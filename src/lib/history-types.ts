@@ -1,7 +1,16 @@
 export type PurchaseDirection = "accepted" | "issued";
 
+/** issued-order: full order from pro/orders; accepted-bonus: bonus-list row without order id/status */
+export type PurchaseSource = "issued-order" | "accepted-bonus";
+
+export type WalletRole = "AGENT" | "STORE" | "MASTER";
+
+/** earned: user's rewards; payable-to-pros: store owes pros; unknown: API role missing */
+export type AccrualScope = "earned" | "payable-to-pros" | "unknown";
+
 export type PurchaseRow = {
   id: string;
+  source: PurchaseSource;
   orderId: string | null;
   bonusId: string | null;
   createdAt: string;
@@ -37,8 +46,17 @@ export type AccrualRow = {
   counterpartyName: string;
   promoCode: string | null;
   isSelfScan: boolean;
-  orderId: string | null;
+  walletRole: WalletRole | null;
+  scope: AccrualScope;
   items: AccrualItemRow[];
+};
+
+export type WalletBalanceResponse = {
+  role: WalletRole;
+  pendingRub: number;
+  paidRub: number;
+  totalRub: number;
+  count: number;
 };
 
 export type AccrualItemRow = {
@@ -107,6 +125,7 @@ export type WalletTransactionsResponse = {
     counterpartyName: string;
     promoCode: string | null;
     isSelfScan: boolean;
+    canPayout?: boolean;
     items: Array<{
       categoryLabel: string;
       bonusPercent: number;

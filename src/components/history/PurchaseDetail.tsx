@@ -1,25 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
-import { fetchHistoryData } from "@/lib/history-loader";
+import { documentOperationsHref, formatMoneyRub } from "@/lib/history-format";
 import {
   bonusStatusLabel,
   bonusStatusTone,
-  orderStatusLabel,
-  orderStatusTone,
+  purchaseOrderStatusLabel,
+  purchaseOrderStatusTone,
 } from "@/lib/history-labels";
-import { findAccrualsForPurchase, findPurchaseByOrderHint } from "@/lib/history-mappers";
+import {
+  findAccrualsForPurchase,
+  findPurchaseById,
+  findPurchaseByOrderId,
+} from "@/lib/history-links";
+import { fetchHistoryData } from "@/lib/history-loader";
 import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import styles from "./history.module.css";
-
-function formatRub(value: number) {
-  return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -48,14 +49,15 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
     setError("");
     try {
       const { purchases, accruals } = await fetchHistoryData(user);
-      const row =
-        findPurchaseByOrderHint(purchases, { orderId: purchaseId, promoCode: promoHint }) ??
-        findPurchaseByOrderHint(purchases, { promoCode: purchaseId });
+      const byOrder = findPurchaseByOrderId(purchases, purchaseId);
+      const row = byOrder ?? findPurchaseById(purchases, purchaseId);
+
       if (!row) {
         setPurchase(null);
         setLinkedAccruals([]);
         return;
       }
+
       setPurchase(row);
       setLinkedAccruals(findAccrualsForPurchase(row, accruals));
     } catch (caught) {
@@ -65,31 +67,11 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
     } finally {
       setLoading(false);
     }
-  }, [user, purchaseId, promoHint]);
+  }, [user, purchaseId]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  const statusLabel = useMemo(() => {
-    if (!purchase) {
-      return "";
-    }
-    if (purchase.bonusStatus) {
-      return bonusStatusLabel(purchase.bonusStatus);
-    }
-    return orderStatusLabel(purchase.orderStatus);
-  }, [purchase]);
-
-  const statusTone = useMemo(() => {
-    if (!purchase) {
-      return "neutral" as const;
-    }
-    if (purchase.bonusStatus) {
-      return bonusStatusTone(purchase.bonusStatus);
-    }
-    return orderStatusTone(purchase.orderStatus);
-  }, [purchase]);
 
   if (loading) {
     return <div className={styles.loading}>Загрузка…</div>;
@@ -107,24 +89,45 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
   if (!purchase) {
     return (
       <div className={styles.empty}>
-        <p>Операция не найдена среди доступных записей.</p>
-        <Link href="/history">Вернуться к истории</Link>
+        <p>
+          Операция не найдена в доступных источниках. Это не означает, что покупка не сохранилась —
+          API может не отдавать её в текущих списках.
+        </p>
+        {promoHint ? (
+          <Link href={documentOperationsHref(promoHint)}>
+            Все операции по документу {promoHint}
+          </Link>
+        ) : null}
+        <Link href="/history">← К истории</Link>
       </div>
     );
   }
 
-  const operationNumber = purchase.orderId ?? purchase.id;
+  const orderStatus = purchaseOrderStatusLabel(purchase);
 
   return (
     <div className={styles.detailCard}>
       <div className={styles.rowHeader}>
         <div>
-          <p className={styles.meta}>Операция #{operationNumber}</p>
+          {purchase.orderId ? (
+            <p className={styles.meta}>Заказ №{purchase.orderId}</p>
+          ) : (
+            <p className={styles.meta}>Номер заказа недоступен в текущем источнике</p>
+          )}
           <h2 className={styles.rowTitle}>{purchase.promoCode ?? "Документ"}</h2>
           <p className={styles.meta}>{formatDate(purchase.createdAt)}</p>
         </div>
-        <StatusBadge label={statusLabel} tone={statusTone} />
+        {orderStatus ? (
+          <StatusBadge label={orderStatus} tone={purchaseOrderStatusTone(purchase)} />
+        ) : null}
       </div>
+
+      {purchase.source === "accepted-bonus" ? (
+        <p className={styles.note}>
+          Данные «Принято у меня» — из списка начислений профклиентам. Полный статус заказа API не
+          возвращает.
+        </p>
+      ) : null}
 
       <div className={styles.detailGrid}>
         <p className={styles.meta}>
@@ -135,14 +138,23 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         {purchase.clientName ? <p className={styles.meta}>Клиент: {purchase.clientName}</p> : null}
         {purchase.branchName ? <p className={styles.meta}>Филиал: {purchase.branchName}</p> : null}
         {purchase.isSelfScan ? <p className={styles.meta}>Самосканирование — без начисления</p> : null}
+        {purchase.source === "accepted-bonus" && purchase.bonusStatus ? (
+          <p className={styles.meta}>
+            Статус начисления профклиенту:{" "}
+            <StatusBadge
+              label={bonusStatusLabel(purchase.bonusStatus)}
+              tone={bonusStatusTone(purchase.bonusStatus)}
+            />
+          </p>
+        ) : null}
       </div>
 
       <div className={styles.amounts}>
-        <span>До скидки: {formatRub(purchase.totalAmount)}</span>
-        <span>Скидка: −{formatRub(purchase.discountAmount)}</span>
-        <strong>К оплате: {formatRub(purchase.payableAmount)}</strong>
+        <span>До скидки: {formatMoneyRub(purchase.totalAmount)}</span>
+        <span>Скидка: −{formatMoneyRub(purchase.discountAmount)}</span>
+        <strong>К оплате: {formatMoneyRub(purchase.payableAmount)}</strong>
         {!purchase.isSelfScan && purchase.proBonus != null && purchase.proBonus > 0 ? (
-          <span>Вознаграждение PROF (сохранено): {formatRub(purchase.proBonus)}</span>
+          <span>Сумма начисления (сохранена): {formatMoneyRub(purchase.proBonus)}</span>
         ) : null}
       </div>
 
@@ -152,22 +164,17 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
           {purchase.items.map((item) => (
             <div key={`${item.categoryLabel}-${item.amount}`} className={styles.itemRow}>
               <strong>{item.categoryLabel}</strong>
-              <span className={styles.meta}>Сумма до скидки: {formatRub(item.amount)}</span>
-              {item.discountPercent != null ? (
-                <span className={styles.meta}>Скидка: {item.discountPercent}%</span>
-              ) : null}
+              <span className={styles.meta}>Сумма до скидки: {formatMoneyRub(item.amount)}</span>
               {item.issuerPercent != null ? (
                 <span className={styles.meta}>
-                  Вознаграждение: {item.issuerPercent}% ({formatRub(item.issuerAmount ?? 0)})
+                  Вознаграждение: {item.issuerPercent}% ({formatMoneyRub(item.issuerAmount ?? 0)})
                 </span>
               ) : null}
             </div>
           ))}
         </div>
-      ) : purchase.direction === "issued" ? (
-        <p className={styles.note}>
-          Позиции по заказам из /api/pro/orders API не возвращает — только суммы заказа.
-        </p>
+      ) : purchase.source === "issued-order" ? (
+        <p className={styles.note}>Позиции заказа API не возвращает — только суммы.</p>
       ) : null}
 
       {linkedAccruals.length ? (
@@ -181,7 +188,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
               style={{ marginTop: "var(--space-2)" }}
             >
               <div className={styles.rowHeader}>
-                <span>{formatRub(accrual.amount)}</span>
+                <span>{formatMoneyRub(accrual.amount)}</span>
                 <StatusBadge
                   label={bonusStatusLabel(accrual.status)}
                   tone={bonusStatusTone(accrual.status)}
@@ -191,11 +198,10 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
             </Link>
           ))}
         </div>
-      ) : !purchase.isSelfScan && purchase.direction === "accepted" ? (
-        <p className={styles.note}>
-          Связанное начисление может отображаться у партнёра-рекомендателя; в вашем кошельке записи
-          нет.
-        </p>
+      ) : purchase.promoCode && !purchase.isSelfScan ? (
+        <Link href={documentOperationsHref(purchase.promoCode)}>
+          Все операции по документу {purchase.promoCode}
+        </Link>
       ) : null}
 
       <Link href="/history">← К истории</Link>

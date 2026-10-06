@@ -1,4 +1,27 @@
+import type { AccrualScope, PurchaseRow } from "./history-types";
+
 export type HistoryStatusTone = "active" | "pending" | "declined" | "neutral";
+
+export const ACCRUAL_SCOPE_LABELS: Record<AccrualScope, string> = {
+  earned: "Начислено мне",
+  "payable-to-pros": "Вознаграждения профклиентам",
+  unknown: "Начисление",
+};
+
+export function accrualScopeLabel(scope: AccrualScope): string {
+  return ACCRUAL_SCOPE_LABELS[scope];
+}
+
+export function purchaseOrderStatusLabel(row: PurchaseRow): string | null {
+  if (row.orderStatus) {
+    return orderStatusLabel(row.orderStatus);
+  }
+  return null;
+}
+
+export function purchaseOrderStatusTone(row: PurchaseRow): HistoryStatusTone {
+  return orderStatusTone(row.orderStatus);
+}
 
 export const BONUS_STATUS_LABELS: Record<string, string> = {
   CALCULATED: "Начислено",

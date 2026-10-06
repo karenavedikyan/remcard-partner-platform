@@ -9,9 +9,23 @@ import type {
   ProOrdersResponse,
   PurchaseRow,
   StoreBonusListResponse,
+  WalletBalanceResponse,
+  WalletRole,
   WalletTransactionsResponse,
 } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
+
+async function fetchWalletRole(): Promise<WalletRole | null> {
+  try {
+    const balance = await remcardFetch<WalletBalanceResponse>("/api/pro/wallet/balance");
+    return balance.role ?? null;
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && (caught.status === 403 || caught.status === 404)) {
+      return null;
+    }
+    throw caught;
+  }
+}
 
 export async function fetchPurchaseRows(user: AuthUser): Promise<PurchaseRow[]> {
   const purchaseRows: PurchaseRow[] = [];
@@ -46,8 +60,11 @@ export async function fetchPurchaseRows(user: AuthUser): Promise<PurchaseRow[]> 
 }
 
 export async function fetchAccrualRows(): Promise<AccrualRow[]> {
-  const txData = await remcardFetch<WalletTransactionsResponse>("/api/pro/wallet/transactions");
-  return mapWalletTransactionsToAccruals(txData);
+  const [walletRole, txData] = await Promise.all([
+    fetchWalletRole(),
+    remcardFetch<WalletTransactionsResponse>("/api/pro/wallet/transactions"),
+  ]);
+  return mapWalletTransactionsToAccruals(txData, walletRole);
 }
 
 export async function fetchHistoryData(user: AuthUser): Promise<{

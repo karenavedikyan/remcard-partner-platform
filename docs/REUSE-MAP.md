@@ -45,10 +45,19 @@
 
 **Legacy (не primary):** `GET /api/bonus/history`, `GET /api/bonus/balance` — allowlisted, navigator wallet использует `/api/pro/wallet/*`.
 
-**Клиентские фильтры:** поиск, статус, период, направление — **только по загруженным записям** (явная пометка в UI).
+**Клиентские фильтры:** поиск, статус заказа (покупки) / статус начисления (начисления), период, направление — **только по загруженным записям**.
+
+**Связи (M3-C fix):**
+- purchase ↔ accrual: **только** `purchase.bonusId === accrual.id`
+- deep link из сканера: **только** `orderId` (`findPurchaseByOrderId` на issued-order)
+- promoCode: фильтр списка «Все операции по документу», **не** matching одной операции
+- Scope начислений: `GET /api/pro/wallet/balance` → `role` (MASTER/AGENT → «Начислено мне», STORE → «Вознаграждения профклиентам»)
+
+**«Принято у меня» (accepted-bonus):** строки из bonus-list — не полная история заказов; номер/статус заказа отдельно от статуса начисления; покупки без Bonus могут отсутствовать.
 
 **Пробелы API (не обходим):**
-- Нет GET order/bonus by id — детали через полный список + client-side find
+- Нет GET order/bonus by id — детали через полный список + client-side find by id
+- issued-order ↔ accrual без общего bonusId в pro/orders — связь по ID невозможна
 - Нет server-side search/pagination на history APIs
 - Самосканирование: покупка может отсутствовать в bonus-list; начисление скрыто фильтром
 

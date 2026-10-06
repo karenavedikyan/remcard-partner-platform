@@ -5,6 +5,7 @@ import type { AccrualRow, PurchaseRow } from "./history-types.ts";
 
 const purchase: PurchaseRow = {
   id: "b1",
+  source: "issued-order",
   orderId: "ord-1",
   bonusId: "b1",
   createdAt: "2026-10-01T12:00:00.000Z",
@@ -56,7 +57,13 @@ describe("filterPurchases", () => {
       ...DEFAULT_HISTORY_FILTERS,
       status: "CALCULATED",
     });
-    assert.equal(byBonusStatus.length, 1);
+    assert.equal(byBonusStatus.length, 0);
+
+    const byOrderStatus = filterPurchases([purchase], {
+      ...DEFAULT_HISTORY_FILTERS,
+      status: "CONFIRMED",
+    });
+    assert.equal(byOrderStatus.length, 1);
   });
 });
 
@@ -70,7 +77,8 @@ describe("filterAccruals", () => {
     counterpartyName: "Store",
     promoCode: "RC-ABC",
     isSelfScan: false,
-    orderId: null,
+    walletRole: "MASTER",
+    scope: "earned",
     items: [],
   };
 

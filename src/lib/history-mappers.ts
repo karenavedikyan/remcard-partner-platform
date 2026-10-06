@@ -1,14 +1,27 @@
 import type {
   AccrualRow,
+  AccrualScope,
   ProOrdersResponse,
   PurchaseRow,
   StoreBonusListResponse,
+  WalletRole,
   WalletTransactionsResponse,
 } from "./history-types";
+
+export function accrualScopeFromWalletRole(role: WalletRole | null): AccrualScope {
+  if (role === "STORE") {
+    return "payable-to-pros";
+  }
+  if (role === "AGENT" || role === "MASTER") {
+    return "earned";
+  }
+  return "unknown";
+}
 
 export function mapStoreBonusListToPurchases(data: StoreBonusListResponse): PurchaseRow[] {
   return data.bonuses.map((bonus) => ({
     id: bonus.id,
+    source: "accepted-bonus",
     orderId: null,
     bonusId: bonus.id,
     createdAt: new Date(bonus.createdAt).toISOString(),
@@ -36,6 +49,7 @@ export function mapStoreBonusListToPurchases(data: StoreBonusListResponse): Purc
 export function mapProOrdersToPurchases(data: ProOrdersResponse): PurchaseRow[] {
   return data.orders.map((order) => ({
     id: order.id,
+    source: "issued-order",
     orderId: order.id,
     bonusId: null,
     createdAt: order.createdAt,
@@ -55,7 +69,11 @@ export function mapProOrdersToPurchases(data: ProOrdersResponse): PurchaseRow[] 
   }));
 }
 
-export function mapWalletTransactionsToAccruals(data: WalletTransactionsResponse): AccrualRow[] {
+export function mapWalletTransactionsToAccruals(
+  data: WalletTransactionsResponse,
+  walletRole: WalletRole | null,
+): AccrualRow[] {
+  const scope = accrualScopeFromWalletRole(walletRole);
   return data.transactions
     .filter((tx) => !tx.isSelfScan && tx.amount > 0)
     .map((tx) => ({
@@ -67,45 +85,8 @@ export function mapWalletTransactionsToAccruals(data: WalletTransactionsResponse
       counterpartyName: tx.counterpartyName,
       promoCode: tx.promoCode,
       isSelfScan: tx.isSelfScan,
-      orderId: null,
+      walletRole,
+      scope,
       items: tx.items,
     }));
-}
-
-export function findPurchaseById(rows: PurchaseRow[], id: string): PurchaseRow | null {
-  return rows.find((row) => row.id === id || row.orderId === id) ?? null;
-}
-
-/** Match a purchase row after scanner success when orderId is known but API may not expose it on store rows. */
-export function findPurchaseByOrderHint(
-  rows: PurchaseRow[],
-  hint: { orderId?: string | null; promoCode?: string | null },
-): PurchaseRow | null {
-  const byId = hint.orderId ? findPurchaseById(rows, hint.orderId) : null;
-  if (byId) {
-    return byId;
-  }
-  if (hint.promoCode) {
-    return rows.find((row) => row.promoCode === hint.promoCode) ?? null;
-  }
-  return null;
-}
-
-export function findAccrualById(rows: AccrualRow[], id: string): AccrualRow | null {
-  return rows.find((row) => row.id === id) ?? null;
-}
-
-export function findAccrualsForPurchase(
-  purchase: PurchaseRow,
-  accruals: AccrualRow[],
-): AccrualRow[] {
-  if (purchase.isSelfScan) {
-    return [];
-  }
-  return accruals.filter(
-    (row) =>
-      !row.isSelfScan &&
-      (row.id === purchase.bonusId ||
-        (purchase.promoCode && row.promoCode === purchase.promoCode)),
-  );
 }

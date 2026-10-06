@@ -38,7 +38,7 @@ export function filterPurchases(rows: PurchaseRow[], filters: HistoryFilters): P
     if (filters.direction !== "all" && row.direction !== filters.direction) {
       return false;
     }
-    if (filters.status && row.bonusStatus !== filters.status && row.orderStatus !== filters.status) {
+    if (filters.status && row.orderStatus !== filters.status) {
       return false;
     }
     if (!inDateRange(row.createdAt, filters.dateFrom, filters.dateTo)) {
@@ -67,9 +67,6 @@ export function filterAccruals(rows: AccrualRow[], filters: HistoryFilters): Acc
 export function purchaseStatusOptions(rows: PurchaseRow[]): string[] {
   const set = new Set<string>();
   for (const row of rows) {
-    if (row.bonusStatus) {
-      set.add(row.bonusStatus);
-    }
     if (row.orderStatus) {
       set.add(row.orderStatus);
     }

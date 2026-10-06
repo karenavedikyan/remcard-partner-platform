@@ -1,72 +1,54 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M3-C: история покупок и начислений).
+Обновлено: 6 октября 2026 года (M3-C fix: strict ID linking, purchase/bonus separation).
 
 ## SHA / ветки
 
 | Источник | SHA / ветка | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` M3-C | ветка `cursor/m3c-history-b3e3` (Draft PR → base `cursor/m3b-scanner-b3e3`) | от `ecc2fbd` (PR #4) |
-| `remcard-partner-platform` M3-B | `ecc2fbd` на `cursor/m3b-scanner-b3e3` (Draft PR #4) | Scanner + fixes |
+| `remcard-partner-platform` M3-C | ветка `cursor/m3c-history-b3e3` (Draft PR #5 → base `cursor/m3b-scanner-b3e3`) | fix после `8c7b365` |
 | `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only |
 
-## M3-C: История покупок и начислений
+## M3-C fix: связи, разделение покупка/начисление, scope
 
-### Реализовано
+### Исправления
 
-- Навигация «История», вкладки **Покупки** / **Начисления**
-- Источники: `GET /api/store/bonus-list` (принято у меня), `GET /api/pro/orders` (по рекомендациям), `GET /api/pro/wallet/transactions` (начисления)
-- Клиентские фильтры: поиск, статус, период, направление (если обе стороны в данных)
-- Детали покупки и начисления; связь по promoCode / bonusId
-- Сканер: ссылка «Открыть покупку» после успешного order 201
-- BFF allowlist расширен; выплаты / POST bonus pay **не добавлены**
+- Связь purchase ↔ accrual **только** по `bonusId === accrual.id`; promoCode не используется для matching
+- `findPurchaseByOrderId` — только issued-order по orderId; сканер без `?promo=`
+- «Принято у меня»: `accepted-bonus` rows — номер/статус заказа отдельно от начисления; bonusId не показывается как № заказа
+- Scope начислений из `GET /api/pro/wallet/balance` → `role`: MASTER/AGENT = «Начислено мне», STORE = «Вознаграждения профклиентам»
+- `formatMoneyRub` — сохраняет копейки при дробных суммах
+- Нет точной связи → «Все операции по документу» (фильтр списка), без ложной «связанной покупки»
 
 ### Проверки
 
-#### Mock / unit (`npm run test:proxy`)
+#### Mock / unit — PASS (114/114)
+
+`npm run test:proxy` — history-links regressions, history-format, filters, mappers
+
+#### Integration (curl, loopback)
 
 | Проверка | Результат |
 | --- | --- |
-| Всего тестов | **108/108 PASS** |
-| history-filters, history-mappers | PASS |
-| remcard-proxy allowlist (bonus-list, pro/orders, wallet) | PASS |
-| lint + build | ok |
+| Prof wallet role MASTER | PASS |
+| Store wallet role STORE | PASS |
+| Staff pro/orders count=0, overlap=0 | PASS |
+| Duplicate promo RC-95DDYO (2 orders) — API returns distinct ids | PASS (unit tests verify no promo mixing) |
+| purchase → reload → history после нового POST | **NOT VERIFIED** |
+| self-scan без начисления | **NOT VERIFIED** — нет fixture |
+| terms change immutability | **NOT VERIFIED** |
 
-#### Интеграционные (curl, loopback, fixture JWT)
+#### Browser (desktop + mobile)
 
-| Проверка | Результат |
-| --- | --- |
-| Store `bonus-list` через BFF | PASS — bonuses с orderItems, суммы |
-| Prof `pro/orders` через BFF | PASS — order.id, proBonus, promoCode |
-| Prof `wallet/transactions` через BFF | PASS — amount/status/items по RC-95DDYO |
-| Согласованность order ↔ accrual (700/−35/70) | PASS |
-| BFF блокирует `/api/admin/secret` | PASS — 403 |
-| Посторонний PRO (staff JWT) — изоляция чужих операций | **NOT VERIFIED** — staff получает 200 на pro/orders; нужен отдельный fixture без контекста |
-| Самоскан без лишнего начисления | **NOT VERIFIED** — нет self-scan fixture в текущих данных |
-| Изменение terms не меняет историю | **NOT VERIFIED** — сценарий не прогонялся в этой сессии |
-| purchase → reload → history после нового POST | **NOT VERIFIED** — использованы существующие записи M3-B |
+См. artifacts `m3c_fix_*` после fix-проверки.
 
-#### Браузер (desktop + mobile, fixture JWT)
+### Оставшиеся пробелы API
 
-| Проверка | Результат |
-| --- | --- |
-| /history — вкладки, фильтры, список | PASS |
-| Детали покупки (суммы 700/35/665/70) | PASS |
-| Детали начисления + позиции | PASS |
-| Mobile 390px — список | PASS |
-| Nav «История» | PASS |
-| Скриншоты | `m3c_history_*`, `m3c_nav_history_link.png` |
-
-### Ограничения / пробелы
-
-- Поиск и фильтры — **только по загруженным записям** (до 200 issued orders)
-- `pro/orders` без line items — детали issued показывают только суммы заказа
-- `bonus-list` без orderId — deep link из сканера использует orderId + fallback promo
-- Самоскан: покупка может отсутствовать в bonus-list; начисление скрыто
-- Нет server pagination / order detail API
+- `bonus-list` / wallet tx без `orderId` — нельзя связать issued-order с accrual по ID
+- `pro/orders` без line items
+- Нет GET order/bonus by id
+- Store partner после сканера: orderId может отсутствовать в списках → «Открыть покупку» показывает ограничение; «Все операции по документу» — отдельная ссылка
 
 ## Не в scope
 
-- Выплаты, изменение статусов, возвраты, ledger
-- Production deploy / merge
-- M3-D и далее
+Merge, deploy, выплаты, navigator changes, M3-D+

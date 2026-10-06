@@ -10,12 +10,16 @@ import {
   filterPurchases,
   purchaseStatusOptions,
 } from "@/lib/history-filters";
+import { formatMoneyRub } from "@/lib/history-format";
 import {
+  accrualScopeLabel,
   bonusStatusLabel,
   bonusStatusTone,
   orderStatusLabel,
-  orderStatusTone,
+  purchaseOrderStatusLabel,
+  purchaseOrderStatusTone,
 } from "@/lib/history-labels";
+import { purchaseDetailHref, purchaseOrderNumberLabel } from "@/lib/history-links";
 import { fetchHistoryData } from "@/lib/history-loader";
 import type { AccrualRow, HistoryFilters, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
@@ -26,10 +30,6 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import styles from "./history.module.css";
 
 type HistoryTab = "purchases" | "accruals";
-
-function formatRub(value: number) {
-  return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -42,33 +42,38 @@ function formatDate(iso: string) {
 }
 
 function PurchaseRowCard({ row }: { row: PurchaseRow }) {
-  const status = row.bonusStatus ?? row.orderStatus;
-  const statusLabel = row.bonusStatus
-    ? bonusStatusLabel(row.bonusStatus)
-    : orderStatusLabel(row.orderStatus);
-  const tone = row.bonusStatus ? bonusStatusTone(row.bonusStatus) : orderStatusTone(row.orderStatus);
+  const orderStatus = purchaseOrderStatusLabel(row);
+  const orderNumber = purchaseOrderNumberLabel(row);
 
   return (
-    <Link href={`/history/purchases/${encodeURIComponent(row.id)}`} className={styles.row}>
+    <Link href={purchaseDetailHref(row)} className={styles.row}>
       <div className={styles.rowHeader}>
         <div>
           <p className={styles.rowTitle}>
-            {row.promoCode ?? "Документ"} · {formatRub(row.payableAmount)}
+            {row.promoCode ?? "Документ"} · {formatMoneyRub(row.payableAmount)}
           </p>
           <p className={styles.meta}>
-            {formatDate(row.createdAt)} · №{row.orderId ?? row.id} ·{" "}
+            {formatDate(row.createdAt)}
+            {orderNumber ? ` · №${orderNumber}` : " · № заказа недоступен"} ·{" "}
             {row.direction === "accepted" ? "Принято у меня" : "По моей рекомендации"}
           </p>
         </div>
-        {status ? <StatusBadge label={statusLabel} tone={tone} /> : null}
+        {orderStatus ? (
+          <StatusBadge label={orderStatus} tone={purchaseOrderStatusTone(row)} />
+        ) : null}
       </div>
       <p className={styles.meta}>
         Партнёр: {row.partnerName}
         {row.clientName ? ` · Клиент: ${row.clientName}` : ""}
       </p>
+      {row.source === "accepted-bonus" && row.bonusStatus ? (
+        <p className={styles.meta}>
+          Начисление профклиенту: {bonusStatusLabel(row.bonusStatus)}
+        </p>
+      ) : null}
       <div className={styles.amounts}>
-        <span>До скидки: {formatRub(row.totalAmount)}</span>
-        <span>Скидка: −{formatRub(row.discountAmount)}</span>
+        <span>До скидки: {formatMoneyRub(row.totalAmount)}</span>
+        <span>Скидка: −{formatMoneyRub(row.discountAmount)}</span>
         {row.isSelfScan ? <span>Самосканирование</span> : null}
       </div>
     </Link>
@@ -80,9 +85,10 @@ function AccrualRowCard({ row }: { row: AccrualRow }) {
     <Link href={`/history/accruals/${encodeURIComponent(row.id)}`} className={styles.row}>
       <div className={styles.rowHeader}>
         <div>
-          <p className={styles.rowTitle}>{formatRub(row.amount)}</p>
+          <p className={styles.rowTitle}>{formatMoneyRub(row.amount)}</p>
           <p className={styles.meta}>
-            {formatDate(row.createdAt)} · {row.promoCode ?? "Документ"}
+            {formatDate(row.createdAt)} · {row.promoCode ?? "Документ"} ·{" "}
+            {accrualScopeLabel(row.scope)}
           </p>
         </div>
         <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
@@ -153,20 +159,26 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       />
 
       <p className={styles.note}>
-        Поиск и фильтры работают по загруженным записям (до 200 заказов по рекомендациям; полный
-        список начислений без серверной пагинации).
+        Поиск и фильтры — по загруженным записям (до 200 заказов по рекомендациям).
       </p>
+
+      {hasAcceptedPurchases ? (
+        <p className={styles.note}>
+          «Принято у меня»: только покупки с начислением профклиенту. Без начисления и
+          самосканирование могут отсутствовать.
+        </p>
+      ) : null}
 
       <div className={styles.toolbar}>
         <div className={styles.filters}>
           <TextField
             label="Поиск"
-            placeholder="Код документа или номер"
+            placeholder="Код документа или номер заказа"
             value={filters.search}
             onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
           />
           <TextField
-            label="Статус"
+            label={tab === "purchases" ? "Статус заказа" : "Статус начисления"}
             value={filters.status}
             onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
             list="history-status-options"
@@ -174,9 +186,7 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
           <datalist id="history-status-options">
             {(tab === "purchases" ? purchaseStatuses : accrualStatuses).map((status) => (
               <option key={status} value={status}>
-                {bonusStatusLabel(status) !== status
-                  ? bonusStatusLabel(status)
-                  : orderStatusLabel(status)}
+                {tab === "purchases" ? orderStatusLabel(status) : bonusStatusLabel(status)}
               </option>
             ))}
           </datalist>

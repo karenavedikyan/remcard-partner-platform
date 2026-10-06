@@ -7,7 +7,7 @@ import { getSessionUser } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 type HistoryPageProps = {
-  searchParams?: { promo?: string; search?: string };
+  searchParams?: { search?: string };
 };
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
@@ -16,7 +16,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     return <SessionGate reason={user ? "role" : "session"} />;
   }
 
-  const initialPromoCode = searchParams?.promo ?? searchParams?.search ?? "";
+  const initialPromoCode = searchParams?.search ?? "";
 
   return (
     <CabinetShell>

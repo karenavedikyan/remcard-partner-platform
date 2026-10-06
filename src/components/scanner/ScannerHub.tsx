@@ -315,10 +315,16 @@ export function ScannerHub() {
         </div>
         <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
           <Link
-            href={`/history/purchases/${encodeURIComponent(success.order.id)}?promo=${encodeURIComponent(confirmedCode)}`}
+            href={`/history/purchases/${encodeURIComponent(success.order.id)}`}
             className={styles.openHistoryLink}
           >
             Открыть покупку
+          </Link>
+          <Link
+            href={`/history?search=${encodeURIComponent(confirmedCode)}`}
+            className={styles.openHistoryLink}
+          >
+            Все операции по документу
           </Link>
           <Button onClick={resetAll}>Сканировать следующий код</Button>
         </div>
