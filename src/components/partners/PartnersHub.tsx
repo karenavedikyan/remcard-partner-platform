@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   PARTNERSHIP_STATUS_LABELS,
@@ -50,6 +51,8 @@ function partnerTitle(partner: { displayName: string | null; organizationName?: 
 }
 
 export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: PartnersHubProps) {
+  const searchParams = useSearchParams();
+  const termsPartnershipId = searchParams.get("terms")?.trim() || null;
   const [tab, setTab] = useState<TabId>("list");
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
@@ -167,6 +170,14 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
       }));
     }
   }
+
+  useEffect(() => {
+    if (!termsPartnershipId) {
+      return;
+    }
+    setTab("list");
+    void loadTermRequests(termsPartnershipId);
+  }, [termsPartnershipId]);
 
   async function refreshProfile() {
     try {

@@ -4,7 +4,9 @@ import {
   buildCreateCertificatePayload,
   categoryFieldKey,
   computeCategoryPercents,
+  formatDiscountLimitError,
   previewIssuerPercent,
+  roundPercent,
   toPercent,
 } from "./certificate-percent.ts";
 
@@ -17,10 +19,9 @@ describe("certificate percent calculation", () => {
     isSelfScan: false,
   };
 
-  it("rounds like navigator toPercent", () => {
+  it("rounds like navigator toPercent helper", () => {
     assert.equal(toPercent(10.126, 0, 100), 10.13);
-    assert.equal(toPercent(-5, 0, 100), 0);
-    assert.equal(toPercent(200, 0, 15), 15);
+    assert.equal(roundPercent(10.126), 10.13);
   });
 
   it("partner pool 15%: client 5% → PROF 10%", () => {
@@ -47,6 +48,21 @@ describe("certificate percent calculation", () => {
     assert.equal(result.value.issuerPercent, 15);
   });
 
+  it("partner pool 15%: client 20% → error, no silent clamp", () => {
+    const result = computeCategoryPercents(partnerCategory, "20");
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.reason, "over_limit");
+    assert.equal(result.message, formatDiscountLimitError(15));
+  });
+
+  it("rejects negative discount", () => {
+    const result = computeCategoryPercents(partnerCategory, "-1");
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.reason, "negative");
+  });
+
   it("self-scan: client 5% → PROF 0%", () => {
     const result = computeCategoryPercents(
       { ...partnerCategory, isSelfScan: true, poolPercent: 100 },
@@ -58,11 +74,21 @@ describe("certificate percent calculation", () => {
     assert.equal(result.value.issuerPercent, 0);
   });
 
+  it("self-scan: rejects over 100% without clamping", () => {
+    const result = computeCategoryPercents(
+      { ...partnerCategory, isSelfScan: true, poolPercent: 100 },
+      "101",
+    );
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.reason, "over_limit");
+  });
+
   it("rejects empty discount draft", () => {
     const result = computeCategoryPercents(partnerCategory, "");
     assert.equal(result.ok, false);
     if (result.ok) return;
-    assert.match(result.message, /Укажите скидку/);
+    assert.equal(result.reason, "empty");
   });
 
   it("rejects missing pool for partner category", () => {
@@ -73,9 +99,17 @@ describe("certificate percent calculation", () => {
     assert.equal(result.ok, false);
   });
 
-  it("previewIssuerPercent returns null for invalid input", () => {
-    assert.equal(previewIssuerPercent(partnerCategory, ""), null);
+  it("previewIssuerPercent returns null for over-limit input", () => {
+    assert.equal(previewIssuerPercent(partnerCategory, "20"), null);
     assert.equal(previewIssuerPercent(partnerCategory, "5"), 10);
+  });
+
+  it("pool 20% after term change: client 7% → PROF 13%", () => {
+    const result = computeCategoryPercents({ ...partnerCategory, poolPercent: 20 }, "7");
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.value.discountPercent, 7);
+    assert.equal(result.value.issuerPercent, 13);
   });
 });
 
@@ -125,6 +159,18 @@ describe("buildCreateCertificatePayload", () => {
     assert.equal(cat.issuerPercent, 10);
   });
 
+  it("does not build payload when discount exceeds agreed pool", () => {
+    const key = categoryFieldKey("store-1", "doors");
+    const result = buildCreateCertificatePayload({
+      selectedPartners: [storePartner],
+      discountDrafts: { [key]: "20" },
+    });
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.fieldErrorReasons[key], "over_limit");
+    assert.match(result.fieldErrors[key] ?? "", /Согласовано 15%/);
+  });
+
   it("keeps self-scan issuerPercent at 0", () => {
     const key = categoryFieldKey("prof-1", "doors");
     const result = buildCreateCertificatePayload({
@@ -149,13 +195,12 @@ describe("buildCreateCertificatePayload", () => {
     assert.equal(result.fieldErrors[key], "Укажите скидку клиенту");
   });
 
-  it("does not silently treat empty draft as zero on submit", () => {
+  it("uses API default when draft absent and rejects cleared whitespace", () => {
     const key = categoryFieldKey("store-1", "doors");
     const result = buildCreateCertificatePayload({
       selectedPartners: [storePartner],
       discountDrafts: {},
     });
-    // Default from API discountPercent=15 is used when draft absent
     assert.equal(result.ok, true);
     if (!result.ok) return;
     assert.equal(result.body.partners[0]!.categories[0]!.discountPercent, 15);

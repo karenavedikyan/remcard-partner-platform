@@ -114,6 +114,23 @@
   font-size: var(--text-sm);
 }
 
+.agreedPercent {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.termsLinkWrap {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.termsLink {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 .resultWrap {
   display: grid;
   gap: var(--space-5);

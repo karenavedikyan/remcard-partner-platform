@@ -1,13 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   buildCreateCertificatePayload,
   categoryFieldKey,
+  partnershipTermsHref,
   previewIssuerPercent,
   resolvePoolPercent,
 } from "@/lib/certificate-percent";
+import type { CategoryValidationFailureReason } from "@/lib/certificate-percent";
 import type {
   AvailablePartner,
   AvailablePartnersResponse,
@@ -49,6 +52,9 @@ export function CertificateCreateForm() {
   const [validityPreset, setValidityPreset] = useState<ValidityPreset>("3");
   const [discountDrafts, setDiscountDrafts] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldErrorReasons, setFieldErrorReasons] = useState<
+    Record<string, CategoryValidationFailureReason>
+  >({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<StoreCertificate | null>(null);
@@ -108,6 +114,7 @@ export function CertificateCreateForm() {
 
     setSubmitError("");
     setFieldErrors({});
+    setFieldErrorReasons({});
 
     const payloadResult = buildCreateCertificatePayload({
       selectedPartners,
@@ -119,6 +126,7 @@ export function CertificateCreateForm() {
     if (!payloadResult.ok) {
       setSubmitError(payloadResult.formError ?? "Проверьте условия документа");
       setFieldErrors(payloadResult.fieldErrors);
+      setFieldErrorReasons(payloadResult.fieldErrorReasons);
       return;
     }
 
@@ -205,8 +213,8 @@ export function CertificateCreateForm() {
             <section className={styles.formSection}>
               <h3>Условия для клиента</h3>
               <p className={styles.meta}>
-                Согласованный процент делится между скидкой клиенту и вашим вознаграждением.
-                Сервер проверит окончательные значения.
+                Общий процент задаётся в условиях партнёрства. Здесь вы распределяете его между
+                скидкой клиенту и своим вознаграждением.
               </p>
               <div className={styles.conditionsGrid}>
                 {selectedPartners.flatMap((partner) =>
@@ -231,6 +239,7 @@ export function CertificateCreateForm() {
                       draftValue,
                     );
                     const rowBlocked = pool === null;
+                    const termsHref = partnershipTermsHref(partner.partnershipId);
 
                     return (
                       <div
@@ -241,8 +250,8 @@ export function CertificateCreateForm() {
                           {partner.storeName} — {cat.categoryLabel}
                         </strong>
                         {pool !== null ? (
-                          <p className={styles.conditionMeta}>
-                            Согласовано: {pool}% · скидка клиенту + ваше вознаграждение
+                          <p className={styles.agreedPercent}>
+                            Согласованный процент: <strong>{pool}%</strong>
                           </p>
                         ) : (
                           <p className={styles.errorText} role="alert">
@@ -252,8 +261,7 @@ export function CertificateCreateForm() {
                         <TextField
                           label="Скидка клиенту, %"
                           type="number"
-                          min={0}
-                          max={pool ?? 100}
+                          inputMode="decimal"
                           disabled={rowBlocked || submitting}
                           value={draftValue}
                           error={fieldErrors[key]}
@@ -266,18 +274,32 @@ export function CertificateCreateForm() {
                                 delete copy[key];
                                 return copy;
                               });
+                              setFieldErrorReasons((prev) => {
+                                const copy = { ...prev };
+                                delete copy[key];
+                                return copy;
+                              });
                             }
                           }}
                         />
                         {!partner.isSelfScan && pool !== null ? (
                           <p className={styles.conditionMeta}>
                             Ваше вознаграждение:{" "}
-                            {issuerPreview != null ? `${issuerPreview}%` : "—"}
+                            <strong>
+                              {issuerPreview != null ? `${issuerPreview}%` : "—"}
+                            </strong>
+                          </p>
+                        ) : null}
+                        {fieldErrorReasons[key] === "over_limit" && termsHref ? (
+                          <p className={styles.termsLinkWrap}>
+                            <Link href={termsHref} className={styles.termsLink}>
+                              Изменить условия партнёрства
+                            </Link>
                           </p>
                         ) : null}
                         {partner.isSelfScan ? (
                           <p className={styles.conditionMeta}>
-                            Самосканирование: вознаграждение PROF не начисляется
+                            Самосканирование: только скидка клиенту, вознаграждение PROF — 0%
                           </p>
                         ) : null}
                       </div>

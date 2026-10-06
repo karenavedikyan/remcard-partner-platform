@@ -18,20 +18,25 @@ export type ResolvedCategoryPercents = {
   poolPercent: number;
 };
 
-export type CategoryValidationError = {
-  fieldKey: string;
-  message: string;
-};
+export type CategoryValidationFailureReason =
+  | "empty"
+  | "invalid"
+  | "negative"
+  | "over_limit"
+  | "missing_pool";
 
-function clamp(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) {
-    return min;
-  }
-  return Math.max(min, Math.min(max, value));
+export function roundPercent(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
+/** @deprecated Use roundPercent on already-validated values. Kept for tests mirroring navigator clamp helper. */
 export function toPercent(value: number, min: number, max: number): number {
-  return Math.round(clamp(value, min, max) * 100) / 100;
+  const clamped = Math.max(min, Math.min(max, value));
+  return roundPercent(clamped);
+}
+
+export function formatDiscountLimitError(poolPercent: number): string {
+  return `Согласовано ${poolPercent}%. Укажите скидку от 0 до ${poolPercent}% или предложите изменить условия партнёрства`;
 }
 
 export function resolvePoolPercent(category: CategoryPercentInput): number | null {
@@ -45,21 +50,30 @@ export function resolvePoolPercent(category: CategoryPercentInput): number | nul
   return pool;
 }
 
+export type ComputeCategoryResult =
+  | { ok: true; value: ResolvedCategoryPercents }
+  | { ok: false; message: string; reason: CategoryValidationFailureReason };
+
 /**
- * Mirrors `updateCategoryPercent` in navigator CertificateWizard.
+ * Validates and splits an agreed pool between client discount and PROF reward.
+ * Does not clamp out-of-range values — returns an error instead.
  */
 export function computeCategoryPercents(
   category: CategoryPercentInput,
   discountRaw: string,
-): { ok: true; value: ResolvedCategoryPercents } | { ok: false; message: string } {
+): ComputeCategoryResult {
   const trimmed = discountRaw.trim();
   if (!trimmed) {
-    return { ok: false, message: "Укажите скидку клиенту" };
+    return { ok: false, message: "Укажите скидку клиенту", reason: "empty" };
   }
 
   const numeric = Number(trimmed);
   if (!Number.isFinite(numeric)) {
-    return { ok: false, message: "Некорректное значение скидки" };
+    return { ok: false, message: "Некорректное значение скидки", reason: "invalid" };
+  }
+
+  if (numeric < 0) {
+    return { ok: false, message: "Скидка не может быть отрицательной", reason: "negative" };
   }
 
   const pool = resolvePoolPercent(category);
@@ -67,20 +81,36 @@ export function computeCategoryPercents(
     return {
       ok: false,
       message: `Не задан согласованный процент для «${category.categoryLabel}»`,
+      reason: "missing_pool",
     };
   }
 
   if (category.isSelfScan) {
-    const discountPercent = toPercent(numeric, 0, 100);
+    if (numeric > 100) {
+      return {
+        ok: false,
+        message: "Укажите скидку от 0 до 100%",
+        reason: "over_limit",
+      };
+    }
+    const discountPercent = roundPercent(numeric);
     return {
       ok: true,
       value: { discountPercent, issuerPercent: 0, poolPercent: pool },
     };
   }
 
-  const maxTotal = toPercent(pool, 0, 100);
-  const discountPercent = toPercent(numeric, 0, maxTotal);
-  const issuerPercent = toPercent(maxTotal - discountPercent, 0, maxTotal);
+  const maxTotal = roundPercent(pool);
+  if (numeric > maxTotal) {
+    return {
+      ok: false,
+      message: formatDiscountLimitError(maxTotal),
+      reason: "over_limit",
+    };
+  }
+
+  const discountPercent = roundPercent(numeric);
+  const issuerPercent = roundPercent(maxTotal - discountPercent);
 
   return {
     ok: true,
@@ -99,6 +129,13 @@ export function previewIssuerPercent(
   return result.value.issuerPercent;
 }
 
+export function partnershipTermsHref(partnershipId: string | null | undefined): string | null {
+  if (!partnershipId) {
+    return null;
+  }
+  return `/partners?terms=${encodeURIComponent(partnershipId)}`;
+}
+
 export type BuildPayloadInput = {
   selectedPartners: Array<{
     storeUserId: string;
@@ -114,7 +151,12 @@ export type BuildPayloadInput = {
 
 export type BuildPayloadResult =
   | { ok: true; body: CreateCertificateBody }
-  | { ok: false; formError?: string; fieldErrors: Record<string, string> };
+  | {
+      ok: false;
+      formError?: string;
+      fieldErrors: Record<string, string>;
+      fieldErrorReasons: Record<string, CategoryValidationFailureReason>;
+    };
 
 export function categoryFieldKey(storeUserId: string, category: string): string {
   return `${storeUserId}::${category}`;
@@ -122,10 +164,16 @@ export function categoryFieldKey(storeUserId: string, category: string): string 
 
 export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPayloadResult {
   if (input.selectedPartners.length === 0) {
-    return { ok: false, formError: "Выберите хотя бы одного партнёра", fieldErrors: {} };
+    return {
+      ok: false,
+      formError: "Выберите хотя бы одного партнёра",
+      fieldErrors: {},
+      fieldErrorReasons: {},
+    };
   }
 
   const fieldErrors: Record<string, string> = {};
+  const fieldErrorReasons: Record<string, CategoryValidationFailureReason> = {};
   const partners: CreateCertificatePartnerInput[] = [];
 
   for (const partner of input.selectedPartners) {
@@ -150,6 +198,7 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
 
       if (!computed.ok) {
         fieldErrors[key] = computed.message;
+        fieldErrorReasons[key] = computed.reason;
         continue;
       }
 
@@ -179,11 +228,17 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
       ok: false,
       formError: "Исправьте условия по категориям",
       fieldErrors,
+      fieldErrorReasons,
     };
   }
 
   if (partners.length === 0) {
-    return { ok: false, formError: "Выберите хотя бы одного партнёра", fieldErrors: {} };
+    return {
+      ok: false,
+      formError: "Выберите хотя бы одного партнёра",
+      fieldErrors: {},
+      fieldErrorReasons: {},
+    };
   }
 
   return {
