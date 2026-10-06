@@ -1,5 +1,5 @@
 import { appConfig, assertServerOnly, isBackendConfigured } from "@/lib/config";
-import type { AuthMeResponse } from "@/lib/api-client";
+import type { AuthMeResponse } from "@/lib/types";
 import {
   applyUpstreamAuthHeaders,
   assertBackendUrlWithoutCredentials,

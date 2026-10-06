@@ -1,9 +1,12 @@
 import { appConfig } from "@/lib/config";
+import type { AuthMeResponse } from "@/lib/types";
 
 export type ApiErrorBody = {
   error?: string;
   message?: string;
 };
+
+export type { AuthMeResponse };
 
 export class RemcardApiError extends Error {
   status: number;
@@ -57,14 +60,6 @@ export async function remcardFetch<T>(
 
   return payload as T;
 }
-
-export type AuthMeResponse = {
-  user: {
-    id: string;
-    email?: string | null;
-    name?: string | null;
-  } | null;
-};
 
 export async function getAuthMe() {
   return remcardFetch<AuthMeResponse>("/api/auth/me");

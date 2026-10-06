@@ -1,0 +1,71 @@
+-- M2-fix-2: изолированное ACTIVE-партнёрство для полного UI-сценария term-change.
+-- Запускать только на remcard_prof_test @ 127.0.0.1
+
+\set ON_ERROR_STOP on
+
+DO $$
+BEGIN
+  IF current_database() <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing seed: database must be remcard_prof_test';
+  END IF;
+END $$;
+
+INSERT INTO "User" (
+  id, "publicId", "displayName", role, "tokenVersion", "createdAt", "updatedAt",
+  "catalogStatus", "isPublic", "partnerType", "storeCategories", city
+) VALUES (
+  'm2fix2-store-a-000000001', 'RC-M2F2-A01', 'M2Fix2 Магазин A', 'PRO', 0, NOW(), NOW(),
+  'APPROVED', true, 'STORE', ARRAY['doors']::text[], 'Краснодар'
+)
+ON CONFLICT (id) DO UPDATE SET
+  "displayName" = EXCLUDED."displayName",
+  "catalogStatus" = 'APPROVED',
+  "partnerType" = 'STORE',
+  "storeCategories" = EXCLUDED."storeCategories";
+
+INSERT INTO "User" (
+  id, "publicId", "displayName", role, "tokenVersion", "createdAt", "updatedAt",
+  "catalogStatus", "isPublic", "partnerType", specializations, city
+) VALUES (
+  'm2fix2-master-b-00000001', 'RC-M2F2-B01', 'M2Fix2 Мастер B', 'PRO', 0, NOW(), NOW(),
+  'APPROVED', true, 'MASTER', ARRAY['doors']::text[], 'Сочи'
+)
+ON CONFLICT (id) DO UPDATE SET
+  "displayName" = EXCLUDED."displayName",
+  "catalogStatus" = 'APPROVED',
+  "partnerType" = 'MASTER',
+  specializations = EXCLUDED.specializations;
+
+INSERT INTO "Partnership" (
+  id, "storeUserId", "proUserId", status, "initiatedBy", "createdAt", "updatedAt"
+) VALUES (
+  'm2fix2-partnership-00001',
+  'm2fix2-store-a-000000001',
+  'm2fix2-master-b-00000001',
+  'ACTIVE',
+  'm2fix2-store-a-000000001',
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  status = 'ACTIVE',
+  "updatedAt" = NOW();
+
+INSERT INTO "PartnershipTerm" (
+  id, "partnershipId", category, "categoryLabel", "storePercent", "createdAt", "updatedAt"
+) VALUES (
+  'm2fix2-term-doors-000001',
+  'm2fix2-partnership-00001',
+  'doors',
+  'Двери',
+  10,
+  NOW(),
+  NOW()
+)
+ON CONFLICT ("partnershipId", category) DO UPDATE SET
+  "storePercent" = 10,
+  "updatedAt" = NOW();
+
+-- Удалить активные term-change запросы для этого партнёрства
+DELETE FROM "TermChangeRequest"
+WHERE "partnershipId" = 'm2fix2-partnership-00001';

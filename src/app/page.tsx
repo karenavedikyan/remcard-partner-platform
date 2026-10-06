@@ -1,121 +1,47 @@
 import { headers } from "next/headers";
-import { getRemcardApiBaseUrl } from "@/lib/api-client";
-import { appConfig, isBackendConfigured } from "@/lib/config";
-import { getAuthMeServer } from "@/lib/remcard-server";
-import { LoginCodeForm } from "@/components/auth/LoginCodeForm";
-import { LogoutButton } from "@/components/auth/LogoutButton";
-import styles from "./page.module.css";
+import { SessionGate } from "@/components/auth/SessionGate";
+import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { PageHeading } from "@/components/ui/PageHeading";
+import { CabinetShell } from "@/components/layout/CabinetShell";
+import { countNeedsMyResponse } from "@/lib/partnership-rules";
+import { fetchRemcardUpstream } from "@/lib/remcard-server";
+import { getSessionUser } from "@/lib/session";
+import type { PartnershipListResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-type HealthRow = {
-  label: string;
-  value: string;
-};
-
-async function loadHealthRows(): Promise<{
-  rows: HealthRow[];
-  authError?: string;
-  backendConfigured: boolean;
-  isLoggedIn: boolean;
-}> {
-  const backendConfigured = isBackendConfigured();
-  const rows: HealthRow[] = [
-    { label: "Кабинет", value: appConfig.appUrl },
-    {
-      label: "Backend API",
-      value: backendConfigured
-        ? getRemcardApiBaseUrl()
-        : "Тестовый backend не подключён",
-    },
-    { label: "Режим", value: "M1 — технический стартовый экран" },
-  ];
-
-  if (!backendConfigured) {
-    return { rows, backendConfigured: false, isLoggedIn: false };
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: { reason?: string };
+}) {
+  const user = await getSessionUser();
+  if (!user) {
+    return <SessionGate reason={searchParams?.reason} />;
+  }
+  if (user.isBlocked) {
+    return <SessionGate reason="blocked" />;
+  }
+  if (user.role !== "PRO") {
+    return <SessionGate reason="role" />;
   }
 
   const cookieHeader = headers().get("cookie");
-  const auth = await getAuthMeServer(cookieHeader);
-  if (auth.ok) {
-    rows.push({
-      label: "Сессия",
-      value: auth.data.user ? `userId ${auth.data.user.id}` : "не авторизован",
-    });
-    return {
-      rows,
-      backendConfigured: true,
-      isLoggedIn: Boolean(auth.data.user),
-    };
-  }
+  const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
 
-  if (!auth.configured) {
-    rows.push({ label: "Сессия", value: "тестовый backend не подключён" });
-    return { rows, backendConfigured: true, isLoggedIn: false };
-  }
-
-  rows.push({ label: "Сессия", value: "ошибка проверки" });
-  return {
-    rows,
-    authError: `HTTP ${auth.status}: ${auth.message}`,
-    backendConfigured: true,
-    isLoggedIn: false,
-  };
-}
-
-export default async function HomePage() {
-  const { rows, authError, backendConfigured, isLoggedIn } = await loadHealthRows();
+  const partnerships = listResult.ok ? listResult.data.partnerships : [];
+  const incomingCount = countNeedsMyResponse(partnerships, user.id);
 
   return (
-    <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="start-title">
-        <span className={styles.eyebrow}>RemCard PROF · M1</span>
-        <h1 id="start-title">Кабинет партнёра</h1>
-        <p>
-          Минимальная локальная основа подключается к разрешённому тестовому
-          backend RemCard через серверный BFF-прокси. Финансовые действия,
-          демо-балансы и фоновые cron не выполняются.
-        </p>
-
-        <ul className={styles.statusList}>
-          {rows.map((row) => (
-            <li key={row.label}>
-              <span className={styles.label}>{row.label}</span>
-              <span className={styles.value}>{row.value}</span>
-            </li>
-          ))}
-        </ul>
-
-        {!backendConfigured ? (
-          <p className={styles.notice} role="status">
-            Тестовый backend не подключён. Укажите `REMCARD_API_BASE_URL` для
-            разрешённого тестового контура — автоматических запросов к production
-            нет.
-          </p>
-        ) : authError ? (
-          <p className={styles.notice} role="status">
-            Проверка сессии через BFF не завершилась: {authError}. Полная
-            интеграция входа требует тестовых учётных данных и согласованных
-            настроек cookie/callback на backend.
-          </p>
-        ) : (
-          <p className={styles.notice} role="status">
-            Это технический экран M1. Экраны PROF, покупки и начисления будут
-            добавлены на следующих этапах после подтверждения интеграции с
-            backend.
-          </p>
-        )}
-
-        {backendConfigured && !authError ? (
-          isLoggedIn ? (
-            <div className={styles.actions}>
-              <LogoutButton />
-            </div>
-          ) : (
-            <LoginCodeForm />
-          )
-        ) : null}
-      </section>
-    </main>
+    <CabinetShell>
+      <PageHeading
+        eyebrow="RemCard PROF"
+        title="Моя главная"
+        description="Краткий обзор профиля и партнёрств без демонстрационных расчётов."
+      />
+      <HomeDashboard user={user} partnerships={partnerships} incomingCount={incomingCount} />
+    </CabinetShell>
   );
 }
