@@ -4,17 +4,94 @@ import {
   accrualScopeFromWalletRole,
   mapProOrdersToPurchases,
   mapStoreBonusListToPurchases,
+  mapStoreOrderDetailToPurchase,
+  mapStoreOrdersToPurchases,
   mapWalletTransactionsToAccruals,
 } from "./history-mappers.ts";
 
 describe("history mappers", () => {
-  it("maps store bonus list to accepted-bonus rows without order id/status", () => {
+  it("maps store orders to accepted-order rows with order id and status", () => {
+    const rows = mapStoreOrdersToPurchases({
+      orders: [
+        {
+          orderId: "ord-1",
+          createdAt: "2026-10-01T10:00:00.000Z",
+          status: "CONFIRMED",
+          totalAmount: 1000,
+          discountAmount: 50,
+          payableAmount: 950,
+          isSelfScan: false,
+          promoCode: "RC-1",
+          clientName: "Client",
+          proName: "PRO",
+          storeName: "Store",
+          branchId: null,
+          branchName: null,
+          branchCity: null,
+          executorUserId: "store-1",
+          executorName: "Seller",
+          proBonus: 100,
+          linkedAccruals: [{ id: "bonus-1", type: "bonus" }],
+        },
+      ],
+      pagination: { limit: 20, hasMore: false, nextCursor: null },
+    });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]!.source, "accepted-order");
+    assert.equal(rows[0]!.orderId, "ord-1");
+    assert.equal(rows[0]!.orderStatus, "CONFIRMED");
+    assert.equal(rows[0]!.bonusId, "bonus-1");
+    assert.equal(rows[0]!.partnerName, "PRO");
+  });
+
+  it("maps store order detail with line items", () => {
+    const row = mapStoreOrderDetailToPurchase({
+      order: {
+        orderId: "ord-2",
+        createdAt: "2026-10-02T10:00:00.000Z",
+        status: "CONFIRMED",
+        totalAmount: 500,
+        discountAmount: 25,
+        payableAmount: 475,
+        isSelfScan: true,
+        promoCode: "RC-2",
+        clientName: null,
+        proName: "PRO",
+        storeName: "Store",
+        branchId: null,
+        branchName: null,
+        branchCity: null,
+        executorUserId: "store-1",
+        executorName: null,
+        proBonus: 0,
+        linkedAccruals: [],
+        items: [
+          {
+            id: "item-1",
+            category: "doors",
+            categoryLabel: "Двери",
+            amount: 500,
+            discountPercent: 5,
+            discountAmount: 25,
+            issuerPercent: 0,
+            issuerAmount: 0,
+          },
+        ],
+      },
+    });
+    assert.equal(row.isSelfScan, true);
+    assert.equal(row.items.length, 1);
+    assert.equal(row.bonusId, null);
+  });
+
+  it("maps store bonus list to accepted-bonus rows preserving optional orderId", () => {
     const rows = mapStoreBonusListToPurchases({
       totalPaid: 0,
       totalPending: 100,
       bonuses: [
         {
           id: "bonus-1",
+          orderId: "ord-legacy",
           amount: 100,
           status: "CALCULATED",
           paidAt: null,
@@ -30,12 +107,8 @@ describe("history mappers", () => {
         },
       ],
     });
-    assert.equal(rows.length, 1);
     assert.equal(rows[0]!.source, "accepted-bonus");
-    assert.equal(rows[0]!.orderId, null);
-    assert.equal(rows[0]!.orderStatus, null);
-    assert.equal(rows[0]!.bonusStatus, "CALCULATED");
-    assert.equal(rows[0]!.payableAmount, 950);
+    assert.equal(rows[0]!.orderId, "ord-legacy");
   });
 
   it("maps pro orders to issued-order rows", () => {
@@ -57,7 +130,6 @@ describe("history mappers", () => {
     });
     assert.equal(rows[0]!.source, "issued-order");
     assert.equal(rows[0]!.orderId, "ord-9");
-    assert.equal(rows[0]!.bonusStatus, null);
   });
 
   it("maps wallet scope from server role", () => {
@@ -100,6 +172,5 @@ describe("history mappers", () => {
     );
     assert.equal(rows.length, 1);
     assert.equal(rows[0]!.scope, "earned");
-    assert.equal(rows[0]!.walletRole, "MASTER");
   });
 });

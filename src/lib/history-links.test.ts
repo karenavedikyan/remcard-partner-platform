@@ -25,7 +25,9 @@ const issuedA: PurchaseRow = {
   isSelfScan: false,
   clientName: "Client",
   branchName: null,
+  executorName: null,
   proBonus: 100,
+  linkedAccrualIds: [],
   items: [],
 };
 
@@ -34,6 +36,29 @@ const issuedB: PurchaseRow = {
   id: "ord-b",
   orderId: "ord-b",
   proBonus: 80,
+};
+
+const acceptedOrder: PurchaseRow = {
+  id: "ord-store",
+  orderId: "ord-store",
+  bonusId: "bonus-store",
+  source: "accepted-order",
+  createdAt: "2026-10-01T09:00:00.000Z",
+  promoCode: "RC-SAME",
+  partnerName: "PRO",
+  direction: "accepted",
+  totalAmount: 700,
+  discountAmount: 35,
+  payableAmount: 665,
+  orderStatus: "CONFIRMED",
+  bonusStatus: null,
+  isSelfScan: false,
+  clientName: "Client",
+  branchName: null,
+  executorName: "Seller",
+  proBonus: 70,
+  linkedAccrualIds: ["bonus-store"],
+  items: [],
 };
 
 const acceptedBonus: PurchaseRow = {
@@ -53,7 +78,9 @@ const acceptedBonus: PurchaseRow = {
   isSelfScan: false,
   clientName: "Client",
   branchName: null,
+  executorName: null,
   proBonus: 60,
+  linkedAccrualIds: ["bonus-1"],
   items: [],
 };
 
@@ -84,9 +111,10 @@ describe("history-links", () => {
     assert.equal(findPurchaseById(purchases, "RC-SAME"), null);
   });
 
-  it("finds issued purchase only by exact orderId", () => {
-    const purchases = [issuedA, issuedB];
+  it("finds purchase only by exact orderId for issued and accepted-order", () => {
+    const purchases = [issuedA, issuedB, acceptedOrder];
     assert.equal(findPurchaseByOrderId(purchases, "ord-a")?.orderId, "ord-a");
+    assert.equal(findPurchaseByOrderId(purchases, "ord-store")?.source, "accepted-order");
     assert.equal(findPurchaseByOrderId(purchases, "ord-unknown"), null);
   });
 

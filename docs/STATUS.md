@@ -1,15 +1,22 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M4-A: аудит готовности к запуску).
+Обновлено: 6 октября 2026 года (M4-D: history + staff).
 
 ## SHA / ветки / PR
 
 | Источник | SHA / ветка | PR |
 | --- | --- | --- |
-| M3-C (функциональный HEAD) | `e88f80b22598e5a69b3da1ff2e070d47a05ae4d6` · `cursor/m3c-history-b3e3` | Draft **#5** → base `cursor/m3b-scanner-b3e3` |
-| M4-A (аудит) | ветка `cursor/m4a-launch-audit-b3e3` · base M3-C | Draft после push |
-| Цепочка PR #1–#5 | M1 `e8f7e91` → M2 `0f1fa2c5` → M3-A `0960f776` → M3-B `ecc2fbd4` → M3-C `e88f80b` | #1–#5 open, не слиты |
-| `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only |
+| M4-C.2 navigator | `698687564f28412282ab512d477695624afd90c5` · `cursor/m4c2-client-idempotency-b3e3` | Draft **#674** |
+| M4-C.2 partner | `28cbd202389e0ce4a78e710abf50c2565525bb44` · `cursor/m4c2-client-idempotency-b3e3` | Draft **#7** |
+| M4-D (оба repo) | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft после push |
+| Цепочка PR #1–#7 | M1 → … → M4-C.2 | open, не слиты |
+
+## M4-D (в работе)
+
+- Order-based «Принято у меня» (`GET /api/store/orders` + detail)
+- Staff preview parity с POST order
+- Direct purchase detail by orderId; pagination «Показать ещё»
+- Отчёт: `docs/reviews/M4-D-history-staff.md`
 
 ## M4-A: вердикт готовности к запуску
 

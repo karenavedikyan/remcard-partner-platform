@@ -4,9 +4,9 @@ export function findPurchaseById(rows: PurchaseRow[], id: string): PurchaseRow |
   return rows.find((row) => row.orderId === id || row.id === id) ?? null;
 }
 
-/** Resolve purchase strictly by orderId (scanner deep link). Never falls back to promoCode. */
+/** Resolve purchase strictly by orderId (scanner deep link). */
 export function findPurchaseByOrderId(rows: PurchaseRow[], orderId: string): PurchaseRow | null {
-  return rows.find((row) => row.source === "issued-order" && row.orderId === orderId) ?? null;
+  return rows.find((row) => row.orderId === orderId) ?? null;
 }
 
 export function findAccrualById(rows: AccrualRow[], id: string): AccrualRow | null {
@@ -32,7 +32,7 @@ export function findPurchaseForAccrual(
 }
 
 export function purchaseDetailHref(row: PurchaseRow): string {
-  if (row.source === "issued-order" && row.orderId) {
+  if (row.orderId) {
     return `/history/purchases/${encodeURIComponent(row.orderId)}`;
   }
   if (row.bonusId) {

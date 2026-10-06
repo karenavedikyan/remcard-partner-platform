@@ -1,6 +1,6 @@
 # Карта переиспользования: экран кабинета → backend RemCard
 
-Дата: 6 октября 2026 года (обновлено после M3-C).
+Дата: 6 октября 2026 года (обновлено после M4-D).
 
 **Источники:** задание M1–M3, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
 
@@ -68,6 +68,22 @@
 **BFF allowlist (добавлено M3-C):** `GET /api/store/bonus-list`, `GET /api/pro/orders`, `GET /api/pro/wallet/balance|transactions`.
 
 **Navigator reference (read-only):** `src/app/api/store/bonus-list/route.ts`, `src/app/api/pro/orders/route.ts`, `src/app/api/pro/wallet/transactions/route.ts`, `src/app/pro/wallet/page.tsx`.
+
+---
+
+## M4-D: Order-based history и staff preview
+
+| Экран кабинета | Navigator reference | API | Поля | Права | Ограничения |
+| --- | --- | --- | --- | --- | --- |
+| История → Принято у меня | `GET /api/store/orders` | cursor/limit pagination | `orderId`, status, sums, items (detail), `linkedAccruals[{id,type:bonus}]`, executor | `resolveStoreOrderListAccess`: owner + org staff ids / staff self only | AgentBonus не отдаётся store API |
+| Детали покупки (store) | `GET /api/store/orders/{orderId}` | direct fetch | полные items + сохранённые проценты | merge access where + id | 404 без доступа |
+| Детали покупки (issued) | `GET /api/pro/orders/{orderId}` | direct fetch | items + bonus/agentBonus links | `certificateOrdersWhereForProContext` | — |
+| Preview staff | `POST /api/store/order/preview` | `buildAcceptableStoreUserIds` | — | branch staff + org owner partner row | parity с POST order |
+| Legacy bonus-list | `GET /api/store/bonus-list` | +`orderId` field | backward compatible | STORE/COMPANY | семантика не изменена |
+
+**BFF allowlist (M4-D):** `GET /api/store/orders`, `GET /api/store/orders/{orderId}`, `GET /api/pro/orders/{orderId}`.
+
+**Partner UI:** `history-loader.ts` → accepted-order; `PurchaseDetail` direct API; «Показать ещё» по `nextCursor`.
 
 ---
 
