@@ -3,6 +3,7 @@ import { SessionGate } from "@/components/auth/SessionGate";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { CabinetShell } from "@/components/layout/CabinetShell";
+import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { getSessionUser } from "@/lib/session";
 import type { PartnershipListResponse } from "@/lib/types";
@@ -26,17 +27,12 @@ export default async function HomePage({
   }
 
   const cookieHeader = headers().get("cookie");
-  const [listResult, incomingResult] = await Promise.all([
-    fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
-      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-    }),
-    fetchRemcardUpstream<{ count: number }>("/api/partnership/incoming-count", {
-      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-    }),
-  ]);
+  const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
 
   const partnerships = listResult.ok ? listResult.data.partnerships : [];
-  const incomingCount = incomingResult.ok ? incomingResult.data.count : 0;
+  const incomingCount = countNeedsMyResponse(partnerships, user.id);
 
   return (
     <CabinetShell>

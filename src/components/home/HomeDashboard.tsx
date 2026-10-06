@@ -3,6 +3,7 @@ import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
+import { partnershipNeedsMyResponse } from "@/lib/partnership-rules";
 import type { AuthUser, Partnership } from "@/lib/types";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -21,11 +22,7 @@ function partnerTitle(partnership: Partnership, meId: string) {
 
 export function HomeDashboard({ user, partnerships, incomingCount }: HomeDashboardProps) {
   const activeCount = partnerships.filter((item) => item.status === "ACTIVE").length;
-  const waiting = partnerships.filter(
-    (item) =>
-      (item.status === "INVITED" || item.status === "PENDING") &&
-      item.initiatedBy !== user.id,
-  );
+  const waiting = partnerships.filter((item) => partnershipNeedsMyResponse(item, user.id!));
 
   return (
     <div className={styles.grid}>

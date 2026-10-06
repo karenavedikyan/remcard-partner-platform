@@ -7,11 +7,19 @@ import {
   categoryLabel,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
+import {
+  SEARCH_ROLE_OPTIONS,
+  countNeedsMyResponse,
+  defaultSearchRoleForUser,
+  getPartnershipUiActions,
+  partnershipNeedsMyResponse,
+  profileUserToPartnerSide,
+  type SearchRole,
+} from "@/lib/partnership-rules";
 import type {
-  InviteTermInput,
   PartnerSearchResult,
   Partnership,
-  TermChangePayload,
+  ProProfileResponse,
   TermChangeRequest,
 } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -19,55 +27,59 @@ import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
+import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
+import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import styles from "./PartnersHub.module.css";
 
 type PartnersHubProps = {
   meId: string;
+  initialProfile: ProProfileResponse;
+  onAttentionCountChange?: (count: number) => void;
 };
 
 type TabId = "list" | "find";
+
+type TermRequestState = {
+  state: "idle" | "loading" | "loaded" | "error";
+  requests: TermChangeRequest[];
+  error: string;
+};
 
 function partnerTitle(partner: { displayName: string | null; organizationName?: string | null }) {
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
-function parseTermChanges(raw: unknown): TermChangePayload[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((entry) => {
-      const category = String((entry as { category?: unknown }).category ?? "").trim();
-      const newPercent = Number((entry as { newPercent?: unknown }).newPercent);
-      if (!category || !Number.isFinite(newPercent)) return null;
-      return { category, newPercent };
-    })
-    .filter((entry): entry is TermChangePayload => Boolean(entry));
-}
-
-export function PartnersHub({ meId }: PartnersHubProps) {
+export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: PartnersHubProps) {
   const [tab, setTab] = useState<TabId>("list");
+  const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
-  const [searchRole, setSearchRole] = useState<"store" | "pro">("store");
-  const [error, setError] = useState("");
+  const [searchRole, setSearchRole] = useState<SearchRole>(() =>
+    defaultSearchRoleForUser(profileUserToPartnerSide(initialProfile.user, initialProfile.organization)),
+  );
+  const [listError, setListError] = useState("");
+  const [searchError, setSearchError] = useState("");
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
-  const [inviteNote, setInviteNote] = useState("");
-  const [termRequests, setTermRequests] = useState<Record<string, TermChangeRequest[]>>({});
+  const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
+  const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
+
+  const searchMeta = SEARCH_ROLE_OPTIONS.find((item) => item.value === searchRole)!;
 
   const loadList = useCallback(async () => {
     setLoadingList(true);
-    setError("");
+    setListError("");
     try {
       const data = await remcardFetch<{ partnerships: Partnership[] }>("/api/partnership/list");
       setPartnerships(data.partnerships ?? []);
     } catch (caught) {
       setPartnerships([]);
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
+      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
     } finally {
       setLoadingList(false);
     }
@@ -75,19 +87,18 @@ export function PartnersHub({ meId }: PartnersHubProps) {
 
   const loadSearch = useCallback(async () => {
     setLoadingSearch(true);
-    setError("");
+    setSearchError("");
     try {
       const params = new URLSearchParams({ role: searchRole });
       if (query.trim()) params.set("q", query.trim());
       if (city.trim()) params.set("city", city.trim());
-      const data = await remcardFetch<PartnerSearchResult[] | { partners: PartnerSearchResult[] }>(
+      const data = await remcardFetch<{ partners: PartnerSearchResult[] }>(
         `/api/partnership/search?${params.toString()}`,
       );
-      const partners = Array.isArray(data) ? data : (data.partners ?? []);
-      setSearchResults(partners);
+      setSearchResults(data.partners ?? []);
     } catch (caught) {
       setSearchResults([]);
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск");
+      setSearchError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск");
     } finally {
       setLoadingSearch(false);
     }
@@ -103,23 +114,22 @@ export function PartnersHub({ meId }: PartnersHubProps) {
     }
   }, [tab, loadSearch]);
 
-  const incomingCount = useMemo(
-    () =>
-      partnerships.filter(
-        (item) =>
-          (item.status === "INVITED" || item.status === "PENDING") &&
-          item.initiatedBy !== meId,
-      ).length,
+  const attentionCount = useMemo(
+    () => countNeedsMyResponse(partnerships, meId),
     [meId, partnerships],
   );
 
-  async function runPartnershipAction(partnershipId: string, action: string, terms?: InviteTermInput[]) {
+  useEffect(() => {
+    onAttentionCountChange?.(attentionCount);
+  }, [attentionCount, onAttentionCountChange]);
+
+  async function runPartnershipAction(partnershipId: string, action: string) {
     setBusyId(partnershipId);
     setActionError("");
     try {
       await remcardFetch(`/api/partnership/${partnershipId}`, {
         method: "PATCH",
-        body: { action, ...(terms ? { terms } : {}) },
+        body: { action },
       });
       await loadList();
     } catch (caught) {
@@ -129,180 +139,42 @@ export function PartnersHub({ meId }: PartnersHubProps) {
     }
   }
 
-  async function sendInvite() {
-    if (!inviteTarget) return;
-    setBusyId(inviteTarget.id);
-    setActionError("");
-    try {
-      const terms: InviteTermInput[] = (inviteTarget.storeCategories.length
-        ? inviteTarget.storeCategories
-        : inviteTarget.specializations.length
-          ? inviteTarget.specializations
-          : ["general"]
-      ).slice(0, 3).map((category) => ({
-        category,
-        categoryLabel: categoryLabel(category),
-        storePercent: 10,
-      }));
-
-      await remcardFetch("/api/partnership/invite", {
-        method: "POST",
-        body: {
-          targetUserId: inviteTarget.id,
-          note: inviteNote.trim() || null,
-          terms,
-        },
-      });
-      setInviteTarget(null);
-      setInviteNote("");
-      setTab("list");
-      await loadList();
-    } catch (caught) {
-      setActionError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить приглашение");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   async function loadTermRequests(partnershipId: string) {
+    setExpandedTermPartnershipId(partnershipId);
+    setTermRequests((prev) => ({
+      ...prev,
+      [partnershipId]: { state: "loading", requests: [], error: "" },
+    }));
     try {
       const data = await remcardFetch<{ requests: TermChangeRequest[] }>(
         `/api/partnerships/${partnershipId}/term-change`,
       );
-      setTermRequests((prev) => ({ ...prev, [partnershipId]: data.requests ?? [] }));
-    } catch {
-      setTermRequests((prev) => ({ ...prev, [partnershipId]: [] }));
-    }
-  }
-
-  async function respondTermChange(
-    partnershipId: string,
-    requestId: string,
-    action: "approve" | "reject",
-  ) {
-    setBusyId(requestId);
-    setActionError("");
-    try {
-      await remcardFetch(`/api/partnerships/${partnershipId}/term-change/${requestId}/respond`, {
-        method: "POST",
-        body: { action },
-      });
-      await loadList();
-      await loadTermRequests(partnershipId);
+      setTermRequests((prev) => ({
+        ...prev,
+        [partnershipId]: { state: "loaded", requests: data.requests ?? [], error: "" },
+      }));
     } catch (caught) {
-      setActionError(
-        caught instanceof RemcardApiError ? caught.message : "Не удалось обработать изменение условий",
-      );
-    } finally {
-      setBusyId(null);
+      setTermRequests((prev) => ({
+        ...prev,
+        [partnershipId]: {
+          state: "error",
+          requests: [],
+          error:
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось загрузить запросы на изменение условий",
+        },
+      }));
     }
   }
 
-  function renderActions(partnership: Partnership) {
-    const isInitiator = partnership.initiatedBy === meId;
-    const partner =
-      partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
-    const disabled = busyId === partnership.id;
-
-    if (partnership.status === "INVITED" && !isInitiator) {
-      return (
-        <div className={styles.rowActions}>
-          <Button disabled={disabled} onClick={() => void runPartnershipAction(partnership.id, "accept")}>
-            Принять
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={disabled}
-            onClick={() => void runPartnershipAction(partnership.id, "reject")}
-          >
-            Отклонить
-          </Button>
-        </div>
-      );
+  async function refreshProfile() {
+    try {
+      const profile = await remcardFetch<ProProfileResponse>("/api/pro/profile");
+      setMeProfile(profile);
+    } catch {
+      // keep previous profile for invite resolution
     }
-
-    if (partnership.status === "INVITED" && isInitiator) {
-      return (
-        <Button
-          variant="secondary"
-          disabled={disabled}
-          onClick={() => void runPartnershipAction(partnership.id, "cancel")}
-        >
-          Отозвать приглашение
-        </Button>
-      );
-    }
-
-    if (partnership.status === "PENDING" && !isInitiator) {
-      return (
-        <div className={styles.rowActions}>
-          <Button
-            disabled={disabled}
-            onClick={() => void runPartnershipAction(partnership.id, "accept_pending")}
-          >
-            Принять условия
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={disabled}
-            onClick={() => void runPartnershipAction(partnership.id, "reject")}
-          >
-            Отклонить
-          </Button>
-        </div>
-      );
-    }
-
-    if (partnership.status === "PENDING" && isInitiator) {
-      return (
-        <Button
-          variant="secondary"
-          disabled={disabled}
-          onClick={() => void runPartnershipAction(partnership.id, "cancel")}
-        >
-          Отменить предложение
-        </Button>
-      );
-    }
-
-    if (partnership.status === "ACTIVE") {
-      return (
-        <div className={styles.rowActions}>
-          <Button
-            variant="secondary"
-            disabled={disabled}
-            onClick={() => void loadTermRequests(partnership.id)}
-          >
-            Запросы на изменение
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={disabled}
-            onClick={() => void runPartnershipAction(partnership.id, "pause")}
-          >
-            Приостановить
-          </Button>
-        </div>
-      );
-    }
-
-    if (partnership.status === "PAUSED") {
-      return (
-        <Button
-          disabled={disabled}
-          onClick={() => void runPartnershipAction(partnership.id, "resume")}
-        >
-          Возобновить
-        </Button>
-      );
-    }
-
-    return (
-      <p className={styles.partnerMeta}>
-        Партнёр: {partnerTitle(partner)}
-        {partner.city ? ` · ${partner.city}` : ""}
-      </p>
-    );
   }
 
   return (
@@ -316,18 +188,23 @@ export function PartnersHub({ meId }: PartnersHubProps) {
         ]}
       />
 
-      {incomingCount > 0 ? (
+      {attentionCount > 0 ? (
         <Panel compact>
           <p className={styles.attention}>
-            Требует внимания: {incomingCount} приглашени{incomingCount === 1 ? "е" : "й"} ждут вашего
-            решения.
+            Требует внимания: {attentionCount}{" "}
+            {attentionCount === 1 ? "партнёрство ждёт вашего решения" : "партнёрства ждут вашего решения"}.
           </p>
         </Panel>
       ) : null}
 
-      {error ? (
+      {listError && tab === "list" ? (
         <p className={styles.error} role="alert">
-          {error}
+          {listError}
+        </p>
+      ) : null}
+      {searchError && tab === "find" ? (
+        <p className={styles.error} role="alert">
+          {searchError}
         </p>
       ) : null}
       {actionError ? (
@@ -351,9 +228,13 @@ export function PartnersHub({ meId }: PartnersHubProps) {
                 partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
               const statusLabel =
                 PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-              const waitingForMe =
-                (partnership.status === "INVITED" || partnership.status === "PENDING") &&
-                partnership.initiatedBy !== meId;
+              const needsResponse = partnershipNeedsMyResponse(partnership, meId);
+              const actions = getPartnershipUiActions(partnership, meId);
+              const termState = termRequests[partnership.id] ?? {
+                state: "idle" as const,
+                requests: [],
+                error: "",
+              };
 
               return (
                 <Panel key={partnership.id} compact>
@@ -362,7 +243,7 @@ export function PartnersHub({ meId }: PartnersHubProps) {
                       <h3>{partnerTitle(partner)}</h3>
                       <p className={styles.partnerMeta}>
                         {partner.city ?? "Город не указан"}
-                        {waitingForMe ? " · ожидает вашего решения" : ""}
+                        {needsResponse ? " · ожидает вашего решения" : ""}
                       </p>
                     </div>
                     <StatusBadge
@@ -392,56 +273,53 @@ export function PartnersHub({ meId }: PartnersHubProps) {
                     </tbody>
                   </table>
 
-                  {renderActions(partnership)}
+                  <div className={styles.rowActions}>
+                    {actions.map((action) =>
+                      action.kind === "waiting" ? (
+                        <p key={action.message} className={styles.partnerMeta}>
+                          {action.message}
+                        </p>
+                      ) : (
+                        <Button
+                          key={action.kind}
+                          variant={action.variant ?? "primary"}
+                          disabled={busyId === partnership.id}
+                          onClick={() => void runPartnershipAction(partnership.id, action.kind)}
+                        >
+                          {action.label}
+                        </Button>
+                      ),
+                    )}
+                    {partnership.status === "ACTIVE" ? (
+                      <Button
+                        variant="secondary"
+                        disabled={busyId === partnership.id}
+                        onClick={() => void loadTermRequests(partnership.id)}
+                      >
+                        Изменение условий
+                      </Button>
+                    ) : null}
+                  </div>
 
-                  {termRequests[partnership.id]?.length ? (
-                    <div className={styles.termRequests}>
-                      <h4>Изменения условий</h4>
-                      {termRequests[partnership.id]?.map((request) => (
-                        <div key={request.id} className={styles.termRequestRow}>
-                          <div>
-                            <StatusBadge
-                              label={request.status}
-                              tone={
-                                request.status === "PENDING"
-                                  ? "pending"
-                                  : request.status === "APPROVED"
-                                    ? "active"
-                                    : "declined"
-                              }
-                            />
-                            <ul>
-                              {parseTermChanges(request.changes).map((change) => (
-                                <li key={`${request.id}-${change.category}`}>
-                                  {categoryLabel(change.category)} → {change.newPercent}%
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          {request.status === "PENDING" && request.requestedBy !== meId ? (
-                            <div className={styles.rowActions}>
-                              <Button
-                                disabled={busyId === request.id}
-                                onClick={() =>
-                                  void respondTermChange(partnership.id, request.id, "approve")
-                                }
-                              >
-                                Согласовать
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                disabled={busyId === request.id}
-                                onClick={() =>
-                                  void respondTermChange(partnership.id, request.id, "reject")
-                                }
-                              >
-                                Отклонить
-                              </Button>
-                            </div>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
+                  {expandedTermPartnershipId === partnership.id ? (
+                    <TermChangePanel
+                      partnership={partnership}
+                      meId={meId}
+                      requests={termState.state === "loaded" ? termState.requests : null}
+                      loadState={
+                        termState.state === "idle"
+                          ? "loading"
+                          : termState.state === "loaded"
+                            ? "loaded"
+                            : termState.state
+                      }
+                      loadError={termState.error}
+                      onReload={() => void loadTermRequests(partnership.id)}
+                      onChanged={() => {
+                        void loadList();
+                        void loadTermRequests(partnership.id);
+                      }}
+                    />
                   ) : null}
                 </Panel>
               );
@@ -451,12 +329,14 @@ export function PartnersHub({ meId }: PartnersHubProps) {
       ) : (
         <>
           <Panel compact>
+            <p className={styles.searchDescription}>{searchMeta.description}</p>
             <div className={styles.searchGrid}>
               <TextField
-                label="Поиск"
+                label="Поиск по имени"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Имя или описание"
+                placeholder={searchMeta.namePlaceholder}
+                hint="Поиск по публичному имени или названию организации"
               />
               <TextField
                 label="Город"
@@ -467,10 +347,13 @@ export function PartnersHub({ meId }: PartnersHubProps) {
                 <span>Кого ищем</span>
                 <select
                   value={searchRole}
-                  onChange={(event) => setSearchRole(event.target.value as "store" | "pro")}
+                  onChange={(event) => setSearchRole(event.target.value as SearchRole)}
                 >
-                  <option value="store">Магазины и компании</option>
-                  <option value="pro">Мастеров и специалистов</option>
+                  {SEARCH_ROLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className={styles.searchAction}>
@@ -496,7 +379,7 @@ export function PartnersHub({ meId }: PartnersHubProps) {
                         <h3>{partnerTitle(partner)}</h3>
                         <p className={styles.partnerMeta}>
                           {partner.city ?? "Город не указан"}
-                          {partner.description ? ` · ${partner.description.slice(0, 120)}` : ""}
+                          {partner.partnerType ? ` · ${partner.partnerType}` : ""}
                         </p>
                       </div>
                       {status ? (
@@ -510,8 +393,8 @@ export function PartnersHub({ meId }: PartnersHubProps) {
                       <Button
                         disabled={busyId === partner.id}
                         onClick={() => {
+                          void refreshProfile();
                           setInviteTarget(partner);
-                          setInviteNote("");
                         }}
                       >
                         Пригласить
@@ -530,30 +413,16 @@ export function PartnersHub({ meId }: PartnersHubProps) {
       )}
 
       {inviteTarget ? (
-        <div className={styles.modalBackdrop} role="presentation" onClick={() => setInviteTarget(null)}>
-          <div
-            className={styles.modal}
-            role="dialog"
-            aria-labelledby="invite-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="invite-title">Пригласить {partnerTitle(inviteTarget)}</h3>
-            <TextField
-              label="Комментарий"
-              value={inviteNote}
-              onChange={(event) => setInviteNote(event.target.value)}
-              hint="Необязательно. Партнёр увидит комментарий вместе с приглашением."
-            />
-            <div className={styles.rowActions}>
-              <Button disabled={busyId === inviteTarget.id} onClick={() => void sendInvite()}>
-                {busyId === inviteTarget.id ? "Отправка…" : "Отправить приглашение"}
-              </Button>
-              <Button variant="secondary" onClick={() => setInviteTarget(null)}>
-                Отмена
-              </Button>
-            </div>
-          </div>
-        </div>
+        <PartnerInviteDialog
+          target={inviteTarget}
+          meProfile={meProfile}
+          busy={busyId === inviteTarget.id}
+          onClose={() => setInviteTarget(null)}
+          onSent={() => {
+            setTab("list");
+            void loadList();
+          }}
+        />
       ) : null}
     </div>
   );

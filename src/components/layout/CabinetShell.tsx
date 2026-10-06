@@ -1,7 +1,9 @@
 import { headers } from "next/headers";
 import { requireProSession } from "@/lib/session";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
+import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { AppShell } from "@/components/layout/AppShell";
+import type { PartnershipListResponse } from "@/lib/types";
 
 type CabinetShellProps = {
   children: React.ReactNode;
@@ -10,13 +12,14 @@ type CabinetShellProps = {
 export async function CabinetShell({ children }: CabinetShellProps) {
   const user = await requireProSession();
   const cookieHeader = headers().get("cookie");
-  const incoming = await fetchRemcardUpstream<{ count: number }>(
-    "/api/partnership/incoming-count",
-    { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
-  );
+  const list = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
+  const attentionCount =
+    list.ok && user.id ? countNeedsMyResponse(list.data.partnerships ?? [], user.id) : 0;
 
   return (
-    <AppShell user={user} incomingCount={incoming.ok ? incoming.data.count : 0}>
+    <AppShell user={user} incomingCount={attentionCount}>
       {children}
     </AppShell>
   );

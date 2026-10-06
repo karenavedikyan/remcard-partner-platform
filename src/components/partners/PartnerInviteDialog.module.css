@@ -1,0 +1,83 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(16, 35, 26, 0.75);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+.dialog {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+  box-shadow: var(--shadow);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.notice {
+  padding: var(--space-4);
+  border-radius: 8px;
+  background: var(--soft);
+  font-size: var(--text-sm);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.confirmRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  font-size: var(--text-sm);
+}
+
+.termsList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.termRow {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--offset);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.termHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.exclude {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.error {
+  color: var(--primary);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

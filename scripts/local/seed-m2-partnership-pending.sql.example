@@ -1,0 +1,34 @@
+-- M2-fix: fixture PENDING для проверки accept_pending / pendingProposedBy.
+-- Запускать после seed-m1-fixtures.sql.example на remcard_prof_test.
+
+\set ON_ERROR_STOP on
+
+DO $$
+BEGIN
+  IF current_database() <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing seed: database must be remcard_prof_test';
+  END IF;
+END $$;
+
+UPDATE "Partnership"
+SET
+  status = 'PENDING',
+  "pendingProposedBy" = 'm1fix-staff-000000000001',
+  "updatedAt" = NOW()
+WHERE "storeUserId" = 'm1fix-store-000000000001'
+  AND "proUserId" = 'm1fix-staff-000000000001';
+
+INSERT INTO "PartnershipTerm" (
+  id, "partnershipId", category, "categoryLabel", "storePercent", "createdAt", "updatedAt"
+) VALUES (
+  'm2fix-term-pending-00001',
+  (SELECT id FROM "Partnership" WHERE "storeUserId" = 'm1fix-store-000000000001' AND "proUserId" = 'm1fix-staff-000000000001' LIMIT 1),
+  'doors',
+  'Двери',
+  15,
+  NOW(),
+  NOW()
+)
+ON CONFLICT ("partnershipId", category) DO UPDATE SET
+  "storePercent" = 15,
+  "updatedAt" = NOW();

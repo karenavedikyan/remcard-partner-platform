@@ -46,8 +46,8 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | Вход M2 | Session gate | `GET /api/auth/me` | Cookie | — | Fixture JWT; bot UI отключён до запуска |
 | Выход | Logout | `POST /api/auth/logout` | Активная сессия | — | POST через BFF; cookie cleared |
 | Список партнёров (M2) | Partnership list | `GET /api/partnership/list` | `role === PRO` | `PartnershipListBlock.tsx` | BFF GET |
-| Поиск (M2) | Partner search | `GET /api/partnership/search?role=store\|pro` | PROF | `PartnerFindClient.tsx` | BFF GET |
-| Приглашение (M2) | Invite | `POST /api/partnership/invite` `{ targetUserId, terms?, note? }` | PROF | `PartnerInviteModal.tsx` | POST через BFF |
+| Поиск (M2-fix) | Partner search | `GET /api/partnership/search?role=store\|pro` | PROF | `PartnerFindClient.tsx`, `search/route.ts` | store→MASTER/COMPANY; pro→STORE/MASTER/COMPANY; q=имя/организация |
+| Приглашение (M2-fix) | Invite с явными terms | `POST /api/partnership/invite` | PROF | `PartnerInviteModal.tsx`, `invite/route.ts` tradeSideCategories | UI: все категории trade-side; general/10% только с подтверждением |
 | Действия (M2) | Accept/reject/cancel/… | `PATCH /api/partnership/[id]` `{ action, terms? }` | Participant + PRO | `src/app/api/partnership/[id]/route.ts` | accept, reject, cancel, counter_offer*, pause, resume, terminate |
 | Напоминание (M2) | Remind invite | `POST /api/partnership/remind` | Initiator | `remind/route.ts` | Не в UI M2 (API allowlisted) |
 | Входящие (M2) | Badge count | `GET /api/partnership/incoming-count` | Soft auth | `incoming-count/route.ts` | Badge в sidebar |
