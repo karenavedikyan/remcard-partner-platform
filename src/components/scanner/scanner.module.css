@@ -1,0 +1,233 @@
+.scannerHero {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.scannerIcon {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.scannerLead {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.expandButton {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.partnerList {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.partnerItem {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: var(--space-3);
+}
+
+.categoryList {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--text-sm);
+}
+
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.modeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeButtonActive {
+  border-color: var(--primary);
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.cameraWrap {
+  margin-top: var(--space-4);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #000;
+}
+
+.qrReader {
+  width: 100%;
+  min-height: 260px;
+}
+
+.manualRow {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  align-items: flex-start;
+}
+
+.manualInput {
+  flex: 1;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.cardDark {
+  background: linear-gradient(160deg, var(--dark) 0%, #1a2b25 100%);
+  color: var(--on-dark);
+  border: none;
+}
+
+.previewTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.meta {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.cardDark .meta {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.categoryRow {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.discountBadge {
+  background: var(--green-soft);
+  color: var(--green);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.summary {
+  background: var(--dark);
+  color: var(--on-dark);
+  border-radius: 14px;
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.summaryTotal {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.successBanner {
+  background: var(--green-soft);
+  color: var(--green);
+  border-radius: 16px;
+  padding: var(--space-5);
+  text-align: center;
+  font-weight: 700;
+}
+
+.errorBlock,
+.notice {
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  padding: var(--space-5);
+}
+
+.errorText {
+  color: var(--primary);
+  margin: var(--space-3) 0 0;
+}
+
+.deniedBlock {
+  border: 1px solid rgba(207, 56, 47, 0.25);
+  background: rgba(207, 56, 47, 0.06);
+  border-radius: 16px;
+  padding: var(--space-5);
+}
+
+.actionsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .actionsRow {
+    grid-template-columns: 1fr;
+  }
+}

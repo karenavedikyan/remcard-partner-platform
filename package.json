@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:proxy": "tsx --test src/lib/remcard-proxy.test.ts src/lib/partnership-rules.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts"
+    "test:proxy": "tsx --test src/lib/remcard-proxy.test.ts src/lib/partnership-rules.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts src/lib/certificate-code.test.ts src/lib/order-totals.test.ts"
   },
   "dependencies": {
+    "html5-qrcode": "^2.3.8",
     "next": "14.2.28",
     "qrcode": "^1.5.4",
     "react": "18.3.1",
