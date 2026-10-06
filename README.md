@@ -19,6 +19,25 @@
 В конце покажи выполненные проверки, изменения и блокеры, затем остановись.
 ```
 
+## Локальный запуск (после M1)
+
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Откройте [http://localhost:3000](http://localhost:3000) — технический стартовый экран M1.
+
+Сборка:
+
+```bash
+npm run build
+npm start
+```
+
+Документация: [docs/SCOPE.md](docs/SCOPE.md), [docs/REUSE-MAP.md](docs/REUSE-MAP.md), [docs/STATUS.md](docs/STATUS.md).
+
 ## Границы первого выпуска
 
 - Разработка ведётся в этом отдельном репозитории.
