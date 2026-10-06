@@ -19,7 +19,7 @@ export default async function ScannerPage() {
         title="Сканер"
         description="Сканируйте QR или введите код, проверьте документ и подтвердите покупку."
       />
-      <ScannerHub />
+      <ScannerHub userId={user.id} />
     </CabinetShell>
   );
 }

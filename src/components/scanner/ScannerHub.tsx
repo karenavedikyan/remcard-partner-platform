@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
-import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
 import { parseCertificateCode } from "@/lib/certificate-code";
 import {
   buildOrderItems,
@@ -20,17 +20,40 @@ import {
   type PreviewSession,
 } from "@/lib/scanner-flow";
 import {
-  isUncertainOrderFailure,
+  ATTEMPT_BODY_MISMATCH_MESSAGE,
+  ATTEMPT_CONFLICT_MESSAGE,
+  classifyStoreOrderNetworkFailure,
+  classifyStoreOrderPostResponse,
+  clearStoreOrderAttempt,
+  createStoreOrderAttempt,
+  formatAttemptItemsSummary,
+  isConflictAttempt,
+  isRestorableAttempt,
+  isStoreOrderAttemptLocked,
+  loadStoreOrderAttempt,
+  markStoreOrderAttemptConflict,
+  markStoreOrderAttemptInFlight,
+  markStoreOrderAttemptSucceeded,
+  markStoreOrderAttemptUnknown,
+  NEW_PURCHASE_WARNING,
+  prepareStoreOrderRetry,
+  releaseStoreOrderAttemptForEdit,
+  STORAGE_SAVE_FAILED_MESSAGE,
   UNCERTAIN_ORDER_DETAIL,
   UNCERTAIN_ORDER_HEADING,
-  validateOrderCreateResponse,
-} from "@/lib/scanner-order-submit";
+  type StoreOrderAttemptRecord,
+} from "@/lib/store-order-attempt";
+import { validateOrderCreateResponse } from "@/lib/scanner-order-submit";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { QrScanner } from "./QrScanner";
 import styles from "./scanner.module.css";
 
 type ScanMode = "manual" | "camera" | "success";
+
+type ScannerHubProps = {
+  userId: string;
+};
 
 function formatUsage(usageCount: number, maxUsages: number) {
   if (maxUsages > 0) {
@@ -41,6 +64,14 @@ function formatUsage(usageCount: number, maxUsages: number) {
 
 function formatRub(value: number) {
   return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
+}
+
+function amountDraftsFromAttempt(record: StoreOrderAttemptRecord): Record<string, string> {
+  const drafts: Record<string, string> = {};
+  for (const item of record.body.items) {
+    drafts[item.category] = String(item.amount);
+  }
+  return drafts;
 }
 
 function PartnerAcceptance({ preview }: { preview: OrderPreviewAllowed }) {
@@ -89,7 +120,58 @@ function PartnerAcceptance({ preview }: { preview: OrderPreviewAllowed }) {
   );
 }
 
-export function ScannerHub() {
+function RestoredAttemptBlock({
+  storedAttempt,
+  orderConflict,
+  previewError,
+  submitting,
+  onNewPurchase,
+  onCheckResult,
+}: {
+  storedAttempt: StoreOrderAttemptRecord;
+  orderConflict: boolean;
+  previewError: string;
+  submitting: boolean;
+  onNewPurchase: () => void;
+  onCheckResult: () => void;
+}) {
+  return (
+    <div className={styles.uncertainBlock} style={{ marginBottom: "var(--space-4)" }}>
+      <p className={styles.uncertainHeading}>Сохранённая попытка покупки</p>
+      <p className={styles.meta}>Документ: {storedAttempt.body.certificateCode}</p>
+      <p className={styles.meta}>{formatAttemptItemsSummary(storedAttempt.body)}</p>
+      {orderConflict ? (
+        <p className={styles.errorText} role="alert">
+          {ATTEMPT_CONFLICT_MESSAGE}
+        </p>
+      ) : (
+        <>
+          <p className={styles.uncertainHeading} style={{ marginTop: "var(--space-3)" }}>
+            {UNCERTAIN_ORDER_HEADING}
+          </p>
+          <p className={styles.meta}>{UNCERTAIN_ORDER_DETAIL}</p>
+        </>
+      )}
+      {previewError ? (
+        <p className={styles.meta} style={{ marginTop: "var(--space-2)" }}>
+          Предпросмотр: {previewError} (не блокирует проверку)
+        </p>
+      ) : null}
+      <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
+        <Button variant="secondary" onClick={onNewPurchase}>
+          Новая покупка
+        </Button>
+        {!orderConflict ? (
+          <Button disabled={submitting} onClick={onCheckResult}>
+            {submitting ? "Проверка…" : "Проверить результат"}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function ScannerHub({ userId }: ScannerHubProps) {
   const [mode, setMode] = useState<ScanMode>("manual");
   const [manualCode, setManualCode] = useState("");
   const [previewSession, setPreviewSession] = useState<PreviewSession | null>(null);
@@ -99,15 +181,16 @@ export function ScannerHub() {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderUncertain, setOrderUncertain] = useState(false);
+  const [orderConflict, setOrderConflict] = useState(false);
   const [success, setSuccess] = useState<OrderCreateResponse | null>(null);
   const [confirmedCode, setConfirmedCode] = useState("");
   const [cameraError, setCameraError] = useState("");
+  const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
+  const [attemptRestoreDone, setAttemptRestoreDone] = useState(false);
 
   const previewRequestIdRef = useRef(0);
   const previewAbortRef = useRef<AbortController | null>(null);
-  const orderAttemptRef = useRef<{ session: PreviewSession; items: ReturnType<typeof buildOrderItems> } | null>(
-    null,
-  );
+  const submitInFlightRef = useRef(false);
 
   const invalidatePreviewRequest = useCallback(() => {
     previewRequestIdRef.current += 1;
@@ -117,6 +200,7 @@ export function ScannerHub() {
 
   const resetAll = useCallback(() => {
     invalidatePreviewRequest();
+    clearStoreOrderAttempt();
     setMode("manual");
     setManualCode("");
     setPreviewSession(null);
@@ -126,22 +210,148 @@ export function ScannerHub() {
     setSubmitError("");
     setSubmitting(false);
     setOrderUncertain(false);
+    setOrderConflict(false);
     setSuccess(null);
     setConfirmedCode("");
     setCameraError("");
-    orderAttemptRef.current = null;
+    setStoredAttempt(null);
+    submitInFlightRef.current = false;
   }, [invalidatePreviewRequest]);
 
+  const startNewPurchase = useCallback(() => {
+    if (storedAttempt && !window.confirm(NEW_PURCHASE_WARNING)) {
+      return;
+    }
+    resetAll();
+  }, [resetAll, storedAttempt]);
+
+  const applyPostOutcome = useCallback(
+    (
+      outcome: ReturnType<typeof classifyStoreOrderPostResponse>,
+      wasRetry: boolean,
+      certificateCode: string,
+    ) => {
+      switch (outcome.kind) {
+        case "success": {
+          const data = validateOrderCreateResponse(outcome.data);
+          markStoreOrderAttemptSucceeded(userId, data.order.id);
+          clearStoreOrderAttempt();
+          setConfirmedCode(certificateCode);
+          setSuccess(data);
+          setPreviewSession(null);
+          setMode("success");
+          setStoredAttempt(null);
+          setOrderUncertain(false);
+          setOrderConflict(false);
+          break;
+        }
+        case "conflict": {
+          const conflict = markStoreOrderAttemptConflict(userId);
+          setStoredAttempt(conflict);
+          setOrderConflict(true);
+          setOrderUncertain(false);
+          setSubmitError(ATTEMPT_CONFLICT_MESSAGE);
+          break;
+        }
+        case "uncertain": {
+          const unknown = markStoreOrderAttemptUnknown(userId);
+          setStoredAttempt(unknown);
+          setOrderUncertain(true);
+          setOrderConflict(false);
+          setSubmitError("");
+          break;
+        }
+        case "unknown_persist": {
+          const unknown = markStoreOrderAttemptUnknown(userId);
+          setStoredAttempt(unknown);
+          setOrderUncertain(true);
+          setOrderConflict(false);
+          setSubmitError(outcome.message ?? "");
+          break;
+        }
+        case "auth_required": {
+          const unknown = wasRetry ? markStoreOrderAttemptUnknown(userId) : null;
+          setStoredAttempt(unknown);
+          setOrderUncertain(wasRetry);
+          setSubmitError(outcome.message);
+          break;
+        }
+        case "validation_failed":
+          releaseStoreOrderAttemptForEdit();
+          setStoredAttempt(null);
+          setOrderUncertain(false);
+          setOrderConflict(false);
+          setSubmitError(outcome.message);
+          break;
+        default:
+          break;
+      }
+    },
+    [userId],
+  );
+
+  const executeOrderPost = useCallback(
+    async (record: StoreOrderAttemptRecord, wasRetry: boolean) => {
+      markStoreOrderAttemptInFlight(userId);
+      setStoredAttempt({ ...record, status: "in_flight" });
+      setSubmitting(true);
+      setSubmitError("");
+
+      try {
+        const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
+          method: "POST",
+          body: record.body,
+          idempotencyKey: record.idempotencyKey,
+        });
+
+        applyPostOutcome(
+          classifyStoreOrderPostResponse({ status: 201, payload, wasRetry }),
+          wasRetry,
+          record.body.certificateCode,
+        );
+      } catch (caught) {
+        if (caught instanceof RemcardApiError) {
+          const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
+          applyPostOutcome(
+            classifyStoreOrderPostResponse({
+              status: caught.status,
+              payload,
+              wasRetry,
+            }),
+            wasRetry,
+            record.body.certificateCode,
+          );
+        } else {
+          applyPostOutcome(
+            classifyStoreOrderNetworkFailure(wasRetry),
+            wasRetry,
+            record.body.certificateCode,
+          );
+        }
+      } finally {
+        submitInFlightRef.current = false;
+        setSubmitting(false);
+        setStoredAttempt(loadStoreOrderAttempt(userId));
+      }
+    },
+    [applyPostOutcome, userId],
+  );
+
   const runPreview = useCallback(
-    async (raw: string) => {
+    async (
+      raw: string,
+      options?: { restoreAttempt?: StoreOrderAttemptRecord | null; optional?: boolean },
+    ) => {
       if (previewLoading) {
         return;
       }
 
       const parsed = parseCertificateCode(raw);
       if (!parsed.ok) {
-        setPreviewError(parsed.error);
-        setPreviewSession(null);
+        if (!options?.optional) {
+          setPreviewError(parsed.error);
+          setPreviewSession(null);
+        }
         return;
       }
 
@@ -152,13 +362,17 @@ export function ScannerHub() {
       previewAbortRef.current = abortController;
 
       setPreviewLoading(true);
-      setPreviewError("");
-      setSubmitError("");
-      setOrderUncertain(false);
-      setSuccess(null);
-      setPreviewSession(null);
-      setMode("manual");
-      orderAttemptRef.current = null;
+      if (!options?.optional) {
+        setPreviewError("");
+      }
+      if (!options?.restoreAttempt) {
+        setSubmitError("");
+        setOrderUncertain(false);
+        setOrderConflict(false);
+        setSuccess(null);
+        setPreviewSession(null);
+        setMode("manual");
+      }
 
       try {
         const data = await remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
@@ -181,11 +395,15 @@ export function ScannerHub() {
         setPreviewSession(session);
 
         if ("allowed" in data && data.allowed) {
-          const drafts: Record<string, string> = {};
-          for (const cat of data.availableCategories) {
-            drafts[cat.category] = "";
+          if (options?.restoreAttempt) {
+            setAmountDrafts(amountDraftsFromAttempt(options.restoreAttempt));
+          } else {
+            const drafts: Record<string, string> = {};
+            for (const cat of data.availableCategories) {
+              drafts[cat.category] = "";
+            }
+            setAmountDrafts(drafts);
           }
-          setAmountDrafts(drafts);
         } else {
           setAmountDrafts({});
         }
@@ -202,12 +420,20 @@ export function ScannerHub() {
         ) {
           return;
         }
-        setPreviewSession(null);
-        setPreviewError(
-          caught instanceof RemcardApiError
-            ? caught.message
-            : "Не удалось проверить документ",
-        );
+        if (!options?.optional) {
+          setPreviewSession(null);
+          setPreviewError(
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось проверить документ",
+          );
+        } else {
+          setPreviewError(
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось проверить документ",
+          );
+        }
       } finally {
         if (requestId === previewRequestIdRef.current) {
           setPreviewLoading(false);
@@ -217,72 +443,95 @@ export function ScannerHub() {
     [previewLoading],
   );
 
-  async function submitOrder() {
-    if (!isPreviewSessionAllowed(previewSession) || submitting || orderUncertain) {
+  useEffect(() => {
+    if (attemptRestoreDone) {
+      return;
+    }
+    const attempt = loadStoreOrderAttempt(userId);
+    setAttemptRestoreDone(true);
+    if (!attempt || attempt.status === "succeeded") {
+      return;
+    }
+    setStoredAttempt(attempt);
+    setOrderUncertain(isRestorableAttempt(attempt));
+    setOrderConflict(isConflictAttempt(attempt));
+    void runPreview(attempt.body.certificateCode, { restoreAttempt: attempt, optional: true });
+  }, [attemptRestoreDone, runPreview, userId]);
+
+  const checkStoredAttempt = useCallback(async () => {
+    if (submitInFlightRef.current || submitting || orderConflict) {
+      return;
+    }
+    submitInFlightRef.current = true;
+    const prepared = prepareStoreOrderRetry(userId);
+    if (!prepared.ok) {
+      setSubmitError(
+        prepared.reason === "conflict"
+          ? ATTEMPT_CONFLICT_MESSAGE
+          : "Нет сохранённой попытки для проверки",
+      );
+      submitInFlightRef.current = false;
+      return;
+    }
+    await executeOrderPost(prepared.record, true);
+  }, [executeOrderPost, orderConflict, submitting, userId]);
+
+  const confirmNewPurchase = useCallback(async () => {
+    if (
+      submitInFlightRef.current ||
+      submitting ||
+      orderUncertain ||
+      orderConflict ||
+      !isPreviewSessionAllowed(previewSession)
+    ) {
       return;
     }
 
-    const { code, preview } = previewSession;
-
-    const validation = validateOrderAmounts(preview.availableCategories, amountDrafts);
+    const validation = validateOrderAmounts(
+      previewSession.preview.availableCategories,
+      amountDrafts,
+    );
     if (!validation.ok) {
       setSubmitError(validation.message);
-      setOrderUncertain(false);
       return;
     }
 
-    const items = buildOrderItems(preview.availableCategories, amountDrafts);
-    const attempt = { session: previewSession, items };
-    orderAttemptRef.current = attempt;
+    submitInFlightRef.current = true;
+    const items = buildOrderItems(previewSession.preview.availableCategories, amountDrafts);
+    const created = createStoreOrderAttempt({
+      userId,
+      body: { certificateCode: previewSession.code, items },
+    });
 
-    setSubmitting(true);
-    setSubmitError("");
-    setOrderUncertain(false);
-
-    try {
-      const raw = await remcardFetch<unknown>("/api/store/order", {
-        method: "POST",
-        body: { certificateCode: code, items },
-      });
-
-      if (orderAttemptRef.current !== attempt) {
-        return;
-      }
-
-      const data = validateOrderCreateResponse(raw);
-
-      setConfirmedCode(code);
-      setSuccess(data);
-      setPreviewSession(null);
-      setMode("success");
-      orderAttemptRef.current = null;
-    } catch (caught) {
-      if (orderAttemptRef.current !== attempt) {
-        return;
-      }
-
-      if (isUncertainOrderFailure(caught)) {
-        setOrderUncertain(true);
-        setSubmitError("");
-      } else if (caught instanceof RemcardApiError) {
-        setSubmitError(caught.message);
-        setOrderUncertain(false);
-      } else {
-        setOrderUncertain(true);
-        setSubmitError("");
-      }
-    } finally {
-      if (orderAttemptRef.current === attempt) {
-        setSubmitting(false);
-      }
+    if (!created.ok) {
+      setSubmitError(
+        created.reason === "body_mismatch" || created.reason === "blocked"
+          ? ATTEMPT_BODY_MISMATCH_MESSAGE
+          : STORAGE_SAVE_FAILED_MESSAGE,
+      );
+      submitInFlightRef.current = false;
+      return;
     }
-  }
+
+    await executeOrderPost(created.record, false);
+  }, [
+    amountDrafts,
+    executeOrderPost,
+    orderConflict,
+    orderUncertain,
+    previewSession,
+    submitting,
+    userId,
+  ]);
 
   const allowedPreview = isPreviewSessionAllowed(previewSession) ? previewSession.preview : null;
   const totals =
     allowedPreview && previewSession
       ? computeOrderTotals(allowedPreview.availableCategories, amountDrafts)
       : null;
+  const amountsLocked = orderUncertain || orderConflict || isStoreOrderAttemptLocked(storedAttempt);
+  const showRestoredBlock =
+    storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
 
   if (mode === "success" && success) {
     return (
@@ -326,7 +575,7 @@ export function ScannerHub() {
           >
             Все операции по документу
           </Link>
-          <Button onClick={resetAll}>Сканировать следующий код</Button>
+          <Button onClick={resetAll}>Новая покупка</Button>
         </div>
       </div>
     );
@@ -337,6 +586,17 @@ export function ScannerHub() {
     const preview = allowedPreview;
     return (
       <div>
+        {showRestoredBlock ? (
+          <RestoredAttemptBlock
+            storedAttempt={storedAttempt}
+            orderConflict={orderConflict}
+            previewError={previewError}
+            submitting={submitting}
+            onNewPurchase={startNewPurchase}
+            onCheckResult={() => void checkStoredAttempt()}
+          />
+        ) : null}
+
         <div className={`${styles.card} ${styles.cardDark}`}>
           <p className={styles.meta}>Документ</p>
           <p className={styles.previewTitle}>{preview.certificate.promoCode}</p>
@@ -384,7 +644,7 @@ export function ScannerHub() {
                   min={0}
                   inputMode="numeric"
                   value={amountDrafts[category.category] ?? ""}
-                  disabled={submitting || orderUncertain}
+                  disabled={submitting || amountsLocked}
                   onChange={(event) =>
                     setAmountDrafts((prev) => ({
                       ...prev,
@@ -418,32 +678,40 @@ export function ScannerHub() {
             </div>
           ) : null}
 
-          {orderUncertain ? (
-            <div className={styles.uncertainBlock} role="alert">
-              <p className={styles.uncertainHeading}>{UNCERTAIN_ORDER_HEADING}</p>
-              <p className={styles.meta}>{UNCERTAIN_ORDER_DETAIL}</p>
-            </div>
-          ) : null}
-
           {submitError ? (
             <p className={styles.errorText} role="alert">
               {submitError}
             </p>
           ) : null}
 
-          <div className={styles.actionsRow}>
-            <Button variant="secondary" disabled={submitting} onClick={resetAll}>
-              {orderUncertain ? "Начать заново" : "Отмена"}
-            </Button>
-            <Button
-              disabled={submitting || orderUncertain || !totals || totals.totalAmount <= 0}
-              onClick={() => void submitOrder()}
-            >
-              {submitting ? "Подтверждение…" : "Подтвердить покупку"}
-            </Button>
-          </div>
+          {!showRestoredBlock ? (
+            <div className={styles.actionsRow}>
+              <Button variant="secondary" disabled={submitting} onClick={startNewPurchase}>
+                Отмена
+              </Button>
+              <Button
+                disabled={submitting || !totals || totals.totalAmount <= 0 || orderConflict}
+                onClick={() => void confirmNewPurchase()}
+              >
+                {submitting ? "Подтверждение…" : "Подтвердить покупку"}
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
+    );
+  }
+
+  if (showRestoredBlock) {
+    return (
+      <RestoredAttemptBlock
+        storedAttempt={storedAttempt}
+        orderConflict={orderConflict}
+        previewError={previewError}
+        submitting={submitting}
+        onNewPurchase={startNewPurchase}
+        onCheckResult={() => void checkStoredAttempt()}
+      />
     );
   }
 

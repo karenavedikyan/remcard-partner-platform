@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:proxy": "tsx --test src/lib/remcard-proxy.test.ts src/lib/partnership-rules.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts src/lib/certificate-code.test.ts src/lib/order-totals.test.ts src/lib/scanner-flow.test.ts src/lib/scanner-order-submit.test.ts src/lib/qr-scanner-decode.test.ts src/lib/history-filters.test.ts src/lib/history-mappers.test.ts src/lib/history-links.test.ts src/lib/history-format.test.ts src/lib/history-sources.test.ts src/lib/history-labels.test.ts"
+    "test:proxy": "tsx --test src/lib/remcard-proxy.test.ts src/lib/partnership-rules.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts src/lib/certificate-code.test.ts src/lib/order-totals.test.ts src/lib/scanner-flow.test.ts src/lib/scanner-order-submit.test.ts src/lib/store-order-attempt.test.ts src/lib/store-order-idempotency-key.test.ts src/lib/qr-scanner-decode.test.ts src/lib/history-filters.test.ts src/lib/history-mappers.test.ts src/lib/history-links.test.ts src/lib/history-format.test.ts src/lib/history-sources.test.ts src/lib/history-labels.test.ts",
+    "test:component": "vitest run",
+    "test": "npm run test:proxy && npm run test:component"
   },
   "dependencies": {
     "html5-qrcode": "^2.3.8",
@@ -17,13 +19,20 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "20.17.30",
     "@types/qrcode": "^1.5.5",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
+    "@vitejs/plugin-react": "^4.7.0",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.28",
+    "jsdom": "^26.1.0",
     "tsx": "^4.19.3",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
   }
 }

@@ -31,6 +31,10 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     cookieHeader: request.headers.get("cookie"),
     origin: request.headers.get("origin"),
     bodyText,
+    idempotencyKeyHeader:
+      request.method === "POST" && pathname === "/api/store/order"
+        ? request.headers.get("Idempotency-Key")
+        : null,
   });
 
   return buildProxyNextResponse(result);
