@@ -53,9 +53,13 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | Входящие (M2) | Badge count | `GET /api/partnership/incoming-count` | Soft auth | `incoming-count/route.ts` | Badge в sidebar |
 | Условия — запрос (M2) | Term change | `GET/POST /api/partnerships/[id]/term-change` | Participant | `term-change/route.ts` | POST `{ changes: [{ category, newPercent }] }` |
 | Условия — ответ (M2) | Approve/reject | `POST /api/partnerships/[id]/term-change/[requestId]/respond` | Participant | `respond/route.ts` | `{ action: approve\|reject }` |
-| QR/сертификат — выдача и список | Issue + list | **`GET/POST /api/store/certificate`** (`route.ts`; код не проверен) | PROF store | `src/app/api/store/certificate/route.ts` | **Не** `/issue` и **не** `/list` как отдельные маршруты — предположение снято в M1-unblock |
-| Публичная карточка | Certificate by code | `GET /api/certificate/[code]` | Публичный | `certificatePublicPayload.ts` | GET с тестовым кодом |
-| PDF | Download | `GET /api/certificate/[code]/pdf` | Как карточка | pdf route | GET → `application/pdf` (binary proxy) |
+| Мои рекомендации (M3-A) — список | PROF list own certs | `GET /api/store/certificate` | `role === PRO`; фильтр `certificateListWhereForProContext` | `route.ts`, `certificateProContextFilter.ts` | Только документы текущего PROF-контекста; не все сертификаты системы |
+| Мои рекомендации (M3-A) — создание | PROF wizard (упрощён) | `POST /api/store/certificate` | `role === PRO`; issuer profile `programReady` или AGENT | `route.ts`, `CertificateWizard.tsx` (ref) | Body: `{ partners: [{ storeUserId, storeName, partnershipId?, isSelfScan, categories: [{ category, categoryLabel, discountPercent, issuerPercent }] }], validUntil?, maxUsages? }`; pool: discount+issuer ≤ poolPercent |
+| Мои рекомендации (M3-A) — партнёры формы | Available partners | `GET /api/store/certificate/available-partners` | `role === PRO` | `available-partners/route.ts` | Активные партнёрства + self-scan; `programReady` / `programMissing` |
+| Мои рекомендации (M3-A) — карточка | Detail by id | `GET /api/store/certificate/[id]` | `role === PRO`; `proUserId === user.id` | `[id]/route.ts` | 404 для чужого документа |
+| Публичная карточка | Certificate by code | `GET /api/certificate/[code]` | Публичный (qrCode или promoCode) | `certificatePublicPayload.ts` | Без proUserId, issuerPercent, внутренних контактов |
+| PDF | Download | `GET /api/certificate/[code]/pdf` | Публичный (promoCode предпочтительнее) | `[code]/pdf/route.ts`, `certPdfKit.ts` | GET → `application/pdf`; QR в PDF = `certificateUrl` |
+| Клиентская страница | Public page | `{BASE}/certificate/{qrCode}` | Публичный | `buildCertificatePageUrl()` | BASE из `getCertificatePublicBaseUrl()` (env `APP_BASE_URL` на backend) |
 | Сканирование | Scan flow | UI: `store/scan/page.tsx` | Store / PROF | order routes | Ручной ввод в тесте |
 | Preview заказа | Order preview | `POST /api/store/order/preview` | Store user | preview route | POST в тесте |
 | Покупка | Place order | `POST /api/store/order` | Store + CSRF (код не проверен) | order route | POST в тесте |
@@ -72,7 +76,8 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 - Profile: `GET/PATCH /api/pro/profile`
 - Partnership: `GET list|search|incoming-count`, `POST invite|remind`, `PATCH /api/partnership/[id]`
 - Term changes: `GET/POST /api/partnerships/[id]/term-change`, `POST .../respond`
-- Store/cert/bonus routes из M1 (M3 backlog для UI)
+- Certificates (M3-A): `GET/POST /api/store/certificate`, `GET .../available-partners`, `GET .../[cuid]`, `GET /api/certificate/[code]`, `GET .../pdf`
+- Store/order/bonus routes из M1 (scanner/purchase — вне M3-A)
 
 Path traversal блокируется. Mutating — origin check.
 

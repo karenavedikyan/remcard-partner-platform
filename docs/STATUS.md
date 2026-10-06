@@ -1,39 +1,49 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M2: блокировка неизвестного org-type + проверка постороннего PRO).
+Обновлено: 6 октября 2026 года (M3-A: рекомендации / QR-сертификаты).
 
 ## SHA источников
 
 | Источник | SHA / версия | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` | ветка `cursor/m2-prof-partners-b3e3` (Draft PR #2, base M1) | M2 закрыт |
+| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A |
 | `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only, без изменений |
 | Прототип | https://pro.remcard.ru/ | Design tokens |
 
-## M2: последние исправления
+## M3-A: реализовано
 
-- [x] Неизвестный тип организации: `inviteTargetStoreOwnershipUnknown()` блокирует приглашение, если у цели есть `organizationName`, но `isStoreOwner` не подтверждён; сообщение «Не удалось определить условия партнёра…»; проверка в submit(); general/10% не показывается при блокировке.
-- [x] Однозначные сценарии сохранены: store-приглашающий, STORE target, подтверждённый non-STORE org, мастер без организации.
-- [x] Посторонний PRO (`m1fix-prof`): GET/POST/respond term-change чужого партнёрства → 404, проценты не меняются; участники A/B — действия разрешены.
+- [x] Раздел «Мои рекомендации» (`/recommendations`): список, пустое состояние, ошибка, повтор.
+- [x] Создание (`/recommendations/new`): партнёры из `available-partners`, условия по категориям, срок, защита от двойного POST в UI.
+- [x] Результат создания: карточка «Готово», QR, код, статус с сервера, копирование ссылки, share, PDF.
+- [x] Карточка документа (`/recommendations/[id]`).
+- [x] BFF allowlist: `available-partners`, `store/certificate/[cuid]`.
+- [x] Предупреждение для test-only URL (localhost, pro.remcard.ru).
+- [x] Навигация «Рекомендации» в sidebar.
 
-## Пробел API (документирован)
+## M2 (база)
 
-`GET /api/partnership/search` не возвращает `organizationPartnerType`. При наличии `organizationName` без типа приглашение блокируется, чтобы не угадать trade-side. После появления поля в API блокировка снимется автоматически.
+- [x] Партнёры, приглашения, term-change (PR #2, SHA `0f1fa2c`).
 
-## Приёмка перед запуском (не закрыто)
-
-- [ ] Настоящий login (бот/OAuth отложен владельцем).
-- [ ] Navigator baseline на пустой PostgreSQL.
-- [ ] Counter-offer при первичном приглашении (есть в navigator, не в UI M2).
-
-## Проверки
+## Проверки M3-A
 
 | Проверка | Результат |
 | --- | --- |
-| `npm run test:proxy` | 47/47 |
+| `npm run test:proxy` | 51/51 |
 | `npm run lint` | ok |
 | `env -u NODE_ENV npm run build` | ok |
-| Outsider PRO term-change GET | 404 «Партнёрство не найдено» |
-| Outsider PRO term-change POST | 404 |
-| Outsider PRO respond approve/reject | 404, percent остаётся 12% |
-| Participant B approve pending | 200 APPROVED, percent → 13% |
+| curl: PROF create/list/detail | 201 / 200 / 200 |
+| curl: outsider GET `/store/certificate/[id]` | 404 |
+| curl: public `GET /certificate/[promoCode]` | 200, без issuerPercent |
+| curl: PDF через BFF | 200, `%PDF-1.3` |
+| Браузер: список, форма, карточка, mobile | см. артефакты PR |
+
+## Ограничения тестовой среды
+
+- Fixture `m1fix-store` в `available-partners` имеет `programReady: false` (`programMissing: publicLocations`) — партнёр магазина недоступен для создания; проверен self-scan PROF (`m1fix-prof`).
+- Клиентская ссылка в тесте: `http://127.0.0.1:3001/certificate/...` — помечается UI как test-only.
+- Fixture JWT ≠ OAuth; вход через бота отложен.
+- Navigator baseline на пустой PostgreSQL — блокер из M1 (не снят).
+
+## Не в scope M3-A
+
+- Сканер, preview/order, начисления бонусов.

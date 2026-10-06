@@ -166,6 +166,11 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/verify-code"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/logout"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/certificate/issue"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/store/certificate/available-partners"), true);
+    assert.equal(
+      isAllowedProxyRoute("GET", "/api/store/certificate/clxyz1234567890123456789"),
+      true,
+    );
     assert.equal(isAllowedProxyRoute("POST", "/api/store/certificate"), true);
     assert.equal(isAllowedProxyRoute("DELETE", "/api/auth/me"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/partnership/incoming-count"), true);
