@@ -1,70 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import { appConfig, assertServerOnly } from "@/lib/config";
-
-const ALLOWED_PREFIXES = [
-  "/api/auth/",
-  "/api/pro/",
-  "/api/partnership/",
-  "/api/partnerships/",
-  "/api/store/",
-  "/api/certificate/",
-  "/api/bonus/",
-] as const;
-
-function isAllowedPath(pathname: string) {
-  return ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
+import { NextRequest } from "next/server";
+import { assertServerOnly } from "@/lib/config";
+import {
+  buildProxyNextResponse,
+  normalizeProxyPath,
+  proxyRemcardRequest,
+} from "@/lib/remcard-proxy";
 
 async function proxyRequest(request: NextRequest, pathSegments: string[]) {
   assertServerOnly("RemCard BFF proxy");
 
-  const pathname = `/${pathSegments.join("/")}`;
-  if (!isAllowedPath(pathname)) {
-    return NextResponse.json({ error: "Path not allowed" }, { status: 403 });
+  const pathname = normalizeProxyPath(pathSegments);
+  if (!pathname) {
+    return buildProxyNextResponse({
+      ok: false,
+      status: 403,
+      body: JSON.stringify({ error: "Invalid path" }),
+    });
   }
 
-  const targetUrl = new URL(pathname, appConfig.remcardApiBaseUrl);
-  targetUrl.search = request.nextUrl.search;
+  const bodyText =
+    request.method !== "GET" && request.method !== "HEAD"
+      ? await request.text()
+      : undefined;
 
-  const headers = new Headers();
-  const contentType = request.headers.get("content-type");
-  if (contentType) {
-    headers.set("content-type", contentType);
-  }
-
-  const cookie = request.headers.get("cookie");
-  if (cookie) {
-    headers.set("cookie", cookie);
-  }
-
-  const init: RequestInit = {
+  const result = await proxyRemcardRequest({
     method: request.method,
-    headers,
-    cache: "no-store",
-    redirect: "manual",
-  };
-
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.text();
-  }
-
-  const upstream = await fetch(targetUrl, init);
-  const body = await upstream.text();
-
-  const response = new NextResponse(body, {
-    status: upstream.status,
-    headers: {
-      "content-type":
-        upstream.headers.get("content-type") ?? "application/json",
-    },
+    pathname,
+    search: request.nextUrl.search,
+    contentType: request.headers.get("content-type"),
+    cookieHeader: request.headers.get("cookie"),
+    origin: request.headers.get("origin"),
+    bodyText,
   });
 
-  const setCookie = upstream.headers.get("set-cookie");
-  if (setCookie) {
-    response.headers.set("set-cookie", setCookie);
-  }
-
-  return response;
+  return buildProxyNextResponse(result);
 }
 
 export async function GET(

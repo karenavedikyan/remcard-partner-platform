@@ -83,5 +83,5 @@ export const remcardApiPaths = {
 } as const;
 
 export function getRemcardApiBaseUrl() {
-  return appConfig.remcardApiBaseUrl;
+  return appConfig.remcardApiBaseUrl ?? "(not configured)";
 }

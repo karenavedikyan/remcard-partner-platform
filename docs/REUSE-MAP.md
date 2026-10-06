@@ -1,12 +1,28 @@
 # Карта переиспользования: экран кабинета → backend RemCard
 
-Дата: 6 октября 2026 года.
+Дата: 6 октября 2026 года (обновлено после M1-unblock).
 
-**Источники:** задание M1 (пути в `remcard-navigator`), публичное зондирование `https://remcard.ru` (без авторизации), CSS прототипа `https://pro.remcard.ru/style.css`.
+**Источники:** задание M1, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
 
-**Ограничение:** репозиторий `karenavedikyan/remcard-navigator` недоступен агенту (private / нет прав). Строки с пометкой «код не проверен» требуют верификации по SHA `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` или актуальному `main`.
+**Ограничение:** `karenavedikyan/remcard-navigator` недоступен агенту (`git clone` → `Repository not found`). Строки «код не проверен» требуют верификации по SHA `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` или актуальному `main`.
 
-**Подключение:** новый кабинет → локальный BFF `/api/remcard/*` → `REMCARD_API_BASE_URL` (по умолчанию `https://remcard.ru`). Cookie `remcard-token` не шарится между origin автоматически; повторный вход на новом origin допустим.
+**Подключение:** кабинет → BFF `/api/remcard/*` → `REMCARD_API_BASE_URL` (только явно настроенный тестовый origin; production-default удалён). Cookie `remcard-token` не шарится между origin; прокси пересылает только allowlisted cookie.
+
+---
+
+## Прототип: опубликованные материалы
+
+| Материал | URL | SHA-256 (2026-10-06) | Использование M1 |
+| --- | --- | --- | --- |
+| Index / shell | https://pro.remcard.ru/ | `a0e5a3e…064ad5b` | Структура HTML: `#app`, `#overlays`, module entry |
+| Основные стили | https://pro.remcard.ru/style.css | `736c343d…372ad81` | Токены в `src/app/globals.css` |
+| Workflows CSS | https://pro.remcard.ru/workflows.css | `2494a765…0eb312d` | Референс сценариев (не подключён runtime) |
+| Certificate CSS | https://pro.remcard.ru/certificate.css | `aa87dd68…fce5538` | Референс сертификата |
+| Bundled app | https://pro.remcard.ru/app.js | `db7c157b…ccc671f` | Vite bundle; imports: `chunk-DXJUU3BS.js`, `chunk-TK7TMV34.js`, `chunk-KTYMGLZA.js`, … |
+
+**Важно:** URL вида `cabinet.js`, `prof-program.js` отдают SPA fallback (тот же HTML, 855 B), а не исходные модули. Классы и сценарии (`prof-program`, `prof-profile`, `cabinet`, …) видны внутри `app.js`.
+
+Demo-расчёты и mock-данные прототипа **не** переносятся как бизнес-логика.
 
 ---
 
@@ -21,45 +37,53 @@
 → способ проверки
 ```
 
-| Экран кабинета | Сценарий на remcard.ru | API / сервис | Авторизация и права | Зависимости | Проверка |
+| Экран кабинета | Сценарий | API / сервис | Авторизация | Зависимости | Проверка |
 | --- | --- | --- | --- | --- | --- |
-| Вход | OAuth / telegram login (PROF) | `POST /api/auth/telegram` (405 без тела — маршрут есть); прочие провайдеры в `src/app/api/auth/**` (код не проверен) | Cookie `remcard-token`; `GET /api/auth/me` → `{ user: null \| {...} }` | `src/lib/proAuth.ts`, NextAuth или custom auth (код не проверен) | Тестовый аккаунт + callback URL для `pro.remcard.ru` / localhost через BFF |
-| Регистрация | Регистрация PROF-партнёра | Маршруты в `src/app/api/auth/**` (код не проверен) | После регистрации — тот же `remcard-token` | Prisma: User, ProProfile (код не проверен) | E2E регистрация в тестовом контуре; userId не дублируется |
-| Профиль / onboarding | Обязательные поля PROF | `GET/PATCH /api/pro/profile` → **401** без cookie | PROF-роль, контекст филиала (`src/lib/proBranchContext.ts`) | `src/app/api/pro/profile/route.ts` | Авторизованный запрос через BFF; сверка полей с UI прототипа |
-| Выход | Завершение сессии | `POST /api/auth/logout` → очищает `remcard-token` | Любая активная сессия | — | POST через BFF; `GET /api/auth/me` → `user: null` |
-| Список партнёров | Список партнёрств компании | `GET /api/partnership/list` → **401**; UI: `PartnershipListBlock.tsx` | PROF / company staff | `src/app/api/partnership/**`, `src/components/partnership/PartnershipListBlock.tsx` | Авторизованный GET; сверка с `/pro` |
-| Поиск партнёра | Поиск по базе | `GET /api/partnership/search` → **401** | PROF | `src/app/api/partnership/**` | Авторизованный GET с query |
-| Приглашение | Отправка приглашения | `POST /api/partnership/invite` → **405** (маршрут есть) | PROF + права компании | `PartnerInviteModal.tsx`, partnership API | POST в тестовом контуре (без реальной отправки в prod) |
-| Условия сотрудничества | Просмотр и согласование | `src/app/api/partnerships/**` (код не проверен; `/api/partnerships/list` → 404) | PROF / partner | Prisma: Partnership, Terms (код не проверен) | Только после доступа к исходникам |
-| Выдача QR/сертификата | Issue certificate | `POST /api/store/certificate/issue` → **401** | PROF store role | `src/app/api/store/certificate/**` | Авторизованный POST в тесте |
-| Список сертификатов | Список выданных | `GET /api/store/certificate/list` → **401** | PROF | store certificate API | Авторизованный GET |
-| Публичная карточка | Карточка по коду | `GET /api/certificate/[code]` (`src/lib/certificatePublicPayload.ts`) | Публичный / ограниченный | certificate routes | GET с валидным кодом (тестовый) |
-| PDF сертификата | Скачивание PDF | `GET /api/certificate/[code]/pdf` | Как у карточки | `src/app/api/certificate/[code]/pdf/route.ts` | GET → application/pdf |
-| Сканирование | Scan flow | UI: `src/app/store/scan/page.tsx` → preview/order API | Store / PROF | store order routes | Ручной ввод кода в тесте |
-| Просмотр условий покупки | Order preview | `POST /api/store/order/preview` → **401** с `{}` | Авторизованный store user | `src/app/api/store/order/preview/route.ts` | POST с телом заказа (тест) |
-| Покупка | Оформление заказа | `POST /api/store/order` → **405** без тела | Store + CSRF/origin (код не проверен) | order route | POST в тестовом контуре |
-| История начислений | Bonus history | `GET /api/bonus/history` → **404** (возможно другой path); `GET /api/store/bonus-list` → **401** | PROF / store | `src/app/api/bonus/**`, `src/app/api/store/bonus-list/route.ts` | Уточнить path по исходникам |
-| Баланс / начисления | Доступные бонусы | `GET /api/bonus/balance` → **401** | PROF | bonus API, cron `src/app/api/cron/confirm-bonuses/route.ts` (не вызывать из кабинета) | Авторизованный GET; cron только на backend |
+| Вход | OAuth / telegram login | `GET /api/auth/me`; `POST /api/auth/logout`; провайдеры `POST /api/auth/*` (код не проверен) | Cookie `remcard-token` | `src/lib/proAuth.ts`, `src/app/api/auth/**` | Тестовый аккаунт + callback для кабинета через BFF |
+| Регистрация | Регистрация PROF | `src/app/api/auth/**` (код не проверен) | `remcard-token` | Prisma User, ProProfile (код не проверен) | E2E в тестовом контуре |
+| Профиль | Onboarding PROF | `GET/PATCH /api/pro/profile` | PROF-роль | `proBranchContext.ts`, `api/pro/profile/route.ts` | Авторизованный запрос через BFF |
+| Выход | Logout | `POST /api/auth/logout` | Активная сессия | — | POST через BFF; cookie cleared |
+| Список партнёров | Partnership list | `GET /api/partnership/list` | PROF / staff | `PartnershipListBlock.tsx`, partnership API | Авторизованный GET |
+| Поиск | Partner search | `GET /api/partnership/search` | PROF | partnership API | Авторизованный GET |
+| Приглашение | Invite | `POST /api/partnership/invite` | PROF + company | `PartnerInviteModal.tsx` | POST в тесте (без prod-отправки) |
+| Условия | Negotiation | `src/app/api/partnerships/**` (код не проверен) | PROF / partner | Partnership, Terms | После доступа к navigator |
+| QR/сертификат — выдача и список | Issue + list | **`GET/POST /api/store/certificate`** (`route.ts`; код не проверен) | PROF store | `src/app/api/store/certificate/route.ts` | **Не** `/issue` и **не** `/list` как отдельные маршруты — предположение снято в M1-unblock |
+| Публичная карточка | Certificate by code | `GET /api/certificate/[code]` | Публичный | `certificatePublicPayload.ts` | GET с тестовым кодом |
+| PDF | Download | `GET /api/certificate/[code]/pdf` | Как карточка | pdf route | GET → `application/pdf` (binary proxy) |
+| Сканирование | Scan flow | UI: `store/scan/page.tsx` | Store / PROF | order routes | Ручной ввод в тесте |
+| Preview заказа | Order preview | `POST /api/store/order/preview` | Store user | preview route | POST в тесте |
+| Покупка | Place order | `POST /api/store/order` | Store + CSRF (код не проверен) | order route | POST в тесте |
+| История начислений | Bonus history | `GET /api/bonus/history`; `GET /api/store/bonus-list` | PROF / store | bonus API | Уточнить path по navigator |
+| Баланс | Available bonuses | `GET /api/bonus/balance` | PROF | bonus API, cron (не из кабинета) | Авторизованный GET |
+
+---
+
+## BFF allowlist (реализовано)
+
+Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`). Широкие префиксы `/api/pro/`, `/api/store/` заменены точечным списком. Path traversal (`..`, encoded `/`) блокируется.
+
+Mutating-запросы: origin должен совпадать с `NEXT_PUBLIC_APP_URL`. Cookie upstream: только `remcard-token` (OAuth temp cookies — уточнить после navigator).
 
 ---
 
 ## Минимальные адаптации backend (не применены)
 
-| Изменение | Причина | Объём |
-| --- | --- | --- |
-| CORS + `Access-Control-Allow-Credentials` для `https://pro.remcard.ru` (и dev origin) **или** обязательный BFF на том же origin | Браузер с `localhost:3000` / `pro.remcard.ru` не получает CORS-заголовков от `remcard.ru` (проверено OPTIONS/POST) | Несколько строк в middleware / next config основного сайта **или** только BFF без CORS |
-| OAuth callback / redirect URI для `pro.remcard.ru` | Telegram/Yandex/VK callback сейчас, вероятно, только для `remcard.ru` | Добавить URI в конфиг провайдеров |
-| Cookie `Domain=.remcard.ru` (опционально) | Сейчас `remcard-token` без domain → host-only; поддомен не наследует сессию | Альтернатива: повторный вход на pro.remcard.ru (предпочтительно по M1) |
-| CSRF / origin allowlist для mutating requests из BFF | POST order, invite и др. могут проверять origin | Добавить origin кабинета или проксировать только server-side |
+| Изменение | Причина |
+| --- | --- |
+| CORS для `pro.remcard.ru` **или** только BFF | Браузер не вызывает remcard.ru напрямую |
+| OAuth callback URI для кабинета | Провайдеры, вероятно, настроены на remcard.ru |
+| CSRF/origin allowlist для BFF-origin | POST order, invite и др. |
+| Cookie names для OAuth flow | Возможны temp cookies помимо `remcard-token` |
 
-**Выбранный способ M1:** BFF-прокси в partner-platform (реализован). Backend-изменения — только после согласования.
+**Выбранный способ M1:** BFF в partner-platform. Backend-изменения — после согласования.
 
 ---
 
 ## Прототип vs production
 
-| Материал | Источник | Использование в M1 |
+| Материал | Источник | M1 |
 | --- | --- | --- |
-| CSS-переменные, Manrope, цвета | `https://pro.remcard.ru/style.css` (etag, 2026-10-03) | Скопированы в `src/app/globals.css` |
-| HTML/JS прототип (`app.js`, demo data) | `https://pro.remcard.ru` | **Не** переносились; demo-логика не является backend |
-| Исходники прототипа (репозиторий) | Не переданы | **Блокер** для полного переноса компонентов |
+| CSS-переменные, Manrope | `style.css` | `globals.css` |
+| Workflows / certificate CSS | live URLs | Документированы; не подключены |
+| HTML/JS bundle | `app.js` + chunks | Референс; demo-логика не переносится |
+| Закрытый repo прототипа | Не передан | Не блокирует токены/CSS из live demo |
