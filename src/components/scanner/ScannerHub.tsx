@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { parseCertificateCode } from "@/lib/certificate-code";
@@ -312,7 +313,15 @@ export function ScannerHub() {
             </p>
           ) : null}
         </div>
-        <Button onClick={resetAll}>Сканировать следующий код</Button>
+        <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
+          <Link
+            href={`/history/purchases/${encodeURIComponent(success.order.id)}?promo=${encodeURIComponent(confirmedCode)}`}
+            className={styles.openHistoryLink}
+          >
+            Открыть покупку
+          </Link>
+          <Button onClick={resetAll}>Сканировать следующий код</Button>
+        </div>
       </div>
     );
   }

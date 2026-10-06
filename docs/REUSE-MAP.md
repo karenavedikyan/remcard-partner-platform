@@ -1,6 +1,6 @@
 # Карта переиспользования: экран кабинета → backend RemCard
 
-Дата: 6 октября 2026 года (обновлено после M3-B).
+Дата: 6 октября 2026 года (обновлено после M3-C).
 
 **Источники:** задание M1–M3, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
 
@@ -28,6 +28,33 @@
 **Navigator reference (read-only):** `src/app/store/scan/page.tsx`, `src/app/api/store/order/preview/route.ts`, `src/app/api/store/order/route.ts`, `src/lib/storeCertificateScan.ts` (GET scan — не используется UI scan page).
 
 **BFF allowlist:** `POST /api/store/order`, `POST /api/store/order/preview` — `src/lib/remcard-proxy.ts`.
+
+---
+
+## M3-C: История покупок и начислений
+
+| Экран кабинета | Navigator reference | API | Поля (используемые) | Права | Ограничения |
+| --- | --- | --- | --- | --- | --- |
+| История → Покупки (принято у меня) | `GET /api/store/bonus-list` (нет отдельного UI-экрана; данные в store wallet) | `GET /api/store/bonus-list` | `bonuses[]`: id, amount, status, createdAt, proName, clientName, totalAmount, discountAmount, promoCode, certificatePartner.isSelfScan, orderItems[] | `role === PRO`, `partnerType` ∈ {STORE, COMPANY} | **Не** для MASTER/AGENT; только заказы с Bonus (самоскан без Bonus **не попадает**); **нет orderId** в ответе; id строки = bonus.id |
+| История → Покупки (по рекомендациям) | `/pro/stats` (метрики), заказы через API | `GET /api/pro/orders?branchId=` | `orders[]`: id, createdAt, clientName, totalAmount, discountAmount, proBonus, status, storeName, branchName, promoCode | PRO + `getProContext` / `certificateOrdersWhereForProContext` | max **200** записей; **нет позиций** (items); серверной пагинации/поиска нет |
+| История → Начисления | `/pro/wallet` (`page.tsx`) | `GET /api/pro/wallet/transactions` | `transactions[]`: id, amount, status, createdAt, paidAt, counterpartyName, promoCode, isSelfScan, items[] | PRO; роль кошелька AGENT/STORE/MASTER через `resolveWalletContext` | Полный список без пагинации; UI **исключает** isSelfScan и amount≤0; canPayout **не используется** (выплаты вне scope) |
+| Баланс (не в UI M3-C) | `/pro/wallet` | `GET /api/pro/wallet/balance` | pendingRub, paidRub, count | PRO | Allowlisted; не отображаем mock-метрики |
+| Детали покупки | **нет** order detail route | Сборка из списков выше + связь по promoCode/bonusId | Сохранённые суммы/проценты из orderItems (store) или proBonus (issued) | Backend фильтрует по user/context | **Не пересчитываем** по текущим terms; issued без line items — явная пометка |
+| Детали начисления | wallet tx card | wallet/transactions + связь purchase | items[].bonusPercent, bonusAmount | Только свои tx | AgentBonus/Bonus — одна запись на роль, не дублируем |
+| Сканер → «Открыть покупку» | — | `/history/purchases/{orderId}?promo=` | orderId из POST order 201; fallback promoCode | PRO | Store rows матчатся по promo, т.к. bonus-list без orderId |
+
+**Legacy (не primary):** `GET /api/bonus/history`, `GET /api/bonus/balance` — allowlisted, navigator wallet использует `/api/pro/wallet/*`.
+
+**Клиентские фильтры:** поиск, статус, период, направление — **только по загруженным записям** (явная пометка в UI).
+
+**Пробелы API (не обходим):**
+- Нет GET order/bonus by id — детали через полный список + client-side find
+- Нет server-side search/pagination на history APIs
+- Самосканирование: покупка может отсутствовать в bonus-list; начисление скрыто фильтром
+
+**BFF allowlist (добавлено M3-C):** `GET /api/store/bonus-list`, `GET /api/pro/orders`, `GET /api/pro/wallet/balance|transactions`.
+
+**Navigator reference (read-only):** `src/app/api/store/bonus-list/route.ts`, `src/app/api/pro/orders/route.ts`, `src/app/api/pro/wallet/transactions/route.ts`, `src/app/pro/wallet/page.tsx`.
 
 ---
 
@@ -84,12 +111,16 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | **Сканер (M3-B)** | Scan hub | `/scanner`, `ScannerHub.tsx` | PRO + SessionGate | `html5-qrcode`, `certificate-code.ts` | Desktop/mobile UI; камера — по клику |
 | **Preview заказа (M3-B)** | Order preview | `POST /api/store/order/preview` | Store partner (PRO) | preview route | curl + браузер; не создаёт Order |
 | **Покупка (M3-B)** | Place order | `POST /api/store/order` | Store + branch context | order route | curl: 1000₽ → disc 50, bonus 100 @ 5/10% |
-| История начислений | Bonus history | `GET /api/bonus/history`; `GET /api/store/bonus-list` | PROF / store | bonus API | **Не в M3-B** |
-| Баланс | Available bonuses | `GET /api/bonus/balance` | PROF | bonus API, cron (не из кабинета) | **Не в M3-B** |
+| **История (M3-C)** | Purchases + accruals hub | `/history`, `HistoryHub.tsx` | PRO | store/bonus-list + pro/orders + wallet/transactions | Tabs, client filters, loading/empty/error |
+| **Детали покупки (M3-C)** | — (нет в navigator) | client find by id/promo | PRO | lists above | Items если есть; linked accruals по promo |
+| **Детали начисления (M3-C)** | wallet tx card | wallet/transactions | PRO | — | Items, link to purchase |
+| **Сканер → история (M3-C)** | — | link after order 201 | PRO | order.id + promo | `/history/purchases/{orderId}?promo=` |
+| История начислений (legacy) | Bonus history | `GET /api/bonus/history` | PROF | bonus API | Allowlisted; UI использует wallet/transactions |
+| Баланс | Available bonuses | `GET /api/bonus/balance`, `/api/pro/wallet/balance` | PROF | bonus/wallet API | Allowlisted; UI M3-C не показывает |
 
 ---
 
-## BFF allowlist (M1 + M2 + M3-A + M3-B)
+## BFF allowlist (M1 + M2 + M3-A + M3-B + M3-C)
 
 Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`):
 
@@ -99,7 +130,8 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 - Term changes: `GET/POST /api/partnerships/[id]/term-change`, `POST .../respond`
 - Certificates (M3-A): `GET/POST /api/store/certificate`, `GET .../available-partners`, `GET .../[cuid]`, `GET /api/certificate/[code]`, `GET .../pdf`
 - Store/order (M3-B): `POST /api/store/order`, `POST /api/store/order/preview`
-- Bonus (allowlisted, UI вне M3-B): `GET /api/store/bonus-list`, `GET /api/bonus/balance|history`
+- History (M3-C): `GET /api/store/bonus-list`, `GET /api/pro/orders`, `GET /api/pro/wallet/balance|transactions`
+- Bonus legacy (allowlisted): `GET /api/bonus/balance|history`
 
 Path traversal блокируется. Mutating — origin check.
 

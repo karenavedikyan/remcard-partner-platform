@@ -127,6 +127,9 @@ export const remcardApiPaths = {
   certificate: "/api/certificate",
   storeCertificate: "/api/store/certificate",
   storeCertificateAvailablePartners: "/api/store/certificate/available-partners",
+  proOrders: "/api/pro/orders",
+  proWalletBalance: "/api/pro/wallet/balance",
+  proWalletTransactions: "/api/pro/wallet/transactions",
 } as const;
 
 export function getRemcardApiBaseUrl() {
