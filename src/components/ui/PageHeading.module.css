@@ -1,0 +1,18 @@
+.heading {
+  margin-bottom: var(--space-8);
+}
+
+.eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: var(--space-3);
+}
+
+.description {
+  margin-top: var(--space-3);
+  max-width: 52rem;
+}

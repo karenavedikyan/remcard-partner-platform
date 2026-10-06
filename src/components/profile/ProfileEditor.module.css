@@ -1,0 +1,59 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.8fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.main {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.statusRow {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.rejection {
+  font-size: var(--text-sm);
+  color: var(--primary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.error {
+  color: var(--primary);
+  font-size: var(--text-sm);
+}
+
+.success {
+  color: var(--green);
+  font-size: var(--text-sm);
+}
+
+.aside {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.orgName {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
