@@ -1,0 +1,50 @@
+-- M2: дополнительные fixture для проверки приглашений (локальная БД remcard_prof_test).
+-- Запускать после seed-m1-fixtures.sql.example.
+
+\set ON_ERROR_STOP on
+
+DO $$
+BEGIN
+  IF current_database() <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing seed: database must be remcard_prof_test';
+  END IF;
+END $$;
+
+UPDATE "User" SET
+  "catalogStatus" = 'APPROVED',
+  "isPublic" = true,
+  "partnerType" = 'MASTER',
+  specializations = ARRAY['doors']::text[]
+WHERE id = 'm1fix-staff-000000000001';
+
+INSERT INTO "Partnership" (
+  id, "storeUserId", "proUserId", status, "initiatedBy", note, "createdAt", "updatedAt"
+) VALUES (
+  'm2fix-invite-00000000001',
+  'm1fix-store-000000000001',
+  'm1fix-staff-000000000001',
+  'INVITED',
+  'm1fix-store-000000000001',
+  'M2 fixture invite',
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  status = 'INVITED',
+  note = EXCLUDED.note,
+  "updatedAt" = NOW();
+
+INSERT INTO "PartnershipTerm" (
+  id, "partnershipId", category, "categoryLabel", "storePercent", "createdAt", "updatedAt"
+) VALUES (
+  'm2fix-term-invite-000001',
+  'm2fix-invite-00000000001',
+  'doors',
+  'Двери',
+  12,
+  NOW(),
+  NOW()
+)
+ON CONFLICT ("partnershipId", category) DO UPDATE SET
+  "storePercent" = 12,
+  "updatedAt" = NOW();

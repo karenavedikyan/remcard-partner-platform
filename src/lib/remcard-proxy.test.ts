@@ -168,6 +168,15 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/store/certificate/issue"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/certificate"), true);
     assert.equal(isAllowedProxyRoute("DELETE", "/api/auth/me"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/partnership/incoming-count"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/partnership/remind"), true);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/partnership/part-123"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/partnerships/part-123/term-change"), true);
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/partnerships/part-123/term-change/req-1/respond"),
+      true,
+    );
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/partnerships/part-123"), false);
   });
 
   it("forwards only allowlisted cookies", () => {

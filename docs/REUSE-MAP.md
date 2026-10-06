@@ -41,12 +41,18 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | --- | --- | --- | --- | --- | --- |
 | Вход | OAuth / telegram login | `GET /api/auth/me`; `POST /api/auth/logout`; провайдеры `POST /api/auth/*` (код не проверен) | Cookie `remcard-token` | `src/lib/proAuth.ts`, `src/app/api/auth/**` | Тестовый аккаунт + callback для кабинета через BFF |
 | Регистрация | Регистрация PROF | `src/app/api/auth/**` (код не проверен) | `remcard-token` | Prisma User, ProProfile (код не проверен) | E2E в тестовом контуре |
-| Профиль | Onboarding PROF | `GET/PATCH /api/pro/profile` | PROF-роль | `proBranchContext.ts`, `api/pro/profile/route.ts` | Авторизованный запрос через BFF |
+| Главная PROF (M2) | Dashboard overview | `GET /api/partnership/list`, `GET /api/partnership/incoming-count` | PROF + cookie | `ProDashboardClient.tsx` (read-only ref) | Fixture-сессия, без mock-метрик |
+| Профиль (M2) | Редактирование карточки | `GET/PATCH /api/pro/profile`; action `submitForModeration` | Authenticated (PRO fields) | `src/app/api/pro/profile/route.ts`, `src/app/pro/profile/page.tsx` | PATCH + reload |
+| Вход M2 | Session gate | `GET /api/auth/me` | Cookie | — | Fixture JWT; bot UI отключён до запуска |
 | Выход | Logout | `POST /api/auth/logout` | Активная сессия | — | POST через BFF; cookie cleared |
-| Список партнёров | Partnership list | `GET /api/partnership/list` | PROF / staff | `PartnershipListBlock.tsx`, partnership API | Авторизованный GET |
-| Поиск | Partner search | `GET /api/partnership/search` | PROF | partnership API | Авторизованный GET |
-| Приглашение | Invite | `POST /api/partnership/invite` | PROF + company | `PartnerInviteModal.tsx` | POST в тесте (без prod-отправки) |
-| Условия | Negotiation | `src/app/api/partnerships/**` (код не проверен) | PROF / partner | Partnership, Terms | После доступа к navigator |
+| Список партнёров (M2) | Partnership list | `GET /api/partnership/list` | `role === PRO` | `PartnershipListBlock.tsx` | BFF GET |
+| Поиск (M2) | Partner search | `GET /api/partnership/search?role=store\|pro` | PROF | `PartnerFindClient.tsx` | BFF GET |
+| Приглашение (M2) | Invite | `POST /api/partnership/invite` `{ targetUserId, terms?, note? }` | PROF | `PartnerInviteModal.tsx` | POST через BFF |
+| Действия (M2) | Accept/reject/cancel/… | `PATCH /api/partnership/[id]` `{ action, terms? }` | Participant + PRO | `src/app/api/partnership/[id]/route.ts` | accept, reject, cancel, counter_offer*, pause, resume, terminate |
+| Напоминание (M2) | Remind invite | `POST /api/partnership/remind` | Initiator | `remind/route.ts` | Не в UI M2 (API allowlisted) |
+| Входящие (M2) | Badge count | `GET /api/partnership/incoming-count` | Soft auth | `incoming-count/route.ts` | Badge в sidebar |
+| Условия — запрос (M2) | Term change | `GET/POST /api/partnerships/[id]/term-change` | Participant | `term-change/route.ts` | POST `{ changes: [{ category, newPercent }] }` |
+| Условия — ответ (M2) | Approve/reject | `POST /api/partnerships/[id]/term-change/[requestId]/respond` | Participant | `respond/route.ts` | `{ action: approve\|reject }` |
 | QR/сертификат — выдача и список | Issue + list | **`GET/POST /api/store/certificate`** (`route.ts`; код не проверен) | PROF store | `src/app/api/store/certificate/route.ts` | **Не** `/issue` и **не** `/list` как отдельные маршруты — предположение снято в M1-unblock |
 | Публичная карточка | Certificate by code | `GET /api/certificate/[code]` | Публичный | `certificatePublicPayload.ts` | GET с тестовым кодом |
 | PDF | Download | `GET /api/certificate/[code]/pdf` | Как карточка | pdf route | GET → `application/pdf` (binary proxy) |
@@ -58,9 +64,17 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 
 ---
 
-## BFF allowlist (реализовано)
+## BFF allowlist (M1 + M2)
 
-Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`). Широкие префиксы `/api/pro/`, `/api/store/` заменены точечным списком. Path traversal (`..`, encoded `/`) блокируется.
+Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`):
+
+- Auth: `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/verify-code` (без UI бота в M2)
+- Profile: `GET/PATCH /api/pro/profile`
+- Partnership: `GET list|search|incoming-count`, `POST invite|remind`, `PATCH /api/partnership/[id]`
+- Term changes: `GET/POST /api/partnerships/[id]/term-change`, `POST .../respond`
+- Store/cert/bonus routes из M1 (M3 backlog для UI)
+
+Path traversal блокируется. Mutating — origin check.
 
 Mutating-запросы: `Origin` обязан совпадать с `NEXT_PUBLIC_APP_URL` (null/чужой origin → 403). Cookie upstream: только `remcard-token`. Navigator OAuth cookies: `oauth_vk_state`, `oauth_yandex_state`, `oauth_pending_consents` — **не проксируются** (блокер полного OAuth через BFF).
 

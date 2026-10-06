@@ -86,28 +86,26 @@ curl -X POST -H "Origin: http://127.0.0.1:3000" -H "Cookie: remcard-token=<fixtu
   http://127.0.0.1:3000/api/remcard/api/auth/logout
 ```
 
-### Вход verify-code (настоящий login, не fixture)
+### M2: fixture-сессия (не login)
 
-UI: форма «Вход по коду из бота» на главной странице кабинета (если backend подключён и сессии нет).
+Публичный UI входа через бота **отключён** до подготовки запуска. Для проверки M2:
 
-BFF:
+1. Сгенерируйте JWT в checkout navigator (локально, значение не коммитить):
 
 ```bash
-curl -X POST http://127.0.0.1:3000/api/remcard/api/auth/verify-code \
-  -H "Origin: http://127.0.0.1:3000" \
-  -H "Content-Type: application/json" \
-  -d '{"code":"123456"}'
+cd /path/to/remcard-navigator
+node -e "const jwt=require('jsonwebtoken'); console.log(jwt.sign({userId:'m1fix-prof-0000000000001',v:0}, process.env.JWT_SECRET, {expiresIn:'30d'}));"
 ```
 
-**Требования на navigator (имена переменных, значения — вне Git):**
+2. Установите cookie `remcard-token` в браузере для `127.0.0.1:3000` или используйте curl (см. выше).
 
-- `JWT_SECRET`, `DATABASE_URL` — уже нужны для backend
-- `TELEGRAM_BOT_TOKEN` (и/или MAX bot) — чтобы пользователь получил код через `/login`
-- В БД: активная строка `BotLoginCode` + существующий `User` с `telegramId` / `maxId`
+3. Дополнительный seed для приглашений M2:
 
-Без bot token и кода в БД endpoint вернёт 401 — это ожидаемо; не подменяйте успешный ответ в коде.
+```bash
+psql "$DATABASE_URL" -f /path/to/remcard-partner-platform/scripts/local/seed-m2-partnership-invite.sql.example
+```
 
-Подробный разбор auth-маршрутов navigator: `docs/reviews/M1-auth-verify-code.md`.
+Fixture JWT **не доказывает** настоящий вход. BFF `POST /api/auth/verify-code` остаётся в allowlist для будущего подключения.
 
 ## (c) Блокер: navigator на пустой БД
 
