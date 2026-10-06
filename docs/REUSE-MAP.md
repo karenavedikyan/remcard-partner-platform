@@ -1,12 +1,33 @@
 # Карта переиспользования: экран кабинета → backend RemCard
 
-Дата: 6 октября 2026 года (обновлено после M1-unblock).
+Дата: 6 октября 2026 года (обновлено после M3-B).
 
-**Источники:** задание M1, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
+**Источники:** задание M1–M3, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
 
 **Navigator:** read-only доступ через Cloud Agent Select Multiple; контрольная точка `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7`. Auth/session сверены по `src/lib/proAuth.ts`, `/api/auth/me`, `/api/auth/logout`.
 
 **Подключение:** кабинет → BFF `/api/remcard/*` → `REMCARD_API_BASE_URL` (только явно настроенный тестовый origin; production-default удалён). Cookie `remcard-token` не шарится между origin; прокси пересылает только allowlisted cookie.
+
+---
+
+## M3-B: Сканер и подтверждение покупки
+
+| Действие кабинета | API | Роль / права | Входные данные | Серверные ограничения |
+| --- | --- | --- | --- | --- |
+| Открыть сканер | `GET /scanner` (UI) | `role === PRO` (SessionGate) | fixture JWT в cookie | Без сессии — SessionGate |
+| Извлечь код из QR/текста | — (клиент `extractCertificateCode`) | — | URL `remcard.ru/certificate/{code}`, `127.0.0.1:3001/certificate/{code}`, path `/certificate/{code}`, promo as-is | **Не** fetch URL из QR; только извлечение кода |
+| Предпросмотр документа | `POST /api/store/order/preview` | PRO; партнёр сертификата: `certPartner.storeUserId === user.id` | `{ certificateCode }` — qrCode или promoCode | Не создаёт Order/Bonus; проверяет status ACTIVE/USED_PARTIALLY, validUntil, partner match; иначе `{ allowed: false, message }` или 404 |
+| Показ partnerCards в preview | (поле ответа preview) | Тот же | — | Публичные карточки партнёров из `buildPartnerCardModelsForCertificate` |
+| Оформление покупки | `POST /api/store/order` | PRO; store user или branch employee org owner (`getProContext`) | `{ certificateCode, items: [{ category, categoryLabel, amount }] }` | `amount` — **сумма до скидки, ₽**, целые; скидка/бонус `Math.round` на сервере; категория из `certPartner.categories`; лимит usage; **нет idempotency key** |
+| Сводка клиента | (ответ order) | — | — | `summary.totalAmount`, `discountAmount`, `issuerBonusAmount` / `proBonusAmount`, `isSelfScan` |
+| Self-scan | тот же POST order | PROF = store partner | — | `isSelfScan: true` → issuer bonus 0, Bonus не создаётся |
+| Чужой PRO | preview/order | staff без partner row | подмена certificateCode | preview: `allowed: false`; order: 400 «не партнёр» |
+| Повтор покупки | POST order | — | новый запрос | **Дубли не защищены на сервере** (блокер production); UI блокирует повтор той же попытки при uncertain; 4xx сохраняют форму |
+| Валидация ответа order | (клиент `validateOrderCreateResponse`) | — | 201 body | Пустой/битый JSON/нет order.id или summary → uncertain, не success |
+
+**Navigator reference (read-only):** `src/app/store/scan/page.tsx`, `src/app/api/store/order/preview/route.ts`, `src/app/api/store/order/route.ts`, `src/lib/storeCertificateScan.ts` (GET scan — не используется UI scan page).
+
+**BFF allowlist:** `POST /api/store/order`, `POST /api/store/order/preview` — `src/lib/remcard-proxy.ts`.
 
 ---
 
@@ -60,15 +81,15 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | Публичная карточка | Certificate by code | `GET /api/certificate/[code]` | Публичный (qrCode или promoCode) | `certificatePublicPayload.ts` | Без proUserId, issuerPercent, внутренних контактов |
 | PDF | Download | `GET /api/certificate/[code]/pdf` | Публичный (promoCode предпочтительнее) | `[code]/pdf/route.ts`, `certPdfKit.ts` | GET → `application/pdf`; QR в PDF = `certificateUrl` |
 | Клиентская страница | Public page | `{BASE}/certificate/{qrCode}` | Публичный | `buildCertificatePageUrl()` | BASE из `getCertificatePublicBaseUrl()` (env `APP_BASE_URL` на backend) |
-| Сканирование | Scan flow | UI: `store/scan/page.tsx` | Store / PROF | order routes | Ручной ввод в тесте |
-| Preview заказа | Order preview | `POST /api/store/order/preview` | Store user | preview route | POST в тесте |
-| Покупка | Place order | `POST /api/store/order` | Store + CSRF (код не проверен) | order route | POST в тесте |
-| История начислений | Bonus history | `GET /api/bonus/history`; `GET /api/store/bonus-list` | PROF / store | bonus API | Уточнить path по navigator |
-| Баланс | Available bonuses | `GET /api/bonus/balance` | PROF | bonus API, cron (не из кабинета) | Авторизованный GET |
+| **Сканер (M3-B)** | Scan hub | `/scanner`, `ScannerHub.tsx` | PRO + SessionGate | `html5-qrcode`, `certificate-code.ts` | Desktop/mobile UI; камера — по клику |
+| **Preview заказа (M3-B)** | Order preview | `POST /api/store/order/preview` | Store partner (PRO) | preview route | curl + браузер; не создаёт Order |
+| **Покупка (M3-B)** | Place order | `POST /api/store/order` | Store + branch context | order route | curl: 1000₽ → disc 50, bonus 100 @ 5/10% |
+| История начислений | Bonus history | `GET /api/bonus/history`; `GET /api/store/bonus-list` | PROF / store | bonus API | **Не в M3-B** |
+| Баланс | Available bonuses | `GET /api/bonus/balance` | PROF | bonus API, cron (не из кабинета) | **Не в M3-B** |
 
 ---
 
-## BFF allowlist (M1 + M2)
+## BFF allowlist (M1 + M2 + M3-A + M3-B)
 
 Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`):
 
@@ -77,7 +98,8 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 - Partnership: `GET list|search|incoming-count`, `POST invite|remind`, `PATCH /api/partnership/[id]`
 - Term changes: `GET/POST /api/partnerships/[id]/term-change`, `POST .../respond`
 - Certificates (M3-A): `GET/POST /api/store/certificate`, `GET .../available-partners`, `GET .../[cuid]`, `GET /api/certificate/[code]`, `GET .../pdf`
-- Store/order/bonus routes из M1 (scanner/purchase — вне M3-A)
+- Store/order (M3-B): `POST /api/store/order`, `POST /api/store/order/preview`
+- Bonus (allowlisted, UI вне M3-B): `GET /api/store/bonus-list`, `GET /api/bonus/balance|history`
 
 Path traversal блокируется. Mutating — origin check.
 
@@ -89,10 +111,11 @@ Mutating-запросы: `Origin` обязан совпадать с `NEXT_PUBLI
 
 | Изменение | Причина |
 | --- | --- |
-| CORS для `pro.remcard.ru` **или** только BFF | Браузер не вызывает remcard.ru напрямую |
+| CORS для `pro.remcard.ru` **или** only BFF | Браузер не вызывает remcard.ru напрямую |
 | OAuth callback URI для кабинета | Провайдеры, вероятно, настроены на remcard.ru |
 | CSRF/origin allowlist для BFF-origin | POST order, invite и др. |
 | Cookie names для OAuth flow | Возможны temp cookies помимо `remcard-token` |
+| **Idempotency-Key на POST /api/store/order** | Безопасный повтор при потере ответа — **блокер production** |
 
 **Выбранный способ M1:** BFF в partner-platform. Backend-изменения — после согласования.
 

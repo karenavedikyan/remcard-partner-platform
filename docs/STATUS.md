@@ -1,45 +1,37 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M3-A-fix-2: строгая валидация скидки без скрытого обрезания).
+Обновлено: 6 октября 2026 года (M3-B fix-2: QR onCode, malformed 201 order response).
 
 ## SHA источников
 
 | Источник | SHA / версия | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A + fixes |
+| `remcard-partner-platform` | ветка `cursor/m3b-scanner-b3e3` (Draft PR #4, base M3-A) | M3-B + fixes |
 | `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only, без изменений |
 
-## M3-A-fix-2: уточнённое правило процентов
+## M3-B fix-2 (PR #4)
 
-- Общий % только из согласованных условий партнёрства (`poolPercent` в `available-partners`).
-- PROF распределяет согласованный % между скидкой клиенту и вознаграждением; **без скрытого clamp** — превышение → ошибка, POST не уходит.
-- UI: «Согласованный процент» (read-only), «Скидка клиенту» (edit), «Ваше вознаграждение» (auto).
-- При превышении: сообщение + ссылка «Изменить условия партнёрства» → `/partners?terms=<partnershipId>`.
-- Self-scan: 0–100%, issuer=0, без обрезания.
+### Исправления
 
-## Проверки
+1. **QR → preview** — `onCode` вызывается до `stopCamera()`; dedup/stale generation в `processQrDecode`.
+2. **Повреждённый 201 order** — `validateOrderCreateResponse` перед success UI; пустой/битый JSON/неверная структура → `orderUncertain`, повтор заблокирован.
+3. **UI uncertain** — «Покупка могла сохраниться. Не подтверждайте её повторно до проверки.» (без технических деталей idempotency в интерфейсе).
+
+### Проверки
 
 | Проверка | Результат |
 | --- | --- |
-| `npm run test:proxy` | **68/68** |
+| `npm run test:proxy` | **99/99** |
 | lint + build | ok |
-| Unit: 5/10, 15/0, 20→error@15, negative, empty | ok |
-| curl: pending term 20% → pool still 15%; after approve → 20%; create 7/13 | ok |
-| Браузер: 21%@20 pool → error, value kept, link; 7% → 13% reward, create ok | ok |
+| Unit: QR emit once, dedup, after close | ok |
+| Unit: order 201 broken/empty/valid, 400 editable | ok |
+| Браузер desktop/mobile | см. artifacts m3b_fix2_* |
+| Физическая камера | **не проверена** (QR логика покрыта unit-тестами) |
 
-## Фактические проценты (после term-change → 20%)
+### Блокеры production
 
-| Сценарий | Клиенту | PROF |
-| --- | --- | --- |
-| M1 Тестовая сеть, pool 20%, ввод 7% | 7% | 13% |
-| Self-scan, ввод 7% | 7% | 0% |
-
-## Ограничения
-
-- Клиентские URL/QR — test-only (`127.0.0.1:3001`).
-- Fixture JWT, не OAuth.
-- Navigator без изменений.
+- **Нет idempotency key** на `POST /api/store/order` — UI блокирует повтор попытки, но не заменяет server-side guarantee (см. REUSE-MAP.md).
 
 ## Не в scope
 
-- Сканер, покупки, начисления (M3-B).
+- M3-C, история, выплаты, production deploy
