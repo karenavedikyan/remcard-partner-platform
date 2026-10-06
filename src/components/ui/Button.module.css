@@ -1,0 +1,32 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 46px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.primary:hover {
+  background: var(--primary-hover);
+}
+
+.secondary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.secondary:hover {
+  background: var(--offset);
+}
