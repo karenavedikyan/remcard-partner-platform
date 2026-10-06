@@ -1,13 +1,13 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M2-fix: партнёрства и условия).
+Обновлено: 6 октября 2026 года (M2-fix завершён).
 
 ## SHA источников
 
 | Источник | SHA / версия | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` | ветка `cursor/m2-prof-partners-b3e3` (PR #2, base M1) | M2-fix в работе |
-| `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only |
+| `remcard-partner-platform` | `460cb5a` на ветке `cursor/m2-prof-partners-b3e3` (Draft PR #2, base M1) | M2-fix |
+| `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only, без изменений |
 | Прототип | https://pro.remcard.ru/ | Design tokens |
 
 ## M2-fix: исправлено
@@ -30,5 +30,12 @@
 | Проверка | Результат |
 | --- | --- |
 | `npm run test:proxy` | 35/35 |
-| Fixture integration (curl) | accept_pending, term-change POST |
-| UI screenshots | см. артефакты m2fix-* |
+| `npm run lint` | ok |
+| `env -u NODE_ENV npm run build` | ok (нестандартный NODE_ENV в VM ломает prerender) |
+| Fixture integration (curl) | search, accept_pending (staff blocked / store ok), term-change |
+| UI screenshots | `m2fix-invite-dialog`, `m2fix-pending-store-side`, `m2fix-partners-search-dropdown`, `m2fix-term-change-dialog`, `m2fix-partners-mobile` |
+
+## Ограничения визуальной приёмки
+
+- Скриншот PENDING со стороны staff (автор предложения) не получен в автоматическом браузере из‑за нестабильной установки cookie; поведение подтверждено unit-тестами и curl (`accept_pending` → 400 для автора).
+- Сценарий «отказ постороннему» в UI не снимался; API возвращает 403/401 для чужих сессий.
