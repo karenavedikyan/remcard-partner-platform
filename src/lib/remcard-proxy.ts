@@ -1,17 +1,18 @@
 import { appConfig, isBackendConfigured, requireBackendBaseUrl } from "./config";
+import {
+  applyUpstreamAuthHeaders,
+  assertBackendUrlWithoutCredentials,
+} from "./remcard-upstream-auth";
 
 export const UPSTREAM_TIMEOUT_MS = 15_000;
 
-const ALLOWED_COOKIE_NAMES = new Set(["remcard-token"]);
+const SESSION_COOKIE = "remcard-token";
+const ALLOWED_COOKIE_NAMES = new Set([SESSION_COOKIE]);
 
 const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: RegExp }> =
   [
     { methods: new Set(["GET"]), pattern: /^\/api\/auth\/me$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/logout$/ },
-    {
-      methods: new Set(["GET", "POST"]),
-      pattern: /^\/api\/auth\/[\w-]+$/,
-    },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/profile$/ },
     {
       methods: new Set(["GET"]),
@@ -52,7 +53,7 @@ export type ProxyResponseResult =
   | {
       ok: true;
       status: number;
-      body: ArrayBuffer;
+      body: ArrayBuffer | null;
       contentType: string | null;
       setCookies: string[];
       location: string | null;
@@ -104,9 +105,52 @@ export function filterAllowedCookies(cookieHeader: string | null): string | null
 
 export function isAllowedMutatingOrigin(origin: string | null): boolean {
   if (!origin) {
-    return true;
+    return false;
   }
   return origin === appConfig.appUrl;
+}
+
+export function responseMustNotIncludeBody(status: number, method: string): boolean {
+  const upperMethod = method.toUpperCase();
+  return (
+    upperMethod === "HEAD" || status === 204 || status === 205 || status === 304
+  );
+}
+
+export function validateProxyLocation(
+  location: string | null,
+  backendBaseUrl: string,
+): string | null {
+  if (!location) {
+    return null;
+  }
+
+  const trimmed = location.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+    return trimmed;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+
+  const backendOrigin = new URL(assertBackendUrlWithoutCredentials(backendBaseUrl)).origin;
+  if (parsed.origin === backendOrigin) {
+    return trimmed;
+  }
+
+  return null;
 }
 
 export async function proxyRemcardRequest(
@@ -135,7 +179,20 @@ export async function proxyRemcardRequest(
     return { ok: false, status: 403, body: JSON.stringify({ error: "Origin not allowed" }) };
   }
 
-  const targetUrl = new URL(pathname, requireBackendBaseUrl());
+  let backendBaseUrl: string;
+  try {
+    backendBaseUrl = assertBackendUrlWithoutCredentials(requireBackendBaseUrl());
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
+      body: JSON.stringify({
+        error: error instanceof Error ? error.message : "Invalid backend URL",
+      }),
+    };
+  }
+
+  const targetUrl = new URL(pathname, backendBaseUrl);
   targetUrl.search = input.search;
 
   const headers = new Headers();
@@ -146,6 +203,11 @@ export async function proxyRemcardRequest(
   const cookie = filterAllowedCookies(input.cookieHeader);
   if (cookie) {
     headers.set("cookie", cookie);
+  }
+
+  const auth = applyUpstreamAuthHeaders(headers);
+  if (!auth.ok) {
+    return { ok: false, status: 503, body: JSON.stringify({ error: auth.message }) };
   }
 
   const init: RequestInit = {
@@ -171,10 +233,9 @@ export async function proxyRemcardRequest(
     return { ok: false, status: 504, body: JSON.stringify({ error: message }) };
   }
 
-  const body =
-    upperMethod === "HEAD" || upstream.status === 204 || upstream.status === 304
-      ? new ArrayBuffer(0)
-      : await upstream.arrayBuffer();
+  const body = responseMustNotIncludeBody(upstream.status, upperMethod)
+    ? null
+    : await upstream.arrayBuffer();
 
   const setCookies =
     typeof upstream.headers.getSetCookie === "function"
@@ -183,13 +244,15 @@ export async function proxyRemcardRequest(
         ? [upstream.headers.get("set-cookie")!]
         : [];
 
+  const location = validateProxyLocation(upstream.headers.get("location"), backendBaseUrl);
+
   return {
     ok: true,
     status: upstream.status,
     body,
     contentType: upstream.headers.get("content-type"),
     setCookies,
-    location: upstream.headers.get("location"),
+    location,
   };
 }
 

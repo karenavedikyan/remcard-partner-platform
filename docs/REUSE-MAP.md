@@ -4,7 +4,7 @@
 
 **Источники:** задание M1, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
 
-**Ограничение:** `karenavedikyan/remcard-navigator` недоступен агенту (`git clone` → `Repository not found`). Строки «код не проверен» требуют верификации по SHA `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` или актуальному `main`.
+**Navigator:** read-only доступ через Cloud Agent Select Multiple; контрольная точка `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7`. Auth/session сверены по `src/lib/proAuth.ts`, `/api/auth/me`, `/api/auth/logout`.
 
 **Подключение:** кабинет → BFF `/api/remcard/*` → `REMCARD_API_BASE_URL` (только явно настроенный тестовый origin; production-default удалён). Cookie `remcard-token` не шарится между origin; прокси пересылает только allowlisted cookie.
 
@@ -62,7 +62,7 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 
 Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`). Широкие префиксы `/api/pro/`, `/api/store/` заменены точечным списком. Path traversal (`..`, encoded `/`) блокируется.
 
-Mutating-запросы: origin должен совпадать с `NEXT_PUBLIC_APP_URL`. Cookie upstream: только `remcard-token` (OAuth temp cookies — уточнить после navigator).
+Mutating-запросы: `Origin` обязан совпадать с `NEXT_PUBLIC_APP_URL` (null/чужой origin → 403). Cookie upstream: только `remcard-token`. Navigator OAuth cookies: `oauth_vk_state`, `oauth_yandex_state`, `oauth_pending_consents` — **не проксируются** (блокер полного OAuth через BFF).
 
 ---
 

@@ -1,0 +1,81 @@
+-- M1 synthetic fixtures for a local test database only.
+-- Abort unless host is loopback and database name is exactly remcard_prof_test.
+
+\set ON_ERROR_STOP on
+
+DO $$
+DECLARE
+  db_name text := current_database();
+  server_addr inet := inet_server_addr();
+BEGIN
+  IF db_name <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing seed: database must be remcard_prof_test, got %', db_name;
+  END IF;
+
+  IF server_addr IS NOT NULL AND server_addr <> '127.0.0.1'::inet THEN
+    RAISE EXCEPTION 'Refusing seed: PostgreSQL must listen on loopback, got %', server_addr;
+  END IF;
+END $$;
+
+INSERT INTO "User" (
+  id, "publicId", "displayName", role, "tokenVersion", "createdAt", "updatedAt"
+) VALUES
+  ('m1fix-client-000000000001', 'RC-2222-3333', 'M1 Клиент', 'CLIENT', 0, NOW(), NOW()),
+  ('m1fix-prof-0000000000001', 'RC-4444-5555', 'M1 Мастер PROF', 'PRO', 0, NOW(), NOW()),
+  ('m1fix-store-000000000001', 'RC-6666-7777', 'M1 Магазин', 'PRO', 0, NOW(), NOW()),
+  ('m1fix-staff-000000000001', 'RC-8888-9999', 'M1 Сотрудник', 'PRO', 0, NOW(), NOW())
+ON CONFLICT (id) DO UPDATE SET
+  "displayName" = EXCLUDED."displayName",
+  "tokenVersion" = 0,
+  "updatedAt" = NOW();
+
+UPDATE "User" SET
+  specializations = ARRAY['doors','plumbing']::text[],
+  "storeCategories" = ARRAY['doors','plumbing']::text[],
+  "catalogStatus" = 'APPROVED',
+  "isPublic" = true,
+  "partnerActivities" = ARRAY['SERVICE']::text[]
+WHERE id = 'm1fix-prof-0000000000001';
+
+UPDATE "User" SET
+  "storeCategories" = ARRAY['doors','plumbing','tiles']::text[],
+  "catalogStatus" = 'APPROVED',
+  "isPublic" = true,
+  "partnerType" = 'STORE',
+  "partnerActivities" = ARRAY['STORE']::text[]
+WHERE id = 'm1fix-store-000000000001';
+
+UPDATE "User" SET
+  "staffRole" = 'OPERATOR',
+  "staffPosition" = 'Оператор тестовой среды'
+WHERE id = 'm1fix-staff-000000000001';
+
+INSERT INTO "Organization" (
+  id, name, "ownerId", "partnerType", "catalogStatus", "storeCategories", "createdAt", "updatedAt"
+) VALUES (
+  'm1fix-org-00000000000001', 'M1 Тестовая сеть', 'm1fix-store-000000000001', 'STORE', 'APPROVED',
+  ARRAY['doors','plumbing','tiles']::text[], NOW(), NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  "ownerId" = EXCLUDED."ownerId",
+  "updatedAt" = NOW();
+
+INSERT INTO "Partnership" (
+  id, "storeUserId", "proUserId", status, "initiatedBy", "createdAt", "updatedAt"
+) VALUES (
+  'm1fix-partnership-000001', 'm1fix-store-000000000001', 'm1fix-prof-0000000000001', 'ACTIVE',
+  'm1fix-store-000000000001', NOW(), NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  status = 'ACTIVE',
+  "updatedAt" = NOW();
+
+INSERT INTO "PartnershipTerm" (
+  id, "partnershipId", category, "categoryLabel", "storePercent", "createdAt", "updatedAt"
+) VALUES (
+  'm1fix-term-doors-0000001', 'm1fix-partnership-000001', 'doors', 'Двери', 10, NOW(), NOW()
+)
+ON CONFLICT ("partnershipId", category) DO UPDATE SET
+  "storePercent" = 10,
+  "updatedAt" = NOW();

@@ -1,5 +1,9 @@
 import { appConfig, assertServerOnly, isBackendConfigured } from "@/lib/config";
 import type { AuthMeResponse } from "@/lib/api-client";
+import {
+  applyUpstreamAuthHeaders,
+  assertBackendUrlWithoutCredentials,
+} from "@/lib/remcard-upstream-auth";
 
 export async function fetchRemcardUpstream<T>(
   path: string,
@@ -19,9 +23,33 @@ export async function fetchRemcardUpstream<T>(
     };
   }
 
+  let backendBaseUrl: string;
+  try {
+    backendBaseUrl = assertBackendUrlWithoutCredentials(appConfig.remcardApiBaseUrl);
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
+      message: error instanceof Error ? error.message : "Invalid backend URL",
+      configured: true,
+    };
+  }
+
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const response = await fetch(`${appConfig.remcardApiBaseUrl}${normalizedPath}`, {
+  const headers = new Headers(init?.headers);
+  const auth = applyUpstreamAuthHeaders(headers);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: 503,
+      message: auth.message,
+      configured: true,
+    };
+  }
+
+  const response = await fetch(`${backendBaseUrl}${normalizedPath}`, {
     ...init,
+    headers,
     cache: "no-store",
   });
 
