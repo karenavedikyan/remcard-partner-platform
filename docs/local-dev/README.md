@@ -43,7 +43,7 @@ cd /path/to/remcard-navigator
 pnpm install --frozen-lockfile
 ```
 
-Если frozen lockfile недоступен в вашей среде, используйте `pnpm install` и **не коммитьте** изменения `pnpm-lock.yaml` в navigator.
+Требуется **pnpm 12.8.1** (см. `packageManager` в navigator). Если `--frozen-lockfile` не проходит из‑за несовместимой версии инструмента, **остановитесь** и установите указанную версию через Corepack; не регенерируйте `pnpm-lock.yaml` и не меняйте версии зависимостей navigator.
 
 5. Поднимите dev-сервер **только если схема уже применена** (см. (c)):
 

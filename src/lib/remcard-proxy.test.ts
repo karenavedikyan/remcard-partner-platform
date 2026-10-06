@@ -198,6 +198,39 @@ describe("remcard proxy transport checks", () => {
     assert.equal(validateProxyLocation("javascript:alert(1)", stubBaseUrl), null);
   });
 
+  it("rejects dot-segment Location normalization to protocol-relative paths", () => {
+    const backend = "https://backend.example";
+    const cabinetOrigin = "https://cabinet.example";
+    const previousAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = cabinetOrigin;
+
+    try {
+      for (const input of ["/a/..//evil.example/path", "/%2e//evil.example/path"]) {
+        const result = validateProxyLocation(input, backend);
+        assert.equal(result, null, `expected null for ${input}`);
+        assert.equal(new URL(input, backend).pathname, "//evil.example/path");
+      }
+
+      assert.equal(
+        validateProxyLocation("/api/partners/../auth/me", backend),
+        "/api/auth/me",
+      );
+      assert.equal(
+        new URL("/api/partners/../auth/me", cabinetOrigin).href,
+        "https://cabinet.example/api/auth/me",
+      );
+
+      const trustedRelative = validateProxyLocation("/dashboard?tab=1", backend);
+      assert.equal(trustedRelative, "/dashboard?tab=1");
+      assert.equal(
+        new URL(trustedRelative!, cabinetOrigin).origin,
+        cabinetOrigin,
+      );
+    } finally {
+      process.env.NEXT_PUBLIC_APP_URL = previousAppUrl;
+    }
+  });
+
   it("filters upstream Set-Cookie names on responses", () => {
     const filtered = filterAllowedSetCookies([
       "remcard-token=abc; Path=/; HttpOnly",

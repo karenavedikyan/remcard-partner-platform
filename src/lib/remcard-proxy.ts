@@ -226,11 +226,33 @@ export function validateProxyLocation(
     return null;
   }
 
-  if (trimmed.startsWith("/")) {
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  if (!parsed.pathname.startsWith("/") || parsed.pathname.startsWith("//")) {
+    return null;
   }
 
-  return `${parsed.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+  const serialized = trimmed.startsWith("/")
+    ? normalizedTarget
+    : `${parsed.origin}${normalizedTarget}`;
+
+  if (serialized.startsWith("//")) {
+    return null;
+  }
+
+  for (const trustedOrigin of Array.from(trustedOrigins)) {
+    try {
+      const resolved = serialized.startsWith("/")
+        ? new URL(serialized, trustedOrigin)
+        : new URL(serialized);
+
+      if (!trustedOrigins.has(resolved.origin)) {
+        return null;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return serialized;
 }
 
 export async function proxyRemcardRequest(
