@@ -185,6 +185,10 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order/preview"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/order"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/store/bonus-list"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/orders"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/balance"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/transactions"), true);
   });
 
   it("forwards only allowlisted cookies", () => {

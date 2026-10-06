@@ -11,6 +11,7 @@ const NAV = [
   { href: "/partners", label: "Партнёры", icon: "🤝", badgeKey: "partners" as const },
   { href: "/recommendations", label: "Рекомендации", icon: "📄" },
   { href: "/scanner", label: "Сканер", icon: "▣" },
+  { href: "/history", label: "История", icon: "☰" },
   { href: "/profile", label: "Профиль", icon: "◎" },
 ] as const;
 
