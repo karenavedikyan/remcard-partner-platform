@@ -7,6 +7,8 @@ import type {
 
 export const GENERAL_PARTNERSHIP_CATEGORY = "general";
 export const DEFAULT_GENERAL_PERCENT = 10;
+export const INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE =
+  "Не удалось определить условия партнёра. Приглашение пока недоступно";
 
 export type PartnerSideProfile = {
   id: string;
@@ -19,6 +21,8 @@ export type PartnerSideProfile = {
    * undefined — тип организации неизвестен (API поиска не возвращает partnerType организации).
    */
   isStoreOwner?: boolean;
+  /** Название организации из поиска; наличие без типа означает неизвестный store-side. */
+  organizationName?: string | null;
 };
 
 export type InviteTermRow = {
@@ -82,6 +86,23 @@ function isStoreSide(user: PartnerSideProfile): boolean {
   return user.partnerType === "STORE" || user.isStoreOwner === true;
 }
 
+/**
+ * Неизвестно, задаёт ли цель условия как магазин: есть организация, но partnerType организации
+ * не подтверждён, а user.partnerType не STORE.
+ */
+export function inviteTargetStoreOwnershipUnknown(target: PartnerSideProfile): boolean {
+  if (target.partnerType === "STORE" || target.isStoreOwner === true) {
+    return false;
+  }
+  if (target.isStoreOwner === false) {
+    return false;
+  }
+  if (target.partnerType !== "MASTER" && target.partnerType !== "COMPANY") {
+    return false;
+  }
+  return Boolean(target.organizationName?.trim());
+}
+
 /** Зеркало tradeSideCategories из POST /api/partnership/invite (navigator). */
 export function resolveInviteTradeSideCategories(
   inviter: PartnerSideProfile,
@@ -96,6 +117,13 @@ export function resolveInviteTradeSideCategories(
       return { categories: tradeSideTermCategories(target), mode: "pro" };
     }
     if (target.partnerType === "MASTER" || target.partnerType === "COMPANY") {
+      if (inviteTargetStoreOwnershipUnknown(target)) {
+        return {
+          categories: [],
+          mode: "pro",
+          blockedReason: INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE,
+        };
+      }
       return { categories: tradeSideTermCategories(inviter), mode: "pro" };
     }
     return { categories: [], mode: "pro", blockedReason: "Партнёр недоступен для приглашения" };
@@ -187,6 +215,7 @@ export function searchResultToPartnerSide(target: PartnerSearchResult): PartnerS
     storeCategories: target.storeCategories ?? [],
     specializations: target.specializations ?? [],
     isStoreOwner,
+    organizationName: target.organizationName ?? null,
   };
 }
 

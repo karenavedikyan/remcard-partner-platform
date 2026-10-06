@@ -8,6 +8,8 @@ import {
   getPartnershipUiActions,
   inviteRowsToTerms,
   partnershipNeedsMyResponse,
+  INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE,
+  inviteTargetStoreOwnershipUnknown,
   resolveInviteTradeSideCategories,
   searchResultToPartnerSide,
   validateInviteRows,
@@ -174,7 +176,7 @@ describe("partnership invite rules", () => {
     assert.deepEqual(result.categories, ["doors", "plumbing"]);
   });
 
-  it("does not treat organizationName alone as STORE without confirmed org type", () => {
+  it("blocks invite when organization type is unknown and may change trade side", () => {
     const side = searchResultToPartnerSide({
       id: "company-2",
       displayName: "Компания",
@@ -192,11 +194,56 @@ describe("partnership invite rules", () => {
       partnershipStatus: null,
     } satisfies PartnerSearchResult);
     assert.equal(side.isStoreOwner, undefined);
+    assert.equal(inviteTargetStoreOwnershipUnknown(side), true);
     const result = resolveInviteTradeSideCategories(
       { ...masterInviter, specializations: ["renovation"] },
       side,
     );
-    assert.deepEqual(result.categories, ["renovation"]);
+    assert.equal(result.blockedReason, INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE);
+    assert.deepEqual(result.categories, []);
+  });
+
+  it("allows store inviter even when target organization type is unknown", () => {
+    const unknownOrgTarget = searchResultToPartnerSide({
+      id: "company-3",
+      displayName: "Компания",
+      city: null,
+      photoUrl: null,
+      description: null,
+      specializations: [],
+      badges: [],
+      storeCategories: ["doors"],
+      partnerType: "COMPANY",
+      organizationName: "ООО Компания",
+      branches: [],
+      rating: null,
+      ratingCount: 0,
+      partnershipStatus: null,
+    } satisfies PartnerSearchResult);
+    const result = resolveInviteTradeSideCategories(storeInviter, unknownOrgTarget);
+    assert.equal(result.blockedReason, undefined);
+    assert.deepEqual(result.categories, ["doors", "plumbing", "tiles"]);
+  });
+
+  it("allows peer invite when target has no organization name", () => {
+    const solo = searchResultToPartnerSide({
+      id: "solo-2",
+      displayName: "Мастер",
+      city: null,
+      photoUrl: null,
+      description: null,
+      specializations: ["plumbing"],
+      badges: [],
+      storeCategories: [],
+      partnerType: "MASTER",
+      branches: [],
+      rating: null,
+      ratingCount: 0,
+      partnershipStatus: null,
+    } satisfies PartnerSearchResult);
+    assert.equal(inviteTargetStoreOwnershipUnknown(solo), false);
+    const result = resolveInviteTradeSideCategories(masterInviter, solo);
+    assert.equal(result.blockedReason, undefined);
   });
 });
 

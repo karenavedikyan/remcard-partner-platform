@@ -103,6 +103,10 @@ export function PartnerInviteDialog({
       return;
     }
     dispatch({ type: "set_error", error: "" });
+    if (resolved.blockedReason) {
+      dispatch({ type: "set_error", error: resolved.blockedReason });
+      return;
+    }
     const activeRows = activeInviteRows(form);
     const validationError = validateInviteRows(activeRows);
     if (validationError) {
