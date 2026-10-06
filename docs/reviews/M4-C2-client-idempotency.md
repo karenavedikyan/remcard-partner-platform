@@ -1,6 +1,6 @@
 # M4-C.2: client idempotency for store order (partner scanner + BFF)
 
-**SHA:** `c3b5369` · **PR:** [#7](https://github.com/karenavedikyan/remcard-partner-platform/pull/7) · **base:** `cursor/m4a-launch-audit-b3e3` (`13e02fa`)
+**SHA:** `f9ca38a` · **PR:** [#7](https://github.com/karenavedikyan/remcard-partner-platform/pull/7) · **base:** `cursor/m4a-launch-audit-b3e3` (`13e02fa`)
 
 ## Dependencies
 
