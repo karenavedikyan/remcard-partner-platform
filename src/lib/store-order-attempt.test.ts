@@ -136,6 +136,17 @@ describe("store-order-attempt", () => {
     assert.equal(loadStoreOrderAttempt("user-1"), null);
   });
 
+  it("status 0 is uncertain on first POST and unknown_persist on retry", () => {
+    assert.equal(
+      classifyStoreOrderPostResponse({ status: 0, payload: null, wasRetry: false }).kind,
+      "uncertain",
+    );
+    assert.equal(
+      classifyStoreOrderPostResponse({ status: 0, payload: null, wasRetry: true }).kind,
+      "unknown_persist",
+    );
+  });
+
   it("classifyStoreOrderPostResponse distinguishes first 400 vs retry 400", () => {
     assert.equal(
       classifyStoreOrderPostResponse({

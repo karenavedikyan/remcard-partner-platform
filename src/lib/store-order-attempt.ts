@@ -362,6 +362,10 @@ export function classifyStoreOrderPostResponse(params: {
     return { kind: "auth_required", message };
   }
 
+  if (params.status === 0) {
+    return params.wasRetry ? { kind: "unknown_persist", message } : { kind: "uncertain" };
+  }
+
   if (params.wasRetry) {
     return { kind: "unknown_persist", message };
   }

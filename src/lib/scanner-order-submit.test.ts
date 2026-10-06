@@ -174,6 +174,18 @@ describe("reduceOrderSubmitState", () => {
     assert.equal(canSubmitOrder(uncertain), false);
   });
 
+  it("status 0 on first POST marks uncertain without clearing key semantics", () => {
+    const started = reduceOrderSubmitState(initialState, { type: "submit_start" });
+    const after = reduceOrderSubmitState(started, {
+      type: "submit_error",
+      error: new RemcardApiError(0, "Сетевая ошибка"),
+      wasRetry: false,
+    });
+    assert.equal(after.orderUncertain, true);
+    assert.equal(after.orderConflict, false);
+    assert.equal(canSubmitOrder(after), false);
+  });
+
   it("401 on retry preserves uncertain state", () => {
     const uncertain = { ...initialState, orderUncertain: true };
     const retry = reduceOrderSubmitState(uncertain, { type: "retry_check_start" });
