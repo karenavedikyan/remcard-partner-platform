@@ -1,5 +1,7 @@
 # M4-C.2: client idempotency for store order (partner scanner + BFF)
 
+**SHA:** `3f9abd8` · **PR base:** `cursor/m4a-launch-audit-b3e3` (`13e02fa`)
+
 ## Dependencies
 
 | Repo | Branch / PR | Role |
