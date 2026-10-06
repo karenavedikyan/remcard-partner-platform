@@ -1,55 +1,45 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M3-A-fix: расчёт процентов, ошибки формы, партнёр programReady).
+Обновлено: 6 октября 2026 года (M3-A-fix-2: строгая валидация скидки без скрытого обрезания).
 
 ## SHA источников
 
 | Источник | SHA / версия | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A + fix |
+| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A + fixes |
 | `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only, без изменений |
-| Прототип | https://pro.remcard.ru/ | Design tokens |
 
-## M3-A-fix: исправления
+## M3-A-fix-2: уточнённое правило процентов
 
-- [x] Расчёт `issuerPercent = poolPercent - discountPercent` как в `CertificateWizard.updateCategoryPercent` (не self-scan).
-- [x] Self-scan: только скидка клиенту, `issuerPercent=0`.
-- [x] UI показывает согласованный %, скидку клиенту и вознаграждение PROF до отправки.
-- [x] Валидация без unhandled rejection: field errors + form error, POST не уходит при ошибке.
-- [x] Seed `scripts/local/seed-m3a-partner-ready.sql.example`: филиал + 15% по «Двери» → `programReady: true` для `M1 Тестовая сеть`.
-- [x] Unit-тесты расчёта и payload (`certificate-percent.test.ts`).
+- Общий % только из согласованных условий партнёрства (`poolPercent` в `available-partners`).
+- PROF распределяет согласованный % между скидкой клиенту и вознаграждением; **без скрытого clamp** — превышение → ошибка, POST не уходит.
+- UI: «Согласованный процент» (read-only), «Скидка клиенту» (edit), «Ваше вознаграждение» (auto).
+- При превышении: сообщение + ссылка «Изменить условия партнёрства» → `/partners?terms=<partnershipId>`.
+- Self-scan: 0–100%, issuer=0, без обрезания.
 
-## M3-A: реализовано (база)
-
-- [x] Список, создание, карточка, ссылка, PDF (`/recommendations/*`).
-- [x] BFF allowlist для certificate routes.
-
-## Проверки M3-A-fix
+## Проверки
 
 | Проверка | Результат |
 | --- | --- |
-| `npm run test:proxy` | **63/63** |
+| `npm run test:proxy` | **68/68** |
 | lint + build | ok |
-| curl: partner 5%/10% create | 201, saved 5% + 10% |
-| curl: self-scan 7% | issuerPercent=0 |
-| curl: outsider detail | 404 |
-| public JSON RC-ZVKDI7 | discount 5%, без issuerPercent |
-| PDF RC-95DDYO | RC-95DDYO, срок, QR → `127.0.0.1:3001/certificate/RC-95DDYO/add` |
-| Браузер: 15% pool, 5/10 preview, validation, create, list, mobile | ok, без console errors |
+| Unit: 5/10, 15/0, 20→error@15, negative, empty | ok |
+| curl: pending term 20% → pool still 15%; after approve → 20%; create 7/13 | ok |
+| Браузер: 21%@20 pool → error, value kept, link; 7% → 13% reward, create ok | ok |
 
-## Фактические проценты (синтетика)
+## Фактические проценты (после term-change → 20%)
 
-| Сценарий | discountPercent | issuerPercent |
+| Сценарий | Клиенту | PROF |
 | --- | --- | --- |
-| M1 Тестовая сеть (15% pool, клиенту 5%) | 5 | 10 |
-| Self-scan M1 Мастер PROF (клиенту 7%) | 7 | 0 |
+| M1 Тестовая сеть, pool 20%, ввод 7% | 7% | 13% |
+| Self-scan, ввод 7% | 7% | 0% |
 
 ## Ограничения
 
-- Клиентская ссылка/QR в тесте: `127.0.0.1:3001` — test-only, не для реальных клиентов.
+- Клиентские URL/QR — test-only (`127.0.0.1:3001`).
 - Fixture JWT, не OAuth.
-- Navigator baseline на пустой PostgreSQL — блокер M1 (не снят).
+- Navigator без изменений.
 
 ## Не в scope
 
-- Сканер, покупки, начисления (M3-B и далее).
+- Сканер, покупки, начисления (M3-B).
