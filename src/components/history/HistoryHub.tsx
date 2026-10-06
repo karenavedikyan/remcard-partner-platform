@@ -14,6 +14,7 @@ import { formatMoneyRub } from "@/lib/history-format";
 import {
   ACCEPTED_BONUS_EMPTY_NOTE,
   ACCEPTED_BONUS_SOURCE_NOTE,
+  ACCEPTED_STORE_ACCESS_DENIED_NOTE,
   FILTERED_PURCHASES_EMPTY_NOTE,
   PURCHASE_PERIOD_FILTER_NOTE,
   accrualScopeLabel,
@@ -27,6 +28,7 @@ import {
 import { purchaseDetailHref, purchaseOrderNumberLabel } from "@/lib/history-links";
 import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
 import {
+  shouldShowAcceptedAccessDeniedNote,
   shouldShowAcceptedBonusEmptyNote,
   shouldShowAcceptedBonusLimitation,
   type HistorySourceAvailability,
@@ -131,10 +133,12 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const [acceptedNextCursor, setAcceptedNextCursor] = useState<string | null>(null);
   const [loadingMoreAccepted, setLoadingMoreAccepted] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState("");
+  const [acceptedAccessDenied, setAcceptedAccessDenied] = useState(false);
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
     setError("");
+    setAcceptedAccessDenied(false);
 
     try {
       const {
@@ -142,11 +146,13 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         accruals: accrualRows,
         sources: sourceFlags,
         acceptedPagination,
+        acceptedAccessDenied: storeAccessDenied,
       } = await fetchHistoryData(user);
 
       setAccruals(accrualRows);
       setPurchases(purchaseRows);
       setSources(sourceFlags);
+      setAcceptedAccessDenied(storeAccessDenied);
       setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
       setHasIssuedPurchases(purchaseRows.some((row) => row.direction === "issued"));
     } catch (caught) {
@@ -203,11 +209,17 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
     sources.acceptedOrders && sources.issuedOrders && hasIssuedPurchases;
   const acceptedRowCount = purchases.filter((row) => row.direction === "accepted").length;
   const showAcceptedLimitation = shouldShowAcceptedBonusLimitation(sources);
+  const showAcceptedAccessDeniedNote = shouldShowAcceptedAccessDeniedNote(
+    acceptedAccessDenied,
+    loading,
+    Boolean(error),
+  );
   const showAcceptedEmptyNote = shouldShowAcceptedBonusEmptyNote(
     sources,
     acceptedRowCount,
     loading,
     Boolean(error),
+    acceptedAccessDenied,
   );
 
   return (
@@ -297,6 +309,10 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
           <p>{error}</p>
           <Button onClick={() => void loadHistory()}>Повторить</Button>
         </div>
+      ) : null}
+
+      {!loading && !error && tab === "purchases" && showAcceptedAccessDeniedNote ? (
+        <p className={styles.note}>{ACCEPTED_STORE_ACCESS_DENIED_NOTE}</p>
       ) : null}
 
       {!loading && !error && tab === "purchases" && showAcceptedEmptyNote ? (

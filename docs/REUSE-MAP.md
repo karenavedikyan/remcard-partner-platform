@@ -78,7 +78,7 @@
 | История → Принято у меня | `GET /api/store/orders` | cursor/limit pagination | `orderId`, status, sums, items (detail), `linkedAccruals[{id,type:bonus}]`, executor | `certificatePartner.storeUserId` (+ staff: self executor + branch on `certificatePartner.branchId`) | AgentBonus не отдаётся store API; без `certificatePartnerId` — скрыто |
 | Детали покупки (store) | `GET /api/store/orders/{orderId}` | direct fetch | полные items + сохранённые проценты | merge access where + id | 404 без доступа |
 | Детали покупки (issued) | `GET /api/pro/orders/{orderId}` | direct fetch | items + bonus/agentBonus links | `certificateOrdersWhereForProContext` | — |
-| Preview staff | `POST /api/store/order/preview` | `buildAcceptableStoreUserIds` | — | branch staff + org owner partner row | parity с POST order |
+| Preview staff | `POST /api/store/order/preview` | `findAccessibleCertificatePartner` | — | branch staff + org owner partner row + `certificatePartner.branchId` | parity с POST order и history |
 | Legacy bonus-list | `GET /api/store/bonus-list` | +`orderId` field | backward compatible | STORE/COMPANY | семантика не изменена |
 
 **BFF allowlist (M4-D):** `GET /api/store/orders`, `GET /api/store/orders/{orderId}`, `GET /api/pro/orders/{orderId}`.

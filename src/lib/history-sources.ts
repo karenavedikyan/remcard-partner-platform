@@ -27,12 +27,22 @@ export function shouldShowAcceptedBonusEmptyNote(
   acceptedRowCount: number,
   loading: boolean,
   error: boolean,
+  acceptedAccessDenied: boolean,
 ): boolean {
   return (
     sources.acceptedOrders &&
     !sources.issuedOrders &&
     !loading &&
     !error &&
+    !acceptedAccessDenied &&
     acceptedRowCount === 0
   );
+}
+
+export function shouldShowAcceptedAccessDeniedNote(
+  acceptedAccessDenied: boolean,
+  loading: boolean,
+  error: boolean,
+): boolean {
+  return acceptedAccessDenied && !loading && !error;
 }

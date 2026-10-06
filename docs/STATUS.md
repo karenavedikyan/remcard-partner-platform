@@ -1,6 +1,6 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M4-D fix-pass).
+Обновлено: 6 октября 2026 года (M4-D final-fix).
 
 ## SHA / ветки / PR
 
@@ -12,12 +12,11 @@
 | M4-D partner | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft **#8** |
 | Цепочка PR #1–#8 | M1 → … → M4-D | open, не слиты |
 
-## M4-D (fix-pass, Draft)
+## M4-D (final-fix, Draft)
 
-- Изоляция store history по `certificatePartner`, не по roster staff
-- Staff `partnerType=null` — доступ через backend capabilities
-- Typed `linkedAccruals` + wallet `orderId`/`accrualType`; pagination fix
-- Browser E2E loopback: detail desktop/mobile PASS
+- Единые права филиалов preview/POST/history через `certificatePartner.branchId`
+- HistoryHub: `acceptedAccessDenied`, обновлённые empty-notes
+- Browser NEW purchase E2E + HTTP staff/owner/idempotency
 - Отчёт: `docs/reviews/M4-D-history-staff.md`
 
 ## M4-A: вердикт готовности к запуску
