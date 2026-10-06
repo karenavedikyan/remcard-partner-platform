@@ -75,7 +75,7 @@
 
 | Экран кабинета | Navigator reference | API | Поля | Права | Ограничения |
 | --- | --- | --- | --- | --- | --- |
-| История → Принято у меня | `GET /api/store/orders` | cursor/limit pagination | `orderId`, status, sums, items (detail), `linkedAccruals[{id,type:bonus}]`, executor | `resolveStoreOrderListAccess`: owner + org staff ids / staff self only | AgentBonus не отдаётся store API |
+| История → Принято у меня | `GET /api/store/orders` | cursor/limit pagination | `orderId`, status, sums, items (detail), `linkedAccruals[{id,type:bonus}]`, executor | `certificatePartner.storeUserId` (+ staff: self executor + branch on `certificatePartner.branchId`) | AgentBonus не отдаётся store API; без `certificatePartnerId` — скрыто |
 | Детали покупки (store) | `GET /api/store/orders/{orderId}` | direct fetch | полные items + сохранённые проценты | merge access where + id | 404 без доступа |
 | Детали покупки (issued) | `GET /api/pro/orders/{orderId}` | direct fetch | items + bonus/agentBonus links | `certificateOrdersWhereForProContext` | — |
 | Preview staff | `POST /api/store/order/preview` | `buildAcceptableStoreUserIds` | — | branch staff + org owner partner row | parity с POST order |
@@ -83,7 +83,7 @@
 
 **BFF allowlist (M4-D):** `GET /api/store/orders`, `GET /api/store/orders/{orderId}`, `GET /api/pro/orders/{orderId}`.
 
-**Partner UI:** `history-loader.ts` → accepted-order; `PurchaseDetail` direct API; «Показать ещё» по `nextCursor`.
+**Partner UI:** `history-loader.ts` → accepted-order (без gate по `partnerType`); `PurchaseDetail` direct API; «Показать ещё» по `nextCursor` даже при пустом клиентском фильтре; accrual↔purchase по `{id,type}` + `orderId` из wallet tx.
 
 ---
 

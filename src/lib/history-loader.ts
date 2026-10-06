@@ -6,7 +6,7 @@ import {
   mapStoreOrdersToPurchases,
   mapWalletTransactionsToAccruals,
 } from "@/lib/history-mappers";
-import { isStoreLikePartner, type HistorySourceAvailability } from "@/lib/history-sources";
+import type { HistorySourceAvailability } from "@/lib/history-sources";
 import type {
   AccrualRow,
   ProOrderDetailResponse,
@@ -52,24 +52,21 @@ export async function fetchAcceptedPurchasePage(
   };
 }
 
+/** Direct detail fetch — tries store accepted scope first, then issued pro scope. */
 export async function fetchPurchaseByOrderId(
   orderId: string,
-  user: AuthUser,
+  _user?: AuthUser,
 ): Promise<PurchaseRow | null> {
-  if (isStoreLikePartner(user)) {
-    try {
-      const data = await remcardFetch<StoreOrderDetailResponse>(
-        `/api/store/orders/${encodeURIComponent(orderId)}`,
-      );
-      return mapStoreOrderDetailToPurchase(data);
-    } catch (caught) {
-      if (caught instanceof RemcardApiError && caught.status === 404) {
-        // Fall through to issued detail for dual-role users.
-      } else if (caught instanceof RemcardApiError && caught.status === 403) {
-        // Fall through.
-      } else {
-        throw caught;
-      }
+  try {
+    const data = await remcardFetch<StoreOrderDetailResponse>(
+      `/api/store/orders/${encodeURIComponent(orderId)}`,
+    );
+    return mapStoreOrderDetailToPurchase(data);
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && (caught.status === 404 || caught.status === 403)) {
+      // Fall through to issued detail for dual-role users or issued-only access.
+    } else {
+      throw caught;
     }
   }
 
@@ -86,10 +83,11 @@ export async function fetchPurchaseByOrderId(
   }
 }
 
-export async function fetchPurchaseRows(user: AuthUser): Promise<{
+export async function fetchPurchaseRows(_user: AuthUser): Promise<{
   purchases: PurchaseRow[];
   sources: HistorySourceAvailability;
   acceptedPagination: StoreOrdersResponse["pagination"] | null;
+  acceptedAccessDenied: boolean;
 }> {
   const purchaseRows: PurchaseRow[] = [];
   const sources: HistorySourceAvailability = {
@@ -97,17 +95,18 @@ export async function fetchPurchaseRows(user: AuthUser): Promise<{
     issuedOrders: false,
   };
   let acceptedPagination: StoreOrdersResponse["pagination"] | null = null;
+  let acceptedAccessDenied = false;
 
-  if (isStoreLikePartner(user)) {
-    try {
-      const accepted = await fetchAcceptedPurchasePage(null);
-      sources.acceptedOrders = true;
-      acceptedPagination = accepted.pagination;
-      purchaseRows.push(...accepted.purchases);
-    } catch (caught) {
-      if (!(caught instanceof RemcardApiError && caught.status === 403)) {
-        throw caught;
-      }
+  try {
+    const accepted = await fetchAcceptedPurchasePage(null);
+    sources.acceptedOrders = true;
+    acceptedPagination = accepted.pagination;
+    purchaseRows.push(...accepted.purchases);
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 403) {
+      acceptedAccessDenied = true;
+    } else {
+      throw caught;
     }
   }
 
@@ -127,6 +126,7 @@ export async function fetchPurchaseRows(user: AuthUser): Promise<{
     ),
     sources,
     acceptedPagination,
+    acceptedAccessDenied,
   };
 }
 
@@ -143,10 +143,9 @@ export async function fetchHistoryData(user: AuthUser): Promise<{
   accruals: AccrualRow[];
   sources: HistorySourceAvailability;
   acceptedPagination: StoreOrdersResponse["pagination"] | null;
+  acceptedAccessDenied: boolean;
 }> {
-  const [{ purchases, sources, acceptedPagination }, accruals] = await Promise.all([
-    fetchPurchaseRows(user),
-    fetchAccrualRows(),
-  ]);
-  return { purchases, accruals, sources, acceptedPagination };
+  const [{ purchases, sources, acceptedPagination, acceptedAccessDenied }, accruals] =
+    await Promise.all([fetchPurchaseRows(user), fetchAccrualRows()]);
+  return { purchases, accruals, sources, acceptedPagination, acceptedAccessDenied };
 }

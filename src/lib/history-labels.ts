@@ -37,6 +37,9 @@ export const ACCEPTED_BONUS_SOURCE_NOTE =
 export const ACCEPTED_BONUS_EMPTY_NOTE =
   "Список пуст — подтверждённых покупок пока нет.";
 
+export const FILTERED_PURCHASES_EMPTY_NOTE =
+  "В загруженных покупках совпадений нет. Это не означает, что покупок нет во всей истории — попробуйте изменить фильтр или загрузить ещё.";
+
 export const BONUS_STATUS_LABELS: Record<string, string> = {
   CALCULATED: "Начислено",
   CONFIRMED: "Подтверждено",

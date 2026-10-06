@@ -10,7 +10,7 @@ import {
   bonusStatusTone,
 } from "@/lib/history-labels";
 import { findAccrualById, findPurchaseForAccrual, purchaseDetailHref } from "@/lib/history-links";
-import { fetchAccrualRows, fetchPurchaseRows } from "@/lib/history-loader";
+import { fetchAccrualRows, fetchPurchaseByOrderId, fetchPurchaseRows } from "@/lib/history-loader";
 import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -42,11 +42,7 @@ export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
     setLoading(true);
     setError("");
     try {
-      const [accruals, purchaseResult] = await Promise.all([
-        fetchAccrualRows(),
-        fetchPurchaseRows(user),
-      ]);
-      const purchases = purchaseResult.purchases;
+      const accruals = await fetchAccrualRows();
       const row = findAccrualById(accruals, accrualId);
       if (!row) {
         setAccrual(null);
@@ -54,7 +50,15 @@ export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
         return;
       }
       setAccrual(row);
-      setLinkedPurchase(findPurchaseForAccrual(row, purchases));
+
+      if (row.orderId) {
+        const byOrderId = await fetchPurchaseByOrderId(row.orderId, user);
+        setLinkedPurchase(byOrderId);
+        return;
+      }
+
+      const purchaseResult = await fetchPurchaseRows(user);
+      setLinkedPurchase(findPurchaseForAccrual(row, purchaseResult.purchases));
     } catch (caught) {
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить начисление",

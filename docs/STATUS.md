@@ -1,6 +1,6 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M4-D: history + staff).
+Обновлено: 6 октября 2026 года (M4-D fix-pass).
 
 ## SHA / ветки / PR
 
@@ -8,14 +8,16 @@
 | --- | --- | --- |
 | M4-C.2 navigator | `698687564f28412282ab512d477695624afd90c5` · `cursor/m4c2-client-idempotency-b3e3` | Draft **#674** |
 | M4-C.2 partner | `28cbd202389e0ce4a78e710abf50c2565525bb44` · `cursor/m4c2-client-idempotency-b3e3` | Draft **#7** |
-| M4-D (оба repo) | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft после push |
-| Цепочка PR #1–#7 | M1 → … → M4-C.2 | open, не слиты |
+| M4-D navigator | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft **#675** |
+| M4-D partner | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft **#8** |
+| Цепочка PR #1–#8 | M1 → … → M4-D | open, не слиты |
 
-## M4-D (в работе)
+## M4-D (fix-pass, Draft)
 
-- Order-based «Принято у меня» (`GET /api/store/orders` + detail)
-- Staff preview parity с POST order
-- Direct purchase detail by orderId; pagination «Показать ещё»
+- Изоляция store history по `certificatePartner`, не по roster staff
+- Staff `partnerType=null` — доступ через backend capabilities
+- Typed `linkedAccruals` + wallet `orderId`/`accrualType`; pagination fix
+- Browser E2E loopback: detail desktop/mobile PASS
 - Отчёт: `docs/reviews/M4-D-history-staff.md`
 
 ## M4-A: вердикт готовности к запуску

@@ -14,6 +14,7 @@ import { formatMoneyRub } from "@/lib/history-format";
 import {
   ACCEPTED_BONUS_EMPTY_NOTE,
   ACCEPTED_BONUS_SOURCE_NOTE,
+  FILTERED_PURCHASES_EMPTY_NOTE,
   PURCHASE_PERIOD_FILTER_NOTE,
   accrualScopeLabel,
   bonusStatusLabel,
@@ -129,6 +130,7 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   });
   const [acceptedNextCursor, setAcceptedNextCursor] = useState<string | null>(null);
   const [loadingMoreAccepted, setLoadingMoreAccepted] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState("");
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
@@ -161,7 +163,7 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       return;
     }
     setLoadingMoreAccepted(true);
-    setError("");
+    setLoadMoreError("");
     try {
       const accepted = await fetchAcceptedPurchasePage(acceptedNextCursor);
       setPurchases((prev) => {
@@ -180,8 +182,8 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       });
       setAcceptedNextCursor(accepted.pagination.hasMore ? accepted.pagination.nextCursor : null);
     } catch (caught) {
-      setError(
-        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить историю",
+      setLoadMoreError(
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить следующую страницу",
       );
     } finally {
       setLoadingMoreAccepted(false);
@@ -302,28 +304,38 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       ) : null}
 
       {!loading && !error && tab === "purchases" ? (
-        filteredPurchases.length ? (
-          <>
+        <>
+          {filteredPurchases.length ? (
             <div className={styles.list}>
               {filteredPurchases.map((row) => (
                 <PurchaseRowCard key={`${row.direction}-${row.id}`} row={row} />
               ))}
             </div>
-            {acceptedNextCursor ? (
-              <div style={{ marginTop: "var(--space-3)" }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => void loadMoreAccepted()}
-                  disabled={loadingMoreAccepted}
-                >
-                  {loadingMoreAccepted ? "Загрузка…" : "Показать ещё"}
-                </Button>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <div className={styles.empty}>Покупок не найдено</div>
-        )
+          ) : purchases.length > 0 ? (
+            <p className={styles.note}>{FILTERED_PURCHASES_EMPTY_NOTE}</p>
+          ) : (
+            <div className={styles.empty}>Покупок не найдено</div>
+          )}
+          {acceptedNextCursor ? (
+            <div style={{ marginTop: "var(--space-3)" }}>
+              {loadMoreError ? (
+                <div className={styles.error} role="alert" style={{ marginBottom: "var(--space-2)" }}>
+                  <p>{loadMoreError}</p>
+                  <Button variant="secondary" onClick={() => void loadMoreAccepted()}>
+                    Повторить загрузку
+                  </Button>
+                </div>
+              ) : null}
+              <Button
+                variant="secondary"
+                onClick={() => void loadMoreAccepted()}
+                disabled={loadingMoreAccepted}
+              >
+                {loadingMoreAccepted ? "Загрузка…" : "Показать ещё"}
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {!loading && !error && tab === "accruals" ? (

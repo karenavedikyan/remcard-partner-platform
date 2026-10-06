@@ -1,4 +1,4 @@
-import type { AccrualRow, PurchaseRow } from "./history-types";
+import type { AccrualRow, AccrualType, PurchaseRow } from "./history-types";
 
 export function findPurchaseById(rows: PurchaseRow[], id: string): PurchaseRow | null {
   return rows.find((row) => row.orderId === id || row.id === id) ?? null;
@@ -13,22 +13,45 @@ export function findAccrualById(rows: AccrualRow[], id: string): AccrualRow | nu
   return rows.find((row) => row.id === id) ?? null;
 }
 
-/** Link purchase ↔ accrual only when bonusId matches accrual.id. */
+export function findAccrualByRef(
+  accruals: AccrualRow[],
+  ref: { id: string; type: AccrualType },
+): AccrualRow | null {
+  return (
+    accruals.find((row) => row.id === ref.id && row.accrualType === ref.type && !row.isSelfScan) ??
+    null
+  );
+}
+
+/** Link purchase ↔ accrual only when id and type match confirmed schema links. */
 export function findAccrualsForPurchase(
   purchase: PurchaseRow,
   accruals: AccrualRow[],
 ): AccrualRow[] {
-  if (purchase.isSelfScan || !purchase.bonusId) {
+  if (purchase.isSelfScan || purchase.linkedAccruals.length === 0) {
     return [];
   }
-  return accruals.filter((row) => !row.isSelfScan && row.id === purchase.bonusId);
+  return purchase.linkedAccruals.flatMap((ref) => {
+    const row = findAccrualByRef(accruals, ref);
+    return row ? [row] : [];
+  });
 }
 
+/** Fallback when accrual list is already loaded — matches by id + type only. */
 export function findPurchaseForAccrual(
   accrual: AccrualRow,
   purchases: PurchaseRow[],
 ): PurchaseRow | null {
-  return purchases.find((row) => row.bonusId === accrual.id) ?? null;
+  if (accrual.isSelfScan) {
+    return null;
+  }
+  return (
+    purchases.find((row) =>
+      row.linkedAccruals.some(
+        (ref) => ref.id === accrual.id && ref.type === accrual.accrualType,
+      ),
+    ) ?? null
+  );
 }
 
 export function purchaseDetailHref(row: PurchaseRow): string {

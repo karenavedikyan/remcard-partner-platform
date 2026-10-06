@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  findAccrualByRef,
   findAccrualsForPurchase,
   findPurchaseById,
   findPurchaseByOrderId,
@@ -8,7 +9,7 @@ import {
 } from "./history-links.ts";
 import type { AccrualRow, PurchaseRow } from "./history-types.ts";
 
-const issuedA: PurchaseRow = {
+const basePurchase = (overrides: Partial<PurchaseRow>): PurchaseRow => ({
   id: "ord-a",
   orderId: "ord-a",
   bonusId: null,
@@ -27,65 +28,16 @@ const issuedA: PurchaseRow = {
   branchName: null,
   executorName: null,
   proBonus: 100,
+  linkedAccruals: [],
   linkedAccrualIds: [],
   items: [],
-};
+  ...overrides,
+});
 
-const issuedB: PurchaseRow = {
-  ...issuedA,
-  id: "ord-b",
-  orderId: "ord-b",
-  proBonus: 80,
-};
-
-const acceptedOrder: PurchaseRow = {
-  id: "ord-store",
-  orderId: "ord-store",
-  bonusId: "bonus-store",
-  source: "accepted-order",
-  createdAt: "2026-10-01T09:00:00.000Z",
-  promoCode: "RC-SAME",
-  partnerName: "PRO",
-  direction: "accepted",
-  totalAmount: 700,
-  discountAmount: 35,
-  payableAmount: 665,
-  orderStatus: "CONFIRMED",
-  bonusStatus: null,
-  isSelfScan: false,
-  clientName: "Client",
-  branchName: null,
-  executorName: "Seller",
-  proBonus: 70,
-  linkedAccrualIds: ["bonus-store"],
-  items: [],
-};
-
-const acceptedBonus: PurchaseRow = {
-  id: "bonus-1",
-  orderId: null,
-  bonusId: "bonus-1",
-  source: "accepted-bonus",
-  createdAt: "2026-10-01T11:00:00.000Z",
-  promoCode: "RC-SAME",
-  partnerName: "PRO",
-  direction: "accepted",
-  totalAmount: 600,
-  discountAmount: 30,
-  payableAmount: 570,
-  orderStatus: null,
-  bonusStatus: "CALCULATED",
-  isSelfScan: false,
-  clientName: "Client",
-  branchName: null,
-  executorName: null,
-  proBonus: 60,
-  linkedAccrualIds: ["bonus-1"],
-  items: [],
-};
-
-const accrualA: AccrualRow = {
+const baseAccrual = (overrides: Partial<AccrualRow>): AccrualRow => ({
   id: "bonus-a",
+  orderId: "ord-a",
+  accrualType: "bonus",
   createdAt: "2026-10-01T10:00:00.000Z",
   amount: 100,
   status: "CALCULATED",
@@ -96,49 +48,67 @@ const accrualA: AccrualRow = {
   walletRole: "MASTER",
   scope: "earned",
   items: [],
-};
+  ...overrides,
+});
 
-const accrualB: AccrualRow = {
-  ...accrualA,
-  id: "bonus-b",
-  amount: 80,
-};
-
-describe("history-links", () => {
+describe("history-links typed accrual refs", () => {
   it("does not match purchases by promoCode alone", () => {
-    const purchases = [issuedA, issuedB];
+    const purchases = [basePurchase({ id: "ord-a", orderId: "ord-a" })];
     assert.equal(findPurchaseByOrderId(purchases, "RC-SAME"), null);
     assert.equal(findPurchaseById(purchases, "RC-SAME"), null);
   });
 
-  it("finds purchase only by exact orderId for issued and accepted-order", () => {
-    const purchases = [issuedA, issuedB, acceptedOrder];
-    assert.equal(findPurchaseByOrderId(purchases, "ord-a")?.orderId, "ord-a");
-    assert.equal(findPurchaseByOrderId(purchases, "ord-store")?.source, "accepted-order");
-    assert.equal(findPurchaseByOrderId(purchases, "ord-unknown"), null);
+  it("links all typed accruals for a purchase", () => {
+    const purchase = basePurchase({
+      linkedAccruals: [
+        { id: "bonus-1", type: "bonus" },
+        { id: "agent-1", type: "agentBonus" },
+      ],
+      linkedAccrualIds: ["bonus-1", "agent-1"],
+      bonusId: "bonus-1",
+    });
+    const accruals = [
+      baseAccrual({ id: "bonus-1", accrualType: "bonus" }),
+      baseAccrual({ id: "agent-1", accrualType: "agentBonus", amount: 40 }),
+    ];
+    const linked = findAccrualsForPurchase(purchase, accruals);
+    assert.equal(linked.length, 2);
+    assert.deepEqual(
+      linked.map((row) => `${row.accrualType}:${row.id}`).sort(),
+      ["agentBonus:agent-1", "bonus:bonus-1"],
+    );
   });
 
-  it("does not mix two accruals with the same promoCode", () => {
-    const purchaseWithBonus: PurchaseRow = { ...issuedA, bonusId: "bonus-a" };
-    const accruals = [accrualA, accrualB];
-    const linked = findAccrualsForPurchase(purchaseWithBonus, accruals);
-    assert.equal(linked.length, 1);
-    assert.equal(linked[0]!.id, "bonus-a");
+  it("does not link accrual when only id matches but type differs", () => {
+    const purchase = basePurchase({
+      linkedAccruals: [{ id: "shared-id", type: "bonus" }],
+    });
+    const accruals = [baseAccrual({ id: "shared-id", accrualType: "agentBonus" })];
+    assert.equal(findAccrualsForPurchase(purchase, accruals).length, 0);
+    assert.equal(findAccrualByRef(accruals, { id: "shared-id", type: "bonus" }), null);
   });
 
-  it("links accrual to purchase only by bonusId", () => {
-    const purchases = [acceptedBonus, issuedA];
-    assert.equal(findPurchaseForAccrual({ ...accrualA, id: "bonus-1" }, purchases)?.bonusId, "bonus-1");
-    assert.equal(findPurchaseForAccrual(accrualA, purchases), null);
+  it("returns no links for self-scan purchase", () => {
+    const purchase = basePurchase({
+      isSelfScan: true,
+      linkedAccruals: [{ id: "bonus-x", type: "bonus" }],
+    });
+    assert.equal(findAccrualsForPurchase(purchase, [baseAccrual({ id: "bonus-x" })]).length, 0);
   });
 
-  it("returns no accrual links when purchase has no bonusId", () => {
-    assert.equal(findAccrualsForPurchase(issuedA, [accrualA, accrualB]).length, 0);
+  it("finds purchase for accrual by typed ref in loaded list", () => {
+    const purchase = basePurchase({
+      orderId: "ord-z",
+      linkedAccruals: [{ id: "bonus-z", type: "bonus" }],
+    });
+    const accrual = baseAccrual({ id: "bonus-z", orderId: "ord-z" });
+    assert.equal(findPurchaseForAccrual(accrual, [purchase])?.orderId, "ord-z");
   });
 
-  it("does not treat bonus status row as order match for unknown orderId", () => {
-    const purchases = [acceptedBonus, issuedA];
-    assert.equal(findPurchaseByOrderId(purchases, "bonus-1"), null);
-    assert.equal(findPurchaseById(purchases, "bonus-1")?.source, "accepted-bonus");
+  it("does not link two purchases with same promoCode only", () => {
+    const first = basePurchase({ id: "ord-1", orderId: "ord-1", promoCode: "RC-DUP" });
+    const second = basePurchase({ id: "ord-2", orderId: "ord-2", promoCode: "RC-DUP" });
+    const accrual = baseAccrual({ id: "bonus-1", orderId: "ord-2" });
+    assert.equal(findPurchaseForAccrual(accrual, [first, second]), null);
   });
 });

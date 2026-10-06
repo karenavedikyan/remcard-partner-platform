@@ -8,6 +8,13 @@ export type WalletRole = "AGENT" | "STORE" | "MASTER";
 /** earned: user's rewards; payable-to-pros: store owes pros; unknown: API role missing */
 export type AccrualScope = "earned" | "payable-to-pros" | "unknown";
 
+export type AccrualType = "bonus" | "agentBonus";
+
+export type LinkedAccrualRef = {
+  id: string;
+  type: AccrualType;
+};
+
 export type PurchaseRow = {
   id: string;
   source: PurchaseSource;
@@ -27,6 +34,9 @@ export type PurchaseRow = {
   branchName: string | null;
   executorName: string | null;
   proBonus: number | null;
+  /** Typed links confirmed by schema (bonus / agentBonus). */
+  linkedAccruals: LinkedAccrualRef[];
+  /** Legacy flat ids — kept for backward compatibility. */
   linkedAccrualIds: string[];
   items: PurchaseItemRow[];
 };
@@ -114,6 +124,8 @@ export type PurchaseItemRow = {
 
 export type AccrualRow = {
   id: string;
+  orderId: string | null;
+  accrualType: AccrualType;
   createdAt: string;
   amount: number;
   status: string;
@@ -193,6 +205,8 @@ export type ProOrdersResponse = {
 export type WalletTransactionsResponse = {
   transactions: Array<{
     id: string;
+    orderId?: string | null;
+    accrualType?: AccrualType;
     amount: number;
     status: string;
     createdAt: string;
