@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { getRemcardApiBaseUrl } from "@/lib/api-client";
 import { appConfig, isBackendConfigured } from "@/lib/config";
 import { getAuthMeServer } from "@/lib/remcard-server";
-import { Button } from "@/components/ui/Button";
+import { LoginCodeForm } from "@/components/auth/LoginCodeForm";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ async function loadHealthRows(): Promise<{
   rows: HealthRow[];
   authError?: string;
   backendConfigured: boolean;
+  isLoggedIn: boolean;
 }> {
   const backendConfigured = isBackendConfigured();
   const rows: HealthRow[] = [
@@ -30,7 +32,7 @@ async function loadHealthRows(): Promise<{
   ];
 
   if (!backendConfigured) {
-    return { rows, backendConfigured: false };
+    return { rows, backendConfigured: false, isLoggedIn: false };
   }
 
   const cookieHeader = headers().get("cookie");
@@ -40,22 +42,29 @@ async function loadHealthRows(): Promise<{
       label: "Сессия",
       value: auth.data.user ? `userId ${auth.data.user.id}` : "не авторизован",
     });
-  } else if (!auth.configured) {
-    rows.push({ label: "Сессия", value: "тестовый backend не подключён" });
-  } else {
-    rows.push({ label: "Сессия", value: "ошибка проверки" });
     return {
       rows,
-      authError: `HTTP ${auth.status}: ${auth.message}`,
       backendConfigured: true,
+      isLoggedIn: Boolean(auth.data.user),
     };
   }
 
-  return { rows, backendConfigured: true };
+  if (!auth.configured) {
+    rows.push({ label: "Сессия", value: "тестовый backend не подключён" });
+    return { rows, backendConfigured: true, isLoggedIn: false };
+  }
+
+  rows.push({ label: "Сессия", value: "ошибка проверки" });
+  return {
+    rows,
+    authError: `HTTP ${auth.status}: ${auth.message}`,
+    backendConfigured: true,
+    isLoggedIn: false,
+  };
 }
 
 export default async function HomePage() {
-  const { rows, authError, backendConfigured } = await loadHealthRows();
+  const { rows, authError, backendConfigured, isLoggedIn } = await loadHealthRows();
 
   return (
     <main className={styles.page}>
@@ -97,14 +106,15 @@ export default async function HomePage() {
           </p>
         )}
 
-        <div className={styles.actions}>
-          <Button variant="secondary" disabled>
-            Вход (M2)
-          </Button>
-          <Button variant="secondary" disabled>
-            Регистрация (M2)
-          </Button>
-        </div>
+        {backendConfigured && !authError ? (
+          isLoggedIn ? (
+            <div className={styles.actions}>
+              <LogoutButton />
+            </div>
+          ) : (
+            <LoginCodeForm />
+          )
+        ) : null}
       </section>
     </main>
   );

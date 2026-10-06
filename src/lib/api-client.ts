@@ -73,6 +73,7 @@ export async function getAuthMe() {
 export const remcardApiPaths = {
   authMe: "/api/auth/me",
   authLogout: "/api/auth/logout",
+  authVerifyCode: "/api/auth/verify-code",
   proProfile: "/api/pro/profile",
   partnershipList: "/api/partnership/list",
   storeBonusList: "/api/store/bonus-list",

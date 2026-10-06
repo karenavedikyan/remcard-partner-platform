@@ -43,12 +43,32 @@ ALTER TABLE "BranchService" ADD CONSTRAINT "BranchService_serviceId_fkey" ...
 
 Таблицы `BranchService` и `Review` созданы, но указанные связи **не enforced**. Это допустимо только для локальной проверки fixture-сессии, **не** для production baseline.
 
-## Минимальный корректный baseline (следующее действие в navigator, вне M1)
+## Минимальный корректный baseline (отдельная задача в private navigator)
 
-1. **Squash/baseline migration** от пустой БД до текущей схемы **или** checked-in SQL snapshot с проверкой FK.
-2. **Выровнять типы** `BranchService.serviceId` / `Review.serviceId` с `Service.id` (`@db.Uuid` или изменить тип `Service.id`).
-3. Документировать supported path: `migrate deploy` vs `db push` для новых разработчиков.
-4. До исправления — локальный M1 ограничен patched bootstrap + `scripts/local/seed-m1-fixtures.sql.example`.
+### Файлы
+
+| Файл | Действие |
+| --- | --- |
+| `prisma/schema.prisma` | Выровнять `BranchService.serviceId` и `Review.serviceId` с `Service.id` (`@db.Uuid`) |
+| `prisma/migrations/` | Добавить **baseline** migration (`CREATE TABLE "User"`, …) или squash до self-contained chain |
+| `docs/` или `README` | Задокументировать: `migrate deploy` на пустой PostgreSQL |
+
+### Проверки (на изолированной loopback БД, не production)
+
+1. `prisma migrate deploy` на пустой БД — без ошибки `relation "User" does not exist`.
+2. `prisma db push` на пустой БД — без ошибки text vs uuid на FK.
+3. `\d "BranchService"` / `\d "Review"` — тип `serviceId` совпадает с `"Service"."id"`.
+4. Smoke: `pnpm exec prisma validate` + один auth route (`/api/auth/me` 401 без cookie).
+
+### Риски
+
+- Production уже на legacy baseline — новая baseline migration не должна ломать существующие deploy.
+- Изменение типа `serviceId` на uuid может затронуть legacy данные, если в колонках не-uuid строки.
+- Squash 96 миграций — большой diff; альтернатива: один `0_init` + пометка «pre-migrate DBs skip to …».
+
+### До исправления
+
+Локальный M1 ограничен patched bootstrap (FK skipped) + `scripts/local/seed-m1-fixtures.sql.example`. **Parity Prisma schema с production DB не подтверждена.**
 
 ## Что не делать
 

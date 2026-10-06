@@ -47,6 +47,32 @@ const stubServer = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/api/auth/verify-code" && request.method === "POST") {
+    let payload: { code?: string } = {};
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) {
+      chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    }
+    try {
+      payload = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { code?: string };
+    } catch {
+      payload = {};
+    }
+
+    if (payload.code === "123456") {
+      response.writeHead(200, {
+        "content-type": "application/json",
+        "set-cookie": "remcard-token=verified; Path=/; HttpOnly",
+      });
+      response.end(JSON.stringify({ user: { id: "user-1", displayName: "Test" } }));
+      return;
+    }
+
+    response.writeHead(401, { "content-type": "application/json" });
+    response.end(JSON.stringify({ error: "Неверный или просроченный код" }));
+    return;
+  }
+
   if (url.pathname === "/api/auth/logout" && request.method === "POST") {
     response.writeHead(200, {
       "content-type": "application/json",
@@ -136,6 +162,8 @@ describe("remcard proxy transport checks", () => {
 
   it("allows only verified route/method pairs", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/me"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/auth/verify-code"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/auth/verify-code"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/logout"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/certificate/issue"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/certificate"), true);
@@ -513,6 +541,61 @@ describe("remcard proxy transport checks", () => {
 
     assert.equal(result.ok, true);
     assert.match(stubState.lastAuthorization ?? "", /^Basic /);
+  });
+
+  it("proxies verify-code login with origin check and session cookie", async () => {
+    const success = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/auth/verify-code",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "oauth_vk_state=temp; remcard-token=old",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ code: "123456" }),
+    });
+
+    assert.equal(success.ok, true);
+    if (!success.ok) {
+      return;
+    }
+
+    assert.equal(success.status, 200);
+    assert.equal(success.setCookies.length, 1);
+    assert.match(success.setCookies[0] ?? "", /^remcard-token=verified/);
+    assert.equal(stubState.lastCookie, "remcard-token=old");
+
+    const blocked = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/auth/verify-code",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: null,
+      origin: "http://evil.example",
+      bodyText: JSON.stringify({ code: "123456" }),
+    });
+
+    assert.equal(blocked.ok, false);
+    if (blocked.ok) {
+      return;
+    }
+    assert.equal(blocked.status, 403);
+
+    const failure = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/auth/verify-code",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: null,
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ code: "000000" }),
+    });
+
+    assert.equal(failure.ok, true);
+    if (!failure.ok) {
+      return;
+    }
+    assert.equal(failure.status, 401);
+    assert.equal(failure.setCookies.length, 0);
   });
 
   it("times out hung upstream requests", async () => {

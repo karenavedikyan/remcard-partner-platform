@@ -86,6 +86,29 @@ curl -X POST -H "Origin: http://127.0.0.1:3000" -H "Cookie: remcard-token=<fixtu
   http://127.0.0.1:3000/api/remcard/api/auth/logout
 ```
 
+### Вход verify-code (настоящий login, не fixture)
+
+UI: форма «Вход по коду из бота» на главной странице кабинета (если backend подключён и сессии нет).
+
+BFF:
+
+```bash
+curl -X POST http://127.0.0.1:3000/api/remcard/api/auth/verify-code \
+  -H "Origin: http://127.0.0.1:3000" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"123456"}'
+```
+
+**Требования на navigator (имена переменных, значения — вне Git):**
+
+- `JWT_SECRET`, `DATABASE_URL` — уже нужны для backend
+- `TELEGRAM_BOT_TOKEN` (и/или MAX bot) — чтобы пользователь получил код через `/login`
+- В БД: активная строка `BotLoginCode` + существующий `User` с `telegramId` / `maxId`
+
+Без bot token и кода в БД endpoint вернёт 401 — это ожидаемо; не подменяйте успешный ответ в коде.
+
+Подробный разбор auth-маршрутов navigator: `docs/reviews/M1-auth-verify-code.md`.
+
 ## (c) Блокер: navigator на пустой БД
 
 Штатные команды navigator **не проходят** на пустой PostgreSQL:
