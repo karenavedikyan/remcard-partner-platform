@@ -1,11 +1,4 @@
-import { RemcardApiError } from "@/lib/api-client";
 import type { OrderPreviewAllowed, OrderPreviewDenied } from "@/lib/order-types";
-
-export const UNCERTAIN_ORDER_HEADING = "Результат неизвестен: покупка могла сохраниться";
-
-export const UNCERTAIN_ORDER_DETAIL =
-  "Ответ сервера не получен. Повторное подтверждение этой попытки заблокировано. " +
-  "На backend нет идемпотентности для POST /api/store/order — это блокер безопасного production-выпуска.";
 
 export type PreviewSession = {
   code: string;
@@ -22,14 +15,6 @@ export function shouldApplyPreviewResponse(
     return false;
   }
   return responseRequestId === latestRequestId;
-}
-
-/** True for network failure, timeout proxy (504), and HTTP 5xx after order POST. */
-export function isUncertainOrderFailure(error: unknown): boolean {
-  if (error instanceof RemcardApiError) {
-    return error.status === 0 || error.status >= 500;
-  }
-  return true;
 }
 
 export function isPreviewSessionAllowed(

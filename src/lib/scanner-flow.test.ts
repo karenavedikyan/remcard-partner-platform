@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { RemcardApiError } from "./api-client.ts";
-import {
-  isPreviewSessionAllowed,
-  isUncertainOrderFailure,
-  shouldApplyPreviewResponse,
-} from "./scanner-flow.ts";
+import { isPreviewSessionAllowed, shouldApplyPreviewResponse } from "./scanner-flow.ts";
 
 describe("shouldApplyPreviewResponse", () => {
   it("accepts the latest request id", () => {
@@ -20,24 +15,6 @@ describe("shouldApplyPreviewResponse", () => {
     const controller = new AbortController();
     controller.abort();
     assert.equal(shouldApplyPreviewResponse(2, 2, controller.signal), false);
-  });
-});
-
-describe("isUncertainOrderFailure", () => {
-  it("treats HTTP 504 as uncertain", () => {
-    assert.equal(isUncertainOrderFailure(new RemcardApiError(504, "Upstream timeout")), true);
-  });
-
-  it("treats HTTP 500 as uncertain", () => {
-    assert.equal(isUncertainOrderFailure(new RemcardApiError(500, "Server error")), true);
-  });
-
-  it("treats network errors as uncertain", () => {
-    assert.equal(isUncertainOrderFailure(new RemcardApiError(0, "Сетевая ошибка")), true);
-  });
-
-  it("treats validation errors as certain failures", () => {
-    assert.equal(isUncertainOrderFailure(new RemcardApiError(400, "Некорректная сумма")), false);
   });
 });
 

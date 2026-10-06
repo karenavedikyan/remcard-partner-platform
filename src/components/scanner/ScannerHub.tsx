@@ -15,12 +15,15 @@ import type {
 } from "@/lib/order-types";
 import {
   isPreviewSessionAllowed,
-  isUncertainOrderFailure,
   shouldApplyPreviewResponse,
-  UNCERTAIN_ORDER_DETAIL,
-  UNCERTAIN_ORDER_HEADING,
   type PreviewSession,
 } from "@/lib/scanner-flow";
+import {
+  isUncertainOrderFailure,
+  UNCERTAIN_ORDER_DETAIL,
+  UNCERTAIN_ORDER_HEADING,
+  validateOrderCreateResponse,
+} from "@/lib/scanner-order-submit";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { QrScanner } from "./QrScanner";
@@ -236,7 +239,7 @@ export function ScannerHub() {
     setOrderUncertain(false);
 
     try {
-      const data = await remcardFetch<OrderCreateResponse>("/api/store/order", {
+      const raw = await remcardFetch<unknown>("/api/store/order", {
         method: "POST",
         body: { certificateCode: code, items },
       });
@@ -244,6 +247,8 @@ export function ScannerHub() {
       if (orderAttemptRef.current !== attempt) {
         return;
       }
+
+      const data = validateOrderCreateResponse(raw);
 
       setConfirmedCode(code);
       setSuccess(data);

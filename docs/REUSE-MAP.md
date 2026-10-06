@@ -22,7 +22,8 @@
 | Сводка клиента | (ответ order) | — | — | `summary.totalAmount`, `discountAmount`, `issuerBonusAmount` / `proBonusAmount`, `isSelfScan` |
 | Self-scan | тот же POST order | PROF = store partner | — | `isSelfScan: true` → issuer bonus 0, Bonus не создаётся |
 | Чужой PRO | preview/order | staff без partner row | подмена certificateCode | preview: `allowed: false`; order: 400 «не партнёр» |
-| Повтор покупки | POST order | — | новый запрос | **Дубли не защищены на сервере** — блокировка двойного клика на клиенте; при потере ответа — сообщение «Результат покупки не подтверждён…» |
+| Повтор покупки | POST order | — | новый запрос | **Дубли не защищены на сервере** (блокер production); UI блокирует повтор той же попытки при uncertain; 4xx сохраняют форму |
+| Валидация ответа order | (клиент `validateOrderCreateResponse`) | — | 201 body | Пустой/битый JSON/нет order.id или summary → uncertain, не success |
 
 **Navigator reference (read-only):** `src/app/store/scan/page.tsx`, `src/app/api/store/order/preview/route.ts`, `src/app/api/store/order/route.ts`, `src/lib/storeCertificateScan.ts` (GET scan — не используется UI scan page).
 

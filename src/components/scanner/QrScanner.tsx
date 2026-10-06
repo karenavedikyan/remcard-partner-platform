@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { parseCertificateCode } from "@/lib/certificate-code";
+import { processQrDecode, type QrLastEmit } from "@/lib/qr-scanner-decode";
 import { Button } from "@/components/ui/Button";
 import styles from "./scanner.module.css";
 
@@ -11,11 +11,10 @@ type QrScannerProps = {
 };
 
 const READER_ID = "partner-scanner-qr-reader";
-const DEDUP_MS = 2500;
 
 export function QrScanner({ onCode, onError }: QrScannerProps) {
   const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null);
-  const lastCodeRef = useRef<{ code: string; at: number } | null>(null);
+  const lastEmitRef = useRef<QrLastEmit | null>(null);
   const generationRef = useRef(0);
   const [active, setActive] = useState(false);
 
@@ -34,44 +33,41 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
   }, []);
 
   const handleDecode = useCallback(
-    (raw: string, generation: number) => {
-      if (generation !== generationRef.current) {
+    (raw: string, scanGeneration: number) => {
+      const result = processQrDecode({
+        raw,
+        scanGeneration,
+        activeGeneration: generationRef.current,
+        lastEmit: lastEmitRef.current,
+        now: Date.now(),
+      });
+
+      if (result.kind === "ignore") {
         return;
       }
 
-      const parsed = parseCertificateCode(raw);
-      if (!parsed.ok) {
-        onError(parsed.error);
+      if (result.kind === "error") {
+        onError(result.message);
         return;
       }
 
-      const now = Date.now();
-      if (
-        lastCodeRef.current &&
-        lastCodeRef.current.code === parsed.code &&
-        now - lastCodeRef.current.at < DEDUP_MS
-      ) {
-        return;
-      }
-      lastCodeRef.current = { code: parsed.code, at: now };
+      lastEmitRef.current = result.nextLastEmit;
+      onCode(result.raw);
       void stopCamera();
-      if (generation === generationRef.current) {
-        onCode(raw);
-      }
     },
     [onCode, onError, stopCamera],
   );
 
   useEffect(() => {
-    const generation = generationRef.current + 1;
-    generationRef.current = generation;
+    const scanGeneration = generationRef.current + 1;
+    generationRef.current = scanGeneration;
     let cancelled = false;
 
     async function startCamera() {
       setActive(true);
       try {
         const { Html5Qrcode } = await import("html5-qrcode");
-        if (cancelled || generation !== generationRef.current) {
+        if (cancelled || scanGeneration !== generationRef.current) {
           return;
         }
 
@@ -80,11 +76,11 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
         await html5.start(
           { facingMode: "environment" },
           { fps: 8, qrbox: { width: 240, height: 240 } },
-          (decoded) => handleDecode(decoded, generation),
+          (decoded) => handleDecode(decoded, scanGeneration),
           () => {},
         );
 
-        if (cancelled || generation !== generationRef.current) {
+        if (cancelled || scanGeneration !== generationRef.current) {
           try {
             await html5.stop();
           } catch {
@@ -96,7 +92,7 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
           setActive(false);
         }
       } catch {
-        if (!cancelled && generation === generationRef.current) {
+        if (!cancelled && scanGeneration === generationRef.current) {
           setActive(false);
           onError(
             "Не удалось запустить камеру. Разрешите доступ или используйте ручной ввод кода.",
