@@ -14,6 +14,8 @@ import { formatMoneyRub } from "@/lib/history-format";
 import {
   ACCEPTED_BONUS_EMPTY_NOTE,
   ACCEPTED_BONUS_SOURCE_NOTE,
+  ACCEPTED_STORE_ACCESS_DENIED_NOTE,
+  FILTERED_PURCHASES_EMPTY_NOTE,
   PURCHASE_PERIOD_FILTER_NOTE,
   accrualScopeLabel,
   bonusStatusLabel,
@@ -24,8 +26,9 @@ import {
   purchaseRowDateLabel,
 } from "@/lib/history-labels";
 import { purchaseDetailHref, purchaseOrderNumberLabel } from "@/lib/history-links";
-import { fetchHistoryData } from "@/lib/history-loader";
+import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
 import {
+  shouldShowAcceptedAccessDeniedNote,
   shouldShowAcceptedBonusEmptyNote,
   shouldShowAcceptedBonusLimitation,
   type HistorySourceAvailability,
@@ -124,24 +127,33 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const [accruals, setAccruals] = useState<AccrualRow[]>([]);
   const [hasIssuedPurchases, setHasIssuedPurchases] = useState(false);
   const [sources, setSources] = useState<HistorySourceAvailability>({
-    acceptedBonusList: false,
+    acceptedOrders: false,
     issuedOrders: false,
   });
+  const [acceptedNextCursor, setAcceptedNextCursor] = useState<string | null>(null);
+  const [loadingMoreAccepted, setLoadingMoreAccepted] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState("");
+  const [acceptedAccessDenied, setAcceptedAccessDenied] = useState(false);
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
     setError("");
+    setAcceptedAccessDenied(false);
 
     try {
       const {
         purchases: purchaseRows,
         accruals: accrualRows,
         sources: sourceFlags,
+        acceptedPagination,
+        acceptedAccessDenied: storeAccessDenied,
       } = await fetchHistoryData(user);
 
       setAccruals(accrualRows);
       setPurchases(purchaseRows);
       setSources(sourceFlags);
+      setAcceptedAccessDenied(storeAccessDenied);
+      setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
       setHasIssuedPurchases(purchaseRows.some((row) => row.direction === "issued"));
     } catch (caught) {
       setError(
@@ -151,6 +163,38 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       setLoading(false);
     }
   }, [user]);
+
+  const loadMoreAccepted = useCallback(async () => {
+    if (!acceptedNextCursor || loadingMoreAccepted) {
+      return;
+    }
+    setLoadingMoreAccepted(true);
+    setLoadMoreError("");
+    try {
+      const accepted = await fetchAcceptedPurchasePage(acceptedNextCursor);
+      setPurchases((prev) => {
+        const seen = new Set(prev.map((row) => `${row.direction}-${row.id}`));
+        const merged = [...prev];
+        for (const row of accepted.purchases) {
+          const key = `${row.direction}-${row.id}`;
+          if (!seen.has(key)) {
+            merged.push(row);
+            seen.add(key);
+          }
+        }
+        return merged.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      });
+      setAcceptedNextCursor(accepted.pagination.hasMore ? accepted.pagination.nextCursor : null);
+    } catch (caught) {
+      setLoadMoreError(
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить следующую страницу",
+      );
+    } finally {
+      setLoadingMoreAccepted(false);
+    }
+  }, [acceptedNextCursor, loadingMoreAccepted]);
 
   useEffect(() => {
     void loadHistory();
@@ -162,14 +206,20 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const accrualStatuses = useMemo(() => accrualStatusOptions(accruals), [accruals]);
 
   const directionFilterVisible =
-    sources.acceptedBonusList && sources.issuedOrders && hasIssuedPurchases;
+    sources.acceptedOrders && sources.issuedOrders && hasIssuedPurchases;
   const acceptedRowCount = purchases.filter((row) => row.direction === "accepted").length;
   const showAcceptedLimitation = shouldShowAcceptedBonusLimitation(sources);
+  const showAcceptedAccessDeniedNote = shouldShowAcceptedAccessDeniedNote(
+    acceptedAccessDenied,
+    loading,
+    Boolean(error),
+  );
   const showAcceptedEmptyNote = shouldShowAcceptedBonusEmptyNote(
     sources,
     acceptedRowCount,
     loading,
     Boolean(error),
+    acceptedAccessDenied,
   );
 
   return (
@@ -184,7 +234,8 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       />
 
       <p className={styles.note}>
-        Поиск и фильтры — по загруженным записям (до 200 заказов по рекомендациям).
+        Поиск и фильтры — по загруженным записям. «Принято у меня» подгружается постранично;
+        «По рекомендациям» — до 200 последних заказов.
       </p>
 
       {showAcceptedLimitation ? <p className={styles.note}>{ACCEPTED_BONUS_SOURCE_NOTE}</p> : null}
@@ -260,20 +311,47 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         </div>
       ) : null}
 
+      {!loading && !error && tab === "purchases" && showAcceptedAccessDeniedNote ? (
+        <p className={styles.note}>{ACCEPTED_STORE_ACCESS_DENIED_NOTE}</p>
+      ) : null}
+
       {!loading && !error && tab === "purchases" && showAcceptedEmptyNote ? (
         <p className={styles.note}>{ACCEPTED_BONUS_EMPTY_NOTE}</p>
       ) : null}
 
       {!loading && !error && tab === "purchases" ? (
-        filteredPurchases.length ? (
-          <div className={styles.list}>
-            {filteredPurchases.map((row) => (
-              <PurchaseRowCard key={`${row.direction}-${row.id}`} row={row} />
-            ))}
-          </div>
-        ) : (
-          <div className={styles.empty}>Покупок не найдено</div>
-        )
+        <>
+          {filteredPurchases.length ? (
+            <div className={styles.list}>
+              {filteredPurchases.map((row) => (
+                <PurchaseRowCard key={`${row.direction}-${row.id}`} row={row} />
+              ))}
+            </div>
+          ) : purchases.length > 0 ? (
+            <p className={styles.note}>{FILTERED_PURCHASES_EMPTY_NOTE}</p>
+          ) : (
+            <div className={styles.empty}>Покупок не найдено</div>
+          )}
+          {acceptedNextCursor ? (
+            <div style={{ marginTop: "var(--space-3)" }}>
+              {loadMoreError ? (
+                <div className={styles.error} role="alert" style={{ marginBottom: "var(--space-2)" }}>
+                  <p>{loadMoreError}</p>
+                  <Button variant="secondary" onClick={() => void loadMoreAccepted()}>
+                    Повторить загрузку
+                  </Button>
+                </div>
+              ) : null}
+              <Button
+                variant="secondary"
+                onClick={() => void loadMoreAccepted()}
+                disabled={loadingMoreAccepted}
+              >
+                {loadingMoreAccepted ? "Загрузка…" : "Показать ещё"}
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {!loading && !error && tab === "accruals" ? (

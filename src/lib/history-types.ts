@@ -1,12 +1,19 @@
 export type PurchaseDirection = "accepted" | "issued";
 
-/** issued-order: full order from pro/orders; accepted-bonus: bonus-list row without order id/status */
-export type PurchaseSource = "issued-order" | "accepted-bonus";
+/** issued-order: pro issuer view; accepted-order: store order history; accepted-bonus: legacy bonus-list row */
+export type PurchaseSource = "issued-order" | "accepted-order" | "accepted-bonus";
 
 export type WalletRole = "AGENT" | "STORE" | "MASTER";
 
 /** earned: user's rewards; payable-to-pros: store owes pros; unknown: API role missing */
 export type AccrualScope = "earned" | "payable-to-pros" | "unknown";
+
+export type AccrualType = "bonus" | "agentBonus";
+
+export type LinkedAccrualRef = {
+  id: string;
+  type: AccrualType;
+};
 
 export type PurchaseRow = {
   id: string;
@@ -25,8 +32,86 @@ export type PurchaseRow = {
   isSelfScan: boolean;
   clientName: string | null;
   branchName: string | null;
+  executorName: string | null;
   proBonus: number | null;
+  /** Typed links confirmed by schema (bonus / agentBonus). */
+  linkedAccruals: LinkedAccrualRef[];
+  /** Legacy flat ids — kept for backward compatibility. */
+  linkedAccrualIds: string[];
   items: PurchaseItemRow[];
+};
+
+export type StoreOrdersResponse = {
+  orders: Array<{
+    orderId: string;
+    createdAt: string;
+    status: string;
+    totalAmount: number;
+    discountAmount: number;
+    payableAmount: number;
+    isSelfScan: boolean;
+    promoCode: string | null;
+    clientName: string | null;
+    proName: string | null;
+    storeName: string | null;
+    branchId: string | null;
+    branchName: string | null;
+    branchCity: string | null;
+    executorUserId: string;
+    executorName: string | null;
+    proBonus: number;
+    linkedAccruals: Array<{ id: string; type: "bonus" }>;
+  }>;
+  pagination: {
+    limit: number;
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+};
+
+export type StoreOrderDetailResponse = {
+  order: StoreOrdersResponse["orders"][number] & {
+    items: Array<{
+      id: string;
+      category: string;
+      categoryLabel: string;
+      amount: number;
+      discountPercent: number;
+      discountAmount: number;
+      issuerPercent: number;
+      issuerAmount: number;
+    }>;
+  };
+};
+
+export type ProOrderDetailResponse = {
+  order: {
+    orderId: string;
+    createdAt: string;
+    status: string;
+    totalAmount: number;
+    discountAmount: number;
+    payableAmount: number;
+    isSelfScan: boolean;
+    promoCode: string;
+    clientName: string;
+    storeName: string;
+    branchId: string | null;
+    branchName: string | null;
+    branchCity: string | null;
+    proBonus: number;
+    linkedAccruals: Array<{ id: string; type: "bonus" | "agentBonus" }>;
+    items: Array<{
+      id: string;
+      category: string;
+      categoryLabel: string;
+      amount: number;
+      discountPercent: number;
+      discountAmount: number;
+      issuerPercent: number;
+      issuerAmount: number;
+    }>;
+  };
 };
 
 export type PurchaseItemRow = {
@@ -39,6 +124,8 @@ export type PurchaseItemRow = {
 
 export type AccrualRow = {
   id: string;
+  orderId: string | null;
+  accrualType: AccrualType;
   createdAt: string;
   amount: number;
   status: string;
@@ -89,6 +176,7 @@ export type StoreBonusListResponse = {
     totalAmount: number;
     discountAmount: number;
     promoCode: string | null;
+    orderId?: string | null;
     certificatePartner: { storeName: string; isSelfScan: boolean } | null;
     orderItems: Array<{
       categoryLabel: string;
@@ -117,6 +205,8 @@ export type ProOrdersResponse = {
 export type WalletTransactionsResponse = {
   transactions: Array<{
     id: string;
+    orderId?: string | null;
+    accrualType?: AccrualType;
     amount: number;
     status: string;
     createdAt: string;

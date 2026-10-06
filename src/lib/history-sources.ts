@@ -1,8 +1,8 @@
 import type { AuthUser } from "@/lib/types";
 
 export type HistorySourceAvailability = {
-  /** GET /api/store/bonus-list returned 200 for store-like user */
-  acceptedBonusList: boolean;
+  /** GET /api/store/orders returned 200 for store-like user */
+  acceptedOrders: boolean;
   /** GET /api/pro/orders returned 200 */
   issuedOrders: boolean;
 };
@@ -15,10 +15,11 @@ export function isStoreLikePartner(user: AuthUser): boolean {
   );
 }
 
+/** Legacy limitation banner removed once accepted-order API is active. */
 export function shouldShowAcceptedBonusLimitation(
-  sources: HistorySourceAvailability,
+  _sources: HistorySourceAvailability,
 ): boolean {
-  return sources.acceptedBonusList;
+  return false;
 }
 
 export function shouldShowAcceptedBonusEmptyNote(
@@ -26,11 +27,22 @@ export function shouldShowAcceptedBonusEmptyNote(
   acceptedRowCount: number,
   loading: boolean,
   error: boolean,
+  acceptedAccessDenied: boolean,
 ): boolean {
   return (
-    sources.acceptedBonusList &&
+    sources.acceptedOrders &&
+    !sources.issuedOrders &&
     !loading &&
     !error &&
+    !acceptedAccessDenied &&
     acceptedRowCount === 0
   );
+}
+
+export function shouldShowAcceptedAccessDeniedNote(
+  acceptedAccessDenied: boolean,
+  loading: boolean,
+  error: boolean,
+): boolean {
+  return acceptedAccessDenied && !loading && !error;
 }

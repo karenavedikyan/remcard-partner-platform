@@ -55,7 +55,16 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/store\/order(?:\/preview)?$/,
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/store\/bonus-list$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/store\/orders$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/store\/orders\/c[a-z0-9]{20,}$/i,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/orders$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/orders\/c[a-z0-9]{20,}$/i,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/wallet\/(balance|transactions)$/ },
     {
       methods: new Set(["GET"]),

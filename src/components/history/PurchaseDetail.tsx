@@ -11,12 +11,8 @@ import {
   purchaseOrderStatusTone,
   purchaseRowDateLabel,
 } from "@/lib/history-labels";
-import {
-  findAccrualsForPurchase,
-  findPurchaseById,
-  findPurchaseByOrderId,
-} from "@/lib/history-links";
-import { fetchHistoryData } from "@/lib/history-loader";
+import { findAccrualsForPurchase } from "@/lib/history-links";
+import { fetchAccrualRows, fetchPurchaseByOrderId } from "@/lib/history-loader";
 import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -42,26 +38,33 @@ type PurchaseDetailProps = {
 export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
   const [purchase, setPurchase] = useState<PurchaseRow | null>(null);
   const [linkedAccruals, setLinkedAccruals] = useState<AccrualRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
+    setAccessDenied(false);
     try {
-      const { purchases, accruals } = await fetchHistoryData(user);
-      const byOrder = findPurchaseByOrderId(purchases, purchaseId);
-      const row = byOrder ?? findPurchaseById(purchases, purchaseId);
-
+      const row = await fetchPurchaseByOrderId(purchaseId, user);
       if (!row) {
+        setPurchase(null);
+        setLinkedAccruals([]);
+        setAccessDenied(true);
+        return;
+      }
+
+      const accruals = await fetchAccrualRows();
+      setPurchase(row);
+      setLinkedAccruals(findAccrualsForPurchase(row, accruals));
+    } catch (caught) {
+      if (caught instanceof RemcardApiError && caught.status === 403) {
+        setAccessDenied(true);
         setPurchase(null);
         setLinkedAccruals([]);
         return;
       }
-
-      setPurchase(row);
-      setLinkedAccruals(findAccrualsForPurchase(row, accruals));
-    } catch (caught) {
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить операцию",
       );
@@ -91,8 +94,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
     return (
       <div className={styles.empty}>
         <p>
-          Операция не найдена в доступных источниках. Это не означает, что покупка не сохранилась —
-          API может не отдавать её в текущих списках.
+          {accessDenied
+            ? "Нет доступа к этой покупке или заказ не найден."
+            : "Операция не найдена в доступных источниках."}
         </p>
         {promoHint ? (
           <Link href={documentOperationsHref(promoHint)}>
@@ -113,7 +117,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
           {purchase.orderId ? (
             <p className={styles.meta}>Заказ №{purchase.orderId}</p>
           ) : (
-            <p className={styles.meta}>Номер заказа недоступен в текущем источнике</p>
+            <p className={styles.meta}>Номер заказа недоступен</p>
           )}
           <h2 className={styles.rowTitle}>{purchase.promoCode ?? "Документ"}</h2>
           <p className={styles.meta}>
@@ -127,8 +131,8 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
 
       {purchase.source === "accepted-bonus" ? (
         <p className={styles.note}>
-          Данные «Принято у меня» — из списка начислений профклиентам. Полный статус заказа API не
-          возвращает.
+          Данные из legacy-источника начислений. Для полного статуса заказа используйте список
+          «Принято у меня».
         </p>
       ) : null}
 
@@ -140,6 +144,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         <p className={styles.meta}>Партнёр: {purchase.partnerName}</p>
         {purchase.clientName ? <p className={styles.meta}>Клиент: {purchase.clientName}</p> : null}
         {purchase.branchName ? <p className={styles.meta}>Филиал: {purchase.branchName}</p> : null}
+        {purchase.executorName ? (
+          <p className={styles.meta}>Исполнитель: {purchase.executorName}</p>
+        ) : null}
         {purchase.isSelfScan ? <p className={styles.meta}>Самосканирование — без начисления</p> : null}
         {purchase.source === "accepted-bonus" && purchase.bonusStatus ? (
           <p className={styles.meta}>
@@ -168,6 +175,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
             <div key={`${item.categoryLabel}-${item.amount}`} className={styles.itemRow}>
               <strong>{item.categoryLabel}</strong>
               <span className={styles.meta}>Сумма до скидки: {formatMoneyRub(item.amount)}</span>
+              {item.discountPercent != null ? (
+                <span className={styles.meta}>Скидка: {item.discountPercent}%</span>
+              ) : null}
               {item.issuerPercent != null ? (
                 <span className={styles.meta}>
                   Вознаграждение: {item.issuerPercent}% ({formatMoneyRub(item.issuerAmount ?? 0)})
@@ -176,8 +186,6 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
             </div>
           ))}
         </div>
-      ) : purchase.source === "issued-order" ? (
-        <p className={styles.note}>Позиции заказа API не возвращает — только суммы.</p>
       ) : null}
 
       {linkedAccruals.length ? (
