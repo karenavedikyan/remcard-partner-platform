@@ -30,6 +30,35 @@ type FetchOptions = {
  * Browser-safe client: calls the local BFF proxy, never the RemCard backend directly.
  * Cookies from the partner origin are forwarded server-side by the proxy route.
  */
+export async function remcardFetchBlob(
+  path: string,
+  options: Omit<FetchOptions, "body"> = {},
+): Promise<{ blob: Blob; filename: string | null }> {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const response = await fetch(`/api/remcard${normalizedPath}`, {
+    method: options.method ?? "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let message = response.statusText;
+    try {
+      const text = await response.text();
+      const payload = text ? (JSON.parse(text) as ApiErrorBody) : null;
+      message = payload?.error ?? payload?.message ?? message;
+    } catch {
+      // ignore parse errors for binary responses
+    }
+    throw new RemcardApiError(response.status, message, null);
+  }
+
+  const disposition = response.headers.get("content-disposition");
+  const filenameMatch = disposition?.match(/filename=\"?([^\";]+)\"?/i);
+  const blob = await response.blob();
+  return { blob, filename: filenameMatch?.[1] ?? null };
+}
+
 export async function remcardFetch<T>(
   path: string,
   options: FetchOptions = {},
@@ -76,6 +105,7 @@ export const remcardApiPaths = {
   storeOrder: "/api/store/order",
   certificate: "/api/certificate",
   storeCertificate: "/api/store/certificate",
+  storeCertificateAvailablePartners: "/api/store/certificate/available-partners",
 } as const;
 
 export function getRemcardApiBaseUrl() {

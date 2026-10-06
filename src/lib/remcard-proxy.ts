@@ -37,6 +37,15 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     },
     {
       methods: new Set(["GET"]),
+      pattern: /^\/api\/store\/certificate\/available-partners$/,
+    },
+    {
+      methods: new Set(["GET"]),
+      // Certificate id (cuid); reserved subpaths like /issue are not allowlisted.
+      pattern: /^\/api\/store\/certificate\/c[a-z0-9]{20,}$/i,
+    },
+    {
+      methods: new Set(["GET"]),
       pattern: /^\/api\/certificate\/[\w-]+\/pdf$/,
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/certificate\/[\w-]+$/ },

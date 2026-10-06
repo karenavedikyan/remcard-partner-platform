@@ -9,6 +9,7 @@ import styles from "./AppShell.module.css";
 const NAV = [
   { href: "/", label: "Главная", icon: "⌂" },
   { href: "/partners", label: "Партнёры", icon: "🤝", badgeKey: "partners" as const },
+  { href: "/recommendations", label: "Рекомендации", icon: "📄" },
   { href: "/profile", label: "Профиль", icon: "◎" },
 ] as const;
 

@@ -1,39 +1,45 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M2: блокировка неизвестного org-type + проверка постороннего PRO).
+Обновлено: 6 октября 2026 года (M3-A-fix-2: строгая валидация скидки без скрытого обрезания).
 
 ## SHA источников
 
 | Источник | SHA / версия | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` | ветка `cursor/m2-prof-partners-b3e3` (Draft PR #2, base M1) | M2 закрыт |
+| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A + fixes |
 | `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only, без изменений |
-| Прототип | https://pro.remcard.ru/ | Design tokens |
 
-## M2: последние исправления
+## M3-A-fix-2: уточнённое правило процентов
 
-- [x] Неизвестный тип организации: `inviteTargetStoreOwnershipUnknown()` блокирует приглашение, если у цели есть `organizationName`, но `isStoreOwner` не подтверждён; сообщение «Не удалось определить условия партнёра…»; проверка в submit(); general/10% не показывается при блокировке.
-- [x] Однозначные сценарии сохранены: store-приглашающий, STORE target, подтверждённый non-STORE org, мастер без организации.
-- [x] Посторонний PRO (`m1fix-prof`): GET/POST/respond term-change чужого партнёрства → 404, проценты не меняются; участники A/B — действия разрешены.
-
-## Пробел API (документирован)
-
-`GET /api/partnership/search` не возвращает `organizationPartnerType`. При наличии `organizationName` без типа приглашение блокируется, чтобы не угадать trade-side. После появления поля в API блокировка снимется автоматически.
-
-## Приёмка перед запуском (не закрыто)
-
-- [ ] Настоящий login (бот/OAuth отложен владельцем).
-- [ ] Navigator baseline на пустой PostgreSQL.
-- [ ] Counter-offer при первичном приглашении (есть в navigator, не в UI M2).
+- Общий % только из согласованных условий партнёрства (`poolPercent` в `available-partners`).
+- PROF распределяет согласованный % между скидкой клиенту и вознаграждением; **без скрытого clamp** — превышение → ошибка, POST не уходит.
+- UI: «Согласованный процент» (read-only), «Скидка клиенту» (edit), «Ваше вознаграждение» (auto).
+- При превышении: сообщение + ссылка «Изменить условия партнёрства» → `/partners?terms=<partnershipId>`.
+- Self-scan: 0–100%, issuer=0, без обрезания.
 
 ## Проверки
 
 | Проверка | Результат |
 | --- | --- |
-| `npm run test:proxy` | 47/47 |
-| `npm run lint` | ok |
-| `env -u NODE_ENV npm run build` | ok |
-| Outsider PRO term-change GET | 404 «Партнёрство не найдено» |
-| Outsider PRO term-change POST | 404 |
-| Outsider PRO respond approve/reject | 404, percent остаётся 12% |
-| Participant B approve pending | 200 APPROVED, percent → 13% |
+| `npm run test:proxy` | **68/68** |
+| lint + build | ok |
+| Unit: 5/10, 15/0, 20→error@15, negative, empty | ok |
+| curl: pending term 20% → pool still 15%; after approve → 20%; create 7/13 | ok |
+| Браузер: 21%@20 pool → error, value kept, link; 7% → 13% reward, create ok | ok |
+
+## Фактические проценты (после term-change → 20%)
+
+| Сценарий | Клиенту | PROF |
+| --- | --- | --- |
+| M1 Тестовая сеть, pool 20%, ввод 7% | 7% | 13% |
+| Self-scan, ввод 7% | 7% | 0% |
+
+## Ограничения
+
+- Клиентские URL/QR — test-only (`127.0.0.1:3001`).
+- Fixture JWT, не OAuth.
+- Navigator без изменений.
+
+## Не в scope
+
+- Сканер, покупки, начисления (M3-B).
