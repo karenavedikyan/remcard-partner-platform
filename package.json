@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:proxy": "tsx --test src/lib/remcard-proxy.test.ts src/lib/partnership-rules.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts src/lib/certificate-code.test.ts src/lib/order-totals.test.ts src/lib/scanner-flow.test.ts src/lib/scanner-order-submit.test.ts src/lib/qr-scanner-decode.test.ts src/lib/history-filters.test.ts src/lib/history-mappers.test.ts src/lib/history-links.test.ts src/lib/history-format.test.ts src/lib/history-sources.test.ts src/lib/history-labels.test.ts"
+    "test:proxy": "tsx --test src/lib/remcard-proxy.test.ts src/lib/partnership-rules.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts src/lib/certificate-code.test.ts src/lib/order-totals.test.ts src/lib/scanner-flow.test.ts src/lib/scanner-order-submit.test.ts src/lib/store-order-attempt.test.ts src/lib/store-order-idempotency-key.test.ts src/lib/qr-scanner-decode.test.ts src/lib/history-filters.test.ts src/lib/history-mappers.test.ts src/lib/history-links.test.ts src/lib/history-format.test.ts src/lib/history-sources.test.ts src/lib/history-labels.test.ts"
   },
   "dependencies": {
     "html5-qrcode": "^2.3.8",

@@ -11,7 +11,13 @@ export class OrderResponseUncertainError extends Error {
 export const UNCERTAIN_ORDER_HEADING = "Результат неизвестен";
 
 export const UNCERTAIN_ORDER_DETAIL =
-  "Покупка могла сохраниться. Не подтверждайте её повторно до проверки.";
+  "Покупка могла сохраниться. Нажмите «Проверить результат» с тем же ключом — не меняйте суммы.";
+
+export const IDEMPOTENCY_MISMATCH_MESSAGE =
+  "Idempotency-Key уже использован с другим телом запроса. Начните новую покупку.";
+
+export const STORAGE_SAVE_FAILED_MESSAGE =
+  "Не удалось сохранить попытку покупки. Проверьте настройки браузера и повторите.";
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -81,8 +87,30 @@ export function canSubmitOrder(state: Pick<OrderSubmitUiState, "submitting" | "o
   return !state.submitting && !state.orderUncertain;
 }
 
+export function canCheckUncertainOrder(
+  state: Pick<OrderSubmitUiState, "submitting" | "orderUncertain">,
+): boolean {
+  return state.orderUncertain && !state.submitting;
+}
+
+export function isIdempotencyMismatchError(error: unknown): boolean {
+  return error instanceof RemcardApiError && error.status === 409;
+}
+
+/** Preserve session attempt for manual retry (unknown result or auth loss). */
+export function shouldPreserveAttemptOnError(error: unknown): boolean {
+  if (isUncertainOrderFailure(error)) {
+    return true;
+  }
+  if (error instanceof RemcardApiError && error.status === 401) {
+    return true;
+  }
+  return false;
+}
+
 export type OrderSubmitEvent =
   | { type: "submit_start" }
+  | { type: "retry_check_start" }
   | { type: "submit_success"; payload: unknown }
   | { type: "submit_error"; error: unknown };
 
@@ -101,6 +129,16 @@ export function reduceOrderSubmitState(
         submitting: true,
         submitError: "",
         orderUncertain: false,
+        postCount: state.postCount + 1,
+      };
+    case "retry_check_start":
+      if (!canCheckUncertainOrder(state)) {
+        return state;
+      }
+      return {
+        ...state,
+        submitting: true,
+        submitError: "",
         postCount: state.postCount + 1,
       };
     case "submit_success": {
@@ -124,6 +162,15 @@ export function reduceOrderSubmitState(
       }
     }
     case "submit_error": {
+      if (isIdempotencyMismatchError(event.error)) {
+        return {
+          ...state,
+          submitting: false,
+          orderUncertain: false,
+          submitError: IDEMPOTENCY_MISMATCH_MESSAGE,
+          success: null,
+        };
+      }
       if (isUncertainOrderFailure(event.error)) {
         return {
           ...state,

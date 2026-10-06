@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { RemcardApiError } from "./api-client.ts";
 import {
+  canCheckUncertainOrder,
   canSubmitOrder,
   reduceOrderSubmitState,
   validateOrderCreateResponse,
@@ -111,6 +112,25 @@ describe("reduceOrderSubmitState", () => {
     const blocked = reduceOrderSubmitState(state, { type: "submit_start" });
     assert.equal(blocked.postCount, 1);
     assert.equal(blocked.submitting, false);
+  });
+
+  it("shows mismatch message on 409 without uncertain retry state", () => {
+    const started = reduceOrderSubmitState(initialState, { type: "submit_start" });
+    const failed = reduceOrderSubmitState(started, {
+      type: "submit_error",
+      error: new RemcardApiError(409, "Idempotency-Key уже использован с другим телом запроса"),
+    });
+    assert.equal(failed.orderUncertain, false);
+    assert.match(failed.submitError, /другим телом запроса/);
+    assert.equal(canSubmitOrder(failed), true);
+  });
+
+  it("allows retry check when uncertain", () => {
+    const uncertain = { ...initialState, orderUncertain: true };
+    assert.equal(canCheckUncertainOrder(uncertain), true);
+    const retry = reduceOrderSubmitState(uncertain, { type: "retry_check_start" });
+    assert.equal(retry.submitting, true);
+    assert.equal(retry.postCount, 1);
   });
 
   it("treats 201 with invalid JSON error as uncertain", () => {

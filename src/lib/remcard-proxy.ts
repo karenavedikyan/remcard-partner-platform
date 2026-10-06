@@ -3,6 +3,7 @@ import {
   applyUpstreamAuthHeaders,
   assertBackendUrlWithoutCredentials,
 } from "./remcard-upstream-auth";
+import { parseStoreOrderIdempotencyKey } from "./store-order-idempotency-key";
 
 export const UPSTREAM_TIMEOUT_MS = 15_000;
 
@@ -70,6 +71,8 @@ export type ProxyRequestInput = {
   cookieHeader: string | null;
   origin: string | null;
   bodyText?: string;
+  /** Raw Idempotency-Key from client — validated and forwarded only for POST /api/store/order. */
+  idempotencyKeyHeader?: string | null;
 };
 
 export type ProxyResponseResult =
@@ -80,8 +83,32 @@ export type ProxyResponseResult =
       contentType: string | null;
       setCookies: string[];
       location: string | null;
+      idempotentReplayed: string | null;
     }
   | { ok: false; status: number; body: string };
+
+const STORE_ORDER_PATH = "/api/store/order";
+
+export function resolveStoreOrderIdempotencyKey(
+  method: string,
+  pathname: string,
+  rawHeader: string | null | undefined,
+): { ok: true; key: string | null } | { ok: false; status: number; body: string } {
+  if (method.toUpperCase() !== "POST" || pathname !== STORE_ORDER_PATH) {
+    return { ok: true, key: null };
+  }
+
+  const parsed = parseStoreOrderIdempotencyKey(rawHeader);
+  if (!parsed.ok) {
+    return {
+      ok: false,
+      status: 400,
+      body: JSON.stringify({ error: parsed.error }),
+    };
+  }
+
+  return { ok: true, key: parsed.key };
+}
 
 export function normalizeProxyPath(pathSegments: string[]): string | null {
   try {
@@ -293,6 +320,15 @@ export async function proxyRemcardRequest(
     return { ok: false, status: 403, body: JSON.stringify({ error: "Path not allowed" }) };
   }
 
+  const idempotency = resolveStoreOrderIdempotencyKey(
+    input.method,
+    pathname,
+    input.idempotencyKeyHeader,
+  );
+  if (!idempotency.ok) {
+    return idempotency;
+  }
+
   const upperMethod = input.method.toUpperCase();
   if (
     upperMethod !== "GET" &&
@@ -331,6 +367,10 @@ export async function proxyRemcardRequest(
   const auth = applyUpstreamAuthHeaders(headers);
   if (!auth.ok) {
     return { ok: false, status: 503, body: JSON.stringify({ error: auth.message }) };
+  }
+
+  if (idempotency.key) {
+    headers.set("Idempotency-Key", idempotency.key);
   }
 
   const init: RequestInit = {
@@ -376,6 +416,7 @@ export async function proxyRemcardRequest(
     contentType: upstream.headers.get("content-type"),
     setCookies: filterAllowedSetCookies(rawSetCookies),
     location,
+    idempotentReplayed: upstream.headers.get("Idempotent-Replayed"),
   };
 }
 
@@ -398,6 +439,10 @@ export function buildProxyNextResponse(result: ProxyResponseResult): Response {
 
   if (result.location) {
     headers.set("location", result.location);
+  }
+
+  if (result.idempotentReplayed) {
+    headers.set("Idempotent-Replayed", result.idempotentReplayed);
   }
 
   for (const cookie of filterAllowedSetCookies(result.setCookies)) {

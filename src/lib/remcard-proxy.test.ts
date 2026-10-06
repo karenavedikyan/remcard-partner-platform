@@ -18,12 +18,14 @@ import {
 type StubState = {
   lastCookie: string | null;
   lastAuthorization: string | null;
+  lastIdempotencyKey: string | null;
   hang: boolean;
 };
 
 const stubState: StubState = {
   lastCookie: null,
   lastAuthorization: null,
+  lastIdempotencyKey: null,
   hang: false,
 };
 
@@ -88,6 +90,28 @@ const stubServer = createServer(async (request, response) => {
   if (url.pathname === "/api/auth/me" && request.method === "HEAD") {
     response.writeHead(204);
     response.end();
+    return;
+  }
+
+  if (url.pathname === "/api/store/order" && request.method === "POST") {
+    stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    response.writeHead(201, {
+      "content-type": "application/json",
+      ...(stubState.lastIdempotencyKey === "replay-key"
+        ? { "Idempotent-Replayed": "true" }
+        : {}),
+    });
+    response.end(
+      JSON.stringify({
+        order: { id: "ord-stub-1" },
+        summary: {
+          totalAmount: 1000,
+          discountAmount: 100,
+          isSelfScan: false,
+          proBonusAmount: 100,
+        },
+      }),
+    );
     return;
   }
 
@@ -299,6 +323,7 @@ describe("remcard proxy transport checks", () => {
       contentType: "application/json",
       setCookies: ["unexpected_cookie=value; Path=/; HttpOnly"],
       location: null,
+      idempotentReplayed: null,
     });
 
     assert.equal(response.headers.get("set-cookie"), null);
@@ -617,6 +642,71 @@ describe("remcard proxy transport checks", () => {
     }
     assert.equal(failure.status, 401);
     assert.equal(failure.setCookies.length, 0);
+  });
+
+  it("requires Idempotency-Key for POST /api/store/order and forwards valid keys", async () => {
+    const missing = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/store/order",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ certificateCode: "RC-X", items: [] }),
+      idempotencyKeyHeader: null,
+    });
+
+    assert.equal(missing.ok, false);
+    if (missing.ok) return;
+    assert.equal(missing.status, 400);
+
+    const invalid = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/store/order",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ certificateCode: "RC-X", items: [] }),
+      idempotencyKeyHeader: "bad key!",
+    });
+
+    assert.equal(invalid.ok, false);
+    if (invalid.ok) return;
+    assert.equal(invalid.status, 400);
+
+    const ok = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/store/order",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ certificateCode: "RC-X", items: [] }),
+      idempotencyKeyHeader: "550e8400-e29b-41d4-a716-446655440000",
+    });
+
+    assert.equal(ok.ok, true);
+    if (!ok.ok) return;
+    assert.equal(stubState.lastIdempotencyKey, "550e8400-e29b-41d4-a716-446655440000");
+
+    const replay = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/store/order",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ certificateCode: "RC-X", items: [] }),
+      idempotencyKeyHeader: "replay-key",
+    });
+
+    assert.equal(replay.ok, true);
+    if (!replay.ok) return;
+    assert.equal(replay.idempotentReplayed, "true");
+
+    const clientResponse = buildProxyNextResponse(replay);
+    assert.equal(clientResponse.headers.get("Idempotent-Replayed"), "true");
   });
 
   it("times out hung upstream requests", async () => {

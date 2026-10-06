@@ -25,7 +25,23 @@ type FetchOptions = {
   body?: unknown;
   cookieHeader?: string;
   signal?: AbortSignal;
+  /** Required for POST /api/store/order purchase attempts. */
+  idempotencyKey?: string;
 };
+
+export type RemcardFetchMeta = {
+  idempotentReplayed: boolean;
+};
+
+function buildRemcardFetchHeaders(options: FetchOptions): HeadersInit {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (options.idempotencyKey) {
+    headers["Idempotency-Key"] = options.idempotencyKey;
+  }
+  return headers;
+}
 
 /**
  * Browser-safe client: calls the local BFF proxy, never the RemCard backend directly.
@@ -64,15 +80,21 @@ export async function remcardFetch<T>(
   path: string,
   options: FetchOptions = {},
 ): Promise<T> {
+  const { payload } = await remcardFetchWithMeta<T>(path, options);
+  return payload;
+}
+
+export async function remcardFetchWithMeta<T>(
+  path: string,
+  options: FetchOptions = {},
+): Promise<{ payload: T; meta: RemcardFetchMeta }> {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
   let response: Response;
   try {
     response = await fetch(`/api/remcard${normalizedPath}`, {
       method: options.method ?? "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: buildRemcardFetchHeaders(options),
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       credentials: "include",
       cache: "no-store",
@@ -108,7 +130,12 @@ export async function remcardFetch<T>(
     );
   }
 
-  return payload as T;
+  return {
+    payload: payload as T,
+    meta: {
+      idempotentReplayed: response.headers.get("Idempotent-Replayed") === "true",
+    },
+  };
 }
 
 export async function getAuthMe() {
