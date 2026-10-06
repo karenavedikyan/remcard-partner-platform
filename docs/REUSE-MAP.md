@@ -39,13 +39,17 @@
 | История → Покупки (по рекомендациям) | `/pro/stats` (метрики), заказы через API | `GET /api/pro/orders?branchId=` | `orders[]`: id, createdAt, clientName, totalAmount, discountAmount, proBonus, status, storeName, branchName, promoCode | PRO + `getProContext` / `certificateOrdersWhereForProContext` | max **200** записей; **нет позиций** (items); серверной пагинации/поиска нет |
 | История → Начисления | `/pro/wallet` (`page.tsx`) | `GET /api/pro/wallet/transactions` | `transactions[]`: id, amount, status, createdAt, paidAt, counterpartyName, promoCode, isSelfScan, items[] | PRO; роль кошелька AGENT/STORE/MASTER через `resolveWalletContext` | Полный список без пагинации; UI **исключает** isSelfScan и amount≤0; canPayout **не используется** (выплаты вне scope) |
 | Баланс (не в UI M3-C) | `/pro/wallet` | `GET /api/pro/wallet/balance` | pendingRub, paidRub, count | PRO | Allowlisted; не отображаем mock-метрики |
-| Детали покупки | **нет** order detail route | Сборка из списков выше + связь по promoCode/bonusId | Сохранённые суммы/проценты из orderItems (store) или proBonus (issued) | Backend фильтрует по user/context | **Не пересчитываем** по текущим terms; issued без line items — явная пометка |
-| Детали начисления | wallet tx card | wallet/transactions + связь purchase | items[].bonusPercent, bonusAmount | Только свои tx | AgentBonus/Bonus — одна запись на роль, не дублируем |
-| Сканер → «Открыть покупку» | — | `/history/purchases/{orderId}?promo=` | orderId из POST order 201; fallback promoCode | PRO | Store rows матчатся по promo, т.к. bonus-list без orderId |
+| Детали покупки | **нет** order detail route | Сборка из списков + find by id/orderId | Сохранённые суммы/проценты из orderItems (store) или proBonus (issued) | Backend фильтрует по user/context | **Не пересчитываем** по текущим terms; issued без line items — явная пометка; `accepted-bonus`: «Дата начисления», `issued-order`: «Дата покупки» |
+| Детали начисления | wallet tx card | wallet/transactions + связь purchase | items[].bonusPercent, bonusAmount | Только свои tx | AgentBonus/Bonus — одна запись на role; связь purchase только по bonusId |
+| Сканер → «Открыть покупку» | — | `/history/purchases/{orderId}` | orderId из POST order 201 | PRO | Только issued-order по orderId; bonus-list без orderId → not-found с пояснением |
 
 **Legacy (не primary):** `GET /api/bonus/history`, `GET /api/bonus/balance` — allowlisted, navigator wallet использует `/api/pro/wallet/*`.
 
-**Клиентские фильтры:** поиск, статус заказа (покупки) / статус начисления (начисления), период, направление — **только по загруженным записям**.
+**Клиентские фильтры:** поиск, статус заказа (покупки) / статус начисления (начисления), период, направление — **только по загруженным записям**. Период: для «Принято у меня» — по `createdAt` начисления (bonus-list); для «По рекомендациям» — по дате покупки (pro/orders).
+
+**Предупреждения UI (источник, не число строк):**
+- `sources.acceptedBonusList` (bonus-list 200) → постоянная пометка об ограничении «Принято у меня»
+- источник доступен, accepted-строк 0 → «покупки без начисления могут отсутствовать; отсутствие записи не означает, что покупка не сохранилась»
 
 **Связи (M3-C fix):**
 - purchase ↔ accrual: **только** `purchase.bonusId === accrual.id`
@@ -121,9 +125,9 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | **Preview заказа (M3-B)** | Order preview | `POST /api/store/order/preview` | Store partner (PRO) | preview route | curl + браузер; не создаёт Order |
 | **Покупка (M3-B)** | Place order | `POST /api/store/order` | Store + branch context | order route | curl: 1000₽ → disc 50, bonus 100 @ 5/10% |
 | **История (M3-C)** | Purchases + accruals hub | `/history`, `HistoryHub.tsx` | PRO | store/bonus-list + pro/orders + wallet/transactions | Tabs, client filters, loading/empty/error |
-| **Детали покупки (M3-C)** | — (нет в navigator) | client find by id/promo | PRO | lists above | Items если есть; linked accruals по promo |
-| **Детали начисления (M3-C)** | wallet tx card | wallet/transactions | PRO | — | Items, link to purchase |
-| **Сканер → история (M3-C)** | — | link after order 201 | PRO | order.id + promo | `/history/purchases/{orderId}?promo=` |
+| **Детали покупки (M3-C)** | — (нет в navigator) | client find by id/orderId | PRO | lists above | Items если есть; linked accrual только по bonusId; даты: начисление vs покупка |
+| **Детали начисления (M3-C)** | wallet tx card | wallet/transactions | PRO | — | Items, link to purchase по bonusId |
+| **Сканер → история (M3-C)** | — | link after order 201 | PRO | order.id | `/history/purchases/{orderId}` |
 | История начислений (legacy) | Bonus history | `GET /api/bonus/history` | PROF | bonus API | Allowlisted; UI использует wallet/transactions |
 | Баланс | Available bonuses | `GET /api/bonus/balance`, `/api/pro/wallet/balance` | PROF | bonus/wallet API | Allowlisted; UI M3-C не показывает |
 

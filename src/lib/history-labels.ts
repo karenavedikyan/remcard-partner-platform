@@ -23,6 +23,20 @@ export function purchaseOrderStatusTone(row: PurchaseRow): HistoryStatusTone {
   return orderStatusTone(row.orderStatus);
 }
 
+/** Label for the primary date field on a purchase row. */
+export function purchaseRowDateLabel(row: PurchaseRow): string {
+  return row.source === "accepted-bonus" ? "Дата начисления" : "Дата покупки";
+}
+
+export const PURCHASE_PERIOD_FILTER_NOTE =
+  "Период: для «Принято у меня» — по дате начисления; для «По рекомендациям» — по дате покупки.";
+
+export const ACCEPTED_BONUS_SOURCE_NOTE =
+  "«Принято у меня»: только покупки с начислением профклиенту. Без начисления и самосканирование могут отсутствовать.";
+
+export const ACCEPTED_BONUS_EMPTY_NOTE =
+  "Список пуст — покупки без начисления здесь не отображаются. Отсутствие записи не означает, что покупка не сохранилась.";
+
 export const BONUS_STATUS_LABELS: Record<string, string> = {
   CALCULATED: "Начислено",
   CONFIRMED: "Подтверждено",

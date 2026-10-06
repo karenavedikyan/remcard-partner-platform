@@ -42,10 +42,11 @@ export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
     setLoading(true);
     setError("");
     try {
-      const [accruals, purchases] = await Promise.all([
+      const [accruals, purchaseResult] = await Promise.all([
         fetchAccrualRows(),
         fetchPurchaseRows(user),
       ]);
+      const purchases = purchaseResult.purchases;
       const row = findAccrualById(accruals, accrualId);
       if (!row) {
         setAccrual(null);

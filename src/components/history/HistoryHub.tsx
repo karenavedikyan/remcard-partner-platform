@@ -12,15 +12,24 @@ import {
 } from "@/lib/history-filters";
 import { formatMoneyRub } from "@/lib/history-format";
 import {
+  ACCEPTED_BONUS_EMPTY_NOTE,
+  ACCEPTED_BONUS_SOURCE_NOTE,
+  PURCHASE_PERIOD_FILTER_NOTE,
   accrualScopeLabel,
   bonusStatusLabel,
   bonusStatusTone,
   orderStatusLabel,
   purchaseOrderStatusLabel,
   purchaseOrderStatusTone,
+  purchaseRowDateLabel,
 } from "@/lib/history-labels";
 import { purchaseDetailHref, purchaseOrderNumberLabel } from "@/lib/history-links";
 import { fetchHistoryData } from "@/lib/history-loader";
+import {
+  shouldShowAcceptedBonusEmptyNote,
+  shouldShowAcceptedBonusLimitation,
+  type HistorySourceAvailability,
+} from "@/lib/history-sources";
 import type { AccrualRow, HistoryFilters, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Tabs } from "@/components/ui/Tabs";
@@ -53,7 +62,7 @@ function PurchaseRowCard({ row }: { row: PurchaseRow }) {
             {row.promoCode ?? "Документ"} · {formatMoneyRub(row.payableAmount)}
           </p>
           <p className={styles.meta}>
-            {formatDate(row.createdAt)}
+            {purchaseRowDateLabel(row)}: {formatDate(row.createdAt)}
             {orderNumber ? ` · №${orderNumber}` : " · № заказа недоступен"} ·{" "}
             {row.direction === "accepted" ? "Принято у меня" : "По моей рекомендации"}
           </p>
@@ -114,18 +123,25 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [accruals, setAccruals] = useState<AccrualRow[]>([]);
   const [hasIssuedPurchases, setHasIssuedPurchases] = useState(false);
-  const [hasAcceptedPurchases, setHasAcceptedPurchases] = useState(false);
+  const [sources, setSources] = useState<HistorySourceAvailability>({
+    acceptedBonusList: false,
+    issuedOrders: false,
+  });
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const { purchases: purchaseRows, accruals: accrualRows } = await fetchHistoryData(user);
+      const {
+        purchases: purchaseRows,
+        accruals: accrualRows,
+        sources: sourceFlags,
+      } = await fetchHistoryData(user);
 
       setAccruals(accrualRows);
       setPurchases(purchaseRows);
-      setHasAcceptedPurchases(purchaseRows.some((row) => row.direction === "accepted"));
+      setSources(sourceFlags);
       setHasIssuedPurchases(purchaseRows.some((row) => row.direction === "issued"));
     } catch (caught) {
       setError(
@@ -145,7 +161,16 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const purchaseStatuses = useMemo(() => purchaseStatusOptions(purchases), [purchases]);
   const accrualStatuses = useMemo(() => accrualStatusOptions(accruals), [accruals]);
 
-  const directionFilterVisible = hasAcceptedPurchases && hasIssuedPurchases;
+  const directionFilterVisible =
+    sources.acceptedBonusList && sources.issuedOrders && hasIssuedPurchases;
+  const acceptedRowCount = purchases.filter((row) => row.direction === "accepted").length;
+  const showAcceptedLimitation = shouldShowAcceptedBonusLimitation(sources);
+  const showAcceptedEmptyNote = shouldShowAcceptedBonusEmptyNote(
+    sources,
+    acceptedRowCount,
+    loading,
+    Boolean(error),
+  );
 
   return (
     <>
@@ -162,11 +187,10 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         Поиск и фильтры — по загруженным записям (до 200 заказов по рекомендациям).
       </p>
 
-      {hasAcceptedPurchases ? (
-        <p className={styles.note}>
-          «Принято у меня»: только покупки с начислением профклиенту. Без начисления и
-          самосканирование могут отсутствовать.
-        </p>
+      {showAcceptedLimitation ? <p className={styles.note}>{ACCEPTED_BONUS_SOURCE_NOTE}</p> : null}
+
+      {tab === "purchases" ? (
+        <p className={styles.note}>{PURCHASE_PERIOD_FILTER_NOTE}</p>
       ) : null}
 
       <div className={styles.toolbar}>
@@ -234,6 +258,10 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
           <p>{error}</p>
           <Button onClick={() => void loadHistory()}>Повторить</Button>
         </div>
+      ) : null}
+
+      {!loading && !error && tab === "purchases" && showAcceptedEmptyNote ? (
+        <p className={styles.note}>{ACCEPTED_BONUS_EMPTY_NOTE}</p>
       ) : null}
 
       {!loading && !error && tab === "purchases" ? (

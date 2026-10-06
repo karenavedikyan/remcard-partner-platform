@@ -4,6 +4,7 @@ import {
   mapStoreBonusListToPurchases,
   mapWalletTransactionsToAccruals,
 } from "@/lib/history-mappers";
+import { isStoreLikePartner, type HistorySourceAvailability } from "@/lib/history-sources";
 import type {
   AccrualRow,
   ProOrdersResponse,
@@ -27,16 +28,20 @@ async function fetchWalletRole(): Promise<WalletRole | null> {
   }
 }
 
-export async function fetchPurchaseRows(user: AuthUser): Promise<PurchaseRow[]> {
+export async function fetchPurchaseRows(user: AuthUser): Promise<{
+  purchases: PurchaseRow[];
+  sources: HistorySourceAvailability;
+}> {
   const purchaseRows: PurchaseRow[] = [];
-  const isStoreLike =
-    user.partnerType === "STORE" ||
-    user.partnerType === "COMPANY" ||
-    user.partnerType === "MASTER";
+  const sources: HistorySourceAvailability = {
+    acceptedBonusList: false,
+    issuedOrders: false,
+  };
 
-  if (isStoreLike) {
+  if (isStoreLikePartner(user)) {
     try {
       const storeData = await remcardFetch<StoreBonusListResponse>("/api/store/bonus-list");
+      sources.acceptedBonusList = true;
       purchaseRows.push(...mapStoreBonusListToPurchases(storeData));
     } catch (caught) {
       if (!(caught instanceof RemcardApiError && caught.status === 403)) {
@@ -47,6 +52,7 @@ export async function fetchPurchaseRows(user: AuthUser): Promise<PurchaseRow[]> 
 
   try {
     const proOrders = await remcardFetch<ProOrdersResponse>("/api/pro/orders");
+    sources.issuedOrders = true;
     purchaseRows.push(...mapProOrdersToPurchases(proOrders));
   } catch (caught) {
     if (!(caught instanceof RemcardApiError && (caught.status === 403 || caught.status === 404))) {
@@ -54,9 +60,12 @@ export async function fetchPurchaseRows(user: AuthUser): Promise<PurchaseRow[]> 
     }
   }
 
-  return purchaseRows.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+  return {
+    purchases: purchaseRows.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    ),
+    sources,
+  };
 }
 
 export async function fetchAccrualRows(): Promise<AccrualRow[]> {
@@ -70,10 +79,11 @@ export async function fetchAccrualRows(): Promise<AccrualRow[]> {
 export async function fetchHistoryData(user: AuthUser): Promise<{
   purchases: PurchaseRow[];
   accruals: AccrualRow[];
+  sources: HistorySourceAvailability;
 }> {
-  const [purchases, accruals] = await Promise.all([
+  const [{ purchases, sources }, accruals] = await Promise.all([
     fetchPurchaseRows(user),
     fetchAccrualRows(),
   ]);
-  return { purchases, accruals };
+  return { purchases, accruals, sources };
 }

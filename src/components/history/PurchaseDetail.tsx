@@ -9,6 +9,7 @@ import {
   bonusStatusTone,
   purchaseOrderStatusLabel,
   purchaseOrderStatusTone,
+  purchaseRowDateLabel,
 } from "@/lib/history-labels";
 import {
   findAccrualsForPurchase,
@@ -115,7 +116,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
             <p className={styles.meta}>Номер заказа недоступен в текущем источнике</p>
           )}
           <h2 className={styles.rowTitle}>{purchase.promoCode ?? "Документ"}</h2>
-          <p className={styles.meta}>{formatDate(purchase.createdAt)}</p>
+          <p className={styles.meta}>
+            {purchaseRowDateLabel(purchase)}: {formatDate(purchase.createdAt)}
+          </p>
         </div>
         {orderStatus ? (
           <StatusBadge label={orderStatus} tone={purchaseOrderStatusTone(purchase)} />
