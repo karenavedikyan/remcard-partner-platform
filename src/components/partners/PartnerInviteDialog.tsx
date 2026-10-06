@@ -1,19 +1,29 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import {
+  activeInviteRows,
+  buildInviteFormResetKey,
+  categoriesFromResetKey,
+  createInitialInviteFormState,
+  setInviteFormError,
+  syncInviteFormState,
+  updateInviteGeneralConfirmed,
+  updateInviteNote,
+  updateInviteRowExcluded,
+  updateInviteRowPercent,
+  type InviteFormSnapshot,
+} from "@/lib/invite-form-state";
 import { categoryLabel } from "@/lib/partnership-labels";
 import {
-  buildDefaultInviteRows,
-  buildGeneralInviteRow,
   DEFAULT_GENERAL_PERCENT,
   GENERAL_PARTNERSHIP_CATEGORY,
   inviteRowsToTerms,
   profileUserToPartnerSide,
   resolveInviteTradeSideCategories,
+  searchResultToPartnerSide,
   validateInviteRows,
-  type InviteTermRow,
-  type PartnerSideProfile,
 } from "@/lib/partnership-rules";
 import type { PartnerSearchResult, ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -32,14 +42,31 @@ function partnerTitle(partner: PartnerSearchResult) {
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
-function targetToPartnerSide(target: PartnerSearchResult): PartnerSideProfile {
-  return {
-    id: target.id,
-    partnerType: target.partnerType ?? null,
-    storeCategories: target.storeCategories,
-    specializations: target.specializations,
-    isStoreOwner: target.partnerType === "STORE" || Boolean(target.organizationName),
-  };
+type InviteFormAction =
+  | { type: "sync"; resetKey: string; categories: readonly string[]; blockedReason?: string }
+  | { type: "set_percent"; index: number; percent: string }
+  | { type: "set_excluded"; index: number; excluded: boolean }
+  | { type: "set_note"; note: string }
+  | { type: "set_general_confirmed"; generalConfirmed: boolean }
+  | { type: "set_error"; error: string };
+
+function inviteFormReducer(state: InviteFormSnapshot, action: InviteFormAction): InviteFormSnapshot {
+  switch (action.type) {
+    case "sync":
+      return syncInviteFormState(state, action.resetKey, action.categories, action.blockedReason);
+    case "set_percent":
+      return updateInviteRowPercent(state, action.index, action.percent);
+    case "set_excluded":
+      return updateInviteRowExcluded(state, action.index, action.excluded);
+    case "set_note":
+      return updateInviteNote(state, action.note);
+    case "set_general_confirmed":
+      return updateInviteGeneralConfirmed(state, action.generalConfirmed);
+    case "set_error":
+      return setInviteFormError(state, action.error);
+    default:
+      return state;
+  }
 }
 
 export function PartnerInviteDialog({
@@ -49,45 +76,44 @@ export function PartnerInviteDialog({
   onClose,
   onSent,
 }: PartnerInviteDialogProps) {
-  const inviter = profileUserToPartnerSide(meProfile.user, meProfile.organization);
-  const targetSide = targetToPartnerSide(target);
-  const resolved = useMemo(
-    () => resolveInviteTradeSideCategories(inviter, targetSide),
-    [inviter, targetSide],
-  );
+  const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
+  const targetSide = searchResultToPartnerSide(target);
+  const resolved = resolveInviteTradeSideCategories(inviterSide, targetSide);
+  const resetKey = buildInviteFormResetKey(target.id, resolved.categories);
 
-  const [rows, setRows] = useState<InviteTermRow[]>([]);
-  const [useGeneralFallback, setUseGeneralFallback] = useState(false);
-  const [generalConfirmed, setGeneralConfirmed] = useState(false);
-  const [note, setNote] = useState("");
-  const [error, setError] = useState("");
+  const [form, dispatch] = useReducer(
+    inviteFormReducer,
+    { resetKey, categories: resolved.categories, blockedReason: resolved.blockedReason },
+    (initial) =>
+      createInitialInviteFormState(initial.resetKey, initial.categories, initial.blockedReason),
+  );
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (resolved.categories.length > 0) {
-      setRows(buildDefaultInviteRows(resolved.categories));
-      setUseGeneralFallback(false);
-      setGeneralConfirmed(false);
-    } else {
-      setRows([]);
-      setUseGeneralFallback(true);
-      setGeneralConfirmed(false);
-    }
-    setError("");
-  }, [target.id, resolved.categories]);
+    dispatch({
+      type: "sync",
+      resetKey,
+      categories: categoriesFromResetKey(resetKey, target.id),
+      blockedReason: resolved.blockedReason,
+    });
+  }, [resetKey, resolved.blockedReason, target.id]);
 
   async function submit() {
-    setError("");
-    const activeRows = useGeneralFallback ? [buildGeneralInviteRow()] : rows;
-    const validationError = validateInviteRows(activeRows);
-    if (validationError) {
-      setError(validationError);
+    if (sending) {
       return;
     }
-    if (useGeneralFallback && !generalConfirmed) {
-      setError(
-        `Подтвердите отправку с общими условиями: «${categoryLabel(GENERAL_PARTNERSHIP_CATEGORY)}» — ${DEFAULT_GENERAL_PERCENT}%`,
-      );
+    dispatch({ type: "set_error", error: "" });
+    const activeRows = activeInviteRows(form);
+    const validationError = validateInviteRows(activeRows);
+    if (validationError) {
+      dispatch({ type: "set_error", error: validationError });
+      return;
+    }
+    if (form.useGeneralFallback && !form.generalConfirmed) {
+      dispatch({
+        type: "set_error",
+        error: `Подтвердите отправку с общими условиями: «${categoryLabel(GENERAL_PARTNERSHIP_CATEGORY)}» — ${DEFAULT_GENERAL_PERCENT}%`,
+      });
       return;
     }
 
@@ -97,7 +123,7 @@ export function PartnerInviteDialog({
         method: "POST",
         body: {
           targetUserId: target.id,
-          note: note.trim() || null,
+          note: form.note.trim() || null,
           terms: inviteRowsToTerms(activeRows).map((term) => ({
             ...term,
             categoryLabel: categoryLabel(term.category),
@@ -107,7 +133,10 @@ export function PartnerInviteDialog({
       onSent();
       onClose();
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить приглашение");
+      dispatch({
+        type: "set_error",
+        error: caught instanceof RemcardApiError ? caught.message : "Не удалось отправить приглашение",
+      });
     } finally {
       setSending(false);
     }
@@ -146,8 +175,10 @@ export function PartnerInviteDialog({
             <label className={styles.confirmRow}>
               <input
                 type="checkbox"
-                checked={generalConfirmed}
-                onChange={(event) => setGeneralConfirmed(event.target.checked)}
+                checked={form.generalConfirmed}
+                onChange={(event) =>
+                  dispatch({ type: "set_general_confirmed", generalConfirmed: event.target.checked })
+                }
               />
               <span>
                 Подтверждаю отправку с общими условиями {DEFAULT_GENERAL_PERCENT}% (
@@ -159,7 +190,7 @@ export function PartnerInviteDialog({
 
         {!resolved.blockedReason && resolved.categories.length > 0 ? (
           <div className={styles.termsList}>
-            {rows.map((row, index) => (
+            {form.rows.map((row, index) => (
               <div key={row.category} className={styles.termRow}>
                 <div className={styles.termHeader}>
                   <strong>{categoryLabel(row.category)}</strong>
@@ -167,14 +198,13 @@ export function PartnerInviteDialog({
                     <input
                       type="checkbox"
                       checked={row.excluded}
-                      onChange={(event) => {
-                        const excluded = event.target.checked;
-                        setRows((prev) =>
-                          prev.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, excluded } : item,
-                          ),
-                        );
-                      }}
+                      onChange={(event) =>
+                        dispatch({
+                          type: "set_excluded",
+                          index,
+                          excluded: event.target.checked,
+                        })
+                      }
                     />
                     Исключить
                   </label>
@@ -186,14 +216,9 @@ export function PartnerInviteDialog({
                     min={0}
                     max={100}
                     value={row.percent}
-                    onChange={(event) => {
-                      const percent = event.target.value;
-                      setRows((prev) =>
-                        prev.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, percent } : item,
-                        ),
-                      );
-                    }}
+                    onChange={(event) =>
+                      dispatch({ type: "set_percent", index, percent: event.target.value })
+                    }
                   />
                 ) : null}
               </div>
@@ -203,14 +228,14 @@ export function PartnerInviteDialog({
 
         <TextAreaField
           label="Комментарий к приглашению"
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
+          value={form.note}
+          onChange={(event) => dispatch({ type: "set_note", note: event.target.value })}
           hint="Необязательно"
         />
 
-        {error ? (
+        {form.error ? (
           <p className={styles.error} role="alert">
-            {error}
+            {form.error}
           </p>
         ) : null}
 

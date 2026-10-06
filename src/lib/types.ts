@@ -103,6 +103,8 @@ export type PartnerSearchResult = {
   badges: string[];
   storeCategories: string[];
   partnerType?: string | null;
+  /** Подтверждённый partnerType организации владельца (если API поиска когда‑либо вернёт). */
+  organizationPartnerType?: string | null;
   organizationName?: string | null;
   organizationLogoUrl?: string | null;
   branches: { address: string; city: string }[];

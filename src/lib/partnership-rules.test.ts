@@ -9,8 +9,10 @@ import {
   inviteRowsToTerms,
   partnershipNeedsMyResponse,
   resolveInviteTradeSideCategories,
+  searchResultToPartnerSide,
   validateInviteRows,
 } from "./partnership-rules.ts";
+import type { PartnerSearchResult } from "./types.ts";
 import type { Partnership } from "./types.ts";
 
 const storeInviter = {
@@ -97,6 +99,104 @@ describe("partnership invite rules", () => {
 
   it("rejects invite rows without active categories", () => {
     assert.match(validateInviteRows([{ category: "doors", percent: "10", excluded: true }]) ?? "", /хотя бы одну/);
+  });
+
+  it("uses inviter categories for COMPANY with non-STORE organization (not org name heuristic)", () => {
+    const renovationMaster = {
+      ...masterInviter,
+      specializations: ["renovation"],
+    };
+    const companyTarget = searchResultToPartnerSide({
+      id: "company-1",
+      displayName: "Компания",
+      city: null,
+      photoUrl: null,
+      description: null,
+      specializations: [],
+      badges: [],
+      storeCategories: ["doors"],
+      partnerType: "COMPANY",
+      organizationName: "ООО Компания",
+      organizationPartnerType: "COMPANY",
+      branches: [],
+      rating: null,
+      ratingCount: 0,
+      partnershipStatus: null,
+    } satisfies PartnerSearchResult);
+    const result = resolveInviteTradeSideCategories(renovationMaster, companyTarget);
+    assert.deepEqual(result.categories, ["renovation"]);
+  });
+
+  it("uses target categories for STORE partnerType", () => {
+    const result = resolveInviteTradeSideCategories(masterInviter, storeTarget);
+    assert.deepEqual(result.categories, ["doors", "plumbing"]);
+  });
+
+  it("uses target categories for confirmed STORE organization owner", () => {
+    const storeOrgOwner = searchResultToPartnerSide({
+      id: "owner-1",
+      displayName: "Владелец сети",
+      city: null,
+      photoUrl: null,
+      description: null,
+      specializations: ["renovation"],
+      badges: [],
+      storeCategories: ["doors", "tiles"],
+      partnerType: "MASTER",
+      organizationName: "Сеть магазинов",
+      organizationPartnerType: "STORE",
+      branches: [],
+      rating: null,
+      ratingCount: 0,
+      partnershipStatus: null,
+    } satisfies PartnerSearchResult);
+    const result = resolveInviteTradeSideCategories(masterInviter, storeOrgOwner);
+    assert.deepEqual(result.categories, ["doors", "tiles"]);
+  });
+
+  it("uses inviter categories for MASTER without organization", () => {
+    const soloMaster = searchResultToPartnerSide({
+      id: "solo-1",
+      displayName: "Мастер",
+      city: null,
+      photoUrl: null,
+      description: null,
+      specializations: ["plumbing"],
+      badges: [],
+      storeCategories: [],
+      partnerType: "MASTER",
+      branches: [],
+      rating: null,
+      ratingCount: 0,
+      partnershipStatus: null,
+    } satisfies PartnerSearchResult);
+    const result = resolveInviteTradeSideCategories(masterInviter, soloMaster);
+    assert.deepEqual(result.categories, ["doors", "plumbing"]);
+  });
+
+  it("does not treat organizationName alone as STORE without confirmed org type", () => {
+    const side = searchResultToPartnerSide({
+      id: "company-2",
+      displayName: "Компания",
+      city: null,
+      photoUrl: null,
+      description: null,
+      specializations: [],
+      badges: [],
+      storeCategories: ["doors"],
+      partnerType: "COMPANY",
+      organizationName: "ООО Компания",
+      branches: [],
+      rating: null,
+      ratingCount: 0,
+      partnershipStatus: null,
+    } satisfies PartnerSearchResult);
+    assert.equal(side.isStoreOwner, undefined);
+    const result = resolveInviteTradeSideCategories(
+      { ...masterInviter, specializations: ["renovation"] },
+      side,
+    );
+    assert.deepEqual(result.categories, ["renovation"]);
   });
 });
 

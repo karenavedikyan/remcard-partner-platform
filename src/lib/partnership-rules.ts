@@ -1,4 +1,9 @@
-import type { InviteTermInput, Partnership, ProProfileUser } from "@/lib/types";
+import type {
+  InviteTermInput,
+  PartnerSearchResult,
+  Partnership,
+  ProProfileUser,
+} from "@/lib/types";
 
 export const GENERAL_PARTNERSHIP_CATEGORY = "general";
 export const DEFAULT_GENERAL_PERCENT = 10;
@@ -8,7 +13,11 @@ export type PartnerSideProfile = {
   partnerType: string | null;
   storeCategories: string[];
   specializations: string[];
-  /** Владелец организации типа STORE (из GET /api/pro/profile organization) */
+  /**
+   * true — владелец организации типа STORE (подтверждено сервером).
+   * false — организация подтверждена, но не STORE.
+   * undefined — тип организации неизвестен (API поиска не возвращает partnerType организации).
+   */
   isStoreOwner?: boolean;
 };
 
@@ -70,7 +79,7 @@ export function tradeSideTermCategories(user: PartnerSideProfile): string[] {
 }
 
 function isStoreSide(user: PartnerSideProfile): boolean {
-  return user.partnerType === "STORE" || Boolean(user.isStoreOwner);
+  return user.partnerType === "STORE" || user.isStoreOwner === true;
 }
 
 /** Зеркало tradeSideCategories из POST /api/partnership/invite (navigator). */
@@ -83,7 +92,7 @@ export function resolveInviteTradeSideCategories(
   }
 
   if (inviter.partnerType === "MASTER" || inviter.partnerType === "COMPANY") {
-    if (isStoreSide(target) || target.partnerType === "STORE") {
+    if (isStoreSide(target)) {
       return { categories: tradeSideTermCategories(target), mode: "pro" };
     }
     if (target.partnerType === "MASTER" || target.partnerType === "COMPANY") {
@@ -151,8 +160,44 @@ export function profileUserToPartnerSide(
     partnerType: user.partnerType,
     storeCategories: user.storeCategories,
     specializations: user.specializations,
-    isStoreOwner: organization?.partnerType === "STORE",
+    isStoreOwner:
+      organization == null
+        ? undefined
+        : organization.partnerType === "STORE"
+          ? true
+          : false,
   };
+}
+
+/** Карточка из GET /api/partnership/search — без эвристик по organizationName. */
+export function searchResultToPartnerSide(target: PartnerSearchResult): PartnerSideProfile {
+  const orgType = target.organizationPartnerType;
+  let isStoreOwner: boolean | undefined;
+  if (orgType === "STORE") {
+    isStoreOwner = true;
+  } else if (orgType != null) {
+    isStoreOwner = false;
+  } else {
+    isStoreOwner = undefined;
+  }
+
+  return {
+    id: target.id,
+    partnerType: target.partnerType ?? null,
+    storeCategories: target.storeCategories ?? [],
+    specializations: target.specializations ?? [],
+    isStoreOwner,
+  };
+}
+
+export function inviteSideStableKey(side: PartnerSideProfile): string {
+  return [
+    side.id,
+    side.partnerType ?? "",
+    side.isStoreOwner === true ? "1" : side.isStoreOwner === false ? "0" : "?",
+    side.storeCategories.join(","),
+    side.specializations.join(","),
+  ].join("\0");
 }
 
 export function partnershipNeedsMyResponse(partnership: Partnership, meId: string): boolean {
