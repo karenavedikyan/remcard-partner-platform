@@ -8,6 +8,8 @@ export const UPSTREAM_TIMEOUT_MS = 15_000;
 
 const SESSION_COOKIE = "remcard-token";
 const ALLOWED_COOKIE_NAMES = new Set([SESSION_COOKIE]);
+const UNSAFE_LOCATION_CHARS = /[\u0000-\u001F\u007F\\]/;
+const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
 
 const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: RegExp }> =
   [
@@ -87,6 +89,18 @@ export function isAllowedProxyRoute(method: string, pathname: string): boolean {
   );
 }
 
+export function getCookieHeaderName(cookiePart: string): string | null {
+  const trimmed = cookiePart.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const separator = trimmed.indexOf("=");
+  const rawName = separator === -1 ? trimmed : trimmed.slice(0, separator);
+  const name = rawName.trim();
+  return name || null;
+}
+
 export function filterAllowedCookies(cookieHeader: string | null): string | null {
   if (!cookieHeader) {
     return null;
@@ -96,11 +110,19 @@ export function filterAllowedCookies(cookieHeader: string | null): string | null
     .split(";")
     .map((part) => part.trim())
     .filter((part) => {
-      const name = part.split("=")[0]?.trim();
+      const name = getCookieHeaderName(part);
       return Boolean(name && ALLOWED_COOKIE_NAMES.has(name));
     });
 
   return filtered.length > 0 ? filtered.join("; ") : null;
+}
+
+export function filterAllowedSetCookies(setCookies: readonly string[]): string[] {
+  return setCookies.filter((cookie) => {
+    const firstSegment = cookie.split(";")[0] ?? "";
+    const name = getCookieHeaderName(firstSegment);
+    return Boolean(name && ALLOWED_COOKIE_NAMES.has(name));
+  });
 }
 
 export function isAllowedMutatingOrigin(origin: string | null): boolean {
@@ -117,6 +139,41 @@ export function responseMustNotIncludeBody(status: number, method: string): bool
   );
 }
 
+function containsUnsafeLocationContent(value: string): boolean {
+  if (UNSAFE_LOCATION_CHARS.test(value) || ENCODED_CONTROL_CHARS.test(value)) {
+    return true;
+  }
+
+  try {
+    const decoded = decodeURIComponent(value);
+    if (decoded !== value && UNSAFE_LOCATION_CHARS.test(decoded)) {
+      return true;
+    }
+  } catch {
+    return true;
+  }
+
+  return false;
+}
+
+function getTrustedProxyOrigins(backendBaseUrl: string): Set<string> {
+  const origins = new Set<string>();
+
+  try {
+    origins.add(new URL(assertBackendUrlWithoutCredentials(backendBaseUrl)).origin);
+  } catch {
+    return origins;
+  }
+
+  try {
+    origins.add(new URL(appConfig.appUrl).origin);
+  } catch {
+    // Ignore invalid app URL; backend origin remains enforced.
+  }
+
+  return origins;
+}
+
 export function validateProxyLocation(
   location: string | null,
   backendBaseUrl: string,
@@ -130,14 +187,29 @@ export function validateProxyLocation(
     return null;
   }
 
-  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
-    return trimmed;
+  if (containsUnsafeLocationContent(trimmed)) {
+    return null;
+  }
+
+  if (trimmed.startsWith("//")) {
+    return null;
+  }
+
+  const trustedOrigins = getTrustedProxyOrigins(backendBaseUrl);
+  if (trustedOrigins.size === 0) {
+    return null;
   }
 
   let parsed: URL;
   try {
-    parsed = new URL(trimmed);
+    parsed = trimmed.startsWith("/")
+      ? new URL(trimmed, assertBackendUrlWithoutCredentials(backendBaseUrl))
+      : new URL(trimmed);
   } catch {
+    return null;
+  }
+
+  if (parsed.username || parsed.password) {
     return null;
   }
 
@@ -145,12 +217,20 @@ export function validateProxyLocation(
     return null;
   }
 
-  const backendOrigin = new URL(assertBackendUrlWithoutCredentials(backendBaseUrl)).origin;
-  if (parsed.origin === backendOrigin) {
-    return trimmed;
+  if (!trustedOrigins.has(parsed.origin)) {
+    return null;
   }
 
-  return null;
+  const normalizedTarget = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  if (containsUnsafeLocationContent(normalizedTarget)) {
+    return null;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+
+  return `${parsed.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
 }
 
 export async function proxyRemcardRequest(
@@ -237,7 +317,7 @@ export async function proxyRemcardRequest(
     ? null
     : await upstream.arrayBuffer();
 
-  const setCookies =
+  const rawSetCookies =
     typeof upstream.headers.getSetCookie === "function"
       ? upstream.headers.getSetCookie()
       : upstream.headers.get("set-cookie")
@@ -251,7 +331,7 @@ export async function proxyRemcardRequest(
     status: upstream.status,
     body,
     contentType: upstream.headers.get("content-type"),
-    setCookies,
+    setCookies: filterAllowedSetCookies(rawSetCookies),
     location,
   };
 }
@@ -277,7 +357,7 @@ export function buildProxyNextResponse(result: ProxyResponseResult): Response {
     headers.set("location", result.location);
   }
 
-  for (const cookie of result.setCookies) {
+  for (const cookie of filterAllowedSetCookies(result.setCookies)) {
     headers.append("set-cookie", cookie);
   }
 

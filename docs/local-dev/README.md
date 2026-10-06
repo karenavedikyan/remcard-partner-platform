@@ -2,14 +2,25 @@
 
 Инструкция для изолированной проверки BFF кабинета рядом с `remcard-navigator` **без production** и без копирования приватного кода navigator в этот публичный репозиторий.
 
-## Что понадобится
+## (a) Proxy transport tests — без navigator и БД
 
-- Node.js 22+, pnpm 12.8.1 (navigator), npm (кабинет)
-- Локальная PostgreSQL, слушающая только loopback
-- Отдельная read-only копия `remcard-navigator` на SHA `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` или актуальном `main`
-- Новые локальные секреты; **не** импортировать production `.env`, дампы или JWT
+Можно выполнить **сейчас**, только в checkout partner-platform:
 
-## PostgreSQL
+```bash
+cd /path/to/remcard-partner-platform
+npm ci
+npm run test:proxy
+npm run lint
+env -u NODE_ENV npm run build
+```
+
+Тесты используют локальный HTTP stub на `127.0.0.1`; production не вызывается.
+
+## (b) Интеграционный smoke — если локальная тестовая БД уже создана
+
+Требует заранее подготовленную PostgreSQL `remcard_prof_test` на loopback **и** уже применённую схему navigator (см. блокер (c)). Не импортировать production `.env`, дампы или JWT.
+
+### PostgreSQL (loopback)
 
 ```bash
 sudo apt-get install -y postgresql
@@ -20,73 +31,74 @@ sudo -u postgres createdb remcard_prof_test -O remcard_test
 
 Проверьте `listen_addresses = '127.0.0.1'` и задайте пароль пользователя `remcard_test` локально (значение держите вне Git).
 
-## Navigator (backend, 127.0.0.1:3001)
+### Navigator (backend, 127.0.0.1:3001)
 
 1. Скопируйте `docs/local-dev/env.navigator.example` в `.env.local` **внутри checkout navigator** (файл не коммитить).
 2. Заполните `DATABASE_URL`, `JWT_SECRET`, `STAGING_AUTH_USER`, `STAGING_AUTH_PASSWORD` новыми локальными значениями.
-3. Перед миграцией убедитесь, что host = `127.0.0.1` или `localhost`, имя БД = `remcard_prof_test`.
-4. Установите зависимости и поднимите dev-сервер:
+3. Перед seed убедитесь: host = `127.0.0.1` или `localhost`, имя БД = `remcard_prof_test`.
+4. Установите зависимости **без изменения lockfile**:
 
 ```bash
 cd /path/to/remcard-navigator
-pnpm install
-./node_modules/.bin/prisma db push   # см. docs/reviews/M1-schema-bootstrap-diagnosis.md
+pnpm install --frozen-lockfile
+```
+
+Если frozen lockfile недоступен в вашей среде, используйте `pnpm install` и **не коммитьте** изменения `pnpm-lock.yaml` в navigator.
+
+5. Поднимите dev-сервер **только если схема уже применена** (см. (c)):
+
+```bash
 pnpm exec next dev -H 127.0.0.1 -p 3001
 ```
 
-Рекомендуемые флаги безопасности для теста:
+Рекомендуемые флаги безопасности:
 
-- `REMCARD_DEPLOYMENT=staging` — включает Basic Auth и блокирует bots/webhooks/cron
+- `REMCARD_DEPLOYMENT=staging` — Basic Auth, блок bots/webhooks/cron
 - `REMCARD_CRON_ENABLED=false`
 - bot/webhook/S3/production tokens **не задавать**
 
-## Fixtures
-
-После применения схемы выполните seed **только** в `remcard_prof_test`:
+### Fixtures (идемпотентный seed)
 
 ```bash
 psql "$DATABASE_URL" -f /path/to/remcard-partner-platform/scripts/local/seed-m1-fixtures.sql.example
 ```
 
-Скрипт сам прерывается, если имя БД или host не соответствуют loopback-тесту. Повторный запуск идемпотентен (`ON CONFLICT`).
+Скрипт прерывается, если host/имя БД не соответствуют loopback-тесту.
 
-Fixture userId для PROF: `m1fix-prof-0000000000001`. JWT для проверки сессии выпускается локально с тем же `JWT_SECRET`, что и navigator; это **не** проверка OAuth.
+Fixture userId PROF: `m1fix-prof-0000000000001`. Локальный JWT с тем же `JWT_SECRET` — **fixture-сессия**, не OAuth.
 
-## Partner cabinet (127.0.0.1:3000)
-
-1. Checkout ветки `cursor/m1-foundation-aa2d`.
-2. Скопируйте `docs/local-dev/env.partner.example` в `.env.local`.
-3. Задайте:
-
-```text
-NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000
-REMCARD_API_BASE_URL=http://127.0.0.1:3001
-REMCARD_API_BASIC_USER=<тот же staging user>
-REMCARD_API_BASIC_PASSWORD=<тот же staging password>
-```
-
-**Не** вставляйте credentials в `REMCARD_API_BASE_URL` — Node.js fetch их отклоняет; Basic Auth передаётся только через server env.
+### Partner cabinet (127.0.0.1:3000)
 
 ```bash
 cd /path/to/remcard-partner-platform
 npm ci
+# .env.local из docs/local-dev/env.partner.example
 npm run dev -- -H 127.0.0.1 -p 3000
 ```
 
-## Проверки BFF
+`REMCARD_API_BASE_URL` **без credentials**; Basic Auth — через `REMCARD_API_BASIC_USER` / `REMCARD_API_BASIC_PASSWORD`.
+
+### Проверки BFF (fixture, не OAuth)
 
 ```bash
-# auth/me через BFF (нужен fixture JWT в cookie remcard-token)
 curl -H "Cookie: remcard-token=<fixture-jwt>" http://127.0.0.1:3000/api/remcard/api/auth/me
-
-# logout
 curl -X POST -H "Origin: http://127.0.0.1:3000" -H "Cookie: remcard-token=<fixture-jwt>" \
   http://127.0.0.1:3000/api/remcard/api/auth/logout
 ```
 
+## (c) Блокер: navigator на пустой БД
+
+Штатные команды navigator **не проходят** на пустой PostgreSQL:
+
+- `prisma migrate deploy` — нет baseline `CREATE TABLE "User"`
+- `prisma db push` — падает на FK `BranchService.serviceId` (text) vs `Service.id` (uuid)
+
+Подробности: `docs/reviews/M1-schema-bootstrap-diagnosis.md`.
+
+**Не использовать** patched bootstrap SQL с пропущенными FK как штатную установку. Исправление baseline — отдельная задача в private repo navigator; вне scope partner-platform M1.
+
 ## Ограничения
 
-- Адреса `127.0.0.1:3000/3001` доступны **только внутри вашей dev/Cloud Agent VM**, не на машине пользователя автоматически.
-- Fixture JWT подтверждает серверную сессию, **не** настоящий вход через VK/Telegram/MAX/Yandex.
-- Для полного OAuth нужны тестовые callback URL и секреты провайдера; временные cookies navigator (`oauth_vk_state`, `oauth_yandex_state`, `oauth_pending_consents`) в BFF пока **не** проксируются.
-- Штатный `prisma migrate deploy` на пустой БД navigator может не пройти; см. диагностику схемы.
+- `127.0.0.1:3000/3001` доступны **только внутри dev/Cloud Agent VM**, не автоматически на машине пользователя.
+- Fixture JWT ≠ настоящий OAuth/login.
+- OAuth temp cookies navigator (`oauth_vk_state`, `oauth_yandex_state`, `oauth_pending_consents`) в BFF **не проксируются**.

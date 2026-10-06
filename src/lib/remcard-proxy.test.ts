@@ -5,6 +5,7 @@ import { after, before, describe, it } from "node:test";
 import {
   buildProxyNextResponse,
   filterAllowedCookies,
+  filterAllowedSetCookies,
   isAllowedMutatingOrigin,
   isAllowedProxyRoute,
   normalizeProxyPath,
@@ -86,6 +87,17 @@ const stubServer = createServer(async (request, response) => {
       response.end();
       return;
     }
+    if (mode === "mixed-cookies") {
+      response.writeHead(200, {
+        "content-type": "application/json",
+        "set-cookie": [
+          "remcard-token=session; Path=/; HttpOnly",
+          "unexpected_cookie=evil; Path=/; HttpOnly",
+        ],
+      });
+      response.end(JSON.stringify({ user: null }));
+      return;
+    }
 
     response.writeHead(200, {
       "content-type": "application/json",
@@ -156,6 +168,10 @@ describe("remcard proxy transport checks", () => {
   it("allows only trusted redirect locations", () => {
     assert.equal(validateProxyLocation("/api/auth/me", stubBaseUrl), "/api/auth/me");
     assert.equal(
+      validateProxyLocation("/api/auth/me?next=1#frag", stubBaseUrl),
+      "/api/auth/me?next=1#frag",
+    );
+    assert.equal(
       validateProxyLocation(`${stubBaseUrl}/?auth=ok`, stubBaseUrl),
       `${stubBaseUrl}/?auth=ok`,
     );
@@ -163,6 +179,47 @@ describe("remcard proxy transport checks", () => {
       validateProxyLocation("https://evil.example/oauth", stubBaseUrl),
       null,
     );
+  });
+
+  it("rejects Location bypasses via backslash, protocol-relative, control chars, and userinfo", () => {
+    const backslashBypass = `/\\evil.example/path`;
+    assert.equal(validateProxyLocation(backslashBypass, stubBaseUrl), null);
+    assert.notEqual(
+      new URL(backslashBypass, "https://cabinet.example").href,
+      "https://cabinet.example/api/auth/me",
+    );
+
+    assert.equal(validateProxyLocation("//evil.example/path", stubBaseUrl), null);
+    assert.equal(validateProxyLocation("/api/auth/me%0d%0aInjected: x", stubBaseUrl), null);
+    assert.equal(
+      validateProxyLocation("https://user:pass@127.0.0.1:1/secret", stubBaseUrl),
+      null,
+    );
+    assert.equal(validateProxyLocation("javascript:alert(1)", stubBaseUrl), null);
+  });
+
+  it("filters upstream Set-Cookie names on responses", () => {
+    const filtered = filterAllowedSetCookies([
+      "remcard-token=abc; Path=/; HttpOnly",
+      "unexpected_cookie=evil; Path=/; HttpOnly",
+      "remcard-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    ]);
+    assert.equal(filtered.length, 2);
+    assert.match(filtered[0] ?? "", /^remcard-token=abc/);
+    assert.match(filtered[1] ?? "", /Expires=Thu, 01 Jan 1970/);
+  });
+
+  it("buildProxyNextResponse never forwards disallowed Set-Cookie headers", () => {
+    const response = buildProxyNextResponse({
+      ok: true,
+      status: 200,
+      body: new TextEncoder().encode("{}").buffer,
+      contentType: "application/json",
+      setCookies: ["unexpected_cookie=value; Path=/; HttpOnly"],
+      location: null,
+    });
+
+    assert.equal(response.headers.get("set-cookie"), null);
   });
 
   it("proxies PDF bytes without text corruption", async () => {
@@ -270,6 +327,30 @@ describe("remcard proxy transport checks", () => {
       assert.equal(response.status, status);
       assert.equal(response.headers.get("content-length"), null);
     }
+  });
+
+  it("forwards only allowlisted Set-Cookie headers from upstream", async () => {
+    const result = await proxyRemcardRequest({
+      method: "GET",
+      pathname: "/api/auth/me",
+      search: "?mode=mixed-cookies",
+      contentType: null,
+      cookieHeader: null,
+      origin: null,
+    });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+
+    assert.equal(result.setCookies.length, 1);
+    assert.match(result.setCookies[0] ?? "", /^remcard-token=session/);
+
+    const response = buildProxyNextResponse(result);
+    const cookies = response.headers.getSetCookie?.() ?? [];
+    assert.equal(cookies.length, 1);
+    assert.match(cookies[0] ?? "", /^remcard-token=session/);
   });
 
   it("forwards multiple Set-Cookie headers on logout", async () => {
