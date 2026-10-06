@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
-import { extractCertificateCode } from "@/lib/certificate-code";
+import { parseCertificateCode } from "@/lib/certificate-code";
 import {
   buildOrderItems,
   computeOrderTotals,
@@ -11,18 +11,22 @@ import {
 import type {
   OrderCreateResponse,
   OrderPreviewAllowed,
-  OrderPreviewDenied,
   OrderPreviewResponse,
 } from "@/lib/order-types";
+import {
+  isPreviewSessionAllowed,
+  isUncertainOrderFailure,
+  shouldApplyPreviewResponse,
+  UNCERTAIN_ORDER_DETAIL,
+  UNCERTAIN_ORDER_HEADING,
+  type PreviewSession,
+} from "@/lib/scanner-flow";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { QrScanner } from "./QrScanner";
 import styles from "./scanner.module.css";
 
-type ScanMode = "choose" | "camera" | "manual" | "preview" | "success";
-
-const UNCERTAIN_ORDER_MESSAGE =
-  "Результат покупки не подтверждён. Проверьте операции перед повтором.";
+type ScanMode = "manual" | "camera" | "success";
 
 function formatUsage(usageCount: number, maxUsages: number) {
   if (maxUsages > 0) {
@@ -84,110 +88,194 @@ function PartnerAcceptance({ preview }: { preview: OrderPreviewAllowed }) {
 export function ScannerHub() {
   const [mode, setMode] = useState<ScanMode>("manual");
   const [manualCode, setManualCode] = useState("");
-  const [certificateCode, setCertificateCode] = useState("");
-  const [preview, setPreview] = useState<OrderPreviewAllowed | OrderPreviewDenied | null>(null);
+  const [previewSession, setPreviewSession] = useState<PreviewSession | null>(null);
   const [previewError, setPreviewError] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [amountDrafts, setAmountDrafts] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [orderUncertain, setOrderUncertain] = useState(false);
   const [success, setSuccess] = useState<OrderCreateResponse | null>(null);
+  const [confirmedCode, setConfirmedCode] = useState("");
   const [cameraError, setCameraError] = useState("");
 
+  const previewRequestIdRef = useRef(0);
+  const previewAbortRef = useRef<AbortController | null>(null);
+  const orderAttemptRef = useRef<{ session: PreviewSession; items: ReturnType<typeof buildOrderItems> } | null>(
+    null,
+  );
+
+  const invalidatePreviewRequest = useCallback(() => {
+    previewRequestIdRef.current += 1;
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
+  }, []);
+
   const resetAll = useCallback(() => {
+    invalidatePreviewRequest();
     setMode("manual");
     setManualCode("");
-    setCertificateCode("");
-    setPreview(null);
+    setPreviewSession(null);
     setPreviewError("");
     setPreviewLoading(false);
     setAmountDrafts({});
     setSubmitError("");
     setSubmitting(false);
+    setOrderUncertain(false);
     setSuccess(null);
+    setConfirmedCode("");
     setCameraError("");
-  }, []);
+    orderAttemptRef.current = null;
+  }, [invalidatePreviewRequest]);
 
-  const runPreview = useCallback(async (raw: string) => {
-    const code = extractCertificateCode(raw);
-    if (!code) {
-      setPreviewError("Укажите код документа");
-      return;
-    }
-
-    setPreviewLoading(true);
-    setPreviewError("");
-    setSubmitError("");
-    setSuccess(null);
-    setPreview(null);
-    setCertificateCode(code);
-    setMode("preview");
-
-    try {
-      const data = await remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
-        method: "POST",
-        body: { certificateCode: code },
-      });
-
-      if ("allowed" in data && data.allowed) {
-        setPreview(data);
-        const drafts: Record<string, string> = {};
-        for (const cat of data.availableCategories) {
-          drafts[cat.category] = "";
-        }
-        setAmountDrafts(drafts);
-      } else {
-        setPreview(data as OrderPreviewDenied);
+  const runPreview = useCallback(
+    async (raw: string) => {
+      if (previewLoading) {
+        return;
       }
-    } catch (caught) {
-      setPreview(null);
-      setPreviewError(
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось проверить документ",
-      );
-    } finally {
-      setPreviewLoading(false);
-    }
-  }, []);
+
+      const parsed = parseCertificateCode(raw);
+      if (!parsed.ok) {
+        setPreviewError(parsed.error);
+        setPreviewSession(null);
+        return;
+      }
+
+      const requestId = previewRequestIdRef.current + 1;
+      previewRequestIdRef.current = requestId;
+      previewAbortRef.current?.abort();
+      const abortController = new AbortController();
+      previewAbortRef.current = abortController;
+
+      setPreviewLoading(true);
+      setPreviewError("");
+      setSubmitError("");
+      setOrderUncertain(false);
+      setSuccess(null);
+      setPreviewSession(null);
+      setMode("manual");
+      orderAttemptRef.current = null;
+
+      try {
+        const data = await remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
+          method: "POST",
+          body: { certificateCode: parsed.code },
+          signal: abortController.signal,
+        });
+
+        if (
+          !shouldApplyPreviewResponse(
+            requestId,
+            previewRequestIdRef.current,
+            abortController.signal,
+          )
+        ) {
+          return;
+        }
+
+        const session: PreviewSession = { code: parsed.code, preview: data };
+        setPreviewSession(session);
+
+        if ("allowed" in data && data.allowed) {
+          const drafts: Record<string, string> = {};
+          for (const cat of data.availableCategories) {
+            drafts[cat.category] = "";
+          }
+          setAmountDrafts(drafts);
+        } else {
+          setAmountDrafts({});
+        }
+      } catch (caught) {
+        if (caught instanceof DOMException && caught.name === "AbortError") {
+          return;
+        }
+        if (
+          !shouldApplyPreviewResponse(
+            requestId,
+            previewRequestIdRef.current,
+            abortController.signal,
+          )
+        ) {
+          return;
+        }
+        setPreviewSession(null);
+        setPreviewError(
+          caught instanceof RemcardApiError
+            ? caught.message
+            : "Не удалось проверить документ",
+        );
+      } finally {
+        if (requestId === previewRequestIdRef.current) {
+          setPreviewLoading(false);
+        }
+      }
+    },
+    [previewLoading],
+  );
 
   async function submitOrder() {
-    if (!preview || !preview.allowed || submitting) {
+    if (!isPreviewSessionAllowed(previewSession) || submitting || orderUncertain) {
       return;
     }
+
+    const { code, preview } = previewSession;
 
     const validation = validateOrderAmounts(preview.availableCategories, amountDrafts);
     if (!validation.ok) {
       setSubmitError(validation.message);
+      setOrderUncertain(false);
       return;
     }
 
     const items = buildOrderItems(preview.availableCategories, amountDrafts);
+    const attempt = { session: previewSession, items };
+    orderAttemptRef.current = attempt;
+
     setSubmitting(true);
     setSubmitError("");
+    setOrderUncertain(false);
 
     try {
       const data = await remcardFetch<OrderCreateResponse>("/api/store/order", {
         method: "POST",
-        body: { certificateCode, items },
+        body: { certificateCode: code, items },
       });
+
+      if (orderAttemptRef.current !== attempt) {
+        return;
+      }
+
+      setConfirmedCode(code);
       setSuccess(data);
-      setPreview(null);
+      setPreviewSession(null);
       setMode("success");
+      orderAttemptRef.current = null;
     } catch (caught) {
-      if (caught instanceof RemcardApiError) {
+      if (orderAttemptRef.current !== attempt) {
+        return;
+      }
+
+      if (isUncertainOrderFailure(caught)) {
+        setOrderUncertain(true);
+        setSubmitError("");
+      } else if (caught instanceof RemcardApiError) {
         setSubmitError(caught.message);
+        setOrderUncertain(false);
       } else {
-        setSubmitError(UNCERTAIN_ORDER_MESSAGE);
+        setOrderUncertain(true);
+        setSubmitError("");
       }
     } finally {
-      setSubmitting(false);
+      if (orderAttemptRef.current === attempt) {
+        setSubmitting(false);
+      }
     }
   }
 
+  const allowedPreview = isPreviewSessionAllowed(previewSession) ? previewSession.preview : null;
   const totals =
-    preview && preview.allowed
-      ? computeOrderTotals(preview.availableCategories, amountDrafts)
+    allowedPreview && previewSession
+      ? computeOrderTotals(allowedPreview.availableCategories, amountDrafts)
       : null;
 
   if (mode === "success" && success) {
@@ -196,7 +284,7 @@ export function ScannerHub() {
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>
           <p className={styles.meta}>Операция #{success.order.id}</p>
-          <p className={styles.previewTitle}>Документ {certificateCode}</p>
+          <p className={styles.previewTitle}>Документ {confirmedCode}</p>
           <div className={styles.summaryRow}>
             <span>Сумма покупки</span>
             <span>{formatRub(success.summary.totalAmount)}</span>
@@ -224,12 +312,15 @@ export function ScannerHub() {
     );
   }
 
-  if (preview && preview.allowed) {
+  if (previewSession && allowedPreview) {
+    const { code } = previewSession;
+    const preview = allowedPreview;
     return (
       <div>
         <div className={`${styles.card} ${styles.cardDark}`}>
           <p className={styles.meta}>Документ</p>
           <p className={styles.previewTitle}>{preview.certificate.promoCode}</p>
+          <p className={styles.meta}>Код для операции: {code}</p>
           <p className={styles.meta}>
             {preview.certificate.issuer.label}: {preview.certificate.issuer.name}
           </p>
@@ -273,7 +364,7 @@ export function ScannerHub() {
                   min={0}
                   inputMode="numeric"
                   value={amountDrafts[category.category] ?? ""}
-                  disabled={submitting}
+                  disabled={submitting || orderUncertain}
                   onChange={(event) =>
                     setAmountDrafts((prev) => ({
                       ...prev,
@@ -300,10 +391,17 @@ export function ScannerHub() {
                 <span>{formatRub(totals.payableAmount)}</span>
               </div>
               {!preview.partner.isSelfScan && totals.totalIssuerBonus > 0 ? (
-                <p className={styles.meta} style={{ color: "rgba(255,255,255,0.65)" }}>
+                <p className={styles.meta} style={{ color: "rgba(255, 255, 255, 0.65)" }}>
                   Вознаграждение PROF (ориентир): {formatRub(totals.totalIssuerBonus)}
                 </p>
               ) : null}
+            </div>
+          ) : null}
+
+          {orderUncertain ? (
+            <div className={styles.uncertainBlock} role="alert">
+              <p className={styles.uncertainHeading}>{UNCERTAIN_ORDER_HEADING}</p>
+              <p className={styles.meta}>{UNCERTAIN_ORDER_DETAIL}</p>
             </div>
           ) : null}
 
@@ -315,10 +413,10 @@ export function ScannerHub() {
 
           <div className={styles.actionsRow}>
             <Button variant="secondary" disabled={submitting} onClick={resetAll}>
-              Отмена
+              {orderUncertain ? "Начать заново" : "Отмена"}
             </Button>
             <Button
-              disabled={submitting || !totals || totals.totalAmount <= 0}
+              disabled={submitting || orderUncertain || !totals || totals.totalAmount <= 0}
               onClick={() => void submitOrder()}
             >
               {submitting ? "Подтверждение…" : "Подтвердить покупку"}
@@ -329,14 +427,14 @@ export function ScannerHub() {
     );
   }
 
-  if (preview && !preview.allowed) {
+  if (previewSession && !previewSession.preview.allowed) {
     return (
       <div className={styles.deniedBlock}>
         <p className={styles.previewTitle}>
-          Документ {preview.certificate?.promoCode ?? certificateCode}
+          Документ {previewSession.preview.certificate?.promoCode ?? previewSession.code}
         </p>
         <p className={styles.errorText} role="alert">
-          {preview.message}
+          {previewSession.preview.message}
         </p>
         <div style={{ marginTop: "var(--space-4)" }}>
           <Button variant="secondary" onClick={resetAll}>
@@ -349,76 +447,88 @@ export function ScannerHub() {
 
   return (
     <>
-      {mode !== "camera" ? (
-        <>
-          <div className={styles.scannerHero}>
-            <span className={styles.scannerIcon} aria-hidden>
-              ▣
-            </span>
-            <p className={styles.scannerLead}>
-              Сканируйте QR-код документа или введите промокод вручную. Предпросмотр не создаёт
-              покупку — подтверждение только по кнопке ниже.
-            </p>
-          </div>
-          <div className={styles.modeSwitch}>
-            <button
-              type="button"
-              className={`${styles.modeButton} ${mode !== "camera" ? styles.modeButtonActive : ""}`}
-              onClick={() => {
-                setCameraError("");
-                setPreviewError("");
-                setMode("manual");
-              }}
-            >
-              ⌨ Ввести код
-            </button>
-            <button
-              type="button"
-              className={`${styles.modeButton} ${mode === "camera" ? styles.modeButtonActive : ""}`}
-              onClick={() => {
-                setCameraError("");
-                setPreviewError("");
-                setMode("camera");
-              }}
-            >
-              📷 Сканировать QR
-            </button>
-          </div>
+      <div className={styles.scannerHero}>
+        <span className={styles.scannerIcon} aria-hidden>
+          ▣
+        </span>
+        <p className={styles.scannerLead}>
+          Сканируйте QR-код документа или введите промокод вручную. Предпросмотр не создаёт
+          покупку — подтверждение только по кнопке ниже.
+        </p>
+      </div>
+      <div className={styles.modeSwitch}>
+        <button
+          type="button"
+          className={`${styles.modeButton} ${mode === "manual" ? styles.modeButtonActive : ""}`}
+          onClick={() => {
+            setCameraError("");
+            setPreviewError("");
+            invalidatePreviewRequest();
+            setPreviewLoading(false);
+            setMode("manual");
+          }}
+        >
+          ⌨ Ввести код
+        </button>
+        <button
+          type="button"
+          className={`${styles.modeButton} ${mode === "camera" ? styles.modeButtonActive : ""}`}
+          onClick={() => {
+            setCameraError("");
+            setPreviewError("");
+            invalidatePreviewRequest();
+            setPreviewLoading(false);
+            setMode("camera");
+          }}
+        >
+          📷 Сканировать QR
+        </button>
+      </div>
 
-          {mode !== "camera" ? (
-            <div className={styles.manualRow}>
-              <div className={styles.manualInput}>
-                <TextField
-                  label="Код или промокод"
-                  value={manualCode}
-                  placeholder="RC-XXXXXX"
-                  onChange={(event) => setManualCode(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      void runPreview(manualCode);
-                    }
-                  }}
-                />
-              </div>
-              <Button disabled={previewLoading} onClick={() => void runPreview(manualCode)}>
-                {previewLoading ? "Проверка…" : "Найти"}
-              </Button>
-            </div>
-          ) : null}
-        </>
+      {mode === "manual" ? (
+        <div className={styles.manualRow}>
+          <div className={styles.manualInput}>
+            <TextField
+              label="Код или промокод"
+              value={manualCode}
+              placeholder="RC-XXXXXX"
+              disabled={previewLoading}
+              onChange={(event) => setManualCode(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !previewLoading) {
+                  void runPreview(manualCode);
+                }
+              }}
+            />
+          </div>
+          <Button disabled={previewLoading} onClick={() => void runPreview(manualCode)}>
+            {previewLoading ? "Проверка…" : "Найти"}
+          </Button>
+        </div>
       ) : null}
 
       {mode === "camera" ? (
         <>
           <QrScanner
-            onCode={(code) => void runPreview(code)}
+            onCode={(raw) => {
+              if (!previewLoading) {
+                void runPreview(raw);
+              }
+            }}
             onError={(message) => {
               setCameraError(message);
               setMode("manual");
             }}
           />
           <div style={{ marginTop: "var(--space-3)" }}>
-            <Button variant="secondary" onClick={() => setMode("manual")}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                invalidatePreviewRequest();
+                setPreviewLoading(false);
+                setMode("manual");
+              }}
+            >
               Ввести код вручную
             </Button>
           </div>
@@ -431,7 +541,13 @@ export function ScannerHub() {
         <div className={styles.errorBlock} role="alert">
           <p>{previewError || cameraError}</p>
           {cameraError ? (
-            <Button variant="secondary" onClick={() => setMode("manual")}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setCameraError("");
+                setMode("manual");
+              }}
+            >
               Ввести код вручную
             </Button>
           ) : null}

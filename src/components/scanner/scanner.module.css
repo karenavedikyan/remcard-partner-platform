@@ -212,6 +212,20 @@
   margin: var(--space-3) 0 0;
 }
 
+.uncertainBlock {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: 14px;
+  border: 1px solid rgba(207, 56, 47, 0.35);
+  background: rgba(207, 56, 47, 0.08);
+}
+
+.uncertainHeading {
+  margin: 0 0 var(--space-2);
+  font-weight: 700;
+  color: var(--primary);
+}
+
 .deniedBlock {
   border: 1px solid rgba(207, 56, 47, 0.25);
   background: rgba(207, 56, 47, 0.06);

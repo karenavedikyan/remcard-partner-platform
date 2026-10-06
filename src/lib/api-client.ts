@@ -24,6 +24,7 @@ type FetchOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   cookieHeader?: string;
+  signal?: AbortSignal;
 };
 
 /**
@@ -64,18 +65,38 @@ export async function remcardFetch<T>(
   options: FetchOptions = {},
 ): Promise<T> {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const response = await fetch(`/api/remcard${normalizedPath}`, {
-    method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    credentials: "include",
-    cache: "no-store",
-  });
+
+  let response: Response;
+  try {
+    response = await fetch(`/api/remcard${normalizedPath}`, {
+      method: options.method ?? "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      credentials: "include",
+      cache: "no-store",
+      signal: options.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+    throw new RemcardApiError(0, "Сетевая ошибка", null);
+  }
 
   const text = await response.text();
-  const payload = text ? (JSON.parse(text) as T | ApiErrorBody) : null;
+  let payload: T | ApiErrorBody | null = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text) as T | ApiErrorBody;
+    } catch {
+      if (!response.ok) {
+        throw new RemcardApiError(response.status, response.statusText, null);
+      }
+      throw new RemcardApiError(response.status, "Некорректный ответ сервера", null);
+    }
+  }
 
   if (!response.ok) {
     const errorBody =
