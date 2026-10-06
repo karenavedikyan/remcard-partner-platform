@@ -1,49 +1,55 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M3-A: рекомендации / QR-сертификаты).
+Обновлено: 6 октября 2026 года (M3-A-fix: расчёт процентов, ошибки формы, партнёр programReady).
 
 ## SHA источников
 
 | Источник | SHA / версия | Примечание |
 | --- | --- | --- |
-| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A |
+| `remcard-partner-platform` | ветка `cursor/m3a-certificates-b3e3` (Draft PR #3, base M2) | M3-A + fix |
 | `remcard-navigator` main | `e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7` | Read-only, без изменений |
 | Прототип | https://pro.remcard.ru/ | Design tokens |
 
-## M3-A: реализовано
+## M3-A-fix: исправления
 
-- [x] Раздел «Мои рекомендации» (`/recommendations`): список, пустое состояние, ошибка, повтор.
-- [x] Создание (`/recommendations/new`): партнёры из `available-partners`, условия по категориям, срок, защита от двойного POST в UI.
-- [x] Результат создания: карточка «Готово», QR, код, статус с сервера, копирование ссылки, share, PDF.
-- [x] Карточка документа (`/recommendations/[id]`).
-- [x] BFF allowlist: `available-partners`, `store/certificate/[cuid]`.
-- [x] Предупреждение для test-only URL (localhost, pro.remcard.ru).
-- [x] Навигация «Рекомендации» в sidebar.
+- [x] Расчёт `issuerPercent = poolPercent - discountPercent` как в `CertificateWizard.updateCategoryPercent` (не self-scan).
+- [x] Self-scan: только скидка клиенту, `issuerPercent=0`.
+- [x] UI показывает согласованный %, скидку клиенту и вознаграждение PROF до отправки.
+- [x] Валидация без unhandled rejection: field errors + form error, POST не уходит при ошибке.
+- [x] Seed `scripts/local/seed-m3a-partner-ready.sql.example`: филиал + 15% по «Двери» → `programReady: true` для `M1 Тестовая сеть`.
+- [x] Unit-тесты расчёта и payload (`certificate-percent.test.ts`).
 
-## M2 (база)
+## M3-A: реализовано (база)
 
-- [x] Партнёры, приглашения, term-change (PR #2, SHA `0f1fa2c`).
+- [x] Список, создание, карточка, ссылка, PDF (`/recommendations/*`).
+- [x] BFF allowlist для certificate routes.
 
-## Проверки M3-A
+## Проверки M3-A-fix
 
 | Проверка | Результат |
 | --- | --- |
-| `npm run test:proxy` | 51/51 |
-| `npm run lint` | ok |
-| `env -u NODE_ENV npm run build` | ok |
-| curl: PROF create/list/detail | 201 / 200 / 200 |
-| curl: outsider GET `/store/certificate/[id]` | 404 |
-| curl: public `GET /certificate/[promoCode]` | 200, без issuerPercent |
-| curl: PDF через BFF | 200, `%PDF-1.3` |
-| Браузер: список, форма, карточка, mobile | см. артефакты PR |
+| `npm run test:proxy` | **63/63** |
+| lint + build | ok |
+| curl: partner 5%/10% create | 201, saved 5% + 10% |
+| curl: self-scan 7% | issuerPercent=0 |
+| curl: outsider detail | 404 |
+| public JSON RC-ZVKDI7 | discount 5%, без issuerPercent |
+| PDF RC-95DDYO | RC-95DDYO, срок, QR → `127.0.0.1:3001/certificate/RC-95DDYO/add` |
+| Браузер: 15% pool, 5/10 preview, validation, create, list, mobile | ok, без console errors |
 
-## Ограничения тестовой среды
+## Фактические проценты (синтетика)
 
-- Fixture `m1fix-store` в `available-partners` имеет `programReady: false` (`programMissing: publicLocations`) — партнёр магазина недоступен для создания; проверен self-scan PROF (`m1fix-prof`).
-- Клиентская ссылка в тесте: `http://127.0.0.1:3001/certificate/...` — помечается UI как test-only.
-- Fixture JWT ≠ OAuth; вход через бота отложен.
-- Navigator baseline на пустой PostgreSQL — блокер из M1 (не снят).
+| Сценарий | discountPercent | issuerPercent |
+| --- | --- | --- |
+| M1 Тестовая сеть (15% pool, клиенту 5%) | 5 | 10 |
+| Self-scan M1 Мастер PROF (клиенту 7%) | 7 | 0 |
 
-## Не в scope M3-A
+## Ограничения
 
-- Сканер, preview/order, начисления бонусов.
+- Клиентская ссылка/QR в тесте: `127.0.0.1:3001` — test-only, не для реальных клиентов.
+- Fixture JWT, не OAuth.
+- Navigator baseline на пустой PostgreSQL — блокер M1 (не снят).
+
+## Не в scope
+
+- Сканер, покупки, начисления (M3-B и далее).

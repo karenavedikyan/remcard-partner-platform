@@ -105,6 +105,10 @@
   background: var(--offset);
 }
 
+.conditionRowBlocked {
+  opacity: 0.65;
+}
+
 .conditionMeta {
   color: var(--muted);
   font-size: var(--text-sm);

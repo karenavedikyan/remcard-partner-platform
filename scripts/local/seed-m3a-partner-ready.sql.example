@@ -1,0 +1,42 @@
+-- M3-A: make m1fix-store partner programReady for certificate recommendations.
+-- Run after seed-m1-fixtures.sql.example on loopback remcard_prof_test only.
+
+\set ON_ERROR_STOP on
+
+DO $$
+BEGIN
+  IF current_database() <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing seed: database must be remcard_prof_test';
+  END IF;
+  IF inet_server_addr() IS NOT NULL AND inet_server_addr() <> '127.0.0.1'::inet THEN
+    RAISE EXCEPTION 'Refusing seed: PostgreSQL must listen on loopback';
+  END IF;
+END $$;
+
+-- Active branch satisfies publicLocations gate for STORE organization.
+INSERT INTO "Branch" (
+  id, "organizationId", name, city, address, "isActive", "catalogStatus", "createdAt", "updatedAt"
+) VALUES (
+  'm1fix-branch-00000000001',
+  'm1fix-org-00000000000001',
+  'M1 Тестовая точка',
+  'Краснодар',
+  'ул. Синтетическая, 1',
+  true,
+  'DRAFT',
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  city = EXCLUDED.city,
+  address = EXCLUDED.address,
+  "isActive" = true,
+  "updatedAt" = NOW();
+
+-- Agreed partnership term: 15% pool for doors category.
+UPDATE "PartnershipTerm"
+SET "storePercent" = 15,
+    "updatedAt" = NOW()
+WHERE "partnershipId" = 'm1fix-partnership-000001'
+  AND category = 'doors';

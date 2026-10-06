@@ -107,6 +107,16 @@ psql "$DATABASE_URL" -f /path/to/remcard-partner-platform/scripts/local/seed-m2-
 
 Fixture JWT **не доказывает** настоящий вход. BFF `POST /api/auth/verify-code` остаётся в allowlist для будущего подключения.
 
+### M3-A: partner-ready для рекомендации к магазину
+
+После M1/M2 seed добавьте филиал и 15% по категории:
+
+```bash
+psql "$DATABASE_URL" -f /path/to/remcard-partner-platform/scripts/local/seed-m3a-partner-ready.sql.example
+```
+
+Проверка: `GET /api/store/certificate/available-partners` для `m1fix-prof` — партнёр `M1 Тестовая сеть` с `programReady: true`, `poolPercent: 15`.
+
 ## (c) Блокер: navigator на пустой БД
 
 Штатные команды navigator **не проходят** на пустой PostgreSQL:

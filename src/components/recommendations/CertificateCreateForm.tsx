@@ -2,10 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import {
+  buildCreateCertificatePayload,
+  categoryFieldKey,
+  previewIssuerPercent,
+  resolvePoolPercent,
+} from "@/lib/certificate-percent";
 import type {
   AvailablePartner,
   AvailablePartnersResponse,
-  CreateCertificateBody,
   StoreCertificate,
 } from "@/lib/certificate-types";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +48,7 @@ export function CertificateCreateForm() {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [validityPreset, setValidityPreset] = useState<ValidityPreset>("3");
   const [discountDrafts, setDiscountDrafts] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<StoreCertificate | null>(null);
@@ -95,72 +101,42 @@ export function CertificateCreateForm() {
     );
   }
 
-  function discountKey(storeUserId: string, category: string) {
-    return `${storeUserId}::${category}`;
-  }
-
   async function submit() {
     if (submitting || created) {
       return;
     }
-    setSubmitError("");
-    if (selectedPartners.length === 0) {
-      setSubmitError("Выберите хотя бы одного партнёра");
-      return;
-    }
 
-    const body: CreateCertificateBody = {
+    setSubmitError("");
+    setFieldErrors({});
+
+    const payloadResult = buildCreateCertificatePayload({
+      selectedPartners,
+      discountDrafts,
       validUntil: validityToIso(validityPreset),
       maxUsages: 0,
-      partners: [],
-    };
+    });
 
-    for (const partner of selectedPartners) {
-      const categories = partner.categories.map((cat) => {
-        const raw =
-          discountDrafts[discountKey(partner.storeUserId, cat.category)] ??
-          String(cat.discountPercent);
-        const discountPercent = Number(raw);
-        if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
-          throw new Error(`Некорректная скидка для ${cat.categoryLabel}`);
-        }
-        const pool = cat.poolPercent ?? 100;
-        if (discountPercent + (cat.issuerPercent ?? 0) > pool + 0.001) {
-          throw new Error(
-            `Скидка и вознаграждение не могут превышать ${pool}% для ${cat.categoryLabel}`,
-          );
-        }
-        return {
-          category: cat.category,
-          categoryLabel: cat.categoryLabel,
-          discountPercent,
-          issuerPercent: cat.issuerPercent ?? 0,
-        };
-      });
-      body.partners.push({
-        storeUserId: partner.storeUserId,
-        storeName: partner.storeName,
-        partnershipId: partner.partnershipId,
-        isSelfScan: partner.isSelfScan,
-        categories,
-      });
+    if (!payloadResult.ok) {
+      setSubmitError(payloadResult.formError ?? "Проверьте условия документа");
+      setFieldErrors(payloadResult.fieldErrors);
+      return;
     }
 
     setSubmitting(true);
     try {
       const result = await remcardFetch<StoreCertificate>("/api/store/certificate", {
         method: "POST",
-        body,
+        body: payloadResult.body,
       });
       setCreated(result);
     } catch (caught) {
-      if (caught instanceof Error && !(caught instanceof RemcardApiError)) {
-        setSubmitError(caught.message);
-      } else {
-        setSubmitError(
-          caught instanceof RemcardApiError ? caught.message : "Не удалось создать документ",
-        );
-      }
+      setSubmitError(
+        caught instanceof RemcardApiError
+          ? caught.message
+          : caught instanceof Error
+            ? caught.message
+            : "Не удалось создать документ",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -229,37 +205,81 @@ export function CertificateCreateForm() {
             <section className={styles.formSection}>
               <h3>Условия для клиента</h3>
               <p className={styles.meta}>
-                Укажите скидку по каждой категории. Партнёр и сервер проверят допустимые пределы.
+                Согласованный процент делится между скидкой клиенту и вашим вознаграждением.
+                Сервер проверит окончательные значения.
               </p>
               <div className={styles.conditionsGrid}>
                 {selectedPartners.flatMap((partner) =>
                   partner.categories.map((cat) => {
-                    const key = discountKey(partner.storeUserId, cat.category);
-                    const pool = cat.poolPercent ?? cat.discountPercent;
+                    const key = categoryFieldKey(partner.storeUserId, cat.category);
+                    const pool = resolvePoolPercent({
+                      category: cat.category,
+                      categoryLabel: cat.categoryLabel,
+                      poolPercent: cat.poolPercent,
+                      isSelfScan: partner.isSelfScan,
+                    });
+                    const draftValue =
+                      discountDrafts[key] ??
+                      (cat.discountPercent != null ? String(cat.discountPercent) : "");
+                    const issuerPreview = previewIssuerPercent(
+                      {
+                        category: cat.category,
+                        categoryLabel: cat.categoryLabel,
+                        poolPercent: cat.poolPercent,
+                        isSelfScan: partner.isSelfScan,
+                      },
+                      draftValue,
+                    );
+                    const rowBlocked = pool === null;
+
                     return (
-                      <div key={key} className={styles.conditionRow}>
+                      <div
+                        key={key}
+                        className={`${styles.conditionRow} ${rowBlocked ? styles.conditionRowBlocked : ""}`}
+                      >
                         <strong>
                           {partner.storeName} — {cat.categoryLabel}
                         </strong>
-                        <p className={styles.conditionMeta}>
-                          Доступный предел: {pool}% (скидка + ваше вознаграждение)
-                        </p>
+                        {pool !== null ? (
+                          <p className={styles.conditionMeta}>
+                            Согласовано: {pool}% · скидка клиенту + ваше вознаграждение
+                          </p>
+                        ) : (
+                          <p className={styles.errorText} role="alert">
+                            Нет согласованного процента для этой категории
+                          </p>
+                        )}
                         <TextField
                           label="Скидка клиенту, %"
                           type="number"
                           min={0}
-                          max={100}
-                          value={
-                            discountDrafts[key] ??
-                            String(cat.discountPercent ?? cat.poolPercent ?? 10)
-                          }
-                          onChange={(event) =>
-                            setDiscountDrafts((prev) => ({
-                              ...prev,
-                              [key]: event.target.value,
-                            }))
-                          }
+                          max={pool ?? 100}
+                          disabled={rowBlocked || submitting}
+                          value={draftValue}
+                          error={fieldErrors[key]}
+                          onChange={(event) => {
+                            const next = event.target.value;
+                            setDiscountDrafts((prev) => ({ ...prev, [key]: next }));
+                            if (fieldErrors[key]) {
+                              setFieldErrors((prev) => {
+                                const copy = { ...prev };
+                                delete copy[key];
+                                return copy;
+                              });
+                            }
+                          }}
                         />
+                        {!partner.isSelfScan && pool !== null ? (
+                          <p className={styles.conditionMeta}>
+                            Ваше вознаграждение:{" "}
+                            {issuerPreview != null ? `${issuerPreview}%` : "—"}
+                          </p>
+                        ) : null}
+                        {partner.isSelfScan ? (
+                          <p className={styles.conditionMeta}>
+                            Самосканирование: вознаграждение PROF не начисляется
+                          </p>
+                        ) : null}
                       </div>
                     );
                   }),
@@ -274,6 +294,7 @@ export function CertificateCreateForm() {
               Срок
               <select
                 value={validityPreset}
+                disabled={submitting}
                 onChange={(event) => setValidityPreset(event.target.value as ValidityPreset)}
               >
                 {VALIDITY_OPTIONS.map((option) => (
@@ -293,13 +314,7 @@ export function CertificateCreateForm() {
 
           <Button
             disabled={submitting || selectablePartners.length === 0}
-            onClick={() => {
-              try {
-                void submit();
-              } catch (caught) {
-                setSubmitError(caught instanceof Error ? caught.message : "Ошибка проверки");
-              }
-            }}
+            onClick={() => void submit()}
           >
             {submitting ? "Создание…" : "Создать рекомендацию"}
           </Button>
