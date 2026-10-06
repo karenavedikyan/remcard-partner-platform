@@ -21,6 +21,7 @@ const VALID_ORDER = {
 const initialState = {
   submitting: false,
   orderUncertain: false,
+  orderConflict: false,
   submitError: "",
   success: null,
   postCount: 0,
@@ -83,6 +84,7 @@ describe("reduceOrderSubmitState", () => {
       payload: VALID_ORDER,
     });
     assert.equal(done.orderUncertain, false);
+    assert.equal(done.orderConflict, false);
     assert.equal(done.success?.order.id, "ord-1");
     assert.equal(done.submitError, "");
   });
@@ -92,8 +94,10 @@ describe("reduceOrderSubmitState", () => {
     const failed = reduceOrderSubmitState(started, {
       type: "submit_error",
       error: new RemcardApiError(400, "Некорректная сумма"),
+      wasRetry: false,
     });
     assert.equal(failed.orderUncertain, false);
+    assert.equal(failed.orderConflict, false);
     assert.equal(failed.submitError, "Некорректная сумма");
     assert.equal(canSubmitOrder(failed), true);
     assert.equal(failed.postCount, 1);
@@ -105,6 +109,7 @@ describe("reduceOrderSubmitState", () => {
     state = reduceOrderSubmitState(state, {
       type: "submit_error",
       error: new RemcardApiError(504, "Upstream timeout"),
+      wasRetry: false,
     });
     assert.equal(state.orderUncertain, true);
     assert.equal(canSubmitOrder(state), false);
@@ -114,15 +119,40 @@ describe("reduceOrderSubmitState", () => {
     assert.equal(blocked.submitting, false);
   });
 
-  it("shows mismatch message on 409 without uncertain retry state", () => {
+  it("409 sets conflict state without clearing key semantics", () => {
     const started = reduceOrderSubmitState(initialState, { type: "submit_start" });
     const failed = reduceOrderSubmitState(started, {
       type: "submit_error",
       error: new RemcardApiError(409, "Idempotency-Key уже использован с другим телом запроса"),
+      wasRetry: true,
     });
     assert.equal(failed.orderUncertain, false);
-    assert.match(failed.submitError, /другим телом запроса/);
-    assert.equal(canSubmitOrder(failed), true);
+    assert.equal(failed.orderConflict, true);
+    assert.match(failed.submitError, /отличаются от уже отправленных/);
+    assert.equal(canSubmitOrder(failed), false);
+    assert.equal(canCheckUncertainOrder(failed), false);
+  });
+
+  it("409 after reload: conflict persists, no normal confirm", () => {
+    const conflictState = {
+      ...initialState,
+      orderConflict: true,
+      submitError: "Данные этой попытки отличаются от уже отправленных.",
+    };
+    assert.equal(canSubmitOrder(conflictState), false);
+    assert.equal(canCheckUncertainOrder(conflictState), false);
+  });
+
+  it("retry 400 keeps uncertain (unknown_persist)", () => {
+    const uncertain = { ...initialState, orderUncertain: true };
+    const retry = reduceOrderSubmitState(uncertain, { type: "retry_check_start" });
+    const after = reduceOrderSubmitState(retry, {
+      type: "submit_error",
+      error: new RemcardApiError(400, "bad"),
+      wasRetry: true,
+    });
+    assert.equal(after.orderUncertain, true);
+    assert.equal(after.orderConflict, false);
   });
 
   it("allows retry check when uncertain", () => {
@@ -138,8 +168,20 @@ describe("reduceOrderSubmitState", () => {
     const uncertain = reduceOrderSubmitState(started, {
       type: "submit_error",
       error: new RemcardApiError(201, "Некорректный ответ сервера"),
+      wasRetry: false,
     });
     assert.equal(uncertain.orderUncertain, true);
     assert.equal(canSubmitOrder(uncertain), false);
+  });
+
+  it("401 on retry preserves uncertain state", () => {
+    const uncertain = { ...initialState, orderUncertain: true };
+    const retry = reduceOrderSubmitState(uncertain, { type: "retry_check_start" });
+    const after = reduceOrderSubmitState(retry, {
+      type: "submit_error",
+      error: new RemcardApiError(401, "Unauthorized"),
+      wasRetry: true,
+    });
+    assert.equal(after.orderUncertain, true);
   });
 });
