@@ -35,14 +35,11 @@ export default async function OnboardingPage(
         `/login?${new URLSearchParams({ step: "consents", returnTo: sanitizeReturnTo(searchParams?.returnTo) ?? "/" }).toString()}`,
       );
     }
-    if (readiness.canAccessCabinet && !readiness.needsProfileOnboarding) {
-      redirect(sanitizeReturnTo(searchParams?.returnTo) ?? "/");
-    }
-    if (readiness.isEmployee) {
-      redirect(sanitizeReturnTo(searchParams?.returnTo) ?? "/");
-    }
-    if (readiness.isAdmin && !readiness.needsProfileOnboarding) {
-      redirect("/?reason=role");
+    if (!readiness.needsProfileOnboarding) {
+      if (readiness.canAccessCabinet) {
+        redirect(sanitizeReturnTo(searchParams?.returnTo) ?? "/");
+      }
+      redirect("/");
     }
   }
 

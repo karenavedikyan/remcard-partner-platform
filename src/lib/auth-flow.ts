@@ -47,7 +47,7 @@ export function resolveStepFromReadiness(
   if (!readiness) return "session_retry";
   if (hasPendingLoginConsents(readiness)) return "consents";
   if (readiness.needsProfileOnboarding) return "loading_readiness";
-  if (!readiness.canAccessCabinet && !readiness.isEmployee) return "access_denied";
+  if (!readiness.canAccessCabinet) return "access_denied";
   return "loading_readiness";
 }
 
@@ -55,7 +55,7 @@ export function isAuthFlowComplete(readiness: CabinetReadiness): boolean {
   return (
     !hasPendingLoginConsents(readiness) &&
     !readiness.needsProfileOnboarding &&
-    (readiness.canAccessCabinet || readiness.isEmployee)
+    readiness.canAccessCabinet
   );
 }
 
@@ -93,9 +93,6 @@ export function resolveDestinationAfterAuth(
       : "/onboarding";
   }
   if (readiness.canAccessCabinet) {
-    return sanitizeReturnTo(returnTo) ?? "/";
-  }
-  if (readiness.isEmployee) {
     return sanitizeReturnTo(returnTo) ?? "/";
   }
   return "/?reason=role";

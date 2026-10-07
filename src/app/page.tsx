@@ -31,23 +31,20 @@ export default async function HomePage(
     "/api/account/cabinet-readiness",
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
   );
-  if (readinessResult.ok) {
-    const readiness = readinessResult.data;
-    if (hasPendingLoginConsents(readiness)) {
-      redirect("/login?step=consents&returnTo=%2F");
-    }
-    if (readiness.needsProfileOnboarding) {
-      redirect("/onboarding?returnTo=%2F");
-    }
-    if (readiness.canAccessCabinet || readiness.isEmployee) {
-      // OWNER+PRO and regular partners enter here; isAdmin stays true for identity only.
-    } else if (readiness.isAdmin) {
-      return <SessionGate reason="role" />;
-    } else {
-      redirect("/onboarding?returnTo=%2F");
-    }
-  } else if (user.role !== "PRO") {
-    redirect("/onboarding");
+
+  if (!readinessResult.ok) {
+    return <SessionGate returnTo="/" />;
+  }
+
+  const readiness = readinessResult.data;
+  if (hasPendingLoginConsents(readiness)) {
+    redirect("/login?step=consents&returnTo=%2F");
+  }
+  if (readiness.needsProfileOnboarding) {
+    redirect("/onboarding?returnTo=%2F");
+  }
+  if (!readiness.canAccessCabinet) {
+    return <SessionGate returnTo="/" />;
   }
 
   const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {

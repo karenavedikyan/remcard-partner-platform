@@ -60,6 +60,15 @@ describe("resolveStepFromReadiness", () => {
     assert.equal(resolveStepFromReadiness(null, false), "code");
     assert.equal(resolveStepFromReadiness(null, true), "session_retry");
   });
+
+  it("routes employee without cabinet access to access_denied", () => {
+    const employeeDenied: CabinetReadiness = {
+      ...ready,
+      canAccessCabinet: false,
+      isEmployee: true,
+    };
+    assert.equal(resolveStepFromReadiness(employeeDenied, true), "access_denied");
+  });
 });
 
 describe("isAuthFlowComplete", () => {
@@ -176,13 +185,25 @@ describe("resolveDestinationAfterAuth", () => {
     assert.equal(resolveDestinationAfterAuth(blocked, "/scanner"), "/?reason=role");
   });
 
-  it("routes employee without cabinet flag to returnTo", () => {
-    const employee: CabinetReadiness = {
+  it("denies employee when backend has not granted cabinet access", () => {
+    const employeeDenied: CabinetReadiness = {
       ...ready,
       canAccessCabinet: false,
       isEmployee: true,
+      isAdmin: true,
     };
-    assert.equal(resolveDestinationAfterAuth(employee, "/scanner"), "/scanner");
+    assert.equal(resolveAuthFlowFromReadiness(employeeDenied), "access_denied");
+    assert.equal(resolveDestinationAfterAuth(employeeDenied, "/scanner"), "/?reason=role");
+  });
+
+  it("allows employee when backend grants cabinet access", () => {
+    const employeeReady: CabinetReadiness = {
+      ...ready,
+      canAccessCabinet: true,
+      isEmployee: true,
+    };
+    assert.equal(isAuthFlowComplete(employeeReady), true);
+    assert.equal(resolveDestinationAfterAuth(employeeReady, "/scanner"), "/scanner");
   });
 });
 
