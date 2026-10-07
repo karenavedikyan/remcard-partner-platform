@@ -4,6 +4,8 @@ import type { AuthMeResponse } from "@/lib/types";
 export type ApiErrorBody = {
   error?: string;
   message?: string;
+  code?: string;
+  returnTo?: string;
 };
 
 export type { AuthMeResponse };

@@ -1,4 +1,4 @@
--- Reset fixtures for PROF-D scenario B (link invite → new CLIENT onboarding → accept).
+-- Reset fixtures for PROF-D link-invite browser scenarios.
 -- Loopback remcard_prof_test only.
 
 \set ON_ERROR_STOP on
@@ -42,22 +42,71 @@ ON CONFLICT ("provider", "externalId") DO UPDATE SET
 
 DELETE FROM "Consent" WHERE "userId" = 'm1fix-client-000000000001';
 
+-- Store author login (tg:888777666).
+UPDATE "User" SET
+  "telegramId" = 888777666,
+  "tokenVersion" = "tokenVersion" + 1
+WHERE id = 'm1fix-store-000000000001';
+
+INSERT INTO "AuthAccount" (id, "userId", provider, "externalId", "createdAt", "lastLoginAt")
+VALUES (
+  'm4d-auth-tg-store', 'm1fix-store-000000000001', 'TELEGRAM', '888777666', NOW(), NOW()
+)
+ON CONFLICT ("provider", "externalId") DO UPDATE SET
+  "userId" = EXCLUDED."userId",
+  "lastLoginAt" = NOW();
+
+-- Staff operator for moderation approve API (tg:666555444).
+UPDATE "User" SET
+  "telegramId" = 666555444,
+  "staffRole" = 'OPERATOR',
+  "tokenVersion" = "tokenVersion" + 1
+WHERE id = 'm1fix-staff-000000000001';
+
+INSERT INTO "AuthAccount" (id, "userId", provider, "externalId", "createdAt", "lastLoginAt")
+VALUES (
+  'm4d-auth-tg-staff', 'm1fix-staff-000000000001', 'TELEGRAM', '666555444', NOW(), NOW()
+)
+ON CONFLICT ("provider", "externalId") DO UPDATE SET
+  "userId" = EXCLUDED."userId",
+  "lastLoginAt" = NOW();
+
+-- APPROVED master for scenario C (existing PRO accept, no onboarding).
+UPDATE "User" SET
+  "telegramId" = 555444333,
+  "catalogStatus" = 'APPROVED',
+  "partnerType" = 'MASTER',
+  specializations = ARRAY['doors']::text[],
+  "isPublic" = true,
+  "tokenVersion" = "tokenVersion" + 1
+WHERE id = 'm2fix-master-search-0001';
+
+INSERT INTO "AuthAccount" (id, "userId", provider, "externalId", "createdAt", "lastLoginAt")
+VALUES (
+  'm4d-auth-tg-master', 'm2fix-master-search-0001', 'TELEGRAM', '555444333', NOW(), NOW()
+)
+ON CONFLICT ("provider", "externalId") DO UPDATE SET
+  "userId" = EXCLUDED."userId",
+  "lastLoginAt" = NOW();
+
 DELETE FROM "PartnershipTerm" WHERE "partnershipId" IN (
   SELECT id FROM "Partnership"
-  WHERE "storeUserId" = 'm1fix-store-000000000001'
-    AND "proUserId" = 'm1fix-client-000000000001'
+  WHERE ("storeUserId" = 'm1fix-store-000000000001' AND "proUserId" IN ('m1fix-client-000000000001', 'm2fix-master-search-0001'))
 );
 DELETE FROM "Partnership"
 WHERE "storeUserId" = 'm1fix-store-000000000001'
-  AND "proUserId" = 'm1fix-client-000000000001';
+  AND "proUserId" IN ('m1fix-client-000000000001', 'm2fix-master-search-0001');
 
 UPDATE "PartnershipLinkInvite" SET "partnershipId" = NULL
 WHERE "inviterId" = 'm1fix-store-000000000001';
 DELETE FROM "PartnershipLinkInvite" WHERE "inviterId" = 'm1fix-store-000000000001';
 
-DELETE FROM "BotLoginCode" WHERE identifier IN ('tg:777666555', 'tg:888777666');
+DELETE FROM "BotLoginCode" WHERE identifier IN ('tg:777666555', 'tg:888777666', 'tg:666555444', 'tg:555444333');
 
 INSERT INTO "BotLoginCode" (id, identifier, code, "expiresAt", used, "createdAt")
 VALUES
   ('m4d-store-login', 'tg:888777666', :'store_code', NOW() + INTERVAL '30 minutes', false, NOW()),
-  ('m4d-client-login', 'tg:777666555', :'client_code', NOW() + INTERVAL '30 minutes', false, NOW());
+  ('m4d-client-login', 'tg:777666555', :'client_code', NOW() + INTERVAL '30 minutes', false, NOW()),
+  ('m4d-staff-login', 'tg:666555444', :'staff_code', NOW() + INTERVAL '30 minutes', false, NOW()),
+  ('m4d-master-login', 'tg:555444333', :'master_code', NOW() + INTERVAL '30 minutes', false, NOW()),
+  ('m4d-master-relogin', 'tg:555444333', :'relogin_code', NOW() + INTERVAL '30 minutes', false, NOW());

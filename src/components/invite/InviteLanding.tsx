@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch, getAuthMe } from "@/lib/api-client";
+import type { AuthUser } from "@/lib/types";
 import { buildSessionRecoveryLoginHref } from "@/lib/auth-flow";
 import { categoryLabel } from "@/lib/partnership-labels";
 import { Button } from "@/components/ui/Button";
@@ -60,15 +61,27 @@ const STATUS_COPY: Record<string, { title: string; lead: string }> = {
   },
 };
 
+function catalogBlocksAccept(user: AuthUser | null): boolean {
+  return Boolean(user?.role === "PRO" && user.catalogStatus && user.catalogStatus !== "APPROVED");
+}
+
+function catalogIsDraft(user: AuthUser | null): boolean {
+  return Boolean(user?.role === "PRO" && user.catalogStatus === "DRAFT");
+}
+
 export function InviteLanding({ token }: InviteLandingProps) {
   const router = useRouter();
   const returnTo = `/invite/${encodeURIComponent(token)}`;
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [loadError, setLoadError] = useState("");
-  const [hasSession, setHasSession] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState("");
+  const [declinedLocally, setDeclinedLocally] = useState(false);
+  const [submittingModeration, setSubmittingModeration] = useState(false);
+  const [moderationSubmitError, setModerationSubmitError] = useState("");
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
@@ -87,27 +100,53 @@ export function InviteLanding({ token }: InviteLandingProps) {
     }
   }, [token]);
 
+  const refreshSession = useCallback(async () => {
+    try {
+      const me = await getAuthMe();
+      setAuthUser(me.user);
+    } catch {
+      setAuthUser(null);
+    } finally {
+      setSessionChecked(true);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPreview();
   }, [loadPreview]);
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const me = await getAuthMe();
-        setHasSession(Boolean(me.user));
-      } catch {
-        setHasSession(false);
-      }
-    })();
-  }, []);
+    void refreshSession();
+  }, [refreshSession]);
+
+  async function submitProfileForModeration() {
+    if (submittingModeration || !catalogIsDraft(authUser)) return;
+    setSubmittingModeration(true);
+    setModerationSubmitError("");
+    try {
+      await remcardFetch("/api/pro/profile", {
+        method: "PATCH",
+        body: { action: "submitForModeration" },
+      });
+      await refreshSession();
+    } catch (caught) {
+      setModerationSubmitError(
+        caught instanceof RemcardApiError
+          ? caught.message
+          : "Не удалось отправить профиль на проверку",
+      );
+    } finally {
+      setSubmittingModeration(false);
+    }
+  }
 
   async function acceptInvite() {
-    if (accepting) return;
+    if (accepting || catalogBlocksAccept(authUser)) return;
     setAccepting(true);
     setAcceptError("");
+    setDeclinedLocally(false);
     try {
-      const result = await remcardFetch<{ ok: boolean; redirect?: string }>(
+      const result = await remcardFetch<{ ok: boolean; redirect?: string; code?: string }>(
         "/api/partnership/link-invite/accept",
         { method: "POST", body: { token } },
       );
@@ -118,18 +157,37 @@ export function InviteLanding({ token }: InviteLandingProps) {
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 401) {
         setAcceptError("Сессия завершилась. Войдите снова.");
-        setHasSession(false);
+        setAuthUser(null);
+      } else if (caught instanceof RemcardApiError) {
+        setAcceptError(caught.message);
+        if (caught.body?.code === "CATALOG_PENDING") {
+          void refreshSession();
+        }
       } else {
-        setAcceptError(caught instanceof RemcardApiError ? caught.message : "Не удалось принять");
+        setAcceptError("Не удалось принять");
       }
     } finally {
       setAccepting(false);
     }
   }
 
-  const loginHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+  function handleDecline() {
+    setDeclinedLocally(true);
+    setAcceptError("");
+  }
 
-  if (loadState === "loading") {
+  function handleReturnToOffer() {
+    setDeclinedLocally(false);
+    void loadPreview();
+    void refreshSession();
+  }
+
+  const loginHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+  const hasSession = Boolean(authUser);
+  const profileBlocksAccept = catalogBlocksAccept(authUser);
+  const profileDraft = catalogIsDraft(authUser);
+
+  if (loadState === "loading" || !sessionChecked) {
     return (
       <main className={styles.page}>
         <div className={styles.wrap}>
@@ -167,6 +225,32 @@ export function InviteLanding({ token }: InviteLandingProps) {
             <h1 className={styles.title}>{copy.title}</h1>
             <p className={styles.lead}>{copy.lead}</p>
             <Link href="/">На главную</Link>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (declinedLocally) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.wrap}>
+          <BrandMark />
+          <section className={styles.card}>
+            <h1 className={styles.title}>Вы не приняли предложение</h1>
+            <p className={styles.lead}>
+              К нему можно вернуться, пока приглашение действует. Регистрация и вход сами по себе
+              не означают согласия с условиями.
+            </p>
+            {preview.expiresAt ? (
+              <p className={styles.meta}>Ссылка действует до {formatExpiry(preview.expiresAt)}</p>
+            ) : null}
+            <div className={styles.actions}>
+              <Button onClick={() => void handleReturnToOffer()}>Вернуться к условиям</Button>
+              <Link href="/">
+                <Button variant="secondary">На главную</Button>
+              </Link>
+            </div>
           </section>
         </div>
       </main>
@@ -228,25 +312,91 @@ export function InviteLanding({ token }: InviteLandingProps) {
           {!hasSession ? (
             <>
               <p className={styles.lead}>
-                После входа вы сможете принять или отклонить предложение. Регистрация не означает
-                согласия с условиями.
+                После входа вы сможете принять предложение или отказаться от него на этой странице.
+                Регистрация не означает согласия с условиями.
               </p>
+              {acceptError ? (
+                <p className={styles.error} role="alert">
+                  {acceptError}{" "}
+                  {/войдите|сессия/i.test(acceptError) ? (
+                    <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
+                  ) : null}
+                </p>
+              ) : null}
               <div className={styles.actions}>
                 <Link href={loginHref}>
                   <Button>Войти или зарегистрироваться</Button>
                 </Link>
               </div>
             </>
+          ) : profileBlocksAccept ? (
+            <>
+              <div className={styles.notice}>
+                {profileDraft ? (
+                  <>
+                    <p><strong>Отправьте профиль на проверку</strong></p>
+                    <p>
+                      Регистрация завершена. Отправьте профиль на модерацию — после одобрения вы
+                      сможете принять приглашение. Ссылка сохранится: вернитесь сюда позже или
+                      обновите страницу.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p><strong>Профиль ожидает проверки</strong></p>
+                    <p>
+                      Профиль на проверке у модератора. После одобрения вы сможете принять
+                      приглашение. Ссылка сохранится: вернитесь сюда позже или обновите страницу.
+                    </p>
+                  </>
+                )}
+              </div>
+              {moderationSubmitError ? (
+                <p className={styles.error} role="alert">
+                  {moderationSubmitError}
+                </p>
+              ) : null}
+              <div className={styles.actions}>
+                {profileDraft ? (
+                  <Button
+                    disabled={submittingModeration}
+                    onClick={() => void submitProfileForModeration()}
+                  >
+                    {submittingModeration ? "Отправляем…" : "Отправить на проверку"}
+                  </Button>
+                ) : (
+                  <Button variant="secondary" disabled>
+                    Принять условия
+                  </Button>
+                )}
+                <Button variant="secondary" onClick={() => void handleDecline()}>
+                  Не принимать
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    void loadPreview();
+                    void refreshSession();
+                  }}
+                >
+                  Обновить статус
+                </Button>
+                <Link href={loginHref}>
+                  <Button variant="secondary">Сменить аккаунт</Button>
+                </Link>
+              </div>
+            </>
           ) : (
             <>
               <p className={styles.lead}>
-                Проверьте условия и нажмите «Принять условия», если согласны. Это создаст активное
-                партнёрство — регистрация сама по себе не означает согласия.
+                Проверьте условия. «Принять условия» создаст активное партнёрство. «Не принимать»
+                закроет предложение без ответа — ссылка останется доступной, пока действует
+                приглашение.
               </p>
               {acceptError ? (
                 <p className={styles.error} role="alert">
                   {acceptError}{" "}
-                  {acceptError.includes("Войдите") ? (
+                  {/войдите|сессия/i.test(acceptError) ? (
                     <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
                   ) : null}
                 </p>
@@ -254,6 +404,9 @@ export function InviteLanding({ token }: InviteLandingProps) {
               <div className={styles.actions}>
                 <Button disabled={accepting} onClick={() => void acceptInvite()}>
                   {accepting ? "Принимаем…" : "Принять условия"}
+                </Button>
+                <Button variant="secondary" disabled={accepting} onClick={() => void handleDecline()}>
+                  Не принимать
                 </Button>
                 <Link href={loginHref}>
                   <Button variant="secondary">Сменить аккаунт</Button>
