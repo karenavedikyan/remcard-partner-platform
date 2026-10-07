@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | M4-D navigator | `7eca04e` · `cursor/m4d-history-staff-b3e3` | Draft **#675** |
 | M4-D partner | `7d35896` · `cursor/m4d-history-staff-b3e3` | Draft **#8** |
-| M4-B navigator | `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft (новый) |
-| M4-B partner | `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft (новый) |
+| M4-B navigator | `ebafdc3` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#676** |
+| M4-B partner | `8978f3d` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#9** |
 | Цепочка PR #1–#8+ | M1 → … → M4-B | open, не слиты |
 
 ## M4-B (auth/onboarding, Draft)
