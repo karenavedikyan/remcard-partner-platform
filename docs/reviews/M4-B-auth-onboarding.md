@@ -11,7 +11,7 @@ Navigator **Draft #676** · Partner **Draft #9** · branch `cursor/m4b-auth-onbo
 
 | Repo | Branch | Base | PR | HEAD (этот проход) |
 | --- | --- | --- | --- | --- |
-| remcard-partner-platform | `cursor/m4b-auth-onboarding-b3e3` | M4-D | Draft **#9** | *(после push)* |
+| remcard-partner-platform | `cursor/m4b-auth-onboarding-b3e3` | M4-D | Draft **#9** | `62226b6` |
 | remcard-navigator | `cursor/m4b-auth-onboarding-b3e3` | M4-D | Draft **#676** | `15abd7c` (без UI-изменений) |
 
 ---
