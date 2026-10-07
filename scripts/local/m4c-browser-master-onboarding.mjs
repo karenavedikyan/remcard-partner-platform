@@ -50,7 +50,7 @@ function trackResponse(response) {
 }
 
 async function enterCode(page, code) {
-  const input = page.getByRole("textbox", { name: /шестизначный код/i });
+  const input = page.getByRole("textbox", { name: /код из сообщения/i });
   await input.waitFor({ timeout: 15000 });
   await input.fill(code);
   await page.getByRole("button", { name: /^продолжить$/i }).click();

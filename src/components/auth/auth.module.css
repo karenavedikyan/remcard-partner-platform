@@ -9,15 +9,18 @@
   align-items: center;
   max-width: 80rem;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-12);
+  padding: var(--space-8) var(--space-12) var(--space-6);
 }
 
 .entryLayout {
+  --entry-column-gap: clamp(2rem, 3.5vw, 4rem);
   max-width: 80rem;
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: var(--space-20);
-  margin: var(--space-4) auto var(--space-10);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  column-gap: var(--entry-column-gap);
+  row-gap: var(--space-8);
+  align-items: start;
+  margin: 0 auto var(--space-10);
   padding: 0 var(--space-12);
 }
 
@@ -26,7 +29,6 @@
   background: #eeeae3;
   border-radius: var(--radius-lg);
   color: #292f2a;
-  align-self: start;
 }
 
 .entryStory .eyebrow {
@@ -41,10 +43,6 @@
   margin: 0;
 }
 
-.storyTitle span {
-  color: #be3d32;
-}
-
 .storyLead {
   margin-top: var(--space-5);
   font-size: var(--text-sm);
@@ -52,85 +50,65 @@
   line-height: 1.6;
 }
 
-.storyWindow {
-  margin-top: var(--space-8);
-  border: 1px solid #d6d6cc;
-  background: #fafbf8;
-  border-radius: var(--radius-md);
-  box-shadow: 0 6px 22px rgba(55, 62, 32, 0.06);
-  transform: rotate(-1.5deg);
-  padding: var(--space-5) var(--space-6);
-  max-width: 26rem;
+.benefitList {
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-5);
 }
 
-.miniTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
+.benefitItem {
+  margin: 0;
+  padding: 0;
 }
 
-.miniBrand {
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  font-weight: 800;
-}
-
-.smallTag {
-  font-size: var(--text-xs);
-  color: #386044;
-}
-
-.storyCaption {
-  font-size: var(--text-lg);
-  line-height: 1.4;
-  font-weight: 700;
-  margin: var(--space-5) 0;
-}
-
-.miniProgram {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-top: 1px solid #e4e6df;
-  font-size: var(--text-sm);
-}
-
-.miniProgram strong {
+.benefitItem strong {
   display: block;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: #292f2a;
+  line-height: 1.4;
 }
 
-.miniProgram small {
-  display: block;
-  font-size: var(--text-xs);
-  font-weight: 400;
-  color: #68716e;
+.benefitItem p {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: #666d66;
+  line-height: 1.55;
 }
 
-.miniStatus {
-  margin-left: auto;
-  color: #376443;
-  font-size: var(--text-xs);
+.storyClosing {
+  margin: var(--space-8) 0 0;
+  font-size: var(--text-sm);
+  color: #666d66;
+  line-height: 1.55;
 }
 
-.storyFoot {
-  display: flex;
-  gap: var(--space-4);
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  color: #777c70;
-  margin-top: var(--space-8);
-  flex-wrap: wrap;
+.mobileIntro {
+  display: none;
+}
+
+.mobileIntroTitle {
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+  margin: 0;
+  color: var(--ink);
+}
+
+.mobileIntroLead {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .entryForm {
-  align-self: center;
   max-width: 26rem;
   width: 100%;
-  padding-block: var(--space-10);
+  padding-top: var(--space-2);
 }
 
 .card {
@@ -217,8 +195,8 @@
   color: var(--ink);
 }
 
-.codeStepHint {
-  margin: 0 0 var(--space-4);
+.botStepHint {
+  margin: var(--space-2) 0 var(--space-5);
   font-size: var(--text-xs);
   color: var(--muted);
   line-height: 1.55;
@@ -339,7 +317,7 @@
   }
 
   .entryLayout {
-    gap: var(--space-10);
+    --entry-column-gap: clamp(1.5rem, 4vw, 2.5rem);
   }
 
   .entryStory {
@@ -353,32 +331,38 @@
 
 @media (max-width: 700px) {
   .entryHeader {
-    padding: var(--space-6) var(--space-5);
+    padding: var(--space-6) var(--space-5) var(--space-4);
   }
 
   .entryLayout {
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
     padding-inline: var(--space-5);
     margin-top: 0;
   }
 
-  .entryStory {
-    border-radius: var(--radius-md);
-  }
-
-  .storyWindow,
-  .storyFoot {
-    display: none;
+  .mobileIntro {
+    display: block;
+    order: 1;
   }
 
   .entryForm {
+    order: 2;
     max-width: none;
-    padding-top: var(--space-8);
-    padding-bottom: var(--space-6);
+    padding-top: 0;
+    padding-bottom: 0;
   }
 
-  .entryForm .eyebrow {
+  .entryStory {
+    order: 3;
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+  }
+
+  .entryStory .eyebrow,
+  .entryStory .storyTitle,
+  .entryStory .storyLead {
     display: none;
   }
 }

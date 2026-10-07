@@ -67,7 +67,7 @@ describe("AuthFlow", () => {
     vi.mocked(getAuthMe).mockResolvedValue({ user: null });
     render(<AuthFlow returnTo="/scanner" />);
 
-    expect(await screen.findByRole("heading", { name: /ваш кабинет партнёра/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i })).toBeInTheDocument();
   });
 
   it("submits code then confirms session and skips consents when ready", async () => {
@@ -89,7 +89,7 @@ describe("AuthFlow", () => {
     const ui = userEvent.setup();
     render(<AuthFlow returnTo="/scanner" />);
 
-    await screen.findByRole("heading", { name: /ваш кабинет партнёра/i });
+    await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i });
     await ui.type(screen.getByPlaceholderText("000000"), "123456");
     await ui.click(screen.getByRole("button", { name: /продолжить/i }));
 
@@ -123,7 +123,7 @@ describe("AuthFlow", () => {
 
     const ui = userEvent.setup();
     render(<AuthFlow returnTo="/scanner" />);
-    await screen.findByRole("heading", { name: /ваш кабинет партнёра/i });
+    await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i });
     await ui.type(screen.getByPlaceholderText("000000"), "123456");
     await ui.click(screen.getByRole("button", { name: /продолжить/i }));
 
@@ -254,10 +254,11 @@ describe("AuthFlow", () => {
     vi.mocked(getAuthMe).mockResolvedValue({ user: null });
     render(<AuthFlow returnTo="/scanner" />);
 
-    expect(await screen.findByRole("link", { name: /продолжить через telegram/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /продолжить через max/i })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /получить код в telegram/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /получить код в max/i })).toBeInTheDocument();
+    expect(screen.getByText(/шаг 1\. получите код/i)).toBeInTheDocument();
     expect(screen.getByText(/шаг 2\. введите код/i)).toBeInTheDocument();
     expect(screen.queryByText(/^или$/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/отправьте боту команду \/login/i)).toBeInTheDocument();
+    expect(screen.getByText(/нет кода\? отправьте боту команду \/login/i)).toBeInTheDocument();
   });
 });

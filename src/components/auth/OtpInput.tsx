@@ -42,7 +42,7 @@ export function OtpInput({ value, onChange, disabled, "aria-label": ariaLabel }:
   return (
     <div className={styles.otpWrap}>
       <label className={styles.fieldLabel} htmlFor={inputId}>
-        Код из бота
+        Код из сообщения
       </label>
       <input
         ref={inputRef}
@@ -54,13 +54,13 @@ export function OtpInput({ value, onChange, disabled, "aria-label": ariaLabel }:
         maxLength={DIGITS}
         value={value}
         disabled={disabled}
-        aria-label={ariaLabel ?? "Шестизначный код из Telegram-бота"}
+        aria-label={ariaLabel ?? "Код из сообщения"}
         placeholder="000000"
         onChange={(event) => handleChange(event.target.value)}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
       />
-      <p className={styles.otpHint}>6 цифр, ведущие нули сохраняются</p>
+      <p className={styles.otpHint}>6 цифр</p>
     </div>
   );
 }

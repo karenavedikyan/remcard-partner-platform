@@ -421,50 +421,51 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
       </header>
 
       <div className={styles.entryLayout}>
-        <section className={styles.entryStory} aria-hidden="true">
-          <span className={styles.eyebrow}>Ваш бизнес. Ваши возможности.</span>
-          <h1 className={styles.storyTitle}>
-            Больше пользы
-            <br />
-            от каждого
-            <br />
-            <span>партнёрства.</span>
+        <section className={styles.mobileIntro} aria-labelledby="mobile-intro-title">
+          <h1 id="mobile-intro-title" className={styles.mobileIntroTitle}>
+            Ваши рекомендации могут приносить доход
+          </h1>
+          <p className={styles.mobileIntroLead}>
+            Рекомендуйте партнёров, получайте вознаграждение за покупки и привлекайте клиентов по
+            рекомендациям.
+          </p>
+        </section>
+
+        <section className={styles.entryStory} aria-labelledby="story-title">
+          <span className={styles.eyebrow}>Партнёрская программа RemCard PROF</span>
+          <h1 id="story-title" className={styles.storyTitle}>
+            Ваши рекомендации могут приносить доход
           </h1>
           <p className={styles.storyLead}>
-            Клиенты, предложения и программы RemCard. В одном понятном кабинете.
+            Рекомендуйте клиентам партнёров и получайте вознаграждение за покупки на согласованных
+            условиях. Принимайте рекомендации других участников и привлекайте клиентов в свой бизнес.
           </p>
-          <div className={styles.storyWindow}>
-            <div className={styles.miniTop}>
-              <span className={styles.miniBrand}>ОПТОВИК</span>
-              <span className={styles.smallTag}>Кабинет создан</span>
-            </div>
-            <p className={styles.storyCaption}>
-              Сначала ваш профиль.
-              <br />
-              Затем нужные вам программы.
-            </p>
-            <div className={styles.miniProgram}>
-              <span>
-                <strong>Каталог</strong>
-                <small>Ваши товары и услуги</small>
-              </span>
-              <span className={styles.miniStatus}>Подключено</span>
-            </div>
-          </div>
-          <div className={styles.storyFoot}>
-            <span>01 / ПРОФИЛЬ</span>
-            <span>02 / ПРОГРАММЫ</span>
-            <span>03 / РЕЗУЛЬТАТ</span>
-          </div>
+          <ul className={styles.benefitList}>
+            <li className={styles.benefitItem}>
+              <strong>Договаривайтесь напрямую</strong>
+              <p>Выбирайте партнёров и согласовывайте условия сотрудничества.</p>
+            </li>
+            <li className={styles.benefitItem}>
+              <strong>Давайте клиентам больше пользы</strong>
+              <p>Оформляйте рекомендации со скидкой по условиям партнёрства.</p>
+            </li>
+            <li className={styles.benefitItem}>
+              <strong>Держите расчёты под контролем</strong>
+              <p>Смотрите покупки, начисления и кто кому должен.</p>
+            </li>
+          </ul>
+          <p className={styles.storyClosing}>
+            Начните с профиля. Затем выберите партнёра и согласуйте условия.
+          </p>
         </section>
 
         <section className={styles.entryForm} aria-labelledby="login-title">
-          <span className={styles.eyebrow}>Начнём с простого</span>
           <h1 id="login-title" className={styles.title}>
-            Ваш кабинет партнёра
+            Присоединяйтесь к RemCard PROF
           </h1>
           <p className={styles.lead}>
-            Войдите, создайте профиль и выбирайте возможности для своей работы.
+            Впервые здесь? Начните регистрацию. Уже есть аккаунт? Войдите тем же способом, которым
+            пользовались раньше.
           </p>
 
           {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
@@ -474,6 +475,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
             </p>
           ) : null}
 
+          <span className={styles.codeStepLabel}>Шаг 1. Получите код</span>
           <div className={styles.botLinks}>
             <a
               className={`${styles.botLink} ${styles.botLinkPrimary}`}
@@ -481,25 +483,24 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Продолжить через Telegram
+              Получить код в Telegram
             </a>
             <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
-              Продолжить через MAX
+              Получить код в MAX
             </a>
           </div>
+          <p className={styles.botStepHint}>
+            Откроется бот. Получите код и вернитесь на эту страницу.
+          </p>
 
           <div className={styles.codeStep}>
             <span className={styles.codeStepLabel}>Шаг 2. Введите код</span>
-            <p className={styles.codeStepHint}>
-              Сначала получите одноразовый код в Telegram или MAX — это два равнозначных способа.
-              Затем введите шесть цифр здесь. Используется тот же аккаунт, что и на remcard.ru.
-            </p>
             <form onSubmit={(event) => void submitCode(event)}>
               <OtpInput
                 value={code}
                 onChange={setCode}
                 disabled={loading}
-                aria-label="Шестизначный код из Telegram или MAX"
+                aria-label="Код из сообщения"
               />
               <Button type="submit" disabled={loading || code.length !== 6}>
                 {loading ? "Проверяем…" : "Продолжить"}
@@ -507,10 +508,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
             </form>
           </div>
 
-          <p className={styles.notice}>
-            Код действует ограниченное время и используется один раз. Если код не пришёл,
-            отправьте боту команду /login.
-          </p>
+          <p className={styles.notice}>Нет кода? Отправьте боту команду /login.</p>
         </section>
       </div>
     </main>
