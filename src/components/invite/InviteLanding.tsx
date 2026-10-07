@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch, getAuthMe } from "@/lib/api-client";
 import type { AuthUser } from "@/lib/types";
-import { buildSessionRecoveryLoginHref } from "@/lib/auth-flow";
+import type { CabinetReadiness } from "@/lib/cabinet-readiness";
+import { fetchReadinessSafe } from "@/lib/auth-session";
+import {
+  buildSessionRecoveryLoginHref,
+  isAuthFlowComplete,
+  resolveDestinationAfterAuth,
+} from "@/lib/auth-flow";
 import { categoryLabel } from "@/lib/partnership-labels";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
@@ -69,6 +75,20 @@ function catalogIsDraft(user: AuthUser | null): boolean {
   return Boolean(user?.role === "PRO" && user.catalogStatus === "DRAFT");
 }
 
+function continuationLabel(readiness: CabinetReadiness): string {
+  if (readiness.needsProfileOnboarding) {
+    return "Продолжить регистрацию";
+  }
+  return "Продолжить вход";
+}
+
+function continuationLead(readiness: CabinetReadiness): string {
+  if (readiness.needsProfileOnboarding) {
+    return "Завершите обязательные шаги профиля — после этого вы сможете принять или отклонить предложение на этой странице.";
+  }
+  return "Примите обязательные соглашения — после этого вы сможете принять или отклонить предложение на этой странице.";
+}
+
 export function InviteLanding({ token }: InviteLandingProps) {
   const router = useRouter();
   const returnTo = `/invite/${encodeURIComponent(token)}`;
@@ -76,12 +96,14 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [loadError, setLoadError] = useState("");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [readiness, setReadiness] = useState<CabinetReadiness | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState("");
   const [declinedLocally, setDeclinedLocally] = useState(false);
   const [submittingModeration, setSubmittingModeration] = useState(false);
   const [moderationSubmitError, setModerationSubmitError] = useState("");
+  const [switchingAccount, setSwitchingAccount] = useState(false);
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
@@ -104,8 +126,15 @@ export function InviteLanding({ token }: InviteLandingProps) {
     try {
       const me = await getAuthMe();
       setAuthUser(me.user);
+      if (me.user) {
+        const readinessResult = await fetchReadinessSafe();
+        setReadiness(readinessResult.ok ? readinessResult.data : null);
+      } else {
+        setReadiness(null);
+      }
     } catch {
       setAuthUser(null);
+      setReadiness(null);
     } finally {
       setSessionChecked(true);
     }
@@ -158,6 +187,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
       if (caught instanceof RemcardApiError && caught.status === 401) {
         setAcceptError("Сессия завершилась. Войдите снова.");
         setAuthUser(null);
+        setReadiness(null);
       } else if (caught instanceof RemcardApiError) {
         setAcceptError(caught.message);
         if (caught.body?.code === "CATALOG_PENDING") {
@@ -182,10 +212,34 @@ export function InviteLanding({ token }: InviteLandingProps) {
     void refreshSession();
   }
 
+  async function handleSwitchAccount() {
+    if (switchingAccount) return;
+    setSwitchingAccount(true);
+    try {
+      await remcardFetch("/api/auth/logout", { method: "POST", body: {} });
+    } catch {
+      // proceed to login even if logout endpoint fails
+    } finally {
+      setAuthUser(null);
+      setReadiness(null);
+      setSwitchingAccount(false);
+      router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      router.refresh();
+    }
+  }
+
+  function handleContinueRegistration() {
+    if (!readiness) return;
+    router.push(resolveDestinationAfterAuth(readiness, returnTo));
+  }
+
   const loginHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
   const hasSession = Boolean(authUser);
   const profileBlocksAccept = catalogBlocksAccept(authUser);
   const profileDraft = catalogIsDraft(authUser);
+  const needsContinuation = Boolean(hasSession && readiness && !isAuthFlowComplete(readiness));
+  const canAccept =
+    hasSession && readiness && isAuthFlowComplete(readiness) && !profileBlocksAccept;
 
   if (loadState === "loading" || !sessionChecked) {
     return (
@@ -259,6 +313,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
 
   const inviterName = preview.inviter?.displayName?.trim() || "Партнёр RemCard";
   const activeTerms = (preview.terms ?? []).filter((t) => !t.isExcluded);
+  const excludedTerms = (preview.terms ?? []).filter((t) => t.isExcluded);
 
   return (
     <main className={styles.page}>
@@ -292,6 +347,15 @@ export function InviteLanding({ token }: InviteLandingProps) {
               ))}
             </tbody>
           </table>
+
+          {excludedTerms.length > 0 ? (
+            <p className={styles.meta}>
+              Исключено из предложения:{" "}
+              {excludedTerms
+                .map((term) => term.categoryLabel || categoryLabel(term.category))
+                .join(", ")}
+            </p>
+          ) : null}
 
           {preview.note ? <p className={styles.lead}>Комментарий: {preview.note}</p> : null}
 
@@ -327,6 +391,28 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 <Link href={loginHref}>
                   <Button>Войти или зарегистрироваться</Button>
                 </Link>
+              </div>
+            </>
+          ) : needsContinuation && readiness ? (
+            <>
+              <div className={styles.notice}>
+                <p><strong>Завершите обязательные шаги</strong></p>
+                <p>{continuationLead(readiness)}</p>
+              </div>
+              <div className={styles.actions}>
+                <Button onClick={() => handleContinueRegistration()}>
+                  {continuationLabel(readiness)}
+                </Button>
+                <Button variant="secondary" onClick={() => void handleDecline()}>
+                  Не принимать
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={switchingAccount}
+                  onClick={() => void handleSwitchAccount()}
+                >
+                  {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
+                </Button>
               </div>
             </>
           ) : profileBlocksAccept ? (
@@ -381,9 +467,13 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 >
                   Обновить статус
                 </Button>
-                <Link href={loginHref}>
-                  <Button variant="secondary">Сменить аккаунт</Button>
-                </Link>
+                <Button
+                  variant="secondary"
+                  disabled={switchingAccount}
+                  onClick={() => void handleSwitchAccount()}
+                >
+                  {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
+                </Button>
               </div>
             </>
           ) : (
@@ -402,15 +492,19 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 </p>
               ) : null}
               <div className={styles.actions}>
-                <Button disabled={accepting} onClick={() => void acceptInvite()}>
+                <Button disabled={accepting || !canAccept} onClick={() => void acceptInvite()}>
                   {accepting ? "Принимаем…" : "Принять условия"}
                 </Button>
                 <Button variant="secondary" disabled={accepting} onClick={() => void handleDecline()}>
                   Не принимать
                 </Button>
-                <Link href={loginHref}>
-                  <Button variant="secondary">Сменить аккаунт</Button>
-                </Link>
+                <Button
+                  variant="secondary"
+                  disabled={switchingAccount || accepting}
+                  onClick={() => void handleSwitchAccount()}
+                >
+                  {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
+                </Button>
               </div>
             </>
           )}

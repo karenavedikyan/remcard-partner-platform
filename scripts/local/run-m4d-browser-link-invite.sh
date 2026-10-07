@@ -86,5 +86,7 @@ run_scenario "B-accept desktop" "$ROOT/scripts/local/m4d-browser-link-invite-mod
 run_scenario "B-accept mobile" "$ROOT/scripts/local/m4d-browser-link-invite-moderation-accept.mjs" --mobile
 run_scenario "C PRO accept" "$ROOT/scripts/local/m4d-browser-link-invite-pro-accept.mjs"
 run_scenario "D 401 relogin" "$ROOT/scripts/local/m4d-browser-link-invite-401.mjs"
+run_scenario "E CLIENT continuation" "$ROOT/scripts/local/m4d-browser-link-invite-client-flow.mjs"
+run_scenario "F switch account" "$ROOT/scripts/local/m4d-browser-link-invite-switch-account.mjs"
 
 echo "Reports and screenshots written to $ARTIFACTS"

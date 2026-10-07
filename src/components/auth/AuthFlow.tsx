@@ -20,6 +20,7 @@ import {
   mapVerifyCodeError,
   resolveAuthFlowFromReadiness,
   resolveDestinationAfterAuth,
+  sanitizeReturnTo,
   sessionRetryMessage,
   type AuthFlowStep,
 } from "@/lib/auth-flow";
@@ -83,6 +84,12 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
         return;
       }
       if (next === "onboarding") {
+        const inviteReturn = sanitizeReturnTo(returnTo ?? null);
+        if (inviteReturn?.startsWith("/invite/")) {
+          router.replace(inviteReturn);
+          router.refresh();
+          return;
+        }
         finishFlow(r);
         return;
       }
