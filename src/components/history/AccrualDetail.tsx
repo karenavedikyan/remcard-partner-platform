@@ -15,7 +15,7 @@ import {
   fetchPurchaseByOrderId,
   fetchPurchaseRows,
 } from "@/lib/history-loader";
-import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
+import type { AccrualRow, AccrualType, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -34,9 +34,10 @@ function formatDate(iso: string) {
 type AccrualDetailProps = {
   user: AuthUser;
   accrualId: string;
+  accrualType?: AccrualType;
 };
 
-export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
+export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accrual, setAccrual] = useState<AccrualRow | null>(null);
@@ -46,7 +47,7 @@ export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
     setLoading(true);
     setError("");
     try {
-      const row = await fetchAccrualById(accrualId);
+      const row = await fetchAccrualById(accrualId, accrualType);
       if (!row) {
         setAccrual(null);
         setLinkedPurchase(null);
@@ -69,7 +70,7 @@ export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
     } finally {
       setLoading(false);
     }
-  }, [user, accrualId]);
+  }, [user, accrualId, accrualType]);
 
   useEffect(() => {
     void load();

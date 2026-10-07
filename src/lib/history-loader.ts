@@ -28,6 +28,16 @@ import type { AuthUser } from "@/lib/types";
 
 const DEFAULT_ACCEPTED_PAGE_SIZE = 20;
 
+export type AccrualSourceStatus = "ok" | "unavailable" | "error";
+
+export type AccrualSourcesSnapshot = {
+  rows: AccrualRow[];
+  wallet: AccrualSourceStatus;
+  settlements: AccrualSourceStatus;
+  walletError: unknown | null;
+  settlementsError: unknown | null;
+};
+
 async function fetchWalletRole(): Promise<WalletRole | null> {
   try {
     const balance = await remcardFetch<WalletBalanceResponse>("/api/pro/wallet/balance");
@@ -149,49 +159,123 @@ async function fetchSettlementAccrualRows(): Promise<AccrualRow[]> {
   return mapSettlementsToAccrualRows(settlements);
 }
 
-export async function fetchAccrualRows(): Promise<AccrualRow[]> {
-  let walletAccruals: AccrualRow[] = [];
-  let walletError: unknown = null;
-  try {
-    walletAccruals = await fetchWalletAccrualRows();
-  } catch (caught) {
-    if (caught instanceof RemcardApiError && (caught.status === 403 || caught.status === 404)) {
-      walletAccruals = [];
-    } else {
-      walletError = caught;
-    }
-  }
-
-  let settlementAccruals: AccrualRow[] = [];
-  let settlementsError: unknown = null;
-  try {
-    settlementAccruals = await fetchSettlementAccrualRows();
-  } catch (caught) {
-    settlementsError = caught;
-  }
-
-  if (walletError && settlementsError) {
-    throw settlementsError instanceof Error ? settlementsError : walletError;
-  }
-
-  return mergeAccrualRowsById(walletAccruals, settlementAccruals);
-}
-
-export async function fetchAccrualById(
+function pickAccrualRow(
+  rows: AccrualRow[],
   accrualId: string,
   accrualType?: AccrualType,
-): Promise<AccrualRow | null> {
-  const rows = await fetchAccrualRows();
+): AccrualRow | null {
   if (accrualType) {
-    return (
-      rows.find((row) => row.id === accrualId && row.accrualType === accrualType) ?? null
-    );
+    return rows.find((row) => row.id === accrualId && row.accrualType === accrualType) ?? null;
   }
   const matches = rows.filter((row) => row.id === accrualId);
   if (matches.length === 1) {
     return matches[0] ?? null;
   }
   return null;
+}
+
+function throwSourceError(error: unknown): never {
+  if (error instanceof RemcardApiError) {
+    throw error;
+  }
+  if (error instanceof Error) {
+    throw error;
+  }
+  throw new Error("Не удалось загрузить начисление");
+}
+
+/** Pure lookup: incomplete verification must not be treated as missing accrual. */
+export function resolveAccrualLookup(
+  snapshot: AccrualSourcesSnapshot,
+  accrualId: string,
+  accrualType?: AccrualType,
+): AccrualRow | null {
+  const found = pickAccrualRow(snapshot.rows, accrualId, accrualType);
+  if (found) {
+    return found;
+  }
+
+  const walletOk = snapshot.wallet === "ok";
+  const walletUnavailable = snapshot.wallet === "unavailable";
+  const settlementsOk = snapshot.settlements === "ok";
+
+  if (walletOk && settlementsOk) {
+    return null;
+  }
+  if (walletUnavailable && settlementsOk) {
+    return null;
+  }
+
+  if (walletOk && snapshot.settlements === "error") {
+    throwSourceError(snapshot.settlementsError);
+  }
+  if (snapshot.wallet === "error" && settlementsOk) {
+    throwSourceError(snapshot.walletError);
+  }
+  if (walletUnavailable && snapshot.settlements === "error") {
+    throwSourceError(snapshot.settlementsError);
+  }
+  if (snapshot.wallet === "error" && snapshot.settlements === "error") {
+    throwSourceError(snapshot.settlementsError ?? snapshot.walletError);
+  }
+
+  return null;
+}
+
+export async function fetchAccrualSourcesSnapshot(): Promise<AccrualSourcesSnapshot> {
+  let walletAccruals: AccrualRow[] = [];
+  let wallet: AccrualSourceStatus = "ok";
+  let walletError: unknown | null = null;
+
+  try {
+    walletAccruals = await fetchWalletAccrualRows();
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && (caught.status === 403 || caught.status === 404)) {
+      wallet = "unavailable";
+      walletAccruals = [];
+    } else {
+      wallet = "error";
+      walletError = caught;
+      walletAccruals = [];
+    }
+  }
+
+  let settlementAccruals: AccrualRow[] = [];
+  let settlements: AccrualSourceStatus = "ok";
+  let settlementsError: unknown | null = null;
+
+  try {
+    settlementAccruals = await fetchSettlementAccrualRows();
+  } catch (caught) {
+    settlements = "error";
+    settlementsError = caught;
+    settlementAccruals = [];
+  }
+
+  if (wallet === "error" && settlements === "error") {
+    throwSourceError(settlementsError ?? walletError);
+  }
+
+  return {
+    rows: mergeAccrualRowsById(walletAccruals, settlementAccruals),
+    wallet,
+    settlements,
+    walletError,
+    settlementsError,
+  };
+}
+
+export async function fetchAccrualRows(): Promise<AccrualRow[]> {
+  const snapshot = await fetchAccrualSourcesSnapshot();
+  return snapshot.rows;
+}
+
+export async function fetchAccrualById(
+  accrualId: string,
+  accrualType?: AccrualType,
+): Promise<AccrualRow | null> {
+  const snapshot = await fetchAccrualSourcesSnapshot();
+  return resolveAccrualLookup(snapshot, accrualId, accrualType);
 }
 
 export async function fetchHistoryData(user: AuthUser): Promise<{
