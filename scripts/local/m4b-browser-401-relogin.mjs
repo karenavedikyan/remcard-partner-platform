@@ -12,8 +12,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const BASE = process.env.M4B_PARTNER_URL ?? "http://127.0.0.1:3000";
-const INITIAL_CODE = process.env.M4B_INITIAL_CODE ?? "901001";
-const RELOGIN_CODE = process.env.M4B_RELOGIN_CODE ?? "901002";
+const INITIAL_CODE = process.env.M4B_INITIAL_CODE;
+const RELOGIN_CODE = process.env.M4B_RELOGIN_CODE;
+if (!INITIAL_CODE || !RELOGIN_CODE || !/^\d{6}$/.test(INITIAL_CODE) || !/^\d{6}$/.test(RELOGIN_CODE)) {
+  console.error("M4B_INITIAL_CODE and M4B_RELOGIN_CODE (6 digits) must be set by run-m4b-browser-401.sh");
+  process.exit(1);
+}
 const EXPECTED_USER_ID = "m1fix-client-000000000001";
 const ARTIFACTS = process.env.M4B_ARTIFACTS_DIR ?? "/opt/cursor/artifacts/m4b-browser-401";
 const MOBILE = process.argv.includes("--mobile");
