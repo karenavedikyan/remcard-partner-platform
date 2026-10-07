@@ -6,6 +6,11 @@ import {
   mapStoreOrdersToPurchases,
   mapWalletTransactionsToAccruals,
 } from "@/lib/history-mappers";
+import { fetchSettlements } from "@/lib/settlements-loader";
+import {
+  mapSettlementsToAccrualRows,
+  mergeAccrualRowsById,
+} from "@/lib/settlements-mappers";
 import type { HistorySourceAvailability } from "@/lib/history-sources";
 import type {
   AccrualRow,
@@ -135,7 +140,13 @@ export async function fetchAccrualRows(): Promise<AccrualRow[]> {
     fetchWalletRole(),
     remcardFetch<WalletTransactionsResponse>("/api/pro/wallet/transactions"),
   ]);
-  return mapWalletTransactionsToAccruals(txData, walletRole);
+  const walletAccruals = mapWalletTransactionsToAccruals(txData, walletRole);
+  try {
+    const settlements = await fetchSettlements();
+    return mergeAccrualRowsById(walletAccruals, mapSettlementsToAccrualRows(settlements));
+  } catch {
+    return walletAccruals;
+  }
 }
 
 export async function fetchHistoryData(user: AuthUser): Promise<{

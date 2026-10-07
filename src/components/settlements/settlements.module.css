@@ -1,0 +1,122 @@
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.summaryCard {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.summaryLabel {
+  margin: 0 0 var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.summaryValue {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.group {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.groupHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.groupTotal {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:hover {
+  border-color: var(--primary);
+}
+
+.rowHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.rowTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.linkButton {
+  font-size: var(--text-sm);
+}
+
+.empty,
+.error,
+.loading {
+  padding: var(--space-5);
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  text-align: center;
+}
+
+.error {
+  border-color: rgba(207, 56, 47, 0.35);
+  background: rgba(207, 56, 47, 0.06);
+}
+
+.note {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-4);
+}

@@ -6,6 +6,7 @@ const SAFE_RETURN_PREFIXES = [
   "/",
   "/scanner",
   "/history",
+  "/settlements",
   "/partners",
   "/profile",
   "/recommendations",

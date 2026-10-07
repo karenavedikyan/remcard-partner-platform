@@ -275,6 +275,7 @@ describe("remcard proxy transport checks", () => {
     );
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/balance"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/transactions"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/settlements"), true);
   });
 
   it("forwards only allowlisted cookies", () => {
