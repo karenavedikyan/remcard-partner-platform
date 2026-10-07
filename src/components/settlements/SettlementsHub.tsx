@@ -95,7 +95,8 @@ function CompletedRow({ row }: { row: SettlementCompleted }) {
         <StatusBadge label={completedDirectionLabel(row.direction)} tone="active" />
       </div>
       <p className={styles.meta}>
-        Оплачено: {formatDate(row.paidAt)} · {bonusStatusLabel(row.status)}
+        Оплачено: {row.paidAt ? formatDate(row.paidAt) : "дата неизвестна"} ·{" "}
+        {bonusStatusLabel(row.status)}
       </p>
     </Link>
   );
@@ -184,8 +185,8 @@ export function SettlementsHub() {
   return (
     <>
       <p className={styles.note}>
-        Учёт обязательств между партнёрами по сохранённым начислениям. Это не банковский
-        баланс — только просмотр открытых и завершённых взаиморасчётов.
+        {data.coverageNote ||
+          "Учёт обязательств между партнёрами по сохранённым начислениям. Это не банковский баланс — только просмотр открытых и завершённых взаиморасчётов."}
       </p>
 
       <div className={styles.summary}>

@@ -14,6 +14,7 @@ import {
 import type { HistorySourceAvailability } from "@/lib/history-sources";
 import type {
   AccrualRow,
+  AccrualType,
   ProOrderDetailResponse,
   ProOrdersResponse,
   PurchaseRow,
@@ -135,18 +136,62 @@ export async function fetchPurchaseRows(_user: AuthUser): Promise<{
   };
 }
 
-export async function fetchAccrualRows(): Promise<AccrualRow[]> {
+async function fetchWalletAccrualRows(): Promise<AccrualRow[]> {
   const [walletRole, txData] = await Promise.all([
     fetchWalletRole(),
     remcardFetch<WalletTransactionsResponse>("/api/pro/wallet/transactions"),
   ]);
-  const walletAccruals = mapWalletTransactionsToAccruals(txData, walletRole);
+  return mapWalletTransactionsToAccruals(txData, walletRole);
+}
+
+async function fetchSettlementAccrualRows(): Promise<AccrualRow[]> {
+  const settlements = await fetchSettlements();
+  return mapSettlementsToAccrualRows(settlements);
+}
+
+export async function fetchAccrualRows(): Promise<AccrualRow[]> {
+  let walletAccruals: AccrualRow[] = [];
+  let walletError: unknown = null;
   try {
-    const settlements = await fetchSettlements();
-    return mergeAccrualRowsById(walletAccruals, mapSettlementsToAccrualRows(settlements));
-  } catch {
-    return walletAccruals;
+    walletAccruals = await fetchWalletAccrualRows();
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && (caught.status === 403 || caught.status === 404)) {
+      walletAccruals = [];
+    } else {
+      walletError = caught;
+    }
   }
+
+  let settlementAccruals: AccrualRow[] = [];
+  let settlementsError: unknown = null;
+  try {
+    settlementAccruals = await fetchSettlementAccrualRows();
+  } catch (caught) {
+    settlementsError = caught;
+  }
+
+  if (walletError && settlementsError) {
+    throw settlementsError instanceof Error ? settlementsError : walletError;
+  }
+
+  return mergeAccrualRowsById(walletAccruals, settlementAccruals);
+}
+
+export async function fetchAccrualById(
+  accrualId: string,
+  accrualType?: AccrualType,
+): Promise<AccrualRow | null> {
+  const rows = await fetchAccrualRows();
+  if (accrualType) {
+    return (
+      rows.find((row) => row.id === accrualId && row.accrualType === accrualType) ?? null
+    );
+  }
+  const matches = rows.filter((row) => row.id === accrualId);
+  if (matches.length === 1) {
+    return matches[0] ?? null;
+  }
+  return null;
 }
 
 export async function fetchHistoryData(user: AuthUser): Promise<{

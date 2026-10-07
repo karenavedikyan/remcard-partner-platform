@@ -9,8 +9,12 @@ import {
   bonusStatusLabel,
   bonusStatusTone,
 } from "@/lib/history-labels";
-import { findAccrualById, findPurchaseForAccrual, purchaseDetailHref } from "@/lib/history-links";
-import { fetchAccrualRows, fetchPurchaseByOrderId, fetchPurchaseRows } from "@/lib/history-loader";
+import { findPurchaseForAccrual, purchaseDetailHref } from "@/lib/history-links";
+import {
+  fetchAccrualById,
+  fetchPurchaseByOrderId,
+  fetchPurchaseRows,
+} from "@/lib/history-loader";
 import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -42,8 +46,7 @@ export function AccrualDetail({ user, accrualId }: AccrualDetailProps) {
     setLoading(true);
     setError("");
     try {
-      const accruals = await fetchAccrualRows();
-      const row = findAccrualById(accruals, accrualId);
+      const row = await fetchAccrualById(accrualId);
       if (!row) {
         setAccrual(null);
         setLinkedPurchase(null);

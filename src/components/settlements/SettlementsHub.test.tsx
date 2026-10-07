@@ -30,6 +30,7 @@ describe("SettlementsHub", () => {
 
   it("shows both directions grouped by partner and completed tab", async () => {
     vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "Показаны взаиморасчёты по подтверждённым покупкам.",
       receivable: [
         {
           id: "b1",
@@ -81,6 +82,19 @@ describe("SettlementsHub", () => {
           paidAt: "2026-09-05T10:00:00.000Z",
           direction: "payable",
         },
+        {
+          id: "b5",
+          orderId: "o5",
+          accrualType: "bonus",
+          counterpartyId: "pro-3",
+          counterpartyName: "No Date",
+          amount: 10,
+          basis: "Сертификат RC-5",
+          status: "PAID",
+          createdAt: "2026-08-01T10:00:00.000Z",
+          paidAt: null,
+          direction: "receivable",
+        },
       ],
     });
 
@@ -96,7 +110,7 @@ describe("SettlementsHub", () => {
 
     await userEvent.click(screen.getByRole("tab", { name: /завершённые/i }));
     expect(screen.getByText(/Paid Partner/)).toBeInTheDocument();
-    expect(screen.getByText(/оплачено/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/оплачено/i).length).toBeGreaterThan(0);
   });
 
   it("denies access for unrelated accounts", async () => {

@@ -9,8 +9,19 @@ export function findPurchaseByOrderId(rows: PurchaseRow[], orderId: string): Pur
   return rows.find((row) => row.orderId === orderId) ?? null;
 }
 
-export function findAccrualById(rows: AccrualRow[], id: string): AccrualRow | null {
-  return rows.find((row) => row.id === id) ?? null;
+export function findAccrualById(
+  rows: AccrualRow[],
+  id: string,
+  accrualType?: AccrualType,
+): AccrualRow | null {
+  if (accrualType) {
+    return findAccrualByRef(rows, { id, type: accrualType });
+  }
+  const matches = rows.filter((row) => row.id === id);
+  if (matches.length === 1) {
+    return matches[0] ?? null;
+  }
+  return null;
 }
 
 export function findAccrualByRef(

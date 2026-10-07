@@ -13,7 +13,7 @@ export type SettlementObligation = {
 };
 
 export type SettlementCompleted = SettlementObligation & {
-  paidAt: string;
+  paidAt: string | null;
   direction: "receivable" | "payable";
 };
 
@@ -21,6 +21,7 @@ export type SettlementsResponse = {
   receivable: SettlementObligation[];
   payable: SettlementObligation[];
   completed: SettlementCompleted[];
+  coverageNote: string;
 };
 
 export type SettlementPartnerGroup = {
