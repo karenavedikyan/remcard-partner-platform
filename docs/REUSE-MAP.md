@@ -95,8 +95,9 @@
 | Ввести код | `AuthFlow`, `LoginModal.tsx` | `POST /api/auth/verify-code` `{ code }` | — | atomic claim; 6 цифр; rate 10/min |
 | Readiness | — | `GET /api/account/cabinet-readiness` | session | nextStep, missing/stale consents |
 | Подтвердить сессию | — | `GET /api/auth/me` | cookie | UI не считает verify-code успехом без me |
-| Согласия входа | `ConsentStep` | `POST /api/account/consent` + `legalDocumentId` | authenticated | только missing; active version |
-| Onboarding PRO | `pro/setup/page.tsx` | consent PUBLIC_OFFER_PRO + `PATCH /api/pro/profile` | CLIENT→PRO | city + stages; staff skip |
+| Согласия входа | `ConsentStep` | `POST /api/account/consent` + `legalDocumentId` | authenticated | checkbox = kind+docId; 409 reload; только missing |
+| Onboarding PRO | `pro/profile/page.tsx` | consent PUBLIC_OFFER_PRO + `PATCH /api/pro/profile` | CLIENT→PRO | partnerType; MASTER→stages; STORE/COMPANY→storeCategories; staff skip |
+| AuthFlow recovery | `AuthFlow` | auth/me + cabinet-readiness | session | session check on /login; retry без повторного verify-code |
 | PROF-операции | store order/preview | `assertCabinetProfAccess` | PRO + readiness | 403 CABINET_NOT_READY |
 | Закрытые страницы | SessionGate / AuthFlow | readiness redirects | PRO | без циклов login↔onboarding |
 | returnTo | — | client whitelist | — | `/`, `/scanner`, `/history/*`, … — без external URL |
@@ -140,7 +141,7 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 | Экран кабинета | Сценарий | API / сервис | Авторизация | Зависимости | Проверка |
 | --- | --- | --- | --- | --- | --- |
 | Вход (M4-B) | Telegram bot code | verify-code; auth/me; cabinet-readiness | Cookie via BFF | `AuthFlow`, `auth-flow.ts` | unit + PG concurrency; bot E2E NOT VERIFIED |
-| Регистрация (M4-B) | CLIENT→PRO onboarding | `POST /api/account/consent`; `PATCH /api/pro/profile` | Session required | `OnboardingForm` | Local stack smoke |
+| Регистрация (M4-B) | CLIENT→PRO onboarding | `POST /api/account/consent`; `PATCH /api/pro/profile` | Session required | `OnboardingForm` | API MASTER PASS; STORE UI browser NOT VERIFIED |
 | Главная PROF (M2) | Dashboard overview | `GET /api/partnership/list`, `GET /api/partnership/incoming-count` | PROF + cookie | `ProDashboardClient.tsx` (read-only ref) | Fixture-сессия, без mock-метрик |
 | Профиль (M2) | Редактирование карточки | `GET/PATCH /api/pro/profile`; action `submitForModeration` | Authenticated (PRO fields) | `src/app/api/pro/profile/route.ts`, `src/app/pro/profile/page.tsx` | PATCH + reload |
 | Session gate | AuthFlow / readiness redirect | cabinet-readiness + auth/me | Cookie | `SessionGate`, `session.ts` | Server + UI gates |

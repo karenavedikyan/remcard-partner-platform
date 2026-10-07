@@ -1,6 +1,6 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 7 октября 2026 года (M4-B fix-pass).
+Обновлено: 7 октября 2026 года (M4-B UI recovery).
 
 ## Дополнение: узкий backend-проход безопасности
 
@@ -11,8 +11,9 @@
 Проверки: navigator 32/32 целевых теста (9 PG), partner 148/148 unit/proxy
 и 8/8 component; typecheck/lint/production Next build обоих приложений PASS.
 Подробности и ограничения: `docs/reviews/M4-B-backend-security.md`.
-**M4-B не закрыт:** UI recovery/смена версии checkbox, onboarding/browser,
-границы readiness policy и test bot E2E остаются. Merge/deploy не выполнялись.
+**M4-B UI recovery выполнен** (AuthFlow, consent kind+docId, onboarding по типу).
+Browser: store login PASS; client consents PASS; полный STORE onboarding UI и bot E2E —
+NOT VERIFIED. Merge/deploy не выполнялись.
 
 ## SHA / ветки / PR
 
@@ -21,16 +22,18 @@
 | M4-D navigator | `7eca04e` · `cursor/m4d-history-staff-b3e3` | Draft **#675** |
 | M4-D partner | `7d35896` · `cursor/m4d-history-staff-b3e3` | Draft **#8** |
 | M4-B navigator | `556c7c8` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#676** |
-| M4-B partner | `139d653` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#9** |
+| M4-B partner | `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#9** (UI recovery push) |
+| M4-B navigator | `15abd7c` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#676** |
 | Цепочка PR #1–#8+ | M1 → … → M4-B | open, не слиты |
 
-## M4-B fix (auth/onboarding, Draft #9 / #676)
+## M4-B (auth/onboarding, Draft #9 / #676)
 
-- Sequential AuthFlow: code → readiness → missing consents → onboarding
-- Backend: cabinet-readiness, consent version check, atomic verify-code, store API gate
-- Real onboarding (city + stages, no hidden defaults)
+- AuthFlow recovery: session check on /login, retry без повторного verify-code, blocked/retry states
+- Consent UI: checkbox = kind + legalDocumentId, 409 → reload + re-accept
+- Onboarding: partnerType MASTER/STORE/COMPANY; stages только MASTER; storeCategories для магазина
+- Backend ( #676 ): claimBotLoginCode, consent serialization, BFF legalDocumentId, store gate — без отката
 - Отчёт: `docs/reviews/M4-B-auth-onboarding.md`
-- **Bot E2E: NOT VERIFIED**
+- **Bot E2E: NOT VERIFIED** · **Next.js CVE — отдельный блокер**
 
 ## M4-D (final-fix, Draft)
 

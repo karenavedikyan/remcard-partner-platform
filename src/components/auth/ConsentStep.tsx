@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import type { ConsentRequirement } from "@/lib/cabinet-readiness";
 import { consentLabel } from "@/lib/auth-consent";
+import { consentRequirementKey } from "@/lib/auth-session";
 import { getLegalSiteUrl } from "@/lib/auth-config";
 import { Button } from "@/components/ui/Button";
 import styles from "./auth.module.css";
@@ -12,6 +13,7 @@ type ConsentStepProps = {
   error: string;
   loading: boolean;
   onSubmit: (accepted: Set<string>) => void;
+  onRetryReadiness: () => void;
 };
 
 function documentHref(base: string, req: ConsentRequirement): string {
@@ -21,12 +23,32 @@ function documentHref(base: string, req: ConsentRequirement): string {
   return `${base}${req.url.startsWith("/") ? req.url : `/${req.url}`}`;
 }
 
-export function ConsentStep({ requirements, error, loading, onSubmit }: ConsentStepProps) {
+function requirementsSignature(requirements: ConsentRequirement[]): string {
+  return requirements.map(consentRequirementKey).join("|");
+}
+
+export function ConsentStep({
+  requirements,
+  error,
+  loading,
+  onSubmit,
+  onRetryReadiness,
+}: ConsentStepProps) {
   const legalBase = getLegalSiteUrl();
   const submitLock = useRef(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-
   const [localError, setLocalError] = useState("");
+  const [signature, setSignature] = useState(requirementsSignature(requirements));
+
+  useEffect(() => {
+    const nextSignature = requirementsSignature(requirements);
+    if (nextSignature !== signature) {
+      setChecked({});
+      setSignature(nextSignature);
+    }
+  }, [requirements, signature]);
+
+  const hasMissingDocument = requirements.some((req) => !req.legalDocumentId);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -34,11 +56,16 @@ export function ConsentStep({ requirements, error, loading, onSubmit }: ConsentS
 
     const accepted = new Set<string>();
     for (const req of requirements) {
-      if (!checked[req.kind]) {
+      const key = consentRequirementKey(req);
+      if (!req.legalDocumentId) {
+        setLocalError("Документ временно недоступен. Повторите проверку.");
+        return;
+      }
+      if (!checked[key]) {
         setLocalError("Примите все обязательные соглашения.");
         return;
       }
-      accepted.add(req.kind);
+      accepted.add(key);
     }
     setLocalError("");
 
@@ -48,7 +75,8 @@ export function ConsentStep({ requirements, error, loading, onSubmit }: ConsentS
   }
 
   const allChecked =
-    requirements.length > 0 && requirements.every((req) => checked[req.kind]);
+    requirements.length > 0 &&
+    requirements.every((req) => req.legalDocumentId && checked[consentRequirementKey(req)]);
 
   return (
     <main className={styles.page}>
@@ -69,34 +97,51 @@ export function ConsentStep({ requirements, error, loading, onSubmit }: ConsentS
         ) : null}
 
         {requirements.length === 0 ? (
-          <p className={styles.lead}>Проверяем статус…</p>
+          <>
+            <p className={styles.lead}>Загружаем список соглашений…</p>
+            <Button type="button" onClick={onRetryReadiness} disabled={loading}>
+              {loading ? "Проверяем…" : "Повторить проверку"}
+            </Button>
+          </>
+        ) : hasMissingDocument ? (
+          <>
+            <p className={styles.error} role="alert">
+              Один из документов временно недоступен. Повторите проверку позже.
+            </p>
+            <Button type="button" onClick={onRetryReadiness} disabled={loading}>
+              {loading ? "Проверяем…" : "Повторить проверку"}
+            </Button>
+          </>
         ) : (
           <form onSubmit={handleSubmit}>
             <fieldset className={styles.consentBlock} disabled={loading}>
               <legend className="sr-only">Обязательные согласия</legend>
-              {requirements.map((req) => (
-                <label key={`${req.kind}-${req.legalDocumentId}`} className={styles.consentRow}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(checked[req.kind])}
-                    onChange={(event) =>
-                      setChecked((prev) => ({ ...prev, [req.kind]: event.target.checked }))
-                    }
-                  />
-                  <span>
-                    Я принимаю{" "}
-                    <a
-                      href={documentHref(legalBase, req)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {consentLabel(req.kind)}
-                    </a>
-                    {req.version ? ` (версия ${req.version})` : null}
-                    {req.status === "stale" ? " — документ обновлён" : null}
-                  </span>
-                </label>
-              ))}
+              {requirements.map((req) => {
+                const key = consentRequirementKey(req);
+                return (
+                  <label key={key} className={styles.consentRow}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(checked[key])}
+                      onChange={(event) =>
+                        setChecked((prev) => ({ ...prev, [key]: event.target.checked }))
+                      }
+                    />
+                    <span>
+                      Я принимаю{" "}
+                      <a
+                        href={documentHref(legalBase, req)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {consentLabel(req.kind)}
+                      </a>
+                      {req.version ? ` (версия ${req.version})` : null}
+                      {req.status === "stale" ? " — документ обновлён" : null}
+                    </span>
+                  </label>
+                );
+              })}
             </fieldset>
 
             <Button type="submit" disabled={loading || !allChecked}>

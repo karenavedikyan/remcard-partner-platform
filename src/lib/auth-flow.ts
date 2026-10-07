@@ -30,16 +30,31 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
   return allowed ? trimmed : null;
 }
 
-export type AuthFlowStep = "code" | "consents" | "done";
+export type AuthFlowStep =
+  | "checking_session"
+  | "code"
+  | "loading_readiness"
+  | "consents"
+  | "blocked"
+  | "session_retry";
 
 export function resolveStepFromReadiness(
   readiness: CabinetReadiness | null,
   hasSession: boolean,
 ): AuthFlowStep {
   if (!hasSession) return "code";
-  if (!readiness) return "consents";
+  if (!readiness) return "session_retry";
   if (hasPendingLoginConsents(readiness)) return "consents";
-  return "done";
+  if (readiness.needsProfileOnboarding) return "loading_readiness";
+  return "loading_readiness";
+}
+
+export function isAuthFlowComplete(readiness: CabinetReadiness): boolean {
+  return (
+    !hasPendingLoginConsents(readiness) &&
+    !readiness.needsProfileOnboarding &&
+    readiness.canAccessCabinet
+  );
 }
 
 export function resolveDestinationAfterAuth(
@@ -49,16 +64,25 @@ export function resolveDestinationAfterAuth(
   if (readiness.isAdmin) {
     return "/?reason=role";
   }
+  if (hasPendingLoginConsents(readiness)) {
+    const params = new URLSearchParams({ step: "consents" });
+    const safe = sanitizeReturnTo(returnTo);
+    if (safe) params.set("returnTo", safe);
+    return `/login?${params.toString()}`;
+  }
   if (readiness.needsProfileOnboarding) {
     const target = sanitizeReturnTo(returnTo);
     return target
       ? `/onboarding?returnTo=${encodeURIComponent(target)}`
       : "/onboarding";
   }
-  if (!readiness.canAccessCabinet) {
-    return "/login";
+  if (readiness.canAccessCabinet) {
+    return sanitizeReturnTo(returnTo) ?? "/";
   }
-  return sanitizeReturnTo(returnTo) ?? "/";
+  if (readiness.isEmployee) {
+    return sanitizeReturnTo(returnTo) ?? "/";
+  }
+  return "/?reason=role";
 }
 
 export function mapVerifyCodeError(
@@ -94,4 +118,14 @@ export function mapPostLoginBlocked(user: AuthUser | null): string | null {
   if (!user) return "Сессия не подтверждена. Продолжите со следующего шага.";
   if (user.isBlocked) return "Аккаунт заблокирован.";
   return null;
+}
+
+export function sessionRetryMessage(kind: "network" | "server" | "session_lost"): string {
+  if (kind === "network") {
+    return "Не удалось связаться с сервером. Проверьте соединение и повторите.";
+  }
+  if (kind === "session_lost") {
+    return "Сессия завершилась. Войдите снова.";
+  }
+  return "Временная ошибка сервера. Повторите проверку.";
 }

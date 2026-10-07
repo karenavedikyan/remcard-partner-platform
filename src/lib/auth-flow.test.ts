@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  isAuthFlowComplete,
   mapVerifyCodeError,
   resolveDestinationAfterAuth,
   resolveStepFromReadiness,
   sanitizeReturnTo,
+  sessionRetryMessage,
 } from "./auth-flow.ts";
 import type { CabinetReadiness } from "./cabinet-readiness.ts";
 
@@ -51,8 +53,16 @@ describe("sanitizeReturnTo", () => {
 describe("resolveStepFromReadiness", () => {
   it("routes session with pending consents to consents step", () => {
     assert.equal(resolveStepFromReadiness(needsConsents, true), "consents");
-    assert.equal(resolveStepFromReadiness(ready, true), "done");
+    assert.equal(resolveStepFromReadiness(ready, true), "loading_readiness");
     assert.equal(resolveStepFromReadiness(null, false), "code");
+    assert.equal(resolveStepFromReadiness(null, true), "session_retry");
+  });
+});
+
+describe("isAuthFlowComplete", () => {
+  it("detects ready cabinet access", () => {
+    assert.equal(isAuthFlowComplete(ready), true);
+    assert.equal(isAuthFlowComplete(needsConsents), false);
   });
 });
 
@@ -70,6 +80,24 @@ describe("resolveDestinationAfterAuth", () => {
     };
     assert.equal(resolveDestinationAfterAuth(profile, "/scanner"), "/onboarding?returnTo=%2Fscanner");
   });
+
+  it("routes unsupported context to role notice instead of login loop", () => {
+    const blocked: CabinetReadiness = {
+      ...ready,
+      canAccessCabinet: false,
+      needsProfileOnboarding: false,
+    };
+    assert.equal(resolveDestinationAfterAuth(blocked, "/scanner"), "/?reason=role");
+  });
+
+  it("routes employee without cabinet flag to returnTo", () => {
+    const employee: CabinetReadiness = {
+      ...ready,
+      canAccessCabinet: false,
+      isEmployee: true,
+    };
+    assert.equal(resolveDestinationAfterAuth(employee, "/scanner"), "/scanner");
+  });
 });
 
 describe("mapVerifyCodeError", () => {
@@ -77,5 +105,13 @@ describe("mapVerifyCodeError", () => {
     assert.match(mapVerifyCodeError(401, { error: "x" }), /неверный/i);
     assert.match(mapVerifyCodeError(429, { retryAfter: 30 }), /30/);
     assert.match(mapVerifyCodeError(0, null), /соединение/i);
+  });
+});
+
+describe("sessionRetryMessage", () => {
+  it("does not mention invalid code after session established", () => {
+    assert.doesNotMatch(sessionRetryMessage("network"), /неверный/i);
+    assert.doesNotMatch(sessionRetryMessage("server"), /неверный/i);
+    assert.match(sessionRetryMessage("session_lost"), /войдите/i);
   });
 });

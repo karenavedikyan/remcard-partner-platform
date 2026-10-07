@@ -1,5 +1,6 @@
 import type { ConsentRequirement } from "@/lib/cabinet-readiness";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { consentRequirementKey } from "@/lib/auth-session";
 
 const CONSENT_LABELS: Record<string, string> = {
   PERSONAL_DATA: "обработку персональных данных",
@@ -27,13 +28,22 @@ export function consentErrorMessage(status: number, body: { error?: string } | n
   return "Не удалось сохранить согласие.";
 }
 
+export function isDocumentVersionMismatch(error: unknown): boolean {
+  return (
+    error instanceof RemcardApiError &&
+    error.status === 409 &&
+    error.body?.error === "DOCUMENT_VERSION_MISMATCH"
+  );
+}
+
 /** Record only the provided requirements; stops on first failure. */
 export async function recordConsentRequirements(
   requirements: ConsentRequirement[],
   accepted: Set<string>,
 ): Promise<void> {
   for (const req of requirements) {
-    if (!accepted.has(req.kind)) {
+    const key = consentRequirementKey(req);
+    if (!accepted.has(key)) {
       throw new Error("Примите все обязательные соглашения.");
     }
     if (!req.legalDocumentId) {
