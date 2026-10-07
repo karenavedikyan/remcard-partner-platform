@@ -188,6 +188,7 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/me"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/auth/verify-code"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/account/consent"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/account/cabinet-readiness"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/account/consent"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/verify-code"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/logout"), false);

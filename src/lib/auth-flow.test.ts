@@ -1,10 +1,38 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { mapVerifyCodeError, resolvePostLoginPath, sanitizeReturnTo } from "./auth-flow.ts";
-import type { AuthUser } from "./types.ts";
+import {
+  mapVerifyCodeError,
+  resolveDestinationAfterAuth,
+  resolveStepFromReadiness,
+  sanitizeReturnTo,
+} from "./auth-flow.ts";
+import type { CabinetReadiness } from "./cabinet-readiness.ts";
 
-const proUser: AuthUser = { id: "u1", role: "PRO" };
-const clientUser: AuthUser = { id: "u2", role: "CLIENT" };
+const ready: CabinetReadiness = {
+  nextStep: "ready",
+  missingConsents: [],
+  needsProfileOnboarding: false,
+  canAccessCabinet: true,
+  isEmployee: false,
+  isAdmin: false,
+};
+
+const needsConsents: CabinetReadiness = {
+  nextStep: "consents",
+  missingConsents: [
+    {
+      kind: "TERMS",
+      legalDocumentId: "d1",
+      version: "1",
+      url: "/terms",
+      status: "missing",
+    },
+  ],
+  needsProfileOnboarding: false,
+  canAccessCabinet: false,
+  isEmployee: false,
+  isAdmin: false,
+};
 
 describe("sanitizeReturnTo", () => {
   it("allows safe internal paths", () => {
@@ -12,21 +40,35 @@ describe("sanitizeReturnTo", () => {
     assert.equal(sanitizeReturnTo("/history/purchases/abc"), "/history/purchases/abc");
   });
 
-  it("rejects external and protocol-relative paths", () => {
+  it("rejects external, login loops and onboarding loops", () => {
     assert.equal(sanitizeReturnTo("https://evil.test"), null);
     assert.equal(sanitizeReturnTo("//evil.test"), null);
-    assert.equal(sanitizeReturnTo("/login?x=1"), null);
+    assert.equal(sanitizeReturnTo("/login"), null);
+    assert.equal(sanitizeReturnTo("/onboarding"), null);
   });
 });
 
-describe("resolvePostLoginPath", () => {
-  it("routes PRO to returnTo or home", () => {
-    assert.equal(resolvePostLoginPath(proUser, "/scanner"), "/scanner");
-    assert.equal(resolvePostLoginPath(proUser, null), "/");
+describe("resolveStepFromReadiness", () => {
+  it("routes session with pending consents to consents step", () => {
+    assert.equal(resolveStepFromReadiness(needsConsents, true), "consents");
+    assert.equal(resolveStepFromReadiness(ready, true), "done");
+    assert.equal(resolveStepFromReadiness(null, false), "code");
+  });
+});
+
+describe("resolveDestinationAfterAuth", () => {
+  it("routes ready PRO to returnTo", () => {
+    assert.equal(resolveDestinationAfterAuth(ready, "/scanner"), "/scanner");
   });
 
-  it("routes CLIENT to onboarding with returnTo", () => {
-    assert.equal(resolvePostLoginPath(clientUser, "/scanner"), "/onboarding?returnTo=%2Fscanner");
+  it("routes CLIENT profile need to onboarding", () => {
+    const profile: CabinetReadiness = {
+      ...needsConsents,
+      nextStep: "profile",
+      needsProfileOnboarding: true,
+      missingConsents: [],
+    };
+    assert.equal(resolveDestinationAfterAuth(profile, "/scanner"), "/onboarding?returnTo=%2Fscanner");
   });
 });
 

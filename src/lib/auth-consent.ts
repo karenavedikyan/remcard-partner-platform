@@ -1,27 +1,60 @@
-export type RequiredLoginConsents = {
-  personalData: boolean;
-  terms: boolean;
+import type { ConsentRequirement } from "@/lib/cabinet-readiness";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+
+const CONSENT_LABELS: Record<string, string> = {
+  PERSONAL_DATA: "обработку персональных данных",
+  TERMS: "пользовательское соглашение",
+  PUBLIC_OFFER_PRO: "публичную оферту для партнёров",
 };
 
-export const EMPTY_LOGIN_CONSENTS: RequiredLoginConsents = {
-  personalData: false,
-  terms: false,
-};
-
-export function validateRequiredLoginConsents(consents: RequiredLoginConsents): string | null {
-  if (!consents.personalData || !consents.terms) {
-    return "Примите обязательные соглашения, чтобы продолжить.";
-  }
-  return null;
+export function consentLabel(kind: string): string {
+  return CONSENT_LABELS[kind] ?? kind;
 }
 
-const CONSENT_KINDS = ["PERSONAL_DATA", "TERMS"] as const;
+export function consentErrorMessage(status: number, body: { error?: string } | null): string {
+  if (status === 409 && body?.error === "DOCUMENT_VERSION_MISMATCH") {
+    return "Документ обновился. Ознакомьтесь с новой версией и примите снова.";
+  }
+  if (status === 503 && body?.error === "NO_ACTIVE_DOCUMENT") {
+    return "Документ временно недоступен. Попробуйте позже.";
+  }
+  if (status === 401) {
+    return "Сессия завершилась. Войдите снова.";
+  }
+  if (status >= 500) {
+    return "Не удалось сохранить согласие. Попробуйте позже.";
+  }
+  return "Не удалось сохранить согласие.";
+}
 
-/** Persist mandatory consents after verify-code session is established. */
-export async function recordRequiredLoginConsents(
-  fetchConsent: (kind: string) => Promise<void>,
+/** Record only the provided requirements; stops on first failure. */
+export async function recordConsentRequirements(
+  requirements: ConsentRequirement[],
+  accepted: Set<string>,
 ): Promise<void> {
-  for (const kind of CONSENT_KINDS) {
-    await fetchConsent(kind);
+  for (const req of requirements) {
+    if (!accepted.has(req.kind)) {
+      throw new Error("Примите все обязательные соглашения.");
+    }
+    if (!req.legalDocumentId) {
+      throw new RemcardApiError(503, consentErrorMessage(503, { error: "NO_ACTIVE_DOCUMENT" }), {
+        error: "NO_ACTIVE_DOCUMENT",
+      });
+    }
+    try {
+      await remcardFetch("/api/account/consent", {
+        method: "POST",
+        body: { kind: req.kind, legalDocumentId: req.legalDocumentId },
+      });
+    } catch (caught) {
+      if (caught instanceof RemcardApiError) {
+        throw new RemcardApiError(
+          caught.status,
+          consentErrorMessage(caught.status, caught.body),
+          caught.body,
+        );
+      }
+      throw caught;
+    }
   }
 }

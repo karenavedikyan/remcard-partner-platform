@@ -1,3 +1,5 @@
+import type { CabinetReadiness } from "@/lib/cabinet-readiness";
+import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import type { AuthUser } from "@/lib/types";
 
 const SAFE_RETURN_PREFIXES = [
@@ -7,7 +9,6 @@ const SAFE_RETURN_PREFIXES = [
   "/partners",
   "/profile",
   "/recommendations",
-  "/onboarding",
 ] as const;
 
 /** Allow only same-origin relative paths without protocol tricks. */
@@ -20,26 +21,50 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
     return null;
   }
   const path = trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
+  if (path === "/login" || path.startsWith("/login/") || path === "/onboarding") {
+    return null;
+  }
   const allowed = SAFE_RETURN_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
   return allowed ? trimmed : null;
 }
 
-export function resolvePostLoginPath(user: AuthUser, returnTo: string | null): string {
-  if (user.isBlocked) {
-    return "/?reason=blocked";
+export type AuthFlowStep = "code" | "consents" | "done";
+
+export function resolveStepFromReadiness(
+  readiness: CabinetReadiness | null,
+  hasSession: boolean,
+): AuthFlowStep {
+  if (!hasSession) return "code";
+  if (!readiness) return "consents";
+  if (hasPendingLoginConsents(readiness)) return "consents";
+  return "done";
+}
+
+export function resolveDestinationAfterAuth(
+  readiness: CabinetReadiness,
+  returnTo: string | null,
+): string {
+  if (readiness.isAdmin) {
+    return "/?reason=role";
   }
-  if (user.role !== "PRO") {
-    const onboardingTarget = sanitizeReturnTo(returnTo);
-    return onboardingTarget
-      ? `/onboarding?returnTo=${encodeURIComponent(onboardingTarget)}`
+  if (readiness.needsProfileOnboarding) {
+    const target = sanitizeReturnTo(returnTo);
+    return target
+      ? `/onboarding?returnTo=${encodeURIComponent(target)}`
       : "/onboarding";
+  }
+  if (!readiness.canAccessCabinet) {
+    return "/login";
   }
   return sanitizeReturnTo(returnTo) ?? "/";
 }
 
-export function mapVerifyCodeError(status: number, body: { error?: string; message?: string; retryAfter?: number } | null): string {
+export function mapVerifyCodeError(
+  status: number,
+  body: { error?: string; message?: string; retryAfter?: number } | null,
+): string {
   if (status === 429) {
     const retry = body?.retryAfter;
     if (typeof retry === "number" && retry > 0) {
@@ -63,4 +88,10 @@ export function mapVerifyCodeError(status: number, body: { error?: string; messa
     return "Временная ошибка сервера. Попробуйте позже.";
   }
   return body?.error ?? body?.message ?? "Не удалось выполнить вход.";
+}
+
+export function mapPostLoginBlocked(user: AuthUser | null): string | null {
+  if (!user) return "Сессия не подтверждена. Продолжите со следующего шага.";
+  if (user.isBlocked) return "Аккаунт заблокирован.";
+  return null;
 }

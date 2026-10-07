@@ -121,3 +121,27 @@
   color: var(--muted);
   line-height: 1.45;
 }
+
+.stageGrid {
+  display: grid;
+  gap: var(--space-1);
+  max-height: 14rem;
+  overflow-y: auto;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.stageRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.stageRow input {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
