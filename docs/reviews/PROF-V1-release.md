@@ -2,7 +2,7 @@
 
 ## Рабочий контур
 
-- Кабинет: https://pro.remcard.ru.
+- Кабинет: https://prof.remcard.ru (новый адрес по решению владельца).
 - Timeweb: https://timeweb.cloud/my/apps/266221/setup.
 - Технический адрес: https://karenavedikyan-remcard-partner-platform-fb70.twc1.net.
 - Backend: https://remcard.ru, прежняя production-БД и авторизация.
@@ -22,7 +22,7 @@ run: npm start -- --hostname 0.0.0.0
 NODE_ENV=production
 NEXT_TELEMETRY_DISABLED=1
 REMCARD_API_BASE_URL=https://remcard.ru
-NEXT_PUBLIC_APP_URL=https://pro.remcard.ru
+NEXT_PUBLIC_APP_URL=https://prof.remcard.ru
 NEXT_PUBLIC_CERTIFICATE_BASE_URL=https://remcard.ru
 NEXT_PUBLIC_REMCARD_SITE_URL=https://remcard.ru
 NEXT_PUBLIC_TELEGRAM_BOT_LOGIN_URL=https://t.me/RemCardBot?start=login
@@ -30,11 +30,23 @@ NEXT_PUBLIC_TELEGRAM_BOT_LOGIN_URL=https://t.me/RemCardBot?start=login
 
 Production credentials backend не копируются в кабинет или Git.
 Технический домен предназначен для диагностики; основной origin для
-пользовательских POST — `https://pro.remcard.ru`.
+пользовательских POST — `https://prof.remcard.ru`.
 
 ## Проверки и границы
 
 ### Блокер домена на момент фиксации отчёта
+
+В 13:04 MSK владелец предложил попробовать `prof.remcard.ru`.
+Создана A-запись `94.228.126.174`, TTL 300, DNS only.
+Привязка приложения изменена с `pro.remcard.ru` на `prof.remcard.ru`,
+`NEXT_PUBLIC_APP_URL` обновлён, остальные env сохранены.
+Deploy `5f855d8d-4bf6-4bdd-9d51-ba3e12935209` успешен на том же runtime SHA.
+На новом домене TLS internal error воспроизводится также.
+Через технический HTTPS с Host/Origin нового домена invalid verify-code
+возвращает 400, чужой Origin 403: конфигурация кабинета обновлена.
+Основной backend health возвращает 200. Обращение в поддержку ещё не отправлено.
+
+История первой попытки:
 
 Deploy `2593290e-4895-4d78-95d8-5e1fa883b9a1` завершён успешно
 на runtime SHA `418aac7`. A-запись `pro.remcard.ru` указывает на

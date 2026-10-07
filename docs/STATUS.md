@@ -5,12 +5,17 @@
 ## Текущий выпуск PROF V1
 
 Кабинет развёрнут в Timeweb App Platform, приложение `266221`, тариф
-510 ₽/месяц. Целевой домен: https://pro.remcard.ru.
+510 ₽/месяц. По решению владельца от 7 октября 2026 целевой домен
+изменён на https://prof.remcard.ru.
 Повторный deploy после подключения домена завершён успешно на том же SHA.
-HTTPS на техническом адресе возвращает 200, но HTTPS `pro.remcard.ru`
+HTTPS на техническом адресе возвращает 200, но HTTPS `prof.remcard.ru`
 пока отклоняется с TLS internal error: публичный запуск на целевом домене
 ещё не завершён. DNS и привязка подтверждены; требуется исправление SSL
 на стороне Timeweb. Не считать этот статус полной production-приёмкой.
+Новый deploy `5f855d8d-4bf6-4bdd-9d51-ba3e12935209` успешен;
+`NEXT_PUBLIC_APP_URL=https://prof.remcard.ru`. Проверка через технический TLS
+с Host/Origin нового домена: invalid verify-code 400, foreign Origin 403.
+Прежний `pro.remcard.ru` больше не привязан к приложению, его DNS пока сохранён.
 
 - Кабинет: `release/prof-v1-20261007`, runtime SHA `418aac7fcf2cd7e899de65d7652271f660901e73`.
 - Backend: `release/prof-backend-v1-20261007`, runtime SHA `94636ab4ecc4ea377b5a543aac85c6c8ea5011f3`.
