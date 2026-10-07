@@ -35,6 +35,7 @@ export type AuthFlowStep =
   | "code"
   | "loading_readiness"
   | "consents"
+  | "access_denied"
   | "blocked"
   | "session_retry";
 
@@ -46,6 +47,7 @@ export function resolveStepFromReadiness(
   if (!readiness) return "session_retry";
   if (hasPendingLoginConsents(readiness)) return "consents";
   if (readiness.needsProfileOnboarding) return "loading_readiness";
+  if (!readiness.canAccessCabinet && !readiness.isEmployee) return "access_denied";
   return "loading_readiness";
 }
 
@@ -53,27 +55,31 @@ export function isAuthFlowComplete(readiness: CabinetReadiness): boolean {
   return (
     !hasPendingLoginConsents(readiness) &&
     !readiness.needsProfileOnboarding &&
-    readiness.canAccessCabinet
+    (readiness.canAccessCabinet || readiness.isEmployee)
   );
 }
 
 /** Login consents always precede profile onboarding. */
-export type AuthFlowDestination = "complete" | "consents" | "onboarding";
+export type AuthFlowDestination = "complete" | "consents" | "onboarding" | "access_denied";
 
 export function resolveAuthFlowFromReadiness(readiness: CabinetReadiness): AuthFlowDestination {
   if (isAuthFlowComplete(readiness)) return "complete";
   if (hasPendingLoginConsents(readiness)) return "consents";
   if (readiness.needsProfileOnboarding) return "onboarding";
-  return "consents";
+  return "access_denied";
+}
+
+export function mapAccessDeniedMessage(readiness: CabinetReadiness): string {
+  if (readiness.isAdmin) {
+    return "Для входа в кабинет нужен профиль партнёра PRO с принятыми соглашениями. Административный доступ без PRO-профиля недоступен.";
+  }
+  return "Доступ в кабинет пока недоступен. Проверьте профиль и соглашения или обратитесь в поддержку.";
 }
 
 export function resolveDestinationAfterAuth(
   readiness: CabinetReadiness,
   returnTo: string | null,
 ): string {
-  if (readiness.isAdmin) {
-    return "/?reason=role";
-  }
   if (hasPendingLoginConsents(readiness)) {
     const params = new URLSearchParams({ step: "consents" });
     const safe = sanitizeReturnTo(returnTo);
@@ -110,7 +116,7 @@ export function mapVerifyCodeError(
     return "Неверный или просроченный код. Запросите новый в боте.";
   }
   if (status === 404) {
-    return "Сначала получите код в Telegram-боте RemCard.";
+    return "Сначала получите код в Telegram- или MAX-боте RemCard.";
   }
   if (status === 403) {
     return "Аккаунт заблокирован.";

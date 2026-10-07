@@ -32,13 +32,18 @@ export default async function HomePage(
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
   );
   if (readinessResult.ok) {
-    if (readinessResult.data.isAdmin) {
-      return <SessionGate reason="role" />;
-    }
-    if (hasPendingLoginConsents(readinessResult.data)) {
+    const readiness = readinessResult.data;
+    if (hasPendingLoginConsents(readiness)) {
       redirect("/login?step=consents&returnTo=%2F");
     }
-    if (readinessResult.data.needsProfileOnboarding || !readinessResult.data.canAccessCabinet) {
+    if (readiness.needsProfileOnboarding) {
+      redirect("/onboarding?returnTo=%2F");
+    }
+    if (readiness.canAccessCabinet || readiness.isEmployee) {
+      // OWNER+PRO and regular partners enter here; isAdmin stays true for identity only.
+    } else if (readiness.isAdmin) {
+      return <SessionGate reason="role" />;
+    } else {
       redirect("/onboarding?returnTo=%2F");
     }
   } else if (user.role !== "PRO") {

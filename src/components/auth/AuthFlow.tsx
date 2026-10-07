@@ -15,6 +15,7 @@ import {
   type SessionFetchKind,
 } from "@/lib/auth-session";
 import {
+  mapAccessDeniedMessage,
   mapPostLoginBlocked,
   mapVerifyCodeError,
   resolveAuthFlowFromReadiness,
@@ -22,7 +23,7 @@ import {
   sessionRetryMessage,
   type AuthFlowStep,
 } from "@/lib/auth-flow";
-import { getTelegramBotLoginUrl } from "@/lib/auth-config";
+import { getMaxBotLoginUrl, getTelegramBotLoginUrl } from "@/lib/auth-config";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "./OtpInput";
 import { ConsentStep } from "./ConsentStep";
@@ -56,7 +57,8 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   const [retryKind, setRetryKind] = useState<RetryKind>("network");
   const [consentResetToken, setConsentResetToken] = useState(0);
 
-  const botUrl = getTelegramBotLoginUrl();
+  const telegramBotUrl = getTelegramBotLoginUrl();
+  const maxBotUrl = getMaxBotLoginUrl();
 
   const finishFlow = useCallback(
     (r: CabinetReadiness) => {
@@ -81,6 +83,11 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
       }
       if (next === "onboarding") {
         finishFlow(r);
+        return;
+      }
+      if (next === "access_denied") {
+        setError(mapAccessDeniedMessage(r));
+        setStep("access_denied");
         return;
       }
       setStep("consents");
@@ -361,6 +368,50 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
     );
   }
 
+  if (step === "access_denied") {
+    return (
+      <main className={styles.page}>
+        <section className={styles.card}>
+          <span className={styles.eyebrow}>RemCard PROF</span>
+          <h1 className={styles.title}>Доступ ограничен</h1>
+          <p className={styles.error} role="alert">
+            {error || mapAccessDeniedMessage(readiness ?? {
+              nextStep: "ready",
+              missingConsents: [],
+              needsProfileOnboarding: false,
+              canAccessCabinet: false,
+              isEmployee: false,
+              isAdmin: false,
+            })}
+          </p>
+          <div className={styles.actions}>
+            <Button type="button" onClick={() => void retrySessionCheck()} disabled={loading}>
+              {loading ? "Проверяем…" : "Повторить проверку"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={async () => {
+                try {
+                  await remcardFetch("/api/auth/logout", { method: "POST" });
+                } catch {
+                  // ignore logout errors; user can still re-enter code
+                }
+                codeConsumedRef.current = false;
+                setReadiness(null);
+                setError("");
+                setStep("code");
+              }}
+              disabled={loading}
+            >
+              Выйти
+            </Button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="login-title">
@@ -369,8 +420,8 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
           Войти в RemCard
         </h1>
         <p className={styles.lead}>
-          Получите одноразовый код в Telegram-боте и введите его здесь. Используется тот же аккаунт,
-          что и на основном сайте RemCard.
+          Получите одноразовый код в Telegram или MAX и введите его здесь. Используется тот же
+          аккаунт, что и на основном сайте RemCard.
         </p>
 
         {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
@@ -380,20 +431,35 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
           </p>
         ) : null}
 
-        <a className={styles.botLink} href={botUrl} target="_blank" rel="noopener noreferrer">
-          Получить код в Telegram
-        </a>
+        <div className={styles.botLinks}>
+          <a className={styles.botLink} href={telegramBotUrl} target="_blank" rel="noopener noreferrer">
+            Получить код в Telegram
+          </a>
+          <a
+            className={`${styles.botLink} ${styles.botLinkSecondary}`}
+            href={maxBotUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Получить код в MAX
+          </a>
+        </div>
 
         <form onSubmit={(event) => void submitCode(event)}>
-          <OtpInput value={code} onChange={setCode} disabled={loading} />
+          <OtpInput
+            value={code}
+            onChange={setCode}
+            disabled={loading}
+            aria-label="Шестизначный код из Telegram или MAX"
+          />
           <Button type="submit" disabled={loading || code.length !== 6}>
             {loading ? "Проверяем…" : "Продолжить"}
           </Button>
         </form>
 
         <p className={styles.notice}>
-          Код действует ограниченное время и используется один раз. Мы не сохраняем код на этом
-          устройстве.
+          Код действует ограниченное время и используется один раз. Если код не пришёл
+          автоматически, отправьте боту команду /login.
         </p>
       </section>
     </main>

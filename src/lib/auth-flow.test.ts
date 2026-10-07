@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildSessionRecoveryLoginHref,
   isAuthFlowComplete,
+  mapAccessDeniedMessage,
   mapVerifyCodeError,
   resolveAuthFlowFromReadiness,
   resolveDestinationAfterAuth,
@@ -96,6 +97,32 @@ describe("resolveAuthFlowFromReadiness", () => {
     assert.equal(resolveAuthFlowFromReadiness(client), "consents");
   });
 
+  it("routes OWNER+PRO with cabinet access to complete", () => {
+    const ownerPro: CabinetReadiness = {
+      nextStep: "ready",
+      missingConsents: [],
+      needsProfileOnboarding: false,
+      canAccessCabinet: true,
+      isEmployee: false,
+      isAdmin: true,
+    };
+    assert.equal(resolveAuthFlowFromReadiness(ownerPro), "complete");
+    assert.equal(isAuthFlowComplete(ownerPro), true);
+  });
+
+  it("routes empty consents with denied access to access_denied", () => {
+    const denied: CabinetReadiness = {
+      nextStep: "ready",
+      missingConsents: [],
+      needsProfileOnboarding: false,
+      canAccessCabinet: false,
+      isEmployee: false,
+      isAdmin: true,
+    };
+    assert.equal(resolveAuthFlowFromReadiness(denied), "access_denied");
+    assert.match(mapAccessDeniedMessage(denied), /PRO/i);
+  });
+
   it("routes to onboarding only after login consents are satisfied", () => {
     const profileOnly: CabinetReadiness = {
       nextStep: "profile",
@@ -120,6 +147,14 @@ describe("resolveAuthFlowFromReadiness", () => {
 describe("resolveDestinationAfterAuth", () => {
   it("routes ready PRO to returnTo", () => {
     assert.equal(resolveDestinationAfterAuth(ready, "/scanner"), "/scanner");
+  });
+
+  it("routes OWNER+PRO with cabinet access to returnTo despite isAdmin", () => {
+    const ownerPro: CabinetReadiness = {
+      ...ready,
+      isAdmin: true,
+    };
+    assert.equal(resolveDestinationAfterAuth(ownerPro, "/scanner"), "/scanner");
   });
 
   it("routes CLIENT profile need to onboarding", () => {

@@ -34,6 +34,15 @@ export function redirectToOnboarding(returnTo: string): never {
   redirect(`/onboarding?returnTo=${encodeURIComponent(returnTo)}`);
 }
 
+function isProfCabinetAllowed(readiness: CabinetReadiness, user: AuthUser): boolean {
+  if (user.isBlocked) return false;
+  if (hasPendingLoginConsents(readiness)) return false;
+  if (readiness.needsProfileOnboarding) return false;
+  if (readiness.canAccessCabinet && user.role === "PRO") return true;
+  if (readiness.isEmployee) return true;
+  return false;
+}
+
 async function ensureCabinetAccess(returnTo: string): Promise<AuthUser> {
   const user = await getSessionUser();
   if (!user) {
@@ -48,8 +57,8 @@ async function ensureCabinetAccess(returnTo: string): Promise<AuthUser> {
     loginRedirect(returnTo);
   }
 
-  if (readiness.isAdmin) {
-    redirect("/?reason=role");
+  if (isProfCabinetAllowed(readiness, user)) {
+    return user;
   }
 
   if (hasPendingLoginConsents(readiness)) {
@@ -60,11 +69,11 @@ async function ensureCabinetAccess(returnTo: string): Promise<AuthUser> {
     redirectToOnboarding(returnTo);
   }
 
-  if (!readiness.canAccessCabinet || user.role !== "PRO") {
-    redirectToOnboarding(returnTo);
+  if (readiness.isAdmin) {
+    redirect("/?reason=role");
   }
 
-  return user;
+  redirect("/?reason=role");
 }
 
 /** Gate for server pages: null = show login gate (no session only). */
@@ -82,19 +91,23 @@ export async function requireProPageUser(returnTo: string): Promise<AuthUser | n
     return null;
   }
 
-  if (readiness.isAdmin) {
-    redirect("/?reason=role");
+  if (isProfCabinetAllowed(readiness, user)) {
+    return user;
   }
 
   if (hasPendingLoginConsents(readiness)) {
     redirect(`/login?${new URLSearchParams({ step: "consents", returnTo }).toString()}`);
   }
 
-  if (readiness.needsProfileOnboarding || !readiness.canAccessCabinet) {
+  if (readiness.needsProfileOnboarding) {
     redirectToOnboarding(returnTo);
   }
 
-  return user;
+  if (readiness.isAdmin) {
+    redirect("/?reason=role");
+  }
+
+  redirect("/?reason=role");
 }
 
 export async function requireProSession(returnTo?: string): Promise<AuthUser> {

@@ -196,16 +196,16 @@ describe("AuthFlow", () => {
     expect(screen.getByText(/версия 1.0/i)).toBeInTheDocument();
   });
 
-  it("shows retry when consents list is empty", async () => {
+  it("shows access denied when consents are empty but cabinet access is false", async () => {
     vi.mocked(remcardFetch).mockImplementation(async (path) => {
       if (path === "/api/account/cabinet-readiness") {
         return {
-          nextStep: "consents",
+          nextStep: "ready",
           missingConsents: [],
           needsProfileOnboarding: false,
           canAccessCabinet: false,
           isEmployee: false,
-          isAdmin: false,
+          isAdmin: true,
         };
       }
       return { ok: true };
@@ -213,9 +213,40 @@ describe("AuthFlow", () => {
 
     render(<AuthFlow returnTo="/scanner" />);
 
-    const retryButton = await screen.findByRole("button", { name: /повторить проверку/i });
-    await waitFor(() => {
-      expect(retryButton).not.toBeDisabled();
+    expect(await screen.findByRole("heading", { name: /доступ ограничен/i })).toBeInTheDocument();
+    expect(screen.queryByText(/загружаем список соглашений/i)).not.toBeInTheDocument();
+    const retryButton = screen.getByRole("button", { name: /повторить проверку/i });
+    expect(retryButton).not.toBeDisabled();
+  });
+
+  it("routes OWNER+PRO with cabinet access to returnTo", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/account/cabinet-readiness") {
+        return {
+          nextStep: "ready",
+          missingConsents: [],
+          needsProfileOnboarding: false,
+          canAccessCabinet: true,
+          isEmployee: false,
+          isAdmin: true,
+        };
+      }
+      return { ok: true };
     });
+
+    render(<AuthFlow returnTo="/scanner" />);
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/scanner");
+    });
+  });
+
+  it("shows Telegram and MAX bot links on code step", async () => {
+    vi.mocked(getAuthMe).mockResolvedValue({ user: null });
+    render(<AuthFlow returnTo="/scanner" />);
+
+    expect(await screen.findByRole("link", { name: /получить код в telegram/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /получить код в max/i })).toBeInTheDocument();
+    expect(screen.getByText(/отправьте боту команду \/login/i)).toBeInTheDocument();
   });
 });

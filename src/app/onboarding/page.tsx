@@ -30,9 +30,6 @@ export default async function OnboardingPage(
 
   if (readinessResult.ok) {
     const readiness = readinessResult.data;
-    if (readiness.isAdmin) {
-      redirect("/?reason=role");
-    }
     if (hasPendingLoginConsents(readiness)) {
       redirect(
         `/login?${new URLSearchParams({ step: "consents", returnTo: sanitizeReturnTo(searchParams?.returnTo) ?? "/" }).toString()}`,
@@ -43,6 +40,9 @@ export default async function OnboardingPage(
     }
     if (readiness.isEmployee) {
       redirect(sanitizeReturnTo(searchParams?.returnTo) ?? "/");
+    }
+    if (readiness.isAdmin && !readiness.needsProfileOnboarding) {
+      redirect("/?reason=role");
     }
   }
 
