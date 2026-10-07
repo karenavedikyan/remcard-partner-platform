@@ -7,7 +7,10 @@ import { RemcardApiError } from "@/lib/api-client";
 import type { ConsentRequirement } from "@/lib/cabinet-readiness";
 import { isDocumentVersionMismatch } from "@/lib/auth-consent";
 import { consentRequirementKey, fetchReadinessSafe } from "@/lib/auth-session";
-import { resolveDestinationAfterAuth, sanitizeReturnTo } from "@/lib/auth-flow";
+import {
+  buildSessionRecoveryLoginHref,
+  resolveDestinationAfterAuth,
+} from "@/lib/auth-flow";
 import { getLegalSiteUrl } from "@/lib/auth-config";
 import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
 import {
@@ -38,17 +41,6 @@ type RetryKind = "network" | "server" | "session_lost" | null;
 
 const STORE_CATEGORY_CHIPS = storeCategoryChips();
 
-function onboardingLoginHref(returnTo: string | null): string {
-  const onboardingTarget = returnTo
-    ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
-    : "/onboarding";
-  const params = new URLSearchParams({
-    reason: "session",
-    returnTo: onboardingTarget,
-  });
-  return `/login?${params.toString()}`;
-}
-
 export function OnboardingForm({
   returnTo,
   initialCity,
@@ -56,6 +48,7 @@ export function OnboardingForm({
 }: OnboardingFormProps) {
   const router = useRouter();
   const submitLock = useRef(false);
+  const displayNameDirtyRef = useRef(false);
   const progressRef = useRef<OnboardingSaveProgress>({
     offerSaved: false,
     displayNameSaved: false,
@@ -122,10 +115,13 @@ export function OnboardingForm({
   }, [partnerType, city, allStages, selectedStages, storeCategories]);
 
   useEffect(() => {
+    if (initialDisplayName?.trim()) {
+      return;
+    }
     void (async () => {
       try {
         const saved = await readSavedDisplayName();
-        if (saved) {
+        if (saved && !displayNameDirtyRef.current) {
           setDisplayName(saved);
           progressRef.current.displayNameSaved = true;
         }
@@ -133,7 +129,7 @@ export function OnboardingForm({
         // ignore bootstrap read errors
       }
     })();
-  }, []);
+  }, [initialDisplayName]);
 
   function toggleStage(id: string) {
     setAllStages(false);
@@ -355,7 +351,7 @@ export function OnboardingForm({
         ) : null}
 
         {showSessionLost ? (
-          <Link className={styles.botLink} href={onboardingLoginHref(sanitizeReturnTo(returnTo))}>
+          <Link className={styles.botLink} href={buildSessionRecoveryLoginHref(returnTo)}>
             Войти снова
           </Link>
         ) : readinessError && (retryKind === "network" || retryKind === "server") ? (
@@ -439,7 +435,10 @@ export function OnboardingForm({
                   <TextField
                     label={partnerType === "STORE" ? "Название магазина" : "Название компании"}
                     value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
+                    onChange={(event) => {
+                      displayNameDirtyRef.current = true;
+                      setDisplayName(event.target.value);
+                    }}
                     disabled={loading}
                     required
                   />

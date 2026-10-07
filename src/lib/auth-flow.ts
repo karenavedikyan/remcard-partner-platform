@@ -130,6 +130,16 @@ export function mapPostLoginBlocked(user: AuthUser | null): string | null {
   return null;
 }
 
+/** Re-login link after session loss: pass final destination, not /onboarding wrapper. */
+export function buildSessionRecoveryLoginHref(returnTo: string | null | undefined): string {
+  const params = new URLSearchParams({ reason: "session" });
+  const safe = sanitizeReturnTo(returnTo);
+  if (safe) {
+    params.set("returnTo", safe);
+  }
+  return `/login?${params.toString()}`;
+}
+
 export function sessionRetryMessage(kind: "network" | "server" | "session_lost"): string {
   if (kind === "network") {
     return "Не удалось связаться с сервером. Проверьте соединение и повторите.";

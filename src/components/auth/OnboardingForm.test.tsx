@@ -133,6 +133,47 @@ describe("OnboardingForm", () => {
     });
   });
 
+  it("preserves user-edited displayName when delayed auth/me returns stale value", async () => {
+    let resolveMe: ((name: string | null) => void) | undefined;
+    const meDeferred = new Promise<{ user: { displayName: string | null } }>((resolve) => {
+      resolveMe = (name) => resolve({ user: { displayName: name } });
+    });
+    vi.mocked(getAuthMe).mockReturnValue(meDeferred);
+
+    const ui = userEvent.setup();
+    render(<OnboardingForm returnTo="/scanner" initialDisplayName="" />);
+    await screen.findByText(/регистрация партнёра/i);
+    await ui.click(screen.getByRole("radio", { name: /магазин/i }));
+
+    const nameInput = screen.getByLabelText(/название магазина/i);
+    await ui.type(nameInput, "Новое название");
+    expect(nameInput).toHaveValue("Новое название");
+
+    resolveMe!("Старое из API");
+    await waitFor(() => expect(getAuthMe).toHaveBeenCalled());
+    expect(nameInput).toHaveValue("Новое название");
+  });
+
+  it("uses initialDisplayName without async overwrite when provided", async () => {
+    let resolveMe: ((name: string | null) => void) | undefined;
+    const meDeferred = new Promise<{ user: { displayName: string | null } }>((resolve) => {
+      resolveMe = (name) => resolve({ user: { displayName: name } });
+    });
+    vi.mocked(getAuthMe).mockReturnValue(meDeferred);
+
+    const ui = userEvent.setup();
+    render(<OnboardingForm returnTo="/scanner" initialDisplayName="С сервера" />);
+    await screen.findByText(/регистрация партнёра/i);
+    await ui.click(screen.getByRole("radio", { name: /магазин/i }));
+
+    const nameInput = screen.getByLabelText(/название магазина/i);
+    await ui.clear(nameInput);
+    await ui.type(nameInput, "Пользовательское");
+    resolveMe!("Старое из API");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(nameInput).toHaveValue("Пользовательское");
+  });
+
   it("retries verification without second profile PATCH after partial success", async () => {
     let readinessCalls = 0;
     vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
@@ -162,7 +203,7 @@ describe("OnboardingForm", () => {
     await ui.click(screen.getByRole("button", { name: /повторить проверку/i }));
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith("/scanner");
     });
     expect(
       vi
@@ -172,7 +213,7 @@ describe("OnboardingForm", () => {
     ).toBe(1);
   });
 
-  it("shows login link on 401 after save", async () => {
+  it("session recovery link passes final returnTo without onboarding wrapper", async () => {
     let readinessCalls = 0;
     vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
       readinessCalls += 1;
@@ -187,7 +228,26 @@ describe("OnboardingForm", () => {
     await ui.click(screen.getByRole("button", { name: /продолжить/i }));
 
     const loginLink = await screen.findByRole("link", { name: /войти снова/i });
-    expect(loginLink.getAttribute("href")).toContain("/login");
-    expect(loginLink.getAttribute("href")).toContain("returnTo");
+    expect(loginLink.getAttribute("href")).toBe("/login?reason=session&returnTo=%2Fscanner");
+    expect(loginLink.getAttribute("href")).not.toContain("onboarding");
+  });
+
+  it("rejects unsafe returnTo in session recovery link", async () => {
+    let readinessCalls = 0;
+    vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
+      readinessCalls += 1;
+      if (readinessCalls <= 2) return { ok: true, data: needsProfile };
+      return { ok: false, kind: "unauthorized" as const };
+    });
+
+    const ui = userEvent.setup();
+    render(<OnboardingForm returnTo="https://evil.test" />);
+    await screen.findByText(/регистрация партнёра/i);
+    await fillStoreForm(ui);
+    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+
+    const loginLink = await screen.findByRole("link", { name: /войти снова/i });
+    expect(loginLink.getAttribute("href")).toBe("/login?reason=session");
+    expect(loginLink.getAttribute("href")).not.toContain("evil");
   });
 });

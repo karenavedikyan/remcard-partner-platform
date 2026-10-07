@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  buildSessionRecoveryLoginHref,
   isAuthFlowComplete,
   mapVerifyCodeError,
   resolveAuthFlowFromReadiness,
@@ -155,6 +156,28 @@ describe("mapVerifyCodeError", () => {
     assert.match(mapVerifyCodeError(401, { error: "x" }), /неверный/i);
     assert.match(mapVerifyCodeError(429, { retryAfter: 30 }), /30/);
     assert.match(mapVerifyCodeError(0, null), /соединение/i);
+  });
+});
+
+describe("buildSessionRecoveryLoginHref", () => {
+  it("passes safe final destination without onboarding wrapper", () => {
+    assert.equal(
+      buildSessionRecoveryLoginHref("/scanner"),
+      "/login?reason=session&returnTo=%2Fscanner",
+    );
+    assert.equal(
+      buildSessionRecoveryLoginHref("/history/purchases/abc"),
+      "/login?reason=session&returnTo=%2Fhistory%2Fpurchases%2Fabc",
+    );
+  });
+
+  it("rejects external and loop-prone returnTo values", () => {
+    assert.equal(buildSessionRecoveryLoginHref("https://evil.test"), "/login?reason=session");
+    assert.equal(
+      buildSessionRecoveryLoginHref("/onboarding?returnTo=%2Fscanner"),
+      "/login?reason=session",
+    );
+    assert.equal(buildSessionRecoveryLoginHref("/login"), "/login?reason=session");
   });
 });
 
