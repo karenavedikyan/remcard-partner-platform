@@ -57,7 +57,9 @@ export DATABASE_URL='…'   # из локального navigator .env.local; н
 ```
 
 Скрипт: **независимый reset + свежие коды перед каждым проходом** (desktop, затем mobile); любой сбой → exit ≠ 0.  
-`DATABASE_URL` проверяется `validate-test-database-url.mjs` (loopback + `remcard_prof_test`); SQL-защита в reset сохранена. Значение URL не логируется.
+`DATABASE_URL` проверяется `validate-test-database-url.mjs` **до psql**: только `postgres:`/`postgresql:`, loopback (`127.0.0.1`, `localhost`, `::1` / `[::1]`), БД `remcard_prof_test` без лишнего path, без query/fragment. Отказ — generic message, без URL/пароля. SQL-защита в reset сохранена.
+
+**Тесты валидатора:** `node --test scripts/local/validate-test-database-url.test.mjs` → **13/13 PASS** (автономно, без БД).
 
 **Учётные данные:** ранний HEAD скрипта содержал захардкоженный пароль БД; пароль **ротирован локально** (только `remcard_prof_test` / loopback), обновлён navigator `.env.local` (не в Git). **История Git не переписывалась** — старый пароль может остаться в прошлых коммитах.
 
@@ -94,6 +96,7 @@ export DATABASE_URL='…'   # из локального navigator .env.local; н
 | Partner component | **21/21 PASS** |
 | Partner lint / typecheck / build | **PASS** |
 | Browser 401 E2E | **PASS** (desktop + mobile) |
+| `validate-test-database-url` | **13/13 PASS** |
 | Navigator | **15abd7c** без изменений |
 
 ---
