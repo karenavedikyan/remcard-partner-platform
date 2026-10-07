@@ -49,15 +49,25 @@ Navigator **Draft #676** · Partner **Draft #9** · branch `cursor/m4b-auth-onbo
 
 **Вход:** verify-code с одноразовыми кодами из тестовой БД (`BotLoginCode`, identifier `tg:777666555`). **Fixture-code login ≠ выдача кода ботом.**
 
-**Воспроизведение:**
+**Воспроизведение** (partner :3000, navigator :3001, loopback `remcard_prof_test`):
 
 ```bash
-# partner :3000 + navigator :3001 + remcard_prof_test
+export DATABASE_URL='…'   # из локального navigator .env.local; не коммитить
 ./scripts/local/run-m4b-browser-401.sh
 ```
 
-Отчёты JSON: `/opt/cursor/artifacts/m4b-browser-401/report_{desktop,mobile}.json`  
-Скриншоты: `desktop_02_session_lost_link.png`, `desktop_03_scanner_final.png`, `mobile_*` (аналогично).
+Скрипт: **независимый reset + свежие коды перед каждым проходом** (desktop, затем mobile); любой сбой → exit ≠ 0.  
+`DATABASE_URL` проверяется `validate-test-database-url.mjs` (loopback + `remcard_prof_test`); SQL-защита в reset сохранена. Значение URL не логируется.
+
+**Учётные данные:** ранний HEAD скрипта содержал захардкоженный пароль БД; пароль **ротирован локально** (только `remcard_prof_test` / loopback), обновлён navigator `.env.local` (не в Git). **История Git не переписывалась** — старый пароль может остаться в прошлых коммитах.
+
+**Доказательства (без секретов):**
+
+| Артефакт | Путь |
+| --- | --- |
+| Desktop JSON | `/opt/cursor/artifacts/m4b-browser-401/report_desktop.json` |
+| Mobile JSON | `/opt/cursor/artifacts/m4b-browser-401/report_mobile.json` |
+| Скриншоты | `/opt/cursor/artifacts/m4b-browser-401/screenshots/{desktop,mobile}_*.png` |
 
 ---
 

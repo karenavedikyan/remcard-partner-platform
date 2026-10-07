@@ -12,7 +12,7 @@
 и 8/8 component; typecheck/lint/production Next build обоих приложений PASS.
 Подробности и ограничения: `docs/reviews/M4-B-backend-security.md`.
 **M4-B fix-pass #3:** displayName dirty guard, session recovery returnTo без /onboarding wrapper.
-Browser 401→re-login→/scanner E2E **PASS** (desktop+mobile, Playwright + DB codes). Bot E2E NOT VERIFIED.
+Browser 401→re-login→/scanner E2E **PASS** (desktop+mobile; `./scripts/local/run-m4b-browser-401.sh`, reset per pass). Bot E2E NOT VERIFIED.
 
 ## SHA / ветки / PR
 
