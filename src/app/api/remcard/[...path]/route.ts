@@ -42,35 +42,35 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
 
 export async function GET(
   request: NextRequest,
-  context: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
 ) {
-  return proxyRequest(request, context.params.path);
+  return proxyRequest(request, (await context.params).path);
 }
 
 export async function POST(
   request: NextRequest,
-  context: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
 ) {
-  return proxyRequest(request, context.params.path);
+  return proxyRequest(request, (await context.params).path);
 }
 
 export async function PUT(
   request: NextRequest,
-  context: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
 ) {
-  return proxyRequest(request, context.params.path);
+  return proxyRequest(request, (await context.params).path);
 }
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
 ) {
-  return proxyRequest(request, context.params.path);
+  return proxyRequest(request, (await context.params).path);
 }
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
 ) {
-  return proxyRequest(request, context.params.path);
+  return proxyRequest(request, (await context.params).path);
 }

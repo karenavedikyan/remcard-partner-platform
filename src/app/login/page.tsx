@@ -3,11 +3,12 @@ import { sanitizeReturnTo } from "@/lib/auth-flow";
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams?: { returnTo?: string; reason?: string; step?: string };
-}) {
+export default async function LoginPage(
+  props: {
+    searchParams?: Promise<{ returnTo?: string; reason?: string; step?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const initialStep = searchParams?.step === "consents" ? "consents" : undefined;
   return (
     <AuthFlow

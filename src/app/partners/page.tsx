@@ -17,7 +17,7 @@ export default async function PartnersPage() {
     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
   }
 
-  const cookieHeader = headers().get("cookie");
+  const cookieHeader = (await headers()).get("cookie");
   const profileResult = await fetchRemcardUpstream<ProProfileResponse>("/api/pro/profile", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });

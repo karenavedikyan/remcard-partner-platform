@@ -7,10 +7,11 @@ import { requireProPageUser } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 type RecommendationDetailPageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export default async function RecommendationDetailPage({ params }: RecommendationDetailPageProps) {
+export default async function RecommendationDetailPage(props: RecommendationDetailPageProps) {
+  const params = await props.params;
   const returnPath = `/recommendations/${params.id}`;
   const user = await requireProPageUser(returnPath);
   if (!user) {

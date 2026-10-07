@@ -8,12 +8,13 @@ import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-export default async function OnboardingPage({
-  searchParams,
-}: {
-  searchParams?: { returnTo?: string };
-}) {
-  const cookieHeader = headers().get("cookie");
+export default async function OnboardingPage(
+  props: {
+    searchParams?: Promise<{ returnTo?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const cookieHeader = (await headers()).get("cookie");
   const auth = await getAuthMeServer(cookieHeader);
   if (!auth.ok || !auth.data.user) {
     redirect(`/login?returnTo=${encodeURIComponent("/onboarding")}`);

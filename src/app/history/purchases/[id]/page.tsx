@@ -7,14 +7,13 @@ import { requireProPageUser } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 type PurchaseDetailPageProps = {
-  params: { id: string };
-  searchParams?: { promo?: string };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ promo?: string }>;
 };
 
-export default async function PurchaseDetailPage({
-  params,
-  searchParams,
-}: PurchaseDetailPageProps) {
+export default async function PurchaseDetailPage(props: PurchaseDetailPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const returnPath = `/history/purchases/${params.id}`;
   const user = await requireProPageUser(returnPath);
   if (!user) {

@@ -9,10 +9,11 @@ export const dynamic = "force-dynamic";
 const RETURN_PATH = "/history";
 
 type HistoryPageProps = {
-  searchParams?: { search?: string };
+  searchParams?: Promise<{ search?: string }>;
 };
 
-export default async function HistoryPage({ searchParams }: HistoryPageProps) {
+export default async function HistoryPage(props: HistoryPageProps) {
+  const searchParams = await props.searchParams;
   const user = await requireProPageUser(RETURN_PATH);
   if (!user) {
     return <SessionGate reason="session" returnTo={RETURN_PATH} />;

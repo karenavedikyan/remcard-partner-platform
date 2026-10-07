@@ -13,11 +13,12 @@ import type { PartnershipListResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams?: { reason?: string };
-}) {
+export default async function HomePage(
+  props: {
+    searchParams?: Promise<{ reason?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser();
   if (!user) {
     return <SessionGate reason={searchParams?.reason} />;
@@ -25,7 +26,7 @@ export default async function HomePage({
   if (user.isBlocked) {
     return <SessionGate reason="blocked" />;
   }
-  const cookieHeader = headers().get("cookie");
+  const cookieHeader = (await headers()).get("cookie");
   const readinessResult = await fetchRemcardUpstream<CabinetReadiness>(
     "/api/account/cabinet-readiness",
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },

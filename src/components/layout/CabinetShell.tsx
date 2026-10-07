@@ -12,7 +12,7 @@ type CabinetShellProps = {
 
 export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
   const user = await requireProSession(returnTo);
-  const cookieHeader = headers().get("cookie");
+  const cookieHeader = (await headers()).get("cookie");
   const list = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });

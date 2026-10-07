@@ -7,10 +7,11 @@ import { requireProPageUser } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 type AccrualDetailPageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export default async function AccrualDetailPage({ params }: AccrualDetailPageProps) {
+export default async function AccrualDetailPage(props: AccrualDetailPageProps) {
+  const params = await props.params;
   const returnPath = `/history/accruals/${params.id}`;
   const user = await requireProPageUser(returnPath);
   if (!user) {

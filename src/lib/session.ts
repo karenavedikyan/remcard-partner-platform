@@ -6,7 +6,7 @@ import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import type { AuthUser } from "@/lib/types";
 
 export async function getSessionUser(): Promise<AuthUser | null> {
-  const cookieHeader = headers().get("cookie");
+  const cookieHeader = (await headers()).get("cookie");
   const auth = await getAuthMeServer(cookieHeader);
   if (!auth.ok || !auth.data.user) {
     return null;
@@ -15,7 +15,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
 }
 
 async function getCabinetReadinessServer(): Promise<CabinetReadiness | null> {
-  const cookieHeader = headers().get("cookie");
+  const cookieHeader = (await headers()).get("cookie");
   const result = await fetchRemcardUpstream<CabinetReadiness>("/api/account/cabinet-readiness", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
