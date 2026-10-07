@@ -92,17 +92,19 @@
 | Действие кабинета | Navigator reference | API | Права | Ограничения |
 | --- | --- | --- | --- | --- |
 | Получить код | Telegram `/login` | BotLoginCode (bot, не HTTP) | — | Deep link `t.me/RemCardBot?start=login`; MAX не в UI |
-| Ввести код | `LoginForm.tsx`, `LoginModal.tsx` | `POST /api/auth/verify-code` `{ code }` | — | 6 цифр; rate 10/min; без consents в body |
+| Ввести код | `AuthFlow`, `LoginModal.tsx` | `POST /api/auth/verify-code` `{ code }` | — | atomic claim; 6 цифр; rate 10/min |
+| Readiness | — | `GET /api/account/cabinet-readiness` | session | nextStep, missing/stale consents |
 | Подтвердить сессию | — | `GET /api/auth/me` | cookie | UI не считает verify-code успехом без me |
-| Согласия входа | `ConsentCheckboxes` (ref) | `POST /api/account/consent` ×2 | authenticated | PERSONAL_DATA, TERMS; idempotent |
-| Onboarding PRO | `pro/setup/page.tsx` | consent PUBLIC_OFFER_PRO + `PATCH /api/pro/profile` | CLIENT→PRO | Сервер назначает role; UI не меняет role |
-| Закрытые страницы | SessionGate | `requireProPageUser` / `requireProSession` | PRO | CLIENT → `/onboarding`; null session → LoginForm |
+| Согласия входа | `ConsentStep` | `POST /api/account/consent` + `legalDocumentId` | authenticated | только missing; active version |
+| Onboarding PRO | `pro/setup/page.tsx` | consent PUBLIC_OFFER_PRO + `PATCH /api/pro/profile` | CLIENT→PRO | city + stages; staff skip |
+| PROF-операции | store order/preview | `assertCabinetProfAccess` | PRO + readiness | 403 CABINET_NOT_READY |
+| Закрытые страницы | SessionGate / AuthFlow | readiness redirects | PRO | без циклов login↔onboarding |
 | returnTo | — | client whitelist | — | `/`, `/scanner`, `/history/*`, … — без external URL |
 | Logout | `LogoutButton` | `POST /api/auth/logout` | session | cookie cleared via BFF |
 
-**BFF allowlist (M4-B):** `POST /api/account/consent` добавлен к auth routes.
+**BFF allowlist (M4-B):** `POST /api/account/consent`, `GET /api/account/cabinet-readiness`.
 
-**Navigator change (M4-B):** `recordConsentIfMissing`; ALLOWED kinds + PERSONAL_DATA, TERMS.
+**Navigator (M4-B fix):** consent active-version check; cabinet-readiness; atomic verify-code; store API gate.
 
 **NOT VERIFIED:** полный bot E2E (см. `docs/reviews/M4-B-auth-onboarding.md`).
 
@@ -137,11 +139,11 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 
 | Экран кабинета | Сценарий | API / сервис | Авторизация | Зависимости | Проверка |
 | --- | --- | --- | --- | --- | --- |
-| Вход (M4-B) | Telegram bot code | `POST /api/auth/verify-code`; `GET /api/auth/me` | Cookie `remcard-token` via BFF | `LoginForm`, `auth-flow.ts` | Fixture DB + unit; bot E2E NOT VERIFIED |
+| Вход (M4-B) | Telegram bot code | verify-code; auth/me; cabinet-readiness | Cookie via BFF | `AuthFlow`, `auth-flow.ts` | unit + PG concurrency; bot E2E NOT VERIFIED |
 | Регистрация (M4-B) | CLIENT→PRO onboarding | `POST /api/account/consent`; `PATCH /api/pro/profile` | Session required | `OnboardingForm` | Local stack smoke |
 | Главная PROF (M2) | Dashboard overview | `GET /api/partnership/list`, `GET /api/partnership/incoming-count` | PROF + cookie | `ProDashboardClient.tsx` (read-only ref) | Fixture-сессия, без mock-метрик |
 | Профиль (M2) | Редактирование карточки | `GET/PATCH /api/pro/profile`; action `submitForModeration` | Authenticated (PRO fields) | `src/app/api/pro/profile/route.ts`, `src/app/pro/profile/page.tsx` | PATCH + reload |
-| Session gate | LoginForm / onboarding redirect | `GET /api/auth/me` | Cookie | `SessionGate`, `session.ts` | Protected pages без fixture JWT |
+| Session gate | AuthFlow / readiness redirect | cabinet-readiness + auth/me | Cookie | `SessionGate`, `session.ts` | Server + UI gates |
 | Выход | Logout | `POST /api/auth/logout` | Активная сессия | — | POST через BFF; cookie cleared |
 | Список партнёров (M2) | Partnership list | `GET /api/partnership/list` | `role === PRO` | `PartnershipListBlock.tsx` | BFF GET |
 | Поиск (M2-fix) | Partner search | `GET /api/partnership/search?role=store\|pro` | PROF | `PartnerFindClient.tsx`, `search/route.ts` | store→MASTER/COMPANY; pro→STORE/MASTER/COMPANY; q=имя/организация |
@@ -174,7 +176,7 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 
 Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`):
 
-- Auth: `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/verify-code`, `POST /api/account/consent`
+- Auth: `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/verify-code`, `POST /api/account/consent`, `GET /api/account/cabinet-readiness`
 - Profile: `GET/PATCH /api/pro/profile`
 - Partnership: `GET list|search|incoming-count`, `POST invite|remind`, `PATCH /api/partnership/[id]`
 - Term changes: `GET/POST /api/partnerships/[id]/term-change`, `POST .../respond`

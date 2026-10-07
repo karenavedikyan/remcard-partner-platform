@@ -1,6 +1,6 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 7 октября 2026 года (M4-B auth/onboarding).
+Обновлено: 7 октября 2026 года (M4-B fix-pass).
 
 ## SHA / ветки / PR
 
@@ -12,14 +12,13 @@
 | M4-B partner | `8978f3d` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#9** |
 | Цепочка PR #1–#8+ | M1 → … → M4-B | open, не слиты |
 
-## M4-B (auth/onboarding, Draft)
+## M4-B fix (auth/onboarding, Draft #9 / #676)
 
-- Вход через `POST /api/auth/verify-code` (Telegram deep link, OTP)
-- Согласия PERSONAL_DATA + TERMS после сессии; onboarding CLIENT→PRO
-- BFF allowlist: `POST /api/account/consent`
-- Backend: расширение `/api/account/consent` (+ idempotent `recordConsentIfMissing`)
+- Sequential AuthFlow: code → readiness → missing consents → onboarding
+- Backend: cabinet-readiness, consent version check, atomic verify-code, store API gate
+- Real onboarding (city + stages, no hidden defaults)
 - Отчёт: `docs/reviews/M4-B-auth-onboarding.md`
-- **Bot E2E: NOT VERIFIED** (нужен test bot)
+- **Bot E2E: NOT VERIFIED**
 
 ## M4-D (final-fix, Draft)
 
