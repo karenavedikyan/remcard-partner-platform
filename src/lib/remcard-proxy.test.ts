@@ -235,6 +235,7 @@ describe("remcard proxy transport checks", () => {
 
   it("allows only verified route/method pairs", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/me"), true);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/auth/me"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/auth/verify-code"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/account/consent"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/account/cabinet-readiness"), true);

@@ -15,9 +15,9 @@ import {
   type SessionFetchKind,
 } from "@/lib/auth-session";
 import {
-  isAuthFlowComplete,
   mapPostLoginBlocked,
   mapVerifyCodeError,
+  resolveAuthFlowFromReadiness,
   resolveDestinationAfterAuth,
   sessionRetryMessage,
   type AuthFlowStep,
@@ -74,11 +74,12 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   const applyReadiness = useCallback(
     (r: CabinetReadiness) => {
       setReadiness(r);
-      if (isAuthFlowComplete(r)) {
+      const next = resolveAuthFlowFromReadiness(r);
+      if (next === "complete") {
         finishFlow(r);
         return;
       }
-      if (r.needsProfileOnboarding) {
+      if (next === "onboarding") {
         finishFlow(r);
         return;
       }

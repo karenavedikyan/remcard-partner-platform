@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   isAuthFlowComplete,
   mapVerifyCodeError,
+  resolveAuthFlowFromReadiness,
   resolveDestinationAfterAuth,
   resolveStepFromReadiness,
   sanitizeReturnTo,
@@ -63,6 +64,55 @@ describe("isAuthFlowComplete", () => {
   it("detects ready cabinet access", () => {
     assert.equal(isAuthFlowComplete(ready), true);
     assert.equal(isAuthFlowComplete(needsConsents), false);
+  });
+});
+
+describe("resolveAuthFlowFromReadiness", () => {
+  it("shows login consents before profile onboarding for new CLIENT", () => {
+    const client: CabinetReadiness = {
+      nextStep: "consents",
+      missingConsents: [
+        {
+          kind: "TERMS",
+          legalDocumentId: "d1",
+          version: "1",
+          url: "/terms",
+          status: "missing",
+        },
+        {
+          kind: "PUBLIC_OFFER_PRO",
+          legalDocumentId: "d2",
+          version: "1",
+          url: "/legal/public-offer-pro",
+          status: "missing",
+        },
+      ],
+      needsProfileOnboarding: true,
+      canAccessCabinet: false,
+      isEmployee: false,
+      isAdmin: false,
+    };
+    assert.equal(resolveAuthFlowFromReadiness(client), "consents");
+  });
+
+  it("routes to onboarding only after login consents are satisfied", () => {
+    const profileOnly: CabinetReadiness = {
+      nextStep: "profile",
+      missingConsents: [
+        {
+          kind: "PUBLIC_OFFER_PRO",
+          legalDocumentId: "d2",
+          version: "1",
+          url: "/legal/public-offer-pro",
+          status: "missing",
+        },
+      ],
+      needsProfileOnboarding: true,
+      canAccessCabinet: false,
+      isEmployee: false,
+      isAdmin: false,
+    };
+    assert.equal(resolveAuthFlowFromReadiness(profileOnly), "onboarding");
   });
 });
 

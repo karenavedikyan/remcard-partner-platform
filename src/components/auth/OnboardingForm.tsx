@@ -1,21 +1,28 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getAuthMe, remcardFetch, RemcardApiError } from "@/lib/api-client";
-import type { CabinetReadiness, ConsentRequirement } from "@/lib/cabinet-readiness";
-import {
-  isDocumentVersionMismatch,
-  recordConsentRequirements,
-} from "@/lib/auth-consent";
+import { RemcardApiError } from "@/lib/api-client";
+import type { ConsentRequirement } from "@/lib/cabinet-readiness";
+import { isDocumentVersionMismatch } from "@/lib/auth-consent";
 import { consentRequirementKey, fetchReadinessSafe } from "@/lib/auth-session";
-import { resolveDestinationAfterAuth } from "@/lib/auth-flow";
+import { resolveDestinationAfterAuth, sanitizeReturnTo } from "@/lib/auth-flow";
 import { getLegalSiteUrl } from "@/lib/auth-config";
 import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
 import {
   PARTNER_TYPE_OPTIONS,
   type PartnerTypeOption,
 } from "@/lib/onboarding-partner-types";
+import {
+  displayNameMatchesSaved,
+  readSavedDisplayName,
+  saveDisplayNameViaAuthMe,
+  saveOfferConsent,
+  saveProProfile,
+  verifyOnboardingComplete,
+  type OnboardingSaveProgress,
+} from "@/lib/onboarding-save";
 import { storeCategoryChips } from "@/lib/store-categories";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
@@ -24,16 +31,40 @@ import styles from "./auth.module.css";
 type OnboardingFormProps = {
   returnTo: string | null;
   initialCity?: string | null;
+  initialDisplayName?: string | null;
 };
+
+type RetryKind = "network" | "server" | "session_lost" | null;
 
 const STORE_CATEGORY_CHIPS = storeCategoryChips();
 
-export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
+function onboardingLoginHref(returnTo: string | null): string {
+  const onboardingTarget = returnTo
+    ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
+    : "/onboarding";
+  const params = new URLSearchParams({
+    reason: "session",
+    returnTo: onboardingTarget,
+  });
+  return `/login?${params.toString()}`;
+}
+
+export function OnboardingForm({
+  returnTo,
+  initialCity,
+  initialDisplayName,
+}: OnboardingFormProps) {
   const router = useRouter();
   const submitLock = useRef(false);
+  const progressRef = useRef<OnboardingSaveProgress>({
+    offerSaved: false,
+    displayNameSaved: false,
+    profileSaved: false,
+  });
+
   const [partnerType, setPartnerType] = useState<PartnerTypeOption | "">("");
   const [city, setCity] = useState(initialCity?.trim() ?? "");
-  const [displayName, setDisplayName] = useState("");
+  const [displayName, setDisplayName] = useState(initialDisplayName?.trim() ?? "");
   const [selectedStages, setSelectedStages] = useState<string[]>([]);
   const [allStages, setAllStages] = useState(false);
   const [storeCategories, setStoreCategories] = useState<string[]>([]);
@@ -42,6 +73,8 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
   const [readinessLoading, setReadinessLoading] = useState(true);
   const [error, setError] = useState("");
   const [readinessError, setReadinessError] = useState("");
+  const [retryKind, setRetryKind] = useState<RetryKind>(null);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [offerRequirement, setOfferRequirement] = useState<ConsentRequirement | null>(null);
   const [offerKey, setOfferKey] = useState("");
 
@@ -50,13 +83,19 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
   const loadReadiness = useCallback(async () => {
     setReadinessLoading(true);
     setReadinessError("");
+    setRetryKind(null);
     const result = await fetchReadinessSafe();
     if (!result.ok) {
-      setReadinessError(
-        result.kind === "network"
-          ? "Не удалось связаться с сервером. Повторите проверку."
-          : "Не удалось проверить статус. Повторите проверку.",
-      );
+      if (result.kind === "unauthorized") {
+        setRetryKind("session_lost");
+        setReadinessError("Сессия завершилась. Войдите снова.");
+      } else if (result.kind === "network") {
+        setRetryKind("network");
+        setReadinessError("Не удалось связаться с сервером. Повторите проверку.");
+      } else {
+        setRetryKind("server");
+        setReadinessError("Временная ошибка сервера. Повторите проверку.");
+      }
       setReadinessLoading(false);
       return null;
     }
@@ -66,6 +105,9 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
       setOfferChecked(false);
       setOfferKey(nextKey);
     }
+    if (!offer) {
+      progressRef.current.offerSaved = true;
+    }
     setOfferRequirement(offer);
     setReadinessLoading(false);
     return result.data;
@@ -74,6 +116,24 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
   useEffect(() => {
     void loadReadiness();
   }, [loadReadiness]);
+
+  useEffect(() => {
+    progressRef.current.profileSaved = false;
+  }, [partnerType, city, allStages, selectedStages, storeCategories]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const saved = await readSavedDisplayName();
+        if (saved) {
+          setDisplayName(saved);
+          progressRef.current.displayNameSaved = true;
+        }
+      } catch {
+        // ignore bootstrap read errors
+      }
+    })();
+  }, []);
 
   function toggleStage(id: string) {
     setAllStages(false);
@@ -98,9 +158,53 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
     );
   }
 
+  const runVerification = useCallback(async (): Promise<boolean> => {
+    const verified = await verifyOnboardingComplete();
+    if (verified.ok) {
+      setAwaitingVerification(false);
+      setRetryKind(null);
+      setError("");
+      router.replace(resolveDestinationAfterAuth(verified.readiness, returnTo));
+      router.refresh();
+      return true;
+    }
+
+    setAwaitingVerification(true);
+    setError(verified.message);
+    if (verified.kind === "unauthorized") {
+      setRetryKind("session_lost");
+    } else if (verified.kind === "network") {
+      setRetryKind("network");
+    } else if (verified.kind === "server") {
+      setRetryKind("server");
+    } else {
+      setRetryKind(null);
+      setAwaitingVerification(false);
+    }
+    return false;
+  }, [returnTo, router]);
+
+  async function handleRetryVerification() {
+    if (submitLock.current || loading) return;
+    submitLock.current = true;
+    setLoading(true);
+    setError("");
+    try {
+      await runVerification();
+    } finally {
+      setLoading(false);
+      submitLock.current = false;
+    }
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (submitLock.current || loading) return;
+
+    if (awaitingVerification) {
+      await handleRetryVerification();
+      return;
+    }
 
     const trimmedCity = city.trim();
     if (!partnerType) {
@@ -129,65 +233,58 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
       }
     }
 
-    if (offerRequirement) {
-      if (!offerRequirement.legalDocumentId) {
-        setError("Документ оферты временно недоступен. Повторите проверку.");
-        return;
-      }
-      if (!offerChecked) {
-        setError("Примите публичную оферту для партнёров.");
-        return;
-      }
+    const needsOffer = Boolean(offerRequirement?.legalDocumentId) && !progressRef.current.offerSaved;
+    if (needsOffer && !offerChecked) {
+      setError("Примите публичную оферту для партнёров.");
+      return;
+    }
+    if (offerRequirement && !offerRequirement.legalDocumentId) {
+      setError("Документ оферты временно недоступен. Повторите проверку.");
+      return;
     }
 
     submitLock.current = true;
     setLoading(true);
     setError("");
+    setRetryKind(null);
+
+    const draft = {
+      partnerType,
+      city: trimmedCity,
+      displayName: displayName.trim(),
+      allStages,
+      selectedStages,
+      storeCategories,
+    };
 
     try {
-      if (offerRequirement?.legalDocumentId) {
-        await recordConsentRequirements(
-          [offerRequirement],
-          new Set([consentRequirementKey(offerRequirement)]),
-        );
+      if (needsOffer && offerRequirement) {
+        await saveOfferConsent(offerRequirement);
+        progressRef.current.offerSaved = true;
+        setOfferChecked(false);
       }
 
-      const body: Record<string, unknown> = {
-        city: trimmedCity,
-        partnerType,
-      };
-
-      if (partnerType === "MASTER") {
-        body.specializations = allStages ? ONBOARDING_STAGES.map((s) => s.id) : selectedStages;
-      } else {
-        body.displayName = displayName.trim();
-        body.storeCategories = storeCategories;
+      if (partnerType !== "MASTER") {
+        const savedName = await readSavedDisplayName();
+        if (!displayNameMatchesSaved(savedName, draft.displayName)) {
+          await saveDisplayNameViaAuthMe(draft.displayName);
+          const confirmed = await readSavedDisplayName();
+          if (!displayNameMatchesSaved(confirmed, draft.displayName)) {
+            throw new RemcardApiError(500, "Не удалось подтвердить название.", null);
+          }
+        }
+        progressRef.current.displayNameSaved = true;
       }
 
-      await remcardFetch("/api/pro/profile", {
-        method: "PATCH",
-        body,
-      });
-
-      const me = await getAuthMe();
-      const readiness = await loadReadiness();
-      if (!readiness || !me.user) {
-        setError("Профиль сохранён, но статус не подтверждён. Повторите проверку.");
-        return;
-      }
-      if (readiness.needsProfileOnboarding) {
-        setError("Завершите оставшиеся поля профиля.");
-        return;
-      }
-      if (!readiness.canAccessCabinet && me.user.role !== "PRO") {
-        setError("Профиль сохранён, но доступ ещё не открыт. Повторите проверку.");
-        return;
+      if (!progressRef.current.profileSaved) {
+        await saveProProfile(draft);
+        progressRef.current.profileSaved = true;
       }
 
-      router.replace(resolveDestinationAfterAuth(readiness, returnTo));
-      router.refresh();
+      await runVerification();
     } catch (caught) {
       if (isDocumentVersionMismatch(caught)) {
+        progressRef.current.offerSaved = false;
         setOfferChecked(false);
         void loadReadiness();
         setError(
@@ -200,8 +297,10 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
       if (caught instanceof RemcardApiError) {
         const code = (caught.body as { errorCode?: string } | null)?.errorCode;
         if (code === "PUBLIC_OFFER_PRO_REQUIRED") {
+          progressRef.current.offerSaved = false;
           setError("Сначала примите публичную оферту.");
         } else if (caught.status === 401) {
+          setRetryKind("session_lost");
           setError("Сессия завершилась. Войдите снова.");
         } else {
           setError(caught.message || "Не удалось завершить регистрацию.");
@@ -219,8 +318,7 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
   }
 
   const masterReady = allStages || selectedStages.length > 0;
-  const storeReady =
-    displayName.trim().length >= 2 && storeCategories.length > 0;
+  const storeReady = displayName.trim().length >= 2 && storeCategories.length > 0;
   const profileFieldsReady =
     partnerType === "MASTER" ? masterReady : partnerType ? storeReady : false;
   const offerReady = !offerRequirement || (offerRequirement.legalDocumentId && offerChecked);
@@ -229,7 +327,10 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
     city.trim().length > 0 &&
     profileFieldsReady &&
     offerReady &&
-    !readinessLoading;
+    !readinessLoading &&
+    retryKind !== "session_lost";
+
+  const showSessionLost = retryKind === "session_lost";
 
   return (
     <main className={styles.page}>
@@ -253,9 +354,17 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
           </p>
         ) : null}
 
-        {readinessError ? (
+        {showSessionLost ? (
+          <Link className={styles.botLink} href={onboardingLoginHref(sanitizeReturnTo(returnTo))}>
+            Войти снова
+          </Link>
+        ) : readinessError && (retryKind === "network" || retryKind === "server") ? (
           <Button type="button" onClick={() => void loadReadiness()} disabled={readinessLoading}>
             {readinessLoading ? "Проверяем…" : "Повторить проверку"}
+          </Button>
+        ) : awaitingVerification && (retryKind === "network" || retryKind === "server") ? (
+          <Button type="button" onClick={() => void handleRetryVerification()} disabled={loading}>
+            {loading ? "Проверяем…" : "Повторить проверку"}
           </Button>
         ) : (
           <form onSubmit={(event) => void handleSubmit(event)}>
@@ -354,7 +463,7 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
               </>
             ) : null}
 
-            {offerRequirement?.legalDocumentId ? (
+            {offerRequirement?.legalDocumentId && !progressRef.current.offerSaved ? (
               <fieldset className={styles.consentBlock} disabled={loading}>
                 <label className={styles.consentRow}>
                   <input
@@ -376,7 +485,7 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
                   </span>
                 </label>
               </fieldset>
-            ) : offerRequirement ? (
+            ) : offerRequirement && !offerRequirement.legalDocumentId ? (
               <p className={styles.error} role="alert">
                 Документ оферты временно недоступен.{" "}
                 <button type="button" onClick={() => void loadReadiness()} disabled={readinessLoading}>
@@ -386,7 +495,13 @@ export function OnboardingForm({ returnTo, initialCity }: OnboardingFormProps) {
             ) : null}
 
             <Button type="submit" disabled={loading || !canSubmit}>
-              {loading ? "Сохраняем…" : "Продолжить"}
+              {loading
+                ? awaitingVerification
+                  ? "Проверяем…"
+                  : "Сохраняем…"
+                : awaitingVerification
+                  ? "Повторить проверку"
+                  : "Продолжить"}
             </Button>
           </form>
         )}

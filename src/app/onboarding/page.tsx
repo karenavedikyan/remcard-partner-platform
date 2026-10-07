@@ -49,6 +49,7 @@ export default async function OnboardingPage({
     <OnboardingForm
       returnTo={sanitizeReturnTo(searchParams?.returnTo)}
       initialCity={auth.data.user.city}
+      initialDisplayName={auth.data.user.displayName}
     />
   );
 }

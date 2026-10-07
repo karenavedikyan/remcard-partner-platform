@@ -57,6 +57,16 @@ export function isAuthFlowComplete(readiness: CabinetReadiness): boolean {
   );
 }
 
+/** Login consents always precede profile onboarding. */
+export type AuthFlowDestination = "complete" | "consents" | "onboarding";
+
+export function resolveAuthFlowFromReadiness(readiness: CabinetReadiness): AuthFlowDestination {
+  if (isAuthFlowComplete(readiness)) return "complete";
+  if (hasPendingLoginConsents(readiness)) return "consents";
+  if (readiness.needsProfileOnboarding) return "onboarding";
+  return "consents";
+}
+
 export function resolveDestinationAfterAuth(
   readiness: CabinetReadiness,
   returnTo: string | null,

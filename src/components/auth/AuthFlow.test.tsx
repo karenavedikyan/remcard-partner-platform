@@ -131,6 +131,42 @@ describe("AuthFlow", () => {
     expect(screen.queryByText(/неверный/i)).not.toBeInTheDocument();
   });
 
+  it("shows consents before onboarding when CLIENT needs both", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/account/cabinet-readiness") {
+        return {
+          nextStep: "consents",
+          missingConsents: [
+            {
+              kind: "TERMS",
+              legalDocumentId: "doc-1",
+              version: "1.0",
+              url: "/terms",
+              status: "missing",
+            },
+            {
+              kind: "PUBLIC_OFFER_PRO",
+              legalDocumentId: "doc-offer",
+              version: "1.0",
+              url: "/legal/public-offer-pro",
+              status: "missing",
+            },
+          ],
+          needsProfileOnboarding: true,
+          canAccessCabinet: false,
+          isEmployee: false,
+          isAdmin: false,
+        };
+      }
+      return { ok: true };
+    });
+
+    render(<AuthFlow returnTo="/scanner" />);
+
+    expect(await screen.findByText(/обязательные соглашения/i)).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalledWith(expect.stringContaining("/onboarding"));
+  });
+
   it("shows consents step when readiness requires them", async () => {
     vi.mocked(remcardFetch).mockImplementation(async (path) => {
       if (path === "/api/account/cabinet-readiness") {
