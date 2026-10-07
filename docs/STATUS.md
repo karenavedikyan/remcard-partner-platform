@@ -2,6 +2,18 @@
 
 Обновлено: 7 октября 2026 года (M4-B fix-pass).
 
+## Дополнение: узкий backend-проход безопасности
+
+Поверх `556c7c8` (navigator) и `603717d` (partner) исправлены привязка
+входа к конкретной записи BotLoginCode, конкурентное принятие согласий
+и фиксация версии документа. Кабинет требует legalDocumentId на BFF.
+
+Проверки: navigator 32/32 целевых теста (9 PG), partner 148/148 unit/proxy
+и 8/8 component; typecheck/lint/production Next build обоих приложений PASS.
+Подробности и ограничения: `docs/reviews/M4-B-backend-security.md`.
+**M4-B не закрыт:** UI recovery/смена версии checkbox, onboarding/browser,
+границы readiness policy и test bot E2E остаются. Merge/deploy не выполнялись.
+
 ## SHA / ветки / PR
 
 | Источник | SHA / ветка | PR |

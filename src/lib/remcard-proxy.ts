@@ -349,6 +349,22 @@ export async function proxyRemcardRequest(
     return { ok: false, status: 403, body: JSON.stringify({ error: "Origin not allowed" }) };
   }
 
+  // This cabinet has a version-aware UI. Never silently fall back to the
+  // backend's optional-document legacy path used by the existing main site.
+  if (upperMethod === "POST" && pathname === "/api/account/consent") {
+    let payload: unknown;
+    try {
+      payload = JSON.parse(input.bodyText ?? "");
+    } catch {
+      return { ok: false, status: 400, body: JSON.stringify({ error: "INVALID_CONSENT_BODY" }) };
+    }
+    const documentId = payload && typeof payload === "object"
+      ? (payload as { legalDocumentId?: unknown }).legalDocumentId : undefined;
+    if (typeof documentId !== "string" || !documentId.trim()) {
+      return { ok: false, status: 400, body: JSON.stringify({ error: "LEGAL_DOCUMENT_ID_REQUIRED" }) };
+    }
+  }
+
   let backendBaseUrl: string;
   try {
     backendBaseUrl = assertBackendUrlWithoutCredentials(requireBackendBaseUrl());
