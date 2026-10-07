@@ -14,9 +14,11 @@ const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
 
 const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: RegExp }> =
   [
-    { methods: new Set(["GET"]), pattern: /^\/api\/auth\/me$/ },
+    { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/auth\/me$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/logout$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/verify-code$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/account\/consent$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/account\/cabinet-readiness$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/profile$/ },
     {
       methods: new Set(["GET"]),
@@ -345,6 +347,22 @@ export async function proxyRemcardRequest(
     !isAllowedMutatingOrigin(input.origin)
   ) {
     return { ok: false, status: 403, body: JSON.stringify({ error: "Origin not allowed" }) };
+  }
+
+  // This cabinet has a version-aware UI. Never silently fall back to the
+  // backend's optional-document legacy path used by the existing main site.
+  if (upperMethod === "POST" && pathname === "/api/account/consent") {
+    let payload: unknown;
+    try {
+      payload = JSON.parse(input.bodyText ?? "");
+    } catch {
+      return { ok: false, status: 400, body: JSON.stringify({ error: "INVALID_CONSENT_BODY" }) };
+    }
+    const documentId = payload && typeof payload === "object"
+      ? (payload as { legalDocumentId?: unknown }).legalDocumentId : undefined;
+    if (typeof documentId !== "string" || !documentId.trim()) {
+      return { ok: false, status: 400, body: JSON.stringify({ error: "LEGAL_DOCUMENT_ID_REQUIRED" }) };
+    }
   }
 
   let backendBaseUrl: string;

@@ -1,16 +1,38 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 6 октября 2026 года (M4-D final-fix).
+Обновлено: 7 октября 2026 года (M4-B fix-pass #3).
+
+## Дополнение: узкий backend-проход безопасности
+
+Поверх `556c7c8` (navigator) и `603717d` (partner) исправлены привязка
+входа к конкретной записи BotLoginCode, конкурентное принятие согласий
+и фиксация версии документа. Кабинет требует legalDocumentId на BFF.
+
+Проверки: navigator 32/32 целевых теста (9 PG), partner 148/148 unit/proxy
+и 8/8 component; typecheck/lint/production Next build обоих приложений PASS.
+Подробности и ограничения: `docs/reviews/M4-B-backend-security.md`.
+**M4-B fix-pass #3:** displayName dirty guard, session recovery returnTo без /onboarding wrapper.
+Browser 401→re-login→/scanner E2E **PASS** (desktop+mobile; `./scripts/local/run-m4b-browser-401.sh`, reset per pass). Bot E2E NOT VERIFIED.
 
 ## SHA / ветки / PR
 
 | Источник | SHA / ветка | PR |
 | --- | --- | --- |
-| M4-C.2 navigator | `698687564f28412282ab512d477695624afd90c5` · `cursor/m4c2-client-idempotency-b3e3` | Draft **#674** |
-| M4-C.2 partner | `28cbd202389e0ce4a78e710abf50c2565525bb44` · `cursor/m4c2-client-idempotency-b3e3` | Draft **#7** |
-| M4-D navigator | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft **#675** |
-| M4-D partner | `cursor/m4d-history-staff-b3e3` · base M4-C.2 | Draft **#8** |
-| Цепочка PR #1–#8 | M1 → … → M4-D | open, не слиты |
+| M4-D navigator | `7eca04e` · `cursor/m4d-history-staff-b3e3` | Draft **#675** |
+| M4-D partner | `7d35896` · `cursor/m4d-history-staff-b3e3` | Draft **#8** |
+| M4-B navigator | `556c7c8` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#676** |
+| M4-B partner | `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#9** (UI recovery push) |
+| M4-B navigator | `15abd7c` · `cursor/m4b-auth-onboarding-b3e3` · base M4-D | Draft **#676** |
+| Цепочка PR #1–#8+ | M1 → … → M4-B | open, не слиты |
+
+## M4-B (auth/onboarding, Draft #9 / #676)
+
+- AuthFlow recovery: session check on /login, retry без повторного verify-code, blocked/retry states
+- Consent UI: checkbox = kind + legalDocumentId, 409 → reload + re-accept
+- Onboarding: partnerType MASTER/STORE/COMPANY; stages только MASTER; storeCategories для магазина
+- Backend ( #676 ): claimBotLoginCode, consent serialization, BFF legalDocumentId, store gate — без отката
+- Отчёт: `docs/reviews/M4-B-auth-onboarding.md`
+- **Bot E2E: NOT VERIFIED** · **Next.js CVE — отдельный блокер**
 
 ## M4-D (final-fix, Draft)
 
@@ -29,7 +51,7 @@
 
 | # | Блокер | Объём |
 | --- | --- | --- |
-| B1 | Вход/регистрация PROF через бота (нет UI; consent не в BFF) | Средний |
+| B1 | ~~Вход/регистрация PROF через бота~~ → M4-B Draft (bot E2E NOT VERIFIED) | Средний |
 | B2 | Idempotency `POST /api/store/order` + race maxUsages | Средний |
 | B3 | `bonus-list` без `orderId` → store deep link broken | Небольшой |
 | B4 | Branch staff: preview 403, owner history miss | Небольшой–средний |

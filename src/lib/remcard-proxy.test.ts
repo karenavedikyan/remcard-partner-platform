@@ -40,6 +40,19 @@ const stubServer = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/api/account/consent") {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    const payload = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    response.writeHead(payload.legalDocumentId === "old-doc" ? 409 : 200, {
+      "content-type": "application/json",
+    });
+    response.end(JSON.stringify(payload.legalDocumentId === "old-doc"
+      ? { error: "DOCUMENT_VERSION_MISMATCH", activeLegalDocumentId: "new-doc", version: "2" }
+      : { ok: true, consentId: "fixture", legalDocumentId: payload.legalDocumentId, version: "2" }));
+    return;
+  }
+
   if (url.pathname === "/api/certificate/demo/pdf") {
     response.writeHead(200, {
       "content-type": "application/pdf",
@@ -178,6 +191,42 @@ after(async () => {
 });
 
 describe("remcard proxy transport checks", () => {
+  it("requires a document ID for cabinet consents without weakening Origin", async () => {
+    const input = {
+      method: "POST", pathname: "/api/account/consent", search: "",
+      contentType: "application/json", cookieHeader: "remcard-token=synthetic",
+      origin: "http://localhost:3000",
+    };
+    for (const bodyText of ['{}', '{"kind":"TERMS"}', '{"legalDocumentId":null}',
+      '{"legalDocumentId":""}', '{"legalDocumentId":123}', 'broken-json']) {
+      const res = await proxyRemcardRequest({ ...input, bodyText });
+      assert.equal(res.status, 400);
+      assert.equal(res.ok, false);
+    }
+    const foreign = await proxyRemcardRequest({
+      ...input, origin: "https://foreign.example",
+      bodyText: JSON.stringify({ kind: "TERMS", legalDocumentId: "new-doc" }),
+    });
+    assert.equal(foreign.status, 403);
+  });
+
+  it("preserves document binding and forwards a version mismatch without retry", async () => {
+    const input = {
+      method: "POST", pathname: "/api/account/consent", search: "",
+      contentType: "application/json", cookieHeader: "remcard-token=synthetic",
+      origin: "http://localhost:3000",
+    };
+    for (const [legalDocumentId, expectedStatus] of [["new-doc", 200], ["old-doc", 409]] as const) {
+      const res = await proxyRemcardRequest({
+        ...input, bodyText: JSON.stringify({ kind: "TERMS", legalDocumentId }),
+      });
+      assert.equal(res.status, expectedStatus);
+      const body = await buildProxyNextResponse(res).json();
+      if (expectedStatus === 200) assert.equal(body.legalDocumentId, legalDocumentId);
+      else assert.equal(body.error, "DOCUMENT_VERSION_MISMATCH");
+    }
+  });
+
   it("normalizes paths and rejects traversal", () => {
     assert.equal(normalizeProxyPath(["api", "auth", "me"]), "/api/auth/me");
     assert.equal(normalizeProxyPath(["api", "..", "auth", "me"]), null);
@@ -186,7 +235,11 @@ describe("remcard proxy transport checks", () => {
 
   it("allows only verified route/method pairs", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/me"), true);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/auth/me"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/auth/verify-code"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/account/consent"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/account/cabinet-readiness"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/account/consent"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/verify-code"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/auth/logout"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/certificate/issue"), false);

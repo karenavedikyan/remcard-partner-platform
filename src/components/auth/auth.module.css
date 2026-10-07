@@ -1,0 +1,147 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+
+.card {
+  width: min(100%, 28rem);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: var(--space-5);
+  box-shadow: var(--shadow);
+}
+
+.eyebrow {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-2);
+}
+
+.lead {
+  margin: 0 0 var(--space-4);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.botLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3rem;
+  margin-bottom: var(--space-4);
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.botLink:hover {
+  filter: brightness(0.95);
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.otpWrap {
+  margin-bottom: var(--space-4);
+}
+
+.otpInput {
+  width: 100%;
+  font-size: 1.5rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.otpHint {
+  margin: var(--space-1) 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.consentBlock {
+  margin-bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.consentRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.consentRow input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.consentRow a {
+  color: var(--primary);
+}
+
+.error {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.875rem;
+}
+
+.notice {
+  margin-top: var(--space-3);
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.stageGrid {
+  display: grid;
+  gap: var(--space-1);
+  max-height: 14rem;
+  overflow-y: auto;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.stageRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.stageRow input {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}

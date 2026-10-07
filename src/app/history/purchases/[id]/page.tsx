@@ -2,7 +2,7 @@ import { SessionGate } from "@/components/auth/SessionGate";
 import { PurchaseDetail } from "@/components/history/PurchaseDetail";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
-import { getSessionUser } from "@/lib/session";
+import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +15,14 @@ export default async function PurchaseDetailPage({
   params,
   searchParams,
 }: PurchaseDetailPageProps) {
-  const user = await getSessionUser();
-  if (!user || user.role !== "PRO") {
-    return <SessionGate reason={user ? "role" : "session"} />;
+  const returnPath = `/history/purchases/${params.id}`;
+  const user = await requireProPageUser(returnPath);
+  if (!user) {
+    return <SessionGate reason="session" returnTo={returnPath} />;
   }
 
   return (
-    <CabinetShell>
+    <CabinetShell returnTo={returnPath}>
       <PageHeading eyebrow="RemCard PROF" title="Покупка" />
       <PurchaseDetail
         user={user}
