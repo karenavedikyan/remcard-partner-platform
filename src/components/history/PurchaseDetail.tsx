@@ -131,8 +131,8 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
 
       {purchase.source === "accepted-bonus" ? (
         <p className={styles.note}>
-          Данные из legacy-источника начислений. Для полного статуса заказа используйте список
-          «Принято у меня».
+          Здесь показаны данные из старого формата начислений. Полный статус заказа доступен в
+          разделе «Принято у меня».
         </p>
       ) : null}
 

@@ -37,6 +37,9 @@ function formatDate(iso: string) {
   });
 }
 
+const SETTLEMENTS_COVERAGE_NOTE =
+  "Здесь показаны расчёты по покупкам. Другие начисления и часть старых операций могут не отображаться.";
+
 const TAB_ITEMS: Array<{ id: SettlementsTab; label: string }> = [
   { id: "receivable", label: "Мне должны" },
   { id: "payable", label: "Я должен" },
@@ -184,10 +187,7 @@ export function SettlementsHub() {
 
   return (
     <>
-      <p className={styles.note}>
-        {data.coverageNote ||
-          "Учёт обязательств между партнёрами по сохранённым начислениям. Это не банковский баланс — только просмотр открытых и завершённых взаиморасчётов."}
-      </p>
+      <p className={styles.note}>{SETTLEMENTS_COVERAGE_NOTE}</p>
 
       <div className={styles.summary}>
         <div className={styles.summaryCard}>

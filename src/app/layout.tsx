@@ -11,12 +11,11 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "RemCard · Кабинет партнёра",
-  description:
-    "Отдельный кабинет RemCard PROF. Первый выпуск использует существующий backend remcard.ru.",
+  description: "Кабинет RemCard PROF — партнёры, рекомендации, сканер и взаиморасчёты.",
 };
 
 export const viewport = {
-  themeColor: "#cf382f",
+  themeColor: "#c12b2f",
 };
 
 export default function RootLayout({

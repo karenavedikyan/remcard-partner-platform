@@ -5,12 +5,17 @@
   gap: var(--space-3);
   min-height: 46px;
   padding: var(--space-3) var(--space-5);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1.5;
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .primary {
@@ -18,7 +23,7 @@
   color: #ffffff;
 }
 
-.primary:hover {
+.primary:hover:not(:disabled) {
   background: var(--primary-hover);
 }
 
@@ -27,6 +32,6 @@
   border: 1px solid var(--line);
 }
 
-.secondary:hover {
+.secondary:hover:not(:disabled) {
   background: var(--offset);
 }

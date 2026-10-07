@@ -36,7 +36,7 @@ export default async function PartnersPage() {
       <PageHeading
         eyebrow="Партнёрская сеть"
         title="Мои партнёры"
-        description="Список отношений, поиск и приглашения через существующие маршруты backend."
+        description="Список партнёров, поиск по каталогу, приглашения и согласование условий."
       />
       <PartnersHub meId={user.id} initialProfile={profileResult.data} />
     </CabinetShell>

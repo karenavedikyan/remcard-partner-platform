@@ -59,7 +59,7 @@ export default async function HomePage(
       <PageHeading
         eyebrow="RemCard PROF"
         title="Моя главная"
-        description="Краткий обзор профиля и партнёрств без демонстрационных расчётов."
+        description="Обзор партнёрств и быстрые переходы к основным разделам кабинета."
       />
       <HomeDashboard user={user} partnerships={partnerships} incomingCount={incomingCount} />
     </CabinetShell>

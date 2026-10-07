@@ -20,7 +20,7 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="secondary" onClick={handleLogout} disabled={loading}>
+    <Button variant="secondary" onClick={handleLogout} disabled={loading} style={{ width: "100%" }}>
       {loading ? "Выход…" : "Выйти"}
     </Button>
   );

@@ -23,7 +23,7 @@ export default async function RecommendationDetailPage(props: RecommendationDeta
       <PageHeading
         eyebrow="Рекомендация"
         title="Документ для клиента"
-        description="QR, код, ссылка и PDF из существующего backend RemCard."
+        description="QR-код, ссылка для клиента и PDF-документ рекомендации."
       />
       <CertificateDetail certificateId={params.id} />
     </CabinetShell>

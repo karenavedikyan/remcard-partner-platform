@@ -36,7 +36,7 @@ export default async function ProfilePage() {
       <PageHeading
         eyebrow="Профиль партнёра"
         title="Профиль"
-        description="Просмотр и редактирование полей через существующий API RemCard."
+        description="Контакты и описание для клиентов, статус публикации в каталоге RemCard."
       />
       <ProfileEditor initial={profileResult.data} />
     </CabinetShell>

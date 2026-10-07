@@ -116,7 +116,8 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
 
       {accrual.scope === "unknown" ? (
         <p className={styles.note}>
-          Тип начисления не определён — API не вернул роль кошелька.
+          Не удалось определить тип начисления. Если сумма кажется неверной, обратитесь в
+          поддержку RemCard.
         </p>
       ) : null}
 

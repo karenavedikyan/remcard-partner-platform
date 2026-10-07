@@ -116,7 +116,7 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
       <form className={styles.main} onSubmit={saveProfile}>
         <Panel
           title="Основное"
-          hint="Изменения сохраняются через существующий backend RemCard."
+          hint="После сохранения данные сразу обновятся в вашем профиле."
         >
           <div className={styles.statusRow}>
             <StatusBadge label={statusLabel} tone={catalogStatusTone(profile.user.catalogStatus)} />

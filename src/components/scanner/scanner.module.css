@@ -4,7 +4,7 @@
   align-items: flex-start;
   padding: var(--space-5);
   margin-bottom: var(--space-4);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--soft);
 }
@@ -92,7 +92,7 @@
 
 .cameraWrap {
   margin-top: var(--space-4);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--line);
   background: #000;
@@ -117,7 +117,7 @@
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: var(--space-5);
   margin-bottom: var(--space-4);
 }
@@ -193,7 +193,7 @@
 .successBanner {
   background: var(--green-soft);
   color: var(--green);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: var(--space-5);
   text-align: center;
   font-weight: 700;
@@ -203,7 +203,7 @@
 .notice {
   background: var(--surface);
   border: 1px dashed var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: var(--space-5);
 }
 
@@ -229,7 +229,7 @@
 .deniedBlock {
   border: 1px solid rgba(207, 56, 47, 0.25);
   background: rgba(207, 56, 47, 0.06);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: var(--space-5);
 }
 

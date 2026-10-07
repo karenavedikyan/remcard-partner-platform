@@ -415,7 +415,19 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="login-title">
-        <span className={styles.eyebrow}>RemCard PROF</span>
+        <div className={styles.brandBlock}>
+          <div className={styles.logoMark} aria-hidden>
+            R
+          </div>
+          <div>
+            <div className={styles.brandTitle}>
+              rem<span>card</span>.
+            </div>
+            <div className={styles.brandSubtitle}>для партнёров</div>
+          </div>
+        </div>
+
+        <span className={styles.eyebrow}>Вход в кабинет</span>
         <h1 id="login-title" className={styles.title}>
           Войти в RemCard
         </h1>
@@ -432,17 +444,21 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
         ) : null}
 
         <div className={styles.botLinks}>
-          <a className={styles.botLink} href={telegramBotUrl} target="_blank" rel="noopener noreferrer">
-            Получить код в Telegram
-          </a>
           <a
-            className={`${styles.botLink} ${styles.botLinkSecondary}`}
-            href={maxBotUrl}
+            className={`${styles.botLink} ${styles.botLinkPrimary}`}
+            href={telegramBotUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
+            Получить код в Telegram
+          </a>
+          <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
             Получить код в MAX
           </a>
+        </div>
+
+        <div className={styles.orDivider} aria-hidden>
+          или
         </div>
 
         <form onSubmit={(event) => void submitCode(event)}>

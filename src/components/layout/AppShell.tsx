@@ -4,17 +4,45 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AuthUser } from "@/lib/types";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import styles from "./AppShell.module.css";
 
-const NAV = [
-  { href: "/", label: "Главная", icon: "⌂" },
-  { href: "/partners", label: "Партнёры", icon: "🤝", badgeKey: "partners" as const },
-  { href: "/recommendations", label: "Рекомендации", icon: "📄" },
-  { href: "/scanner", label: "Сканер", icon: "▣" },
-  { href: "/history", label: "История", icon: "☰" },
-  { href: "/settlements", label: "Взаиморасчёты", icon: "₽" },
-  { href: "/profile", label: "Профиль", icon: "◎" },
-] as const;
+const NAV: Array<{
+  href: string;
+  label: string;
+  icon: NavIconKey;
+  badgeKey?: "partners";
+}> = [
+  { href: "/", label: "Главная", icon: "home" },
+  { href: "/partners", label: "Партнёры", icon: "partners", badgeKey: "partners" },
+  { href: "/recommendations", label: "Рекомендации", icon: "recommendations" },
+  { href: "/scanner", label: "Сканер", icon: "scanner" },
+  { href: "/history", label: "История", icon: "history" },
+  { href: "/settlements", label: "Взаиморасчёты", icon: "settlements" },
+  { href: "/profile", label: "Профиль", icon: "profile" },
+];
+
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Главная",
+  "/partners": "Партнёры",
+  "/recommendations": "Рекомендации",
+  "/scanner": "Сканер",
+  "/history": "История",
+  "/settlements": "Взаиморасчёты",
+  "/profile": "Профиль",
+  "/login": "Вход",
+  "/onboarding": "Регистрация",
+};
+
+function pageTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) {
+    return PAGE_TITLES[pathname];
+  }
+  const base = NAV.find(
+    (item) => item.href !== "/" && (pathname === item.href || pathname.startsWith(`${item.href}/`)),
+  );
+  return base?.label ?? "Кабинет партнёра";
+}
 
 type AppShellProps = {
   user: AuthUser;
@@ -38,10 +66,9 @@ function NavLinks({
           item.href === "/"
             ? pathname === "/"
             : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const Icon = NAV_ICONS[item.icon];
         const badge =
-          "badgeKey" in item && item.badgeKey === "partners" && incomingCount > 0
-            ? incomingCount
-            : null;
+          item.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
         return (
           <Link
             key={item.href}
@@ -49,7 +76,9 @@ function NavLinks({
             className={`${styles.navLink} ${active ? styles.navLinkActive : ""} ${className ?? ""}`}
             aria-current={active ? "page" : undefined}
           >
-            <span aria-hidden>{item.icon}</span>
+            <span className={styles.navIcon}>
+              <Icon />
+            </span>
             {item.label}
             {badge ? <span className={styles.navBadge}>{badge}</span> : null}
           </Link>
@@ -61,16 +90,33 @@ function NavLinks({
 
 export function AppShell({ user, incomingCount = 0, children }: AppShellProps) {
   const pathname = usePathname();
+  const currentPage = pageTitle(pathname);
+  const displayName = user.displayName?.trim() || "Партнёр RemCard";
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar} aria-label="Основная навигация">
-        <div className={styles.brand}>
-          Rem<span>Card</span>
+        <div className={styles.brandBlock}>
+          <div className={styles.logoMark} aria-hidden>
+            R
+          </div>
+          <div className={styles.brandText}>
+            <div className={styles.brandTitle}>
+              rem<span>card</span>.
+            </div>
+            <div className={styles.brandSubtitle}>для партнёров</div>
+          </div>
         </div>
+
+        <div className={styles.workspace}>
+          <div className={styles.workspaceLabel}>Рабочее пространство</div>
+          <div className={styles.workspaceName}>{displayName}</div>
+        </div>
+
         <nav className={styles.nav}>
           <NavLinks pathname={pathname} incomingCount={incomingCount} />
         </nav>
+
         <div className={styles.sidebarFooter}>
           <LogoutButton />
         </div>
@@ -81,8 +127,10 @@ export function AppShell({ user, incomingCount = 0, children }: AppShellProps) {
           <NavLinks pathname={pathname} incomingCount={incomingCount} />
         </nav>
         <header className={styles.topbar}>
-          <div className={styles.account}>{user.displayName ?? "Партнёр PROF"}</div>
-          <LogoutButton />
+          <div className={styles.breadcrumb}>
+            Кабинет партнёра › <strong>{currentPage}</strong>
+          </div>
+          <div className={styles.topbarAccount}>{displayName}</div>
         </header>
         <main className={styles.content}>{children}</main>
       </div>

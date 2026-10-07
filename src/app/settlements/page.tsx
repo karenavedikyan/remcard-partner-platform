@@ -19,7 +19,7 @@ export default async function SettlementsPage() {
       <PageHeading
         eyebrow="RemCard PROF"
         title="Взаиморасчёты"
-        description="Открытые обязательства и завершённые выплаты между партнёрами — по данным сервера, без пересчёта."
+        description="Открытые обязательства и завершённые выплаты между партнёрами."
       />
       <SettlementsHub />
     </CabinetShell>

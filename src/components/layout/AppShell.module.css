@@ -1,7 +1,8 @@
 .shell {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(0, 252px) minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  background: var(--bg);
 }
 
 .sidebar {
@@ -10,37 +11,96 @@
   height: 100dvh;
   background: var(--surface);
   border-right: 1px solid var(--line);
-  padding: var(--space-6);
+  padding: var(--space-6) var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
-.brand {
-  font-size: var(--text-lg);
+.brandBlock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.logoMark {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.brandText {
+  min-width: 0;
+}
+
+.brandTitle {
+  font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
-.brand span {
+.brandTitle span {
   color: var(--primary);
+}
+
+.brandSubtitle {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.workspace {
+  padding: var(--space-3);
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.workspaceLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--space-1);
+}
+
+.workspaceName {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .nav {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  flex: 1;
+  overflow-y: auto;
 }
 
 .navLink {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: 8px;
+  padding: 0.65rem var(--space-3);
+  min-height: 46px;
+  border-radius: 7px;
   text-decoration: none;
   font-size: var(--text-sm);
   font-weight: 650;
   color: var(--muted);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .navLink:hover {
@@ -50,25 +110,35 @@
 
 .navLinkActive {
   background: var(--soft);
-  color: var(--ink);
+  color: var(--primary);
+}
+
+.navLinkActive .navIcon {
+  color: var(--primary);
+}
+
+.navIcon {
+  flex-shrink: 0;
+  color: var(--muted);
 }
 
 .navBadge {
   margin-left: auto;
   min-width: 1.25rem;
-  padding: 0 var(--space-2);
+  padding: 0 0.4rem;
   border-radius: 999px;
   background: var(--primary);
   color: #fff;
-  font-size: var(--text-xs);
+  font-size: 0.65rem;
   font-weight: 700;
   text-align: center;
+  line-height: 1.4;
 }
 
 .sidebarFooter {
   margin-top: auto;
-  display: grid;
-  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
 }
 
 .main {
@@ -80,25 +150,35 @@
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  min-height: 72px;
-  padding: var(--space-4) var(--space-8);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(8px);
+  min-height: 5rem;
+  padding: var(--space-3) var(--space-10);
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 
-.account {
+.breadcrumb {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.breadcrumb strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.topbarAccount {
   font-size: var(--text-sm);
   font-weight: 650;
+  text-align: right;
 }
 
 .content {
-  width: min(1260px, 100%);
+  width: min(var(--content-max), 100%);
   margin: 0 auto;
   padding: var(--space-8);
   flex: 1;
@@ -124,17 +204,34 @@
     padding: var(--space-3) var(--space-4);
     background: var(--surface);
     border-bottom: 1px solid var(--line);
+    -webkit-overflow-scrolling: touch;
   }
 
   .mobileNav .navLink {
     white-space: nowrap;
+    flex-shrink: 0;
+    font-size: var(--text-xs);
   }
 
   .content {
-    padding: var(--space-5) var(--space-4) var(--space-10);
+    padding: var(--space-5) var(--space-4) calc(var(--space-10) + env(safe-area-inset-bottom));
   }
 
   .topbar {
-    padding: var(--space-4);
+    min-height: 4.25rem;
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+@media (max-width: 600px) {
+  .breadcrumb strong {
+    display: none;
+  }
+
+  .topbarAccount {
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
