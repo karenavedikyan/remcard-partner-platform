@@ -1,6 +1,6 @@
 # Статус проекта remcard-partner-platform
 
-Обновлено: 7 октября 2026 года (M4-B UI recovery).
+Обновлено: 7 октября 2026 года (M4-B fix-pass #2).
 
 ## Дополнение: узкий backend-проход безопасности
 
@@ -11,9 +11,8 @@
 Проверки: navigator 32/32 целевых теста (9 PG), partner 148/148 unit/proxy
 и 8/8 component; typecheck/lint/production Next build обоих приложений PASS.
 Подробности и ограничения: `docs/reviews/M4-B-backend-security.md`.
-**M4-B UI recovery выполнен** (AuthFlow, consent kind+docId, onboarding по типу).
-Browser: store login PASS; client consents PASS; полный STORE onboarding UI и bot E2E —
-NOT VERIFIED. Merge/deploy не выполнялись.
+**M4-B fix-pass #2:** consents→onboarding order, displayName via auth/me PATCH, 401/partial-save recovery.
+Browser CLIENT→consents→STORE onboarding PASS (fixture). Bot E2E NOT VERIFIED.
 
 ## SHA / ветки / PR
 
