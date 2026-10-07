@@ -11,9 +11,8 @@
 Проверки: navigator 32/32 целевых теста (9 PG), partner 148/148 unit/proxy
 и 8/8 component; typecheck/lint/production Next build обоих приложений PASS.
 Подробности и ограничения: `docs/reviews/M4-B-backend-security.md`.
-**M4-B fix-pass #3:** displayName dirty guard (late auth/me), session recovery returnTo без /onboarding wrapper.
-Tests: proxy 163/163, component 21/21, lint/typecheck/build PASS. Browser 401→re-login E2E NOT VERIFIED.
-Bot E2E NOT VERIFIED.
+**M4-B fix-pass #3:** displayName dirty guard, session recovery returnTo без /onboarding wrapper.
+Browser 401→re-login→/scanner E2E **PASS** (desktop+mobile, Playwright + DB codes). Bot E2E NOT VERIFIED.
 
 ## SHA / ветки / PR
 

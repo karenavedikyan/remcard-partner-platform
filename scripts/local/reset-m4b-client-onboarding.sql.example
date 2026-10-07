@@ -1,0 +1,42 @@
+-- Reset m1fix-client fixture for M4-B browser acceptance (401 → re-login).
+-- Requires loopback DB remcard_prof_test (same guards as seed-m1-fixtures).
+
+\set ON_ERROR_STOP on
+
+DO $$
+DECLARE
+  db_name text := current_database();
+  server_addr inet := inet_server_addr();
+BEGIN
+  IF db_name <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing reset: database must be remcard_prof_test, got %', db_name;
+  END IF;
+  IF server_addr IS NOT NULL AND server_addr <> '127.0.0.1'::inet THEN
+    RAISE EXCEPTION 'Refusing reset: PostgreSQL must listen on loopback, got %', server_addr;
+  END IF;
+END $$;
+
+-- CLIENT with incomplete onboarding (needs login consents + profile).
+UPDATE "User" SET
+  role = 'CLIENT',
+  "partnerType" = NULL,
+  "displayName" = 'M1 Клиент',
+  city = NULL,
+  specializations = ARRAY[]::text[],
+  "storeCategories" = ARRAY[]::text[],
+  "partnerActivities" = ARRAY[]::text[],
+  "catalogStatus" = 'DRAFT',
+  "isPublic" = false,
+  "tokenVersion" = "tokenVersion" + 1,
+  "updatedAt" = NOW()
+WHERE id = 'm1fix-client-000000000001';
+
+DELETE FROM "Consent" WHERE "userId" = 'm1fix-client-000000000001';
+
+DELETE FROM "BotLoginCode" WHERE identifier = 'tg:777666555';
+
+-- :initial_code and :relogin_code are substituted by run script (6 digits each).
+INSERT INTO "BotLoginCode" (id, identifier, code, "expiresAt", used, "createdAt")
+VALUES
+  ('m4b-browser-initial', 'tg:777666555', :'initial_code', NOW() + INTERVAL '30 minutes', false, NOW()),
+  ('m4b-browser-relogin', 'tg:777666555', :'relogin_code', NOW() + INTERVAL '30 minutes', false, NOW());

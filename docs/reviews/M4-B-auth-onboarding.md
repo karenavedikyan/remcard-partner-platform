@@ -1,6 +1,6 @@
 # M4-B: вход, регистрация и согласия в PROF-кабинете
 
-Дата: 7 октября 2026 (fix-pass #3: displayName dirty guard, returnTo после re-login).  
+Дата: 7 октября 2026 (fix-pass #3 + browser 401 E2E).  
 Navigator **Draft #676** · Partner **Draft #9** · branch `cursor/m4b-auth-onboarding-b3e3` · base M4-D.
 
 Предшествующие проходы: `M4-B-backend-security.md`, fix-pass #1 (`62226b6`), fix-pass #2 (`4646f3f`).
@@ -11,7 +11,7 @@ Navigator **Draft #676** · Partner **Draft #9** · branch `cursor/m4b-auth-onbo
 
 | Repo | Branch | Base | PR | HEAD |
 | --- | --- | --- | --- | --- |
-| remcard-partner-platform | `cursor/m4b-auth-onboarding-b3e3` | M4-D | Draft **#9** | `32bbe9b` |
+| remcard-partner-platform | `cursor/m4b-auth-onboarding-b3e3` | M4-D | Draft **#9** | *(после push browser E2E)* |
 | remcard-navigator | `cursor/m4b-auth-onboarding-b3e3` | M4-D | Draft **#676** | `15abd7c` (без изменений) |
 
 ---
@@ -22,65 +22,76 @@ Navigator **Draft #676** · Partner **Draft #9** · branch `cursor/m4b-auth-onbo
 
 - `OnboardingForm`: `displayNameDirtyRef` — после любого пользовательского ввода (включая очистку) асинхронный `readSavedDisplayName()` не перезаписывает поле.
 - Bootstrap-read только если `initialDisplayName` пуст; при SSR-значении чтение пропускается.
-- Проверка названия через `PATCH /api/auth/me` + повторное чтение `auth/me` после сохранения — без изменений.
 
 ### 2. returnTo после повторного входа (401 на onboarding)
 
-- Новый `buildSessionRecoveryLoginHref(returnTo)` в `auth-flow.ts`: в ссылку «Войти снова» передаётся **конечный** безопасный адрес (`/scanner`, `/history`, …), не `/onboarding?returnTo=…`.
-- `sanitizeReturnTo` по-прежнему отклоняет внешние URL, `/login`, `/onboarding` (защита от redirect-loop).
-- Необходимость onboarding после re-login определяет readiness в `AuthFlow` / `resolveDestinationAfterAuth`.
+- `buildSessionRecoveryLoginHref(returnTo)`: ссылка «Войти снова» передаёт **конечный** адрес (`/scanner`, …), не `/onboarding?returnTo=…`.
+- `sanitizeReturnTo` отклоняет внешние URL, `/login`, `/onboarding`.
 
 ---
 
-## Приёмка A–H (fix-pass #3)
+## Browser E2E: 401 → re-login → /scanner
 
-| ID | Ожидание | Факт | Доказательство | Статус |
-| --- | --- | --- | --- | --- |
-| A | STORE skip consents → cabinet | без изменений | prior pass | **PASS** |
-| B | CLIENT: consents → onboarding → cabinet | без изменений | fix-pass #2 browser | **PASS** |
-| B2 | STORE displayName сохранён | без изменений | fix-pass #2 | **PASS** |
-| C | Staff без owner onboarding | без изменений | unit + server | **PASS** |
-| D | readiness fail без re-verify-code | без изменений | component | **PASS** |
-| E | 409 consent version | без изменений | component | **PASS** |
-| F | 401 onboarding → re-login → исходный адрес | href `/login?reason=session&returnTo=%2Fscanner`; unsafe returnTo отклонён | `OnboardingForm.test`, `auth-flow.test` | **PASS** (component); browser E2E **NOT VERIFIED** |
-| F2 | Поздний auth/me не затирает ввод | delayed read + user edit → значение сохраняется | `OnboardingForm.test` (2 кейса) | **PASS** (component) |
-| G | Purchase idempotency | без изменений | unit | **PASS** |
-| H | Protection / double-click | без изменений | unit | **PASS** |
+**Статус: PASS** (desktop + mobile, реальный HTTP 401, без fault injection).
+
+| Параметр | Desktop | Mobile |
+| --- | --- | --- |
+| Viewport | 1280×800 | iPhone 13 (Playwright) |
+| Fixture user | `m1fix-client-000000000001` | то же |
+| HTTP 401 | `POST /api/account/consent` после `context.clearCookies()` | то же |
+| «Войти снова» href | `/login?reason=session&returnTo=%2Fscanner` | то же |
+| URL chain | `/login?returnTo=%2Fscanner` → `/onboarding?returnTo=%2Fscanner` → `/login?reason=session&returnTo=%2Fscanner` → `/scanner` | то же |
+| Reload /scanner | PASS | PASS |
+| Погашенный код повторно | `POST verify-code` → **401** | то же |
+| Redirect-loop | нет | нет |
+
+**Причина прошлого NOT VERIFIED:** `remcard-token` — **HttpOnly**; удаление через `document.cookie` не снимает сессию. Для приёмки нужен `Playwright context.clearCookies()`.
+
+**Вход:** verify-code с одноразовыми кодами из тестовой БД (`BotLoginCode`, identifier `tg:777666555`). **Fixture-code login ≠ выдача кода ботом.**
+
+**Воспроизведение:**
+
+```bash
+# partner :3000 + navigator :3001 + remcard_prof_test
+./scripts/local/run-m4b-browser-401.sh
+```
+
+Отчёты JSON: `/opt/cursor/artifacts/m4b-browser-401/report_{desktop,mobile}.json`  
+Скриншоты: `desktop_02_session_lost_link.png`, `desktop_03_scanner_final.png`, `mobile_*` (аналогично).
+
+---
+
+## Приёмка A–H
+
+| ID | Ожидание | Статус | Доказательство |
+| --- | --- | --- | --- |
+| A | STORE skip consents → cabinet | **PASS** | prior |
+| B | CLIENT: consents → onboarding → cabinet | **PASS** | fix-pass #2 + browser E2E |
+| B2 | STORE displayName | **PASS** | fix-pass #2 |
+| C–E, G–H | без изменений | **PASS** | unit/component |
+| F | 401 onboarding → re-login → `/scanner` | **PASS** | browser E2E (desktop + mobile) |
+| F2 | late auth/me не затирает ввод | **PASS** | component |
 
 **Bot E2E:** **NOT VERIFIED** (fixture codes ≠ bot issuance).
 
 ---
 
-## Тесты fix-pass #3
+## Тесты fix-pass #3 (без перезапуска после browser-only commit)
 
 | Набор | Результат |
 | --- | --- |
-| Partner proxy (`npm run test:proxy`) | **163/163 PASS** |
-| Partner component (`npm run test:component`) | **21/21 PASS** (+3 OnboardingForm, +2 auth-flow) |
-| Partner lint | **PASS** |
-| Partner typecheck (`tsc --noEmit`) | **PASS** |
-| Partner production build | **PASS** |
+| Partner proxy | **163/163 PASS** |
+| Partner component | **21/21 PASS** |
+| Partner lint / typecheck / build | **PASS** |
+| Browser 401 E2E | **PASS** (desktop + mobile) |
 | Navigator | **15abd7c** без изменений |
-
----
-
-## Browser fix-pass #3
-
-| Сценарий | Статус | Примечание |
-| --- | --- | --- |
-| 401 → «Войти снова» → re-login → `/scanner` | **NOT VERIFIED** | Не удалось воспроизвести session_lost UI в браузере (API onboarding не вернул 401 при invalid cookie); component-регрессии на href и dirty guard — **PASS** |
-| STORE onboarding → `/scanner` (happy path) | **PASS** | fixture login, URL `/scanner` |
-| CLIENT consents → onboarding | **PASS** (fix-pass #2) | — |
-
-Component-проверки **не** засчитываются как browser E2E.
 
 ---
 
 ## Блокеры выпуска
 
 1. Bot E2E NOT VERIFIED  
-2. Browser 401→re-login→continue (session_lost UI) NOT VERIFIED  
-3. Next.js 14.2.28 CVE (не обновлялось)  
-4. Merge PR chain / staging HTTPS / DNS  
+2. Next.js 14.2.28 CVE  
+3. Merge PR chain / staging HTTPS / DNS  
 
 Merge/deploy не выполнялись.
