@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AuthUser } from "@/lib/types";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { BrandMark } from "@/components/layout/BrandMark";
 import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import styles from "./AppShell.module.css";
 
@@ -97,15 +98,7 @@ export function AppShell({ user, incomingCount = 0, children }: AppShellProps) {
     <div className={styles.shell}>
       <aside className={styles.sidebar} aria-label="Основная навигация">
         <div className={styles.brandBlock}>
-          <div className={styles.logoMark} aria-hidden>
-            R
-          </div>
-          <div className={styles.brandText}>
-            <div className={styles.brandTitle}>
-              rem<span>card</span>.
-            </div>
-            <div className={styles.brandSubtitle}>для партнёров</div>
-          </div>
+          <BrandMark />
         </div>
 
         <div className={styles.workspace}>
@@ -118,7 +111,7 @@ export function AppShell({ user, incomingCount = 0, children }: AppShellProps) {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <LogoutButton />
+          <LogoutButton className={styles.sidebarLogoutButton} />
         </div>
       </aside>
 
@@ -130,7 +123,12 @@ export function AppShell({ user, incomingCount = 0, children }: AppShellProps) {
           <div className={styles.breadcrumb}>
             Кабинет партнёра › <strong>{currentPage}</strong>
           </div>
-          <div className={styles.topbarAccount}>{displayName}</div>
+          <div className={styles.topbarActions}>
+            <div className={styles.topbarAccount}>{displayName}</div>
+            <div className={styles.mobileLogout} data-testid="mobile-logout">
+              <LogoutButton className={styles.mobileLogoutButton} />
+            </div>
+          </div>
         </header>
         <main className={styles.content}>{children}</main>
       </div>

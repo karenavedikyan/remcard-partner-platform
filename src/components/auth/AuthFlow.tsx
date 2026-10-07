@@ -24,6 +24,7 @@ import {
   type AuthFlowStep,
 } from "@/lib/auth-flow";
 import { getMaxBotLoginUrl, getTelegramBotLoginUrl } from "@/lib/auth-config";
+import { BrandMark } from "@/components/layout/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "./OtpInput";
 import { ConsentStep } from "./ConsentStep";
@@ -312,7 +313,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
   if (booting || step === "checking_session" || step === "loading_readiness") {
     return (
-      <main className={styles.page}>
+      <main className={styles.centerPage}>
         <section className={styles.card}>
           <p className={styles.lead}>
             {step === "checking_session" ? "Проверяем сессию…" : "Проверяем статус…"}
@@ -324,7 +325,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
   if (step === "blocked") {
     return (
-      <main className={styles.page}>
+      <main className={styles.centerPage}>
         <section className={styles.card}>
           <p className={styles.error} role="alert">
             {error || "Аккаунт заблокирован."}
@@ -336,7 +337,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
   if (step === "session_retry") {
     return (
-      <main className={styles.page}>
+      <main className={styles.centerPage}>
         <section className={styles.card}>
           <p className={styles.error} role="alert">
             {error}
@@ -370,8 +371,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
   if (step === "access_denied") {
     return (
-      <main className={styles.page}>
+      <main className={styles.centerPage}>
         <section className={styles.card}>
+          <BrandMark />
           <span className={styles.eyebrow}>RemCard PROF</span>
           <h1 className={styles.title}>Доступ ограничен</h1>
           <p className={styles.error} role="alert">
@@ -414,70 +416,103 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
   return (
     <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="login-title">
-        <div className={styles.brandBlock}>
-          <div className={styles.logoMark} aria-hidden>
-            R
-          </div>
-          <div>
-            <div className={styles.brandTitle}>
-              rem<span>card</span>.
-            </div>
-            <div className={styles.brandSubtitle}>для партнёров</div>
-          </div>
-        </div>
+      <header className={styles.entryHeader}>
+        <BrandMark />
+      </header>
 
-        <span className={styles.eyebrow}>Вход в кабинет</span>
-        <h1 id="login-title" className={styles.title}>
-          Войти в RemCard
-        </h1>
-        <p className={styles.lead}>
-          Получите одноразовый код в Telegram или MAX и введите его здесь. Используется тот же
-          аккаунт, что и на основном сайте RemCard.
-        </p>
-
-        {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
+      <div className={styles.entryLayout}>
+        <section className={styles.entryStory} aria-hidden="true">
+          <span className={styles.eyebrow}>Ваш бизнес. Ваши возможности.</span>
+          <h1 className={styles.storyTitle}>
+            Больше пользы
+            <br />
+            от каждого
+            <br />
+            <span>партнёрства.</span>
+          </h1>
+          <p className={styles.storyLead}>
+            Клиенты, предложения и программы RemCard. В одном понятном кабинете.
           </p>
-        ) : null}
+          <div className={styles.storyWindow}>
+            <div className={styles.miniTop}>
+              <span className={styles.miniBrand}>ОПТОВИК</span>
+              <span className={styles.smallTag}>Кабинет создан</span>
+            </div>
+            <p className={styles.storyCaption}>
+              Сначала ваш профиль.
+              <br />
+              Затем нужные вам программы.
+            </p>
+            <div className={styles.miniProgram}>
+              <span>
+                <strong>Каталог</strong>
+                <small>Ваши товары и услуги</small>
+              </span>
+              <span className={styles.miniStatus}>Подключено</span>
+            </div>
+          </div>
+          <div className={styles.storyFoot}>
+            <span>01 / ПРОФИЛЬ</span>
+            <span>02 / ПРОГРАММЫ</span>
+            <span>03 / РЕЗУЛЬТАТ</span>
+          </div>
+        </section>
 
-        <div className={styles.botLinks}>
-          <a
-            className={`${styles.botLink} ${styles.botLinkPrimary}`}
-            href={telegramBotUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Получить код в Telegram
-          </a>
-          <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
-            Получить код в MAX
-          </a>
-        </div>
+        <section className={styles.entryForm} aria-labelledby="login-title">
+          <span className={styles.eyebrow}>Начнём с простого</span>
+          <h1 id="login-title" className={styles.title}>
+            Ваш кабинет партнёра
+          </h1>
+          <p className={styles.lead}>
+            Войдите, создайте профиль и выбирайте возможности для своей работы.
+          </p>
 
-        <div className={styles.orDivider} aria-hidden>
-          или
-        </div>
+          {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          ) : null}
 
-        <form onSubmit={(event) => void submitCode(event)}>
-          <OtpInput
-            value={code}
-            onChange={setCode}
-            disabled={loading}
-            aria-label="Шестизначный код из Telegram или MAX"
-          />
-          <Button type="submit" disabled={loading || code.length !== 6}>
-            {loading ? "Проверяем…" : "Продолжить"}
-          </Button>
-        </form>
+          <div className={styles.botLinks}>
+            <a
+              className={`${styles.botLink} ${styles.botLinkPrimary}`}
+              href={telegramBotUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Продолжить через Telegram
+            </a>
+            <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
+              Продолжить через MAX
+            </a>
+          </div>
 
-        <p className={styles.notice}>
-          Код действует ограниченное время и используется один раз. Если код не пришёл
-          автоматически, отправьте боту команду /login.
-        </p>
-      </section>
+          <div className={styles.codeStep}>
+            <span className={styles.codeStepLabel}>Шаг 2. Введите код</span>
+            <p className={styles.codeStepHint}>
+              Сначала получите одноразовый код в Telegram или MAX — это два равнозначных способа.
+              Затем введите шесть цифр здесь. Используется тот же аккаунт, что и на remcard.ru.
+            </p>
+            <form onSubmit={(event) => void submitCode(event)}>
+              <OtpInput
+                value={code}
+                onChange={setCode}
+                disabled={loading}
+                aria-label="Шестизначный код из Telegram или MAX"
+              />
+              <Button type="submit" disabled={loading || code.length !== 6}>
+                {loading ? "Проверяем…" : "Продолжить"}
+              </Button>
+            </form>
+          </div>
+
+          <p className={styles.notice}>
+            Код действует ограниченное время и используется один раз. Если код не пришёл,
+            отправьте боту команду /login.
+          </p>
+        </section>
+      </div>
     </main>
   );
 }

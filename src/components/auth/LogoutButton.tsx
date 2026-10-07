@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { remcardFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 
-export function LogoutButton() {
+type LogoutButtonProps = {
+  className?: string;
+};
+
+export function LogoutButton({ className }: LogoutButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +24,12 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="secondary" onClick={handleLogout} disabled={loading} style={{ width: "100%" }}>
+    <Button
+      variant="secondary"
+      onClick={handleLogout}
+      disabled={loading}
+      className={className}
+    >
       {loading ? "Выход…" : "Выйти"}
     </Button>
   );

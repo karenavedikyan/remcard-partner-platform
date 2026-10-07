@@ -25,40 +25,6 @@
   border-bottom: 1px solid var(--line);
 }
 
-.logoMark {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 10px;
-  background: var(--primary);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.brandText {
-  min-width: 0;
-}
-
-.brandTitle {
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.brandTitle span {
-  color: var(--primary);
-}
-
-.brandSubtitle {
-  margin-top: 2px;
-  font-size: var(--text-xs);
-  color: var(--muted);
-}
-
 .workspace {
   padding: var(--space-3);
   border-radius: 10px;
@@ -141,6 +107,28 @@
   border-top: 1px solid var(--line);
 }
 
+.sidebarLogoutButton {
+  width: 100%;
+}
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.mobileLogout {
+  display: none;
+}
+
+.mobileLogoutButton {
+  min-height: 40px;
+  padding-inline: var(--space-4);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
 .main {
   min-width: 0;
   display: flex;
@@ -220,6 +208,11 @@
   .topbar {
     min-height: 4.25rem;
     padding: var(--space-3) var(--space-4);
+  }
+
+  .mobileLogout {
+    display: block;
+    flex-shrink: 0;
   }
 }
 
