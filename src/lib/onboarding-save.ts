@@ -1,6 +1,7 @@
 import { getAuthMe, remcardFetch, RemcardApiError } from "@/lib/api-client";
 import type { CabinetReadiness, ConsentRequirement } from "@/lib/cabinet-readiness";
 import { recordConsentRequirements } from "@/lib/auth-consent";
+import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import { consentRequirementKey, fetchAuthMeSafe, fetchReadinessSafe } from "@/lib/auth-session";
 import type { PartnerTypeOption } from "@/lib/onboarding-partner-types";
 import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
@@ -115,6 +116,13 @@ export async function verifyOnboardingComplete(): Promise<VerifyOnboardingResult
   }
 
   const readiness = readinessResult.data;
+  if (hasPendingLoginConsents(readiness)) {
+    return {
+      ok: false,
+      kind: "incomplete",
+      message: "Примите обязательные соглашения.",
+    };
+  }
   if (readiness.needsProfileOnboarding) {
     return {
       ok: false,
@@ -122,7 +130,7 @@ export async function verifyOnboardingComplete(): Promise<VerifyOnboardingResult
       message: "Завершите оставшиеся поля профиля.",
     };
   }
-  if (!readiness.canAccessCabinet && meResult.data.user?.role !== "PRO") {
+  if (!readiness.canAccessCabinet) {
     return {
       ok: false,
       kind: "incomplete",

@@ -196,6 +196,18 @@ describe("resolveDestinationAfterAuth", () => {
     assert.equal(resolveDestinationAfterAuth(employeeDenied, "/scanner"), "/?reason=role");
   });
 
+  it("blocks cabinet access for CLIENT without completed profile onboarding", () => {
+    const clientIncomplete: CabinetReadiness = {
+      ...needsConsents,
+      nextStep: "profile",
+      missingConsents: [],
+      needsProfileOnboarding: true,
+      canAccessCabinet: false,
+    };
+    assert.equal(isAuthFlowComplete(clientIncomplete), false);
+    assert.equal(resolveAuthFlowFromReadiness(clientIncomplete), "onboarding");
+  });
+
   it("allows employee when backend grants cabinet access", () => {
     const employeeReady: CabinetReadiness = {
       ...ready,

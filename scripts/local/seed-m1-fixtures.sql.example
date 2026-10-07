@@ -18,16 +18,25 @@ BEGIN
 END $$;
 
 INSERT INTO "User" (
-  id, "publicId", "displayName", role, "tokenVersion", "createdAt", "updatedAt"
+  id, "publicId", "displayName", role, "tokenVersion", "telegramId", "createdAt", "updatedAt"
 ) VALUES
-  ('m1fix-client-000000000001', 'RC-2222-3333', 'M1 Клиент', 'CLIENT', 0, NOW(), NOW()),
+  ('m1fix-client-000000000001', 'RC-2222-3333', 'M1 Клиент', 'CLIENT', 0, 777666555, NOW(), NOW()),
   ('m1fix-prof-0000000000001', 'RC-4444-5555', 'M1 Мастер PROF', 'PRO', 0, NOW(), NOW()),
   ('m1fix-store-000000000001', 'RC-6666-7777', 'M1 Магазин', 'PRO', 0, NOW(), NOW()),
   ('m1fix-staff-000000000001', 'RC-8888-9999', 'M1 Сотрудник', 'PRO', 0, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
   "displayName" = EXCLUDED."displayName",
   "tokenVersion" = 0,
+  "telegramId" = EXCLUDED."telegramId",
   "updatedAt" = NOW();
+
+INSERT INTO "AuthAccount" (id, "userId", provider, "externalId", "createdAt", "lastLoginAt")
+VALUES (
+  'm1fix-auth-tg-client-01', 'm1fix-client-000000000001', 'TELEGRAM', '777666555', NOW(), NOW()
+)
+ON CONFLICT ("provider", "externalId") DO UPDATE SET
+  "userId" = EXCLUDED."userId",
+  "lastLoginAt" = NOW();
 
 UPDATE "User" SET
   specializations = ARRAY['doors','plumbing']::text[],

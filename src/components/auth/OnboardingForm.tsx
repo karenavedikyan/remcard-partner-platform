@@ -317,7 +317,10 @@ export function OnboardingForm({
   const storeReady = displayName.trim().length >= 2 && storeCategories.length > 0;
   const profileFieldsReady =
     partnerType === "MASTER" ? masterReady : partnerType ? storeReady : false;
-  const offerReady = !offerRequirement || (offerRequirement.legalDocumentId && offerChecked);
+  const offerReady =
+    !offerRequirement ||
+    progressRef.current.offerSaved ||
+    (offerRequirement.legalDocumentId && offerChecked);
   const canSubmit =
     Boolean(partnerType) &&
     city.trim().length > 0 &&

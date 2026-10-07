@@ -241,6 +241,15 @@ describe("AuthFlow", () => {
     });
   });
 
+  it("skips registration when partner is already ready for cabinet", async () => {
+    render(<AuthFlow returnTo="/partners" />);
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/partners");
+    });
+    expect(replace).not.toHaveBeenCalledWith(expect.stringContaining("/onboarding"));
+  });
+
   it("shows Telegram and MAX bot links on code step", async () => {
     vi.mocked(getAuthMe).mockResolvedValue({ user: null });
     render(<AuthFlow returnTo="/scanner" />);

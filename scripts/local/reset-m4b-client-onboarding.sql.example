@@ -27,9 +27,18 @@ UPDATE "User" SET
   "partnerActivities" = ARRAY[]::text[],
   "catalogStatus" = 'DRAFT',
   "isPublic" = false,
+  "telegramId" = 777666555,
   "tokenVersion" = "tokenVersion" + 1,
   "updatedAt" = NOW()
 WHERE id = 'm1fix-client-000000000001';
+
+INSERT INTO "AuthAccount" (id, "userId", provider, "externalId", "createdAt", "lastLoginAt")
+VALUES (
+  'm4b-auth-tg-client', 'm1fix-client-000000000001', 'TELEGRAM', '777666555', NOW(), NOW()
+)
+ON CONFLICT ("provider", "externalId") DO UPDATE SET
+  "userId" = EXCLUDED."userId",
+  "lastLoginAt" = NOW();
 
 DELETE FROM "Consent" WHERE "userId" = 'm1fix-client-000000000001';
 

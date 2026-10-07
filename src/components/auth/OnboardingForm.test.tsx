@@ -232,6 +232,66 @@ describe("OnboardingForm", () => {
     expect(loginLink.getAttribute("href")).not.toContain("onboarding");
   });
 
+  it("saves COMPANY profile via PATCH /api/pro/profile without displayName in body", async () => {
+    const ui = userEvent.setup();
+    render(<OnboardingForm returnTo={null} />);
+    await screen.findByText(/регистрация партнёра/i);
+    await ui.click(screen.getByRole("radio", { name: /компани/i }));
+    await ui.type(screen.getByLabelText(/город работы/i), "Сочи");
+    await ui.type(screen.getByLabelText(/название компании/i), "Компания Тест");
+    await ui.click(screen.getByRole("checkbox", { name: /двери/i }));
+    await ui.click(screen.getByRole("checkbox", { name: /публичную оферту/i }));
+    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+
+    await waitFor(() => {
+      expect(remcardFetch).toHaveBeenCalledWith(
+        "/api/pro/profile",
+        expect.objectContaining({
+          method: "PATCH",
+          body: expect.objectContaining({
+            partnerType: "COMPANY",
+            city: "Сочи",
+            storeCategories: expect.arrayContaining(["doors"]),
+          }),
+        }),
+      );
+    });
+  });
+
+  it("preserves form input when profile PATCH fails", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path, options) => {
+      if (path === "/api/auth/me" && options?.method === "PATCH") {
+        savedDisplayName = (options.body as { displayName: string }).displayName;
+        return { user: { id: "c1", role: "CLIENT", displayName: savedDisplayName } };
+      }
+      if (path === "/api/pro/profile" && options?.method === "PATCH") {
+        throw new RemcardApiError(503, "Временная ошибка сервера.", null);
+      }
+      if (path === "/api/account/consent") {
+        return { ok: true };
+      }
+      return { ok: true };
+    });
+
+    const ui = userEvent.setup();
+    render(<OnboardingForm returnTo={null} />);
+    await screen.findByText(/регистрация партнёра/i);
+    await fillStoreForm(ui);
+    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+
+    expect(await screen.findByText(/временная ошибка/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/название магазина/i)).toHaveValue("Магазин Тест");
+    expect(screen.getByLabelText(/город работы/i)).toHaveValue("Краснодар");
+
+    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+    await waitFor(() => {
+      const profileCalls = vi
+        .mocked(remcardFetch)
+        .mock.calls.filter(([path, opts]) => path === "/api/pro/profile" && opts?.method === "PATCH");
+      expect(profileCalls.length).toBe(2);
+    });
+  });
+
   it("rejects unsafe returnTo in session recovery link", async () => {
     let readinessCalls = 0;
     vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
