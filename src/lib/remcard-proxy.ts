@@ -17,6 +17,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/auth\/me$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/logout$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/verify-code$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/account\/consent$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/profile$/ },
     {
       methods: new Set(["GET"]),

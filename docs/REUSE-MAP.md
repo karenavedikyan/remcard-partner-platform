@@ -1,6 +1,6 @@
 # Карта переиспользования: экран кабинета → backend RemCard
 
-Дата: 6 октября 2026 года (обновлено после M4-D).
+Дата: 7 октября 2026 года (обновлено после M4-B).
 
 **Источники:** задание M1–M3, `docs/tasks/M1-unblock.md`, публичный static demo `https://pro.remcard.ru` (SHA-256 в `docs/STATUS.md`).
 
@@ -87,6 +87,27 @@
 
 ---
 
+## M4-B: Вход, регистрация, согласия
+
+| Действие кабинета | Navigator reference | API | Права | Ограничения |
+| --- | --- | --- | --- | --- |
+| Получить код | Telegram `/login` | BotLoginCode (bot, не HTTP) | — | Deep link `t.me/RemCardBot?start=login`; MAX не в UI |
+| Ввести код | `LoginForm.tsx`, `LoginModal.tsx` | `POST /api/auth/verify-code` `{ code }` | — | 6 цифр; rate 10/min; без consents в body |
+| Подтвердить сессию | — | `GET /api/auth/me` | cookie | UI не считает verify-code успехом без me |
+| Согласия входа | `ConsentCheckboxes` (ref) | `POST /api/account/consent` ×2 | authenticated | PERSONAL_DATA, TERMS; idempotent |
+| Onboarding PRO | `pro/setup/page.tsx` | consent PUBLIC_OFFER_PRO + `PATCH /api/pro/profile` | CLIENT→PRO | Сервер назначает role; UI не меняет role |
+| Закрытые страницы | SessionGate | `requireProPageUser` / `requireProSession` | PRO | CLIENT → `/onboarding`; null session → LoginForm |
+| returnTo | — | client whitelist | — | `/`, `/scanner`, `/history/*`, … — без external URL |
+| Logout | `LogoutButton` | `POST /api/auth/logout` | session | cookie cleared via BFF |
+
+**BFF allowlist (M4-B):** `POST /api/account/consent` добавлен к auth routes.
+
+**Navigator change (M4-B):** `recordConsentIfMissing`; ALLOWED kinds + PERSONAL_DATA, TERMS.
+
+**NOT VERIFIED:** полный bot E2E (см. `docs/reviews/M4-B-auth-onboarding.md`).
+
+---
+
 ## Прототип: опубликованные материалы
 
 | Материал | URL | SHA-256 (2026-10-06) | Использование M1 |
@@ -116,11 +137,11 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 
 | Экран кабинета | Сценарий | API / сервис | Авторизация | Зависимости | Проверка |
 | --- | --- | --- | --- | --- | --- |
-| Вход | OAuth / telegram login | `GET /api/auth/me`; `POST /api/auth/logout`; провайдеры `POST /api/auth/*` (код не проверен) | Cookie `remcard-token` | `src/lib/proAuth.ts`, `src/app/api/auth/**` | Тестовый аккаунт + callback для кабинета через BFF |
-| Регистрация | Регистрация PROF | `src/app/api/auth/**` (код не проверен) | `remcard-token` | Prisma User, ProProfile (код не проверен) | E2E в тестовом контуре |
+| Вход (M4-B) | Telegram bot code | `POST /api/auth/verify-code`; `GET /api/auth/me` | Cookie `remcard-token` via BFF | `LoginForm`, `auth-flow.ts` | Fixture DB + unit; bot E2E NOT VERIFIED |
+| Регистрация (M4-B) | CLIENT→PRO onboarding | `POST /api/account/consent`; `PATCH /api/pro/profile` | Session required | `OnboardingForm` | Local stack smoke |
 | Главная PROF (M2) | Dashboard overview | `GET /api/partnership/list`, `GET /api/partnership/incoming-count` | PROF + cookie | `ProDashboardClient.tsx` (read-only ref) | Fixture-сессия, без mock-метрик |
 | Профиль (M2) | Редактирование карточки | `GET/PATCH /api/pro/profile`; action `submitForModeration` | Authenticated (PRO fields) | `src/app/api/pro/profile/route.ts`, `src/app/pro/profile/page.tsx` | PATCH + reload |
-| Вход M2 | Session gate | `GET /api/auth/me` | Cookie | — | Fixture JWT; bot UI отключён до запуска |
+| Session gate | LoginForm / onboarding redirect | `GET /api/auth/me` | Cookie | `SessionGate`, `session.ts` | Protected pages без fixture JWT |
 | Выход | Logout | `POST /api/auth/logout` | Активная сессия | — | POST через BFF; cookie cleared |
 | Список партнёров (M2) | Partnership list | `GET /api/partnership/list` | `role === PRO` | `PartnershipListBlock.tsx` | BFF GET |
 | Поиск (M2-fix) | Partner search | `GET /api/partnership/search?role=store\|pro` | PROF | `PartnerFindClient.tsx`, `search/route.ts` | store→MASTER/COMPANY; pro→STORE/MASTER/COMPANY; q=имя/организация |
@@ -153,7 +174,7 @@ Demo-расчёты и mock-данные прототипа **не** перен�
 
 Прокси разрешает только проверенные пары method+path (см. `src/lib/remcard-proxy.ts`):
 
-- Auth: `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/verify-code` (без UI бота в M2)
+- Auth: `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/verify-code`, `POST /api/account/consent`
 - Profile: `GET/PATCH /api/pro/profile`
 - Partnership: `GET list|search|incoming-count`, `POST invite|remind`, `PATCH /api/partnership/[id]`
 - Term changes: `GET/POST /api/partnerships/[id]/term-change`, `POST .../respond`

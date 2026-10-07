@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { PageHeading } from "@/components/ui/PageHeading";
@@ -23,7 +24,7 @@ export default async function HomePage({
     return <SessionGate reason="blocked" />;
   }
   if (user.role !== "PRO") {
-    return <SessionGate reason="role" />;
+    redirect("/onboarding");
   }
 
   const cookieHeader = headers().get("cookie");
@@ -35,7 +36,7 @@ export default async function HomePage({
   const incomingCount = countNeedsMyResponse(partnerships, user.id);
 
   return (
-    <CabinetShell>
+    <CabinetShell returnTo="/">
       <PageHeading
         eyebrow="RemCard PROF"
         title="Моя главная"
