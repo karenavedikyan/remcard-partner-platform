@@ -1,0 +1,63 @@
+-- Reset fixtures for PROF-D scenario B (link invite → new CLIENT onboarding → accept).
+-- Loopback remcard_prof_test only.
+
+\set ON_ERROR_STOP on
+
+DO $$
+DECLARE
+  db_name text := current_database();
+  server_addr inet := inet_server_addr();
+BEGIN
+  IF db_name <> 'remcard_prof_test' THEN
+    RAISE EXCEPTION 'Refusing reset: database must be remcard_prof_test, got %', db_name;
+  END IF;
+  IF server_addr IS NOT NULL AND server_addr <> '127.0.0.1'::inet THEN
+    RAISE EXCEPTION 'Refusing reset: PostgreSQL must listen on loopback, got %', server_addr;
+  END IF;
+END $$;
+
+-- Reset guest CLIENT (same as M4-C).
+UPDATE "User" SET
+  role = 'CLIENT',
+  "partnerType" = NULL,
+  "displayName" = 'M1 Клиент',
+  city = NULL,
+  specializations = ARRAY[]::text[],
+  "storeCategories" = ARRAY[]::text[],
+  "partnerActivities" = ARRAY[]::text[],
+  "catalogStatus" = 'DRAFT',
+  "isPublic" = false,
+  "telegramId" = 777666555,
+  "tokenVersion" = "tokenVersion" + 1,
+  "updatedAt" = NOW()
+WHERE id = 'm1fix-client-000000000001';
+
+INSERT INTO "AuthAccount" (id, "userId", provider, "externalId", "createdAt", "lastLoginAt")
+VALUES (
+  'm4b-auth-tg-client', 'm1fix-client-000000000001', 'TELEGRAM', '777666555', NOW(), NOW()
+)
+ON CONFLICT ("provider", "externalId") DO UPDATE SET
+  "userId" = EXCLUDED."userId",
+  "lastLoginAt" = NOW();
+
+DELETE FROM "Consent" WHERE "userId" = 'm1fix-client-000000000001';
+
+DELETE FROM "PartnershipTerm" WHERE "partnershipId" IN (
+  SELECT id FROM "Partnership"
+  WHERE "storeUserId" = 'm1fix-store-000000000001'
+    AND "proUserId" = 'm1fix-client-000000000001'
+);
+DELETE FROM "Partnership"
+WHERE "storeUserId" = 'm1fix-store-000000000001'
+  AND "proUserId" = 'm1fix-client-000000000001';
+
+UPDATE "PartnershipLinkInvite" SET "partnershipId" = NULL
+WHERE "inviterId" = 'm1fix-store-000000000001';
+DELETE FROM "PartnershipLinkInvite" WHERE "inviterId" = 'm1fix-store-000000000001';
+
+DELETE FROM "BotLoginCode" WHERE identifier IN ('tg:777666555', 'tg:888777666');
+
+INSERT INTO "BotLoginCode" (id, identifier, code, "expiresAt", used, "createdAt")
+VALUES
+  ('m4d-store-login', 'tg:888777666', :'store_code', NOW() + INTERVAL '30 minutes', false, NOW()),
+  ('m4d-client-login', 'tg:777666555', :'client_code', NOW() + INTERVAL '30 minutes', false, NOW());

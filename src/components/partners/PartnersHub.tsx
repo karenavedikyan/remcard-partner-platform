@@ -29,6 +29,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
 import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
+import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import styles from "./PartnersHub.module.css";
 
@@ -38,7 +39,7 @@ type PartnersHubProps = {
   onAttentionCountChange?: (count: number) => void;
 };
 
-type TabId = "list" | "find";
+type TabId = "list" | "find" | "link";
 
 type TermRequestState = {
   state: "idle" | "loading" | "loaded" | "error";
@@ -195,7 +196,8 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
         onChange={setTab}
         items={[
           { id: "list", label: "Мои партнёры", count: partnerships.length || undefined },
-          { id: "find", label: "Найти партнёра" },
+          { id: "find", label: "Найти в RemCard" },
+          { id: "link", label: "Пригласить по ссылке" },
         ]}
       />
 
@@ -337,6 +339,8 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
             })}
           </div>
         )
+      ) : tab === "link" ? (
+        <PartnerLinkInvitePanel meProfile={meProfile} />
       ) : (
         <>
           <Panel compact>

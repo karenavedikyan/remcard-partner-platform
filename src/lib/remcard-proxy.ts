@@ -25,6 +25,13 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/partnership\/(list|search|incoming-count)$/,
     },
     { methods: new Set(["POST"]), pattern: /^\/api\/partnership\/(invite|remind)$/ },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/partnership\/link-invite$/ },
+    { methods: new Set(["DELETE"]), pattern: /^\/api\/partnership\/link-invite\/[\w-]+$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/partnership\/link-invite\/public\/[\w-]+$/,
+    },
+    { methods: new Set(["POST"]), pattern: /^\/api\/partnership\/link-invite\/accept$/ },
     { methods: new Set(["PATCH"]), pattern: /^\/api\/partnership\/[\w-]+$/ },
     {
       methods: new Set(["GET", "POST"]),

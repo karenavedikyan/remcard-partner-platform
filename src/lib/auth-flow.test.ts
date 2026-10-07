@@ -43,6 +43,7 @@ describe("sanitizeReturnTo", () => {
   it("allows safe internal paths", () => {
     assert.equal(sanitizeReturnTo("/scanner"), "/scanner");
     assert.equal(sanitizeReturnTo("/history/purchases/abc"), "/history/purchases/abc");
+    assert.equal(sanitizeReturnTo("/invite/abc123token"), "/invite/abc123token");
   });
 
   it("rejects external, login loops and onboarding loops", () => {

@@ -4,6 +4,7 @@ import type {
   Partnership,
   ProProfileUser,
 } from "@/lib/types";
+import { STORE_CATEGORY_CHIP_KEYS } from "@/lib/store-categories";
 
 export const GENERAL_PARTNERSHIP_CATEGORY = "general";
 export const DEFAULT_GENERAL_PERCENT = 10;
@@ -315,4 +316,35 @@ export function getPartnershipUiActions(
 
 export function defaultSearchRoleForUser(user: PartnerSideProfile): SearchRole {
   return isStoreSide(user) ? "store" : "pro";
+}
+
+/** Категории для создания ссылки-приглашения (без известного получателя). */
+export function resolveLinkInviteCreateCategories(
+  inviter: PartnerSideProfile,
+  intendedPartnerType: "MASTER" | "STORE" | "COMPANY" | "",
+): { categories: string[]; requiresManualPick: boolean; error?: string } {
+  if (isStoreSide(inviter)) {
+    return { categories: tradeSideTermCategories(inviter), requiresManualPick: false };
+  }
+  if (inviter.partnerType === "MASTER" || inviter.partnerType === "COMPANY") {
+    if (!intendedPartnerType) {
+      return {
+        categories: [],
+        requiresManualPick: false,
+        error: "Укажите предполагаемый тип партнёра",
+      };
+    }
+    if (intendedPartnerType === "STORE") {
+      return {
+        categories: [...STORE_CATEGORY_CHIP_KEYS],
+        requiresManualPick: true,
+      };
+    }
+    return { categories: tradeSideTermCategories(inviter), requiresManualPick: false };
+  }
+  return {
+    categories: [],
+    requiresManualPick: false,
+    error: "Укажите тип партнёра в профиле, чтобы создавать ссылки",
+  };
 }
