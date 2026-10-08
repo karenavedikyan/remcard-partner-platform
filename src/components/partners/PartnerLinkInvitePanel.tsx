@@ -16,6 +16,7 @@ import {
   updateInviteRowPercent,
   type InviteFormSnapshot,
 } from "@/lib/invite-form-state";
+import { buildInviteShareMessage } from "@/lib/invite-presentation";
 import { categoryLabel } from "@/lib/partnership-labels";
 import {
   DEFAULT_GENERAL_PERCENT,
@@ -193,22 +194,45 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
     }
   }
 
+  function inviterShareName() {
+    return (
+      meProfile.organization?.name?.trim() ||
+      meProfile.user.displayName?.trim() ||
+      "RemCard PROF"
+    );
+  }
+
+  function inviteShareText(url: string) {
+    return buildInviteShareMessage({
+      inviterName: inviterShareName(),
+      url,
+      inviterType: meProfile.user.partnerType,
+      intendedType: needsIntendedType ? intendedType || null : null,
+    });
+  }
+
   async function copyUrl(url: string) {
     await navigator.clipboard.writeText(url);
     setShareHint("Ссылка скопирована");
   }
 
+  async function copyInviteMessage(url: string) {
+    await navigator.clipboard.writeText(inviteShareText(url));
+    setShareHint("Текст приглашения скопирован");
+  }
+
   async function shareUrl(url: string) {
+    const text = inviteShareText(url);
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Приглашение RemCard PROF", url });
+        await navigator.share({ title: "Приглашение RemCard PROF", text, url });
         setShareHint("Готово");
         return;
       } catch {
         // fallback to copy
       }
     }
-    await copyUrl(url);
+    await copyInviteMessage(url);
   }
 
   async function revokeInvite(id: string) {
@@ -353,6 +377,9 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
             <div className={styles.actions}>
               <Button variant="secondary" onClick={() => void copyUrl(createdUrl)}>
                 Скопировать ссылку
+              </Button>
+              <Button variant="secondary" onClick={() => void copyInviteMessage(createdUrl)}>
+                Скопировать приглашение
               </Button>
               <Button variant="secondary" onClick={() => void shareUrl(createdUrl)}>
                 Поделиться

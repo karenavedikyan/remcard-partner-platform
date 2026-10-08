@@ -13,6 +13,14 @@ import {
   resolveDestinationAfterAuth,
 } from "@/lib/auth-flow";
 import { displayCategoryLabel } from "@/lib/category-display";
+import {
+  buildInviteHeroContent,
+  formatInviteAudienceLabel,
+  INVITE_GUEST_DISCLAIMER,
+  INVITE_MODERATION_NOTE,
+  INVITE_PERCENT_EXPLAINER,
+  inviterDisplayName,
+} from "@/lib/invite-presentation";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
 import styles from "./InviteLanding.module.css";
@@ -311,74 +319,79 @@ export function InviteLanding({ token }: InviteLandingProps) {
     );
   }
 
-  const inviterName = preview.inviter?.displayName?.trim() || "Партнёр RemCard";
+  const inviterName = inviterDisplayName(preview);
+  const hero = buildInviteHeroContent(preview);
+  const audienceLabel = formatInviteAudienceLabel(
+    preview.intendedPartnerType,
+    preview.inviter?.partnerType ?? null,
+  );
   const activeTerms = (preview.terms ?? []).filter((t) => !t.isExcluded);
   const excludedTerms = (preview.terms ?? []).filter((t) => t.isExcluded);
+
+  const termsBlock = (
+    <div className={styles.termsSection}>
+      <h2 className={styles.termsSectionTitle}>Условия предложения</h2>
+      <div className={styles.termsScroll}>
+        <table className={styles.termsTable}>
+          <thead>
+            <tr>
+              <th>Категория</th>
+              <th>Общий %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeTerms.map((term) => (
+              <tr key={term.category}>
+                <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
+                <td>{term.storePercent}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className={styles.meta}>{INVITE_PERCENT_EXPLAINER}</p>
+      {excludedTerms.length > 0 ? (
+        <p className={styles.meta}>
+          Исключено из предложения:{" "}
+          {excludedTerms
+            .map((term) => displayCategoryLabel(term.category, term.categoryLabel))
+            .join(", ")}
+        </p>
+      ) : null}
+      {preview.note ? (
+        <p className={styles.noteBlock}>
+          Комментарий отправителя: {preview.note}
+        </p>
+      ) : null}
+      {preview.expiresAt ? (
+        <p className={styles.meta}>Ссылка действует до {formatExpiry(preview.expiresAt)}</p>
+      ) : null}
+    </div>
+  );
 
   return (
     <main className={styles.page}>
       <div className={styles.wrap}>
         <BrandMark />
-        <section className={styles.card}>
+        <section className={styles.card} aria-busy={accepting}>
           <span className={styles.eyebrow}>RemCard PROF</span>
-          <h1 className={styles.title}>{inviterName} приглашает вас к сотрудничеству</h1>
-          <p className={styles.lead}>
-            {preview.inviter?.city ? `Город: ${preview.inviter.city}. ` : ""}
-            Предложение партнёрства в программе RemCard PROF — условия зафиксированы отправителем.
+          <h1 className={styles.title}>{hero.headline}</h1>
+          <p className={styles.inviterLine}>
+            Приглашает: {inviterName}
+            {preview.inviter?.city ? ` · ${preview.inviter.city}` : ""}
           </p>
-
-          {preview.intendedPartnerType ? (
-            <p className={styles.meta}>Ожидаемый тип партнёра: {preview.intendedPartnerType}</p>
+          {audienceLabel ? (
+            <span className={styles.audienceBadge}>{audienceLabel}</span>
           ) : null}
-
-          <table className={styles.termsTable}>
-            <thead>
-              <tr>
-                <th>Категория</th>
-                <th>Общий %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeTerms.map((term) => (
-                <tr key={term.category}>
-                  <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
-                  <td>{term.storePercent}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {excludedTerms.length > 0 ? (
-            <p className={styles.meta}>
-              Исключено из предложения:{" "}
-              {excludedTerms
-                .map((term) => displayCategoryLabel(term.category, term.categoryLabel))
-                .join(", ")}
-            </p>
-          ) : null}
-
-          {preview.note ? <p className={styles.lead}>Комментарий: {preview.note}</p> : null}
-
-          {preview.expiresAt ? (
-            <p className={styles.meta}>Ссылка действует до {formatExpiry(preview.expiresAt)}</p>
-          ) : null}
-
-          <div className={styles.notice}>
-            <p><strong>Как работает программа</strong></p>
-            <ol className={styles.steps}>
-              <li>Согласовать условия с партнёром</li>
-              <li>Оформить рекомендацию клиенту</li>
-              <li>Подтвердить покупку</li>
-              <li>Увидеть начисление во взаиморасчётах</li>
-            </ol>
-          </div>
+          <p className={styles.lead}>{hero.lead}</p>
+          <ul className={styles.benefitList}>
+            {hero.bullets.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
 
           {!hasSession ? (
-            <>
-              <p className={styles.lead}>
-                После входа вы сможете принять предложение или отказаться от него на этой странице.
-                Регистрация не означает согласия с условиями.
-              </p>
+            <div className={styles.ctaGuest}>
               {acceptError ? (
                 <p className={styles.error} role="alert">
                   {acceptError}{" "}
@@ -387,13 +400,31 @@ export function InviteLanding({ token }: InviteLandingProps) {
                   ) : null}
                 </p>
               ) : null}
-              <div className={styles.actions}>
-                <Link href={loginHref}>
-                  <Button>Войти или зарегистрироваться</Button>
-                </Link>
-              </div>
-            </>
-          ) : needsContinuation && readiness ? (
+              <Link href={loginHref}>
+                <Button>Зарегистрироваться и продолжить</Button>
+              </Link>
+              <p className={styles.loginSecondary}>
+                Уже есть аккаунт?{" "}
+                <Link href={loginHref}>Войти</Link>
+              </p>
+              <p className={styles.ctaGuestNote}>{INVITE_GUEST_DISCLAIMER}</p>
+              <p className={styles.ctaGuestNote}>{INVITE_MODERATION_NOTE}</p>
+            </div>
+          ) : null}
+
+          {termsBlock}
+
+          <div className={styles.notice}>
+            <p><strong>Как начать</strong></p>
+            <ol className={styles.steps}>
+              <li>Зарегистрируйтесь или войдите и заполните профиль</li>
+              <li>Дождитесь проверки профиля, если она потребуется</li>
+              <li>Примите или отклоните условия на этой странице</li>
+              <li>Работайте с рекомендациями и покупками в кабинете</li>
+            </ol>
+          </div>
+
+          {hasSession && needsContinuation && readiness ? (
             <>
               <div className={styles.notice}>
                 <p><strong>Завершите обязательные шаги</strong></p>
@@ -415,7 +446,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 </Button>
               </div>
             </>
-          ) : profileBlocksAccept ? (
+          ) : hasSession && profileBlocksAccept ? (
             <>
               <div className={styles.notice}>
                 {profileDraft ? (
@@ -476,7 +507,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 </Button>
               </div>
             </>
-          ) : (
+          ) : hasSession ? (
             <>
               <p className={styles.lead}>
                 Проверьте условия. «Принять условия» создаст активное партнёрство. «Не принимать»
@@ -507,7 +538,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 </Button>
               </div>
             </>
-          )}
+          ) : null}
         </section>
       </div>
     </main>
