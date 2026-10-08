@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { buildSiteLinkMetadata } from "@/lib/site-opengraph";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -9,10 +10,7 @@ const manrope = Manrope({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "RemCard · Кабинет партнёра",
-  description: "Кабинет RemCard PROF — партнёры, рекомендации, сканер и взаиморасчёты.",
-};
+export const metadata: Metadata = buildSiteLinkMetadata("/");
 
 export const viewport = {
   themeColor: "#c12b2f",
