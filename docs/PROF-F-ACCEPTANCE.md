@@ -7,7 +7,10 @@
 | remcard-navigator | `release/prof-backend-v1-20261007` @ `072ebfd` | `feat/prof-f-profile-catalog-team` |
 | remcard-partner-platform | `release/prof-v1-20261007` @ `6afc65d` | `feat/prof-f-profile-catalog-team` |
 
-Коммиты этапа — см. `git log -1` на feature-ветках после push.
+| Репозиторий | HEAD feature |
+|-------------|----------------|
+| remcard-navigator | `bcbc3ef` |
+| remcard-partner-platform | `d395165` |
 
 Карта переиспользования: [PROF-F-REUSE-MAP.md](./PROF-F-REUSE-MAP.md).
 
