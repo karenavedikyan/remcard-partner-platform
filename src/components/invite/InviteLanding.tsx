@@ -201,7 +201,10 @@ export function InviteLanding({ token }: InviteLandingProps) {
       } else if (caught instanceof RemcardApiError) {
         setAcceptError(caught.message);
         const body = caught.body as { code?: string; partnershipId?: string } | undefined;
-        if (body?.code === "PARTNERSHIP_ALREADY_ACTIVE" && body.partnershipId) {
+        if (
+          body?.partnershipId &&
+          (body.code === "PARTNERSHIP_ALREADY_ACTIVE" || body.code === "PARTNERSHIP_EXISTS")
+        ) {
           setExistingPartnershipId(body.partnershipId);
         }
         if (caught.body?.code === "CATALOG_PENDING") {
@@ -531,7 +534,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
               {existingPartnershipId ? (
                 <p className={styles.lead}>
                   <Link href={`/partners?terms=${encodeURIComponent(existingPartnershipId)}`}>
-                    Открыть действующее партнёрство
+                    Открыть существующее партнёрство в кабинете
                   </Link>
                 </p>
               ) : null}
