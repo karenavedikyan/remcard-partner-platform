@@ -79,29 +79,6 @@ export async function saveProProfile(draft: OnboardingDraft): Promise<void> {
   });
 }
 
-export async function ensureOrganizationForDraft(draft: OnboardingDraft): Promise<void> {
-  if (draft.partnerType === "MASTER") return;
-  const name = draft.organizationName.trim();
-  if (name.length < 2) {
-    throw new RemcardApiError(400, "Укажите название организации.", null);
-  }
-  try {
-    await remcardFetch("/api/pro/organization", {
-      method: "POST",
-      body: { name, partnerType: draft.partnerType },
-    });
-  } catch (caught) {
-    if (caught instanceof RemcardApiError && caught.status === 409) {
-      await remcardFetch("/api/pro/organization", {
-        method: "PATCH",
-        body: { name },
-      });
-      return;
-    }
-    throw caught;
-  }
-}
-
 export async function verifyOnboardingComplete(): Promise<VerifyOnboardingResult> {
   const meResult = await fetchAuthMeSafe();
   if (!meResult.ok) {

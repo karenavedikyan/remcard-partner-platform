@@ -27,7 +27,9 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/notification-settings$/,
     },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/notification-settings\/test$/ },
-    { methods: new Set(["POST"]), pattern: /^\/api\/profile\/contacts\/link$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/notification-bind\/start$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/notification-bind\/status$/ },
+    { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/pro\/organization\/branches$/ },
     {
       methods: new Set(["GET"]),
       pattern: /^\/api\/partnership\/(list|search|incoming-count)$/,

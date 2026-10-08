@@ -3,6 +3,7 @@ import { SessionGate } from "@/components/auth/SessionGate";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
+import { sanitizeReturnTo } from "@/lib/auth-flow";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
@@ -15,9 +16,10 @@ export default async function ProfilePage(props: {
   searchParams?: Promise<{ section?: string; returnTo?: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const user = await requireProPageUser(RETURN_PATH);
+  const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
+  const user = await requireProPageUser(safeReturnTo);
   if (!user) {
-    return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+    return <SessionGate reason="session" returnTo={safeReturnTo} />;
   }
 
   const cookieHeader = (await headers()).get("cookie");
@@ -29,13 +31,13 @@ export default async function ProfilePage(props: {
     return (
       <SessionGate
         reason={profileResult.status === 401 ? "session" : undefined}
-        returnTo={RETURN_PATH}
+        returnTo={safeReturnTo}
       />
     );
   }
 
   return (
-    <CabinetShell returnTo={RETURN_PATH}>
+    <CabinetShell returnTo={safeReturnTo}>
       <PageHeading
         eyebrow="Профиль партнёра"
         title="Профиль"
@@ -44,6 +46,7 @@ export default async function ProfilePage(props: {
       <ProfileEditor
         initial={profileResult.data}
         moderationSection={searchParams?.section === "moderation"}
+        returnTo={safeReturnTo}
       />
     </CabinetShell>
   );

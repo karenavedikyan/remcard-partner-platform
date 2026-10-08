@@ -23,7 +23,6 @@ import {
   saveDisplayNameViaAuthMe,
   saveOfferConsent,
   saveProProfile,
-  ensureOrganizationForDraft,
   verifyOnboardingComplete,
   type OnboardingSaveProgress,
 } from "@/lib/onboarding-save";
@@ -280,7 +279,6 @@ export function OnboardingForm({
 
       if (!progressRef.current.profileSaved) {
         await saveProProfile(draft);
-        await ensureOrganizationForDraft(draft);
         progressRef.current.profileSaved = true;
       }
 
