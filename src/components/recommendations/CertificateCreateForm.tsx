@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { displayCategoryLabel } from "@/lib/category-display";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   buildCreateCertificatePayload,
@@ -247,7 +248,8 @@ export function CertificateCreateForm() {
                         className={`${styles.conditionRow} ${rowBlocked ? styles.conditionRowBlocked : ""}`}
                       >
                         <strong>
-                          {partner.storeName} — {cat.categoryLabel}
+                          {partner.storeName} —{" "}
+                          {displayCategoryLabel(cat.category, cat.categoryLabel)}
                         </strong>
                         {pool !== null ? (
                           <p className={styles.agreedPercent}>

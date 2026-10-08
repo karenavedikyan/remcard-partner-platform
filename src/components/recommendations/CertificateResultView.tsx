@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
+import { displayCategoryLabel } from "@/lib/category-display";
 import { RemcardApiError, remcardFetchBlob } from "@/lib/api-client";
 import { certificateStatusLabel } from "@/lib/certificate-labels";
 import {
@@ -128,7 +129,7 @@ export function CertificateResultView({ certificate }: CertificateResultViewProp
           {(certificate.partners ?? []).flatMap((partner) =>
             partner.categories.map((cat) => (
               <li key={`${partner.id}-${cat.category}`}>
-                {cat.categoryLabel}: скидка {cat.discountPercent}%
+                {displayCategoryLabel(cat.category, cat.categoryLabel)}: скидка {cat.discountPercent}%
               </li>
             )),
           )}

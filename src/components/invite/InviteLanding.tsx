@@ -12,7 +12,7 @@ import {
   isAuthFlowComplete,
   resolveDestinationAfterAuth,
 } from "@/lib/auth-flow";
-import { categoryLabel } from "@/lib/partnership-labels";
+import { displayCategoryLabel } from "@/lib/category-display";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
 import styles from "./InviteLanding.module.css";
@@ -341,7 +341,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
             <tbody>
               {activeTerms.map((term) => (
                 <tr key={term.category}>
-                  <td>{term.categoryLabel || categoryLabel(term.category)}</td>
+                  <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
                   <td>{term.storePercent}%</td>
                 </tr>
               ))}
@@ -352,7 +352,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
             <p className={styles.meta}>
               Исключено из предложения:{" "}
               {excludedTerms
-                .map((term) => term.categoryLabel || categoryLabel(term.category))
+                .map((term) => displayCategoryLabel(term.category, term.categoryLabel))
                 .join(", ")}
             </p>
           ) : null}

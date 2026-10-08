@@ -60,6 +60,6 @@ export const STORE_CATEGORY_CHIP_KEYS: string[] = [
 export function storeCategoryChips(): { value: string; label: string }[] {
   return STORE_CATEGORY_CHIP_KEYS.map((value) => ({
     value,
-    label: STORE_CATEGORY_LABELS[value] || value,
+    label: STORE_CATEGORY_LABELS[value] ?? value,
   }));
 }

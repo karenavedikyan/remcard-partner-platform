@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { displayCategoryLabel } from "@/lib/category-display";
 import {
   PARTNERSHIP_STATUS_LABELS,
-  categoryLabel,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
 import {
@@ -279,7 +279,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                     <tbody>
                       {partnership.terms.map((term) => (
                         <tr key={term.id}>
-                          <td>{term.categoryLabel || categoryLabel(term.category)}</td>
+                          <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
                           <td>{term.isExcluded ? "—" : `${term.storePercent}%`}</td>
                         </tr>
                       ))}

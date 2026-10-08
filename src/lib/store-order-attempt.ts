@@ -1,3 +1,5 @@
+import { displayCategoryLabel } from "@/lib/category-display";
+
 /** Client-side purchase attempt persistence for POST /api/store/order idempotency. */
 
 export const STORE_ORDER_ATTEMPT_STORAGE_KEY = "remcard:store-order-attempt:v1";
@@ -249,7 +251,9 @@ export function isStoreOrderAttemptLocked(record: StoreOrderAttemptRecord | null
 
 export function formatAttemptItemsSummary(body: StoreOrderAttemptBody): string {
   return normalizeStoreOrderAttemptBody(body)
-    .items.map((item) => `${item.categoryLabel || item.category}: ${item.amount} ₽`)
+    .items.map(
+      (item) => `${displayCategoryLabel(item.category, item.categoryLabel)}: ${item.amount} ₽`,
+    )
     .join("; ");
 }
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { displayCategoryLabel, displayCategoryLabelFromStored } from "@/lib/category-display";
 import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
 import { parseCertificateCode } from "@/lib/certificate-code";
 import {
@@ -107,7 +108,7 @@ function PartnerAcceptance({ preview }: { preview: OrderPreviewAllowed }) {
                 <ul className={styles.categoryList}>
                   {card.categories.map((cat) => (
                     <li key={cat.categoryLabel}>
-                      {cat.categoryLabel}: −{cat.discountPercent}%
+                      {displayCategoryLabelFromStored(cat.categoryLabel)}: −{cat.discountPercent}%
                     </li>
                   ))}
                 </ul>
@@ -635,7 +636,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             {preview.availableCategories.map((category) => (
               <div key={category.category} className={styles.categoryRow}>
                 <div className={styles.categoryHeader}>
-                  <strong>{category.categoryLabel}</strong>
+                  <strong>{displayCategoryLabel(category.category, category.categoryLabel)}</strong>
                   <span className={styles.discountBadge}>−{category.discountPercent}%</span>
                 </div>
                 <TextField

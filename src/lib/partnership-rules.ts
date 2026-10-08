@@ -4,6 +4,7 @@ import type {
   Partnership,
   ProProfileUser,
 } from "@/lib/types";
+import { categoryLabel } from "@/lib/partnership-labels";
 import { STORE_CATEGORY_CHIP_KEYS } from "@/lib/store-categories";
 
 export const GENERAL_PARTNERSHIP_CATEGORY = "general";
@@ -158,7 +159,7 @@ export function inviteRowsToTerms(rows: InviteTermRow[]): InviteTermInput[] {
     .filter((row) => row.category)
     .map((row) => ({
       category: row.category,
-      categoryLabel: row.category,
+      categoryLabel: categoryLabel(row.category),
       storePercent: row.excluded
         ? 0
         : Math.min(100, Math.max(0, Number(row.percent) || 0)),

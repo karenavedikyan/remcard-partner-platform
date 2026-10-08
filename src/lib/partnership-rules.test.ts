@@ -78,6 +78,16 @@ describe("partnership invite rules", () => {
     const terms = inviteRowsToTerms(rows);
     assert.equal(terms.length, 3);
     assert.equal(terms[0]?.storePercent, 10);
+    assert.equal(terms[0]?.categoryLabel, "Двери");
+  });
+
+  it("inviteRowsToTerms sets Russian categoryLabel for all store keys", () => {
+    const terms = inviteRowsToTerms([
+      { category: "flooring", percent: "10", excluded: false },
+      { category: "handles", percent: "5", excluded: false },
+    ]);
+    assert.equal(terms[0]?.categoryLabel, "Напольные покрытия");
+    assert.equal(terms[1]?.categoryLabel, "Фурнитура и замки");
   });
 
   it("uses target store categories when master invites store", () => {

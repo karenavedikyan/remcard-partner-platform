@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
+import { displayCategoryLabelFromStored } from "@/lib/category-display";
 import { documentOperationsHref, formatMoneyRub } from "@/lib/history-format";
 import {
   accrualScopeLabel,
@@ -134,7 +135,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
           <h3 className={styles.rowTitle}>Позиции</h3>
           {accrual.items.map((item, index) => (
             <div key={`${item.categoryLabel}-${index}`} className={styles.itemRow}>
-              <strong>{item.categoryLabel}</strong>
+              <strong>{displayCategoryLabelFromStored(item.categoryLabel)}</strong>
               <span className={styles.meta}>
                 {item.bonusPercent}% от {formatMoneyRub(item.amount)} →{" "}
                 {formatMoneyRub(item.bonusAmount)}

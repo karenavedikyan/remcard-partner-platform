@@ -1,3 +1,5 @@
+import { canonicalCategoryLabel } from "@/lib/category-display";
+
 export const PARTNERSHIP_STATUS_LABELS: Record<string, string> = {
   INVITED: "Приглашение",
   PENDING: "Согласование",
@@ -13,15 +15,9 @@ export const CATALOG_STATUS_LABELS: Record<string, string> = {
   REJECTED: "Отклонён",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  general: "Общие условия",
-  doors: "Двери",
-  plumbing: "Сантехника",
-  tiles: "Плитка",
-};
-
+/** @deprecated Prefer displayCategoryLabel(category, storedLabel) at render time. */
 export function categoryLabel(key: string): string {
-  return CATEGORY_LABELS[key] ?? key;
+  return canonicalCategoryLabel(key);
 }
 
 export function partnershipStatusTone(

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
+import { displayCategoryLabelFromStored } from "@/lib/category-display";
 import { documentOperationsHref, formatMoneyRub } from "@/lib/history-format";
 import {
   bonusStatusLabel,
@@ -173,7 +174,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
           <h3 className={styles.rowTitle}>Позиции</h3>
           {purchase.items.map((item) => (
             <div key={`${item.categoryLabel}-${item.amount}`} className={styles.itemRow}>
-              <strong>{item.categoryLabel}</strong>
+              <strong>{displayCategoryLabelFromStored(item.categoryLabel)}</strong>
               <span className={styles.meta}>Сумма до скидки: {formatMoneyRub(item.amount)}</span>
               {item.discountPercent != null ? (
                 <span className={styles.meta}>Скидка: {item.discountPercent}%</span>
