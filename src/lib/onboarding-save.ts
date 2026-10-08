@@ -22,7 +22,32 @@ export type OnboardingSaveProgress = {
   offerSaved: boolean;
   displayNameSaved: boolean;
   profileSaved: boolean;
+  organizationSaved: boolean;
 };
+
+export function buildOrganizationUpsertBody(
+  draft: OnboardingDraft,
+): Record<string, unknown> | null {
+  if (draft.partnerType !== "STORE" && draft.partnerType !== "COMPANY") {
+    return null;
+  }
+  const name = draft.organizationName.trim();
+  if (name.length < 2) {
+    return null;
+  }
+  return {
+    name,
+    partnerType: draft.partnerType,
+    storeCategories: draft.storeCategories,
+  };
+}
+
+export function organizationNameMatchesSaved(
+  saved: string | null | undefined,
+  draft: string,
+): boolean {
+  return (saved ?? "").trim() === draft.trim();
+}
 
 export type VerifyOnboardingResult =
   | { ok: true; readiness: CabinetReadiness }
@@ -77,6 +102,54 @@ export async function saveProProfile(draft: OnboardingDraft): Promise<void> {
     method: "PATCH",
     body: buildProfilePatchBody(draft),
   });
+}
+
+export async function readSavedOrganizationName(): Promise<string | null> {
+  const payload = await remcardFetch<{ organization: { name: string } | null }>(
+    "/api/pro/organization",
+    { method: "GET" },
+  );
+  return payload.organization?.name?.trim() ?? null;
+}
+
+/** STORE/COMPANY: persist commercial org name separately from representative displayName. */
+export async function saveOnboardingOrganization(draft: OnboardingDraft): Promise<void> {
+  const body = buildOrganizationUpsertBody(draft);
+  if (!body) {
+    throw new RemcardApiError(400, "Укажите название организации.", null);
+  }
+  const targetName = String(body.name);
+
+  const existing = await remcardFetch<{ organization: { name: string } | null }>(
+    "/api/pro/organization",
+    { method: "GET" },
+  );
+
+  if (existing.organization) {
+    await remcardFetch("/api/pro/organization", { method: "PATCH", body });
+  } else {
+    try {
+      await remcardFetch("/api/pro/organization", { method: "POST", body });
+    } catch (caught) {
+      if (caught instanceof RemcardApiError && caught.status === 409) {
+        await remcardFetch("/api/pro/organization", { method: "PATCH", body });
+      } else {
+        throw caught;
+      }
+    }
+  }
+
+  const confirmed = await readSavedOrganizationName();
+  if (!organizationNameMatchesSaved(confirmed, targetName)) {
+    throw new RemcardApiError(500, "Не удалось подтвердить название организации.", null);
+  }
+}
+
+export async function saveProProfileOnboarding(draft: OnboardingDraft): Promise<void> {
+  await saveProProfile(draft);
+  if (draft.partnerType === "STORE" || draft.partnerType === "COMPANY") {
+    await saveOnboardingOrganization(draft);
+  }
 }
 
 export async function verifyOnboardingComplete(): Promise<VerifyOnboardingResult> {

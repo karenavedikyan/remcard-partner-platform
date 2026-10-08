@@ -184,15 +184,10 @@ export async function submitProfileForModerationReview(
   profile: ProProfileResponse,
   draft: ProfileDraft,
 ): Promise<ProProfileResponse> {
-  const saved = await persistProfileDraft(profile, draft);
-  const payload = await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
+  await persistProfileDraft(profile, draft);
+  await remcardFetch("/api/pro/profile", {
     method: "PATCH",
     body: { action: "submitForModeration" },
   });
-  const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
-  return {
-    ...refreshed,
-    user: payload.user,
-    organization: saved.organization ?? refreshed.organization,
-  };
+  return remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
 }

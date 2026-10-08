@@ -80,10 +80,12 @@ const needsProfile = {
 
 describe("OnboardingForm", () => {
   let savedDisplayName: string | null = null;
+  let savedOrgName: string | null = null;
 
   beforeEach(() => {
     vi.clearAllMocks();
     savedDisplayName = null;
+    savedOrgName = null;
     vi.mocked(fetchReadinessSafe).mockResolvedValue({ ok: true, data: needsProfile });
     vi.mocked(getAuthMe).mockImplementation(async () => ({
       user: { id: "c1", role: "PRO", displayName: savedDisplayName },
@@ -96,8 +98,18 @@ describe("OnboardingForm", () => {
       if (path === "/api/pro/profile" && options?.method === "PATCH") {
         return { user: { id: "c1", role: "PRO", partnerType: "STORE" } };
       }
-      if (path === "/api/pro/organization") {
-        return { id: "org1", name: "Магазин Тест" };
+      if (path === "/api/pro/organization" && (!options?.method || options.method === "GET")) {
+        return {
+          organization: savedOrgName ? { id: "org1", name: savedOrgName } : null,
+        };
+      }
+      if (path === "/api/pro/organization" && options?.method === "POST") {
+        savedOrgName = (options.body as { name: string }).name;
+        return { id: "org1", name: savedOrgName };
+      }
+      if (path === "/api/pro/organization" && options?.method === "PATCH") {
+        savedOrgName = (options.body as { name: string }).name;
+        return { organization: { id: "org1", name: savedOrgName } };
       }
       if (path === "/api/account/consent") {
         return { ok: true };
@@ -114,6 +126,24 @@ describe("OnboardingForm", () => {
     await ui.click(screen.getByRole("checkbox", { name: /двери/i }));
     await ui.click(screen.getByRole("checkbox", { name: /публичную оферту/i }));
   }
+
+  it("saves organization name via organization API for STORE", async () => {
+    const ui = userEvent.setup();
+    render(<OnboardingForm returnTo="/scanner" />);
+    await screen.findByText(/регистрация партнёра/i);
+    await fillStoreForm(ui);
+    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+
+    await waitFor(() => {
+      expect(remcardFetch).toHaveBeenCalledWith(
+        "/api/pro/organization",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.objectContaining({ name: "Магазин Тест", partnerType: "STORE" }),
+        }),
+      );
+    });
+  });
 
   it("saves displayName via PATCH /api/auth/me for STORE", async () => {
     const ui = userEvent.setup();
@@ -213,6 +243,12 @@ describe("OnboardingForm", () => {
       vi
         .mocked(remcardFetch)
         .mock.calls.filter(([path, opts]) => path === "/api/pro/profile" && opts?.method === "PATCH")
+        .length,
+    ).toBe(1);
+    expect(
+      vi
+        .mocked(remcardFetch)
+        .mock.calls.filter(([path, opts]) => path === "/api/pro/organization" && opts?.method === "POST")
         .length,
     ).toBe(1);
   });

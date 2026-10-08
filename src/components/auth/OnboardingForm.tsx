@@ -19,9 +19,12 @@ import {
 } from "@/lib/onboarding-partner-types";
 import {
   displayNameMatchesSaved,
+  organizationNameMatchesSaved,
   readSavedDisplayName,
+  readSavedOrganizationName,
   saveDisplayNameViaAuthMe,
   saveOfferConsent,
+  saveOnboardingOrganization,
   saveProProfile,
   verifyOnboardingComplete,
   type OnboardingSaveProgress,
@@ -49,10 +52,12 @@ export function OnboardingForm({
   const router = useRouter();
   const submitLock = useRef(false);
   const displayNameDirtyRef = useRef(false);
+  const organizationDirtyRef = useRef(false);
   const progressRef = useRef<OnboardingSaveProgress>({
     offerSaved: false,
     displayNameSaved: false,
     profileSaved: false,
+    organizationSaved: false,
   });
 
   const [partnerType, setPartnerType] = useState<PartnerTypeOption | "">("");
@@ -113,7 +118,11 @@ export function OnboardingForm({
 
   useEffect(() => {
     progressRef.current.profileSaved = false;
-  }, [partnerType, city, allStages, selectedStages, storeCategories, representativeName, organizationName]);
+  }, [partnerType, city, allStages, selectedStages, storeCategories, representativeName]);
+
+  useEffect(() => {
+    progressRef.current.organizationSaved = false;
+  }, [partnerType, organizationName, storeCategories]);
 
   useEffect(() => {
     if (initialDisplayName?.trim()) {
@@ -131,6 +140,23 @@ export function OnboardingForm({
       }
     })();
   }, [initialDisplayName]);
+
+  useEffect(() => {
+    if (partnerType !== "STORE" && partnerType !== "COMPANY") {
+      return;
+    }
+    void (async () => {
+      try {
+        const saved = await readSavedOrganizationName();
+        if (saved && !organizationDirtyRef.current) {
+          setOrganizationName(saved);
+          progressRef.current.organizationSaved = true;
+        }
+      } catch {
+        // ignore bootstrap read errors
+      }
+    })();
+  }, [partnerType]);
 
   function toggleStage(id: string) {
     setAllStages(false);
@@ -280,6 +306,17 @@ export function OnboardingForm({
       if (!progressRef.current.profileSaved) {
         await saveProProfile(draft);
         progressRef.current.profileSaved = true;
+      }
+
+      if (draft.partnerType === "STORE" || draft.partnerType === "COMPANY") {
+        const savedOrg = await readSavedOrganizationName();
+        if (
+          !progressRef.current.organizationSaved ||
+          !organizationNameMatchesSaved(savedOrg, draft.organizationName)
+        ) {
+          await saveOnboardingOrganization(draft);
+          progressRef.current.organizationSaved = true;
+        }
       }
 
       await runVerification();
@@ -462,7 +499,10 @@ export function OnboardingForm({
                   <TextField
                     label={partnerType === "STORE" ? "Название магазина" : "Название компании"}
                     value={organizationName}
-                    onChange={(event) => setOrganizationName(event.target.value)}
+                    onChange={(event) => {
+                      organizationDirtyRef.current = true;
+                      setOrganizationName(event.target.value);
+                    }}
                     disabled={loading}
                     required
                     hint="Юридическое или коммерческое название организации — отдельно от имени представителя."
