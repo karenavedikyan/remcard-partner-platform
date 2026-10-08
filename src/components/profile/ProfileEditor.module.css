@@ -8,6 +8,7 @@
 .main {
   display: grid;
   gap: var(--space-6);
+  min-width: 0;
 }
 
 .fields {
@@ -108,8 +109,84 @@
   gap: var(--space-3);
 }
 
+/* Team (Сотрудники): long branch names + transfer <select> must not widen mobile viewport */
+.teamSectionList,
+.teamSectionList > li {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.teamSectionList ul {
+  margin: 0;
+  padding-left: 0.85rem;
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+  list-style: disc;
+}
+
+.teamBranchTitle {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.teamEmployeeItem {
+  min-width: 0;
+  max-width: 100%;
+  list-style: none;
+}
+
+.teamEmployeeFields {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.teamCheckRow {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.teamCheckRow select {
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.teamEmployeeToggle {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  justify-content: flex-start;
+}
+
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .teamCheckRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .teamSectionList {
+    padding-left: 0.75rem;
+  }
+
+  .teamSectionList ul {
+    padding-left: 0.65rem;
   }
 }

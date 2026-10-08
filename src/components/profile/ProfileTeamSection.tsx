@@ -175,10 +175,10 @@ export function ProfileTeamSection() {
       ) : null}
 
       {overview?.branches.length ? (
-        <ul className={styles.notesList}>
+        <ul className={`${styles.notesList} ${styles.teamSectionList}`}>
           {overview.branches.map((branch) => (
             <li key={branch.id}>
-              <strong>
+              <strong className={styles.teamBranchTitle}>
                 {branch.name} ({branch.city})
               </strong>
               {branch.employees.length === 0 ? (
@@ -238,7 +238,7 @@ export function ProfileTeamSection() {
 
       {canManage ? (
         <form onSubmit={(e) => void createInvite(e)} className={styles.fields}>
-          <label className={styles.checkRow}>
+            <label className={`${styles.checkRow} ${styles.teamCheckRow}`}>
             Тип приглашения
             <select
               value={scope}
@@ -249,7 +249,7 @@ export function ProfileTeamSection() {
             </select>
           </label>
           {scope === "BRANCH" && overview?.branches.length ? (
-            <label className={styles.checkRow}>
+            <label className={`${styles.checkRow} ${styles.teamCheckRow}`}>
               Филиал
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                 {overview.branches.map((b) => (
@@ -260,7 +260,7 @@ export function ProfileTeamSection() {
               </select>
             </label>
           ) : null}
-          <label className={styles.checkRow}>
+          <label className={`${styles.checkRow} ${styles.teamCheckRow}`}>
             Роль
             <select value={role} onChange={(e) => setRole(e.target.value)}>
               {ROLE_OPTIONS.map((opt) => (

@@ -94,12 +94,17 @@ export function ProfileTeamEmployeeCard({
     employee.user.displayName ?? employee.fullName ?? employee.user.publicId ?? "Сотрудник";
 
   return (
-    <li>
-      <Button type="button" variant="secondary" onClick={() => setOpen((v) => !v)}>
+    <li className={styles.teamEmployeeItem}>
+      <Button
+        type="button"
+        variant="secondary"
+        className={styles.teamEmployeeToggle}
+        onClick={() => setOpen((v) => !v)}
+      >
         {label} — {ROLE_OPTIONS.find((r) => r.value === employee.role)?.label ?? employee.role}
       </Button>
       {open ? (
-        <div className={styles.fields}>
+        <div className={`${styles.fields} ${styles.teamEmployeeFields}`}>
           <p className={styles.hint}>
             Филиал: {branchName}. Права задаются ролью на сервере; недоступные действия отклоняются API.
           </p>
@@ -110,7 +115,7 @@ export function ProfileTeamEmployeeCard({
           ) : null}
           {canManage ? (
             <>
-              <label className={styles.checkRow}>
+              <label className={`${styles.checkRow} ${styles.teamCheckRow}`}>
                 Роль
                 <select value={role} onChange={(e) => setRole(e.target.value)}>
                   {ROLE_OPTIONS.map((opt) => (
@@ -127,7 +132,7 @@ export function ProfileTeamEmployeeCard({
           ) : null}
           {isOwner && allBranches.length > 1 ? (
             <>
-              <label className={styles.checkRow}>
+              <label className={`${styles.checkRow} ${styles.teamCheckRow}`}>
                 Перевод в филиал
                 <select value={targetBranchId} onChange={(e) => setTargetBranchId(e.target.value)}>
                   <option value="">Выберите…</option>
