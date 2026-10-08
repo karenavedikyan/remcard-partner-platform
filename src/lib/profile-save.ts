@@ -1,5 +1,6 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
+import { catalogEntityForProfile } from "@/lib/profile-catalog-state";
 import type { ProProfileResponse } from "@/lib/types";
 
 export type ProfileDraft = {
@@ -143,21 +144,33 @@ export async function persistCatalogDraftOnly(
   profile: ProProfileResponse,
   draft: ProfileDraft,
 ): Promise<ProProfileResponse> {
-  await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
-    method: "PATCH",
-    body: {
-      description: draft.description.trim() || null,
-      specializations: draft.partnerType === "MASTER" ? draft.specializations : undefined,
-      storeCategories:
-        draft.partnerType === "STORE" || draft.partnerType === "COMPANY"
-          ? draft.storeCategories
-          : undefined,
-      website: draft.website.trim() || null,
-      telegram: draft.telegram.trim() || null,
-      publicEmail: draft.publicEmail.trim() || null,
-      publicPhone: draft.publicPhone.trim() || null,
-    },
-  });
+  const entity = catalogEntityForProfile(profile);
+  if (entity === "organization") {
+    await remcardFetch("/api/pro/organization", {
+      method: "PATCH",
+      body: {
+        description: draft.description.trim() || null,
+        storeCategories: draft.storeCategories,
+        website: draft.website.trim() || null,
+      },
+    });
+  } else {
+    await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
+      method: "PATCH",
+      body: {
+        description: draft.description.trim() || null,
+        specializations: draft.partnerType === "MASTER" ? draft.specializations : undefined,
+        storeCategories:
+          draft.partnerType === "STORE" || draft.partnerType === "COMPANY"
+            ? draft.storeCategories
+            : undefined,
+        website: draft.website.trim() || null,
+        telegram: draft.telegram.trim() || null,
+        publicEmail: draft.publicEmail.trim() || null,
+        publicPhone: draft.publicPhone.trim() || null,
+      },
+    });
+  }
 
   const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
   return refreshed;
@@ -197,14 +210,28 @@ export async function persistProfileDraft(
   };
 }
 
-export async function unpublishFromCatalog(): Promise<void> {
+export async function unpublishFromCatalog(profile: ProProfileResponse): Promise<void> {
+  if (catalogEntityForProfile(profile) === "organization") {
+    await remcardFetch("/api/pro/organization", {
+      method: "PATCH",
+      body: { action: "unpublishFromCatalog" },
+    });
+    return;
+  }
   await remcardFetch("/api/pro/profile", {
     method: "PATCH",
     body: { action: "unpublishFromCatalog" },
   });
 }
 
-export async function discardCatalogDraft(): Promise<void> {
+export async function discardCatalogDraft(profile: ProProfileResponse): Promise<void> {
+  if (catalogEntityForProfile(profile) === "organization") {
+    await remcardFetch("/api/pro/organization", {
+      method: "PATCH",
+      body: { action: "discardCatalogDraft" },
+    });
+    return;
+  }
   await remcardFetch("/api/pro/profile", {
     method: "PATCH",
     body: { action: "discardCatalogDraft" },
@@ -216,10 +243,17 @@ export async function submitProfileForModerationReview(
   draft: ProfileDraft,
 ): Promise<ProProfileResponse> {
   await persistCatalogDraftOnly(profile, draft);
-  await remcardFetch("/api/pro/profile", {
-    method: "PATCH",
-    body: { action: "submitForModeration" },
-  });
+  if (catalogEntityForProfile(profile) === "organization") {
+    await remcardFetch("/api/pro/organization/submit-for-moderation", {
+      method: "POST",
+      body: {},
+    });
+  } else {
+    await remcardFetch("/api/pro/profile", {
+      method: "PATCH",
+      body: { action: "submitForModeration" },
+    });
+  }
   return remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
 }
 

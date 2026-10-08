@@ -289,6 +289,7 @@ describe("remcard proxy transport checks", () => {
       true,
     );
     assert.equal(
+      isAllowedProxyRoute("GET", "/api/pro/employees"),
       isAllowedProxyRoute("PATCH", "/api/pro/organization/branches/br_krd/employees/emp_1"),
       true,
     );

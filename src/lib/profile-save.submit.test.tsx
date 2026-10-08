@@ -83,6 +83,9 @@ describe("submitProfileForModerationReview", () => {
         if (path === "/api/pro/profile" && opts?.method === "PATCH" && !opts.body?.action) {
           return { user: profile.user };
         }
+        if (path === "/api/pro/organization/submit-for-moderation" && opts?.method === "POST") {
+          return { ok: true };
+        }
         if (path === "/api/pro/organization" && opts?.method === "GET") {
           return {
             organization: {
@@ -100,12 +103,10 @@ describe("submitProfileForModerationReview", () => {
         if (path === "/api/pro/organization/branches" && opts?.method === "POST") {
           return { branch: { id: "b1" } };
         }
-        if (path === "/api/pro/profile" && opts?.method === "PATCH" && opts.body?.action) {
-          return { user: { ...profile.user, catalogStatus: "DRAFT" } };
-        }
         if (path === "/api/pro/profile" && opts?.method === "GET") {
           return {
             ...profile,
+            catalogPublication: { catalogEntity: "organization", isLivePublic: false, draftPending: false, published: {} },
             organization: { ...profile.organization!, catalogStatus: "PENDING" },
           };
         }

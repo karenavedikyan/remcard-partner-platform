@@ -3,9 +3,15 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
+import {
+  discardBranchCatalogDraft,
+  persistBranchCatalogDraft,
+  submitBranchForModeration,
+  unpublishBranchFromCatalog,
+} from "@/lib/profile-branch-save";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
-import { TextField } from "@/components/ui/FormField";
+import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./ProfileEditor.module.css";
 
 type BranchDetail = {
@@ -19,7 +25,14 @@ type BranchDetail = {
   isActive: boolean;
   description: string | null;
   photoUrl?: string | null;
+  storeCategories?: string[];
 };
+
+function effectiveDescription(branch: BranchDetail): string {
+  const draft = branch.catalogDraft;
+  if (draft && typeof draft.description === "string") return draft.description;
+  return branch.description ?? "";
+}
 
 type ProfileBranchDetailProps = {
   branchId: string;
@@ -30,6 +43,8 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   const [branch, setBranch] = useState<BranchDetail | null>(null);
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
+  const [description, setDescription] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -45,6 +60,8 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
       setBranch(data.branch);
       setCity(data.branch.city);
       setAddress(data.branch.address);
+      setDescription(effectiveDescription(data.branch));
+      setPhotoUrl(data.branch.photoUrl ?? "");
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить филиал");
     } finally {
@@ -56,7 +73,7 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     void load();
   }, [load]);
 
-  async function save(event: FormEvent) {
+  async function saveWorking(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
     setError("");
@@ -66,10 +83,30 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
         method: "PATCH",
         body: { city: city.trim(), address: address.trim() },
       });
-      setMessage("Сохранено");
+      setMessage("Адрес сохранён");
       await load();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveCatalogDraft(event: FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await persistBranchCatalogDraft(branchId, {
+        description,
+        photoUrl,
+        storeCategories: branch?.storeCategories ?? [],
+      });
+      setMessage("Черновик публикации филиала сохранён");
+      await load();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить черновик");
     } finally {
       setSaving(false);
     }
@@ -95,10 +132,7 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   async function submitBranchCatalog() {
     setSaving(true);
     try {
-      await remcardFetch(
-        `/api/pro/organization/branches/${encodeURIComponent(branchId)}/submit-for-moderation`,
-        { method: "POST", body: {} },
-      );
+      await submitBranchForModeration(branchId);
       setMessage("Филиал отправлен на проверку для публикации");
       await load();
     } catch (caught) {
@@ -108,7 +142,35 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     }
   }
 
+  async function unpublish() {
+    setSaving(true);
+    try {
+      await unpublishBranchFromCatalog(branchId);
+      setMessage("Филиал снят с публикации в каталоге");
+      await load();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось снять с публикации");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function discardDraft() {
+    setSaving(true);
+    try {
+      await discardBranchCatalogDraft(branchId);
+      setMessage("Черновик правок филиала отменён");
+      await load();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отменить черновик");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) return <p className={styles.hint}>Загружаем филиал…</p>;
+
+  const catalogLocked = branch?.catalogStatus === "PENDING";
 
   return (
     <Panel title={branch?.name ?? "Филиал"}>
@@ -137,32 +199,59 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
           </p>
           {branch.catalogPublished ? (
             <div className={styles.bannerWarn}>
-              <strong>Опубликовано в каталоге</strong>
+              <strong>Опубликовано в каталоге (live)</strong>
               <p>{branch.description || "— без описания —"}</p>
-              {branch.catalogDraft && Object.keys(branch.catalogDraft).length > 0 ? (
-                <p className={styles.hint}>
-                  Черновик правок сохранён отдельно и не подменяет опубликованный текст до проверки.
-                </p>
-              ) : null}
             </div>
           ) : null}
-          <form onSubmit={(e) => void save(e)} className={styles.fields}>
+          <form onSubmit={(e) => void saveWorking(e)} className={styles.fields}>
             <TextField label="Город" value={city} onChange={(e) => setCity(e.target.value)} required />
             <TextField label="Адрес" value={address} onChange={(e) => setAddress(e.target.value)} required />
             <Button type="submit" disabled={saving}>
-              {saving ? "Сохранение…" : "Сохранить"}
+              {saving ? "Сохранение…" : "Сохранить адрес"}
             </Button>
           </form>
-          <div className={styles.actions}>
-            <Button type="button" variant="secondary" disabled={saving} onClick={() => void submitBranchCatalog()}>
-              Отправить филиал на публикацию
-            </Button>
-            {branch.isActive ? (
-              <Button type="button" variant="secondary" disabled={saving} onClick={() => void deactivate()}>
-                Отключить филиал
+          <form onSubmit={(e) => void saveCatalogDraft(e)} className={styles.fields}>
+            <TextAreaField
+              label="Описание для каталога (черновик)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={catalogLocked}
+            />
+            <TextField
+              label="Фото URL"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              disabled={catalogLocked}
+            />
+            <div className={styles.actions}>
+              <Button type="submit" disabled={saving || catalogLocked}>
+                {saving ? "Сохранение…" : "Сохранить черновик каталога"}
               </Button>
-            ) : null}
-          </div>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving || catalogLocked}
+                onClick={() => void submitBranchCatalog()}
+              >
+                Отправить на публикацию
+              </Button>
+              {branch.catalogPublished ? (
+                <Button type="button" variant="secondary" disabled={saving} onClick={() => void unpublish()}>
+                  Снять с публикации
+                </Button>
+              ) : null}
+              {branch.catalogDraft && Object.keys(branch.catalogDraft).length > 0 ? (
+                <Button type="button" variant="secondary" disabled={saving} onClick={() => void discardDraft()}>
+                  Отменить черновик
+                </Button>
+              ) : null}
+            </div>
+          </form>
+          {branch.isActive ? (
+            <Button type="button" variant="secondary" disabled={saving} onClick={() => void deactivate()}>
+              Отключить филиал
+            </Button>
+          ) : null}
         </>
       ) : null}
     </Panel>

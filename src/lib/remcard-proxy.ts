@@ -48,6 +48,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["POST"]), pattern: branchEmployeeTransferPath() },
     { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/invites$/ },
     { methods: new Set(["DELETE", "PATCH"]), pattern: inviteByIdPath() },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/employees$/ },
     { methods: new Set(["PATCH", "DELETE"]), pattern: proEmployeeByIdPath() },
     { methods: new Set(["GET"]), pattern: /^\/api\/invite\/[\w-]+$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/invite\/accept$/ },

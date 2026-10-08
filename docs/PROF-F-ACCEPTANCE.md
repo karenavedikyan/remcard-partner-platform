@@ -72,4 +72,4 @@ npm run test                                                 # platform
 | Репозиторий | SHA |
 |-------------|-----|
 | remcard-navigator | `3a7e48d` |
-| remcard-partner-platform | `f8aa6fd` (docs в этом коммите; повторный push с SHA — см. ниже) |
+| remcard-partner-platform | `6cc2858` |

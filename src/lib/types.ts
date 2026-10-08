@@ -47,6 +47,8 @@ export type ProProfileUser = {
 
 export type ProProfileResponse = {
   catalogPublication?: {
+    catalogEntity?: "user" | "organization";
+    organizationId?: string;
     isLivePublic: boolean;
     draftPending: boolean;
     published: {
@@ -66,6 +68,10 @@ export type ProProfileResponse = {
     catalogStatus: string;
     catalogPublished?: boolean;
     catalogDraft?: unknown;
+    catalogDraftPending?: boolean;
+    description?: string | null;
+    website?: string | null;
+    storeCategories?: string[];
     partnerType: string | null;
     branchCount: number;
   } | null;

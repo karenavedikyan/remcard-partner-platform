@@ -61,7 +61,7 @@ export function ProfileTeamSection() {
       if (data.branches[0]?.id && !branchId) {
         setBranchId(data.branches[0].id);
       }
-      if (data.myRole === "ORG_OWNER" && data.branches.length === 0) {
+      if (data.myRole === "SOLO_PARTNER" || (data.myRole === "ORG_OWNER" && data.branches.length === 0)) {
         setScope("SOLO_PARTNER");
       }
       if (canManageTeam(data)) {
@@ -75,7 +75,7 @@ export function ProfileTeamSection() {
           })),
         );
       }
-      if (data.myRole === "ORG_OWNER" && data.branches.length === 0) {
+      if (data.myRole === "SOLO_PARTNER") {
         const solo = await remcardFetch<{ employees: SoloPartnerEmployeeRow[] }>(
           "/api/pro/employees",
         );
@@ -204,11 +204,9 @@ export function ProfileTeamSection() {
             </li>
           ))}
         </ul>
-      ) : overview && overview.myRole === "ORG_OWNER" ? (
+      ) : overview?.myRole === "SOLO_PARTNER" ? (
         <>
-          <p className={styles.hint}>
-            Нет филиалов — можно пригласить сотрудника на SOLO_PARTNER или добавить филиал.
-          </p>
+          <p className={styles.hint}>Сотрудники вашего SOLO-профиля (без организации и филиалов).</p>
           {soloEmployees.length > 0 ? (
             <ul className={styles.notesList}>
               {soloEmployees.map((emp) => (
@@ -216,9 +214,13 @@ export function ProfileTeamSection() {
               ))}
             </ul>
           ) : (
-            <p className={styles.hint}>Пока нет сотрудников SOLO_PARTNER.</p>
+            <p className={styles.hint}>Пока нет сотрудников — создайте приглашение SOLO_PARTNER ниже.</p>
           )}
         </>
+      ) : overview && overview.myRole === "ORG_OWNER" ? (
+        <p className={styles.hint}>
+          Нет филиалов — можно пригласить сотрудника на SOLO_PARTNER или добавить филиал.
+        </p>
       ) : null}
 
       {pending.length > 0 ? (

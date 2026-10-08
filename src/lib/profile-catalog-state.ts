@@ -19,7 +19,9 @@ export function canSubmitProfileForModeration(profile: ProProfileResponse): bool
   if (status === "DRAFT" || status === "NEEDS_REVISION") return true;
   if (status === "APPROVED") {
     return Boolean(
-      profile.catalogPublication?.draftPending || profile.user.catalogDraftPending,
+      profile.catalogPublication?.draftPending ||
+        profile.user.catalogDraftPending ||
+        profile.organization?.catalogDraftPending,
     );
   }
   return false;

@@ -2,7 +2,7 @@
 
 export type EmployeesOverviewResponse = {
   organization: { id: string; name: string };
-  myRole: "ORG_OWNER" | "MANAGER" | "OTHER";
+  myRole: "ORG_OWNER" | "MANAGER" | "SOLO_PARTNER" | "OTHER";
   myBranchIds: string[];
   summary: {
     totalEmployees: number;
@@ -42,6 +42,7 @@ export type EmployeesOverviewResponse = {
     userId: string;
     isOrgOwner: boolean;
     canManageEmployeesByBranchId: Record<string, boolean>;
+    canManageSoloPartnerEmployees?: boolean;
   };
 };
 
@@ -103,6 +104,9 @@ export function collectPendingInvites(overview: EmployeesOverviewResponse) {
 }
 
 export function canManageTeam(overview: EmployeesOverviewResponse): boolean {
+  if (overview.myRole === "SOLO_PARTNER") {
+    return overview.viewer.canManageSoloPartnerEmployees === true;
+  }
   if (overview.myRole === "ORG_OWNER") return true;
   if (overview.myRole === "MANAGER") {
     return Object.values(overview.viewer.canManageEmployeesByBranchId).some(Boolean);

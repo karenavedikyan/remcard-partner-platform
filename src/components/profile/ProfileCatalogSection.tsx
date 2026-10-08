@@ -29,9 +29,7 @@ type ProfileCatalogSectionProps = {
 };
 
 function isPubliclyVisible(profile: ProProfileResponse): boolean {
-  const pub = profile.catalogPublication;
-  if (pub?.isLivePublic) return true;
-  return profile.user.isPublic && effectiveCatalogStatus(profile) === "APPROVED";
+  return profile.catalogPublication?.isLivePublic === true;
 }
 
 export function ProfileCatalogSection({
@@ -91,7 +89,7 @@ export function ProfileCatalogSection({
     setSubmitting(true);
     setError("");
     try {
-      await unpublishFromCatalog();
+      await unpublishFromCatalog(profile);
       const refreshed = await refreshProfile();
       onProfileUpdated(refreshed);
       setSuccess("Карточка снята с публикации. Кабинет и партнёрства продолжают работать.");

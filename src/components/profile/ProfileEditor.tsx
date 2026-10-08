@@ -152,14 +152,27 @@ export function ProfileEditor({
   const applyProfile = useCallback((next: ProProfileResponse) => {
     setProfile(next);
     const u = next.user as ExtendedUser;
+    const catalogOnOrg = next.catalogPublication?.catalogEntity === "organization";
     setDisplayName(u.displayName ?? "");
     setCity(u.city ?? "");
-    setDescription(u.description ?? "");
+    setDescription(
+      catalogOnOrg && next.organization?.description != null
+        ? next.organization.description
+        : (u.description ?? ""),
+    );
     setPartnerType(u.partnerType ?? "MASTER");
     setSpecializations(u.specializations ?? []);
-    setStoreCategories(u.storeCategories ?? []);
+    setStoreCategories(
+      catalogOnOrg && next.organization?.storeCategories
+        ? next.organization.storeCategories
+        : (u.storeCategories ?? []),
+    );
     setOrganizationName(next.organization?.name ?? "");
-    setWebsite(u.website ?? "");
+    setWebsite(
+      catalogOnOrg && next.organization?.website != null
+        ? (next.organization.website ?? "")
+        : (u.website ?? ""),
+    );
     setTelegram(u.telegram ?? "");
     setPublicEmail(u.publicEmail ?? "");
     setPublicPhone(u.publicPhone ?? "");
