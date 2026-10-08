@@ -4,8 +4,8 @@
 
 | Repo | SHA |
 |------|-----|
-| remcard-navigator | _(after push this turn)_ |
-| remcard-partner-platform | _(after push this turn)_ |
+| remcard-navigator | `2263af3` (build fix on `670b8c9` logic) |
+| remcard-partner-platform | `c5617e3` |
 
 Base compared to Computer release check: navigator `3a7e48d`, platform `6cc2858`.
 
@@ -60,17 +60,26 @@ All: `user`, `neverApprovedUser`, `orgCatalogEntity`, `org`, `branch` → **PASS
 
 ## Browser 1440 / 390
 
-**NOT VERIFIED** — PROF login gate (Telegram/MAX). Artifacts:
-
-- `/opt/cursor/artifacts/prof-f-browser-1440-NOT-VERIFIED-login-required.png`
-- `/opt/cursor/artifacts/prof-f-browser-390-NOT-VERIFIED-login-required.png`
+**PASS** (Computer, synthetic local session on navigator `670b8c9` + platform `c5617e3`): org/branch catalog drafts persist after reload; unpublish → public 404; branch submit keeps prior public text and locks fields; SOLO list + role PATCH/revoke; 35 BFF requests **200**; no horizontal overflow.
 
 Real bot E2E — **NOT VERIFIED**
+
+## Production build
+
+| Repo | Command | Exit |
+|------|---------|------|
+| remcard-navigator | `NODE_ENV=production PLATFORM_INN=0000000000 PLATFORM_OGRN=000000000000000 node scripts/build-app.mjs` | **0** |
+| remcard-partner-platform | production frontend build on `c5617e3` | **0** (Computer) |
+
+Navigator: `pnpm exec prisma generate` → `pnpm typecheck` (`tsc --noEmit`) → **0**.
 
 ## Commands
 
 ```bash
 # navigator
+pnpm exec prisma generate
+pnpm typecheck
+NODE_ENV=production PLATFORM_INN=0000000000 PLATFORM_OGRN=000000000000000 pnpm build
 pnpm exec vitest run src/lib/__tests__/catalogPublicationRoutes.integration.test.ts
 pnpm exec vitest run --exclude '**/*.integration.test.ts'
 
