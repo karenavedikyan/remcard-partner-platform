@@ -1,5 +1,13 @@
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 
+/** Bounded wait for SSR metadata; failures must not break /invite pages. */
+export const LINK_INVITE_PUBLIC_PREVIEW_TIMEOUT_MS = 5_000;
+
+/** Test seam only — production code always uses fetchRemcardUpstream. */
+export const linkInvitePublicPreviewDeps = {
+  fetchUpstream: fetchRemcardUpstream,
+};
+
 export type LinkInvitePublicTerm = {
   category: string;
   categoryLabel: string;
@@ -28,14 +36,21 @@ export async function fetchPublicLinkInvitePreview(
     return { status: "NOT_FOUND" };
   }
 
-  const result = await fetchRemcardUpstream<LinkInvitePublicPreview>(
-    `/api/partnership/link-invite/public/${encodeURIComponent(trimmed)}`,
-    { method: "GET" },
-  );
+  try {
+    const result = await linkInvitePublicPreviewDeps.fetchUpstream<LinkInvitePublicPreview>(
+      `/api/partnership/link-invite/public/${encodeURIComponent(trimmed)}`,
+      {
+        method: "GET",
+        signal: AbortSignal.timeout(LINK_INVITE_PUBLIC_PREVIEW_TIMEOUT_MS),
+      },
+    );
 
-  if (!result.ok) {
+    if (!result.ok) {
+      return null;
+    }
+
+    return result.data;
+  } catch {
     return null;
   }
-
-  return result.data;
 }

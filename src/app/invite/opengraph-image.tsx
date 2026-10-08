@@ -37,27 +37,16 @@ export default async function Image() {
         />
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
-              background: ACCENT,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                border: "3px solid white",
-                borderTop: "none",
-                transform: "translateY(-2px)",
-              }}
+          <svg viewBox="0 0 36 36" width="52" height="52" aria-hidden>
+            <rect width="36" height="36" rx="10" fill={ACCENT} />
+            <path
+              d="M10 26V12l8-5 8 5v14h-5v-8h-6v8z"
+              fill="none"
+              stroke="white"
+              strokeWidth={2.2}
+              strokeLinejoin="round"
             />
-          </div>
+          </svg>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <span style={{ fontSize: 28, fontWeight: 800, color: "#1a1f1d", letterSpacing: -0.5 }}>
               remcard<span style={{ color: ACCENT }}>.</span>
