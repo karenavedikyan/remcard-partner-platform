@@ -5,7 +5,7 @@
 | Репозиторий | Feature branch | HEAD (после push) |
 |-------------|----------------|-------------------|
 | remcard-navigator | `feat/prof-f-profile-catalog-team` | `f4caf30` |
-| remcard-partner-platform | `feat/prof-f-profile-catalog-team` | `0765a6b` |
+| remcard-partner-platform | `feat/prof-f-profile-catalog-team` | `f238acf` (fix `0765a6b`) |
 
 База: navigator `2908914`, platform `8160e24` → продолжение на той же ветке.
 
