@@ -248,7 +248,7 @@ export function ProfileEditor({
         ))}
       </nav>
 
-      <form className={styles.main} onSubmit={saveProfile}>
+      <div className={styles.main}>
         {revisionBanner && activeSection === "catalog" ? (
           <div className={styles.bannerWarn} role="status">
             <strong>Нужно исправить публикацию в каталоге</strong>
@@ -258,6 +258,7 @@ export function ProfileEditor({
         ) : null}
 
         {activeSection === "basics" ? (
+        <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
             <StatusBadge
@@ -310,44 +311,56 @@ export function ProfileEditor({
                 />
               ) : null}
 
-              <TextAreaField
-                label="Описание"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
             </div>
           </fieldset>
         </Panel>
-        ) : null}
-
-        {activeSection === "basics" ? (
-        <Panel title="Контакты для клиентов" hint="Публичные контакты карточки настраиваются в разделе «Публикация».">
-          <fieldset className={styles.fieldset} disabled={!basicsEditable}>
-            <div className={styles.fields}>
-              <TextField label="Сайт" value={website} onChange={(e) => setWebsite(e.target.value)} />
-              <TextField
-                label="Telegram (публичный)"
-                value={telegram}
-                onChange={(e) => setTelegram(e.target.value)}
-                hint="Публичный @username — не канал уведомлений бота."
-              />
-              <TextField
-                label="Рабочий email"
-                value={publicEmail}
-                onChange={(e) => setPublicEmail(e.target.value)}
-              />
-              <TextField
-                label="Рабочий телефон"
-                value={publicPhone}
-                onChange={(e) => setPublicPhone(e.target.value)}
-              />
-            </div>
-          </fieldset>
-        </Panel>
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          ) : null}
+          {success ? (
+            <p className={styles.success} role="status">
+              {success}
+            </p>
+          ) : null}
+          <div className={styles.actions}>
+            <Button type="submit" disabled={saving || !basicsEditable}>
+              {saving ? "Сохранение…" : "Сохранить данные"}
+            </Button>
+          </div>
+        </form>
         ) : null}
 
         {activeSection === "catalog" ? (
           <>
+            <Panel title="Текст и контакты для публикации">
+              <fieldset className={styles.fieldset} disabled={!catalogEditable}>
+                <div className={styles.fields}>
+                  <TextAreaField
+                    label="Описание для каталога"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                  />
+                  <TextField label="Сайт" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                  <TextField
+                    label="Telegram (публичный)"
+                    value={telegram}
+                    onChange={(e) => setTelegram(e.target.value)}
+                  />
+                  <TextField
+                    label="Рабочий email"
+                    value={publicEmail}
+                    onChange={(e) => setPublicEmail(e.target.value)}
+                  />
+                  <TextField
+                    label="Рабочий телефон"
+                    value={publicPhone}
+                    onChange={(e) => setPublicPhone(e.target.value)}
+                  />
+                </div>
+              </fieldset>
+            </Panel>
             {partnerType === "MASTER" ? (
               <Panel title="Специализации для каталога">
                 <fieldset className={styles.fieldset} disabled={!catalogEditable}>
@@ -473,25 +486,7 @@ export function ProfileEditor({
           </Panel>
         )}
 
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-        {success ? (
-          <p className={styles.success} role="status">
-            {success}
-          </p>
-        ) : null}
-
-        {activeSection === "basics" ? (
-          <div className={styles.actions}>
-            <Button type="submit" disabled={saving || !basicsEditable}>
-              {saving ? "Сохранение…" : "Сохранить данные"}
-            </Button>
-          </div>
-        ) : null}
-      </form>
+      </div>
 
       <aside className={styles.aside}>
         <Panel title="Подсказка" compact>

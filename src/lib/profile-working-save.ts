@@ -47,11 +47,6 @@ export async function persistWorkingProfileDraft(
     body: {
       city: draft.city.trim(),
       partnerType: draft.partnerType,
-      description: draft.description.trim() || null,
-      website: draft.website.trim() || null,
-      telegram: draft.telegram.trim() || null,
-      publicEmail: draft.publicEmail.trim() || null,
-      publicPhone: draft.publicPhone.trim() || null,
     },
   });
 

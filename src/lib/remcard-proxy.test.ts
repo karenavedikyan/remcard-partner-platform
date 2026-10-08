@@ -276,6 +276,24 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/balance"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/transactions"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/settlements"), true);
+    assert.equal(
+      isAllowedProxyRoute("PATCH", "/api/pro/organization/branches/br_krd_partizan"),
+      true,
+    );
+    assert.equal(
+      isAllowedProxyRoute("GET", "/api/pro/organization/branches/cabcdefghijklmnopqrst"),
+      true,
+    );
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/organization/branches/br_krd/submit-for-moderation"),
+      true,
+    );
+    assert.equal(
+      isAllowedProxyRoute("PATCH", "/api/pro/organization/branches/br_krd/employees/emp_1"),
+      true,
+    );
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/organization/branches/../auth/me"), false);
+    assert.equal(normalizeProxyPath(["api", "pro", "organization", "branches", "..", "auth"]), null);
   });
 
   it("forwards only allowlisted cookies", () => {

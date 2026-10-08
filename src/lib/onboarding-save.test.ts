@@ -20,7 +20,7 @@ describe("onboarding-save", () => {
     });
     assert.equal(body.city, "Краснодар");
     assert.equal(body.partnerType, "STORE");
-    assert.deepEqual(body.storeCategories, ["doors"]);
+    assert.equal("storeCategories" in body, false);
     assert.equal("displayName" in body, false);
   });
 
@@ -37,11 +37,10 @@ describe("onboarding-save", () => {
     assert.deepEqual(body, {
       name: "Магазин Тест",
       partnerType: "STORE",
-      storeCategories: ["doors"],
     });
   });
 
-  it("buildProfilePatchBody sends stage ids for MASTER", () => {
+  it("buildProfilePatchBody sends only working minimum for MASTER", () => {
     const body = buildProfilePatchBody({
       partnerType: "MASTER",
       city: "Краснодар",
@@ -51,7 +50,9 @@ describe("onboarding-save", () => {
       selectedStages: ["L1-0"],
       storeCategories: [],
     });
-    assert.deepEqual(body.specializations, ["L1-0"]);
+    assert.equal(body.city, "Краснодар");
+    assert.equal(body.partnerType, "MASTER");
+    assert.equal("specializations" in body, false);
     assert.equal("displayName" in body, false);
   });
 

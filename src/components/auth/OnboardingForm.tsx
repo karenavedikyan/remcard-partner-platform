@@ -245,18 +245,9 @@ export function OnboardingForm({
       return;
     }
 
-    if (partnerType === "MASTER") {
-      if (!allStages && selectedStages.length === 0) {
-        setError("Выберите хотя бы одну специализацию или «Все этапы».");
-        return;
-      }
-    } else {
+    if (partnerType === "STORE" || partnerType === "COMPANY") {
       if (organizationName.trim().length < 2) {
         setError("Укажите название организации (минимум 2 символа).");
-        return;
-      }
-      if (storeCategories.length === 0) {
-        setError("Выберите хотя бы одну категорию товаров.");
         return;
       }
     }
@@ -357,11 +348,13 @@ export function OnboardingForm({
 
   const repReady =
     representativeName.trim().length >= 2 && representativeName.trim() !== "Пользователь";
-  const masterReady = repReady && (allStages || selectedStages.length > 0);
-  const storeReady =
-    repReady && organizationName.trim().length >= 2 && storeCategories.length > 0;
+  const storeReady = repReady && organizationName.trim().length >= 2;
   const profileFieldsReady =
-    partnerType === "MASTER" ? masterReady : partnerType ? storeReady : false;
+    partnerType === "MASTER"
+      ? repReady
+      : partnerType === "STORE" || partnerType === "COMPANY"
+        ? storeReady
+        : false;
   const offerReady =
     !offerRequirement ||
     progressRef.current.offerSaved ||
@@ -463,69 +456,26 @@ export function OnboardingForm({
               </div>
             ) : null}
 
-            {partnerType === "MASTER" ? (
+            {partnerType === "STORE" || partnerType === "COMPANY" ? (
               <div style={{ marginBottom: "var(--space-4)" }}>
-                <p className={styles.fieldLabel}>Специализации</p>
-                <label className={styles.consentRow}>
-                  <input
-                    type="checkbox"
-                    checked={allStages}
-                    onChange={toggleAllStages}
-                    disabled={loading}
-                  />
-                  <span>Все этапы строительства</span>
-                </label>
-                <div className={styles.stageGrid}>
-                  {ONBOARDING_STAGES.map((stage) => (
-                    <label key={stage.id} className={styles.stageRow}>
-                      <input
-                        type="checkbox"
-                        checked={allStages || selectedStages.includes(stage.id)}
-                        onChange={() => toggleStage(stage.id)}
-                        disabled={loading || allStages}
-                      />
-                      <span>
-                        {stage.icon} {stage.title}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                <TextField
+                  label={partnerType === "STORE" ? "Название магазина" : "Название компании"}
+                  value={organizationName}
+                  onChange={(event) => {
+                    organizationDirtyRef.current = true;
+                    setOrganizationName(event.target.value);
+                  }}
+                  disabled={loading}
+                  required
+                  hint="Юридическое или коммерческое название организации — отдельно от имени представителя."
+                />
               </div>
             ) : null}
 
-            {partnerType === "STORE" || partnerType === "COMPANY" ? (
-              <>
-                <div style={{ marginBottom: "var(--space-4)" }}>
-                  <TextField
-                    label={partnerType === "STORE" ? "Название магазина" : "Название компании"}
-                    value={organizationName}
-                    onChange={(event) => {
-                      organizationDirtyRef.current = true;
-                      setOrganizationName(event.target.value);
-                    }}
-                    disabled={loading}
-                    required
-                    hint="Юридическое или коммерческое название организации — отдельно от имени представителя."
-                  />
-                </div>
-                <div style={{ marginBottom: "var(--space-4)" }}>
-                  <p className={styles.fieldLabel}>Категории товаров</p>
-                  <div className={styles.stageGrid}>
-                    {STORE_CATEGORY_CHIPS.map((cat) => (
-                      <label key={cat.value} className={styles.stageRow}>
-                        <input
-                          type="checkbox"
-                          checked={storeCategories.includes(cat.value)}
-                          onChange={() => toggleStoreCategory(cat.value)}
-                          disabled={loading}
-                        />
-                        <span>{cat.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : null}
+            <p className={styles.lead}>
+              Специализации и категории для каталога можно добавить позже в профиле — для входа в
+              кабинет они не обязательны.
+            </p>
 
             {offerRequirement?.legalDocumentId && !progressRef.current.offerSaved ? (
               <fieldset className={styles.consentBlock} disabled={loading}>

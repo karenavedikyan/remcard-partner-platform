@@ -2,59 +2,77 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import {
+  canManageTeam,
+  collectPendingInvites,
+  type EmployeesOverviewResponse,
+} from "@/lib/employees-overview-types";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextField } from "@/components/ui/FormField";
 import styles from "./ProfileEditor.module.css";
 
-type EmployeeRow = {
-  id: string;
-  role: string;
-  fullName: string | null;
-  user: { displayName: string | null; publicId: string };
-};
+const ROLE_OPTIONS = [
+  { value: "SELLER", label: "Продавец" },
+  { value: "MANAGER", label: "Менеджер" },
+  { value: "VIEWER", label: "Наблюдатель" },
+] as const;
 
-type PendingInvite = {
+function roleLabel(role: string): string {
+  return ROLE_OPTIONS.find((r) => r.value === role)?.label ?? role;
+}
+
+type StaffInviteRow = {
   id: string;
-  email: string | null;
+  url: string;
+  role: string;
   status: string;
+  branchName: string | null;
   expiresAt: string;
 };
 
-type Overview = {
-  role: string;
-  organization: { id: string; name: string } | null;
-  branches: Array<{
-    id: string;
-    name: string;
-    city: string;
-    employees: EmployeeRow[];
-  }>;
-  pendingInvites: PendingInvite[];
-};
-
 export function ProfileTeamSection() {
-  const [overview, setOverview] = useState<Overview | null>(null);
+  const [overview, setOverview] = useState<EmployeesOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
+  const [scope, setScope] = useState<"BRANCH" | "SOLO_PARTNER">("BRANCH");
   const [branchId, setBranchId] = useState("");
+  const [role, setRole] = useState<string>("SELLER");
+  const [position, setPosition] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [lastInviteUrl, setLastInviteUrl] = useState("");
+  const [invites, setInvites] = useState<StaffInviteRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await remcardFetch<Overview>("/api/pro/organization/employees-overview");
+      const data = await remcardFetch<EmployeesOverviewResponse>(
+        "/api/pro/organization/employees-overview",
+      );
       setOverview(data);
-      if (!branchId && data.branches[0]?.id) {
+      if (data.branches[0]?.id && !branchId) {
         setBranchId(data.branches[0].id);
+      }
+      if (data.myRole === "ORG_OWNER" && data.branches.length === 0) {
+        setScope("SOLO_PARTNER");
+      }
+      if (canManageTeam(data)) {
+        const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
+          "/api/pro/invites?status=PENDING&limit=20",
+        );
+        setInvites(
+          (inv.invites ?? []).map((row) => ({
+            ...row,
+            branchName: row.branchName ?? null,
+          })),
+        );
       }
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 403) {
         setOverview(null);
-        setError("Управление командой доступно владельцу или менеджеру с правами.");
+        setError("Управление командой недоступно для вашей роли.");
       } else {
         setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить команду");
       }
@@ -67,23 +85,27 @@ export function ProfileTeamSection() {
     void load();
   }, [load]);
 
-  async function sendInvite(event: FormEvent) {
+  async function createInvite(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
     setError("");
     setMessage("");
+    setLastInviteUrl("");
     try {
-      await remcardFetch("/api/pro/invites", {
-        method: "POST",
-        body: {
-          scope: "BRANCH",
-          branchId,
-          email: inviteEmail.trim(),
-          role: "SELLER",
-        },
-      });
-      setInviteEmail("");
-      setMessage("Приглашение создано. Отправьте ссылку сотруднику из кабинета RemCard.");
+      const body: Record<string, unknown> = {
+        scope,
+        role,
+        position: position.trim() || undefined,
+      };
+      if (scope === "BRANCH") {
+        body.branchId = branchId;
+      }
+      const result = await remcardFetch<{ invite: { url: string; id: string } }>(
+        "/api/pro/invites",
+        { method: "POST", body },
+      );
+      setLastInviteUrl(result.invite.url);
+      setMessage("Ссылка создана — отправьте её сотруднику (письмо не отправляется автоматически).");
       await load();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать приглашение");
@@ -92,12 +114,36 @@ export function ProfileTeamSection() {
     }
   }
 
+  async function revokeInvite(id: string) {
+    setError("");
+    try {
+      await remcardFetch(`/api/pro/invites/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await load();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отозвать");
+    }
+  }
+
+  async function suspendBranchEmployee(branchIdValue: string, empId: string) {
+    await remcardFetch(
+      `/api/pro/organization/branches/${encodeURIComponent(branchIdValue)}/employees/${encodeURIComponent(empId)}`,
+      { method: "DELETE" },
+    );
+    await load();
+  }
+
+  const pending = overview ? collectPendingInvites(overview) : [];
+  const canManage = overview ? canManageTeam(overview) : false;
+
   return (
-    <Panel title="Сотрудники и доступы" hint="Приглашения используют существующий механизм RemCard StaffInvite.">
+    <Panel title="Сотрудники и доступы">
       {loading ? <p className={styles.hint}>Загружаем…</p> : null}
       {error ? (
         <p className={styles.error} role="alert">
-          {error}
+          {error}{" "}
+          <Button type="button" variant="secondary" onClick={() => void load()}>
+            Повторить
+          </Button>
         </p>
       ) : null}
       {message ? (
@@ -105,44 +151,86 @@ export function ProfileTeamSection() {
           {message}
         </p>
       ) : null}
+      {lastInviteUrl ? (
+        <div className={styles.bannerWarn}>
+          <p>Ссылка для сотрудника (PROF):</p>
+          <code>{lastInviteUrl}</code>
+          <Button
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(lastInviteUrl)}
+          >
+            Копировать
+          </Button>
+        </div>
+      ) : null}
+
+      {overview && overview.myRole === "OTHER" ? (
+        <p className={styles.hint}>Вы не управляете командой этой организации.</p>
+      ) : null}
 
       {overview?.branches.length ? (
+        <ul className={styles.notesList}>
+          {overview.branches.map((branch) => (
+            <li key={branch.id}>
+              <strong>
+                {branch.name} ({branch.city})
+              </strong>
+              {branch.employees.length === 0 ? (
+                <p className={styles.hint}>Нет сотрудников</p>
+              ) : (
+                <ul>
+                  {branch.employees.map((emp) => (
+                    <li key={emp.id}>
+                      {emp.user.displayName ?? emp.fullName ?? emp.user.publicId} —{" "}
+                      {roleLabel(emp.role)}
+                      {canManage ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => void suspendBranchEmployee(branch.id, emp.id)}
+                        >
+                          Отозвать доступ
+                        </Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : overview && overview.myRole === "ORG_OWNER" ? (
+        <p className={styles.hint}>
+          Нет филиалов — можно пригласить сотрудника на SOLO_PARTNER или добавить филиал.
+        </p>
+      ) : null}
+
+      {pending.length > 0 ? (
         <>
+          <p className={styles.hint}>Ожидают принятия ({overview?.summary.pendingInvites ?? pending.length}):</p>
           <ul className={styles.notesList}>
-            {overview.branches.map((branch) => (
-              <li key={branch.id}>
-                <strong>
-                  {branch.name} ({branch.city})
-                </strong>
-                {branch.employees.length === 0 ? (
-                  <p className={styles.hint}>Нет сотрудников</p>
-                ) : (
-                  <ul>
-                    {branch.employees.map((emp) => (
-                      <li key={emp.id}>
-                        {emp.user.displayName ?? emp.fullName ?? emp.user.publicId} — {emp.role}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            {pending.map((inv) => (
+              <li key={inv.id}>
+                {roleLabel(inv.role)} — до {new Date(inv.expiresAt).toLocaleDateString("ru-RU")}
               </li>
             ))}
           </ul>
+        </>
+      ) : null}
 
-          {overview.pendingInvites.length > 0 ? (
-            <>
-              <p className={styles.hint}>Ожидают принятия:</p>
-              <ul className={styles.notesList}>
-                {overview.pendingInvites.map((inv) => (
-                  <li key={inv.id}>
-                    {inv.email ?? "приглашение"} — {inv.status}
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-
-          <form onSubmit={(e) => void sendInvite(e)} className={styles.fields}>
+      {canManage ? (
+        <form onSubmit={(e) => void createInvite(e)} className={styles.fields}>
+          <label className={styles.checkRow}>
+            Тип приглашения
+            <select
+              value={scope}
+              onChange={(e) => setScope(e.target.value as "BRANCH" | "SOLO_PARTNER")}
+            >
+              <option value="BRANCH">На филиал</option>
+              <option value="SOLO_PARTNER">SOLO партнёр (без филиала)</option>
+            </select>
+          </label>
+          {scope === "BRANCH" && overview?.branches.length ? (
             <label className={styles.checkRow}>
               Филиал
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
@@ -153,19 +241,40 @@ export function ProfileTeamSection() {
                 ))}
               </select>
             </label>
-            <TextField
-              label="Email сотрудника"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-            />
-            <Button type="submit" disabled={saving || !branchId}>
-              {saving ? "Отправка…" : "Пригласить сотрудника"}
-            </Button>
-          </form>
+          ) : null}
+          <label className={styles.checkRow}>
+            Роль
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <TextField label="Должность (необязательно)" value={position} onChange={(e) => setPosition(e.target.value)} />
+          <Button type="submit" disabled={saving || (scope === "BRANCH" && !branchId)}>
+            {saving ? "Создаём…" : "Создать ссылку-приглашение"}
+          </Button>
+        </form>
+      ) : null}
+
+      {invites.length > 0 && canManage ? (
+        <>
+          <p className={styles.hint}>Активные приглашения</p>
+          <ul className={styles.notesList}>
+            {invites.map((inv) => (
+              <li key={inv.id}>
+                {roleLabel(inv.role)} — {inv.status}{" "}
+                <Button type="button" variant="secondary" onClick={() => void revokeInvite(inv.id)}>
+                  Отозвать
+                </Button>
+                <br />
+                <a href={inv.url}>{inv.url}</a>
+              </li>
+            ))}
+          </ul>
         </>
-      ) : overview ? (
-        <p className={styles.hint}>Добавьте филиал, чтобы приглашать сотрудников на точку.</p>
       ) : null}
     </Panel>
   );

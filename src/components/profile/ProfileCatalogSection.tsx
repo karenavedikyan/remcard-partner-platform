@@ -11,6 +11,7 @@ import {
 import {
   persistProfileDraft,
   submitProfileForModerationReview,
+  unpublishFromCatalog,
   type ProfileDraft,
 } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
@@ -26,13 +27,18 @@ type ProfileCatalogSectionProps = {
   onProfileUpdated: (next: ProProfileResponse) => void;
 };
 
+function isPubliclyVisible(profile: ProProfileResponse): boolean {
+  const pub = profile.catalogPublication;
+  if (pub?.isLivePublic) return true;
+  return profile.user.isPublic && effectiveCatalogStatus(profile) === "APPROVED";
+}
+
 export function ProfileCatalogSection({
   profile,
   draft,
   onProfileUpdated,
 }: ProfileCatalogSectionProps) {
   const router = useRouter();
-  const [preparing, setPreparing] = useState(false);
   const [expanded, setExpanded] = useState(
     () => effectiveCatalogStatus(profile) !== "DRAFT" || showRevisionBanner(profile),
   );
@@ -44,6 +50,8 @@ export function ProfileCatalogSection({
   const catalogStatus = effectiveCatalogStatus(profile);
   const statusLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
   const canSubmit = canSubmitProfileForModeration(profile);
+  const published = profile.catalogPublication?.published;
+  const draftPending = profile.catalogPublication?.draftPending || profile.user.catalogDraftPending;
 
   async function saveDraft(event: FormEvent) {
     event.preventDefault();
@@ -53,7 +61,7 @@ export function ProfileCatalogSection({
     try {
       const next = await persistProfileDraft(profile, draft);
       onProfileUpdated(next);
-      setSuccess("Черновик публикации сохранён");
+      setSuccess("Черновик публикации сохранён (не отправлен на модерацию)");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
@@ -78,38 +86,65 @@ export function ProfileCatalogSection({
     }
   }
 
+  async function unpublish() {
+    setSubmitting(true);
+    setError("");
+    try {
+      await unpublishFromCatalog();
+      const refreshed = await persistProfileDraft(profile, draft);
+      onProfileUpdated({ ...refreshed, user: { ...refreshed.user, isPublic: false } });
+      setSuccess("Карточка снята с публикации. Кабинет и партнёрства продолжают работать.");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось снять с публикации");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <Panel title="Публикация в каталоге">
       <div className={styles.statusRow}>
         <StatusBadge label={statusLabel} tone={catalogStatusTone(catalogStatus)} />
+        {isPubliclyVisible(profile) ? (
+          <StatusBadge label="Видна в каталоге" tone="active" />
+        ) : (
+          <StatusBadge label="Не видна посетителям" tone="pending" />
+        )}
+        {draftPending ? <StatusBadge label="Черновик правок" tone="pending" /> : null}
       </div>
 
       {!expanded ? (
         <div className={styles.bannerWarn}>
           <strong>Привлекайте клиентов из каталога RemCard</strong>
           <p>
-            Расскажите о своих услугах или товарах, покажите примеры работ и помогите клиентам
-            выбрать вас. Размещение в каталоге необязательно: вы можете работать с партнёрами в
-            PROF без публичного профиля.
+            Расскажите о своих услугах или товарах и помогите клиентам выбрать вас. Размещение
+            необязательно: можно работать с партнёрами в PROF без публичного профиля.
           </p>
-          <Button type="button" onClick={() => setExpanded(true)} disabled={preparing}>
+          <Button type="button" onClick={() => setExpanded(true)}>
             Подготовить профиль к публикации
           </Button>
         </div>
       ) : (
         <>
           <p className={styles.hint}>
-            Поля ниже относятся к публичной карточке на remcard.ru. Имя представителя из основных
-            данных автоматически не публикуется.
+            Имя представителя попадает в каталог только если включено «показывать полное имя» в
+            карточке (showFullName) — иначе на remcard.ru используется коммерческое имя/название
+            организации.
           </p>
+          {published && isPubliclyVisible(profile) ? (
+            <div className={styles.bannerWarn}>
+              <strong>Предпросмотр опубликованной версии</strong>
+              <p>{published.description || "— без описания —"}</p>
+              <p className={styles.hint}>
+                Правки ниже сохраняются как черновик и не подменяют опубликованный текст до проверки.
+              </p>
+            </div>
+          ) : null}
           {profile.user.rejectionReason ? (
             <p className={styles.error}>{profile.user.rejectionReason}</p>
           ) : null}
           <form onSubmit={(e) => void saveDraft(e)}>
-            <p className={styles.hint}>
-              Заполните обязательные для публикации поля в основном блоке (специализации или
-              категории, адрес филиала для организаций) и сохраните черновик перед отправкой.
-            </p>
             {error ? (
               <p className={styles.error} role="alert">
                 {error}
@@ -132,6 +167,11 @@ export function ProfileCatalogSection({
                   onClick={() => void submitPublication()}
                 >
                   {submitting ? "Отправка…" : "Отправить на публикацию"}
+                </Button>
+              ) : null}
+              {isPubliclyVisible(profile) ? (
+                <Button type="button" variant="secondary" disabled={submitting} onClick={() => void unpublish()}>
+                  Снять с публикации
                 </Button>
               ) : null}
             </div>

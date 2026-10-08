@@ -123,7 +123,6 @@ describe("OnboardingForm", () => {
     await ui.type(screen.getByLabelText(/город работы/i), "Краснодар");
     await ui.type(screen.getByLabelText(/имя представителя/i), "Иван Тест");
     await ui.type(screen.getByLabelText(/название магазина/i), "Магазин Тест");
-    await ui.click(screen.getByRole("checkbox", { name: /двери/i }));
     await ui.click(screen.getByRole("checkbox", { name: /публичную оферту/i }));
   }
 
@@ -280,7 +279,6 @@ describe("OnboardingForm", () => {
     await ui.type(screen.getByLabelText(/город работы/i), "Сочи");
     await ui.type(screen.getByLabelText(/имя представителя/i), "Пётр Тест");
     await ui.type(screen.getByLabelText(/название компании/i), "Компания Тест");
-    await ui.click(screen.getByRole("checkbox", { name: /двери/i }));
     await ui.click(screen.getByRole("checkbox", { name: /публичную оферту/i }));
     await ui.click(screen.getByRole("button", { name: /продолжить/i }));
 
@@ -292,7 +290,6 @@ describe("OnboardingForm", () => {
           body: expect.objectContaining({
             partnerType: "COMPANY",
             city: "Сочи",
-            storeCategories: expect.arrayContaining(["doors"]),
           }),
         }),
       );

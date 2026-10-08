@@ -39,12 +39,27 @@ export type ProProfileUser = {
   publicEmail: string | null;
   publicPhone: string | null;
   showFullName: boolean;
+  catalogDraftPending?: boolean;
   telegramLinked?: boolean;
   maxLinked?: boolean;
   notificationSettings?: unknown;
 };
 
 export type ProProfileResponse = {
+  catalogPublication?: {
+    isLivePublic: boolean;
+    draftPending: boolean;
+    published: {
+      description: string | null;
+      specializations: string[];
+      storeCategories: string[];
+      website: string | null;
+      telegram: string | null;
+      publicEmail: string | null;
+      publicPhone: string | null;
+      showFullName?: boolean;
+    };
+  };
   organization: {
     id: string;
     name: string;

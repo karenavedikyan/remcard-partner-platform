@@ -6,6 +6,7 @@ import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextField } from "@/components/ui/FormField";
+import { ProfileBranchDetail } from "./ProfileBranchDetail";
 import styles from "./ProfileEditor.module.css";
 
 type BranchRow = {
@@ -43,6 +44,7 @@ export function ProfileBranchesSection({
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,6 +103,10 @@ export function ProfileBranchesSection({
     );
   }
 
+  if (selectedId) {
+    return <ProfileBranchDetail branchId={selectedId} onClose={() => setSelectedId(null)} />;
+  }
+
   return (
     <Panel
       title="Филиалы"
@@ -130,6 +136,9 @@ export function ProfileBranchesSection({
                 Каталог: {CATALOG_STATUS_LABELS[b.catalogStatus] ?? b.catalogStatus}
                 {b.isActive === false ? " · неактивен" : ""}
               </p>
+              <Button type="button" variant="secondary" onClick={() => setSelectedId(b.id)}>
+                Открыть
+              </Button>
             </li>
           ))}
         </ul>

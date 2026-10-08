@@ -38,7 +38,8 @@ function isProfCabinetAllowed(readiness: CabinetReadiness, user: AuthUser): bool
   if (user.isBlocked) return false;
   if (hasPendingLoginConsents(readiness)) return false;
   if (readiness.needsProfileOnboarding) return false;
-  return readiness.canAccessCabinet && user.role === "PRO";
+  if (!readiness.canAccessCabinet) return false;
+  return user.role === "PRO" || readiness.isEmployee;
 }
 
 async function ensureCabinetAccess(returnTo: string): Promise<AuthUser> {

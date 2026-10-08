@@ -4,12 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RemcardApiError, remcardFetch, getAuthMe } from "@/lib/api-client";
+import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import { fetchReadinessSafe } from "@/lib/auth-session";
-import {
-  buildSessionRecoveryLoginHref,
-  isAuthFlowComplete,
-  resolveDestinationAfterAuth,
-} from "@/lib/auth-flow";
+import { buildSessionRecoveryLoginHref } from "@/lib/auth-flow";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
 import styles from "./InviteLanding.module.css";
@@ -28,6 +25,17 @@ function roleLabelRu(role: string): string {
   return "продавец";
 }
 
+function mapProfRedirect(redirect: string | undefined): string {
+  if (!redirect) return "/";
+  if (redirect === "/pro" || redirect === "/client" || redirect.startsWith("/pro/")) {
+    return "/";
+  }
+  if (redirect.startsWith("/") && !redirect.startsWith("//")) {
+    return redirect;
+  }
+  return "/";
+}
+
 export function StaffInviteAccept() {
   const sp = useSearchParams();
   const router = useRouter();
@@ -37,9 +45,10 @@ export function StaffInviteAccept() {
   const [preview, setPreview] = useState<
     "loading" | PreviewOk | "ACCEPTED" | "REVOKED" | "EXPIRED" | "NOT_FOUND" | "error"
   >("loading");
+  const [previewError, setPreviewError] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [hasSession, setHasSession] = useState(false);
-  const [needsContinuation, setNeedsContinuation] = useState(false);
+  const [needsConsents, setNeedsConsents] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState("");
 
@@ -49,6 +58,7 @@ export function StaffInviteAccept() {
       return;
     }
     setPreview("loading");
+    setPreviewError(false);
     try {
       const data = await remcardFetch<{ status: string; employer?: PreviewOk["employer"] }>(
         `/api/invite/${encodeURIComponent(token)}`,
@@ -60,6 +70,7 @@ export function StaffInviteAccept() {
       }
     } catch {
       setPreview("error");
+      setPreviewError(true);
     }
   }, [token]);
 
@@ -69,15 +80,13 @@ export function StaffInviteAccept() {
       setHasSession(Boolean(me.user));
       if (me.user) {
         const readiness = await fetchReadinessSafe();
-        setNeedsContinuation(
-          readiness.ok ? !isAuthFlowComplete(readiness.data) : true,
-        );
+        setNeedsConsents(readiness.ok ? hasPendingLoginConsents(readiness.data) : true);
       } else {
-        setNeedsContinuation(false);
+        setNeedsConsents(false);
       }
     } catch {
       setHasSession(false);
-      setNeedsContinuation(false);
+      setNeedsConsents(false);
     } finally {
       setSessionChecked(true);
     }
@@ -100,12 +109,8 @@ export function StaffInviteAccept() {
         method: "POST",
         body: { token },
       });
-      if (result.redirect) {
-        router.replace(result.redirect);
-        router.refresh();
-      } else {
-        router.replace("/profile");
-      }
+      router.replace(mapProfRedirect(result.redirect));
+      router.refresh();
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 401) {
         setError("Сессия завершилась. Войдите снова.");
@@ -118,7 +123,7 @@ export function StaffInviteAccept() {
     }
   }
 
-  if (preview === "loading" || !sessionChecked) {
+  if ((preview === "loading" || !sessionChecked) && !previewError) {
     return (
       <main className={styles.page}>
         <div className={styles.wrap}>
@@ -137,6 +142,11 @@ export function StaffInviteAccept() {
           <section className={styles.card}>
             <h1 className={styles.title}>Приглашение недоступно</h1>
             <p className={styles.lead}>Проверьте ссылку или запросите новое приглашение у работодателя.</p>
+            {previewError ? (
+              <Button type="button" onClick={() => void loadPreview()}>
+                Повторить загрузку
+              </Button>
+            ) : null}
             <Link href="/">На главную</Link>
           </section>
         </div>
@@ -144,11 +154,7 @@ export function StaffInviteAccept() {
     );
   }
 
-  if (
-    preview === "ACCEPTED" ||
-    preview === "REVOKED" ||
-    preview === "EXPIRED"
-  ) {
+  if (preview === "ACCEPTED" || preview === "REVOKED" || preview === "EXPIRED") {
     const copy =
       preview === "ACCEPTED"
         ? { title: "Приглашение уже принято", lead: "Доступ оформлен в вашем аккаунте." }
@@ -162,13 +168,16 @@ export function StaffInviteAccept() {
           <section className={styles.card}>
             <h1 className={styles.title}>{copy.title}</h1>
             <p className={styles.lead}>{copy.lead}</p>
-            <Link href="/profile">В профиль</Link>
+            <Link href="/">В кабинет</Link>
           </section>
         </div>
       </main>
     );
   }
 
+  if (preview === "loading") {
+    return null;
+  }
   const pending = preview;
   const loginHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
 
@@ -187,48 +196,43 @@ export function StaffInviteAccept() {
             Срок действия: {new Date(pending.expiresAt).toLocaleString("ru-RU")}
           </p>
 
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}{" "}
+              {/войдите|сессия/i.test(error) ? (
+                <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
+              ) : null}
+            </p>
+          ) : null}
+
           {!hasSession ? (
             <div className={styles.ctaGuest}>
               <Link href={loginHref}>
                 <Button>Войти или зарегистрироваться</Button>
               </Link>
               <p className={styles.ctaGuestNote}>
-                Вход не означает принятие приглашения — подтвердите его отдельной кнопкой после
-                входа.
+                Создание компании или публикация в каталоге не требуются — только вход и явное
+                принятие приглашения.
               </p>
             </div>
-          ) : needsContinuation ? (
+          ) : needsConsents ? (
             <div className={styles.actions}>
-              <Button
-                onClick={async () => {
-                  const readiness = await fetchReadinessSafe();
-                  if (readiness.ok) {
-                    router.push(resolveDestinationAfterAuth(readiness.data, returnTo));
-                  }
-                }}
-              >
-                Продолжить обязательные шаги
+              <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}&step=consents`}>
+                <Button>Примите обязательные соглашения</Button>
+              </Link>
+              <Button type="button" variant="secondary" onClick={() => void refreshSession()}>
+                Обновить статус
               </Button>
             </div>
           ) : (
-            <>
-              {error ? (
-                <p className={styles.error} role="alert">
-                  {error}{" "}
-                  {/войдите|сессия/i.test(error) ? (
-                    <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
-                  ) : null}
-                </p>
-              ) : null}
-              <div className={styles.actions}>
-                <Button disabled={accepting} onClick={() => void acceptInvite()}>
-                  {accepting ? "Принимаем…" : "Принять приглашение"}
-                </Button>
-                <Link href="/profile">
-                  <Button variant="secondary">В профиль</Button>
-                </Link>
-              </div>
-            </>
+            <div className={styles.actions}>
+              <Button disabled={accepting} onClick={() => void acceptInvite()}>
+                {accepting ? "Принимаем…" : "Принять приглашение"}
+              </Button>
+              <Link href="/">
+                <Button variant="secondary">В кабинет</Button>
+              </Link>
+            </div>
           )}
         </section>
       </div>

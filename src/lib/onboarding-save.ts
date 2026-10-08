@@ -38,7 +38,6 @@ export function buildOrganizationUpsertBody(
   return {
     name,
     partnerType: draft.partnerType,
-    storeCategories: draft.storeCategories,
   };
 }
 
@@ -54,18 +53,10 @@ export type VerifyOnboardingResult =
   | { ok: false; kind: "unauthorized" | "network" | "server" | "incomplete"; message: string };
 
 export function buildProfilePatchBody(draft: OnboardingDraft): Record<string, unknown> {
-  const body: Record<string, unknown> = {
+  return {
     city: draft.city.trim(),
     partnerType: draft.partnerType,
   };
-  if (draft.partnerType === "MASTER") {
-    body.specializations = draft.allStages
-      ? ONBOARDING_STAGES.map((s) => s.id)
-      : draft.selectedStages;
-  } else {
-    body.storeCategories = draft.storeCategories;
-  }
-  return body;
 }
 
 export function displayNameMatchesSaved(saved: string | null | undefined, draft: string): boolean {

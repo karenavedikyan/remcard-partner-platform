@@ -1,4 +1,4 @@
-# PROF-F — приёмка (этап 1)
+# PROF-F — приёмка (fix-pass)
 
 ## Ветки и база
 
@@ -7,63 +7,87 @@
 | remcard-navigator | `release/prof-backend-v1-20261007` @ `072ebfd` | `feat/prof-f-profile-catalog-team` |
 | remcard-partner-platform | `release/prof-v1-20261007` @ `6afc65d` | `feat/prof-f-profile-catalog-team` |
 
-| Репозиторий | HEAD feature |
-|-------------|----------------|
-| remcard-navigator | `bcbc3ef` |
-| remcard-partner-platform | `d395165` |
+| Репозиторий | HEAD feature (после fix-pass) |
+|-------------|-------------------------------|
+| remcard-navigator | `2908914` |
+| remcard-partner-platform | `31f7187` |
 
 Карта переиспользования: [PROF-F-REUSE-MAP.md](./PROF-F-REUSE-MAP.md).
 
-## Изменения API / правил (navigator)
+## Fix-pass: navigator
 
-- `privatePartnershipEligibility.ts` — допуск к **частному** партнёрству без `catalogStatus === APPROVED` (блок: REJECTED, не PRO, нет города/имени/типа, isBlocked).
-- `partnershipLinkInviteShared.resolvePartnershipSides` — проверка accepter через eligibility.
-- `POST /api/partnership/invite` — target через `canParticipateInPrivatePartnership`.
-- Link-invite accept — без блокировки по PENDING каталога; интеграционный тест обновлён.
+- **Каталог / черновик:** миграция `20261008193000_catalog_publication_draft` (`User`/`Organization`/`Branch`.`catalogDraft`). Для solo PRO: при `APPROVED && isPublic` правки публичных полей пишутся в `catalogDraft`, live-колонки не затираются; flush при submit; `unpublishFromCatalog`, `discardCatalogDraft`.
+- **`PATCH /api/pro/profile`:** рабочий PATCH — только `city`, `partnerType`, `areas`; публичные поля — через catalog/draft; GET отдаёт `catalogPublication` и merged edit fields.
+- **Readiness / partnership:** `soloWorkingProfileIncomplete`; `canAccessCabinet` для сотрудников; **REJECTED каталога не блокирует** частное партнёрство; inviter blocked / target deleted+blocked на invite.
+- **Staff invite accept:** redirect на `/profile` при PROF origin.
+- **Branch:** `PATCH .../branches/[id]` — `isActive` для владельца.
+- **Тесты:** `catalogPublicationDraft.test.ts`, обновлены profile route mocks, `privatePartnershipEligibility`, `route.network` (branchId на partner row).
 
-Схема БД / production-миграции: **не применялись**.
+Production SQL / деплой: **не выполнялись**. Миграция только в репозитории + unit-тест парсинга черновика.
 
-## Изменения UI / BFF (platform)
+## Fix-pass: platform
 
-- `/profile` — секции: основные данные, филиалы, команда, публикация, уведомления.
-- `profile-working-save.ts` — сохранение рабочего минимума без модерации.
-- `ProfileCatalogSection` — добровольная публикация, черновик и отдельная отправка.
-- `InviteLanding` — частное приглашение без требования модерации каталога.
-- `/invite/accept` — принятие StaffInvite на PROF.
-- BFF allowlist: branches `[id]`, employees-overview, invites, submit-for-moderation, `/api/invite/*`.
+- **Формы:** `ProfileEditor` — layout на `div`; `<form>` только у «Основных данных»; каталог, филиалы, команда — отдельные формы/секции (нет вложенных submit).
+- **Сохранения:** `profile-working-save.ts` — PATCH только `city`/`partnerType` (+ org); публичные поля в каталоге; `unpublish` / `discardCatalogDraft`.
+- **Каталог UI:** предпросмотр, снятие с публикации, черновик vs live, честная подсказка про `showFullName`.
+- **Onboarding:** без обязательных специализаций/категорий; org POST без скрытых категорий.
+- **Команда:** `employees-overview-types` + контрактный тест; `ProfileTeamSection` под реальный DTO (`myRole`, `summary.pendingInvites`, `branches[].pendingInvites`, `viewer`); invite URL + copy + revoke; роли по-русски.
+- **StaffInviteAccept:** без owner-onboarding; mapping redirect PROF; 401 + retry preview/readiness.
+- **Филиалы:** `ProfileBranchDetail` (legacy id через BFF); BFF `remcard-proxy-ids` + тесты CUID / `br_*` / traversal.
+- **Session:** `isProfCabinetAllowed` учитывает `readiness.isEmployee`.
 
-## Проверки
+## Команды проверки (fix-pass, 2026-10-08)
 
-| Проверка | Результат |
-|----------|-----------|
-| platform `npm run test` (proxy + component) | **PASS** |
-| platform `tsc --noEmit` | **PASS** |
-| platform `npm run lint` | **PASS** (предупреждение react-hooks в AuthFlow — было) |
-| platform `NODE_ENV=production npm run build` | **PASS** |
-| navigator `pnpm test` privatePartnershipEligibility | **PASS** |
-| navigator `pnpm typecheck` | **PASS** |
-| navigator `pnpm lint` | **PASS** |
-| navigator production `pnpm build` | **NOT VERIFIED** — `check-legal-env` требует PLATFORM_INN/PLATFORM_OGRN (синтетические legal-env в production не использовались) |
-| PG integration link-invite | **NOT VERIFIED** — нужна `remcard_prof_test` на 127.0.0.1 |
-| Браузер smoke 1440/390 (profile, catalog, branch, team) | **NOT VERIFIED** — нет поднятого полного стека с тестовой БД в этой сессии |
-| E2E moderation API (черновик → approve) | **NOT VERIFIED** |
-| E2E Telegram/MAX bot bind | **NOT VERIFIED** (не bot E2E) |
+```bash
+# remcard-navigator
+cd remcard-navigator
+pnpm typecheck
+pnpm exec vitest run --exclude '**/*.integration.test.ts'
+pnpm exec vitest run src/lib/__tests__/catalogPublicationDraft.test.ts \
+  src/lib/__tests__/privatePartnershipEligibility.test.ts
+PLATFORM_INN=7707083893 PLATFORM_OGRN=1027700132195 NODE_ENV=production pnpm build
+pnpm lint
+
+# remcard-partner-platform
+cd remcard-partner-platform
+npm run test
+npm run lint
+NODE_ENV=production npm run build
+```
+
+Синтетические `PLATFORM_INN` / `PLATFORM_OGRN` — **только** для локальной production-сборки navigator в изолированном окружении, не для production env.
+
+## Регрессии PROF-F (целевой прогон)
+
+| # | Сценарий | Результат |
+|---|----------|-----------|
+| 1 | employees-overview DTO с филиалами — UI не падает | **PASS** (контрактный тест + переписанный `ProfileTeamSection`) |
+| 2 | Независимые формы / рабочий PATCH без публичных полей | **PASS** (код + unit); браузерный DOM — **NOT VERIFIED** |
+| 3 | Минимальная регистрация; private invite при REJECTED каталога | **PASS** (eligibility + onboarding tests); PG invite — **NOT VERIFIED** |
+| 4 | Публичная карточка vs черновик / unpublish | **PASS** (server draft logic + unit); moderation E2E — **NOT VERIFIED** |
+| 5 | StaffInvite: ссылка → новый CLIENT → accept без owner onboarding | **PASS** (код + component paths); полный browser — **NOT VERIFIED** |
+| 6 | Legacy branch id BFF + proxy tests | **PASS** (`remcard-proxy.test.ts`); API с live DB — **NOT VERIFIED** |
+| 7 | Старый кабинет remcard.ru | **NOT VERIFIED** (не поднимался параллельно в этой сессии) |
+
+| Прочее | Результат |
+|--------|-----------|
+| PG integration (`remcard_prof_test`) | **NOT VERIFIED** |
+| Браузер smoke 1440/390 | **NOT VERIFIED** |
+| E2E moderation approve | **NOT VERIFIED** |
+| Real bot E2E Telegram/MAX | **NOT VERIFIED** |
 
 ## Скриншоты
 
-Не снимались в этой сессии (нет рабочего backend smoke). После деплоя на staging: профиль «Основные данные», CTA «Подготовить профиль к публикации», InviteLanding с «Заполнить профиль», `/invite/accept`.
+Не снимались: полный стек с `remcard_prof_test` в этой сессии не поднимался. Для staging: профиль (раздельные секции), публикация (черновик/предпросмотр), карточка филиала `br_*`, команда (ссылка приглашения), `/invite/accept` (guest + 401).
 
 ## Публикация / откат
 
-1. Merge feature → release только после PASS smoke на staging с тестовой БД.
-2. Откат: revert коммитов на `feat/prof-f-profile-catalog-team` или не мержить в release; данных/миграций на production нет.
-3. Старый кабинет remcard.ru остаётся включён — отключение отдельным этапом.
+1. Merge feature → release только после smoke на staging с тестовой БД и прогона миграции `catalogDraft` там же.
+2. Откат: revert на `feat/prof-f-profile-catalog-team`; production не трогали.
+3. Старый кабинет remcard.ru остаётся включён.
 
-## Что мешает полностью отключить старый кабинет
+## Оставшиеся пробелы этапа (не «намеренные ограничения»)
 
-- Полное управление сотрудниками (права, transfer, suspend) в PROF — пока список + invite; расширенные экраны на remcard.ru `/pro/organization`.
-- Редактирование филиала `[id]`, архивирование, публичные контакты филиала — API allowlist частично; UI филиала на PROF — создание/список, без карточки филиала.
-- Программы, сертификаты, лиды, проекты, лимиты — только в legacy `/pro/*`.
-- Партнёрский поиск/каталог remcard.ru и модерация штаба — без переноса админки.
-- Дублирующие URL входа и deep links в старые письма/боты на remcard.ru.
-- Пока не доказан parity smoke, редирект всего PRO-трафика с remcard.ru на prof.remcard.ru рискован.
+- Полный transfer / редактирование permissions сотрудника в PROF UI — частично (revoke/suspend через существующие DELETE; расширенные экраны ещё на remcard.ru).
+- Изоляция черновика каталога для **Organization/Branch** на всех PATCH-маршрутах — schema готова, основная логика на solo `User` profile.
+- Parity smoke remcard.ru ↔ PROF и browser E2E — не закрыты в этой сессии.

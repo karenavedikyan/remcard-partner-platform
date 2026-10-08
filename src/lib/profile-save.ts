@@ -180,6 +180,20 @@ export async function persistProfileDraft(
   };
 }
 
+export async function unpublishFromCatalog(): Promise<void> {
+  await remcardFetch("/api/pro/profile", {
+    method: "PATCH",
+    body: { action: "unpublishFromCatalog" },
+  });
+}
+
+export async function discardCatalogDraft(): Promise<void> {
+  await remcardFetch("/api/pro/profile", {
+    method: "PATCH",
+    body: { action: "discardCatalogDraft" },
+  });
+}
+
 export async function submitProfileForModerationReview(
   profile: ProProfileResponse,
   draft: ProfileDraft,
