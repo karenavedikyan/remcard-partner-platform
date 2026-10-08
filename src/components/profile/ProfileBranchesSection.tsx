@@ -32,12 +32,14 @@ type ProfileBranchesSectionProps = {
   defaultCity?: string;
   hasOrganization: boolean;
   partnerType: string;
+  initialBranchId?: string;
 };
 
 export function ProfileBranchesSection({
   defaultCity = "",
   hasOrganization,
   partnerType,
+  initialBranchId,
 }: ProfileBranchesSectionProps) {
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,11 @@ export function ProfileBranchesSection({
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialBranchId ?? null);
+
+  useEffect(() => {
+    if (initialBranchId) setSelectedId(initialBranchId);
+  }, [initialBranchId]);
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -21,7 +21,13 @@ const PROFILE_SECTIONS = new Set([
 ]);
 
 export default async function ProfilePage(props: {
-  searchParams?: Promise<{ section?: string; returnTo?: string }>;
+  searchParams?: Promise<{
+    section?: string;
+    returnTo?: string;
+    moderation?: string;
+    branchId?: string;
+    organizationId?: string;
+  }>;
 }) {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
@@ -32,6 +38,7 @@ export default async function ProfilePage(props: {
       : sectionRaw && PROFILE_SECTIONS.has(sectionRaw)
         ? (sectionRaw as "basics" | "branches" | "team" | "catalog" | "notifications")
         : undefined;
+  const moderationSection = searchParams?.moderation === "1" || sectionRaw === "moderation";
   const user = await requireProPageUser(safeReturnTo);
   if (!user) {
     return <SessionGate reason="session" returnTo={safeReturnTo} />;
@@ -60,8 +67,9 @@ export default async function ProfilePage(props: {
       />
       <ProfileEditor
         initial={profileResult.data}
-        moderationSection={searchParams?.section === "moderation"}
+        moderationSection={moderationSection}
         section={section}
+        focusBranchId={searchParams?.branchId}
         returnTo={safeReturnTo}
       />
     </CabinetShell>

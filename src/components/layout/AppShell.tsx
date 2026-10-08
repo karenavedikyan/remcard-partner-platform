@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AuthUser } from "@/lib/types";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { ProfNotificationBell } from "@/components/notifications/ProfNotificationBell";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import styles from "./AppShell.module.css";
@@ -31,6 +32,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/history": "История",
   "/settlements": "Взаиморасчёты",
   "/profile": "Профиль",
+  "/notifications": "Уведомления",
   "/login": "Вход",
   "/onboarding": "Регистрация",
 };
@@ -124,6 +126,7 @@ export function AppShell({ user, incomingCount = 0, children }: AppShellProps) {
             Кабинет партнёра › <strong>{currentPage}</strong>
           </div>
           <div className={styles.topbarActions}>
+            <ProfNotificationBell />
             <div className={styles.topbarAccount}>{displayName}</div>
             <div className={styles.mobileLogout} data-testid="mobile-logout">
               <LogoutButton className={styles.mobileLogoutButton} />

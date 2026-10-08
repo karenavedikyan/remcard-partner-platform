@@ -69,6 +69,7 @@ type ProfileEditorProps = {
   moderationSection?: boolean;
   returnTo?: string | null;
   section?: ProfileSectionId;
+  focusBranchId?: string;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -82,6 +83,7 @@ export function ProfileEditor({
   moderationSection,
   returnTo,
   section: sectionProp = "basics",
+  focusBranchId,
 }: ProfileEditorProps) {
   const router = useRouter();
   const [profile, setProfile] = useState(initial);
@@ -102,7 +104,7 @@ export function ProfileEditor({
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(
-    moderationSection ? "catalog" : sectionProp,
+    focusBranchId ? "branches" : moderationSection ? "catalog" : sectionProp,
   );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -432,6 +434,7 @@ export function ProfileEditor({
             defaultCity={city}
             hasOrganization={Boolean(profile.organization)}
             partnerType={partnerType}
+            initialBranchId={focusBranchId}
           />
         ) : null}
 
