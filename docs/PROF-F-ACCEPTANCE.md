@@ -1,61 +1,75 @@
-# PROF-F — приёмка (fix-pass 2)
+# PROF-F — приёмка (fix-pass 3: published visibility + staging)
 
 ## Ветки
 
-| Репозиторий | Feature branch | HEAD (после push) |
-|-------------|----------------|-------------------|
-| remcard-navigator | `feat/prof-f-profile-catalog-team` | `f4caf30` |
-| remcard-partner-platform | `feat/prof-f-profile-catalog-team` | `f238acf` (fix `0765a6b`) |
+| Репозиторий | Feature branch |
+|-------------|----------------|
+| remcard-navigator | `feat/prof-f-profile-catalog-team` |
+| remcard-partner-platform | `feat/prof-f-profile-catalog-team` |
 
-База: navigator `2908914`, platform `8160e24` → продолжение на той же ветке.
+База для сравнения с Computer-воспроизведением: navigator `f4caf30`.
 
-## Сделано в этом проходе
+## Исправленные дефекты
 
-### Каталог User / Organization / Branch
+1. **Публичность отделена от статуса модерации:** User — `isPublic` + не `REJECTED`; Organization/Branch — `catalogPublished`. Submit в `PENDING` не снимает опубликованный снимок.
+2. **Staging на всём lifecycle:** правки каталога в draft при live public; `PATCH` каталога при `PENDING` → **409**; approve применяет `catalogUnderReview` / draft без `catalogDraftPending` в Prisma.
+3. **Admin branch approve:** `buildBranchApproveUpdate` (frozen snapshot).
 
-- Submit **без** `flushUserCatalogDraftOnDb` до валидации; ошибка submit не переносит draft в live.
-- Resubmit: `APPROVED` + `catalogDraft` → submit → `PENDING`, **live колонки и публичная карточка до approve не меняются**; approve атомарно применяет draft (`buildUserApproveUpdate` / org / branch).
-- Revise/reject pending resubmit: live public сохраняется (`isPublic` не сбрасывается без необходимости; reject resubmit → `APPROVED` + draft остаётся).
-- Org submit через profile / org API **не** массово ставит все филиалы в PENDING; филиал — отдельный `submit-for-moderation`.
-- PATCH org/branch: catalog-поля stage в `catalogDraft` при live APPROVED; `unpublishFromCatalog` / `discardCatalogDraft` per entity.
-- Overlay draft: явный `null` в draft **не** восстанавливает live через `??`.
-- UI: `canSubmit` для `APPROVED` + draft; unpublish **без** `persistProfileDraft`; catalog save — `persistCatalogDraftOnly`; убран `showFullName` из пользовательского текста.
+## Проверка HTTP (без моков Prisma, lifecycle только API)
 
-### Сотрудники PROF
-
-- `ProfileTeamEmployeeCard`: карточка, смена роли (PATCH), перевод (POST transfer), отзыв (DELETE); права через `viewer.canManageEmployeesByBranchId` + server API.
-
-## Команды проверки
+Сервер: `PORT=3401`, `DATABASE_URL=…/remcard_prof_test`, `REMCARD_DEPLOYMENT=staging` + Basic auth из `.env.local`.
 
 ```bash
-# navigator
 cd remcard-navigator
-pnpm typecheck
-pnpm exec vitest run --exclude '**/*.integration.test.ts'
-PLATFORM_INN=7707083893 PLATFORM_OGRN=1027700132195 NODE_ENV=production pnpm build
-
-# platform
-cd remcard-partner-platform
-npm run test
-NODE_ENV=production npm run build
+export $(grep -v '^#' .env.local | xargs)
+PORT=3401 pnpm exec next dev -p 3401   # отдельный терминал
+BASE_URL=http://127.0.0.1:3401 pnpm exec tsx scripts/prof-f-catalog-http-regression.ts
 ```
 
-## Регрессии
+Артефакт прогона: `/opt/cursor/artifacts/prof-f-catalog-http-regression.json`
 
-| Сценарий | Результат |
-|----------|-----------|
-| Unit/API (navigator без `*.integration.test.ts`) | **PASS** (после фикса org submit / approve-all mocks) |
-| platform `npm run test` + production build | **PASS** |
-| PG `remcard_prof_test` lifecycle + migrate deploy | **NOT VERIFIED** — локальный `DATABASE_URL` указывает на другую БД; `prisma migrate deploy` падает на историческом `20260325120000_add_pro_mode` (enum уже exists). Интеграционный тест `catalogPublicationLifecycle.integration.test.ts` включён только при `DATABASE_URL` с `remcard_prof_test`. |
-| Browser 1440/390 + staff-invite + parity remcard.ru | **NOT VERIFIED** — полный стек и изолированная `remcard_prof_test` не подняты в этой сессии |
-| Real bot E2E | **NOT VERIFIED** |
+| Сущность | Ключевые HTTP | Ожидание | Результат |
+|----------|---------------|----------|-----------|
+| User | GET `/api/catalog?page=1` → PATCH profile draft → submit → GET catalog → PATCH PENDING → revise → PATCH → resubmit | Видимость до approve; PENDING PATCH **409**; live не меняется; `isPublic` true после resubmit | **PASS** |
+| Organization | GET `/api/catalog/org/[id]` → PATCH org → POST submit → GET org → PATCH PENDING | **200** после submit; PATCH **409** | **PASS** |
+| Branch | GET `/api/catalog/branch/[id]` → PATCH → POST submit → GET branch → PATCH PENDING | **200** после submit; PATCH **409** | **PASS** |
 
-## Скриншоты
+`current_database()` при прогоне: `remcard_prof_test` (см. также `catalog-publication-integration.log`).
 
-Не снимались (browser smoke не выполнен).
+## Интеграционные тесты (Vitest + PG)
 
-## Остатки исходного объёма
+```bash
+export $(grep -v '^#' .env.local | xargs)
+pnpm exec vitest run src/lib/__tests__/catalogPublicationRoutes.integration.test.ts
+```
 
-- Явный UI «опубликовано vs черновик» для org/branch в PROF (backend staging есть).
-- SOLO `PartnerEmployee` карточка в UI (API `/api/pro/employees/[id]` есть; ветка BRANCH закрыта).
-- Полный PG прогон User+Org+Branch на **выделенной** `remcard_prof_test` после чистого migrate baseline.
+7/7 **PASS** (route handlers + PostgreSQL).
+
+## Unit / build
+
+```bash
+pnpm exec vitest run --exclude '**/*.integration.test.ts'   # navigator
+npm run test                                                 # platform
+```
+
+## БД / миграции
+
+- Для пустой изолированной БД: `prisma db push` (исправлены `@db.Uuid` на `BranchService.serviceId`, `Review.serviceId`).
+- Не использовать `migrate resolve` / baseline на неизвестном production `DATABASE_URL`.
+- Computer-воспроизведение на `f4caf30` использовало SQL `20261008193000_catalog_publication_draft` + generate — это **не** эквивалент полной цепочки migrate deploy.
+
+## UI (platform)
+
+- Org/branch: подписи «виден / не опубликован / черновик» в филиалах и карточке филиала.
+- SOLO: `ProfileSoloPartnerEmployeeCard` + GET/PATCH `/api/pro/employees`.
+
+## Browser 1440/390
+
+**NOT VERIFIED** в этой сессии (HTTP + PG закрыты).
+
+## HEAD (после push)
+
+| Репозиторий | SHA |
+|-------------|-----|
+| remcard-navigator | `3a7e48d` |
+| remcard-partner-platform | `f8aa6fd` (docs в этом коммите; повторный push с SHA — см. ниже) |
