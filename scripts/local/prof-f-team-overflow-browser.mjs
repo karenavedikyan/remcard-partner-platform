@@ -100,12 +100,23 @@ async function measure(page) {
       const r = b.getBoundingClientRect();
       return { text: b.textContent?.trim().slice(0, 24), right: r.right, visible: r.width > 0 && r.height > 0 };
     });
+    const selects = [...document.querySelectorAll(".teamCheckRow select")].map((el) => {
+      const r = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return {
+        id: el.id || null,
+        height: Math.round(r.height * 10) / 10,
+        minHeight: style.minHeight,
+        flex: style.flex,
+      };
+    });
     return {
       clientWidth: doc.clientWidth,
       scrollWidth: doc.scrollWidth,
       innerWidth: window.innerWidth,
       horizontalOverflow: doc.scrollWidth > doc.clientWidth,
       transferOptions: optionCount,
+      selects,
       buttons,
     };
   });
@@ -131,7 +142,15 @@ async function run() {
   await browser.close();
   console.log(JSON.stringify({ results }, null, 2));
 
-  const failed = results.filter((r) => r.horizontalOverflow || r.transferOptions < 3);
+  const MAX_MOBILE_SELECT_HEIGHT = 72;
+
+  const failed = results.filter((r) => {
+    if (r.horizontalOverflow || r.transferOptions < 3) return true;
+    if (r.viewport === "mobile_390") {
+      return (r.selects ?? []).some((s) => s.height > MAX_MOBILE_SELECT_HEIGHT);
+    }
+    return false;
+  });
   if (failed.length) process.exit(1);
 }
 
