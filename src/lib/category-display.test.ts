@@ -36,6 +36,21 @@ describe("category display resolver", () => {
 
   it("preserves substantive saved Russian labels", () => {
     assert.equal(displayCategoryLabel("doors", "Двери и комплектующие"), "Двери и комплектующие");
+    assert.equal(displayCategoryLabel("doors", "Двери"), "Двери");
+  });
+
+  it("displayCategoryLabelFromStored keeps normal Russian names", () => {
+    assert.equal(displayCategoryLabelFromStored("Двери"), "Двери");
+    assert.equal(displayCategoryLabelFromStored("Напольные покрытия"), "Напольные покрытия");
+    assert.equal(displayCategoryLabelFromStored("Общее сотрудничество"), "Общее сотрудничество");
+  });
+
+  it("displayCategoryLabelFromStored translates raw English codes", () => {
+    assert.equal(displayCategoryLabelFromStored("flooring"), "Напольные покрытия");
+  });
+
+  it("uses canonical from category id when stored English label mismatches", () => {
+    assert.equal(displayCategoryLabel("flooring", "handles"), "Напольные покрытия");
   });
 
   it("does not expose unknown tech codes", () => {

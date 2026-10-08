@@ -51,6 +51,10 @@ export function canonicalCategoryLabel(category: string): string {
  * User-facing label: prefer canonical Russian for known ids and raw API/snapshot codes;
  * keep substantive saved Russian labels when they are not bare English keys.
  */
+function isKnownCategoryId(category: string): boolean {
+  return KNOWN_CATEGORY_KEYS.has(resolveCategoryKey(category));
+}
+
 export function displayCategoryLabel(
   category: string,
   storedLabel?: string | null,
@@ -61,13 +65,16 @@ export function displayCategoryLabel(
   if (!stored) {
     return canonical;
   }
-  if (stored === category || stored === categoryKey || isEnglishCategoryCode(stored)) {
-    return canonicalCategoryLabel(resolveCategoryKey(stored));
+  if (hasCyrillic(stored)) {
+    return stored;
   }
-  if (!hasCyrillic(stored)) {
+  if (isKnownCategoryId(categoryKey)) {
     return canonical;
   }
-  return stored;
+  if (isEnglishCategoryCode(stored)) {
+    return canonicalCategoryLabel(resolveCategoryKey(stored));
+  }
+  return canonical;
 }
 
 /** When only a stored label is available (history rows), resolve display safely. */
