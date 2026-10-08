@@ -10,7 +10,7 @@
 | Репозиторий | HEAD feature (после fix-pass) |
 |-------------|-------------------------------|
 | remcard-navigator | `2908914` |
-| remcard-partner-platform | `31f7187` |
+| remcard-partner-platform | `7b7502c` |
 
 Карта переиспользования: [PROF-F-REUSE-MAP.md](./PROF-F-REUSE-MAP.md).
 
