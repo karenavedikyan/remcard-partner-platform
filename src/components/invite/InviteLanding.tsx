@@ -112,6 +112,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const [submittingModeration, setSubmittingModeration] = useState(false);
   const [moderationSubmitError, setModerationSubmitError] = useState("");
   const [switchingAccount, setSwitchingAccount] = useState(false);
+  const [existingPartnershipId, setExistingPartnershipId] = useState<string | null>(null);
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
@@ -181,6 +182,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
     if (accepting || catalogBlocksAccept(authUser)) return;
     setAccepting(true);
     setAcceptError("");
+    setExistingPartnershipId(null);
     setDeclinedLocally(false);
     try {
       const result = await remcardFetch<{ ok: boolean; redirect?: string; code?: string }>(
@@ -198,6 +200,10 @@ export function InviteLanding({ token }: InviteLandingProps) {
         setReadiness(null);
       } else if (caught instanceof RemcardApiError) {
         setAcceptError(caught.message);
+        const body = caught.body as { code?: string; partnershipId?: string } | undefined;
+        if (body?.code === "PARTNERSHIP_ALREADY_ACTIVE" && body.partnershipId) {
+          setExistingPartnershipId(body.partnershipId);
+        }
         if (caught.body?.code === "CATALOG_PENDING") {
           void refreshSession();
         }
@@ -520,6 +526,13 @@ export function InviteLanding({ token }: InviteLandingProps) {
                   {/войдите|сессия/i.test(acceptError) ? (
                     <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
                   ) : null}
+                </p>
+              ) : null}
+              {existingPartnershipId ? (
+                <p className={styles.lead}>
+                  <Link href={`/partners?terms=${encodeURIComponent(existingPartnershipId)}`}>
+                    Открыть действующее партнёрство
+                  </Link>
                 </p>
               ) : null}
               <div className={styles.actions}>

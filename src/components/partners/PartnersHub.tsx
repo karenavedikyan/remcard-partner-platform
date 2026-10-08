@@ -269,6 +269,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                     <p className={styles.note}>Комментарий: {partnership.note}</p>
                   ) : null}
 
+                  <p className={styles.termsCaption}>Действующие условия</p>
                   <table className={styles.termsTable}>
                     <thead>
                       <tr>

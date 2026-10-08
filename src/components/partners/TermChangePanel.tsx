@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { categoryLabel } from "@/lib/partnership-labels";
+import { describePendingTermChange } from "@/lib/term-change-labels";
 import type { Partnership, PartnershipTerm, TermChangeRequest } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
@@ -118,7 +119,7 @@ export function TermChangePanel({
 
   return (
     <div className={styles.panel}>
-      <h4>Изменение условий</h4>
+      <h4>Предложенные изменения условий</h4>
 
       {loadState === "loading" ? <p className={styles.meta}>Загрузка запросов…</p> : null}
       {loadState === "error" ? (
@@ -136,18 +137,28 @@ export function TermChangePanel({
 
       {loadState === "loaded" && requests && requests.length > 0 ? (
         <div className={styles.requests}>
-          {requests.map((request) => (
+          {requests.map((request) => {
+            const pendingCopy =
+              request.status === "PENDING"
+                ? describePendingTermChange(request, partnership, meId)
+                : null;
+            return (
             <div key={request.id} className={styles.requestRow}>
-              <p>
-                Статус:{" "}
-                {request.status === "PENDING"
-                  ? "На согласовании"
-                  : request.status === "APPROVED"
+              {pendingCopy ? (
+                <>
+                  <p><strong>{pendingCopy.heading}</strong></p>
+                  <p className={styles.meta}>{pendingCopy.hint}</p>
+                </>
+              ) : (
+                <p>
+                  Статус:{" "}
+                  {request.status === "APPROVED"
                     ? "Принято"
                     : request.status === "REJECTED"
                       ? "Отклонено"
                       : request.status}
-              </p>
+                </p>
+              )}
               <ul>
                 {(Array.isArray(request.changes) ? request.changes : []).map((change) => {
                   const category = String((change as { category?: unknown }).category ?? "");
@@ -162,7 +173,7 @@ export function TermChangePanel({
                   );
                 })}
               </ul>
-              {request.status === "PENDING" && request.requestedBy !== meId ? (
+              {request.status === "PENDING" && pendingCopy?.canRespond ? (
                 <div className={styles.actions}>
                   <Button
                     disabled={respondingId === request.id}
@@ -179,17 +190,16 @@ export function TermChangePanel({
                   </Button>
                 </div>
               ) : null}
-              {request.status === "PENDING" && request.requestedBy === meId ? (
-                <p className={styles.meta}>Ожидаем ответа партнёра</p>
-              ) : null}
             </div>
-          ))}
+          );
+          })}
         </div>
       ) : null}
 
       {partnership.status === "ACTIVE" ? (
         <div className={styles.proposal}>
-          <p className={styles.meta}>Предложить изменение процентов по активным категориям:</p>
+          <h5 className={styles.subheading}>Предложить новое изменение</h5>
+          <p className={styles.meta}>Укажите новые проценты по действующим категориям:</p>
           {terms.map((term) => (
             <TextField
               key={term.id}

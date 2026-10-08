@@ -6,6 +6,12 @@
   gap: var(--space-3);
 }
 
+.subheading {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
 .meta {
   font-size: var(--text-sm);
   color: var(--muted);

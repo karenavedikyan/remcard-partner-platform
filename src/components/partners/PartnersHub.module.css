@@ -21,6 +21,13 @@
   font-size: var(--text-sm);
 }
 
+.termsCaption {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .termsTable {
   width: 100%;
   border-collapse: collapse;
