@@ -504,6 +504,12 @@ export function ProfileEditor({
               {CATALOG_STATUS_LABELS[profile.organization.catalogStatus] ??
                 profile.organization.catalogStatus}
             </p>
+            <p className={styles.hint}>
+              {profile.organization.catalogPublished
+                ? "Организация видна в каталоге (опубликованная версия)."
+                : "Организация не опубликована для посетителей."}
+              {profile.organization.catalogDraft ? " Есть черновик правок." : ""}
+            </p>
             <p>Филиалов: {profile.organization.branchCount ?? 0}</p>
           </Panel>
         ) : null}

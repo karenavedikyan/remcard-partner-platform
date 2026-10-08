@@ -15,6 +15,8 @@ type BranchRow = {
   city: string;
   address: string;
   catalogStatus: string;
+  catalogPublished?: boolean;
+  catalogDraft?: unknown;
   isActive?: boolean;
 };
 
@@ -134,6 +136,8 @@ export function ProfileBranchesSection({
               </p>
               <p className={styles.hint}>
                 Каталог: {CATALOG_STATUS_LABELS[b.catalogStatus] ?? b.catalogStatus}
+                {b.catalogPublished ? " · виден посетителям" : " · не опубликован"}
+                {b.catalogDraft ? " · черновик правок" : ""}
                 {b.isActive === false ? " · неактивен" : ""}
               </p>
               <Button type="button" variant="secondary" onClick={() => setSelectedId(b.id)}>

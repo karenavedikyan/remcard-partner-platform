@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextField } from "@/components/ui/FormField";
 import { ProfileTeamEmployeeCard } from "./ProfileTeamEmployeeCard";
+import {
+  ProfileSoloPartnerEmployeeCard,
+  type SoloPartnerEmployeeRow,
+} from "./ProfileSoloPartnerEmployeeCard";
 import styles from "./ProfileEditor.module.css";
 
 const ROLE_OPTIONS = [
@@ -44,6 +48,7 @@ export function ProfileTeamSection() {
   const [message, setMessage] = useState("");
   const [lastInviteUrl, setLastInviteUrl] = useState("");
   const [invites, setInvites] = useState<StaffInviteRow[]>([]);
+  const [soloEmployees, setSoloEmployees] = useState<SoloPartnerEmployeeRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,6 +74,14 @@ export function ProfileTeamSection() {
             branchName: row.branchName ?? null,
           })),
         );
+      }
+      if (data.myRole === "ORG_OWNER" && data.branches.length === 0) {
+        const solo = await remcardFetch<{ employees: SoloPartnerEmployeeRow[] }>(
+          "/api/pro/employees",
+        );
+        setSoloEmployees(solo.employees ?? []);
+      } else {
+        setSoloEmployees([]);
       }
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 403) {
@@ -192,9 +205,20 @@ export function ProfileTeamSection() {
           ))}
         </ul>
       ) : overview && overview.myRole === "ORG_OWNER" ? (
-        <p className={styles.hint}>
-          Нет филиалов — можно пригласить сотрудника на SOLO_PARTNER или добавить филиал.
-        </p>
+        <>
+          <p className={styles.hint}>
+            Нет филиалов — можно пригласить сотрудника на SOLO_PARTNER или добавить филиал.
+          </p>
+          {soloEmployees.length > 0 ? (
+            <ul className={styles.notesList}>
+              {soloEmployees.map((emp) => (
+                <ProfileSoloPartnerEmployeeCard key={emp.id} employee={emp} onChanged={load} />
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.hint}>Пока нет сотрудников SOLO_PARTNER.</p>
+          )}
+        </>
       ) : null}
 
       {pending.length > 0 ? (

@@ -14,8 +14,11 @@ type BranchDetail = {
   city: string;
   address: string;
   catalogStatus: string;
+  catalogPublished?: boolean;
+  catalogDraft?: Record<string, unknown> | null;
   isActive: boolean;
   description: string | null;
+  photoUrl?: string | null;
 };
 
 type ProfileBranchDetailProps = {
@@ -127,7 +130,22 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
           <p className={styles.hint}>
             Работа: {branch.isActive ? "активен" : "отключён"} · Каталог:{" "}
             {CATALOG_STATUS_LABELS[branch.catalogStatus] ?? branch.catalogStatus}
+            {branch.catalogPublished ? " · виден посетителям" : " · не опубликован"}
+            {branch.catalogDraft && Object.keys(branch.catalogDraft).length > 0
+              ? " · черновик правок"
+              : ""}
           </p>
+          {branch.catalogPublished ? (
+            <div className={styles.bannerWarn}>
+              <strong>Опубликовано в каталоге</strong>
+              <p>{branch.description || "— без описания —"}</p>
+              {branch.catalogDraft && Object.keys(branch.catalogDraft).length > 0 ? (
+                <p className={styles.hint}>
+                  Черновик правок сохранён отдельно и не подменяет опубликованный текст до проверки.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <form onSubmit={(e) => void save(e)} className={styles.fields}>
             <TextField label="Город" value={city} onChange={(e) => setCity(e.target.value)} required />
             <TextField label="Адрес" value={address} onChange={(e) => setAddress(e.target.value)} required />

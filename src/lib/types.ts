@@ -64,6 +64,8 @@ export type ProProfileResponse = {
     id: string;
     name: string;
     catalogStatus: string;
+    catalogPublished?: boolean;
+    catalogDraft?: unknown;
     partnerType: string | null;
     branchCount: number;
   } | null;
