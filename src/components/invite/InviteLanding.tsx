@@ -75,20 +75,15 @@ const STATUS_COPY: Record<string, { title: string; lead: string }> = {
   },
 };
 
-function catalogBlocksAccept(user: AuthUser | null): boolean {
-  return Boolean(user?.role === "PRO" && user.catalogStatus && user.catalogStatus !== "APPROVED");
-}
-
-function catalogIsDraft(user: AuthUser | null): boolean {
-  return Boolean(user?.role === "PRO" && user.catalogStatus === "DRAFT");
-}
-
-function catalogNeedsRevision(user: AuthUser | null): boolean {
-  return Boolean(user?.role === "PRO" && user.catalogStatus === "NEEDS_REVISION");
-}
-
-function catalogIsPendingReview(user: AuthUser | null): boolean {
-  return Boolean(user?.role === "PRO" && user.catalogStatus === "PENDING");
+function profileBlocksPrivateAccept(
+  user: AuthUser | null,
+  readiness: CabinetReadiness | null,
+): boolean {
+  if (!user || user.role !== "PRO") return true;
+  if (!readiness?.canAccessCabinet) return true;
+  if (readiness.needsProfileOnboarding) return true;
+  if (readiness.needsProfileCompletion) return true;
+  return false;
 }
 
 function continuationLabel(readiness: CabinetReadiness): string {
@@ -117,8 +112,6 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState("");
   const [declinedLocally, setDeclinedLocally] = useState(false);
-  const [submittingModeration, setSubmittingModeration] = useState(false);
-  const [moderationSubmitError, setModerationSubmitError] = useState("");
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [existingPartnershipId, setExistingPartnershipId] = useState<string | null>(null);
 
@@ -165,29 +158,8 @@ export function InviteLanding({ token }: InviteLandingProps) {
     void refreshSession();
   }, [refreshSession]);
 
-  async function submitProfileForModeration() {
-    if (submittingModeration || !catalogIsDraft(authUser)) return;
-    setSubmittingModeration(true);
-    setModerationSubmitError("");
-    try {
-      await remcardFetch("/api/pro/profile", {
-        method: "PATCH",
-        body: { action: "submitForModeration" },
-      });
-      await refreshSession();
-    } catch (caught) {
-      setModerationSubmitError(
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось отправить профиль на проверку",
-      );
-    } finally {
-      setSubmittingModeration(false);
-    }
-  }
-
   async function acceptInvite() {
-    if (accepting || catalogBlocksAccept(authUser)) return;
+    if (accepting || profileBlocksPrivateAccept(authUser, readiness)) return;
     setAccepting(true);
     setAcceptError("");
     setExistingPartnershipId(null);
@@ -214,9 +186,6 @@ export function InviteLanding({ token }: InviteLandingProps) {
           (body.code === "PARTNERSHIP_ALREADY_ACTIVE" || body.code === "PARTNERSHIP_EXISTS")
         ) {
           setExistingPartnershipId(body.partnershipId);
-        }
-        if (caught.body?.code === "CATALOG_PENDING") {
-          void refreshSession();
         }
       } else {
         setAcceptError("Не удалось принять");
@@ -260,11 +229,10 @@ export function InviteLanding({ token }: InviteLandingProps) {
 
   const loginHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
   const hasSession = Boolean(authUser);
-  const profileBlocksAccept = catalogBlocksAccept(authUser);
-  const profileDraft = catalogIsDraft(authUser);
+  const profileIncomplete = profileBlocksPrivateAccept(authUser, readiness);
   const needsContinuation = Boolean(hasSession && readiness && !isAuthFlowComplete(readiness));
   const canAccept =
-    hasSession && readiness && isAuthFlowComplete(readiness) && !profileBlocksAccept;
+    hasSession && readiness && isAuthFlowComplete(readiness) && !profileIncomplete;
 
   if (loadState === "loading" || !sessionChecked) {
     return (
@@ -434,10 +402,10 @@ export function InviteLanding({ token }: InviteLandingProps) {
           <div className={styles.notice}>
             <p><strong>Как начать</strong></p>
             <ol className={styles.steps}>
-              <li>Зарегистрируйтесь или войдите и заполните профиль</li>
-              <li>Дождитесь проверки профиля, если она потребуется</li>
-              <li>Примите или отклоните условия на этой странице</li>
-              <li>Работайте с рекомендациями и покупками в кабинете</li>
+              <li>Зарегистрируйтесь или войдите и заполните обязательные данные профиля</li>
+              <li>Примите обязательные соглашения, если система попросит</li>
+              <li>Явно примите или отклоните условия на этой странице</li>
+              <li>Работайте с рекомендациями и покупками в кабинете — публикация в каталоге не обязательна</li>
             </ol>
           </div>
 
@@ -463,65 +431,25 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 </Button>
               </div>
             </>
-          ) : hasSession && profileBlocksAccept ? (
+          ) : hasSession && profileIncomplete ? (
             <>
               <div className={styles.notice}>
-                {catalogNeedsRevision(authUser) ? (
-                  <>
-                    <p><strong>Нужно исправить профиль</strong></p>
-                    <p>
-                      Модератор оставил замечания. Исправьте профиль и отправьте его повторно — после
-                      одобрения вернитесь сюда и явно примите условия приглашения.
-                    </p>
-                  </>
-                ) : profileDraft ? (
-                  <>
-                    <p><strong>Отправьте профиль на проверку</strong></p>
-                    <p>
-                      Регистрация завершена. Отправьте профиль на модерацию — после одобрения вы
-                      сможете принять приглашение. Ссылка сохранится: вернитесь сюда позже или
-                      обновите страницу.
-                    </p>
-                  </>
-                ) : catalogIsPendingReview(authUser) ? (
-                  <>
-                    <p><strong>Профиль на проверке</strong></p>
-                    <p>
-                      Модератор проверяет профиль. Это не ожидание приглашения — после одобрения вы
-                      сможете принять условия на этой странице.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p><strong>Профиль не готов к принятию</strong></p>
-                    <p>
-                      Завершите проверку профиля в кабинете, затем вернитесь к приглашению.
-                    </p>
-                  </>
-                )}
-              </div>
-              {moderationSubmitError ? (
-                <p className={styles.error} role="alert">
-                  {moderationSubmitError}
+                <p><strong>Дозаполните профиль для сотрудничества</strong></p>
+                <p>
+                  Укажите имя представителя, город и тип партнёра в кабинете. Публикация в каталоге
+                  RemCard для частного приглашения не нужна — после сохранения вернитесь сюда и
+                  явно примите условия.
                 </p>
-              ) : null}
+              </div>
               <div className={styles.actions}>
-                {profileDraft ? (
-                  <Button
-                    disabled={submittingModeration}
-                    onClick={() => void submitProfileForModeration()}
-                  >
-                    {submittingModeration ? "Отправляем…" : "Отправить на проверку"}
-                  </Button>
-                ) : catalogNeedsRevision(authUser) ? (
-                  <Link href={`/profile?returnTo=${encodeURIComponent(returnTo)}&section=moderation`}>
-                    <Button>Исправить профиль</Button>
-                  </Link>
-                ) : (
-                  <Button variant="secondary" disabled>
-                    {catalogIsPendingReview(authUser) ? "На проверке" : "Принять условия"}
-                  </Button>
-                )}
+                <Link
+                  href={`/profile?returnTo=${encodeURIComponent(returnTo)}&section=basics`}
+                >
+                  <Button>Заполнить профиль</Button>
+                </Link>
+                <Button variant="secondary" disabled>
+                  Принять условия
+                </Button>
                 <Button variant="secondary" onClick={() => void handleDecline()}>
                   Не принимать
                 </Button>

@@ -11,16 +11,20 @@ import {
 import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
 import { storeCategoryChips } from "@/lib/store-categories";
 import {
-  canSubmitProfileForModeration,
   effectiveCatalogStatus,
-  profileFieldsEditable,
+  catalogPublicationEditable,
+  profileBasicsEditable,
   showRevisionBanner,
 } from "@/lib/profile-catalog-state";
+import { type ProfileDraft } from "@/lib/profile-save";
 import {
-  persistProfileDraft,
-  submitProfileForModerationReview,
-  type ProfileDraft,
-} from "@/lib/profile-save";
+  persistWorkingProfileDraft,
+  validateWorkingProfileDraft,
+  workingProfileMissingFields,
+} from "@/lib/profile-working-save";
+import { ProfileBranchesSection } from "./ProfileBranchesSection";
+import { ProfileCatalogSection } from "./ProfileCatalogSection";
+import { ProfileTeamSection } from "./ProfileTeamSection";
 import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
@@ -45,10 +49,26 @@ type ModerationNote = {
   resolvedAt: string | null;
 };
 
+export type ProfileSectionId =
+  | "basics"
+  | "branches"
+  | "team"
+  | "catalog"
+  | "notifications";
+
+const PROFILE_SECTIONS: { id: ProfileSectionId; label: string }[] = [
+  { id: "basics", label: "Основные данные" },
+  { id: "branches", label: "Филиалы" },
+  { id: "team", label: "Сотрудники" },
+  { id: "catalog", label: "Публикация" },
+  { id: "notifications", label: "Уведомления" },
+];
+
 type ProfileEditorProps = {
   initial: ProProfileResponse;
   moderationSection?: boolean;
   returnTo?: string | null;
+  section?: ProfileSectionId;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -57,7 +77,12 @@ type ExtendedUser = ProProfileResponse["user"] & {
   notificationSettings?: unknown;
 };
 
-export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileEditorProps) {
+export function ProfileEditor({
+  initial,
+  moderationSection,
+  returnTo,
+  section: sectionProp = "basics",
+}: ProfileEditorProps) {
   const router = useRouter();
   const [profile, setProfile] = useState(initial);
   const user = profile.user as ExtendedUser;
@@ -76,7 +101,9 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
   const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
 
   const [saving, setSaving] = useState(false);
-  const [submittingModeration, setSubmittingModeration] = useState(false);
+  const [activeSection, setActiveSection] = useState<ProfileSectionId>(
+    moderationSection ? "catalog" : sectionProp,
+  );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [notes, setNotes] = useState<ModerationNote[]>([]);
@@ -84,8 +111,8 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
   const [notesError, setNotesError] = useState("");
 
   const catalogStatus = effectiveCatalogStatus(profile);
-  const fieldsEditable = profileFieldsEditable(profile);
-  const canSubmitModeration = canSubmitProfileForModeration(profile);
+  const basicsEditable = profileBasicsEditable(profile);
+  const catalogEditable = catalogPublicationEditable(profile);
   const revisionBanner = showRevisionBanner(profile);
 
   const needsBranchFields =
@@ -176,15 +203,15 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
-    if (!fieldsEditable) return;
+    if (!basicsEditable) return;
     setSaving(true);
     setError("");
     setSuccess("");
 
     try {
-      const next = await persistProfileDraft(profile, buildDraft());
+      const next = await persistWorkingProfileDraft(profile, buildDraft());
       applyProfile(next);
-      setSuccess("Изменения сохранены");
+      setSuccess("Данные сохранены");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить профиль");
@@ -193,35 +220,12 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
     }
   }
 
-  async function submitForModeration() {
-    if (!canSubmitModeration) return;
-    setSubmittingModeration(true);
-    setError("");
-    setSuccess("");
-    try {
-      const next = await submitProfileForModerationReview(profile, buildDraft());
-      applyProfile(next);
-      setSuccess(
-        revisionBanner
-          ? "Профиль сохранён и отправлен на повторную проверку"
-          : "Профиль отправлен на проверку",
-      );
-      void loadNotes();
-      router.refresh();
-    } catch (caught) {
-      setError(
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось отправить профиль на проверку",
-      );
-    } finally {
-      setSubmittingModeration(false);
-    }
-  }
-
   const statusLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
   const showBack =
     returnTo && returnTo !== "/profile" && returnTo.startsWith("/") && !returnTo.startsWith("//");
+
+  const workingMissing = workingProfileMissingFields(buildDraft());
+  const workingComplete = validateWorkingProfileDraft(buildDraft()) === null;
 
   return (
     <div className={styles.grid} id={moderationSection ? "moderation-remarks" : undefined}>
@@ -231,32 +235,45 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
         </p>
       ) : null}
 
+      <nav className={styles.chipGrid} aria-label="Разделы профиля">
+        {PROFILE_SECTIONS.map((item) => (
+          <Button
+            key={item.id}
+            type="button"
+            variant={activeSection === item.id ? "primary" : "secondary"}
+            onClick={() => setActiveSection(item.id)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </nav>
+
       <form className={styles.main} onSubmit={saveProfile}>
-        {revisionBanner ? (
+        {revisionBanner && activeSection === "catalog" ? (
           <div className={styles.bannerWarn} role="status">
-            <strong>Нужно исправить профиль</strong>
-            <p>
-              Внесите правки по замечаниям модератора, нажмите «Сохранить изменения», затем
-              «Сохранить и отправить повторно».
-            </p>
+            <strong>Нужно исправить публикацию в каталоге</strong>
+            <p>Внесите правки в разделе «Публикация», сохраните черновик и отправьте повторно.</p>
             {profile.user.rejectionReason ? <p>{profile.user.rejectionReason}</p> : null}
-            {profile.organization?.catalogStatus === "NEEDS_REVISION" ? (
-              <p>Организация также требует доработки по статусу витрины.</p>
-            ) : null}
           </div>
         ) : null}
 
-        <Panel title="Основное" hint="Сохраните изменения отдельно от отправки на проверку.">
+        {activeSection === "basics" ? (
+        <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
-            <StatusBadge label={statusLabel} tone={catalogStatusTone(catalogStatus)} />
-            {!fieldsEditable ? (
-              <p className={styles.hint}>
-                Профиль на проверке — сохранение и редактирование недоступны до решения модератора.
-              </p>
+            <StatusBadge
+              label={workingComplete ? "Заполнено" : "Нужно дозаполнить"}
+              tone={workingComplete ? "active" : "pending"}
+            />
+            {!workingComplete ? (
+              <ul className={styles.notesList}>
+                {workingMissing.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
             ) : null}
           </div>
 
-          <fieldset className={styles.fieldset} disabled={!fieldsEditable}>
+          <fieldset className={styles.fieldset} disabled={!basicsEditable}>
             <div className={styles.fields}>
               <TextField
                 label="Имя представителя"
@@ -283,59 +300,15 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
                 ))}
               </SelectField>
 
-              {partnerType === "MASTER" ? (
-                <fieldset className={styles.fieldset}>
-                  <legend>Специализации</legend>
-                  <div className={styles.chipGrid}>
-                    {ONBOARDING_STAGES.map((stage) => (
-                      <label key={stage.id} className={styles.checkRow}>
-                        <input
-                          type="checkbox"
-                          checked={specializations.includes(stage.id)}
-                          onChange={() => toggleSpec(stage.id)}
-                        />
-                        <span>
-                          {stage.icon} {stage.title}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              ) : (
-                <>
-                  <TextField
-                    label="Название организации"
-                    value={organizationName}
-                    onChange={(event) => setOrganizationName(event.target.value)}
-                    hint="Коммерческое название магазина или компании."
-                    required
-                  />
-                  {needsBranchFields ? (
-                    <TextField
-                      label="Адрес первого филиала"
-                      value={branchAddress}
-                      onChange={(event) => setBranchAddress(event.target.value)}
-                      required
-                      hint="Реальный адрес точки — нужен для модерации каталога филиалов."
-                    />
-                  ) : null}
-                  <fieldset className={styles.fieldset}>
-                    <legend>Категории товаров</legend>
-                    <div className={styles.chipGrid}>
-                      {STORE_CATEGORY_CHIPS.map((cat) => (
-                        <label key={cat.value} className={styles.checkRow}>
-                          <input
-                            type="checkbox"
-                            checked={storeCategories.includes(cat.value)}
-                            onChange={() => toggleCategory(cat.value)}
-                          />
-                          <span>{cat.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                </>
-              )}
+              {partnerType === "STORE" || partnerType === "COMPANY" ? (
+                <TextField
+                  label="Название организации"
+                  value={organizationName}
+                  onChange={(event) => setOrganizationName(event.target.value)}
+                  hint="Коммерческое название — отдельно от имени представителя."
+                  required
+                />
+              ) : null}
 
               <TextAreaField
                 label="Описание"
@@ -345,9 +318,11 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
             </div>
           </fieldset>
         </Panel>
+        ) : null}
 
-        <Panel title="Контакты для клиентов" hint="Эти данные могут быть видны в публичной карточке.">
-          <fieldset className={styles.fieldset} disabled={!fieldsEditable}>
+        {activeSection === "basics" ? (
+        <Panel title="Контакты для клиентов" hint="Публичные контакты карточки настраиваются в разделе «Публикация».">
+          <fieldset className={styles.fieldset} disabled={!basicsEditable}>
             <div className={styles.fields}>
               <TextField label="Сайт" value={website} onChange={(e) => setWebsite(e.target.value)} />
               <TextField
@@ -369,8 +344,92 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
             </div>
           </fieldset>
         </Panel>
+        ) : null}
 
-        {(revisionBanner || moderationSection) && (
+        {activeSection === "catalog" ? (
+          <>
+            {partnerType === "MASTER" ? (
+              <Panel title="Специализации для каталога">
+                <fieldset className={styles.fieldset} disabled={!catalogEditable}>
+                  <div className={styles.chipGrid}>
+                    {ONBOARDING_STAGES.map((stage) => (
+                      <label key={stage.id} className={styles.checkRow}>
+                        <input
+                          type="checkbox"
+                          checked={specializations.includes(stage.id)}
+                          onChange={() => toggleSpec(stage.id)}
+                        />
+                        <span>
+                          {stage.icon} {stage.title}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </Panel>
+            ) : (
+              <Panel title="Категории и филиал для публикации">
+                <fieldset className={styles.fieldset} disabled={!catalogEditable}>
+                  {needsBranchFields ? (
+                    <TextField
+                      label="Адрес первого филиала (для модерации)"
+                      value={branchAddress}
+                      onChange={(event) => setBranchAddress(event.target.value)}
+                      hint="Нужен для отправки организации в каталог."
+                    />
+                  ) : null}
+                  <div className={styles.chipGrid}>
+                    {STORE_CATEGORY_CHIPS.map((cat) => (
+                      <label key={cat.value} className={styles.checkRow}>
+                        <input
+                          type="checkbox"
+                          checked={storeCategories.includes(cat.value)}
+                          onChange={() => toggleCategory(cat.value)}
+                        />
+                        <span>{cat.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </Panel>
+            )}
+            <ProfileCatalogSection
+              profile={profile}
+              draft={buildDraft()}
+              onProfileUpdated={applyProfile}
+            />
+          </>
+        ) : null}
+
+        {activeSection === "branches" ? (
+          <ProfileBranchesSection
+            defaultCity={city}
+            hasOrganization={Boolean(profile.organization)}
+            partnerType={partnerType}
+          />
+        ) : null}
+
+        {activeSection === "team" ? <ProfileTeamSection /> : null}
+
+        {activeSection === "notifications" ? (
+          <NotificationSettingsPanel
+            telegramLinked={Boolean(user.telegramLinked)}
+            maxLinked={Boolean(user.maxLinked)}
+            initialSettings={user.notificationSettings ?? null}
+            onLinkedChange={(state) => {
+              setProfile((prev) => ({
+                ...prev,
+                user: {
+                  ...prev.user,
+                  telegramLinked: state.telegramLinked,
+                  maxLinked: state.maxLinked,
+                },
+              }));
+            }}
+          />
+        ) : null}
+
+        {(revisionBanner || moderationSection) && activeSection === "catalog" && (
           <Panel title="Замечания модератора" hint="Только ваши комментарии — без внутренних записей штаба.">
             {notesLoading ? (
               <p className={styles.hint}>Загружаем…</p>
@@ -414,22 +473,6 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
           </Panel>
         )}
 
-        <NotificationSettingsPanel
-          telegramLinked={Boolean(user.telegramLinked)}
-          maxLinked={Boolean(user.maxLinked)}
-          initialSettings={user.notificationSettings ?? null}
-          onLinkedChange={(state) => {
-            setProfile((prev) => ({
-              ...prev,
-              user: {
-                ...prev.user,
-                telegramLinked: state.telegramLinked,
-                maxLinked: state.maxLinked,
-              },
-            }));
-          }}
-        />
-
         {error ? (
           <p className={styles.error} role="alert">
             {error}
@@ -441,33 +484,22 @@ export function ProfileEditor({ initial, moderationSection, returnTo }: ProfileE
           </p>
         ) : null}
 
-        <div className={styles.actions}>
-          <Button type="submit" disabled={saving || !fieldsEditable}>
-            {saving ? "Сохранение…" : "Сохранить изменения"}
-          </Button>
-          {canSubmitModeration ? (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={submittingModeration || saving || !fieldsEditable}
-              onClick={() => void submitForModeration()}
-            >
-              {submittingModeration
-                ? "Отправка…"
-                : revisionBanner
-                  ? "Сохранить и отправить повторно"
-                  : "Отправить на проверку"}
+        {activeSection === "basics" ? (
+          <div className={styles.actions}>
+            <Button type="submit" disabled={saving || !basicsEditable}>
+              {saving ? "Сохранение…" : "Сохранить данные"}
             </Button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </form>
 
       <aside className={styles.aside}>
         <Panel title="Подсказка" compact>
           <p>
-            Заполните обязательные поля и сохраните. Отправка на проверку доступна из черновика или
-            после замечаний модератора.
+            Рабочие данные сохраняются без модерации. Публикация в каталоге — добровольно, в разделе
+            «Публикация».
           </p>
+          <p className={styles.hint}>Каталог: {statusLabel}</p>
         </Panel>
         {profile.organization ? (
           <Panel title="Организация" compact>

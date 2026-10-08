@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   canSubmitProfileForModeration,
+  catalogPublicationEditable,
   effectiveCatalogStatus,
+  profileBasicsEditable,
   profileFieldsEditable,
 } from "./profile-catalog-state.ts";
 import type { ProProfileResponse } from "./types.ts";
@@ -55,6 +57,8 @@ describe("profile-catalog-state", () => {
       },
     });
     assert.equal(effectiveCatalogStatus(p), "PENDING");
+    assert.equal(profileBasicsEditable(p), true);
+    assert.equal(catalogPublicationEditable(p), false);
     assert.equal(profileFieldsEditable(p), false);
     assert.equal(canSubmitProfileForModeration(p), false);
   });

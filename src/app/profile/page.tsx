@@ -12,11 +12,26 @@ export const dynamic = "force-dynamic";
 
 const RETURN_PATH = "/profile";
 
+const PROFILE_SECTIONS = new Set([
+  "basics",
+  "branches",
+  "team",
+  "catalog",
+  "notifications",
+]);
+
 export default async function ProfilePage(props: {
   searchParams?: Promise<{ section?: string; returnTo?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
+  const sectionRaw = searchParams?.section;
+  const section =
+    sectionRaw === "moderation"
+      ? "catalog"
+      : sectionRaw && PROFILE_SECTIONS.has(sectionRaw)
+        ? (sectionRaw as "basics" | "branches" | "team" | "catalog" | "notifications")
+        : undefined;
   const user = await requireProPageUser(safeReturnTo);
   if (!user) {
     return <SessionGate reason="session" returnTo={safeReturnTo} />;
@@ -41,11 +56,12 @@ export default async function ProfilePage(props: {
       <PageHeading
         eyebrow="Профиль партнёра"
         title="Профиль"
-        description="Контакты и описание для клиентов, статус публикации в каталоге RemCard."
+        description="Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard."
       />
       <ProfileEditor
         initial={profileResult.data}
         moderationSection={searchParams?.section === "moderation"}
+        section={section}
         returnTo={safeReturnTo}
       />
     </CabinetShell>

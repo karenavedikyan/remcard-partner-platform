@@ -18,9 +18,20 @@ export function canSubmitProfileForModeration(profile: ProProfileResponse): bool
   return status === "DRAFT" || status === "NEEDS_REVISION";
 }
 
-export function profileFieldsEditable(profile: ProProfileResponse): boolean {
+/** Working profile (PROF cabinet) — editable unless catalog publication is under review. */
+export function profileBasicsEditable(_profile: ProProfileResponse): boolean {
+  return true;
+}
+
+/** Public catalog draft — locked while moderation decision is pending. */
+export function catalogPublicationEditable(profile: ProProfileResponse): boolean {
   const status = effectiveCatalogStatus(profile);
   return status !== "PENDING";
+}
+
+/** @deprecated use profileBasicsEditable / catalogPublicationEditable */
+export function profileFieldsEditable(profile: ProProfileResponse): boolean {
+  return catalogPublicationEditable(profile);
 }
 
 export function showRevisionBanner(profile: ProProfileResponse): boolean {

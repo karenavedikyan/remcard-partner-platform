@@ -31,6 +31,23 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/notification-bind\/status$/ },
     { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/pro\/organization\/branches$/ },
     {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/organization\/branches\/c[a-z0-9]{20,}$/i,
+    },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/employees-overview$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/organization\/submit-for-moderation$/ },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/organization\/branches\/c[a-z0-9]{20,}\/submit-for-moderation$/i,
+    },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/invites$/ },
+    {
+      methods: new Set(["DELETE", "PATCH"]),
+      pattern: /^\/api\/pro\/invites\/c[a-z0-9]{20,}$/i,
+    },
+    { methods: new Set(["GET"]), pattern: /^\/api\/invite\/[\w-]+$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/invite\/accept$/ },
+    {
       methods: new Set(["GET"]),
       pattern: /^\/api\/partnership\/(list|search|incoming-count)$/,
     },
