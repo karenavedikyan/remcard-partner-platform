@@ -9,7 +9,8 @@ import {
   showRevisionBanner,
 } from "@/lib/profile-catalog-state";
 import {
-  persistProfileDraft,
+  persistCatalogDraftOnly,
+  refreshProfile,
   submitProfileForModerationReview,
   unpublishFromCatalog,
   type ProfileDraft,
@@ -59,7 +60,7 @@ export function ProfileCatalogSection({
     setError("");
     setSuccess("");
     try {
-      const next = await persistProfileDraft(profile, draft);
+      const next = await persistCatalogDraftOnly(profile, draft);
       onProfileUpdated(next);
       setSuccess("Черновик публикации сохранён (не отправлен на модерацию)");
       router.refresh();
@@ -91,8 +92,8 @@ export function ProfileCatalogSection({
     setError("");
     try {
       await unpublishFromCatalog();
-      const refreshed = await persistProfileDraft(profile, draft);
-      onProfileUpdated({ ...refreshed, user: { ...refreshed.user, isPublic: false } });
+      const refreshed = await refreshProfile();
+      onProfileUpdated(refreshed);
       setSuccess("Карточка снята с публикации. Кабинет и партнёрства продолжают работать.");
       router.refresh();
     } catch (caught) {
@@ -128,9 +129,8 @@ export function ProfileCatalogSection({
       ) : (
         <>
           <p className={styles.hint}>
-            Имя представителя попадает в каталог только если включено «показывать полное имя» в
-            карточке (showFullName) — иначе на remcard.ru используется коммерческое имя/название
-            организации.
+            Имя представителя в каталоге показывается только при включённой опции «показывать полное
+            имя» в карточке; иначе на remcard.ru используется коммерческое имя или название организации.
           </p>
           {published && isPubliclyVisible(profile) ? (
             <div className={styles.bannerWarn}>

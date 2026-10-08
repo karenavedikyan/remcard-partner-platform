@@ -15,7 +15,14 @@ export function effectiveCatalogStatus(profile: ProProfileResponse): string {
 
 export function canSubmitProfileForModeration(profile: ProProfileResponse): boolean {
   const status = effectiveCatalogStatus(profile);
-  return status === "DRAFT" || status === "NEEDS_REVISION";
+  if (status === "PENDING" || status === "REJECTED") return false;
+  if (status === "DRAFT" || status === "NEEDS_REVISION") return true;
+  if (status === "APPROVED") {
+    return Boolean(
+      profile.catalogPublication?.draftPending || profile.user.catalogDraftPending,
+    );
+  }
+  return false;
 }
 
 /** Working profile (PROF cabinet) — editable unless catalog publication is under review. */

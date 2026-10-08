@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextField } from "@/components/ui/FormField";
+import { ProfileTeamEmployeeCard } from "./ProfileTeamEmployeeCard";
 import styles from "./ProfileEditor.module.css";
 
 const ROLE_OPTIONS = [
@@ -124,14 +125,6 @@ export function ProfileTeamSection() {
     }
   }
 
-  async function suspendBranchEmployee(branchIdValue: string, empId: string) {
-    await remcardFetch(
-      `/api/pro/organization/branches/${encodeURIComponent(branchIdValue)}/employees/${encodeURIComponent(empId)}`,
-      { method: "DELETE" },
-    );
-    await load();
-  }
-
   const pending = overview ? collectPendingInvites(overview) : [];
   const canManage = overview ? canManageTeam(overview) : false;
 
@@ -180,19 +173,18 @@ export function ProfileTeamSection() {
               ) : (
                 <ul>
                   {branch.employees.map((emp) => (
-                    <li key={emp.id}>
-                      {emp.user.displayName ?? emp.fullName ?? emp.user.publicId} —{" "}
-                      {roleLabel(emp.role)}
-                      {canManage ? (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => void suspendBranchEmployee(branch.id, emp.id)}
-                        >
-                          Отозвать доступ
-                        </Button>
-                      ) : null}
-                    </li>
+                    <ProfileTeamEmployeeCard
+                      key={emp.id}
+                      branchId={branch.id}
+                      branchName={branch.name}
+                      employee={emp}
+                      allBranches={overview.branches}
+                      canManage={
+                        overview.viewer.canManageEmployeesByBranchId[branch.id] ?? canManage
+                      }
+                      isOwner={overview.viewer.isOrgOwner}
+                      onChanged={load}
+                    />
                   ))}
                 </ul>
               )}

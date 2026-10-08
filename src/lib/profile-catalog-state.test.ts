@@ -63,6 +63,14 @@ describe("profile-catalog-state", () => {
     assert.equal(canSubmitProfileForModeration(p), false);
   });
 
+  it("allows submit for APPROVED when catalog draft pending", () => {
+    const p = profile({
+      user: { ...profile({}).user, catalogStatus: "APPROVED", catalogDraftPending: true },
+      catalogPublication: { isLivePublic: true, draftPending: true, published: null },
+    });
+    assert.equal(canSubmitProfileForModeration(p), true);
+  });
+
   it("allows submit for solo user in NEEDS_REVISION", () => {
     const p = profile({
       user: { ...profile({}).user, catalogStatus: "NEEDS_REVISION" },

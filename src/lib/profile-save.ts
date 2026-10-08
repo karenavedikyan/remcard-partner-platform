@@ -138,6 +138,31 @@ async function syncStoreOrganization(
   return (await fetchOwnerOrganization()) ?? currentOrg;
 }
 
+/** Saves only public catalog fields (does not PATCH working city/type or auth display name). */
+export async function persistCatalogDraftOnly(
+  profile: ProProfileResponse,
+  draft: ProfileDraft,
+): Promise<ProProfileResponse> {
+  await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
+    method: "PATCH",
+    body: {
+      description: draft.description.trim() || null,
+      specializations: draft.partnerType === "MASTER" ? draft.specializations : undefined,
+      storeCategories:
+        draft.partnerType === "STORE" || draft.partnerType === "COMPANY"
+          ? draft.storeCategories
+          : undefined,
+      website: draft.website.trim() || null,
+      telegram: draft.telegram.trim() || null,
+      publicEmail: draft.publicEmail.trim() || null,
+      publicPhone: draft.publicPhone.trim() || null,
+    },
+  });
+
+  const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
+  return refreshed;
+}
+
 export async function persistProfileDraft(
   profile: ProProfileResponse,
   draft: ProfileDraft,
@@ -156,19 +181,11 @@ export async function persistProfileDraft(
     method: "PATCH",
     body: {
       city: draft.city.trim(),
-      description: draft.description.trim() || null,
       partnerType: draft.partnerType,
-      specializations: draft.partnerType === "MASTER" ? draft.specializations : undefined,
-      storeCategories:
-        draft.partnerType === "STORE" || draft.partnerType === "COMPANY"
-          ? draft.storeCategories
-          : undefined,
-      website: draft.website.trim() || null,
-      telegram: draft.telegram.trim() || null,
-      publicEmail: draft.publicEmail.trim() || null,
-      publicPhone: draft.publicPhone.trim() || null,
     },
   });
+
+  await persistCatalogDraftOnly(profile, draft);
 
   const organization = await syncStoreOrganization(profile, draft);
 
@@ -198,10 +215,14 @@ export async function submitProfileForModerationReview(
   profile: ProProfileResponse,
   draft: ProfileDraft,
 ): Promise<ProProfileResponse> {
-  await persistProfileDraft(profile, draft);
+  await persistCatalogDraftOnly(profile, draft);
   await remcardFetch("/api/pro/profile", {
     method: "PATCH",
     body: { action: "submitForModeration" },
   });
+  return remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
+}
+
+export async function refreshProfile(): Promise<ProProfileResponse> {
   return remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
 }
