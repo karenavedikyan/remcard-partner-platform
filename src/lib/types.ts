@@ -39,6 +39,9 @@ export type ProProfileUser = {
   publicEmail: string | null;
   publicPhone: string | null;
   showFullName: boolean;
+  telegramLinked?: boolean;
+  maxLinked?: boolean;
+  notificationSettings?: unknown;
 };
 
 export type ProProfileResponse = {

@@ -61,7 +61,13 @@ export default async function HomePage(
         title="Моя главная"
         description="Обзор партнёрств и быстрые переходы к основным разделам кабинета."
       />
-      <HomeDashboard user={user} partnerships={partnerships} incomingCount={incomingCount} />
+      <HomeDashboard
+        user={user}
+        partnerships={partnerships}
+        incomingCount={incomingCount}
+        needsProfileCompletion={readiness.needsProfileCompletion}
+        catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+      />
     </CabinetShell>
   );
 }

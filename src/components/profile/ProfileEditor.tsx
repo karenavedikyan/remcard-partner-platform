@@ -1,17 +1,21 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   CATALOG_STATUS_LABELS,
   catalogStatusTone,
 } from "@/lib/partnership-labels";
+import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
+import { storeCategoryChips } from "@/lib/store-categories";
+import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import styles from "./ProfileEditor.module.css";
 
 const PARTNER_TYPES = [
@@ -20,35 +24,103 @@ const PARTNER_TYPES = [
   { value: "STORE", label: "Магазин" },
 ] as const;
 
-type ProfileEditorProps = {
-  initial: ProProfileResponse;
+const STORE_CATEGORY_CHIPS = storeCategoryChips();
+
+type ModerationNote = {
+  id: string;
+  comment: string;
+  createdAt: string;
+  attachments: string[];
+  resolvedAt: string | null;
 };
 
-export function ProfileEditor({ initial }: ProfileEditorProps) {
+type ProfileEditorProps = {
+  initial: ProProfileResponse;
+  moderationSection?: boolean;
+};
+
+type ExtendedUser = ProProfileResponse["user"] & {
+  telegramLinked?: boolean;
+  maxLinked?: boolean;
+  notificationSettings?: unknown;
+};
+
+export function ProfileEditor({ initial, moderationSection }: ProfileEditorProps) {
   const router = useRouter();
   const [profile, setProfile] = useState(initial);
-  const [city, setCity] = useState(initial.user.city ?? "");
-  const [description, setDescription] = useState(initial.user.description ?? "");
-  const [partnerType, setPartnerType] = useState(initial.user.partnerType ?? "MASTER");
-  const [website, setWebsite] = useState(initial.user.website ?? "");
-  const [telegram, setTelegram] = useState(initial.user.telegram ?? "");
-  const [publicEmail, setPublicEmail] = useState(initial.user.publicEmail ?? "");
-  const [publicPhone, setPublicPhone] = useState(initial.user.publicPhone ?? "");
+  const user = profile.user as ExtendedUser;
+
+  const [displayName, setDisplayName] = useState(user.displayName ?? "");
+  const [city, setCity] = useState(user.city ?? "");
+  const [description, setDescription] = useState(user.description ?? "");
+  const [partnerType, setPartnerType] = useState(user.partnerType ?? "MASTER");
+  const [specializations, setSpecializations] = useState<string[]>(user.specializations ?? []);
+  const [storeCategories, setStoreCategories] = useState<string[]>(user.storeCategories ?? []);
+  const [organizationName, setOrganizationName] = useState(profile.organization?.name ?? "");
+  const [website, setWebsite] = useState(user.website ?? "");
+  const [telegram, setTelegram] = useState(user.telegram ?? "");
+  const [publicEmail, setPublicEmail] = useState(user.publicEmail ?? "");
+  const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
+
   const [saving, setSaving] = useState(false);
   const [submittingModeration, setSubmittingModeration] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [notes, setNotes] = useState<ModerationNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+
+  const canSubmitModeration =
+    profile.user.catalogStatus === "DRAFT" || profile.user.catalogStatus === "NEEDS_REVISION";
+
+  const loadNotes = useCallback(async () => {
+    if (profile.user.catalogStatus === "APPROVED" && !moderationSection) return;
+    setNotesLoading(true);
+    try {
+      const data = await remcardFetch<{ notes: ModerationNote[] }>("/api/pro/moderation-notes");
+      setNotes(Array.isArray(data.notes) ? data.notes : []);
+    } catch {
+      setNotes([]);
+    } finally {
+      setNotesLoading(false);
+    }
+  }, [moderationSection, profile.user.catalogStatus]);
+
+  useEffect(() => {
+    void loadNotes();
+  }, [loadNotes]);
 
   useEffect(() => {
     setProfile(initial);
-    setCity(initial.user.city ?? "");
-    setDescription(initial.user.description ?? "");
-    setPartnerType(initial.user.partnerType ?? "MASTER");
-    setWebsite(initial.user.website ?? "");
-    setTelegram(initial.user.telegram ?? "");
-    setPublicEmail(initial.user.publicEmail ?? "");
-    setPublicPhone(initial.user.publicPhone ?? "");
+    const u = initial.user as ExtendedUser;
+    setDisplayName(u.displayName ?? "");
+    setCity(u.city ?? "");
+    setDescription(u.description ?? "");
+    setPartnerType(u.partnerType ?? "MASTER");
+    setSpecializations(u.specializations ?? []);
+    setStoreCategories(u.storeCategories ?? []);
+    setOrganizationName(initial.organization?.name ?? "");
+    setWebsite(u.website ?? "");
+    setTelegram(u.telegram ?? "");
+    setPublicEmail(u.publicEmail ?? "");
+    setPublicPhone(u.publicPhone ?? "");
   }, [initial]);
+
+  const openNotes = useMemo(
+    () => notes.filter((n) => !n.resolvedAt).slice(0, 3),
+    [notes],
+  );
+
+  function toggleSpec(id: string) {
+    setSpecializations((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  }
+
+  function toggleCategory(value: string) {
+    setStoreCategories((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    );
+  }
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -57,6 +129,7 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
     setSuccess("");
 
     try {
+      const trimmedName = displayName.trim();
       const payload = await remcardFetch<{ user: ProProfileResponse["user"] }>(
         "/api/pro/profile",
         {
@@ -65,6 +138,9 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
             city: city.trim() || null,
             description: description.trim() || null,
             partnerType,
+            specializations: partnerType === "MASTER" ? specializations : undefined,
+            storeCategories:
+              partnerType === "STORE" || partnerType === "COMPANY" ? storeCategories : undefined,
             website: website.trim() || null,
             telegram: telegram.trim() || null,
             publicEmail: publicEmail.trim() || null,
@@ -72,8 +148,36 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
           },
         },
       );
-      setProfile((prev) => ({ ...prev, user: payload.user }));
-      setSuccess("Профиль сохранён");
+
+      if (trimmedName.length >= 2 && trimmedName !== "Пользователь") {
+        if (trimmedName !== (profile.user.displayName ?? "").trim()) {
+          await saveDisplayNameViaAuthMe(trimmedName);
+        }
+      }
+
+      if (
+        (partnerType === "STORE" || partnerType === "COMPANY") &&
+        organizationName.trim().length >= 2
+      ) {
+        try {
+          await remcardFetch("/api/pro/organization", {
+            method: profile.organization ? "PATCH" : "POST",
+            body: profile.organization
+              ? { name: organizationName.trim() }
+              : { name: organizationName.trim(), partnerType },
+          });
+        } catch (orgErr) {
+          if (!(orgErr instanceof RemcardApiError && orgErr.status === 409)) {
+            throw orgErr;
+          }
+        }
+      }
+
+      setProfile((prev) => ({
+        ...prev,
+        user: { ...payload.user, displayName: trimmedName || payload.user.displayName },
+      }));
+      setSuccess("Изменения сохранены");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить профиль");
@@ -82,11 +186,53 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
     }
   }
 
+  async function persistProfileFields(): Promise<void> {
+    const trimmedName = displayName.trim();
+    if (trimmedName.length >= 2 && trimmedName !== "Пользователь") {
+      if (trimmedName !== (profile.user.displayName ?? "").trim()) {
+        await saveDisplayNameViaAuthMe(trimmedName);
+      }
+    }
+    await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
+      method: "PATCH",
+      body: {
+        city: city.trim() || null,
+        description: description.trim() || null,
+        partnerType,
+        specializations: partnerType === "MASTER" ? specializations : undefined,
+        storeCategories:
+          partnerType === "STORE" || partnerType === "COMPANY" ? storeCategories : undefined,
+        website: website.trim() || null,
+        telegram: telegram.trim() || null,
+        publicEmail: publicEmail.trim() || null,
+        publicPhone: publicPhone.trim() || null,
+      },
+    });
+    if (
+      (partnerType === "STORE" || partnerType === "COMPANY") &&
+      organizationName.trim().length >= 2
+    ) {
+      try {
+        await remcardFetch("/api/pro/organization", {
+          method: profile.organization ? "PATCH" : "POST",
+          body: profile.organization
+            ? { name: organizationName.trim() }
+            : { name: organizationName.trim(), partnerType },
+        });
+      } catch (orgErr) {
+        if (!(orgErr instanceof RemcardApiError && orgErr.status === 409)) {
+          throw orgErr;
+        }
+      }
+    }
+  }
+
   async function submitForModeration() {
     setSubmittingModeration(true);
     setError("");
     setSuccess("");
     try {
+      await persistProfileFields();
       const payload = await remcardFetch<{ user: ProProfileResponse["user"] }>(
         "/api/pro/profile",
         {
@@ -95,7 +241,12 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
         },
       );
       setProfile((prev) => ({ ...prev, user: payload.user }));
-      setSuccess("Профиль отправлен на проверку");
+      setSuccess(
+        profile.user.catalogStatus === "NEEDS_REVISION"
+          ? "Профиль сохранён и отправлен на повторную проверку"
+          : "Профиль отправлен на проверку",
+      );
+      void loadNotes();
       router.refresh();
     } catch (caught) {
       setError(
@@ -111,30 +262,43 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
   const statusLabel =
     CATALOG_STATUS_LABELS[profile.user.catalogStatus] ?? profile.user.catalogStatus;
 
+  const showRevisionBanner = profile.user.catalogStatus === "NEEDS_REVISION";
+
   return (
-    <div className={styles.grid}>
+    <div className={styles.grid} id={moderationSection ? "moderation-remarks" : undefined}>
       <form className={styles.main} onSubmit={saveProfile}>
-        <Panel
-          title="Основное"
-          hint="После сохранения данные сразу обновятся в вашем профиле."
-        >
+        {showRevisionBanner ? (
+          <div className={styles.bannerWarn} role="status">
+            <strong>Нужно исправить профиль</strong>
+            <p>
+              Внесите правки по замечаниям модератора, нажмите «Сохранить изменения», затем
+              «Сохранить и отправить повторно».
+            </p>
+            {profile.user.rejectionReason ? <p>{profile.user.rejectionReason}</p> : null}
+          </div>
+        ) : null}
+
+        <Panel title="Основное" hint="Сохраните изменения отдельно от отправки на проверку.">
           <div className={styles.statusRow}>
             <StatusBadge label={statusLabel} tone={catalogStatusTone(profile.user.catalogStatus)} />
-            {profile.user.rejectionReason ? (
-              <p className={styles.rejection} role="status">
-                {profile.user.rejectionReason}
-              </p>
+            {profile.user.catalogStatus === "PENDING" ? (
+              <p className={styles.hint}>Профиль на проверке — редактирование доступно после решения.</p>
             ) : null}
           </div>
 
           <div className={styles.fields}>
-            <TextField label="Публичное имя" value={profile.user.displayName ?? ""} readOnly />
+            <TextField
+              label="Имя представителя"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              required
+              hint="Отображается в кабинете; не подменяет название организации."
+            />
             <TextField
               label="Город"
               value={city}
               onChange={(event) => setCity(event.target.value)}
               required
-              hint="Город, где вы работаете с клиентами"
             />
             <SelectField
               label="Тип партнёра"
@@ -147,43 +311,107 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
                 </option>
               ))}
             </SelectField>
+
+            {partnerType === "MASTER" ? (
+              <fieldset className={styles.fieldset}>
+                <legend>Специализации</legend>
+                <div className={styles.chipGrid}>
+                  {ONBOARDING_STAGES.map((stage) => (
+                    <label key={stage.id} className={styles.checkRow}>
+                      <input
+                        type="checkbox"
+                        checked={specializations.includes(stage.id)}
+                        onChange={() => toggleSpec(stage.id)}
+                      />
+                      <span>
+                        {stage.icon} {stage.title}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ) : (
+              <>
+                <TextField
+                  label="Название организации"
+                  value={organizationName}
+                  onChange={(event) => setOrganizationName(event.target.value)}
+                  hint="Коммерческое название магазина или компании."
+                />
+                <fieldset className={styles.fieldset}>
+                  <legend>Категории товаров</legend>
+                  <div className={styles.chipGrid}>
+                    {STORE_CATEGORY_CHIPS.map((cat) => (
+                      <label key={cat.value} className={styles.checkRow}>
+                        <input
+                          type="checkbox"
+                          checked={storeCategories.includes(cat.value)}
+                          onChange={() => toggleCategory(cat.value)}
+                        />
+                        <span>{cat.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </>
+            )}
+
             <TextAreaField
               label="Описание"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              hint="Кратко опишите, чем вы занимаетесь"
             />
           </div>
         </Panel>
 
-        <Panel title="Контакты для клиентов">
+        <Panel title="Контакты для клиентов" hint="Эти данные могут быть видны в публичной карточке.">
           <div className={styles.fields}>
+            <TextField label="Сайт" value={website} onChange={(e) => setWebsite(e.target.value)} />
             <TextField
-              label="Сайт"
-              value={website}
-              onChange={(event) => setWebsite(event.target.value)}
-              placeholder="https://"
-            />
-            <TextField
-              label="Telegram"
+              label="Telegram (публичный)"
               value={telegram}
-              onChange={(event) => setTelegram(event.target.value)}
-              placeholder="@username"
+              onChange={(e) => setTelegram(e.target.value)}
+              hint="Публичный @username — не канал уведомлений бота."
             />
             <TextField
               label="Рабочий email"
               value={publicEmail}
-              onChange={(event) => setPublicEmail(event.target.value)}
-              inputMode="email"
+              onChange={(e) => setPublicEmail(e.target.value)}
             />
             <TextField
               label="Рабочий телефон"
               value={publicPhone}
-              onChange={(event) => setPublicPhone(event.target.value)}
-              placeholder="+7XXXXXXXXXX"
+              onChange={(e) => setPublicPhone(e.target.value)}
             />
           </div>
         </Panel>
+
+        {(showRevisionBanner || moderationSection) && (
+          <Panel title="Замечания модератора" hint="Только ваши комментарии — без внутренних записей штаба.">
+            {notesLoading ? (
+              <p className={styles.hint}>Загружаем…</p>
+            ) : openNotes.length === 0 ? (
+              <p className={styles.hint}>Нет открытых замечаний.</p>
+            ) : (
+              <ul className={styles.notesList}>
+                {openNotes.map((note) => (
+                  <li key={note.id}>
+                    <p>{note.comment}</p>
+                    <time dateTime={note.createdAt}>
+                      {new Date(note.createdAt).toLocaleString("ru-RU")}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )}
+
+        <NotificationSettingsPanel
+          telegramLinked={Boolean(user.telegramLinked)}
+          maxLinked={Boolean(user.maxLinked)}
+          initialSettings={user.notificationSettings ?? null}
+        />
 
         {error ? (
           <p className={styles.error} role="alert">
@@ -198,16 +426,20 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
 
         <div className={styles.actions}>
           <Button type="submit" disabled={saving}>
-            {saving ? "Сохранение…" : "Сохранить профиль"}
+            {saving ? "Сохранение…" : "Сохранить изменения"}
           </Button>
-          {profile.user.catalogStatus === "DRAFT" ? (
+          {canSubmitModeration ? (
             <Button
               type="button"
               variant="secondary"
-              disabled={submittingModeration}
-              onClick={submitForModeration}
+              disabled={submittingModeration || saving}
+              onClick={() => void submitForModeration()}
             >
-              {submittingModeration ? "Отправка…" : "Отправить на проверку"}
+              {submittingModeration
+                ? "Отправка…"
+                : profile.user.catalogStatus === "NEEDS_REVISION"
+                  ? "Сохранить и отправить повторно"
+                  : "Отправить на проверку"}
             </Button>
           ) : null}
         </div>
@@ -216,14 +448,14 @@ export function ProfileEditor({ initial }: ProfileEditorProps) {
       <aside className={styles.aside}>
         <Panel title="Подсказка" compact>
           <p>
-            Заполните город и описание, затем сохраните профиль. После проверки карточка появится в
-            каталоге RemCard.
+            Заполните обязательные поля и сохраните. Отправка на проверку доступна из черновика или
+            после замечаний модератора.
           </p>
         </Panel>
         {profile.organization ? (
           <Panel title="Организация" compact>
             <p className={styles.orgName}>{profile.organization.name}</p>
-            <p>Филиалов: {profile.organization.branchCount}</p>
+            <p>Статус витрины: {CATALOG_STATUS_LABELS[profile.organization.catalogStatus] ?? profile.organization.catalogStatus}</p>
           </Panel>
         ) : null}
       </aside>

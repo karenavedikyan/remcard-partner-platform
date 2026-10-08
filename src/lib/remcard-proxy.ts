@@ -20,6 +20,14 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["POST"]), pattern: /^\/api\/account\/consent$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/account\/cabinet-readiness$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/profile$/ },
+    { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/pro\/organization$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/moderation-notes$/ },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/notification-settings$/,
+    },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/notification-settings\/test$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/profile\/contacts\/link$/ },
     {
       methods: new Set(["GET"]),
       pattern: /^\/api\/partnership\/(list|search|incoming-count)$/,

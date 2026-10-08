@@ -11,7 +11,8 @@ export const PARTNERSHIP_STATUS_LABELS: Record<string, string> = {
 export const CATALOG_STATUS_LABELS: Record<string, string> = {
   DRAFT: "Черновик",
   PENDING: "На проверке",
-  APPROVED: "В каталоге",
+  NEEDS_REVISION: "Нужно исправить профиль",
+  APPROVED: "Проверен",
   REJECTED: "Отклонён",
 };
 
@@ -43,6 +44,8 @@ export function catalogStatusTone(
     case "APPROVED":
       return "active";
     case "PENDING":
+      return "pending";
+    case "NEEDS_REVISION":
       return "pending";
     case "REJECTED":
       return "declined";

@@ -83,6 +83,14 @@ function catalogIsDraft(user: AuthUser | null): boolean {
   return Boolean(user?.role === "PRO" && user.catalogStatus === "DRAFT");
 }
 
+function catalogNeedsRevision(user: AuthUser | null): boolean {
+  return Boolean(user?.role === "PRO" && user.catalogStatus === "NEEDS_REVISION");
+}
+
+function catalogIsPendingReview(user: AuthUser | null): boolean {
+  return Boolean(user?.role === "PRO" && user.catalogStatus === "PENDING");
+}
+
 function continuationLabel(readiness: CabinetReadiness): string {
   if (readiness.needsProfileOnboarding) {
     return "Продолжить регистрацию";
@@ -458,7 +466,15 @@ export function InviteLanding({ token }: InviteLandingProps) {
           ) : hasSession && profileBlocksAccept ? (
             <>
               <div className={styles.notice}>
-                {profileDraft ? (
+                {catalogNeedsRevision(authUser) ? (
+                  <>
+                    <p><strong>Нужно исправить профиль</strong></p>
+                    <p>
+                      Модератор оставил замечания. Исправьте профиль и отправьте его повторно — после
+                      одобрения вернитесь сюда и явно примите условия приглашения.
+                    </p>
+                  </>
+                ) : profileDraft ? (
                   <>
                     <p><strong>Отправьте профиль на проверку</strong></p>
                     <p>
@@ -467,12 +483,19 @@ export function InviteLanding({ token }: InviteLandingProps) {
                       обновите страницу.
                     </p>
                   </>
+                ) : catalogIsPendingReview(authUser) ? (
+                  <>
+                    <p><strong>Профиль на проверке</strong></p>
+                    <p>
+                      Модератор проверяет профиль. Это не ожидание приглашения — после одобрения вы
+                      сможете принять условия на этой странице.
+                    </p>
+                  </>
                 ) : (
                   <>
-                    <p><strong>Профиль ожидает проверки</strong></p>
+                    <p><strong>Профиль не готов к принятию</strong></p>
                     <p>
-                      Профиль на проверке у модератора. После одобрения вы сможете принять
-                      приглашение. Ссылка сохранится: вернитесь сюда позже или обновите страницу.
+                      Завершите проверку профиля в кабинете, затем вернитесь к приглашению.
                     </p>
                   </>
                 )}
@@ -490,9 +513,13 @@ export function InviteLanding({ token }: InviteLandingProps) {
                   >
                     {submittingModeration ? "Отправляем…" : "Отправить на проверку"}
                   </Button>
+                ) : catalogNeedsRevision(authUser) ? (
+                  <Link href={`/profile?returnTo=${encodeURIComponent(returnTo)}&section=moderation`}>
+                    <Button>Исправить профиль</Button>
+                  </Link>
                 ) : (
                   <Button variant="secondary" disabled>
-                    Принять условия
+                    {catalogIsPendingReview(authUser) ? "На проверке" : "Принять условия"}
                   </Button>
                 )}
                 <Button variant="secondary" onClick={() => void handleDecline()}>

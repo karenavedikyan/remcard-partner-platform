@@ -13,6 +13,8 @@ type HomeDashboardProps = {
   user: AuthUser;
   partnerships: Partnership[];
   incomingCount: number;
+  needsProfileCompletion?: boolean;
+  catalogStatus?: string | null;
 };
 
 const QUICK_ACTIONS = [
@@ -47,13 +49,32 @@ function partnerTitle(partnership: Partnership, meId: string) {
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
-export function HomeDashboard({ user, partnerships, incomingCount }: HomeDashboardProps) {
+export function HomeDashboard({
+  user,
+  partnerships,
+  incomingCount,
+  needsProfileCompletion,
+  catalogStatus,
+}: HomeDashboardProps) {
   const activeCount = partnerships.filter((item) => item.status === "ACTIVE").length;
   const waiting = partnerships.filter((item) => partnershipNeedsMyResponse(item, user.id!));
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
 
   return (
     <div className={styles.grid}>
+      {catalogStatus === "NEEDS_REVISION" ? (
+        <section className={styles.alertBanner} role="status">
+          <strong>Нужно исправить профиль</strong>
+          <p>Есть замечания модератора — откройте профиль, внесите правки и отправьте повторно.</p>
+          <Link href="/profile?section=moderation">Исправить профиль →</Link>
+        </section>
+      ) : needsProfileCompletion ? (
+        <section className={styles.alertBanner} role="status">
+          <strong>Дополните профиль</strong>
+          <p>Укажите имя представителя, город и направления работы, чтобы отправить карточку на проверку.</p>
+          <Link href="/profile">Заполнить профиль →</Link>
+        </section>
+      ) : null}
       <section className={styles.welcomeCard}>
         <div>
           <span className={styles.darkEyebrow}>RemCard PROF</span>

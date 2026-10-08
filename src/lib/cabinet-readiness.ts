@@ -16,6 +16,8 @@ export type CabinetReadiness = {
   nextStep: "consents" | "profile" | "ready";
   missingConsents: ConsentRequirement[];
   needsProfileOnboarding: boolean;
+  needsProfileCompletion?: boolean;
+  catalogStatus?: string | null;
   canAccessCabinet: boolean;
   isEmployee: boolean;
   isAdmin: boolean;

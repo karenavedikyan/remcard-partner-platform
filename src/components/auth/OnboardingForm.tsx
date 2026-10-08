@@ -23,6 +23,7 @@ import {
   saveDisplayNameViaAuthMe,
   saveOfferConsent,
   saveProProfile,
+  ensureOrganizationForDraft,
   verifyOnboardingComplete,
   type OnboardingSaveProgress,
 } from "@/lib/onboarding-save";
@@ -57,7 +58,8 @@ export function OnboardingForm({
 
   const [partnerType, setPartnerType] = useState<PartnerTypeOption | "">("");
   const [city, setCity] = useState(initialCity?.trim() ?? "");
-  const [displayName, setDisplayName] = useState(initialDisplayName?.trim() ?? "");
+  const [representativeName, setRepresentativeName] = useState(initialDisplayName?.trim() ?? "");
+  const [organizationName, setOrganizationName] = useState("");
   const [selectedStages, setSelectedStages] = useState<string[]>([]);
   const [allStages, setAllStages] = useState(false);
   const [storeCategories, setStoreCategories] = useState<string[]>([]);
@@ -112,7 +114,7 @@ export function OnboardingForm({
 
   useEffect(() => {
     progressRef.current.profileSaved = false;
-  }, [partnerType, city, allStages, selectedStages, storeCategories]);
+  }, [partnerType, city, allStages, selectedStages, storeCategories, representativeName, organizationName]);
 
   useEffect(() => {
     if (initialDisplayName?.trim()) {
@@ -122,7 +124,7 @@ export function OnboardingForm({
       try {
         const saved = await readSavedDisplayName();
         if (saved && !displayNameDirtyRef.current) {
-          setDisplayName(saved);
+          setRepresentativeName(saved);
           progressRef.current.displayNameSaved = true;
         }
       } catch {
@@ -212,15 +214,20 @@ export function OnboardingForm({
       return;
     }
 
+    const repName = representativeName.trim();
+    if (repName.length < 2 || repName === "Пользователь") {
+      setError("Укажите имя представителя (минимум 2 символа, не «Пользователь»).");
+      return;
+    }
+
     if (partnerType === "MASTER") {
       if (!allStages && selectedStages.length === 0) {
         setError("Выберите хотя бы одну специализацию или «Все этапы».");
         return;
       }
     } else {
-      const trimmedName = displayName.trim();
-      if (trimmedName.length < 2) {
-        setError("Укажите название магазина или компании (минимум 2 символа).");
+      if (organizationName.trim().length < 2) {
+        setError("Укажите название организации (минимум 2 символа).");
         return;
       }
       if (storeCategories.length === 0) {
@@ -247,7 +254,8 @@ export function OnboardingForm({
     const draft = {
       partnerType,
       city: trimmedCity,
-      displayName: displayName.trim(),
+      displayName: repName,
+      organizationName: organizationName.trim(),
       allStages,
       selectedStages,
       storeCategories,
@@ -260,20 +268,19 @@ export function OnboardingForm({
         setOfferChecked(false);
       }
 
-      if (partnerType !== "MASTER") {
-        const savedName = await readSavedDisplayName();
-        if (!displayNameMatchesSaved(savedName, draft.displayName)) {
-          await saveDisplayNameViaAuthMe(draft.displayName);
-          const confirmed = await readSavedDisplayName();
-          if (!displayNameMatchesSaved(confirmed, draft.displayName)) {
-            throw new RemcardApiError(500, "Не удалось подтвердить название.", null);
-          }
+      const savedName = await readSavedDisplayName();
+      if (!displayNameMatchesSaved(savedName, draft.displayName)) {
+        await saveDisplayNameViaAuthMe(draft.displayName);
+        const confirmed = await readSavedDisplayName();
+        if (!displayNameMatchesSaved(confirmed, draft.displayName)) {
+          throw new RemcardApiError(500, "Не удалось подтвердить имя представителя.", null);
         }
-        progressRef.current.displayNameSaved = true;
       }
+      progressRef.current.displayNameSaved = true;
 
       if (!progressRef.current.profileSaved) {
         await saveProProfile(draft);
+        await ensureOrganizationForDraft(draft);
         progressRef.current.profileSaved = true;
       }
 
@@ -313,8 +320,11 @@ export function OnboardingForm({
     }
   }
 
-  const masterReady = allStages || selectedStages.length > 0;
-  const storeReady = displayName.trim().length >= 2 && storeCategories.length > 0;
+  const repReady =
+    representativeName.trim().length >= 2 && representativeName.trim() !== "Пользователь";
+  const masterReady = repReady && (allStages || selectedStages.length > 0);
+  const storeReady =
+    repReady && organizationName.trim().length >= 2 && storeCategories.length > 0;
   const profileFieldsReady =
     partnerType === "MASTER" ? masterReady : partnerType ? storeReady : false;
   const offerReady =
@@ -402,6 +412,22 @@ export function OnboardingForm({
               />
             </div>
 
+            {partnerType ? (
+              <div style={{ marginBottom: "var(--space-4)" }}>
+                <TextField
+                  label="Имя представителя"
+                  value={representativeName}
+                  onChange={(event) => {
+                    displayNameDirtyRef.current = true;
+                    setRepresentativeName(event.target.value);
+                  }}
+                  disabled={loading}
+                  required
+                  hint="Как к вам обращаться в кабинете и переписке. Можно изменить позже в профиле."
+                />
+              </div>
+            ) : null}
+
             {partnerType === "MASTER" ? (
               <div style={{ marginBottom: "var(--space-4)" }}>
                 <p className={styles.fieldLabel}>Специализации</p>
@@ -437,13 +463,11 @@ export function OnboardingForm({
                 <div style={{ marginBottom: "var(--space-4)" }}>
                   <TextField
                     label={partnerType === "STORE" ? "Название магазина" : "Название компании"}
-                    value={displayName}
-                    onChange={(event) => {
-                      displayNameDirtyRef.current = true;
-                      setDisplayName(event.target.value);
-                    }}
+                    value={organizationName}
+                    onChange={(event) => setOrganizationName(event.target.value)}
                     disabled={loading}
                     required
+                    hint="Юридическое или коммерческое название организации — отдельно от имени представителя."
                   />
                 </div>
                 <div style={{ marginBottom: "var(--space-4)" }}>

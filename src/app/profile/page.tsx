@@ -11,7 +11,10 @@ export const dynamic = "force-dynamic";
 
 const RETURN_PATH = "/profile";
 
-export default async function ProfilePage() {
+export default async function ProfilePage(props: {
+  searchParams?: Promise<{ section?: string; returnTo?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const user = await requireProPageUser(RETURN_PATH);
   if (!user) {
     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
@@ -38,7 +41,10 @@ export default async function ProfilePage() {
         title="Профиль"
         description="Контакты и описание для клиентов, статус публикации в каталоге RemCard."
       />
-      <ProfileEditor initial={profileResult.data} />
+      <ProfileEditor
+        initial={profileResult.data}
+        moderationSection={searchParams?.section === "moderation"}
+      />
     </CabinetShell>
   );
 }

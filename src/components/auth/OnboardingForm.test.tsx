@@ -96,6 +96,9 @@ describe("OnboardingForm", () => {
       if (path === "/api/pro/profile" && options?.method === "PATCH") {
         return { user: { id: "c1", role: "PRO", partnerType: "STORE" } };
       }
+      if (path === "/api/pro/organization") {
+        return { id: "org1", name: "Магазин Тест" };
+      }
       if (path === "/api/account/consent") {
         return { ok: true };
       }
@@ -106,6 +109,7 @@ describe("OnboardingForm", () => {
   async function fillStoreForm(ui: ReturnType<typeof userEvent.setup>) {
     await ui.click(screen.getByRole("radio", { name: /магазин/i }));
     await ui.type(screen.getByLabelText(/город работы/i), "Краснодар");
+    await ui.type(screen.getByLabelText(/имя представителя/i), "Иван Тест");
     await ui.type(screen.getByLabelText(/название магазина/i), "Магазин Тест");
     await ui.click(screen.getByRole("checkbox", { name: /двери/i }));
     await ui.click(screen.getByRole("checkbox", { name: /публичную оферту/i }));
@@ -121,7 +125,7 @@ describe("OnboardingForm", () => {
     await waitFor(() => {
       expect(remcardFetch).toHaveBeenCalledWith("/api/auth/me", {
         method: "PATCH",
-        body: { displayName: "Магазин Тест" },
+        body: { displayName: "Иван Тест" },
       });
       expect(remcardFetch).toHaveBeenCalledWith(
         "/api/pro/profile",
@@ -238,6 +242,7 @@ describe("OnboardingForm", () => {
     await screen.findByText(/регистрация партнёра/i);
     await ui.click(screen.getByRole("radio", { name: /компани/i }));
     await ui.type(screen.getByLabelText(/город работы/i), "Сочи");
+    await ui.type(screen.getByLabelText(/имя представителя/i), "Пётр Тест");
     await ui.type(screen.getByLabelText(/название компании/i), "Компания Тест");
     await ui.click(screen.getByRole("checkbox", { name: /двери/i }));
     await ui.click(screen.getByRole("checkbox", { name: /публичную оферту/i }));

@@ -3,6 +3,20 @@
   gap: var(--space-6);
 }
 
+.alertBanner {
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.alertBanner a {
+  font-weight: 600;
+  color: var(--primary);
+}
+
 .welcomeCard {
   background: var(--dark);
   color: var(--on-dark);
