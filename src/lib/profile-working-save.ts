@@ -77,6 +77,33 @@ export function workingProfileMissingFields(draft: ProfileDraft): string[] {
   return issues;
 }
 
+async function persistOrganizationName(
+  draft: ProfileDraft,
+  profile: ProProfileResponse,
+): Promise<void> {
+  const orgName = draft.organizationName.trim();
+  const savedOrg = profile.organization?.name?.trim() ?? "";
+  if (orgName === savedOrg) return;
+  const orgBody = { name: orgName, partnerType: draft.partnerType };
+  const existing = await remcardFetch<{ organization: { id: string } | null }>(
+    "/api/pro/organization",
+    { method: "GET" },
+  );
+  if (existing.organization) {
+    await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
+  } else {
+    try {
+      await remcardFetch("/api/pro/organization", { method: "POST", body: orgBody });
+    } catch (caught) {
+      if (caught instanceof RemcardApiError && caught.status === 409) {
+        await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
+      } else {
+        throw caught;
+      }
+    }
+  }
+}
+
 export async function persistWorkingProfileDraft(
   profile: ProProfileResponse,
   draft: ProfileDraft,
@@ -92,6 +119,13 @@ export async function persistWorkingProfileDraft(
     await saveDisplayNameViaAuthMe(trimmedName);
   }
 
+  const needsOrg = draft.partnerType === "STORE" || draft.partnerType === "COMPANY";
+  const orgBeforeProfile =
+    needsOrg && Boolean(options.partnerSearchTouched && draft.partnerSearchOptIn);
+  if (orgBeforeProfile) {
+    await persistOrganizationName(draft, profile);
+  }
+
   const patchBody = buildWorkingProfilePatchBody(profile, draft, options);
 
   if (Object.keys(patchBody).length > 0) {
@@ -101,29 +135,8 @@ export async function persistWorkingProfileDraft(
     });
   }
 
-  if (draft.partnerType === "STORE" || draft.partnerType === "COMPANY") {
-    const orgName = draft.organizationName.trim();
-    const savedOrg = profile.organization?.name?.trim() ?? "";
-    if (orgName !== savedOrg) {
-      const orgBody = { name: orgName, partnerType: draft.partnerType };
-      const existing = await remcardFetch<{ organization: { id: string } | null }>(
-        "/api/pro/organization",
-        { method: "GET" },
-      );
-      if (existing.organization) {
-        await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
-      } else {
-        try {
-          await remcardFetch("/api/pro/organization", { method: "POST", body: orgBody });
-        } catch (caught) {
-          if (caught instanceof RemcardApiError && caught.status === 409) {
-            await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
-          } else {
-            throw caught;
-          }
-        }
-      }
-    }
+  if (needsOrg && !orgBeforeProfile) {
+    await persistOrganizationName(draft, profile);
   }
 
   const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
