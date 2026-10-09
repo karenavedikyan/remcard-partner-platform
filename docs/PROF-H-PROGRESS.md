@@ -5,7 +5,7 @@
 | | SHA | Branch |
 |---|---|---|
 | Base | `bb60c60` | `origin/release/prof-v1-20261007` |
-| HEAD | _(see `git rev-parse HEAD` after push)_ | `feat/prof-h-profile-redesign` |
+| HEAD | `f11b56e` | `feat/prof-h-profile-redesign` |
 
 PROF-G не в базе release (`6f660db` остаётся в `feat/prof-g-notification-center`). Точки интеграции H6: bell в `CabinetShell`, deep link `section=notifications`, без изменений в H1.
 
