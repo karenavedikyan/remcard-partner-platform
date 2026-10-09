@@ -38,6 +38,16 @@ export function savedWorkingProfileReadyLabel(profile: ProProfileResponse): {
 }
 
 export function savedDirectionLabels(profile: ProProfileResponse): string[] {
+  const w = profile.workingProfile;
+  if (w) {
+    const products = (w.effectiveProductCategoryIds ?? []).map(
+      (id) => `Товар: ${displayCategoryLabel(id, id)}`,
+    );
+    const services = (w.effectiveServiceSpecializationIds ?? []).map(
+      (id) => `Услуга: ${masterDirectionLabel(id)}`,
+    );
+    return [...products, ...services];
+  }
   const partnerType = profile.user.partnerType ?? "MASTER";
   const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
   if (partnerType === "MASTER") {
@@ -48,6 +58,13 @@ export function savedDirectionLabels(profile: ProProfileResponse): string[] {
       ? profile.organization.storeCategories
       : profile.user.storeCategories;
   return (ids ?? []).map((id) => displayCategoryLabel(id, id));
+}
+
+export function savedPartnerSearchVisibleLabel(profile: ProProfileResponse): string {
+  const visible = profile.workingProfile?.partnerSearchVisible;
+  if (visible === true) return "Виден партнёрам";
+  if (visible === false) return "Скрыт из поиска партнёров";
+  return "—";
 }
 
 export function savedRepresentativeName(profile: ProProfileResponse): string {

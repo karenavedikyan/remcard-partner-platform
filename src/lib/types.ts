@@ -45,7 +45,40 @@ export type ProProfileUser = {
   notificationSettings?: unknown;
 };
 
+export type WorkingPrimaryDirection = { kind: "product" | "service"; id: string } | null;
+
+export type WorkingProfileDto = {
+  productCategoryIds: string[];
+  serviceSpecializationIds: string[];
+  navigatorStageIds: string[];
+  primaryDirection: WorkingPrimaryDirection;
+  effectiveProductCategoryIds: string[];
+  effectiveServiceSpecializationIds: string[];
+  partnerSearchVisible: boolean;
+  partnerSearchOptIn: boolean;
+  partnerSearchOptInExplicit: boolean;
+  workingDirectionsTouched: boolean;
+  partnerWorkMode: string | null;
+  areas: string[];
+  partnershipContactName: string | null;
+  partnershipContactPhone: string | null;
+  partnershipContactEmail: string | null;
+};
+
+export type PartnerTaxonomyItem = {
+  kind: "product" | "service" | "stage";
+  id: string;
+  label: string;
+};
+
+export type PartnerTaxonomyResponse = {
+  products: PartnerTaxonomyItem[];
+  services: PartnerTaxonomyItem[];
+  stages: PartnerTaxonomyItem[];
+};
+
 export type ProProfileResponse = {
+  workingProfile?: WorkingProfileDto;
   catalogPublication?: {
     catalogEntity?: "user" | "organization";
     organizationId?: string;
@@ -138,6 +171,17 @@ export type PartnerSearchResult = {
   ratingCount: number;
   partnershipStatus: string | null;
   isPublic?: boolean | null;
+  productCategoryIds?: string[];
+  serviceSpecializationIds?: string[];
+  navigatorStageIds?: string[];
+  workingProductLabels?: string[];
+  workingServiceLabels?: string[];
+  workingStageLabels?: string[];
+  partnershipContact?: {
+    name: string | null;
+    phone: string | null;
+    email: string | null;
+  };
 };
 
 export type PartnerSearchResponse = {

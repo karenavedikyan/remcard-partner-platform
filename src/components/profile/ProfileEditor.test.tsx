@@ -114,7 +114,7 @@ describe("ProfileEditor", () => {
     const ui = userEvent.setup();
     render(<ProfileEditor initial={initial} returnTo="/invite/abc" />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
-    expect(screen.getByRole("button", { name: /Сохранить данные/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /Сохранить основные данные/i })).not.toBeDisabled();
     expect(screen.getByRole("link", { name: /Вернуться/i })).toHaveAttribute("href", "/invite/abc");
   });
 

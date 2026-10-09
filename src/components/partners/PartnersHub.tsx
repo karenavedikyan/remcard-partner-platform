@@ -29,6 +29,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
 import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
+import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import styles from "./PartnersHub.module.css";
@@ -62,6 +63,9 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
+  const [filterProducts, setFilterProducts] = useState<string[]>([]);
+  const [filterServices, setFilterServices] = useState<string[]>([]);
+  const [filterStages, setFilterStages] = useState<string[]>([]);
   const [searchRole, setSearchRole] = useState<SearchRole>(() =>
     defaultSearchRoleForUser(profileUserToPartnerSide(initialProfile.user, initialProfile.organization)),
   );
@@ -96,6 +100,9 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
       const params = new URLSearchParams({ role: searchRole });
       if (query.trim()) params.set("q", query.trim());
       if (city.trim()) params.set("city", city.trim());
+      if (filterProducts.length) params.set("product", filterProducts.join(","));
+      if (filterServices.length) params.set("service", filterServices.join(","));
+      if (filterStages.length) params.set("stage", filterStages.join(","));
       const data = await remcardFetch<{ partners: PartnerSearchResult[] }>(
         `/api/partnership/search?${params.toString()}`,
       );
@@ -106,7 +113,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     } finally {
       setLoadingSearch(false);
     }
-  }, [city, query, searchRole]);
+  }, [city, filterProducts, filterServices, filterStages, query, searchRole]);
 
   useEffect(() => {
     void loadList();
@@ -378,6 +385,14 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 </Button>
               </div>
             </div>
+            <PartnerSearchFilters
+              productIds={filterProducts}
+              serviceIds={filterServices}
+              stageIds={filterStages}
+              onChangeProducts={setFilterProducts}
+              onChangeServices={setFilterServices}
+              onChangeStages={setFilterStages}
+            />
           </Panel>
 
           {loadingSearch ? (
@@ -397,6 +412,34 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                           {partner.city ?? "Город не указан"}
                           {partner.partnerType ? ` · ${partner.partnerType}` : ""}
                         </p>
+                        {partner.workingProductLabels?.length ? (
+                          <p className={styles.partnerMeta}>
+                            Товары: {partner.workingProductLabels.join(", ")}
+                          </p>
+                        ) : null}
+                        {partner.workingServiceLabels?.length ? (
+                          <p className={styles.partnerMeta}>
+                            Услуги: {partner.workingServiceLabels.join(", ")}
+                          </p>
+                        ) : null}
+                        {partner.workingStageLabels?.length ? (
+                          <p className={styles.partnerMeta}>
+                            Этапы: {partner.workingStageLabels.join(", ")}
+                          </p>
+                        ) : null}
+                        {partner.partnershipContact?.name ||
+                        partner.partnershipContact?.phone ||
+                        partner.partnershipContact?.email ? (
+                          <p className={styles.partnerMeta}>
+                            Контакт: {partner.partnershipContact.name ?? "—"}
+                            {partner.partnershipContact.phone
+                              ? ` · ${partner.partnershipContact.phone}`
+                              : ""}
+                            {partner.partnershipContact.email
+                              ? ` · ${partner.partnershipContact.email}`
+                              : ""}
+                          </p>
+                        ) : null}
                       </div>
                       {status ? (
                         <StatusBadge

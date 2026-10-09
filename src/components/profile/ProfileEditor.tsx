@@ -35,6 +35,8 @@ import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
+import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
   buildProfileSectionHref,
   PROFILE_SECTION_NAV,
@@ -52,6 +54,14 @@ const PARTNER_TYPES = [
 ] as const;
 
 const STORE_CATEGORY_CHIPS = storeCategoryChips();
+
+const PARTNER_WORK_MODES = [
+  { value: "", label: "Не указано" },
+  { value: "ON_SITE", label: "По адресу" },
+  { value: "MOBILE", label: "На выезде" },
+  { value: "BOTH", label: "По адресу и на выезде" },
+  { value: "ONLINE", label: "Онлайн" },
+] as const;
 
 type ModerationNote = {
   id: string;
@@ -103,6 +113,33 @@ export function ProfileEditor({
   const [telegram, setTelegram] = useState(user.telegram ?? "");
   const [publicEmail, setPublicEmail] = useState(user.publicEmail ?? "");
   const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
+  const initialWorking = initial.workingProfile;
+  const [productCategoryIds, setProductCategoryIds] = useState<string[]>(
+    initialWorking?.productCategoryIds ?? [],
+  );
+  const [serviceSpecializationIds, setServiceSpecializationIds] = useState<string[]>(
+    initialWorking?.serviceSpecializationIds ?? [],
+  );
+  const [navigatorStageIds, setNavigatorStageIds] = useState<string[]>(
+    initialWorking?.navigatorStageIds ?? [],
+  );
+  const [primaryDirection, setPrimaryDirection] = useState<WorkingPrimaryDirection>(
+    initialWorking?.primaryDirection ?? null,
+  );
+  const [partnerSearchOptIn, setPartnerSearchOptIn] = useState(
+    initialWorking?.partnerSearchOptIn ?? false,
+  );
+  const [partnerWorkMode, setPartnerWorkMode] = useState(initialWorking?.partnerWorkMode ?? "");
+  const [areasText, setAreasText] = useState((initialWorking?.areas ?? user.areas ?? []).join("\n"));
+  const [partnershipContactName, setPartnershipContactName] = useState(
+    initialWorking?.partnershipContactName ?? "",
+  );
+  const [partnershipContactPhone, setPartnershipContactPhone] = useState(
+    initialWorking?.partnershipContactPhone ?? "",
+  );
+  const [partnershipContactEmail, setPartnershipContactEmail] = useState(
+    initialWorking?.partnershipContactEmail ?? "",
+  );
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
@@ -125,6 +162,13 @@ export function ProfileEditor({
     (partnerType === "STORE" || partnerType === "COMPANY") &&
     (!profile.organization || (profile.organization.branchCount ?? 0) === 0);
 
+  const parseAreas = useCallback((): string[] => {
+    return areasText
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [areasText]);
+
   const buildDraft = useCallback((): ProfileDraft => {
     return {
       displayName,
@@ -139,16 +183,36 @@ export function ProfileEditor({
       telegram,
       publicEmail,
       publicPhone,
+      productCategoryIds,
+      serviceSpecializationIds,
+      navigatorStageIds,
+      primaryDirection,
+      partnerSearchOptIn,
+      partnerWorkMode,
+      areas: parseAreas(),
+      partnershipContactName,
+      partnershipContactPhone,
+      partnershipContactEmail,
     };
   }, [
     branchAddress,
     city,
     description,
     displayName,
+    navigatorStageIds,
     organizationName,
+    parseAreas,
+    partnerSearchOptIn,
+    partnerWorkMode,
     partnerType,
+    partnershipContactEmail,
+    partnershipContactName,
+    partnershipContactPhone,
+    primaryDirection,
+    productCategoryIds,
     publicEmail,
     publicPhone,
+    serviceSpecializationIds,
     specializations,
     storeCategories,
     telegram,
@@ -187,6 +251,17 @@ export function ProfileEditor({
     setTelegram(u.telegram ?? "");
     setPublicEmail(u.publicEmail ?? "");
     setPublicPhone(u.publicPhone ?? "");
+    const w = next.workingProfile;
+    setProductCategoryIds(w?.productCategoryIds ?? []);
+    setServiceSpecializationIds(w?.serviceSpecializationIds ?? []);
+    setNavigatorStageIds(w?.navigatorStageIds ?? []);
+    setPrimaryDirection(w?.primaryDirection ?? null);
+    setPartnerSearchOptIn(w?.partnerSearchOptIn ?? false);
+    setPartnerWorkMode(w?.partnerWorkMode ?? "");
+    setAreasText((w?.areas ?? u.areas ?? []).join("\n"));
+    setPartnershipContactName(w?.partnershipContactName ?? "");
+    setPartnershipContactPhone(w?.partnershipContactPhone ?? "");
+    setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
   }, []);
 
   const loadNotes = useCallback(async () => {
@@ -400,6 +475,95 @@ export function ProfileEditor({
             </div>
           </fieldset>
         </Panel>
+
+        <Panel title="Чем вы занимаетесь">
+          <ProfileDirectionsPicker
+            disabled={!basicsEditable}
+            productCategoryIds={productCategoryIds}
+            serviceSpecializationIds={serviceSpecializationIds}
+            navigatorStageIds={navigatorStageIds}
+            primaryDirection={primaryDirection}
+            onChangeProducts={setProductCategoryIds}
+            onChangeServices={setServiceSpecializationIds}
+            onChangeStages={setNavigatorStageIds}
+            onChangePrimary={setPrimaryDirection}
+          />
+        </Panel>
+
+        <Panel title="Где вы работаете">
+          <fieldset className={styles.fieldset} disabled={!basicsEditable}>
+            <div className={styles.fields}>
+              <SelectField
+                label="Формат работы"
+                value={partnerWorkMode}
+                onChange={(event) => setPartnerWorkMode(event.target.value)}
+              >
+                {PARTNER_WORK_MODES.map((item) => (
+                  <option key={item.value || "none"} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </SelectField>
+              <TextAreaField
+                label="Территории обслуживания"
+                value={areasText}
+                onChange={(event) => setAreasText(event.target.value)}
+                hint="По одной зоне в строке или через запятую. Не заменяет точный адрес филиала."
+              />
+            </div>
+          </fieldset>
+        </Panel>
+
+        <Panel title="Контакт для сотрудничества">
+          <p className={styles.hint}>
+            Эти контакты предназначены для сотрудничества с партнёрами RemCard. Они не публикуются
+            автоматически в открытом каталоге.
+          </p>
+          <fieldset className={styles.fieldset} disabled={!basicsEditable}>
+            <div className={styles.fields}>
+              <TextField
+                label="Контактное лицо"
+                value={partnershipContactName}
+                onChange={(event) => setPartnershipContactName(event.target.value)}
+              />
+              <TextField
+                label="Телефон"
+                value={partnershipContactPhone}
+                onChange={(event) => setPartnershipContactPhone(event.target.value)}
+              />
+              <TextField
+                label="Email"
+                value={partnershipContactEmail}
+                onChange={(event) => setPartnershipContactEmail(event.target.value)}
+              />
+            </div>
+          </fieldset>
+        </Panel>
+
+        <Panel title="Видимость">
+          <label className={styles.checkRow}>
+            <input
+              type="checkbox"
+              checked={partnerSearchOptIn}
+              disabled={!basicsEditable}
+              onChange={(event) => setPartnerSearchOptIn(event.target.checked)}
+            />
+            <span>Показывать партнёрам в RemCard</span>
+          </label>
+          <p className={styles.hint}>
+            Другие партнёры смогут найти вас по товарам, услугам и городу и предложить сотрудничество.
+            Публикация на remcard.ru настраивается отдельно.
+          </p>
+          {profile.workingProfile?.partnerSearchVisible != null ? (
+            <p className={styles.hint}>
+              Сейчас на сервере:{" "}
+              {profile.workingProfile.partnerSearchVisible
+                ? "виден партнёрам"
+                : "скрыт из поиска партнёров"}
+              .
+            </p>
+          ) : null}
+        </Panel>
           {error ? (
             <p className={styles.error} role="alert">
               {error}
@@ -412,7 +576,7 @@ export function ProfileEditor({
           ) : null}
           <div className={styles.actions}>
             <Button type="submit" disabled={saving || !basicsEditable}>
-              {saving ? "Сохранение…" : "Сохранить данные"}
+              {saving ? "Сохранение…" : "Сохранить основные данные"}
             </Button>
           </div>
         </form>

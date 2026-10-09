@@ -14,6 +14,7 @@ import {
   savedRepresentativeName,
   savedWorkingProfileReadyLabel,
   savedWorkingProfileTitle,
+  savedPartnerSearchVisibleLabel,
 } from "@/lib/profile-overview-display";
 import type { ProProfileResponse } from "@/lib/types";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
@@ -253,6 +254,10 @@ export function ProfileOverviewSection({
                 "Пока не указаны"
               )}
             </dd>
+          </div>
+          <div>
+            <dt>Поиск партнёров</dt>
+            <dd>{savedPartnerSearchVisibleLabel(profile)}</dd>
           </div>
         </dl>
 

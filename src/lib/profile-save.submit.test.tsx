@@ -73,6 +73,16 @@ const draft: ProfileDraft = {
   telegram: "",
   publicEmail: "",
   publicPhone: "",
+  productCategoryIds: [],
+  serviceSpecializationIds: [],
+  navigatorStageIds: [],
+  primaryDirection: null,
+  partnerSearchOptIn: false,
+  partnerWorkMode: "",
+  areas: [],
+  partnershipContactName: "",
+  partnershipContactPhone: "",
+  partnershipContactEmail: "",
 };
 
 describe("submitProfileForModerationReview", () => {

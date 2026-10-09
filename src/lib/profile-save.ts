@@ -16,6 +16,16 @@ export type ProfileDraft = {
   telegram: string;
   publicEmail: string;
   publicPhone: string;
+  productCategoryIds: string[];
+  serviceSpecializationIds: string[];
+  navigatorStageIds: string[];
+  primaryDirection: { kind: "product" | "service"; id: string } | null;
+  partnerSearchOptIn: boolean;
+  partnerWorkMode: string;
+  areas: string[];
+  partnershipContactName: string;
+  partnershipContactPhone: string;
+  partnershipContactEmail: string;
 };
 
 export function validateProfileDraft(

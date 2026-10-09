@@ -1,60 +1,49 @@
-# PROF-H1 — progress
+# PROF-H — progress
 
-## Git
+## Git (H2)
 
-| | SHA | Branch |
-|---|---|---|
-| Base | `bb60c60` | `origin/release/prof-v1-20261007` |
-| HEAD | `96285e8` | `feat/prof-h-profile-redesign` |
+| Repo | Base | Branch | HEAD (after H2) |
+|------|------|--------|-----------------|
+| remcard-partner-platform | `bb60c60` (`release/prof-v1-20261007`) | `feat/prof-h-profile-redesign` | _(see commit)_ |
+| remcard-navigator | `9523dcd` (`release/prof-backend-v1-20261007`) | `feat/prof-h-profile-redesign` | _(see commit)_ |
 
-## Mobile overflow fix (390×844)
+H1 accepted: `49118cd` (docs), `96285e8` (overflow CSS).
 
-**Причина:** flex-полоса вкладок и grid-потомки с `min-width: auto` раздували intrinsic width (~634px) → `documentElement.scrollWidth` > viewport.
+## H2 — реализовано
 
-**Исправление (CSS only):**
-- `ProfileEditor`: `.shell` → `grid-template-columns: minmax(0,1fr)`; `.sectionNav` + `.tabStrip` → `width:100%`, `min-width:0`; вкладки scroll только в `.tabStrip`
-- Grid колонки: `minmax(0, …)` вместо фиксированных min 260px
-- `ProfileOverviewSection.grid`: `minmax(0,1fr)` на брейкпоинтах
-- `AppShell.content`, `PageHeading`: `min-width:0` для цепочки кабинета
-- Dev-fixture `main`: `width:100%`, `min-width:0`, responsive padding
+- Отдельное хранение рабочих направлений и видимости на `User` (миграция `20261009_prof_h2_working_profile`).
+- `GET/PATCH /api/pro/profile` → блок `workingProfile`; catalog PATCH не затрагивает working-поля (`splitProfilePatchBody`).
+- `GET /api/pro/partner-taxonomy` — единый read-only справочник.
+- Внутренний поиск: opt-in + legacy до первого explicit; фильтры `q`, `city`, `product`, `service`, `stage` (AND между группами).
+- Platform: форма «Основные данные» (6 секций), picker, PartnersHub filters, overview «Поиск партнёров».
+- Контракт: [PROF-H2-CONTRACT.md](./PROF-H2-CONTRACT.md)
 
-**Метрики после fix (fixture UI, viewport 390×844):**
+## H1 mobile overflow (сохранено)
 
-| Страница | innerWidth | clientWidth | scrollWidth | bodyScroll |
-|---|---:|---:|---:|---:|
-| Обзор | 390 | 390 | 390 | 390 |
-| Основные данные | 390 | 390 | 390 | 390 |
+Метрики fixture 390×844: `innerWidth/clientWidth/scrollWidth/bodyScroll` = **390**.
 
-Раннее утверждение «overflow отсутствует» только по `clientWidth` было **неверным** (было `scrollWidth` ≈ 666 при `clientWidth` 390). Сейчас **scrollWidth = clientWidth = 390**.
+## Проверки H2
 
-## Fix-pass (ранее)
+| Команда | Exit | Результат |
+|---------|------|-----------|
+| platform `npm run test` | 0 | 66 tests PASS |
+| platform `NODE_ENV=production npm run build` | 0 | PASS |
+| navigator `npm run test` (workingProfile, partnershipSearchQuery, profH2 integration) | 0 | PASS (integration без seed users — см. NOT VERIFIED) |
+| test DB migration execute | 0 | applied on `remcard_prof_test` |
 
-Dirty basics, `router.push` + history, обзор по saved profile, счётчики SOLO/403, Vitest 66 + proxy 228.
+## Browser (fixture UI)
 
-Backend, API, permissions, moderation lifecycle **не менялись**.
-
-## Проверки (факт)
-
-| Команда | Результат |
-|---|---|
-| `npm run test` | PASS (228 proxy + 66 component) |
-| `npm run lint` | PASS (warning `AuthFlow.tsx`) |
-| `NODE_ENV=production npm run build` | PASS |
-
-## Browser screenshots (fixture UI)
-
-| Файл | Viewport |
-|---|---|
-| `docs/screenshots/prof-h1-overview-1440.png` | 1440×900 |
-| `docs/screenshots/prof-h1-basics-1440.png` | 1440×900 |
-| `docs/screenshots/prof-h1-overview-390.png` | 390×844 |
-| `docs/screenshots/prof-h1-basics-390.png` | 390×844 |
+| Файл | Viewport | Примечание |
+|------|----------|------------|
+| `/opt/cursor/artifacts/screenshots/prof-h2-basics-1440.png` | 1440×900 | layout + секции H2 |
+| `/opt/cursor/artifacts/screenshots/prof-h2-basics-390.png` | 390×844 | overflow metrics 390/390/390/390 |
 
 ## NOT VERIFIED
 
-- Authenticated `/profile` в CabinetShell (метрики overflow; CSS цепочка `AppShell.content` обновлена)
-- Real-auth E2E на стенде
+- Сквозной сценарий A→B на test DB (нет пользователей `m2fix-master-search-0001` в текущей БД).
+- Authenticated save/reload + partnership search с живым upstream на стенде.
+- Partners `/partners` browser без сессии (403/upstream).
 
-## H2
+## H3+
 
 Не начат.
