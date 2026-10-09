@@ -1,15 +1,56 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import type { BranchContactsForm } from "@/lib/branch-public-contacts";
+import { BRANCH_CONTACT_KINDS } from "@/lib/branch-public-contacts";
 
 export type BranchCatalogDraft = {
   name: string;
   city: string;
   address: string;
+  addressCity?: string | null;
+  addressDistrict?: string | null;
+  addressGeohash?: string | null;
   description: string;
   photoUrl: string;
   workingHours: string | null;
   specializations: string[];
   storeCategories: string[];
 };
+
+function channelsFromForm(form: BranchContactsForm): Record<string, { isActive: boolean; value: string }> {
+  const channels: Record<string, { isActive: boolean; value: string }> = {};
+  for (const kind of BRANCH_CONTACT_KINDS) {
+    channels[kind] = {
+      isActive: form[kind].isActive,
+      value: form[kind].value.trim(),
+    };
+  }
+  return channels;
+}
+
+/** Single PATCH: branch fields + public contacts (atomic on server draft). */
+export async function persistBranchDraft(
+  branchId: string,
+  draft: BranchCatalogDraft,
+  contacts: BranchContactsForm,
+): Promise<void> {
+  await remcardFetch(`/api/pro/organization/branches/${encodeURIComponent(branchId)}`, {
+    method: "PATCH",
+    body: {
+      name: draft.name.trim(),
+      city: draft.city.trim(),
+      address: draft.address.trim(),
+      addressCity: draft.addressCity ?? undefined,
+      addressDistrict: draft.addressDistrict ?? undefined,
+      addressGeohash: draft.addressGeohash ?? undefined,
+      workingHours: draft.workingHours,
+      description: draft.description.trim() || null,
+      photoUrl: draft.photoUrl.trim() || null,
+      specializations: draft.specializations,
+      storeCategories: draft.storeCategories,
+      channels: channelsFromForm(contacts),
+    },
+  });
+}
 
 export async function persistBranchWorkingAndCatalog(
   branchId: string,
@@ -21,6 +62,9 @@ export async function persistBranchWorkingAndCatalog(
       name: draft.name.trim(),
       city: draft.city.trim(),
       address: draft.address.trim(),
+      addressCity: draft.addressCity ?? undefined,
+      addressDistrict: draft.addressDistrict ?? undefined,
+      addressGeohash: draft.addressGeohash ?? undefined,
       workingHours: draft.workingHours,
       description: draft.description.trim() || null,
       photoUrl: draft.photoUrl.trim() || null,
@@ -49,21 +93,6 @@ export async function submitBranchForModeration(branchId: string): Promise<void>
     `/api/pro/organization/branches/${encodeURIComponent(branchId)}/submit-for-moderation`,
     { method: "POST", body: {} },
   );
-}
-
-/** @deprecated use persistBranchWorkingAndCatalog */
-export async function persistBranchCatalogDraft(
-  branchId: string,
-  draft: Pick<BranchCatalogDraft, "description" | "photoUrl" | "storeCategories">,
-): Promise<void> {
-  await remcardFetch(`/api/pro/organization/branches/${encodeURIComponent(branchId)}`, {
-    method: "PATCH",
-    body: {
-      description: draft.description.trim() || null,
-      photoUrl: draft.photoUrl.trim() || null,
-      storeCategories: draft.storeCategories,
-    },
-  });
 }
 
 export function branchSaveErrorMessage(caught: unknown): string {

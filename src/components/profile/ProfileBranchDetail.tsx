@@ -5,16 +5,16 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { CATALOG_STATUS_LABELS, catalogStatusTone } from "@/lib/partnership-labels";
 import { buildBranchPreviewModel } from "@/lib/branch-catalog-preview";
 import {
-  emptyWeekSchedule,
   parseBranchWorkingHours,
   serializeBranchWorkingHours,
+  validateBranchWorkingHoursText,
+  weekTemplateSchedule,
   type BranchDayKey,
   type BranchDaySchedule,
 } from "@/lib/branch-working-hours";
 import {
   branchContactsFromRows,
   emptyBranchContactsForm,
-  persistBranchPublicContacts,
   contactSaveErrorMessage,
   type BranchContactsForm,
   type OrgPublicContactRow,
@@ -22,10 +22,11 @@ import {
 import {
   branchSaveErrorMessage,
   discardBranchCatalogDraft,
-  persistBranchWorkingAndCatalog,
+  persistBranchDraft,
   submitBranchForModeration,
   unpublishBranchFromCatalog,
 } from "@/lib/profile-branch-save";
+import { BranchAddressGeocoder, type BranchAddressGeoValue } from "./BranchAddressGeocoder";
 import { BranchCatalogPublicationPreview } from "./BranchCatalogPublicationPreview";
 import { ProfileBranchContactsSection } from "./ProfileBranchContactsSection";
 import { ProfileBranchScheduleEditor } from "./ProfileBranchScheduleEditor";
@@ -41,6 +42,9 @@ type BranchDetail = {
   name: string;
   city: string;
   address: string;
+  addressCity?: string | null;
+  addressDistrict?: string | null;
+  addressGeohash?: string | null;
   catalogStatus: string;
   catalogPublished?: boolean;
   catalogDraft?: Record<string, unknown> | null;
@@ -88,7 +92,16 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   const [contacts, setContacts] = useState<BranchContactsForm>(() => emptyBranchContactsForm());
   const [scheduleLegacy, setScheduleLegacy] = useState("");
   const [scheduleUseLegacy, setScheduleUseLegacy] = useState(false);
-  const [scheduleDays, setScheduleDays] = useState(() => emptyWeekSchedule());
+  const [scheduleEmpty, setScheduleEmpty] = useState(true);
+  const [scheduleDays, setScheduleDays] = useState(() => weekTemplateSchedule());
+  const [addressGeo, setAddressGeo] = useState<BranchAddressGeoValue>({
+    addressCity: null,
+    addressDistrict: null,
+    addressGeohash: null,
+  });
+  const [branchNotes, setBranchNotes] = useState<
+    { comment: string; createdAt: string; kind: string }[]
+  >([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,31 +110,47 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   const savedSnapshot = useRef("");
 
   const applyBranchToForm = useCallback((b: BranchDetail) => {
-    setName(b.name);
-    setCity(b.city);
-    setAddress(b.address);
+    setName(String(draftField(b, "name", b.name) ?? b.name));
+    setCity(String(draftField(b, "city", b.city) ?? b.city));
+    setAddress(String(draftField(b, "address", b.address) ?? b.address));
     setDescription(String(draftField(b, "description", b.description ?? "") ?? ""));
     setPhotoUrl(String(draftField(b, "photoUrl", b.photoUrl ?? "") ?? ""));
     setSpecializations([...(draftField(b, "specializations", b.specializations ?? []) as string[])]);
     setStoreCategories([...(draftField(b, "storeCategories", b.storeCategories ?? []) as string[])]);
     setContacts(branchContactsFromRows(b.publicContacts ?? []));
-    const wh = b.workingHours ?? "";
+    setAddressGeo({
+      addressCity: (draftField(b, "addressCity", b.addressCity ?? b.city) as string | null) ?? null,
+      addressDistrict: (draftField(b, "addressDistrict", b.addressDistrict) as string | null) ?? null,
+      addressGeohash: (draftField(b, "addressGeohash", b.addressGeohash) as string | null) ?? null,
+    });
+    const whRaw = draftField(b, "workingHours", b.workingHours ?? null) as string | null;
+    const wh = whRaw?.trim() ?? "";
     const parsed = parseBranchWorkingHours(wh);
-    if (parsed.mode === "legacy") {
+    if (parsed.mode === "empty") {
+      setScheduleEmpty(true);
+      setScheduleUseLegacy(false);
+      setScheduleLegacy("");
+      setScheduleDays(weekTemplateSchedule());
+    } else if (parsed.mode === "legacy") {
+      setScheduleEmpty(false);
       setScheduleUseLegacy(true);
       setScheduleLegacy(parsed.text);
-      setScheduleDays(emptyWeekSchedule());
+      setScheduleDays(weekTemplateSchedule());
     } else {
+      setScheduleEmpty(false);
       setScheduleUseLegacy(false);
       setScheduleLegacy("");
       setScheduleDays(parsed.days);
     }
     savedSnapshot.current = JSON.stringify({
-      name: b.name,
-      city: b.city,
-      address: b.address,
+      name: String(draftField(b, "name", b.name) ?? b.name),
+      city: String(draftField(b, "city", b.city) ?? b.city),
+      address: String(draftField(b, "address", b.address) ?? b.address),
       description: String(draftField(b, "description", b.description ?? "") ?? ""),
+      photoUrl: String(draftField(b, "photoUrl", b.photoUrl ?? "") ?? ""),
+      geo: draftField(b, "addressGeohash", b.addressGeohash ?? null),
       wh,
+      contacts: branchContactsFromRows(b.publicContacts ?? []),
       specializations: draftField(b, "specializations", b.specializations ?? []),
       storeCategories: draftField(b, "storeCategories", b.storeCategories ?? []),
     });
@@ -131,7 +160,7 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     setLoading(true);
     setError("");
     try {
-      const [branchRes, orgRes, profileRes] = await Promise.all([
+      const [branchRes, orgRes, profileRes, notesRes] = await Promise.all([
         remcardFetch<{ branch: BranchDetail; isOwner: boolean }>(
           `/api/pro/organization/branches/${encodeURIComponent(branchId)}`,
         ),
@@ -143,6 +172,9 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
           } | null;
         }>("/api/pro/organization"),
         remcardFetch<{ user?: { storeWorkingHours?: string | null } }>("/api/pro/profile"),
+        remcardFetch<{ notes?: { comment: string; createdAt: string; kind: string }[] }>(
+          "/api/pro/moderation-notes",
+        ).catch(() => ({ notes: [] })),
       ]);
       setBranch(branchRes.branch);
       setIsOwner(branchRes.isOwner);
@@ -154,6 +186,12 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
         publicContacts: org?.publicContacts ?? [],
         storeWorkingHours: profileRes.user?.storeWorkingHours?.trim() || null,
       });
+      const bn = branchRes.branch.name;
+      setBranchNotes(
+        (notesRes.notes ?? []).filter(
+          (n) => n.comment.includes(branchId) || n.comment.includes(bn),
+        ),
+      );
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить филиал");
     } finally {
@@ -166,9 +204,10 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   }, [load]);
 
   const workingHoursValue = useMemo(() => {
+    if (scheduleEmpty) return null;
     if (scheduleUseLegacy) return scheduleLegacy.trim() || null;
     return serializeBranchWorkingHours(scheduleDays);
-  }, [scheduleDays, scheduleLegacy, scheduleUseLegacy]);
+  }, [scheduleDays, scheduleEmpty, scheduleLegacy, scheduleUseLegacy]);
 
   const dirty = useMemo(() => {
     const snap = JSON.stringify({
@@ -176,16 +215,22 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
       city,
       address,
       description,
-      wh: workingHoursValue,
+      photoUrl,
+      geo: addressGeo.addressGeohash,
+      wh: workingHoursValue ?? "",
+      contacts,
       specializations,
       storeCategories,
     });
     return snap !== savedSnapshot.current;
   }, [
     address,
+    addressGeo.addressGeohash,
     city,
+    contacts,
     description,
     name,
+    photoUrl,
     specializations,
     storeCategories,
     workingHoursValue,
@@ -207,18 +252,30 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     setSaving(true);
     setError("");
     setMessage("");
+    const whErr = validateBranchWorkingHoursText(workingHoursValue);
+    if (whErr) {
+      setError(whErr);
+      setSaving(false);
+      return;
+    }
     try {
-      await persistBranchWorkingAndCatalog(branchId, {
-        name,
-        city,
-        address,
-        description,
-        photoUrl,
-        workingHours: workingHoursValue,
-        specializations,
-        storeCategories,
-      });
-      await persistBranchPublicContacts(branchId, contacts);
+      await persistBranchDraft(
+        branchId,
+        {
+          name,
+          city,
+          address,
+          addressCity: addressGeo.addressCity,
+          addressDistrict: addressGeo.addressDistrict,
+          addressGeohash: addressGeo.addressGeohash,
+          description,
+          photoUrl,
+          workingHours: workingHoursValue,
+          specializations,
+          storeCategories,
+        },
+        contacts,
+      );
       setMessage("Черновик филиала сохранён");
       await load();
     } catch (caught) {
@@ -237,10 +294,11 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   function copyOrgSchedule() {
     if (!orgSnap?.storeWorkingHours) return;
     const parsed = parseBranchWorkingHours(orgSnap.storeWorkingHours);
+    setScheduleEmpty(false);
     if (parsed.mode === "legacy") {
       setScheduleUseLegacy(true);
       setScheduleLegacy(parsed.text);
-    } else {
+    } else if (parsed.mode === "grid") {
       setScheduleUseLegacy(false);
       setScheduleDays(parsed.days);
     }
@@ -258,7 +316,36 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   }
 
   async function submitBranchCatalog() {
-    setSaving(true);
+    if (dirty) {
+      const ok = confirm("Сохранить изменения и отправить на проверку?");
+      if (!ok) return;
+      setSaving(true);
+      try {
+        await persistBranchDraft(
+          branchId,
+          {
+            name,
+            city,
+            address,
+            addressCity: addressGeo.addressCity,
+            addressDistrict: addressGeo.addressDistrict,
+            addressGeohash: addressGeo.addressGeohash,
+            description,
+            photoUrl,
+            workingHours: workingHoursValue,
+            specializations,
+            storeCategories,
+          },
+          contacts,
+        );
+      } catch (caught) {
+        setError(contactSaveErrorMessage(caught) || branchSaveErrorMessage(caught));
+        setSaving(false);
+        return;
+      }
+    } else {
+      setSaving(true);
+    }
     try {
       await submitBranchForModeration(branchId);
       setMessage("Филиал отправлен на проверку");
@@ -271,6 +358,9 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   }
 
   async function unpublish() {
+    if (!confirm("Снять филиал с публикации в каталоге? Текущая карточка перестанет быть видна клиентам.")) {
+      return;
+    }
     setSaving(true);
     try {
       await unpublishBranchFromCatalog(branchId);
@@ -371,7 +461,22 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
 
               <Panel title="Где находится">
                 <TextField label="Город" value={city} onChange={(e) => setCity(e.target.value)} required />
-                <TextField label="Адрес" value={address} onChange={(e) => setAddress(e.target.value)} required />
+                <TextField
+                  label="Адрес"
+                  value={address}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    setAddressGeo({ addressCity: null, addressDistrict: null, addressGeohash: null });
+                  }}
+                  required
+                />
+                <BranchAddressGeocoder
+                  city={city}
+                  addressLine={address}
+                  value={addressGeo}
+                  disabled={catalogLocked}
+                  onChange={setAddressGeo}
+                />
               </Panel>
 
               <Panel title="Товары и услуги">
@@ -413,8 +518,15 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
                   legacyText={scheduleLegacy}
                   days={scheduleDays}
                   useLegacy={scheduleUseLegacy}
+                  isEmpty={scheduleEmpty}
                   disabled={catalogLocked}
+                  onStartFromTemplate={() => {
+                    setScheduleEmpty(false);
+                    setScheduleUseLegacy(false);
+                    setScheduleDays(weekTemplateSchedule());
+                  }}
                   onUseLegacyChange={(legacy, text) => {
+                    setScheduleEmpty(false);
                     setScheduleUseLegacy(legacy);
                     if (legacy) setScheduleLegacy(text);
                     else {
@@ -426,6 +538,16 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
                   onApplyToAllWorking={applyScheduleToWorkingDays}
                 />
               </Panel>
+
+              {branchNotes.length > 0 ? (
+                <Panel title="Замечания модератора по филиалу">
+                  <ul className={styles.hint}>
+                    {branchNotes.map((n) => (
+                      <li key={n.createdAt + n.comment.slice(0, 12)}>{n.comment}</li>
+                    ))}
+                  </ul>
+                </Panel>
+              ) : null}
 
               <Panel title="Публикация и предпросмотр">
                 <div className={styles.actions}>

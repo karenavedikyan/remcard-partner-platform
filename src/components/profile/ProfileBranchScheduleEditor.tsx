@@ -15,21 +15,44 @@ type ProfileBranchScheduleEditorProps = {
   legacyText: string;
   days: Record<BranchDayKey, BranchDaySchedule>;
   useLegacy: boolean;
+  isEmpty: boolean;
   disabled?: boolean;
   onUseLegacyChange: (legacy: boolean, text: string) => void;
   onDaysChange: (days: Record<BranchDayKey, BranchDaySchedule>) => void;
   onApplyToAllWorking: () => void;
+  onStartFromTemplate: () => void;
 };
 
 export function ProfileBranchScheduleEditor({
   legacyText,
   days,
   useLegacy,
+  isEmpty,
   disabled,
   onUseLegacyChange,
   onDaysChange,
   onApplyToAllWorking,
+  onStartFromTemplate,
 }: ProfileBranchScheduleEditorProps) {
+  if (isEmpty) {
+    return (
+      <div className={styles.fields}>
+        <p className={styles.hint}>Не указано</p>
+        <Button type="button" variant="secondary" disabled={disabled} onClick={onStartFromTemplate}>
+          Заполнить типовой неделей
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={disabled}
+          onClick={() => onUseLegacyChange(true, "")}
+        >
+          Ввести текстом
+        </Button>
+      </div>
+    );
+  }
+
   if (useLegacy) {
     return (
       <div className={styles.fields}>
@@ -47,6 +70,9 @@ export function ProfileBranchScheduleEditor({
           onClick={() => onUseLegacyChange(false, serializeBranchWorkingHours(days))}
         >
           Заменить сеткой дней
+        </Button>
+        <Button type="button" variant="secondary" disabled={disabled} onClick={onStartFromTemplate}>
+          Подставить типовую неделю
         </Button>
         <p className={styles.hint}>Время указывается как местное время филиала.</p>
       </div>
