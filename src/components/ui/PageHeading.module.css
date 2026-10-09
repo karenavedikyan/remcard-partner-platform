@@ -1,5 +1,7 @@
 .heading {
   margin-bottom: var(--space-8);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .eyebrow {

@@ -72,7 +72,16 @@ export default async function ProfileDevFixturePage(props: {
   });
 
   return (
-    <main style={{ padding: "24px 32px", maxWidth: 1310, margin: "0 auto" }}>
+    <main
+      style={{
+        boxSizing: "border-box",
+        width: "100%",
+        maxWidth: 1310,
+        minWidth: 0,
+        margin: "0 auto",
+        padding: "24px clamp(16px, 4vw, 32px)",
+      }}
+    >
       <header style={{ marginBottom: 24 }}>
         <p style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6c706a" }}>
           Профиль партнёра

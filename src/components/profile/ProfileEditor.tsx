@@ -305,7 +305,7 @@ export function ProfileEditor({
         </p>
       ) : null}
 
-      <nav aria-label="Разделы профиля">
+      <nav className={styles.sectionNav} aria-label="Разделы профиля">
         <ul className={styles.tabStrip} role="tablist">
           {PROFILE_SECTION_NAV.map((item) => (
             <li key={item.id} role="presentation">

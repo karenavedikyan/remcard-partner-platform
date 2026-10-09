@@ -1,8 +1,10 @@
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.52fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 1.52fr) minmax(0, 1fr);
   gap: var(--space-5);
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .identityPanel {
@@ -245,7 +247,7 @@
 
 @media (max-width: 900px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

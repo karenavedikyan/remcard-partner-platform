@@ -1,7 +1,15 @@
 .shell {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.sectionNav {
+  min-width: 0;
+  width: 100%;
   max-width: 100%;
 }
 
@@ -10,11 +18,21 @@
   gap: var(--space-6);
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   margin: 0;
   padding: 0;
   list-style: none;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabStrip > li {
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .tabStrip::-webkit-scrollbar {
@@ -56,7 +74,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.8fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr);
   gap: var(--space-6);
   align-items: start;
   min-width: 0;
@@ -144,8 +162,8 @@
 @media (max-width: 650px) {
   .tabStrip {
     gap: var(--space-5);
-    margin-inline: calc(-1 * var(--space-1));
-    padding-inline: var(--space-1);
+    padding-inline: 0;
+    margin-inline: 0;
   }
 }
 
@@ -243,7 +261,7 @@
 
 @media (max-width: 900px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .teamCheckRow {

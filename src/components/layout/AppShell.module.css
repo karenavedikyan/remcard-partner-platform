@@ -167,9 +167,12 @@
 
 .content {
   width: min(var(--content-max), 100%);
+  min-width: 0;
+  max-width: 100%;
   margin: 0 auto;
   padding: var(--space-8);
   flex: 1;
+  box-sizing: border-box;
 }
 
 .mobileNav {
