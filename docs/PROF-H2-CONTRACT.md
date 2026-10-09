@@ -1,6 +1,6 @@
 # PROF-H2 — контракт (fix-pass)
 
-Base: navigator `d8f287e` → **`022450b5`**; platform `d2ae82f` → **`b2a9927`**. Branch: `feat/prof-h-profile-redesign`.
+Base: navigator `d8f287e` → **`022450b5`**; platform `d2ae82f` → **`afb8d02`**. Branch: `feat/prof-h-profile-redesign`.
 
 ## 1. Legacy-профили
 
