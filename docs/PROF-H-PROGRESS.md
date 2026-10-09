@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `a6665f8f` | **`942230a2`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `b0d47af` | **`cd6c12c`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `942230a2` | *(see H3 residual pass below)* |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `1b7c9cb` | *(see H3 residual pass below)* |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -206,3 +206,88 @@ Screenshots: `/opt/cursor/artifacts/screenshots/prof-h3-catalog-1440.png`, `prof
 - Moderation-notes UI flow in browser (API covered elsewhere).
 - Successful logo upload to production blob (browser retry gets **503** when storage unset — client reject path verified).
 - Org-only owner with separate STORE fixture in browser (API org contact bleed covered).
+
+---
+
+## PROF-H3 — residual defects + acceptance (2026-10-09)
+
+Base SHAs at start: navigator **`942230a2`**, platform **`1b7c9cb`**.
+
+### 1. Organization catalog fields in `profileDraftFromProfile` — **CLOSED**
+
+- `catalogEntity === "organization"`: `specializations` / `storeCategories` (and related catalog slice) from **organization** effective arrays; empty org `[]` does **not** fall back to owner `User`.
+- Platform: `profile-draft-sync.ts` + `profile-draft-sync.test.ts`, `ProfileEditor.test.tsx` («organization specializations, not owner user list»).
+- Browser: `catalog_org_specializations_not_owner` on `m1fix-prof-browser-store01` (owner `doors`/`plumbing` vs org `tiles`/`doors`).
+
+### 2. Working identity when overrides null — **CLOSED**
+
+- Navigator: `workingIdentityPreserveBeforeCatalogPublicChange` before live catalog column writes (draft save + approve); does not overwrite existing overrides.
+- Integration: solo DRAFT + published approve paths in `profH3EndToEnd` / `profH3CatalogFixPass`; explicit `auth/me` + `discardCatalogDraft` assertions on working name/city.
+- Unit: `workingIdentityPreserve.test.ts`.
+
+### Tests / build (this pass)
+
+```bash
+# navigator
+cd remcard-navigator && pnpm run typecheck   # exit 0
+NODE_ENV=production PLATFORM_INN=000000000000 PLATFORM_OGRN=000000000000000 pnpm run build   # exit 0
+pnpm exec vitest run src/lib/__tests__/workingIdentityPreserve.test.ts \
+  src/lib/__tests__/profH3EndToEnd.integration.test.ts \
+  src/lib/__tests__/profH3CatalogFixPass.integration.test.ts \
+  src/lib/__tests__/catalogPublicationRoutes.integration.test.ts
+# ×2 runs: 20/20 then 17/17 integration (3 suites) — all pass
+
+# platform
+cd remcard-partner-platform && npm run test:component -- --run \
+  src/lib/profile-draft-sync.test.ts src/components/profile/ProfileEditor.test.tsx   # exit 0, 17 passed
+NODE_ENV=production npm run build   # exit 0
+```
+
+| Suite | Exit | Passed |
+|-------|------|--------|
+| Navigator typecheck | 0 | — |
+| Navigator production build | 0 | — |
+| Navigator H3 integration ×2 | 0 | **17/17** each |
+| Navigator unit (`workingIdentityPreserve`) | 0 | **3/3** (in 20-test run) |
+| Platform component (profile) | 0 | **17/17** |
+| Platform production build | 0 | — |
+
+### Browser (1440 / 390, local `:3000` / `:3001`)
+
+```bash
+cd remcard-partner-platform
+node scripts/prof-h3-browser-fixtures.mjs   # remcard_prof_test loopback only
+node scripts/prof-h3-browser-smoke.mjs
+```
+
+| Exit | Result |
+|------|--------|
+| **0** | **PASS** |
+
+| Scenario | Result |
+|----------|--------|
+| Catalog layout + preview 1440 | PASS |
+| Save → reload description | PASS |
+| Org specializations (not owner bleed) | PASS |
+| Directions picker (products + services) | PASS |
+| Upload reject → retry same input | PASS |
+| Mock upload → save → reload → preview | PASS *(UI contract; not production storage)* |
+| Moderation note visible + catalog section | PASS |
+| 390×844 overflow | PASS |
+
+Screenshots:
+
+- `/opt/cursor/artifacts/screenshots/prof-h3-catalog-1440.png`
+- `/opt/cursor/artifacts/screenshots/prof-h3-catalog-390.png`
+- `/opt/cursor/artifacts/screenshots/prof-h3-catalog-org-specializations.png`
+- `/opt/cursor/artifacts/screenshots/prof-h3-moderation-notes.png`
+- `/opt/cursor/artifacts/screenshots/prof-h3-upload-mock-preview.png`
+
+Console: `net::ERR_NAME_NOT_RESOLVED` for `example.test` mock image URL only (expected).
+
+### NOT VERIFIED (external)
+
+- **Production blob storage** for real logo upload (503 when unset; mock documents UI contract only).
+- **Real Telegram / MAX** login (fixture JWT + HttpOnly cookie only).
+
+No PR / release / deploy / production DB. **H4 not started.**

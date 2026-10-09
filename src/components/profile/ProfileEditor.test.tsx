@@ -64,6 +64,22 @@ vi.mock("./ProfileTeamSection", () => ({
   ProfileTeamSection: () => <div data-testid="team-section" />,
 }));
 
+vi.mock("./ProfileDirectionsPicker", () => ({
+  ProfileDirectionsPicker: ({
+    serviceSpecializationIds,
+    productCategoryIds,
+  }: {
+    serviceSpecializationIds: string[];
+    productCategoryIds: string[];
+  }) => (
+    <div
+      data-testid="catalog-directions"
+      data-services={serviceSpecializationIds.join(",")}
+      data-products={productCategoryIds.join(",")}
+    />
+  ),
+}));
+
 const initial: ProProfileResponse = {
   organization: null,
   programs: [],
@@ -279,6 +295,53 @@ describe("ProfileEditor", () => {
     );
     await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
     expect(screen.getByLabelText(/Адрес первого филиала/i)).toBeInTheDocument();
+  });
+
+  it("catalog section shows organization specializations, not owner user list", async () => {
+    mockSearchParams = new URLSearchParams("section=catalog");
+    const ui = userEvent.setup();
+    render(
+      <ProfileEditor
+        initial={{
+          ...initial,
+          catalogPublication: {
+            catalogEntity: "organization",
+            isLivePublic: false,
+            draftPending: false,
+            published: {
+              description: null,
+              specializations: [],
+              storeCategories: [],
+              website: null,
+              telegram: null,
+              publicEmail: null,
+              publicPhone: null,
+            },
+          },
+          user: {
+            ...initial.user,
+            partnerType: "STORE",
+            specializations: ["electrician"],
+            storeCategories: ["plumbing"],
+          },
+          organization: {
+            id: "o1",
+            name: "Shop",
+            catalogStatus: "DRAFT",
+            partnerType: "STORE",
+            branchCount: 1,
+            specializations: ["tiles"],
+            storeCategories: ["doors"],
+          },
+        }}
+        section="catalog"
+      />,
+    );
+    await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
+    const picker = screen.getByTestId("catalog-directions");
+    expect(picker.getAttribute("data-services")).toBe("tiles");
+    expect(picker.getAttribute("data-products")).toBe("doors");
+    expect(picker.getAttribute("data-services")).not.toContain("electrician");
   });
 
   it("opens catalog for moderation deep link section", async () => {

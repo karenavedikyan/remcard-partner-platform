@@ -6,6 +6,11 @@ const outDir = "/opt/cursor/artifacts/screenshots";
 mkdirSync(outDir, { recursive: true });
 
 const USER = "m1fix-prof-browser01";
+const USER_ORG_STORE = "m1fix-prof-browser-store01";
+
+execSync("node /agent/repos/remcard-partner-platform/scripts/prof-h3-browser-fixtures.mjs", {
+  stdio: "inherit",
+});
 
 function mintToken(userId) {
   return execSync(
@@ -15,6 +20,27 @@ function mintToken(userId) {
 }
 
 const results = { scenarios: {}, consoleErrors: [], exitCode: 0 };
+
+async function openCatalogSection(page) {
+  await page.goto("http://127.0.0.1:3000/profile?section=catalog", {
+    waitUntil: "networkidle",
+    timeout: 120_000,
+  });
+  await page.getByText("Помогите новым клиентам").waitFor({ timeout: 60_000 });
+  const catalogTab = page.getByRole("tab", { name: /Каталог RemCard/i });
+  if ((await catalogTab.getAttribute("aria-selected")) !== "true") {
+    await catalogTab.click();
+    await page.waitForTimeout(400);
+  }
+}
+
+async function ensureCatalogExpanded(page) {
+  const prepare = page.getByRole("button", { name: /Подготовить профиль к публикации/i });
+  if (await prepare.isVisible()) {
+    await prepare.click();
+    await page.waitForTimeout(600);
+  }
+}
 
 async function runScenario(key, fn) {
   try {
@@ -77,6 +103,43 @@ await runScenario("catalog_save_reload", async () => {
   }
 });
 
+await runScenario("catalog_org_specializations_not_owner", async () => {
+  const orgContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await orgContext.addCookies([
+    {
+      name: "remcard-token",
+      value: mintToken(USER_ORG_STORE),
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
+  const orgPage = await orgContext.newPage();
+  await openCatalogSection(orgPage);
+  await ensureCatalogExpanded(orgPage);
+  await orgPage.waitForTimeout(800);
+  const services = orgPage.getByRole("group", { name: "Работы и услуги" });
+  const products = orgPage.getByRole("group", { name: "Товары" });
+  const tiles = services.getByRole("checkbox", { name: /Плитка/i });
+  const doorsProduct = products.getByRole("checkbox", { name: /Двери/i });
+  if (!(await tiles.isChecked())) throw new Error("org services must show tiles checked");
+  if (await doorsProduct.isChecked()) {
+    // org storeCategories doors may be pre-selected; ensure owner-only plumbing is not in products
+  }
+  const plumbing = products.getByRole("checkbox", { name: /Сантехника/i });
+  if (await plumbing.isChecked()) {
+    throw new Error("owner storeCategories plumbing must not appear for org catalog");
+  }
+  const ownerDoorsService = services.getByRole("checkbox", { name: /^Двери$/i });
+  if (await ownerDoorsService.isChecked()) {
+    throw new Error("owner user specializations must not drive org catalog services");
+  }
+  await orgPage.screenshot({ path: `${outDir}/prof-h3-catalog-org-specializations.png`, fullPage: true });
+  await orgContext.close();
+});
+
 await runScenario("catalog_directions_picker", async () => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("http://127.0.0.1:3000/profile?section=catalog", {
@@ -96,13 +159,38 @@ await runScenario("catalog_directions_picker", async () => {
   if (!(await firstProduct.isChecked())) throw new Error("product checkbox not wired");
 });
 
-await runScenario("catalog_upload_reject_retry", async () => {
-  await page.goto("http://127.0.0.1:3000/profile?section=catalog", {
-    waitUntil: "networkidle",
-    timeout: 120_000,
+await runScenario("catalog_upload_mock_success_reload", async () => {
+  await page.route("**/api/remcard/api/upload", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ url: "https://example.test/mock-catalog-logo.png" }),
+    });
   });
-  await page.getByRole("button", { name: /Подготовить профиль к публикации/i }).click();
-  await page.waitForTimeout(500);
+  await openCatalogSection(page);
+  await ensureCatalogExpanded(page);
+  const input = page.locator('input[type="file"]').first();
+  await input.setInputFiles({
+    name: "mock-logo.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    ),
+  });
+  await page.waitForTimeout(1500);
+  await page.getByRole("button", { name: /Сохранить черновик/i }).click();
+  await page.waitForTimeout(3000);
+  await page.reload({ waitUntil: "networkidle" });
+  await ensureCatalogExpanded(page);
+  await page.screenshot({ path: `${outDir}/prof-h3-upload-mock-preview.png`, fullPage: true });
+  results.scenarios.catalog_upload_mock_note =
+    "UI contract only (mock upload URL, not production storage)";
+});
+
+await runScenario("catalog_upload_reject_retry", async () => {
+  await openCatalogSection(page);
+  await ensureCatalogExpanded(page);
   const input = page.locator('input[type="file"]').first();
   await input.setInputFiles({
     name: "not-image.txt",
@@ -123,6 +211,19 @@ await runScenario("catalog_upload_reject_retry", async () => {
     ),
   });
   await page.waitForTimeout(2500);
+});
+
+await runScenario("moderation_notes_catalog_link", async () => {
+  execSync(
+    `cd /agent/repos/remcard-navigator && pnpm exec tsx scripts/prof-h3-browser-moderation-seed.ts ${USER}`,
+    { stdio: "pipe" },
+  );
+  await openCatalogSection(page);
+  const body = await page.locator("body").innerText();
+  if (!body.includes("исправьте описание каталога")) {
+    throw new Error("moderation note not visible on catalog section");
+  }
+  await page.screenshot({ path: `${outDir}/prof-h3-moderation-notes.png`, fullPage: true });
 });
 
 await runScenario("overflow_390", async () => {

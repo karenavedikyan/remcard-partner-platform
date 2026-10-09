@@ -25,11 +25,12 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
       ? (profile.organization?.description ?? "")
       : (u.description ?? ""),
     partnerType: u.partnerType ?? "MASTER",
-    specializations: [...(u.specializations ?? [])],
-    storeCategories:
-      catalogOnOrg && profile.organization?.storeCategories
-        ? [...profile.organization.storeCategories]
-        : [...(u.storeCategories ?? [])],
+    specializations: catalogOnOrg
+      ? [...(profile.organization?.specializations ?? [])]
+      : [...(u.specializations ?? [])],
+    storeCategories: catalogOnOrg
+      ? [...(profile.organization?.storeCategories ?? [])]
+      : [...(u.storeCategories ?? [])],
     organizationName: profile.organization?.name ?? "",
     branchAddress: "",
     website: catalogOnOrg ? (profile.organization?.website ?? "") : (u.website ?? ""),
