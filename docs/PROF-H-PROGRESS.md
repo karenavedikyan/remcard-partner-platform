@@ -5,7 +5,7 @@
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
 | remcard-navigator | `feat/prof-h-profile-redesign` | `942230a2` | **`432498a0`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `1b7c9cb` | **`7e02d9f`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `1b7c9cb` | **`462cf60`** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
