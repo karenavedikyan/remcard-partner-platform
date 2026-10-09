@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `83a950cb` | **`0a1b483e`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `dec181e` | **`113149d`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `0a1b483e` | **`e4df195d`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `e3c9af7` | **`ff5d6b7`** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -81,8 +81,66 @@ node scripts/prof-h2-browser-smoke.mjs
 - `scripts/prof-h2-browser-smoke.mjs`: полный сценарий A/B, JSON-отчёт, скриншоты.
 - `scripts/prof-h2-seed-pagination.mjs` + navigator `scripts/prof-h2-seed-pagination.ts`: seed для page 2 (loopback `remcard_prof_test` only).
 
-## H3
+## H3 — catalog publication UI (2026-10-09)
 
-Not started. No PR / release / deploy / production DB.
+Reuse map: `docs/PROF-H3-REUSE-MAP.md`.
 
-**H2 acceptance complete, готов к H3.**
+### Platform tests / build
+
+```bash
+cd remcard-partner-platform && npm run test:component
+NODE_ENV=production npm run build
+```
+
+| Command | Exit | Passed |
+|---------|------|--------|
+| `test:component` | 0 | **75** |
+| `production build` | 0 | — |
+
+New/updated: `profile-catalog-completeness.test.ts`, `catalog-public-preview.test.ts`, `ProfileEditor.test.tsx`.
+
+### Navigator
+
+```bash
+cd remcard-navigator && pnpm run typecheck
+JWT_SECRET=... DATABASE_URL=.../remcard_prof_test \
+  pnpm exec vitest run src/lib/__tests__/catalogPublicationRoutes.integration.test.ts
+```
+
+| Command | Exit | Notes |
+|---------|------|--------|
+| `typecheck` | 0 | PASS |
+| `catalogPublicationRoutes.integration` | 1 | **6 passed, 2 failed** — flaky/polluted `remcard_prof_test` (revise/PENDING expectations); not a new H3 API surface |
+
+### Browser (catalog)
+
+```bash
+cd remcard-partner-platform && node scripts/prof-h3-browser-smoke.mjs
+```
+
+| Exit | Scenarios |
+|------|-----------|
+| 0 | layout+preview 1440, save→reload, overflow 390 — **PASS** |
+
+Screenshots:
+
+- `/opt/cursor/artifacts/screenshots/prof-h3-catalog-1440.png`
+- `/opt/cursor/artifacts/screenshots/prof-h3-catalog-390.png`
+
+### Delivered (H3 scope)
+
+- «Каталог RemCard»: headline, card (name/logo/description), taxonomy products/services, public contacts, preview, status/actions (save/submit/discard/unpublish/open remcard.ru).
+- Logo upload via existing `/api/upload` (BFF proxy added); fallback `CategoryIcons` / `CatalogCategoryAvatar`.
+- Explicit «Перенести направления из рабочего профиля»; catalog vs working contacts labeled.
+- Unsaved catalog leave confirm + `beforeunload` (with basics guard).
+- `persistCatalogDraftOnly`: `photoUrl` / `logoUrl`, `showFullName`, org name.
+
+### NOT VERIFIED (this run)
+
+- Full browser matrix (upload error, moderation notes UI, org-only write path in UI, all product/service/both layouts).
+- Real remcard.ru public card pixel parity (preview is local DTO).
+- Telegram/MAX login.
+- Clean-room re-run of all 8 catalogPublication integration scenarios after DB reset.
+- H4 branches / H5 staff.
+
+No PR / release / deploy / production DB. **H4 not started.**

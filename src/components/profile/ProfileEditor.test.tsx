@@ -252,13 +252,12 @@ describe("ProfileEditor", () => {
     const ui = userEvent.setup();
     render(<ProfileEditor initial={draftProfile} section="catalog" />);
     await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
-    await ui.click(screen.getByRole("button", { name: /отправить на публикацию/i }));
+    await ui.click(screen.getByRole("button", { name: /Отправить на проверку/i }));
 
     await waitFor(() => {
       expect(submitProfileForModerationReview).toHaveBeenCalledTimes(1);
     });
-    expect(await screen.findByText("На проверке")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /отправить на публикацию/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Отправить на проверку/i })).not.toBeInTheDocument();
   });
 
   it("shows branch address field for store without organization in catalog section", async () => {

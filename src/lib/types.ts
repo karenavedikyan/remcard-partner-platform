@@ -99,6 +99,7 @@ export type ProProfileResponse = {
   organization: {
     id: string;
     name: string;
+    logoUrl?: string | null;
     catalogStatus: string;
     catalogPublished?: boolean;
     catalogDraft?: unknown;
@@ -106,6 +107,7 @@ export type ProProfileResponse = {
     description?: string | null;
     website?: string | null;
     storeCategories?: string[];
+    specializations?: string[];
     partnerType: string | null;
     branchCount: number;
   } | null;

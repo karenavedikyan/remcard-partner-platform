@@ -6,8 +6,12 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
   const u = profile.user;
   const w = profile.workingProfile;
   const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
+  const org = profile.organization;
   return {
     displayName: u.displayName ?? "",
+    catalogPublicName: catalogOnOrg ? (org?.name ?? "") : (u.displayName ?? ""),
+    showFullName: u.showFullName ?? false,
+    catalogImageUrl: catalogOnOrg ? (org?.logoUrl ?? "") : (u.photoUrl ?? ""),
     city: u.city ?? "",
     description:
       catalogOnOrg && profile.organization?.description != null
@@ -66,6 +70,9 @@ const DRAFT_KEYS: (keyof ProfileDraft)[] = [
   "partnershipContactName",
   "partnershipContactPhone",
   "partnershipContactEmail",
+  "catalogPublicName",
+  "showFullName",
+  "catalogImageUrl",
 ];
 
 function normalizeDraft(draft: ProfileDraft): ProfileDraft {

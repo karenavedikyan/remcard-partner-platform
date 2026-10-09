@@ -1,0 +1,47 @@
+.card {
+  border: 1px solid var(--color-border, #e4e4e7);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface, #fff);
+}
+
+.header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.meta {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted, #71717a);
+  font-size: 0.875rem;
+}
+
+.desc {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+}
+
+.tags {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: var(--color-muted, #52525b);
+}
+
+.contacts {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
+}
+
+.note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted, #a1a1aa);
+}

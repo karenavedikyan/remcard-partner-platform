@@ -16,6 +16,11 @@ export type ProfileDraft = {
   telegram: string;
   publicEmail: string;
   publicPhone: string;
+  /** Public catalog title (solo: displayName column; org: organization name). */
+  catalogPublicName: string;
+  showFullName: boolean;
+  /** Solo: photoUrl; organization: logoUrl (effective draft). */
+  catalogImageUrl: string;
   productCategoryIds: string[];
   serviceSpecializationIds: string[];
   navigatorStageIds: string[];
@@ -159,12 +164,20 @@ export async function persistCatalogDraftOnly(
     await remcardFetch("/api/pro/organization", {
       method: "PATCH",
       body: {
+        name: draft.organizationName.trim() || undefined,
         description: draft.description.trim() || null,
         storeCategories: draft.storeCategories,
+        specializations:
+          draft.partnerType === "MASTER" ? draft.specializations : undefined,
         website: draft.website.trim() || null,
+        logoUrl: draft.catalogImageUrl.trim() || null,
       },
     });
   } else {
+    const trimmedPublic = (draft.catalogPublicName || draft.displayName).trim();
+    if (trimmedPublic !== (profile.user.displayName ?? "").trim()) {
+      await saveDisplayNameViaAuthMe(trimmedPublic);
+    }
     await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
       method: "PATCH",
       body: {
@@ -178,6 +191,8 @@ export async function persistCatalogDraftOnly(
         telegram: draft.telegram.trim() || null,
         publicEmail: draft.publicEmail.trim() || null,
         publicPhone: draft.publicPhone.trim() || null,
+        showFullName: draft.showFullName,
+        photoUrl: draft.catalogImageUrl.trim() || null,
       },
     });
   }

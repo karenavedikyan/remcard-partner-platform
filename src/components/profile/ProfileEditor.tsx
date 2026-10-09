@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
-import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
-import { storeCategoryChips } from "@/lib/store-categories";
 import {
   effectiveCatalogStatus,
   catalogPublicationEditable,
@@ -18,6 +16,10 @@ import {
   isWorkingProfileDirty,
   profileDraftFromProfile,
 } from "@/lib/profile-draft-sync";
+import {
+  catalogDraftFromProfile,
+  isCatalogDraftDirty,
+} from "@/lib/profile-catalog-draft-sync";
 import {
   persistWorkingProfileDraft,
   validateWorkingProfileDraft,
@@ -50,14 +52,14 @@ export type { ProfileSectionId };
 
 const UNSAVED_BASICS_LEAVE_MESSAGE =
   "Есть несохранённые изменения в основных данных. Уйти без сохранения?";
+const UNSAVED_CATALOG_LEAVE_MESSAGE =
+  "Есть несохранённые изменения в каталоге. Уйти без сохранения?";
 
 const PARTNER_TYPES = [
   { value: "MASTER", label: "Специалист" },
   { value: "COMPANY", label: "Компания" },
   { value: "STORE", label: "Магазин" },
 ] as const;
-
-const STORE_CATEGORY_CHIPS = storeCategoryChips();
 
 const PARTNER_WORK_MODES = [
   { value: "", label: "Не указано" },
@@ -117,6 +119,12 @@ export function ProfileEditor({
   const [telegram, setTelegram] = useState(user.telegram ?? "");
   const [publicEmail, setPublicEmail] = useState(user.publicEmail ?? "");
   const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
+  const [catalogPublicName, setCatalogPublicName] = useState(user.displayName ?? "");
+  const [showFullName, setShowFullName] = useState(user.showFullName ?? false);
+  const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
+  const [catalogImageUrl, setCatalogImageUrl] = useState(
+    catalogOnOrg ? (profile.organization?.logoUrl ?? "") : (user.photoUrl ?? ""),
+  );
   const initialWorking = initial.workingProfile;
   const [productCategoryIds, setProductCategoryIds] = useState<string[]>(
     initialWorking?.effectiveProductCategoryIds ?? initialWorking?.productCategoryIds ?? [],
@@ -190,6 +198,9 @@ export function ProfileEditor({
       telegram,
       publicEmail,
       publicPhone,
+      catalogPublicName: catalogOnOrg ? organizationName : catalogPublicName,
+      showFullName,
+      catalogImageUrl,
       productCategoryIds,
       serviceSpecializationIds,
       navigatorStageIds,
@@ -219,6 +230,10 @@ export function ProfileEditor({
     productCategoryIds,
     publicEmail,
     publicPhone,
+    catalogPublicName,
+    catalogOnOrg,
+    showFullName,
+    catalogImageUrl,
     serviceSpecializationIds,
     specializations,
     storeCategories,
@@ -227,12 +242,14 @@ export function ProfileEditor({
   ]);
 
   const savedSnapshotRef = useRef(profileDraftFromProfile(initial));
+  const savedCatalogSnapshotRef = useRef(catalogDraftFromProfile(initial));
   const syncedUserIdRef = useRef(initial.user.id);
   const draftRef = useRef<ProfileDraft | null>(null);
 
   const applyProfile = useCallback((next: ProProfileResponse) => {
     setProfile(next);
     savedSnapshotRef.current = profileDraftFromProfile(next);
+    savedCatalogSnapshotRef.current = catalogDraftFromProfile(next);
     const u = next.user as ExtendedUser;
     const catalogOnOrg = next.catalogPublication?.catalogEntity === "organization";
     setDisplayName(u.displayName ?? "");
@@ -258,6 +275,11 @@ export function ProfileEditor({
     setTelegram(u.telegram ?? "");
     setPublicEmail(u.publicEmail ?? "");
     setPublicPhone(u.publicPhone ?? "");
+    setCatalogPublicName(u.displayName ?? "");
+    setShowFullName(u.showFullName ?? false);
+    setCatalogImageUrl(
+      catalogOnOrg ? (next.organization?.logoUrl ?? "") : (u.photoUrl ?? ""),
+    );
     const w = next.workingProfile;
     setProductCategoryIds(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? []);
     setServiceSpecializationIds(
@@ -321,16 +343,31 @@ export function ProfileEditor({
     profileDraftFromProfile(profile),
     currentDraft,
   );
+  const hasUnsavedCatalogChanges = isCatalogDraftDirty(
+    savedCatalogSnapshotRef.current,
+    currentDraft,
+  );
 
   const confirmLeaveBasicsUnsaved = useCallback(() => {
     if (activeSection !== "basics" || !hasUnsavedBasicsChanges) return true;
     return window.confirm(UNSAVED_BASICS_LEAVE_MESSAGE);
   }, [activeSection, hasUnsavedBasicsChanges]);
 
+  const confirmLeaveCatalogUnsaved = useCallback(() => {
+    if (activeSection !== "catalog" || !hasUnsavedCatalogChanges) return true;
+    return window.confirm(UNSAVED_CATALOG_LEAVE_MESSAGE);
+  }, [activeSection, hasUnsavedCatalogChanges]);
+
+  const confirmLeaveUnsaved = useCallback(() => {
+    if (!confirmLeaveBasicsUnsaved()) return false;
+    if (!confirmLeaveCatalogUnsaved()) return false;
+    return true;
+  }, [confirmLeaveBasicsUnsaved, confirmLeaveCatalogUnsaved]);
+
   const navigateSection = useCallback(
     (next: ProfileSectionId) => {
       if (next === activeSection) return;
-      if (!confirmLeaveBasicsUnsaved()) return;
+      if (!confirmLeaveUnsaved()) return;
       setActiveSection(next);
       const qs = buildProfileSectionHref(next, new URLSearchParams(searchParams.toString())).split(
         "?",
@@ -338,17 +375,22 @@ export function ProfileEditor({
       const href = qs ? `${profileBasePath}?${qs}` : profileBasePath;
       router.push(href, { scroll: false });
     },
-    [activeSection, confirmLeaveBasicsUnsaved, profileBasePath, router, searchParams],
+    [activeSection, confirmLeaveUnsaved, profileBasePath, router, searchParams],
   );
 
   useEffect(() => {
-    if (activeSection !== "basics" || !hasUnsavedBasicsChanges) return;
+    if (
+      (activeSection !== "basics" || !hasUnsavedBasicsChanges) &&
+      (activeSection !== "catalog" || !hasUnsavedCatalogChanges)
+    ) {
+      return;
+    }
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [activeSection, hasUnsavedBasicsChanges]);
+  }, [activeSection, hasUnsavedBasicsChanges, hasUnsavedCatalogChanges]);
   const fixtureOverview: EmployeesOverviewResponse | undefined = profileBasePath.includes(
     "dev-fixture",
   )
@@ -356,18 +398,6 @@ export function ProfileEditor({
     : undefined;
 
   const openNotes = useMemo(() => notes.filter((n) => !n.resolvedAt), [notes]);
-
-  function toggleSpec(id: string) {
-    setSpecializations((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  }
-
-  function toggleCategory(value: string) {
-    setStoreCategories((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
-    );
-  }
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -407,7 +437,7 @@ export function ProfileEditor({
           <Link
             href={returnTo}
             onClick={(event) => {
-              if (!confirmLeaveBasicsUnsaved()) event.preventDefault();
+              if (!confirmLeaveUnsaved()) event.preventDefault();
             }}
           >
             ← Вернуться к предыдущему разделу
@@ -621,85 +651,43 @@ export function ProfileEditor({
         ) : null}
 
         {activeSection === "catalog" ? (
-          <>
-            <Panel title="Текст и контакты для публикации">
-              <fieldset className={styles.fieldset} disabled={!catalogEditable}>
-                <div className={styles.fields}>
-                  <TextAreaField
-                    label="Описание для каталога"
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                  />
-                  <TextField label="Сайт" value={website} onChange={(e) => setWebsite(e.target.value)} />
-                  <TextField
-                    label="Telegram (публичный)"
-                    value={telegram}
-                    onChange={(e) => setTelegram(e.target.value)}
-                  />
-                  <TextField
-                    label="Рабочий email"
-                    value={publicEmail}
-                    onChange={(e) => setPublicEmail(e.target.value)}
-                  />
-                  <TextField
-                    label="Рабочий телефон"
-                    value={publicPhone}
-                    onChange={(e) => setPublicPhone(e.target.value)}
-                  />
-                </div>
-              </fieldset>
-            </Panel>
-            {partnerType === "MASTER" ? (
-              <Panel title="Специализации для каталога">
-                <fieldset className={styles.fieldset} disabled={!catalogEditable}>
-                  <div className={styles.chipGrid}>
-                    {ONBOARDING_STAGES.map((stage) => (
-                      <label key={stage.id} className={styles.checkRow}>
-                        <input
-                          type="checkbox"
-                          checked={specializations.includes(stage.id)}
-                          onChange={() => toggleSpec(stage.id)}
-                        />
-                        <span>
-                          {stage.icon} {stage.title}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              </Panel>
-            ) : (
-              <Panel title="Категории и филиал для публикации">
-                <fieldset className={styles.fieldset} disabled={!catalogEditable}>
-                  {needsBranchFields ? (
-                    <TextField
-                      label="Адрес первого филиала (для модерации)"
-                      value={branchAddress}
-                      onChange={(event) => setBranchAddress(event.target.value)}
-                      hint="Нужен для отправки организации в каталог."
-                    />
-                  ) : null}
-                  <div className={styles.chipGrid}>
-                    {STORE_CATEGORY_CHIPS.map((cat) => (
-                      <label key={cat.value} className={styles.checkRow}>
-                        <input
-                          type="checkbox"
-                          checked={storeCategories.includes(cat.value)}
-                          onChange={() => toggleCategory(cat.value)}
-                        />
-                        <span>{cat.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              </Panel>
-            )}
-            <ProfileCatalogSection
-              profile={profile}
-              draft={buildDraft()}
-              onProfileUpdated={applyProfile}
-            />
-          </>
+          <ProfileCatalogSection
+            profile={profile}
+            draft={buildDraft()}
+            catalogEditable={catalogEditable}
+            partnerType={partnerType}
+            needsBranchFields={needsBranchFields}
+            onProfileUpdated={applyProfile}
+            catalogPublicName={catalogPublicName}
+            onCatalogPublicNameChange={setCatalogPublicName}
+            onOrganizationNameChange={setOrganizationName}
+            showFullName={showFullName}
+            onShowFullNameChange={setShowFullName}
+            catalogImageUrl={catalogImageUrl}
+            onCatalogImageUrlChange={setCatalogImageUrl}
+            description={description}
+            onDescriptionChange={setDescription}
+            specializations={specializations}
+            onSpecializationsChange={setSpecializations}
+            storeCategories={storeCategories}
+            onStoreCategoriesChange={setStoreCategories}
+            branchAddress={branchAddress}
+            onBranchAddressChange={setBranchAddress}
+            website={website}
+            onWebsiteChange={setWebsite}
+            telegram={telegram}
+            onTelegramChange={setTelegram}
+            publicEmail={publicEmail}
+            onPublicEmailChange={setPublicEmail}
+            publicPhone={publicPhone}
+            onPublicPhoneChange={setPublicPhone}
+            workingProductIds={productCategoryIds}
+            workingServiceIds={serviceSpecializationIds}
+            onCopyWorkingDirections={() => {
+              setStoreCategories([...productCategoryIds]);
+              setSpecializations([...serviceSpecializationIds]);
+            }}
+          />
         ) : null}
 
         {activeSection === "branches" ? (
