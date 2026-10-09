@@ -5,7 +5,7 @@
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
 | remcard-navigator | `feat/prof-h-profile-redesign` | `432498a0` | **`cba0a4b2`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `a350424` | **`9059642`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `a350424` | **`e417536`** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -334,4 +334,4 @@ Screenshots: `prof-h4-branches-1440.png`, `prof-h4-branch-preview-1440.png`, `pr
 - Moderation UI на филиале в browser (lifecycle — integration).
 - Real Telegram / MAX.
 
-**H5 не начинат.**
+**H5 не начата.**
