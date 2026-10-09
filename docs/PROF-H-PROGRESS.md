@@ -1,66 +1,67 @@
-# PROF-H1 — progress
+# PROF-H1 — progress (fix-pass)
 
 ## Git
 
 | | SHA | Branch |
 |---|---|---|
 | Base | `bb60c60` | `origin/release/prof-v1-20261007` |
-| HEAD | `f11b56e` | `feat/prof-h-profile-redesign` |
+| Prior HEAD | `1f5df46` | `feat/prof-h-profile-redesign` (initial H1) |
+| HEAD | _(after fix-pass push)_ | `feat/prof-h-profile-redesign` |
 
-PROF-G не в базе release (`6f660db` остаётся в `feat/prof-g-notification-center`). Точки интеграции H6: bell в `CabinetShell`, deep link `section=notifications`, без изменений в H1.
+## Fix-pass (приёмка H1)
 
-## Reuse map (H1)
+| # | Тема | Изменение |
+|---|---|---|
+| 1 | Dirty basics | `profile-draft-sync`: `initial` rerender не затирает форму; смена `user.id` сбрасывает; после save — `applyProfile` |
+| 2 | History | `router.push` при смене вкладки; `searchParams` → `activeSection` (Back/Forward/reload) |
+| 3 | Обзор | Только сохранённый профиль; баннер несохранённых правок; `master-direction-label` для trade + L1 |
+| 4 | Счётчики | SOLO: ошибка `/api/pro/employees` ≠ 0; нет fallback на `organization.branchCount` при 403/ошибке |
+| 5 | Тесты | Vitest: `profile-sections`, `profile-draft-sync`, `master-direction-label`, `profile-overview-display`, `ProfileOverviewSection` |
+| 6 | Скриншоты | Fixture + `DEV_FIXTURE_EMPLOYEES_OVERVIEW` (5 сотрудников, 3 филиала); 1440/390 |
 
-| Источник | Использование в H1 |
+Backend, API-контракты, permissions, catalog lifecycle **не менялись**.
+
+## Reuse map (кратко)
+
+| Источник | H1 |
 |---|---|
-| `ProfileEditor` + формы разделов | Сохранены; обёрнуты горизонтальными вкладками и URL-sync |
-| `profile-working-save`, `ProfileDraft` | Обзор: статус «Готов к работе», карточка рабочего профиля |
-| `profile-catalog-state`, `catalogPublication` | Обзор: статус каталога, CTA «Подготовить публикацию» / «Управлять карточкой» |
-| `ProfileCatalogSection`, branches, team, notifications | Без изменения контрактов save/submit |
-| `GET /api/pro/organization/employees-overview` | Сводные счётчики филиалов/сотрудников в scope (без N+1) |
-| `onboarding-stages`, `category-display` | Подписи направлений на обзоре |
-| `sanitizeReturnTo`, `resolveProfileSectionFromQuery` | Deep links: `section`, `moderation`, `branchId`, `returnTo` |
+| `ProfileEditor` + разделы | Каркас, dirty-sync, push-навигация |
+| `profile-draft-sync` | Snapshot сохранённого vs форма |
+| `profile-overview-display` | Обзор только из `ProProfileResponse` |
+| `employees-overview` + `/api/pro/employees` | Счётчики в scope (fixture на dev-fixture) |
 
-## Изменения
-
-- `/profile` без query → раздел **Обзор** (`overview`).
-- Горизонтальная навигация: Обзор / Основные данные / Каталог RemCard / Филиалы / Сотрудники / Уведомления.
-- Новый `ProfileOverviewSection` (композиция по эталону, данные из DTO/loaders).
-- `profile/page.tsx`: `moderation=1`, `branchId`, `overview` в resolver.
-- Изолированные CSS modules (`ProfileOverviewSection.module.css`, вкладки в `ProfileEditor.module.css`).
-- Dev-only fixture: `/profile/dev-fixture` (404 в production build).
-
-## Проверки
+## Проверки (факт)
 
 | Команда | Результат |
 |---|---|
-| `npm run test` | PASS (proxy 228 + component 47) |
-| `npm run lint` | PASS (1 pre-existing warning in `AuthFlow.tsx`) |
-| `npx tsc --noEmit` | PASS после `rm -rf .next` |
+| `npm run test:proxy` | PASS (228 tests) |
+| `npm run test:component` | PASS (66 tests, incl. `profile-sections.test.ts` ×6) |
+| `npm run lint` | PASS (pre-existing `AuthFlow` hook warning) |
+| `npx tsc --noEmit` | PASS (after clean `.next`) |
 | `NODE_ENV=production npm run build` | PASS (exit 0) |
 
-### Сценарии (component / fixture)
+### Регрессии (component)
 
-| Сценарий | Статус |
+- Rerender `initial` + dirty имя → значение сохраняется
+- `router.push` на смене вкладки; sync из `searchParams`
+- Обзор: org title, MASTER labels, incomplete ≠ «Готов к работе»
+- Overview: 403 без branchCount 99; SOLO 500 → retry; manager scoped count
+
+## Browser (fixture UI, не authenticated E2E)
+
+| Файл | Viewport |
 |---|---|
-| `/profile` без query → обзор | PASS (`ProfileEditor.test.tsx`) |
-| URL sync / section switch | PASS |
-| Несохранённый ввод basics сохраняется | PASS |
-| Deep link `section=catalog`, `section=moderation` | PASS |
-| Catalog submit regression | PASS |
-| Real-auth E2E 1440/390 | NOT VERIFIED (fixture UI) |
+| `docs/screenshots/prof-h1-overview-1440.png` | 1440×900 |
+| `docs/screenshots/prof-h1-basics-1440.png` | 1440×900 |
+| `docs/screenshots/prof-h1-overview-390.png` | 390×844 |
 
-## Скриншоты (fixture UI)
-
-- Desktop 1440: `docs/screenshots/prof-h1-overview-1440.png`
-- Desktop 1440 basics: `docs/screenshots/prof-h1-basics-1440.png`
-- Mobile 390: `docs/screenshots/prof-h1-overview-390.png`
+Overflow (390): `documentElement.clientWidth` = 390, визуально без page horizontal scroll; вкладки прокручиваются в полосе.
 
 ## NOT VERIFIED
 
-- Real-auth browser E2E на стенде с backend.
-- PROF-G bell в базе (ветка не в release); регресс bell — после merge G.
+- Real-auth E2E на стенде с backend
+- PROF-G bell (не в release base)
 
-## H2 dependencies
+## H2
 
-- Единые справочники категорий/этапов, PATCH visibility, поиск — без изменений backend в H1.
+Единые справочники / visibility / PATCH — отдельное задание после приёмки H1.
