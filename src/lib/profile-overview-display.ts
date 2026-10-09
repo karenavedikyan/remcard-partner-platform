@@ -2,7 +2,7 @@ import { displayCategoryLabel } from "@/lib/category-display";
 import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProProfileResponse } from "@/lib/types";
-import { workingProfileComplete } from "@/lib/profile-working-save";
+import { workingProfileCabinetReady } from "@/lib/profile-working-save";
 
 const PARTNER_TYPE_LABELS: Record<string, string> = {
   MASTER: "Специалист",
@@ -31,7 +31,7 @@ export function savedWorkingProfileReadyLabel(profile: ProProfileResponse): {
   ready: boolean;
 } {
   const saved = profileDraftFromProfile(profile);
-  const ready = workingProfileComplete(saved);
+  const ready = workingProfileCabinetReady(saved);
   return ready
     ? { label: "Готов к работе", ready: true }
     : { label: "Нужно дозаполнить", ready: false };

@@ -59,6 +59,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
+  const [searchNextCursor, setSearchNextCursor] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [query, setQuery] = useState("");
@@ -93,37 +94,55 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     }
   }, []);
 
-  const loadSearch = useCallback(async () => {
-    setLoadingSearch(true);
-    setSearchError("");
-    try {
-      const params = new URLSearchParams({ role: searchRole });
-      if (query.trim()) params.set("q", query.trim());
-      if (city.trim()) params.set("city", city.trim());
-      if (filterProducts.length) params.set("product", filterProducts.join(","));
-      if (filterServices.length) params.set("service", filterServices.join(","));
-      if (filterStages.length) params.set("stage", filterStages.join(","));
-      const data = await remcardFetch<{ partners: PartnerSearchResult[] }>(
-        `/api/partnership/search?${params.toString()}`,
-      );
-      setSearchResults(data.partners ?? []);
-    } catch (caught) {
-      setSearchResults([]);
-      setSearchError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск");
-    } finally {
-      setLoadingSearch(false);
-    }
-  }, [city, filterProducts, filterServices, filterStages, query, searchRole]);
+  const loadSearch = useCallback(
+    async (mode: "reset" | "append", cursor: string | null = null) => {
+      setLoadingSearch(true);
+      setSearchError("");
+      try {
+        const params = new URLSearchParams({ role: searchRole, limit: "20" });
+        if (query.trim()) params.set("q", query.trim());
+        if (city.trim()) params.set("city", city.trim());
+        if (filterProducts.length) params.set("product", filterProducts.join(","));
+        if (filterServices.length) params.set("service", filterServices.join(","));
+        if (filterStages.length) params.set("stage", filterStages.join(","));
+        if (mode === "append" && cursor) {
+          params.set("cursor", cursor);
+        }
+        const data = await remcardFetch<{
+          partners: PartnerSearchResult[];
+          nextCursor?: string | null;
+          hasMore?: boolean;
+        }>(`/api/partnership/search?${params.toString()}`);
+        const batch = data.partners ?? [];
+        setSearchResults((prev) => {
+          if (mode === "append") {
+            const seen = new Set(prev.map((p) => p.id));
+            return [...prev, ...batch.filter((p) => !seen.has(p.id))];
+          }
+          return batch;
+        });
+        setSearchNextCursor(data.nextCursor ?? null);
+      } catch (caught) {
+        if (mode === "reset") setSearchResults([]);
+        setSearchError(
+          caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
+        );
+      } finally {
+        setLoadingSearch(false);
+      }
+    },
+    [city, filterProducts, filterServices, filterStages, query, searchRole],
+  );
 
   useEffect(() => {
     void loadList();
   }, [loadList]);
 
   useEffect(() => {
-    if (tab === "find") {
-      void loadSearch();
-    }
-  }, [tab, loadSearch]);
+    if (tab !== "find") return;
+    setSearchNextCursor(null);
+    void loadSearch("reset");
+  }, [tab, city, filterProducts, filterServices, filterStages, query, searchRole, loadSearch]);
 
   const attentionCount = useMemo(
     () => countNeedsMyResponse(partnerships, meId),
@@ -380,7 +399,14 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 </select>
               </label>
               <div className={styles.searchAction}>
-                <Button type="button" onClick={() => void loadSearch()} disabled={loadingSearch}>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setSearchNextCursor(null);
+                    void loadSearch("reset");
+                  }}
+                  disabled={loadingSearch}
+                >
                   {loadingSearch ? "Поиск…" : "Найти"}
                 </Button>
               </div>
@@ -410,7 +436,11 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                         <h3>{partnerTitle(partner)}</h3>
                         <p className={styles.partnerMeta}>
                           {partner.city ?? "Город не указан"}
-                          {partner.partnerType ? ` · ${partner.partnerType}` : ""}
+                          {partner.partnerTypeLabel
+                            ? ` · ${partner.partnerTypeLabel}`
+                            : partner.partnerType
+                              ? ` · ${partner.partnerType}`
+                              : ""}
                         </p>
                         {partner.workingProductLabels?.length ? (
                           <p className={styles.partnerMeta}>
@@ -468,6 +498,18 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
               })}
             </div>
           )}
+          {searchNextCursor ? (
+            <div className={styles.searchAction}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={loadingSearch}
+                onClick={() => void loadSearch("append", searchNextCursor)}
+              >
+                {loadingSearch ? "Загрузка…" : "Показать ещё"}
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
 

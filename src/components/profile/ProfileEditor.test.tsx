@@ -25,6 +25,7 @@ vi.mock("@/lib/profile-working-save", () => ({
   persistWorkingProfileDraft: vi.fn(),
   validateWorkingProfileDraft: vi.fn(() => null),
   workingProfileMissingFields: vi.fn(() => []),
+  workingProfileCabinetReady: vi.fn(() => true),
   workingProfileComplete: vi.fn(() => true),
 }));
 

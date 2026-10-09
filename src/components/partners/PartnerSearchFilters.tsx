@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import type { PartnerTaxonomyItem } from "@/lib/types";
@@ -20,6 +20,12 @@ function toggle(list: string[], id: string) {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
+function matchesFilter(item: PartnerTaxonomyItem, q: string): boolean {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  return item.label.toLowerCase().includes(needle) || item.id.toLowerCase().includes(needle);
+}
+
 export function PartnerSearchFilters({
   productIds,
   serviceIds,
@@ -28,35 +34,48 @@ export function PartnerSearchFilters({
   onChangeServices,
   onChangeStages,
 }: PartnerSearchFiltersProps) {
-  const [taxonomy, setTaxonomy] = useState<{
+  const [fullTaxonomy, setFullTaxonomy] = useState<{
     products: PartnerTaxonomyItem[];
     services: PartnerTaxonomyItem[];
     stages: PartnerTaxonomyItem[];
   } | null>(null);
+  const loadGen = useRef(0);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
 
   const load = useCallback(async () => {
+    const gen = ++loadGen.current;
     try {
-      const data = await fetchPartnerTaxonomy(filter);
-      setTaxonomy({
+      const data = await fetchPartnerTaxonomy();
+      if (gen !== loadGen.current) return;
+      setFullTaxonomy({
         products: data.products ?? [],
         services: data.services ?? [],
         stages: data.stages ?? [],
       });
       setError("");
     } catch (caught) {
-      setTaxonomy(null);
+      if (gen !== loadGen.current) return;
+      setFullTaxonomy(null);
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить фильтры",
       );
     }
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => void load(), 250);
-    return () => clearTimeout(t);
+    void load();
   }, [load]);
+
+  const visible = useMemo(() => {
+    const q = filter.trim();
+    if (!fullTaxonomy) return null;
+    return {
+      products: fullTaxonomy.products.filter((item) => matchesFilter(item, q)),
+      services: fullTaxonomy.services.filter((item) => matchesFilter(item, q)),
+      stages: fullTaxonomy.stages.filter((item) => matchesFilter(item, q)),
+    };
+  }, [filter, fullTaxonomy]);
 
   return (
     <div className={styles.wrap}>
@@ -77,11 +96,11 @@ export function PartnerSearchFilters({
           </Button>
         </div>
       ) : null}
-      {taxonomy ? (
+      {visible ? (
         <div className={styles.grid}>
           <fieldset>
             <legend>Товары</legend>
-            {taxonomy.products.map((item) => (
+            {visible.products.map((item) => (
               <label key={item.id} className={styles.row}>
                 <input
                   type="checkbox"
@@ -94,7 +113,7 @@ export function PartnerSearchFilters({
           </fieldset>
           <fieldset>
             <legend>Работы и услуги</legend>
-            {taxonomy.services.map((item) => (
+            {visible.services.map((item) => (
               <label key={item.id} className={styles.row}>
                 <input
                   type="checkbox"
@@ -107,7 +126,7 @@ export function PartnerSearchFilters({
           </fieldset>
           <fieldset>
             <legend>Этапы ремонта</legend>
-            {taxonomy.stages.map((item) => (
+            {visible.stages.map((item) => (
               <label key={item.id} className={styles.row}>
                 <input
                   type="checkbox"

@@ -54,6 +54,7 @@ export type WorkingProfileDto = {
   primaryDirection: WorkingPrimaryDirection;
   effectiveProductCategoryIds: string[];
   effectiveServiceSpecializationIds: string[];
+  effectiveNavigatorStageIds?: string[];
   partnerSearchVisible: boolean;
   partnerSearchOptIn: boolean;
   partnerSearchOptInExplicit: boolean;
@@ -162,6 +163,7 @@ export type PartnerSearchResult = {
   badges: string[];
   storeCategories: string[];
   partnerType?: string | null;
+  partnerTypeLabel?: string | null;
   /** Подтверждённый partnerType организации владельца (если API поиска когда‑либо вернёт). */
   organizationPartnerType?: string | null;
   organizationName?: string | null;
@@ -186,6 +188,8 @@ export type PartnerSearchResult = {
 
 export type PartnerSearchResponse = {
   partners: PartnerSearchResult[];
+  nextCursor?: string | null;
+  hasMore?: boolean;
 };
 
 export type TermChangeRequest = {

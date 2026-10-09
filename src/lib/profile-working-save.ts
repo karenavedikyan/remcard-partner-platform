@@ -2,6 +2,7 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
+import { buildWorkingProfilePatchBody, type WorkingSaveOptions } from "@/lib/working-profile-patch";
 
 export function validateWorkingProfileDraft(draft: ProfileDraft): string | null {
   const name = draft.displayName.trim();
@@ -40,16 +41,8 @@ export function validateWorkingProfileDraft(draft: ProfileDraft): string | null 
   return null;
 }
 
-export function workingProfileComplete(draft: ProfileDraft): boolean {
-  return validateWorkingProfileDraft(draft) === null;
-}
-
-export function workingProfileMissingFields(draft: ProfileDraft): string[] {
-  const err = validateWorkingProfileDraft(draft);
-  return err ? [err] : [];
-}
-
-export function workingProfileMinimumForCabinet(draft: ProfileDraft): boolean {
+/** Cabinet minimum without requiring search directions. */
+export function workingProfileCabinetReady(draft: ProfileDraft): boolean {
   const name = draft.displayName.trim();
   if (name.length < 2 || name === "Пользователь") return false;
   if (!draft.city.trim()) return false;
@@ -63,9 +56,31 @@ export function workingProfileMinimumForCabinet(draft: ProfileDraft): boolean {
   return true;
 }
 
+export function workingProfileComplete(draft: ProfileDraft): boolean {
+  return workingProfileCabinetReady(draft);
+}
+
+export function workingProfileMissingFields(draft: ProfileDraft): string[] {
+  const issues: string[] = [];
+  const name = draft.displayName.trim();
+  if (name.length < 2 || name === "Пользователь") {
+    issues.push("Укажите имя представителя (минимум 2 символа, не «Пользователь»).");
+  }
+  if (!draft.city.trim()) issues.push("Укажите город.");
+  if (!draft.partnerType) issues.push("Выберите тип партнёра.");
+  if (
+    (draft.partnerType === "STORE" || draft.partnerType === "COMPANY") &&
+    draft.organizationName.trim().length < 2
+  ) {
+    issues.push("Укажите название организации (минимум 2 символа).");
+  }
+  return issues;
+}
+
 export async function persistWorkingProfileDraft(
   profile: ProProfileResponse,
   draft: ProfileDraft,
+  options: WorkingSaveOptions = {},
 ): Promise<ProProfileResponse> {
   const validationError = validateWorkingProfileDraft(draft);
   if (validationError) {
@@ -77,47 +92,35 @@ export async function persistWorkingProfileDraft(
     await saveDisplayNameViaAuthMe(trimmedName);
   }
 
-  const patchBody: Record<string, unknown> = {
-    city: draft.city.trim(),
-    partnerType: draft.partnerType,
-    productCategoryIds: draft.productCategoryIds,
-    serviceSpecializationIds: draft.serviceSpecializationIds,
-    navigatorStageIds: draft.navigatorStageIds,
-    primaryDirection: draft.primaryDirection,
-    partnerSearchOptIn: draft.partnerSearchOptIn,
-    areas: draft.areas,
-    partnershipContactName: draft.partnershipContactName.trim() || null,
-    partnershipContactPhone: draft.partnershipContactPhone.trim() || null,
-    partnershipContactEmail: draft.partnershipContactEmail.trim() || null,
-  };
-  if (draft.partnerWorkMode.trim()) {
-    patchBody.partnerWorkMode = draft.partnerWorkMode.trim();
-  } else {
-    patchBody.partnerWorkMode = null;
-  }
+  const patchBody = buildWorkingProfilePatchBody(profile, draft, options);
 
-  await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
-    method: "PATCH",
-    body: patchBody,
-  });
+  if (Object.keys(patchBody).length > 0) {
+    await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
+      method: "PATCH",
+      body: patchBody,
+    });
+  }
 
   if (draft.partnerType === "STORE" || draft.partnerType === "COMPANY") {
     const orgName = draft.organizationName.trim();
-    const orgBody = { name: orgName, partnerType: draft.partnerType };
-    const existing = await remcardFetch<{ organization: { id: string } | null }>(
-      "/api/pro/organization",
-      { method: "GET" },
-    );
-    if (existing.organization) {
-      await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
-    } else {
-      try {
-        await remcardFetch("/api/pro/organization", { method: "POST", body: orgBody });
-      } catch (caught) {
-        if (caught instanceof RemcardApiError && caught.status === 409) {
-          await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
-        } else {
-          throw caught;
+    const savedOrg = profile.organization?.name?.trim() ?? "";
+    if (orgName !== savedOrg) {
+      const orgBody = { name: orgName, partnerType: draft.partnerType };
+      const existing = await remcardFetch<{ organization: { id: string } | null }>(
+        "/api/pro/organization",
+        { method: "GET" },
+      );
+      if (existing.organization) {
+        await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
+      } else {
+        try {
+          await remcardFetch("/api/pro/organization", { method: "POST", body: orgBody });
+        } catch (caught) {
+          if (caught instanceof RemcardApiError && caught.status === 409) {
+            await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
+          } else {
+            throw caught;
+          }
         }
       }
     }

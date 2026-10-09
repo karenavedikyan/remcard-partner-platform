@@ -21,6 +21,7 @@ import {
 import {
   persistWorkingProfileDraft,
   validateWorkingProfileDraft,
+  workingProfileCabinetReady,
   workingProfileMissingFields,
 } from "@/lib/profile-working-save";
 import type { EmployeesOverviewResponse } from "@/lib/employees-overview-types";
@@ -115,20 +116,23 @@ export function ProfileEditor({
   const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
   const initialWorking = initial.workingProfile;
   const [productCategoryIds, setProductCategoryIds] = useState<string[]>(
-    initialWorking?.productCategoryIds ?? [],
+    initialWorking?.effectiveProductCategoryIds ?? initialWorking?.productCategoryIds ?? [],
   );
   const [serviceSpecializationIds, setServiceSpecializationIds] = useState<string[]>(
-    initialWorking?.serviceSpecializationIds ?? [],
+    initialWorking?.effectiveServiceSpecializationIds ??
+      initialWorking?.serviceSpecializationIds ??
+      [],
   );
   const [navigatorStageIds, setNavigatorStageIds] = useState<string[]>(
-    initialWorking?.navigatorStageIds ?? [],
+    initialWorking?.effectiveNavigatorStageIds ?? initialWorking?.navigatorStageIds ?? [],
   );
   const [primaryDirection, setPrimaryDirection] = useState<WorkingPrimaryDirection>(
     initialWorking?.primaryDirection ?? null,
   );
   const [partnerSearchOptIn, setPartnerSearchOptIn] = useState(
-    initialWorking?.partnerSearchOptIn ?? false,
+    initialWorking?.partnerSearchVisible ?? initialWorking?.partnerSearchOptIn ?? false,
   );
+  const partnerSearchTouchedRef = useRef(false);
   const [partnerWorkMode, setPartnerWorkMode] = useState(initialWorking?.partnerWorkMode ?? "");
   const [areasText, setAreasText] = useState((initialWorking?.areas ?? user.areas ?? []).join("\n"));
   const [partnershipContactName, setPartnershipContactName] = useState(
@@ -252,11 +256,14 @@ export function ProfileEditor({
     setPublicEmail(u.publicEmail ?? "");
     setPublicPhone(u.publicPhone ?? "");
     const w = next.workingProfile;
-    setProductCategoryIds(w?.productCategoryIds ?? []);
-    setServiceSpecializationIds(w?.serviceSpecializationIds ?? []);
-    setNavigatorStageIds(w?.navigatorStageIds ?? []);
+    setProductCategoryIds(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? []);
+    setServiceSpecializationIds(
+      w?.effectiveServiceSpecializationIds ?? w?.serviceSpecializationIds ?? [],
+    );
+    setNavigatorStageIds(w?.effectiveNavigatorStageIds ?? w?.navigatorStageIds ?? []);
     setPrimaryDirection(w?.primaryDirection ?? null);
-    setPartnerSearchOptIn(w?.partnerSearchOptIn ?? false);
+    setPartnerSearchOptIn(w?.partnerSearchVisible ?? w?.partnerSearchOptIn ?? false);
+    partnerSearchTouchedRef.current = false;
     setPartnerWorkMode(w?.partnerWorkMode ?? "");
     setAreasText((w?.areas ?? u.areas ?? []).join("\n"));
     setPartnershipContactName(w?.partnershipContactName ?? "");
@@ -352,7 +359,10 @@ export function ProfileEditor({
     setSuccess("");
 
     try {
-      const next = await persistWorkingProfileDraft(profile, buildDraft());
+      const next = await persistWorkingProfileDraft(profile, buildDraft(), {
+        partnerSearchTouched: partnerSearchTouchedRef.current,
+      });
+      partnerSearchTouchedRef.current = false;
       applyProfile(next);
       setSuccess("Данные сохранены");
       router.refresh();
@@ -368,7 +378,7 @@ export function ProfileEditor({
     returnTo && returnTo !== "/profile" && returnTo.startsWith("/") && !returnTo.startsWith("//");
 
   const workingMissing = workingProfileMissingFields(buildDraft());
-  const workingComplete = validateWorkingProfileDraft(buildDraft()) === null;
+  const workingComplete = workingProfileCabinetReady(buildDraft());
 
   const showAside = activeSection !== "overview";
 
@@ -546,7 +556,10 @@ export function ProfileEditor({
               type="checkbox"
               checked={partnerSearchOptIn}
               disabled={!basicsEditable}
-              onChange={(event) => setPartnerSearchOptIn(event.target.checked)}
+              onChange={(event) => {
+                partnerSearchTouchedRef.current = true;
+                setPartnerSearchOptIn(event.target.checked);
+              }}
             />
             <span>Показывать партнёрам в RemCard</span>
           </label>

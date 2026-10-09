@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import type { PartnerTaxonomyItem, WorkingPrimaryDirection } from "@/lib/types";
@@ -29,6 +29,12 @@ function toggleId(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
+function matchesFilter(item: PartnerTaxonomyItem, q: string): boolean {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  return item.label.toLowerCase().includes(needle) || item.id.toLowerCase().includes(needle);
+}
+
 export function ProfileDirectionsPicker({
   productCategoryIds,
   serviceSpecializationIds,
@@ -40,24 +46,27 @@ export function ProfileDirectionsPicker({
   onChangeStages,
   onChangePrimary,
 }: ProfileDirectionsPickerProps) {
-  const [taxonomy, setTaxonomy] = useState<LoadedTaxonomy | null>(null);
+  const [fullTaxonomy, setFullTaxonomy] = useState<LoadedTaxonomy | null>(null);
+  const loadGenerationRef = useRef(0);
   const [loadState, setLoadState] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [loadError, setLoadError] = useState("");
   const [filter, setFilter] = useState("");
 
-  const load = useCallback(async (q?: string) => {
+  const load = useCallback(async () => {
+    const gen = ++loadGenerationRef.current;
     setLoadState("loading");
     setLoadError("");
     try {
-      const data = await fetchPartnerTaxonomy(q);
-      setTaxonomy({
+      const data = await fetchPartnerTaxonomy();
+      if (gen !== loadGenerationRef.current) return;
+      setFullTaxonomy({
         products: data.products ?? [],
         services: data.services ?? [],
         stages: data.stages ?? [],
       });
       setLoadState("ready");
     } catch (caught) {
-      setTaxonomy(null);
+      if (gen !== loadGenerationRef.current) return;
       setLoadState("error");
       setLoadError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить справочник",
@@ -69,26 +78,41 @@ export function ProfileDirectionsPicker({
     void load();
   }, [load]);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      void load(filter);
-    }, 280);
-    return () => clearTimeout(t);
-  }, [filter, load]);
-
   const labelByKey = useMemo(() => {
     const map = new Map<string, string>();
-    for (const item of taxonomy?.products ?? []) {
-      map.set(`product:${item.id}`, item.label);
+    for (const item of fullTaxonomy?.products ?? []) {
+      map.set(`product:${item.id}`, `Товар: ${item.label}`);
     }
-    for (const item of taxonomy?.services ?? []) {
-      map.set(`service:${item.id}`, item.label);
+    for (const item of fullTaxonomy?.services ?? []) {
+      map.set(`service:${item.id}`, `Услуга: ${item.label}`);
     }
-    for (const item of taxonomy?.stages ?? []) {
+    for (const item of fullTaxonomy?.stages ?? []) {
       map.set(`stage:${item.id}`, item.label);
     }
     return map;
-  }, [taxonomy]);
+  }, [fullTaxonomy]);
+
+  const filtered = useMemo(() => {
+    const q = filter.trim();
+    if (!fullTaxonomy) return null;
+    return {
+      products: fullTaxonomy.products.filter((item) => matchesFilter(item, q)),
+      services: fullTaxonomy.services.filter((item) => matchesFilter(item, q)),
+      stages: fullTaxonomy.stages.filter((item) => matchesFilter(item, q)),
+    };
+  }, [filter, fullTaxonomy]);
+
+  const removePrimaryIfNeeded = useCallback(
+    (nextProducts: string[], nextServices: string[]) => {
+      if (!primaryDirection) return;
+      const ok =
+        primaryDirection.kind === "product"
+          ? nextProducts.includes(primaryDirection.id)
+          : nextServices.includes(primaryDirection.id);
+      if (!ok) onChangePrimary(null);
+    },
+    [onChangePrimary, primaryDirection],
+  );
 
   const selectedChips = useMemo(() => {
     const chips: { key: string; label: string; remove: () => void }[] = [];
@@ -96,14 +120,22 @@ export function ProfileDirectionsPicker({
       chips.push({
         key: `p-${id}`,
         label: labelByKey.get(`product:${id}`) ?? `Товар: ${id}`,
-        remove: () => onChangeProducts(productCategoryIds.filter((x) => x !== id)),
+        remove: () => {
+          const next = productCategoryIds.filter((x) => x !== id);
+          onChangeProducts(next);
+          removePrimaryIfNeeded(next, serviceSpecializationIds);
+        },
       });
     }
     for (const id of serviceSpecializationIds) {
       chips.push({
         key: `s-${id}`,
         label: labelByKey.get(`service:${id}`) ?? `Услуга: ${id}`,
-        remove: () => onChangeServices(serviceSpecializationIds.filter((x) => x !== id)),
+        remove: () => {
+          const next = serviceSpecializationIds.filter((x) => x !== id);
+          onChangeServices(next);
+          removePrimaryIfNeeded(productCategoryIds, next);
+        },
       });
     }
     return chips;
@@ -113,6 +145,7 @@ export function ProfileDirectionsPicker({
     onChangeServices,
     productCategoryIds,
     serviceSpecializationIds,
+    removePrimaryIfNeeded,
   ]);
 
   const primaryOptions = useMemo(() => {
@@ -145,15 +178,6 @@ export function ProfileDirectionsPicker({
     }
     const found = primaryOptions.find((o) => o.value === value);
     onChangePrimary(found?.direction ?? null);
-  }
-
-  function removePrimaryIfNeeded(nextProducts: string[], nextServices: string[]) {
-    if (!primaryDirection) return;
-    const ok =
-      primaryDirection.kind === "product"
-        ? nextProducts.includes(primaryDirection.id)
-        : nextServices.includes(primaryDirection.id);
-    if (!ok) onChangePrimary(null);
   }
 
   return (
@@ -194,27 +218,27 @@ export function ProfileDirectionsPicker({
         />
       </label>
 
-      {loadState === "loading" && !taxonomy ? (
+      {loadState === "loading" && !fullTaxonomy ? (
         <p className={styles.hint}>Загружаем справочник…</p>
       ) : null}
       {loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{loadError}</p>
-          <Button type="button" variant="secondary" onClick={() => void load(filter)}>
+          <Button type="button" variant="secondary" onClick={() => void load()}>
             Повторить
           </Button>
         </div>
       ) : null}
 
-      {taxonomy ? (
+      {filtered ? (
         <>
           <fieldset className={styles.group} disabled={disabled}>
             <legend>Товары</legend>
             <div className={styles.optionGrid}>
-              {taxonomy.products.length === 0 ? (
+              {filtered.products.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Товары».</p>
               ) : (
-                taxonomy.products.map((item) => (
+                filtered.products.map((item) => (
                   <label key={item.id} className={styles.checkRow}>
                     <input
                       type="checkbox"
@@ -235,10 +259,10 @@ export function ProfileDirectionsPicker({
           <fieldset className={styles.group} disabled={disabled}>
             <legend>Работы и услуги</legend>
             <div className={styles.optionGrid}>
-              {taxonomy.services.length === 0 ? (
+              {filtered.services.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
               ) : (
-                taxonomy.services.map((item) => (
+                filtered.services.map((item) => (
                   <label key={item.id} className={styles.checkRow}>
                     <input
                       type="checkbox"
@@ -280,16 +304,18 @@ export function ProfileDirectionsPicker({
         <legend>На каких этапах вы полезны</legend>
         <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
         <div className={styles.optionGrid}>
-          {(taxonomy?.stages ?? []).map((item) => (
-            <label key={item.id} className={styles.checkRow}>
-              <input
-                type="checkbox"
-                checked={navigatorStageIds.includes(item.id)}
-                onChange={() => onChangeStages(toggleId(navigatorStageIds, item.id))}
-              />
-              <span>{item.label}</span>
-            </label>
-          ))}
+          {(fullTaxonomy?.stages ?? [])
+            .filter((item) => matchesFilter(item, filter.trim()))
+            .map((item) => (
+              <label key={item.id} className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={navigatorStageIds.includes(item.id)}
+                  onChange={() => onChangeStages(toggleId(navigatorStageIds, item.id))}
+                />
+                <span>{item.label}</span>
+              </label>
+            ))}
         </div>
       </fieldset>
     </div>
