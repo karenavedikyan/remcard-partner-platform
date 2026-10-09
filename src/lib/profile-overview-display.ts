@@ -1,7 +1,7 @@
 import { displayCategoryLabel } from "@/lib/category-display";
-import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
+import { masterDirectionLabel } from "@/lib/master-direction-label";
+import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProProfileResponse } from "@/lib/types";
-import type { ProfileDraft } from "@/lib/profile-save";
 import { workingProfileComplete } from "@/lib/profile-working-save";
 
 const PARTNER_TYPE_LABELS: Record<string, string> = {
@@ -15,46 +15,45 @@ export function partnerTypeLabel(partnerType: string | null | undefined): string
   return PARTNER_TYPE_LABELS[partnerType] ?? partnerType;
 }
 
-/** Primary working entity title (not conflating user with organization). */
-export function workingProfileTitle(
-  profile: ProProfileResponse,
-  draft: ProfileDraft,
-): string {
-  const partnerType = draft.partnerType ?? profile.user.partnerType ?? "MASTER";
+/** Primary working entity title from saved profile only. */
+export function savedWorkingProfileTitle(profile: ProProfileResponse): string {
+  const partnerType = profile.user.partnerType ?? "MASTER";
   if (partnerType === "MASTER" || !profile.organization) {
-    const name = draft.displayName.trim() || profile.user.displayName?.trim();
+    const name = profile.user.displayName?.trim();
     return name || "—";
   }
-  const orgName =
-    draft.organizationName.trim() || profile.organization.name?.trim();
+  const orgName = profile.organization.name?.trim();
   return orgName || "—";
 }
 
-export function workingProfileReadyLabel(draft: ProfileDraft): {
+export function savedWorkingProfileReadyLabel(profile: ProProfileResponse): {
   label: string;
   ready: boolean;
 } {
-  const ready = workingProfileComplete(draft);
+  const saved = profileDraftFromProfile(profile);
+  const ready = workingProfileComplete(saved);
   return ready
     ? { label: "Готов к работе", ready: true }
     : { label: "Нужно дозаполнить", ready: false };
 }
 
-export function savedDirectionLabels(
-  profile: ProProfileResponse,
-  draft: ProfileDraft,
-): string[] {
-  const partnerType = draft.partnerType ?? profile.user.partnerType ?? "MASTER";
+export function savedDirectionLabels(profile: ProProfileResponse): string[] {
+  const partnerType = profile.user.partnerType ?? "MASTER";
+  const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
   if (partnerType === "MASTER") {
-    const ids = draft.specializations.length
-      ? draft.specializations
-      : profile.user.specializations;
-    return ids
-      .map((id) => ONBOARDING_STAGES.find((s) => s.id === id)?.title ?? id)
-      .filter(Boolean);
+    return (profile.user.specializations ?? []).map((id) => masterDirectionLabel(id));
   }
-  const ids = draft.storeCategories.length
-    ? draft.storeCategories
-    : profile.user.storeCategories;
-  return ids.map((id) => displayCategoryLabel(id, id));
+  const ids =
+    catalogOnOrg && profile.organization?.storeCategories?.length
+      ? profile.organization.storeCategories
+      : profile.user.storeCategories;
+  return (ids ?? []).map((id) => displayCategoryLabel(id, id));
+}
+
+export function savedRepresentativeName(profile: ProProfileResponse): string {
+  return profile.user.displayName?.trim() || "—";
+}
+
+export function savedCity(profile: ProProfileResponse): string {
+  return profile.user.city?.trim() || "—";
 }

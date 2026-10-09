@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
@@ -15,10 +15,16 @@ import {
 } from "@/lib/profile-catalog-state";
 import { type ProfileDraft } from "@/lib/profile-save";
 import {
+  isWorkingProfileDirty,
+  profileDraftFromProfile,
+} from "@/lib/profile-draft-sync";
+import {
   persistWorkingProfileDraft,
   validateWorkingProfileDraft,
   workingProfileMissingFields,
 } from "@/lib/profile-working-save";
+import type { EmployeesOverviewResponse } from "@/lib/employees-overview-types";
+import { DEV_FIXTURE_EMPLOYEES_OVERVIEW } from "@/lib/dev-profile-fixture-overview";
 import { ProfileBranchesSection } from "./ProfileBranchesSection";
 import { ProfileCatalogSection } from "./ProfileCatalogSection";
 import { ProfileTeamSection } from "./ProfileTeamSection";
@@ -149,8 +155,13 @@ export function ProfileEditor({
     website,
   ]);
 
+  const savedSnapshotRef = useRef(profileDraftFromProfile(initial));
+  const syncedUserIdRef = useRef(initial.user.id);
+  const draftRef = useRef<ProfileDraft | null>(null);
+
   const applyProfile = useCallback((next: ProProfileResponse) => {
     setProfile(next);
+    savedSnapshotRef.current = profileDraftFromProfile(next);
     const u = next.user as ExtendedUser;
     const catalogOnOrg = next.catalogPublication?.catalogEntity === "organization";
     setDisplayName(u.displayName ?? "");
@@ -197,6 +208,16 @@ export function ProfileEditor({
   }, [loadNotes]);
 
   useEffect(() => {
+    if (initial.user.id !== syncedUserIdRef.current) {
+      syncedUserIdRef.current = initial.user.id;
+      applyProfile(initial);
+      return;
+    }
+    setProfile(initial);
+    const currentDraft = draftRef.current ?? savedSnapshotRef.current;
+    if (isWorkingProfileDirty(savedSnapshotRef.current, currentDraft)) {
+      return;
+    }
     applyProfile(initial);
   }, [initial, applyProfile]);
 
@@ -211,15 +232,28 @@ export function ProfileEditor({
 
   const navigateSection = useCallback(
     (next: ProfileSectionId) => {
+      if (next === activeSection) return;
       setActiveSection(next);
       const qs = buildProfileSectionHref(next, new URLSearchParams(searchParams.toString())).split(
         "?",
       )[1];
       const href = qs ? `${profileBasePath}?${qs}` : profileBasePath;
-      router.replace(href, { scroll: false });
+      router.push(href, { scroll: false });
     },
-    [profileBasePath, router, searchParams],
+    [activeSection, profileBasePath, router, searchParams],
   );
+
+  const currentDraft = buildDraft();
+  draftRef.current = currentDraft;
+  const hasUnsavedBasicsChanges = isWorkingProfileDirty(
+    profileDraftFromProfile(profile),
+    currentDraft,
+  );
+  const fixtureOverview: EmployeesOverviewResponse | undefined = profileBasePath.includes(
+    "dev-fixture",
+  )
+    ? DEV_FIXTURE_EMPLOYEES_OVERVIEW
+    : undefined;
 
   const openNotes = useMemo(() => notes.filter((n) => !n.resolvedAt), [notes]);
 
@@ -296,8 +330,9 @@ export function ProfileEditor({
         {activeSection === "overview" ? (
           <ProfileOverviewSection
             profile={profile}
-            draft={buildDraft()}
             onNavigateSection={navigateSection}
+            hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+            fixtureOverview={fixtureOverview}
           />
         ) : null}
         {revisionBanner && activeSection === "catalog" ? (

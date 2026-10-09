@@ -12,7 +12,13 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.test.tsx"],
+    include: [
+      "src/**/*.test.tsx",
+      "src/lib/profile-sections.test.ts",
+      "src/lib/profile-draft-sync.test.ts",
+      "src/lib/master-direction-label.test.ts",
+      "src/lib/profile-overview-display.test.tsx",
+    ],
     testTimeout: 30_000,
   },
 });

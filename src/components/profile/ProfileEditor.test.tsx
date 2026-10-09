@@ -6,11 +6,11 @@ import type { ProProfileResponse } from "@/lib/types";
 import { persistWorkingProfileDraft } from "@/lib/profile-working-save";
 import { submitProfileForModerationReview } from "@/lib/profile-save";
 
-const replaceMock = vi.fn();
+const pushMock = vi.fn();
 let mockSearchParams = new URLSearchParams("");
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn(), replace: replaceMock }),
+  useRouter: () => ({ refresh: vi.fn(), push: pushMock, replace: vi.fn() }),
   useSearchParams: () => mockSearchParams,
   usePathname: () => "/profile",
 }));
@@ -100,7 +100,7 @@ describe("ProfileEditor", () => {
     mockSearchParams = new URLSearchParams("");
     vi.mocked(persistWorkingProfileDraft).mockReset();
     vi.mocked(submitProfileForModerationReview).mockReset();
-    replaceMock.mockReset();
+    pushMock.mockReset();
   });
 
   it("opens overview by default with working profile block", () => {
@@ -130,11 +130,61 @@ describe("ProfileEditor", () => {
     expect(screen.getByLabelText(/Имя представителя/i)).toHaveValue("Новое имя");
   });
 
-  it("syncs URL when changing tabs", async () => {
+  it("uses router.push when changing tabs", async () => {
     const ui = userEvent.setup();
     render(<ProfileEditor initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
-    expect(replaceMock).toHaveBeenCalledWith("/profile?section=basics", { scroll: false });
+    expect(pushMock).toHaveBeenCalledWith("/profile?section=basics", { scroll: false });
+  });
+
+  it("keeps unsaved name when initial prop is rerendered with new object", async () => {
+    const ui = userEvent.setup();
+    const { rerender } = render(<ProfileEditor initial={initial} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    const nameInput = screen.getByLabelText(/Имя представителя/i);
+    await ui.clear(nameInput);
+    await ui.type(nameInput, "Несохраненное имя");
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Имя представителя/i)).toHaveValue("Несохраненное имя");
+    });
+    rerender(
+      <ProfileEditor
+        initial={{
+          ...initial,
+          user: { ...initial.user, displayName: "Иван" },
+        }}
+      />,
+    );
+    expect(screen.getByLabelText(/Имя представителя/i)).toHaveValue("Несохраненное имя");
+  });
+
+  it("resets form when signed-in user changes", async () => {
+    const ui = userEvent.setup();
+    const { rerender } = render(<ProfileEditor initial={initial} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    await ui.clear(screen.getByLabelText(/Имя представителя/i));
+    await ui.type(screen.getByLabelText(/Имя представителя/i), "Несохраненное имя");
+    rerender(
+      <ProfileEditor
+        initial={{
+          ...initial,
+          user: { ...initial.user, id: "u2", displayName: "Пётр" },
+        }}
+      />,
+    );
+    expect(screen.getByLabelText(/Имя представителя/i)).toHaveValue("Пётр");
+  });
+
+  it("follows searchParams when simulating browser history", () => {
+    mockSearchParams = new URLSearchParams("section=basics");
+    const { rerender } = render(<ProfileEditor initial={initial} section="basics" />);
+    expect(screen.getByRole("tab", { name: /Основные данные/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    mockSearchParams = new URLSearchParams("");
+    rerender(<ProfileEditor initial={initial} section="overview" />);
+    expect(screen.getByRole("tab", { name: /Обзор/i })).toHaveAttribute("aria-selected", "true");
   });
 
   it("shows PENDING org status after catalog submit without resubmit button", async () => {
