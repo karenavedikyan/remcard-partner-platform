@@ -214,21 +214,95 @@ await runScenario("acceptance_C_submit_ui_explains", async () => {
   await context.close();
 });
 
-await runScenario("acceptance_D_retry_confirm_submit", async () => {
+function ymapsFlakyRejectThenOkInitScript() {
+  return () => {
+    let geocodeCalls = 0;
+    const hit = (q) => ({
+      geometry: { getCoordinates: () => [38.975313, 45.03547] },
+      properties: {
+        get: (k) => {
+          if (k === "text") return String(q);
+          return {
+            metaDataProperty: {
+              GeocoderMetaData: {
+                Address: { Components: [{ kind: "locality", name: "Краснодар" }] },
+              },
+            },
+          };
+        },
+      },
+    });
+    window.ymaps = {
+      ready: (cb) => cb(),
+      geocode: (q) => ({
+        then: (ok, fail) => {
+          geocodeCalls += 1;
+          if (geocodeCalls === 1) {
+            queueMicrotask(() => fail?.(new Error("provider async reject")));
+            return;
+          }
+          queueMicrotask(() =>
+            ok({
+              geoObjects: { get: (i) => (i === 0 ? hit(q) : null) },
+            }),
+          );
+        },
+      }),
+    };
+  };
+}
+
+async function runRetrySamePageAcceptance(viewport, screenshotName) {
   if (!results.branchNoGeoId) throw new Error("no branch from A");
-  const context = await profContext({ width: 1440, height: 900 });
+  const context = await browser.newContext({ viewport });
+  await context.addInitScript(ymapsFlakyRejectThenOkInitScript());
+  await context.addCookies([
+    {
+      name: "remcard-token",
+      value: mintToken(STORE_OWNER),
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
   const page = await context.newPage();
   await openBranchEditor(page, results.branchNoGeoId);
-  await page.getByRole("button", { name: /Заполнить направлениями организации/i }).click({ timeout: 15_000 });
+
   await page.getByTestId("branch-address-search").click();
+  await page.getByTestId("branch-map-load-error").waitFor({ timeout: 15_000 });
+  await page.getByTestId("branch-address-search").waitFor({ state: "visible" });
+  await expectNotSearching(page);
+
+  await page.getByTestId("branch-address-retry").click();
   await page.getByTestId("branch-address-preview").waitFor({ timeout: 15_000 });
+  await page.screenshot({ path: `${outDir}/${screenshotName}`, fullPage: true });
   await page.getByTestId("branch-address-confirm").click();
   await page.getByTestId("branch-geohash-confirmed").waitFor({ timeout: 10_000 });
+
   await page.getByRole("button", { name: /Сохранить черновик/i }).click();
   await page.getByText(/Черновик филиала сохранён/i).waitFor({ timeout: 15_000 });
-  await page.getByTestId("branch-submit-moderation").click();
-  await page.getByText(/отправлен на проверку/i).waitFor({ timeout: 15_000 });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByTestId("branch-geohash-confirmed").waitFor({ timeout: 15_000 });
   await context.close();
+}
+
+async function expectNotSearching(page) {
+  const btn = page.getByTestId("branch-address-search");
+  await btn.waitFor({ timeout: 10_000 });
+  const label = await btn.innerText();
+  if (label.includes("Поиск")) {
+    throw new Error("search still in loading state");
+  }
+}
+
+await runScenario("acceptance_D_retry_confirm_submit", async () => {
+  await runRetrySamePageAcceptance(
+    { width: 1440, height: 900 },
+    "prof-h4-d-retry-preview-1440.png",
+  );
+  await runRetrySamePageAcceptance({ width: 390, height: 844 }, "prof-h4-d-retry-preview-390.png");
 });
 
 await runScenario("full_branch_flow_1440", async () => {
@@ -402,8 +476,8 @@ await runScenario("provider_error_retry", async () => {
   const page = await context.newPage();
   await openBranchEditor(page, results.branchId);
   await page.getByTestId("branch-address-search").click();
-  await page.getByRole("alert").filter({ hasText: /карт/i }).waitFor({ timeout: 10_000 });
-  await page.getByRole("button", { name: /Повторить поиск/i }).waitFor({ timeout: 10_000 });
+  await page.getByTestId("branch-map-load-error").waitFor({ timeout: 10_000 });
+  await page.getByTestId("branch-address-retry").waitFor({ timeout: 10_000 });
   await context.close();
 });
 

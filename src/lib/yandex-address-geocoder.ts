@@ -5,11 +5,21 @@ export type YmapsGeo = {
   properties: { get: (k: string) => unknown };
 };
 
+export type YmapsGeocodeResult = {
+  geoObjects: { get: (index: number) => YmapsGeo | null | undefined };
+};
+
+/** Yandex API returns a thenable that accepts onRejected for async geocode failures. */
+export type YmapsGeocodeRequest = {
+  then: (
+    onFulfilled: (result: YmapsGeocodeResult) => void,
+    onRejected?: (reason: unknown) => void,
+  ) => void;
+};
+
 export type YmapsNamespace = {
-  ready: (cb: () => void) => void;
-  geocode: (q: string, opts?: { results?: number }) => {
-    then: (cb: (res: { geoObjects: { get: (i: number) => YmapsGeo } }) => void) => void;
-  };
+  ready: (callback: () => void) => void;
+  geocode: (query: string, opts?: { results?: number }) => YmapsGeocodeRequest;
 };
 
 export function extractCityDistrict(geo: YmapsGeo): { city: string | null; district: string | null } {
@@ -28,31 +38,58 @@ export function extractCityDistrict(geo: YmapsGeo): { city: string | null; distr
   return { city, district };
 }
 
-let ymapsLoadPromise: Promise<YmapsNamespace> | null = null;
+type WindowWithYmaps = Window & { ymaps?: YmapsNamespace };
+
+let ymapsLoadInFlight: Promise<YmapsNamespace> | null = null;
+
+function readWindowYmaps(): YmapsNamespace | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as WindowWithYmaps).ymaps;
+}
+
+function startYmapsScriptLoad(apiKey: string): Promise<YmapsNamespace> {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`;
+    script.async = true;
+    script.dataset.remcardYmapsLoader = "1";
+    script.onload = () => {
+      const ymaps = readWindowYmaps();
+      if (ymaps) resolve(ymaps);
+      else reject(new Error("ymaps missing after script load"));
+    };
+    script.onerror = () => reject(new Error("ymaps script failed"));
+    document.head.appendChild(script);
+  });
+}
+
+/** Reset cached loader state (tests only). */
+export function resetYmapsLoaderForTests(): void {
+  ymapsLoadInFlight = null;
+}
 
 export function loadYmaps(apiKey: string): Promise<YmapsNamespace> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("no window"));
   }
-  const w = window as unknown as { ymaps?: YmapsNamespace };
-  if (w.ymaps) {
-    return Promise.resolve(w.ymaps);
+  const existing = readWindowYmaps();
+  if (existing) {
+    return Promise.resolve(existing);
   }
-  if (!ymapsLoadPromise) {
-    ymapsLoadPromise = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`;
-      s.async = true;
-      s.onload = () => {
-        const y = (window as unknown as { ymaps?: YmapsNamespace }).ymaps;
-        if (y) resolve(y);
-        else reject(new Error("ymaps missing"));
-      };
-      s.onerror = () => reject(new Error("ymaps script failed"));
-      document.head.appendChild(s);
+  if (!ymapsLoadInFlight) {
+    ymapsLoadInFlight = startYmapsScriptLoad(apiKey).finally(() => {
+      ymapsLoadInFlight = null;
     });
   }
-  return ymapsLoadPromise;
+  return ymapsLoadInFlight;
+}
+
+export function runYmapsGeocode(ymaps: YmapsNamespace, query: string): Promise<YmapsGeocodeResult> {
+  return new Promise((resolve, reject) => {
+    ymaps.ready(() => {
+      ymaps.geocode(query, { results: 1 }).then(resolve, reject);
+    });
+  });
 }
 
 export function buildBranchGeocodeQuery(city: string, addressLine: string): string {
