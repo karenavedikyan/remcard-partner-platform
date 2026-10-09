@@ -201,16 +201,9 @@ export function ProfileBranchesSection({
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           required
-          hint="Реальный адрес точки — без него нельзя сохранить филиал."
+          hint="Укажите город и адрес точки. Подтверждение на карте понадобится только для публикации в каталоге."
         />
-        <Button
-          type="submit"
-          disabled={saving}
-          onClick={(event) => {
-            event.preventDefault();
-            void addBranch(event);
-          }}
-        >
+        <Button type="submit" disabled={saving} data-testid="branch-add-submit">
           {saving ? "Сохранение…" : "Добавить филиал"}
         </Button>
       </form>

@@ -79,7 +79,14 @@ function ymapsInitScript() {
   };
 }
 
-const results = { scenarios: {}, consoleErrors: [], branchId: null, exitCode: 0, provider: "mock-ymaps-in-page" };
+const results = {
+  scenarios: {},
+  consoleErrors: [],
+  branchId: null,
+  branchNoGeoId: null,
+  exitCode: 0,
+  provider: "mock-ymaps-in-page",
+};
 
 async function runScenario(key, fn) {
   try {
@@ -117,6 +124,112 @@ async function openBranchEditor(page, branchId) {
   });
   await page.getByLabel(/Название/i).waitFor({ timeout: 60_000 });
 }
+
+async function profContextNoMaps(viewport) {
+  const ctx = await browser.newContext({ viewport });
+  await ctx.addCookies([
+    {
+      name: "remcard-token",
+      value: mintToken(STORE_OWNER),
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
+  return ctx;
+}
+
+await runScenario("acceptance_A_create_form_no_geohash", async () => {
+  const context = await profContext({ width: 1440, height: 900 });
+  const page = await context.newPage();
+  await page.goto(`${PROF}/profile?section=branches`, { waitUntil: "networkidle", timeout: 120_000 });
+  await page.getByText("Точки на карте remcard.ru").waitFor({ timeout: 60_000 });
+
+  const branchName = `H4 A ${Date.now().toString().slice(-5)}`;
+  const branchAddress = `ул. A ${Date.now().toString().slice(-4)}`;
+  const addForm = page.locator("form").filter({ hasText: "Город филиала" });
+  await addForm.locator('[id="название-(необязательно)"]').fill(branchName);
+  await addForm.locator('[id="город-филиала"]').fill("Краснодар");
+  await addForm.locator('[id="адрес"]').fill(branchAddress);
+  await addForm.getByTestId("branch-add-submit").click();
+  await page.getByText(/Филиал добавлен/i).waitFor({ timeout: 30_000 });
+  await page.getByText(branchName).waitFor({ timeout: 15_000 });
+
+  const branchId = await page.evaluate(async (name) => {
+    const r = await fetch("/api/remcard/api/pro/organization", { credentials: "include" });
+    const j = await r.json();
+    return j.organization?.branches?.find((b) => b.name === name)?.id ?? null;
+  }, branchName);
+  if (!branchId) throw new Error("created branch not in org list");
+  results.branchNoGeoId = branchId;
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByText(branchName).waitFor({ timeout: 15_000 });
+  await page.screenshot({ path: `${outDir}/prof-h4-a-create-no-geohash-1440.png`, fullPage: true });
+  await context.close();
+});
+
+await runScenario("acceptance_B_provider_down_save_draft", async () => {
+  if (!results.branchNoGeoId) throw new Error("no branch from A");
+  const context = await profContextNoMaps({ width: 390, height: 844 });
+  await context.addInitScript(() => {
+    window.ymaps = {
+      ready: (cb) => cb(),
+      geocode: () => {
+        throw new Error("provider down");
+      },
+    };
+  });
+  const page = await context.newPage();
+  await openBranchEditor(page, results.branchNoGeoId);
+  await page.getByTestId("branch-address-search").click();
+  await page.getByTestId("branch-map-load-error").waitFor({ timeout: 15_000 });
+
+  await page.locator("label").filter({ hasText: "Телефон" }).locator('input[type="checkbox"]').check();
+  await page.getByLabel(/Значение \(Телефон\)/i).fill("+79001112233");
+  await page.getByRole("button", { name: /Сохранить черновик/i }).click();
+  await page.getByText(/Черновик филиала сохранён/i).waitFor({ timeout: 15_000 });
+
+  const token = mintToken(STORE_OWNER);
+  const submit = await fetch(
+    `${NAV}/api/pro/organization/branches/${results.branchNoGeoId}/submit-for-moderation`,
+    { method: "POST", headers: navFetchHeaders(`remcard-token=${token}`) },
+  );
+  if (submit.status !== 400) throw new Error(`expected submit 400 without geohash, got ${submit.status}`);
+  await page.screenshot({ path: `${outDir}/prof-h4-b-provider-down-390.png`, fullPage: true });
+  await context.close();
+});
+
+await runScenario("acceptance_C_submit_ui_explains", async () => {
+  if (!results.branchNoGeoId) throw new Error("no branch from A");
+  const context = await profContext({ width: 1440, height: 900 });
+  const page = await context.newPage();
+  await openBranchEditor(page, results.branchNoGeoId);
+  await page.getByTestId("branch-publication-geohash-hint").waitFor({ timeout: 10_000 });
+  await page.getByTestId("branch-submit-moderation").click();
+  await page.getByRole("alert").filter({ hasText: /подтвердите адрес/i }).waitFor({ timeout: 10_000 });
+  await page.getByTestId("branch-confirm-address-cta").click();
+  await context.close();
+});
+
+await runScenario("acceptance_D_retry_confirm_submit", async () => {
+  if (!results.branchNoGeoId) throw new Error("no branch from A");
+  const context = await profContext({ width: 1440, height: 900 });
+  const page = await context.newPage();
+  await openBranchEditor(page, results.branchNoGeoId);
+  await page.getByRole("button", { name: /Заполнить направлениями организации/i }).click({ timeout: 15_000 });
+  await page.getByTestId("branch-address-search").click();
+  await page.getByTestId("branch-address-preview").waitFor({ timeout: 15_000 });
+  await page.getByTestId("branch-address-confirm").click();
+  await page.getByTestId("branch-geohash-confirmed").waitFor({ timeout: 10_000 });
+  await page.getByRole("button", { name: /Сохранить черновик/i }).click();
+  await page.getByText(/Черновик филиала сохранён/i).waitFor({ timeout: 15_000 });
+  await page.getByTestId("branch-submit-moderation").click();
+  await page.getByText(/отправлен на проверку/i).waitFor({ timeout: 15_000 });
+  await context.close();
+});
 
 await runScenario("full_branch_flow_1440", async () => {
   const context = await profContext({ width: 1440, height: 900 });
@@ -200,7 +313,22 @@ await runScenario("full_branch_flow_1440", async () => {
   await context.close();
 });
 
-await runScenario("published_draft_and_geohash_reset", async () => {
+await runScenario("acceptance_F_contacts_keep_geohash", async () => {
+  if (!results.branchId) throw new Error("no branch from full flow");
+  const branchId = results.branchId;
+  const context = await profContext({ width: 1440, height: 900 });
+  const page = await context.newPage();
+  await openBranchEditor(page, branchId);
+  await page.getByTestId("branch-geohash-confirmed").waitFor({ timeout: 15_000 });
+  await page.locator("label").filter({ hasText: "Email" }).locator('input[type="checkbox"]').check();
+  await page.getByLabel(/Значение \(Email\)/i).fill("branch@example.test");
+  await page.getByRole("button", { name: /Сохранить черновик/i }).click();
+  await page.getByText(/Черновик филиала сохранён/i).waitFor({ timeout: 15_000 });
+  await page.getByTestId("branch-geohash-confirmed").waitFor({ timeout: 15_000 });
+  await context.close();
+});
+
+await runScenario("acceptance_E_published_draft_no_geo_submit", async () => {
   if (!results.branchId) throw new Error("no branch from prior scenario");
   const branchId = results.branchId;
   const context = await profContext({ width: 1440, height: 900 });
@@ -237,6 +365,15 @@ await runScenario("published_draft_and_geohash_reset", async () => {
   if (draftGeo != null) {
     throw new Error(`draft should not keep geohash after city/address change (got ${draftGeo})`);
   }
+
+  await page.getByTestId("branch-submit-moderation").click();
+  await page.getByRole("alert").filter({ hasText: /подтвердите адрес/i }).waitFor({ timeout: 10_000 });
+  const token2 = mintToken(STORE_OWNER);
+  const blocked = await fetch(
+    `${NAV}/api/pro/organization/branches/${branchId}/submit-for-moderation`,
+    { method: "POST", headers: navFetchHeaders(`remcard-token=${token2}`) },
+  );
+  if (blocked.status !== 400) throw new Error(`submit should stay blocked without geohash (${blocked.status})`);
   await context.close();
 });
 

@@ -10,6 +10,12 @@ import {
 import { Button } from "@/components/ui/Button";
 import styles from "./ProfileEditor.module.css";
 
+export const BRANCH_ADDRESS_PUBLICATION_HINT =
+  "Для публикации филиала в каталоге подтвердите адрес на карте. Сохранить филиал и работать в кабинете можно уже сейчас";
+
+export const BRANCH_MAP_LOAD_ERROR =
+  "Не удалось загрузить карту. Вы можете сохранить данные и подтвердить адрес позже";
+
 export type BranchAddressGeoValue = {
   addressCity: string | null;
   addressDistrict: string | null;
@@ -96,9 +102,7 @@ export function BranchAddressGeocoder({
     } catch {
       if (gen === searchGen.current) {
         setScriptErr(true);
-        setSearchErr(
-          "Не удалось связаться с картами. Черновик можно сохранить — повторите поиск позже.",
-        );
+        setSearchErr(BRANCH_MAP_LOAD_ERROR);
       }
     } finally {
       if (gen === searchGen.current) setSearching(false);
@@ -123,19 +127,31 @@ export function BranchAddressGeocoder({
   if (!apiKey || scriptErr) {
     return (
       <div className={styles.fields} data-testid="branch-address-geocoder-fallback">
-        <p className={styles.hint}>
-          {!apiKey
-            ? "Ключ Яндекс.Карт не настроен — укажите адрес вручную. Для отправки на модерацию нужна зона на карте (ключ NEXT_PUBLIC_YANDEX_MAPS_API_KEY)."
-            : "Карты недоступны — сохраните черновик и повторите поиск позже."}
-        </p>
+        {!value.addressGeohash ? (
+          <p className={styles.hint} data-testid="branch-address-publication-hint">
+            {BRANCH_ADDRESS_PUBLICATION_HINT}
+          </p>
+        ) : null}
+        {!apiKey ? (
+          <p className={styles.hint}>
+            Ключ Яндекс.Карт не настроен — адрес можно указать текстом; подтверждение на карте станет
+            доступно после настройки ключа.
+          </p>
+        ) : null}
         {searchErr ? (
-          <p className={styles.error} role="alert">
+          <p className={styles.error} role="alert" data-testid="branch-map-load-error">
             {searchErr}
           </p>
         ) : null}
-        {apiKey && scriptErr ? (
-          <Button type="button" variant="secondary" disabled={disabled || !queryKey.trim()} onClick={() => void searchAddress()}>
-            Повторить поиск адреса
+        {apiKey ? (
+          <Button
+            type="button"
+            variant="secondary"
+            data-testid="branch-address-search"
+            disabled={disabled || searching || !queryKey.trim()}
+            onClick={() => void searchAddress()}
+          >
+            {searching ? "Поиск…" : scriptErr ? "Повторить поиск адреса" : "Найти адрес"}
           </Button>
         ) : null}
       </div>
@@ -144,8 +160,13 @@ export function BranchAddressGeocoder({
 
   return (
     <div className={styles.fields} data-testid="branch-address-geocoder">
+      {!value.addressGeohash ? (
+        <p className={styles.hint} data-testid="branch-address-publication-hint">
+          {BRANCH_ADDRESS_PUBLICATION_HINT}
+        </p>
+      ) : null}
       <p className={styles.hint}>
-        Сначала найдите адрес, затем подтвердите найденный результат (геозона ~5&nbsp;км для каталога).
+        Подготовка к публикации: найдите адрес и подтвердите результат (геозона ~5&nbsp;км для каталога).
       </p>
       <div className={styles.fields}>
         <Button
@@ -175,18 +196,21 @@ export function BranchAddressGeocoder({
             Подтверждено · геозона {value.addressGeohash}
             {value.addressDistrict ? ` · ${value.addressDistrict}` : ""}
           </p>
-        ) : (
-          !pending && (
-            <p className={styles.hint}>
-              Адрес не подтверждён — черновик можно сохранить, на модерацию отправляйте только после
-              подтверждения.
-            </p>
-          )
-        )}
+        ) : null}
         {searchErr ? (
-          <p className={styles.error} role="alert">
+          <p className={styles.error} role="alert" data-testid="branch-map-load-error">
             {searchErr}
           </p>
+        ) : null}
+        {searchErr && !scriptErr ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={disabled || searching || !queryKey.trim()}
+            onClick={() => void searchAddress()}
+          >
+            Повторить поиск адреса
+          </Button>
         ) : null}
       </div>
     </div>

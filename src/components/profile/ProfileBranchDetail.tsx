@@ -26,7 +26,11 @@ import {
   submitBranchForModeration,
   unpublishBranchFromCatalog,
 } from "@/lib/profile-branch-save";
-import { BranchAddressGeocoder, type BranchAddressGeoValue } from "./BranchAddressGeocoder";
+import {
+  BranchAddressGeocoder,
+  BRANCH_ADDRESS_PUBLICATION_HINT,
+  type BranchAddressGeoValue,
+} from "./BranchAddressGeocoder";
 import { BranchCatalogPublicationPreview } from "./BranchCatalogPublicationPreview";
 import { ProfileBranchContactsSection } from "./ProfileBranchContactsSection";
 import { ProfileBranchScheduleEditor } from "./ProfileBranchScheduleEditor";
@@ -315,9 +319,22 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     setScheduleDays(next);
   }
 
+  function focusConfirmAddress() {
+    document
+      .querySelector('[data-testid="branch-address-geocoder"], [data-testid="branch-address-geocoder-fallback"]')
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const searchBtn = document.querySelector('[data-testid="branch-address-search"]') as HTMLButtonElement | null;
+    if (searchBtn && !searchBtn.disabled) {
+      searchBtn.focus();
+    }
+  }
+
   async function submitBranchCatalog() {
     if (!addressGeo.addressGeohash?.trim()) {
-      setError("Подтвердите адрес (найдите и подтвердите результат) перед отправкой на модерацию.");
+      setError(
+        "Для отправки на модерацию подтвердите адрес на карте (найдите результат и нажмите «Подтвердить этот адрес»). Черновик можно сохранить без подтверждения.",
+      );
+      focusConfirmAddress();
       return;
     }
     if (dirty) {
@@ -562,19 +579,38 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
               ) : null}
 
               <Panel title="Публикация и предпросмотр">
+                {!addressGeo.addressGeohash?.trim() && isOwner && !catalogLocked ? (
+                  <p className={styles.hint} data-testid="branch-publication-geohash-hint">
+                    {BRANCH_ADDRESS_PUBLICATION_HINT}
+                  </p>
+                ) : null}
                 <div className={styles.actions}>
                   <Button type="submit" disabled={saving || catalogLocked}>
                     {saving ? "Сохранение…" : "Сохранить черновик"}
                   </Button>
                   {isOwner ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={saving || catalogLocked}
-                      onClick={() => void submitBranchCatalog()}
-                    >
-                      {submitLabel}
-                    </Button>
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={saving || catalogLocked}
+                        onClick={() => void submitBranchCatalog()}
+                        data-testid="branch-submit-moderation"
+                      >
+                        {submitLabel}
+                      </Button>
+                      {!addressGeo.addressGeohash?.trim() && !catalogLocked ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={saving}
+                          data-testid="branch-confirm-address-cta"
+                          onClick={focusConfirmAddress}
+                        >
+                          Подтвердить адрес
+                        </Button>
+                      ) : null}
+                    </>
                   ) : null}
                   <Button type="button" variant="secondary" onClick={() => setPreviewOpen((v) => !v)}>
                     {previewOpen ? "Скрыть предпросмотр" : "Предпросмотр"}

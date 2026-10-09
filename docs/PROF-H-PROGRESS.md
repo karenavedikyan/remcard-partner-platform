@@ -327,11 +327,12 @@ cd remcard-partner-platform && npm run build
 
 ### PROF-H4 — geocode + browser acceptance (2026-10-09, turn 2)
 
-Base: navigator **`7d2879fa`**, platform **`6d230ab`**.
+Base: navigator **`7d2879fa`**, platform **`6d230ab`**.  
+HEAD: navigator **`d7a4389d`**, platform **`f276f0c`** (+ non-blocking geocode turn below).
 
 | Check | Result |
 |-------|--------|
-| `profH4Branches.integration.test.ts` | **8/8** (incl. `PATCH null addressGeohash`) |
+| `profH4Branches.integration.test.ts` | **12/12** |
 | `npm run test:proxy` (platform) | **228/228** |
 | `profile-branch-save.test.ts`, `yandex-address-geocoder.test.ts` | **2/2** |
 | Navigator / platform `npm run build` | exit **0** |
@@ -339,7 +340,22 @@ Base: navigator **`7d2879fa`**, platform **`6d230ab`**.
 
 Browser (mock provider): create → geocode confirm → save/reload → submit → staff approve → `GET /api/catalog/branch/[id]` + catalog search → published draft vs live → provider error retry → revise note → resubmit → contacts dirty / no overflow.
 
-Artifacts: `prof-h4-e2e-after-approve-1440.png`, `prof-h4-e2e-390.png`, `prof-h4-browser-acceptance.json`.
+Artifacts: `prof-h4-e2e-after-approve-1440.png`, `prof-h4-e2e-390.png`, `prof-h4-a-create-no-geohash-1440.png`, `prof-h4-b-provider-down-390.png`, `prof-h4-browser-acceptance.json`.
+
+### PROF-H4 — геокод не блокирует кабинет (2026-10-09, turn 3)
+
+Правило: geohash обязателен **только** для submit на модерацию; создание филиала и «Сохранить черновик» без карты.
+
+| Сценарий | API (remcard_prof_test) | Browser (mock ymaps) |
+|----------|-------------------------|----------------------|
+| **A** создать без geohash | `POST` branch без geohash → 201 | форма «Добавить филиал» → список → reload |
+| **B** ошибка карт, save draft | — | provider down → save контакты → submit API 400 |
+| **C** submit без geohash | submit → 400 | UI hint + alert + «Подтвердить адрес» |
+| **D** retry → confirm → submit | — | preview → confirm → submit OK |
+| **E** published + draft без geo | live unchanged, submit 400 | UI + API blocked |
+| **F** контакты без сброса geo | PATCH channels, live geohash сохранён | geohash UI после save |
+
+Сервер: submit использует effective snapshot — явный `addressGeohash: null` в draft не подменяется live geohash (`??` исправлено).
 
 ### NOT VERIFIED (external)
 
