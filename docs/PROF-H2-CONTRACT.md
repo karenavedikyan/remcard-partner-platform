@@ -1,6 +1,6 @@
 # PROF-H2 — контракт (fix-pass)
 
-Base: navigator `9523dcd` → HEAD fix-pass; platform `d2ae82f` → HEAD fix-pass. Branch: `feat/prof-h-profile-redesign`.
+Base: navigator `d8f287e` → **`022450b5`**; platform `d2ae82f` → **`5bbcdf7`**. Branch: `feat/prof-h-profile-redesign`.
 
 ## 1. Legacy-профили
 
@@ -34,7 +34,9 @@ Frontend: chip remove вызывает `removePrimaryIfNeeded` (как checkbox)
 | PRO без cabinet | 403 `assertCabinetProfAccess` |
 | PRO с доступом | 200 + `partnershipContact*` |
 
-Публичный `/api/catalog` — тест: JSON без `partnershipContact*`.
+Публичный `/api/catalog` — integration: JSON без `partnershipContact*` (при доступной БД).
+
+Unit: `src/app/api/partnership/search/__tests__/route.auth.test.ts` (4 cases).
 
 ## 4. Справочник
 
@@ -51,15 +53,30 @@ Frontend: chip remove вызывает `removePrimaryIfNeeded` (как checkbox)
 
 Working PATCH не меняет live `storeCategories` / `specializations` / `catalogStatus` / `isPublic` (integration test при доступной БД).
 
-## Проверки (fix-pass)
+## 7. API integration
+
+`profH2WorkingProfileRoutes.integration.test.ts`: создаёт A/B в `remcard_prof_test`, проверяет URL/loopback/`current_database()`, сценарий PATCH→GET→search→opt-out; **нет** `hasFixtures` false-green.
+
+## 8. Frontend tests
+
+Vitest include: `profile-working-save.test.ts`, `working-profile-patch.test.ts`, `ProfileDirectionsPicker.test.tsx`.
+
+## Проверки (fix-pass, 2026-10-09)
 
 | Команда | Exit | Результат |
 |---------|------|-----------|
 | navigator `pnpm run typecheck` | 0 | PASS |
-| navigator `vitest` workingProfile + partnershipSearchQuery | 0 | PASS |
-| navigator `profH2WorkingProfileRoutes.integration.test.ts` | skip / — | **NOT VERIFIED** — `127.0.0.1:5432` недоступен в прогоне |
+| navigator `pnpm run lint` | 0 | PASS (pre-existing warnings elsewhere) |
+| navigator `vitest` workingProfile + partnershipSearchQuery | 0 | **9** tests PASS |
+| navigator `vitest` partnership search route.auth | 0 | **4** tests PASS |
+| navigator `profH2WorkingProfileRoutes.integration.test.ts` | 0 | **6 skipped** — PostgreSQL `127.0.0.1:5432` недоступен |
 | platform `npm run test:component` | 0 | **73** tests PASS |
-| platform `npm run test:proxy` | см. прогон | PASS |
+| platform `npm run test:proxy` | 0 | **228** tests PASS |
+| platform `npm run lint` | 0 | PASS |
 | platform `NODE_ENV=production npm run build` | 0 | PASS |
 
-Скриншоты прежние (`docs/screenshots/prof-h2-basics-*`); browser с live upstream — **NOT VERIFIED** в fix-pass.
+## NOT VERIFIED
+
+- Полный API-сценарий на `remcard_prof_test` (нет БД в прогоне; миграция split не применена).
+- Browser 1440×900 / 390×844 с live navigator upstream (taxonomy, save/reload, search, overflow).
+- Скриншоты: прежние `docs/screenshots/prof-h2-basics-*` (upstream/fixture).

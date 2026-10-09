@@ -2,33 +2,40 @@
 
 ## Git
 
-| Repo | Branch | From | To (after fix-pass) |
-|------|--------|------|---------------------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `d8f287e` | _(commit below)_ |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `d2ae82f` | _(commit below)_ |
+| Repo | Branch | From | To (fix-pass) |
+|------|--------|------|----------------|
+| remcard-navigator | `feat/prof-h-profile-redesign` | `d8f287e` | **`022450b5`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `d2ae82f` | **`5bbcdf7`** |
 
-## Fix-pass highlights
+## Fix-pass checklist (1–8)
 
-1. Legacy: effective directions + diff PATCH; split `workingProduct/ServiceDirectionsTouched`.
-2. Primary validation on final state; cabinet/search minimum on server.
-3. Search: `assertCabinetProfAccess`, blocked gate, pagination, activity-based type filter.
-4. Picker: full taxonomy + local filter; L1 from `navigatorL1Stages.ts`.
-5. Integration test creates own users (no m2fix mutation); removed false-green `hasFixtures` assert.
+| # | Item | Status |
+|---|------|--------|
+| 1 | Legacy directions/visibility on save | **PASS** — code + `workingProfile.test.ts`; integration **NOT VERIFIED** (DB) |
+| 2 | PATCH final-state + primary + search minimum | **PASS** — unit + integration case in skipped suite |
+| 3 | Search auth gates + catalog leak | **PASS** — route.auth (4) + integration catalog case skipped |
+| 4 | Picker canonical labels + L1 single source | **PASS** — component tests (2) |
+| 5 | Activity vs role + pagination | **PASS** — `partnershipSearchQuery` tests + PartnersHub UI |
+| 6 | Public catalog immutability | **PASS** (code path); integration **NOT VERIFIED** (DB) |
+| 7 | Real API scenario (no false-green) | **PASS** (test design); execution **NOT VERIFIED** (6 skipped) |
+| 8 | Vitest suites + browser | Vitest **PASS** (73); browser **NOT VERIFIED** |
 
 ## Tests (this run)
 
 | Suite | Count | Exit |
 |-------|-------|------|
 | platform Vitest component | 73 | 0 |
-| navigator `workingProfile` + `partnershipSearchQuery` | included in vitest | 0 |
-| navigator API integration `profH2WorkingProfileRoutes` | 6 cases | **skipped** (DB unreachable) |
+| platform proxy (node:test) | 228 | 0 |
+| navigator `workingProfile` + `partnershipSearchQuery` | 9 | 0 |
+| navigator partnership search `route.auth` | 4 | 0 |
+| navigator `profH2WorkingProfileRoutes.integration` | 6 | 0 (skipped) |
 
 ## NOT VERIFIED
 
-- `profH2WorkingProfileRoutes.integration.test.ts` on live `remcard_prof_test` (P1001).
+- `profH2WorkingProfileRoutes.integration.test.ts` on live `remcard_prof_test` (PostgreSQL unreachable; apply `20261009_prof_h2_direction_touched_split`).
 - Browser 1440/390 with live taxonomy + save/reload/search.
-- Full navigator vitest (1017 tests) — spot + typecheck only in fix-pass window.
+- Full navigator vitest (~1017) — targeted H2 + typecheck/lint only.
 
 ## H3
 
-Not started.
+Not started. No PR / deploy / production DB in this pass.
