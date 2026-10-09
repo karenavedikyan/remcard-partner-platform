@@ -4,8 +4,8 @@
 
 | Repo | Branch | From | To (fix-pass) |
 |------|--------|------|----------------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `d8f287e` | **`022450b5`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `d2ae82f` | **`afb8d02`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `022450b5` | **`c4a866ab`** (+ city display fix) |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `7c38206` | **`cf39471`** |
 
 ## Fix-pass checklist (1–8)
 
