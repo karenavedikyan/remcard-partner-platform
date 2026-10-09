@@ -6,8 +6,13 @@ import type { ProProfileResponse } from "@/lib/types";
 import { persistWorkingProfileDraft } from "@/lib/profile-working-save";
 import { submitProfileForModerationReview } from "@/lib/profile-save";
 
+const replaceMock = vi.fn();
+let mockSearchParams = new URLSearchParams("");
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), replace: replaceMock }),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => "/profile",
 }));
 
 vi.mock("next/link", () => ({
@@ -20,6 +25,7 @@ vi.mock("@/lib/profile-working-save", () => ({
   persistWorkingProfileDraft: vi.fn(),
   validateWorkingProfileDraft: vi.fn(() => null),
   workingProfileMissingFields: vi.fn(() => []),
+  workingProfileComplete: vi.fn(() => true),
 }));
 
 vi.mock("@/lib/profile-save", () => ({
@@ -28,8 +34,21 @@ vi.mock("@/lib/profile-save", () => ({
 }));
 
 vi.mock("@/lib/api-client", () => ({
-  remcardFetch: vi.fn().mockResolvedValue({ notes: [] }),
-  RemcardApiError: class RemcardApiError extends Error {},
+  remcardFetch: vi.fn().mockResolvedValue({
+    notes: [],
+    organization: { id: "o1", name: "Shop", branches: [] },
+    summary: { totalEmployees: 0, byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 }, pendingInvites: 0 },
+    branches: [],
+    myRole: "ORG_OWNER",
+    viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+  }),
+  RemcardApiError: class RemcardApiError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  },
 }));
 
 vi.mock("./NotificationSettingsPanel", () => ({
@@ -52,7 +71,7 @@ const initial: ProProfileResponse = {
     publicId: "RC1",
     displayName: "Иван",
     city: "Москва",
-    specializations: ["stage-1"],
+    specializations: ["L1-0"],
     role: "PRO",
     partnerType: "MASTER",
     description: null,
@@ -78,14 +97,44 @@ const initial: ProProfileResponse = {
 
 describe("ProfileEditor", () => {
   beforeEach(() => {
+    mockSearchParams = new URLSearchParams("");
     vi.mocked(persistWorkingProfileDraft).mockReset();
     vi.mocked(submitProfileForModerationReview).mockReset();
+    replaceMock.mockReset();
   });
 
-  it("allows saving basics while catalog publication is pending review", () => {
+  it("opens overview by default with working profile block", () => {
     render(<ProfileEditor initial={initial} returnTo="/invite/abc" />);
+    expect(screen.getByRole("heading", { name: /Рабочий профиль/i })).toBeInTheDocument();
+    expect(screen.getByText(/Пусть новые клиенты найдут вас/i)).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Обзор/i })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("allows saving basics while catalog publication is pending review", async () => {
+    const ui = userEvent.setup();
+    render(<ProfileEditor initial={initial} returnTo="/invite/abc" />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     expect(screen.getByRole("button", { name: /Сохранить данные/i })).not.toBeDisabled();
     expect(screen.getByRole("link", { name: /Вернуться/i })).toHaveAttribute("href", "/invite/abc");
+  });
+
+  it("preserves unsaved basics input when switching sections", async () => {
+    const ui = userEvent.setup();
+    render(<ProfileEditor initial={initial} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    const nameInput = screen.getByLabelText(/Имя представителя/i);
+    await ui.clear(nameInput);
+    await ui.type(nameInput, "Новое имя");
+    await ui.click(screen.getByRole("tab", { name: /Обзор/i }));
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    expect(screen.getByLabelText(/Имя представителя/i)).toHaveValue("Новое имя");
+  });
+
+  it("syncs URL when changing tabs", async () => {
+    const ui = userEvent.setup();
+    render(<ProfileEditor initial={initial} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    expect(replaceMock).toHaveBeenCalledWith("/profile?section=basics", { scroll: false });
   });
 
   it("shows PENDING org status after catalog submit without resubmit button", async () => {
@@ -111,6 +160,7 @@ describe("ProfileEditor", () => {
       organization: { ...draftProfile.organization!, catalogStatus: "PENDING" },
     });
 
+    mockSearchParams = new URLSearchParams("section=catalog");
     const ui = userEvent.setup();
     render(<ProfileEditor initial={draftProfile} section="catalog" />);
     await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
@@ -124,6 +174,7 @@ describe("ProfileEditor", () => {
   });
 
   it("shows branch address field for store without organization in catalog section", async () => {
+    mockSearchParams = new URLSearchParams("section=catalog");
     const ui = userEvent.setup();
     render(
       <ProfileEditor
@@ -141,5 +192,14 @@ describe("ProfileEditor", () => {
     );
     await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
     expect(screen.getByLabelText(/Адрес первого филиала/i)).toBeInTheDocument();
+  });
+
+  it("opens catalog for moderation deep link section", async () => {
+    mockSearchParams = new URLSearchParams("section=moderation");
+    render(<ProfileEditor initial={initial} section="catalog" moderationSection />);
+    expect(screen.getByRole("tab", { name: /Каталог RemCard/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 });

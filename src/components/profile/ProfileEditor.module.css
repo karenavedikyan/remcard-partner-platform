@@ -1,8 +1,69 @@
+.shell {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tabStrip {
+  display: flex;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 100%;
+}
+
+.tabStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.tabButton {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  min-height: 48px;
+  padding: 0 0 var(--space-3);
+  white-space: nowrap;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tabButton:hover {
+  color: var(--ink);
+}
+
+.tabButtonActive {
+  color: var(--ink);
+}
+
+.tabButtonActive::after {
+  content: "";
+  height: 3px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #c12b2f;
+  border-radius: 3px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.8fr);
   gap: var(--space-6);
   align-items: start;
+  min-width: 0;
+}
+
+.gridSingle {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .main {
@@ -78,6 +139,14 @@
 .chipGrid {
   display: grid;
   gap: var(--space-2);
+}
+
+@media (max-width: 650px) {
+  .tabStrip {
+    gap: var(--space-5);
+    margin-inline: calc(-1 * var(--space-1));
+    padding-inline: var(--space-1);
+  }
 }
 
 .checkRow {

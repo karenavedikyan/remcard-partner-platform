@@ -2,12 +2,9 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
-import {
-  CATALOG_STATUS_LABELS,
-  catalogStatusTone,
-} from "@/lib/partnership-labels";
+import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
 import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
 import { storeCategoryChips } from "@/lib/store-categories";
 import {
@@ -31,7 +28,16 @@ import { Panel } from "@/components/ui/Panel";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
+import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import {
+  buildProfileSectionHref,
+  PROFILE_SECTION_NAV,
+  resolveProfileSectionFromQuery,
+  type ProfileSectionId,
+} from "@/lib/profile-sections";
 import styles from "./ProfileEditor.module.css";
+
+export type { ProfileSectionId };
 
 const PARTNER_TYPES = [
   { value: "MASTER", label: "Специалист" },
@@ -49,26 +55,12 @@ type ModerationNote = {
   resolvedAt: string | null;
 };
 
-export type ProfileSectionId =
-  | "basics"
-  | "branches"
-  | "team"
-  | "catalog"
-  | "notifications";
-
-const PROFILE_SECTIONS: { id: ProfileSectionId; label: string }[] = [
-  { id: "basics", label: "Основные данные" },
-  { id: "branches", label: "Филиалы" },
-  { id: "team", label: "Сотрудники" },
-  { id: "catalog", label: "Публикация" },
-  { id: "notifications", label: "Уведомления" },
-];
-
 type ProfileEditorProps = {
   initial: ProProfileResponse;
   moderationSection?: boolean;
   returnTo?: string | null;
   section?: ProfileSectionId;
+  focusBranchId?: string;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -81,9 +73,15 @@ export function ProfileEditor({
   initial,
   moderationSection,
   returnTo,
-  section: sectionProp = "basics",
+  section: sectionProp = "overview",
+  focusBranchId,
 }: ProfileEditorProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const profileBasePath = pathname.startsWith("/profile/dev-fixture")
+    ? "/profile/dev-fixture"
+    : "/profile";
   const [profile, setProfile] = useState(initial);
   const user = profile.user as ExtendedUser;
 
@@ -101,9 +99,11 @@ export function ProfileEditor({
   const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
 
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<ProfileSectionId>(
-    moderationSection ? "catalog" : sectionProp,
-  );
+  const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
+    if (focusBranchId) return "branches";
+    if (moderationSection) return "catalog";
+    return sectionProp;
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [notes, setNotes] = useState<ModerationNote[]>([]);
@@ -200,6 +200,27 @@ export function ProfileEditor({
     applyProfile(initial);
   }, [initial, applyProfile]);
 
+  useEffect(() => {
+    const fromUrl = resolveProfileSectionFromQuery({
+      section: searchParams.get("section"),
+      moderation: searchParams.get("moderation"),
+      branchId: searchParams.get("branchId"),
+    });
+    setActiveSection(fromUrl);
+  }, [searchParams]);
+
+  const navigateSection = useCallback(
+    (next: ProfileSectionId) => {
+      setActiveSection(next);
+      const qs = buildProfileSectionHref(next, new URLSearchParams(searchParams.toString())).split(
+        "?",
+      )[1];
+      const href = qs ? `${profileBasePath}?${qs}` : profileBasePath;
+      router.replace(href, { scroll: false });
+    },
+    [profileBasePath, router, searchParams],
+  );
+
   const openNotes = useMemo(() => notes.filter((n) => !n.resolvedAt), [notes]);
 
   function toggleSpec(id: string) {
@@ -240,32 +261,49 @@ export function ProfileEditor({
   const workingMissing = workingProfileMissingFields(buildDraft());
   const workingComplete = validateWorkingProfileDraft(buildDraft()) === null;
 
+  const showAside = activeSection !== "overview";
+
   return (
-    <div className={styles.grid} id={moderationSection ? "moderation-remarks" : undefined}>
+    <div className={styles.shell} id={moderationSection ? "moderation-remarks" : undefined}>
       {showBack ? (
         <p className={styles.hint}>
           <Link href={returnTo}>← Вернуться к предыдущему разделу</Link>
         </p>
       ) : null}
 
-      <nav className={styles.chipGrid} aria-label="Разделы профиля">
-        {PROFILE_SECTIONS.map((item) => (
-          <Button
-            key={item.id}
-            type="button"
-            variant={activeSection === item.id ? "primary" : "secondary"}
-            onClick={() => setActiveSection(item.id)}
-          >
-            {item.label}
-          </Button>
-        ))}
+      <nav aria-label="Разделы профиля">
+        <ul className={styles.tabStrip} role="tablist">
+          {PROFILE_SECTION_NAV.map((item) => (
+            <li key={item.id} role="presentation">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeSection === item.id}
+                className={`${styles.tabButton} ${activeSection === item.id ? styles.tabButtonActive : ""}`}
+                onClick={() => navigateSection(item.id)}
+              >
+                {item.label}
+              </button>
+            </li>
+          ))}
+        </ul>
       </nav>
 
+      <div
+        className={`${styles.grid} ${showAside ? "" : styles.gridSingle}`}
+      >
       <div className={styles.main}>
+        {activeSection === "overview" ? (
+          <ProfileOverviewSection
+            profile={profile}
+            draft={buildDraft()}
+            onNavigateSection={navigateSection}
+          />
+        ) : null}
         {revisionBanner && activeSection === "catalog" ? (
           <div className={styles.bannerWarn} role="status">
             <strong>Нужно исправить публикацию в каталоге</strong>
-            <p>Внесите правки в разделе «Публикация», сохраните черновик и отправьте повторно.</p>
+            <p>Внесите правки в разделе «Каталог RemCard», сохраните черновик и отправьте повторно.</p>
             {profile.user.rejectionReason ? <p>{profile.user.rejectionReason}</p> : null}
           </div>
         ) : null}
@@ -432,6 +470,7 @@ export function ProfileEditor({
             defaultCity={city}
             hasOrganization={Boolean(profile.organization)}
             partnerType={partnerType}
+            initialBranchId={focusBranchId}
           />
         ) : null}
 
@@ -501,32 +540,35 @@ export function ProfileEditor({
 
       </div>
 
-      <aside className={styles.aside}>
-        <Panel title="Подсказка" compact>
-          <p>
-            Рабочие данные сохраняются без модерации. Публикация в каталоге — добровольно, в разделе
-            «Публикация».
-          </p>
-          <p className={styles.hint}>Каталог: {statusLabel}</p>
-        </Panel>
-        {profile.organization ? (
-          <Panel title="Организация" compact>
-            <p className={styles.orgName}>{profile.organization.name}</p>
+      {showAside ? (
+        <aside className={styles.aside}>
+          <Panel title="Подсказка" compact>
             <p>
-              Статус витрины:{" "}
-              {CATALOG_STATUS_LABELS[profile.organization.catalogStatus] ??
-                profile.organization.catalogStatus}
+              Рабочие данные сохраняются без модерации. Публикация в каталоге — добровольно, в
+              разделе «Каталог RemCard».
             </p>
-            <p className={styles.hint}>
-              {profile.organization.catalogPublished
-                ? "Организация видна в каталоге (опубликованная версия)."
-                : "Организация не опубликована для посетителей."}
-              {profile.organization.catalogDraft ? " Есть черновик правок." : ""}
-            </p>
-            <p>Филиалов: {profile.organization.branchCount ?? 0}</p>
+            <p className={styles.hint}>Каталог: {statusLabel}</p>
           </Panel>
-        ) : null}
-      </aside>
+          {profile.organization ? (
+            <Panel title="Организация" compact>
+              <p className={styles.orgName}>{profile.organization.name}</p>
+              <p>
+                Статус витрины:{" "}
+                {CATALOG_STATUS_LABELS[profile.organization.catalogStatus] ??
+                  profile.organization.catalogStatus}
+              </p>
+              <p className={styles.hint}>
+                {profile.organization.catalogPublished
+                  ? "Организация видна в каталоге (опубликованная версия)."
+                  : "Организация не опубликована для посетителей."}
+                {profile.organization.catalogDraft ? " Есть черновик правок." : ""}
+              </p>
+              <p>Филиалов: {profile.organization.branchCount ?? 0}</p>
+            </Panel>
+          ) : null}
+        </aside>
+      ) : null}
+      </div>
     </div>
   );
 }

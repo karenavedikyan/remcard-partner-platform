@@ -4,6 +4,11 @@ import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { sanitizeReturnTo } from "@/lib/auth-flow";
+import {
+  isModerationDeepLink,
+  resolveProfileSectionFromQuery,
+  type ProfileSectionId,
+} from "@/lib/profile-sections";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
@@ -12,26 +17,27 @@ export const dynamic = "force-dynamic";
 
 const RETURN_PATH = "/profile";
 
-const PROFILE_SECTIONS = new Set([
-  "basics",
-  "branches",
-  "team",
-  "catalog",
-  "notifications",
-]);
-
 export default async function ProfilePage(props: {
-  searchParams?: Promise<{ section?: string; returnTo?: string }>;
+  searchParams?: Promise<{
+    section?: string;
+    returnTo?: string;
+    moderation?: string;
+    branchId?: string;
+  }>;
 }) {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
-  const sectionRaw = searchParams?.section;
-  const section =
-    sectionRaw === "moderation"
-      ? "catalog"
-      : sectionRaw && PROFILE_SECTIONS.has(sectionRaw)
-        ? (sectionRaw as "basics" | "branches" | "team" | "catalog" | "notifications")
-        : undefined;
+  const section: ProfileSectionId = resolveProfileSectionFromQuery({
+    section: searchParams?.section,
+    moderation: searchParams?.moderation,
+    branchId: searchParams?.branchId,
+  });
+  const moderationSection = isModerationDeepLink({
+    section: searchParams?.section,
+    moderation: searchParams?.moderation,
+  });
+  const focusBranchId = searchParams?.branchId?.trim() || undefined;
+
   const user = await requireProPageUser(safeReturnTo);
   if (!user) {
     return <SessionGate reason="session" returnTo={safeReturnTo} />;
@@ -60,8 +66,9 @@ export default async function ProfilePage(props: {
       />
       <ProfileEditor
         initial={profileResult.data}
-        moderationSection={searchParams?.section === "moderation"}
+        moderationSection={moderationSection}
         section={section}
+        focusBranchId={focusBranchId}
         returnTo={safeReturnTo}
       />
     </CabinetShell>
