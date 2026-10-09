@@ -2,9 +2,14 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
-import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
+import { CATALOG_STATUS_LABELS, catalogStatusTone } from "@/lib/partnership-labels";
+import {
+  formatBranchDirectionsSummary,
+  formatWorkingHoursShort,
+} from "@/lib/branch-list-format";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextField } from "@/components/ui/FormField";
 import { ProfileBranchDetail } from "./ProfileBranchDetail";
 import styles from "./ProfileEditor.module.css";
@@ -18,6 +23,10 @@ type BranchRow = {
   catalogPublished?: boolean;
   catalogDraft?: unknown;
   isActive?: boolean;
+  workingHours?: string | null;
+  specializations?: string[];
+  storeCategories?: string[];
+  _count?: { publicContacts?: number };
 };
 
 type OrgPayload = {
@@ -46,6 +55,7 @@ export function ProfileBranchesSection({
   const [error, setError] = useState("");
   const [city, setCity] = useState(defaultCity);
   const [address, setAddress] = useState("");
+  const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialBranchId ?? null);
@@ -80,10 +90,15 @@ export function ProfileBranchesSection({
     try {
       await remcardFetch("/api/pro/organization/branches", {
         method: "POST",
-        body: { city: city.trim(), address: address.trim() },
+        body: {
+          city: city.trim(),
+          address: address.trim(),
+          name: name.trim() || undefined,
+        },
       });
       setAddress("");
-      setMessage("Филиал добавлен. Он доступен для работы; публикация в каталоге — отдельно.");
+      setName("");
+      setMessage("Филиал добавлен. Настройте адрес, направления и публикацию в карточке.");
       await load();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать филиал");
@@ -104,8 +119,8 @@ export function ProfileBranchesSection({
     return (
       <Panel title="Филиалы">
         <p className={styles.hint}>
-          Сначала сохраните основные данные и название организации — затем здесь можно добавить
-          точки.
+          Сначала сохраните основные данные и название организации в разделе «Основные данные» — затем
+          здесь можно добавить точки для клиентов remcard.ru.
         </p>
       </Panel>
     );
@@ -118,7 +133,7 @@ export function ProfileBranchesSection({
   return (
     <Panel
       title="Филиалы"
-      hint="Внутренние точки для работы. Статус «работает» не означает публикацию в каталоге RemCard."
+      hint="Точки на карте remcard.ru: адрес, направления, контакты и расписание каждого филиала."
     >
       {loading ? <p className={styles.hint}>Загружаем…</p> : null}
       {error ? (
@@ -141,22 +156,45 @@ export function ProfileBranchesSection({
                 {b.city}, {b.address}
               </p>
               <p className={styles.hint}>
-                Каталог: {CATALOG_STATUS_LABELS[b.catalogStatus] ?? b.catalogStatus}
-                {b.catalogPublished ? " · виден посетителям" : " · не опубликован"}
-                {b.catalogDraft ? " · черновик правок" : ""}
-                {b.isActive === false ? " · неактивен" : ""}
+                {formatBranchDirectionsSummary(b.storeCategories ?? [], b.specializations ?? [])}
               </p>
+              <p className={styles.hint}>Расписание: {formatWorkingHoursShort(b.workingHours)}</p>
+              <p className={styles.hint}>
+                Контакты: {(b._count?.publicContacts ?? 0) > 0 ? "указаны" : "не указаны"}
+              </p>
+              <div className={styles.statusRow}>
+                <StatusBadge
+                  label={b.isActive === false ? "Неактивен" : "Работает"}
+                  tone={b.isActive === false ? "pending" : "active"}
+                />
+                <StatusBadge
+                  label={CATALOG_STATUS_LABELS[b.catalogStatus] ?? b.catalogStatus}
+                  tone={catalogStatusTone(b.catalogStatus)}
+                />
+                <StatusBadge
+                  label={b.catalogPublished ? "В каталоге" : "Не опубликован"}
+                  tone={b.catalogPublished ? "active" : "pending"}
+                />
+              </div>
               <Button type="button" variant="secondary" onClick={() => setSelectedId(b.id)}>
-                Открыть
+                Редактировать
               </Button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className={styles.hint}>Пока нет филиалов. Добавьте первую точку ниже.</p>
+        <p className={styles.hint}>
+          Пока нет филиалов. Добавьте первую точку — клиенты увидят её на remcard.ru после публикации.
+        </p>
       )}
 
       <form onSubmit={(e) => void addBranch(e)} className={styles.fields}>
+        <h3 className={styles.hint}>Добавить филиал</h3>
+        <TextField
+          label="Название (необязательно)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
         <TextField label="Город филиала" value={city} onChange={(e) => setCity(e.target.value)} required />
         <TextField
           label="Адрес"

@@ -20,6 +20,8 @@ export default defineConfig({
       "src/lib/profile-overview-display.test.tsx",
       "src/lib/profile-working-save.test.ts",
       "src/lib/working-profile-patch.test.ts",
+      "src/lib/branch-working-hours.test.ts",
+      "src/lib/branch-catalog-preview.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
     ],
     testTimeout: 30_000,

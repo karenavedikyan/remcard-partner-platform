@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `942230a2` | **`432498a0`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `1b7c9cb` | **`462cf60`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `432498a0` | *(H4 commit)* |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `a350424` | *(H4 commit)* |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -290,4 +290,48 @@ Console: `net::ERR_NAME_NOT_RESOLVED` for `example.test` mock image URL only (ex
 - **Production blob storage** for real logo upload (503 when unset; mock documents UI contract only).
 - **Real Telegram / MAX** login (fixture JWT + HttpOnly cookie only).
 
-No PR / release / deploy / production DB. **H4 not started.**
+No PR / release / deploy / production DB.
+
+---
+
+## PROF-H4 — филиалы (2026-10-09)
+
+Reuse map: `docs/PROF-H4-REUSE-MAP.md`.
+
+Base: navigator **`432498a0`**, platform **`a350424`**.
+
+### Контракт / миграции
+
+- **Без миграций.** `Branch`, `BranchPublicContact`, `workingHours` (TEXT), catalog draft/live.
+- `GET /api/catalog`: query `specializations` для фильтра филиалов (+ `city`, `storeCategories`).
+- `validateBranchWorkingHours` на create/patch филиала → **400** при некорректном времени.
+
+### Tests / build
+
+```bash
+cd remcard-navigator && pnpm run typecheck && \
+  pnpm exec vitest run src/lib/__tests__/branchWorkingHours.test.ts src/lib/__tests__/profH4Branches.integration.test.ts && \
+  NODE_ENV=production PLATFORM_INN=000000000000 PLATFORM_OGRN=000000000000000 pnpm run build
+
+cd remcard-partner-platform && npx tsc --noEmit && \
+  npm run test:component -- --run src/lib/branch-working-hours.test.ts src/lib/branch-catalog-preview.test.ts && \
+  NODE_ENV=production npm run build && node scripts/prof-h4-browser-smoke.mjs
+```
+
+| Check | Exit | Passed |
+|-------|------|--------|
+| Navigator H4 tests | 0 | **10/10** |
+| Navigator production build | 0 | — |
+| Platform tsc + branch tests | 0 | **3/3** |
+| Platform production build | 0 | — |
+| Browser smoke | 0 | PASS |
+
+Screenshots: `prof-h4-branches-1440.png`, `prof-h4-branch-preview-1440.png`, `prof-h4-branches-390.png`.
+
+### NOT VERIFIED (H4)
+
+- Production blob; geocoder UI для submit (в API-тестах geohash задаётся явно).
+- Moderation UI на филиале в browser (lifecycle — integration).
+- Real Telegram / MAX.
+
+**H5 не начинат.**
