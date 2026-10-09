@@ -173,7 +173,36 @@ cd remcard-partner-platform && npm run test:component && NODE_ENV=production npm
 
 New regression: `profH3CatalogFixPass.integration.test.ts` (public name vs `workingDisplayName` through approve).
 
+### H3 fix-pass — Prisma mapper + form state + E2E (this turn)
+
+| Scenario | Layer | Result |
+|----------|-------|--------|
+| Solo DRAFT full form payload → save → GET → submit → approve | API `profH3EndToEnd` | PASS |
+| Published solo working vs public name/city | API `profH3CatalogFixPass` | PASS |
+| Legacy `apartment-new` + catalog-only PATCH (partner search visible) | API `profH3EndToEnd` | PASS |
+| Org DRAFT contacts save/reload/clear (no owner bleed) | API `profH3EndToEnd` | PASS |
+| Org APPROVED contact draft → submit → approve | API `profH3EndToEnd` | PASS |
+| COMPANY services-only via `POST …/submit-for-moderation` | API `profH3EndToEnd` | PASS |
+| Catalog publication regression suite ×2 | API integration | **14/14 PASS** |
+| Browser: layout, save/reload, directions both groups, upload reject, 390 overflow | `prof-h3-browser-smoke.mjs` exit **0** | PASS |
+
+Commands:
+
+```bash
+cd remcard-navigator && pnpm run typecheck && \
+  pnpm exec vitest run src/lib/__tests__/profH3EndToEnd.integration.test.ts \
+    src/lib/__tests__/catalogPublicationRoutes.integration.test.ts \
+    src/lib/__tests__/profH3CatalogFixPass.integration.test.ts
+# run twice — both green
+
+cd remcard-partner-platform && npm run test:component && NODE_ENV=production npm run build
+node scripts/prof-h3-browser-smoke.mjs   # dev :3000 + nav :3001
+```
+
+Screenshots: `/opt/cursor/artifacts/screenshots/prof-h3-catalog-1440.png`, `prof-h3-catalog-390.png`.
+
 ### NOT VERIFIED (fix-pass)
 
-- Full 1440/390 browser matrix (upload error/retry, moderation notes, all three direction layouts) — extend `prof-h3-browser-smoke.mjs` when stack is up.
-- Production blob delivery (upload tests may mock / skip when storage unset).
+- Moderation-notes UI flow in browser (API covered elsewhere).
+- Successful logo upload to production blob (browser retry gets **503** when storage unset — client reject path verified).
+- Org-only owner with separate STORE fixture in browser (API org contact bleed covered).

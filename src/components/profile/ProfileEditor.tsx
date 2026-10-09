@@ -106,28 +106,25 @@ export function ProfileEditor({
     : "/profile";
   const [profile, setProfile] = useState(initial);
   const user = profile.user as ExtendedUser;
+  const initialCatalogForm = profileDraftFromProfile(initial);
 
   const [displayName, setDisplayName] = useState(user.displayName ?? "");
   const [city, setCity] = useState(user.city ?? "");
-  const [description, setDescription] = useState(user.description ?? "");
+  const [description, setDescription] = useState(initialCatalogForm.description);
   const [partnerType, setPartnerType] = useState(user.partnerType ?? "MASTER");
-  const [specializations, setSpecializations] = useState<string[]>(user.specializations ?? []);
-  const [storeCategories, setStoreCategories] = useState<string[]>(user.storeCategories ?? []);
-  const [organizationName, setOrganizationName] = useState(profile.organization?.name ?? "");
-  const [branchAddress, setBranchAddress] = useState("");
-  const [website, setWebsite] = useState(user.website ?? "");
-  const [telegram, setTelegram] = useState(user.telegram ?? "");
-  const [publicEmail, setPublicEmail] = useState(user.publicEmail ?? "");
-  const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
-  const [catalogPublicName, setCatalogPublicName] = useState(
-    user.catalogDisplayName ?? user.displayName ?? "",
-  );
-  const [catalogCity, setCatalogCity] = useState(user.catalogCity ?? user.city ?? "");
-  const [showFullName, setShowFullName] = useState(user.showFullName ?? false);
+  const [specializations, setSpecializations] = useState<string[]>(initialCatalogForm.specializations);
+  const [storeCategories, setStoreCategories] = useState<string[]>(initialCatalogForm.storeCategories);
+  const [organizationName, setOrganizationName] = useState(initialCatalogForm.organizationName);
+  const [branchAddress, setBranchAddress] = useState(initialCatalogForm.branchAddress);
+  const [website, setWebsite] = useState(initialCatalogForm.website);
+  const [telegram, setTelegram] = useState(initialCatalogForm.telegram);
+  const [publicEmail, setPublicEmail] = useState(initialCatalogForm.publicEmail);
+  const [publicPhone, setPublicPhone] = useState(initialCatalogForm.publicPhone);
+  const [catalogPublicName, setCatalogPublicName] = useState(initialCatalogForm.catalogPublicName);
+  const [catalogCity, setCatalogCity] = useState(initialCatalogForm.catalogCity);
+  const [showFullName, setShowFullName] = useState(initialCatalogForm.showFullName);
   const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
-  const [catalogImageUrl, setCatalogImageUrl] = useState(
-    catalogOnOrg ? (profile.organization?.logoUrl ?? "") : (user.photoUrl ?? ""),
-  );
+  const [catalogImageUrl, setCatalogImageUrl] = useState(initialCatalogForm.catalogImageUrl);
   const initialWorking = initial.workingProfile;
   const [productCategoryIds, setProductCategoryIds] = useState<string[]>(
     initialWorking?.effectiveProductCategoryIds ?? initialWorking?.productCategoryIds ?? [],
@@ -256,36 +253,23 @@ export function ProfileEditor({
     savedSnapshotRef.current = profileDraftFromProfile(next);
     savedCatalogSnapshotRef.current = catalogDraftFromProfile(next);
     const u = next.user as ExtendedUser;
-    const catalogOnOrg = next.catalogPublication?.catalogEntity === "organization";
+    const catalogForm = profileDraftFromProfile(next);
     setDisplayName(u.displayName ?? "");
     setCity(u.city ?? "");
-    setDescription(
-      catalogOnOrg && next.organization?.description != null
-        ? next.organization.description
-        : (u.description ?? ""),
-    );
     setPartnerType(u.partnerType ?? "MASTER");
-    setSpecializations(u.specializations ?? []);
-    setStoreCategories(
-      catalogOnOrg && next.organization?.storeCategories
-        ? next.organization.storeCategories
-        : (u.storeCategories ?? []),
-    );
-    setOrganizationName(next.organization?.name ?? "");
-    setWebsite(
-      catalogOnOrg && next.organization?.website != null
-        ? (next.organization.website ?? "")
-        : (u.website ?? ""),
-    );
-    setTelegram(u.telegram ?? "");
-    setPublicEmail(u.publicEmail ?? "");
-    setPublicPhone(u.publicPhone ?? "");
-    setCatalogPublicName(u.catalogDisplayName ?? u.displayName ?? "");
-    setCatalogCity(u.catalogCity ?? u.city ?? "");
-    setShowFullName(u.showFullName ?? false);
-    setCatalogImageUrl(
-      catalogOnOrg ? (next.organization?.logoUrl ?? "") : (u.photoUrl ?? ""),
-    );
+    setDescription(catalogForm.description);
+    setSpecializations(catalogForm.specializations);
+    setStoreCategories(catalogForm.storeCategories);
+    setOrganizationName(catalogForm.organizationName);
+    setBranchAddress(catalogForm.branchAddress);
+    setWebsite(catalogForm.website);
+    setTelegram(catalogForm.telegram);
+    setPublicEmail(catalogForm.publicEmail);
+    setPublicPhone(catalogForm.publicPhone);
+    setCatalogPublicName(catalogForm.catalogPublicName);
+    setCatalogCity(catalogForm.catalogCity);
+    setShowFullName(catalogForm.showFullName);
+    setCatalogImageUrl(catalogForm.catalogImageUrl);
     const w = next.workingProfile;
     setProductCategoryIds(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? []);
     setServiceSpecializationIds(

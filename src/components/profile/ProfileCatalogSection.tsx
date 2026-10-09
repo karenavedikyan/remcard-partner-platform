@@ -25,7 +25,6 @@ import {
 } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { CATALOG_STATUS_LABELS, catalogStatusTone } from "@/lib/partnership-labels";
-import { storeCategoryChips } from "@/lib/store-categories";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -246,9 +245,6 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
         ? "Отправить повторно"
         : "Отправить на проверку";
 
-  const showProducts = partnerType === "STORE" || partnerType === "COMPANY";
-  const showServices = partnerType === "MASTER" || partnerType === "COMPANY";
-
   return (
     <>
       <Panel title="Помогите новым клиентам найти вас">
@@ -385,56 +381,18 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                 Перенести направления из рабочего профиля
               </Button>
             )}
-            {showProducts && showServices ? (
-              <ProfileDirectionsPicker
-                disabled={!catalogEditable}
-                catalogMode
-                productCategoryIds={storeCategories}
-                serviceSpecializationIds={specializations}
-                navigatorStageIds={[]}
-                primaryDirection={null as WorkingPrimaryDirection}
-                onChangeProducts={onStoreCategoriesChange}
-                onChangeServices={onSpecializationsChange}
-                onChangeStages={() => {}}
-                onChangePrimary={() => {}}
-              />
-            ) : showProducts ? (
-              <fieldset className={styles.fieldset} disabled={!catalogEditable} id="catalog-products">
-                <div className={styles.chipGrid}>
-                  {storeCategoryChips().map((cat) => (
-                    <label key={cat.value} className={styles.checkRow}>
-                      <input
-                        type="checkbox"
-                        checked={storeCategories.includes(cat.value)}
-                        onChange={() =>
-                          onStoreCategoriesChange(
-                            storeCategories.includes(cat.value)
-                              ? storeCategories.filter((x) => x !== cat.value)
-                              : [...storeCategories, cat.value],
-                          )
-                        }
-                      />
-                      <span>{cat.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ) : (
-              <div id="catalog-services">
-                <ProfileDirectionsPicker
-                  disabled={!catalogEditable}
-                  catalogMode
-                  productCategoryIds={[]}
-                  serviceSpecializationIds={specializations}
-                  navigatorStageIds={[]}
-                  primaryDirection={null}
-                  onChangeProducts={() => {}}
-                  onChangeServices={onSpecializationsChange}
-                  onChangeStages={() => {}}
-                  onChangePrimary={() => {}}
-                />
-              </div>
-            )}
+            <ProfileDirectionsPicker
+              disabled={!catalogEditable}
+              catalogMode
+              productCategoryIds={storeCategories}
+              serviceSpecializationIds={specializations}
+              navigatorStageIds={[]}
+              primaryDirection={null as WorkingPrimaryDirection}
+              onChangeProducts={onStoreCategoriesChange}
+              onChangeServices={onSpecializationsChange}
+              onChangeStages={() => {}}
+              onChangePrimary={() => {}}
+            />
           </Panel>
 
           {needsBranchFields ? (

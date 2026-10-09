@@ -77,6 +77,54 @@ await runScenario("catalog_save_reload", async () => {
   }
 });
 
+await runScenario("catalog_directions_picker", async () => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("http://127.0.0.1:3000/profile?section=catalog", {
+    waitUntil: "networkidle",
+    timeout: 120_000,
+  });
+  await page.getByRole("button", { name: /Подготовить профиль к публикации/i }).click();
+  await page.waitForTimeout(800);
+  const productsLegend = page.getByRole("group", { name: "Товары" });
+  const servicesLegend = page.getByRole("group", { name: "Работы и услуги" });
+  if (!(await productsLegend.isVisible()) || !(await servicesLegend.isVisible())) {
+    throw new Error("catalog picker must show both product and service groups");
+  }
+  const firstProduct = productsLegend.locator('input[type="checkbox"]').first();
+  await firstProduct.check();
+  await page.waitForTimeout(300);
+  if (!(await firstProduct.isChecked())) throw new Error("product checkbox not wired");
+});
+
+await runScenario("catalog_upload_reject_retry", async () => {
+  await page.goto("http://127.0.0.1:3000/profile?section=catalog", {
+    waitUntil: "networkidle",
+    timeout: 120_000,
+  });
+  await page.getByRole("button", { name: /Подготовить профиль к публикации/i }).click();
+  await page.waitForTimeout(500);
+  const input = page.locator('input[type="file"]').first();
+  await input.setInputFiles({
+    name: "not-image.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("not an image"),
+  });
+  await page.waitForTimeout(800);
+  const body = await page.locator("body").innerText();
+  if (!/изображение|JPG|PNG|WEBP|HEIC/i.test(body)) {
+    throw new Error("expected client upload validation message");
+  }
+  await input.setInputFiles({
+    name: "tiny.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    ),
+  });
+  await page.waitForTimeout(2500);
+});
+
 await runScenario("overflow_390", async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(400);

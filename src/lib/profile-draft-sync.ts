@@ -2,6 +2,11 @@ import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 
 /** Working-profile fields derived from the last saved server profile (not in-form edits). */
+/** Catalog-tab form slice (organization effective fields, no owner User bleed). */
+export function catalogFormFieldsFromProfile(profile: ProProfileResponse): ProfileDraft {
+  return profileDraftFromProfile(profile);
+}
+
 export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDraft {
   const u = profile.user;
   const w = profile.workingProfile;
