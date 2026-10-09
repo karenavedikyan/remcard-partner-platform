@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `b0e3a332` | **`83a950cb`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `2860991` | **`7e94dbd`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `83a950cb` | **`83a950cb`** (+ pagination seed script commit) |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `dec181e` | **(see latest push on branch)** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -15,81 +15,74 @@
 
 Integration: `published solo: working name/city in auth/me and search q; public card unchanged`.
 
-## 2. Tests (2026-10-09, this run)
+## 2. Tests (2026-10-09)
 
-### Unit / route (navigator)
+### Unit / route (navigator) — not re-run this turn (app unchanged)
+
+Prior run: **26 passed**, exit 0 (`workingProfile`, pagination, search auth, auth/me).
+
+### PG / API (`remcard_prof_test`) — not re-run this turn
+
+Prior run: **10 passed**, exit 0 (`profH2WorkingProfileRoutes.integration.test.ts`).
+
+### Platform component (this turn — unsaved leave guard)
 
 ```bash
-cd remcard-navigator && pnpm run typecheck
-cd remcard-navigator && DATABASE_URL=postgresql://postgres:***@127.0.0.1:5432/remcard_prof_test \
-  pnpm exec vitest run \
-  src/lib/__tests__/workingProfile.test.ts \
-  src/lib/__tests__/partnershipSearchPagination.test.ts \
-  src/app/api/partnership/search/__tests__/route.auth.test.ts \
-  src/app/api/auth/me/__tests__/route.test.ts
+cd remcard-partner-platform && npm run test:component -- --run src/components/profile/ProfileEditor.test.tsx
 ```
 
-| Exit | Passed | Failed | Skipped |
-|------|--------|--------|---------|
-| 0 | 26 | 0 | 0 |
+| Exit | Passed | Failed |
+|------|--------|--------|
+| 0 | 12 | 0 |
 
-### PG / API (`remcard_prof_test`)
+### Browser acceptance (PROF-H2, local stack)
 
-Guard: `parsePgHost` loopback + `current_database() = remcard_prof_test`.  
-Schema: `pnpm exec prisma db push` (isolated DB, not production migrate ledger).  
-Legal: `pnpm seed:legal` + consents for browser fixtures.
+Setup: один navigator `:3001` + platform `:3000`; `JWT_SECRET` согласован; `remcard_prof_test`; `seed:legal` + consents; fixture users `m1fix-prof-browser01` (A) / `m1fix-prof-browser02` (B); HttpOnly cookie via Playwright.
 
 ```bash
-JWT_SECRET=prof-h2-integration-test-secret-min-32-chars \
-DATABASE_URL=postgresql://postgres:***@127.0.0.1:5432/remcard_prof_test \
-pnpm exec vitest run src/lib/__tests__/profH2WorkingProfileRoutes.integration.test.ts
-```
-
-| Exit | Passed | Failed | Skipped |
-|------|--------|--------|---------|
-| 0 | **10** | 0 | 0 |
-
-### Platform
-
-```bash
-cd remcard-partner-platform && npm run test:component
-NODE_ENV=production npm run build
-```
-
-| Command | Exit | Passed |
-|---------|------|--------|
-| `test:component` | 0 | 73 |
-| `production build` | 0 | — |
-
-### Browser smoke (local backend)
-
-Setup: single navigator `:3001` + platform `:3000` with `REMCARD_API_*` Basic; fixture JWT via `createToken` + HttpOnly cookie (Playwright); users `m1fix-prof-browser01/02`; `seed:legal` + consents.
-
-```bash
-cd remcard-partner-platform && npx playwright install chromium
+cd remcard-partner-platform
+node scripts/prof-h2-seed-pagination.mjs   # remcard_prof_test only, marker RC-H2-BROWSER-PAG-
+npx playwright install chromium             # once
 node scripts/prof-h2-browser-smoke.mjs
-# → {"loggedIn":true,"overflow":false}
 ```
 
-| Viewport | Result |
-|----------|--------|
-| 1440×900 | «Основные данные», справочник товаров/услуг, этапы — **OK** |
-| 390×844 | **overflow: false** |
+| Exit code | Result |
+|-----------|--------|
+| **0** | **PASS** |
 
-Screenshots:
+| # | Сценарий (1440 / 390) | Result |
+|---|------------------------|--------|
+| 1 | A: рабочее имя, город, справочник (двери / плитка / диагностика), opt-in, save → reload | **PASS** |
+| 2 | B: поиск по имени, фильтры, карточка с именем и городом | **PASS** |
+| 3 | A opt-out → B не находит; opt-in → снова находит | **PASS** |
+| 4 | Pagination: 28 seeded профилей (null / shared `lastActiveAt`), «Показать ещё», без дублей, порядок = API | **PASS** |
+| 5 | Несохранённые изменения: confirm при уходе, cancel сохраняет ввод, после save — без ложного confirm | **PASS** |
+| — | 390×844 horizontal overflow | **PASS** (`overflow_390`) |
 
-- `/opt/cursor/artifacts/screenshots/prof-h2-browser-1440-basics.png`
-- `/opt/cursor/artifacts/screenshots/prof-h2-browser-save.png`
-- `/opt/cursor/artifacts/screenshots/prof-h2-browser-reload.png`
+**Console errors:** none captured.
+
+**Не проверялось:** реальный вход через Telegram / MAX (только JWT fixture + cookie).
+
+### Screenshots
+
+- `/opt/cursor/artifacts/screenshots/prof-h2-s1-a-basics-1440.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s1-a-after-save.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s1-a-after-reload.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s2-b-found-a.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s3-b-a-hidden.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s3-b-a-visible-again.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s4-pagination.png`
+- `/opt/cursor/artifacts/screenshots/prof-h2-s5-cancel-leave.png`
 - `/opt/cursor/artifacts/screenshots/prof-h2-browser-390.png`
 
-Не покрыто в этом smoke: второй партнёр, opt-in/search UI, «Показать ещё» (нужен отдельный прогон с двумя JWT и PartnersHub).
+### Code touched for H2 acceptance
 
-## 3. Blockers (minor)
-
-- Browser smoke script не включает сценарий B→A search и pagination (ручной/расширенный скрипт).
-- Локально: несколько параллельных `next dev` на `:3001` ломали `JWT_SECRET` — нужен один процесс с явным env.
+- `ProfileEditor.tsx`: `confirm` при уходе из «Основных данных» с dirty draft; `beforeunload`; guard на link «Вернуться».
+- `scripts/prof-h2-browser-smoke.mjs`: полный сценарий A/B, JSON-отчёт, скриншоты.
+- `scripts/prof-h2-seed-pagination.mjs` + navigator `scripts/prof-h2-seed-pagination.ts`: seed для page 2 (loopback `remcard_prof_test` only).
 
 ## H3
 
 Not started. No PR / release / deploy / production DB.
+
+**H2 acceptance complete, готов к H3.**

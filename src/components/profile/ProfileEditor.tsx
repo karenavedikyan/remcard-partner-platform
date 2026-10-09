@@ -48,6 +48,9 @@ import styles from "./ProfileEditor.module.css";
 
 export type { ProfileSectionId };
 
+const UNSAVED_BASICS_LEAVE_MESSAGE =
+  "Есть несохранённые изменения в основных данных. Уйти без сохранения?";
+
 const PARTNER_TYPES = [
   { value: "MASTER", label: "Специалист" },
   { value: "COMPANY", label: "Компания" },
@@ -312,9 +315,22 @@ export function ProfileEditor({
     setActiveSection(fromUrl);
   }, [searchParams]);
 
+  const currentDraft = buildDraft();
+  draftRef.current = currentDraft;
+  const hasUnsavedBasicsChanges = isWorkingProfileDirty(
+    profileDraftFromProfile(profile),
+    currentDraft,
+  );
+
+  const confirmLeaveBasicsUnsaved = useCallback(() => {
+    if (activeSection !== "basics" || !hasUnsavedBasicsChanges) return true;
+    return window.confirm(UNSAVED_BASICS_LEAVE_MESSAGE);
+  }, [activeSection, hasUnsavedBasicsChanges]);
+
   const navigateSection = useCallback(
     (next: ProfileSectionId) => {
       if (next === activeSection) return;
+      if (!confirmLeaveBasicsUnsaved()) return;
       setActiveSection(next);
       const qs = buildProfileSectionHref(next, new URLSearchParams(searchParams.toString())).split(
         "?",
@@ -322,15 +338,17 @@ export function ProfileEditor({
       const href = qs ? `${profileBasePath}?${qs}` : profileBasePath;
       router.push(href, { scroll: false });
     },
-    [activeSection, profileBasePath, router, searchParams],
+    [activeSection, confirmLeaveBasicsUnsaved, profileBasePath, router, searchParams],
   );
 
-  const currentDraft = buildDraft();
-  draftRef.current = currentDraft;
-  const hasUnsavedBasicsChanges = isWorkingProfileDirty(
-    profileDraftFromProfile(profile),
-    currentDraft,
-  );
+  useEffect(() => {
+    if (activeSection !== "basics" || !hasUnsavedBasicsChanges) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [activeSection, hasUnsavedBasicsChanges]);
   const fixtureOverview: EmployeesOverviewResponse | undefined = profileBasePath.includes(
     "dev-fixture",
   )
@@ -386,7 +404,14 @@ export function ProfileEditor({
     <div className={styles.shell} id={moderationSection ? "moderation-remarks" : undefined}>
       {showBack ? (
         <p className={styles.hint}>
-          <Link href={returnTo}>← Вернуться к предыдущему разделу</Link>
+          <Link
+            href={returnTo}
+            onClick={(event) => {
+              if (!confirmLeaveBasicsUnsaved()) event.preventDefault();
+            }}
+          >
+            ← Вернуться к предыдущему разделу
+          </Link>
         </p>
       ) : null}
 

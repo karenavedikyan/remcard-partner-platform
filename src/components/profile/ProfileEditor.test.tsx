@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileEditor } from "./ProfileEditor";
 import type { ProProfileResponse } from "@/lib/types";
 import { persistWorkingProfileDraft } from "@/lib/profile-working-save";
@@ -102,6 +102,11 @@ describe("ProfileEditor", () => {
     vi.mocked(persistWorkingProfileDraft).mockReset();
     vi.mocked(submitProfileForModerationReview).mockReset();
     pushMock.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("opens overview by default with working profile block", () => {
@@ -136,6 +141,38 @@ describe("ProfileEditor", () => {
     render(<ProfileEditor initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     expect(pushMock).toHaveBeenCalledWith("/profile?section=basics", { scroll: false });
+  });
+
+  it("warns before leaving basics with unsaved changes and keeps input when cancelled", async () => {
+    const ui = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
+    render(<ProfileEditor initial={initial} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    await ui.clear(screen.getByLabelText(/Имя представителя/i));
+    await ui.type(screen.getByLabelText(/Имя представителя/i), "Черновик H2");
+    pushMock.mockClear();
+    await ui.click(screen.getByRole("tab", { name: /Обзор/i }));
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Имя представителя/i)).toHaveValue("Черновик H2");
+  });
+
+  it("does not warn when leaving basics after save", async () => {
+    const ui = userEvent.setup();
+    vi.mocked(persistWorkingProfileDraft).mockResolvedValue(initial);
+    const confirmSpy = vi.spyOn(window, "confirm");
+    render(<ProfileEditor initial={initial} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    await ui.clear(screen.getByLabelText(/Имя представителя/i));
+    await ui.type(screen.getByLabelText(/Имя представителя/i), "Сохранённое имя");
+    await ui.click(screen.getByRole("button", { name: /Сохранить основные данные/i }));
+    await waitFor(() => {
+      expect(persistWorkingProfileDraft).toHaveBeenCalled();
+    });
+    confirmSpy.mockClear();
+    await ui.click(screen.getByRole("tab", { name: /Обзор/i }));
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalledWith("/profile", { scroll: false });
   });
 
   it("keeps unsaved name when initial prop is rerendered with new object", async () => {
