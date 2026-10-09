@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `83a950cb` | **`83a950cb`** (+ pagination seed script commit) |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `dec181e` | **(see latest push on branch)** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `83a950cb` | **`0a1b483e`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `dec181e` | **`eb962d1`** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
