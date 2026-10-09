@@ -376,6 +376,17 @@ Base: platform **`cd0c60c`**, navigator **`ceebccc1`**.
 
 Artifacts: `prof-h4-d-retry-preview-1440.png`, `prof-h4-d-retry-preview-390.png`.
 
+### PROF-H4 — query change during search (2026-10-09, turn 5)
+
+При смене города/адреса во время запроса: `setSearching(false)` вместе с `searchGen++`; старый `finally` не трогает loading нового запроса.
+
+| Check | Exit |
+|-------|------|
+| `BranchAddressGeocoder.test.tsx` (stale + race A/B) | **2/2** |
+| `node scripts/prof-h4-geocode-query-race.mjs` | **0** |
+
+Artifact: `prof-h4-geocode-query-race-1440.png`.
+
 ### NOT VERIFIED (external)
 
 - **Реальный Yandex Maps API** в браузере (без mock `window.ymaps` / без live `api-maps.yandex.ru`).
