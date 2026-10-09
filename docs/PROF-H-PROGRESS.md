@@ -357,6 +357,25 @@ Artifacts: `prof-h4-e2e-after-approve-1440.png`, `prof-h4-e2e-390.png`, `prof-h4
 
 Сервер: submit использует effective snapshot — явный `addressGeohash: null` в draft не подменяется live geohash (`??` исправлено).
 
+### PROF-H4 — retry геокодера (2026-10-09, turn 4)
+
+Base: platform **`cd0c60c`**, navigator **`ceebccc1`**.
+
+| Fix | Detail |
+|-----|--------|
+| Async geocode reject | `runYmapsGeocode` + `onRejected` на thenable; loading завершается в `finally` |
+| Retry UI | `scriptErr` сбрасывается после успеха; preview/confirm на **той же странице** |
+| `loadYmaps` | rejected in-flight не кэшируется; повтор реально перезапускает загрузку |
+| Stale query | `searchGen` bump при смене адреса; поздний ответ не ставит preview |
+
+| Check | Exit |
+|-------|------|
+| `yandex-address-geocoder.test.ts` + `BranchAddressGeocoder.test.tsx` | **5/5** |
+| `npm run build` (platform) | **0** |
+| `acceptance_D_retry_confirm_submit` (1440 + 390, async reject → retry → preview → save → reload) | **PASS** |
+
+Artifacts: `prof-h4-d-retry-preview-1440.png`, `prof-h4-d-retry-preview-390.png`.
+
 ### NOT VERIFIED (external)
 
 - **Реальный Yandex Maps API** в браузере (без mock `window.ymaps` / без live `api-maps.yandex.ru`).
