@@ -5,7 +5,7 @@
 | | SHA | Branch |
 |---|---|---|
 | Base | `bb60c60` | `origin/release/prof-v1-20261007` |
-| HEAD | _(see latest push)_ | `feat/prof-h-profile-redesign` |
+| HEAD | `96285e8` | `feat/prof-h-profile-redesign` |
 
 ## Mobile overflow fix (390×844)
 
