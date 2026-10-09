@@ -1,41 +1,55 @@
-# PROF-H — progress (fix-pass)
+# PROF-H — progress (working identity + final acceptance)
 
-## Git
+## Git HEAD
 
-| Repo | Branch | From | To (fix-pass) |
-|------|--------|------|----------------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `022450b5` | **`c4a866ab`** (+ city display fix) |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `7c38206` | **`cf39471`** |
+| Repo | Branch | Base | HEAD |
+|------|--------|------|------|
+| remcard-navigator | `feat/prof-h-profile-redesign` | `b0e3a332` | _(after push)_ |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `2860991` | _(docs only)_ |
 
-## Fix-pass checklist (1–8)
+## 1. Working identity (effective displayName / city)
 
-| # | Item | Status |
-|---|------|--------|
-| 1 | Legacy directions/visibility on save | **PASS** — code + `workingProfile.test.ts`; integration **NOT VERIFIED** (DB) |
-| 2 | PATCH final-state + primary + search minimum | **PASS** — unit + integration case in skipped suite |
-| 3 | Search auth gates + catalog leak | **PASS** — route.auth (4) + integration catalog case skipped |
-| 4 | Picker canonical labels + L1 single source | **PASS** — component tests (2) |
-| 5 | Activity vs role + pagination | **PASS** — `partnershipSearchQuery` tests + PartnersHub UI |
-| 6 | Public catalog immutability | **PASS** (code path); integration **NOT VERIFIED** (DB) |
-| 7 | Real API scenario (no false-green) | **PASS** (test design); execution **NOT VERIFIED** (6 skipped) |
-| 8 | Vitest suites + browser | Vitest **PASS** (73); browser **NOT VERIFIED** |
+- **GET `/api/auth/me`:** для `role=PRO` — `effectiveWorkingDisplayName` / `effectiveWorkingCity`; CLIENT и staff без изменения legacy-логики session/displayName.
+- **Partnership search:** фильтр `q` по `workingDisplayName` с fallback на `displayName`; карточки и city — effective helpers.
+- **Публичный каталог:** live `displayName` / `city` не меняются при сохранении working (колонки `workingDisplayName`, `workingCity`).
 
-## Tests (this run)
+## 2. Tests (2026-10-09 run)
 
-| Suite | Count | Exit |
-|-------|-------|------|
-| platform Vitest component | 73 | 0 |
-| platform proxy (node:test) | 228 | 0 |
-| navigator `workingProfile` + `partnershipSearchQuery` | 9 | 0 |
-| navigator partnership search `route.auth` | 4 | 0 |
-| navigator `profH2WorkingProfileRoutes.integration` | 6 | 0 (skipped) |
+### Unit / route (navigator, no PG)
 
-## NOT VERIFIED
+| Command | Exit | Passed | Failed | Skipped |
+|---------|------|--------|--------|---------|
+| `pnpm run typecheck` | 0 | — | — | — |
+| `vitest run workingProfile.test.ts partnershipSearchPagination.test.ts route.auth.test.ts auth/me/route.test.ts` | 0 | 25 | 0 | 0 |
 
-- `profH2WorkingProfileRoutes.integration.test.ts` on live `remcard_prof_test` (PostgreSQL unreachable; apply `20261009_prof_h2_direction_touched_split`).
-- Browser 1440/390 with live taxonomy + save/reload/search.
-- Full navigator vitest (~1017) — targeted H2 + typecheck/lint only.
+### PG / API (`remcard_prof_test` @ 127.0.0.1)
+
+**Подготовка:** `apt install postgresql`; `CREATE DATABASE remcard_prof_test`; `pnpm exec prisma db push` (не production migrate deploy); `JWT_SECRET` в env.
+
+| Command | Exit | Passed | Failed | Skipped |
+|---------|------|--------|--------|---------|
+| `DATABASE_URL=postgresql://postgres:***@127.0.0.1:5432/remcard_prof_test vitest run profH2WorkingProfileRoutes.integration.test.ts` | 0 | **10** | 0 | 0 |
+
+Покрыто: legacy directions; city+opt-in; STORE/COMPANY org opt-in; search opt-in/out; pagination null `lastActiveAt`; bad cursor 400; published solo working name in auth/me + search `q` + public card unchanged; catalog GET 200 без contact keys.
+
+### Platform
+
+| Command | Exit | Passed |
+|---------|------|--------|
+| `npm run test:component` | 0 | 73 |
+| `NODE_ENV=production npm run build` | 0 | — |
+
+### Browser smoke (1440 / 390)
+
+**NOT VERIFIED** — автоматический browser-agent не прошёл gate логина (cookie `remcard-token` в UI).  
+**Частично проверено вручную через curl:** BFF `GET http://127.0.0.1:3000/api/remcard/api/auth/me` с fixture JWT → 200 и user payload.  
+Скриншоты: `/opt/cursor/artifacts/screenshots/prof-h2-auth-failure-report.md` (отчёт о блокере cookie в UI), целевые `prof-h2-browser-*.png` **не созданы**.
+
+## 3. Blockers (remaining)
+
+- Browser E2E с реальным cookie в Chromium (нужна ручная установка cookie или штатный login flow с ботом).
+- Полный `prisma migrate deploy` chain на пустой БД не использовался; для CI/test — `db push` на isolated `remcard_prof_test`.
 
 ## H3
 
-Not started. No PR / deploy / production DB in this pass.
+Not started. No PR / release / deploy / production DB.
