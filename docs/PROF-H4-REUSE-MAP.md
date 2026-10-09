@@ -1,6 +1,6 @@
 # PROF-H4 — reuse map (branches: address, contacts, schedule, publication)
 
-Base: navigator `432498a0`, platform `a350424`. Branch: `feat/prof-h-profile-redesign`.
+Base: navigator `cba0a4b2`, platform `8c8f25e`. HEAD: navigator `7d2879fa`, platform `db46c7c`. Branch: `feat/prof-h-profile-redesign`.
 
 ## 1. PROF UI (platform)
 
@@ -32,8 +32,9 @@ No second branch model. No User owner contacts bleed into branch.
 | List org + branches | `GET /api/pro/organization` |
 | Create branch | `POST /api/pro/organization/branches` |
 | Branch detail | `GET /api/pro/organization/branches/[id]` (includes `publicContacts`, `isOwner`) |
-| Working + catalog patch | `PATCH /api/pro/organization/branches/[id]` — `city`, `address`, `name`, `workingHours`, catalog fields via `buildBranchCatalogWrite` |
-| Branch public contacts | `PATCH /api/pro/organization/branches/[id]/public-contacts` — `{ channels: { phone: { isActive, value }, ... } }` |
+| Working + catalog patch | `PATCH /api/pro/organization/branches/[id]` — поля + optional `channels` (atomic draft); published → `catalogDraft` only |
+| Branch public contacts | `PATCH .../public-contacts` — live или draft; **409** if `PENDING` |
+| Geocode (PRO) | `POST /api/pro/geocode/resolve` — deterministic when `REMCARD_GEOCODE_DETERMINISTIC=1` |
 | Submit branch | `POST /api/pro/organization/branches/[id]/submit-for-moderation` (**owner only**) |
 | Discard / unpublish | `PATCH` body `{ action: 'discardCatalogDraft' \| 'unpublishFromCatalog' }` |
 | Approve (tests) | `POST /api/admin/moderation/branches/[branchId]/approve` |
@@ -41,7 +42,7 @@ No second branch model. No User owner contacts bleed into branch.
 
 Access: `assertBranchManagerOrOwner` (`proOrganizationAccess.ts`) — owner, branch `managerId`, or `BranchEmployee` with role `MANAGER`. Other employees → **403**.
 
-Staging: `shouldStageBranchCatalogEdits` when `catalogPublished` — live columns unchanged until approve (`orgBranchCatalogPatch.ts`, `catalogPublicationLifecycle.ts`).
+Staging: `shouldStageBranchCatalogEdits` when `catalogPublished` — snapshot includes location, hours, contacts JSON (`branchCatalogPublicContacts.ts`, `catalogPublicationLifecycle.ts`, `branchEditorEffective.ts`).
 
 Submit validation: `branchCatalogSubmitMissingFields` — name, city, address, geohash, ≥1 category.
 

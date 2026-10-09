@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `432498a0` | **`cba0a4b2`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `a350424` | **`e417536`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `cba0a4b2` | **`7d2879fa`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `8c8f25e` | **`db46c7c`** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -294,44 +294,41 @@ No PR / release / deploy / production DB.
 
 ---
 
-## PROF-H4 — филиалы (2026-10-09)
+## PROF-H4 — филиалы + сценарные разрывы (2026-10-09)
 
 Reuse map: `docs/PROF-H4-REUSE-MAP.md`.
 
-Base: navigator **`432498a0`**, platform **`a350424`**.
+Base (задано): navigator **`cba0a4b2`**, platform **`8c8f25e`**.  
+HEAD после H4-fix: navigator **`7d2879fa`**, platform **`db46c7c`**.
 
-### Контракт / миграции
+### Четыре разрыва (исправлено в коде)
 
-- **Без миграций.** `Branch`, `BranchPublicContact`, `workingHours` (TEXT), catalog draft/live.
-- `GET /api/catalog`: query `specializations` для фильтра филиалов (+ `city`, `storeCategories`).
-- `validateBranchWorkingHours` на create/patch филиала → **400** при некорректном времени.
+1. **Полный snapshot опубликованного филиала** — name/city/address/geodata/`workingHours`/контакты + описание/фото/направления в `catalogDraft`; live до approve; `public-contacts` PATCH → draft или **409** при PENDING; approve транзакция + `syncBranchCatalogPublicContactsFromDraft`; editor GET — effective draft (`branchEditorEffective.ts`).
+2. **Geohash без ручного SQL** — `BranchAddressGeocoder` + `POST /api/pro/geocode/resolve` (детерминированный режим `REMCARD_GEOCODE_DETERMINISTIC=1`); сброс geohash при смене адреса.
+3. **Расписание** — пустое «Не указано»; grid только при 7/7 без потерь; legacy с перерывом; `09:99`/`24:00`/обратный интервал → 400 (server + client).
+4. **Dirty / submit** — snapshot с contacts/photo/geo; один `persistBranchDraft`; submit save-first; confirm unpublish; замечания модератора (filter по id/имени филиала).
 
-### Tests / build
+### Tests / build (this turn)
 
 ```bash
-cd remcard-navigator && pnpm run typecheck && \
-  pnpm exec vitest run src/lib/__tests__/branchWorkingHours.test.ts src/lib/__tests__/profH4Branches.integration.test.ts && \
-  NODE_ENV=production PLATFORM_INN=000000000000 PLATFORM_OGRN=000000000000000 pnpm run build
-
-cd remcard-partner-platform && npx tsc --noEmit && \
-  npm run test:component -- --run src/lib/branch-working-hours.test.ts src/lib/branch-catalog-preview.test.ts && \
-  NODE_ENV=production npm run build && node scripts/prof-h4-browser-smoke.mjs
+cd remcard-navigator && pnpm exec vitest run src/lib/__tests__/branchWorkingHours.test.ts src/lib/__tests__/profH4Branches.integration.test.ts
+cd remcard-navigator && npm run build
+cd remcard-partner-platform && npm run test:component -- --run src/lib/branch-working-hours.test.ts src/lib/branch-catalog-preview.test.ts
+cd remcard-partner-platform && npm run build
 ```
 
 | Check | Exit | Passed |
 |-------|------|--------|
-| Navigator H4 tests | 0 | **10/10** |
-| Navigator production build | 0 | — |
-| Platform tsc + branch tests | 0 | **3/3** |
-| Platform production build | 0 | — |
-| Browser smoke | 0 | PASS |
+| `branchWorkingHours.test.ts` | 0 | **7/7** |
+| `profH4Branches.integration.test.ts` (loopback `remcard_prof_test`) | 0 | **7/7** |
+| Navigator `npm run build` | 0 | — |
+| Platform branch unit tests | 0 | **5/5** |
+| Platform `npm run build` | 0 | — |
 
-Screenshots: `prof-h4-branches-1440.png`, `prof-h4-branch-preview-1440.png`, `prof-h4-branches-390.png`.
+### NOT VERIFIED (H4 acceptance gaps)
 
-### NOT VERIFIED (H4)
-
-- Production blob; geocoder UI для submit (в API-тестах geohash задаётся явно).
-- Moderation UI на филиале в browser (lifecycle — integration).
-- Real Telegram / MAX.
+- **Полный browser E2E** create → geocode → submit → moderation → public card (1440/390) — не перезапускался в этом turn (prior list/edit smoke only).
+- **Реальный Yandex geocoder** в UI (server resolve без `REMCARD_GEOCODE_DETERMINISTIC` → 503 с подсказкой).
+- Production blob; real Telegram / MAX.
 
 **H5 не начата.**
