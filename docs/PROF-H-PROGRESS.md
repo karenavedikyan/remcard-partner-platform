@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `942230a2` | *(see H3 residual pass below)* |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `1b7c9cb` | *(see H3 residual pass below)* |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `942230a2` | **`432498a0`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `1b7c9cb` | **`a7c7622`** |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
