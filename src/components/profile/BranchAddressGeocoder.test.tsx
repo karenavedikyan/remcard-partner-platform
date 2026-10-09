@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BranchAddressGeocoder, type BranchAddressGeoValue } from "./BranchAddressGeocoder";
 
 vi.mock("@/lib/yandex-address-geocoder", async (importOriginal) => {
@@ -20,13 +20,40 @@ const emptyGeo: BranchAddressGeoValue = {
   addressGeohash: null,
 };
 
+function geoResult(text: string) {
+  return {
+    geoObjects: {
+      get: (i: number) =>
+        i === 0
+          ? {
+              geometry: { getCoordinates: () => [38.975313, 45.03547] as [number, number] },
+              properties: {
+                get: (k: string) =>
+                  k === "text"
+                    ? text
+                    : {
+                        metaDataProperty: {
+                          GeocoderMetaData: {
+                            Address: { Components: [{ kind: "locality", name: "Краснодар" }] },
+                          },
+                        },
+                      },
+              },
+            }
+          : null,
+    },
+  };
+}
+
+beforeEach(() => {
+  vi.mocked(ymapsLib.loadYmaps).mockResolvedValue({
+    ready: (cb) => cb(),
+    geocode: () => ({ then: () => {} }),
+  });
+});
+
 describe("BranchAddressGeocoder stale response", () => {
   it("ignores late geocode result after city/address change", async () => {
-    vi.mocked(ymapsLib.loadYmaps).mockResolvedValue({
-      ready: (cb) => cb(),
-      geocode: () => ({ then: () => {} }),
-    });
-
     let resolveSlow: ((v: ymapsLib.YmapsGeocodeResult) => void) | null = null;
     vi.mocked(ymapsLib.runYmapsGeocode).mockImplementation(
       () =>
@@ -57,16 +84,81 @@ describe("BranchAddressGeocoder stale response", () => {
       />,
     );
 
-    const geo = {
-      geometry: { getCoordinates: () => [38.9, 45.0] as [number, number] },
-      properties: {
-        get: (k: string) => (k === "text" ? "Краснодар, ул. Старая" : null),
-      },
-    };
-    resolveSlow?.({ geoObjects: { get: (i) => (i === 0 ? geo : null) } });
+    resolveSlow?.(geoResult("Краснодар, ул. Старая"));
 
     await waitFor(() => {
       expect(screen.queryByTestId("branch-address-preview")).not.toBeInTheDocument();
     });
+    expect(screen.getByTestId("branch-address-search")).not.toBeDisabled();
+  });
+
+  it("allows new search while old request completes; confirms B only", async () => {
+    const pendingA: { resolve: ((v: ymapsLib.YmapsGeocodeResult) => void) | null } = {
+      resolve: null,
+    };
+    const pendingB: { resolve: ((v: ymapsLib.YmapsGeocodeResult) => void) | null } = {
+      resolve: null,
+    };
+
+    vi.mocked(ymapsLib.runYmapsGeocode).mockImplementation((_, query) => {
+      if (query.includes("ул. A")) {
+        return new Promise((resolve) => {
+          pendingA.resolve = resolve;
+        });
+      }
+      if (query.includes("ул. B")) {
+        return new Promise((resolve) => {
+          pendingB.resolve = resolve;
+        });
+      }
+      return Promise.reject(new Error(`unexpected query ${query}`));
+    });
+
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <BranchAddressGeocoder
+        city="Краснодар"
+        addressLine="ул. A"
+        value={emptyGeo}
+        onChange={onChange}
+      />,
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("branch-address-search"));
+    expect(screen.getByTestId("branch-address-search")).toBeDisabled();
+
+    rerender(
+      <BranchAddressGeocoder
+        city="Краснодар"
+        addressLine="ул. B"
+        value={emptyGeo}
+        onChange={onChange}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("branch-address-search")).not.toBeDisabled();
+    });
+
+    await user.click(screen.getByTestId("branch-address-search"));
+    expect(screen.getByTestId("branch-address-search")).toBeDisabled();
+
+    pendingA.resolve?.(geoResult("Краснодар, ул. A"));
+    await waitFor(() => {
+      expect(screen.queryByText(/Найдено:.*ул\. A/)).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("branch-address-search")).toBeDisabled();
+
+    pendingB.resolve?.(geoResult("Краснодар, ул. B"));
+    await waitFor(() => {
+      expect(screen.getByText(/Найдено:.*ул\. B/)).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("branch-address-search")).not.toBeDisabled();
+
+    await user.click(screen.getByTestId("branch-address-confirm"));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ addressGeohash: expect.stringMatching(/^[a-z0-9]{5}$/) }),
+    );
   });
 });

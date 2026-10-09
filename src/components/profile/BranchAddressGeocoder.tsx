@@ -67,6 +67,7 @@ export function BranchAddressGeocoder({
     const key = queryKey.trim();
     if (prevQueryKeyRef.current !== null && prevQueryKeyRef.current !== key) {
       searchGen.current += 1;
+      setSearching(false);
       setPending(null);
       setSearchErr("");
       onChange({ addressCity: null, addressDistrict: null, addressGeohash: null });
