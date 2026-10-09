@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base | HEAD |
 |------|--------|------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `b0e3a332` | _(after push)_ |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `2860991` | _(docs only)_ |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `b0e3a332` | **`83a950cb`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `2860991` | **`97c418f`** |
 
 ## 1. Working identity (effective displayName / city)
 
