@@ -304,7 +304,7 @@ HEAD после H4-fix: navigator **`7d2879fa`**, platform **`db46c7c`**.
 ### Четыре разрыва (исправлено в коде)
 
 1. **Полный snapshot опубликованного филиала** — name/city/address/geodata/`workingHours`/контакты + описание/фото/направления в `catalogDraft`; live до approve; `public-contacts` PATCH → draft или **409** при PENDING; approve транзакция + `syncBranchCatalogPublicContactsFromDraft`; editor GET — effective draft (`branchEditorEffective.ts`).
-2. **Geohash без ручного SQL** — `BranchAddressGeocoder` + `POST /api/pro/geocode/resolve` (детерминированный режим `REMCARD_GEOCODE_DETERMINISTIC=1`); сброс geohash при смене адреса.
+2. **Geohash без ручного SQL** — client-side Yandex (как `AddressGeocoder` в navigator): поиск → preview → «Подтвердить этот адрес»; stub `POST /api/pro/geocode/resolve` удалён; сброс geohash при смене **города или адреса**; `PATCH` с явным `addressGeohash: null`.
 3. **Расписание** — пустое «Не указано»; grid только при 7/7 без потерь; legacy с перерывом; `09:99`/`24:00`/обратный интервал → 400 (server + client).
 4. **Dirty / submit** — snapshot с contacts/photo/geo; один `persistBranchDraft`; submit save-first; confirm unpublish; замечания модератора (filter по id/имени филиала).
 
@@ -325,10 +325,25 @@ cd remcard-partner-platform && npm run build
 | Platform branch unit tests | 0 | **5/5** |
 | Platform `npm run build` | 0 | — |
 
-### NOT VERIFIED (H4 acceptance gaps)
+### PROF-H4 — geocode + browser acceptance (2026-10-09, turn 2)
 
-- **Полный browser E2E** create → geocode → submit → moderation → public card (1440/390) — не перезапускался в этом turn (prior list/edit smoke only).
-- **Реальный Yandex geocoder** в UI (server resolve без `REMCARD_GEOCODE_DETERMINISTIC` → 503 с подсказкой).
+Base: navigator **`7d2879fa`**, platform **`6d230ab`**.
+
+| Check | Result |
+|-------|--------|
+| `profH4Branches.integration.test.ts` | **8/8** (incl. `PATCH null addressGeohash`) |
+| `npm run test:proxy` (platform) | **228/228** |
+| `profile-branch-save.test.ts`, `yandex-address-geocoder.test.ts` | **2/2** |
+| Navigator / platform `npm run build` | exit **0** |
+| `node scripts/prof-h4-browser-acceptance.mjs` | **PASS** (mock `ymaps`; 1440 + 390) |
+
+Browser (mock provider): create → geocode confirm → save/reload → submit → staff approve → `GET /api/catalog/branch/[id]` + catalog search → published draft vs live → provider error retry → revise note → resubmit → contacts dirty / no overflow.
+
+Artifacts: `prof-h4-e2e-after-approve-1440.png`, `prof-h4-e2e-390.png`, `prof-h4-browser-acceptance.json`.
+
+### NOT VERIFIED (external)
+
+- **Реальный Yandex Maps API** в браузере (без mock `window.ymaps` / без live `api-maps.yandex.ru`).
 - Production blob; real Telegram / MAX.
 
 **H5 не начата.**

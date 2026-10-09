@@ -316,6 +316,10 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
   }
 
   async function submitBranchCatalog() {
+    if (!addressGeo.addressGeohash?.trim()) {
+      setError("Подтвердите адрес (найдите и подтвердите результат) перед отправкой на модерацию.");
+      return;
+    }
     if (dirty) {
       const ok = confirm("Сохранить изменения и отправить на проверку?");
       if (!ok) return;
@@ -460,7 +464,15 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
               </Panel>
 
               <Panel title="Где находится">
-                <TextField label="Город" value={city} onChange={(e) => setCity(e.target.value)} required />
+                <TextField
+                  label="Город"
+                  value={city}
+                  onChange={(e) => {
+                    setCity(e.target.value);
+                    setAddressGeo({ addressCity: null, addressDistrict: null, addressGeohash: null });
+                  }}
+                  required
+                />
                 <TextField
                   label="Адрес"
                   value={address}

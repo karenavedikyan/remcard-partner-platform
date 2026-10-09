@@ -11,6 +11,7 @@ export function Button({
   children,
   className,
   variant = "primary",
+  type = "button",
   ...props
 }: ButtonProps) {
   const classes = [styles.button, styles[variant], className]
@@ -18,7 +19,7 @@ export function Button({
     .join(" ");
 
   return (
-    <button type="button" className={classes} {...props}>
+    <button type={type} className={classes} {...props}>
       {children}
     </button>
   );

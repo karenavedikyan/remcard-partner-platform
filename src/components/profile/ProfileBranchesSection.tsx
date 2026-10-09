@@ -203,7 +203,14 @@ export function ProfileBranchesSection({
           required
           hint="Реальный адрес точки — без него нельзя сохранить филиал."
         />
-        <Button type="submit" disabled={saving}>
+        <Button
+          type="submit"
+          disabled={saving}
+          onClick={(event) => {
+            event.preventDefault();
+            void addBranch(event);
+          }}
+        >
           {saving ? "Сохранение…" : "Добавить филиал"}
         </Button>
       </form>
