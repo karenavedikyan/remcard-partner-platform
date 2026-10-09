@@ -48,21 +48,13 @@ export function catalogMissingForSubmit(
         fieldId: "catalog-branch-address",
       });
     }
-    if (
-      (partnerType === "STORE" || partnerType === "COMPANY") &&
-      draft.storeCategories.length === 0
-    ) {
+    const hasProducts = draft.storeCategories.length > 0;
+    const hasServices = draft.specializations.length > 0;
+    if (!hasProducts && !hasServices) {
       missing.push({
-        id: "products",
-        label: "Категории товаров",
+        id: "directions",
+        label: "Товары и/или услуги",
         fieldId: "catalog-products",
-      });
-    }
-    if (partnerType === "MASTER" && draft.specializations.length === 0) {
-      missing.push({
-        id: "services",
-        label: "Специализации",
-        fieldId: "catalog-services",
       });
     }
     return missing;
@@ -75,23 +67,15 @@ export function catalogMissingForSubmit(
       fieldId: "catalog-public-name",
     });
   }
-  if (!draft.city.trim()) {
+  if (!(draft.catalogCity || draft.city).trim()) {
     missing.push({ id: "city", label: "Город", fieldId: "catalog-city-hint" });
   }
-  if (partnerType === "MASTER" && draft.specializations.length === 0) {
+  const hasProducts = draft.storeCategories.length > 0;
+  const hasServices = draft.specializations.length > 0;
+  if (!hasProducts && !hasServices) {
     missing.push({
-      id: "services",
-      label: "Услуги для каталога",
-      fieldId: "catalog-services",
-    });
-  }
-  if (
-    (partnerType === "STORE" || partnerType === "COMPANY") &&
-    draft.storeCategories.length === 0
-  ) {
-    missing.push({
-      id: "products",
-      label: "Товары для каталога",
+      id: "directions",
+      label: "Товары и/или услуги для каталога",
       fieldId: "catalog-products",
     });
   }

@@ -9,14 +9,16 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
   const org = profile.organization;
   return {
     displayName: u.displayName ?? "",
-    catalogPublicName: catalogOnOrg ? (org?.name ?? "") : (u.displayName ?? ""),
+    catalogPublicName: catalogOnOrg
+      ? (org?.name ?? "")
+      : (u.catalogDisplayName ?? u.displayName ?? ""),
+    catalogCity: catalogOnOrg ? "" : (u.catalogCity ?? u.city ?? ""),
     showFullName: u.showFullName ?? false,
     catalogImageUrl: catalogOnOrg ? (org?.logoUrl ?? "") : (u.photoUrl ?? ""),
     city: u.city ?? "",
-    description:
-      catalogOnOrg && profile.organization?.description != null
-        ? profile.organization.description
-        : (u.description ?? ""),
+    description: catalogOnOrg
+      ? (profile.organization?.description ?? "")
+      : (u.description ?? ""),
     partnerType: u.partnerType ?? "MASTER",
     specializations: [...(u.specializations ?? [])],
     storeCategories:
@@ -25,13 +27,10 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
         : [...(u.storeCategories ?? [])],
     organizationName: profile.organization?.name ?? "",
     branchAddress: "",
-    website:
-      catalogOnOrg && profile.organization?.website != null
-        ? (profile.organization.website ?? "")
-        : (u.website ?? ""),
-    telegram: u.telegram ?? "",
-    publicEmail: u.publicEmail ?? "",
-    publicPhone: u.publicPhone ?? "",
+    website: catalogOnOrg ? (profile.organization?.website ?? "") : (u.website ?? ""),
+    telegram: catalogOnOrg ? (org?.telegram ?? "") : (u.telegram ?? ""),
+    publicEmail: catalogOnOrg ? (org?.publicEmail ?? "") : (u.publicEmail ?? ""),
+    publicPhone: catalogOnOrg ? (org?.publicPhone ?? "") : (u.publicPhone ?? ""),
     productCategoryIds: [...(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? [])],
     serviceSpecializationIds: [
       ...(w?.effectiveServiceSpecializationIds ?? w?.serviceSpecializationIds ?? []),
@@ -49,6 +48,7 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
 
 const DRAFT_KEYS: (keyof ProfileDraft)[] = [
   "displayName",
+  "catalogCity",
   "city",
   "description",
   "partnerType",

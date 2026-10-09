@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `0a1b483e` | **`e4df195d`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `e3c9af7` | **`ff5d6b7`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `e4df195d` | *(see commit below)* |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `7d2c93d` | *(see commit below)* |
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
@@ -110,7 +110,7 @@ JWT_SECRET=... DATABASE_URL=.../remcard_prof_test \
 | Command | Exit | Notes |
 |---------|------|--------|
 | `typecheck` | 0 | PASS |
-| `catalogPublicationRoutes.integration` | 1 | **6 passed, 2 failed** — flaky/polluted `remcard_prof_test` (revise/PENDING expectations); not a new H3 API surface |
+| `catalogPublicationRoutes.integration` | 0 | **8 passed** ×2 runs (see H3 fix-pass) |
 
 ### Browser (catalog)
 
@@ -144,3 +144,36 @@ Screenshots:
 - H4 branches / H5 staff.
 
 No PR / release / deploy / production DB. **H4 not started.**
+
+---
+
+## PROF-H3 fix-pass (save defects) — **DONE**
+
+### Root cause of prior 2 integration failures (not «DB pollution»)
+
+| Test | Expected | Actual | Cause |
+|------|----------|--------|--------|
+| `user: PENDING resubmit stays in GET /api/catalog; live until approve` | PATCH draft **200** | **400** | Published solo with `isPublic` + incomplete **partner search minimum** (fixture `specializations: ['apartment-new']` ≠ trade id → empty effective services). Post-patch gate ran on **catalog-only** `{ catalogDraft }` updates. |
+| `user: NEEDS_REVISION keeps staging…` | `catalogStatus` **PENDING** after submit | **APPROVED** | Same blocked draft PATCH → empty `catalogDraft` → submit returned 200 but `partnerProfileSubmitBlockedReason` path skipped status change / no staged draft. |
+
+Fixes: `userPatchIsCatalogDraftOnly` skips partner-search gate for catalog-draft-only PATCH; fixtures use trade id `tiles`; `catalogDisplayName` draft pipeline; org contacts + directions/completeness alignment.
+
+### Commands (this fix-pass)
+
+```bash
+# navigator — twice, both green
+cd remcard-navigator && pnpm run typecheck
+JWT_SECRET=... DATABASE_URL=postgresql://...@127.0.0.1:5432/remcard_prof_test \
+  pnpm exec vitest run src/lib/__tests__/catalogPublicationRoutes.integration.test.ts \
+                   src/lib/__tests__/profH3CatalogFixPass.integration.test.ts
+
+# platform
+cd remcard-partner-platform && npm run test:component && NODE_ENV=production npm run build
+```
+
+New regression: `profH3CatalogFixPass.integration.test.ts` (public name vs `workingDisplayName` through approve).
+
+### NOT VERIFIED (fix-pass)
+
+- Full 1440/390 browser matrix (upload error/retry, moderation notes, all three direction layouts) — extend `prof-h3-browser-smoke.mjs` when stack is up.
+- Production blob delivery (upload tests may mock / skip when storage unset).

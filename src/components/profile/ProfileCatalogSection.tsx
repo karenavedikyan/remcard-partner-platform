@@ -140,6 +140,10 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
 
   async function saveDraft(event?: FormEvent) {
     event?.preventDefault();
+    if (uploading) {
+      setError("Дождитесь завершения загрузки изображения");
+      return;
+    }
     setSaving(true);
     setError("");
     setSuccess("");
@@ -156,6 +160,10 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
   }
 
   async function submitPublication() {
+    if (uploading) {
+      setError("Дождитесь завершения загрузки изображения");
+      return;
+    }
     if (missing.length > 0) {
       setError(`Заполните обязательные поля: ${missing.map((m) => m.label).join(", ")}`);
       return;
@@ -221,6 +229,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
     setUploading(false);
     if (!result.ok) {
       setUploadError(result.error);
+      if (fileRef.current) fileRef.current.value = "";
       return;
     }
     onCatalogImageUrlChange(result.url);
@@ -379,6 +388,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
             {showProducts && showServices ? (
               <ProfileDirectionsPicker
                 disabled={!catalogEditable}
+                catalogMode
                 productCategoryIds={storeCategories}
                 serviceSpecializationIds={specializations}
                 navigatorStageIds={[]}
@@ -413,6 +423,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
               <div id="catalog-services">
                 <ProfileDirectionsPicker
                   disabled={!catalogEditable}
+                  catalogMode
                   productCategoryIds={[]}
                   serviceSpecializationIds={specializations}
                   navigatorStageIds={[]}
@@ -509,14 +520,17 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
 
             <form onSubmit={(e) => void saveDraft(e)}>
               <div className={styles.actions}>
-                <Button type="submit" disabled={saving || !catalogPublicationEditable(profile)}>
+                <Button
+                  type="submit"
+                  disabled={saving || uploading || !catalogPublicationEditable(profile)}
+                >
                   {saving ? "Сохранение…" : "Сохранить черновик"}
                 </Button>
                 {canSubmit && missing.length === 0 ? (
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={submitting || saving}
+                    disabled={submitting || saving || uploading}
                     onClick={() => void submitPublication()}
                   >
                     {submitting ? "Отправка…" : submitLabel}

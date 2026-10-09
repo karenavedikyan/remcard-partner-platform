@@ -8,9 +8,18 @@ export type CatalogUploadResult =
   | { ok: true; url: string }
   | { ok: false; error: string; status?: number };
 
+const ALLOWED_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+
 export function validateCatalogImageFile(file: File): string | null {
-  const okType =
-    file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name);
+  const mime = (file.type || "").toLowerCase();
+  const extOk = /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name);
+  const okType = (mime && ALLOWED_MIME.has(mime)) || (extOk && (!mime || mime === "application/octet-stream"));
   if (!okType) return "Выберите изображение (JPG, PNG, WEBP, HEIC)";
   if (file.size > MAX_BYTES) return "Файл слишком большой (макс. 10 МБ)";
   return null;
@@ -23,6 +32,7 @@ export async function uploadCatalogImage(file: File): Promise<CatalogUploadResul
 
   const formData = new FormData();
   formData.append("file", file, file.name);
+  formData.append("purpose", "catalog");
 
   try {
     const res = await fetch("/api/remcard/api/upload", {

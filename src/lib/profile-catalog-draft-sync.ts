@@ -14,6 +14,7 @@ const CATALOG_KEYS: (keyof ProfileDraft)[] = [
   "publicEmail",
   "publicPhone",
   "catalogPublicName",
+  "catalogCity",
   "showFullName",
   "catalogImageUrl",
 ];
@@ -34,6 +35,7 @@ function normalizeCatalog(d: ProfileDraft): ProfileDraft {
     publicEmail: d.publicEmail.trim(),
     publicPhone: d.publicPhone.trim(),
     catalogPublicName: d.catalogPublicName.trim(),
+    catalogCity: d.catalogCity.trim(),
     catalogImageUrl: d.catalogImageUrl.trim(),
     specializations: [...d.specializations].sort(),
     storeCategories: [...d.storeCategories].sort(),

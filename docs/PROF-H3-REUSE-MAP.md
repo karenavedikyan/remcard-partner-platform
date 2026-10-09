@@ -28,7 +28,7 @@ Platform preview mirrors the same rules in `catalog-public-preview.ts` + `Catalo
 
 | Item | Path |
 |------|------|
-| POST upload | `remcard-navigator/src/app/api/upload/route.ts` (blob storage, 10MB, JPEG/PNG/WEBP/HEIC) |
+| POST upload | `remcard-navigator/src/app/api/upload/route.ts` (blob storage, 10MB; `purpose=catalog` → strict MIME + no raw fallback) |
 | Client helper | `remcard-navigator/src/lib/clientImageUpload.ts` → platform `catalog-image-upload.ts` via BFF `/api/remcard/api/upload` |
 | Solo field | `User.photoUrl` in `pickUserCatalogDraftPatch` / staged `catalogDraft` |
 | Org field | `Organization.logoUrl` in `pickOrgCatalogPatch` (`orgBranchCatalogPatch.ts`) |
@@ -37,6 +37,8 @@ Platform preview mirrors the same rules in `catalog-public-preview.ts` + `Catalo
 
 | Action | API |
 |--------|-----|
+| Public solo name/city | `UserCatalogDraftPayload.catalogDisplayName` / `catalogCity` → staged `catalogDraft`; approve → `User.displayName` / `User.city` (not `working*`) |
+| Org public contacts | `OrganizationPublicContact` via `orgCatalogPublicContacts.ts`; staged in org `catalogDraft` when `catalogPublished` |
 | Save draft | `PATCH /api/pro/profile` or `PATCH /api/pro/organization` (staged when live) |
 | Submit | `action: submitForModeration` or `POST /api/pro/organization/submit-for-moderation` |
 | Discard draft | `action: discardCatalogDraft` |

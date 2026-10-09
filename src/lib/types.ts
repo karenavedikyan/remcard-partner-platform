@@ -18,6 +18,8 @@ export type ProProfileUser = {
   publicId: string;
   displayName: string | null;
   city: string | null;
+  catalogDisplayName?: string | null;
+  catalogCity?: string | null;
   specializations: string[];
   role: string;
   partnerType: string | null;
@@ -108,6 +110,9 @@ export type ProProfileResponse = {
     website?: string | null;
     storeCategories?: string[];
     specializations?: string[];
+    telegram?: string | null;
+    publicEmail?: string | null;
+    publicPhone?: string | null;
     partnerType: string | null;
     branchCount: number;
   } | null;

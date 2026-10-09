@@ -1,4 +1,5 @@
 import { displayCategoryLabel } from "@/lib/category-display";
+import { masterDirectionLabel } from "@/lib/master-direction-label";
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { catalogEntityForProfile } from "@/lib/profile-catalog-state";
@@ -52,13 +53,13 @@ export function buildCatalogPreviewModel(
 ): CatalogPreviewModel {
   const partnerType = draft.partnerType || profile.user.partnerType || "MASTER";
   const productLabels = draft.storeCategories.map((id) => displayCategoryLabel(id));
-  const serviceLabels = draft.specializations.map((id) => displayCategoryLabel(id));
+  const serviceLabels = draft.specializations.map((id) => masterDirectionLabel(id));
   const categoriesForAvatar =
     draft.storeCategories.length > 0 ? draft.storeCategories : draft.specializations;
 
   return {
     publicName: catalogPublicTitle(draft, profile),
-    city: draft.city.trim() || profile.user.city || "",
+    city: (draft.catalogCity || draft.city).trim() || profile.user.catalogCity || profile.user.city || "",
     description: draft.description.trim(),
     productLabels,
     serviceLabels,

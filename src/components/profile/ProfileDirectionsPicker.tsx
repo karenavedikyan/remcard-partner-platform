@@ -13,6 +13,8 @@ type ProfileDirectionsPickerProps = {
   navigatorStageIds: string[];
   primaryDirection: WorkingPrimaryDirection;
   disabled?: boolean;
+  /** Catalog publication: no working-profile stage/primary editors. */
+  catalogMode?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -41,6 +43,7 @@ export function ProfileDirectionsPicker({
   navigatorStageIds,
   primaryDirection,
   disabled,
+  catalogMode,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -282,7 +285,7 @@ export function ProfileDirectionsPicker({
         </>
       ) : null}
 
-      {primaryOptions.length > 0 ? (
+      {!catalogMode && primaryOptions.length > 0 ? (
         <label className={styles.primary}>
           <span>Основное направление</span>
           <select
@@ -300,24 +303,26 @@ export function ProfileDirectionsPicker({
         </label>
       ) : null}
 
-      <fieldset className={styles.group} disabled={disabled}>
-        <legend>На каких этапах вы полезны</legend>
-        <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
-        <div className={styles.optionGrid}>
-          {(fullTaxonomy?.stages ?? [])
-            .filter((item) => matchesFilter(item, filter.trim()))
-            .map((item) => (
-              <label key={item.id} className={styles.checkRow}>
-                <input
-                  type="checkbox"
-                  checked={navigatorStageIds.includes(item.id)}
-                  onChange={() => onChangeStages(toggleId(navigatorStageIds, item.id))}
-                />
-                <span>{item.label}</span>
-              </label>
-            ))}
-        </div>
-      </fieldset>
+      {!catalogMode ? (
+        <fieldset className={styles.group} disabled={disabled}>
+          <legend>На каких этапах вы полезны</legend>
+          <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
+          <div className={styles.optionGrid}>
+            {(fullTaxonomy?.stages ?? [])
+              .filter((item) => matchesFilter(item, filter.trim()))
+              .map((item) => (
+                <label key={item.id} className={styles.checkRow}>
+                  <input
+                    type="checkbox"
+                    checked={navigatorStageIds.includes(item.id)}
+                    onChange={() => onChangeStages(toggleId(navigatorStageIds, item.id))}
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+          </div>
+        </fieldset>
+      ) : null}
     </div>
   );
 }

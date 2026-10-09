@@ -119,7 +119,10 @@ export function ProfileEditor({
   const [telegram, setTelegram] = useState(user.telegram ?? "");
   const [publicEmail, setPublicEmail] = useState(user.publicEmail ?? "");
   const [publicPhone, setPublicPhone] = useState(user.publicPhone ?? "");
-  const [catalogPublicName, setCatalogPublicName] = useState(user.displayName ?? "");
+  const [catalogPublicName, setCatalogPublicName] = useState(
+    user.catalogDisplayName ?? user.displayName ?? "",
+  );
+  const [catalogCity, setCatalogCity] = useState(user.catalogCity ?? user.city ?? "");
   const [showFullName, setShowFullName] = useState(user.showFullName ?? false);
   const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
   const [catalogImageUrl, setCatalogImageUrl] = useState(
@@ -187,6 +190,7 @@ export function ProfileEditor({
   const buildDraft = useCallback((): ProfileDraft => {
     return {
       displayName,
+      catalogCity,
       city,
       description,
       partnerType,
@@ -214,6 +218,7 @@ export function ProfileEditor({
     };
   }, [
     branchAddress,
+    catalogCity,
     city,
     description,
     displayName,
@@ -275,7 +280,8 @@ export function ProfileEditor({
     setTelegram(u.telegram ?? "");
     setPublicEmail(u.publicEmail ?? "");
     setPublicPhone(u.publicPhone ?? "");
-    setCatalogPublicName(u.displayName ?? "");
+    setCatalogPublicName(u.catalogDisplayName ?? u.displayName ?? "");
+    setCatalogCity(u.catalogCity ?? u.city ?? "");
     setShowFullName(u.showFullName ?? false);
     setCatalogImageUrl(
       catalogOnOrg ? (next.organization?.logoUrl ?? "") : (u.photoUrl ?? ""),

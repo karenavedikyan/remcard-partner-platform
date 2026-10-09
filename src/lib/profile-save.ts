@@ -5,6 +5,8 @@ import type { ProProfileResponse } from "@/lib/types";
 
 export type ProfileDraft = {
   displayName: string;
+  /** Public catalog city (solo); not working city from basics. */
+  catalogCity: string;
   city: string;
   description: string;
   partnerType: string;
@@ -167,26 +169,35 @@ export async function persistCatalogDraftOnly(
         name: draft.organizationName.trim() || undefined,
         description: draft.description.trim() || null,
         storeCategories: draft.storeCategories,
-        specializations:
-          draft.partnerType === "MASTER" ? draft.specializations : undefined,
+        specializations: draft.specializations,
         website: draft.website.trim() || null,
         logoUrl: draft.catalogImageUrl.trim() || null,
+        telegram: draft.telegram.trim() || null,
+        publicEmail: draft.publicEmail.trim() || null,
+        publicPhone: draft.publicPhone.trim() || null,
       },
     });
-  } else {
-    const trimmedPublic = (draft.catalogPublicName || draft.displayName).trim();
-    if (trimmedPublic !== (profile.user.displayName ?? "").trim()) {
-      await saveDisplayNameViaAuthMe(trimmedPublic);
+    const branchCount = profile.organization?.branchCount ?? 0;
+    if (branchCount === 0 && draft.branchAddress.trim().length >= 3) {
+      await remcardFetch("/api/pro/organization/branches", {
+        method: "POST",
+        body: {
+          city: (draft.catalogCity || draft.city).trim(),
+          address: draft.branchAddress.trim(),
+          storeCategories: draft.storeCategories,
+        },
+      });
     }
+  } else {
+    const trimmedPublic = (draft.catalogPublicName || "").trim();
     await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
       method: "PATCH",
       body: {
+        catalogDisplayName: trimmedPublic || null,
+        catalogCity: (draft.catalogCity || draft.city).trim() || null,
         description: draft.description.trim() || null,
-        specializations: draft.partnerType === "MASTER" ? draft.specializations : undefined,
-        storeCategories:
-          draft.partnerType === "STORE" || draft.partnerType === "COMPANY"
-            ? draft.storeCategories
-            : undefined,
+        specializations: draft.specializations,
+        storeCategories: draft.storeCategories,
         website: draft.website.trim() || null,
         telegram: draft.telegram.trim() || null,
         publicEmail: draft.publicEmail.trim() || null,
