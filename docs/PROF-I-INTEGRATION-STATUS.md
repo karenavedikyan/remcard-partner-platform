@@ -7,7 +7,7 @@
 
 | Repository | SHA |
 |------------|-----|
-| remcard-partner-platform | `3f0867e` |
+| remcard-partner-platform | `db3ebc7` |
 | remcard-navigator | `edde090c` |
 
 All feature tips (`feat/prof-i-{theme,inbox,team-permissions,payouts}`) are ancestors of these integration commits.
