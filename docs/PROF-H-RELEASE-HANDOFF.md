@@ -8,8 +8,8 @@
 |----------|-----|------|
 | Navigator **immutable bundle** (app + migrations) | `f900bcf9ac364dbd805a0dfe56253d39da257533` | Checkout for code parity |
 | Platform **immutable bundle** | `9a6ab80914e43c2e8a0929ea84a01fa257d01123` | Checkout for code parity |
-| Navigator **release-safety scripts/docs** | _see git tip of `feat/prof-h-profile-redesign` after fix-pass commit_ | Preflight/apply/manifest updates |
-| Platform **handoff docs only** | _same branch tip after fix-pass_ | This file |
+| Navigator **release-safety scripts/docs** | `c7129c1e87f97031696fad95e05d4c62d1bfabdf` | Preflight/apply/manifest updates |
+| Platform **handoff docs only** | `9e301bdb41174454b13d413bc17f1f447c86ea94` | This file |
 
 Manifest source of truth: `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json` (checksums, order, legacy names, DB policy). **Do not** use `git pull` on a branch name as the release version — use explicit SHAs above.
 
