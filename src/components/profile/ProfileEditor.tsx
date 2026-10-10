@@ -13,7 +13,11 @@ import {
 } from "@/lib/profile-catalog-state";
 import { type ProfileDraft } from "@/lib/profile-save";
 import {
+  effectiveWorkingProductIds,
+  effectiveWorkingServiceIds,
+  effectiveWorkingStageIds,
   isWorkingProfileDirty,
+  partnerSearchCheckboxValue,
   profileDraftFromProfile,
 } from "@/lib/profile-draft-sync";
 import {
@@ -128,21 +132,19 @@ export function ProfileEditor({
   const [catalogImageUrl, setCatalogImageUrl] = useState(initialCatalogForm.catalogImageUrl);
   const initialWorking = initial.workingProfile;
   const [productCategoryIds, setProductCategoryIds] = useState<string[]>(
-    initialWorking?.effectiveProductCategoryIds ?? initialWorking?.productCategoryIds ?? [],
+    effectiveWorkingProductIds(initialWorking),
   );
   const [serviceSpecializationIds, setServiceSpecializationIds] = useState<string[]>(
-    initialWorking?.effectiveServiceSpecializationIds ??
-      initialWorking?.serviceSpecializationIds ??
-      [],
+    effectiveWorkingServiceIds(initialWorking),
   );
   const [navigatorStageIds, setNavigatorStageIds] = useState<string[]>(
-    initialWorking?.effectiveNavigatorStageIds ?? initialWorking?.navigatorStageIds ?? [],
+    effectiveWorkingStageIds(initialWorking),
   );
   const [primaryDirection, setPrimaryDirection] = useState<WorkingPrimaryDirection>(
     initialWorking?.primaryDirection ?? null,
   );
   const [partnerSearchOptIn, setPartnerSearchOptIn] = useState(
-    initialWorking?.partnerSearchVisible ?? initialWorking?.partnerSearchOptIn ?? false,
+    partnerSearchCheckboxValue(initialWorking),
   );
   const partnerSearchTouchedRef = useRef(false);
   const [partnerWorkMode, setPartnerWorkMode] = useState(initialWorking?.partnerWorkMode ?? "");
@@ -272,13 +274,11 @@ export function ProfileEditor({
     setShowFullName(catalogForm.showFullName);
     setCatalogImageUrl(catalogForm.catalogImageUrl);
     const w = next.workingProfile;
-    setProductCategoryIds(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? []);
-    setServiceSpecializationIds(
-      w?.effectiveServiceSpecializationIds ?? w?.serviceSpecializationIds ?? [],
-    );
-    setNavigatorStageIds(w?.effectiveNavigatorStageIds ?? w?.navigatorStageIds ?? []);
+    setProductCategoryIds(effectiveWorkingProductIds(w));
+    setServiceSpecializationIds(effectiveWorkingServiceIds(w));
+    setNavigatorStageIds(effectiveWorkingStageIds(w));
     setPrimaryDirection(w?.primaryDirection ?? null);
-    setPartnerSearchOptIn(w?.partnerSearchVisible ?? w?.partnerSearchOptIn ?? false);
+    setPartnerSearchOptIn(partnerSearchCheckboxValue(w));
     partnerSearchTouchedRef.current = false;
     setPartnerWorkMode(w?.partnerWorkMode ?? "");
     setAreasText((w?.areas ?? u.areas ?? []).join("\n"));
@@ -331,7 +331,7 @@ export function ProfileEditor({
   const currentDraft = buildDraft();
   draftRef.current = currentDraft;
   const hasUnsavedBasicsChanges = isWorkingProfileDirty(
-    profileDraftFromProfile(profile),
+    savedSnapshotRef.current,
     currentDraft,
   );
   const hasUnsavedCatalogChanges = isCatalogDraftDirty(

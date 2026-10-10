@@ -1,5 +1,28 @@
 import type { ProfileDraft } from "@/lib/profile-save";
-import type { ProProfileResponse } from "@/lib/types";
+import type { ProProfileResponse, WorkingProfileDto } from "@/lib/types";
+
+/** Checkbox + dirty baseline: explicit opt-in, else server-computed legacy visibility. */
+export function partnerSearchCheckboxValue(w?: WorkingProfileDto | null): boolean {
+  if (!w) return false;
+  if (w.partnerSearchOptInExplicit) return w.partnerSearchOptIn;
+  return w.partnerSearchVisible;
+}
+
+export function effectiveWorkingProductIds(w?: WorkingProfileDto | null): string[] {
+  return [...(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? [])];
+}
+
+export function effectiveWorkingServiceIds(w?: WorkingProfileDto | null): string[] {
+  return [...(w?.effectiveServiceSpecializationIds ?? w?.serviceSpecializationIds ?? [])];
+}
+
+export function effectiveWorkingStageIds(w?: WorkingProfileDto | null): string[] {
+  return [...(w?.effectiveNavigatorStageIds ?? w?.navigatorStageIds ?? [])];
+}
+
+function nullableString(value: string | null | undefined): string {
+  return value?.trim() ?? "";
+}
 
 /** Working-profile fields derived from the last saved server profile (not in-form edits). */
 /** Catalog-tab form slice (organization effective fields, no owner User bleed). */
@@ -37,18 +60,16 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
     telegram: catalogOnOrg ? (org?.telegram ?? "") : (u.telegram ?? ""),
     publicEmail: catalogOnOrg ? (org?.publicEmail ?? "") : (u.publicEmail ?? ""),
     publicPhone: catalogOnOrg ? (org?.publicPhone ?? "") : (u.publicPhone ?? ""),
-    productCategoryIds: [...(w?.effectiveProductCategoryIds ?? w?.productCategoryIds ?? [])],
-    serviceSpecializationIds: [
-      ...(w?.effectiveServiceSpecializationIds ?? w?.serviceSpecializationIds ?? []),
-    ],
-    navigatorStageIds: [...(w?.effectiveNavigatorStageIds ?? w?.navigatorStageIds ?? [])],
+    productCategoryIds: effectiveWorkingProductIds(w),
+    serviceSpecializationIds: effectiveWorkingServiceIds(w),
+    navigatorStageIds: effectiveWorkingStageIds(w),
     primaryDirection: w?.primaryDirection ?? null,
-    partnerSearchOptIn: w?.partnerSearchVisible ?? w?.partnerSearchOptIn ?? false,
-    partnerWorkMode: w?.partnerWorkMode ?? "",
+    partnerSearchOptIn: partnerSearchCheckboxValue(w),
+    partnerWorkMode: nullableString(w?.partnerWorkMode),
     areas: [...(w?.areas ?? u.areas ?? [])],
-    partnershipContactName: w?.partnershipContactName ?? "",
-    partnershipContactPhone: w?.partnershipContactPhone ?? "",
-    partnershipContactEmail: w?.partnershipContactEmail ?? "",
+    partnershipContactName: nullableString(w?.partnershipContactName),
+    partnershipContactPhone: nullableString(w?.partnershipContactPhone),
+    partnershipContactEmail: nullableString(w?.partnershipContactEmail),
   };
 }
 
@@ -97,6 +118,9 @@ function normalizeDraft(draft: ProfileDraft): ProfileDraft {
     partnershipContactPhone: draft.partnershipContactPhone.trim(),
     partnershipContactEmail: draft.partnershipContactEmail.trim(),
     partnerWorkMode: draft.partnerWorkMode.trim(),
+    catalogPublicName: draft.catalogPublicName.trim(),
+    catalogCity: draft.catalogCity.trim(),
+    catalogImageUrl: draft.catalogImageUrl.trim(),
     specializations: [...draft.specializations].sort(),
     storeCategories: [...draft.storeCategories].sort(),
     productCategoryIds: [...draft.productCategoryIds].sort(),

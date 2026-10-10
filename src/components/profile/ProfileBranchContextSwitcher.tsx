@@ -62,9 +62,10 @@ export function ProfileBranchContextSwitcher() {
   }
 
   return (
-    <label className={styles.checkRow}>
-      Рабочий филиал
+    <label className={`${styles.checkRow} ${styles.branchContextCheckRow}`}>
+      <span className={styles.branchContextLabel}>Рабочий филиал</span>
       <select
+        className={styles.branchContextSelect}
         data-testid="pro-branch-context-select"
         disabled={saving}
         value={activeId}

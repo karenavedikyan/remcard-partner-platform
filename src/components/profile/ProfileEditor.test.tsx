@@ -125,6 +125,68 @@ describe("ProfileEditor", () => {
     vi.restoreAllMocks();
   });
 
+  it("does not show false unsaved basics banner for legacy org owner on load", () => {
+    const legacyOrg: ProProfileResponse = {
+      organization: {
+        id: "org-opt",
+        name: "ОПТОВИК",
+        catalogStatus: "APPROVED",
+        partnerType: "STORE",
+        branchCount: 6,
+        storeCategories: ["doors", "flooring", "handles"],
+        specializations: [],
+      },
+      programs: [],
+      catalogPublication: {
+        catalogEntity: "organization",
+        isLivePublic: true,
+        draftPending: false,
+        published: {
+          description: null,
+          specializations: [],
+          storeCategories: ["doors", "flooring", "handles"],
+          website: null,
+          telegram: null,
+          publicEmail: null,
+          publicPhone: null,
+        },
+      },
+      workingProfile: {
+        productCategoryIds: [],
+        serviceSpecializationIds: [],
+        navigatorStageIds: [],
+        primaryDirection: null,
+        effectiveProductCategoryIds: ["doors", "flooring", "handles"],
+        effectiveServiceSpecializationIds: [],
+        effectiveNavigatorStageIds: ["L1-1", "L1-2", "L1-3", "L1-4", "L1-5", "L1-6", "L1-7", "L1-8", "L1-9"],
+        partnerSearchVisible: true,
+        partnerSearchOptIn: false,
+        partnerSearchOptInExplicit: false,
+        workingProductDirectionsTouched: false,
+        workingServiceDirectionsTouched: false,
+        workingNavigatorStagesTouched: false,
+        partnerWorkMode: null,
+        areas: [],
+        partnershipContactName: null,
+        partnershipContactPhone: null,
+        partnershipContactEmail: null,
+      },
+      user: {
+        ...initial.user,
+        partnerType: "STORE",
+        catalogStatus: "APPROVED",
+        isPublic: true,
+        specializations: ["L1-1", "L1-2", "L1-3", "L1-4", "L1-5", "L1-6", "L1-7", "L1-8", "L1-9"],
+        storeCategories: ["doors", "flooring", "handles"],
+        description: null,
+      },
+    };
+    render(<ProfileEditor initial={legacyOrg} />);
+    expect(
+      screen.queryByText(/Есть несохранённые изменения в основных данных/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens overview by default with working profile block", () => {
     render(<ProfileEditor initial={initial} returnTo="/invite/abc" />);
     expect(screen.getByRole("heading", { name: /Рабочий профиль/i })).toBeInTheDocument();
