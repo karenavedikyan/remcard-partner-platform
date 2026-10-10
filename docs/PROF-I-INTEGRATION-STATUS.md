@@ -3,21 +3,25 @@
 **Date:** 2026-10-10  
 **Branch:** `feat/prof-i-integration` (both repos)
 
-## Integration SHAs
+## Integration SHAs (after subagent tip reconciliation)
 
 | Repository | SHA |
 |------------|-----|
-| remcard-partner-platform | `498626b` |
-| remcard-navigator | `389547c0` |
+| remcard-partner-platform | `3f0867e` |
+| remcard-navigator | `edde090c` |
 
-## Stream SHAs (feature branches, pushed)
+All feature tips (`feat/prof-i-{theme,inbox,team-permissions,payouts}`) are ancestors of these integration commits.
+
+## Stream SHAs (feature branches, origin)
 
 | Stream | Platform | Navigator |
 |--------|----------|-----------|
-| A theme | `8639c5e` (`feat/prof-i-theme`) | — |
-| B inbox | `663924d` (`feat/prof-i-inbox`) | `c38b6444` |
-| C team/permissions | `a4f36d8` (`feat/prof-i-team-permissions`) | `ef11d03b` (+ contract `d71c0aac`) |
-| D payouts | `dbade10` (`feat/prof-i-payouts`) | `6b96a9ad` |
+| A theme | `395f61a` / impl `8639c5e` | — |
+| B inbox | `01dd8e1` | `d5caef7a` |
+| C team/permissions | `495f1cf` | `79869023` |
+| D payouts | `830acc6` | `59c08d5b` |
+
+Stream B browser smoke + screenshots: `scripts/prof-i-b-notifications-browser.mjs`, `docs/screenshots/prof-i-b/` (on `feat/prof-i-inbox`, merged into integration).
 
 ## Migrations (apply in order on loopback `remcard_prof_test` only)
 
@@ -30,12 +34,11 @@
 | Check | Result |
 |-------|--------|
 | Platform `npm run test:proxy` | **233/233 PASS** |
-| Platform `npm run test:component` | **122/122 PASS** |
-| Platform `npm run build` | **PASS** |
-| Navigator `bonusPayout` unit (stream D worktree) | **2/2 PASS** |
+| Platform `npm run test:component` | **124/124 PASS** (incl. `prof-notifications`, theme) |
+| Platform `npm run build` | **PASS** (prior run) |
 | Navigator `pnpm exec tsc --noEmit` (integration) | **PASS** |
-| Navigator PG `profIInbox.integration.test.ts` | **NOT RUN** (requires loopback `remcard_prof_test` + migrations) |
-| Cross-feature browser acceptance | **NOT RUN** (no dual-server browser in this agent pass) |
+| Navigator PG `profIInbox.integration.test.ts` | **NOT RUN** on integration (loopback DB + fixtures) |
+| Cross-feature browser (theme + bell + team + payout) | **NOT RUN** on integration |
 | Production deploy / Timeweb / Yandex Maps | **NOT VERIFIED** |
 
 ## Parallel executors (Cursor Task)
@@ -45,12 +48,8 @@
 | A | `bc-6677d555-68ff-562c-8f58-e28c0be3ab03` |
 | B | `bc-f29c95f4-0c0a-5b18-b3ef-b35685c42f1b` |
 | C | `bc-68c6b93e-5d5b-5d1d-a5d4-b2da09f9e224` |
-| C platform finish | `bc-8f3aa42b-ebb8-5bd0-a784-75526969bead` |
+| C platform UI | `bc-8f3aa42b-ebb8-5bd0-a784-75526969bead` |
 | D | `bc-c0bc0345-141a-532c-8fee-242103e04f5f` |
-
-## Isolation
-
-Worktrees under `/tmp/prof-i-worktrees/` — see `WORKSTREAMS.md`. Docs handoff commit `8872685fcbf4f363b5da3f6d5b4da88346e2caae`; prototype blocks at `/tmp/prof-i-reference/prototype/`.
 
 ## Operator follow-up
 
