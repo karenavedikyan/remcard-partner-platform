@@ -1,5 +1,10 @@
 export type SettlementAccrualType = "bonus" | "agentBonus";
 
+export type SettlementPayoutActions = {
+  canRecordCash: boolean;
+  canRecordTransfer: boolean;
+};
+
 export type SettlementObligation = {
   id: string;
   orderId: string;
@@ -10,6 +15,7 @@ export type SettlementObligation = {
   basis: string;
   status: string;
   createdAt: string;
+  payoutActions?: SettlementPayoutActions;
 };
 
 export type SettlementCompleted = SettlementObligation & {

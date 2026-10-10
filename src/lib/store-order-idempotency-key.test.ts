@@ -30,4 +30,19 @@ describe("resolveStoreOrderIdempotencyKey", () => {
       false,
     );
   });
+
+  it("forwards optional key for bonus payout POST", () => {
+    assert.deepEqual(
+      resolveStoreOrderIdempotencyKey("POST", "/api/bonus/clxyz123456789012345678/pay", null),
+      { ok: true, key: null },
+    );
+    assert.deepEqual(
+      resolveStoreOrderIdempotencyKey(
+        "POST",
+        "/api/bonus/clxyz123456789012345678/pay",
+        "prof-i-d:test-key",
+      ),
+      { ok: true, key: "prof-i-d:test-key" },
+    );
+  });
 });

@@ -1,0 +1,96 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 45%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.dialog {
+  background: var(--surface-elevated, #fff);
+  color: var(--text-primary, #111);
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.note {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #555);
+  line-height: 1.45;
+}
+
+.metaList {
+  margin: 0 0 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.metaList dt {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+}
+
+.metaList dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.methods {
+  border: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.legend {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.methodLabel {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  font-size: 0.9375rem;
+}
+
+.noteField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.noteField textarea {
+  resize: vertical;
+  min-height: 4rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle, #ccc);
+  font: inherit;
+}
+
+.error {
+  color: var(--danger, #b00020);
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
