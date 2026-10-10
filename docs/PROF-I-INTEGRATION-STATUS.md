@@ -64,7 +64,7 @@ PROF_E_INVITE_CHAIN_ONLY=1 PROF_E_PLATFORM_URL=http://127.0.0.1:3000 \
 | Field | Value |
 |-------|--------|
 | **runMode** | `invite-employee-chain-only` (not full E) |
-| **platform SHA** | see `docs/prof-i-e-browser-report.json` → `platformSha` |
+| **platform SHA** | `d6273be3805250ccbb60284bf1e693512dadef2c` |
 | **exit code** | **1** |
 | **scenarios** | `team-invite-wizard` **PASS**, `employee-accept-access` **PASS**, `bff-get-unexpected` **FAIL** |
 | **expectedDenyResponses** | 1× GET wallet/settlements **403** |

@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-10-10T14:15:19.894Z",
+  "generatedAt": "2026-10-10T14:15:38.202Z",
   "runMode": "invite-employee-chain-only",
-  "platformSha": "2ca4c205a669d56f37060018d4544a9c2ed88800",
+  "platformSha": "d6273be3805250ccbb60284bf1e693512dadef2c",
   "profBase": "http://127.0.0.1:3000",
   "fixtures": {
-    "tag": "prof-i-e-1791641719738",
-    "ownerId": "cmv2h7ylt0000js2qh931xfqs",
-    "employeeId": "cmv2h7ylz0001js2q5cu3fwn7",
-    "organizationId": "cmv2h7yna000rjs2q0atxkck5",
-    "branchAId": "cmv2h7ynd000tjs2qogy2g2uc",
-    "branchBId": "cmv2h7ynf000vjs2qed961ly3",
-    "payableBonusId": "cmv2h7ynx0017js2qsbv7vf4p",
+    "tag": "prof-i-e-1791641738041",
+    "ownerId": "cmv2h8cq80000jset2rxjfpl8",
+    "employeeId": "cmv2h8cqe0001jsetmie7jt6r",
+    "organizationId": "cmv2h8crt000rjsete98ddwin",
+    "branchAId": "cmv2h8crv000tjsetm7uom8vm",
+    "branchBId": "cmv2h8crx000vjsettbmao7fu",
+    "payableBonusId": "cmv2h8csi0017jsetxfk80kvc",
     "payableAmount": 777,
-    "profRecipientId": "cmv2h7ynk000yjs2q3o06aofd",
-    "seedNotificationId": "cmv2h7yo00019js2qrvra8eid"
+    "profRecipientId": "cmv2h8cs3000yjsetv26ax1ei",
+    "seedNotificationId": "cmv2h8csk0019jset5ey5xto0"
   },
   "scenarios": {
     "team-invite-wizard": "PASS",
