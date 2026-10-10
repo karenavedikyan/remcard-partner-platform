@@ -9,7 +9,7 @@
 | Navigator **immutable runtime** | `ecc798328e117394df52e4c0cf4ee246abf0b58c` |
 | Platform **immutable runtime** | `ad9349b2fa07d0b2cff387c8950c33cdc91fb94a` |
 | Navigator **release scripts + manifest** | `c8f660296ef2c98b34e757b076cb5d0461bde39a` |
-| Platform **integration status + handoff** | *(this commit on `feat/prof-i-integration`)* |
+| Platform **integration status + handoff** | `e016e3684355f997f8f3a874fef28ed723d50951` |
 
 Manifest: `remcard-navigator/docs/PROF-I-RELEASE-MANIFEST.json`  
 Migrations: `remcard-navigator/docs/PROF-I-RELEASE-MIGRATIONS.md`  
