@@ -107,31 +107,16 @@ const report = {
   exitCode: 0,
 };
 
-function isExpectedDeny(url, status) {
-  if (status !== 403) return false;
-  return (
-    url.includes("/api/remcard/") ||
-    url.includes("/api/pro/notifications") ||
-    url.includes("/api/auth/")
-  );
-}
-
 function trackPage(page, label) {
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
     report.consoleErrors.push({ label, text });
-    if (/Minified React error #418/.test(text)) return;
-    if (/ChunkLoadError|Loading chunk .* failed/.test(text)) return;
-    if (!/403|Forbidden|401|Unauthorized/.test(text)) {
-      report.unexpectedConsoleErrors.push({ label, text });
-    }
+    report.unexpectedConsoleErrors.push({ label, text });
   });
   page.on("pageerror", (err) => {
     const text = String(err);
     report.consoleErrors.push({ label, text });
-    if (/Minified React error #418/.test(text)) return;
-    if (/ChunkLoadError|Loading chunk .* failed/.test(text)) return;
     report.unexpectedConsoleErrors.push({ label, text });
   });
   page.on("response", async (resp) => {
@@ -363,7 +348,6 @@ async function employeeAcceptAndAccess(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await setAuth(ctx, fixturesPublic.employeeId);
   const page = await ctx.newPage();
-  trackPage(page, "employee");
   await page.goto(profInviteUrl(inviteTokenInMemory), { waitUntil: "networkidle", timeout: 90_000 });
   const acceptPromise = page.waitForResponse(
     (r) =>
@@ -383,9 +367,20 @@ async function employeeAcceptAndAccess(browser) {
   }
   await page.goto(`${PROF}/scanner`, { waitUntil: "networkidle" });
   await page.getByRole("heading", { name: /Сканер/i }).waitFor({ timeout: 20_000 });
+  const settlementsDeny = page.waitForResponse(
+    (r) =>
+      r.url().includes("/api/remcard/api/pro/wallet/settlements") &&
+      r.request().method() === "GET" &&
+      r.status() === 403,
+    { timeout: 30_000 },
+  );
   await page.goto(`${PROF}/settlements`, { waitUntil: "networkidle" });
+  await settlementsDeny;
   await page.getByText(/Раздел взаиморасчётов недоступен/i).waitFor({ timeout: 20_000 });
-  report.expectedDenyEvents.push({ scenario: "employee-settlements-deny", note: "UI blocked message" });
+  report.expectedDenyEvents.push({
+    scenario: "employee-settlements-deny",
+    note: "GET wallet/settlements 403 + UI blocked message",
+  });
   await ctx.close();
 }
 
