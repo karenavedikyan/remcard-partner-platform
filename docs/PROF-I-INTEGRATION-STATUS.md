@@ -7,7 +7,7 @@
 
 | Repository | SHA |
 |------------|-----|
-| remcard-partner-platform | `c415231` (after merge A–D + bell wiring) |
+| remcard-partner-platform | `498626b` |
 | remcard-navigator | `389547c0` |
 
 ## Stream SHAs (feature branches, pushed)
