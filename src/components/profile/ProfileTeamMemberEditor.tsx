@@ -260,6 +260,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           <Button
             type="button"
             variant="secondary"
+            data-testid="team-member-revoke-org"
             disabled={saving || revoking}
             onClick={() => void revokeOrg()}
           >

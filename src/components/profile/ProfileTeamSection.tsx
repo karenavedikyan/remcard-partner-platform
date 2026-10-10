@@ -433,6 +433,7 @@ export function ProfileTeamSection() {
                         <label key={b.id} className={styles.checkRow}>
                           <input
                             type="checkbox"
+                            data-testid={`team-invite-branch-${b.id}`}
                             checked={branchIds.has(b.id)}
                             onChange={() => toggleInviteBranch(b.id)}
                           />

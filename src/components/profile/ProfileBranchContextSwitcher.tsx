@@ -65,6 +65,7 @@ export function ProfileBranchContextSwitcher() {
     <label className={styles.checkRow}>
       Рабочий филиал
       <select
+        data-testid="pro-branch-context-select"
         disabled={saving}
         value={activeId}
         onChange={(e) => void onChange(e.target.value)}

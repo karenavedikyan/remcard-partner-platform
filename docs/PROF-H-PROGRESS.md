@@ -4,16 +4,17 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `c2878c6c` | **`11e83db4`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `40a4131` | **`b46408a`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `11e83db4` | see git log |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `33d4c4e` | see git log |
 
 ## PROF-H5 — organization team (2026-10-10)
 
 - Reuse map: `docs/PROF-H5-REUSE-MAP.md` (both repos).
 - Backend: `OrganizationMember`, `InviteScope.ORGANIZATION`, multi-branch invites/accept, `team` in employees-overview, owner `team-members` PATCH/DELETE, multi-branch `getProContext` + `remcard-pro-branch` cookie.
 - Platform: team UI, org invite form, member editor, branch switcher, BFF allowlist.
-- PG: `profH5Team.integration.test.ts` (A, E, G) on `remcard_prof_test`.
-- Completion pass: snapshot accept fix, BFF branch cookie, CLIENT/head-office readiness, atomic accept claim, targeted revoke, PG A–G/J (**8 tests**), browser script (partial — see acceptance).
+- PG: `profH5Team.integration.test.ts` (**12 tests**) + `profH5StoreOrder.integration.test.ts` (**2 tests**) on `remcard_prof_test` — matrix A–J including store preview/order.
+- Store regression fix: context-aware purchase gate (owner/SOLO vs branch staff), `canActivateCertificates` enforcement, order history via cabinet readiness for CLIENT employees.
+- Browser: `prof-h5-browser-acceptance.mjs` **PASS** (1440/390) — see `docs/PROF-H5-ACCEPTANCE.md`.
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 
