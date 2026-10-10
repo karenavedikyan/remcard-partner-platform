@@ -8,7 +8,7 @@
 | Repository | SHA |
 |------------|-----|
 | remcard-partner-platform | `c415231` (after merge A–D + bell wiring) |
-| remcard-navigator | `d58b3f03` |
+| remcard-navigator | `389547c0` |
 
 ## Stream SHAs (feature branches, pushed)
 
@@ -33,7 +33,8 @@
 | Platform `npm run test:component` | **122/122 PASS** |
 | Platform `npm run build` | **PASS** |
 | Navigator `bonusPayout` unit (stream D worktree) | **2/2 PASS** |
-| Navigator full vitest inbox suite in E worktree | **NOT RUN** (vitest/rolldown parse error on test entry — operator may run `profIInbox.integration.test.ts` with loopback DB) |
+| Navigator `pnpm exec tsc --noEmit` (integration) | **PASS** |
+| Navigator PG `profIInbox.integration.test.ts` | **NOT RUN** (requires loopback `remcard_prof_test` + migrations) |
 | Cross-feature browser acceptance | **NOT RUN** (no dual-server browser in this agent pass) |
 | Production deploy / Timeweb / Yandex Maps | **NOT VERIFIED** |
 
