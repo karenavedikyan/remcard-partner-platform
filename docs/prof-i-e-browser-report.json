@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-10-10T13:19:39.519Z",
+  "profBase": "http://127.0.0.1:3000",
+  "fixtures": {
+    "tag": "prof-i-e-1791638379358",
+    "ownerId": "cmv2f8d5h0000jsdzgacoi81r",
+    "employeeId": "cmv2f8d5p0001jsdzkixp5dlc",
+    "organizationId": "cmv2f8d72000rjsdz7rw7evx7",
+    "branchAId": "cmv2f8d75000tjsdzr88wnpf6",
+    "branchBId": "cmv2f8d77000vjsdzxrhgmn46",
+    "payableBonusId": "cmv2f8d7s0017jsdzqqsdrbwk",
+    "payableAmount": 777,
+    "profRecipientId": "cmv2f8d7d000yjsdzrhldyqk4",
+    "seedNotificationId": "cmv2f8d7v0019jsdzw1gpzic1"
+  },
+  "scenarios": {
+    "theme-1440-light": "PASS",
+    "bell-1440-light": "PASS",
+    "theme-390-dark": "PASS",
+    "bell-390-dark": "PASS",
+    "390-horizontal-overflow": "FAIL: horizontal overflow",
+    "team-invite-wizard": "FAIL: page.waitForFunction: Timeout 30000ms exceeded.",
+    "employee-accept-access": "FAIL: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /Принять приглашение/i })\n",
+    "owner-payout-ui": "FAIL: expected 1 BonusPayoutRecord, got 0"
+  },
+  "consoleErrors": [
+    {
+      "label": "1440-light",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "label": "390-dark",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "label": "owner-desktop",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    }
+  ],
+  "screenshots": [
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/theme-1440-light-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/bell-open-1440-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/notifications-page-1440-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/theme-390-dark-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/bell-open-390-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/notifications-page-390-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/390-overflow-check.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/payout-recorded.png"
+  ],
+  "dbChecks": {
+    "payoutRecordsBefore": "0",
+    "payoutRecordsAfter": "0",
+    "bonusStatus": "CONFIRMED"
+  },
+  "exitCode": 1
+}

@@ -1,58 +1,97 @@
-# PROF-I integration — READY_FOR_OPERATOR_CHECK
+# PROF-I stream E — integration acceptance
 
 **Date:** 2026-10-10  
-**Branch:** `feat/prof-i-integration` (both repos)
+**Branch:** `feat/prof-i-integration` (both repos)  
+**Verdict:** **BLOCKED** (PG + builds OK; cross-feature browser incomplete)
 
-## Integration SHAs (after subagent tip reconciliation)
+## Verified SHA pair (E run)
 
-| Repository | SHA |
-|------------|-----|
-| remcard-partner-platform | `db3ebc7` |
-| remcard-navigator | `edde090c` |
+| Repository | Commit |
+|------------|--------|
+| remcard-partner-platform | `67da0483c78aa2f6e4757e4dbb1505261c0f5b38` |
+| remcard-navigator | `edde090c38fc0d3f917144d91183e67618e06660` |
 
-All feature tips (`feat/prof-i-{theme,inbox,team-permissions,payouts}`) are ancestors of these integration commits.
+## Loopback DB guard
 
-## Stream SHAs (feature branches, origin)
+```bash
+cd /tmp/prof-i-worktrees/prof-i-e-navigator
+set -a && source .env.local && set +a
+node scripts/prof-i-e-pg-preflight.mjs
+# exit 0 → {"ok":true,"migrationsApplied":["already_present"],...}
+psql "$DATABASE_URL" -t -A -c "SELECT current_database(), COALESCE(inet_server_addr()::text,'local');"
+# remcard_prof_test|127.0.0.1/32
+```
 
-| Stream | Platform | Navigator |
-|--------|----------|-----------|
-| A theme | `395f61a` / impl `8639c5e` | — |
-| B inbox | `01dd8e1` | `d5caef7a` |
-| C team/permissions | `495f1cf` | `79869023` |
-| D payouts | `830acc6` | `59c08d5b` |
+## PostgreSQL / Vitest (remcard_prof_test)
 
-Stream B browser smoke + screenshots: `scripts/prof-i-b-notifications-browser.mjs`, `docs/screenshots/prof-i-b/` (on `feat/prof-i-inbox`, merged into integration).
+```bash
+cd /tmp/prof-i-worktrees/prof-i-e-navigator
+set -a && source .env.local && set +a
+node scripts/prof-i-e-pg-preflight.mjs                    # exit 0
+pnpm exec tsx scripts/prof-i-e-payout-fixtures.ts           # exit 0
+pnpm exec vitest run \
+  src/lib/__tests__/profIInbox.integration.test.ts \
+  src/lib/__tests__/profICPermissions.integration.test.ts \
+  src/lib/__tests__/profIPayout.integration.test.ts \
+  src/lib/__tests__/profH5PartialRevoke.integration.test.ts \
+  src/lib/__tests__/bonusPayout.test.ts \
+  src/lib/__tests__/prof-i-permissions.test.ts \
+  src/lib/__tests__/profInbox.test.ts
+# exit 0 — 7 files, 28 tests passed
+```
 
-## Migrations (apply in order on loopback `remcard_prof_test` only)
+Navigator `profIPayout.integration.test.ts`: concurrent idempotent `payBonus` requests fixed (pre-built `NextRequest`s before `Promise.all`).
 
-1. `20261013_prof_i_b_inbox_dedupe_key`
-2. `20261014_prof_i_c_01_granular_permissions`
-3. `20261015_prof_i_d_bonus_payout_record`
+## Production builds (final integration tree)
 
-## Automated checks (integration worktree)
+| App | Command | Exit |
+|-----|---------|------|
+| navigator | `NODE_ENV=production PLATFORM_INN=000000000000 PLATFORM_OGRN=000000000000000 pnpm run build` | **0** |
+| platform | `NODE_ENV=production npm run build` (after `NEXT_PUBLIC_APP_URL` aligned to serve port) | **0** |
 
-| Check | Result |
-|-------|--------|
-| Platform `npm run test:proxy` | **233/233 PASS** |
-| Platform `npm run test:component` | **124/124 PASS** (incl. `prof-notifications`, theme) |
-| Platform `npm run build` | **PASS** (prior run) |
-| Navigator `pnpm exec tsc --noEmit` (integration) | **PASS** |
-| Navigator PG `profIInbox.integration.test.ts` | **NOT RUN** on integration (loopback DB + fixtures) |
-| Cross-feature browser (theme + bell + team + payout) | **NOT RUN** on integration |
-| Production deploy / Timeweb / Yandex Maps | **NOT VERIFIED** |
+**Not re-run:** platform `test:proxy` 233/233, `test:component` 124/124 (unchanged integration tip).
 
-## Parallel executors (Cursor Task)
+## Browser integration (Playwright)
 
-| Stream | Agent ID |
-|--------|----------|
-| A | `bc-6677d555-68ff-562c-8f58-e28c0be3ab03` |
-| B | `bc-f29c95f4-0c0a-5b18-b3ef-b35685c42f1b` |
-| C | `bc-68c6b93e-5d5b-5d1d-a5d4-b2da09f9e224` |
-| C platform UI | `bc-8f3aa42b-ebb8-5bd0-a784-75526969bead` |
-| D | `bc-c0bc0345-141a-532c-8fee-242103e04f5f` |
+**Serve (loopback only):**
 
-## Operator follow-up
+- Navigator: `PORT=3001 NODE_ENV=production pnpm run start` with `.env.production.local` ← copy of `.env.local` (JWT + DATABASE).
+- Platform: `PORT=3000 NODE_ENV=production npm run start` with `.env.production.local` where `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000` and `REMCARD_API_BASE_URL=http://127.0.0.1:3001` (mutating BFF requires matching Origin).
 
-1. Apply migrations on staging DB; run one browser path: theme toggle + bell + team invite wizard + record payout (mock).
-2. Confirm `emitProfPayoutRecorded` dedupe on retry.
-3. No PR/release merge from this package unless explicitly requested.
+```bash
+cd /tmp/prof-i-worktrees/prof-i-e-platform
+set -a && source /tmp/prof-i-worktrees/prof-i-e-navigator/.env.local && set +a
+PROF_E_PLATFORM_URL=http://127.0.0.1:3000 node scripts/prof-i-e-integration-browser.mjs
+# exit 1 — see report
+```
+
+**Report:** `docs/prof-i-e-browser-report.json`  
+**Screenshots:** `docs/screenshots/prof-i-e/`
+
+| Scenario | Result |
+|----------|--------|
+| theme 1440 light / 390 dark | **PASS** |
+| bell + notifications link 1440 / 390 | **PASS** |
+| 390 horizontal overflow (home) | **FAIL** |
+| team invite wizard (UI) | **FAIL** (step 3 confirm → submit stays disabled) |
+| employee accept + access enforcement | **FAIL** (no invite token; blocked by wizard) |
+| owner payout UI → DB | **FAIL** (modal screenshot taken; `BonusPayoutRecord` count 0; bonus stays CONFIRMED) |
+
+Console: intermittent **403** on mutating `/api/remcard/*` when platform `NEXT_PUBLIC_APP_URL` ≠ browser origin port (documented above).
+
+## NOT VERIFIED
+
+- Production / Timeweb / Yandex Maps live
+- Full PROF-H / proxy 233 / component 124 re-run after E-only script changes
+- Real Telegram/MAX/bank/bots
+
+## E artifacts (this run)
+
+| Path | Repo |
+|------|------|
+| `scripts/prof-i-e-integration-browser.mjs` | platform |
+| `scripts/prof-i-e-pg-preflight.mjs` | navigator |
+| `scripts/prof-i-e-payout-fixtures.ts` | navigator |
+| `scripts/prof-i-e-browser-fixtures.ts` | navigator |
+| `docs/prof-i-e-browser-report.json` | platform |
+| `docs/screenshots/prof-i-e/*.png` | platform |
