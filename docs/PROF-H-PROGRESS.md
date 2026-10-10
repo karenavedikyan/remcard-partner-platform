@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `ceebccc1` | **(H5 commit pending push)** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `80fc5f1` | **(H5 commit pending push)** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `ceebccc1` | **`c2878c6c`** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `80fc5f1` | **`f52bcd6`** (+ progress doc) |
 
 ## PROF-H5 — organization team (2026-10-10)
 
