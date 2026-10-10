@@ -9,7 +9,7 @@
 | Navigator **immutable application bundle** | `f900bcf9ac364dbd805a0dfe56253d39da257533` | App + migration SQL (unchanged) |
 | Platform **immutable application bundle** | `9a6ab80914e43c2e8a0929ea84a01fa257d01123` | PROF cabinet frontend |
 | Navigator **release-safety tooling** | `51a3572f8209380a6d508afc3f11d6b3f93b6ba4` | Preflight/apply/probes/tests — use for operator migrate path |
-| Platform **docs handoff** | _this commit on `feat/prof-h-profile-redesign`_ | No runtime change |
+| Platform **docs handoff** | `dc67fa06789a69a779077d1bb20fc5ee391507a3` | No runtime change |
 
 Release baseline for rehearsal diff: navigator `9523dcd5dc4cd0c69b58152604004a6ed27083be`, platform `bb60c608f8b88c910773ab681060fe0a48673ee9`.
 
