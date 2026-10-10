@@ -9,7 +9,7 @@
 | Navigator **immutable application bundle** | `f900bcf9ac364dbd805a0dfe56253d39da257533` |
 | Platform **immutable application bundle** | `9a6ab80914e43c2e8a0929ea84a01fa257d01123` |
 | Navigator **release-safety tooling** | `a53433d24cec69d2fc4b669a8dbb30e7ce7806d3` |
-| Platform **docs handoff** | `de7a5ba68228608b8beffefb29beddb38593e623` |
+| Platform **docs handoff** | `998b8df823652b09fe3917ce9469bf6827675e7e` |
 
 Manifest: `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json`  
 Production history: `remcard-navigator/docs/PROF-H-PRODUCTION-HISTORY.md`
