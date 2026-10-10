@@ -6,8 +6,8 @@
 
 | Repository | Branch | Role | SHA (full) |
 |------------|--------|------|------------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | backend + migrations | `9724293cb212e9edcea3e4bafe52754640a0f87f` |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | PROF cabinet frontend | `2d0ca5c9dd183037790764506b0046bca5a52020` (+ doc commit on push) |
+| remcard-navigator | `feat/prof-h-profile-redesign` | backend + migrations | `e099c72b0fd72bdedf5d914c24b563d2a737e007` |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | PROF cabinet frontend | `44058dd9d5657d8571daee3dd7d3f8aa66220703` |
 
 **Merge-base with release (no release-only commits behind feature):**
 
