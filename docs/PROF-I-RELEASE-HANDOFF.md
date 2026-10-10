@@ -8,14 +8,14 @@
 |----------|-----|
 | Navigator **immutable runtime** | `ecc798328e117394df52e4c0cf4ee246abf0b58c` |
 | Platform **immutable runtime** | `ad9349b2fa07d0b2cff387c8950c33cdc91fb94a` |
-| Navigator **release manifest / migrations doc** | *(commit after runtime pins — see git log on `feat/prof-i-integration`)* |
-| Platform **integration status + this handoff** | *(doc commit after runtime pins)* |
+| Navigator **release scripts + manifest** | `c8f660296ef2c98b34e757b076cb5d0461bde39a` |
+| Platform **integration status + handoff** | *(this commit on `feat/prof-i-integration`)* |
 
 Manifest: `remcard-navigator/docs/PROF-I-RELEASE-MANIFEST.json`  
 Migrations: `remcard-navigator/docs/PROF-I-RELEASE-MIGRATIONS.md`  
 Acceptance table: `docs/PROF-I-INTEGRATION-STATUS.md`
 
-**Release blocker:** controlled PROF-I migration preflight/apply scripts are **not shipped**. Do **not** use `prisma migrate deploy` on production until the mechanism in the migrations doc exists.
+Controlled apply: `scripts/prof-i-release-migrate-preflight.mjs` + `scripts/prof-i-release-migrate-apply.mjs` (checkout navigator **release-scripts** commit from manifest/handoff table). **Do not** use `prisma migrate deploy`.
 
 ---
 
@@ -25,17 +25,14 @@ Run from operator workstation with **read-only** DB role and production tunnel i
 
 ```bash
 cd remcard-navigator
-git checkout ecc798328e117394df52e4c0cf4ee246abf0b58c
+# Checkout release-scripts tip (manifest/handoff SHA), not necessarily runtime ecc79832.
 
 export DATABASE_URL='postgresql://…'
 export DIRECT_URL='postgresql://…'
-export PROF_I_EXPECTED_DB_HOST='…'      # when prof-i preflight ships
+export PROF_I_EXPECTED_DB_HOST='…'
 export PROF_I_EXPECTED_DB_NAME='remcard'
 
-# Today (strict, not PROF-I-aware):
-node scripts/verify-prof-pending-migrations.mjs
-# Future (required before apply):
-# node scripts/prof-i-release-migrate-preflight.mjs --mode=production-history
+node scripts/prof-i-release-migrate-preflight.mjs --mode=production-history
 ```
 
 **Stop if:** pending set ≠ exactly three PROF-I migrations (after H complete), ledger drift, partial I migrations, or URL identity mismatch. **Do not** `migrate resolve`, `db push`, or edit `_prisma_migrations`.
@@ -59,7 +56,7 @@ This package **does not** run backup/restore.
 | Phase | Component | Rationale |
 |-------|-----------|-----------|
 | 1 | **PROF-H complete on DB** | PROF-I SQL depends on H-five ledger rows (`20261011_prof_h5_branch_access_changed` last). |
-| 2 | **PROF-I migrations** (controlled apply when shipped) | Backend at `ecc79832` expects I-B/I-C/I-D schema for inbox dedupe, permissions snapshots, payout records. |
+| 2 | **PROF-I migrations** (controlled apply) | See navigator migrations doc; write creds `PROF_I_APPLY_*`. |
 | 3 | **Navigator backend** @ `ecc79832` | Serves `/api/pro/context` with `teamCapabilities`, scoped `employees-overview`, inbox/payout APIs. |
 | 4 | **Platform frontend** @ `ad9349b` | BFF + profile gates consume `teamCapabilities`; must match navigator origin. |
 
@@ -141,7 +138,8 @@ Treat as **NOT VERIFIED** (not PASS) for this package:
 | Navigator `organizationTeamCabinet.test.ts` | exit 0 |
 | Navigator `prof-i-team-cabinet.integration.test.ts` on `remcard_prof_test` | exit 0 |
 | Platform `profile-cabinet-access.test.ts` | exit 0 |
-| PROF-I SQL on synthetic DB `remcard_prof_i_upgrade_rehearsal` | DDL applied in order; objects present |
+| `pnpm run test:prof-i-release` | exit 0 (manifest + apply guards) |
+| `prof-i-release-controlled-rehearsal.mjs --apply` on `remcard_prof_i_controlled_rehearsal` | **PASS** (synthetic H-complete baseline; not production) |
 
 Full browser **E** on SHA pair `ad9349b` + `ecc79832` was **not** re-run (see integration status). Employee-chain-only **PASS** on that pair.
 
@@ -149,5 +147,4 @@ Full browser **E** on SHA pair `ad9349b` + `ecc79832` was **not** re-run (see in
 
 ## Status
 
-**BLOCKED** for production **migration apply** (controlled script missing).  
-**READY_FOR_OPERATOR_CHECK** for reviewing pins, manifest checksums, handoff order, and read-only preflight planning — **not** permission to publish.
+**READY_FOR_OPERATOR_CHECK** — loopback controlled rehearsal PASS; production preflight/apply remains operator-only. **Not** permission to publish.

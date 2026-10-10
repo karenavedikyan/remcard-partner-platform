@@ -21,7 +21,7 @@ This document keeps **historical SHA rows** for past runs; the table below is th
 | **Full E repeated on candidate pair** | `ad9349b` · `ecc79832` | **NOT RUN** (by scope — chain + contract cover delta) | — |
 | PG **28** / proxy **233** / component **124** suites | — | **NOT RUN** (no changes claimed in those areas) | — |
 | PROF-I **SQL upgrade rehearsal** (synthetic post-H baseline) | navigator `ecc79832` SQL files | **PASS** (DDL only on `remcard_prof_i_upgrade_rehearsal`) | navigator `docs/PROF-I-RELEASE-MIGRATIONS.md` |
-| Controlled **PROF-I migration preflight/apply** | — | **NOT SHIPPED** — **BLOCKER** | manifest `applyMechanism.releaseBlocker` |
+| Controlled **PROF-I migration preflight/apply** | navigator release-scripts tip | **PASS** loopback (`prof-i-release-controlled-rehearsal.mjs --apply` on synthetic DB) | `docs/PROF-I-RELEASE-MIGRATIONS.md` |
 | Production read-only preflight | — | **NOT VERIFIED** (operator) | handoff §A |
 | Live auth, cards, storage, delivery | — | **NOT VERIFIED** | handoff §G |
 
@@ -57,4 +57,4 @@ pnpm exec vitest run src/lib/profile-cabinet-access.test.ts
 
 ## Verdict
 
-**Integration candidate pinned** at runtime SHA pair above. **Not** a production go-ahead. Migration apply remains **BLOCKED** until controlled PROF-I scripts ship (see handoff + manifest).
+**Integration candidate pinned** at runtime SHA pair above. Controlled migration tooling rehearsed on loopback only — **not** a production go-ahead (see handoff).
