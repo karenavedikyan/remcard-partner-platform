@@ -44,6 +44,14 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET", "PATCH"]), pattern: branchByIdPath() },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/employees-overview$/ },
     {
+      methods: new Set(["GET", "POST"]),
+      pattern: /^\/api\/pro\/organization\/permission-templates$/,
+    },
+    {
+      methods: new Set(["GET", "POST"]),
+      pattern: /^\/api\/pro\/organization\/permission-templates$/,
+    },
+    {
       methods: new Set(["PATCH", "DELETE"]),
       pattern: /^\/api\/pro\/organization\/team-members\/[a-zA-Z0-9_-]{1,128}$/,
     },

@@ -20,6 +20,7 @@ type PreviewOk = {
   branchLabels?: string[];
   allCurrentBranchesSnapshot?: boolean;
   expiresAt: string;
+  permissionLabels?: string[];
 };
 
 function roleLabelRu(role: string): string {
@@ -206,6 +207,13 @@ export function StaffInviteAccept() {
                 ? " · набор «все текущие филиалы» (новые добавляются отдельно)"
                 : ""}
             </p>
+          ) : null}
+          {pending.permissionLabels?.length ? (
+            <ul className={styles.meta}>
+              {pending.permissionLabels.map((label) => (
+                <li key={label}>{label}</li>
+              ))}
+            </ul>
           ) : null}
           <p className={styles.meta}>
             Срок действия: {new Date(pending.expiresAt).toLocaleString("ru-RU")}

@@ -1,21 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
+import {
+  effectiveActionIdsForBranch,
+  memberPermissionState,
+} from "@/lib/prof-i-member-permissions";
+import { normalizePermissionFlags, type ProfIPermissionFlags } from "@/lib/prof-i-permissions";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
+import { ProfileTeamPermissionMatrix } from "./ProfileTeamPermissionMatrix";
 import styles from "./ProfileEditor.module.css";
-
-const ROLE_OPTIONS = [
-  { value: "SELLER", label: "Продавец" },
-  { value: "MANAGER", label: "Менеджер" },
-  { value: "VIEWER", label: "Наблюдатель" },
-] as const;
-
-function roleLabel(role: string): string {
-  return ROLE_OPTIONS.find((r) => r.value === role)?.label ?? role;
-}
+import teamStyles from "./ProfileTeamPermissions.module.css";
 
 type Props = {
   member: TeamMemberRow;
@@ -25,29 +22,27 @@ type Props = {
 };
 
 export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: Props) {
+  const initial = memberPermissionState(member);
   const [membershipKind, setMembershipKind] = useState<"BRANCH_STAFF" | "HEAD_OFFICE">(
     member.membershipKind === "HEAD_OFFICE" ? "HEAD_OFFICE" : "BRANCH_STAFF",
   );
   const [position, setPosition] = useState(member.position ?? "");
   const [fullName, setFullName] = useState(member.fullName ?? "");
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(member.branchAccess.map((b) => b.branchId)),
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(initial.selectedBranchIds));
+  const [defaultPermissions, setDefaultPermissions] = useState<ProfIPermissionFlags>(
+    initial.defaultPermissions,
   );
-  const [roleForNew, setRoleForNew] = useState("SELLER");
-  const [branchRoles, setBranchRoles] = useState<Record<string, string>>(() =>
-    Object.fromEntries(member.branchAccess.map((b) => [b.branchId, b.role])),
+  const [branchPermissions, setBranchPermissions] = useState<Record<string, ProfIPermissionFlags>>(
+    initial.branchPermissions,
   );
+  const [permissionsMixed, setPermissionsMixed] = useState(initial.permissionsMixed);
+  const [scopeEditorBranchId, setScopeEditorBranchId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
 
   const branchOptions = overview.branches;
-
-  const rolesDiffer = useMemo(() => {
-    const roles = new Set(member.branchAccess.map((b) => b.role));
-    return roles.size > 1;
-  }, [member.branchAccess]);
 
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {
@@ -64,27 +59,16 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     setDirty(true);
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setBranchPermissions((bp) => {
+          const copy = { ...bp };
+          delete copy[id];
+          return copy;
+        });
+      } else next.add(id);
       return next;
     });
-  }
-
-  async function changeBranchRole(branchId: string, employeeId: string, role: string) {
-    setSaving(true);
-    setError("");
-    try {
-      await remcardFetch(
-        `/api/pro/organization/branches/${encodeURIComponent(branchId)}/employees/${encodeURIComponent(employeeId)}`,
-        { method: "PATCH", body: { role } },
-      );
-      setBranchRoles((prev) => ({ ...prev, [branchId]: role }));
-      onSaved();
-    } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось изменить роль");
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function save(event: FormEvent) {
@@ -103,16 +87,25 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     setSaving(true);
     setError("");
     try {
+      const body: Record<string, unknown> = {
+        organizationId: overview.organization.id,
+        membershipKind,
+        position: position.trim() || null,
+        fullName: fullName.trim() || null,
+        branchIds: [...selected],
+        defaultPermissions,
+        permissionsMixed,
+      };
+      if (permissionsMixed) {
+        const map: Record<string, ProfIPermissionFlags> = {};
+        for (const id of selected) {
+          map[id] = normalizePermissionFlags(branchPermissions[id] ?? defaultPermissions);
+        }
+        body.branchPermissions = map;
+      }
       await remcardFetch(`/api/pro/organization/team-members/${encodeURIComponent(member.userId)}`, {
         method: "PATCH",
-        body: {
-          organizationId: overview.organization.id,
-          membershipKind,
-          position: position.trim() || null,
-          fullName: fullName.trim() || null,
-          branchIds: [...selected],
-          roleForNewBranches: roleForNew,
-        },
+        body,
       });
       onSaved();
       onClose();
@@ -147,6 +140,38 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     }
   }
 
+  const scopeBranch = scopeEditorBranchId
+    ? branchOptions.find((b) => b.id === scopeEditorBranchId)
+    : null;
+
+  if (scopeBranch) {
+    const scopeFlags = normalizePermissionFlags(
+      branchPermissions[scopeBranch.id] ?? defaultPermissions,
+    );
+    return (
+      <div className={teamStyles.wizardBackdrop} role="dialog" aria-modal="true">
+        <div className={teamStyles.wizardPanel}>
+          <div className={teamStyles.wizardHead}>
+            <h3>Права в {scopeBranch.name}</h3>
+            <Button type="button" variant="secondary" onClick={() => setScopeEditorBranchId(null)}>
+              Назад
+            </Button>
+          </div>
+          <div className={teamStyles.wizardBody}>
+            <ProfileTeamPermissionMatrix
+              value={scopeFlags}
+              onChange={(next) => {
+                setDirty(true);
+                setPermissionsMixed(true);
+                setBranchPermissions((prev) => ({ ...prev, [scopeBranch.id]: next }));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
       <form className={styles.modalPanel} onSubmit={(e) => void save(e)}>
@@ -154,12 +179,6 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         <p className={styles.hint}>
           {member.fullName || member.displayName} · {member.publicId}
         </p>
-        {rolesDiffer ? (
-          <p className={styles.bannerWarn}>
-            Роли по филиалам различаются — меняйте каждый филиал отдельно ниже. При добавлении
-            нового филиала будет роль «{roleLabel(roleForNew)}».
-          </p>
-        ) : null}
         {error ? (
           <p className={styles.error} role="alert">
             {error}
@@ -195,12 +214,28 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           }}
         />
         <fieldset className={styles.fieldset}>
+          <legend>Общий набор прав</legend>
+          <ProfileTeamPermissionMatrix
+            value={defaultPermissions}
+            onChange={(next) => {
+              setDirty(true);
+              setDefaultPermissions(next);
+            }}
+            disabled={saving || revoking}
+          />
+        </fieldset>
+        <fieldset className={styles.fieldset}>
           <legend>Доступ к филиалам</legend>
           {branchOptions.length === 0 ? (
             <p className={styles.hint}>Без доступа к операциям филиалов (филиалов пока нет).</p>
           ) : (
             branchOptions.map((b) => {
-              const access = member.branchAccess.find((x) => x.branchId === b.id);
+              const count = effectiveActionIdsForBranch({
+                permissionsMixed,
+                defaultPermissions,
+                branchPermissions,
+                branchId: b.id,
+              }).length;
               return (
                 <div key={b.id} className={styles.chipGrid}>
                   <label className={styles.checkRow}>
@@ -210,25 +245,16 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
                       checked={selected.has(b.id)}
                       onChange={() => toggleBranch(b.id)}
                     />
-                    {b.name} ({b.city})
+                    {b.name} ({b.city}){selected.has(b.id) ? ` · ${count} разрешений` : ""}
                   </label>
-                  {access ? (
-                    <label className={styles.checkRow}>
-                      Роль в филиале
-                      <select
-                        value={branchRoles[b.id] ?? access.role}
-                        disabled={saving || revoking}
-                        onChange={(e) =>
-                          void changeBranchRole(b.id, access.employeeId, e.target.value)
-                        }
-                      >
-                        {ROLE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                  {selected.has(b.id) && permissionsMixed ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setScopeEditorBranchId(b.id)}
+                    >
+                      Настроить права
+                    </Button>
                   ) : null}
                 </div>
               );
@@ -236,20 +262,23 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           )}
         </fieldset>
         <label className={styles.checkRow}>
-          Роль для новых филиалов
-          <select
-            value={roleForNew}
+          <input
+            type="checkbox"
+            checked={permissionsMixed}
             onChange={(e) => {
               setDirty(true);
-              setRoleForNew(e.target.value);
+              const on = e.target.checked;
+              setPermissionsMixed(on);
+              if (on) {
+                const map: Record<string, ProfIPermissionFlags> = { ...branchPermissions };
+                for (const id of selected) {
+                  if (!map[id]) map[id] = normalizePermissionFlags(defaultPermissions);
+                }
+                setBranchPermissions(map);
+              }
             }}
-          >
-            {ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          />
+          Разные права по подразделениям
         </label>
         <div className={styles.modalActions}>
           <Button type="submit" disabled={saving || revoking || !dirty}>

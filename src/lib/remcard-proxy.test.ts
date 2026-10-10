@@ -279,6 +279,14 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/transactions"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/wallet/settlements"), true);
     assert.equal(
+      isAllowedProxyRoute("GET", "/api/pro/organization/permission-templates"),
+      true,
+    );
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/organization/permission-templates"),
+      true,
+    );
+    assert.equal(
       isAllowedProxyRoute("PATCH", "/api/pro/organization/branches/br_krd_partizan"),
       true,
     );

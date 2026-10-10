@@ -25,6 +25,7 @@ export default defineConfig({
       "src/lib/branch-working-hours.test.ts",
       "src/lib/branch-catalog-preview.test.ts",
       "src/lib/profile-branch-save.test.ts",
+      "src/lib/prof-i-team-ui.test.ts",
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
     ],
