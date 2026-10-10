@@ -28,6 +28,7 @@ export default defineConfig({
       "src/lib/prof-i-team-ui.test.ts",
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
+      "src/lib/theme-preference.test.ts",
     ],
     testTimeout: 30_000,
   },

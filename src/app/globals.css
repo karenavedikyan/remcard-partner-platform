@@ -3,25 +3,31 @@
  * (karenavedikyan-remcard-navigator-1351.twc1.net, ОПТОВИК demo).
  */
 :root {
-  --bg: #f5f5f4;
+  color-scheme: light;
+  --bg: #f6f5f3;
   --surface: #ffffff;
-  --offset: #f0f1f0;
-  --ink: #1a1f1d;
-  --muted: #68716e;
-  --line: rgba(29, 46, 38, 0.11);
+  --offset: #f2f1ee;
+  --ink: #252923;
+  --muted: #6c706a;
+  --line: #e5e5df;
   --primary: #c12b2f;
-  --primary-hover: #a82428;
-  --soft: #fdeeed;
-  --green: #276648;
-  --green-soft: #ecf5ee;
+  --primary-hover: #a72226;
+  --red: var(--primary);
+  --red-hover: var(--primary-hover);
+  --soft: #fcf0ed;
+  --green: #35684b;
+  --green-soft: #eef5ef;
+  --amber: #865c20;
+  --amber-soft: #fbf3e3;
   --dark: #253e35;
   --on-dark: #f8fcf8;
-  --shadow: 0 1px 3px rgba(25, 48, 38, 0.06), 0 12px 32px rgba(25, 48, 38, 0.06);
+  --shadow: 0 24px 80px rgba(39, 43, 36, 0.15);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --sidebar-width: 15.75rem;
-  --content-max: 72rem;
+  --sidebar-width: 14.875rem;
+  --content-max: 81.875rem;
+  --topbar-height: 4.75rem;
 
   --font-body: "Manrope", sans-serif;
   --text-xs: clamp(0.75rem, 0.73rem + 0.1vw, 0.8rem);
@@ -42,19 +48,24 @@
 }
 
 [data-theme="dark"] {
-  --bg: #131917;
-  --surface: #1c2421;
-  --offset: #25312b;
-  --ink: #eaf0ec;
-  --muted: #a6b5ac;
-  --line: rgba(210, 236, 220, 0.14);
-  --primary: #f3786d;
-  --primary-hover: #ff9288;
-  --soft: #372a27;
-  --green: #a4d2b1;
-  --green-soft: #253b2c;
+  color-scheme: dark;
+  --bg: #171a17;
+  --surface: #202520;
+  --offset: #2b312b;
+  --ink: #f0f1ec;
+  --muted: #a6aea4;
+  --line: #394038;
+  --primary: #ef8a86;
+  --primary-hover: #ffaaa4;
+  --red: var(--primary);
+  --red-hover: var(--primary-hover);
+  --soft: #3c2928;
+  --green: #acd5b8;
+  --green-soft: #293d30;
+  --amber: #e5c18a;
+  --amber-soft: #3c3424;
   --dark: #293f36;
-  --shadow: 0 16px 50px rgba(0, 0, 0, 0.19);
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
 }
 
 *,
@@ -104,11 +115,35 @@ p {
   color: var(--muted);
 }
 
-button {
+button,
+input,
+select,
+textarea {
   font: inherit;
+  color: inherit;
+}
+
+button {
   cursor: pointer;
   border: 0;
-  color: inherit;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 :focus-visible {

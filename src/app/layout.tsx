@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { buildSiteLinkMetadata } from "@/lib/site-opengraph";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme-preference";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -22,8 +24,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <body className={manrope.className}>{children}</body>
+    <html lang="ru" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: THEME_BOOT_SCRIPT,
+          }}
+        />
+      </head>
+      <body className={manrope.className}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
