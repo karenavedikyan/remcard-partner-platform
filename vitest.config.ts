@@ -31,6 +31,7 @@ export default defineConfig({
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
       "src/lib/theme-preference.test.ts",
       "src/lib/prof-notifications.test.ts",
+      "src/lib/prof-notification-target.test.ts",
     ],
     testTimeout: 30_000,
   },

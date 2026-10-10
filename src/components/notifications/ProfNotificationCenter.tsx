@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useProfNotifications } from "@/hooks/useProfNotifications";
+import { ProfNotificationRowActions } from "./ProfNotificationRowActions";
 import styles from "./ProfNotifications.module.css";
 
 export function ProfNotificationCenter() {
@@ -62,16 +62,10 @@ export function ProfNotificationCenter() {
               {item.action.requiresAction && item.action.actionLabel ? (
                 <span className={styles.actionTag}>Требует действия · {item.action.actionLabel}</span>
               ) : null}
-              <div className={styles.rowActions}>
-                <Button type="button" variant="secondary" onClick={() => void notifications.markRead(item.id)}>
-                  Отметить прочитанным
-                </Button>
-                {item.url ? (
-                  <Link href={item.url.startsWith("/") ? item.url : "/notifications"}>
-                    <Button type="button">Перейти</Button>
-                  </Link>
-                ) : null}
-              </div>
+              <ProfNotificationRowActions
+                item={item}
+                onMarkRead={notifications.markRead}
+              />
             </li>
           ))}
         </ul>

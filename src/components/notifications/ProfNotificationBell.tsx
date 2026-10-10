@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useProfNotifications } from "@/hooks/useProfNotifications";
 import type { ProfNotificationItem } from "@/lib/prof-notifications";
+import { ProfNotificationRowActions } from "./ProfNotificationRowActions";
 import styles from "./ProfNotifications.module.css";
 
 function BellIcon() {
@@ -34,17 +35,6 @@ function formatWhen(iso: string): string {
   }
 }
 
-function hrefForItem(url: string | null): string {
-  if (!url) return "/notifications";
-  if (url.startsWith("/")) return url;
-  try {
-    const u = new URL(url);
-    return u.pathname + u.search;
-  } catch {
-    return "/notifications";
-  }
-}
-
 function NotificationRow({
   item,
   onMarkRead,
@@ -54,7 +44,6 @@ function NotificationRow({
   onMarkRead: (id: string) => void;
   onNavigate: () => void;
 }) {
-  const target = hrefForItem(item.url);
   return (
     <li className={`${styles.card} ${item.isRead ? "" : styles.cardUnread}`}>
       <div className={styles.cardTitle}>{item.title}</div>
@@ -63,16 +52,7 @@ function NotificationRow({
       {item.action.requiresAction && item.action.actionLabel ? (
         <span className={styles.actionTag}>Требует действия · {item.action.actionLabel}</span>
       ) : null}
-      <div className={styles.rowActions}>
-        <Button type="button" variant="secondary" onClick={() => void onMarkRead(item.id)}>
-          Отметить прочитанным
-        </Button>
-        <Link href={target} onClick={onNavigate}>
-          <Button type="button" onClick={() => void onMarkRead(item.id)}>
-            Перейти
-          </Button>
-        </Link>
-      </div>
+      <ProfNotificationRowActions item={item} onMarkRead={onMarkRead} onNavigate={onNavigate} />
     </li>
   );
 }
