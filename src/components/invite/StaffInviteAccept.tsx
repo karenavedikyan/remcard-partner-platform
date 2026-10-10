@@ -13,9 +13,12 @@ import styles from "./InviteLanding.module.css";
 
 type PreviewOk = {
   status: "PENDING";
-  employer: { displayName: string; type: "BRANCH" | "SOLO_PARTNER" };
+  employer: { displayName: string; type: "BRANCH" | "SOLO_PARTNER" | "ORGANIZATION" };
   role: string;
   position: string | null;
+  membershipKind?: string | null;
+  branchLabels?: string[];
+  allCurrentBranchesSnapshot?: boolean;
   expiresAt: string;
 };
 
@@ -189,9 +192,21 @@ export function StaffInviteAccept() {
           <span className={styles.eyebrow}>RemCard PROF</span>
           <h1 className={styles.title}>Приглашение в команду</h1>
           <p className={styles.lead}>
-            {pending.employer.displayName} приглашает вас как {roleLabelRu(pending.role)}
-            {pending.position ? ` (${pending.position})` : ""}.
+            {pending.employer.displayName} приглашает вас как сотрудника ({roleLabelRu(pending.role)}
+            {pending.position ? ` · ${pending.position}` : ""}). Это приглашение в команду, не
+            партнёрство и не публикация в каталоге.
           </p>
+          {pending.employer.type === "ORGANIZATION" ? (
+            <p className={styles.meta}>
+              {pending.membershipKind === "HEAD_OFFICE" ? "Головной офис" : "Сотрудник филиалов"}
+              {pending.branchLabels?.length
+                ? ` · филиалы: ${pending.branchLabels.join(", ")}`
+                : " · без доступа к операциям филиалов"}
+              {pending.allCurrentBranchesSnapshot
+                ? " · набор «все текущие филиалы» (новые добавляются отдельно)"
+                : ""}
+            </p>
+          ) : null}
           <p className={styles.meta}>
             Срок действия: {new Date(pending.expiresAt).toLocaleString("ru-RU")}
           </p>

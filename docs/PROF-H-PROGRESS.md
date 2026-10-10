@@ -4,8 +4,16 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `cba0a4b2` | **`7d2879fa`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `8c8f25e` | **`db46c7c`** |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `ceebccc1` | **(H5 commit pending push)** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `80fc5f1` | **(H5 commit pending push)** |
+
+## PROF-H5 — organization team (2026-10-10)
+
+- Reuse map: `docs/PROF-H5-REUSE-MAP.md` (both repos).
+- Backend: `OrganizationMember`, `InviteScope.ORGANIZATION`, multi-branch invites/accept, `team` in employees-overview, owner `team-members` PATCH/DELETE, multi-branch `getProContext` + `remcard-pro-branch` cookie.
+- Platform: team UI, org invite form, member editor, branch switcher, BFF allowlist.
+- PG: `profH5Team.integration.test.ts` (A, E, G) on `remcard_prof_test`.
+- Acceptance: `docs/PROF-H5-ACCEPTANCE.md` — browser 1440/390 **NOT VERIFIED** (stub script only).
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 

@@ -8,7 +8,10 @@ export type EmployeesOverviewResponse = {
     totalEmployees: number;
     byRole: { MANAGER: number; SELLER: number; VIEWER: number };
     pendingInvites: number;
+    uniqueEmployees?: number;
   };
+  team?: TeamMemberRow[];
+  organizationPendingInvites?: OrganizationPendingInviteRow[];
   branches: Array<{
     id: string;
     name: string;
@@ -44,6 +47,39 @@ export type EmployeesOverviewResponse = {
     canManageEmployeesByBranchId: Record<string, boolean>;
     canManageSoloPartnerEmployees?: boolean;
   };
+};
+
+export type TeamMemberRow = {
+  userId: string;
+  displayName: string;
+  publicId: string;
+  photoUrl: string | null;
+  lastActiveAt: string | null;
+  fullName: string | null;
+  position: string | null;
+  membershipKind: "BRANCH_STAFF" | "HEAD_OFFICE" | "LEGACY";
+  orgMemberStatus: string | null;
+  branchAccess: Array<{
+    employeeId: string;
+    branchId: string;
+    branchName: string;
+    city: string;
+    role: string;
+    permissions: Record<string, boolean>;
+  }>;
+};
+
+export type OrganizationPendingInviteRow = {
+  id: string;
+  role: string;
+  position: string | null;
+  fullName: string | null;
+  membershipKind: string | null;
+  branchIds: string[];
+  allCurrentBranchesSnapshot: boolean;
+  createdAt: string;
+  expiresAt: string;
+  status: string;
 };
 
 /** Fixture shape from navigator route.test.ts (ORG_OWNER). */

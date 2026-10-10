@@ -38,6 +38,7 @@ import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { ProfileBranchContextSwitcher } from "./ProfileBranchContextSwitcher";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
@@ -457,6 +458,7 @@ export function ProfileEditor({
         className={`${styles.grid} ${showAside ? "" : styles.gridSingle}`}
       >
       <div className={styles.main}>
+        <ProfileBranchContextSwitcher />
         {activeSection === "overview" ? (
           <ProfileOverviewSection
             profile={profile}
