@@ -711,7 +711,7 @@ function ProfileEditorInner({
           />
         ) : null}
 
-        {activeSection === "team" ? <ProfileTeamSection /> : null}
+        {activeSection === "team" ? <ProfileTeamSection fixtureOverview={fixtureOverview} /> : null}
 
         {activeSection === "notifications" ? (
           <NotificationSettingsPanel

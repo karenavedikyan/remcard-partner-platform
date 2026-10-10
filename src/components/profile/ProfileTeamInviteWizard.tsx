@@ -24,6 +24,7 @@ export type InviteWizardScope = "ORGANIZATION" | "BRANCH" | "SOLO_PARTNER";
 type Props = {
   overview: EmployeesOverviewResponse;
   initialScope?: InviteWizardScope;
+  initialBranchId?: string;
   onClose: () => void;
   onCreated: (url: string) => void;
 };
@@ -62,11 +63,21 @@ function defaultDraft(): {
   };
 }
 
-export function ProfileTeamInviteWizard({ overview, initialScope, onClose, onCreated }: Props) {
+export function ProfileTeamInviteWizard({
+  overview,
+  initialScope,
+  initialBranchId,
+  onClose,
+  onCreated,
+}: Props) {
   const [draft, setDraft] = useState(() => {
     const base = defaultDraft();
     if (initialScope) base.scope = initialScope;
-    if (overview.branches[0]?.id) base.branchId = overview.branches[0].id;
+    const branchId = initialBranchId ?? overview.branches[0]?.id;
+    if (branchId) {
+      base.branchId = branchId;
+      base.selectedBranchIds = new Set([branchId]);
+    }
     return base;
   });
   const [orgTemplates, setOrgTemplates] = useState<OrganizationPermissionTemplate[]>([]);
@@ -367,9 +378,11 @@ export function ProfileTeamInviteWizard({ overview, initialScope, onClose, onCre
           <aside className={styles.asideNote}>
             <strong>Начисление ≠ выплата</strong>
             <p className={formStyles.hint}>
-              Начисление сохраняется в истории; выплата добавляется отдельной операцией.
+              Начисление сохраняется в истории; выплата добавляется отдельной операцией. Подготовка, отказ
+              или ошибка перевода не уменьшают остаток.
             </p>
             <p className={formStyles.hint}>
+              Отметка перевода фиксирует уже выполненный перевод — не инициирует банковский платёж.
               Название должности не выдаёт права. Управление владельцем и удаление организации не входят в
               наборы.
             </p>

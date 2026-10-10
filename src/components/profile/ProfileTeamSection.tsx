@@ -1,36 +1,42 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  blockedTeamSectionMessage,
-} from "@/lib/profile-cabinet-access";
+import { blockedTeamSectionMessage } from "@/lib/profile-cabinet-access";
 import { useProfileCabinetAccess } from "./ProfileCabinetAccessContext";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   canManageTeam,
   type EmployeesOverviewResponse,
-  type OrganizationPendingInviteRow,
   type TeamMemberRow,
 } from "@/lib/employees-overview-types";
-import { summarizeMemberAccess } from "@/lib/prof-i-member-permissions";
+import {
+  computeTeamStats,
+  filterTeamMembers,
+  formatAccessScopeLabel,
+  HEAD_OFFICE_LOCATION_ID,
+  memberDisplayName,
+  memberInitials,
+  memberMatchesLocation,
+  memberRoleSummary,
+  mergePendingInvites,
+  resolveDisplayTeam,
+  canEditTeamMember,
+  type TeamSectionView,
+  type UnifiedPendingInvite,
+} from "@/lib/team-section-model";
 import { Button } from "@/components/ui/Button";
-import { Panel } from "@/components/ui/Panel";
-import { TextField } from "@/components/ui/FormField";
-import { ProfileTeamEmployeeCard } from "./ProfileTeamEmployeeCard";
 import {
   ProfileSoloPartnerEmployeeCard,
   type SoloPartnerEmployeeRow,
 } from "./ProfileSoloPartnerEmployeeCard";
 import { ProfileTeamMemberEditor } from "./ProfileTeamMemberEditor";
-import { ProfileTeamInviteWizard, type InviteWizardScope } from "./ProfileTeamInviteWizard";
-import teamStyles from "./ProfileTeamPermissions.module.css";
-import styles from "./ProfileEditor.module.css";
-
-function membershipLabel(kind: string | null | undefined): string {
-  if (kind === "HEAD_OFFICE") return "Головной офис";
-  if (kind === "BRANCH_STAFF") return "Сотрудник филиалов";
-  return "Команда";
-}
+import {
+  ProfileTeamInviteWizard,
+  type InviteWizardScope,
+} from "./ProfileTeamInviteWizard";
+import { ProfileTeamPermissionsHelpDialog } from "./ProfileTeamPermissionsHelpDialog";
+import styles from "./ProfileTeamSection.module.css";
+import formStyles from "./ProfileEditor.module.css";
 
 type StaffInviteRow = {
   id: string;
@@ -55,11 +61,18 @@ async function copyInviteUrl(url: string): Promise<boolean> {
   }
 }
 
-export function ProfileTeamSection() {
+type ProfileTeamSectionProps = {
+  /** Dev-fixture only: skip network and render mock overview. */
+  fixtureOverview?: EmployeesOverviewResponse;
+};
+
+export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps = {}) {
   const { canOpenTeamSection, contextReady } = useProfileCabinetAccess();
   const fetchGenerationRef = useRef(0);
-  const [overview, setOverview] = useState<EmployeesOverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState<EmployeesOverviewResponse | null>(
+    fixtureOverview ?? null,
+  );
+  const [loading, setLoading] = useState(!fixtureOverview);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [copyFailed, setCopyFailed] = useState(false);
@@ -67,13 +80,24 @@ export function ProfileTeamSection() {
   const [invites, setInvites] = useState<StaffInviteRow[]>([]);
   const [soloEmployees, setSoloEmployees] = useState<SoloPartnerEmployeeRow[]>([]);
   const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [view, setView] = useState<TeamSectionView>("people");
   const [editMember, setEditMember] = useState<TeamMemberRow | null>(null);
-  const [showAllInvites, setShowAllInvites] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardScope, setWizardScope] = useState<InviteWizardScope | undefined>();
+  const [wizardBranchId, setWizardBranchId] = useState<string | undefined>();
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const load = useCallback(async () => {
+    if (fixtureOverview) {
+      setOverview(fixtureOverview);
+      setLoading(false);
+      setError("");
+      if (canManageTeam(fixtureOverview)) {
+        setInvites([]);
+      }
+      return;
+    }
     if (!contextReady || !canOpenTeamSection) {
       setOverview(null);
       setInvites([]);
@@ -96,6 +120,8 @@ export function ProfileTeamSection() {
           "/api/pro/invites?status=PENDING&limit=200",
         );
         setInvites(inv.invites ?? []);
+      } else {
+        setInvites([]);
       }
       if (data.myRole === "SOLO_PARTNER") {
         const solo = await remcardFetch<{ employees: SoloPartnerEmployeeRow[] }>("/api/pro/employees");
@@ -116,40 +142,61 @@ export function ProfileTeamSection() {
         setLoading(false);
       }
     }
-  }, [canOpenTeamSection, contextReady]);
+  }, [canOpenTeamSection, contextReady, fixtureOverview]);
 
   useEffect(() => {
+    if (fixtureOverview) return;
     fetchGenerationRef.current += 1;
     setOverview(null);
     setInvites([]);
     setSoloEmployees([]);
     setError("");
-  }, [canOpenTeamSection, contextReady]);
+  }, [canOpenTeamSection, contextReady, fixtureOverview]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const teamRows = useMemo(() => {
-    const team = overview?.team ?? [];
-    const q = search.trim().toLowerCase();
-    return team.filter((m) => {
-      const hay = `${m.fullName ?? ""} ${m.displayName} ${m.publicId}`.toLowerCase();
-      if (q && !hay.includes(q)) return false;
-      if (branchFilter === "HEAD_OFFICE") {
-        return m.membershipKind === "HEAD_OFFICE";
-      }
-      if (branchFilter) {
-        return m.branchAccess.some((b) => b.branchId === branchFilter);
-      }
-      return true;
-    });
-  }, [overview?.team, search, branchFilter]);
+  const displayTeam = useMemo(
+    () => (overview ? resolveDisplayTeam(overview) : []),
+    [overview],
+  );
 
-  const orgPending: OrganizationPendingInviteRow[] = overview?.organizationPendingInvites ?? [];
-  const visibleOrgPending = showAllInvites ? orgPending : orgPending.slice(0, 10);
+  const pendingUnified = useMemo(
+    () =>
+      overview
+        ? mergePendingInvites({ overview, staffInvites: invites })
+        : ([] as UnifiedPendingInvite[]),
+    [overview, invites],
+  );
+
+  const stats = useMemo(
+    () =>
+      overview
+        ? computeTeamStats(overview, displayTeam, pendingUnified)
+        : { employees: 0, branches: 0, headOffice: 0, pendingInvites: 0 },
+    [overview, displayTeam, pendingUnified],
+  );
+
+  const filteredMembers = useMemo(
+    () =>
+      filterTeamMembers({
+        members: displayTeam,
+        query: search,
+        locationFilter: locationFilter === "all" ? "all" : locationFilter,
+      }),
+    [displayTeam, search, locationFilter],
+  );
+
+  const locationOptions = useMemo(() => {
+    if (!overview) return [];
+    const opts = overview.branches.map((b) => ({ id: b.id, label: b.name }));
+    opts.unshift({ id: HEAD_OFFICE_LOCATION_ID, label: "Головной офис" });
+    return opts;
+  }, [overview]);
 
   async function revokeInvite(id: string) {
+    if (fixtureOverview) return;
     setError("");
     try {
       await remcardFetch(`/api/pro/invites/${encodeURIComponent(id)}`, { method: "DELETE" });
@@ -160,240 +207,406 @@ export function ProfileTeamSection() {
   }
 
   const canManage = overview ? canManageTeam(overview) : false;
-  const uniqueCount =
-    overview?.summary.uniqueEmployees ?? overview?.summary.totalEmployees ?? 0;
-  const pendingCount = overview?.summary.pendingInvites ?? 0;
 
-  function openWizard(scope?: InviteWizardScope) {
+  function openWizard(scope?: InviteWizardScope, branchId?: string) {
     setWizardScope(scope);
+    setWizardBranchId(branchId);
     setWizardOpen(true);
+  }
+
+  function renderPersonRow(member: TeamMemberRow) {
+    const scope = formatAccessScopeLabel(member, overview?.branches.length ?? 0);
+    const role = memberRoleSummary(member);
+    const chipClass =
+      member.membershipKind === "HEAD_OFFICE" && member.branchAccess.length === 0
+        ? styles.scopeChipOffice
+        : styles.scopeChip;
+    return (
+      <article key={member.userId} className={styles.person} data-testid={`person-${member.userId}`}>
+        <div className={styles.personIdentity}>
+          <span className={styles.avatar} aria-hidden="true">
+            {member.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={member.photoUrl} alt="" />
+            ) : (
+              memberInitials(memberDisplayName(member))
+            )}
+          </span>
+          <div>
+            <strong>{memberDisplayName(member)}</strong>
+            <small>{member.position?.trim() || "Сотрудник"}</small>
+          </div>
+        </div>
+        <div>
+          <span className={styles.roleLabel}>{role.title}</span>
+          <small>{role.hint}</small>
+        </div>
+        <div>
+          <span className={chipClass}>{scope.primary}</span>
+          <small>{scope.secondary}</small>
+        </div>
+        {canManage && overview && canEditTeamMember(overview, member) ? (
+          <div className={styles.personActions}>
+            <Button type="button" variant="secondary" onClick={() => setEditMember(member)}>
+              Доступы
+            </Button>
+          </div>
+        ) : (
+          <span />
+        )}
+      </article>
+    );
+  }
+
+  function renderPeopleView() {
+    if (filteredMembers.length === 0) {
+      return (
+        <div className={styles.empty}>
+          <h3>{search.trim() ? "Сотрудники не найдены" : "Пока нет сотрудников"}</h3>
+          <p>
+            {search.trim()
+              ? "Попробуйте другое имя, должность или выберите все подразделения."
+              : "Пригласите сотрудника и настройте доступ к подразделениям."}
+          </p>
+          {search.trim() || locationFilter !== "all" ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setSearch("");
+                setLocationFilter("all");
+              }}
+            >
+              Сбросить поиск
+            </Button>
+          ) : canManage ? (
+            <Button type="button" data-testid="team-open-invite-wizard" onClick={() => openWizard()}>
+              Пригласить сотрудника
+            </Button>
+          ) : null}
+        </div>
+      );
+    }
+    return (
+      <div className={styles.list}>
+        <div className={styles.listHead}>
+          <span>Сотрудник</span>
+          <span>Разрешённые действия</span>
+          <span>Область доступа</span>
+          <span />
+        </div>
+        {filteredMembers.map(renderPersonRow)}
+      </div>
+    );
+  }
+
+  function renderLocationsView() {
+    if (!overview) return null;
+    const locations = [
+      ...overview.branches.map((b) => ({
+        id: b.id,
+        name: b.name,
+        meta: `${b.city} · ${b.address}`,
+        isOffice: false,
+      })),
+      {
+        id: HEAD_OFFICE_LOCATION_ID,
+        name: "Головной офис",
+        meta: "Офисные задачи, без автоматического доступа к магазинам",
+        isOffice: true,
+      },
+    ].filter((loc) => locationFilter === "all" || locationFilter === loc.id);
+
+    return (
+      <>
+        <div className={styles.locationGrid}>
+          {locations.map((loc) => {
+            const rows = displayTeam.filter((m) => memberMatchesLocation(m, loc.id));
+            return (
+              <section key={loc.id} className={styles.location}>
+                <div className={styles.locationHead}>
+                  <h3>{loc.name}</h3>
+                </div>
+                <p className={styles.locationMeta}>
+                  {loc.meta} · {rows.length} в команде
+                </p>
+                {rows.length === 0 ? (
+                  <p className={formStyles.hint}>Пока нет сотрудников с доступом</p>
+                ) : (
+                  rows.map((m) => (
+                    <div key={`${loc.id}-${m.userId}`} className={styles.miniPerson}>
+                      <div>
+                        <strong>{memberDisplayName(m)}</strong>
+                        <small>{m.position?.trim() || memberRoleSummary(m).title}</small>
+                      </div>
+                      {canManage && canEditTeamMember(overview, m) ? (
+                        <Button type="button" variant="secondary" onClick={() => setEditMember(m)}>
+                          Доступы
+                        </Button>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+                {canManage && !loc.isOffice ? (
+                  <Button type="button" variant="secondary" onClick={() => openWizard("BRANCH", loc.id)}>
+                    Пригласить сюда
+                  </Button>
+                ) : null}
+              </section>
+            );
+          })}
+        </div>
+        <p className={styles.footerNote}>
+          Один человек может отображаться в нескольких подразделениях. В общем счётчике каждый сотрудник
+          учтён один раз.
+        </p>
+      </>
+    );
+  }
+
+  function renderInvitesView() {
+    if (pendingUnified.length === 0) {
+      return (
+        <div className={styles.empty}>
+          <h3>Все приглашения обработаны</h3>
+          <p>Новые приглашения появятся здесь до принятия сотрудником.</p>
+          {canManage ? (
+            <Button type="button" onClick={() => openWizard()}>
+              Пригласить сотрудника
+            </Button>
+          ) : null}
+        </div>
+      );
+    }
+    return pendingUnified.map((inv) => (
+      <article key={inv.id} className={styles.inviteRow}>
+        <div className={styles.inviteRowHead}>
+          <div>
+            <strong>{inv.label}</strong>
+            <p>
+              {inv.position?.trim() || "Сотрудник"} · {inv.scopeLabel}
+              {inv.expiresAt
+                ? ` · до ${new Date(inv.expiresAt).toLocaleDateString("ru-RU")}`
+                : ""}
+            </p>
+          </div>
+          <span className={styles.pendingBadge}>Ожидает принятия</span>
+        </div>
+        <div className={styles.inviteActions}>
+          {inv.url ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                void copyInviteUrl(inv.url!).then((ok) => {
+                  if (ok) setMessage("Ссылка скопирована");
+                  else setCopyFailed(true);
+                })
+              }
+            >
+              Скопировать ссылку
+            </Button>
+          ) : null}
+          {canManage && inv.revokeId && !fixtureOverview ? (
+            <Button type="button" variant="secondary" onClick={() => void revokeInvite(inv.revokeId!)}>
+              Отозвать
+            </Button>
+          ) : null}
+        </div>
+      </article>
+    ));
   }
 
   if (!contextReady) {
     return (
-      <Panel title="Сотрудники и доступы">
-        <p className={styles.hint}>Загружаем контекст доступа…</p>
-      </Panel>
+      <div className={styles.stateBlock}>
+        <p className={formStyles.hint}>Загружаем контекст доступа…</p>
+      </div>
     );
   }
 
   if (!canOpenTeamSection) {
     return (
-      <Panel title="Сотрудники и доступы">
-        <p className={styles.hint} role="status">
+      <div className={styles.stateBlock}>
+        <p className={formStyles.hint} role="status">
           {blockedTeamSectionMessage()}
         </p>
-      </Panel>
+      </div>
     );
   }
 
   return (
-    <Panel title="Сотрудники и доступы">
-      <p className={styles.hint}>
-        Должность называете сами. Права выбираете по опциям: продажи, начисления, выплаты и другие
-        задачи. Одна ссылка — один согласованный набор доступов.
-      </p>
-      {loading ? <p className={styles.hint}>Загружаем…</p> : null}
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}{" "}
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            Повторить
+    <div className={styles.root} data-testid="team-section-root">
+      <div className={styles.heading}>
+        <div>
+          <h2>Команда и доступы</h2>
+          <p>
+            Должность называете сами. Права выбираете по опциям: продажи, начисления, выплаты и другие
+            задачи. Одна ссылка — один согласованный набор доступов.
+          </p>
+        </div>
+        {canManage ? (
+          <Button type="button" data-testid="team-open-invite-wizard" onClick={() => openWizard()}>
+            Пригласить сотрудника
           </Button>
-        </p>
+        ) : null}
+      </div>
+
+      {loading ? <p className={formStyles.hint}>Загружаем…</p> : null}
+      {error ? (
+        <div className={styles.errorRow} role="alert">
+          <span>{error}</span>
+          {!fixtureOverview ? (
+            <Button type="button" variant="secondary" onClick={() => void load()}>
+              Повторить
+            </Button>
+          ) : null}
+        </div>
       ) : null}
       {message ? (
-        <p className={styles.success} role="status">
+        <p className={formStyles.success} role="status">
           {message}
         </p>
       ) : null}
+      {copyFailed ? (
+        <p className={formStyles.hint}>Не удалось скопировать — выделите ссылку вручную.</p>
+      ) : null}
       {lastInviteUrl ? (
-        <div className={styles.bannerWarn}>
+        <div className={formStyles.bannerWarn}>
           <p>Ссылка для сотрудника:</p>
           <code>{lastInviteUrl}</code>
-          <Button
-            type="button"
-            onClick={() =>
-              void copyInviteUrl(lastInviteUrl).then((ok) => {
-                if (ok) setCopyFailed(false);
-                else setCopyFailed(true);
-              })
-            }
-          >
-            Копировать
-          </Button>
-          {copyFailed ? (
-            <p className={styles.hint}>Не удалось скопировать — выделите ссылку вручную.</p>
-          ) : null}
         </div>
       ) : null}
 
       {overview && overview.myRole !== "OTHER" ? (
-        <p className={styles.hint}>
-          В команде: <strong>{uniqueCount}</strong> · ожидают приглашения: <strong>{pendingCount}</strong>
-        </p>
-      ) : null}
-
-      {canManage ? (
-        <div className={styles.fields}>
-          <Button type="button" data-testid="team-open-invite-wizard" onClick={() => openWizard()}>
-            Пригласить сотрудника
-          </Button>
+        <div className={styles.stats} data-testid="team-stats">
+          <div className={styles.stat}>
+            <strong>{stats.employees}</strong>
+            <span>сотрудников</span>
+          </div>
+          <div className={styles.stat}>
+            <strong>{stats.branches}</strong>
+            <span>филиалов</span>
+          </div>
+          <div className={styles.stat}>
+            <strong>{stats.headOffice}</strong>
+            <span>в головном офисе</span>
+          </div>
+          <div className={styles.stat}>
+            <strong>{stats.pendingInvites}</strong>
+            <span>приглашения</span>
+          </div>
         </div>
       ) : null}
 
       {overview && overview.myRole === "OTHER" ? (
-        <p className={styles.hint}>Вы не управляете командой этой организации.</p>
+        <p className={formStyles.hint}>Вы не управляете командой этой организации.</p>
       ) : null}
 
-      {overview?.team && overview.team.length > 0 ? (
-        <>
-          <div className={styles.fields}>
-            <TextField
-              label="Поиск по имени"
+      <div className={styles.controls}>
+        <div className={styles.segment} role="group" aria-label="Представление команды">
+          {(
+            [
+              ["people", "Все сотрудники"],
+              ["locations", "По подразделениям"],
+              ["invites", "Приглашения"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={view === id}
+              data-testid={`team-view-${id}`}
+              onClick={() => setView(id)}
+            >
+              {label}
+              {id === "invites" && stats.pendingInvites ? ` (${stats.pendingInvites})` : ""}
+            </button>
+          ))}
+        </div>
+        <Button type="button" variant="secondary" data-testid="team-permissions-help" onClick={() => setHelpOpen(true)}>
+          Должности, права и выплаты
+        </Button>
+      </div>
+
+      {view !== "invites" ? (
+        <div className={styles.toolbar}>
+          <label className={styles.searchWrap}>
+            <span className="sr-only">Поиск</span>
+            <input
+              aria-label="Поиск по имени или должности"
+              placeholder="Имя или должность"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <label className={styles.checkRow}>
-              Фильтр
-              <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)}>
-                <option value="">Все</option>
-                <option value="HEAD_OFFICE">Головной офис (без филиалов)</option>
-                {overview.branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div>
-            {teamRows.map((member) => {
-              const summary = summarizeMemberAccess(member);
-              return (
-                <article key={member.userId} className={teamStyles.personGrid} data-testid={`person-${member.userId}`}>
-                  <div>
-                    <strong>{member.fullName || member.displayName}</strong>
-                    <small>{member.position?.trim() || "Сотрудник"}</small>
-                  </div>
-                  <div>
-                    <span>{summary.subtitle}</span>
-                    <small>Должность не определяет доступ</small>
-                  </div>
-                  <div>
-                    <span>
-                      {membershipLabel(member.membershipKind)}
-                      {member.branchAccess.length
-                        ? ` · ${member.branchAccess.map((b) => b.branchName).join(", ")}`
-                        : " · без доступа к операциям филиалов"}
-                    </span>
-                  </div>
-                  {canManage && overview.myRole === "ORG_OWNER" ? (
-                    <Button type="button" variant="secondary" onClick={() => setEditMember(member)}>
-                      Доступы
-                    </Button>
-                  ) : null}
-                </article>
-              );
-            })}
-          </div>
-        </>
+          </label>
+          <select
+            aria-label="Подразделение"
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+          >
+            <option value="all">Все подразделения</option>
+            {locationOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       ) : null}
 
-      {overview?.branches.length && !overview.team?.length ? (
-        <ul className={`${styles.notesList} ${styles.teamSectionList}`}>
-          {overview.branches.map((branch) => (
-            <li key={branch.id}>
-              <strong className={styles.teamBranchTitle}>
-                {branch.name} ({branch.city})
-              </strong>
-              {branch.employees.length === 0 ? (
-                <p className={styles.hint}>Нет сотрудников</p>
-              ) : (
-                <ul>
-                  {branch.employees.map((emp) => (
-                    <ProfileTeamEmployeeCard
-                      key={emp.id}
-                      branchId={branch.id}
-                      branchName={branch.name}
-                      employee={emp}
-                      allBranches={overview.branches}
-                      canManage={
-                        overview.viewer.canManageEmployeesByBranchId[branch.id] ?? canManage
-                      }
-                      isOwner={overview.viewer.isOrgOwner}
-                      onChanged={load}
-                    />
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : overview?.myRole === "SOLO_PARTNER" ? (
-        <>
-          <p className={styles.hint}>Команда партнёра (без организации и филиалов).</p>
+      <div data-testid="team-view-content">
+        {view === "people" ? renderPeopleView() : null}
+        {view === "locations" ? renderLocationsView() : null}
+        {view === "invites" ? renderInvitesView() : null}
+      </div>
+
+      {overview?.myRole === "SOLO_PARTNER" ? (
+        <div className={styles.soloBlock}>
+          <p className={formStyles.hint}>Команда партнёра (без организации и филиалов).</p>
           {soloEmployees.length > 0 ? (
-            <ul className={styles.notesList}>
+            <ul className={formStyles.notesList}>
               {soloEmployees.map((emp) => (
                 <ProfileSoloPartnerEmployeeCard key={emp.id} employee={emp} onChanged={load} />
               ))}
             </ul>
           ) : (
-            <p className={styles.hint}>Пока нет сотрудников — создайте приглашение.</p>
+            <p className={formStyles.hint}>Пока нет сотрудников — создайте приглашение.</p>
           )}
           {canManage ? (
             <Button type="button" variant="secondary" onClick={() => openWizard("SOLO_PARTNER")}>
               Пригласить в SOLO-команду
             </Button>
           ) : null}
-        </>
-      ) : overview && overview.myRole === "ORG_OWNER" && overview.branches.length === 0 ? (
-        <p className={styles.hint}>
+        </div>
+      ) : null}
+
+      {overview && overview.myRole === "ORG_OWNER" && overview.branches.length === 0 && displayTeam.length === 0 ? (
+        <p className={formStyles.hint}>
           Филиалов пока нет — можно пригласить сотрудника головного офиса или добавить филиал.
         </p>
       ) : null}
 
-      {orgPending.length > 0 ? (
-        <>
-          <p className={styles.hint}>Ожидают принятия (организация):</p>
-          <ul className={styles.notesList}>
-            {visibleOrgPending.map((inv) => (
-              <li key={inv.id}>
-                {membershipLabel(inv.membershipKind)} · {inv.position?.trim() || "Сотрудник"}
-                {inv.allCurrentBranchesSnapshot
-                  ? " · все текущие филиалы (новые нужно добавить отдельно)"
-                  : inv.branchIds.length
-                    ? ` · филиалы: ${inv.branchIds.length}`
-                    : " · без филиалов"}
-                {" · до "}
-                {new Date(inv.expiresAt).toLocaleDateString("ru-RU")}
-              </li>
-            ))}
-          </ul>
-          {orgPending.length > 10 && !showAllInvites ? (
-            <Button type="button" variant="secondary" onClick={() => setShowAllInvites(true)}>
-              Показать ещё
-            </Button>
-          ) : null}
-        </>
-      ) : null}
-
-      {invites.length > 0 && canManage ? (
-        <>
-          <p className={styles.hint}>Активные приглашения</p>
-          <ul className={styles.notesList}>
-            {invites.map((inv) => (
-              <li key={inv.id}>
-                {inv.position?.trim() || inv.role} — {inv.status}{" "}
-                <Button type="button" variant="secondary" onClick={() => void revokeInvite(inv.id)}>
-                  Отозвать
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+      <div className={styles.rulebox}>
+        <div>
+          <span className={styles.eyebrow}>Права = что можно делать</span>
+          <p>
+            Один набор можно выдать на один магазин, несколько точек или все текущие филиалы. Новые филиалы
+            не добавляются автоматически.
+          </p>
+        </div>
+        <div>
+          <span className={styles.eyebrow}>Доступ = где можно работать</span>
+          <p>
+            Головной офис выбирается отдельно. Членство HEAD_OFFICE не открывает данные всех филиалов без
+            явного доступа к ним.
+          </p>
+        </div>
+      </div>
+      <p className={styles.footerNote}>
+        Владелец управляет организацией. Приглашённые сотрудники не могут сменить владельца, удалить
+        организацию или повысить собственные права.
+      </p>
 
       {editMember && overview ? (
         <ProfileTeamMemberEditor
@@ -408,6 +621,7 @@ export function ProfileTeamSection() {
         <ProfileTeamInviteWizard
           overview={overview}
           initialScope={wizardScope}
+          initialBranchId={wizardBranchId}
           onClose={() => setWizardOpen(false)}
           onCreated={(url) => {
             setLastInviteUrl(url);
@@ -416,6 +630,8 @@ export function ProfileTeamSection() {
           }}
         />
       ) : null}
-    </Panel>
+
+      {helpOpen ? <ProfileTeamPermissionsHelpDialog onClose={() => setHelpOpen(false)} /> : null}
+    </div>
   );
 }

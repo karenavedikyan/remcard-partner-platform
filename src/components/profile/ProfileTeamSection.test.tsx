@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileTeamSection } from "./ProfileTeamSection";
 import { ProfileCabinetAccessProvider } from "./ProfileCabinetAccessContext";
@@ -6,6 +7,7 @@ import {
   deriveProfileCabinetAccess,
   ownerProfileCabinetAccess,
 } from "@/lib/profile-cabinet-access";
+import { DEV_FIXTURE_EMPLOYEES_OVERVIEW } from "@/lib/dev-profile-fixture-overview";
 import type { ProProfileResponse } from "@/lib/types";
 import { remcardFetch } from "@/lib/api-client";
 
@@ -116,5 +118,37 @@ describe("ProfileTeamSection access gates", () => {
         "/api/pro/organization/employees-overview",
       );
     });
+  });
+});
+
+describe("ProfileTeamSection prototype layout (fixture)", () => {
+  it("renders stats, views, search by position, and unified invites", async () => {
+    const user = userEvent.setup();
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileTeamSection fixtureOverview={DEV_FIXTURE_EMPLOYEES_OVERVIEW} />
+      </ProfileCabinetAccessProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Команда и доступы" })).toBeInTheDocument();
+    expect(screen.getByTestId("team-stats")).toHaveTextContent("5");
+    expect(screen.getByTestId("team-stats")).toHaveTextContent("3");
+    expect(screen.getByTestId("team-stats")).toHaveTextContent("2");
+
+    await user.click(screen.getByTestId("team-view-locations"));
+    expect(screen.getByRole("heading", { name: "Головной офис" })).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("team-view-people"));
+    await user.type(screen.getByLabelText(/Поиск по имени или должности/i), "выплат");
+    expect(screen.getByText("Ирина Морозова")).toBeInTheDocument();
+    expect(screen.queryByText("Мария Иванова")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("team-view-invites"));
+    expect(screen.getAllByText(/Ожидает принятия/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Алексей Кузнецов/i)).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("team-permissions-help"));
+    expect(screen.getByRole("dialog", { name: /Должности, права и выплаты/i })).toBeInTheDocument();
+    expect(screen.getByText(/не инициирует банковский/i)).toBeInTheDocument();
   });
 });
