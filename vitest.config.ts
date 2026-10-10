@@ -29,6 +29,7 @@ export default defineConfig({
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
       "src/lib/theme-preference.test.ts",
+      "src/lib/prof-notifications.test.ts",
     ],
     testTimeout: 30_000,
   },
