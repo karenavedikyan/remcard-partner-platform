@@ -13,13 +13,13 @@
 }
 
 .pending {
-  background: #fff1cc;
-  color: #784500;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 
 .declined {
-  background: #ffe5e8;
-  color: #a8202d;
+  background: var(--soft);
+  color: var(--primary);
 }
 
 .neutral {

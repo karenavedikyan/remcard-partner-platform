@@ -12,6 +12,12 @@
   --line: #e5e5df;
   --primary: #c12b2f;
   --primary-hover: #a72226;
+  --primary-fg: #ffffff;
+  --tab-active-bg: var(--ink);
+  --tab-active-fg: #ffffff;
+  --accent-emphasis: #9f1239;
+  --accent-fill: var(--primary);
+  --accent-on-fill: var(--primary-fg);
   --red: var(--primary);
   --red-hover: var(--primary-hover);
   --soft: #fcf0ed;
@@ -55,8 +61,14 @@
   --ink: #f0f1ec;
   --muted: #a6aea4;
   --line: #394038;
-  --primary: #ef8a86;
-  --primary-hover: #ffaaa4;
+  --primary: #b54844;
+  --primary-hover: #c95550;
+  --primary-fg: #ffffff;
+  --tab-active-bg: #343a34;
+  --tab-active-fg: #f0f1ec;
+  --accent-emphasis: #fda4af;
+  --accent-fill: #b54844;
+  --accent-on-fill: #ffffff;
   --red: var(--primary);
   --red-hover: var(--primary-hover);
   --soft: #3c2928;
@@ -133,6 +145,18 @@ select,
 textarea {
   background: var(--surface);
   border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+select option {
+  background: var(--surface);
+  color: var(--ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

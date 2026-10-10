@@ -22,7 +22,7 @@
 }
 
 .tabActive {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
+  background: var(--tab-active-bg);
+  border-color: var(--tab-active-bg);
+  color: var(--tab-active-fg);
 }

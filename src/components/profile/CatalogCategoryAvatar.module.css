@@ -28,7 +28,7 @@
 .icon {
   width: 3rem;
   height: 3rem;
-  color: var(--color-primary, #e11d48);
+  color: var(--accent-emphasis);
 }
 
 .compact .icon {

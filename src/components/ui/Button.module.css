@@ -20,7 +20,7 @@
 
 .primary {
   background: var(--primary);
-  color: #ffffff;
+  color: var(--primary-fg);
 }
 
 .primary:hover:not(:disabled) {

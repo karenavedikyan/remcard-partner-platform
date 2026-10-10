@@ -49,7 +49,7 @@
 }
 
 .wizardStepActive {
-  color: var(--color-primary, #e11d48);
+  color: var(--accent-emphasis);
   font-weight: 700;
 }
 
@@ -64,9 +64,9 @@
 }
 
 .wizardStepActive .stepBadge {
-  background: var(--color-primary, #e11d48);
-  color: #fff;
-  border-color: var(--color-primary, #e11d48);
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  border-color: var(--accent-fill);
 }
 
 .wizardBody {
@@ -174,7 +174,7 @@
   margin-left: 0.35rem;
   font-size: 0.65rem;
   font-weight: 600;
-  color: var(--color-primary, #e11d48);
+  color: var(--accent-emphasis);
 }
 
 .asideNote {

@@ -112,15 +112,11 @@
   padding: 0 0.4rem;
   border-radius: 999px;
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-fg);
   font-size: 0.65rem;
   font-weight: 700;
   text-align: center;
   line-height: 1.4;
-}
-
-[data-theme="dark"] .navBadge {
-  color: #281a18;
 }
 
 .sidebarFooter {

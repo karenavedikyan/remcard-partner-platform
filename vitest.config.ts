@@ -32,6 +32,7 @@ export default defineConfig({
       "src/lib/theme-preference.test.ts",
       "src/lib/prof-notifications.test.ts",
       "src/lib/prof-notification-target.test.ts",
+      "src/lib/theme-contrast.test.ts",
     ],
     testTimeout: 30_000,
   },

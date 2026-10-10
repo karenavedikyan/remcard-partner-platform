@@ -7,7 +7,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-primary, #e11d48);
+  color: var(--accent-emphasis);
   cursor: pointer;
   text-decoration: underline;
   font: inherit;
