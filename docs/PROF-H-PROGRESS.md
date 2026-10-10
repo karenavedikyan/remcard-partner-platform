@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `11e83db4` | see git log |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `33d4c4e` | see git log |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `2e7e1148` | see git log |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `eef0fc5` | see git log |
 
 ## PROF-H5 — organization team (2026-10-10)
 
@@ -15,6 +15,7 @@
 - PG: `profH5Team.integration.test.ts` (**12 tests**) + `profH5StoreOrder.integration.test.ts` (**2 tests**) on `remcard_prof_test` — matrix A–J including store preview/order.
 - Store regression fix: context-aware purchase gate (owner/SOLO vs branch staff), `canActivateCertificates` enforcement, order history via cabinet readiness for CLIENT employees.
 - Browser: `prof-h5-browser-acceptance.mjs` **PASS** (1440/390) — see `docs/PROF-H5-ACCEPTANCE.md`.
+- Partial revoke pass: `managerId` cleanup, `branchAccessChangedAt` stale-invite guard, `profH5PartialRevoke.integration.test.ts`, browser partial revoke A.
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 

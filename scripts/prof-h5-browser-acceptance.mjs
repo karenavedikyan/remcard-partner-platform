@@ -180,6 +180,55 @@ async function main() {
     await shot(employeePage, "employee-branch-b-persisted-390");
   });
 
+  await runScenario("owner_partial_revoke_branch_a", async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await ctx.newPage();
+    page.on("dialog", (d) => d.accept());
+    await ctx.addCookies([{ name: "remcard-token", value: ownerToken, url: PROF }]);
+    await page.goto(`${PROF}/profile?section=team`, { waitUntil: "networkidle" });
+    const configure = page.getByRole("button", { name: /Настроить доступ/i }).first();
+    await configure.waitFor({ timeout: 20000 });
+    await configure.click();
+    const branchA = page.getByTestId(`team-member-branch-${fixtures.branchAId}`);
+    await branchA.waitFor({ timeout: 15000 });
+    if (await branchA.isChecked()) {
+      await branchA.uncheck();
+    }
+    await page.getByRole("button", { name: /^Сохранить/i }).click();
+    await page.waitForTimeout(2500);
+    await shot(page, "owner-partial-revoke-a-1440");
+    await ctx.close();
+
+    if (!employeePage) throw new Error("employee page not open");
+    const ctxB = await employeePage.evaluate(async (branchBId) => {
+      const r = await fetch("/api/remcard/api/pro/context", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branchId: branchBId }),
+      });
+      return { status: r.status, body: await r.text() };
+    }, fixtures.branchBId);
+    report.diagnostics.afterPartialRevokePatchB = ctxB;
+    if (ctxB.status !== 200) {
+      throw new Error(`expected branch B context PATCH 200 after partial revoke, got ${ctxB.status}`);
+    }
+    const ctxBadA = await employeePage.evaluate(async (branchAId) => {
+      const r = await fetch("/api/remcard/api/pro/context", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branchId: branchAId }),
+      });
+      return { status: r.status, body: await r.text() };
+    }, fixtures.branchAId);
+    report.diagnostics.afterPartialRevokePatchA = ctxBadA;
+    if (ctxBadA.status === 200) {
+      throw new Error("branch A should be forbidden after partial revoke");
+    }
+    await shot(employeePage, "employee-after-partial-revoke-390");
+  });
+
   await runScenario("owner_revoke_via_ui", async () => {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();

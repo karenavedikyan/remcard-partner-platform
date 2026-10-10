@@ -4,8 +4,8 @@ Branch: `feat/prof-h-profile-redesign`
 
 | Repo | Base (given) | HEAD (this pass) |
 |------|--------------|------------------|
-| remcard-navigator | `11e83db4` | see git log after push |
-| remcard-partner-platform | `33d4c4e` | see git log after push |
+| remcard-navigator | `2e7e1148` | see git log after push |
+| remcard-partner-platform | `eef0fc5` | see git log after push |
 
 ## Defect → fix → test → result
 
@@ -18,6 +18,9 @@ Branch: `feat/prof-h-profile-redesign`
 | CLIENT employee 403 on order history after purchase | `resolveStoreOrderListAccess` uses cabinet readiness (not `UserRole.PRO` only) | order detail after create in PG | **PASS** |
 | Browser invite checked «all current» first | `data-testid=team-invite-branch-{id}` on A/B | `prof-h5-browser-acceptance.mjs` | **PASS** |
 | Stale stack / JWT not loaded on `next start` | Clean `.next`, `source .env.local`, `pnpm start` only | browser run | **PASS** |
+| Partial revoke left `Branch.managerId` bypass | Clear `managerId` + `branchAccessChangedAt` in `applyOrganizationTeamBranchSet` | `profH5PartialRevoke` + browser partial | **PASS** |
+| Stale pending invite restored removed branch | `assertStaleStaffInviteBranchGrants` (ORG + legacy BRANCH) | `profH5PartialRevoke` | **PASS** |
+| Sole manager test used `branchIds=[]` (wrong guard) | Real case: sole manager on A, PATCH keep B only → 400 | `profH5PartialRevoke` | **PASS** |
 
 ## Commands (this pass)
 
@@ -27,7 +30,8 @@ Branch: `feat/prof-h-profile-redesign`
 | `pnpm build` (navigator) | 0 | pass |
 | `npm run build` (platform) | 0 | pass |
 | `vitest profH5Team.integration.test.ts` | 0 | **12 passed** |
-| `vitest profH5StoreOrder.integration.test.ts` | 0 | **2 passed** |
+| `vitest profH5PartialRevoke.integration.test.ts` | 0 | **5 passed** |
+| `vitest profH5StoreOrder.integration.test.ts` | 0 | **2 passed** (prior pass; not re-run) |
 | `vitest route.branch.integration.test.ts` (store) | 0 | **5 passed** (with SELLER permission flags in fixture) |
 | `npm run test:proxy` (platform) | 0 | **228 passed** |
 | `node scripts/prof-h5-browser-acceptance.mjs` | 0 | **PASS** (1440 + 390) |
@@ -44,9 +48,9 @@ Stack for browser: navigator `:3001` + platform `:3000`, `JWT_SECRET` from navig
 | D | **PASS** | `profH5Team` HEAD_OFFICE, no `BranchEmployee`, GET context ORG_TEAM_MEMBER |
 | E | **PASS** | `profH5Team` PATCH A+B → B+C preserves B `id` + `canManageCatalog`; membershipKind-only PATCH keeps branch set |
 | F | **PASS** | `profH5Team` non-owner PATCH team → 403 |
-| G | **PASS** | `profH5Team` revoke X, pending invite Y stays PENDING; partial branch remove; org revoke → context 403 |
+| G | **PASS** | **Full revoke:** `profH5Team` org DELETE + context 403. **Partial:** `profH5PartialRevoke` managerId cleared, stale invite blocked, Y pending ok |
 | H | **PASS** | `profH5Team` expired/revoked invite 400; concurrent accept 200+409, one winner; repeat accept idempotent, no notify |
-| I | **PASS** | `profH5Team` legacy BRANCH invite; sole manager bulk PATCH → 400 |
+| I | **PASS** (split) | **Legacy BRANCH accept:** `profH5Team`. **Stale BRANCH after partial revoke:** `profH5PartialRevoke`. **Sole manager:** PATCH A off / keep B → 400 + rollback (`profH5PartialRevoke`). **SOLO suspend/resume:** `profH5PartialRevoke` |
 | J | **PASS** | `profH5Team` CLIENT accept + GET context 200 (cabinet); browser full accept + profile (not context-only) |
 
 Auth: integration tests use real `createToken` cookies (no auth mocks).
@@ -59,8 +63,9 @@ Auth: integration tests use real `createToken` cookies (no auth mocks).
 | Local invite URL (token on PROF) | **PASS** |
 | Employee accept | **PASS** |
 | Branch switch B + reload persistence | **PASS** |
-| Owner revoke via UI (`team-member-revoke-org`) | **PASS** |
-| Stale employee tab: GET/PATCH `/api/remcard/api/pro/context` → 403 | **PASS** |
+| Owner partial revoke A (editor `team-member-branch-*`), employee B ok / A forbidden | **PASS** |
+| Owner full org revoke via UI (`team-member-revoke-org`) | **PASS** |
+| Stale employee tab after full revoke: context → 403 | **PASS** |
 | 390 layout overflow | **PASS** |
 
 Report: `/opt/cursor/artifacts/prof-h5-browser-report.json`  
@@ -72,5 +77,6 @@ Telegram / MAX: **NOT VERIFIED** (by design).
 ## Key files
 
 - Navigator: `src/lib/proContextRequest.ts`, `src/lib/store/storeOrderAccess.ts`, store order preview/POST routes
-- PG: `src/lib/__tests__/profH5Team.integration.test.ts`, `src/lib/__tests__/profH5StoreOrder.integration.test.ts`
+- PG: `profH5Team`, `profH5PartialRevoke`, `profH5StoreOrder` integration tests
+- Partial revoke: `organizationTeam.applyOrganizationTeamBranchSet`, `staffInviteAcceptOrganization`, `OrganizationMember.branchAccessChangedAt`
 - Platform: `scripts/prof-h5-browser-acceptance.mjs`, `ProfileTeamSection` / `ProfileBranchContextSwitcher` test ids

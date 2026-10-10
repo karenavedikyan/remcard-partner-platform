@@ -206,6 +206,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
                   <label className={styles.checkRow}>
                     <input
                       type="checkbox"
+                      data-testid={`team-member-branch-${b.id}`}
                       checked={selected.has(b.id)}
                       onChange={() => toggleBranch(b.id)}
                     />
