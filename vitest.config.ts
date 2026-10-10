@@ -27,6 +27,7 @@ export default defineConfig({
       "src/lib/profile-branch-save.test.ts",
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
+      "src/lib/prof-notifications.test.ts",
     ],
     testTimeout: 30_000,
   },
