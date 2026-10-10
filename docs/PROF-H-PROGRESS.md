@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (given) | HEAD |
 |------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `ceebccc1` | **`c2878c6c`** |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `80fc5f1` | **`f52bcd6`** (+ progress doc) |
+| remcard-navigator | `feat/prof-h-profile-redesign` | `c2878c6c` | **(H5 completion commit)** |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `40a4131` | **(H5 completion commit)** |
 
 ## PROF-H5 — organization team (2026-10-10)
 
@@ -13,7 +13,7 @@
 - Backend: `OrganizationMember`, `InviteScope.ORGANIZATION`, multi-branch invites/accept, `team` in employees-overview, owner `team-members` PATCH/DELETE, multi-branch `getProContext` + `remcard-pro-branch` cookie.
 - Platform: team UI, org invite form, member editor, branch switcher, BFF allowlist.
 - PG: `profH5Team.integration.test.ts` (A, E, G) on `remcard_prof_test`.
-- Acceptance: `docs/PROF-H5-ACCEPTANCE.md` — browser 1440/390 **NOT VERIFIED** (stub script only).
+- Completion pass: snapshot accept fix, BFF branch cookie, CLIENT/head-office readiness, atomic accept claim, targeted revoke, PG A–G/J (**8 tests**), browser script (partial — see acceptance).
 
 ## 1. Working identity — **DONE** (`83a950cb`)
 

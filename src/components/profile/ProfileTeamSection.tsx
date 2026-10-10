@@ -91,12 +91,14 @@ export function ProfileTeamSection() {
       if (data.branches[0]?.id && !branchId) {
         setBranchId(data.branches[0].id);
       }
-      if (data.myRole === "SOLO_PARTNER" || (data.myRole === "ORG_OWNER" && data.branches.length === 0)) {
-        setScope(data.branches.length === 0 ? "SOLO_PARTNER" : "ORGANIZATION");
+      if (data.myRole === "SOLO_PARTNER") {
+        setScope("SOLO_PARTNER");
+      } else if (data.myRole === "ORG_OWNER" && data.branches.length === 0) {
+        setScope("ORGANIZATION");
       }
       if (canManageTeam(data)) {
         const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
-          "/api/pro/invites?status=PENDING&limit=50",
+          "/api/pro/invites?status=PENDING&limit=200",
         );
         setInvites(inv.invites ?? []);
       }
@@ -129,7 +131,7 @@ export function ProfileTeamSection() {
       const hay = `${m.fullName ?? ""} ${m.displayName} ${m.publicId}`.toLowerCase();
       if (q && !hay.includes(q)) return false;
       if (branchFilter === "HEAD_OFFICE") {
-        return m.membershipKind === "HEAD_OFFICE" && m.branchAccess.length === 0;
+        return m.membershipKind === "HEAD_OFFICE";
       }
       if (branchFilter) {
         return m.branchAccess.some((b) => b.branchId === branchFilter);

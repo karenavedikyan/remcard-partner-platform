@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,10 @@ const ROLE_OPTIONS = [
   { value: "MANAGER", label: "Менеджер" },
   { value: "VIEWER", label: "Наблюдатель" },
 ] as const;
+
+function roleLabel(role: string): string {
+  return ROLE_OPTIONS.find((r) => r.value === role)?.label ?? role;
+}
 
 type Props = {
   member: TeamMemberRow;
@@ -30,6 +34,9 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     () => new Set(member.branchAccess.map((b) => b.branchId)),
   );
   const [roleForNew, setRoleForNew] = useState("SELLER");
+  const [branchRoles, setBranchRoles] = useState<Record<string, string>>(() =>
+    Object.fromEntries(member.branchAccess.map((b) => [b.branchId, b.role])),
+  );
   const [saving, setSaving] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +49,17 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     return roles.size > 1;
   }, [member.branchAccess]);
 
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (dirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
   function toggleBranch(id: string) {
     setDirty(true);
     setSelected((prev) => {
@@ -52,10 +70,34 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     });
   }
 
+  async function changeBranchRole(branchId: string, employeeId: string, role: string) {
+    setSaving(true);
+    setError("");
+    try {
+      await remcardFetch(
+        `/api/pro/organization/branches/${encodeURIComponent(branchId)}/employees/${encodeURIComponent(employeeId)}`,
+        { method: "PATCH", body: { role } },
+      );
+      setBranchRoles((prev) => ({ ...prev, [branchId]: role }));
+      onSaved();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось изменить роль");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (membershipKind === "BRANCH_STAFF" && selected.size === 0) {
+    if (membershipKind === "BRANCH_STAFF" && selected.size === 0 && branchOptions.length > 0) {
       setError("Для сотрудника филиалов выберите хотя бы один филиал");
+      return;
+    }
+    if (
+      !window.confirm(
+        "Сохранить изменения доступа? Снятые филиалы перестанут быть доступны сотруднику.",
+      )
+    ) {
       return;
     }
     setSaving(true);
@@ -114,9 +156,8 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         </p>
         {rolesDiffer ? (
           <p className={styles.bannerWarn}>
-            Роли по филиалам различаются — при добавлении нового филиала будет роль «
-            {ROLE_OPTIONS.find((r) => r.value === roleForNew)?.label ?? roleForNew}». Существующие
-            роли не выравниваются автоматически.
+            Роли по филиалам различаются — меняйте каждый филиал отдельно ниже. При добавлении
+            нового филиала будет роль «{roleLabel(roleForNew)}».
           </p>
         ) : null}
         {error ? (
@@ -158,38 +199,70 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           {branchOptions.length === 0 ? (
             <p className={styles.hint}>Без доступа к операциям филиалов (филиалов пока нет).</p>
           ) : (
-            branchOptions.map((b) => (
-              <label key={b.id} className={styles.checkRow}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(b.id)}
-                  onChange={() => toggleBranch(b.id)}
-                />
-                {b.name} ({b.city})
-              </label>
-            ))
+            branchOptions.map((b) => {
+              const access = member.branchAccess.find((x) => x.branchId === b.id);
+              return (
+                <div key={b.id} className={styles.chipGrid}>
+                  <label className={styles.checkRow}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(b.id)}
+                      onChange={() => toggleBranch(b.id)}
+                    />
+                    {b.name} ({b.city})
+                  </label>
+                  {access ? (
+                    <label className={styles.checkRow}>
+                      Роль в филиале
+                      <select
+                        value={branchRoles[b.id] ?? access.role}
+                        disabled={saving || revoking}
+                        onChange={(e) =>
+                          void changeBranchRole(b.id, access.employeeId, e.target.value)
+                        }
+                      >
+                        {ROLE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                </div>
+              );
+            })
           )}
         </fieldset>
-        {rolesDiffer ? (
-          <label className={styles.checkRow}>
-            Роль для новых филиалов
-            <select value={roleForNew} onChange={(e) => setRoleForNew(e.target.value)}>
-              {ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <label className={styles.checkRow}>
+          Роль для новых филиалов
+          <select
+            value={roleForNew}
+            onChange={(e) => {
+              setDirty(true);
+              setRoleForNew(e.target.value);
+            }}
+          >
+            {ROLE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className={styles.modalActions}>
-          <Button type="submit" disabled={saving || !dirty}>
+          <Button type="submit" disabled={saving || revoking || !dirty}>
             {saving ? "Сохраняем…" : "Сохранить"}
           </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving || revoking}>
             Отмена
           </Button>
-          <Button type="button" variant="secondary" disabled={revoking} onClick={() => void revokeOrg()}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={saving || revoking}
+            onClick={() => void revokeOrg()}
+          >
             {revoking ? "…" : "Отозвать доступ к организации"}
           </Button>
         </div>

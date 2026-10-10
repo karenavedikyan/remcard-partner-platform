@@ -1,60 +1,69 @@
-# PROF-H5 acceptance
+# PROF-H5 acceptance (completion pass)
 
 Branch: `feat/prof-h-profile-redesign`
 
-| Repo | Base (given) | HEAD (this turn) |
-|------|--------------|------------------|
-| remcard-navigator | `ceebccc1` | see git log |
-| remcard-partner-platform | `80fc5f1` | see git log |
+| Repo | Base | HEAD (this pass) |
+|------|------|------------------|
+| remcard-navigator | `c2878c6c` | see git log |
+| remcard-partner-platform | `40a4131` | see git log |
 
-## Commands (this turn)
+## Defect → fix → test → result
+
+| Defect | Fix | Test | Result |
+|--------|-----|------|--------|
+| Snapshot «all current» re-expanded at accept | `staffInviteAcceptOrganization` uses stored `branchIds` only | `C`, `C2` PG | **PASS** |
+| `remcard-pro-branch` dropped by BFF | Allowlist cookie forward + Set-Cookie filter | `remcard-proxy.test.ts` | **PASS** |
+| Invalid preferred branch silently used first branch | `getProContext` null `activeBranch`; store order gate | `B` PG | **PASS** |
+| CLIENT / head office not in readiness | `OrganizationMember` ACTIVE in `isPartnerEmployee`; `/api/pro/context` cabinet gate | `D`, `J` PG | **PASS** |
+| Non-atomic invite accept | `updateMany` claim after assignments in transaction | (partial) | **NOT VERIFIED** concurrent |
+| Revoke mass-cancelled invites | Removed broad `updateMany` on org invites | `G` PG | **PASS** (403 cabinet + rows removed) |
+| Sole manager removed in bulk | `assertCanRemoveBranchEmployee` | PATCH team (existing) | **PASS** (E preserves manager) |
+| UI role management hidden | Per-branch role select + branch API PATCH | manual | **NOT VERIFIED** browser |
+
+## Commands
 
 | Command | Exit | Result |
 |---------|------|--------|
-| `cd remcard-navigator && pnpm typecheck` | 0 | pass |
-| `cd remcard-navigator && pnpm build` | 0 | pass |
-| `cd remcard-navigator && pnpm exec vitest run src/lib/__tests__/profH5Team.integration.test.ts` | 0 | 3 passed |
-| `cd remcard-navigator && pnpm exec vitest run src/app/api/pro/invites/__tests__/create-invite.test.ts` | 0 | pass |
-| `cd remcard-partner-platform && npm run test:proxy` | 0 | 228 passed |
-| `cd remcard-partner-platform && npm run build` | 0 | pass |
-| `node remcard-partner-platform/scripts/prof-h5-browser-acceptance.mjs` | 0 | stub report only |
+| `pnpm typecheck` (navigator) | 0 | pass |
+| `pnpm build` (navigator) | 0 | pass |
+| `pnpm build` (platform) | 0 | pass |
+| `vitest profH5Team.integration.test.ts` | 0 | **8 passed** |
+| `npm run test:proxy` (platform) | 0 | **228 passed** |
+| `node scripts/prof-h5-browser-acceptance.mjs` | 1 | partial (see below) |
 
-DB: `remcard_prof_test` — migration SQL applied manually (`20261010_prof_h5_organization_team`).
+## Scenarios A–J (PG / API)
 
-## Scenarios A–J
+| ID | Status | Evidence |
+|----|--------|----------|
+| A | **PASS** | PG: one user, A+B |
+| B | **PASS** | PG: PATCH/GET context + cookie branch B |
+| C | **PASS** | PG: snapshot + new branch C excluded; deactivated B → no rows |
+| D | **PASS** | PG: head office, no branch rows, ORG_TEAM_MEMBER |
+| E | **PASS** | PG: PATCH team preserves manager on B |
+| F | **PASS** | PG: manager PATCH team → 403 |
+| G | **PASS** | PG: revoke → branch rows gone, context 403, employee row 404 |
+| H | **NOT VERIFIED** | expired/concurrent accept not automated this pass |
+| I | **NOT VERIFIED** | legacy SOLO/suspend/single-manager not re-run in H5 file |
+| J | **PASS** | PG: CLIENT accept + GET context 200 |
 
-| ID | Description | Status |
-|----|-------------|--------|
-| A | One link A+B → one user, no C | **PASS** (PG) |
-| B | Work API in A/B vs C/other org | **NOT VERIFIED** (store order preview not wired in H5 test) |
-| C | «All current» excludes new branch | **NOT VERIFIED** |
-| D | Head office without fake branch | **NOT VERIFIED** (PG partial via revoke → SOLO context) |
-| E | Remove A add C, B rights kept | **PASS** (PG) |
-| F | Security tampering | **NOT VERIFIED** |
-| G | Revoke → old session blocked | **PASS** (PG context) |
-| H | Invite edge cases | **NOT VERIFIED** |
-| I | Legacy BRANCH/SOLO regressions | **PASS** (create-invite unit + unchanged paths) |
-| J | Employee without owner profile | **NOT VERIFIED** (browser) |
+Auth: integration tests use real `createToken` cookies (no `getProUser` mock).
 
 ## Browser 1440 / 390
 
-| Check | Status |
-|-------|--------|
-| Owner form invite A+B | **NOT VERIFIED** |
+| Step | Status |
+|------|--------|
+| Owner form invite A+B | **NOT VERIFIED** (Playwright: team form button timeout) |
 | Copy link | **NOT VERIFIED** |
-| Employee accept second context | **NOT VERIFIED** |
-| Branch switcher | **NOT VERIFIED** |
-| Owner changes scope | **NOT VERIFIED** |
+| Employee accept | **NOT VERIFIED** |
+| Branch switch A/B | **NOT VERIFIED** |
+| Owner revoke + stale tab | **PARTIAL** (revoke via API PASS; UI stale tab not asserted) |
 
-Report: `/opt/cursor/artifacts/prof-h5-browser-report.json` (stub until full Playwright stack).
+Report: `/opt/cursor/artifacts/prof-h5-browser-report.json`  
+Screenshots: `/opt/cursor/artifacts/screenshots/prof-h5-*.png`
+
+Blocker for full browser PASS: platform dev `.next` corruption required `next build` + `next start`; automated owner flow still could not submit invite form (needs follow-up on selectors / SSR data).
 
 ## Artifacts
 
-- Screenshots: not captured this turn (browser NOT VERIFIED).
-- JSON: `/opt/cursor/artifacts/prof-h5-browser-report.json`
-
-## Known limits
-
-- `prisma migrate deploy` not baselined on `remcard_prof_test`; SQL applied directly.
-- Manager cannot PATCH org-wide team member (owner only); legacy branch invites unchanged.
-- Concurrent accept uses DB transaction but no explicit `updateMany` claim (follow-up hardening).
+- PG: `src/lib/__tests__/profH5Team.integration.test.ts`
+- Browser: `scripts/prof-h5-browser-acceptance.mjs`, `scripts/prof-h5-browser-fixtures.ts`

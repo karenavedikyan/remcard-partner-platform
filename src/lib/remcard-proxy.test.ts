@@ -306,6 +306,10 @@ describe("remcard proxy transport checks", () => {
     );
     assert.equal(filterAllowedCookies("other=secret"), null);
     assert.equal(filterAllowedCookies("oauth_vk_state=abc; remcard-token=abc"), "remcard-token=abc");
+    assert.equal(
+      filterAllowedCookies("remcard-token=abc; remcard-pro-branch=br_1; evil=1"),
+      "remcard-token=abc; remcard-pro-branch=br_1",
+    );
   });
 
   it("rejects missing or foreign origins for mutating requests", () => {
@@ -391,12 +395,14 @@ describe("remcard proxy transport checks", () => {
   it("filters upstream Set-Cookie names on responses", () => {
     const filtered = filterAllowedSetCookies([
       "remcard-token=abc; Path=/; HttpOnly",
+      "remcard-pro-branch=br_a; Path=/; HttpOnly",
       "unexpected_cookie=evil; Path=/; HttpOnly",
       "remcard-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
     ]);
-    assert.equal(filtered.length, 2);
-    assert.match(filtered[0] ?? "", /^remcard-token=abc/);
-    assert.match(filtered[1] ?? "", /Expires=Thu, 01 Jan 1970/);
+    assert.equal(filtered.length, 3);
+    assert.ok(filtered.some((c) => c.startsWith("remcard-token=abc")));
+    assert.ok(filtered.some((c) => c.startsWith("remcard-pro-branch=br_a")));
+    assert.ok(filtered.some((c) => /Expires=Thu, 01 Jan 1970/.test(c)));
   });
 
   it("buildProxyNextResponse never forwards disallowed Set-Cookie headers", () => {

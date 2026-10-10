@@ -16,7 +16,8 @@ import {
 export const UPSTREAM_TIMEOUT_MS = 15_000;
 
 const SESSION_COOKIE = "remcard-token";
-const ALLOWED_COOKIE_NAMES = new Set([SESSION_COOKIE]);
+const PRO_BRANCH_CONTEXT_COOKIE = "remcard-pro-branch";
+const ALLOWED_COOKIE_NAMES = new Set([SESSION_COOKIE, PRO_BRANCH_CONTEXT_COOKIE]);
 const UNSAFE_LOCATION_CHARS = /[\u0000-\u001F\u007F\\]/;
 const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
 
