@@ -83,6 +83,11 @@ describe("ProfileOverviewSection counters", () => {
         role: "ORG_TEAM_MEMBER",
         organization: { id: "o1", name: "Shop" },
         branches: [],
+        teamCapabilities: {
+          canOpenTeamSection: false,
+          canFetchEmployeesOverview: false,
+          canManageEmployeesByBranchId: {},
+        },
       },
       contextReady: true,
     });

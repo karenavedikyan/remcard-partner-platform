@@ -74,6 +74,11 @@ describe("ProfileTeamSection access gates", () => {
         role: "ORG_TEAM_MEMBER",
         organization: { id: "o1", name: "Shop" },
         branches: [{ id: "b1", name: "A", city: "C" }],
+        teamCapabilities: {
+          canOpenTeamSection: false,
+          canFetchEmployeesOverview: false,
+          canManageEmployeesByBranchId: {},
+        },
       },
       contextReady: true,
     });

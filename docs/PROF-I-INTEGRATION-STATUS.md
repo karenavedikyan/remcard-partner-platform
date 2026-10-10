@@ -52,9 +52,15 @@ PROF_E_PLATFORM_URL=http://127.0.0.1:3000 node scripts/prof-i-e-integration-brow
 
 **Last full E run:** all scenarios **PASS**; `exitCode: 0`; no console/page errors recorded (employee page had **no** `trackPage` on that run).
 
+## Team access contract — `teamCapabilities` (2026-10-10)
+
+Navigator `GET /api/pro/context` adds **`teamCapabilities`** (`canOpenTeamSection`, `canFetchEmployeesOverview`, `canManageEmployeesByBranchId` per branch). Platform **`deriveProfileCabinetAccess`** uses only this server payload (not `UserRole === PRO`). **`employees-overview`** uses `getProfCabinetUser` + scoped branch list: CLIENT only with `canManageEmployees`; PRO managers may view branch roster; manage per-branch flag; no org-wide leak; empty scope → **403**. Moderation notes stay **PRO-only**, unrelated to team.
+
+**Integration:** `prof-i-team-cabinet.integration.test.ts` — CLIENT team in A only, B hidden, revoke → 403 + context off, owner unchanged.
+
 ## Invite chain — employee `trackPage` closed (2026-10-10)
 
-**App fix:** server `GET /api/pro/context` on profile page → `deriveProfileCabinetAccess`; no `employees-overview` / `moderation-notes` for CLIENT org team without PRO overview roles; team tab shows access restriction instead of load errors. Owner / PRO branch manager unchanged.
+**App fix:** gated fetches above; scan-only CLIENT unchanged.
 
 Harness: `PROF_E_INVITE_CHAIN_ONLY=1`, strict `trackPage(employee)`. Expected deny = confirmed GET wallet/settlements **403** only.
 

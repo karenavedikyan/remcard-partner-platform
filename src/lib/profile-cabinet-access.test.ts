@@ -46,65 +46,77 @@ function profile(role: string, partnerType = "STORE"): ProProfileResponse {
   };
 }
 
-const ownerCtx: ProContextSnapshot = {
-  role: "ORG_OWNER",
-  organization: { id: "o1", name: "Shop" },
-  branches: [{ id: "b1", name: "A", city: "C" }],
-  activeBranch: null,
-};
-
 describe("deriveProfileCabinetAccess", () => {
-  it("owner PRO with ready context may fetch overview and moderation notes", () => {
+  it("uses server teamCapabilities for CLIENT team manager", () => {
+    const proContext: ProContextSnapshot = {
+      role: "ORG_TEAM_MEMBER",
+      organization: { id: "o1", name: "Shop" },
+      branches: [{ id: "bA", name: "A", city: "C" }],
+      teamCapabilities: {
+        canOpenTeamSection: true,
+        canFetchEmployeesOverview: true,
+        canManageEmployeesByBranchId: { bA: true },
+      },
+    };
     const access = deriveProfileCabinetAccess({
-      profile: profile("PRO"),
-      proContext: ownerCtx,
+      profile: profile("CLIENT"),
+      proContext,
       contextReady: true,
     });
     expect(access.canFetchEmployeesOverview).toBe(true);
     expect(access.canOpenTeamSection).toBe(true);
-    expect(access.canFetchModerationNotes).toBe(true);
+    expect(access.canFetchModerationNotes).toBe(false);
   });
 
-  it("CLIENT org team member must not fetch overview or moderation notes", () => {
+  it("CLIENT scan-only without teamCapabilities cannot open team", () => {
     const access = deriveProfileCabinetAccess({
       profile: profile("CLIENT"),
       proContext: {
         role: "ORG_TEAM_MEMBER",
         organization: { id: "o1", name: "Shop" },
-        branches: [{ id: "b1", name: "A", city: "C" }],
-        activeBranch: { id: "b1", name: "A", city: "C" },
-        branchRole: "SELLER",
+        branches: [{ id: "bA", name: "A", city: "C" }],
+        teamCapabilities: {
+          canOpenTeamSection: false,
+          canFetchEmployeesOverview: false,
+          canManageEmployeesByBranchId: {},
+        },
       },
       contextReady: true,
     });
-    expect(access.canFetchEmployeesOverview).toBe(false);
     expect(access.canOpenTeamSection).toBe(false);
     expect(access.canFetchModerationNotes).toBe(false);
   });
 
-  it("PRO branch manager keeps team/overview fetch", () => {
+  it("owner PRO keeps moderation notes without team coupling", () => {
     const access = deriveProfileCabinetAccess({
       profile: profile("PRO"),
       proContext: {
-        role: "BRANCH_MANAGER",
-        organization: { id: "o1", name: "Shop" },
-        branches: [{ id: "b1", name: "A", city: "C" }],
-        activeBranch: { id: "b1", name: "A", city: "C" },
+        role: "ORG_OWNER",
+        teamCapabilities: {
+          canOpenTeamSection: true,
+          canFetchEmployeesOverview: true,
+          canManageEmployeesByBranchId: {},
+        },
       },
       contextReady: true,
     });
-    expect(access.canFetchEmployeesOverview).toBe(true);
-    expect(access.canOpenTeamSection).toBe(true);
+    expect(access.canFetchModerationNotes).toBe(true);
   });
 
-  it("blocks privileged fetches until context is ready", () => {
+  it("blocks team until context is ready", () => {
     const access = deriveProfileCabinetAccess({
       profile: profile("PRO"),
-      proContext: ownerCtx,
+      proContext: {
+        role: "ORG_OWNER",
+        teamCapabilities: {
+          canOpenTeamSection: true,
+          canFetchEmployeesOverview: true,
+          canManageEmployeesByBranchId: {},
+        },
+      },
       contextReady: false,
     });
     expect(access.canFetchEmployeesOverview).toBe(false);
-    expect(access.canOpenTeamSection).toBe(false);
     expect(access.canFetchModerationNotes).toBe(true);
   });
 
