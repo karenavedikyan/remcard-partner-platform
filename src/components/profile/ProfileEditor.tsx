@@ -20,6 +20,7 @@ import {
   partnerSearchCheckboxValue,
   profileDraftFromProfile,
 } from "@/lib/profile-draft-sync";
+import { formatAreasForTextField, parseAreasFromText } from "@/lib/profile-working-areas";
 import {
   catalogDraftFromProfile,
   isCatalogDraftDirty,
@@ -148,7 +149,9 @@ export function ProfileEditor({
   );
   const partnerSearchTouchedRef = useRef(false);
   const [partnerWorkMode, setPartnerWorkMode] = useState(initialWorking?.partnerWorkMode ?? "");
-  const [areasText, setAreasText] = useState((initialWorking?.areas ?? user.areas ?? []).join("\n"));
+  const [areasText, setAreasText] = useState(() =>
+    formatAreasForTextField(initialWorking?.areas ?? user.areas),
+  );
   const [partnershipContactName, setPartnershipContactName] = useState(
     initialWorking?.partnershipContactName ?? "",
   );
@@ -180,12 +183,7 @@ export function ProfileEditor({
     (partnerType === "STORE" || partnerType === "COMPANY") &&
     (!profile.organization || (profile.organization.branchCount ?? 0) === 0);
 
-  const parseAreas = useCallback((): string[] => {
-    return areasText
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, [areasText]);
+  const parseAreas = useCallback((): string[] => parseAreasFromText(areasText), [areasText]);
 
   const buildDraft = useCallback((): ProfileDraft => {
     return {
@@ -281,7 +279,7 @@ export function ProfileEditor({
     setPartnerSearchOptIn(partnerSearchCheckboxValue(w));
     partnerSearchTouchedRef.current = false;
     setPartnerWorkMode(w?.partnerWorkMode ?? "");
-    setAreasText((w?.areas ?? u.areas ?? []).join("\n"));
+    setAreasText(formatAreasForTextField(w?.areas ?? u.areas));
     setPartnershipContactName(w?.partnershipContactName ?? "");
     setPartnershipContactPhone(w?.partnershipContactPhone ?? "");
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");

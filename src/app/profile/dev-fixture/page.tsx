@@ -26,7 +26,7 @@ const FIXTURE_PROFILE: ProProfileResponse = {
     partnerSearchOptInExplicit: false,
     workingDirectionsTouched: true,
     partnerWorkMode: "BOTH",
-    areas: ["Краснодарский край"],
+    areas: ["Краснодар, Анапа, Новороссийск"],
     partnershipContactName: "Алексей",
     partnershipContactPhone: null,
     partnershipContactEmail: "partner@example.com",

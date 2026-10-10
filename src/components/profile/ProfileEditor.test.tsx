@@ -166,7 +166,7 @@ describe("ProfileEditor", () => {
         workingServiceDirectionsTouched: false,
         workingNavigatorStagesTouched: false,
         partnerWorkMode: null,
-        areas: [],
+        areas: ["Краснодар, Анапа, Новороссийск"],
         partnershipContactName: null,
         partnershipContactPhone: null,
         partnershipContactEmail: null,
@@ -181,10 +181,154 @@ describe("ProfileEditor", () => {
         description: null,
       },
     };
-    render(<ProfileEditor initial={legacyOrg} />);
+    const { rerender } = render(<ProfileEditor initial={legacyOrg} />);
     expect(
       screen.queryByText(/Есть несохранённые изменения в основных данных/i),
     ).not.toBeInTheDocument();
+    rerender(<ProfileEditor initial={{ ...legacyOrg, programs: [...legacyOrg.programs] }} />);
+    expect(
+      screen.queryByText(/Есть несохранённые изменения в основных данных/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("legacy production areas: equivalent separators stay clean; edit and revert dirty cycle", async () => {
+    const ui = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const legacyOrg: ProProfileResponse = {
+      organization: {
+        id: "org-opt",
+        name: "ОПТОВИК",
+        catalogStatus: "APPROVED",
+        partnerType: "STORE",
+        branchCount: 6,
+        storeCategories: ["doors"],
+        specializations: [],
+      },
+      programs: [],
+      workingProfile: {
+        productCategoryIds: [],
+        serviceSpecializationIds: [],
+        navigatorStageIds: [],
+        primaryDirection: null,
+        effectiveProductCategoryIds: ["doors"],
+        effectiveServiceSpecializationIds: [],
+        effectiveNavigatorStageIds: [],
+        partnerSearchVisible: false,
+        partnerSearchOptIn: false,
+        partnerSearchOptInExplicit: false,
+        workingProductDirectionsTouched: false,
+        workingServiceDirectionsTouched: false,
+        workingNavigatorStagesTouched: false,
+        partnerWorkMode: null,
+        areas: ["Краснодар, Анапа, Новороссийск"],
+        partnershipContactName: null,
+        partnershipContactPhone: null,
+        partnershipContactEmail: null,
+      },
+      user: { ...initial.user, partnerType: "STORE" },
+    };
+    render(<ProfileEditor initial={legacyOrg} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    const areas = screen.getByLabelText(/Территории обслуживания/i);
+    await ui.clear(areas);
+    await ui.type(areas, "Краснодар; Анапа\nНовороссийск");
+    confirmSpy.mockClear();
+    await ui.click(screen.getByRole("tab", { name: /Каталог RemCard/i }));
+    expect(confirmSpy).not.toHaveBeenCalled();
+
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    const areasAgain = screen.getByLabelText(/Территории обслуживания/i);
+    await ui.clear(areasAgain);
+    await ui.type(areasAgain, "Краснодар, Анапа, Новороссийск, Сочи");
+    confirmSpy.mockClear();
+    await ui.click(screen.getByRole("tab", { name: /Каталог RemCard/i }));
+    expect(confirmSpy).toHaveBeenCalled();
+
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    const areasRevert = screen.getByLabelText(/Территории обслуживания/i);
+    await ui.clear(areasRevert);
+    await ui.type(areasRevert, "Краснодар\nАнапа\nНовороссийск");
+    confirmSpy.mockClear();
+    await ui.click(screen.getByRole("tab", { name: /Каталог RemCard/i }));
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it("after save with legacy areas GET stays clean", async () => {
+    const ui = userEvent.setup();
+    const legacyOrg: ProProfileResponse = {
+      organization: null,
+      programs: [],
+      workingProfile: {
+        productCategoryIds: [],
+        serviceSpecializationIds: [],
+        navigatorStageIds: [],
+        primaryDirection: null,
+        effectiveProductCategoryIds: ["doors"],
+        effectiveServiceSpecializationIds: [],
+        effectiveNavigatorStageIds: [],
+        partnerSearchVisible: false,
+        partnerSearchOptIn: false,
+        partnerSearchOptInExplicit: false,
+        workingProductDirectionsTouched: false,
+        workingServiceDirectionsTouched: false,
+        workingNavigatorStagesTouched: false,
+        partnerWorkMode: null,
+        areas: ["Краснодар, Анапа, Новороссийск"],
+        partnershipContactName: null,
+        partnershipContactPhone: null,
+        partnershipContactEmail: null,
+      },
+      user: { ...initial.user, partnerType: "MASTER" },
+    };
+    vi.mocked(persistWorkingProfileDraft).mockResolvedValue({
+      ...legacyOrg,
+      workingProfile: {
+        ...legacyOrg.workingProfile!,
+        areas: ["Краснодар, Анапа, Новороссийск"],
+      },
+    });
+    render(<ProfileEditor initial={legacyOrg} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    await ui.click(screen.getByRole("button", { name: /Сохранить основные данные/i }));
+    await waitFor(() => expect(persistWorkingProfileDraft).toHaveBeenCalled());
+    expect(
+      screen.queryByText(/Есть несохранённые изменения в основных данных/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("basics to catalog without edits does not confirm leave", async () => {
+    const ui = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm");
+    const legacyOrg: ProProfileResponse = {
+      organization: null,
+      programs: [],
+      workingProfile: {
+        productCategoryIds: [],
+        serviceSpecializationIds: [],
+        navigatorStageIds: [],
+        primaryDirection: null,
+        effectiveProductCategoryIds: ["doors"],
+        effectiveServiceSpecializationIds: [],
+        effectiveNavigatorStageIds: [],
+        partnerSearchVisible: false,
+        partnerSearchOptIn: false,
+        partnerSearchOptInExplicit: false,
+        workingProductDirectionsTouched: false,
+        workingServiceDirectionsTouched: false,
+        workingNavigatorStagesTouched: false,
+        partnerWorkMode: null,
+        areas: ["Краснодар, Анапа, Новороссийск"],
+        partnershipContactName: null,
+        partnershipContactPhone: null,
+        partnershipContactEmail: null,
+      },
+      user: { ...initial.user },
+    };
+    render(<ProfileEditor initial={legacyOrg} />);
+    await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
+    confirmSpy.mockClear();
+    await ui.click(screen.getByRole("tab", { name: /Каталог RemCard/i }));
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it("opens overview by default with working profile block", () => {

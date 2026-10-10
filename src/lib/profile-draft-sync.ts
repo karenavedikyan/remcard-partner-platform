@@ -1,4 +1,5 @@
 import type { ProfileDraft } from "@/lib/profile-save";
+import { normalizeAreasList, resolveWorkingAreasForDraft } from "@/lib/profile-working-areas";
 import type { ProProfileResponse, WorkingProfileDto } from "@/lib/types";
 
 /** Checkbox + dirty baseline: explicit opt-in, else server-computed legacy visibility. */
@@ -66,7 +67,7 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
     primaryDirection: w?.primaryDirection ?? null,
     partnerSearchOptIn: partnerSearchCheckboxValue(w),
     partnerWorkMode: nullableString(w?.partnerWorkMode),
-    areas: [...(w?.areas ?? u.areas ?? [])],
+    areas: resolveWorkingAreasForDraft(w, u.areas),
     partnershipContactName: nullableString(w?.partnershipContactName),
     partnershipContactPhone: nullableString(w?.partnershipContactPhone),
     partnershipContactEmail: nullableString(w?.partnershipContactEmail),
@@ -126,7 +127,7 @@ function normalizeDraft(draft: ProfileDraft): ProfileDraft {
     productCategoryIds: [...draft.productCategoryIds].sort(),
     serviceSpecializationIds: [...draft.serviceSpecializationIds].sort(),
     navigatorStageIds: [...draft.navigatorStageIds].sort(),
-    areas: [...draft.areas].sort(),
+    areas: [...normalizeAreasList(draft.areas)].sort(),
   };
 }
 

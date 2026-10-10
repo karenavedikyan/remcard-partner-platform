@@ -33,14 +33,29 @@ async function metrics(page) {
     const doc = document.documentElement;
     const select = document.querySelector('[data-testid="pro-branch-context-select"]');
     const selectBox = select?.getBoundingClientRect();
+    const selectedTab = document.querySelector('[role="tab"][aria-selected="true"]');
     return {
       clientWidth: doc.clientWidth,
       scrollWidth: doc.scrollWidth,
       overflow: doc.scrollWidth > doc.clientWidth + 2,
       selectWidth: selectBox?.width ?? null,
       selectRight: selectBox?.right ?? null,
+      selectPresent: Boolean(select),
+      activeTabText: selectedTab?.textContent?.trim() ?? null,
     };
   });
+}
+
+async function assertTabOpen(page, label) {
+  const tab = page.getByRole("tab", { name: label });
+  await tab.click();
+  await page.waitForTimeout(200);
+  const m = await metrics(page);
+  const name = label.source.replace(/\\^|\\$/g, "");
+  if (!m.activeTabText || !label.test(m.activeTabText)) {
+    throw new Error(`tab not active: expected ${name}, got ${m.activeTabText}`);
+  }
+  return m;
 }
 
 async function branchSelectProbe(page) {
@@ -91,7 +106,11 @@ async function main() {
     });
   });
 
-  const results = { widths: {}, tabs: {}, branchProbe: null, exitCode: 0 };
+  const results = { widths: {}, tabs: {}, branchProbe: null, basicsToCatalog: null, exitCode: 0 };
+  let dialogSeen = false;
+  page.on("dialog", () => {
+    dialogSeen = true;
+  });
 
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -106,17 +125,44 @@ async function main() {
     });
 
     for (const label of TAB_LABELS) {
-      const tab = page.getByRole("tab", { name: label });
-      await tab.click();
-      await page.waitForTimeout(150);
-      const m = await metrics(page);
+      const m = await assertTabOpen(page, label);
       const key = `${width}:${label.source}`;
       results.tabs[key] = m;
       if (m.overflow) {
         results.exitCode = 1;
         console.error(`overflow on tab ${label} at ${width}:`, m);
       }
+      if (label.source.includes("Обзор") && width === 390 && !m.selectPresent) {
+        results.exitCode = 1;
+        console.error("branch context select missing on overview @390");
+      }
     }
+  }
+
+  dialogSeen = false;
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto(`${BASE}/profile/dev-fixture?section=basics`, {
+    waitUntil: "networkidle",
+    timeout: 120_000,
+  });
+  const basicsMetrics = await metrics(page);
+  if (!basicsMetrics.activeTabText?.includes("Основные")) {
+    results.exitCode = 1;
+    console.error("basics deep link did not open basics tab", basicsMetrics);
+  }
+  dialogSeen = false;
+  await assertTabOpen(page, /Каталог RemCard/i);
+  results.basicsToCatalog = {
+    confirmDialog: dialogSeen,
+    unsavedBanner: await page
+      .getByText(/Есть несохранённые изменения в основных данных/i)
+      .isVisible()
+      .catch(() => false),
+    metrics: await metrics(page),
+  };
+  if (dialogSeen || results.basicsToCatalog.unsavedBanner) {
+    results.exitCode = 1;
+    console.error("false unsaved on basics→catalog", results.basicsToCatalog);
   }
 
   results.branchProbe = await branchSelectProbe(page);
