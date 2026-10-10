@@ -1,0 +1,15 @@
+.slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 650px) {
+  .slot {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
