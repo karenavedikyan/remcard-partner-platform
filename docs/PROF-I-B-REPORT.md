@@ -6,8 +6,8 @@
 
 | Repo | HEAD (after this report commit) | Worktree |
 |------|-----------------------------------|----------|
-| remcard-partner-platform | _(see git push output)_ | `/tmp/prof-i-worktrees/prof-i-b-platform` |
-| remcard-navigator | _(see git push output)_ | `/tmp/prof-i-worktrees/prof-i-b-navigator` |
+| remcard-partner-platform | `ab8c35631af080da994d2c66a8c5d9b76e4bcf9e` | `/tmp/prof-i-worktrees/prof-i-b-platform` |
+| remcard-navigator | `d5caef7a84ce3d61f5f25754cf533275387197ef` | `/tmp/prof-i-worktrees/prof-i-b-navigator` |
 
 ## Reuse (PROF-G → H5)
 
