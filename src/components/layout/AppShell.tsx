@@ -42,6 +42,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/history": "История",
   "/settlements": "Взаиморасчёты",
   "/profile": "Профиль",
+  "/notifications": "Уведомления",
   "/login": "Вход",
   "/onboarding": "Регистрация",
 };

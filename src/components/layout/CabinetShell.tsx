@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { requireProSession } from "@/lib/session";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
-import { AppShell } from "@/components/layout/AppShell";
+import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
 import type { PartnershipListResponse } from "@/lib/types";
 
 type CabinetShellProps = {
@@ -20,8 +20,8 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
     list.ok && user.id ? countNeedsMyResponse(list.data.partnerships ?? [], user.id) : 0;
 
   return (
-    <AppShell user={user} incomingCount={attentionCount}>
+    <CabinetAppShellClient user={user} incomingCount={attentionCount}>
       {children}
-    </AppShell>
+    </CabinetAppShellClient>
   );
 }
