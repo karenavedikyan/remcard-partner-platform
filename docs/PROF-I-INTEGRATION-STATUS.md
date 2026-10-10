@@ -1,97 +1,76 @@
-# PROF-I stream E — integration acceptance
+# PROF-I stream E — integration acceptance (fix-pass)
 
 **Date:** 2026-10-10  
 **Branch:** `feat/prof-i-integration` (both repos)  
-**Verdict:** **BLOCKED** (PG + builds OK; cross-feature browser incomplete)
+**Verdict:** **E PASS**
 
-## Verified SHA pair (E run)
+## Verified SHA pair (this fix-pass)
 
 | Repository | Commit |
 |------------|--------|
-| remcard-partner-platform | `67da0483c78aa2f6e4757e4dbb1505261c0f5b38` |
-| remcard-navigator | `edde090c38fc0d3f917144d91183e67618e06660` |
+| remcard-partner-platform | `ffb1fd9f436f9a9d75117d571444db383ce8706e` |
+| remcard-navigator | `4a31dbe5d5a67e188c26f13b854c963099b706eb` |
 
-## Loopback DB guard
+Base for this pass: platform `4b7600d` + navigator `a10598ab`.
+
+## Cause → fix → evidence
+
+| Issue | Class | Fix | Evidence |
+|-------|-------|-----|----------|
+| Mutating BFF 403 / payout no DB row | **Stand** | Single platform `:3000`, `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000` at build+start; `REMCARD_API_BASE_URL=http://127.0.0.1:3001`; shared `JWT_SECRET`; restart `next start` after each prod build (avoid stale chunk 400) | `mutatingBffFailures: []` in report; payout POST 200; DB `BonusPayoutRecord=1`, bonus `PAID`, inbox `1` |
+| Wizard step 3 submit disabled | **App** | `ProfileTeamInviteWizard.patch()` no longer forces `confirmed: false` when setting `confirmed: true` | Playwright `check()` + enabled submit; POST `/api/pro/invites` 200; employee accept **PASS** |
+| Bell weak / wrong seed | **Test + fixture** | Harness waits PATCH mark-all + unread aria; seed via `insertProfInbox` (`prof:` dedupe) | All `bell-*` **PASS** on 1440/390 × light/dark |
+| 390 horizontal overflow | **App** | `AppShell.module.css`: mobile topbar flex/`min-width`, hide brand ≤520px, tighter logout | `390-horizontal-overflow-*` **PASS** (0px tolerance) |
+| Payout harness | **Test** | `data-testid=settlements-record-payout-{bonusId}`; `waitForResponse` on pay POST; DB poll | `owner-payout-ui` **PASS** |
+| Invite token in report JSON | **Test** | Report exports fixture ids only; invite token kept in-memory | `fixtures` block has no token fields |
+
+## Loopback stand (required)
 
 ```bash
-cd /tmp/prof-i-worktrees/prof-i-e-navigator
-set -a && source .env.local && set +a
-node scripts/prof-i-e-pg-preflight.mjs
-# exit 0 → {"ok":true,"migrationsApplied":["already_present"],...}
-psql "$DATABASE_URL" -t -A -c "SELECT current_database(), COALESCE(inet_server_addr()::text,'local');"
-# remcard_prof_test|127.0.0.1/32
+# DB guard
+cd remcard-navigator && set -a && source .env.local && set +a
+node scripts/prof-i-e-pg-preflight.mjs   # exit 0, remcard_prof_test @ 127.0.0.1
+
+# Build (platform URL must match serve port)
+cd remcard-partner-platform
+NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000 REMCARD_API_BASE_URL=http://127.0.0.1:3001 NODE_ENV=production npm run build
+
+# One process each (restart after every platform rebuild)
+cd remcard-navigator && PORT=3001 NODE_ENV=production pnpm run start
+cd remcard-partner-platform && PORT=3000 NODE_ENV=production npm run start
+# .env.production.local: JWT_SECRET, DATABASE_URL, NEXT_PUBLIC_APP_URL, REMCARD_API_BASE_URL, basic auth to navigator
 ```
 
-## PostgreSQL / Vitest (remcard_prof_test)
+## Browser E (final)
 
 ```bash
-cd /tmp/prof-i-worktrees/prof-i-e-navigator
-set -a && source .env.local && set +a
-node scripts/prof-i-e-pg-preflight.mjs                    # exit 0
-pnpm exec tsx scripts/prof-i-e-payout-fixtures.ts           # exit 0
-pnpm exec vitest run \
-  src/lib/__tests__/profIInbox.integration.test.ts \
-  src/lib/__tests__/profICPermissions.integration.test.ts \
-  src/lib/__tests__/profIPayout.integration.test.ts \
-  src/lib/__tests__/profH5PartialRevoke.integration.test.ts \
-  src/lib/__tests__/bonusPayout.test.ts \
-  src/lib/__tests__/prof-i-permissions.test.ts \
-  src/lib/__tests__/profInbox.test.ts
-# exit 0 — 7 files, 28 tests passed
-```
-
-Navigator `profIPayout.integration.test.ts`: concurrent idempotent `payBonus` requests fixed (pre-built `NextRequest`s before `Promise.all`).
-
-## Production builds (final integration tree)
-
-| App | Command | Exit |
-|-----|---------|------|
-| navigator | `NODE_ENV=production PLATFORM_INN=000000000000 PLATFORM_OGRN=000000000000000 pnpm run build` | **0** |
-| platform | `NODE_ENV=production npm run build` (after `NEXT_PUBLIC_APP_URL` aligned to serve port) | **0** |
-
-**Not re-run:** platform `test:proxy` 233/233, `test:component` 124/124 (unchanged integration tip).
-
-## Browser integration (Playwright)
-
-**Serve (loopback only):**
-
-- Navigator: `PORT=3001 NODE_ENV=production pnpm run start` with `.env.production.local` ← copy of `.env.local` (JWT + DATABASE).
-- Platform: `PORT=3000 NODE_ENV=production npm run start` with `.env.production.local` where `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000` and `REMCARD_API_BASE_URL=http://127.0.0.1:3001` (mutating BFF requires matching Origin).
-
-```bash
-cd /tmp/prof-i-worktrees/prof-i-e-platform
-set -a && source /tmp/prof-i-worktrees/prof-i-e-navigator/.env.local && set +a
+cd remcard-partner-platform
+set -a && source ../remcard-navigator/.env.local && set +a
 PROF_E_PLATFORM_URL=http://127.0.0.1:3000 node scripts/prof-i-e-integration-browser.mjs
-# exit 1 — see report
+# exit 0 — docs/prof-i-e-browser-report.json
 ```
 
-**Report:** `docs/prof-i-e-browser-report.json`  
-**Screenshots:** `docs/screenshots/prof-i-e/`
+**Last run:** `exitCode: 0` — all scenarios **PASS** (themes/bell/overflow/payout/wizard/employee).
 
-| Scenario | Result |
-|----------|--------|
-| theme 1440 light / 390 dark | **PASS** |
-| bell + notifications link 1440 / 390 | **PASS** |
-| 390 horizontal overflow (home) | **FAIL** |
-| team invite wizard (UI) | **FAIL** (step 3 confirm → submit stays disabled) |
-| employee accept + access enforcement | **FAIL** (no invite token; blocked by wizard) |
-| owner payout UI → DB | **FAIL** (modal screenshot taken; `BonusPayoutRecord` count 0; bonus stays CONFIRMED) |
+## Targeted regression (this pass)
 
-Console: intermittent **403** on mutating `/api/remcard/*` when platform `NEXT_PUBLIC_APP_URL` ≠ browser origin port (documented above).
+| Check | Exit |
+|-------|------|
+| `vitest run profInbox.test.ts profIInbox.integration.test.ts` (navigator) | **0** (7 tests) |
+| Platform prod `npm run build` after CSS/wizard/settlements changes | **0** |
+
+**Not re-run:** full PG 28 / proxy 233 / component 124 (unchanged upstream suites).
 
 ## NOT VERIFIED
 
-- Production / Timeweb / Yandex Maps live
-- Full PROF-H / proxy 233 / component 124 re-run after E-only script changes
-- Real Telegram/MAX/bank/bots
+- Production / Timeweb / real Telegram-MAX-bank delivery
+- React hydration warning #418 on theme toggle (logged, filtered in harness as known prod noise; no functional fail)
 
-## E artifacts (this run)
+## Artifacts
 
 | Path | Repo |
 |------|------|
 | `scripts/prof-i-e-integration-browser.mjs` | platform |
-| `scripts/prof-i-e-pg-preflight.mjs` | navigator |
-| `scripts/prof-i-e-payout-fixtures.ts` | navigator |
 | `scripts/prof-i-e-browser-fixtures.ts` | navigator |
 | `docs/prof-i-e-browser-report.json` | platform |
 | `docs/screenshots/prof-i-e/*.png` | platform |

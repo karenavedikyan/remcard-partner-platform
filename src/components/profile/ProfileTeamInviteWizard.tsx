@@ -95,7 +95,13 @@ export function ProfileTeamInviteWizard({ overview, initialScope, onClose, onCre
   const branchList = overview.branches;
 
   function patch(partial: Partial<typeof draft>) {
-    setDraft((prev) => ({ ...prev, ...partial, confirmed: false }));
+    setDraft((prev) => {
+      const next = { ...prev, ...partial };
+      if (!("confirmed" in partial)) {
+        next.confirmed = false;
+      }
+      return next;
+    });
   }
 
   function effectiveFlags(branchId: string): ProfIPermissionFlags {

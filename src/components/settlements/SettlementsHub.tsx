@@ -78,7 +78,12 @@ function ObligationRow({
           Покупка
         </Link>
         {canPayout && onRecordPayout ? (
-          <Button type="button" variant="secondary" onClick={() => onRecordPayout(row)}>
+          <Button
+            type="button"
+            variant="secondary"
+            data-testid={`settlements-record-payout-${row.id}`}
+            onClick={() => onRecordPayout(row)}
+          >
             Зафиксировать выплату
           </Button>
         ) : null}

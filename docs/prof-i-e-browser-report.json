@@ -1,56 +1,119 @@
 {
-  "generatedAt": "2026-10-10T13:19:39.519Z",
+  "generatedAt": "2026-10-10T13:46:37.272Z",
   "profBase": "http://127.0.0.1:3000",
   "fixtures": {
-    "tag": "prof-i-e-1791638379358",
-    "ownerId": "cmv2f8d5h0000jsdzgacoi81r",
-    "employeeId": "cmv2f8d5p0001jsdzkixp5dlc",
-    "organizationId": "cmv2f8d72000rjsdz7rw7evx7",
-    "branchAId": "cmv2f8d75000tjsdzr88wnpf6",
-    "branchBId": "cmv2f8d77000vjsdzxrhgmn46",
-    "payableBonusId": "cmv2f8d7s0017jsdzqqsdrbwk",
+    "tag": "prof-i-e-1791639997107",
+    "ownerId": "cmv2g71ey0000js294nkxwtha",
+    "employeeId": "cmv2g71f40001js29zirma7aj",
+    "organizationId": "cmv2g71gk000rjs297vhbgfu3",
+    "branchAId": "cmv2g71go000tjs29q0klw9jd",
+    "branchBId": "cmv2g71gq000vjs29yawz1y84",
+    "payableBonusId": "cmv2g71ha0017js293w09sgip",
     "payableAmount": 777,
-    "profRecipientId": "cmv2f8d7d000yjsdzrhldyqk4",
-    "seedNotificationId": "cmv2f8d7v0019jsdzw1gpzic1"
+    "profRecipientId": "cmv2g71gu000yjs29gi1lr9b2",
+    "seedNotificationId": "cmv2g71hd0019js29zvrbim1a"
   },
   "scenarios": {
     "theme-1440-light": "PASS",
     "bell-1440-light": "PASS",
+    "theme-1440-dark": "PASS",
+    "bell-1440-dark": "PASS",
+    "theme-390-light": "PASS",
+    "bell-390-light": "PASS",
+    "390-horizontal-overflow-home-light": "PASS",
     "theme-390-dark": "PASS",
     "bell-390-dark": "PASS",
-    "390-horizontal-overflow": "FAIL: horizontal overflow",
-    "team-invite-wizard": "FAIL: page.waitForFunction: Timeout 30000ms exceeded.",
-    "employee-accept-access": "FAIL: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /Принять приглашение/i })\n",
-    "owner-payout-ui": "FAIL: expected 1 BonusPayoutRecord, got 0"
+    "390-horizontal-overflow-home-dark": "PASS",
+    "owner-payout-ui": "PASS",
+    "team-invite-wizard": "PASS",
+    "employee-accept-access": "PASS",
+    "390-horizontal-overflow-team": "PASS"
   },
   "consoleErrors": [
     {
       "label": "1440-light",
-      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+      "label": "1440-light",
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+      "label": "1440-dark",
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+      "label": "390-light",
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+      "label": "390-light",
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+      "label": "390-light",
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
     },
     {
       "label": "390-dark",
+      "text": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+      "label": "employee",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "label": "employee",
       "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
     },
     {
-      "label": "owner-desktop",
+      "label": "employee",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "label": "employee",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "label": "employee",
       "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
     }
   ],
+  "unexpectedConsoleErrors": [],
+  "expectedDenyEvents": [
+    {
+      "scenario": "employee-settlements-deny",
+      "note": "UI blocked message"
+    }
+  ],
+  "mutatingBffFailures": [],
   "screenshots": [
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/theme-1440-light-dark.png",
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/bell-open-1440-light.png",
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/notifications-page-1440-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/theme-1440-dark-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/bell-open-1440-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/notifications-page-1440-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/theme-390-light-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/bell-open-390-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/notifications-page-390-light.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/390-overflow-home-light.png",
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/theme-390-dark-light.png",
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/bell-open-390-dark.png",
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/notifications-page-390-dark.png",
-    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/390-overflow-check.png",
-    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/payout-recorded.png"
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/390-overflow-home-dark.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/payout-recorded.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/team-invite-created.png",
+    "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/employee-invite-accepted.png"
   ],
   "dbChecks": {
     "payoutRecordsBefore": "0",
-    "payoutRecordsAfter": "0",
-    "bonusStatus": "CONFIRMED"
+    "payoutApiReplay": false,
+    "payoutRecordId": "cmv2g7er40001jsu6rcju3c6r",
+    "payoutRecordsAfter": "1",
+    "bonusStatus": "PAID",
+    "payoutInboxRows": "1",
+    "bonusStillConfirmed": "0"
   },
-  "exitCode": 1
+  "exitCode": 0
 }
