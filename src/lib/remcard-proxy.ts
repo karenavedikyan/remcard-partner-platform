@@ -130,6 +130,14 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET"]),
       pattern: /^\/api\/bonus\/(balance|history)$/,
     },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/bonus\/c[a-z0-9]{20,}\/payout-actions$/i,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/bonus\/c[a-z0-9]{20,}\/pay$/i,
+    },
   ];
 
 export type ProxyRequestInput = {
@@ -157,13 +165,40 @@ export type ProxyResponseResult =
   | { ok: false; status: number; body: string };
 
 const STORE_ORDER_PATH = "/api/store/order";
+const BONUS_PAY_PATH = /^\/api\/bonus\/[^/]+\/pay$/;
+
+function parseOptionalIdempotencyKey(
+  raw: string | null | undefined,
+): { ok: true; key: string | null } | { ok: false; error: string } {
+  if (raw == null || raw === "") {
+    return { ok: true, key: null };
+  }
+  const parsed = parseStoreOrderIdempotencyKey(raw);
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error };
+  }
+  return { ok: true, key: parsed.key };
+}
 
 export function resolveStoreOrderIdempotencyKey(
   method: string,
   pathname: string,
   rawHeader: string | null | undefined,
 ): { ok: true; key: string | null } | { ok: false; status: number; body: string } {
-  if (method.toUpperCase() !== "POST" || pathname !== STORE_ORDER_PATH) {
+  const upper = method.toUpperCase();
+  if (upper === "POST" && BONUS_PAY_PATH.test(pathname)) {
+    const parsed = parseOptionalIdempotencyKey(rawHeader);
+    if (!parsed.ok) {
+      return {
+        ok: false,
+        status: 400,
+        body: JSON.stringify({ error: parsed.error }),
+      };
+    }
+    return { ok: true, key: parsed.key };
+  }
+
+  if (upper !== "POST" || pathname !== STORE_ORDER_PATH) {
     return { ok: true, key: null };
   }
 

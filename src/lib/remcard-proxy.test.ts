@@ -287,6 +287,14 @@ describe("remcard proxy transport checks", () => {
       true,
     );
     assert.equal(
+      isAllowedProxyRoute("POST", "/api/bonus/clxyz123456789012345678/pay"),
+      true,
+    );
+    assert.equal(
+      isAllowedProxyRoute("GET", "/api/bonus/clxyz123456789012345678/payout-actions"),
+      true,
+    );
+    assert.equal(
       isAllowedProxyRoute("PATCH", "/api/pro/organization/branches/br_krd_partizan"),
       true,
     );

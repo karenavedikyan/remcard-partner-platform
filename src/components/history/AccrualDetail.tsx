@@ -20,6 +20,8 @@ import type { AccrualRow, AccrualType, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PayoutRecordModal } from "@/components/payout/PayoutRecordModal";
+import { fetchBonusPayoutActions, type SettlementPayoutActions } from "@/lib/payout-record";
 import styles from "./history.module.css";
 
 function formatDate(iso: string) {
@@ -43,6 +45,8 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
   const [error, setError] = useState("");
   const [accrual, setAccrual] = useState<AccrualRow | null>(null);
   const [linkedPurchase, setLinkedPurchase] = useState<PurchaseRow | null>(null);
+  const [payoutActions, setPayoutActions] = useState<SettlementPayoutActions | null>(null);
+  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,6 +59,24 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         return;
       }
       setAccrual(row);
+      setPayoutActions(null);
+      setPayoutModalOpen(false);
+
+      if (
+        row.scope === "payable-to-pros" &&
+        row.accrualType === "bonus" &&
+        row.status !== "PAID" &&
+        row.status !== "CANCELLED"
+      ) {
+        try {
+          const actions = await fetchBonusPayoutActions(row.id, row.accrualType);
+          if (actions.canRecordCash || actions.canRecordTransfer) {
+            setPayoutActions(actions);
+          }
+        } catch {
+          // Payout actions are optional; detail remains read-only.
+        }
+      }
 
       if (row.orderId) {
         const byOrderId = await fetchPurchaseByOrderId(row.orderId, user);
@@ -153,7 +175,29 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         </Link>
       ) : null}
 
+      {payoutActions && accrual ? (
+        <Button type="button" onClick={() => setPayoutModalOpen(true)}>
+          Зафиксировать выплату
+        </Button>
+      ) : null}
+
       <Link href="/history">← К истории</Link>
+
+      {payoutModalOpen && payoutActions && accrual ? (
+        <PayoutRecordModal
+          target={{
+            bonusId: accrual.id,
+            counterpartyName: accrual.counterpartyName,
+            amount: accrual.amount,
+            basis: accrual.promoCode
+              ? `Сертификат ${accrual.promoCode}`
+              : `Начисление ${accrual.id.slice(-8)}`,
+            payoutActions,
+          }}
+          onClose={() => setPayoutModalOpen(false)}
+          onSuccess={() => void load()}
+        />
+      ) : null}
     </div>
   );
 }

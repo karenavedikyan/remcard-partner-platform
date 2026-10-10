@@ -25,6 +25,10 @@ import type {
 import { Tabs } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  PayoutRecordModal,
+  type PayoutRecordTarget,
+} from "@/components/payout/PayoutRecordModal";
 import styles from "./settlements.module.css";
 
 function formatDate(iso: string) {
@@ -46,7 +50,16 @@ const TAB_ITEMS: Array<{ id: SettlementsTab; label: string }> = [
   { id: "completed", label: "Завершённые" },
 ];
 
-function ObligationRow({ row }: { row: SettlementObligation }) {
+function ObligationRow({
+  row,
+  onRecordPayout,
+}: {
+  row: SettlementObligation;
+  onRecordPayout?: (row: SettlementObligation) => void;
+}) {
+  const canPayout =
+    row.payoutActions &&
+    (row.payoutActions.canRecordCash || row.payoutActions.canRecordTransfer);
   return (
     <article className={styles.row}>
       <div className={styles.rowHeader}>
@@ -64,12 +77,23 @@ function ObligationRow({ row }: { row: SettlementObligation }) {
         <Link href={settlementPurchaseHref(row)} className={styles.linkButton}>
           Покупка
         </Link>
+        {canPayout && onRecordPayout ? (
+          <Button type="button" variant="secondary" onClick={() => onRecordPayout(row)}>
+            Зафиксировать выплату
+          </Button>
+        ) : null}
       </div>
     </article>
   );
 }
 
-function PartnerGroupBlock({ group }: { group: SettlementPartnerGroup }) {
+function PartnerGroupBlock({
+  group,
+  onRecordPayout,
+}: {
+  group: SettlementPartnerGroup;
+  onRecordPayout?: (row: SettlementObligation) => void;
+}) {
   return (
     <section className={styles.group}>
       <div className={styles.groupHeader}>
@@ -78,7 +102,7 @@ function PartnerGroupBlock({ group }: { group: SettlementPartnerGroup }) {
       </div>
       <div className={styles.list}>
         {group.items.map((row) => (
-          <ObligationRow key={row.id} row={row} />
+          <ObligationRow key={row.id} row={row} onRecordPayout={onRecordPayout} />
         ))}
       </div>
     </section>
@@ -111,6 +135,7 @@ export function SettlementsHub() {
   const [error, setError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
   const [data, setData] = useState<SettlementsResponse | null>(null);
+  const [payoutTarget, setPayoutTarget] = useState<PayoutRecordTarget | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,6 +172,17 @@ export function SettlementsHub() {
     () => groupObligationsByCounterparty(data?.payable ?? []),
     [data?.payable],
   );
+
+  const openPayoutModal = useCallback((row: SettlementObligation) => {
+    if (!row.payoutActions) return;
+    setPayoutTarget({
+      bonusId: row.id,
+      counterpartyName: row.counterpartyName,
+      amount: row.amount,
+      basis: row.basis,
+      payoutActions: row.payoutActions,
+    });
+  }, []);
 
   const receivableTotal = sumObligationAmounts(data?.receivable ?? []);
   const payableTotal = sumObligationAmounts(data?.payable ?? []);
@@ -224,7 +260,11 @@ export function SettlementsHub() {
         ) : (
           <div className={styles.list}>
             {payableGroups.map((group) => (
-              <PartnerGroupBlock key={group.counterpartyId} group={group} />
+              <PartnerGroupBlock
+                key={group.counterpartyId}
+                group={group}
+                onRecordPayout={openPayoutModal}
+              />
             ))}
           </div>
         )
@@ -240,6 +280,14 @@ export function SettlementsHub() {
             ))}
           </div>
         )
+      ) : null}
+
+      {payoutTarget ? (
+        <PayoutRecordModal
+          target={payoutTarget}
+          onClose={() => setPayoutTarget(null)}
+          onSuccess={() => void load()}
+        />
       ) : null}
     </>
   );
