@@ -1,140 +1,100 @@
 # PROF-H release handoff (H1–H5) — preparation only
 
-**This document does not authorize production deploy.** It packages a release candidate, migration plan, verification evidence, and operator steps.
+**Does not authorize production deploy, migration writes, or publication.**
 
-## 1. Candidate SHA pair (feature branches)
+## 1. Version pins (no moving branch)
 
-| Repository | Branch | Role | SHA (full) |
-|------------|--------|------|------------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | backend + migrations | `6ae369a16ead395b8c9e1518d0781b4c78d1169c` |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | PROF cabinet frontend | `63be300794ca5670b752cc5d60704e6f367b9be9` |
+| Artifact | SHA | Role |
+|----------|-----|------|
+| Navigator **immutable bundle** (app + migrations) | `f900bcf9ac364dbd805a0dfe56253d39da257533` | Checkout for code parity |
+| Platform **immutable bundle** | `9a6ab80914e43c2e8a0929ea84a01fa257d01123` | Checkout for code parity |
+| Navigator **release-safety scripts/docs** | _see git tip of `feat/prof-h-profile-redesign` after fix-pass commit_ | Preflight/apply/manifest updates |
+| Platform **handoff docs only** | _same branch tip after fix-pass_ | This file |
 
-**Merge-base with release (no release-only commits behind feature):**
+Manifest source of truth: `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json` (checksums, order, legacy names, DB policy). **Do not** use `git pull` on a branch name as the release version — use explicit SHAs above.
 
-- Navigator: `9523dcd5dc4cd0c69b58152604004a6ed27083be` (= `release/prof-backend-v1-20261007` tip)
-- Platform: `bb60c608f8b88c910773ab681060fe0a48673ee9` (= `release/prof-v1-20261007` tip)
+Release baseline for diff/rehearsal (not live deployment ID):
 
-Release SHAs are **Git references for diffing**, not confirmed live deployment IDs. Operator must confirm Timeweb/runtime metadata separately.
+- Navigator `9523dcd5dc4cd0c69b58152604004a6ed27083be`
+- Platform `bb60c608f8b88c910773ab681060fe0a48673ee9`
 
-**Manifest source of truth:** `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json` (checksums, migration order, legacy names).
+## 2. Expected pending migrations
 
-## 2. Release scope
+Exactly **five** PROF-H SQL files in manifest (H2×3 + H5×2). After release backend ledger is complete, preflight `expectedPendingProfH` should list those five names until apply. **Any other pending** migration on disk → preflight **BLOCKED** (full `migrate deploy` would apply more than PROF-H).
 
-| Scope | Content | DB delta on release backend |
-|-------|---------|------------------------------|
-| H1 | Profile structure / sections | — (app) |
-| H2 | Working profile, directions, internal search | 3 migrations |
-| H3 | Voluntary catalog + public draft | On release already |
-| H4 | Branches, contacts, schedule, address confirm | On release already |
-| H5 | Team, branch access, invites, partial revoke | 2 migrations |
-
-**Excluded:** PROF-G, unrelated branches, PROF-D ledger repair, disabling legacy remcard.ru cabinet.
-
-**Prep change (blocker fix):** migration folder renames so Prisma lexicographic order matches dependencies (H2 `_01/_02/_03`, H5 `20261011_…` after `organization_team`). See `docs/PROF-H-RELEASE-MIGRATIONS.md`.
-
-## 3. Migration apply (operator)
-
-Single mechanism — **`npx prisma migrate deploy`** via **direct** `DIRECT_URL`, after read-only preflight:
+## 3. Operator read-only preflight (production)
 
 ```bash
 cd remcard-navigator
-git checkout feat/prof-h-profile-redesign
-git pull
-# checkout exact candidate SHA from manifest
+git checkout f900bcf9ac364dbd805a0dfe56253d39da257533  # or later tip that includes release-safety scripts
 
-DIRECT_URL="<direct-postgres-url>" node scripts/prof-h-release-migrate-preflight.mjs
-# exit 0 required
+export DATABASE_URL='postgresql://…'   # read-only role
+export DIRECT_URL='postgresql://…'     # MUST match DATABASE_URL identity
+export PROF_H_EXPECTED_DB_HOST='…'
+export PROF_H_EXPECTED_DB_NAME='…'
 
-DIRECT_URL="<direct-postgres-url>" npx prisma migrate deploy
+node scripts/prof-h-release-migrate-preflight.mjs --mode=operator-readonly
 ```
 
-- **5** pending SQL migrations on top of release backend ledger (names + SHA-256 in manifest).
-- **Do not** use `scripts/migrate-deploy.mjs` for the migration-only step (runs `seed-legal.ts` afterward).
-- **Do not** `db push`, `reset`, or `resolve` without evidence.
-- If **legacy** ledger names exist (`20261010100000_…`, unprefixed H2 folders), **stop** — manual reconciliation (manifest `legacyLedgerNames`).
+Exit **0** → `READY_FOR_OPERATOR_CHECK` for migration **readiness only**. Exit **1** → `BLOCKED` (see JSON `blockers`).
 
-Timeweb backend start (`scripts/start-prof-release.mjs`) applies **only** P124 idempotency gate — **not** the H2/H5 chain.
+**Not executed in this prep task:** live production connection.
 
-## 4. Verification executed (prep environment)
+## 4. Apply (only after separate written approval + backup)
 
-Synthetic **INN/OGRN** placeholders used for builds (`000000000000` / `000000000000000`) — not for production config.
+```bash
+DATABASE_URL='…' DIRECT_URL='…' \
+  node scripts/prof-h-release-migrate-apply.mjs --apply --mode=operator-readonly
+```
 
-| Check | Command | Exit |
-|-------|---------|------|
-| Migration order unit test | `node --test scripts/lib/__tests__/prof-h-release-manifest.test.mjs` | 0 |
-| Upgrade rehearsal (isolated `remcard_prof_h_upgrade_rc`) | `PROF_H_UPGRADE_DATABASE_URL=postgresql://…/remcard_prof_h_upgrade_rc node scripts/prof-h-release-upgrade-rehearsal.mjs --apply` | 0 — 5 migrations applied; second deploy no-op |
-| Preflight on rehearsal DB | `DIRECT_URL=…/remcard_prof_h_upgrade_rc node scripts/prof-h-release-migrate-preflight.mjs` | 0 — all 5 applied |
-| Navigator typecheck | `pnpm run typecheck` | 0 |
-| Navigator production build | `CI=true OPERATOR_INN=… PLATFORM_INN=… pnpm run build` | 0 |
-| PG integration H2–H5 | `pnpm exec vitest run src/lib/__tests__/profH{2,3,4,5}*.integration.test.ts` (+ catalog fix pass) | 0 — **50** tests |
-| Platform tests | `npm run test` | 0 — proxy + **90** component |
-| Platform production build | `CI=true npm run build` | 0 |
-| Browser smoke (H5 acceptance = team, store context, partial revoke, 390 overflow) | `source .env.local && node scripts/prof-h5-browser-acceptance.mjs` | 0 |
+Forbidden: `scripts/migrate-deploy.mjs`, `seed-legal` in migrate step, `db push`, `migrate resolve` without evidence.
 
-Prior acceptance for H2–H4 browser/scripts: `docs/PROF-H-PROGRESS.md`, `docs/PROF-H5-ACCEPTANCE.md`. Screenshots: `/opt/cursor/artifacts/screenshots/prof-h5-*.png`.
+## 5. Defect → fix → test (release-safety fix-pass)
 
-**Skipped / not re-run this prep:** full H2+H3+H4 browser matrix in one script (covered by prior acceptance + H5 cross-cutting smoke). Real Telegram/MAX login, live Yandex, production blob upload.
+| Defect | Fix | Test |
+|--------|-----|------|
+| `DIRECT_URL` / `DATABASE_URL` could diverge | `resolveProfHDatabaseTarget()` requires both, same identity; Prisma child gets both | Unit: mismatched URLs → `url_identity_mismatch` |
+| Preflight trusted computed SQL hashes | Manifest JSON authoritative; disk verified against manifest | Unit: tampered manifest sha → block |
+| Only 5 PROF-H migrations audited | Full disk folder vs ledger; unknown pending blocked | Unit: extra pending migration |
+| Loopback-only preflight blocked operator handoff | `--mode=operator-readonly` + expected host/db env | Unit: operator target mismatch |
+| Unfinished ledger rows ignored off-disk | Scan all ledger rows | Unit: unfinished non–PROF-H row |
+| Duplicate successful ledger collapsed | Per-name row buckets | Unit: duplicate_success |
+| Upgrade rehearsal used moving release ref | Pinned `9523dcd5…` worktree | Rehearsal `--apply` exit 0 |
+| Self-referential manifest SHAs | `candidateGit.immutableBundleSha` + separate docs tip | Handoff table §1 |
 
-## 5. Suggested production rollout order
+## 6. Commands run locally (fix-pass)
 
-1. **Backup** (operator — see §7) + confirm backup ID stored.
-2. **Read-only preflight** on production `DIRECT_URL` (migration ledger + checksums).
-3. **Maintenance window / traffic note** if desired (additive DDL; low downtime expected).
-4. **`prisma migrate deploy`** (5 migrations).
-5. **Deploy backend** to candidate navigator SHA (`pnpm build` artifact / Timeweb).
-6. **Deploy frontend** to candidate platform SHA (`npm run build`).
-7. **Read-only smoke** (public pages, auth cookie, profile load, no write tests).
-8. **Write smoke** (separate approval): working save, draft catalog, branch create, invite accept — per runbook.
+| Command | Exit |
+|---------|------|
+| `pnpm run test:prof-h-release` | 0 (16 tests) |
+| `PROF_H_UPGRADE_DATABASE_URL=…/remcard_prof_h_upgrade_rc node scripts/prof-h-release-upgrade-rehearsal.mjs --apply` | 0 |
+| `DATABASE_URL=… DIRECT_URL=…/remcard_prof_h_upgrade_rc node scripts/prof-h-release-migrate-preflight.mjs` | 0 (post-rehearsal) |
+| Mismatch probe: `DATABASE_URL=…/remcard_prof_test` + `DIRECT_URL=…/remcard_prof_h_upgrade_rc` preflight | 1 |
 
-**Avoid incompatible states:**
+Browser H1–H5 **not re-run** (no app/runtime change in immutable bundle).
 
-| State | Risk |
-|-------|------|
-| New backend + old DB (migrations not applied) | H2/H5 API vs schema mismatch — **block deploy until migrate** |
-| New DB schema + old backend | Additive columns mostly OK; **H5** new tables unused — OK short term |
-| New frontend + old backend | Team UI / working profile / BFF routes missing — **broken** |
-| Old frontend + new backend | Partial: legacy cabinet may work; **PROF routes** need new frontend |
+## 7. Upgrade rehearsal limitations
 
-Deploy **migrations before or with backend**; deploy **platform after backend** is up.
+- Release baseline via **fixed SHA** `9523dcd5…` worktree + `db push` + synthetic ledger (early migrations cannot bootstrap empty DB).
+- Proves **PROF-H SQL delta** applies in order and is idempotent on isolated `remcard_prof_h_upgrade_rc`.
+- **Does not** prove production historical ledger health or pre-20260325 bootstrap path.
 
-## 6. Compatibility notes
+## 8. Rollout order (unchanged)
 
-- **Old FE + new BE:** remcard.ru legacy cabinet unchanged; new platform required for PROF-H UI.
-- **Rollback FE only:** Safe if backend stays new; users lose new UI only.
-- **Rollback BE after H5:** **Unsafe** if partial revoke / stale-invite logic relied upon — old backend may **ignore** `branchAccessChangedAt` and accept stale invites. Prefer **keep new backend** or **disable org invites** operationally until forward fix.
-- **Rollback DB:** Restore from backup only with explicit data-loss review (additive columns + new rows after cutover).
+Backup (confirmed ID) → read-only preflight → **separate approval** → apply script → deploy backend → deploy frontend → read-only smoke → approved write smoke.
 
-## 7. Backup & rollback (instructions only — not executed)
+## 9. Rollback / H5 backend revert
 
-**Backup:** use operator’s standard PostgreSQL backup for the navigator database (Timeweb panel or `pg_dump` runbook). Include full DB + confirm restore drill on staging. Record backup **ID/ timestamp** in change ticket (no secrets in chat).
+**Not safe** to roll back backend after H5 without a **proven** block on dangerous legacy invite paths: old code may ignore `branchAccessChangedAt` and stale-invite guards. There is **no** operational toggle in this release. Forward-fix options: keep new backend, freeze org invites, or DB restore with explicit data-loss review. **No** DROP schema default.
 
-**Rollback apps:** redeploy previous **known-good deployment artifacts** (not just Git SHA unless that SHA is what Timeweb runs). Order: **frontend first** (reduce bad UX) or **backend first** if security — for H5 stale-invite issue, **do not** roll backend back without invite freeze.
+## 10. External checks
 
-**Schema:** do **not** DROP new columns/tables as default rollback. Additive schema does **not** guarantee old code safety for H5 auth paths.
+Unchanged from prior handoff: JWT alignment, BFF, Yandex live, blob upload, Telegram/MAX — operator-owned, not mocked in preflight.
 
-## 8. External configuration checklist (no secret values)
+## 11. Status
 
-| Item | What to verify | Expected | Blocker until |
-|------|----------------|----------|----------------|
-| Backend URL / CORS | Platform `REMCARD_API_BASE_URL`, navigator allowed origins | BFF 200, no CORS on `/api/remcard/*` | Deploy platform |
-| JWT / session cookie | Same `JWT_SECRET` on navigator; cookie domain for prof host | `/api/auth/me` 200 when logged in | Smoke |
-| `remcard-pro-branch` cookie | BFF forwards Set-Cookie from `/api/pro/context` | Branch switch persists | H5 smoke |
-| StaffInvite / partnership URLs | Invite links hit navigator `/invite/accept` | Accept flow 200 | H5 prod smoke |
-| `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` | Key allows production domain | Geocoder loads | H4 address (live) |
-| Blob/storage | Logo upload env on navigator | Upload returns URL | Catalog logo (live) |
-| Telegram / MAX | Bot tokens, webhook URLs unchanged | Login works | Post-deploy external |
-| Legal env | `OPERATOR_INN`, `PLATFORM_INN`, OGRN, documents | `pnpm run check:legal-env` pass in prod image | Backend start |
+**READY_FOR_OPERATOR_CHECK** — release-safety tooling verified locally; production read-only preflight and external checks remain.
 
-**Remaining live checks (operator):** real Telegram/MAX login, live Yandex tile/geocode on prod domain, real logo upload to production storage.
+## 12. Draft permission text
 
-## 9. Draft permission request (for a future ticket)
-
-> Request approval to deploy PROF-H release candidate: navigator `<SHA>` + platform `2d0ca5c9…` (or updated platform doc SHA). Preconditions: production backup confirmed, `prof-h-release-migrate-preflight.mjs` exit 0 on `DIRECT_URL`, migrate deploy applies exactly 5 migrations per manifest, no legacy ledger names. Rollout: backup → preflight → migrate → backend → frontend → read-only smoke → approved write smoke. Rollback constraints documented for H5 backend revert.
-
-## 10. Release status
-
-**READY_FOR_OPERATOR_CHECK** — candidate builds and tests pass; migration order fix and upgrade rehearsal succeeded on isolated DB. Required before approval: production read-only preflight, confirmed deployment metadata, external live checks in §8.
-
----
-
-Platform doc commit SHA: update `PROF-H-PROGRESS.md` after push. Navigator candidate SHA: see `PROF-H-RELEASE-MANIFEST.json` after prep commit.
+> Request approval to run `prof-h-release-migrate-apply.mjs --apply` after backup and preflight exit 0 on production read-only URLs. Deploy navigator immutable bundle `f900bcf9…` plus release-safety script tip, platform `9a6ab809…`, following manifest pending set (5 migrations).

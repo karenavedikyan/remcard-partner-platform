@@ -10,9 +10,11 @@
 ## PROF-H release candidate package (2026-10-10)
 
 - Handoff: `docs/PROF-H-RELEASE-HANDOFF.md`
-- Migration manifest (source of truth): `remcard-navigator/docs/PROF-H-RELEASE-MIGRATIONS.md` + `PROF-H-RELEASE-MANIFEST.json`
+- Migration manifest (source of truth): `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json`
+- Immutable bundle SHAs: navigator `f900bcf9…`, platform `9a6ab809…` (+ release-safety script commits on branch tip)
+- Preflight: `prof-h-release-migrate-preflight.mjs` (manifest + full ledger; unified DATABASE_URL/DIRECT_URL)
 - Status: **READY_FOR_OPERATOR_CHECK** (no deploy authorization)
-- Browser RC: `prof-h5-browser-acceptance.mjs` exit **0** (JWT from navigator `.env.local`, `pnpm start` :3001 + platform :3000)
+- Browser RC (prior): `prof-h5-browser-acceptance.mjs` exit **0** — not re-run after release-safety-only pass
 
 ## PROF-H5 — organization team (2026-10-10)
 
