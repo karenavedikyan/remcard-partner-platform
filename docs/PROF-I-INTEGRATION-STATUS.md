@@ -52,9 +52,11 @@ PROF_E_PLATFORM_URL=http://127.0.0.1:3000 node scripts/prof-i-e-integration-brow
 
 **Last full E run:** all scenarios **PASS**; `exitCode: 0`; no console/page errors recorded (employee page had **no** `trackPage` on that run).
 
-## Invite chain partial — employee `trackPage` (2026-10-10)
+## Invite chain — employee `trackPage` closed (2026-10-10)
 
-Harness-only: `PROF_E_INVITE_CHAIN_ONLY=1`, `trackPage(employee)` immediately after `newPage`, before first navigation. Console/pageerror tracking stays on; expected deny is only confirmed **GET** `/api/remcard/api/pro/wallet/settlements` → **403** (`expectedDenyResponses`). Other BFF GET/console/page errors → **FAIL** (`unexpectedBffGetErrors` / `unexpectedConsoleErrors` / `unexpectedPageErrors`).
+**App fix:** server `GET /api/pro/context` on profile page → `deriveProfileCabinetAccess`; no `employees-overview` / `moderation-notes` for CLIENT org team without PRO overview roles; team tab shows access restriction instead of load errors. Owner / PRO branch manager unchanged.
+
+Harness: `PROF_E_INVITE_CHAIN_ONLY=1`, strict `trackPage(employee)`. Expected deny = confirmed GET wallet/settlements **403** only.
 
 ```bash
 PROF_E_INVITE_CHAIN_ONLY=1 PROF_E_PLATFORM_URL=http://127.0.0.1:3000 \
@@ -64,14 +66,13 @@ PROF_E_INVITE_CHAIN_ONLY=1 PROF_E_PLATFORM_URL=http://127.0.0.1:3000 \
 | Field | Value |
 |-------|--------|
 | **runMode** | `invite-employee-chain-only` (not full E) |
-| **platform SHA** | `d6273be3805250ccbb60284bf1e693512dadef2c` |
-| **exit code** | **1** |
-| **scenarios** | `team-invite-wizard` **PASS**, `employee-accept-access` **PASS**, `bff-get-unexpected` **FAIL** |
+| **platform SHA** | `50c4fc8c227ba1a0fbc0196c0db8afe89ee7df20` |
+| **exit code** | **0** |
+| **scenarios** | wizard + employee-accept-access **PASS** |
 | **expectedDenyResponses** | 1× GET wallet/settlements **403** |
-| **unexpectedBffGetErrors** | 401×2 `pro/organization/employees-overview`, 403×2 `pro/moderation-notes` (console mirrors generic network lines in `consoleErrors`) |
-| **unexpectedPageErrors** | `[]` |
+| **unexpectedBffGetErrors / unexpectedConsoleErrors / unexpectedPageErrors** | `[]` |
 
-**Verdict:** invite → accept → scanner → settlements deny **behaviour PASS**; strict employee observability **FAIL** until app/shell stops calling forbidden BFF GETs on profile routes (no app change in this pass).
+**Verdict:** employee-chain acceptance **PASS** (strict observability). Full E not re-run this pass.
 
 ## NOT VERIFIED
 
