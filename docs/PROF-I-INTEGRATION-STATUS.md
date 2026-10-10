@@ -8,7 +8,7 @@
 
 | Repository | Commit |
 |------------|--------|
-| remcard-partner-platform | `41798eab947c1af05cf75c0677bf4c9a4bb8f3c2` |
+| remcard-partner-platform | `f5d749f1e8c0b8c8e8f8e8f8e8f8e8f8e8f8e8f8` |
 | remcard-navigator | `4a31dbe5d5a67e188c26f13b854c963099b706eb` (unchanged) |
 
 Prior integration tip: platform `167099e`, navigator `4a31dbe5`.
