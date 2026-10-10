@@ -93,37 +93,71 @@ function sqlScalar(sql) {
   }).trim();
 }
 
+const PLATFORM_ROOT =
+  process.env.PROF_E_PLATFORM_ROOT ?? "/tmp/prof-i-worktrees/prof-i-e-platform";
+const INVITE_CHAIN_ONLY = process.env.PROF_E_INVITE_CHAIN_ONLY === "1";
+
 const report = {
   generatedAt: new Date().toISOString(),
+  runMode: INVITE_CHAIN_ONLY ? "invite-employee-chain-only" : "full-e",
+  platformSha: execSync("git rev-parse HEAD", { cwd: PLATFORM_ROOT, encoding: "utf8" }).trim(),
   profBase: PROF,
   fixtures: fixturesPublic,
   scenarios: {},
   consoleErrors: [],
   unexpectedConsoleErrors: [],
-  expectedDenyEvents: [],
+  unexpectedPageErrors: [],
+  unexpectedBffGetErrors: [],
+  expectedDenyResponses: [],
   mutatingBffFailures: [],
   screenshots: [],
   dbChecks: {},
   exitCode: 0,
 };
 
+/** Confirmed deny for employee settlements access (GET BFF wallet/settlements → 403). */
+function isEmployeeWalletSettlementsDenyGet(resp) {
+  if (resp.request().method() !== "GET" || resp.status() !== 403) return false;
+  try {
+    const path = new URL(resp.url()).pathname;
+    return path === "/api/remcard/api/pro/wallet/settlements";
+  } catch {
+    return false;
+  }
+}
+
+const GENERIC_FAILED_RESOURCE_RE =
+  /^Failed to load resource: the server responded with a status of (401|403|404) /;
+
 function trackPage(page, label) {
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
     report.consoleErrors.push({ label, text });
+    if (GENERIC_FAILED_RESOURCE_RE.test(text)) return;
     report.unexpectedConsoleErrors.push({ label, text });
   });
   page.on("pageerror", (err) => {
     const text = String(err);
-    report.consoleErrors.push({ label, text });
-    report.unexpectedConsoleErrors.push({ label, text });
+    report.consoleErrors.push({ label, text, kind: "pageerror" });
+    report.unexpectedPageErrors.push({ label, text });
+    report.unexpectedConsoleErrors.push({ label, text, kind: "pageerror" });
   });
   page.on("response", async (resp) => {
     const req = resp.request();
     const method = req.method();
-    if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return;
     const url = resp.url();
+    if (method === "GET" && resp.status() >= 400 && url.includes("/api/remcard/")) {
+      if (!isEmployeeWalletSettlementsDenyGet(resp)) {
+        report.unexpectedBffGetErrors.push({
+          label,
+          method: "GET",
+          url,
+          status: resp.status(),
+        });
+      }
+    }
+    if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return;
     if (!url.includes("/api/remcard/")) return;
     if (resp.status() >= 400) {
       let bodySnippet = "";
@@ -348,6 +382,7 @@ async function employeeAcceptAndAccess(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await setAuth(ctx, fixturesPublic.employeeId);
   const page = await ctx.newPage();
+  trackPage(page, "employee");
   await page.goto(profInviteUrl(inviteTokenInMemory), { waitUntil: "networkidle", timeout: 90_000 });
   const acceptPromise = page.waitForResponse(
     (r) =>
@@ -367,21 +402,30 @@ async function employeeAcceptAndAccess(browser) {
   }
   await page.goto(`${PROF}/scanner`, { waitUntil: "networkidle" });
   await page.getByRole("heading", { name: /Сканер/i }).waitFor({ timeout: 20_000 });
-  const settlementsDeny = page.waitForResponse(
-    (r) =>
-      r.url().includes("/api/remcard/api/pro/wallet/settlements") &&
-      r.request().method() === "GET" &&
-      r.status() === 403,
-    { timeout: 30_000 },
-  );
-  await page.goto(`${PROF}/settlements`, { waitUntil: "networkidle" });
-  await settlementsDeny;
-  await page.getByText(/Раздел взаиморасчётов недоступен/i).waitFor({ timeout: 20_000 });
-  report.expectedDenyEvents.push({
-    scenario: "employee-settlements-deny",
-    note: "GET wallet/settlements 403 + UI blocked message",
+  const settlementsDeny = page.waitForResponse(isEmployeeWalletSettlementsDenyGet, {
+    timeout: 30_000,
   });
+  await page.goto(`${PROF}/settlements`, { waitUntil: "networkidle" });
+  const denyResp = await settlementsDeny;
+  report.expectedDenyResponses.push({
+    scenario: "employee-settlements-deny",
+    label: "employee",
+    method: "GET",
+    url: denyResp.url(),
+    status: denyResp.status(),
+  });
+  await page.getByText(/Раздел взаиморасчётов недоступен/i).waitFor({ timeout: 20_000 });
   await ctx.close();
+}
+
+async function runInviteEmployeeChain(browser) {
+  const ownerCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await setAuth(ownerCtx, fixturesPublic.ownerId);
+  const ownerPage = await ownerCtx.newPage();
+  trackPage(ownerPage, "owner-wizard");
+  await runScenario("team-invite-wizard", () => ownerInviteWizard(ownerPage));
+  await runScenario("employee-accept-access", () => employeeAcceptAndAccess(browser));
+  await ownerCtx.close();
 }
 
 async function pollPayoutDb(bonusId, profRecipientId) {
@@ -455,8 +499,35 @@ async function ownerPayout(page) {
   await page.getByText(/777/).first().waitFor({ timeout: 20_000 });
 }
 
+function finalizeReport() {
+  const nConsole = report.unexpectedConsoleErrors.length;
+  const nPage = report.unexpectedPageErrors.length;
+  const nBffGet = report.unexpectedBffGetErrors.length;
+  if (nConsole > 0 || nPage > 0 || nBffGet > 0) {
+    report.exitCode = 1;
+    if (nBffGet > 0) {
+      report.scenarios["bff-get-unexpected"] = `FAIL: ${nBffGet} unexpected BFF GET errors`;
+    }
+    if (nConsole > 0 || nPage > 0) {
+      report.scenarios["console-unexpected"] =
+        `FAIL: ${nConsole} unexpected console + ${nPage} pageerror`;
+    }
+  }
+  writeFileSync(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
+  console.log(JSON.stringify({ exitCode: report.exitCode, reportPath: REPORT_PATH, runMode: report.runMode }));
+}
+
 async function main() {
   assertLoopbackStand();
+
+  const browser = await chromium.launch();
+  try {
+    if (INVITE_CHAIN_ONLY) {
+      await runInviteEmployeeChain(browser);
+      finalizeReport();
+      process.exit(report.exitCode);
+      return;
+    }
 
   const viewports = [
     { label: "1440", width: 1440, height: 900 },
@@ -467,8 +538,6 @@ async function main() {
     { suffix: "dark", initial: "dark" },
   ];
 
-  const browser = await chromium.launch();
-  try {
     for (const vp of viewports) {
       for (const th of themes) {
         const scenarioKey = `theme-${vp.label}-${th.suffix}`;
@@ -518,13 +587,7 @@ async function main() {
     await browser.close();
   }
 
-  if (report.unexpectedConsoleErrors.length > 0) {
-    report.exitCode = 1;
-    report.scenarios["console-unexpected"] = `FAIL: ${report.unexpectedConsoleErrors.length} unexpected console errors`;
-  }
-
-  writeFileSync(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
-  console.log(JSON.stringify({ exitCode: report.exitCode, reportPath: REPORT_PATH }));
+  finalizeReport();
   process.exit(report.exitCode);
 }
 

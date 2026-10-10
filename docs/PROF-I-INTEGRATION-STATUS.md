@@ -50,7 +50,28 @@ PROF_E_PLATFORM_URL=http://127.0.0.1:3000 node scripts/prof-i-e-integration-brow
 # employee settlements deny: waitForResponse GET wallet/settlements 403 (not console filter)
 ```
 
-**Last E run:** all scenarios **PASS**; `exitCode: 0`; no console/page errors recorded.
+**Last full E run:** all scenarios **PASS**; `exitCode: 0`; no console/page errors recorded (employee page had **no** `trackPage` on that run).
+
+## Invite chain partial — employee `trackPage` (2026-10-10)
+
+Harness-only: `PROF_E_INVITE_CHAIN_ONLY=1`, `trackPage(employee)` immediately after `newPage`, before first navigation. Console/pageerror tracking stays on; expected deny is only confirmed **GET** `/api/remcard/api/pro/wallet/settlements` → **403** (`expectedDenyResponses`). Other BFF GET/console/page errors → **FAIL** (`unexpectedBffGetErrors` / `unexpectedConsoleErrors` / `unexpectedPageErrors`).
+
+```bash
+PROF_E_INVITE_CHAIN_ONLY=1 PROF_E_PLATFORM_URL=http://127.0.0.1:3000 \
+  node scripts/prof-i-e-integration-browser.mjs
+```
+
+| Field | Value |
+|-------|--------|
+| **runMode** | `invite-employee-chain-only` (not full E) |
+| **platform SHA** | see `docs/prof-i-e-browser-report.json` → `platformSha` |
+| **exit code** | **1** |
+| **scenarios** | `team-invite-wizard` **PASS**, `employee-accept-access` **PASS**, `bff-get-unexpected` **FAIL** |
+| **expectedDenyResponses** | 1× GET wallet/settlements **403** |
+| **unexpectedBffGetErrors** | 401×2 `pro/organization/employees-overview`, 403×2 `pro/moderation-notes` (console mirrors generic network lines in `consoleErrors`) |
+| **unexpectedPageErrors** | `[]` |
+
+**Verdict:** invite → accept → scanner → settlements deny **behaviour PASS**; strict employee observability **FAIL** until app/shell stops calling forbidden BFF GETs on profile routes (no app change in this pass).
 
 ## NOT VERIFIED
 
