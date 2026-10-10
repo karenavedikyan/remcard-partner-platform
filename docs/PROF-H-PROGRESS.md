@@ -2,10 +2,17 @@
 
 ## Git HEAD
 
-| Repo | Branch | Base (given) | HEAD |
-|------|--------|--------------|------|
-| remcard-navigator | `feat/prof-h-profile-redesign` | `2e7e1148` | see git log |
-| remcard-partner-platform | `feat/prof-h-profile-redesign` | `eef0fc5` | see git log |
+| Repo | Branch | Release merge-base | HEAD (after PROF-H RC prep) |
+|------|--------|--------------------|-----------------------------|
+| remcard-navigator | `feat/prof-h-profile-redesign` | `9523dcd5` (`release/prof-backend-v1-20261007`) | see `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json` |
+| remcard-partner-platform | `feat/prof-h-profile-redesign` | `bb60c608` (`release/prof-v1-20261007`) | see handoff / git log |
+
+## PROF-H release candidate package (2026-10-10)
+
+- Handoff: `docs/PROF-H-RELEASE-HANDOFF.md`
+- Migration manifest (source of truth): `remcard-navigator/docs/PROF-H-RELEASE-MIGRATIONS.md` + `PROF-H-RELEASE-MANIFEST.json`
+- Status: **READY_FOR_OPERATOR_CHECK** (no deploy authorization)
+- Browser RC: `prof-h5-browser-acceptance.mjs` exit **0** (JWT from navigator `.env.local`, `pnpm start` :3001 + platform :3000)
 
 ## PROF-H5 — organization team (2026-10-10)
 
