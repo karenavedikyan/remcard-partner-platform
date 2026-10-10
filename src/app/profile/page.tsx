@@ -10,6 +10,10 @@ import {
   type ProfileSectionId,
 } from "@/lib/profile-sections";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
+import {
+  deriveProfileCabinetAccess,
+  type ProContextSnapshot,
+} from "@/lib/profile-cabinet-access";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
 
@@ -57,6 +61,16 @@ export default async function ProfilePage(props: {
     );
   }
 
+  const contextResult = await fetchRemcardUpstream<ProContextSnapshot>("/api/pro/context", {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
+  const contextReady = contextResult.ok;
+  const cabinetAccess = deriveProfileCabinetAccess({
+    profile: profileResult.data,
+    proContext: contextReady ? contextResult.data : null,
+    contextReady,
+  });
+
   return (
     <CabinetShell returnTo={safeReturnTo}>
       <PageHeading
@@ -66,6 +80,7 @@ export default async function ProfilePage(props: {
       />
       <ProfileEditor
         initial={profileResult.data}
+        cabinetAccess={cabinetAccess}
         moderationSection={moderationSection}
         section={section}
         focusBranchId={focusBranchId}

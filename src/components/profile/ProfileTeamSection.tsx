@@ -1,6 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  blockedTeamSectionMessage,
+} from "@/lib/profile-cabinet-access";
+import { useProfileCabinetAccess } from "./ProfileCabinetAccessContext";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   canManageTeam,
@@ -52,6 +56,8 @@ async function copyInviteUrl(url: string): Promise<boolean> {
 }
 
 export function ProfileTeamSection() {
+  const { canOpenTeamSection, contextReady } = useProfileCabinetAccess();
+  const fetchGenerationRef = useRef(0);
   const [overview, setOverview] = useState<EmployeesOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,12 +74,22 @@ export function ProfileTeamSection() {
   const [wizardScope, setWizardScope] = useState<InviteWizardScope | undefined>();
 
   const load = useCallback(async () => {
+    if (!contextReady || !canOpenTeamSection) {
+      setOverview(null);
+      setInvites([]);
+      setSoloEmployees([]);
+      setLoading(false);
+      setError("");
+      return;
+    }
+    const generation = fetchGenerationRef.current;
     setLoading(true);
     setError("");
     try {
       const data = await remcardFetch<EmployeesOverviewResponse>(
         "/api/pro/organization/employees-overview",
       );
+      if (generation !== fetchGenerationRef.current) return;
       setOverview(data);
       if (canManageTeam(data)) {
         const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
@@ -88,6 +104,7 @@ export function ProfileTeamSection() {
         setSoloEmployees([]);
       }
     } catch (caught) {
+      if (generation !== fetchGenerationRef.current) return;
       if (caught instanceof RemcardApiError && caught.status === 403) {
         setOverview(null);
         setError("Управление командой недоступно для вашей роли.");
@@ -95,9 +112,19 @@ export function ProfileTeamSection() {
         setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить команду");
       }
     } finally {
-      setLoading(false);
+      if (generation === fetchGenerationRef.current) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [canOpenTeamSection, contextReady]);
+
+  useEffect(() => {
+    fetchGenerationRef.current += 1;
+    setOverview(null);
+    setInvites([]);
+    setSoloEmployees([]);
+    setError("");
+  }, [canOpenTeamSection, contextReady]);
 
   useEffect(() => {
     void load();
@@ -140,6 +167,24 @@ export function ProfileTeamSection() {
   function openWizard(scope?: InviteWizardScope) {
     setWizardScope(scope);
     setWizardOpen(true);
+  }
+
+  if (!contextReady) {
+    return (
+      <Panel title="Сотрудники и доступы">
+        <p className={styles.hint}>Загружаем контекст доступа…</p>
+      </Panel>
+    );
+  }
+
+  if (!canOpenTeamSection) {
+    return (
+      <Panel title="Сотрудники и доступы">
+        <p className={styles.hint} role="status">
+          {blockedTeamSectionMessage()}
+        </p>
+      </Panel>
+    );
   }
 
   return (

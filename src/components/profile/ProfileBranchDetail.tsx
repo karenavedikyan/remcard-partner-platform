@@ -26,6 +26,7 @@ import {
   submitBranchForModeration,
   unpublishBranchFromCatalog,
 } from "@/lib/profile-branch-save";
+import { useProfileCabinetAccess } from "./ProfileCabinetAccessContext";
 import {
   BranchAddressGeocoder,
   BRANCH_ADDRESS_PUBLICATION_HINT,
@@ -83,6 +84,7 @@ type ProfileBranchDetailProps = {
 };
 
 export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailProps) {
+  const { canFetchModerationNotes } = useProfileCabinetAccess();
   const [branch, setBranch] = useState<BranchDetail | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [orgSnap, setOrgSnap] = useState<OrgSnapshot | null>(null);
@@ -164,6 +166,11 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     setLoading(true);
     setError("");
     try {
+      const notesPromise = canFetchModerationNotes
+        ? remcardFetch<{ notes?: { comment: string; createdAt: string; kind: string }[] }>(
+            "/api/pro/moderation-notes",
+          ).catch(() => ({ notes: [] }))
+        : Promise.resolve({ notes: [] as { comment: string; createdAt: string; kind: string }[] });
       const [branchRes, orgRes, profileRes, notesRes] = await Promise.all([
         remcardFetch<{ branch: BranchDetail; isOwner: boolean }>(
           `/api/pro/organization/branches/${encodeURIComponent(branchId)}`,
@@ -176,9 +183,7 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
           } | null;
         }>("/api/pro/organization"),
         remcardFetch<{ user?: { storeWorkingHours?: string | null } }>("/api/pro/profile"),
-        remcardFetch<{ notes?: { comment: string; createdAt: string; kind: string }[] }>(
-          "/api/pro/moderation-notes",
-        ).catch(() => ({ notes: [] })),
+        notesPromise,
       ]);
       setBranch(branchRes.branch);
       setIsOwner(branchRes.isOwner);
@@ -201,7 +206,7 @@ export function ProfileBranchDetail({ branchId, onClose }: ProfileBranchDetailPr
     } finally {
       setLoading(false);
     }
-  }, [applyBranchToForm, branchId]);
+  }, [applyBranchToForm, branchId, canFetchModerationNotes]);
 
   useEffect(() => {
     void load();

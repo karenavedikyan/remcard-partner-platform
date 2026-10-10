@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileEditor } from "./ProfileEditor";
+import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import type { ProProfileResponse } from "@/lib/types";
 import { persistWorkingProfileDraft } from "@/lib/profile-working-save";
 import { submitProfileForModerationReview } from "@/lib/profile-save";
@@ -79,6 +80,8 @@ vi.mock("./ProfileDirectionsPicker", () => ({
     />
   ),
 }));
+
+const cabinetAccess = ownerProfileCabinetAccess();
 
 const initial: ProProfileResponse = {
   organization: null,
@@ -181,11 +184,11 @@ describe("ProfileEditor", () => {
         description: null,
       },
     };
-    const { rerender } = render(<ProfileEditor initial={legacyOrg} />);
+    const { rerender } = render(<ProfileEditor cabinetAccess={cabinetAccess} initial={legacyOrg} />);
     expect(
       screen.queryByText(/Есть несохранённые изменения в основных данных/i),
     ).not.toBeInTheDocument();
-    rerender(<ProfileEditor initial={{ ...legacyOrg, programs: [...legacyOrg.programs] }} />);
+    rerender(<ProfileEditor cabinetAccess={cabinetAccess} initial={{ ...legacyOrg, programs: [...legacyOrg.programs] }} />);
     expect(
       screen.queryByText(/Есть несохранённые изменения в основных данных/i),
     ).not.toBeInTheDocument();
@@ -227,7 +230,7 @@ describe("ProfileEditor", () => {
       },
       user: { ...initial.user, partnerType: "STORE" },
     };
-    render(<ProfileEditor initial={legacyOrg} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={legacyOrg} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     const areas = screen.getByLabelText(/Территории обслуживания/i);
     await ui.clear(areas);
@@ -287,7 +290,7 @@ describe("ProfileEditor", () => {
         areas: ["Краснодар, Анапа, Новороссийск"],
       },
     });
-    render(<ProfileEditor initial={legacyOrg} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={legacyOrg} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     await ui.click(screen.getByRole("button", { name: /Сохранить основные данные/i }));
     await waitFor(() => expect(persistWorkingProfileDraft).toHaveBeenCalled());
@@ -324,7 +327,7 @@ describe("ProfileEditor", () => {
       },
       user: { ...initial.user },
     };
-    render(<ProfileEditor initial={legacyOrg} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={legacyOrg} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     confirmSpy.mockClear();
     await ui.click(screen.getByRole("tab", { name: /Каталог RemCard/i }));
@@ -332,7 +335,7 @@ describe("ProfileEditor", () => {
   });
 
   it("opens overview by default with working profile block", () => {
-    render(<ProfileEditor initial={initial} returnTo="/invite/abc" />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} returnTo="/invite/abc" />);
     expect(screen.getByRole("heading", { name: /Рабочий профиль/i })).toBeInTheDocument();
     expect(screen.getByText(/Пусть новые клиенты найдут вас/i)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Обзор/i })).toHaveAttribute("aria-selected", "true");
@@ -340,7 +343,7 @@ describe("ProfileEditor", () => {
 
   it("allows saving basics while catalog publication is pending review", async () => {
     const ui = userEvent.setup();
-    render(<ProfileEditor initial={initial} returnTo="/invite/abc" />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} returnTo="/invite/abc" />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     expect(screen.getByRole("button", { name: /Сохранить основные данные/i })).not.toBeDisabled();
     expect(screen.getByRole("link", { name: /Вернуться/i })).toHaveAttribute("href", "/invite/abc");
@@ -348,7 +351,7 @@ describe("ProfileEditor", () => {
 
   it("preserves unsaved basics input when switching sections", async () => {
     const ui = userEvent.setup();
-    render(<ProfileEditor initial={initial} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     const nameInput = screen.getByLabelText(/Имя представителя/i);
     await ui.clear(nameInput);
@@ -360,7 +363,7 @@ describe("ProfileEditor", () => {
 
   it("uses router.push when changing tabs", async () => {
     const ui = userEvent.setup();
-    render(<ProfileEditor initial={initial} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     expect(pushMock).toHaveBeenCalledWith("/profile?section=basics", { scroll: false });
   });
@@ -368,7 +371,7 @@ describe("ProfileEditor", () => {
   it("warns before leaving basics with unsaved changes and keeps input when cancelled", async () => {
     const ui = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
-    render(<ProfileEditor initial={initial} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     await ui.clear(screen.getByLabelText(/Имя представителя/i));
     await ui.type(screen.getByLabelText(/Имя представителя/i), "Черновик H2");
@@ -383,7 +386,7 @@ describe("ProfileEditor", () => {
     const ui = userEvent.setup();
     vi.mocked(persistWorkingProfileDraft).mockResolvedValue(initial);
     const confirmSpy = vi.spyOn(window, "confirm");
-    render(<ProfileEditor initial={initial} />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     await ui.clear(screen.getByLabelText(/Имя представителя/i));
     await ui.type(screen.getByLabelText(/Имя представителя/i), "Сохранённое имя");
@@ -399,7 +402,7 @@ describe("ProfileEditor", () => {
 
   it("keeps unsaved name when initial prop is rerendered with new object", async () => {
     const ui = userEvent.setup();
-    const { rerender } = render(<ProfileEditor initial={initial} />);
+    const { rerender } = render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     const nameInput = screen.getByLabelText(/Имя представителя/i);
     await ui.clear(nameInput);
@@ -409,6 +412,7 @@ describe("ProfileEditor", () => {
     });
     rerender(
       <ProfileEditor
+        cabinetAccess={cabinetAccess}
         initial={{
           ...initial,
           user: { ...initial.user, displayName: "Иван" },
@@ -420,12 +424,13 @@ describe("ProfileEditor", () => {
 
   it("resets form when signed-in user changes", async () => {
     const ui = userEvent.setup();
-    const { rerender } = render(<ProfileEditor initial={initial} />);
+    const { rerender } = render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} />);
     await ui.click(screen.getByRole("tab", { name: /Основные данные/i }));
     await ui.clear(screen.getByLabelText(/Имя представителя/i));
     await ui.type(screen.getByLabelText(/Имя представителя/i), "Несохраненное имя");
     rerender(
       <ProfileEditor
+        cabinetAccess={cabinetAccess}
         initial={{
           ...initial,
           user: { ...initial.user, id: "u2", displayName: "Пётр" },
@@ -437,13 +442,13 @@ describe("ProfileEditor", () => {
 
   it("follows searchParams when simulating browser history", () => {
     mockSearchParams = new URLSearchParams("section=basics");
-    const { rerender } = render(<ProfileEditor initial={initial} section="basics" />);
+    const { rerender } = render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} section="basics" />);
     expect(screen.getByRole("tab", { name: /Основные данные/i })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     mockSearchParams = new URLSearchParams("");
-    rerender(<ProfileEditor initial={initial} section="overview" />);
+    rerender(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} section="overview" />);
     expect(screen.getByRole("tab", { name: /Обзор/i })).toHaveAttribute("aria-selected", "true");
   });
 
@@ -472,7 +477,7 @@ describe("ProfileEditor", () => {
 
     mockSearchParams = new URLSearchParams("section=catalog");
     const ui = userEvent.setup();
-    render(<ProfileEditor initial={draftProfile} section="catalog" />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={draftProfile} section="catalog" />);
     await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
     await ui.click(screen.getByRole("button", { name: /Отправить на проверку/i }));
 
@@ -487,6 +492,7 @@ describe("ProfileEditor", () => {
     const ui = userEvent.setup();
     render(
       <ProfileEditor
+        cabinetAccess={cabinetAccess}
         initial={{
           ...initial,
           user: {
@@ -508,6 +514,7 @@ describe("ProfileEditor", () => {
     const ui = userEvent.setup();
     render(
       <ProfileEditor
+        cabinetAccess={cabinetAccess}
         initial={{
           ...initial,
           catalogPublication: {
@@ -552,7 +559,7 @@ describe("ProfileEditor", () => {
 
   it("opens catalog for moderation deep link section", async () => {
     mockSearchParams = new URLSearchParams("section=moderation");
-    render(<ProfileEditor initial={initial} section="catalog" moderationSection />);
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} section="catalog" moderationSection />);
     expect(screen.getByRole("tab", { name: /Каталог RemCard/i })).toHaveAttribute(
       "aria-selected",
       "true",

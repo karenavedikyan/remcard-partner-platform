@@ -2,6 +2,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { ProfileCabinetAccessProvider } from "./ProfileCabinetAccessContext";
+import {
+  deriveProfileCabinetAccess,
+  ownerProfileCabinetAccess,
+} from "@/lib/profile-cabinet-access";
 import type { ProProfileResponse } from "@/lib/types";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { EMPLOYEES_OVERVIEW_FIXTURE } from "@/lib/employees-overview-types";
@@ -55,14 +60,44 @@ const storeProfile: ProProfileResponse = {
   },
 };
 
+function renderOverview(
+  profile: ProProfileResponse = storeProfile,
+  access = ownerProfileCabinetAccess(),
+) {
+  return render(
+    <ProfileCabinetAccessProvider value={access}>
+      <ProfileOverviewSection profile={profile} onNavigateSection={() => {}} />
+    </ProfileCabinetAccessProvider>,
+  );
+}
+
 describe("ProfileOverviewSection counters", () => {
   beforeEach(() => {
     vi.mocked(remcardFetch).mockReset();
   });
 
+  it("does not fetch employees-overview for CLIENT team member", async () => {
+    const access = deriveProfileCabinetAccess({
+      profile: { ...storeProfile, user: { ...storeProfile.user, role: "CLIENT" } },
+      proContext: {
+        role: "ORG_TEAM_MEMBER",
+        organization: { id: "o1", name: "Shop" },
+        branches: [],
+      },
+      contextReady: true,
+    });
+    renderOverview(storeProfile, access);
+    await waitFor(() => {
+      expect(vi.mocked(remcardFetch)).not.toHaveBeenCalledWith(
+        expect.stringContaining("employees-overview"),
+        expect.anything(),
+      );
+    });
+  });
+
   it("does not show org branchCount after overview 403", async () => {
     vi.mocked(remcardFetch).mockRejectedValue(new RemcardApiError(403, "Forbidden"));
-    render(<ProfileOverviewSection profile={storeProfile} onNavigateSection={() => {}} />);
+    renderOverview();
     await waitFor(() => {
       expect(screen.queryByText("99")).not.toBeInTheDocument();
     });
@@ -75,7 +110,7 @@ describe("ProfileOverviewSection counters", () => {
       myRole: "MANAGER",
       branches: [EMPLOYEES_OVERVIEW_FIXTURE.branches[0]],
     });
-    render(<ProfileOverviewSection profile={storeProfile} onNavigateSection={() => {}} />);
+    renderOverview();
     const branchBtn = await screen.findByRole("button", { name: /Филиалы/i });
     expect(within(branchBtn).getByText("1")).toBeInTheDocument();
     expect(screen.queryByText("99")).not.toBeInTheDocument();
@@ -96,7 +131,7 @@ describe("ProfileOverviewSection counters", () => {
       }
       throw new RemcardApiError(500, "Server error");
     });
-    render(<ProfileOverviewSection profile={storeProfile} onNavigateSection={() => {}} />);
+    renderOverview();
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });

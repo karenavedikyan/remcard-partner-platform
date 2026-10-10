@@ -1,42 +1,25 @@
 {
-  "generatedAt": "2026-10-10T14:15:38.202Z",
+  "generatedAt": "2026-10-10T14:26:03.550Z",
   "runMode": "invite-employee-chain-only",
-  "platformSha": "d6273be3805250ccbb60284bf1e693512dadef2c",
+  "platformSha": "deee2348d4b59a15474bc13e6d46e26873c1da16",
   "profBase": "http://127.0.0.1:3000",
   "fixtures": {
-    "tag": "prof-i-e-1791641738041",
-    "ownerId": "cmv2h8cq80000jset2rxjfpl8",
-    "employeeId": "cmv2h8cqe0001jsetmie7jt6r",
-    "organizationId": "cmv2h8crt000rjsete98ddwin",
-    "branchAId": "cmv2h8crv000tjsetm7uom8vm",
-    "branchBId": "cmv2h8crx000vjsettbmao7fu",
-    "payableBonusId": "cmv2h8csi0017jsetxfk80kvc",
+    "tag": "prof-i-e-1791642363393",
+    "ownerId": "cmv2hlr950000jsuanxif8atl",
+    "employeeId": "cmv2hlr9a0001jsua046dqldr",
+    "organizationId": "cmv2hlram000rjsuaq2ejux7d",
+    "branchAId": "cmv2hlrao000tjsual86gmv6z",
+    "branchBId": "cmv2hlrar000vjsuavr576i98",
+    "payableBonusId": "cmv2hlrbb0017jsuasdxbwsnp",
     "payableAmount": 777,
-    "profRecipientId": "cmv2h8cs3000yjsetv26ax1ei",
-    "seedNotificationId": "cmv2h8csk0019jset5ey5xto0"
+    "profRecipientId": "cmv2hlrax000yjsuad64s95z8",
+    "seedNotificationId": "cmv2hlrbe0019jsuae01nchxb"
   },
   "scenarios": {
     "team-invite-wizard": "PASS",
-    "employee-accept-access": "PASS",
-    "bff-get-unexpected": "FAIL: 4 unexpected BFF GET errors"
+    "employee-accept-access": "PASS"
   },
   "consoleErrors": [
-    {
-      "label": "employee",
-      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-    },
-    {
-      "label": "employee",
-      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
-    },
-    {
-      "label": "employee",
-      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-    },
-    {
-      "label": "employee",
-      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
-    },
     {
       "label": "employee",
       "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
@@ -44,32 +27,7 @@
   ],
   "unexpectedConsoleErrors": [],
   "unexpectedPageErrors": [],
-  "unexpectedBffGetErrors": [
-    {
-      "label": "employee",
-      "method": "GET",
-      "url": "http://127.0.0.1:3000/api/remcard/api/pro/organization/employees-overview",
-      "status": 401
-    },
-    {
-      "label": "employee",
-      "method": "GET",
-      "url": "http://127.0.0.1:3000/api/remcard/api/pro/moderation-notes",
-      "status": 403
-    },
-    {
-      "label": "employee",
-      "method": "GET",
-      "url": "http://127.0.0.1:3000/api/remcard/api/pro/organization/employees-overview",
-      "status": 401
-    },
-    {
-      "label": "employee",
-      "method": "GET",
-      "url": "http://127.0.0.1:3000/api/remcard/api/pro/moderation-notes",
-      "status": 403
-    }
-  ],
+  "unexpectedBffGetErrors": [],
   "expectedDenyResponses": [
     {
       "scenario": "employee-settlements-deny",
@@ -85,5 +43,5 @@
     "/tmp/prof-i-worktrees/prof-i-e-platform/docs/screenshots/prof-i-e/employee-invite-accepted.png"
   ],
   "dbChecks": {},
-  "exitCode": 1
+  "exitCode": 0
 }

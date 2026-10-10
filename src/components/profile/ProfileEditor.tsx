@@ -44,6 +44,11 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
 import { ProfileBranchContextSwitcher } from "./ProfileBranchContextSwitcher";
+import {
+  ProfileCabinetAccessProvider,
+  useProfileCabinetAccess,
+} from "./ProfileCabinetAccessContext";
+import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
@@ -85,6 +90,7 @@ type ModerationNote = {
 
 type ProfileEditorProps = {
   initial: ProProfileResponse;
+  cabinetAccess: ProfileCabinetAccess;
   moderationSection?: boolean;
   returnTo?: string | null;
   section?: ProfileSectionId;
@@ -97,13 +103,22 @@ type ExtendedUser = ProProfileResponse["user"] & {
   notificationSettings?: unknown;
 };
 
-export function ProfileEditor({
+export function ProfileEditor(props: ProfileEditorProps) {
+  return (
+    <ProfileCabinetAccessProvider value={props.cabinetAccess}>
+      <ProfileEditorInner {...props} />
+    </ProfileCabinetAccessProvider>
+  );
+}
+
+function ProfileEditorInner({
   initial,
   moderationSection,
   returnTo,
   section: sectionProp = "overview",
   focusBranchId,
 }: ProfileEditorProps) {
+  const cabinetAccess = useProfileCabinetAccess();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -286,6 +301,7 @@ export function ProfileEditor({
   }, []);
 
   const loadNotes = useCallback(async () => {
+    if (!cabinetAccess.canFetchModerationNotes) return;
     if (catalogStatus === "APPROVED" && !moderationSection) return;
     setNotesLoading(true);
     setNotesError("");
@@ -297,11 +313,17 @@ export function ProfileEditor({
     } finally {
       setNotesLoading(false);
     }
-  }, [catalogStatus, moderationSection]);
+  }, [cabinetAccess.canFetchModerationNotes, catalogStatus, moderationSection]);
 
   useEffect(() => {
+    if (!cabinetAccess.canFetchModerationNotes) {
+      setNotes([]);
+      setNotesError("");
+      setNotesLoading(false);
+      return;
+    }
     void loadNotes();
-  }, [loadNotes]);
+  }, [cabinetAccess.canFetchModerationNotes, loadNotes]);
 
   useEffect(() => {
     if (initial.user.id !== syncedUserIdRef.current) {

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
+import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { resolveProfileSectionFromQuery, type ProfileSectionId } from "@/lib/profile-sections";
 import type { ProProfileResponse } from "@/lib/types";
 
@@ -108,7 +109,12 @@ export default async function ProfileDevFixturePage(props: {
           Fixture UI (без сессии) для проверки PROF-H1.
         </p>
       </header>
-      <ProfileEditor initial={FIXTURE_PROFILE} section={section} returnTo="/profile/dev-fixture" />
+      <ProfileEditor
+        initial={FIXTURE_PROFILE}
+        cabinetAccess={ownerProfileCabinetAccess()}
+        section={section}
+        returnTo="/profile/dev-fixture"
+      />
     </main>
   );
 }

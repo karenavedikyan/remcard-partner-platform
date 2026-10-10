@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse } from "@/lib/employees-overview-types";
 import {
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { ProfileSectionId } from "@/lib/profile-sections";
+import { useProfileCabinetAccess } from "./ProfileCabinetAccessContext";
 import styles from "./ProfileOverviewSection.module.css";
 
 type ProfileOverviewSectionProps = {
@@ -56,9 +57,11 @@ export function ProfileOverviewSection({
   hasUnsavedBasicsChanges = false,
   fixtureOverview,
 }: ProfileOverviewSectionProps) {
+  const { canFetchEmployeesOverview, contextReady } = useProfileCabinetAccess();
   const [teamOverview, setTeamOverview] = useState<EmployeesOverviewResponse | null>(
     fixtureOverview ?? null,
   );
+  const fetchGenerationRef = useRef(0);
   const [overviewLoading, setOverviewLoading] = useState(!fixtureOverview);
   const [overviewForbidden, setOverviewForbidden] = useState(false);
   const [overviewError, setOverviewError] = useState("");
@@ -95,9 +98,18 @@ export function ProfileOverviewSection({
       }
       return;
     }
+    if (!contextReady || !canFetchEmployeesOverview) {
+      setTeamOverview(null);
+      setOverviewLoading(false);
+      setOverviewForbidden(!canFetchEmployeesOverview && contextReady);
+      setOverviewError("");
+      setSoloEmployees({ status: "idle" });
+      return;
+    }
     if (!showBranchesTools && partnerType !== "MASTER") {
       return;
     }
+    const generation = fetchGenerationRef.current;
     setOverviewLoading(true);
     setOverviewForbidden(false);
     setOverviewError("");
@@ -107,11 +119,13 @@ export function ProfileOverviewSection({
       const data = await remcardFetch<EmployeesOverviewResponse>(
         "/api/pro/organization/employees-overview",
       );
+      if (generation !== fetchGenerationRef.current) return;
       setTeamOverview(data);
       if (data.myRole === "SOLO_PARTNER") {
         await loadSoloEmployees();
       }
     } catch (caught) {
+      if (generation !== fetchGenerationRef.current) return;
       setTeamOverview(null);
       if (caught instanceof RemcardApiError && caught.status === 403) {
         setOverviewForbidden(true);
@@ -125,7 +139,22 @@ export function ProfileOverviewSection({
     } finally {
       setOverviewLoading(false);
     }
-  }, [fixtureOverview, loadSoloEmployees, partnerType, showBranchesTools]);
+  }, [
+    canFetchEmployeesOverview,
+    contextReady,
+    fixtureOverview,
+    loadSoloEmployees,
+    partnerType,
+    showBranchesTools,
+  ]);
+
+  useEffect(() => {
+    fetchGenerationRef.current += 1;
+    setTeamOverview(null);
+    setOverviewForbidden(false);
+    setOverviewError("");
+    setSoloEmployees({ status: "idle" });
+  }, [canFetchEmployeesOverview, contextReady, profile.user.id]);
 
   useEffect(() => {
     void loadTeamSummary();
