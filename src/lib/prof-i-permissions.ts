@@ -131,13 +131,18 @@ export function normalizePermissionFlags(
   for (const key of ALL_FLAG_KEYS) {
     if (typeof input[key] === "boolean") base[key] = input[key]!;
   }
-  const ledgerExplicitOff = input.canViewWallet === false;
-  if (ledgerExplicitOff || !base.canViewWallet) {
+  if (input.canViewWallet === false) {
     base.canViewWallet = false;
     base.canPayBonusCash = false;
     base.canPayBonusTransfer = false;
-  } else if (base.canPayBonusCash || base.canPayBonusTransfer) {
-    base.canViewWallet = true;
+  } else {
+    if (base.canPayBonusCash || base.canPayBonusTransfer) {
+      base.canViewWallet = true;
+    }
+    if (!base.canViewWallet) {
+      base.canPayBonusCash = false;
+      base.canPayBonusTransfer = false;
+    }
   }
   return base;
 }

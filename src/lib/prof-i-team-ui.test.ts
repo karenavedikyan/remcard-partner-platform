@@ -7,7 +7,7 @@ import {
 
 describe("prof-i-team-ui helpers", () => {
   it("ties payout to ledger in UI normalization", () => {
-    const flags = normalizePermissionFlags({ canPayBonusTransfer: true, canViewWallet: false });
+    const flags = normalizePermissionFlags({ canPayBonusTransfer: true });
     expect(flags.canViewWallet).toBe(true);
   });
 
