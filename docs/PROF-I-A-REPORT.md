@@ -21,7 +21,7 @@
 
 ## Commits
 
-(Filled after push — see git log on `feat/prof-i-theme`.)
+- `8639c5e` — feat(prof-i-a): cabinet theme toggle and prototype shell parity
 
 ## Tests
 
