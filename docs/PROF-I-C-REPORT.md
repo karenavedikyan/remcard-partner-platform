@@ -2,7 +2,7 @@
 
 **Branch:** `feat/prof-i-team-permissions`  
 **Contract:** `docs/PROF-I-PERMISSIONS-CONTRACT.md` (`2026-10-14.1`)  
-**Navigator backend reference:** `ef11d03b` (stream C navigator worktree; not modified here)
+**Paired SHA (2026-10-10):** platform `a4f36d8746c98c52c8b3339afe6fce18dccea684` · navigator `79869023ed3bfb7be1ac732525e77760c6e91d7d`
 
 ## Delivered UX
 
