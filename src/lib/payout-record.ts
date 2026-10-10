@@ -53,7 +53,7 @@ export async function recordBonusPayoutFact(input: RecordPayoutInput): Promise<R
 
 export function newPayoutIdempotencyKey(bonusId: string): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return `prof-i-d:${bonusId}:${crypto.randomUUID()}`;
+    return `prof-i-d.${bonusId}.${crypto.randomUUID()}`;
   }
-  return `prof-i-d:${bonusId}:${Date.now()}`;
+  return `prof-i-d.${bonusId}.${Date.now()}`;
 }
