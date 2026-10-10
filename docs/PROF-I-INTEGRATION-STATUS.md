@@ -72,7 +72,8 @@ PROF_E_INVITE_CHAIN_ONLY=1 PROF_E_PLATFORM_URL=http://127.0.0.1:3000 \
 | Field | Value |
 |-------|--------|
 | **runMode** | `invite-employee-chain-only` (not full E) |
-| **platform SHA** | `50c4fc8c227ba1a0fbc0196c0db8afe89ee7df20` |
+| **platform SHA** | `ad9349b2fa07d0b2cff387c8950c33cdc91fb94a` |
+| **navigator SHA** | `ecc798328e117394df52e4c0cf4ee246abf0b58c` |
 | **exit code** | **0** |
 | **scenarios** | wizard + employee-accept-access **PASS** |
 | **expectedDenyResponses** | 1× GET wallet/settlements **403** |
