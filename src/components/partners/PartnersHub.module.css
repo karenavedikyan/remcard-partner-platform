@@ -91,6 +91,13 @@
   align-items: flex-end;
 }
 
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
 .termRequests {
   margin-top: var(--space-4);
   display: grid;

@@ -14,6 +14,8 @@ type PartnerSearchFiltersProps = {
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
+  /** Increment to clear the local taxonomy name filter. */
+  taxonomyFilterResetKey?: number;
 };
 
 function toggle(list: string[], id: string) {
@@ -33,6 +35,7 @@ export function PartnerSearchFilters({
   onChangeProducts,
   onChangeServices,
   onChangeStages,
+  taxonomyFilterResetKey = 0,
 }: PartnerSearchFiltersProps) {
   const [fullTaxonomy, setFullTaxonomy] = useState<{
     products: PartnerTaxonomyItem[];
@@ -66,6 +69,10 @@ export function PartnerSearchFilters({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setFilter("");
+  }, [taxonomyFilterResetKey]);
 
   const visible = useMemo(() => {
     const q = filter.trim();

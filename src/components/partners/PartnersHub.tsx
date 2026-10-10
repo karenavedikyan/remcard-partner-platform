@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { displayCategoryLabel } from "@/lib/category-display";
@@ -32,6 +32,10 @@ import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import {
+  hasCustomPartnershipSearchFilters,
+  mergeSearchResultPages,
+} from "@/lib/partnership-search-ui";
 import styles from "./PartnersHub.module.css";
 
 type PartnersHubProps = {
@@ -77,8 +81,26 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
+  const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
+  const searchRequestGen = useRef(0);
 
+  const inviterSide = useMemo(
+    () => profileUserToPartnerSide(meProfile.user, meProfile.organization),
+    [meProfile],
+  );
+  const defaultSearchRole = useMemo(() => defaultSearchRoleForUser(inviterSide), [inviterSide]);
   const searchMeta = SEARCH_ROLE_OPTIONS.find((item) => item.value === searchRole)!;
+  const hasCustomFilters = hasCustomPartnershipSearchFilters(
+    {
+      query,
+      city,
+      filterProducts,
+      filterServices,
+      filterStages,
+      searchRole,
+    },
+    defaultSearchRole,
+  );
 
   const loadList = useCallback(async () => {
     setLoadingList(true);
@@ -96,8 +118,14 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
 
   const loadSearch = useCallback(
     async (mode: "reset" | "append", cursor: string | null = null) => {
+      let requestGen = searchRequestGen.current;
+      if (mode === "reset") {
+        requestGen = ++searchRequestGen.current;
+        setSearchResults([]);
+        setSearchNextCursor(null);
+        setSearchError("");
+      }
       setLoadingSearch(true);
-      setSearchError("");
       try {
         const params = new URLSearchParams({ role: searchRole, limit: "20" });
         if (query.trim()) params.set("q", query.trim());
@@ -113,26 +141,36 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
           nextCursor?: string | null;
           hasMore?: boolean;
         }>(`/api/partnership/search?${params.toString()}`);
+        if (requestGen !== searchRequestGen.current) return;
+
         const batch = data.partners ?? [];
-        setSearchResults((prev) => {
-          if (mode === "append") {
-            const seen = new Set(prev.map((p) => p.id));
-            return [...prev, ...batch.filter((p) => !seen.has(p.id))];
-          }
-          return batch;
-        });
+        setSearchResults((prev) => mergeSearchResultPages(prev, batch, mode));
         setSearchNextCursor(data.nextCursor ?? null);
       } catch (caught) {
+        if (requestGen !== searchRequestGen.current) return;
         if (mode === "reset") setSearchResults([]);
         setSearchError(
           caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
         );
       } finally {
-        setLoadingSearch(false);
+        if (requestGen === searchRequestGen.current) {
+          setLoadingSearch(false);
+        }
       }
     },
     [city, filterProducts, filterServices, filterStages, query, searchRole],
   );
+
+  const resetSearchFilters = useCallback(() => {
+    setQuery("");
+    setCity("");
+    setFilterProducts([]);
+    setFilterServices([]);
+    setFilterStages([]);
+    setSearchRole(defaultSearchRole);
+    setTaxonomyFilterResetKey((key) => key + 1);
+    setSearchNextCursor(null);
+  }, [defaultSearchRole]);
 
   useEffect(() => {
     void loadList();
@@ -239,11 +277,6 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
       {listError && tab === "list" ? (
         <p className={styles.error} role="alert">
           {listError}
-        </p>
-      ) : null}
-      {searchError && tab === "find" ? (
-        <p className={styles.error} role="alert">
-          {searchError}
         </p>
       ) : null}
       {actionError ? (
@@ -418,13 +451,40 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
               onChangeProducts={setFilterProducts}
               onChangeServices={setFilterServices}
               onChangeStages={setFilterStages}
+              taxonomyFilterResetKey={taxonomyFilterResetKey}
             />
           </Panel>
 
-          {loadingSearch ? (
+          {loadingSearch && searchResults.length === 0 ? (
             <Panel>Ищем партнёров…</Panel>
-          ) : searchResults.length === 0 ? (
-            <Panel title="Никого не найдено" hint="Измените запрос или город." />
+          ) : searchError && searchResults.length === 0 ? (
+            <Panel title="Не удалось выполнить поиск">
+              <p className={styles.error} role="alert">
+                {searchError}
+              </p>
+              <div className={styles.emptyActions}>
+                <Button type="button" onClick={() => void loadSearch("reset")}>
+                  Повторить
+                </Button>
+              </div>
+            </Panel>
+          ) : !loadingSearch && !searchError && searchResults.length === 0 ? (
+            <Panel title="По выбранным условиям партнёры пока не найдены">
+              <p className={styles.searchDescription}>
+                Попробуйте изменить фильтры. Знаете магазин, компанию или специалиста в этой области?
+                Пригласите их в RemCard и предложите сотрудничество.
+              </p>
+              <div className={styles.emptyActions}>
+                <Button type="button" onClick={() => setTab("link")}>
+                  Пригласить знакомого партнёра
+                </Button>
+                {hasCustomFilters ? (
+                  <Button type="button" variant="secondary" onClick={resetSearchFilters}>
+                    Сбросить фильтры
+                  </Button>
+                ) : null}
+              </div>
+            </Panel>
           ) : (
             <div className={styles.list}>
               {searchResults.map((partner) => {
@@ -498,6 +558,16 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
               })}
             </div>
           )}
+          {searchResults.length > 0 && searchError ? (
+            <Panel compact>
+              <p className={styles.error} role="alert">
+                {searchError}
+              </p>
+              <Button type="button" variant="secondary" onClick={() => void loadSearch("reset")}>
+                Повторить
+              </Button>
+            </Panel>
+          ) : null}
           {searchNextCursor ? (
             <div className={styles.searchAction}>
               <Button
