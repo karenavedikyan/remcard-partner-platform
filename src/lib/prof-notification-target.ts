@@ -1,7 +1,9 @@
 import { getAppUrl } from "@/lib/config";
 
-/** Cabinet routes that may appear as notification deep links (same policy as auth returnTo). */
-const ALLOWED_PATH_PREFIXES = [
+const DEFAULT_TRUSTED_NAVIGATOR_ORIGINS = ["https://remcard.ru", "https://www.remcard.ru"] as const;
+
+/** Static App Router pages on the partner cabinet (no arbitrary subpaths). */
+const EXACT_STATIC_PATHS = new Set([
   "/",
   "/scanner",
   "/history",
@@ -9,28 +11,71 @@ const ALLOWED_PATH_PREFIXES = [
   "/partners",
   "/profile",
   "/recommendations",
-  "/invite",
-] as const;
+  "/recommendations/new",
+  "/invite/accept",
+]);
 
-const DEFAULT_TRUSTED_NAVIGATOR_ORIGINS = ["https://remcard.ru", "https://www.remcard.ru"] as const;
+const DEV_FIXTURE_SEGMENT = "dev-fixture";
 
-const LEGACY_PARTNER_PATH = /^\/(?:pro|store)\/partners(\/.*)?$/;
+const PATH_SEGMENT = /^[A-Za-z0-9._-]{1,128}$/;
 
-function normalizeLegacyPartnerPath(pathname: string): string {
-  const match = pathname.match(LEGACY_PARTNER_PATH);
-  if (!match) return pathname;
-  const suffix = match[1] ?? "";
-  return `/partners${suffix}`;
+function stripTrailingSlash(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.slice(0, -1);
+  }
+  return pathname;
+}
+
+/**
+ * Legacy navigator partner list URLs — exact paths only (optional trailing slash).
+ * Any suffix such as /pro/partners/foo is rejected (null).
+ */
+function mapLegacyPartnerPathname(pathname: string): string | null {
+  const path = stripTrailingSlash(pathname);
+  if (path === "/pro/partners" || path === "/store/partners") {
+    return "/partners";
+  }
+  if (/^\/(?:pro|store)\/partners\//.test(path)) {
+    return null;
+  }
+  return pathname;
 }
 
 function isSelfNotificationListPath(pathname: string): boolean {
   return pathname === "/notifications" || pathname.startsWith("/notifications/");
 }
 
+function hasDevFixture(pathname: string): boolean {
+  return pathname.split("/").includes(DEV_FIXTURE_SEGMENT);
+}
+
 function isAllowedCabinetPath(pathname: string): boolean {
-  return ALLOWED_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || (prefix !== "/" && pathname.startsWith(`${prefix}/`)),
-  );
+  const path = stripTrailingSlash(pathname);
+
+  if (hasDevFixture(path)) {
+    return false;
+  }
+
+  if (EXACT_STATIC_PATHS.has(path)) {
+    return true;
+  }
+
+  const parts = path.split("/").filter(Boolean);
+
+  if (parts.length === 3 && parts[0] === "history" && parts[1] === "accruals" && PATH_SEGMENT.test(parts[2]!)) {
+    return true;
+  }
+  if (parts.length === 3 && parts[0] === "history" && parts[1] === "purchases" && PATH_SEGMENT.test(parts[2]!)) {
+    return true;
+  }
+  if (parts.length === 2 && parts[0] === "recommendations" && PATH_SEGMENT.test(parts[1]!)) {
+    return parts[1] !== "new";
+  }
+  if (parts.length === 2 && parts[0] === "invite" && PATH_SEGMENT.test(parts[1]!)) {
+    return parts[1] !== "accept";
+  }
+
+  return false;
 }
 
 function trustedNavigatorOrigins(): Set<string> {
@@ -101,7 +146,11 @@ export function resolveProfNotificationTarget(raw: string | null | undefined): s
     return null;
   }
 
-  const pathname = normalizeLegacyPartnerPath(parsed.pathname);
+  const legacyMapped = mapLegacyPartnerPathname(parsed.pathname);
+  if (legacyMapped === null) {
+    return null;
+  }
+  const pathname = legacyMapped;
 
   if (isSelfNotificationListPath(pathname)) {
     return null;
@@ -113,5 +162,6 @@ export function resolveProfNotificationTarget(raw: string | null | undefined): s
 
   const search = parsed.search ?? "";
   const hash = parsed.hash ?? "";
-  return `${pathname}${search}${hash}`;
+  const normalizedPath = stripTrailingSlash(pathname);
+  return `${normalizedPath}${search}${hash}`;
 }

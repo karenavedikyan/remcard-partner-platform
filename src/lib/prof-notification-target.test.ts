@@ -15,10 +15,17 @@ describe("resolveProfNotificationTarget", () => {
   it("maps legacy partner routes to /partners preserving query and hash", () => {
     expect(resolveProfNotificationTarget("/pro/partners")).toBe("/partners");
     expect(resolveProfNotificationTarget("/store/partners")).toBe("/partners");
+    expect(resolveProfNotificationTarget("/pro/partners/")).toBe("/partners");
     expect(resolveProfNotificationTarget("/pro/partners?tab=incoming")).toBe(
       "/partners?tab=incoming",
     );
     expect(resolveProfNotificationTarget("/store/partners#section")).toBe("/partners#section");
+  });
+
+  it("rejects legacy partner paths with unknown suffixes", () => {
+    expect(resolveProfNotificationTarget("/pro/partners/extra")).toBeNull();
+    expect(resolveProfNotificationTarget("/store/partners/foo/bar")).toBeNull();
+    expect(resolveProfNotificationTarget("https://remcard.ru/pro/partners/legacy-id")).toBeNull();
   });
 
   it("maps trusted absolute navigator partner URLs to cabinet /partners", () => {
@@ -29,10 +36,20 @@ describe("resolveProfNotificationTarget", () => {
     expect(resolveProfNotificationTarget("https://prof.remcard.ru/pro/partners")).toBe("/partners");
   });
 
-  it("keeps other allowed cabinet destinations", () => {
+  it("keeps allowed static and dynamic cabinet destinations", () => {
     expect(resolveProfNotificationTarget("/scanner")).toBe("/scanner");
-    expect(resolveProfNotificationTarget("/profile/branches")).toBe("/profile/branches");
     expect(resolveProfNotificationTarget("/invite/abc123")).toBe("/invite/abc123");
+    expect(resolveProfNotificationTarget("/history/accruals/acc-1")).toBe("/history/accruals/acc-1");
+    expect(resolveProfNotificationTarget("/history/purchases/pur-2")).toBe(
+      "/history/purchases/pur-2",
+    );
+    expect(resolveProfNotificationTarget("/recommendations/rec-3")).toBe("/recommendations/rec-3");
+  });
+
+  it("rejects non-existent subpaths and dev fixtures", () => {
+    expect(resolveProfNotificationTarget("/profile/branches")).toBeNull();
+    expect(resolveProfNotificationTarget("/partners/dev-fixture")).toBeNull();
+    expect(resolveProfNotificationTarget("/partners/anything")).toBeNull();
   });
 
   it("rejects self notification list links and unknown paths", () => {
