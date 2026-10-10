@@ -8,79 +8,64 @@
 |----------|-----|--------|
 | Navigator **immutable application bundle** | `f900bcf9ac364dbd805a0dfe56253d39da257533` | App + migration SQL (unchanged) |
 | Platform **immutable application bundle** | `9a6ab80914e43c2e8a0929ea84a01fa257d01123` | PROF cabinet frontend |
-| Navigator **release-safety tooling** | `ebc20c9e0ec98d4477d8a51871839fae367d9a47` | Preflight/apply/42 schema probes — operator migrate path |
-| Platform **docs handoff** | `a08087ee87372d53699b8d8f84618f004dcbdd7f` | No runtime change |
+| Navigator **release-safety tooling** | _see navigator commit after push_ | production-history preflight + controlled apply |
+| Platform **docs handoff** | _this commit_ | No runtime change |
 
 Release baseline for rehearsal diff: navigator `9523dcd5dc4cd0c69b58152604004a6ed27083be`, platform `bb60c608f8b88c910773ab681060fe0a48673ee9`.
 
-Manifest: `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json` at release-safety SHA above.
+Manifest: `remcard-navigator/docs/PROF-H-RELEASE-MANIFEST.json`. Production history: `remcard-navigator/docs/PROF-H-PRODUCTION-HISTORY.md`.
 
-## 2. Operator A — read-only preflight (no writes)
+Computer production preflight at `ebc20c9e0ec98d4477d8a51871839fae367d9a47` (**strict** mode) → **BLOCKED** (18 historical issues, 5 PROF-H pending). Use **`--mode=production-history`** for operator readiness on `remcard`.
 
-Use a **read-only** database role. Do not use apply credentials here.
+## 2. Operator A — production-history preflight (read-only)
 
 ```bash
 cd remcard-navigator
-git checkout ebc20c9e0ec98d4477d8a51871839fae367d9a47
+git checkout <release-safety-sha>
 
-export DATABASE_URL='postgresql://…'   # read-only user, direct connection
-export DIRECT_URL='postgresql://…'     # MUST match DATABASE_URL (same host:port/database)
+export DATABASE_URL='postgresql://…'   # read-only role
+export DIRECT_URL='postgresql://…'     # MUST match DATABASE_URL
 export PROF_H_EXPECTED_DB_HOST='…'
-export PROF_H_EXPECTED_DB_NAME='…'
+export PROF_H_EXPECTED_DB_NAME='remcard'
 
-node scripts/prof-h-release-migrate-preflight.mjs --mode=operator-readonly
+node scripts/prof-h-release-migrate-preflight.mjs --mode=production-history
 ```
 
-Exit **0** → migration **readiness** check passed (`READY_FOR_OPERATOR_CHECK` in JSON). Exit **1** → **BLOCKED** — do not apply.
+Exit **0** → `READY_FOR_OPERATOR_CHECK` with categories `VERIFIED_HISTORICAL_EXCEPTION`, `STRICT_PASS`, `PENDING_PROF_H`. Exit **1** → **BLOCKED**.
 
-Preflight runs in a read-only transaction, probes `public` schema objects for all five PROF-H SQL migrations, audits full migration folder vs ledger (including ledger→disk orphans), and requires matching `DATABASE_URL`/`DIRECT_URL`.
+## 3. Operator B — controlled apply (five SQL only)
 
-## 3. Operator B — apply (only after backup + separate approval)
-
-Use credentials with **`CREATE`/`ALTER`/`INSERT` on `_prisma_migrations`** (not read-only). Same target database identity as preflight.
+Migrate role (not read-only). Same DB identity as preflight.
 
 ```bash
-cd remcard-navigator
-git checkout ebc20c9e0ec98d4477d8a51871839fae367d9a47
-
-export DATABASE_URL='postgresql://…'   # migrate role
-export DIRECT_URL='postgresql://…'     # same identity as DATABASE_URL
-
-node scripts/prof-h-release-migrate-apply.mjs --apply --mode=operator-readonly
+node scripts/prof-h-release-migrate-apply.mjs --apply --mode=production-history
 ```
 
-The apply script **re-runs preflight** immediately before `prisma migrate deploy`. If preflight is **BLOCKED**, Prisma is **not** started. Child process sets **both** `DATABASE_URL` and `DIRECT_URL` to the verified target.
-
-Forbidden: `scripts/migrate-deploy.mjs` (includes seed-legal), `db push`, `migrate resolve` without evidence.
+Re-runs production-history preflight before and under advisory lock. **No** `prisma migrate deploy`. Forbidden: `scripts/migrate-deploy.mjs`, `db push`, `migrate resolve` without evidence.
 
 Deploy **applications** separately using immutable bundle SHAs (§1) after schema apply succeeds.
 
-## 4. Expected pending set
+## 4. Five pending PROF-H
 
-Five PROF-H migrations in manifest. Any other pending migration on disk → preflight **BLOCKED**.
+Listed in manifest with SHA-256; any other pending on-disk migration → **BLOCKED** (production-history).
 
-## 5. Fix-pass evidence (three gaps closed)
+## 5. Schema probes
 
-| Gap | Fix | Test |
-|-----|-----|------|
-| Partial H object probes | 13 `public` probes for all 5 SQL files | Unit: H2_01/H2_03/H5 enum cases → `ok=false` |
-| Ledger orphan not on disk | Successful ledger row without folder → BLOCKED | Unit: `20990101_removed_from_disk_package` |
-| Handoff checkout ambiguity | Exact release-safety SHA; split read-only vs apply credentials | Docs §2–3 |
+42 objects — `PROF_H_SCHEMA_PROBE_REGISTRY` in navigator release-safety scripts.
 
-## 6. Local verification (fix-pass)
+## 6. Local verification
 
 | Command | Exit |
 |---------|------|
-| `pnpm run test:prof-h-release` | 0 (**113** tests, 42 registry probes) |
-| Upgrade rehearsal `--apply` on `remcard_prof_h_upgrade_rc` | 0 |
-| Preflight after rehearsal (unified URLs) | 0 |
-| Apply guard when preflight blocked | 0 (Prisma not invoked) |
+| `pnpm run test:prof-h-release` | 0 (118 tests) |
+| `prof-h-release-production-history-rehearsal.mjs --apply` | 0 or BLOCKED if baseline schema ≠ production proofs |
+| Apply when preflight blocked | 1, zero SQL executed |
 
-Rehearsal limitation unchanged: release `9523dcd5` + synthetic ledger proves PROF-H SQL delta only, not production history.
+## 7. NOT VERIFIED here
 
-## 7. Rollback / H5 backend
-
-Rolling back backend after H5 remains **unsafe** without forward-fix (stale invites / `branchAccessChangedAt`). No operational toggle in this release.
+- Live production `remcard` PASS (operator / Computer)
+- Full fixture rehearsal PASS on `9523dcd5` db push vs all 18 schema proofs
+- Five-migration atomicity under `CREATE TYPE` / `ALTER TYPE` on production volume
 
 ## 8. Status
 
