@@ -6,15 +6,19 @@ import { PageHeading } from "@/components/ui/PageHeading";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
+import { partnersPageReturnPath } from "@/lib/partners-return-path";
 
 export const dynamic = "force-dynamic";
 
-const RETURN_PATH = "/partners";
+export default async function PartnersPage(props: {
+  searchParams?: Promise<{ terms?: string; partnershipId?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const returnPath = partnersPageReturnPath(searchParams);
 
-export default async function PartnersPage() {
-  const user = await requireProPageUser(RETURN_PATH);
+  const user = await requireProPageUser(returnPath);
   if (!user) {
-    return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+    return <SessionGate reason="session" returnTo={returnPath} />;
   }
 
   const cookieHeader = (await headers()).get("cookie");
@@ -26,13 +30,13 @@ export default async function PartnersPage() {
     return (
       <SessionGate
         reason={profileResult.status === 401 ? "session" : undefined}
-        returnTo={RETURN_PATH}
+        returnTo={returnPath}
       />
     );
   }
 
   return (
-    <CabinetShell returnTo={RETURN_PATH}>
+    <CabinetShell returnTo={returnPath}>
       <PageHeading
         eyebrow="Партнёрская сеть"
         title="Мои партнёры"
