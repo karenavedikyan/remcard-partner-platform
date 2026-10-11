@@ -37,6 +37,7 @@ import {
 } from "./ProfileTeamInviteWizard";
 import { ProfileTeamInviteShare } from "./ProfileTeamInviteShare";
 import type { InviteShareContext } from "@/lib/invite-share-message";
+import { isInviteShareable } from "@/lib/invite-share-eligibility";
 import { ProfileTeamPermissionsHelpDialog } from "./ProfileTeamPermissionsHelpDialog";
 import { DEV_FIXTURE_STAFF_INVITES } from "@/lib/dev-profile-fixture-overview";
 import styles from "./ProfileTeamSection.module.css";
@@ -65,6 +66,29 @@ type StaffInviteRow = {
   allCurrentBranchesSnapshot?: boolean;
 };
 
+type TrackedCreatedInviteShare = InviteShareContext & {
+  inviteId: string;
+  status: string;
+  expiresAt: string;
+};
+
+function shareFromStaffInvite(
+  inv: StaffInviteRow,
+  orgNameFallback: string,
+): TrackedCreatedInviteShare | null {
+  if (!isInviteShareable({ status: inv.status, expiresAt: inv.expiresAt })) return null;
+  return {
+    inviteId: inv.id,
+    status: inv.status,
+    expiresAt: inv.expiresAt,
+    url: inv.url,
+    inviteeFullName: inv.fullName ?? null,
+    inviterDisplayName: inv.inviterDisplayName ?? null,
+    organizationName: inv.organizationName?.trim() || orgNameFallback,
+    scope: inv.scope ?? null,
+  };
+}
+
 type ProfileTeamSectionProps = {
   /** Dev-fixture only: skip network and render mock overview. */
   fixtureOverview?: EmployeesOverviewResponse;
@@ -79,8 +103,12 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [loading, setLoading] = useState(!fixtureOverview);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [createdInviteShare, setCreatedInviteShare] = useState<InviteShareContext | null>(null);
+  const [createdInviteShare, setCreatedInviteShare] = useState<TrackedCreatedInviteShare | null>(
+    null,
+  );
   const [invites, setInvites] = useState<StaffInviteRow[]>([]);
+  const [removedMemberUserIds, setRemovedMemberUserIds] = useState<Set<string>>(() => new Set());
+  const [refreshError, setRefreshError] = useState("");
   const [soloEmployees, setSoloEmployees] = useState<SoloPartnerEmployeeRow[]>([]);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
@@ -92,6 +120,37 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [helpOpen, setHelpOpen] = useState(false);
   const [manualCopyUrl, setManualCopyUrl] = useState<string | null>(null);
   const contentReady = Boolean(overview) && !loading && !error;
+
+  const overviewRef = useRef(overview);
+  overviewRef.current = overview;
+
+  const syncCreatedInviteShare = useCallback((nextInvites: StaffInviteRow[], orgName: string) => {
+    setCreatedInviteShare((prev) => {
+      if (!prev) return null;
+      const row = nextInvites.find((i) => i.id === prev.inviteId);
+      if (!row) {
+        setManualCopyUrl((manual) => (manual && manual.includes(prev.url) ? null : manual));
+        return null;
+      }
+      const next = shareFromStaffInvite(row, orgName);
+      if (!next) {
+        setManualCopyUrl((manual) => (manual && manual.includes(prev.url) ? null : manual));
+        return null;
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const tick = window.setInterval(() => {
+      setCreatedInviteShare((prev) => {
+        if (!prev || isInviteShareable(prev)) return prev;
+        setManualCopyUrl((manual) => (manual && manual.includes(prev.url) ? null : manual));
+        return null;
+      });
+    }, 30_000);
+    return () => window.clearInterval(tick);
+  }, []);
 
   const load = useCallback(async () => {
     if (fixtureOverview) {
@@ -114,22 +173,28 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       return;
     }
     const generation = fetchGenerationRef.current;
+    const hadOverview = Boolean(overviewRef.current);
     setLoading(true);
-    setError("");
+    if (!hadOverview) setError("");
+    setRefreshError("");
     try {
       const data = await remcardFetch<EmployeesOverviewResponse>(
         "/api/pro/organization/employees-overview",
       );
       if (generation !== fetchGenerationRef.current) return;
       setOverview(data);
+      setRemovedMemberUserIds(new Set());
       if (canManageTeam(data)) {
         const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
           "/api/pro/invites?status=PENDING&limit=200",
         );
         if (generation !== fetchGenerationRef.current) return;
-        setInvites(inv.invites ?? []);
+        const list = inv.invites ?? [];
+        setInvites(list);
+        syncCreatedInviteShare(list, data.organization.name);
       } else {
         setInvites([]);
+        setCreatedInviteShare(null);
       }
       if (data.myRole === "SOLO_PARTNER") {
         const solo = await remcardFetch<{ employees: SoloPartnerEmployeeRow[] }>("/api/pro/employees");
@@ -140,18 +205,22 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       }
     } catch (caught) {
       if (generation !== fetchGenerationRef.current) return;
-      if (caught instanceof RemcardApiError && caught.status === 403) {
+      const msg =
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить команду";
+      if (hadOverview) {
+        setRefreshError("Не удалось обновить список");
+      } else if (caught instanceof RemcardApiError && caught.status === 403) {
         setOverview(null);
         setError("Управление командой недоступно для вашей роли.");
       } else {
-        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить команду");
+        setError(msg);
       }
     } finally {
       if (generation === fetchGenerationRef.current) {
         setLoading(false);
       }
     }
-  }, [canOpenTeamSection, contextReady, fixtureOverview]);
+  }, [canOpenTeamSection, contextReady, fixtureOverview, syncCreatedInviteShare]);
 
   useEffect(() => {
     if (fixtureOverview) return;
@@ -166,10 +235,10 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
     void load();
   }, [load]);
 
-  const displayTeam = useMemo(
-    () => (overview ? resolveDisplayTeam(overview) : []),
-    [overview],
-  );
+  const displayTeam = useMemo(() => {
+    if (!overview) return [];
+    return resolveDisplayTeam(overview).filter((m) => !removedMemberUserIds.has(m.userId));
+  }, [overview, removedMemberUserIds]);
 
   const pendingUnified = useMemo(
     () =>
@@ -207,8 +276,16 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   async function revokeInvite(id: string) {
     if (fixtureOverview) return;
     setError("");
+    setRefreshError("");
     try {
       await remcardFetch(`/api/pro/invites/${encodeURIComponent(id)}`, { method: "DELETE" });
+      setCreatedInviteShare((prev) => (prev?.inviteId === id ? null : prev));
+      setManualCopyUrl((prev) => {
+        if (!prev) return prev;
+        const row = invites.find((i) => i.id === id);
+        if (row && prev.includes(row.url)) return null;
+        return prev;
+      });
       await load();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отозвать");
@@ -499,12 +576,22 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           ) : null}
         </div>
       ) : null}
+      {refreshError ? (
+        <div className={styles.errorRow} role="alert">
+          <span>{refreshError}</span>
+          {!fixtureOverview ? (
+            <Button type="button" variant="secondary" onClick={() => void load()}>
+              Повторить
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       {message ? (
         <p className={formStyles.success} role="status">
           {message}
         </p>
       ) : null}
-      {createdInviteShare ? (
+      {createdInviteShare && isInviteShareable(createdInviteShare) ? (
         <ProfileTeamInviteShare
           ctx={createdInviteShare}
           onFeedback={(text) => {
@@ -669,9 +756,12 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           member={editMember}
           overview={overview}
           onClose={() => setEditMember(null)}
-          onSaved={(successMessage) => {
+          onSaved={(successMessage, removedUserId) => {
             setMessage(successMessage);
             setEditMember(null);
+            if (removedUserId) {
+              setRemovedMemberUserIds((prev) => new Set(prev).add(removedUserId));
+            }
             void load();
           }}
         />
@@ -684,13 +774,18 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           initialBranchId={wizardBranchId}
           onClose={() => setWizardOpen(false)}
           onCreated={(invite) => {
-            setCreatedInviteShare({
+            const tracked: TrackedCreatedInviteShare = {
+              inviteId: invite.id,
+              status: "PENDING",
+              expiresAt: invite.expiresAt,
               url: invite.url,
               inviteeFullName: invite.fullName,
               inviterDisplayName: invite.inviterDisplayName,
-              organizationName: invite.organizationName ?? overview.organization.name,
+              organizationName:
+                invite.organizationName?.trim() || overview.organization.name,
               scope: invite.scope ?? "ORGANIZATION",
-            });
+            };
+            setCreatedInviteShare(tracked);
             setView("invites");
             setMessage("Приглашение создано — отправьте его сотруднику.");
             void load();

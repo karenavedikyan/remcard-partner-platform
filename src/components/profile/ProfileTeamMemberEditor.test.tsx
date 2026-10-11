@@ -4,7 +4,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileTeamMemberEditor } from "./ProfileTeamMemberEditor";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
-import { remcardFetch } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: vi.fn(),
@@ -178,5 +178,117 @@ describe("ProfileTeamMemberEditor branch manager", () => {
     const paths = vi.mocked(remcardFetch).mock.calls.map(([path]) => String(path));
     expect(paths.some((p) => p.includes("/team-members/"))).toBe(false);
     expect(paths).toEqual(["/api/pro/organization/branches/b1/employees/emp-a-b1"]);
+    expect(vi.mocked(remcardFetch).mock.calls[0]?.[1]).toMatchObject({
+      method: "PATCH",
+      body: expect.objectContaining({ permissions: expect.any(Object) }),
+    });
+  });
+});
+
+const ownerOverview = (): EmployeesOverviewResponse => ({
+  organization: { id: "org-1", name: "Test Org" },
+  myRole: "ORG_OWNER",
+  branches: [
+    {
+      id: "b1",
+      name: "Филиал 1",
+      city: "Город",
+      address: "ул. 1",
+      employees: [
+        {
+          id: "emp-mgr",
+          role: "MANAGER",
+          fullName: "Mgr",
+          user: { id: "u-mgr", displayName: "Mgr", publicId: "RC-M", photoUrl: null, lastActiveAt: null },
+          permissions: {},
+        },
+      ],
+      pendingInvites: [],
+    },
+  ],
+  organizationPendingInvites: [],
+  teamMembers: [],
+  viewer: { userId: "owner-1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+});
+
+const soleManagerMember: TeamMemberRow = {
+  userId: "u-mgr",
+  displayName: "Mgr",
+  publicId: "RC-M",
+  photoUrl: null,
+  lastActiveAt: null,
+  fullName: "Mgr",
+  position: "Менеджер",
+  membershipKind: "BRANCH_STAFF",
+  orgMemberStatus: "ACTIVE",
+  branchAccess: [
+    {
+      employeeId: "emp-mgr",
+      branchId: "b1",
+      branchName: "Филиал 1",
+      city: "Город",
+      role: "MANAGER",
+      permissions: {},
+    },
+  ],
+};
+
+describe("ProfileTeamMemberEditor owner removal", () => {
+  beforeEach(() => {
+    vi.mocked(remcardFetch).mockReset();
+    vi.mocked(remcardFetch).mockResolvedValue({});
+  });
+
+  it("cancel on remove confirm does not DELETE; confirm sends DELETE", async () => {
+    const user = userEvent.setup();
+    const onSaved = vi.fn();
+    render(
+      <ProfileTeamMemberEditor
+        member={soleManagerMember}
+        overview={ownerOverview()}
+        onClose={() => {}}
+        onSaved={onSaved}
+      />,
+    );
+
+    await user.click(screen.getByTestId("team-member-remove-from-team"));
+    expect(screen.getByTestId("team-member-remove-confirm")).toBeInTheDocument();
+    expect(screen.getByText(/Филиал 1/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Отмена" }));
+    expect(remcardFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/team-members/"),
+      expect.objectContaining({ method: "DELETE" }),
+    );
+
+    await user.click(screen.getByTestId("team-member-remove-from-team"));
+    await user.click(screen.getByTestId("team-member-remove-confirm"));
+
+    await waitFor(() => {
+      expect(remcardFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/team-members/u-mgr"),
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+    expect(onSaved).toHaveBeenCalledWith(expect.stringContaining("удалён"), "u-mgr");
+  });
+
+  it("shows action error near footer when DELETE fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(remcardFetch).mockRejectedValue(new RemcardApiError(400, "Нельзя удалить"));
+
+    render(
+      <ProfileTeamMemberEditor
+        member={soleManagerMember}
+        overview={ownerOverview()}
+        onClose={() => {}}
+        onSaved={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByTestId("team-member-remove-from-team"));
+    await user.click(screen.getByTestId("team-member-remove-confirm"));
+
+    expect(await screen.findByTestId("team-member-action-error")).toHaveTextContent("Нельзя удалить");
   });
 });

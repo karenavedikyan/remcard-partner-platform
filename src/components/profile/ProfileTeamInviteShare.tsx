@@ -51,14 +51,16 @@ export function ProfileTeamInviteShare({ ctx, compact, onFeedback, onManualCopy 
   async function shareNative() {
     if (typeof navigator.share !== "function") return;
     setSharePending(true);
+    const text = buildInviteShareMessage(ctx);
     try {
-      const text = buildInviteShareMessage(ctx);
       await navigator.share({
         title: "Приглашение в RemCard",
         text,
       });
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
+      onFeedback?.("Не удалось открыть «Поделиться». Скопируйте текст вручную.");
+      onManualCopy?.(text);
     } finally {
       setSharePending(false);
     }

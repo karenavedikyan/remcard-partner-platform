@@ -1,18 +1,18 @@
 export type InviteShareContext = {
   inviteeFullName?: string | null;
+  /** Only when known reliably (never inferred from ФИО). */
+  inviteeGivenName?: string | null;
   inviterDisplayName?: string | null;
   organizationName?: string | null;
   url: string;
   scope?: string | null;
 };
 
-/** Greeting line for invitee — first token of full name or neutral hello. */
-export function inviteeGreetingLine(fullName: string | null | undefined): string {
-  const trimmed = fullName?.trim();
+/** Greeting — uses given name only when explicitly provided; never splits full name. */
+export function inviteeGreetingLine(givenName?: string | null): string {
+  const trimmed = givenName?.trim();
   if (!trimmed) return "Здравствуйте!";
-  const first = trimmed.split(/\s+/).filter(Boolean)[0];
-  if (!first) return "Здравствуйте!";
-  return `${first}, здравствуйте!`;
+  return `${trimmed}, здравствуйте!`;
 }
 
 function inviterLine(ctx: InviteShareContext): string {
@@ -36,7 +36,7 @@ function teamTargetLine(ctx: InviteShareContext): string {
 }
 
 export function buildInviteShareMessage(ctx: InviteShareContext): string {
-  const greeting = inviteeGreetingLine(ctx.inviteeFullName);
+  const greeting = inviteeGreetingLine(ctx.inviteeGivenName);
   const inviter = inviterLine(ctx);
   const target = teamTargetLine(ctx);
   return `${greeting}

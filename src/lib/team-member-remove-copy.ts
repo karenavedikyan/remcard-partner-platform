@@ -18,6 +18,28 @@ export function branchesLosingSoleManager(
   return out;
 }
 
+export function branchesLosingSoleManagerOnUncheck(
+  overview: EmployeesOverviewResponse,
+  member: TeamMemberRow,
+  selectedBranchIds: Set<string>,
+): Array<{ branchId: string; branchName: string }> {
+  const out: Array<{ branchId: string; branchName: string }> = [];
+  for (const access of member.branchAccess) {
+    if (selectedBranchIds.has(access.branchId)) continue;
+    if (access.role !== "MANAGER") continue;
+    const branch = overview.branches.find((b) => b.id === access.branchId);
+    if (!branch) continue;
+    const managerCount = branch.employees.filter((e) => e.role === "MANAGER").length;
+    const selfIsManager = branch.employees.some(
+      (e) => e.user.id === member.userId && e.role === "MANAGER",
+    );
+    if (managerCount <= 1 && selfIsManager) {
+      out.push({ branchId: branch.id, branchName: branch.name });
+    }
+  }
+  return out;
+}
+
 export function buildRemoveFromTeamConfirmCopy(input: {
   member: TeamMemberRow;
   organizationName: string;

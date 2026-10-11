@@ -28,7 +28,9 @@ type Props = {
   initialBranchId?: string;
   onClose: () => void;
   onCreated: (invite: {
+    id: string;
     url: string;
+    expiresAt: string;
     fullName?: string | null;
     inviterDisplayName?: string | null;
     organizationName?: string | null;
@@ -280,7 +282,9 @@ export function ProfileTeamInviteWizard({
       }
       const result = await remcardFetch<{
         invite: {
+          id: string;
           url: string;
+          expiresAt: string;
           fullName?: string | null;
           inviterDisplayName?: string | null;
           organizationName?: string | null;

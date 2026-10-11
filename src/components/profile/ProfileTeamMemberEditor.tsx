@@ -7,6 +7,7 @@ import { effectiveActionIdsForBranch, memberPermissionState } from "@/lib/prof-i
 import { manageableBranchAccess, memberDisplayName } from "@/lib/team-section-model";
 import {
   branchesLosingSoleManager,
+  branchesLosingSoleManagerOnUncheck,
   buildRemoveFromTeamConfirmCopy,
 } from "@/lib/team-member-remove-copy";
 import {
@@ -25,7 +26,7 @@ type Props = {
   member: TeamMemberRow;
   overview: EmployeesOverviewResponse;
   onClose: () => void;
-  onSaved: (successMessage: string) => void;
+  onSaved: (successMessage: string, removedUserId?: string) => void;
 };
 
 const STEP_LABELS = ["Должность и права", "Подразделения", "Проверка"] as const;
@@ -203,7 +204,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         `/api/pro/organization/team-members/${encodeURIComponent(member.userId)}?organizationId=${encodeURIComponent(overview.organization.id)}`,
         { method: "DELETE" },
       );
-      onSaved(`${memberDisplayName(member)} удалён из команды`);
+      onSaved(`${memberDisplayName(member)} удалён из команды`, member.userId);
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось удалить из команды");
     } finally {
@@ -218,6 +219,10 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         soleManagerBranches: branchesLosingSoleManager(overview, member),
       })
     : null;
+
+  const partialSoleManagerBranches = isOrgOwner
+    ? branchesLosingSoleManagerOnUncheck(overview, member, selected)
+    : [];
 
   const scopeBranch = scopeEditorBranchId
     ? branchOptions.find((b) => b.id === scopeEditorBranchId)
@@ -455,6 +460,13 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
             </details>
           );
         })}
+        {partialSoleManagerBranches.length > 0 ? (
+          <p className={formStyles.bannerWarn} data-testid="team-member-partial-sole-manager-warn">
+            Филиал{partialSoleManagerBranches.length > 1 ? "ы" : ""}{" "}
+            {partialSoleManagerBranches.map((b) => b.branchName).join(", ")} останется без управляющего
+            после сохранения. Вы как владелец сохраните доступ.
+          </p>
+        ) : null}
         <label className={formStyles.checkRow}>
           <input
             type="checkbox"

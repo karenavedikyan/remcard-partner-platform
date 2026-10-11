@@ -4,6 +4,7 @@ import type {
   TeamMemberRow,
 } from "./employees-overview-types";
 import type { InviteShareContext } from "./invite-share-message";
+import { isInviteShareable } from "./invite-share-eligibility";
 import { summarizeMemberAccess } from "./prof-i-member-permissions";
 
 export type TeamSectionView = "people" | "locations" | "invites";
@@ -246,8 +247,10 @@ export function mergePendingInvites(input: {
     }
   }
 
+  const orgNameFallback = input.overview.organization.name;
+
   for (const inv of input.staffInvites) {
-    if (inv.status !== "PENDING" && inv.status !== "pending") continue;
+    if (!isInviteShareable({ status: inv.status, expiresAt: inv.expiresAt })) continue;
     const orgShape: OrganizationPendingInviteRow | null =
       inv.branchIds || inv.allCurrentBranchesSnapshot || inv.membershipKind
         ? {
@@ -279,17 +282,21 @@ export function mergePendingInvites(input: {
         url: inv.url,
         inviteeFullName: inv.fullName ?? null,
         inviterDisplayName: inv.inviterDisplayName ?? null,
-        organizationName: inv.organizationName ?? null,
+        organizationName: inv.organizationName?.trim() || orgNameFallback,
         scope: inv.scope ?? null,
       },
     });
   }
 
-  return [...map.values()].map((row) => ({
-    ...row,
-    url: row.url ?? null,
-    share: row.share ?? null,
-  }));
+  return [...map.values()]
+    .filter((row) => isInviteShareable({ status: row.status, expiresAt: row.expiresAt }))
+    .map((row) => ({
+      ...row,
+      url: row.url ?? null,
+      share: row.share && row.url && isInviteShareable({ status: row.status, expiresAt: row.expiresAt })
+        ? row.share
+        : null,
+    }));
 }
 
 export function canManageBranch(
