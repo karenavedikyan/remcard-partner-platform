@@ -18,23 +18,168 @@ const PROF_ROOT =
   "/opt/cursor/worktrees/remcard-partner-platform-rc-prof-recommendation-partnership-contrast";
 const OUT = process.env.PROF_RC_ARTIFACT_DIR || "/opt/cursor/artifacts/prof-combined-rc-smoke";
 
+const TESTED_CODE_SHA = {
+  navigator: "70464d46a1e83b4dc22e80116ac10e1304467c59",
+  platform: "5639943d9032fa34b85bf917acc2c5a53833a40d",
+};
+
 mkdirSync(OUT, { recursive: true });
 
 const report = {
-  candidateCodeSha: { navigator: null, platform: null },
-  sourceTips: {},
+  testedCodeSha: { ...TESTED_CODE_SHA },
+  toolingBranchTip: { navigator: null, platform: null },
+  stack: {},
   scenarios: {},
   notVerified: [],
   assertions: {},
   exitCode: 0,
 };
 
-report.candidateCodeSha.navigator = execSync(`git -C ${NAV_ROOT} rev-parse HEAD`, {
+report.toolingBranchTip.navigator = execSync(`git -C ${NAV_ROOT} rev-parse HEAD`, {
   encoding: "utf8",
 }).trim();
-report.candidateCodeSha.platform = execSync(`git -C ${PROF_ROOT} rev-parse HEAD`, {
+report.toolingBranchTip.platform = execSync(`git -C ${PROF_ROOT} rev-parse HEAD`, {
   encoding: "utf8",
 }).trim();
+
+function assertTestedCodeIsRuntimeBase() {
+  for (const [label, root, sha] of [
+    ["navigator", NAV_ROOT, TESTED_CODE_SHA.navigator],
+    ["platform", PROF_ROOT, TESTED_CODE_SHA.platform],
+  ]) {
+    execSync(`git -C ${root} merge-base --is-ancestor ${sha} HEAD`, { stdio: "pipe" });
+    if (execSync(`git -C ${root} rev-parse HEAD`, { encoding: "utf8" }).trim() === sha) continue;
+    const dirty = execSync(`git -C ${root} diff HEAD --name-only`, { encoding: "utf8" }).trim();
+    if (dirty) throw new Error(`${label} RC worktree has uncommitted tracked changes: ${dirty}`);
+  }
+}
+
+function readProcCwd(pid) {
+  try {
+    return execSync(`readlink -f /proc/${pid}/cwd`, { encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function verifySmokeStack() {
+  assertTestedCodeIsRuntimeBase();
+  const profPid = execSync("pgrep -f 'next start -p 3030' | head -1", { encoding: "utf8" }).trim();
+  const navPid = execSync("pgrep -f 'next start -p 3031' | head -1", { encoding: "utf8" }).trim();
+  if (!profPid || !navPid) throw new Error("missing next start on 3030 or 3031");
+  const profCwd = readProcCwd(profPid);
+  const navCwd = readProcCwd(navPid);
+  if (profCwd !== PROF_ROOT) {
+    throw new Error(`platform cwd ${profCwd} !== RC ${PROF_ROOT}`);
+  }
+  if (navCwd !== NAV_ROOT) {
+    throw new Error(`navigator cwd ${navCwd} !== RC ${NAV_ROOT}`);
+  }
+  let buildId = null;
+  try {
+    buildId = execSync(`cat ${PROF_ROOT}/.next/BUILD_ID`, { encoding: "utf8" }).trim();
+  } catch {
+    throw new Error("platform .next/BUILD_ID missing — rebuild RC platform before smoke");
+  }
+  report.stack = { profCwd, navCwd, platformBuildId: buildId, profPid, navPid };
+}
+
+function decodeReturnToOnce(raw) {
+  if (raw == null || raw === "") return null;
+  try {
+    return decodeURIComponent(String(raw).replace(/\+/g, " "));
+  } catch {
+    return null;
+  }
+}
+
+function isSafeInternalReturnPath(path) {
+  return typeof path === "string" && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
+}
+
+function expectedPartnersReturnTo(partnershipId) {
+  return `/partners?terms=${partnershipId}`;
+}
+
+function assertReturnToMatchesPartnership(returnTo, partnershipId) {
+  const expected = expectedPartnersReturnTo(partnershipId);
+  const parsed = new URL(returnTo, "http://smoke.local");
+  const terms = parsed.searchParams.get("terms");
+  if (parsed.pathname !== "/partners" || terms !== partnershipId) {
+    throw new Error(`returnTo ${returnTo} !== expected ${expected}`);
+  }
+}
+
+async function extractReturnToFromGatePage(page) {
+  const observedUrl = page.url();
+  const u = new URL(observedUrl);
+
+  if (u.pathname === "/login") {
+    const decoded = decodeReturnToOnce(u.searchParams.get("returnTo"));
+    if (!decoded || !isSafeInternalReturnPath(decoded)) {
+      throw new Error(`login page missing safe returnTo (observed ${observedUrl})`);
+    }
+    return { observedUrl, returnTo: decoded, source: "login_url" };
+  }
+
+  const loginLink = page.locator('a[href*="/login"]');
+  if ((await loginLink.count()) > 0) {
+    const href = await loginLink.first().getAttribute("href");
+    if (href) {
+      const linkUrl = new URL(href, observedUrl);
+      if (linkUrl.pathname === "/login") {
+        const decoded = decodeReturnToOnce(linkUrl.searchParams.get("returnTo"));
+        if (decoded && isSafeInternalReturnPath(decoded)) {
+          return { observedUrl, returnTo: decoded, source: "login_link" };
+        }
+      }
+    }
+  }
+
+  if (u.pathname === "/partners" && u.searchParams.has("terms")) {
+    const terms = u.searchParams.get("terms")?.trim();
+    if (!terms) throw new Error(`partners URL lost terms query (${observedUrl})`);
+    const returnTo = expectedPartnersReturnTo(terms);
+    return { observedUrl, returnTo, source: "partners_deeplink_url" };
+  }
+
+  throw new Error(`cannot extract returnTo from gate page (${observedUrl})`);
+}
+
+function curlJsonWithStatus(path, token) {
+  const out = execFileSync(
+    "curl",
+    [
+      "-s",
+      "-w",
+      "\n__HTTP__%{http_code}",
+      "-H",
+      `Cookie: remcard-token=${token}`,
+      "-H",
+      `Origin: ${PROF}`,
+      `${PROF}/api/remcard${path}`,
+    ],
+    { encoding: "utf8" },
+  );
+  const match = out.match(/\n__HTTP__(\d+)\s*$/);
+  if (!match) {
+    throw new Error(`curl response missing HTTP suffix: ${out.slice(0, 200)}`);
+  }
+  const status = Number.parseInt(match[1], 10);
+  const body = out.slice(0, match.index);
+  let json = null;
+  try {
+    json = body ? JSON.parse(body) : null;
+  } catch {
+    json = body;
+  }
+  return { status, json, body };
+}
+
+function jsonContainsForeignPartnership(json, foreignId, foreignStoreName) {
+  const text = JSON.stringify(json ?? {});
+  return text.includes(foreignId) || text.includes(foreignStoreName);
+}
 
 function navTsx(code, extraEnv = {}) {
   return execFileSync("pnpm", ["exec", "tsx", "-e", code], {
@@ -220,6 +365,8 @@ let fixtures = null;
 let cleanupError = null;
 
 try {
+  verifySmokeStack();
+
   fixtures = JSON.parse(
     execSync(`cd ${NAV_ROOT} && pnpm exec tsx scripts/prof-recommendation-browser-fixtures.ts seed`, {
       encoding: "utf8",
@@ -251,6 +398,7 @@ try {
   });
 
   await run("partnership_login_gate_and_synthetic_return", async () => {
+    const expectedReturnTo = expectedPartnersReturnTo(fixtures.partnershipSpecId);
     const url = generatorPartnershipUrl(fixtures.partnershipSpecId);
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
@@ -258,48 +406,117 @@ try {
     const loginVisible = await page.getByRole("heading", { name: /Вход|войти/i }).count();
     const authFlow = await page.getByText(/код|Telegram|MAX/i).count();
     if (loginVisible + authFlow === 0) throw new Error("expected login gate UI");
-    const current = page.url();
-    if (!current.includes("login") && !current.includes("returnTo")) {
-      report.notVerified.push("login_gate_ui_present_but_url_shape_ambiguous");
+
+    const extracted = await extractReturnToFromGatePage(page);
+    assertReturnToMatchesPartnership(extracted.returnTo, fixtures.partnershipSpecId);
+    if (extracted.returnTo !== expectedReturnTo) {
+      throw new Error(`returnTo ${extracted.returnTo} !== expected ${expectedReturnTo}`);
     }
-    const returnParam = decodeURIComponent(
-      new URL(current.includes("returnTo") ? current : `${PROF}/login?returnTo=${encodeURIComponent(`/partners?terms=${fixtures.partnershipSpecId}`)}`).searchParams.get("returnTo") || "",
-    );
-    if (!returnParam.includes(`terms=${fixtures.partnershipSpecId}`)) {
-      throw new Error(`returnTo missing terms: ${returnParam}`);
-    }
-    report.assertions.loginReturnTo = returnParam;
+
+    report.assertions.loginGate = {
+      observedUrl: extracted.observedUrl,
+      expectedReturnTo,
+      extractedReturnTo: extracted.returnTo,
+      extractSource: extracted.source,
+    };
     report.notVerified.push(
-      "external_MAX_Telegram_OTP: NOT VERIFIED — post-gate auth uses local JWT mint, not real OTP",
+      "external_MAX_Telegram_OTP: NOT VERIFIED — synthetic JWT after gate is not login E2E",
     );
+
     const token = mint(fixtures.issuerSpecId, fixtures.issuerSpecTokenVersion);
     await ctx.addCookies([{ name: "remcard-token", value: token, url: PROF }]);
-    await page.goto(`${PROF}${returnParam.startsWith("/") ? returnParam : `/partners?terms=${fixtures.partnershipSpecId}`}`, {
-      waitUntil: "networkidle",
-    });
+    await page.goto(`${PROF}${extracted.returnTo}`, { waitUntil: "networkidle" });
     await page.getByText(fixtures.storeName).waitFor({ timeout: 30_000 });
+    await page.getByText("Действующие условия").waitFor();
+    await page.getByRole("cell", { name: `${fixtures.ownTermsPercent}%` }).waitFor();
     await page.screenshot({ path: path.join(OUT, "partnership-after-synthetic-auth.png"), fullPage: true });
     await ctx.close();
+    return report.assertions.loginGate;
   });
 
   await run("partnership_foreign_id_no_leak", async () => {
-    const foreignId = fixtures.partnershipId;
+    const ownId = fixtures.partnershipSpecId;
+    const foreignId = fixtures.partnershipForeignId;
     const bogus = "00000000-0000-4000-8000-000000000099";
-    const ctx = await browser.newContext({ extraHTTPHeaders: { Origin: PROF } });
     const token = mint(fixtures.issuerSpecId, fixtures.issuerSpecTokenVersion);
+    const evidence = {
+      ownPartnershipId: ownId,
+      foreignPartnershipId: foreignId,
+      bogusPartnershipId: bogus,
+      foreignStoreName: fixtures.foreignStoreName,
+      foreignTermsMarker: `${fixtures.foreignTermsPercent}%`,
+    };
+
+    const listOwn = curlJsonWithStatus("/api/partnership/list", token);
+    evidence.listStatus = listOwn.status;
+    if (listOwn.status !== 200) throw new Error(`list API ${listOwn.status}`);
+    const ownRow = (listOwn.json?.partnerships ?? []).find((p) => p.id === ownId);
+    if (!ownRow) throw new Error("own partnership missing from list API");
+    if (jsonContainsForeignPartnership(listOwn.json, foreignId, fixtures.foreignStoreName)) {
+      throw new Error("list API leaked foreign partnership");
+    }
+
+    const termOwn = curlJsonWithStatus(`/api/partnerships/${ownId}/term-change`, token);
+    evidence.ownTermChangeStatus = termOwn.status;
+
+    const ctx = await browser.newContext({ extraHTTPHeaders: { Origin: PROF } });
     await ctx.addCookies([{ name: "remcard-token", value: token, url: PROF }]);
     const page = await ctx.newPage();
-    await page.goto(`${PROF}/partners?terms=${foreignId}`, { waitUntil: "networkidle" });
+
+    await page.goto(`${PROF}/partners?terms=${encodeURIComponent(ownId)}`, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: fixtures.storeName, level: 3 }).waitFor({ timeout: 30_000 });
-    const cards = await page.getByRole("heading", { level: 3 }).count();
-    if (cards < 1) throw new Error("expected at least one partnership card");
-    await page.goto(`${PROF}/partners?terms=${bogus}`, { waitUntil: "networkidle" });
-    const emptyHint = page.getByText(/Партнёров пока нет|не удалось|Требует внимания/i);
-    const stillList = page.getByRole("heading", { name: fixtures.storeName, level: 3 });
-    if ((await stillList.count()) === 0 && (await emptyHint.count()) === 0) {
-      throw new Error("unexpected empty/foreign partnership state");
+    await page.getByRole("cell", { name: `${fixtures.ownTermsPercent}%` }).waitFor();
+    evidence.ownDomTermsVisible = true;
+
+    const termForeign = curlJsonWithStatus(`/api/partnerships/${foreignId}/term-change`, token);
+    evidence.foreignTermChangeStatus = termForeign.status;
+    if (termForeign.status === 200 && jsonContainsForeignPartnership(termForeign.json, foreignId, fixtures.foreignStoreName)) {
+      const termsText = JSON.stringify(termForeign.json);
+      if (termsText.includes(String(fixtures.foreignTermsPercent))) {
+        throw new Error("foreign term-change API returned foreign conditions");
+      }
     }
+    if (jsonContainsForeignPartnership(termForeign.json, foreignId, fixtures.foreignStoreName) && termForeign.status === 200) {
+      throw new Error("foreign term-change API body references foreign partnership data");
+    }
+
+    await page.goto(`${PROF}/partners?terms=${encodeURIComponent(foreignId)}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    const foreignHeading = page.getByRole("heading", { name: fixtures.foreignStoreName, level: 3 });
+    const foreignPercent = page.getByRole("cell", { name: `${fixtures.foreignTermsPercent}%` });
+    const foreignLabel = page.getByRole("cell", { name: fixtures.foreignTermsLabel });
+    evidence.foreignDomStoreHeadings = await foreignHeading.count();
+    evidence.foreignDomPercentCells = await foreignPercent.count();
+    evidence.foreignDomLabelCells = await foreignLabel.count();
+    if (evidence.foreignDomStoreHeadings > 0 || evidence.foreignDomPercentCells > 0) {
+      throw new Error("foreign partnership conditions visible in DOM");
+    }
+    const pageText = await page.locator("body").innerText();
+    if (pageText.includes(fixtures.foreignStoreName) && pageText.includes(`${fixtures.foreignTermsPercent}%`)) {
+      throw new Error("foreign store marker and percent leaked in page text");
+    }
+
+    await page.goto(`${PROF}/partners?terms=${encodeURIComponent(bogus)}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    const termBogus = curlJsonWithStatus(`/api/partnerships/${bogus}/term-change`, token);
+    evidence.bogusTermChangeStatus = termBogus.status;
+    if (termBogus.status === 200) {
+      throw new Error("bogus partnership term-change returned 200");
+    }
+    if (jsonContainsForeignPartnership(termBogus.json, foreignId, fixtures.foreignStoreName)) {
+      throw new Error("bogus id response leaked foreign partnership");
+    }
+    const bogusForeignHeading = await page.getByRole("heading", { name: fixtures.foreignStoreName, level: 3 }).count();
+    const bogusForeignPct = await page.getByRole("cell", { name: `${fixtures.foreignTermsPercent}%` }).count();
+    evidence.bogusDomForeignHeadings = bogusForeignHeading;
+    evidence.bogusDomForeignPercent = bogusForeignPct;
+    if (bogusForeignHeading > 0 || bogusForeignPct > 0) {
+      throw new Error("bogus terms query showed foreign conditions");
+    }
+
     await ctx.close();
+    report.assertions.partnershipForeignIdNoLeak = evidence;
+    return evidence;
   });
 
   await run("specialization_master_390_dark", async () => {
