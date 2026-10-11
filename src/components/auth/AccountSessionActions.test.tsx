@@ -22,10 +22,6 @@ vi.mock("./LogoutButton", () => ({
 describe("AccountSessionActions", () => {
   beforeEach(() => {
     vi.mocked(remcardFetch).mockReset();
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { assign: vi.fn(), href: "http://localhost/" },
-    });
   });
 
   it("opens confirm dialog and calls sign-out-all endpoint", async () => {

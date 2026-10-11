@@ -26,7 +26,7 @@ export function AccountSessionActions({
 
   useEffect(() => {
     return subscribeSessionBroadcast(() => {
-      window.location.assign("/login?reason=signed_out_all");
+      window.location.href = "/login?reason=signed_out_all";
     });
   }, []);
 
@@ -47,7 +47,7 @@ export function AccountSessionActions({
     try {
       await remcardFetch("/api/auth/sign-out-all-sessions", { method: "POST", body: {} });
       broadcastSignOutAll();
-      window.location.assign("/login?reason=signed_out_all");
+      window.location.href = "/login?reason=signed_out_all";
     } catch (caught) {
       const message =
         caught instanceof RemcardApiError
