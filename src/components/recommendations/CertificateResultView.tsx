@@ -108,7 +108,7 @@ export function CertificateResultView({ certificate }: CertificateResultViewProp
   }
 
   return (
-    <div className={styles.resultWrap}>
+    <div className={styles.resultWrap} data-testid="recommendation-create-success">
       <div className={styles.successBanner}>Готово — документ создан</div>
 
       <div className={styles.certificateCard}>

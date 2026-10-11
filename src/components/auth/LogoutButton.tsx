@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { remcardFetch } from "@/lib/api-client";
+import { getAuthMe, remcardFetch } from "@/lib/api-client";
+import { clearRecommendationCreateDraftsForUser } from "@/lib/recommendation-create-draft";
 import { Button } from "@/components/ui/Button";
 
 type LogoutButtonProps = {
@@ -16,6 +17,8 @@ export function LogoutButton({ className }: LogoutButtonProps) {
   async function handleLogout() {
     setLoading(true);
     try {
+      const me = await getAuthMe().catch(() => null);
+      if (me?.user?.id) clearRecommendationCreateDraftsForUser(me.user.id);
       await remcardFetch("/api/auth/logout", { method: "POST", body: {} });
       router.refresh();
     } finally {

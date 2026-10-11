@@ -36,7 +36,7 @@ function spawnDetached(cwd, env) {
   return child.pid;
 }
 
-async function wait(url, ms = 120000) {
+async function wait(url, ms = 180000) {
   const start = Date.now();
   while (Date.now() - start < ms) {
     try {
@@ -54,7 +54,11 @@ async function main() {
   mkdirSync("/tmp/prof-recommendation-stack", { recursive: true });
   killPort(NAV_PORT);
   killPort(PROF_PORT);
-  spawnDetached(NAV_ROOT, { PORT: NAV_PORT });
+  spawnDetached(NAV_ROOT, {
+    PORT: NAV_PORT,
+    NEXT_PUBLIC_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
+    APP_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
+  });
   spawnDetached(PROF_ROOT, {
     PORT: PROF_PORT,
     REMCARD_API_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,

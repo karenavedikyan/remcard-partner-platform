@@ -102,6 +102,7 @@ const DRAFT_KEYS: (keyof ProfileDraft)[] = [
   "catalogPublicName",
   "showFullName",
   "catalogImageUrl",
+  "partnerActivities",
 ];
 
 function normalizeDraft(draft: ProfileDraft): ProfileDraft {
@@ -129,6 +130,7 @@ function normalizeDraft(draft: ProfileDraft): ProfileDraft {
     serviceSpecializationIds: [...draft.serviceSpecializationIds].sort(),
     navigatorStageIds: [...draft.navigatorStageIds].sort(),
     areas: [...normalizeAreasList(draft.areas)].sort(),
+    partnerActivities: [...draft.partnerActivities].sort(),
   };
 }
 

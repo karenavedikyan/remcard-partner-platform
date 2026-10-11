@@ -58,6 +58,7 @@ import {
   type ProfileSectionId,
 } from "@/lib/profile-sections";
 import styles from "./ProfileEditor.module.css";
+import { resolveFocusableElement } from "@/lib/recommendation-profile-focus";
 
 export type { ProfileSectionId };
 
@@ -200,10 +201,8 @@ function ProfileEditorInner({
     if (!el) return;
     el.classList.add(styles.profileFocusPulse);
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-    const focusable = el.querySelector("input, textarea, select, button");
-    if (focusable instanceof HTMLElement) {
-      focusable.focus({ preventScroll: true });
-    }
+    const focusable = resolveFocusableElement(el);
+    focusable?.focus({ preventScroll: true });
     const timer = window.setTimeout(() => {
       el.classList.remove(styles.profileFocusPulse);
     }, 4000);
@@ -475,7 +474,9 @@ function ProfileEditorInner({
               if (!confirmLeaveUnsaved()) event.preventDefault();
             }}
           >
-            ← Вернуться к предыдущему разделу
+            {returnTo === "/recommendations/new"
+              ? "← Вернуться к рекомендации"
+              : "← Вернуться к предыдущему разделу"}
           </Link>
         </p>
       ) : null}
@@ -538,21 +539,23 @@ function ProfileEditorInner({
 
           <fieldset className={styles.fieldset} disabled={!basicsEditable}>
             <div className={styles.fields}>
-              <TextField
-                label="Имя представителя"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                required
-                hint="Отображается в кабинете; не подменяет название организации."
-                data-profile-focus="displayName"
-              />
-              <TextField
-                label="Город"
-                value={city}
-                onChange={(event) => setCity(event.target.value)}
-                required
-                data-profile-focus="city"
-              />
+              <div data-profile-focus="displayName">
+                <TextField
+                  label="Имя представителя"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  required
+                  hint="Отображается в кабинете; не подменяет название организации."
+                />
+              </div>
+              <div data-profile-focus="city">
+                <TextField
+                  label="Город"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  required
+                />
+              </div>
               <SelectField
                 label="Тип партнёра"
                 value={partnerType}

@@ -16,6 +16,7 @@ import {
 } from "@/lib/profile-cabinet-access";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
+import { parseProfileFocusFromQuery } from "@/lib/recommendation-profile-focus";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function ProfilePage(props: {
 }) {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
-  const focusField = searchParams?.focus?.trim() || undefined;
+  const focusField = parseProfileFocusFromQuery(searchParams?.focus);
   const section: ProfileSectionId = resolveProfileSectionFromQuery({
     section: searchParams?.section,
     moderation: searchParams?.moderation,

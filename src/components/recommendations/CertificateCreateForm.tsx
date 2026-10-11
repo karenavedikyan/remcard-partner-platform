@@ -21,10 +21,15 @@ import type {
 import {
   clearRecommendationCreateDraft,
   loadRecommendationCreateDraft,
+  reconcileRecommendationDraftWithPartners,
   saveRecommendationCreateDraft,
+  type RecommendationCreateDraftScope,
 } from "@/lib/recommendation-create-draft";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import {
   ctaLabelForIssuerCode,
+  ctaLabelForIssuerFocus,
+  profileHrefForIssuerFocus,
   profileHrefForIssuerMissing,
 } from "@/lib/recommendation-profile-focus";
 import { Button } from "@/components/ui/Button";
@@ -71,12 +76,14 @@ export function CertificateCreateForm() {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<StoreCertificate | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [draftScope, setDraftScope] = useState<RecommendationCreateDraftScope | null>(null);
   const [issuerReady, setIssuerReady] = useState<boolean | null>(null);
   const [issuerMissing, setIssuerMissing] = useState<
     CertificateRecommendationIssuerMissingField[]
   >([]);
+  const [stalePartnerKeys, setStalePartnerKeys] = useState<string[]>([]);
   const draftRestoredRef = useRef(false);
+  const skipSaveRef = useRef(true);
 
   const loadPartners = useCallback(async () => {
     setLoadState("loading");
@@ -109,34 +116,63 @@ export function CertificateCreateForm() {
   }, [loadPartners]);
 
   useEffect(() => {
-    void getAuthMe().then((me) => {
-      if (me.user?.id) setUserId(me.user.id);
+    void getAuthMe().then(async (me) => {
+      if (!me.user?.id) return;
+      let organizationId: string | null = null;
+      let branchId: string | null = null;
+      try {
+        const ctx = await remcardFetch<ProContextSnapshot>("/api/pro/context");
+        organizationId = ctx.organization?.id ?? null;
+        branchId = ctx.activeBranch?.id ?? null;
+      } catch {
+        // form works without context; draft stays user-scoped
+      }
+      setDraftScope({
+        userId: me.user.id,
+        organizationId,
+        branchId,
+      });
     });
   }, []);
-
-  useEffect(() => {
-    if (!userId || draftRestoredRef.current || loadState !== "loaded") return;
-    const saved = loadRecommendationCreateDraft(userId);
-    if (!saved) return;
-    draftRestoredRef.current = true;
-    setSelectedKeys(saved.selectedKeys);
-    setDiscountDrafts(saved.discountDrafts);
-    setValidityPreset(saved.validityPreset as ValidityPreset);
-  }, [userId, loadState]);
-
-  useEffect(() => {
-    if (!userId || loadState !== "loaded") return;
-    saveRecommendationCreateDraft(userId, {
-      selectedKeys,
-      discountDrafts,
-      validityPreset,
-    });
-  }, [userId, loadState, selectedKeys, discountDrafts, validityPreset]);
 
   const selectablePartners = useMemo(
     () => partners.filter((p) => p.programReady !== false && p.categories.length > 0),
     [partners],
   );
+
+  const partnerKeySet = useMemo(
+    () => new Set(selectablePartners.map((p) => partnerKey(p))),
+    [selectablePartners],
+  );
+
+  useEffect(() => {
+    if (!draftScope || draftRestoredRef.current || loadState !== "loaded") return;
+    const saved = loadRecommendationCreateDraft(draftScope);
+    draftRestoredRef.current = true;
+    if (!saved) {
+      skipSaveRef.current = false;
+      return;
+    }
+    const reconciled = reconcileRecommendationDraftWithPartners({
+      selectedKeys: saved.selectedKeys,
+      discountDrafts: saved.discountDrafts,
+      partnerKeys: partnerKeySet,
+    });
+    setSelectedKeys(reconciled.selectedKeys);
+    setDiscountDrafts(reconciled.discountDrafts);
+    setValidityPreset(saved.validityPreset as ValidityPreset);
+    setStalePartnerKeys(reconciled.stalePartnerKeys);
+    skipSaveRef.current = false;
+  }, [draftScope, loadState, partnerKeySet]);
+
+  useEffect(() => {
+    if (!draftScope || loadState !== "loaded" || skipSaveRef.current) return;
+    saveRecommendationCreateDraft(draftScope, {
+      selectedKeys,
+      discountDrafts,
+      validityPreset,
+    });
+  }, [draftScope, loadState, selectedKeys, discountDrafts, validityPreset]);
 
   const selectedPartners = useMemo(
     () => selectablePartners.filter((p) => selectedKeys.includes(partnerKey(p))),
@@ -187,7 +223,7 @@ export function CertificateCreateForm() {
         body: payloadResult.body,
       });
       setCreated(result);
-      if (userId) clearRecommendationCreateDraft(userId);
+      if (draftScope) clearRecommendationCreateDraft(draftScope);
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 422) {
         const payload = caught.body as {
@@ -229,6 +265,11 @@ export function CertificateCreateForm() {
 
       {loadState === "loaded" ? (
         <>
+          {stalePartnerKeys.length > 0 ? (
+            <p className={styles.meta} role="status" data-testid="recommendation-draft-stale">
+              Некоторые ранее выбранные партнёры больше недоступны и были сняты с формы.
+            </p>
+          ) : null}
           {issuerReady === false && issuerMissing.length > 0 ? (
             <section className={styles.readinessBlock} data-testid="recommendation-issuer-readiness">
               <h3>Чтобы рекомендовать партнёров</h3>
@@ -236,9 +277,21 @@ export function CertificateCreateForm() {
                 {issuerMissing.map((field) => (
                   <li key={field.code}>
                     <span>{field.message}</span>{" "}
-                    <Link href={profileHrefForIssuerMissing(field.code, RETURN_PATH)}>
-                      {ctaLabelForIssuerCode(field.code)}
-                    </Link>
+                    {field.code === "directionOrAgent" ? (
+                      <span>
+                        <Link href={profileHrefForIssuerFocus(RETURN_PATH, "directions")}>
+                          {ctaLabelForIssuerFocus("directions")}
+                        </Link>
+                        {" · "}
+                        <Link href={profileHrefForIssuerFocus(RETURN_PATH, "agentActivity")}>
+                          {ctaLabelForIssuerFocus("agentActivity")}
+                        </Link>
+                      </span>
+                    ) : (
+                      <Link href={profileHrefForIssuerMissing(field.code, RETURN_PATH)}>
+                        {ctaLabelForIssuerCode(field.code)}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -394,6 +447,7 @@ export function CertificateCreateForm() {
               <select
                 value={validityPreset}
                 disabled={submitting}
+                data-testid="recommendation-validity-preset"
                 onChange={(event) => setValidityPreset(event.target.value as ValidityPreset)}
               >
                 {VALIDITY_OPTIONS.map((option) => (

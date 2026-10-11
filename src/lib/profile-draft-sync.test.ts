@@ -299,6 +299,21 @@ describe("profile-draft-sync", () => {
     expect(profileDraftsEqual(saved, current)).toBe(true);
   });
 
+  it("detects dirty partnerActivities (AGENT toggle)", () => {
+    const profile: ProProfileResponse = {
+      ...baseProfile,
+      user: {
+        ...baseProfile.user,
+        partnerActivities: ["SERVICE"],
+      },
+    };
+    const saved = profileDraftFromProfile(profile);
+    expect(isWorkingProfileDirty(saved, { ...saved, partnerActivities: ["SERVICE", "AGENT"] })).toBe(
+      true,
+    );
+    expect(isWorkingProfileDirty(saved, { ...saved, partnerActivities: ["SERVICE"] })).toBe(false);
+  });
+
   it("keeps empty organization specialization list without owner fallback", () => {
     const profile: ProProfileResponse = {
       ...baseProfile,
