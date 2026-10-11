@@ -26,9 +26,14 @@ function killPort(port) {
 }
 
 function spawnDetached(cwd, env) {
-  const child = spawn("pnpm", ["exec", "next", "dev", "-p", env.PORT], {
+  const port = env.PORT;
+  const shellCmd = `set -a && [ -f .env.local ] && . ./.env.local; set +a; export PORT=${port} ${Object.entries(env)
+    .filter(([k]) => k !== "PORT")
+    .map(([k, v]) => `${k}=${JSON.stringify(String(v))}`)
+    .join(" ")}; exec pnpm exec next dev -p ${port}`;
+  const child = spawn("bash", ["-lc", shellCmd], {
     cwd,
-    env: { ...process.env, ...env },
+    env: process.env,
     detached: true,
     stdio: "ignore",
   });

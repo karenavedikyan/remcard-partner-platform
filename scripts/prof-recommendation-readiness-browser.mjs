@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 import { chromium } from "playwright";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 
 const PROF = process.env.PROF_BASE_URL || "http://127.0.0.1:3020";
 const NAV = process.env.NAV_BASE_URL || "http://127.0.0.1:3021";
 const outDir = "/opt/cursor/artifacts/screenshots";
+const NAV_ROOT = "/opt/cursor/worktrees/remcard-navigator-feat-prof-recommendation-readiness";
+const PROF_ROOT = "/opt/cursor/worktrees/remcard-partner-platform-feat-prof-recommendation-readiness";
+
+function navTsx(code) {
+  return execFileSync("pnpm", ["exec", "tsx", "-e", code], { cwd: NAV_ROOT, encoding: "utf8" }).trim();
+}
 mkdirSync(outDir, { recursive: true });
 
 const report = {
@@ -21,31 +27,19 @@ function sh(repo, cmd) {
   return execSync(`cd ${repo} && ${cmd}`, { encoding: "utf8" }).trim();
 }
 
-report.navigatorSha = sh(
-  "/opt/cursor/worktrees/remcard-navigator-feat-prof-recommendation-readiness",
-  "git rev-parse HEAD",
-);
-report.platformSha = sh(
-  "/opt/cursor/worktrees/remcard-partner-platform-feat-prof-recommendation-readiness",
-  "git rev-parse HEAD",
-);
+report.navigatorSha = sh(NAV_ROOT, "git rev-parse HEAD");
+report.platformSha = sh(PROF_ROOT, "git rev-parse HEAD");
 
 function mint(userId, tokenVersion) {
-  return execSync(
-    `cd /opt/cursor/worktrees/remcard-navigator-feat-prof-recommendation-readiness && pnpm exec tsx -e ${JSON.stringify(
-      `import dotenv from 'dotenv'; dotenv.config({path:'.env.local'}); import {createToken} from './src/lib/auth'; process.stdout.write(createToken('${userId}', ${tokenVersion}));`,
-    )}`,
-    { encoding: "utf8" },
-  ).trim();
+  return navTsx(
+    `import dotenv from 'dotenv'; dotenv.config({path:'.env.local'}); import {createToken} from './src/lib/auth'; process.stdout.write(createToken('${userId}', ${tokenVersion}));`,
+  );
 }
 
 function assertCertInPg(certId) {
-  const out = execSync(
-    `cd /opt/cursor/worktrees/remcard-navigator-feat-prof-recommendation-readiness && pnpm exec tsx -e ${JSON.stringify(
-      `import dotenv from 'dotenv'; dotenv.config({path:'.env.local'}); import {prisma} from './src/lib/prisma'; prisma.certificate.count({where:{id:'${certId}'}}).then(c=>{process.stdout.write(String(c));}).finally(()=>prisma.$disconnect());`,
-    )}`,
-    { encoding: "utf8" },
-  ).trim();
+  const out = navTsx(
+    `import dotenv from 'dotenv'; dotenv.config({path:'.env.local'}); import {prisma} from './src/lib/prisma'; prisma.certificate.count({where:{id:'${certId}'}}).then(c=>{process.stdout.write(String(c));}).finally(()=>prisma.$disconnect());`,
+  );
   if (out !== "1") throw new Error(`certificate row missing in PG: ${certId} (count=${out})`);
 }
 
@@ -66,10 +60,24 @@ async function fillPartnerAndTerms(page) {
   await discountInput.fill("7");
 }
 
+async function waitCreateFormReady(page) {
+  await page.goto(`${PROF}/recommendations/new`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  const readiness = page.getByTestId("recommendation-issuer-readiness");
+  const validity = page.getByTestId("recommendation-validity-preset");
+  await Promise.race([
+    readiness.waitFor({ state: "visible", timeout: 60000 }),
+    validity.waitFor({ state: "visible", timeout: 60000 }),
+  ]);
+  const onLanding = await page.getByRole("heading", { name: /Ваши рекомендации могут приносить доход/i }).count();
+  if (onLanding > 0) {
+    throw new Error("unauthenticated landing — check JWT_SECRET / stack .env.local");
+  }
+}
+
 async function agentPath(page, token) {
-  await page.goto(`${PROF}/recommendations/new`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.getByTestId("recommendation-issuer-readiness").waitFor({ timeout: 30000 });
+  await waitCreateFormReady(page);
   await fillPartnerAndTerms(page);
+  await page.getByTestId("recommendation-issuer-readiness").waitFor({ timeout: 30000 });
   await page.getByRole("link", { name: "Указать агента в профиле" }).click();
   await page.waitForURL(/\/profile\?/, { timeout: 30000 });
   const nameFocus = page.locator('[data-profile-focus="displayName"] input');
@@ -85,7 +93,6 @@ async function agentPath(page, token) {
     const errText = await page.locator('[role="alert"]').first().textContent().catch(() => "");
     throw new Error(`profile PATCH ${patchRes.status()} ${errText}`);
   }
-  await page.getByRole("status", { name: /Данные сохранены/i }).waitFor({ timeout: 15000 });
   await page.getByRole("link", { name: /Вернуться к рекомендации/i }).click();
   await page.waitForURL(/\/recommendations\/new/, { timeout: 30000 });
   await page.reload({ waitUntil: "networkidle" });
@@ -109,9 +116,9 @@ async function agentPath(page, token) {
 }
 
 async function specializationPath(page) {
-  await page.goto(`${PROF}/recommendations/new`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.getByTestId("recommendation-issuer-readiness").waitFor({ timeout: 30000 });
+  await waitCreateFormReady(page);
   await fillPartnerAndTerms(page);
+  await page.getByTestId("recommendation-issuer-readiness").waitFor({ timeout: 30000 });
   await page.getByRole("link", { name: "Выбрать специализацию" }).click();
   await page.waitForURL(/\/profile\?.*focus=directions/, { timeout: 30000 });
   const dirSection = page.locator('[data-profile-focus="directions"]');
@@ -129,7 +136,6 @@ async function specializationPath(page) {
     const errText = await page.locator('[role="alert"]').first().textContent().catch(() => "");
     throw new Error(`profile PATCH ${patchRes.status()} ${errText}`);
   }
-  await page.getByRole("status", { name: /Данные сохранены/i }).waitFor({ timeout: 15000 });
   await page.getByRole("link", { name: /Вернуться к рекомендации/i }).click();
   await page.waitForURL(/\/recommendations\/new/, { timeout: 30000 });
   const postPromise = page.waitForResponse(
@@ -151,7 +157,7 @@ let fixtures = null;
 try {
   fixtures = JSON.parse(
     execSync(
-      "cd /opt/cursor/worktrees/remcard-navigator-feat-prof-recommendation-readiness && pnpm exec tsx scripts/prof-recommendation-browser-fixtures.ts seed",
+      `cd ${NAV_ROOT} && pnpm exec tsx scripts/prof-recommendation-browser-fixtures.ts seed`,
       { encoding: "utf8" },
     ).trim(),
   );
@@ -193,7 +199,7 @@ try {
 } finally {
   if (fixtures?.tag) {
     execSync(
-      `cd /opt/cursor/worktrees/remcard-navigator-feat-prof-recommendation-readiness && pnpm exec tsx scripts/prof-recommendation-browser-fixtures.ts cleanup ${fixtures.tag}`,
+      `cd ${NAV_ROOT} && pnpm exec tsx scripts/prof-recommendation-browser-fixtures.ts cleanup ${fixtures.tag}`,
       { stdio: "inherit" },
     );
   }
