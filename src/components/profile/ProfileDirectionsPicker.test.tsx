@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { THEME_CONTRAST_PAIRS, contrastRatio } from "@/lib/theme-contrast";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 
 vi.mock("@/lib/partner-taxonomy", () => ({
@@ -11,6 +12,15 @@ vi.mock("@/lib/partner-taxonomy", () => ({
 }));
 
 describe("ProfileDirectionsPicker", () => {
+  it("chip and lead token pairs meet WCAG contrast on light and dark surfaces", () => {
+    for (const theme of ["light", "dark"] as const) {
+      const chip = THEME_CONTRAST_PAIRS[theme].profileDirectionsChip;
+      const lead = THEME_CONTRAST_PAIRS[theme].profileDirectionsLead;
+      expect(contrastRatio(chip.fg, chip.bg)).toBeGreaterThanOrEqual(chip.minRatio);
+      expect(contrastRatio(lead.fg, lead.bg)).toBeGreaterThanOrEqual(lead.minRatio);
+    }
+  });
+
   it("keeps Russian labels on chips when filter hides options", async () => {
     const onProducts = vi.fn();
     render(

@@ -42,6 +42,8 @@ export const THEME_CONTRAST_PAIRS = {
     accentFillBadge: { fg: "#ffffff", bg: "#c12b2f", minRatio: 4.5 },
     bodyText: { fg: "#6c706a", bg: "#ffffff", minRatio: 4.5 },
     placeholder: { fg: "#6c706a", bg: "#ffffff", minRatio: 4.5 },
+    profileDirectionsChip: { fg: "#252923", bg: "#f2f1ee", minRatio: 4.5 },
+    profileDirectionsLead: { fg: "#6c706a", bg: "#ffffff", minRatio: 4.5 },
   },
   dark: {
     primaryTextOnSurface: { fg: "#fda4af", bg: "#202520", minRatio: 4.5 },
@@ -52,5 +54,7 @@ export const THEME_CONTRAST_PAIRS = {
     accentFillBadge: { fg: "#ffffff", bg: "#b54844", minRatio: 4.5 },
     bodyText: { fg: "#a6aea4", bg: "#202520", minRatio: 4.5 },
     placeholder: { fg: "#a6aea4", bg: "#202520", minRatio: 4.5 },
+    profileDirectionsChip: { fg: "#f0f1ec", bg: "#2b312b", minRatio: 4.5 },
+    profileDirectionsLead: { fg: "#a6aea4", bg: "#202520", minRatio: 4.5 },
   },
 } as const;

@@ -7,14 +7,14 @@
 
 .lead {
   margin: 0;
-  color: var(--color-text-muted, #5c6470);
+  color: var(--muted);
   line-height: 1.45;
 }
 
 .empty {
   margin: 0;
   font-size: 0.9375rem;
-  color: var(--color-text-muted, #5c6470);
+  color: var(--muted);
 }
 
 .chips {
@@ -24,15 +24,43 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  min-width: 0;
+}
+
+.chips li {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .chip {
-  border: 1px solid var(--color-border, #d8dde5);
-  background: var(--color-surface-muted, #f4f6f8);
+  box-sizing: border-box;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  background: var(--offset);
+  color: var(--ink);
   border-radius: 999px;
   padding: 0.25rem 0.65rem;
   font-size: 0.875rem;
+  font: inherit;
+  line-height: 1.35;
   cursor: pointer;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--ink) 14%, var(--line));
+}
+
+.chip:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .search span {
@@ -76,7 +104,7 @@
 .hint {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--color-text-muted, #5c6470);
+  color: var(--muted);
 }
 
 .errorBlock {
