@@ -5,34 +5,24 @@
 - **remcard-navigator** `feat/prof-recommendation-readiness`
 - **remcard-partner-platform** `feat/prof-recommendation-readiness`
 
-## Base → HEAD (this fix-pass)
+## SHAs (no self-referential docs tip in code table)
 
-| Repo | Base | HEAD (after push) |
-|------|------|-------------------|
-| navigator | `27d465779e01dbaf3e61068d71b35fa83ca6a83b` | `32ffea86e1e0d93519332fe22b2093dcf15caf45` |
-| platform | `2713153e103412cc75b20997ddd57ca250ebb9d1` | `bbd3d224308d0dccec6af9fd0778e48e0fae13a0` |
+| | Value |
+|---|--------|
+| **testedCodeSha (navigator)** | `32ffea86e1e0d93519332fe22b2093dcf15caf45` |
+| **testedCodeSha (platform, before this delta)** | `93ecd5d735ba125a1e58244cfcb4ddb0c114bee5` |
+| **docs tip (platform, after push)** | see `git rev-parse HEAD` on platform branch after latest commit |
 
-Stack: platform **3020**, navigator **3021**. Worktrees: `/opt/cursor/worktrees/*-feat-prof-recommendation-readiness`. Start with `.env.local` sourced (JWT + staging Basic Auth); platform build needs `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3020`.
+Earlier report rows referenced `bbd3d224…`; that was stale relative to branch tip at the time of the first fix-pass push.
 
-## Fix-pass scope (factual)
+## Delta (this pass)
 
-1. **Profile draft sync** — `partnerActivities` in `DRAFT_KEYS` + normalized set compare; AGENT toggle dirty/revert in `profile-draft-sync.test.ts`.
-2. **Focus & return** — whitelist `focus` query; `resolveFocusableElement`; name/city wrappers; dual CTAs for `directionOrAgent`; «Вернуться к рекомендации» for `/recommendations/new`.
-3. **Create-form draft v2** — scoped `userId` + `organizationId` + `branchId`, TTL/shape validation, safe sessionStorage, reconcile stale partner keys, restore-before-save, logout cleanup.
-4. **Issuer resolver (navigator)** — effective working display name before stale legacy; `recommendationIssuerInputFromUserAndOrg`; org city/categories without catalog gates.
-5. **Tests** — unit helpers; PG `profRecommendationIssuer.integration.test.ts` (AGENT + specialization PATCH + invalid discount + catalog unchanged + tagged cleanup).
+1. **CertificateCreateForm** — persist draft only after successful `GET /api/pro/context` (not userId/null/null on error); scope error UI + retry; `hydratedScopeKey` barrier so restore completes before autosave; scope switch re-hydrates without copying in-memory values across scopes.
+2. **recommendation-create-draft** — safe `sessionStorage` getter (SecurityError-safe).
+3. **Browser** — specialization path selects a service under «Работы и услуги», asserts PATCH `serviceSpecializationIds`, no AGENT / no product categories; draft restore (partner, discount 7, validity 6) before POST 201 + PG.
 
-## Automated checks (2026-10-11)
-
-| Check | Result |
-|-------|--------|
-| platform vitest (`profile-draft-sync`, `recommendation-create-draft`, `recommendation-profile-focus`) | **16 passed** |
-| navigator vitest (`certificateRecommendationIssuerReadiness`) | **9 passed** |
-| navigator PG `profRecommendationIssuer.integration.test.ts` | **2 passed** |
-| platform `pnpm run build` (3020 app URL) | **pass** |
-| navigator `pnpm run build` | **pass** |
-| browser `prof-recommendation-readiness-browser.mjs` | **PASS** — agent 1440 light (draft restore, POST 201, PG row); specialization 390 dark (POST 201, PG row); report `/opt/cursor/artifacts/screenshots/prof-recommendation-browser-report.json` |
+Stack **3020/3021** with `.env.local` sourced on `next start`.
 
 ## Not in scope
 
-No PR/merge/deploy, no team-actions stack (3010/3011), no production profiles.
+No PR/merge/deploy, team-actions/production/real profiles.

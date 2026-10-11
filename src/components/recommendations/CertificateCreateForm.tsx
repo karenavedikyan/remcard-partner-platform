@@ -23,6 +23,7 @@ import {
   loadRecommendationCreateDraft,
   reconcileRecommendationDraftWithPartners,
   saveRecommendationCreateDraft,
+  serializeRecommendationCreateDraftScope,
   type RecommendationCreateDraftScope,
 } from "@/lib/recommendation-create-draft";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
@@ -40,6 +41,14 @@ import styles from "./recommendations.module.css";
 type ValidityPreset = "1" | "3" | "6" | "12" | "unlimited";
 
 const RETURN_PATH = "/recommendations/new";
+
+const DEFAULT_VALIDITY: ValidityPreset = "3";
+
+type DraftScopeResolution =
+  | { status: "pending" }
+  | { status: "no-session" }
+  | { status: "error"; message: string }
+  | { status: "ready"; scope: RecommendationCreateDraftScope };
 
 const VALIDITY_OPTIONS: Array<{ value: ValidityPreset; label: string }> = [
   { value: "1", label: "1 месяц" },
@@ -67,7 +76,7 @@ export function CertificateCreateForm() {
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [loadError, setLoadError] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-  const [validityPreset, setValidityPreset] = useState<ValidityPreset>("3");
+  const [validityPreset, setValidityPreset] = useState<ValidityPreset>(DEFAULT_VALIDITY);
   const [discountDrafts, setDiscountDrafts] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [fieldErrorReasons, setFieldErrorReasons] = useState<
@@ -76,14 +85,48 @@ export function CertificateCreateForm() {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<StoreCertificate | null>(null);
-  const [draftScope, setDraftScope] = useState<RecommendationCreateDraftScope | null>(null);
+  const [scopeResolution, setScopeResolution] = useState<DraftScopeResolution>({ status: "pending" });
+  const [hydratedScopeKey, setHydratedScopeKey] = useState<string | null>(null);
   const [issuerReady, setIssuerReady] = useState<boolean | null>(null);
   const [issuerMissing, setIssuerMissing] = useState<
     CertificateRecommendationIssuerMissingField[]
   >([]);
   const [stalePartnerKeys, setStalePartnerKeys] = useState<string[]>([]);
-  const draftRestoredRef = useRef(false);
-  const skipSaveRef = useRef(true);
+  const scopeResolveGenerationRef = useRef(0);
+
+  const resolveDraftScope = useCallback(async () => {
+    const generation = ++scopeResolveGenerationRef.current;
+    setScopeResolution({ status: "pending" });
+    setHydratedScopeKey(null);
+    try {
+      const me = await getAuthMe();
+      if (!me.user?.id) {
+        if (generation === scopeResolveGenerationRef.current) {
+          setScopeResolution({ status: "no-session" });
+        }
+        return;
+      }
+      const ctx = await remcardFetch<ProContextSnapshot>("/api/pro/context");
+      if (generation !== scopeResolveGenerationRef.current) return;
+      setScopeResolution({
+        status: "ready",
+        scope: {
+          userId: me.user.id,
+          organizationId: ctx.organization?.id ?? null,
+          branchId: ctx.activeBranch?.id ?? null,
+        },
+      });
+    } catch (caught) {
+      if (generation !== scopeResolveGenerationRef.current) return;
+      setScopeResolution({
+        status: "error",
+        message:
+          caught instanceof RemcardApiError
+            ? caught.message
+            : "Не удалось определить рабочий контекст. Черновик формы не сохранится, пока контекст недоступен.",
+      });
+    }
+  }, []);
 
   const loadPartners = useCallback(async () => {
     setLoadState("loading");
@@ -116,24 +159,14 @@ export function CertificateCreateForm() {
   }, [loadPartners]);
 
   useEffect(() => {
-    void getAuthMe().then(async (me) => {
-      if (!me.user?.id) return;
-      let organizationId: string | null = null;
-      let branchId: string | null = null;
-      try {
-        const ctx = await remcardFetch<ProContextSnapshot>("/api/pro/context");
-        organizationId = ctx.organization?.id ?? null;
-        branchId = ctx.activeBranch?.id ?? null;
-      } catch {
-        // form works without context; draft stays user-scoped
-      }
-      setDraftScope({
-        userId: me.user.id,
-        organizationId,
-        branchId,
-      });
-    });
-  }, []);
+    void resolveDraftScope();
+  }, [resolveDraftScope]);
+
+  const persistableScope =
+    scopeResolution.status === "ready" ? scopeResolution.scope : null;
+  const activeScopeKey = persistableScope
+    ? serializeRecommendationCreateDraftScope(persistableScope)
+    : null;
 
   const selectablePartners = useMemo(
     () => partners.filter((p) => p.programReady !== false && p.categories.length > 0),
@@ -146,33 +179,46 @@ export function CertificateCreateForm() {
   );
 
   useEffect(() => {
-    if (!draftScope || draftRestoredRef.current || loadState !== "loaded") return;
-    const saved = loadRecommendationCreateDraft(draftScope);
-    draftRestoredRef.current = true;
-    if (!saved) {
-      skipSaveRef.current = false;
-      return;
+    if (loadState !== "loaded" || !persistableScope || !activeScopeKey) return;
+    if (hydratedScopeKey === activeScopeKey) return;
+
+    const saved = loadRecommendationCreateDraft(persistableScope);
+    if (saved) {
+      const reconciled = reconcileRecommendationDraftWithPartners({
+        selectedKeys: saved.selectedKeys,
+        discountDrafts: saved.discountDrafts,
+        partnerKeys: partnerKeySet,
+      });
+      setSelectedKeys(reconciled.selectedKeys);
+      setDiscountDrafts(reconciled.discountDrafts);
+      setValidityPreset(saved.validityPreset as ValidityPreset);
+      setStalePartnerKeys(reconciled.stalePartnerKeys);
+    } else if (hydratedScopeKey != null) {
+      setSelectedKeys([]);
+      setDiscountDrafts({});
+      setValidityPreset(DEFAULT_VALIDITY);
+      setStalePartnerKeys([]);
     }
-    const reconciled = reconcileRecommendationDraftWithPartners({
-      selectedKeys: saved.selectedKeys,
-      discountDrafts: saved.discountDrafts,
-      partnerKeys: partnerKeySet,
-    });
-    setSelectedKeys(reconciled.selectedKeys);
-    setDiscountDrafts(reconciled.discountDrafts);
-    setValidityPreset(saved.validityPreset as ValidityPreset);
-    setStalePartnerKeys(reconciled.stalePartnerKeys);
-    skipSaveRef.current = false;
-  }, [draftScope, loadState, partnerKeySet]);
+    setHydratedScopeKey(activeScopeKey);
+  }, [activeScopeKey, hydratedScopeKey, loadState, partnerKeySet, persistableScope]);
 
   useEffect(() => {
-    if (!draftScope || loadState !== "loaded" || skipSaveRef.current) return;
-    saveRecommendationCreateDraft(draftScope, {
+    if (loadState !== "loaded" || !persistableScope || !activeScopeKey) return;
+    if (hydratedScopeKey !== activeScopeKey) return;
+    saveRecommendationCreateDraft(persistableScope, {
       selectedKeys,
       discountDrafts,
       validityPreset,
     });
-  }, [draftScope, loadState, selectedKeys, discountDrafts, validityPreset]);
+  }, [
+    activeScopeKey,
+    discountDrafts,
+    hydratedScopeKey,
+    loadState,
+    persistableScope,
+    selectedKeys,
+    validityPreset,
+  ]);
 
   const selectedPartners = useMemo(
     () => selectablePartners.filter((p) => selectedKeys.includes(partnerKey(p))),
@@ -223,7 +269,7 @@ export function CertificateCreateForm() {
         body: payloadResult.body,
       });
       setCreated(result);
-      if (draftScope) clearRecommendationCreateDraft(draftScope);
+      if (persistableScope) clearRecommendationCreateDraft(persistableScope);
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 422) {
         const payload = caught.body as {
@@ -259,6 +305,19 @@ export function CertificateCreateForm() {
           <p role="alert">{loadError}</p>
           <Button variant="secondary" onClick={() => void loadPartners()}>
             Повторить
+          </Button>
+        </div>
+      ) : null}
+
+      {scopeResolution.status === "error" ? (
+        <div className={styles.errorBlock} data-testid="recommendation-draft-scope-error">
+          <p role="status">{scopeResolution.message}</p>
+          <p className={styles.meta}>
+            Введённые данные остаются на экране, но не сохраняются в черновик, пока не удастся
+            загрузить контекст кабинета.
+          </p>
+          <Button variant="secondary" onClick={() => void resolveDraftScope()}>
+            Повторить загрузку контекста
           </Button>
         </div>
       ) : null}

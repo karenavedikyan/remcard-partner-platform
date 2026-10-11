@@ -33,6 +33,22 @@ function scopeKey(scope: RecommendationCreateDraftScope): string {
   return `${scope.userId}:${scopeSegment(scope.organizationId)}:${scopeSegment(scope.branchId)}`;
 }
 
+export function serializeRecommendationCreateDraftScope(
+  scope: RecommendationCreateDraftScope,
+): string {
+  return scopeKey(scope);
+}
+
+function sessionStorageSafe(): Storage | null {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    void sessionStorage.length;
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function recommendationCreateDraftKey(scope: RecommendationCreateDraftScope): string {
   return `rc-rec-create-v${RECOMMENDATION_CREATE_DRAFT_VERSION}:${scopeKey(scope)}`;
 }
@@ -70,16 +86,20 @@ function isValidDraftShape(raw: unknown): raw is RecommendationCreateDraft {
 }
 
 function readStorage(key: string): string | null {
+  const storage = sessionStorageSafe();
+  if (!storage) return null;
   try {
-    return sessionStorage.getItem(key);
+    return storage.getItem(key);
   } catch {
     return null;
   }
 }
 
 function writeStorage(key: string, value: string): boolean {
+  const storage = sessionStorageSafe();
+  if (!storage) return false;
   try {
-    sessionStorage.setItem(key, value);
+    storage.setItem(key, value);
     return true;
   } catch {
     return false;
@@ -87,8 +107,10 @@ function writeStorage(key: string, value: string): boolean {
 }
 
 function removeStorage(key: string): void {
+  const storage = sessionStorageSafe();
+  if (!storage) return;
   try {
-    sessionStorage.removeItem(key);
+    storage.removeItem(key);
   } catch {
     // ignore quota / privacy mode
   }
@@ -98,7 +120,7 @@ export function saveRecommendationCreateDraft(
   scope: RecommendationCreateDraftScope,
   draft: RecommendationCreateDraftPayload,
 ): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (!sessionStorageSafe()) return;
   const payload: RecommendationCreateDraft = {
     v: RECOMMENDATION_CREATE_DRAFT_VERSION,
     userId: scope.userId,
@@ -113,7 +135,7 @@ export function saveRecommendationCreateDraft(
 export function loadRecommendationCreateDraft(
   scope: RecommendationCreateDraftScope,
 ): RecommendationCreateDraft | null {
-  if (typeof sessionStorage === "undefined") return null;
+  if (!sessionStorageSafe()) return null;
   const raw = readStorage(recommendationCreateDraftKey(scope));
   if (!raw) return null;
   try {
@@ -137,18 +159,19 @@ export function loadRecommendationCreateDraft(
 }
 
 export function clearRecommendationCreateDraft(scope: RecommendationCreateDraftScope): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (!sessionStorageSafe()) return;
   removeStorage(recommendationCreateDraftKey(scope));
 }
 
 /** Logout / account switch: drop all recommendation create drafts for this user. */
 export function clearRecommendationCreateDraftsForUser(userId: string): void {
-  if (typeof sessionStorage === "undefined" || !userId) return;
+  const storage = sessionStorageSafe();
+  if (!storage || !userId) return;
   const prefix = `rc-rec-create-v${RECOMMENDATION_CREATE_DRAFT_VERSION}:${userId}:`;
   try {
     const keys: string[] = [];
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
       if (key?.startsWith(prefix)) keys.push(key);
     }
     for (const key of keys) removeStorage(key);

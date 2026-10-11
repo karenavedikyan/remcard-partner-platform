@@ -115,7 +115,42 @@ async function agentPath(page, token) {
   report.agentCertificateId = body.id;
 }
 
-async function specializationPath(page) {
+function fetchFirstServiceTaxonomy(token) {
+  const out = execFileSync(
+    "curl",
+    [
+      "-s",
+      "-H",
+      `Cookie: remcard-token=${token}`,
+      "-H",
+      `Origin: ${PROF}`,
+      `${PROF}/api/remcard/api/pro/partner-taxonomy`,
+    ],
+    { encoding: "utf8" },
+  );
+  const data = JSON.parse(out);
+  const service = data.services?.find((s) => s?.id && s?.label);
+  if (!service) throw new Error("partner-taxonomy missing services");
+  return { id: service.id, label: service.label };
+}
+
+async function assertDraftTermsRestored(page) {
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitCreateFormReady(page);
+  const validity = await page.getByTestId("recommendation-validity-preset").inputValue();
+  if (validity !== "6") throw new Error(`validity not restored: ${validity}`);
+  const discountVal = await page.locator('input[type="number"]').first().inputValue();
+  if (discountVal !== "7") throw new Error(`discount not restored: ${discountVal}`);
+  const partnerCheckbox = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Партнёры" }) })
+    .getByRole("checkbox")
+    .first();
+  if (!(await partnerCheckbox.isChecked())) throw new Error("partner checkbox not restored");
+}
+
+async function specializationPath(page, token) {
+  const service = fetchFirstServiceTaxonomy(token);
   await waitCreateFormReady(page);
   await fillPartnerAndTerms(page);
   await page.getByTestId("recommendation-issuer-readiness").waitFor({ timeout: 30000 });
@@ -123,9 +158,11 @@ async function specializationPath(page) {
   await page.waitForURL(/\/profile\?.*focus=directions/, { timeout: 30000 });
   const dirSection = page.locator('[data-profile-focus="directions"]');
   await dirSection.waitFor({ timeout: 30000 });
-  const dirCheckbox = dirSection.getByRole("checkbox").first();
-  await dirCheckbox.waitFor({ timeout: 60000 });
-  await dirCheckbox.check();
+  const servicesFieldset = dirSection.getByRole("group", { name: "Работы и услуги" });
+  await servicesFieldset.waitFor({ timeout: 60000 });
+  const serviceCheckbox = servicesFieldset.getByRole("checkbox", { name: service.label });
+  await serviceCheckbox.waitFor({ timeout: 60000 });
+  await serviceCheckbox.check();
   const profilePatch = page.waitForResponse(
     (r) => r.url().includes("/api/pro/profile") && r.request().method() === "PATCH",
     { timeout: 60000 },
@@ -136,8 +173,22 @@ async function specializationPath(page) {
     const errText = await page.locator('[role="alert"]').first().textContent().catch(() => "");
     throw new Error(`profile PATCH ${patchRes.status()} ${errText}`);
   }
+  const patchBody = patchRes.request().postDataJSON();
+  const specIds = patchBody?.serviceSpecializationIds ?? [];
+  if (!Array.isArray(specIds) || !specIds.includes(service.id)) {
+    throw new Error(`PATCH missing service ${service.id}: ${JSON.stringify(specIds)}`);
+  }
+  const productIds = patchBody?.productCategoryIds ?? [];
+  if (Array.isArray(productIds) && productIds.length > 0) {
+    throw new Error(`unexpected productCategoryIds in PATCH: ${JSON.stringify(productIds)}`);
+  }
+  const activities = patchBody?.partnerActivities ?? [];
+  if (Array.isArray(activities) && activities.includes("AGENT")) {
+    throw new Error("PATCH must not enable AGENT for specialization path");
+  }
   await page.getByRole("link", { name: /Вернуться к рекомендации/i }).click();
   await page.waitForURL(/\/recommendations\/new/, { timeout: 30000 });
+  await assertDraftTermsRestored(page);
   const postPromise = page.waitForResponse(
     (r) => r.url().includes("/api/store/certificate") && r.request().method() === "POST",
     { timeout: 60000 },
@@ -163,20 +214,6 @@ try {
   );
   const browser = await chromium.launch({ headless: true });
 
-  await run("agent_path_1440_light_with_draft_restore", async () => {
-    const ctx = await browser.newContext({
-      viewport: { width: 1440, height: 900 },
-      colorScheme: "light",
-      extraHTTPHeaders: { Origin: PROF },
-    });
-    const page = await ctx.newPage();
-    const token = mint(fixtures.issuerId, fixtures.issuerTokenVersion);
-    await ctx.addCookies([{ name: "remcard-token", value: token, url: PROF }]);
-    await agentPath(page, token);
-    await page.screenshot({ path: `${outDir}/prof-recommendation-agent-happy-1440-light.png`, fullPage: true });
-    await ctx.close();
-  });
-
   await run("specialization_path_390_dark", async () => {
     const ctx = await browser.newContext({
       viewport: { width: 390, height: 844 },
@@ -186,7 +223,7 @@ try {
     const page = await ctx.newPage();
     const token = mint(fixtures.issuerSpecId, fixtures.issuerSpecTokenVersion);
     await ctx.addCookies([{ name: "remcard-token", value: token, url: PROF }]);
-    await specializationPath(page);
+    await specializationPath(page, token);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
     );

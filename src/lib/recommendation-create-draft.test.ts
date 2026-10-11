@@ -56,6 +56,26 @@ describe("recommendation-create-draft", () => {
     expect(loadRecommendationCreateDraft(scopeB)).toBeNull();
   });
 
+  it("treats sessionStorage getter failures as unavailable", () => {
+    const original = globalThis.sessionStorage;
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("denied", "SecurityError");
+      },
+    });
+    saveRecommendationCreateDraft(scopeA, {
+      selectedKeys: [],
+      discountDrafts: {},
+      validityPreset: "3",
+    });
+    expect(loadRecommendationCreateDraft(scopeA)).toBeNull();
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      value: original,
+    });
+  });
+
   it("reconciles stale partner keys against current GET", () => {
     const out = reconcileRecommendationDraftWithPartners({
       selectedKeys: ["gone:1", "keep:2"],
