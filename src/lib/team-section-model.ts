@@ -3,6 +3,7 @@ import type {
   OrganizationPendingInviteRow,
   TeamMemberRow,
 } from "./employees-overview-types";
+import type { InviteShareContext } from "./invite-share-message";
 import { summarizeMemberAccess } from "./prof-i-member-permissions";
 
 export type TeamSectionView = "people" | "locations" | "invites";
@@ -19,6 +20,7 @@ export type UnifiedPendingInvite = {
   url: string | null;
   source: "organization" | "branch" | "staff";
   revokeId: string | null;
+  share: InviteShareContext | null;
 };
 
 export function memberInitials(name: string): string {
@@ -164,7 +166,10 @@ export function inviteScopeLabel(
   return parts.join(" · ") || "Без филиалов";
 }
 
-type InviteMergeSeed = Omit<UnifiedPendingInvite, "url"> & { url?: string | null };
+type InviteMergeSeed = Omit<UnifiedPendingInvite, "url" | "share"> & {
+  url?: string | null;
+  share?: InviteShareContext | null;
+};
 
 function mergeInviteRow(map: Map<string, InviteMergeSeed>, row: InviteMergeSeed) {
   const prev = map.get(row.id);
@@ -183,6 +188,7 @@ function mergeInviteRow(map: Map<string, InviteMergeSeed>, row: InviteMergeSeed)
     url: row.url ?? prev.url ?? null,
     revokeId: row.revokeId ?? prev.revokeId,
     source: prev.source,
+    share: row.share ?? prev.share ?? null,
   });
 }
 
@@ -193,9 +199,13 @@ export function mergePendingInvites(input: {
     url: string;
     role: string;
     position?: string | null;
+    fullName?: string | null;
     status: string;
     branchName: string | null;
     expiresAt: string;
+    scope?: string | null;
+    organizationName?: string | null;
+    inviterDisplayName?: string | null;
     membershipKind?: string | null;
     branchIds?: string[];
     allCurrentBranchesSnapshot?: boolean;
@@ -215,6 +225,7 @@ export function mergePendingInvites(input: {
       url: null,
       source: "organization",
       revokeId: inv.id,
+      share: null,
     });
   }
 
@@ -230,6 +241,7 @@ export function mergePendingInvites(input: {
         url: null,
         source: "branch",
         revokeId: inv.id,
+        share: null,
       });
     }
   }
@@ -253,7 +265,7 @@ export function mergePendingInvites(input: {
         : null;
     mergeInviteRow(map, {
       id: inv.id,
-      label: inv.position?.trim() || inv.role,
+      label: inv.fullName?.trim() || inv.position?.trim() || inv.role,
       position: inv.position ?? null,
       scopeLabel: orgShape
         ? inviteScopeLabel(orgShape, branches)
@@ -263,10 +275,21 @@ export function mergePendingInvites(input: {
       url: inv.url,
       source: "staff",
       revokeId: inv.id,
+      share: {
+        url: inv.url,
+        inviteeFullName: inv.fullName ?? null,
+        inviterDisplayName: inv.inviterDisplayName ?? null,
+        organizationName: inv.organizationName ?? null,
+        scope: inv.scope ?? null,
+      },
     });
   }
 
-  return [...map.values()].map((row) => ({ ...row, url: row.url ?? null }));
+  return [...map.values()].map((row) => ({
+    ...row,
+    url: row.url ?? null,
+    share: row.share ?? null,
+  }));
 }
 
 export function canManageBranch(

@@ -150,6 +150,6 @@ describe("ProfileTeamSection prototype layout (fixture)", () => {
     await user.click(screen.getByTestId("team-permissions-help"));
     expect(screen.getByRole("dialog", { name: /Должности, права и выплаты/i })).toBeInTheDocument();
     expect(screen.getByTestId("team-bonus-illustration")).toBeInTheDocument();
-    expect(screen.getByTestId("team-copy-invite-inv-org-1")).toBeInTheDocument();
+    expect(screen.getByTestId("team-copy-invite-message")).toBeInTheDocument();
   });
 });

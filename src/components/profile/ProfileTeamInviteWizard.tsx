@@ -27,7 +27,13 @@ type Props = {
   initialScope?: InviteWizardScope;
   initialBranchId?: string;
   onClose: () => void;
-  onCreated: (url: string) => void;
+  onCreated: (invite: {
+    url: string;
+    fullName?: string | null;
+    inviterDisplayName?: string | null;
+    organizationName?: string | null;
+    scope?: string | null;
+  }) => void;
 };
 
 function buildInviteWizardDraft(
@@ -272,11 +278,19 @@ export function ProfileTeamInviteWizard({
           body.branchIds = [...draft.selectedBranchIds];
         }
       }
-      const result = await remcardFetch<{ invite: { url: string } }>("/api/pro/invites", {
+      const result = await remcardFetch<{
+        invite: {
+          url: string;
+          fullName?: string | null;
+          inviterDisplayName?: string | null;
+          organizationName?: string | null;
+          scope?: string | null;
+        };
+      }>("/api/pro/invites", {
         method: "POST",
         body,
       });
-      onCreated(result.invite.url);
+      onCreated(result.invite);
       onClose();
     } catch (caught) {
       const message =

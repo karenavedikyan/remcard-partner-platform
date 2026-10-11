@@ -1,10 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
 import { effectiveActionIdsForBranch, memberPermissionState } from "@/lib/prof-i-member-permissions";
-import { manageableBranchAccess } from "@/lib/team-section-model";
+import { manageableBranchAccess, memberDisplayName } from "@/lib/team-section-model";
+import {
+  branchesLosingSoleManager,
+  buildRemoveFromTeamConfirmCopy,
+} from "@/lib/team-member-remove-copy";
 import {
   normalizePermissionFlags,
   permissionLabelsFromFlags,
@@ -21,7 +25,7 @@ type Props = {
   member: TeamMemberRow;
   overview: EmployeesOverviewResponse;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (successMessage: string) => void;
 };
 
 const STEP_LABELS = ["Должность и права", "Подразделения", "Проверка"] as const;
@@ -63,6 +67,8 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
   const [revoking, setRevoking] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
 
   const branchOptions = overview.branches;
   const editableBranches = isOrgOwner
@@ -70,6 +76,13 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     : manageable
         .map((a) => branchOptions.find((b) => b.id === a.branchId))
         .filter((b): b is (typeof branchOptions)[number] => Boolean(b));
+
+  useEffect(() => {
+    const el = actionErrorRef.current;
+    if (!error || !el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [error]);
 
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {
@@ -126,8 +139,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           { method: "PATCH", body: { permissions: flags } },
         );
       }
-      onSaved();
-      onClose();
+      onSaved(`Права ${memberDisplayName(member)} обновлены`);
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
     } finally {
@@ -164,8 +176,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         method: "PATCH",
         body,
       });
-      onSaved();
-      onClose();
+      onSaved(`Права ${memberDisplayName(member)} обновлены`);
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
     } finally {
@@ -175,7 +186,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
 
   async function submitSave(event: FormEvent) {
     event.preventDefault();
-    if (!confirmed || !dirty) return;
+    if (!confirmed || !dirty || saving || revoking) return;
     if (!isOrgOwner) {
       await saveBranchScoped();
       return;
@@ -183,14 +194,8 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     await saveOwner();
   }
 
-  async function revokeOrg() {
-    if (
-      !window.confirm(
-        "Отозвать доступ к организации? Сотрудник потеряет доступ ко всем филиалам сети.",
-      )
-    ) {
-      return;
-    }
+  async function removeFromTeamConfirmed() {
+    setRemoveConfirmOpen(false);
     setRevoking(true);
     setError("");
     try {
@@ -198,14 +203,21 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         `/api/pro/organization/team-members/${encodeURIComponent(member.userId)}?organizationId=${encodeURIComponent(overview.organization.id)}`,
         { method: "DELETE" },
       );
-      onSaved();
-      onClose();
+      onSaved(`${memberDisplayName(member)} удалён из команды`);
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отозвать");
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось удалить из команды");
     } finally {
       setRevoking(false);
     }
   }
+
+  const removeCopy = isOrgOwner
+    ? buildRemoveFromTeamConfirmCopy({
+        member,
+        organizationName: overview.organization.name,
+        soleManagerBranches: branchesLosingSoleManager(overview, member),
+      })
+    : null;
 
   const scopeBranch = scopeEditorBranchId
     ? branchOptions.find((b) => b.id === scopeEditorBranchId)
@@ -488,26 +500,32 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
             </div>
           ))}
         </div>
-        <div className={styles.wizardBody}>
+        <div className={styles.wizardBody}>{renderStepBody()}</div>
+        <div className={styles.wizardFoot}>
           {error ? (
-            <p className={formStyles.error} role="alert">
+            <p
+              ref={actionErrorRef}
+              tabIndex={-1}
+              className={formStyles.error}
+              role="alert"
+              aria-live="assertive"
+              data-testid="team-member-action-error"
+            >
               {error}
             </p>
-          ) : null}
-          {renderStepBody()}
-        </div>
-        <div className={styles.wizardFoot}>
-          <small>Изменения сохраняются только после проверки на шаге 3.</small>
+          ) : (
+            <small>Изменения сохраняются только после проверки на шаге 3.</small>
+          )}
           <div className={styles.wizardFootActions}>
             {isOrgOwner ? (
               <Button
                 type="button"
                 variant="secondary"
-                data-testid="team-member-revoke-org"
+                data-testid="team-member-remove-from-team"
                 disabled={saving || revoking}
-                onClick={() => void revokeOrg()}
+                onClick={() => setRemoveConfirmOpen(true)}
               >
-                {revoking ? "…" : "Отозвать доступ"}
+                {revoking ? "…" : "Удалить из команды"}
               </Button>
             ) : null}
             {step > 1 ? (
@@ -536,6 +554,27 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           </div>
         </div>
       </form>
+      {removeConfirmOpen && removeCopy ? (
+        <div className={styles.removeConfirmBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.removeConfirmPanel}>
+            <h3>{removeCopy.title}</h3>
+            <p className={formStyles.hint}>{removeCopy.body}</p>
+            <div className={styles.wizardFootActions}>
+              <Button type="button" variant="secondary" onClick={() => setRemoveConfirmOpen(false)}>
+                Отмена
+              </Button>
+              <Button
+                type="button"
+                data-testid="team-member-remove-confirm"
+                disabled={revoking}
+                onClick={() => void removeFromTeamConfirmed()}
+              >
+                Удалить из команды
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

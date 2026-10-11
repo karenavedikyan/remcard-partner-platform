@@ -35,6 +35,8 @@ import {
   ProfileTeamInviteWizard,
   type InviteWizardScope,
 } from "./ProfileTeamInviteWizard";
+import { ProfileTeamInviteShare } from "./ProfileTeamInviteShare";
+import type { InviteShareContext } from "@/lib/invite-share-message";
 import { ProfileTeamPermissionsHelpDialog } from "./ProfileTeamPermissionsHelpDialog";
 import { DEV_FIXTURE_STAFF_INVITES } from "@/lib/dev-profile-fixture-overview";
 import styles from "./ProfileTeamSection.module.css";
@@ -51,23 +53,17 @@ type StaffInviteRow = {
   url: string;
   role: string;
   position?: string | null;
+  fullName?: string | null;
   status: string;
   branchName: string | null;
   expiresAt: string;
   scope?: string;
+  organizationName?: string | null;
+  inviterDisplayName?: string | null;
   membershipKind?: string | null;
   branchIds?: string[];
   allCurrentBranchesSnapshot?: boolean;
 };
-
-async function copyInviteUrl(url: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 type ProfileTeamSectionProps = {
   /** Dev-fixture only: skip network and render mock overview. */
@@ -83,8 +79,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [loading, setLoading] = useState(!fixtureOverview);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [copyFailed, setCopyFailed] = useState(false);
-  const [lastInviteUrl, setLastInviteUrl] = useState("");
+  const [createdInviteShare, setCreatedInviteShare] = useState<InviteShareContext | null>(null);
   const [invites, setInvites] = useState<StaffInviteRow[]>([]);
   const [soloEmployees, setSoloEmployees] = useState<SoloPartnerEmployeeRow[]>([]);
   const [search, setSearch] = useState("");
@@ -270,7 +265,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
               aria-label={`Настроить доступ: ${memberDisplayName(member)}`}
               onClick={() => setEditMember(member)}
             >
-              Доступы
+              Изменить права
             </Button>
           </div>
         ) : (
@@ -375,7 +370,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
                           aria-label={`Настроить доступ: ${memberDisplayName(m)}`}
                           onClick={() => setEditMember(m)}
                         >
-                          Доступы
+                          Изменить права
                         </Button>
                       ) : null}
                     </div>
@@ -431,28 +426,18 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           </div>
           <span className={styles.pendingBadge}>Ожидает принятия</span>
         </div>
+        {inv.url && inv.share ? (
+          <ProfileTeamInviteShare
+            compact
+            ctx={inv.share}
+            onFeedback={(text) => {
+              setMessage(text);
+              setManualCopyUrl(null);
+            }}
+            onManualCopy={(text) => setManualCopyUrl(text || null)}
+          />
+        ) : null}
         <div className={styles.inviteActions}>
-          {inv.url ? (
-            <Button
-              type="button"
-              variant="secondary"
-              data-testid={`team-copy-invite-${inv.id}`}
-              onClick={() =>
-                void copyInviteUrl(inv.url!).then((ok) => {
-                  if (ok) {
-                    setMessage("Ссылка скопирована");
-                    setCopyFailed(false);
-                    setManualCopyUrl(null);
-                  } else {
-                    setCopyFailed(true);
-                    setManualCopyUrl(inv.url);
-                  }
-                })
-              }
-            >
-              Скопировать ссылку
-            </Button>
-          ) : null}
           {canManage && inv.revokeId && !fixtureOverview ? (
             <Button type="button" variant="secondary" onClick={() => void revokeInvite(inv.revokeId!)}>
               Отозвать
@@ -519,14 +504,15 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           {message}
         </p>
       ) : null}
-      {copyFailed ? (
-        <p className={formStyles.hint}>Не удалось скопировать — выделите ссылку вручную.</p>
-      ) : null}
-      {lastInviteUrl ? (
-        <div className={formStyles.bannerWarn}>
-          <p>Ссылка для сотрудника:</p>
-          <code>{lastInviteUrl}</code>
-        </div>
+      {createdInviteShare ? (
+        <ProfileTeamInviteShare
+          ctx={createdInviteShare}
+          onFeedback={(text) => {
+            setMessage(text);
+            setManualCopyUrl(null);
+          }}
+          onManualCopy={(text) => setManualCopyUrl(text || null)}
+        />
       ) : null}
 
       {overview && overview.myRole !== "OTHER" ? (
@@ -615,8 +601,14 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
 
       {manualCopyUrl ? (
         <div className={formStyles.bannerWarn} data-testid="team-manual-copy-url">
-          <p>Скопируйте ссылку вручную:</p>
-          <textarea readOnly value={manualCopyUrl} rows={2} aria-label="Ссылка приглашения" />
+          <p>Скопируйте текст вручную:</p>
+          <textarea
+            className={styles.manualCopyArea}
+            readOnly
+            value={manualCopyUrl}
+            rows={4}
+            aria-label="Текст приглашения"
+          />
         </div>
       ) : null}
 
@@ -677,7 +669,11 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           member={editMember}
           overview={overview}
           onClose={() => setEditMember(null)}
-          onSaved={() => void load()}
+          onSaved={(successMessage) => {
+            setMessage(successMessage);
+            setEditMember(null);
+            void load();
+          }}
         />
       ) : null}
 
@@ -687,9 +683,16 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           initialScope={wizardScope}
           initialBranchId={wizardBranchId}
           onClose={() => setWizardOpen(false)}
-          onCreated={(url) => {
-            setLastInviteUrl(url);
-            setMessage("Ссылка создана — отправьте её сотруднику.");
+          onCreated={(invite) => {
+            setCreatedInviteShare({
+              url: invite.url,
+              inviteeFullName: invite.fullName,
+              inviterDisplayName: invite.inviterDisplayName,
+              organizationName: invite.organizationName ?? overview.organization.name,
+              scope: invite.scope ?? "ORGANIZATION",
+            });
+            setView("invites");
+            setMessage("Приглашение создано — отправьте его сотруднику.");
             void load();
           }}
         />

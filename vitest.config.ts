@@ -27,6 +27,8 @@ export default defineConfig({
       "src/lib/profile-branch-save.test.ts",
       "src/lib/prof-i-team-ui.test.ts",
       "src/lib/api-client.errors.test.ts",
+      "src/lib/invite-share-message.test.ts",
+      "src/lib/team-member-remove-copy.test.ts",
       "src/lib/profile-cabinet-access.test.ts",
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",
