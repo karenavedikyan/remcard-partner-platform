@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
 import { effectiveActionIdsForBranch, memberPermissionState } from "@/lib/prof-i-member-permissions";
@@ -21,14 +21,27 @@ type Props = {
 
 export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: Props) {
   const isOrgOwner = overview.viewer.isOrgOwner;
-  const manageable = manageableBranchAccess(overview, member);
+  const manageable = useMemo(
+    () => manageableBranchAccess(overview, member),
+    [
+      member.userId,
+      overview.viewer.isOrgOwner,
+      JSON.stringify(member.branchAccess.map((b) => `${b.branchId}:${b.employeeId}`)),
+      JSON.stringify(overview.viewer.canManageEmployeesByBranchId),
+    ],
+  );
   const initial = memberPermissionState(member);
   const [membershipKind, setMembershipKind] = useState<"BRANCH_STAFF" | "HEAD_OFFICE">(
     member.membershipKind === "HEAD_OFFICE" ? "HEAD_OFFICE" : "BRANCH_STAFF",
   );
   const [position, setPosition] = useState(member.position ?? "");
   const [fullName, setFullName] = useState(member.fullName ?? "");
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(initial.selectedBranchIds));
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    if (!overview.viewer.isOrgOwner) {
+      return new Set(manageableBranchAccess(overview, member).map((m) => m.branchId));
+    }
+    return new Set(initial.selectedBranchIds);
+  });
   const [defaultPermissions, setDefaultPermissions] = useState<ProfIPermissionFlags>(
     initial.defaultPermissions,
   );
@@ -48,12 +61,6 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     : manageable
         .map((a) => branchOptions.find((b) => b.id === a.branchId))
         .filter((b): b is (typeof branchOptions)[number] => Boolean(b));
-
-  useEffect(() => {
-    if (!isOrgOwner && manageable.length > 0) {
-      setSelected(new Set(manageable.map((m) => m.branchId)));
-    }
-  }, [isOrgOwner, manageable]);
 
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {

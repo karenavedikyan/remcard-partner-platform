@@ -131,12 +131,14 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
         const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
           "/api/pro/invites?status=PENDING&limit=200",
         );
+        if (generation !== fetchGenerationRef.current) return;
         setInvites(inv.invites ?? []);
       } else {
         setInvites([]);
       }
       if (data.myRole === "SOLO_PARTNER") {
         const solo = await remcardFetch<{ employees: SoloPartnerEmployeeRow[] }>("/api/pro/employees");
+        if (generation !== fetchGenerationRef.current) return;
         setSoloEmployees(solo.employees ?? []);
       } else {
         setSoloEmployees([]);
@@ -652,7 +654,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
 
       <div className={styles.rulebox}>
         <div>
-          <span className={styles.eyebrow}>Роль = что можно делать</span>
+          <span className={styles.eyebrow}>Права = что можно делать</span>
           <p>
             Один и тот же набор прав можно выдать на один магазин, несколько точек или всю текущую сеть.
           </p>
