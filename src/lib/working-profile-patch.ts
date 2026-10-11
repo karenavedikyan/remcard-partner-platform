@@ -75,5 +75,9 @@ export function buildWorkingProfilePatchBody(
     body.partnershipContactEmail = draft.partnershipContactEmail.trim() || null;
   }
 
+  if (!arraysEqual(draft.partnerActivities, saved.partnerActivities)) {
+    body.partnerActivities = draft.partnerActivities;
+  }
+
   return body;
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { displayCategoryLabel } from "@/lib/category-display";
-import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { getAuthMe, RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   buildCreateCertificatePayload,
   categoryFieldKey,
@@ -15,14 +15,26 @@ import type { CategoryValidationFailureReason } from "@/lib/certificate-percent"
 import type {
   AvailablePartner,
   AvailablePartnersResponse,
+  CertificateRecommendationIssuerMissingField,
   StoreCertificate,
 } from "@/lib/certificate-types";
+import {
+  clearRecommendationCreateDraft,
+  loadRecommendationCreateDraft,
+  saveRecommendationCreateDraft,
+} from "@/lib/recommendation-create-draft";
+import {
+  ctaLabelForIssuerCode,
+  profileHrefForIssuerMissing,
+} from "@/lib/recommendation-profile-focus";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { CertificateResultView } from "./CertificateResultView";
 import styles from "./recommendations.module.css";
 
 type ValidityPreset = "1" | "3" | "6" | "12" | "unlimited";
+
+const RETURN_PATH = "/recommendations/new";
 
 const VALIDITY_OPTIONS: Array<{ value: ValidityPreset; label: string }> = [
   { value: "1", label: "1 месяц" },
@@ -59,6 +71,12 @@ export function CertificateCreateForm() {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<StoreCertificate | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [issuerReady, setIssuerReady] = useState<boolean | null>(null);
+  const [issuerMissing, setIssuerMissing] = useState<
+    CertificateRecommendationIssuerMissingField[]
+  >([]);
+  const draftRestoredRef = useRef(false);
 
   const loadPartners = useCallback(async () => {
     setLoadState("loading");
@@ -67,6 +85,8 @@ export function CertificateCreateForm() {
       const data = await remcardFetch<AvailablePartnersResponse>(
         "/api/store/certificate/available-partners",
       );
+      setIssuerReady(data.certificateRecommendationIssuerReady !== false);
+      setIssuerMissing(data.certificateRecommendationIssuerMissing ?? []);
       const rows = [...(data.partners ?? [])];
       if (data.selfScanPartner) {
         rows.push(data.selfScanPartner);
@@ -87,6 +107,31 @@ export function CertificateCreateForm() {
   useEffect(() => {
     void loadPartners();
   }, [loadPartners]);
+
+  useEffect(() => {
+    void getAuthMe().then((me) => {
+      if (me.user?.id) setUserId(me.user.id);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!userId || draftRestoredRef.current || loadState !== "loaded") return;
+    const saved = loadRecommendationCreateDraft(userId);
+    if (!saved) return;
+    draftRestoredRef.current = true;
+    setSelectedKeys(saved.selectedKeys);
+    setDiscountDrafts(saved.discountDrafts);
+    setValidityPreset(saved.validityPreset as ValidityPreset);
+  }, [userId, loadState]);
+
+  useEffect(() => {
+    if (!userId || loadState !== "loaded") return;
+    saveRecommendationCreateDraft(userId, {
+      selectedKeys,
+      discountDrafts,
+      validityPreset,
+    });
+  }, [userId, loadState, selectedKeys, discountDrafts, validityPreset]);
 
   const selectablePartners = useMemo(
     () => partners.filter((p) => p.programReady !== false && p.categories.length > 0),
@@ -110,6 +155,10 @@ export function CertificateCreateForm() {
 
   async function submit() {
     if (submitting || created) {
+      return;
+    }
+    if (issuerReady === false) {
+      setSubmitError(issuerMissing[0]?.message ?? "Заполните профиль для рекомендаций");
       return;
     }
 
@@ -138,7 +187,18 @@ export function CertificateCreateForm() {
         body: payloadResult.body,
       });
       setCreated(result);
+      if (userId) clearRecommendationCreateDraft(userId);
     } catch (caught) {
+      if (caught instanceof RemcardApiError && caught.status === 422) {
+        const payload = caught.body as {
+          missingFields?: CertificateRecommendationIssuerMissingField[];
+          errorCode?: string;
+        } | null;
+        if (payload?.errorCode === "ISSUER_NOT_READY" && payload.missingFields?.length) {
+          setIssuerReady(false);
+          setIssuerMissing(payload.missingFields);
+        }
+      }
       setSubmitError(
         caught instanceof RemcardApiError
           ? caught.message
@@ -169,6 +229,21 @@ export function CertificateCreateForm() {
 
       {loadState === "loaded" ? (
         <>
+          {issuerReady === false && issuerMissing.length > 0 ? (
+            <section className={styles.readinessBlock} data-testid="recommendation-issuer-readiness">
+              <h3>Чтобы рекомендовать партнёров</h3>
+              <ul className={styles.readinessList}>
+                {issuerMissing.map((field) => (
+                  <li key={field.code}>
+                    <span>{field.message}</span>{" "}
+                    <Link href={profileHrefForIssuerMissing(field.code, RETURN_PATH)}>
+                      {ctaLabelForIssuerCode(field.code)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
           <section className={styles.formSection}>
             <h3>Партнёры</h3>
             {selectablePartners.length === 0 ? (
@@ -337,7 +412,7 @@ export function CertificateCreateForm() {
           ) : null}
 
           <Button
-            disabled={submitting || selectablePartners.length === 0}
+            disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
             onClick={() => void submit()}
           >
             {submitting ? "Создание…" : "Создать рекомендацию"}

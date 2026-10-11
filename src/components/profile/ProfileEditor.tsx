@@ -95,6 +95,7 @@ type ProfileEditorProps = {
   returnTo?: string | null;
   section?: ProfileSectionId;
   focusBranchId?: string;
+  focusField?: string;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -117,6 +118,7 @@ function ProfileEditorInner({
   returnTo,
   section: sectionProp = "overview",
   focusBranchId,
+  focusField,
 }: ProfileEditorProps) {
   const cabinetAccess = useProfileCabinetAccess();
   const router = useRouter();
@@ -176,6 +178,9 @@ function ProfileEditorInner({
   const [partnershipContactEmail, setPartnershipContactEmail] = useState(
     initialWorking?.partnershipContactEmail ?? "",
   );
+  const [partnerActivities, setPartnerActivities] = useState<string[]>(
+    user.partnerActivities ?? [],
+  );
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
@@ -188,6 +193,22 @@ function ProfileEditorInner({
   const [notes, setNotes] = useState<ModerationNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState("");
+
+  useEffect(() => {
+    if (!focusField || activeSection !== "basics") return;
+    const el = document.querySelector(`[data-profile-focus="${focusField}"]`);
+    if (!el) return;
+    el.classList.add(styles.profileFocusPulse);
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const focusable = el.querySelector("input, textarea, select, button");
+    if (focusable instanceof HTMLElement) {
+      focusable.focus({ preventScroll: true });
+    }
+    const timer = window.setTimeout(() => {
+      el.classList.remove(styles.profileFocusPulse);
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [focusField, activeSection]);
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const basicsEditable = profileBasicsEditable(profile);
@@ -228,6 +249,7 @@ function ProfileEditorInner({
       partnershipContactName,
       partnershipContactPhone,
       partnershipContactEmail,
+      partnerActivities,
     };
   }, [
     branchAddress,
@@ -244,6 +266,7 @@ function ProfileEditorInner({
     partnershipContactEmail,
     partnershipContactName,
     partnershipContactPhone,
+    partnerActivities,
     primaryDirection,
     productCategoryIds,
     publicEmail,
@@ -298,6 +321,7 @@ function ProfileEditorInner({
     setPartnershipContactName(w?.partnershipContactName ?? "");
     setPartnershipContactPhone(w?.partnershipContactPhone ?? "");
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
+    setPartnerActivities(u.partnerActivities ?? catalogForm.partnerActivities ?? []);
   }, []);
 
   const loadNotes = useCallback(async () => {
@@ -520,12 +544,14 @@ function ProfileEditorInner({
                 onChange={(event) => setDisplayName(event.target.value)}
                 required
                 hint="Отображается в кабинете; не подменяет название организации."
+                data-profile-focus="displayName"
               />
               <TextField
                 label="Город"
                 value={city}
                 onChange={(event) => setCity(event.target.value)}
                 required
+                data-profile-focus="city"
               />
               <SelectField
                 label="Тип партнёра"
@@ -554,17 +580,54 @@ function ProfileEditorInner({
         </Panel>
 
         <Panel title="Чем вы занимаетесь">
-          <ProfileDirectionsPicker
-            disabled={!basicsEditable}
-            productCategoryIds={productCategoryIds}
-            serviceSpecializationIds={serviceSpecializationIds}
-            navigatorStageIds={navigatorStageIds}
-            primaryDirection={primaryDirection}
-            onChangeProducts={setProductCategoryIds}
-            onChangeServices={setServiceSpecializationIds}
-            onChangeStages={setNavigatorStageIds}
-            onChangePrimary={setPrimaryDirection}
-          />
+          <div
+            className={styles.agentActivityRow}
+            data-profile-focus="agentActivity"
+            data-testid="profile-agent-activity-row"
+          >
+            <label className={styles.checkRow}>
+              <input
+                type="checkbox"
+                checked={partnerActivities.includes("AGENT")}
+                disabled={!basicsEditable}
+                data-testid="profile-agent-activity"
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setPartnerActivities((prev) => {
+                    if (checked) {
+                      return prev.includes("AGENT") ? prev : [...prev, "AGENT"];
+                    }
+                    return prev.filter((a) => a !== "AGENT");
+                  });
+                }}
+              />
+              <span>
+                <strong>Рекомендую товары и услуги</strong>
+                <span className={styles.hint}>
+                  {" "}
+                  (Агент / рекомендатель)
+                </span>
+              </span>
+            </label>
+            <p className={styles.hint}>
+              Для агентов, блогеров и всех, кто рекомендует партнёров друзьям, знакомым или
+              подписчикам. Необязательно самому оказывать услуги или продавать товары. Размер
+              бонуса зависит от условий с партнёром.
+            </p>
+          </div>
+          <div data-profile-focus="directions">
+            <ProfileDirectionsPicker
+              disabled={!basicsEditable}
+              productCategoryIds={productCategoryIds}
+              serviceSpecializationIds={serviceSpecializationIds}
+              navigatorStageIds={navigatorStageIds}
+              primaryDirection={primaryDirection}
+              onChangeProducts={setProductCategoryIds}
+              onChangeServices={setServiceSpecializationIds}
+              onChangeStages={setNavigatorStageIds}
+              onChangePrimary={setPrimaryDirection}
+            />
+          </div>
         </Panel>
 
         <Panel title="Где вы работаете">

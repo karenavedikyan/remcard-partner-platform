@@ -33,6 +33,7 @@ export type ProfileDraft = {
   partnershipContactName: string;
   partnershipContactPhone: string;
   partnershipContactEmail: string;
+  partnerActivities: string[];
 };
 
 export function validateProfileDraft(

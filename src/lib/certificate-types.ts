@@ -64,9 +64,19 @@ export type AvailablePartner = {
   programMissing?: string[];
 };
 
+export type CertificateRecommendationIssuerMissingField = {
+  code: "publicName" | "city" | "directionOrAgent";
+  message: string;
+};
+
 export type AvailablePartnersResponse = {
   partners: AvailablePartner[];
   selfScanPartner?: AvailablePartner | null;
+  certificateProgramSelfReady?: boolean;
+  certificateProgramSelfMissing?: string[];
+  certificateRecommendationIssuerReady?: boolean;
+  certificateRecommendationIssuerMissing?: CertificateRecommendationIssuerMissingField[];
+  isAgentRecommender?: boolean;
 };
 
 export type CreateCertificatePartnerInput = {

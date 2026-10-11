@@ -370,3 +370,13 @@
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
+
+.agentActivityRow {
+  margin-bottom: var(--space-4);
+}
+
+.profileFocusPulse {
+  outline: 2px solid var(--accent-emphasis, #2563eb);
+  outline-offset: 4px;
+  border-radius: var(--radius-md, 8px);
+}

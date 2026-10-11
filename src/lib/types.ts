@@ -18,6 +18,7 @@ export type ProProfileUser = {
   publicId: string;
   displayName: string | null;
   city: string | null;
+  partnerActivities?: string[];
   catalogDisplayName?: string | null;
   catalogCity?: string | null;
   specializations: string[];

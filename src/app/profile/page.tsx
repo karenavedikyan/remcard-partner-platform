@@ -27,10 +27,12 @@ export default async function ProfilePage(props: {
     returnTo?: string;
     moderation?: string;
     branchId?: string;
+    focus?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
+  const focusField = searchParams?.focus?.trim() || undefined;
   const section: ProfileSectionId = resolveProfileSectionFromQuery({
     section: searchParams?.section,
     moderation: searchParams?.moderation,
@@ -84,6 +86,7 @@ export default async function ProfilePage(props: {
         moderationSection={moderationSection}
         section={section}
         focusBranchId={focusBranchId}
+        focusField={focusField}
         returnTo={safeReturnTo}
       />
     </CabinetShell>

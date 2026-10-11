@@ -71,6 +71,7 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
     partnershipContactName: nullableString(w?.partnershipContactName),
     partnershipContactPhone: nullableString(w?.partnershipContactPhone),
     partnershipContactEmail: nullableString(w?.partnershipContactEmail),
+    partnerActivities: [...(u.partnerActivities ?? [])],
   };
 }
 
