@@ -10,7 +10,7 @@
 | Repo | Base | HEAD (after push) |
 |------|------|-------------------|
 | navigator | `27d465779e01dbaf3e61068d71b35fa83ca6a83b` | `32ffea86e1e0d93519332fe22b2093dcf15caf45` |
-| platform | `2713153e103412cc75b20997ddd57ca250ebb9d1` | `73d02bf2fed98fbb3cd8acd18a7d220f785cb97b` |
+| platform | `2713153e103412cc75b20997ddd57ca250ebb9d1` | `c9a920d735ba125a1e58244cfcb4ddb0c114bee5` |
 
 Stack: platform **3020**, navigator **3021**. Worktrees: `/opt/cursor/worktrees/*-feat-prof-recommendation-readiness`. Start with `.env.local` sourced (JWT + staging Basic Auth); platform build needs `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3020`.
 
