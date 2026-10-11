@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
-import { resolveProfileSectionFromQuery, type ProfileSectionId } from "@/lib/profile-sections";
+import {
+  isModerationDeepLink,
+  resolveProfileSectionFromQuery,
+  type ProfileSectionId,
+} from "@/lib/profile-sections";
 import type { ProProfileResponse } from "@/lib/types";
 
 /** Fixture UI for H1 screenshots only; route 404 in production builds. */
@@ -83,11 +87,13 @@ export default async function ProfileDevFixturePage(props: {
   }
 
   const searchParams = await props.searchParams;
-  const section: ProfileSectionId = resolveProfileSectionFromQuery({
+  const query = {
     section: searchParams?.section,
     moderation: searchParams?.moderation,
     branchId: searchParams?.branchId,
-  });
+  };
+  const section: ProfileSectionId = resolveProfileSectionFromQuery(query);
+  const moderationSection = isModerationDeepLink(query);
 
   return (
     <main
@@ -113,6 +119,7 @@ export default async function ProfileDevFixturePage(props: {
         initial={FIXTURE_PROFILE}
         cabinetAccess={ownerProfileCabinetAccess()}
         section={section}
+        moderationSection={moderationSection}
         returnTo="/profile/dev-fixture"
       />
     </main>
