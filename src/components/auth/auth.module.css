@@ -166,8 +166,8 @@
 }
 
 .botLinkPrimary {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
   color: var(--primary-fg);
 }
 
@@ -177,8 +177,8 @@
 }
 
 .botLinkPrimary:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
+  background: var(--accent-fill-hover);
+  border-color: var(--accent-fill-hover);
 }
 
 .codeStep {

@@ -34,7 +34,9 @@ export function contrastRatio(foregroundHex: string, backgroundHex: string): num
 /** Pairs mirrored from :root and [data-theme="dark"] in globals.css */
 export const THEME_CONTRAST_PAIRS = {
   light: {
+    primaryTextOnSurface: { fg: "#c12b2f", bg: "#ffffff", minRatio: 4.5 },
     primaryButton: { fg: "#ffffff", bg: "#c12b2f", minRatio: 4.5 },
+    primaryButtonHover: { fg: "#ffffff", bg: "#a72226", minRatio: 4.5 },
     tabActive: { fg: "#ffffff", bg: "#252923", minRatio: 4.5 },
     accentEmphasisOnSurface: { fg: "#9f1239", bg: "#ffffff", minRatio: 4.5 },
     accentFillBadge: { fg: "#ffffff", bg: "#c12b2f", minRatio: 4.5 },
@@ -42,7 +44,9 @@ export const THEME_CONTRAST_PAIRS = {
     placeholder: { fg: "#6c706a", bg: "#ffffff", minRatio: 4.5 },
   },
   dark: {
+    primaryTextOnSurface: { fg: "#fda4af", bg: "#202520", minRatio: 4.5 },
     primaryButton: { fg: "#ffffff", bg: "#b54844", minRatio: 4.5 },
+    primaryButtonHover: { fg: "#ffffff", bg: "#9a3834", minRatio: 4.5 },
     tabActive: { fg: "#f0f1ec", bg: "#343a34", minRatio: 4.5 },
     accentEmphasisOnSurface: { fg: "#fda4af", bg: "#202520", minRatio: 4.5 },
     accentFillBadge: { fg: "#ffffff", bg: "#b54844", minRatio: 4.5 },

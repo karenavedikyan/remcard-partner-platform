@@ -515,13 +515,17 @@
 
   .segment {
     width: 100%;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .segment button {
-    font-size: var(--t-xs);
+    min-width: 0;
+    font-size: 12px;
     padding-inline: var(--space-2);
     line-height: 1.35;
+    white-space: normal;
+    text-align: center;
   }
 
   .toolbar {

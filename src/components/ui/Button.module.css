@@ -19,12 +19,12 @@
 }
 
 .primary {
-  background: var(--primary);
+  background: var(--accent-fill);
   color: var(--primary-fg);
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--accent-fill-hover);
 }
 
 .secondary {
