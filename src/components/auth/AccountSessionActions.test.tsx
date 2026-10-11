@@ -19,6 +19,11 @@ vi.mock("./LogoutButton", () => ({
   LogoutButton: () => <button type="button">Выйти</button>,
 }));
 
+vi.mock("@/lib/session-broadcast", () => ({
+  broadcastSignOutAll: vi.fn(),
+  subscribeSessionBroadcast: vi.fn(() => () => {}),
+}));
+
 describe("AccountSessionActions", () => {
   beforeEach(() => {
     vi.mocked(remcardFetch).mockReset();
