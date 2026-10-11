@@ -143,16 +143,47 @@ export function computeTeamStats(
   };
 }
 
-function scopeLabelFromOrgInvite(inv: OrganizationPendingInviteRow, branchCount: number): string {
-  if (inv.allCurrentBranchesSnapshot && branchCount > 0) {
-    return `Все ${branchCount} текущих филиалов${inv.membershipKind === "HEAD_OFFICE" ? " + Головной офис" : ""}`;
-  }
+export function inviteScopeLabel(
+  inv: OrganizationPendingInviteRow,
+  branches: EmployeesOverviewResponse["branches"],
+): string {
+  const nameById = new Map(branches.map((b) => [b.id, b.name]));
   const parts: string[] = [];
-  if (inv.branchIds.length) {
-    parts.push(`${inv.branchIds.length} филиал${inv.branchIds.length === 1 ? "" : "а"}`);
+  const ids = inv.branchIds ?? [];
+  if (ids.length > 0) {
+    if (inv.allCurrentBranchesSnapshot) {
+      parts.push(`Все ${ids.length} филиалов на момент приглашения`);
+    } else {
+      const names = ids.map((id) => nameById.get(id) ?? id);
+      parts.push(names.length <= 3 ? names.join(", ") : `${names.slice(0, 2).join(", ")}… (+${names.length - 2})`);
+    }
+  } else if (inv.allCurrentBranchesSnapshot) {
+    parts.push("Все филиалы на момент приглашения");
   }
   if (inv.membershipKind === "HEAD_OFFICE") parts.push("Головной офис");
   return parts.join(" · ") || "Без филиалов";
+}
+
+type InviteMergeSeed = Omit<UnifiedPendingInvite, "url"> & { url?: string | null };
+
+function mergeInviteRow(map: Map<string, InviteMergeSeed>, row: InviteMergeSeed) {
+  const prev = map.get(row.id);
+  if (!prev) {
+    map.set(row.id, { ...row, url: row.url ?? null });
+    return;
+  }
+  map.set(row.id, {
+    ...prev,
+    ...row,
+    label: prev.label || row.label,
+    position: prev.position ?? row.position,
+    scopeLabel: prev.scopeLabel || row.scopeLabel,
+    expiresAt: row.expiresAt ?? prev.expiresAt,
+    status: row.status || prev.status,
+    url: row.url ?? prev.url ?? null,
+    revokeId: row.revokeId ?? prev.revokeId,
+    source: prev.source,
+  });
 }
 
 export function mergePendingInvites(input: {
@@ -166,20 +197,19 @@ export function mergePendingInvites(input: {
     branchName: string | null;
     expiresAt: string;
     membershipKind?: string | null;
+    branchIds?: string[];
+    allCurrentBranchesSnapshot?: boolean;
   }>;
 }): UnifiedPendingInvite[] {
-  const out: UnifiedPendingInvite[] = [];
-  const seen = new Set<string>();
-  const branchCount = input.overview.branches.length;
+  const map = new Map<string, InviteMergeSeed>();
+  const branches = input.overview.branches;
 
   for (const inv of input.overview.organizationPendingInvites ?? []) {
-    if (seen.has(inv.id)) continue;
-    seen.add(inv.id);
-    out.push({
+    mergeInviteRow(map, {
       id: inv.id,
       label: inv.fullName?.trim() || inv.position?.trim() || "Приглашение",
       position: inv.position,
-      scopeLabel: scopeLabelFromOrgInvite(inv, branchCount),
+      scopeLabel: inviteScopeLabel(inv, branches),
       expiresAt: inv.expiresAt,
       status: inv.status,
       url: null,
@@ -188,11 +218,9 @@ export function mergePendingInvites(input: {
     });
   }
 
-  for (const branch of input.overview.branches) {
+  for (const branch of branches) {
     for (const inv of branch.pendingInvites) {
-      if (seen.has(inv.id)) continue;
-      seen.add(inv.id);
-      out.push({
+      mergeInviteRow(map, {
         id: inv.id,
         label: inv.fullName?.trim() || inv.position?.trim() || "Приглашение",
         position: inv.position,
@@ -208,13 +236,28 @@ export function mergePendingInvites(input: {
 
   for (const inv of input.staffInvites) {
     if (inv.status !== "PENDING" && inv.status !== "pending") continue;
-    if (seen.has(inv.id)) continue;
-    seen.add(inv.id);
-    out.push({
+    const orgShape: OrganizationPendingInviteRow | null =
+      inv.branchIds || inv.allCurrentBranchesSnapshot || inv.membershipKind
+        ? {
+            id: inv.id,
+            role: inv.role,
+            position: inv.position ?? null,
+            fullName: null,
+            membershipKind: inv.membershipKind ?? null,
+            branchIds: inv.branchIds ?? [],
+            allCurrentBranchesSnapshot: inv.allCurrentBranchesSnapshot ?? false,
+            createdAt: "",
+            expiresAt: inv.expiresAt,
+            status: inv.status,
+          }
+        : null;
+    mergeInviteRow(map, {
       id: inv.id,
       label: inv.position?.trim() || inv.role,
       position: inv.position ?? null,
-      scopeLabel: inv.branchName ?? (inv.membershipKind === "HEAD_OFFICE" ? "Головной офис" : "Организация"),
+      scopeLabel: orgShape
+        ? inviteScopeLabel(orgShape, branches)
+        : (inv.branchName ?? (inv.membershipKind === "HEAD_OFFICE" ? "Головной офис" : "Организация")),
       expiresAt: inv.expiresAt,
       status: inv.status,
       url: inv.url,
@@ -223,7 +266,24 @@ export function mergePendingInvites(input: {
     });
   }
 
-  return out;
+  return [...map.values()].map((row) => ({ ...row, url: row.url ?? null }));
+}
+
+export function canManageBranch(
+  overview: EmployeesOverviewResponse,
+  branchId: string,
+): boolean {
+  if (overview.viewer.isOrgOwner) return true;
+  return overview.viewer.canManageEmployeesByBranchId[branchId] === true;
+}
+
+export function manageableBranchAccess(
+  overview: EmployeesOverviewResponse,
+  member: TeamMemberRow,
+) {
+  return member.branchAccess.filter(
+    (b) => overview.viewer.isOrgOwner || overview.viewer.canManageEmployeesByBranchId[b.branchId],
+  );
 }
 
 export function memberRoleSummary(member: TeamMemberRow): { title: string; hint: string } {

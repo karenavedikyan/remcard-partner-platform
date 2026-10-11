@@ -3,10 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
-import {
-  effectiveActionIdsForBranch,
-  memberPermissionState,
-} from "@/lib/prof-i-member-permissions";
+import { effectiveActionIdsForBranch, memberPermissionState } from "@/lib/prof-i-member-permissions";
+import { manageableBranchAccess } from "@/lib/team-section-model";
 import { normalizePermissionFlags, type ProfIPermissionFlags } from "@/lib/prof-i-permissions";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
@@ -22,6 +20,8 @@ type Props = {
 };
 
 export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: Props) {
+  const isOrgOwner = overview.viewer.isOrgOwner;
+  const manageable = manageableBranchAccess(overview, member);
   const initial = memberPermissionState(member);
   const [membershipKind, setMembershipKind] = useState<"BRANCH_STAFF" | "HEAD_OFFICE">(
     member.membershipKind === "HEAD_OFFICE" ? "HEAD_OFFICE" : "BRANCH_STAFF",
@@ -43,6 +43,17 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
   const [dirty, setDirty] = useState(false);
 
   const branchOptions = overview.branches;
+  const editableBranches = isOrgOwner
+    ? branchOptions
+    : manageable
+        .map((a) => branchOptions.find((b) => b.id === a.branchId))
+        .filter((b): b is (typeof branchOptions)[number] => Boolean(b));
+
+  useEffect(() => {
+    if (!isOrgOwner && manageable.length > 0) {
+      setSelected(new Set(manageable.map((m) => m.branchId)));
+    }
+  }, [isOrgOwner, manageable]);
 
   useEffect(() => {
     function onBeforeUnload(e: BeforeUnloadEvent) {
@@ -71,8 +82,46 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     });
   }
 
+  async function saveBranchScoped(event: FormEvent) {
+    event.preventDefault();
+    if (!manageable.length) {
+      setError("Нет филиалов, доступных для редактирования");
+      return;
+    }
+    if (
+      !window.confirm("Сохранить права сотрудника в разрешённых филиалах?")
+    ) {
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      for (const access of manageable) {
+        const flags = normalizePermissionFlags(
+          permissionsMixed
+            ? (branchPermissions[access.branchId] ?? defaultPermissions)
+            : defaultPermissions,
+        );
+        await remcardFetch(
+          `/api/pro/organization/branches/${encodeURIComponent(access.branchId)}/employees/${encodeURIComponent(access.employeeId)}`,
+          { method: "PATCH", body: { permissions: flags } },
+        );
+      }
+      onSaved();
+      onClose();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (!isOrgOwner) {
+      await saveBranchScoped(event);
+      return;
+    }
     if (membershipKind === "BRANCH_STAFF" && selected.size === 0 && branchOptions.length > 0) {
       setError("Для сотрудника филиалов выберите хотя бы один филиал");
       return;
@@ -184,35 +233,44 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
             {error}
           </p>
         ) : null}
-        <label className={styles.checkRow}>
-          Принадлежность
-          <select
-            value={membershipKind}
-            onChange={(e) => {
-              setDirty(true);
-              setMembershipKind(e.target.value as "BRANCH_STAFF" | "HEAD_OFFICE");
-            }}
-          >
-            <option value="BRANCH_STAFF">Сотрудник филиалов</option>
-            <option value="HEAD_OFFICE">Головной офис</option>
-          </select>
-        </label>
-        <TextField
-          label="Должность"
-          value={position}
-          onChange={(e) => {
-            setDirty(true);
-            setPosition(e.target.value);
-          }}
-        />
-        <TextField
-          label="ФИО в команде"
-          value={fullName}
-          onChange={(e) => {
-            setDirty(true);
-            setFullName(e.target.value);
-          }}
-        />
+        {isOrgOwner ? (
+          <>
+            <label className={styles.checkRow}>
+              Принадлежность
+              <select
+                value={membershipKind}
+                onChange={(e) => {
+                  setDirty(true);
+                  setMembershipKind(e.target.value as "BRANCH_STAFF" | "HEAD_OFFICE");
+                }}
+              >
+                <option value="BRANCH_STAFF">Сотрудник филиалов</option>
+                <option value="HEAD_OFFICE">Головной офис</option>
+              </select>
+            </label>
+            <TextField
+              label="Должность"
+              value={position}
+              onChange={(e) => {
+                setDirty(true);
+                setPosition(e.target.value);
+              }}
+            />
+            <TextField
+              label="ФИО в команде"
+              value={fullName}
+              onChange={(e) => {
+                setDirty(true);
+                setFullName(e.target.value);
+              }}
+            />
+          </>
+        ) : (
+          <p className={styles.hint}>
+            Редактирование только для филиалов, где у вас есть право управлять сотрудниками (
+            {manageable.map((b) => b.branchName).join(", ")}).
+          </p>
+        )}
         <fieldset className={styles.fieldset}>
           <legend>Общий набор прав</legend>
           <ProfileTeamPermissionMatrix
@@ -226,10 +284,10 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
         </fieldset>
         <fieldset className={styles.fieldset}>
           <legend>Доступ к филиалам</legend>
-          {branchOptions.length === 0 ? (
+          {editableBranches.length === 0 ? (
             <p className={styles.hint}>Без доступа к операциям филиалов (филиалов пока нет).</p>
           ) : (
-            branchOptions.map((b) => {
+            editableBranches.map((b) => {
               const count = effectiveActionIdsForBranch({
                 permissionsMixed,
                 defaultPermissions,
@@ -244,6 +302,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
                       data-testid={`team-member-branch-${b.id}`}
                       checked={selected.has(b.id)}
                       onChange={() => toggleBranch(b.id)}
+                      disabled={!isOrgOwner}
                     />
                     {b.name} ({b.city}){selected.has(b.id) ? ` · ${count} разрешений` : ""}
                   </label>
@@ -287,15 +346,17 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving || revoking}>
             Отмена
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            data-testid="team-member-revoke-org"
-            disabled={saving || revoking}
-            onClick={() => void revokeOrg()}
-          >
-            {revoking ? "…" : "Отозвать доступ к организации"}
-          </Button>
+          {isOrgOwner ? (
+            <Button
+              type="button"
+              variant="secondary"
+              data-testid="team-member-revoke-org"
+              disabled={saving || revoking}
+              onClick={() => void revokeOrg()}
+            >
+              {revoking ? "…" : "Отозвать доступ к организации"}
+            </Button>
+          ) : null}
         </div>
       </form>
     </div>

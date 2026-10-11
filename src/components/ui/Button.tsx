@@ -3,7 +3,7 @@ import styles from "./Button.module.css";
 
 type ButtonProps = PropsWithChildren<
   ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: "primary" | "secondary";
+    variant?: "primary" | "secondary" | "text";
   }
 >;
 

@@ -4,6 +4,8 @@ import {
   formatAccessScopeLabel,
   HEAD_OFFICE_LOCATION_ID,
   memberMatchesLocation,
+  canManageBranch,
+  inviteScopeLabel,
   mergePendingInvites,
   resolveDisplayTeam,
 } from "./team-section-model";
@@ -64,6 +66,67 @@ describe("team-section-model", () => {
     expect(primary).toContain("Головной офис");
   });
 
+  it("merges staff url into overview row with same id", () => {
+    const overview = {
+      organization: { id: "o", name: "O" },
+      branches: [{ id: "b1", name: "A", city: "C", address: "a", employees: [], pendingInvites: [] }],
+      organizationPendingInvites: [
+        {
+          id: "same-id",
+          role: "SELLER",
+          position: "Менеджер",
+          fullName: "Иван",
+          membershipKind: "BRANCH_STAFF",
+          branchIds: ["b1"],
+          allCurrentBranchesSnapshot: false,
+          createdAt: "",
+          expiresAt: "2026-12-01",
+          status: "PENDING",
+        },
+      ],
+    } as EmployeesOverviewResponse;
+    const merged = mergePendingInvites({
+      overview,
+      staffInvites: [
+        {
+          id: "same-id",
+          url: "https://prof.test/invite/abc",
+          role: "SELLER",
+          position: "Менеджер",
+          status: "PENDING",
+          branchName: "A",
+          expiresAt: "2026-12-01",
+        },
+      ],
+    });
+    expect(merged).toHaveLength(1);
+    expect(merged[0]?.url).toBe("https://prof.test/invite/abc");
+    expect(merged[0]?.scopeLabel).toBe("A");
+  });
+
+  it("invite scope uses snapshot branchIds count not current branch list", () => {
+    const label = inviteScopeLabel(
+      {
+        id: "x",
+        role: "SELLER",
+        position: null,
+        fullName: null,
+        membershipKind: "BRANCH_STAFF",
+        branchIds: ["b1", "b2"],
+        allCurrentBranchesSnapshot: true,
+        createdAt: "",
+        expiresAt: "",
+        status: "PENDING",
+      },
+      [
+        { id: "b1", name: "A", city: "C", address: "", employees: [], pendingInvites: [] },
+        { id: "b2", name: "B", city: "C", address: "", employees: [], pendingInvites: [] },
+        { id: "b3", name: "C", city: "C", address: "", employees: [], pendingInvites: [] },
+      ],
+    );
+    expect(label).toBe("Все 2 филиалов на момент приглашения");
+  });
+
   it("merges pending invites without duplicate ids", () => {
     const overview = {
       organization: { id: "o", name: "O" },
@@ -118,6 +181,14 @@ describe("team-section-model", () => {
     });
     expect(merged).toHaveLength(3);
     expect(merged.find((i) => i.url)?.url).toContain("invite");
+  });
+
+  it("branch manager invite gate is per branch", () => {
+    const overview = {
+      viewer: { isOrgOwner: false, canManageEmployeesByBranchId: { b1: true, b2: false } },
+    } as EmployeesOverviewResponse;
+    expect(canManageBranch(overview, "b1")).toBe(true);
+    expect(canManageBranch(overview, "b2")).toBe(false);
   });
 
   it("synthesizes legacy team rows from branch employees", () => {

@@ -21,6 +21,7 @@ import {
   mergePendingInvites,
   resolveDisplayTeam,
   canEditTeamMember,
+  canManageBranch,
   type TeamSectionView,
   type UnifiedPendingInvite,
 } from "@/lib/team-section-model";
@@ -35,8 +36,15 @@ import {
   type InviteWizardScope,
 } from "./ProfileTeamInviteWizard";
 import { ProfileTeamPermissionsHelpDialog } from "./ProfileTeamPermissionsHelpDialog";
+import { DEV_FIXTURE_STAFF_INVITES } from "@/lib/dev-profile-fixture-overview";
 import styles from "./ProfileTeamSection.module.css";
 import formStyles from "./ProfileEditor.module.css";
+import {
+  TeamIconBuilding2,
+  TeamIconSearch,
+  TeamIconShieldCheck,
+  TeamIconUserPlus,
+} from "./team-section-icons";
 
 type StaffInviteRow = {
   id: string;
@@ -87,6 +95,8 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [wizardScope, setWizardScope] = useState<InviteWizardScope | undefined>();
   const [wizardBranchId, setWizardBranchId] = useState<string | undefined>();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [manualCopyUrl, setManualCopyUrl] = useState<string | null>(null);
+  const contentReady = Boolean(overview) && !loading && !error;
 
   const load = useCallback(async () => {
     if (fixtureOverview) {
@@ -94,6 +104,8 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       setLoading(false);
       setError("");
       if (canManageTeam(fixtureOverview)) {
+        setInvites(DEV_FIXTURE_STAFF_INVITES);
+      } else {
         setInvites([]);
       }
       return;
@@ -242,12 +254,20 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           <small>{role.hint}</small>
         </div>
         <div>
-          <span className={chipClass}>{scope.primary}</span>
+          <span className={chipClass}>
+            <TeamIconBuilding2 className={styles.chipIcon} />
+            {scope.primary}
+          </span>
           <small>{scope.secondary}</small>
         </div>
         {canManage && overview && canEditTeamMember(overview, member) ? (
           <div className={styles.personActions}>
-            <Button type="button" variant="secondary" onClick={() => setEditMember(member)}>
+            <Button
+              type="button"
+              variant="text"
+              aria-label={`Настроить доступ: ${memberDisplayName(member)}`}
+              onClick={() => setEditMember(member)}
+            >
               Доступы
             </Button>
           </div>
@@ -259,6 +279,13 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   }
 
   function renderPeopleView() {
+    if (overview?.myRole === "SOLO_PARTNER" && soloEmployees.length > 0 && filteredMembers.length === 0) {
+      return (
+        <p className={formStyles.hint} data-testid="team-solo-people-hint">
+          Сотрудники SOLO-команды перечислены в блоке ниже ({soloEmployees.length}).
+        </p>
+      );
+    }
     if (filteredMembers.length === 0) {
       return (
         <div className={styles.empty}>
@@ -321,7 +348,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       <>
         <div className={styles.locationGrid}>
           {locations.map((loc) => {
-            const rows = displayTeam.filter((m) => memberMatchesLocation(m, loc.id));
+            const rows = filteredMembers.filter((m) => memberMatchesLocation(m, loc.id));
             return (
               <section key={loc.id} className={styles.location}>
                 <div className={styles.locationHead}>
@@ -340,15 +367,25 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
                         <small>{m.position?.trim() || memberRoleSummary(m).title}</small>
                       </div>
                       {canManage && canEditTeamMember(overview, m) ? (
-                        <Button type="button" variant="secondary" onClick={() => setEditMember(m)}>
+                        <Button
+                          type="button"
+                          variant="text"
+                          aria-label={`Настроить доступ: ${memberDisplayName(m)}`}
+                          onClick={() => setEditMember(m)}
+                        >
                           Доступы
                         </Button>
                       ) : null}
                     </div>
                   ))
                 )}
-                {canManage && !loc.isOffice ? (
-                  <Button type="button" variant="secondary" onClick={() => openWizard("BRANCH", loc.id)}>
+                {canManage && !loc.isOffice && canManageBranch(overview, loc.id) ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    data-testid={`team-invite-here-${loc.id}`}
+                    onClick={() => openWizard("BRANCH", loc.id)}
+                  >
                     Пригласить сюда
                   </Button>
                 ) : null}
@@ -397,10 +434,17 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
             <Button
               type="button"
               variant="secondary"
+              data-testid={`team-copy-invite-${inv.id}`}
               onClick={() =>
                 void copyInviteUrl(inv.url!).then((ok) => {
-                  if (ok) setMessage("Ссылка скопирована");
-                  else setCopyFailed(true);
+                  if (ok) {
+                    setMessage("Ссылка скопирована");
+                    setCopyFailed(false);
+                    setManualCopyUrl(null);
+                  } else {
+                    setCopyFailed(true);
+                    setManualCopyUrl(inv.url);
+                  }
                 })
               }
             >
@@ -441,12 +485,17 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
         <div>
           <h2>Команда и доступы</h2>
           <p>
-            Должность называете сами. Права выбираете по опциям: продажи, начисления, выплаты и другие
-            задачи. Одна ссылка — один согласованный набор доступов.
+            Кто с вами работает, за что отвечает и к каким подразделениям имеет доступ.
           </p>
         </div>
         {canManage ? (
-          <Button type="button" data-testid="team-open-invite-wizard" onClick={() => openWizard()}>
+          <Button
+            type="button"
+            className={styles.headingCta}
+            data-testid="team-open-invite-wizard"
+            onClick={() => openWizard()}
+          >
+            <TeamIconUserPlus className={styles.ctaIcon} />
             Пригласить сотрудника
           </Button>
         ) : null}
@@ -524,7 +573,13 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
             </button>
           ))}
         </div>
-        <Button type="button" variant="secondary" data-testid="team-permissions-help" onClick={() => setHelpOpen(true)}>
+        <Button
+          type="button"
+          variant="text"
+          data-testid="team-permissions-help"
+          onClick={() => setHelpOpen(true)}
+        >
+          <TeamIconShieldCheck className={styles.ctaIcon} />
           Должности, права и выплаты
         </Button>
       </div>
@@ -532,6 +587,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       {view !== "invites" ? (
         <div className={styles.toolbar}>
           <label className={styles.searchWrap}>
+            <TeamIconSearch className={styles.searchIcon} />
             <span className="sr-only">Поиск</span>
             <input
               aria-label="Поиск по имени или должности"
@@ -555,10 +611,17 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
         </div>
       ) : null}
 
+      {manualCopyUrl ? (
+        <div className={formStyles.bannerWarn} data-testid="team-manual-copy-url">
+          <p>Скопируйте ссылку вручную:</p>
+          <textarea readOnly value={manualCopyUrl} rows={2} aria-label="Ссылка приглашения" />
+        </div>
+      ) : null}
+
       <div data-testid="team-view-content">
-        {view === "people" ? renderPeopleView() : null}
-        {view === "locations" ? renderLocationsView() : null}
-        {view === "invites" ? renderInvitesView() : null}
+        {contentReady && view === "people" ? renderPeopleView() : null}
+        {contentReady && view === "locations" ? renderLocationsView() : null}
+        {contentReady && view === "invites" ? renderInvitesView() : null}
       </div>
 
       {overview?.myRole === "SOLO_PARTNER" ? (
@@ -589,17 +652,16 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
 
       <div className={styles.rulebox}>
         <div>
-          <span className={styles.eyebrow}>Права = что можно делать</span>
+          <span className={styles.eyebrow}>Роль = что можно делать</span>
           <p>
-            Один набор можно выдать на один магазин, несколько точек или все текущие филиалы. Новые филиалы
-            не добавляются автоматически.
+            Один и тот же набор прав можно выдать на один магазин, несколько точек или всю текущую сеть.
           </p>
         </div>
         <div>
           <span className={styles.eyebrow}>Доступ = где можно работать</span>
           <p>
-            Головной офис выбирается отдельно. Членство HEAD_OFFICE не открывает данные всех филиалов без
-            явного доступа к ним.
+            Головной офис выбирается отдельно. Доступ к офису сам по себе не открывает данные всех
+            филиалов.
           </p>
         </div>
       </div>
@@ -631,7 +693,13 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
         />
       ) : null}
 
-      {helpOpen ? <ProfileTeamPermissionsHelpDialog onClose={() => setHelpOpen(false)} /> : null}
+      {helpOpen && overview ? (
+        <ProfileTeamPermissionsHelpDialog
+          organizationId={overview.organization.id}
+          canLoadOrgTemplates={overview.myRole === "ORG_OWNER"}
+          onClose={() => setHelpOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

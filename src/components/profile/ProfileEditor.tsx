@@ -439,7 +439,7 @@ function ProfileEditorInner({
   const workingMissing = workingProfileMissingFields(buildDraft());
   const workingComplete = workingProfileCabinetReady(buildDraft());
 
-  const showAside = activeSection !== "overview";
+  const showAside = activeSection !== "overview" && activeSection !== "team";
 
   return (
     <div className={styles.shell} id={moderationSection ? "moderation-remarks" : undefined}>

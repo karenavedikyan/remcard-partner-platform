@@ -21,6 +21,20 @@ const permPayout = {
   canPayBonusTransfer: true,
 };
 
+export const DEV_FIXTURE_STAFF_INVITES = [
+  {
+    id: "inv-org-1",
+    url: "https://fixture.invalid/invite/inv-org-1",
+    role: "SELLER",
+    position: "Продавец-консультант",
+    status: "PENDING",
+    branchName: "Центральный",
+    expiresAt: "2026-11-08T10:00:00.000Z",
+    branchIds: ["b1"],
+    allCurrentBranchesSnapshot: false,
+  },
+];
+
 /** Mock employees-overview for `/profile/dev-fixture` screenshots only. */
 export const DEV_FIXTURE_EMPLOYEES_OVERVIEW: EmployeesOverviewResponse = {
   organization: { id: "org-fixture", name: "Оптовик Юг" },

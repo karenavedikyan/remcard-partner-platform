@@ -16,6 +16,7 @@ import { effectiveActionIdsForBranch } from "@/lib/prof-i-member-permissions";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { ProfileTeamPermissionMatrix } from "./ProfileTeamPermissionMatrix";
+import { TeamBonusIllustration } from "./TeamBonusIllustration";
 import styles from "./ProfileTeamPermissions.module.css";
 import formStyles from "./ProfileEditor.module.css";
 
@@ -28,6 +29,40 @@ type Props = {
   onClose: () => void;
   onCreated: (url: string) => void;
 };
+
+function buildInviteWizardDraft(
+  overview: EmployeesOverviewResponse,
+  initialScope?: InviteWizardScope,
+  initialBranchId?: string,
+) {
+  const base = defaultDraft();
+  if (initialBranchId) {
+    base.scope = initialScope ?? "BRANCH";
+    base.branchId = initialBranchId;
+    base.selectedBranchIds = new Set([initialBranchId]);
+    return base;
+  }
+  if (initialScope) {
+    base.scope = initialScope;
+  } else if (overview.myRole === "SOLO_PARTNER") {
+    base.scope = "SOLO_PARTNER";
+  } else if (!overview.viewer.isOrgOwner) {
+    base.scope = "BRANCH";
+    const managed = overview.branches.find(
+      (b) => overview.viewer.canManageEmployeesByBranchId[b.id],
+    );
+    if (managed) base.branchId = managed.id;
+  } else {
+    base.scope = "ORGANIZATION";
+  }
+  if (base.scope === "ORGANIZATION") {
+    base.selectedBranchIds = new Set();
+    base.selectAllBranches = false;
+  } else if (base.scope === "BRANCH" && base.branchId) {
+    base.selectedBranchIds = new Set([base.branchId]);
+  }
+  return base;
+}
 
 function defaultDraft(): {
   step: number;
@@ -70,16 +105,9 @@ export function ProfileTeamInviteWizard({
   onClose,
   onCreated,
 }: Props) {
-  const [draft, setDraft] = useState(() => {
-    const base = defaultDraft();
-    if (initialScope) base.scope = initialScope;
-    const branchId = initialBranchId ?? overview.branches[0]?.id;
-    if (branchId) {
-      base.branchId = branchId;
-      base.selectedBranchIds = new Set([branchId]);
-    }
-    return base;
-  });
+  const [draft, setDraft] = useState(() =>
+    buildInviteWizardDraft(overview, initialScope, initialBranchId),
+  );
   const [orgTemplates, setOrgTemplates] = useState<OrganizationPermissionTemplate[]>([]);
   const [templateName, setTemplateName] = useState("");
   const [templateFeedback, setTemplateFeedback] = useState("");
@@ -375,18 +403,7 @@ export function ProfileTeamInviteWizard({
             value={draft.defaultPermissions}
             onChange={(next) => patch({ defaultPermissions: next })}
           />
-          <aside className={styles.asideNote}>
-            <strong>Начисление ≠ выплата</strong>
-            <p className={formStyles.hint}>
-              Начисление сохраняется в истории; выплата добавляется отдельной операцией. Подготовка, отказ
-              или ошибка перевода не уменьшают остаток.
-            </p>
-            <p className={formStyles.hint}>
-              Отметка перевода фиксирует уже выполненный перевод — не инициирует банковский платёж.
-              Название должности не выдаёт права. Управление владельцем и удаление организации не входят в
-              наборы.
-            </p>
-          </aside>
+          <TeamBonusIllustration />
         </div>
         {overview.myRole === "ORG_OWNER" ? (
           <details className={styles.saveTemplate}>
@@ -417,20 +434,6 @@ export function ProfileTeamInviteWizard({
         <p className={formStyles.hint}>
           Выберите филиалы и, при необходимости, головной офис. Новые филиалы автоматически не добавляются.
         </p>
-        {draft.scope === "ORGANIZATION" ? (
-          <label className={formStyles.checkRow}>
-            Принадлежность
-            <select
-              value={draft.membershipKind}
-              onChange={(e) =>
-                patch({ membershipKind: e.target.value as "BRANCH_STAFF" | "HEAD_OFFICE" })
-              }
-            >
-              <option value="BRANCH_STAFF">Сотрудник филиалов</option>
-              <option value="HEAD_OFFICE">Головной офис</option>
-            </select>
-          </label>
-        ) : null}
         {draft.scope === "BRANCH" && branchList.length ? (
           <label className={formStyles.checkRow}>
             Филиал
@@ -495,10 +498,17 @@ export function ProfileTeamInviteWizard({
               : null}
           </div>
         ) : null}
-        {draft.scope === "ORGANIZATION" && draft.membershipKind === "HEAD_OFFICE" ? (
+        {draft.scope === "ORGANIZATION" ? (
           <div className={`${styles.locationChoice} ${styles.officeBlock}`}>
             <label className={styles.locationLabel}>
-              <input type="checkbox" checked readOnly aria-readonly />
+              <input
+                type="checkbox"
+                data-testid="team-invite-head-office"
+                checked={draft.membershipKind === "HEAD_OFFICE"}
+                onChange={(e) =>
+                  patch({ membershipKind: e.target.checked ? "HEAD_OFFICE" : "BRANCH_STAFF" })
+                }
+              />
               <span>
                 <strong>Головной офис</strong>
                 <small>Офисные задачи, без автоматического доступа к магазинам</small>
@@ -602,6 +612,8 @@ export function ProfileTeamInviteWizard({
           {["Должность и права", "Подразделения", "Проверка"].map((label, i) => (
             <div
               key={label}
+              data-testid={`team-wizard-step-${i + 1}`}
+              data-active={draft.step === i + 1 ? "true" : "false"}
               className={`${styles.wizardStep} ${draft.step === i + 1 ? styles.wizardStepActive : ""}`}
             >
               <span className={styles.stepBadge}>{i + 1}</span>
