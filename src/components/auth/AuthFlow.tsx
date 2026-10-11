@@ -42,6 +42,7 @@ type RetryKind = "network" | "server" | "session_lost";
 
 const REASON_MESSAGES: Record<string, string> = {
   session: "Сессия завершилась. Войдите снова.",
+  signed_out_all: "Вы вышли со всех устройств. Войдите снова.",
   blocked: "Аккаунт заблокирован.",
   role: "Для доступа нужен профиль партнёра.",
 };

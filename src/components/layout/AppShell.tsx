@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { AuthUser } from "@/lib/types";
-import { LogoutButton } from "@/components/auth/LogoutButton";
+import { AccountSessionActions } from "@/components/auth/AccountSessionActions";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
@@ -174,7 +174,7 @@ export function AppShell({
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <LogoutButton className={styles.sidebarLogoutButton} />
+          <AccountSessionActions logoutClassName={styles.sidebarLogoutButton} />
           <small className={styles.sidebarTagline}>
             RemCard PROF
             <br />
@@ -218,7 +218,11 @@ export function AppShell({
               </div>
             </div>
             <div className={styles.mobileLogout} data-testid="mobile-logout">
-              <LogoutButton className={styles.mobileLogoutButton} />
+              <AccountSessionActions
+                layout="inline"
+                logoutClassName={styles.mobileLogoutButton}
+                signOutAllClassName={styles.mobileSignOutAllButton}
+              />
             </div>
           </div>
         </header>

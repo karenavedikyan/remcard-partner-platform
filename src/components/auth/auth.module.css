@@ -310,6 +310,59 @@
   padding: var(--space-4);
 }
 
+.accountSessionStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.accountSessionInline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sessionDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(23 32 23 / 45%);
+  backdrop-filter: blur(3px);
+}
+
+.sessionDialogPanel {
+  width: min(480px, calc(100vw - 2rem));
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.sessionDialogPanel h3 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-3);
+}
+
+.sessionDialogCopy {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: var(--space-5);
+}
+
+.sessionDialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
 @media (max-width: 900px) {
   .entryHeader,
   .entryLayout {

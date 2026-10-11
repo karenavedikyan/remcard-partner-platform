@@ -7,11 +7,14 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
-vi.mock("@/components/auth/LogoutButton", () => ({
-  LogoutButton: ({ className }: { className?: string }) => (
-    <button type="button" className={className}>
-      Выйти
-    </button>
+vi.mock("@/components/auth/AccountSessionActions", () => ({
+  AccountSessionActions: () => (
+    <>
+      <button type="button">Выйти</button>
+      <button type="button" data-testid="sign-out-all-devices">
+        Выйти со всех устройств
+      </button>
+    </>
   ),
 }));
 
@@ -29,8 +32,8 @@ describe("AppShell", () => {
   it("renders logout in sidebar and mobile topbar", () => {
     renderShell();
 
-    const logoutButtons = screen.getAllByRole("button", { name: "Выйти" });
-    expect(logoutButtons).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Выйти" })).toHaveLength(2);
+    expect(screen.getAllByTestId("sign-out-all-devices")).toHaveLength(2);
     expect(screen.getByTestId("mobile-logout")).toBeTruthy();
   });
 

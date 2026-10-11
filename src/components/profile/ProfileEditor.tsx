@@ -402,6 +402,16 @@ function ProfileEditorInner({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [activeSection, hasUnsavedBasicsChanges, hasUnsavedCatalogChanges]);
+
+  useEffect(() => {
+    const unsaved = hasUnsavedBasicsChanges || hasUnsavedCatalogChanges;
+    if (typeof window === "undefined") return;
+    if (unsaved) {
+      window.sessionStorage.setItem("remcard-profile-unsaved", "1");
+    } else {
+      window.sessionStorage.removeItem("remcard-profile-unsaved");
+    }
+  }, [hasUnsavedBasicsChanges, hasUnsavedCatalogChanges]);
   const fixtureOverview: EmployeesOverviewResponse | undefined = profileBasePath.includes(
     "dev-fixture",
   )
