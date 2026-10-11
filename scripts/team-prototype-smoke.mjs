@@ -85,8 +85,9 @@ async function runViewport(page, theme, name) {
   await page.getByTestId("team-view-people").click();
   await page.getByRole("button", { name: "Доступы" }).first().click();
   await page.getByRole("dialog", { name: /Настроить доступ/i }).waitFor({ state: "visible" });
+  assert((await page.getByTestId("team-member-wizard-step-1").getAttribute("data-active")) === "true");
   await page.screenshot({ path: `${OUT}/team-member-edit-${theme}-${name}.png` });
-  await page.getByRole("button", { name: "Отмена" }).click();
+  await page.getByRole("button", { name: "Закрыть" }).click();
 
   const overflow = await page.evaluate(() => {
     const el = document.documentElement;

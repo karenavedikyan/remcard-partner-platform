@@ -131,26 +131,44 @@ describe("ProfileTeamMemberEditor branch manager", () => {
   beforeEach(() => {
     vi.mocked(remcardFetch).mockReset();
     vi.mocked(remcardFetch).mockResolvedValue({});
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
-  it("mounts without update loop and keeps edits across overview rerender", async () => {
+  it("three-step wizard keeps edits across overview rerender and PATCHes branch only", async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    await screen.findByRole("heading", { name: "Настроить доступ" });
+    await screen.findByRole("dialog", { name: "Настроить доступ" });
+    expect((await screen.getByTestId("team-member-wizard-step-1").getAttribute("data-active"))).toBe(
+      "true",
+    );
 
     const scanPerm = screen.getByTestId("team-perm-scan");
     expect(scanPerm).not.toBeChecked();
     await user.click(scanPerm);
     expect(scanPerm).toBeChecked();
 
-    const saveBtn = screen.getByRole("button", { name: "Сохранить" });
-    expect(saveBtn).toBeEnabled();
+    await user.click(screen.getByTestId("team-member-wizard-next"));
+    expect((await screen.getByTestId("team-member-wizard-step-2").getAttribute("data-active"))).toBe(
+      "true",
+    );
+
+    await user.click(screen.getByTestId("team-member-wizard-next"));
+    expect((await screen.getByTestId("team-member-wizard-step-3").getAttribute("data-active"))).toBe(
+      "true",
+    );
 
     await user.click(screen.getByTestId("refresh-overview"));
+    expect(screen.queryByTestId("team-perm-scan")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Назад" }));
+    await user.click(screen.getByRole("button", { name: "Назад" }));
     expect(screen.getByTestId("team-perm-scan")).toBeChecked();
 
+    await user.click(screen.getByTestId("team-member-wizard-next"));
+    await user.click(screen.getByTestId("team-member-wizard-next"));
+    await user.click(screen.getByTestId("team-member-confirm"));
+
+    const saveBtn = screen.getByTestId("team-member-save");
+    expect(saveBtn).toBeEnabled();
     await user.click(saveBtn);
 
     await waitFor(() => {
@@ -159,10 +177,6 @@ describe("ProfileTeamMemberEditor branch manager", () => {
 
     const paths = vi.mocked(remcardFetch).mock.calls.map(([path]) => String(path));
     expect(paths.some((p) => p.includes("/team-members/"))).toBe(false);
-    expect(paths).toEqual([
-      "/api/pro/organization/branches/b1/employees/emp-a-b1",
-    ]);
-    expect(paths.some((p) => p.includes("emp-a-b2"))).toBe(false);
-    expect(paths.some((p) => p.includes("emp-b-b2"))).toBe(false);
+    expect(paths).toEqual(["/api/pro/organization/branches/b1/employees/emp-a-b1"]);
   });
 });

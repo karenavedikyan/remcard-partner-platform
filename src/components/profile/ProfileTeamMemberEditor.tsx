@@ -5,12 +5,17 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "@/lib/employees-overview-types";
 import { effectiveActionIdsForBranch, memberPermissionState } from "@/lib/prof-i-member-permissions";
 import { manageableBranchAccess } from "@/lib/team-section-model";
-import { normalizePermissionFlags, type ProfIPermissionFlags } from "@/lib/prof-i-permissions";
+import {
+  normalizePermissionFlags,
+  permissionLabelsFromFlags,
+  type ProfIPermissionFlags,
+} from "@/lib/prof-i-permissions";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { ProfileTeamPermissionMatrix } from "./ProfileTeamPermissionMatrix";
-import styles from "./ProfileEditor.module.css";
-import teamStyles from "./ProfileTeamPermissions.module.css";
+import { TeamBonusIllustration } from "./TeamBonusIllustration";
+import formStyles from "./ProfileEditor.module.css";
+import styles from "./ProfileTeamPermissions.module.css";
 
 type Props = {
   member: TeamMemberRow;
@@ -18,6 +23,8 @@ type Props = {
   onClose: () => void;
   onSaved: () => void;
 };
+
+const STEP_LABELS = ["Должность и права", "Подразделения", "Проверка"] as const;
 
 export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: Props) {
   const isOrgOwner = overview.viewer.isOrgOwner;
@@ -31,6 +38,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     ],
   );
   const initial = memberPermissionState(member);
+  const [step, setStep] = useState(1);
   const [membershipKind, setMembershipKind] = useState<"BRANCH_STAFF" | "HEAD_OFFICE">(
     member.membershipKind === "HEAD_OFFICE" ? "HEAD_OFFICE" : "BRANCH_STAFF",
   );
@@ -50,6 +58,7 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
   );
   const [permissionsMixed, setPermissionsMixed] = useState(initial.permissionsMixed);
   const [scopeEditorBranchId, setScopeEditorBranchId] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [error, setError] = useState("");
@@ -73,6 +82,15 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  function branchActionIds(branchId: string) {
+    return effectiveActionIdsForBranch({
+      permissionsMixed,
+      defaultPermissions,
+      branchPermissions,
+      branchId,
+    });
+  }
+
   function toggleBranch(id: string) {
     setDirty(true);
     setSelected((prev) => {
@@ -89,15 +107,9 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     });
   }
 
-  async function saveBranchScoped(event: FormEvent) {
-    event.preventDefault();
+  async function saveBranchScoped() {
     if (!manageable.length) {
       setError("Нет филиалов, доступных для редактирования");
-      return;
-    }
-    if (
-      !window.confirm("Сохранить права сотрудника в разрешённых филиалах?")
-    ) {
       return;
     }
     setSaving(true);
@@ -123,21 +135,10 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     }
   }
 
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    if (!isOrgOwner) {
-      await saveBranchScoped(event);
-      return;
-    }
+  async function saveOwner() {
     if (membershipKind === "BRANCH_STAFF" && selected.size === 0 && branchOptions.length > 0) {
       setError("Для сотрудника филиалов выберите хотя бы один филиал");
-      return;
-    }
-    if (
-      !window.confirm(
-        "Сохранить изменения доступа? Снятые филиалы перестанут быть доступны сотруднику.",
-      )
-    ) {
+      setStep(2);
       return;
     }
     setSaving(true);
@@ -170,6 +171,16 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     } finally {
       setSaving(false);
     }
+  }
+
+  async function submitSave(event: FormEvent) {
+    event.preventDefault();
+    if (!confirmed || !dirty) return;
+    if (!isOrgOwner) {
+      await saveBranchScoped();
+      return;
+    }
+    await saveOwner();
   }
 
   async function revokeOrg() {
@@ -205,15 +216,15 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
       branchPermissions[scopeBranch.id] ?? defaultPermissions,
     );
     return (
-      <div className={teamStyles.wizardBackdrop} role="dialog" aria-modal="true">
-        <div className={teamStyles.wizardPanel}>
-          <div className={teamStyles.wizardHead}>
+      <div className={styles.wizardBackdrop} role="dialog" aria-modal="true">
+        <div className={styles.wizardPanel}>
+          <div className={styles.wizardHead}>
             <h3>Права в {scopeBranch.name}</h3>
             <Button type="button" variant="secondary" onClick={() => setScopeEditorBranchId(null)}>
               Назад
             </Button>
           </div>
-          <div className={teamStyles.wizardBody}>
+          <div className={styles.wizardBody}>
             <ProfileTeamPermissionMatrix
               value={scopeFlags}
               onChange={(next) => {
@@ -228,142 +239,301 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     );
   }
 
-  return (
-    <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
-      <form className={styles.modalPanel} onSubmit={(e) => void save(e)}>
-        <h3>Настроить доступ</h3>
-        <p className={styles.hint}>
-          {member.fullName || member.displayName} · {member.publicId}
-        </p>
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
+  const stepValid =
+    step === 1
+      ? true
+      : step === 2
+        ? isOrgOwner
+          ? membershipKind === "HEAD_OFFICE" || selected.size > 0 || branchOptions.length === 0
+          : manageable.length > 0
+        : confirmed;
+
+  const summaryBranchIds = isOrgOwner ? [...selected] : editableBranches.map((b) => b.id);
+
+  function renderStepBody() {
+    if (step === 1) {
+      return (
+        <>
+          <h3>{fullName.trim() || member.displayName}</h3>
+          <p className={formStyles.hint}>
+            {member.publicId} · настройте должность и набор прав
           </p>
-        ) : null}
-        {isOrgOwner ? (
-          <>
-            <label className={styles.checkRow}>
-              Принадлежность
-              <select
-                value={membershipKind}
+          {isOrgOwner ? (
+            <div className={styles.identityGrid}>
+              <TextField
+                label="ФИО в команде"
+                value={fullName}
                 onChange={(e) => {
                   setDirty(true);
-                  setMembershipKind(e.target.value as "BRANCH_STAFF" | "HEAD_OFFICE");
+                  setFullName(e.target.value);
                 }}
-              >
-                <option value="BRANCH_STAFF">Сотрудник филиалов</option>
-                <option value="HEAD_OFFICE">Головной офис</option>
-              </select>
-            </label>
-            <TextField
-              label="Должность"
-              value={position}
-              onChange={(e) => {
-                setDirty(true);
-                setPosition(e.target.value);
-              }}
-            />
-            <TextField
-              label="ФИО в команде"
-              value={fullName}
-              onChange={(e) => {
-                setDirty(true);
-                setFullName(e.target.value);
-              }}
-            />
-          </>
-        ) : (
-          <p className={styles.hint}>
-            Редактирование только для филиалов, где у вас есть право управлять сотрудниками (
-            {manageable.map((b) => b.branchName).join(", ")}).
-          </p>
-        )}
-        <fieldset className={styles.fieldset}>
-          <legend>Общий набор прав</legend>
-          <ProfileTeamPermissionMatrix
-            value={defaultPermissions}
-            onChange={(next) => {
-              setDirty(true);
-              setDefaultPermissions(next);
-            }}
-            disabled={saving || revoking}
-          />
-        </fieldset>
-        <fieldset className={styles.fieldset}>
-          <legend>Доступ к филиалам</legend>
-          {editableBranches.length === 0 ? (
-            <p className={styles.hint}>Без доступа к операциям филиалов (филиалов пока нет).</p>
+              />
+              <TextField
+                label="Должность"
+                value={position}
+                onChange={(e) => {
+                  setDirty(true);
+                  setPosition(e.target.value);
+                }}
+              />
+            </div>
           ) : (
-            editableBranches.map((b) => {
-              const count = effectiveActionIdsForBranch({
-                permissionsMixed,
-                defaultPermissions,
-                branchPermissions,
-                branchId: b.id,
-              }).length;
-              return (
-                <div key={b.id} className={styles.chipGrid}>
-                  <label className={styles.checkRow}>
-                    <input
-                      type="checkbox"
-                      data-testid={`team-member-branch-${b.id}`}
-                      checked={selected.has(b.id)}
-                      onChange={() => toggleBranch(b.id)}
-                      disabled={!isOrgOwner}
-                    />
-                    {b.name} ({b.city}){selected.has(b.id) ? ` · ${count} разрешений` : ""}
-                  </label>
-                  {selected.has(b.id) && permissionsMixed ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setScopeEditorBranchId(b.id)}
-                    >
-                      Настроить права
-                    </Button>
-                  ) : null}
-                </div>
-              );
-            })
+            <p className={formStyles.hint}>
+              Редактирование только для филиалов, где у вас есть право управлять сотрудниками (
+              {manageable.map((b) => b.branchName).join(", ")}).
+            </p>
           )}
-        </fieldset>
-        <label className={styles.checkRow}>
+          <div className={styles.editorGrid}>
+            <ProfileTeamPermissionMatrix
+              value={defaultPermissions}
+              onChange={(next) => {
+                setDirty(true);
+                setDefaultPermissions(next);
+              }}
+              disabled={saving || revoking}
+            />
+            <TeamBonusIllustration compact />
+          </div>
+        </>
+      );
+    }
+
+    if (step === 2) {
+      return (
+        <>
+          <h3>Где действуют выбранные права?</h3>
+          <p className={formStyles.hint}>
+            Выберите филиалы и, при необходимости, головной офис. Новые филиалы автоматически не
+            добавляются.
+          </p>
+          {isOrgOwner && branchOptions.length ? (
+            <div className={styles.locationChoice}>
+              {branchOptions.map((b) => {
+                const count = branchActionIds(b.id).length;
+                return (
+                  <div key={b.id} className={styles.locationRow}>
+                    <label className={styles.locationLabel}>
+                      <input
+                        type="checkbox"
+                        data-testid={`team-member-branch-${b.id}`}
+                        checked={selected.has(b.id)}
+                        onChange={() => toggleBranch(b.id)}
+                      />
+                      <span>
+                        <strong>{b.name}</strong>
+                        <small>{b.city}</small>
+                        {selected.has(b.id) ? (
+                          <small>
+                            {count} разрешений
+                            {branchActionIds(b.id).includes("cash") ||
+                            branchActionIds(b.id).includes("transfer")
+                              ? " · выплаты разрешены"
+                              : ""}
+                          </small>
+                        ) : null}
+                      </span>
+                    </label>
+                    {permissionsMixed && selected.has(b.id) ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setScopeEditorBranchId(b.id)}
+                      >
+                        Настроить права
+                      </Button>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+          {isOrgOwner ? (
+            <div className={`${styles.locationChoice} ${styles.officeBlock}`}>
+              <label className={styles.locationLabel}>
+                <input
+                  type="checkbox"
+                  data-testid="team-member-head-office"
+                  checked={membershipKind === "HEAD_OFFICE"}
+                  onChange={(e) => {
+                    setDirty(true);
+                    setMembershipKind(e.target.checked ? "HEAD_OFFICE" : "BRANCH_STAFF");
+                  }}
+                />
+                <span>
+                  <strong>Головной офис</strong>
+                  <small>Офисные задачи, без автоматического доступа к магазинам</small>
+                </span>
+              </label>
+            </div>
+          ) : (
+            <div className={styles.locationChoice}>
+              {editableBranches.map((b) => (
+                <div key={b.id} className={styles.locationRow}>
+                  <label className={styles.locationLabel}>
+                    <input type="checkbox" checked disabled readOnly />
+                    <span>
+                      <strong>{b.name}</strong>
+                      <small>{b.city}</small>
+                    </span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+          {(isOrgOwner || editableBranches.length > 0) ? (
+            <label className={formStyles.checkRow}>
+              <input
+                type="checkbox"
+                checked={permissionsMixed}
+                onChange={(e) => {
+                  setDirty(true);
+                  const on = e.target.checked;
+                  setPermissionsMixed(on);
+                  if (on) {
+                    const map: Record<string, ProfIPermissionFlags> = { ...branchPermissions };
+                    for (const id of selected) {
+                      if (!map[id]) map[id] = normalizePermissionFlags(defaultPermissions);
+                    }
+                    setBranchPermissions(map);
+                  }
+                }}
+              />
+              Разные права по подразделениям
+            </label>
+          ) : null}
+          <p className={styles.proposal}>
+            Офис не открывает данные всей сети. Для расчётов и выплат по магазинам отметьте
+            соответствующие филиалы, даже если сотрудник работает в головном офисе.
+          </p>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <h3>{fullName.trim() || member.displayName}</h3>
+        <p className={formStyles.hint}>
+          Должность: <strong>{position.trim() || "Сотрудник"}</strong>. Название не влияет на
+          разрешения.
+        </p>
+        {membershipKind === "HEAD_OFFICE" ? (
+          <p className={formStyles.hint}>Головной офис · без автоматического доступа ко всем филиалам</p>
+        ) : null}
+        {summaryBranchIds.map((branchId) => {
+          const branch = branchOptions.find((b) => b.id === branchId);
+          if (!branch) return null;
+          const flags = normalizePermissionFlags(
+            permissionsMixed
+              ? (branchPermissions[branchId] ?? defaultPermissions)
+              : defaultPermissions,
+          );
+          const labels = permissionLabelsFromFlags(flags);
+          return (
+            <details
+              key={branchId}
+              className={styles.scopeSummary}
+              open={labels.some((l) => l.includes("Выплата"))}
+            >
+              <summary>
+                {branch.name} <small>{labels.length} разрешений</small>
+              </summary>
+              <ul>
+                {labels.length ? labels.map((l) => <li key={l}>{l}</li>) : <li>Нет разрешённых операций</li>}
+              </ul>
+            </details>
+          );
+        })}
+        <label className={formStyles.checkRow}>
           <input
             type="checkbox"
-            checked={permissionsMixed}
-            onChange={(e) => {
-              setDirty(true);
-              const on = e.target.checked;
-              setPermissionsMixed(on);
-              if (on) {
-                const map: Record<string, ProfIPermissionFlags> = { ...branchPermissions };
-                for (const id of selected) {
-                  if (!map[id]) map[id] = normalizePermissionFlags(defaultPermissions);
-                }
-                setBranchPermissions(map);
-              }
-            }}
+            data-testid="team-member-confirm"
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.target.checked)}
           />
-          Разные права по подразделениям
+          Я проверил должность, подразделения и права, включая разрешения на выплаты
         </label>
-        <div className={styles.modalActions}>
-          <Button type="submit" disabled={saving || revoking || !dirty}>
-            {saving ? "Сохраняем…" : "Сохранить"}
-          </Button>
+      </>
+    );
+  }
+
+  return (
+    <div
+      className={styles.wizardBackdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Настроить доступ"
+    >
+      <form className={styles.wizardPanel} onSubmit={(e) => void submitSave(e)}>
+        <div className={styles.wizardHead}>
+          <div>
+            <h3>Настроить доступ</h3>
+            <p className={formStyles.hint}>
+              {member.fullName || member.displayName} · {member.publicId}
+            </p>
+          </div>
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving || revoking}>
-            Отмена
+            Закрыть
           </Button>
-          {isOrgOwner ? (
-            <Button
-              type="button"
-              variant="secondary"
-              data-testid="team-member-revoke-org"
-              disabled={saving || revoking}
-              onClick={() => void revokeOrg()}
+        </div>
+        <div className={styles.wizardSteps}>
+          {STEP_LABELS.map((label, i) => (
+            <div
+              key={label}
+              data-testid={`team-member-wizard-step-${i + 1}`}
+              data-active={step === i + 1 ? "true" : "false"}
+              className={`${styles.wizardStep} ${step === i + 1 ? styles.wizardStepActive : ""}`}
             >
-              {revoking ? "…" : "Отозвать доступ к организации"}
-            </Button>
+              <span className={styles.stepBadge}>{i + 1}</span>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+        <div className={styles.wizardBody}>
+          {error ? (
+            <p className={formStyles.error} role="alert">
+              {error}
+            </p>
           ) : null}
+          {renderStepBody()}
+        </div>
+        <div className={styles.wizardFoot}>
+          <small>Изменения сохраняются только после проверки на шаге 3.</small>
+          <div className={styles.wizardFootActions}>
+            {isOrgOwner ? (
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid="team-member-revoke-org"
+                disabled={saving || revoking}
+                onClick={() => void revokeOrg()}
+              >
+                {revoking ? "…" : "Отозвать доступ"}
+              </Button>
+            ) : null}
+            {step > 1 ? (
+              <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
+                Назад
+              </Button>
+            ) : null}
+            {step < 3 ? (
+              <Button
+                type="button"
+                disabled={!stepValid}
+                onClick={() => setStep(step + 1)}
+                data-testid="team-member-wizard-next"
+              >
+                Далее
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={!confirmed || !dirty || saving || revoking}
+                data-testid="team-member-save"
+              >
+                {saving ? "Сохраняем…" : "Сохранить"}
+              </Button>
+            )}
+          </div>
         </div>
       </form>
     </div>
