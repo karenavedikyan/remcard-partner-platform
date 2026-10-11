@@ -18,6 +18,7 @@ export default defineConfig({
       "src/lib/profile-draft-sync.test.ts",
       "src/lib/profile-working-areas.test.ts",
       "src/lib/partnership-search-ui.test.ts",
+      "src/lib/partners-return-path.test.ts",
       "src/lib/master-direction-label.test.ts",
       "src/lib/profile-overview-display.test.tsx",
       "src/lib/profile-working-save.test.ts",
