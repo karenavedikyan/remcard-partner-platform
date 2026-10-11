@@ -10,6 +10,20 @@ export type ApiErrorBody = {
 
 export type { AuthMeResponse };
 
+/** User-visible message when the response body/statusText are empty or unhelpful. */
+export function remcardApiErrorMessage(
+  status: number,
+  statusText: string,
+  errorBody: ApiErrorBody | null,
+): string {
+  const fromBody = errorBody?.error?.trim() || errorBody?.message?.trim();
+  if (fromBody) return fromBody;
+  const st = statusText?.trim();
+  if (st) return st;
+  if (status === 0) return "Сетевая ошибка";
+  return `Ошибка сервера (${status})`;
+}
+
 export class RemcardApiError extends Error {
   status: number;
   body: ApiErrorBody | null;
@@ -61,15 +75,18 @@ export async function remcardFetchBlob(
   });
 
   if (!response.ok) {
-    let message = response.statusText;
+    let errorBody: ApiErrorBody | null = null;
     try {
       const text = await response.text();
-      const payload = text ? (JSON.parse(text) as ApiErrorBody) : null;
-      message = payload?.error ?? payload?.message ?? message;
+      errorBody = text ? (JSON.parse(text) as ApiErrorBody) : null;
     } catch {
       // ignore parse errors for binary responses
     }
-    throw new RemcardApiError(response.status, message, null);
+    throw new RemcardApiError(
+      response.status,
+      remcardApiErrorMessage(response.status, response.statusText, errorBody),
+      errorBody,
+    );
   }
 
   const disposition = response.headers.get("content-disposition");
@@ -116,7 +133,11 @@ export async function remcardFetchWithMeta<T>(
       payload = JSON.parse(text) as T | ApiErrorBody;
     } catch {
       if (!response.ok) {
-        throw new RemcardApiError(response.status, response.statusText, null);
+        throw new RemcardApiError(
+          response.status,
+          remcardApiErrorMessage(response.status, response.statusText, null),
+          null,
+        );
       }
       throw new RemcardApiError(response.status, "Некорректный ответ сервера", null);
     }
@@ -127,7 +148,7 @@ export async function remcardFetchWithMeta<T>(
       payload && typeof payload === "object" ? (payload as ApiErrorBody) : null;
     throw new RemcardApiError(
       response.status,
-      errorBody?.error ?? errorBody?.message ?? response.statusText,
+      remcardApiErrorMessage(response.status, response.statusText, errorBody),
       errorBody,
     );
   }

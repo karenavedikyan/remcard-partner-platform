@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { EmployeesOverviewResponse } from "@/lib/employees-overview-types";
 import {
@@ -114,6 +114,7 @@ export function ProfileTeamInviteWizard({
   const [confirmApplyTemplate, setConfirmApplyTemplate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const submitErrorRef = useRef<HTMLParagraphElement>(null);
 
   const loadTemplates = useCallback(async () => {
     if (overview.myRole !== "ORG_OWNER") return;
@@ -130,6 +131,13 @@ export function ProfileTeamInviteWizard({
   useEffect(() => {
     void loadTemplates();
   }, [loadTemplates]);
+
+  useEffect(() => {
+    const el = submitErrorRef.current;
+    if (!error || !el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [error]);
 
   const branchList = overview.branches;
 
@@ -235,7 +243,7 @@ export function ProfileTeamInviteWizard({
 
   async function submitInvite(event: FormEvent) {
     event.preventDefault();
-    if (!draft.confirmed) return;
+    if (!draft.confirmed || saving) return;
     setSaving(true);
     setError("");
     try {
@@ -271,7 +279,11 @@ export function ProfileTeamInviteWizard({
       onCreated(result.invite.url);
       onClose();
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать приглашение");
+      const message =
+        caught instanceof RemcardApiError
+          ? caught.message.trim() || `Ошибка сервера (${caught.status})`
+          : "Не удалось создать приглашение";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -580,6 +592,18 @@ export function ProfileTeamInviteWizard({
           />
           Я проверил должность, подразделения и права, включая разрешения на выплаты
         </label>
+        {error ? (
+          <p
+            ref={submitErrorRef}
+            tabIndex={-1}
+            className={formStyles.error}
+            role="alert"
+            aria-live="assertive"
+            data-testid="team-invite-submit-error"
+          >
+            {error}
+          </p>
+        ) : null}
       </>
     );
 
@@ -622,8 +646,8 @@ export function ProfileTeamInviteWizard({
           ))}
         </div>
         <div className={styles.wizardBody}>
-          {error ? (
-            <p className={formStyles.error} role="alert">
+          {error && draft.step !== 3 ? (
+            <p className={formStyles.error} role="alert" aria-live="polite">
               {error}
             </p>
           ) : null}
