@@ -5,6 +5,19 @@
 - Репозиторий: `remcard-partner-platform`
 - Ветка: `fix/prof-profile-directions-contrast`
 - Base (release tip): `c49fafabcaa5080d50233b229675595dd99f5747`
+- Tested: `1b480a68a48575b5d25856ab1c8b4cdfb75d4534`
+
+## Результаты browser (computed)
+
+| Viewport | Theme | Chip contrast | Lead contrast |
+|----------|-------|---------------|---------------|
+| 1440 | light | 13.09:1 | 5.04:1 |
+| 390 | light | 13.09:1 | 5.04:1 |
+| 1440 | dark | 11.73:1 | 6.84:1 |
+| 390 | dark | 11.73:1 | 6.84:1 |
+| catalog 390 | dark | 11.73:1 | — |
+
+Chip removal: 2 → 1. Long service label: no horizontal overflow @390 dark.
 
 ## Проблема
 
