@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { buildInviteShareMessage, type InviteShareContext } from "@/lib/invite-share-message";
+import { isInviteShareable } from "@/lib/invite-share-eligibility";
 import { Button } from "@/components/ui/Button";
 import formStyles from "./ProfileEditor.module.css";
 import styles from "./ProfileTeamSection.module.css";
@@ -22,10 +23,28 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+function shareBlockedMessage(ctx: InviteShareContext): string | null {
+  if (!ctx.status && !ctx.expiresAt) return null;
+  if (isInviteShareable({ status: ctx.status ?? "PENDING", expiresAt: ctx.expiresAt ?? null })) {
+    return null;
+  }
+  return "Приглашение больше недоступно для отправки";
+}
+
 export function ProfileTeamInviteShare({ ctx, compact, onFeedback, onManualCopy }: Props) {
   const [sharePending, setSharePending] = useState(false);
 
+  function guardShareable(): boolean {
+    const blocked = shareBlockedMessage(ctx);
+    if (blocked) {
+      onFeedback?.(blocked);
+      return false;
+    }
+    return true;
+  }
+
   async function copyFull() {
+    if (!guardShareable()) return;
     const text = buildInviteShareMessage(ctx);
     const ok = await copyText(text);
     if (ok) {
@@ -38,6 +57,7 @@ export function ProfileTeamInviteShare({ ctx, compact, onFeedback, onManualCopy 
   }
 
   async function copyLinkOnly() {
+    if (!guardShareable()) return;
     const ok = await copyText(ctx.url);
     if (ok) {
       onFeedback?.("Ссылка скопирована");
@@ -50,6 +70,7 @@ export function ProfileTeamInviteShare({ ctx, compact, onFeedback, onManualCopy 
 
   async function shareNative() {
     if (typeof navigator.share !== "function") return;
+    if (!guardShareable()) return;
     setSharePending(true);
     const text = buildInviteShareMessage(ctx);
     try {

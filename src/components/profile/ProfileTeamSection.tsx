@@ -119,6 +119,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [wizardBranchId, setWizardBranchId] = useState<string | undefined>();
   const [helpOpen, setHelpOpen] = useState(false);
   const [manualCopyUrl, setManualCopyUrl] = useState<string | null>(null);
+  const [shareEligibilityClock, setShareEligibilityClock] = useState(() => Date.now());
   const contentReady = Boolean(overview) && !loading && !error;
 
   const overviewRef = useRef(overview);
@@ -143,14 +144,22 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
 
   useEffect(() => {
     const tick = window.setInterval(() => {
+      const now = Date.now();
+      setShareEligibilityClock(now);
       setCreatedInviteShare((prev) => {
-        if (!prev || isInviteShareable(prev)) return prev;
+        if (!prev || isInviteShareable(prev, now)) return prev;
         setManualCopyUrl((manual) => (manual && manual.includes(prev.url) ? null : manual));
         return null;
       });
+      setManualCopyUrl((manual) => {
+        if (!manual) return manual;
+        const matchInvite = invites.find((i) => manual.includes(i.url));
+        if (matchInvite && !isInviteShareable(matchInvite, now)) return null;
+        return manual;
+      });
     }, 30_000);
     return () => window.clearInterval(tick);
-  }, []);
+  }, [invites]);
 
   const load = useCallback(async () => {
     if (fixtureOverview) {
@@ -243,9 +252,9 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const pendingUnified = useMemo(
     () =>
       overview
-        ? mergePendingInvites({ overview, staffInvites: invites })
+        ? mergePendingInvites({ overview, staffInvites: invites, nowMs: shareEligibilityClock })
         : ([] as UnifiedPendingInvite[]),
-    [overview, invites],
+    [overview, invites, shareEligibilityClock],
   );
 
   const stats = useMemo(

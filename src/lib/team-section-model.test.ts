@@ -66,6 +66,29 @@ describe("team-section-model", () => {
     expect(primary).toContain("Головной офис");
   });
 
+  it("drops expired staff invite when nowMs passes expiry", () => {
+    const overview = {
+      organization: { id: "o", name: "O" },
+      branches: [],
+      organizationPendingInvites: [],
+    } as EmployeesOverviewResponse;
+    const merged = mergePendingInvites({
+      overview,
+      staffInvites: [
+        {
+          id: "expired",
+          url: "https://prof.test/invite/x",
+          role: "SELLER",
+          status: "PENDING",
+          branchName: "A",
+          expiresAt: "2020-01-01T00:00:00.000Z",
+        },
+      ],
+      nowMs: Date.parse("2026-06-01T00:00:00.000Z"),
+    });
+    expect(merged).toHaveLength(0);
+  });
+
   it("merges staff url into overview row with same id", () => {
     const overview = {
       organization: { id: "o", name: "O" },

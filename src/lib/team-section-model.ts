@@ -195,6 +195,7 @@ function mergeInviteRow(map: Map<string, InviteMergeSeed>, row: InviteMergeSeed)
 
 export function mergePendingInvites(input: {
   overview: EmployeesOverviewResponse;
+  nowMs?: number;
   staffInvites: Array<{
     id: string;
     url: string;
@@ -212,8 +213,11 @@ export function mergePendingInvites(input: {
     allCurrentBranchesSnapshot?: boolean;
   }>;
 }): UnifiedPendingInvite[] {
+  const nowMs = input.nowMs ?? Date.now();
   const map = new Map<string, InviteMergeSeed>();
   const branches = input.overview.branches;
+  const shareable = (row: { status: string; expiresAt: string | null }) =>
+    isInviteShareable({ status: row.status, expiresAt: row.expiresAt }, nowMs);
 
   for (const inv of input.overview.organizationPendingInvites ?? []) {
     mergeInviteRow(map, {
@@ -250,7 +254,7 @@ export function mergePendingInvites(input: {
   const orgNameFallback = input.overview.organization.name;
 
   for (const inv of input.staffInvites) {
-    if (!isInviteShareable({ status: inv.status, expiresAt: inv.expiresAt })) continue;
+    if (!shareable({ status: inv.status, expiresAt: inv.expiresAt })) continue;
     const orgShape: OrganizationPendingInviteRow | null =
       inv.branchIds || inv.allCurrentBranchesSnapshot || inv.membershipKind
         ? {
@@ -280,6 +284,9 @@ export function mergePendingInvites(input: {
       revokeId: inv.id,
       share: {
         url: inv.url,
+        inviteId: inv.id,
+        status: inv.status,
+        expiresAt: inv.expiresAt,
         inviteeFullName: inv.fullName ?? null,
         inviterDisplayName: inv.inviterDisplayName ?? null,
         organizationName: inv.organizationName?.trim() || orgNameFallback,
@@ -289,13 +296,19 @@ export function mergePendingInvites(input: {
   }
 
   return [...map.values()]
-    .filter((row) => isInviteShareable({ status: row.status, expiresAt: row.expiresAt }))
+    .filter((row) => shareable({ status: row.status, expiresAt: row.expiresAt }))
     .map((row) => ({
       ...row,
       url: row.url ?? null,
-      share: row.share && row.url && isInviteShareable({ status: row.status, expiresAt: row.expiresAt })
-        ? row.share
-        : null,
+      share:
+        row.share && row.url && shareable({ status: row.status, expiresAt: row.expiresAt })
+          ? {
+              ...row.share,
+              inviteId: row.id,
+              status: row.status,
+              expiresAt: row.expiresAt,
+            }
+          : null,
     }));
 }
 

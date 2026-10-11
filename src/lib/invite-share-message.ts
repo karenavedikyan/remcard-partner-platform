@@ -6,6 +6,9 @@ export type InviteShareContext = {
   organizationName?: string | null;
   url: string;
   scope?: string | null;
+  inviteId?: string;
+  status?: string;
+  expiresAt?: string | null;
 };
 
 /** Greeting — uses given name only when explicitly provided; never splits full name. */
