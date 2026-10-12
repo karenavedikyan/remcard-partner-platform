@@ -49,10 +49,16 @@ export function formatStaffBranchLine(branch: {
   city: string;
   address?: string | null;
 }): string {
+  const name = branch.name.trim();
   const addr = branch.address?.trim();
-  if (addr) return `${branch.name} — ${addr}`;
+  if (addr) {
+    const normName = name.toLowerCase();
+    const normAddr = addr.toLowerCase();
+    if (normName.includes(normAddr)) return name;
+    return `${name} — ${addr}`;
+  }
   const city = branch.city?.trim();
-  return city ? `${branch.name} (${city})` : branch.name;
+  return city ? `${name} (${city})` : name;
 }
 
 /** Summary line for «Область доступа» (independent of active working branch). */

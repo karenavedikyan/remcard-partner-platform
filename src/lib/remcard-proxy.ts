@@ -150,6 +150,7 @@ export type ProxyRequestInput = {
   contentType: string | null;
   cookieHeader: string | null;
   origin: string | null;
+  hostHeader?: string | null;
   bodyText?: string;
   /** Raw Idempotency-Key from client — validated and forwarded only for POST /api/store/order. */
   idempotencyKeyHeader?: string | null;
@@ -280,11 +281,21 @@ export function filterAllowedSetCookies(setCookies: readonly string[]): string[]
   });
 }
 
-export function isAllowedMutatingOrigin(origin: string | null): boolean {
+export function isAllowedMutatingOrigin(
+  origin: string | null,
+  hostHeader?: string | null,
+): boolean {
   if (!origin) {
     return false;
   }
-  return origin === appConfig.appUrl;
+  if (origin === appConfig.appUrl) {
+    return true;
+  }
+  const host = hostHeader?.trim();
+  if (!host) {
+    return false;
+  }
+  return origin === `http://${host}` || origin === `https://${host}`;
 }
 
 export function responseMustNotIncludeBody(status: number, method: string): boolean {
@@ -440,7 +451,7 @@ export async function proxyRemcardRequest(
   if (
     upperMethod !== "GET" &&
     upperMethod !== "HEAD" &&
-    !isAllowedMutatingOrigin(input.origin)
+    !isAllowedMutatingOrigin(input.origin, input.hostHeader)
   ) {
     return { ok: false, status: 403, body: JSON.stringify({ error: "Origin not allowed" }) };
   }

@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { deriveProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { resolveProfileSectionFromQuery } from "@/lib/profile-sections";
@@ -54,6 +55,10 @@ const BRANCHES = Array.from({ length: 6 }, (_, i) => ({
 export default async function StaffAccessScopeFixturePage(props: {
   searchParams?: Promise<{ section?: string }>;
 }) {
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
+
   const searchParams = await props.searchParams;
   const section = resolveProfileSectionFromQuery({ section: searchParams?.section });
 

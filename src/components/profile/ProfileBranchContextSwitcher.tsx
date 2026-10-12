@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { formatStaffBranchLine } from "@/lib/profile-staff-cabinet";
 import styles from "./ProfileEditor.module.css";
 
 type ProContextPayload = {
@@ -71,15 +72,11 @@ export function ProfileBranchContextSwitcher() {
         value={activeId}
         onChange={(e) => void onChange(e.target.value)}
       >
-        {ctx.branches.map((b) => {
-          const addr = b.address?.trim();
-          const label = addr ? `${b.name} — ${addr}` : `${b.name} (${b.city})`;
-          return (
-            <option key={b.id} value={b.id}>
-              {label}
-            </option>
-          );
-        })}
+        {ctx.branches.map((b) => (
+          <option key={b.id} value={b.id}>
+            {formatStaffBranchLine(b)}
+          </option>
+        ))}
       </select>
       {error ? (
         <span className={styles.error} role="alert">

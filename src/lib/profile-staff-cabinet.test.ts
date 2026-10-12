@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatStaffBranchLine,
   staffAccessScopeBranchLines,
   staffAccessScopeHeadline,
   staffWorkingBranchLine,
@@ -71,6 +72,16 @@ describe("profile-staff-cabinet access scope labels", () => {
       activeBranch: null,
     };
     expect(staffAccessScopeHeadline(ctx)).toBe("Головной офис");
+  });
+
+  it("formatStaffBranchLine does not duplicate address embedded in branch name", () => {
+    expect(
+      formatStaffBranchLine({
+        name: "ОПТОВИК — ул. 40 лет Победы, 168",
+        city: "Краснодар",
+        address: "ул. 40 лет Победы, 168",
+      }),
+    ).toBe("ОПТОВИК — ул. 40 лет Победы, 168");
   });
 
   it("legacy employee without membershipKind does not mention head office", () => {
