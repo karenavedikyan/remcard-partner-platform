@@ -18,26 +18,8 @@ mkdirSync(OUT, { recursive: true });
 
 const report = { status: "FAIL", detail: {}, exitCode: 1 };
 
-async function acceptLoginConsents(page) {
-  const consentsTitle = page.getByRole("heading", { name: /обязательные соглашения/i });
-  const visible = await consentsTitle
-    .waitFor({ state: "visible", timeout: 45_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!visible) return false;
-
-  const boxes = page.locator('input[type="checkbox"]');
-  const count = await boxes.count();
-  for (let i = 0; i < count; i += 1) await boxes.nth(i).check();
-  await page.getByRole("button", { name: /^продолжить$/i }).click();
-  await page
-    .waitForFunction(
-      () => !document.body.textContent?.includes("Сохраняем…"),
-      undefined,
-      { timeout: 30_000 },
-    )
-    .catch(() => {});
-  return true;
+function assertStep(condition, message) {
+  if (!condition) throw new Error(message);
 }
 
 try {
@@ -46,6 +28,7 @@ try {
       encoding: "utf8",
     }).trim(),
   );
+  assertStep(fx.inviteeConsentCount === 0, "fixture must seed invitee without consents");
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: "dark" });
@@ -56,7 +39,11 @@ try {
     const url = response.url();
     if (!url.includes("/api/")) return;
     const u = new URL(url);
-    if (!u.pathname.includes("verify-code") && !u.pathname.includes("consent") && !u.pathname.includes("cabinet-readiness")) {
+    if (
+      !u.pathname.includes("verify-code") &&
+      !u.pathname.includes("consent") &&
+      !u.pathname.includes("cabinet-readiness")
+    ) {
       return;
     }
     apiLog.push({ method: response.request().method(), path: u.pathname, status: response.status() });
@@ -69,34 +56,40 @@ try {
   await page.waitForURL(/\/login\?.*returnTo=/, { timeout: 60_000 });
 
   await page.getByRole("textbox", { name: /код из сообщения/i }).fill(fx.loginCode);
-  await page.getByRole("button", { name: /^продолжить$/i }).click();
-
-  await page.waitForFunction(
-    () => {
-      const t = (document.body.textContent ?? "").toLowerCase();
-      return (
-        t.includes("обязательные соглашения") ||
-        t.includes("принять приглашение") ||
-        /\/invite\/accept\?token=/.test(window.location.href)
-      );
-    },
-    undefined,
-    { timeout: 90_000 },
+  const verifyWait = page.waitForResponse(
+    (r) => r.url().includes("verify-code") && r.request().method() === "POST",
+    { timeout: 60_000 },
   );
+  await page.getByRole("button", { name: /^продолжить$/i }).click();
+  const verifyRes = await verifyWait;
+  assertStep(verifyRes.status() === 200, `verify-code must be 200, got ${verifyRes.status()}`);
 
-  const verifyEntry = apiLog.find((e) => e.path.includes("verify-code"));
-  if (verifyEntry && verifyEntry.status >= 400) {
-    throw new Error(`verify-code failed: ${JSON.stringify(verifyEntry)} (check NEXT_PUBLIC_APP_URL === ${PROF})`);
-  }
+  await page.getByRole("heading", { name: /обязательные соглашения/i }).waitFor({ timeout: 60_000 });
 
-  await acceptLoginConsents(page);
+  const consentPostWait = page.waitForResponse(
+    (r) => r.url().includes("/account/consent") && r.request().method() === "POST",
+    { timeout: 60_000 },
+  );
+  const boxes = page.locator('input[type="checkbox"]');
+  const n = await boxes.count();
+  assertStep(n >= 2, `expected consent checkboxes, got ${n}`);
+  for (let i = 0; i < n; i += 1) await boxes.nth(i).check();
+  await page.getByRole("button", { name: /^продолжить$/i }).click();
+  const firstConsent = await consentPostWait;
+  assertStep(firstConsent.status() === 200, `consent save must be 200, got ${firstConsent.status()}`);
+
+  await page.waitForResponse(
+    (r) =>
+      r.url().includes("/account/consent") &&
+      r.request().method() === "POST" &&
+      r.status() === 200,
+    { timeout: 60_000 },
+  );
 
   const tokenRe = new RegExp(
     `/invite/accept\\?token=${fx.branchInviteToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
   );
-  if (!tokenRe.test(page.url())) {
-    await page.waitForURL(tokenRe, { timeout: 90_000 });
-  }
+  await page.waitForURL(tokenRe, { timeout: 90_000 });
 
   await page.getByRole("button", { name: /Принять приглашение/i }).click();
   await page.waitForURL(/\/profile/, { timeout: 90_000 });
@@ -105,6 +98,11 @@ try {
   if (/каталог|партнёрск/i.test(text) && /обязательн.*комpan/i.test(text)) {
     throw new Error("partner onboarding forced");
   }
+
+  const verifyEntry = apiLog.find((e) => e.path.includes("verify-code") && e.method === "POST");
+  const consentPosts = apiLog.filter((e) => e.path.includes("consent") && e.method === "POST");
+  assertStep(verifyEntry?.status === 200, "apiLog: verify-code 200");
+  assertStep(consentPosts.length >= 2 && consentPosts.every((e) => e.status === 200), "apiLog: consent POSTs 200");
 
   const finalUrl = page.url();
   await page.screenshot({ path: path.join(OUT, "auth-return-390-dark.png"), fullPage: true });
