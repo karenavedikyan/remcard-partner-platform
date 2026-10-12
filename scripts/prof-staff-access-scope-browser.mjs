@@ -2,6 +2,7 @@
 /**
  * Auth synthetic stack smoke: HEAD_OFFICE staff, branch switch + reload, scope unchanged.
  * 390 dark / 1440 light, no horizontal overflow on scope block.
+ * Platform must be built/started with NEXT_PUBLIC_APP_URL === PROF_BASE_URL (e.g. :3030).
  */
 import { chromium } from "playwright";
 import { execSync } from "node:child_process";

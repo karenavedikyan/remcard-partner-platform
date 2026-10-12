@@ -30,7 +30,6 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     contentType: request.headers.get("content-type"),
     cookieHeader: request.headers.get("cookie"),
     origin: request.headers.get("origin"),
-    hostHeader: request.headers.get("host"),
     bodyText,
     idempotencyKeyHeader:
       request.method === "POST" && pathname === "/api/store/order"
