@@ -52,7 +52,10 @@ export default async function HomePage(
   });
 
   const partnerships = listResult.ok ? listResult.data.partnerships : [];
-  const incomingCount = countNeedsMyResponse(partnerships, user.id);
+  const partyUserId = listResult.ok
+    ? (listResult.data.cabinet?.partyUserId ?? user.id)
+    : user.id;
+  const incomingCount = countNeedsMyResponse(partnerships, partyUserId);
 
   return (
     <CabinetShell returnTo="/">

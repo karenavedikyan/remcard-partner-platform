@@ -88,7 +88,21 @@ function mockListAndSearch(
 ) {
   vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
     if (path === "/api/partnership/list") {
-      return { partnerships: [] };
+      return {
+        partnerships: [],
+        cabinet: {
+          actorUserId: "me-1",
+          partyUserId: "me-1",
+          partySide: "store" as const,
+          mode: "organization" as const,
+          organizationId: "org-1",
+          canManagePartnerships: true,
+          activeBranchId: null,
+        },
+      };
+    }
+    if (path === "/api/pro/context") {
+      return { role: "ORG_OWNER", organization: { id: "org-1", name: "Shop" }, activeBranch: null, branches: [] };
     }
     if (typeof path === "string" && path.startsWith("/api/partnership/search")) {
       return searchImpl(path, init);
@@ -252,5 +266,27 @@ describe("PartnersHub search empty state", () => {
     });
     expect(call).toBe(1);
     expect(screen.queryByRole("button", { name: /Показать ещё/i })).not.toBeInTheDocument();
+  });
+
+  it("shows retry panel on list error instead of empty partners state", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/partnership/list") {
+        throw new (await import("@/lib/api-client")).RemcardApiError(403, "Нет доступа к партнёрствам организации");
+      }
+      if (path === "/api/pro/context") {
+        return { role: "ORG_TEAM_MEMBER", organization: { id: "org-1" }, activeBranch: { id: "b1" }, branches: [{ id: "b1", name: "B", city: "C" }] };
+      }
+      if (path === "/api/partnership/link-invite") {
+        return { invites: [] };
+      }
+      return storeProfile;
+    });
+
+    render(<PartnersHub meId="staff-1" initialProfile={storeProfile} />);
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Нет доступа к партнёрствам организации");
+    });
+    expect(screen.queryByText("Партнёров пока нет")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Повторить/i })).toBeInTheDocument();
   });
 });

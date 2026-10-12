@@ -11,7 +11,8 @@ import styles from "./TermChangePanel.module.css";
 
 type TermChangePanelProps = {
   partnership: Partnership;
-  meId: string;
+  partyUserId: string;
+  readOnly?: boolean;
   requests: TermChangeRequest[] | null;
   loadState: "idle" | "loading" | "loaded" | "error";
   loadError: string;
@@ -25,7 +26,8 @@ function activeTerms(terms: PartnershipTerm[]): PartnershipTerm[] {
 
 export function TermChangePanel({
   partnership,
-  meId,
+  partyUserId,
+  readOnly = false,
   requests,
   loadState,
   loadError,
@@ -140,7 +142,7 @@ export function TermChangePanel({
           {requests.map((request) => {
             const pendingCopy =
               request.status === "PENDING"
-                ? describePendingTermChange(request, partnership, meId)
+                ? describePendingTermChange(request, partnership, partyUserId)
                 : null;
             return (
             <div key={request.id} className={styles.requestRow}>
@@ -173,7 +175,7 @@ export function TermChangePanel({
                   );
                 })}
               </ul>
-              {request.status === "PENDING" && pendingCopy?.canRespond ? (
+              {request.status === "PENDING" && pendingCopy?.canRespond && !readOnly ? (
                 <div className={styles.actions}>
                   <Button
                     disabled={respondingId === request.id}
@@ -196,7 +198,7 @@ export function TermChangePanel({
         </div>
       ) : null}
 
-      {partnership.status === "ACTIVE" ? (
+      {partnership.status === "ACTIVE" && !readOnly ? (
         <div className={styles.proposal}>
           <h5 className={styles.subheading}>Предложить новое изменение</h5>
           <p className={styles.meta}>Укажите новые проценты по действующим категориям:</p>

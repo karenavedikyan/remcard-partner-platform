@@ -16,8 +16,10 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
   const list = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
+  const partyUserId =
+    list.ok && list.data.cabinet?.partyUserId ? list.data.cabinet.partyUserId : user.id;
   const attentionCount =
-    list.ok && user.id ? countNeedsMyResponse(list.data.partnerships ?? [], user.id) : 0;
+    list.ok && partyUserId ? countNeedsMyResponse(list.data.partnerships ?? [], partyUserId) : 0;
 
   return (
     <CabinetAppShellClient user={user} incomingCount={attentionCount}>

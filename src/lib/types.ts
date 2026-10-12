@@ -157,8 +157,19 @@ export type Partnership = {
   proUser: PartnershipUser;
 };
 
+export type PartnershipCabinetMeta = {
+  actorUserId: string;
+  partyUserId: string;
+  partySide: "store" | "pro";
+  mode: "organization" | "personal";
+  organizationId: string | null;
+  canManagePartnerships: boolean;
+  activeBranchId: string | null;
+};
+
 export type PartnershipListResponse = {
   partnerships: Partnership[];
+  cabinet?: PartnershipCabinetMeta;
 };
 
 export type PartnerSearchResult = {

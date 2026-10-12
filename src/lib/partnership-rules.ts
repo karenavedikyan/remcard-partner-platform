@@ -231,42 +231,43 @@ export function inviteSideStableKey(side: PartnerSideProfile): string {
   ].join("\0");
 }
 
-export function partnershipNeedsMyResponse(partnership: Partnership, meId: string): boolean {
+/** `partyUserId` — сторона организации или личный id партнёра (не id сотрудника). */
+export function partnershipNeedsMyResponse(partnership: Partnership, partyUserId: string): boolean {
   const isParticipant =
-    partnership.storeUserId === meId || partnership.proUserId === meId;
+    partnership.storeUserId === partyUserId || partnership.proUserId === partyUserId;
   if (!isParticipant) {
     return false;
   }
 
   if (partnership.status === "INVITED") {
-    return partnership.initiatedBy !== meId;
+    return partnership.initiatedBy !== partyUserId;
   }
 
   if (partnership.status === "PENDING") {
     const authorId = partnership.pendingProposedBy ?? "";
-    return Boolean(authorId && authorId !== meId);
+    return Boolean(authorId && authorId !== partyUserId);
   }
 
   return false;
 }
 
-export function countNeedsMyResponse(partnerships: Partnership[], meId: string): number {
-  return partnerships.filter((item) => partnershipNeedsMyResponse(item, meId)).length;
+export function countNeedsMyResponse(partnerships: Partnership[], partyUserId: string): number {
+  return partnerships.filter((item) => partnershipNeedsMyResponse(item, partyUserId)).length;
 }
 
 export function getPartnershipUiActions(
   partnership: Partnership,
-  meId: string,
+  partyUserId: string,
 ): PartnershipUiAction[] {
   const isParticipant =
-    partnership.storeUserId === meId || partnership.proUserId === meId;
+    partnership.storeUserId === partyUserId || partnership.proUserId === partyUserId;
   if (!isParticipant) {
     return [];
   }
 
-  const iAmInitiator = partnership.initiatedBy === meId;
+  const iAmInitiator = partnership.initiatedBy === partyUserId;
   const authorId = partnership.pendingProposedBy ?? "";
-  const iAmAuthor = authorId === meId;
+  const iAmAuthor = authorId === partyUserId;
 
   if (partnership.status === "INVITED") {
     if (iAmInitiator) {

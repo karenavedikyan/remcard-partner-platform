@@ -20,6 +20,8 @@ import {
 import type {
   PartnerSearchResult,
   Partnership,
+  PartnershipCabinetMeta,
+  PartnershipListResponse,
   ProProfileResponse,
   TermChangeRequest,
 } from "@/lib/types";
@@ -61,6 +63,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
   const [tab, setTab] = useState<TabId>("list");
   const [meProfile, setMeProfile] = useState(initialProfile);
+  const [cabinet, setCabinet] = useState<PartnershipCabinetMeta | null>(null);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
   const [searchNextCursor, setSearchNextCursor] = useState<string | null>(null);
@@ -83,6 +86,10 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
   const searchRequestGen = useRef(0);
+  const workContextKeyRef = useRef("");
+
+  const partyUserId = cabinet?.partyUserId ?? meId;
+  const canManagePartnerships = cabinet?.canManagePartnerships ?? false;
 
   const inviterSide = useMemo(
     () => profileUserToPartnerSide(meProfile.user, meProfile.organization),
@@ -106,15 +113,39 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     setLoadingList(true);
     setListError("");
     try {
-      const data = await remcardFetch<{ partnerships: Partnership[] }>("/api/partnership/list");
+      const data = await remcardFetch<PartnershipListResponse>("/api/partnership/list");
+      setCabinet(data.cabinet ?? null);
       setPartnerships(data.partnerships ?? []);
     } catch (caught) {
+      setCabinet(null);
       setPartnerships([]);
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
     } finally {
       setLoadingList(false);
     }
   }, []);
+
+  const syncWorkContext = useCallback(async () => {
+    try {
+      const ctx = await remcardFetch<{
+        role: string;
+        organization?: { id: string } | null;
+        activeBranch?: { id: string } | null;
+      }>("/api/pro/context");
+      const key = `${ctx.role}:${ctx.organization?.id ?? ""}:${ctx.activeBranch?.id ?? ""}`;
+      const prev = workContextKeyRef.current;
+      workContextKeyRef.current = key;
+      if (prev && prev !== key) {
+        setCabinet(null);
+        setPartnerships([]);
+        setTermRequests({});
+        setExpandedTermPartnershipId(null);
+        await loadList();
+      }
+    } catch {
+      // ignore — list still reflects last successful cabinet meta
+    }
+  }, [loadList]);
 
   const loadSearch = useCallback(
     async (mode: "reset" | "append", cursor: string | null = null) => {
@@ -174,7 +205,11 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
 
   useEffect(() => {
     void loadList();
-  }, [loadList]);
+    void syncWorkContext();
+    const onFocus = () => void syncWorkContext();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadList, syncWorkContext]);
 
   useEffect(() => {
     if (tab !== "find") return;
@@ -183,8 +218,8 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   }, [tab, city, filterProducts, filterServices, filterStages, query, searchRole, loadSearch]);
 
   const attentionCount = useMemo(
-    () => countNeedsMyResponse(partnerships, meId),
-    [meId, partnerships],
+    () => countNeedsMyResponse(partnerships, partyUserId),
+    [partyUserId, partnerships],
   );
 
   useEffect(() => {
@@ -274,11 +309,6 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
         </Panel>
       ) : null}
 
-      {listError && tab === "list" ? (
-        <p className={styles.error} role="alert">
-          {listError}
-        </p>
-      ) : null}
       {actionError ? (
         <p className={styles.error} role="alert">
           {actionError}
@@ -288,6 +318,17 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
       {tab === "list" ? (
         loadingList ? (
           <Panel>Загрузка партнёрств…</Panel>
+        ) : listError ? (
+          <Panel title="Не удалось загрузить партнёров">
+            <p className={styles.error} role="alert">
+              {listError}
+            </p>
+            <div className={styles.emptyActions}>
+              <Button type="button" onClick={() => void loadList()}>
+                Повторить
+              </Button>
+            </div>
+          </Panel>
         ) : partnerships.length === 0 ? (
           <Panel
             title="Партнёров пока нет"
@@ -297,11 +338,15 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
           <div className={styles.list}>
             {partnerships.map((partnership) => {
               const partner =
-                partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
+                partnership.storeUserId === partyUserId
+                  ? partnership.proUser
+                  : partnership.storeUser;
               const statusLabel =
                 PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-              const needsResponse = partnershipNeedsMyResponse(partnership, meId);
-              const actions = getPartnershipUiActions(partnership, meId);
+              const needsResponse = partnershipNeedsMyResponse(partnership, partyUserId);
+              const actions = canManagePartnerships
+                ? getPartnershipUiActions(partnership, partyUserId)
+                : [];
               const termState = termRequests[partnership.id] ?? {
                 state: "idle" as const,
                 requests: [],
@@ -369,7 +414,9 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                         disabled={busyId === partnership.id}
                         onClick={() => void loadTermRequests(partnership.id)}
                       >
-                        Изменение условий
+                        {canManagePartnerships
+                          ? "Изменение условий"
+                          : "Запросы на изменение условий"}
                       </Button>
                     ) : null}
                   </div>
@@ -377,7 +424,8 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                   {expandedTermPartnershipId === partnership.id ? (
                     <TermChangePanel
                       partnership={partnership}
-                      meId={meId}
+                      partyUserId={partyUserId}
+                      readOnly={!canManagePartnerships}
                       requests={termState.state === "loaded" ? termState.requests : null}
                       loadState={
                         termState.state === "idle"
