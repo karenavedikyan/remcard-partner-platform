@@ -18,8 +18,10 @@ import {
 } from "@/lib/profile-overview-display";
 import {
   isOrganizationStaffEmployee,
-  staffAccessScopeLabel,
+  staffAccessScopeBranchLines,
+  staffAccessScopeHeadline,
   staffPositionLabel,
+  staffWorkingBranchLine,
 } from "@/lib/profile-staff-cabinet";
 import type { ProProfileResponse } from "@/lib/types";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
@@ -176,7 +178,9 @@ export function ProfileOverviewSection({
   const published = isPubliclyVisible(profile);
   const needsRevision = showRevisionBanner(profile);
   const staffPosition = staffPositionLabel(proContext);
-  const staffScope = staffAccessScopeLabel(proContext);
+  const staffScopeHeadline = staffAccessScopeHeadline(proContext);
+  const staffScopeBranches = staffAccessScopeBranchLines(proContext);
+  const staffWorkingBranch = staffWorkingBranchLine(proContext);
 
   const branchCount = useMemo(() => {
     if (!showBranchesTools || overviewForbidden || overviewError) return null;
@@ -280,9 +284,27 @@ export function ProfileOverviewSection({
                 <dt>Должность</dt>
                 <dd>{staffPosition ?? "—"}</dd>
               </div>
-              <div>
+              <div className={styles.scopeFact}>
                 <dt>Область доступа</dt>
-                <dd>{staffScope ?? "—"}</dd>
+                <dd>
+                  <span data-testid="staff-access-scope-headline">
+                    {staffScopeHeadline ?? "—"}
+                  </span>
+                  {staffScopeBranches.length > 0 ? (
+                    <details className={styles.scopeDetails} data-testid="staff-access-scope-branches">
+                      <summary>Список филиалов ({staffScopeBranches.length})</summary>
+                      <ul className={styles.scopeBranchList}>
+                        {staffScopeBranches.map((b) => (
+                          <li key={b.id}>{b.line}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : null}
+                </dd>
+              </div>
+              <div>
+                <dt>Текущий рабочий филиал</dt>
+                <dd data-testid="staff-working-branch">{staffWorkingBranch ?? "—"}</dd>
               </div>
               <div>
                 <dt>Представитель</dt>

@@ -8,6 +8,11 @@ const ORG_STAFF_CONTEXT_ROLES = new Set([
   "BRANCH_MANAGER",
 ]);
 
+export type StaffBranchLine = {
+  id: string;
+  line: string;
+};
+
 /** User has own partner / catalog activity (independent of employer). */
 export function hasOwnPartnerActivity(profile: ProProfileResponse): boolean {
   if (profile.user.partnerType) return true;
@@ -31,16 +36,64 @@ export function isOrganizationStaffEmployee(
   return false;
 }
 
-export function staffAccessScopeLabel(proContext: ProContextSnapshot | null): string | null {
+function pluralFilial(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return "филиал";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "филиала";
+  return "филиалов";
+}
+
+export function formatStaffBranchLine(branch: {
+  name: string;
+  city: string;
+  address?: string | null;
+}): string {
+  const addr = branch.address?.trim();
+  if (addr) return `${branch.name} — ${addr}`;
+  const city = branch.city?.trim();
+  return city ? `${branch.name} (${city})` : branch.name;
+}
+
+/** Summary line for «Область доступа» (independent of active working branch). */
+export function staffAccessScopeHeadline(proContext: ProContextSnapshot | null): string | null {
   if (!proContext?.organization) return null;
+  const branches = proContext.branches ?? [];
+  const n = branches.length;
+
   if (proContext.membershipKind === "HEAD_OFFICE") {
-    const n = proContext.branches?.length ?? 0;
-    return n > 0 ? `Штаб · ${n} филиал(ов) по правам` : "Штаб организации";
+    if (n === 0) return "Головной офис";
+    return `Головной офис и ${n} ${pluralFilial(n)}`;
   }
-  if (proContext.activeBranch?.name) {
-    return `Филиал: ${proContext.activeBranch.name}`;
+
+  if (proContext.membershipKind === "BRANCH_STAFF") {
+    if (n === 0) return proContext.organization.name;
+    if (n === 1) return formatStaffBranchLine(branches[0]!);
+    return `${n} ${pluralFilial(n)}`;
   }
+
+  if (n === 1) return formatStaffBranchLine(branches[0]!);
+  if (n > 1) return `${n} ${pluralFilial(n)}`;
   return proContext.organization.name;
+}
+
+export function staffAccessScopeBranchLines(proContext: ProContextSnapshot | null): StaffBranchLine[] {
+  if (!proContext?.branches?.length) return [];
+  return proContext.branches.map((b) => ({
+    id: b.id,
+    line: formatStaffBranchLine(b),
+  }));
+}
+
+export function staffWorkingBranchLine(proContext: ProContextSnapshot | null): string | null {
+  const active = proContext?.activeBranch;
+  if (!active) return null;
+  return formatStaffBranchLine(active);
+}
+
+/** @deprecated Prefer staffAccessScopeHeadline + branch list in UI. */
+export function staffAccessScopeLabel(proContext: ProContextSnapshot | null): string | null {
+  return staffAccessScopeHeadline(proContext);
 }
 
 export function staffPositionLabel(proContext: ProContextSnapshot | null): string | null {

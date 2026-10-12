@@ -9,8 +9,8 @@ export type TeamCapabilitiesSnapshot = {
 
 export type ProContextSnapshot = {
   role: string;
-  branches?: Array<{ id: string; name: string; city: string }>;
-  activeBranch?: { id: string; name: string; city: string } | null;
+  branches?: Array<{ id: string; name: string; city: string; address?: string | null }>;
+  activeBranch?: { id: string; name: string; city: string; address?: string | null } | null;
   organization?: { id: string; name: string } | null;
   branchRole?: string | null;
   membershipKind?: string | null;

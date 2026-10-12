@@ -79,6 +79,36 @@
   overflow-wrap: anywhere;
 }
 
+.scopeFact {
+  grid-column: 1 / -1;
+}
+
+.scopeDetails {
+  margin-top: var(--space-2);
+  font-weight: 500;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.scopeDetails summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.scopeBranchList {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.1rem;
+  font-weight: 500;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.scopeBranchList li {
+  overflow-wrap: anywhere;
+  margin-bottom: var(--space-1);
+}
+
 .panelFoot {
   display: flex;
   justify-content: space-between;

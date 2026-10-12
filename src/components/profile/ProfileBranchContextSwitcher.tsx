@@ -6,8 +6,8 @@ import styles from "./ProfileEditor.module.css";
 
 type ProContextPayload = {
   role: string;
-  branches: Array<{ id: string; name: string; city: string }>;
-  activeBranch: { id: string; name: string; city: string } | null;
+  branches: Array<{ id: string; name: string; city: string; address?: string | null }>;
+  activeBranch: { id: string; name: string; city: string; address?: string | null } | null;
   organization: { name: string } | null;
 };
 
@@ -63,7 +63,7 @@ export function ProfileBranchContextSwitcher() {
 
   return (
     <label className={`${styles.checkRow} ${styles.branchContextCheckRow}`}>
-      <span className={styles.branchContextLabel}>Рабочий филиал</span>
+      <span className={styles.branchContextLabel}>Текущий рабочий филиал</span>
       <select
         className={styles.branchContextSelect}
         data-testid="pro-branch-context-select"
@@ -71,11 +71,15 @@ export function ProfileBranchContextSwitcher() {
         value={activeId}
         onChange={(e) => void onChange(e.target.value)}
       >
-        {ctx.branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name} ({b.city})
-          </option>
-        ))}
+        {ctx.branches.map((b) => {
+          const addr = b.address?.trim();
+          const label = addr ? `${b.name} — ${addr}` : `${b.name} (${b.city})`;
+          return (
+            <option key={b.id} value={b.id}>
+              {label}
+            </option>
+          );
+        })}
       </select>
       {error ? (
         <span className={styles.error} role="alert">
