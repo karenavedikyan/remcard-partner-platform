@@ -306,6 +306,53 @@
   flex-wrap: wrap;
 }
 
+.inviteShareBlock {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted, var(--surface));
+}
+
+.inviteShareCompact {
+  margin-top: var(--space-3);
+}
+
+.inviteShareActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.manualCopyArea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: var(--text-sm);
+  margin-top: var(--space-2);
+  word-break: break-all;
+}
+
+.removeConfirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.removeConfirmPanel {
+  max-width: 480px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: var(--space-5);
+}
+
 .locationGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

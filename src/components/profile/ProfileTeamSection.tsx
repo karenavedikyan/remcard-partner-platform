@@ -77,12 +77,15 @@ type ProfileTeamSectionProps = {
 export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps = {}) {
   const { canOpenTeamSection, contextReady } = useProfileCabinetAccess();
   const fetchGenerationRef = useRef(0);
+  const overviewRef = useRef<EmployeesOverviewResponse | null>(null);
   const [overview, setOverview] = useState<EmployeesOverviewResponse | null>(
     fixtureOverview ?? null,
   );
   const [loading, setLoading] = useState(!fixtureOverview);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [removedMemberUserIds, setRemovedMemberUserIds] = useState<Set<string>>(() => new Set());
+  const [refreshError, setRefreshError] = useState("");
   const [copyFailed, setCopyFailed] = useState(false);
   const [lastInviteUrl, setLastInviteUrl] = useState("");
   const [invites, setInvites] = useState<StaffInviteRow[]>([]);
@@ -98,6 +101,8 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [manualCopyUrl, setManualCopyUrl] = useState<string | null>(null);
   const [invitesLoadError, setInvitesLoadError] = useState("");
   const contentReady = Boolean(overview) && !loading && !error;
+
+  overviewRef.current = overview;
 
   const load = useCallback(async () => {
     if (fixtureOverview) {
@@ -120,14 +125,17 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       return;
     }
     const generation = fetchGenerationRef.current;
+    const hadOverview = Boolean(overviewRef.current);
     setLoading(true);
-    setError("");
+    if (!hadOverview) setError("");
+    setRefreshError("");
     try {
       const data = await remcardFetch<EmployeesOverviewResponse>(
         "/api/pro/organization/employees-overview",
       );
       if (generation !== fetchGenerationRef.current) return;
       setOverview(data);
+      setRemovedMemberUserIds(new Set());
       setInvitesLoadError("");
       if (canManageTeam(data)) {
         try {
@@ -157,11 +165,15 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       }
     } catch (caught) {
       if (generation !== fetchGenerationRef.current) return;
-      if (caught instanceof RemcardApiError && caught.status === 403) {
+      const msg =
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить команду";
+      if (hadOverview) {
+        setRefreshError("Не удалось обновить список");
+      } else if (caught instanceof RemcardApiError && caught.status === 403) {
         setOverview(null);
         setError("Управление командой недоступно для вашей роли.");
       } else {
-        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить команду");
+        setError(msg);
       }
     } finally {
       if (generation === fetchGenerationRef.current) {
@@ -183,10 +195,10 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
     void load();
   }, [load]);
 
-  const displayTeam = useMemo(
-    () => (overview ? resolveDisplayTeam(overview) : []),
-    [overview],
-  );
+  const displayTeam = useMemo(() => {
+    if (!overview) return [];
+    return resolveDisplayTeam(overview).filter((m) => !removedMemberUserIds.has(m.userId));
+  }, [overview, removedMemberUserIds]);
 
   const pendingUnified = useMemo(
     () =>
@@ -531,6 +543,11 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           {message}
         </p>
       ) : null}
+      {refreshError ? (
+        <p className={formStyles.bannerWarn} role="status" data-testid="team-refresh-error">
+          {refreshError}
+        </p>
+      ) : null}
       {invitesLoadError ? (
         <p className={formStyles.bannerWarn} role="status" data-testid="team-invites-load-error">
           {invitesLoadError}. Список сотрудников ниже доступен; приглашения могут быть неполными.
@@ -694,7 +711,14 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
           member={editMember}
           overview={overview}
           onClose={() => setEditMember(null)}
-          onSaved={() => void load()}
+          onSaved={(successMessage, removedUserId) => {
+            setMessage(successMessage);
+            setEditMember(null);
+            if (removedUserId) {
+              setRemovedMemberUserIds((prev) => new Set(prev).add(removedUserId));
+            }
+            void load();
+          }}
         />
       ) : null}
 

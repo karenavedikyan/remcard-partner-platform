@@ -37,6 +37,7 @@ export default defineConfig({
       "src/lib/prof-notification-target.test.ts",
       "src/lib/theme-contrast.test.ts",
       "src/lib/team-section-model.test.ts",
+      "src/lib/team-member-remove-copy.test.ts",
       "src/components/profile/ProfileTeamSection.test.tsx",
       "src/lib/recommendation-profile-focus.test.ts",
       "src/lib/recommendation-create-draft.test.ts",
