@@ -130,6 +130,38 @@ try {
     };
   });
 
+  await run("client_manager_post_organization_forbidden", async () => {
+    const token = mint(fixtures.managerClientId);
+    const out = execFileSync(
+      "curl",
+      [
+        "-s",
+        "-w",
+        "\n__HTTP__%{http_code}",
+        "-X",
+        "POST",
+        "-H",
+        `Cookie: remcard-token=${token}`,
+        "-H",
+        "Content-Type: application/json",
+        "-H",
+        `Origin: ${PROF}`,
+        "-d",
+        JSON.stringify({
+          scope: "ORGANIZATION",
+          membershipKind: "HEAD_OFFICE",
+          selectAllCurrentBranches: true,
+          role: "SELLER",
+        }),
+        `${PROF}/api/remcard/api/pro/invites`,
+      ],
+      { encoding: "utf8" },
+    );
+    const m = out.match(/\n__HTTP__(\d+)\s*$/);
+    if (!m || m[1] !== "403") throw new Error(`expected POST ORG 403, got ${m?.[1]}`);
+    return { http: m[1] };
+  });
+
   await run("client_viewer_invites_forbidden", async () => {
     const token = mint(fixtures.viewerClientId);
     const invites = curlJson(`${PROF}/api/remcard/api/pro/invites?status=PENDING&limit=50`, token);

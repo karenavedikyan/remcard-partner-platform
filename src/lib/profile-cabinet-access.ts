@@ -14,6 +14,7 @@ export type ProContextSnapshot = {
   organization?: { id: string; name: string } | null;
   branchRole?: string | null;
   membershipKind?: string | null;
+  membershipPosition?: string | null;
   teamCapabilities?: TeamCapabilitiesSnapshot;
 };
 

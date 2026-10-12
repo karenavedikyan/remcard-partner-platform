@@ -119,6 +119,50 @@ describe("ProfileTeamSection access gates", () => {
       );
     });
   });
+
+  it("keeps roster visible when invites GET fails with 500", async () => {
+    const { RemcardApiError } = await import("@/lib/api-client");
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path.startsWith("/api/pro/organization/employees-overview")) {
+        return {
+          organization: { id: "o1", name: "Shop" },
+          myRole: "ORG_OWNER",
+          myBranchIds: ["b1"],
+          summary: {
+            totalEmployees: 2,
+            byRole: { MANAGER: 0, SELLER: 2, VIEWER: 0 },
+            pendingInvites: 0,
+          },
+          branches: [
+            {
+              id: "b1",
+              name: "A",
+              city: "C",
+              employees: [],
+              pendingInvites: [],
+            },
+          ],
+          viewer: {
+            userId: "u1",
+            isOrgOwner: true,
+            canManageEmployeesByBranchId: { b1: true },
+          },
+        };
+      }
+      if (path.startsWith("/api/pro/invites")) {
+        throw new RemcardApiError(500, "Invites unavailable");
+      }
+      return { invites: [] };
+    });
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileTeamSection />
+      </ProfileCabinetAccessProvider>,
+    );
+    expect(await screen.findByTestId("team-section-root")).toBeInTheDocument();
+    expect(await screen.findByText(/Invites unavailable/i)).toBeInTheDocument();
+    expect(screen.getByText(/Список сотрудников ниже доступен/i)).toBeInTheDocument();
+  });
 });
 
 describe("ProfileTeamSection prototype layout (fixture)", () => {

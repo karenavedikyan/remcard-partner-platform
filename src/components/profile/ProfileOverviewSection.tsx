@@ -16,7 +16,11 @@ import {
   savedWorkingProfileTitle,
   savedPartnerSearchVisibleLabel,
 } from "@/lib/profile-overview-display";
-import { isOrganizationStaffEmployee } from "@/lib/profile-staff-cabinet";
+import {
+  isOrganizationStaffEmployee,
+  staffAccessScopeLabel,
+  staffPositionLabel,
+} from "@/lib/profile-staff-cabinet";
 import type { ProProfileResponse } from "@/lib/types";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
 import { Button } from "@/components/ui/Button";
@@ -171,6 +175,8 @@ export function ProfileOverviewSection({
   const catalogLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
   const published = isPubliclyVisible(profile);
   const needsRevision = showRevisionBanner(profile);
+  const staffPosition = staffPositionLabel(proContext);
+  const staffScope = staffAccessScopeLabel(proContext);
 
   const branchCount = useMemo(() => {
     if (!showBranchesTools || overviewForbidden || overviewError) return null;
@@ -264,46 +270,78 @@ export function ProfileOverviewSection({
         </div>
 
         <dl className={styles.facts}>
-          <div>
-            <dt>Представитель</dt>
-            <dd>{savedRepresentativeName(profile)}</dd>
-          </div>
-          <div>
-            <dt>Статус заполнения</dt>
-            <dd>
-              <StatusBadge label={ready.label} tone={ready.ready ? "active" : "pending"} />
-            </dd>
-          </div>
-          <div>
-            <dt>Направления</dt>
-            <dd>
-              {directions.length ? (
-                <ul className={styles.chips}>
-                  {directions.map((label) => (
-                    <li key={label}>{label}</li>
-                  ))}
-                </ul>
-              ) : (
-                "Пока не указаны"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Поиск партнёров</dt>
-            <dd>{savedPartnerSearchVisibleLabel(profile)}</dd>
-          </div>
+          {isStaffEmployee ? (
+            <>
+              <div>
+                <dt>Организация</dt>
+                <dd>{title}</dd>
+              </div>
+              <div>
+                <dt>Должность</dt>
+                <dd>{staffPosition ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Область доступа</dt>
+                <dd>{staffScope ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Представитель</dt>
+                <dd>{savedRepresentativeName(profile)}</dd>
+              </div>
+              <div>
+                <dt>Статус</dt>
+                <dd>
+                  <StatusBadge label={ready.label} tone={ready.ready ? "active" : "pending"} />
+                </dd>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <dt>Представитель</dt>
+                <dd>{savedRepresentativeName(profile)}</dd>
+              </div>
+              <div>
+                <dt>Статус заполнения</dt>
+                <dd>
+                  <StatusBadge label={ready.label} tone={ready.ready ? "active" : "pending"} />
+                </dd>
+              </div>
+              <div>
+                <dt>Направления</dt>
+                <dd>
+                  {directions.length ? (
+                    <ul className={styles.chips}>
+                      {directions.map((label) => (
+                        <li key={label}>{label}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    "Пока не указаны"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Поиск партнёров</dt>
+                <dd>{savedPartnerSearchVisibleLabel(profile)}</dd>
+              </div>
+            </>
+          )}
         </dl>
 
-        <div className={styles.panelFoot}>
-          <p className={styles.subline}>
-            Данные для партнёрства; публикация в каталоге необязательна.
-          </p>
-          <Button type="button" variant="secondary" onClick={() => onNavigateSection("basics")}>
-            Изменить
-          </Button>
-        </div>
+        {!isStaffEmployee ? (
+          <div className={styles.panelFoot}>
+            <p className={styles.subline}>
+              Данные для партнёрства; публикация в каталоге необязательна.
+            </p>
+            <Button type="button" variant="secondary" onClick={() => onNavigateSection("basics")}>
+              Изменить
+            </Button>
+          </div>
+        ) : null}
       </Panel>
 
+      {!isStaffEmployee ? (
       <aside className={styles.catalogTeaser} aria-label="Каталог RemCard">
         <span className={styles.catalogEyebrow}>Каталог RemCard</span>
         <h2>Пусть новые клиенты найдут вас</h2>
@@ -327,6 +365,7 @@ export function ProfileOverviewSection({
           )}
         </div>
       </aside>
+      ) : null}
 
       {showTeamTools ? (
         <div className={styles.wideRow}>
