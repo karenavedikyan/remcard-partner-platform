@@ -2,6 +2,8 @@ import { displayCategoryLabel } from "@/lib/category-display";
 import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProProfileResponse } from "@/lib/types";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
+import { isOrganizationStaffEmployee, staffAccessScopeLabel } from "@/lib/profile-staff-cabinet";
 import { workingProfileCabinetReady } from "@/lib/profile-working-save";
 
 const PARTNER_TYPE_LABELS: Record<string, string> = {
@@ -11,14 +13,30 @@ const PARTNER_TYPE_LABELS: Record<string, string> = {
 };
 
 export function partnerTypeLabel(partnerType: string | null | undefined): string {
-  if (!partnerType) return "—";
+  if (!partnerType) return "Сотрудник";
   return PARTNER_TYPE_LABELS[partnerType] ?? partnerType;
 }
 
+export function overviewRoleLabel(
+  profile: ProProfileResponse,
+  proContext: ProContextSnapshot | null,
+): string {
+  if (isOrganizationStaffEmployee(profile, proContext)) {
+    return staffAccessScopeLabel(proContext) ?? "Сотрудник организации";
+  }
+  return partnerTypeLabel(profile.user.partnerType);
+}
+
 /** Primary working entity title from saved profile only. */
-export function savedWorkingProfileTitle(profile: ProProfileResponse): string {
-  const partnerType = profile.user.partnerType ?? "MASTER";
-  if (partnerType === "MASTER" || !profile.organization) {
+export function savedWorkingProfileTitle(
+  profile: ProProfileResponse,
+  proContext: ProContextSnapshot | null = null,
+): string {
+  if (isOrganizationStaffEmployee(profile, proContext)) {
+    return profile.organization?.name?.trim() || proContext?.organization?.name?.trim() || "—";
+  }
+  const partnerType = profile.user.partnerType;
+  if (!partnerType || partnerType === "MASTER" || !profile.organization) {
     const name = profile.user.displayName?.trim();
     return name || "—";
   }
@@ -26,10 +44,16 @@ export function savedWorkingProfileTitle(profile: ProProfileResponse): string {
   return orgName || "—";
 }
 
-export function savedWorkingProfileReadyLabel(profile: ProProfileResponse): {
+export function savedWorkingProfileReadyLabel(
+  profile: ProProfileResponse,
+  proContext: ProContextSnapshot | null = null,
+): {
   label: string;
   ready: boolean;
 } {
+  if (isOrganizationStaffEmployee(profile, proContext)) {
+    return { label: "Доступ по приглашению", ready: true };
+  }
   const saved = profileDraftFromProfile(profile);
   const ready = workingProfileCabinetReady(saved);
   return ready

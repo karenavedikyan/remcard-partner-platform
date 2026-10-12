@@ -96,6 +96,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
   const [wizardBranchId, setWizardBranchId] = useState<string | undefined>();
   const [helpOpen, setHelpOpen] = useState(false);
   const [manualCopyUrl, setManualCopyUrl] = useState<string | null>(null);
+  const [invitesLoadError, setInvitesLoadError] = useState("");
   const contentReady = Boolean(overview) && !loading && !error;
 
   const load = useCallback(async () => {
@@ -127,12 +128,23 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       );
       if (generation !== fetchGenerationRef.current) return;
       setOverview(data);
+      setInvitesLoadError("");
       if (canManageTeam(data)) {
-        const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
-          "/api/pro/invites?status=PENDING&limit=200",
-        );
-        if (generation !== fetchGenerationRef.current) return;
-        setInvites(inv.invites ?? []);
+        try {
+          const inv = await remcardFetch<{ invites: StaffInviteRow[] }>(
+            "/api/pro/invites?status=PENDING&limit=200",
+          );
+          if (generation !== fetchGenerationRef.current) return;
+          setInvites(inv.invites ?? []);
+        } catch (caught) {
+          if (generation !== fetchGenerationRef.current) return;
+          setInvites([]);
+          setInvitesLoadError(
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось загрузить приглашения",
+          );
+        }
       } else {
         setInvites([]);
       }
@@ -517,6 +529,11 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       {message ? (
         <p className={formStyles.success} role="status">
           {message}
+        </p>
+      ) : null}
+      {invitesLoadError ? (
+        <p className={formStyles.bannerWarn} role="status" data-testid="team-invites-load-error">
+          {invitesLoadError}. Список сотрудников ниже доступен; приглашения могут быть неполными.
         </p>
       ) : null}
       {copyFailed ? (

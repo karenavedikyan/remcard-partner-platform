@@ -8,7 +8,7 @@ import {
   showRevisionBanner,
 } from "@/lib/profile-catalog-state";
 import {
-  partnerTypeLabel,
+  overviewRoleLabel,
   savedCity,
   savedDirectionLabels,
   savedRepresentativeName,
@@ -16,6 +16,7 @@ import {
   savedWorkingProfileTitle,
   savedPartnerSearchVisibleLabel,
 } from "@/lib/profile-overview-display";
+import { isOrganizationStaffEmployee } from "@/lib/profile-staff-cabinet";
 import type { ProProfileResponse } from "@/lib/types";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
 import { Button } from "@/components/ui/Button";
@@ -57,7 +58,7 @@ export function ProfileOverviewSection({
   hasUnsavedBasicsChanges = false,
   fixtureOverview,
 }: ProfileOverviewSectionProps) {
-  const { canFetchEmployeesOverview, contextReady } = useProfileCabinetAccess();
+  const { canFetchEmployeesOverview, contextReady, proContext } = useProfileCabinetAccess();
   const [teamOverview, setTeamOverview] = useState<EmployeesOverviewResponse | null>(
     fixtureOverview ?? null,
   );
@@ -67,10 +68,12 @@ export function ProfileOverviewSection({
   const [overviewError, setOverviewError] = useState("");
   const [soloEmployees, setSoloEmployees] = useState<SoloEmployeesState>({ status: "idle" });
 
-  const partnerType = profile.user.partnerType ?? "MASTER";
+  const isStaffEmployee = isOrganizationStaffEmployee(profile, proContext);
+  const partnerType = profile.user.partnerType;
   const hasOrganization = Boolean(profile.organization);
   const showBranchesTools =
-    hasOrganization && (partnerType === "STORE" || partnerType === "COMPANY");
+    hasOrganization &&
+    (partnerType === "STORE" || partnerType === "COMPANY" || isStaffEmployee);
 
   const loadSoloEmployees = useCallback(async () => {
     setSoloEmployees({ status: "loading" });
@@ -106,7 +109,7 @@ export function ProfileOverviewSection({
       setSoloEmployees({ status: "idle" });
       return;
     }
-    if (!showBranchesTools && partnerType !== "MASTER") {
+    if (!showBranchesTools && partnerType !== "MASTER" && !isStaffEmployee) {
       return;
     }
     const generation = fetchGenerationRef.current;
@@ -146,6 +149,7 @@ export function ProfileOverviewSection({
     loadSoloEmployees,
     partnerType,
     showBranchesTools,
+    isStaffEmployee,
   ]);
 
   useEffect(() => {
@@ -160,8 +164,8 @@ export function ProfileOverviewSection({
     void loadTeamSummary();
   }, [loadTeamSummary]);
 
-  const title = savedWorkingProfileTitle(profile);
-  const ready = savedWorkingProfileReadyLabel(profile);
+  const title = savedWorkingProfileTitle(profile, proContext);
+  const ready = savedWorkingProfileReadyLabel(profile, proContext);
   const directions = savedDirectionLabels(profile);
   const catalogStatus = effectiveCatalogStatus(profile);
   const catalogLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
@@ -254,7 +258,7 @@ export function ProfileOverviewSection({
           <div className={styles.titleBlock}>
             <h2>{title}</h2>
             <p className={styles.subline}>
-              {partnerTypeLabel(partnerType)} · {savedCity(profile)}
+              {overviewRoleLabel(profile, proContext)} · {savedCity(profile)}
             </p>
           </div>
         </div>

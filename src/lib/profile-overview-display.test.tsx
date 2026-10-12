@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   savedDirectionLabels,
+  overviewRoleLabel,
   savedWorkingProfileReadyLabel,
   savedWorkingProfileTitle,
 } from "./profile-overview-display";
@@ -116,5 +117,54 @@ describe("profile-overview-display", () => {
       },
     };
     expect(savedDirectionLabels(profile)).toEqual(["Сантехника", "Чистовая отделка"]);
+  });
+
+  it("staff CLIENT without partnerType shows organization, not MASTER", () => {
+    const profile: ProProfileResponse = {
+      organization: {
+        id: "o1",
+        name: "ОПТОВИК",
+        catalogStatus: "DRAFT",
+        partnerType: "STORE",
+        branchCount: 6,
+      },
+      programs: [],
+      user: {
+        id: "u-staff",
+        publicId: "RC-ST",
+        displayName: "Сергей",
+        city: "Краснодар",
+        specializations: [],
+        role: "CLIENT",
+        partnerType: null,
+        description: null,
+        catalogStatus: "DRAFT",
+        isPublic: false,
+        rejectionReason: null,
+        badges: [],
+        photoUrl: null,
+        storeCategories: [],
+        areas: [],
+        website: null,
+        telegram: null,
+        whatsapp: null,
+        instagram: null,
+        vk: null,
+        max: null,
+        yandex: null,
+        publicEmail: null,
+        publicPhone: null,
+        showFullName: false,
+      },
+    };
+    const ctx = {
+      role: "OTHER",
+      organization: { id: "o1", name: "ОПТОВИК" },
+      membershipKind: "HEAD_OFFICE",
+      branches: [{ id: "b1", name: "F1", city: "C" }],
+    };
+    expect(savedWorkingProfileTitle(profile, ctx)).toBe("ОПТОВИК");
+    expect(savedWorkingProfileReadyLabel(profile, ctx).label).toBe("Доступ по приглашению");
+    expect(overviewRoleLabel(profile, ctx)).toContain("Штаб");
   });
 });
