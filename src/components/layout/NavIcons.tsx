@@ -86,6 +86,26 @@ export function NavIconProfile(props: IconProps) {
   );
 }
 
+export function NavIconNotifications(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M18 16H6l1.2-1.6c.6-.8.9-1.8.9-2.8V10a5 5 0 0 1 10 0v1.6c0 1 .3 2 .9 2.8L18 16z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </BaseIcon>
+  );
+}
+
+export function NavIconMoreGrid(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <rect x="4" y="4" width="6" height="6" rx="1" />
+      <rect x="14" y="4" width="6" height="6" rx="1" />
+      <rect x="4" y="14" width="6" height="6" rx="1" />
+      <rect x="14" y="14" width="6" height="6" rx="1" />
+    </BaseIcon>
+  );
+}
+
 export const NAV_ICONS = {
   home: NavIconHome,
   partners: NavIconPartners,
@@ -94,6 +114,8 @@ export const NAV_ICONS = {
   history: NavIconHistory,
   settlements: NavIconSettlements,
   profile: NavIconProfile,
+  notifications: NavIconNotifications,
+  more: NavIconMoreGrid,
 } as const;
 
 export type NavIconKey = keyof typeof NAV_ICONS;

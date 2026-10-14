@@ -40,6 +40,10 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET", "PATCH"]),
       pattern: /^\/api\/pro\/notification-settings$/,
     },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/cabinet-ui-preferences$/,
+    },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/notification-settings\/test$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/notification-bind\/start$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/notification-bind\/status$/ },
