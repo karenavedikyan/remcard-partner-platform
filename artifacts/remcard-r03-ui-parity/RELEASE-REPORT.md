@@ -4,8 +4,8 @@
 
 | Repo | Branch | HEAD (full) | Base |
 |------|--------|-------------|------|
-| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7`+UI commits | parent `#17` @ `375d263` |
-| remcard-navigator | `cursor/r03-ui-parity-b3e3` | `40b8094e4bf2158fd7a10b1cc1c33474b90a77b3`+DTO commits | `cursor/r03-agent-clients-certs-b3e3` |
+| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `167633f` (full SHA at push) | `#17` @ `375d263` |
+| remcard-navigator | `cursor/r03-ui-parity-b3e3` | `ce5a940a` (full SHA at push) | `40b8094e` (R03 lists) |
 
 Release integration target: `release/prof-v1-20261007` (`a5b83b3` at fetch time).
 
