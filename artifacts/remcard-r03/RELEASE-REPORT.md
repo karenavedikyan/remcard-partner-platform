@@ -8,8 +8,8 @@ Single honest local acceptance completed on **admin-test stack** (admin login â†
 
 | Repo | Branch | HEAD | Base |
 |------|--------|------|------|
-| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `2d0250721d57e06835286efa3cb5ff7df525f620` | `release/prof-v1-20261007` |
-| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `fe3f6ba74c0ff935ba6c3fc090711f3d390c54c0` | `release/prof-backend-v1-20261007` |
+| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `eaa33f7` (after R03.2-CLOSE) | `release/prof-v1-20261007` |
+| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `251ec8bb` (after R03.2-CLOSE) | `release/prof-backend-v1-20261007` |
 
 PRs: frontend [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15), backend [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680).
 

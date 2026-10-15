@@ -5,14 +5,14 @@
   "repositories": {
     "frontend": {
       "path": "remcard-partner-platform",
-      "head": "2d0250721d57e06835286efa3cb5ff7df525f620",
+      "head": "eaa33f7",
       "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-v1-20261007",
       "pr": 15
     },
     "backend": {
       "path": "remcard-navigator",
-      "head": "fe3f6ba74c0ff935ba6c3fc090711f3d390c54c0",
+      "head": "251ec8bb",
       "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-backend-v1-20261007",
       "pr": 680
