@@ -52,6 +52,34 @@
   flex-shrink: 1;
 }
 
+.topbarBrand > div {
+  gap: 12px;
+}
+
+.topbarBrand svg {
+  width: 34px;
+  height: 34px;
+}
+
+.topbarBrand svg path {
+  stroke: var(--primary-fg);
+}
+
+.topbarBrand svg + span {
+  font-size: 20px;
+  letter-spacing: -0.05em;
+  line-height: 1.6;
+}
+
+.topbarBrand small {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
 .topbarActions {
   display: flex;
   align-items: center;
@@ -116,6 +144,7 @@
   top: 86px;
   align-self: start;
   max-height: calc(100dvh - 86px);
+  min-height: calc(100dvh - 86px);
   background: var(--surface);
   border-right: 1px solid var(--line);
   padding: 24px 16px;
@@ -203,8 +232,7 @@
 }
 
 .sidebarBottom {
-  margin-top: auto;
-  padding-top: 8px;
+  display: none;
 }
 
 .sidebarBottom small {
@@ -250,12 +278,17 @@
   }
 
   .productTopbar {
-    min-height: 76px;
-    padding: 16px;
+    min-height: 64px;
+    padding: 10px 16px;
+    gap: 8px;
   }
 
   .topbarBrand small {
-    display: none;
+    display: block;
+  }
+
+  .topbarBrand svg + span {
+    font-size: 18px;
   }
 
   .sidebar {
@@ -333,12 +366,5 @@
   .mobileBottomLinkActive {
     background: var(--soft);
     color: var(--primary);
-  }
-}
-
-@media (max-width: 320px) {
-  .mobileBottomLink {
-    min-height: 44px;
-    font-size: 9px;
   }
 }
