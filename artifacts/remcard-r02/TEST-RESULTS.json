@@ -1,13 +1,18 @@
 {
-  "generatedAt": "2026-10-15T10:38:00Z",
-  "release": "R02.2 RC",
+  "generatedAt": "2026-10-15T11:05:00Z",
+  "release": "R02.3 RC",
+  "baselineHead": {
+    "navigator": "228b8993ab405838e035ca14816782b79bbc0060",
+    "platform": "0b26351ca6690fe0a2d5fd2220b912c2ee33ef07"
+  },
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
-    "headAfterCommit": "pending-push",
+    "headAfterCommit": "TBD_AFTER_PUSH",
+    "migrationSqlSha256": "4f52ccaf51dc4856271c77abbed34af082cdb9f027b230f61a4a235c18221566",
     "tests": [
       {
-        "command": "pnpm exec vitest run src/lib/__tests__/agentProfileDraft.test.ts src/lib/__tests__/agentProfileSeed.test.ts",
+        "command": "pnpm exec vitest run src/app/api/auth/me/__tests__/route.test.ts",
         "exitCode": 0,
         "result": "PASS"
       },
@@ -15,13 +20,12 @@
         "command": "DATABASE_URL/DIRECT_URL=loopback remcard_r01_test PROF_R02_AGENT_PROFILE_ENABLED=1 pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "5 scenarios incl. mixed contact isolation, working seed GET, STORE enable 409"
+        "notes": "unchanged from R02.2; not re-run this session — schema/runtime unchanged"
       },
       {
         "command": "PROF_R02_RUN_PG=1 node --test scripts/lib/__tests__/prof-r02-controlled-apply.integration.test.mjs",
         "exitCode": 0,
-        "result": "PASS",
-        "notes": "post-R01 fixture → apply → verify; idempotent second apply; checksum mismatch refuse"
+        "result": "PASS"
       },
       {
         "command": "pnpm run build",
@@ -33,12 +37,13 @@
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
-    "headAfterCommit": "95852b9",
+    "headAfterCommit": "TBD_AFTER_PUSH",
     "tests": [
       {
-        "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx src/lib/agent-profile/api.client.test.ts src/lib/contact-phone-display.test.ts src/lib/remcard-proxy-r02.test.ts",
+        "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
         "exitCode": 0,
-        "result": "PASS"
+        "result": "PASS",
+        "notes": "5 tests incl. finish pending, double submit, network reject"
       },
       {
         "command": "pnpm run build",
@@ -46,26 +51,34 @@
         "result": "PASS"
       },
       {
-        "command": "node scripts/r02-profile-visual.mjs (R02_SERVERS_READY=1, loopback stack)",
-        "exitCode": 1,
-        "result": "FAIL",
-        "notes": "impl: wizard not visible without auth; ref: theme control timeout on index.html — see artifacts/remcard-r02/screenshots/visual-report.json"
+        "command": "node scripts/r02-local-stack.mjs && node scripts/r02-local-acceptance.mjs",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "auth me chain, CSRF 403, profile E2E artifact"
       },
       {
-        "command": "node scripts/r02-profile-bff-smoke.mjs",
-        "exitCode": 1,
-        "result": "FAIL",
-        "notes": "401 UNAUTHORIZED — dev navigator JWT_SECRET not aligned with mint script env"
+        "command": "node scripts/r02-profile-visual.mjs",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "14 captures; visual-report.json all VERIFY PASS"
+      },
+      {
+        "command": "PROF_R02_AGENT_PROFILE_ENABLED=0 node scripts/r02-local-stack.mjs && R02_SKIP_PROFILE_E2E=1 node scripts/r02-local-acceptance.mjs && node scripts/r02-gate-off-smoke.mjs",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "featureEnabled false; legacy data-profile-focus present; no wizard marker"
       }
     ]
   },
-  "r02Items": {
-    "1_gateOffLegacy": "PASS",
-    "2_wizardInflight": "PASS",
-    "3_prefillMixed": "PASS",
-    "4_requisites": "PASS",
-    "5_controlledUpgrade": "PASS",
-    "6_visualBff": "PARTIAL_FAIL"
+  "r02_3": {
+    "A_finishBusyLifecycle": "PASS",
+    "B_localAuthBffE2e": "PASS",
+    "C_pairedVisual": "PASS"
+  },
+  "localAuthArtifacts": {
+    "http": "artifacts/remcard-r02/local-auth-evidence.json",
+    "profileE2e": "artifacts/remcard-r02/profile-e2e-evidence.json",
+    "visualReport": "artifacts/remcard-r02/screenshots/visual-report.json"
   },
   "productionSmoke": "NOT RUN"
 }

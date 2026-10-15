@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "wizard": {
+    "prefill": {},
+    "prefillOk": true,
+    "saveDraft": {},
+    "reload": {},
+    "reloadOk": true,
+    "skipContacts": {},
+    "finish": {},
+    "afterFinish": {},
+    "finishOk": true
+  },
+  "requisites": {
+    "create": {},
+    "revise": {},
+    "setPrimary": {},
+    "apply": {},
+    "archive": {},
+    "statuses": {
+      "create": 200,
+      "revise": 200,
+      "setPrimary": 200,
+      "apply": 200,
+      "archive": 200
+    },
+    "ok": true
+  },
+  "ui": {
+    "roleOk": true,
+    "reloadOk": true
+  }
+}

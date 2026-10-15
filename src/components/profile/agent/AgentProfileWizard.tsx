@@ -86,11 +86,12 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       uiStep: number,
       expectedVersion: number,
       expectedEpoch: number,
-      opts: { mode: "save" | "advance"; nextUiStep?: number },
+      opts: { mode: "save" | "advance"; nextUiStep?: number; releaseBusy?: boolean },
     ) => {
       const run = saveQueue.current.then(async () => {
         setSaving(true);
         const writeGen = dirtyGen.current;
+        const releaseBusy = opts.releaseBusy !== false;
         try {
           const res = await patchAgentProfileDraft({
             expectedVersion,
@@ -132,7 +133,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
           }
           throw caught;
         } finally {
-          setSaving(false);
+          if (releaseBusy) setSaving(false);
         }
       });
       saveQueue.current = run.then(
@@ -179,11 +180,11 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       }
       return;
     }
-    setSaving(true);
     try {
       const saved = await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
         mode: "advance",
         nextUiStep: step,
+        releaseBusy: false,
       });
       if (!saved) return;
       await finishAgentProfile({
@@ -199,8 +200,14 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.body?.fields) {
         setFieldErrors(caught.body.fields as FieldErrors);
-      } else if (caught instanceof RemcardApiError) {
-        setBanner({ kind: "error", text: caught.message });
+      } else {
+        setBanner({
+          kind: "error",
+          text:
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось сохранить профиль. Проверьте подключение и попробуйте снова.",
+        });
       }
     } finally {
       setSaving(false);

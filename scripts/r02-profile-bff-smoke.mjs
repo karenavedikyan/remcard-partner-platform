@@ -3,7 +3,10 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-const PLATFORM = process.env.R02_PLATFORM_URL || "http://127.0.0.1:3000";
+const PLATFORM =
+  process.env.R02_PLATFORM_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "http://127.0.0.1:3032";
 const NAV = process.env.R02_NAVIGATOR_DIR || path.resolve("/agent/repos/remcard-navigator");
 const USER_ID = process.env.R02_SMOKE_USER_ID || "r02-bff-smoke-agent";
 

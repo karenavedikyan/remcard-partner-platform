@@ -32,6 +32,17 @@ describe("Independent R02.1 wizard review", () => {
   });
   afterEach(cleanup);
 
+  it("keeps submit disabled while finish POST is still pending", async () => {
+    api.fetchAgentProfileDraft.mockResolvedValue({ ...initial, step: 4 });
+    api.finishAgentProfile.mockImplementation(() => new Promise(() => {}));
+    render(<AgentProfileWizard userId="synthetic-review-agent" />);
+    await screen.findByText("Шаг 4 из 4");
+    const submit = screen.getByTestId("agent-profile-next");
+    fireEvent.click(submit);
+    await waitFor(() => expect(api.finishAgentProfile).toHaveBeenCalledTimes(1));
+    expect(submit).toBeDisabled();
+  });
+
   it("skips optional contacts and saves the review step", async () => {
     render(<AgentProfileWizard userId="synthetic-review-agent" />);
     await screen.findByText("Шаг 3 из 4");
@@ -63,5 +74,29 @@ describe("Independent R02.1 wizard review", () => {
     const second = api.patchAgentProfileDraft.mock.calls[1][0];
     expect(second.expectedVersion).toBe(7);
     expect(second.payload.city).toBe("Краснодар");
+  });
+
+  it("ignores a second finish click while finish is pending", async () => {
+    api.fetchAgentProfileDraft.mockResolvedValue({ ...initial, step: 4 });
+    api.finishAgentProfile.mockImplementation(() => new Promise(() => {}));
+    render(<AgentProfileWizard userId="synthetic-review-agent" />);
+    await screen.findByText("Шаг 4 из 4");
+    const submit = screen.getByTestId("agent-profile-next");
+    fireEvent.click(submit);
+    await waitFor(() => expect(api.finishAgentProfile).toHaveBeenCalledTimes(1));
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(api.finishAgentProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a network error and re-enables submit after finish rejection", async () => {
+    api.fetchAgentProfileDraft.mockResolvedValue({ ...initial, step: 4 });
+    api.finishAgentProfile.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    render(<AgentProfileWizard userId="synthetic-review-agent" />);
+    await screen.findByText("Шаг 4 из 4");
+    const submit = screen.getByTestId("agent-profile-next");
+    fireEvent.click(submit);
+    await screen.findByText(/проверьте подключение/i);
+    await waitFor(() => expect(submit).not.toBeDisabled());
   });
 });
