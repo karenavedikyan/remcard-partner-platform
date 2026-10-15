@@ -8,7 +8,7 @@
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
-    "headAfterCommit": "TBD_AFTER_PUSH",
+    "headAfterCommit": "b6d910ee",
     "migrationSqlSha256": "4f52ccaf51dc4856271c77abbed34af082cdb9f027b230f61a4a235c18221566",
     "tests": [
       {
@@ -37,7 +37,7 @@
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
-    "headAfterCommit": "3651370",
+    "headAfterCommit": "24e98cc",
     "tests": [
       {
         "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
