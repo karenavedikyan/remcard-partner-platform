@@ -1,21 +1,21 @@
 {
-  "generatedAt": "2026-10-15T19:50:00.000Z",
-  "verdict": "READY_FOR_PUBLICATION",
+  "generatedAt": "2026-10-15T20:40:22.414Z",
+  "verdict": "READY_FOR_REVIEW",
   "ok": true,
   "repositories": {
     "frontend": {
       "path": "remcard-partner-platform",
-      "branch": "cursor/r03-agent-clients-certs-b3e3",
+      "branch": "cursor/r03-final-4-b3e3",
       "base": "release/prof-v1-20261007",
       "pr": 15,
-      "head": "bf05d2fd8c9cfd0953fa0bebc8dd86e51af63a4f"
+      "head": "2ffb73d788056e980a7d10a48fa82009819ef9a8"
     },
     "backend": {
       "path": "remcard-navigator",
-      "branch": "cursor/r03-agent-clients-certs-b3e3",
+      "branch": "cursor/r03-final-4-b3e3",
       "base": "release/prof-backend-v1-20261007",
       "pr": 680,
-      "head": "6da34993466c34f9d48e0fbc6b25b419eb248a9a"
+      "head": "50ae51ccb2ab05a74c604e4ebf39d2311cda0d64"
     }
   },
   "acceptance": {
@@ -29,7 +29,7 @@
   },
   "commands": [
     {
-      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/lib/agent-nav/sections.test.ts src/components/agent-r03/SharePreviewDialog.test.tsx src/components/agent-r03/clientContactShare.test.ts src/lib/remcard-proxy-r03.test.ts",
+      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/lib/agent-nav/sections.test.ts src/lib/remcard-proxy-r03.test.ts",
       "exitCode": 0,
       "result": "pass"
     },
@@ -44,20 +44,18 @@
       "result": "pass"
     },
     {
-      "cmd": "JWT_SECRET=… DATABASE_URL=… ADMIN_TEST_PLATFORM_PORT=3040 node scripts/r03-local-acceptance.mjs",
+      "cmd": "JWT_SECRET=… node scripts/r03-local-acceptance.mjs",
       "exitCode": 0,
       "result": "pass",
-      "note": "Full secrets in cloud env only; see local-acceptance-report.json for measured flags and steps"
+      "note": "READY_FOR_REVIEW; see local-acceptance-report.json"
     }
   ],
-  "final3": {
-    "integratedAgentNav": true,
-    "honestVisualPairs": 8,
-    "e2eCertificateUiForm": true,
-    "gateOffSmoke": true
-  },
-  "notes": [
-    "Prior premature READY_FOR_PUBLICATION superseded by this FINAL-3 run.",
-    "R02-LIVE-UI PR #14 not included."
-  ]
+  "final4": {
+    "mobileListRows": true,
+    "serverPaginationMeta": true,
+    "clientBatch": true,
+    "toolbarSortStatus": true,
+    "certificateCardHierarchy": true,
+    "acceptanceStrictness": true
+  }
 }

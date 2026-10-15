@@ -1,59 +1,42 @@
-# RemCard R03 FINAL-3 — Release Report
+# RemCard R03 FINAL-4 — Release Report
 
-## Verdict: **READY_FOR_PUBLICATION**
+## Verdict: **READY_FOR_REVIEW**
 
-FINAL-3 closes the three remaining acceptance items on existing PRs [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) / [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680). No merge, deploy, production connect, or gate publication.
+Targeted R03 UI/acceptance delta on existing PRs [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) / [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680). No merge, deploy, or production changes.
 
-## Code refs (acceptance run on committed tree)
+## Code refs (acceptance run)
 
 | Repo | Branch | HEAD | Base |
 |------|--------|------|------|
-| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `bf05d2fd` | `release/prof-v1-20261007` |
-| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `6da34993` | `release/prof-backend-v1-20261007` |
+| remcard-partner-platform | `cursor/r03-final-4-b3e3` | `2ffb73d` | `release/prof-v1-20261007` |
+| remcard-navigator | `cursor/r03-final-4-b3e3` | `50ae51cc` | `release/prof-backend-v1-20261007` |
 
-Baseline before FINAL-3: platform `7704489b`, navigator `251ec8bb`.
+FINAL-3 baseline: platform `219dd915` / runtime `bf05d2fd`; navigator `6da34993`.
 
-## FINAL-3 scope (only)
+## FINAL-4 mapping
 
-### 1. Integrated agent shell + list toolbar
-
-- Admin-test stack enables `PROF_R01_AGENT_NAV_ENABLED` + `PROF_R03_AGENT_CERTIFICATES_ENABLED`; stale stack without R01 is restarted on the same ports (3040/3041).
-- `AgentAppShell` + `resolveAgentDesktopNavKeys`: desktop **Сертификаты / Клиенты** first; mobile defaults include certificates + **Ещё** (`data-testid="mobile-nav-more"`).
-- Shared `AgentR03ListToolbar`: search, **Показывать**, list/cards toggle, found count, select-page row (frozen order; no demo finance panels).
-
-### 2. Honest visual pairs
-
-- `scripts/lib/r03-prototype-ref.mjs`: agent role → cabinet → **nav:home** (certificates) / **nav:clients**; list/cards via `data-coll-action`; ref driven at 1440 then resized; ThemeToggle for dark impl/ref.
-- **8 verified matched pairs** + **1** single 320 smoke — see `visual-report.md` and `local-acceptance-report.json` (`visualPairCount: 8`).
-
-### 3. E2E path + gate-OFF
-
-- Admin → test-agent → R02 profile; **Сертификаты/Клиенты via real nav**; client create/rename-only; certificate **UI form** (partnership seed `scripts/r03AcceptancePartnerSeed.ts`); detail alias + test-owner public restriction; batch archive/restore; reload + admin return/re-enter alias; BFF idempotency retry.
-- **Gate OFF:** navigator restart with `PROF_R03_AGENT_CERTIFICATES_ENABLED=false`, BFF `featureEnabled: false`, `/certificates` blocked, `/recommendations` legacy path OK; stack restored to R03 on.
-
-## Flags / eligibility (admin-test 3040/3041)
-
-From last acceptance: `pilotActive: true`, `permittedKeys` includes `certificates` + `clients`, `mobileNavKeys`: certificates, partners, wallet, profile. Secrets not logged.
-
-## Commands (last green run)
-
-```bash
-# stack (if needed): ADMIN_TEST_PLATFORM_PORT=3040 ADMIN_TEST_BACKEND_PORT=3041 JWT_SECRET=… DATABASE_URL=… node scripts/admin-test-local-stack.mjs
-JWT_SECRET=… DATABASE_URL=… ADMIN_TEST_PLATFORM_PORT=3040 node scripts/r03-local-acceptance.mjs  # exit 0
-cd remcard-partner-platform && pnpm build && pnpm exec vitest run … # see TEST-RESULTS.json
-cd remcard-navigator && pnpm build
-```
+| Requirement | Change |
+|-------------|--------|
+| Mobile list 375/320 without horizontal table scroll | `AgentR03Mobile*Row` + `@media (max-width: 680px)` list mode; desktop table retained |
+| Desktop list chrome | Bordered `collectionPanel` / `searchInput`, table wrap styling |
+| Certificate cards hierarchy | `AgentCertificateCard` + list DTO fields (`partnerStoreName`, `categorySummary`, …) |
+| Real filter/sort controls | `AgentR03ListToolbar` sort + cert status; server-side copy |
+| Server totals / pagination | GET meta (`totalCount`, `activeCount`, `archivedCount`, page 25/50/100, Назад/Далее) |
+| Client selection + batch | `batchAgentClients` + UI batch bar; cert batch preserved |
+| Acceptance false positives | Dark pair theme check (impl + ref), return/re-enter via nav, 2-ID batch, idempotency same ID, gate-OFF legacy `/recommendations`, 320 geometry smoke |
+| Seed safety | `r03AcceptancePartnerSeed.ts` refuses non-loopback / non-disposable DB |
 
 ## Evidence
 
-- `artifacts/remcard-r03/local-acceptance-report.json` — `ok: true`, `failures: []`
-- `artifacts/remcard-r03/visual-report.md` — 8 pairs + 1 single
-- `artifacts/remcard-r03/visual/impl-*` / `ref-*`
+- `local-acceptance-report.json` — `verdict: READY_FOR_REVIEW`, `visualPairCount: 8`, `failures: []`
+- `visual-report.md` — 8 matched pairs + 320 smoke single
+- `visual/impl-*` / `ref-*` under `artifacts/remcard-r03/visual/`
 
-## Preserved from R03.2-CLOSE
+## Remaining visual deltas (not defects)
 
-BFF 200, client action set, contact opt-in, test-owner exclusion on client add, migration guards — not re-audited.
+- Synthetic admin-test data vs frozen demo rows; test banner; no demo finance panels (by design).
+- Certificate card body uses real partner/category fields only (no fabricated bonuses/conditions).
 
 ## Out of scope
 
-R02-LIVE-UI #14, R04/R05, staff/branches/notifications/Tandoor, merge/deploy/production.
+R02-LIVE-UI #14, R04/R05, staff/branches/notifications, merge/deploy/production.
