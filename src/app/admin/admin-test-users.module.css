@@ -1,0 +1,66 @@
+.shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filters input,
+.filters select,
+.panel input,
+.panel select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.adminError {
+  color: #b00020;
+}
+
+.adminOk {
+  color: #0a7a32;
+}
+
+@media (max-width: 375px) {
+  .shell {
+    padding: 0;
+  }
+}

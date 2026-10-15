@@ -5,12 +5,23 @@ export type AuthUser = {
   role?: string;
   city?: string | null;
   partnerType?: string | null;
+  partnerActivities?: string[];
   catalogStatus?: string | null;
   isBlocked?: boolean;
+  staffRole?: string | null;
+  isProfTestUser?: boolean;
+};
+
+export type ProfTestSessionInfo = {
+  active: boolean;
+  displayName: string;
+  partnerType?: string | null;
+  partnerActivities?: string[];
 };
 
 export type AuthMeResponse = {
   user: AuthUser | null;
+  profTestSession?: ProfTestSessionInfo | null;
 };
 
 export type ProProfileUser = {

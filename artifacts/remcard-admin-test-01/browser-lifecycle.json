@@ -1,0 +1,183 @@
+{
+  "startedAt": "2026-10-15T14:52:20.029Z",
+  "finishedAt": "2026-10-15T14:53:05.036Z",
+  "platformOrigin": "http://127.0.0.1:3000",
+  "backendOrigin": "http://127.0.0.1:3010",
+  "database": "remcard_admin_test_012",
+  "ok": true,
+  "steps": [
+    {
+      "at": "2026-10-15T14:52:20.029Z",
+      "step": "admin_login_form",
+      "ok": true,
+      "path": "http://127.0.0.1:3000/admin/test-users"
+    },
+    {
+      "at": "2026-10-15T14:52:20.725Z",
+      "step": "create_agent",
+      "ok": true,
+      "displayName": "BLC 1792075938537 · Агент",
+      "metaSnippet": "BLC 1792075938537 · АгентRC-TEST-SZBG-QT6P · АгентОткрыть ЛКСбросить профильОткл"
+    },
+    {
+      "at": "2026-10-15T14:52:21.574Z",
+      "step": "create_master",
+      "ok": true,
+      "displayName": "BLC 1792075938537 · Специалист",
+      "metaSnippet": "BLC 1792075938537 · СпециалистRC-TEST-J71E-QTRI · СпециалистОткрыть ЛКСбросить п"
+    },
+    {
+      "at": "2026-10-15T14:52:22.261Z",
+      "step": "create_store",
+      "ok": true,
+      "displayName": "BLC 1792075938537 · Магазин",
+      "metaSnippet": "BLC 1792075938537 · МагазинRC-TEST-2AD5-QUDA · МагазинОткрыть ЛКСбросить профиль"
+    },
+    {
+      "at": "2026-10-15T14:52:23.045Z",
+      "step": "create_company",
+      "ok": true,
+      "displayName": "BLC 1792075938537 · Компания",
+      "metaSnippet": "BLC 1792075938537 · КомпанияRC-TEST-NYU1-QUYM · КомпанияОткрыть ЛКСбросить профи"
+    },
+    {
+      "at": "2026-10-15T14:52:24.604Z",
+      "step": "enter_test_session",
+      "ok": true,
+      "isProfTestUser": true,
+      "profTestActive": true
+    },
+    {
+      "at": "2026-10-15T14:52:46.022Z",
+      "step": "profile_entry_gate",
+      "url": "http://127.0.0.1:3000/login?step=consents&returnTo=%2Fprofile",
+      "gate": "unknown"
+    },
+    {
+      "at": "2026-10-15T14:52:48.183Z",
+      "step": "consent_ux",
+      "action": "accepted_via_ui",
+      "ok": true,
+      "checkboxCount": 2
+    },
+    {
+      "at": "2026-10-15T14:52:50.002Z",
+      "step": "enter_agent_shell",
+      "ok": true,
+      "banner": true
+    },
+    {
+      "at": "2026-10-15T14:52:51.856Z",
+      "step": "r02_save_draft_reload",
+      "ok": true,
+      "reloadedName": "Browser Agent Profile",
+      "reloadedCity": "Сочи"
+    },
+    {
+      "at": "2026-10-15T14:52:52.001Z",
+      "step": "r02_skip_audience_step",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:52:53.834Z",
+      "step": "r02_contacts_draft_reload",
+      "ok": true,
+      "reloadedPhone": "+7 (900) 111-22-33",
+      "reloadedEmail": "browser.agent@example.test"
+    },
+    {
+      "at": "2026-10-15T14:52:54.798Z",
+      "step": "r02_finish_profile",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:52:55.122Z",
+      "step": "bff_get_after_finish",
+      "bffStatus": 200,
+      "ok": true,
+      "profileComplete": true,
+      "hasDraft": false,
+      "savedDisplayName": "Browser Agent Profile"
+    },
+    {
+      "at": "2026-10-15T14:52:56.168Z",
+      "step": "consent_ux",
+      "action": "not_shown",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:52:57.037Z",
+      "step": "return_enter_fresh_bff_get",
+      "bffStatus": 200,
+      "ok": true,
+      "hasDraft": false
+    },
+    {
+      "at": "2026-10-15T14:52:58.997Z",
+      "step": "consent_ux",
+      "action": "not_shown",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:52:59.457Z",
+      "step": "reset_profile_scope",
+      "bffStatus": 200,
+      "ok": true,
+      "agentWorkingDisplayName": null,
+      "profileComplete": false
+    },
+    {
+      "at": "2026-10-15T14:53:00.746Z",
+      "step": "disable_visible_in_list",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:00.806Z",
+      "step": "disable_session_invalid",
+      "enterButtonDisabled": true,
+      "staleAuthMeStatus": 200,
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:01.844Z",
+      "step": "admin_password_change_ui",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:04.778Z",
+      "step": "admin_password_old_rejected_new_works",
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:04.815Z",
+      "step": "admin_password_invalidates_old_admin_session",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:04.895Z",
+      "step": "negative_real_user_reset",
+      "status": 403,
+      "ok": true,
+      "emailUnchanged": true
+    },
+    {
+      "at": "2026-10-15T14:53:04.940Z",
+      "step": "negative_auth_me_after_password_bump",
+      "bffStatus": 200,
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:04.978Z",
+      "step": "negative_return_replay",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "at": "2026-10-15T14:53:05.034Z",
+      "step": "negative_partnership_invite_bff",
+      "status": 403,
+      "ok": true
+    }
+  ]
+}

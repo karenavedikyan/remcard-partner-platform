@@ -1,0 +1,23 @@
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 0.75rem);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  background: #fff6e5;
+  border-bottom: 2px solid #e6a700;
+  color: #3a2f00;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+}
+
+.btn {
+  min-height: 40px;
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border-radius: 8px;
+  border: 1px solid #c98a00;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
