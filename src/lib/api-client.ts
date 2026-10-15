@@ -6,6 +6,7 @@ export type ApiErrorBody = {
   message?: string;
   code?: string;
   returnTo?: string;
+  fields?: Record<string, string>;
 };
 
 export type { AuthMeResponse };

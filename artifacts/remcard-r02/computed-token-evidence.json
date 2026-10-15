@@ -1,0 +1,48 @@
+{
+  "capturedAt": "2026-10-15T11:51:56.714Z",
+  "implProfileRequisites320Light": {
+    "scopeVars": {
+      "pw2": "0.5rem",
+      "pwBg": "#fff",
+      "pwLine": "#dce0e3"
+    },
+    "tabVars": {
+      "pw2": "0.5rem",
+      "pwBg": "#fff",
+      "pwLine": "#dce0e3"
+    },
+    "tabActive": {
+      "gap": 12,
+      "paddingTop": 8,
+      "paddingLeft": 12,
+      "borderTopWidth": 1,
+      "backgroundColor": "rgb(255, 241, 241)",
+      "borderColor": "rgb(181, 42, 46)"
+    },
+    "tabInactive": {
+      "gap": 12,
+      "paddingTop": 8,
+      "paddingLeft": 12,
+      "borderTopWidth": 1,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderColor": "rgb(220, 224, 227)"
+    },
+    "tabsDistinct": true,
+    "listItemBorder": true,
+    "varsOk": true
+  },
+  "wizard375Regression": {
+    "overlap": false,
+    "clipped": false,
+    "stepBtn": {
+      "display": "flex",
+      "flexDirection": "column"
+    },
+    "count": 4
+  },
+  "notLiteralParity": [
+    "desktop wizard width ~28px vs reference",
+    "completed status badge radius 6px vs ref pill",
+    "demo wallet banner not ported"
+  ]
+}

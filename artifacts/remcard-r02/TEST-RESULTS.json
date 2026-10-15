@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-10-15T11:52:00Z",
+  "release": "R02.6 RC",
+  "codeSha": {
+    "navigator": "b6d910ee9c91405339b838d1c1ab83a1080ad4f0",
+    "platform": "731d01bcb59be8175a6546800916b391d1be1265"
+  },
+  "docSha": {
+    "platformReport": "731d01bcb59be8175a6546800916b391d1be1265"
+  },
+  "navigator": {
+    "branch": "cursor/r02-agent-profile-b3e3",
+    "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
+    "runtimeChangedInR026": false,
+    "tests": [{ "result": "PASS_CARRYOVER", "notes": "unchanged b6d910ee" }]
+  },
+  "platform": {
+    "branch": "cursor/r02-agent-profile-b3e3",
+    "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
+    "tests": [
+      {
+        "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "5/5"
+      },
+      { "command": "pnpm run build", "exitCode": 0, "result": "PASS" },
+      {
+        "command": "R02_6_CAPTURE=1 node scripts/r02-profile-visual.mjs",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "tokenScope in visual-report.json; computed-token-evidence.json"
+      }
+    ]
+  },
+  "r02_6": {
+    "agentScopeTokens": "PASS",
+    "requisitesListStyles": "PASS",
+    "visualCapture": "PASS"
+  },
+  "productionSmoke": "NOT RUN"
+}

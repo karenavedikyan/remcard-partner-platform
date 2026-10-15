@@ -1,0 +1,106 @@
+{
+  "ok": true,
+  "wizard": {
+    "prefill": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "version": 0,
+        "draftEpoch": 4,
+        "step": 1,
+        "hasDraft": false,
+        "profileComplete": false,
+        "payload": {
+          "displayName": "R02 Visual Agent",
+          "city": "Краснодар"
+        }
+      }
+    },
+    "prefillOk": true,
+    "saveDraft": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "version": 1,
+        "draftEpoch": 4,
+        "step": 1,
+        "hasDraft": null,
+        "profileComplete": null,
+        "payload": {
+          "displayName": "R02 Visual Agent",
+          "city": "Краснодар"
+        }
+      }
+    },
+    "reload": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "version": 1,
+        "draftEpoch": 4,
+        "step": 1,
+        "hasDraft": true,
+        "profileComplete": false,
+        "payload": {
+          "displayName": "R02 Visual Agent",
+          "city": "Краснодар"
+        }
+      }
+    },
+    "reloadOk": true,
+    "skipContacts": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "version": 2,
+        "draftEpoch": 4,
+        "step": 4,
+        "hasDraft": null,
+        "profileComplete": null,
+        "payload": {
+          "displayName": "R02 Visual Agent",
+          "city": "Краснодар"
+        }
+      }
+    },
+    "finish": {
+      "status": 200,
+      "ok": true
+    },
+    "afterFinish": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "version": 0,
+        "draftEpoch": 5,
+        "step": 1,
+        "hasDraft": false,
+        "profileComplete": true,
+        "payload": {
+          "displayName": "R02 Visual Agent",
+          "city": "Краснодар"
+        }
+      }
+    },
+    "finishOk": true
+  },
+  "requisites": {
+    "create": {},
+    "revise": {},
+    "setPrimary": {},
+    "apply": {},
+    "archive": {},
+    "statuses": {
+      "create": 200,
+      "revise": 200,
+      "setPrimary": 200,
+      "apply": 200,
+      "archive": 200
+    },
+    "ok": true
+  },
+  "ui": {
+    "roleOk": true,
+    "reloadOk": true
+  }
+}

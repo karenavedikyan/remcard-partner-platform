@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "gate": "off",
+  "steps": {
+    "bffStatus": {
+      "status": 200,
+      "body": {
+        "contractVersion": "2026-10-15.r02",
+        "featureEnabled": false,
+        "hasAgentActivity": true,
+        "eligible": false,
+        "profileComplete": false,
+        "userId": "r02-local-pro-agent-v1"
+      }
+    },
+    "bffDraft": {
+      "status": 403,
+      "body": {
+        "error": "R02 недоступен"
+      }
+    },
+    "legacyUi": {
+      "status": 200,
+      "legacyMarker": true,
+      "wizardMarker": false
+    }
+  }
+}

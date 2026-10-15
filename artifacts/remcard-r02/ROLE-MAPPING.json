@@ -1,0 +1,29 @@
+{
+  "contractVersion": "2026-10-15.r02.1",
+  "activation": {
+    "r02Path": "POST /api/pro/agent-profile/enable-activity",
+    "rules": [
+      "PRO cabinet user only (no CLIENT→PRO promotion)",
+      "assertPrincipalAgentOwnerContext before mutation (blocks employed partnerEmployee, branch staff without owned org, employed wallet view)",
+      "Adds AGENT to partnerActivities only; does not change partnerType/organization",
+      "Legacy POST /api/pro/agent-activate unchanged for existing callers"
+    ]
+  },
+  "eligibility": {
+    "resolvePrincipalAgentBusiness": "AGENT activity + owner context guard + principal agent wallet (employedView false)"
+  },
+  "profileFields": {
+    "finishWrites": [
+      "agentWorkingDisplayName",
+      "agentWorkingCity",
+      "agentWorkingProfileCompletedAt",
+      "agentRecommendAudience/Channel",
+      "partnershipContactPhone/Email",
+      "workingDisplayName/City only when pure AGENT activity (no STORE/SERVICE)"
+    ],
+    "finishDoesNotWrite": ["User.displayName", "User.city", "login phone", "catalog fields"]
+  },
+  "walletSideEffects": {
+    "note": "Adding AGENT activity may still affect resolveWalletContext classification for legacy wallet APIs; R02 UX is isolated via separate agent profile fields and enable path gates."
+  }
+}
