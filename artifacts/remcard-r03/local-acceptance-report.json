@@ -1,0 +1,113 @@
+{
+  "ok": true,
+  "verdict": "READY_FOR_REVIEW",
+  "stack": "admin-test",
+  "platformGitSha": "e7a10a1e7bb309bb44d32020b4cbcec93c198af7",
+  "navigatorGitSha": "50ae51ccb2ab05a74c604e4ebf39d2311cda0d64",
+  "meta": {
+    "navOrigin": "http://127.0.0.1:3041",
+    "platformOrigin": "http://127.0.0.1:3040",
+    "envPath": "/tmp/admin-test-local-stack/runtime.env",
+    "navPid": 180238,
+    "platPid": 180240,
+    "database": "remcard_admin_test_012"
+  },
+  "http": {},
+  "browser": {
+    "testSession": {
+      "ok": true,
+      "userId": "cmva0o9vu0003jsi849md9rk7"
+    }
+  },
+  "visualPairs": [
+    {
+      "name": "certificates-list-375-dark",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-list-375-dark.png",
+      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-list-375-dark.png",
+      "implVerified": true,
+      "refVerified": true,
+      "viewport": "375x812",
+      "section": "certificates",
+      "viewMode": "list",
+      "theme": "dark",
+      "themeEvidence": {
+        "impl": {
+          "dataTheme": "dark",
+          "colorScheme": "dark",
+          "htmlClass": "",
+          "bodyBg": "rgb(23, 26, 23)",
+          "htmlBg": "rgba(0, 0, 0, 0)",
+          "surfaceSource": "toolbar",
+          "surfaceBg": "rgb(24, 26, 25)",
+          "surfaceLuma": 25,
+          "surfaceRgb": {
+            "r": 24,
+            "g": 26,
+            "b": 25,
+            "a": 1
+          }
+        },
+        "ref": {
+          "dataTheme": "dark",
+          "colorScheme": "dark",
+          "htmlClass": "",
+          "bodyBg": "rgb(24, 26, 25)",
+          "htmlBg": "rgba(0, 0, 0, 0)",
+          "surfaceSource": "main",
+          "surfaceBg": "rgb(24, 26, 25)",
+          "surfaceLuma": 25,
+          "surfaceRgb": {
+            "r": 24,
+            "g": 26,
+            "b": 25,
+            "a": 1
+          }
+        }
+      }
+    }
+  ],
+  "singles": [],
+  "steps": {},
+  "flags": {},
+  "idempotency": {},
+  "failures": [],
+  "themeChecks": {
+    "ref-certificates-list-375-dark": {
+      "raw": {
+        "dataTheme": "dark",
+        "colorScheme": "dark",
+        "htmlClass": "",
+        "bodyBg": "rgb(24, 26, 25)",
+        "htmlBg": "rgba(0, 0, 0, 0)",
+        "surfaceSource": "main",
+        "surfaceBg": "rgb(24, 26, 25)",
+        "surfaceLuma": 25,
+        "surfaceRgb": {
+          "r": 24,
+          "g": 26,
+          "b": 25,
+          "a": 1
+        }
+      },
+      "verdict": {
+        "ok": true,
+        "reason": "explicit_dark_surface",
+        "dataTheme": "dark",
+        "colorScheme": "dark",
+        "surfaceLuma": 25,
+        "surfaceBg": "rgb(24, 26, 25)",
+        "htmlClass": "",
+        "bodyBg": "rgb(24, 26, 25)",
+        "htmlBg": "rgba(0, 0, 0, 0)",
+        "surfaceSource": "main",
+        "surfaceRgb": {
+          "r": 24,
+          "g": 26,
+          "b": 25,
+          "a": 1
+        }
+      }
+    }
+  },
+  "scope": "dark-pair-only"
+}

@@ -127,6 +127,8 @@ async function main() {
     `PROF_ADMIN_PASSWORD_LOGIN_ENABLED=1`,
     `PROF_ADMIN_TEST_USERS_ENABLED=1`,
     `PROF_R02_AGENT_PROFILE_ENABLED=true`,
+    `PROF_R01_AGENT_NAV_ENABLED=true`,
+    `PROF_R03_AGENT_CERTIFICATES_ENABLED=true`,
     `ADMIN_TEST_BACKEND_PORT=${NAV_PORT}`,
     `ADMIN_TEST_PLATFORM_PORT=${PLATFORM_PORT}`,
     `REMCARD_API_BASE_URL=http://127.0.0.1:${NAV_PORT}`,
@@ -142,6 +144,8 @@ async function main() {
     PROF_ADMIN_PASSWORD_LOGIN_ENABLED: '1',
     PROF_ADMIN_TEST_USERS_ENABLED: '1',
     PROF_R02_AGENT_PROFILE_ENABLED: 'true',
+    PROF_R01_AGENT_NAV_ENABLED: 'true',
+    PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true',
   };
   const navPid = spawnDev(NAV_ROOT, NAV_PORT, navEnv);
   const platPid = spawnDev(ROOT, PLATFORM_PORT, {
@@ -174,6 +178,20 @@ async function main() {
   });
   if (fixtures.status !== 0) {
     console.error(JSON.stringify({ error: 'fixtures_failed', detail: (fixtures.stderr || fixtures.stdout || '').slice(0, 300) }));
+    process.exit(1);
+  }
+
+  const schemaPush = spawnSync(
+    'pnpm',
+    ['exec', 'prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'],
+    {
+      cwd: NAV_ROOT,
+      env: { ...probeEnv, PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true' },
+      encoding: 'utf8',
+    },
+  );
+  if (schemaPush.status !== 0) {
+    console.error(JSON.stringify({ error: 'schema_push_failed', detail: (schemaPush.stderr || '').slice(0, 300) }));
     process.exit(1);
   }
 

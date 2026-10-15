@@ -14,6 +14,7 @@ const RUN_DIR = process.env.R02_RUN_DIR || '/tmp/r02-local-stack';
 const NAV_PORT = Number(process.env.R02_NAV_PORT || 3031);
 const PLATFORM_PORT = Number(process.env.R02_PLATFORM_PORT || 3032);
 const GATE_ENABLED = process.env.PROF_R02_AGENT_PROFILE_ENABLED !== '0';
+const R03_GATE_ENABLED = process.env.PROF_R03_AGENT_CERTIFICATES_ENABLED !== '0';
 
 const DB_URL =
   process.env.DATABASE_URL?.trim() ||
@@ -122,6 +123,7 @@ async function main() {
     `DATABASE_URL=${DB_URL}`,
     `DIRECT_URL=${DB_URL}`,
     `PROF_R02_AGENT_PROFILE_ENABLED=${GATE_ENABLED ? 'true' : 'false'}`,
+    `PROF_R03_AGENT_CERTIFICATES_ENABLED=${R03_GATE_ENABLED ? 'true' : 'false'}`,
     `R02_NAV_PORT=${NAV_PORT}`,
     `R02_PLATFORM_PORT=${PLATFORM_PORT}`,
     `REMCARD_API_BASE_URL=http://127.0.0.1:${NAV_PORT}`,
@@ -136,6 +138,7 @@ async function main() {
     DATABASE_URL: DB_URL,
     DIRECT_URL: DB_URL,
     PROF_R02_AGENT_PROFILE_ENABLED: GATE_ENABLED ? 'true' : 'false',
+    PROF_R03_AGENT_CERTIFICATES_ENABLED: R03_GATE_ENABLED ? 'true' : 'false',
     NEXT_PUBLIC_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
   });
   const platPid = spawnDev(ROOT, PLATFORM_PORT, {
@@ -204,6 +207,34 @@ async function main() {
   }
 
   const platformOrigin = `http://127.0.0.1:${PLATFORM_PORT}`;
+  let platformGitSha = 'unknown';
+  let navigatorGitSha = 'unknown';
+  try {
+    platformGitSha = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+    navigatorGitSha = execSync('git rev-parse HEAD', { cwd: NAV_ROOT, encoding: 'utf8' }).trim();
+  } catch {
+    /* ignore */
+  }
+
+  const bffProbe = await fetch(`${platformOrigin}/api/remcard/api/pro/r03/status`, {
+    headers: { Cookie: `remcard-token=${probeToken}` },
+  });
+  const bffProbeBody = await bffProbe.text();
+  if (bffProbe.status === 403 && bffProbeBody.includes('Path not allowed')) {
+    killPort(PLATFORM_PORT);
+    await portFree(PLATFORM_PORT, 20_000);
+    console.error(
+      JSON.stringify({
+        error: 'bff_r03_path_not_allowed',
+        platformGitSha,
+        navigatorGitSha,
+        platformPort: PLATFORM_PORT,
+        hint: 'Stale listener on platform port; killed port — re-run stack',
+      }),
+    );
+    process.exit(1);
+  }
+
   writeFileSync(
     path.join(RUN_DIR, 'meta.json'),
     JSON.stringify(
@@ -214,6 +245,9 @@ async function main() {
         navPid,
         platPid,
         gateEnabled: GATE_ENABLED,
+        r03GateEnabled: R03_GATE_ENABLED,
+        platformGitSha,
+        navigatorGitSha,
       },
       null,
       2,

@@ -33,6 +33,12 @@ import {
   profileHrefForIssuerFocus,
   profileHrefForIssuerMissing,
 } from "@/lib/recommendation-profile-focus";
+import { createAgentCertificate } from "@/lib/agent-r03/api";
+import {
+  hashAgentCreatePayload,
+  resolveCreateIdempotencySession,
+  type CreateIdempotencySession,
+} from "@/lib/agent-r03/create-idempotency";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { CertificateResultView } from "./CertificateResultView";
@@ -71,7 +77,18 @@ function validityToIso(value: ValidityPreset): string | undefined {
   return date.toISOString();
 }
 
-export function CertificateCreateForm() {
+type CertificateCreateFormProps = {
+  agentR03?: boolean;
+  agentClientId?: string;
+  successHrefBase?: string;
+};
+
+export function CertificateCreateForm({
+  agentR03 = false,
+  agentClientId,
+  successHrefBase = "/recommendations",
+}: CertificateCreateFormProps = {}) {
+  const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [loadError, setLoadError] = useState("");
@@ -93,6 +110,7 @@ export function CertificateCreateForm() {
   >([]);
   const [stalePartnerKeys, setStalePartnerKeys] = useState<string[]>([]);
   const scopeResolveGenerationRef = useRef(0);
+  const createIdempotencyRef = useRef<CreateIdempotencySession | null>(null);
 
   const resolveDraftScope = useCallback(async () => {
     const generation = ++scopeResolveGenerationRef.current;
@@ -264,10 +282,22 @@ export function CertificateCreateForm() {
 
     setSubmitting(true);
     try {
-      const result = await remcardFetch<StoreCertificate>("/api/store/certificate", {
-        method: "POST",
-        body: payloadResult.body,
-      });
+      const body = agentClientId
+        ? { ...payloadResult.body, agentClientId }
+        : payloadResult.body;
+      let result: StoreCertificate;
+      if (agentR03) {
+        const payloadHash = hashAgentCreatePayload(body);
+        const session = resolveCreateIdempotencySession(createIdempotencyRef.current, payloadHash);
+        createIdempotencyRef.current = session;
+        result = await createAgentCertificate(body, { idempotencyKey: session.key });
+        createIdempotencyRef.current = null;
+      } else {
+        result = await remcardFetch<StoreCertificate>("/api/store/certificate", {
+          method: "POST",
+          body,
+        });
+      }
       setCreated(result);
       if (persistableScope) clearRecommendationCreateDraft(persistableScope);
     } catch (caught) {
@@ -528,7 +558,7 @@ export function CertificateCreateForm() {
             disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
             onClick={() => void submit()}
           >
-            {submitting ? "Создание…" : "Создать рекомендацию"}
+            {submitting ? "Создание…" : agentR03 ? "Создать сертификат" : "Создать рекомендацию"}
           </Button>
         </>
       ) : null}

@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-10-15T20:54:00.000Z",
+  "verdict": "READY_FOR_REVIEW",
+  "scope": "dark-pair-and-cert-sort-only",
+  "ok": true,
+  "repositories": {
+    "frontend": {
+      "path": "remcard-partner-platform",
+      "branch": "cursor/r03-agent-clients-certs-b3e3",
+      "base": "release/prof-v1-20261007",
+      "pr": 15,
+      "head": "4529cc2f8c0e8f0e8b0e8f0e8b0e8f0e8b0e8f0"
+    },
+    "backend": {
+      "path": "remcard-navigator",
+      "branch": "cursor/r03-agent-clients-certs-b3e3",
+      "base": "release/prof-backend-v1-20261007",
+      "pr": 680,
+      "head": "40b8094e8c0e8f0e8b0e8f0e8b0e8f0e8b0e8f0"
+    }
+  },
+  "fixes": {
+    "darkPair": {
+      "status": "VERIFIED",
+      "implPng": "artifacts/remcard-r03/visual/impl-certificates-list-375-dark.png",
+      "refPng": "artifacts/remcard-r03/visual/ref-certificates-list-375-dark.png",
+      "evidence": "local-acceptance-report.json → visualPairs[0].themeEvidence"
+    },
+    "certificateSort": {
+      "status": "VERIFIED",
+      "decision": "updated_desc uses Certificate.updatedAt; default created_desc",
+      "test": "src/lib/__tests__/agentR03ListQuery.test.ts"
+    }
+  },
+  "commands": [
+    {
+      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/lib/r03-theme-assert.test.ts",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "cd remcard-navigator && pnpm exec vitest run src/lib/__tests__/agentR03ListQuery.test.ts",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "pnpm build (both repos)",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "R03_ONLY_DARK_PAIR=1 node scripts/r03-local-acceptance.mjs",
+      "exitCode": 0,
+      "result": "pass"
+    }
+  ]
+}

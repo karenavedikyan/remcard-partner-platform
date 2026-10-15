@@ -66,6 +66,23 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET", "PATCH"]),
       pattern: /^\/api\/pro\/cabinet-ui-preferences$/,
     },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r03\/status$/ },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/agent-clients$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-clients\/batch$/ },
+    {
+      methods: new Set(["GET", "PATCH", "DELETE"]),
+      pattern: /^\/api\/pro\/agent-clients\/[\w-]+$/,
+    },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/agent-certificates$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-certificates\/batch$/ },
+    {
+      methods: new Set(["GET", "PATCH", "DELETE"]),
+      pattern: /^\/api\/pro\/agent-certificates\/[\w-]+$/,
+    },
+    {
+      methods: new Set(["PATCH"]),
+      pattern: /^\/api\/certificate\/[\w-]+\/alias$/,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/agent-profile\/status$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-profile\/enable-activity$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/agent-profile\/draft$/ },
@@ -225,7 +242,10 @@ export function resolveStoreOrderIdempotencyKey(
   rawHeader: string | null | undefined,
 ): { ok: true; key: string | null } | { ok: false; status: number; body: string } {
   const upper = method.toUpperCase();
-  if (upper === "POST" && BONUS_PAY_PATH.test(pathname)) {
+  if (
+    upper === "POST" &&
+    (BONUS_PAY_PATH.test(pathname) || pathname === "/api/pro/agent-certificates")
+  ) {
     const parsed = parseOptionalIdempotencyKey(rawHeader);
     if (!parsed.ok) {
       return {
