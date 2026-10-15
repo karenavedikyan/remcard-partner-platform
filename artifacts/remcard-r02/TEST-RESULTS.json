@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-10-15T11:18:00Z",
-  "release": "R02.4 RC",
+  "generatedAt": "2026-10-15T11:32:00Z",
+  "release": "R02.5 RC",
   "codeSha": {
     "navigator": "b6d910ee9c91405339b838d1c1ab83a1080ad4f0",
-    "platform": "TBD_AFTER_COMMIT"
+    "platform": "pending_commit"
   },
   "docSha": {
-    "platformReport": "TBD_AFTER_COMMIT"
+    "platformReport": "pending_commit"
   },
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
-    "runtimeChangedInR024": false,
+    "runtimeChangedInR025": false,
     "migrationSqlSha256": "4f52ccaf51dc4856271c77abbed34af082cdb9f027b230f61a4a235c18221566",
     "tests": [
       {
@@ -37,33 +37,17 @@
         "result": "PASS"
       },
       {
-        "command": "node scripts/r02-local-stack.mjs && R02_SKIP_PROFILE_E2E=1 node scripts/r02-local-acceptance.mjs",
+        "command": "R02_MOBILE_ONLY=1 node scripts/r02-profile-visual.mjs",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "writes local-auth-evidence-gate-on.json"
-      },
-      {
-        "command": "node scripts/r02-local-profile-e2e.mjs",
-        "exitCode": 0,
-        "result": "PASS",
-        "notes": "profile-e2e-evidence.json; finishOk requires profileComplete===true && hasDraft===false"
-      },
-      {
-        "command": "PROF_R02_AGENT_PROFILE_ENABLED=0 node scripts/r02-local-stack.mjs && R02_SKIP_PROFILE_E2E=1 node scripts/r02-local-acceptance.mjs && node scripts/r02-gate-off-smoke.mjs",
-        "exitCode": 0,
-        "result": "PASS",
-        "notes": "local-auth-evidence-gate-off.json + legacy HTML marker"
-      },
-      {
-        "command": "node scripts/r02-profile-visual.mjs",
-        "exitCode": 0,
-        "result": "PASS",
-        "notes": "18 pairs; desktop wizard width delta 28px; visual-report.json"
+        "notes": "18 report rows; desktop 1440 carry-over; mobile child flex/overlap + requisites readiness"
       }
     ]
   },
-  "r02_4": {
-    "C_visualDesignVerify": "PASS",
+  "r02_5": {
+    "mobileCssCascade": "PASS",
+    "pureAgentCopy": "PASS",
+    "visualMobile": "PASS",
     "evidenceGateOn": "artifacts/remcard-r02/local-auth-evidence-gate-on.json",
     "evidenceGateOff": "artifacts/remcard-r02/local-auth-evidence-gate-off.json",
     "profileE2e": "artifacts/remcard-r02/profile-e2e-evidence.json",

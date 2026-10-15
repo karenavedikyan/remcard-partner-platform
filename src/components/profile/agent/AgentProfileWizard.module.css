@@ -42,62 +42,6 @@
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--pw-4);
-  }
-
-  .journey {
-    padding: 0;
-  }
-
-  .journey > .title,
-  .journey > .intro,
-  .journey > .kicker,
-  .journeyNote {
-    display: none;
-  }
-
-  .journey .steps {
-    display: flex;
-    margin: 0;
-    gap: var(--pw-2);
-  }
-
-  .journey .steps li {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .stepBtn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    grid-template-columns: unset;
-    padding: var(--pw-2) var(--pw-1);
-    gap: var(--pw-2);
-    text-align: center;
-    font-size: var(--pw-xs);
-    min-height: auto;
-  }
-
-  .stepBtn small {
-    display: none;
-  }
-
-  .stepNumber {
-    grid-row: auto;
-    width: 28px;
-    height: 28px;
-  }
-
-  .pw {
-    margin-top: var(--pw-4);
-  }
-}
-
 .journey {
   padding: var(--pw-4) 0;
 }
@@ -375,8 +319,8 @@
 }
 
 .avatar {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 12px;
   background: var(--pw-tint);
   color: var(--pw-accent);
@@ -393,7 +337,7 @@
   color: var(--pw-accent);
   background: var(--pw-tint);
   padding: var(--pw-2) var(--pw-3);
-  border-radius: 999px;
+  border-radius: 6px;
 }
 
 .bannerError,
@@ -436,4 +380,123 @@
   border-color: var(--pw-accent);
   background: var(--pw-tint);
   color: var(--pw-accent);
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--pw-4);
+  }
+
+  .pw {
+    margin-top: var(--pw-4);
+  }
+
+  .journey {
+    padding: 0;
+  }
+
+  .journey > .title,
+  .journey > .intro,
+  .journey > .kicker,
+  .journeyNote {
+    display: none;
+  }
+
+  .journey .steps {
+    display: flex;
+    margin: 0;
+    gap: var(--pw-2);
+  }
+
+  .journey .steps li {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .journey .stepBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    padding: var(--pw-2) var(--pw-1);
+    gap: var(--pw-2);
+    text-align: center;
+    font-size: var(--pw-xs);
+    min-height: auto;
+  }
+
+  .journey .stepBtn small {
+    display: none;
+  }
+
+  .journey .stepNumber {
+    grid-row: auto;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .actions {
+    flex-wrap: nowrap;
+    gap: var(--pw-2);
+  }
+
+  .actionsLeft {
+    flex: 0 0 auto;
+  }
+
+  .actionsRight {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: var(--pw-2);
+    min-width: 0;
+  }
+
+  .actionsRight .btnDraft {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: var(--pw-2) var(--pw-2);
+  }
+
+  .actionsRight .btnPrimary {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs {
+    gap: var(--pw-3);
+    margin-bottom: var(--pw-5);
+  }
+
+  .tab {
+    flex: 1 1 calc(50% - var(--pw-2));
+    min-width: 0;
+    padding: var(--pw-2) var(--pw-3);
+    font-size: var(--pw-xs);
+    text-align: center;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    row-gap: var(--pw-2);
+  }
+
+  .actionsRight {
+    flex-wrap: wrap;
+    width: 100%;
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .actionsRight .btnDraft,
+  .actionsRight .btnPrimary {
+    flex: 1 1 auto;
+    min-width: min(100%, 140px);
+  }
 }

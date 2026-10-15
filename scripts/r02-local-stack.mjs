@@ -203,12 +203,13 @@ async function main() {
     process.exit(1);
   }
 
+  const platformOrigin = `http://127.0.0.1:${PLATFORM_PORT}`;
   writeFileSync(
     path.join(RUN_DIR, 'meta.json'),
     JSON.stringify(
       {
         navOrigin: `http://127.0.0.1:${NAV_PORT}`,
-        platformOrigin: `http://127.0.0.1:${PLATFORM_PORT}`,
+        platformOrigin,
         envPath,
         navPid,
         platPid,
@@ -217,6 +218,11 @@ async function main() {
       null,
       2,
     ),
+  );
+  writeFileSync(
+    path.join(RUN_DIR, 'session.json'),
+    JSON.stringify({ token: probeToken, platformOrigin }, null, 2),
+    { mode: 0o600 },
   );
   console.log(
     JSON.stringify({

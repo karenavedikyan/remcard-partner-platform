@@ -569,11 +569,6 @@ function ProfileEditorInner({
           basicsEditable={basicsEditable}
           onActivitiesChange={setPartnerActivities}
         />
-        {pureAgentCompactUi ? (
-          <p className={styles.hint}>
-            Основные поля магазина скрыты — профиль агента заполняется в блоке «Профиль агента» выше.
-          </p>
-        ) : null}
         {!pureAgentCompactUi ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">

@@ -7,6 +7,7 @@ import type { AgentProfileStatusResponse } from "@/lib/agent-profile/types";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { AgentProfileWizard } from "./AgentProfileWizard";
+import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import { AgentPayoutRequisitesPanel } from "./AgentPayoutRequisitesPanel";
 import styles from "./AgentProfileWizard.module.css";
 
@@ -98,8 +99,17 @@ export function AgentProfileSection({
     );
   }
 
+  const pureAgent = isPureAgentActivities(partnerActivities);
+
   return (
-    <Panel title="Профиль агента" hint="Отдельно от legacy-профиля магазина или компании.">
+    <Panel
+      title="Профиль агента"
+      hint={
+        pureAgent
+          ? undefined
+          : "Заполняется отдельно от основных данных партнёра в этом разделе."
+      }
+    >
       <div className={styles.tabs} role="tablist">
         <button
           type="button"

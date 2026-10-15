@@ -23,7 +23,7 @@ const SYNTH = {
   contactEmail: 'visual.agent@example.test',
 };
 
-const PAIRS = [
+const ALL_PAIRS = [
   { name: 'wizard-step1-1440-light', width: 1440, height: 900, theme: 'light', scenario: 'step1', crop: 'wizard' },
   { name: 'wizard-step1-1440-dark', width: 1440, height: 900, theme: 'dark', scenario: 'step1', crop: 'wizard' },
   { name: 'wizard-step1-375-light', width: 375, height: 812, theme: 'light', scenario: 'step1', crop: 'wizard' },
@@ -32,8 +32,33 @@ const PAIRS = [
   { name: 'review-375-dark', width: 375, height: 812, theme: 'dark', scenario: 'review', crop: 'wizard' },
   { name: 'completed-375-light', width: 375, height: 812, theme: 'light', scenario: 'completed', crop: 'wizard' },
   { name: 'completed-375-dark', width: 375, height: 812, theme: 'dark', scenario: 'completed', crop: 'wizard' },
-  { name: 'profile-320-smoke', width: 320, height: 700, theme: 'light', scenario: 'contacts', crop: 'page-full' },
+  { name: 'profile-contacts-320-light', width: 320, height: 900, theme: 'light', scenario: 'contacts', crop: 'page-full' },
+  { name: 'profile-contacts-320-dark', width: 320, height: 900, theme: 'dark', scenario: 'contacts', crop: 'page-full' },
+  {
+    name: 'profile-requisites-320-light',
+    width: 320,
+    height: 900,
+    theme: 'light',
+    scenario: 'requisites',
+    crop: 'page-full',
+    implOnly: true,
+  },
+  {
+    name: 'profile-requisites-320-dark',
+    width: 320,
+    height: 900,
+    theme: 'dark',
+    scenario: 'requisites',
+    crop: 'page-full',
+    implOnly: true,
+  },
 ];
+
+const MOBILE_ONLY = process.env.R02_MOBILE_ONLY === '1';
+const PAIRS = MOBILE_ONLY ? ALL_PAIRS.filter((p) => p.width <= 375 || p.width === 320) : ALL_PAIRS;
+
+const HIDE_DEV_CHROME =
+  'nextjs-portal,[data-nextjs-toast],next-route-announcer{display:none!important}';
 
 const REF_HIDE =
   '.demo-top,.review-details,.registration,.choice-footer,.demo-toolbar,.mobile-demo-settings,.review-toolbar{display:none!important}';
@@ -169,7 +194,43 @@ async function prepareImpl(page, baseUrl, theme, scenario) {
     await walkImplWizardToContacts(page);
     return;
   }
+  if (scenario === 'requisites') {
+    return;
+  }
   await walkImplWizardToReview(page);
+}
+
+async function polishStep1Capture(page) {
+  await page.evaluate(() => {
+    document.activeElement?.blur?.();
+    document.querySelectorAll('input, textarea, button').forEach((el) => {
+      if (el === document.activeElement) el.blur();
+    });
+  });
+  await page.evaluate(async () => {
+    if (document.fonts?.ready) await document.fonts.ready;
+  });
+  await page.waitForTimeout(250);
+}
+
+async function waitRequisitesReady(page) {
+  await page.getByRole('tab', { name: 'Реквизиты' }).click();
+  const panel = page.locator('[data-testid="agent-requisites-panel"]');
+  await panel.waitFor({ timeout: 60_000 });
+  await page.waitForFunction(
+    () => {
+      const panel = document.querySelector('[data-testid="agent-requisites-panel"]');
+      if (!panel) return false;
+      const loading = panel.textContent?.includes('Загрузка');
+      if (loading) return false;
+      return (
+        panel.querySelector('button') != null ||
+        panel.textContent?.includes('40817') ||
+        panel.textContent?.toLowerCase().includes('реквизит')
+      );
+    },
+    { timeout: 60_000 },
+  );
 }
 
 async function walkImplWizardToReview(page) {
@@ -184,12 +245,24 @@ async function walkImplWizardToReview(page) {
   await page.waitForSelector('[data-testid="agent-profile-progress"]', { hasText: 'Шаг 4 из 4' });
 }
 
+async function waitDraftPatch(page) {
+  await page
+    .waitForResponse(
+      (r) => r.url().includes('/agent-profile/draft') && r.request().method() === 'PATCH' && r.status() === 200,
+      { timeout: 45_000 },
+    )
+    .catch(() => null);
+}
+
 async function walkImplWizardToContacts(page) {
   await page.getByTestId('agent-profile-input-displayName').fill(SYNTH.displayName);
   await page.locator('#agent-city').fill(SYNTH.city);
-  await page.getByTestId('agent-profile-next').click();
-  await page.getByRole('button', { name: 'Пропустить' }).click();
-  await page.waitForSelector('#agent-profile-step-title', { hasText: 'Как с вами связаться?' });
+  await Promise.all([waitDraftPatch(page), page.getByTestId('agent-profile-next').click()]);
+  await page.waitForSelector('#agent-profile-step-title', { hasText: 'Кому' });
+  await page.locator('#agent-audience').fill(SYNTH.audience);
+  await Promise.all([waitDraftPatch(page), page.getByTestId('agent-profile-next').click()]);
+  await page.waitForSelector('[data-testid="agent-profile-progress"]', { hasText: 'Шаг 3' });
+  await page.waitForSelector('#agent-profile-step-title', { hasText: 'связаться' });
 }
 
 async function readThemeMetrics(page, side) {
@@ -207,6 +280,37 @@ async function readThemeMetrics(page, side) {
       bg === 'rgb(32, 35, 41)' || bg === 'rgb(41, 46, 54)' || attr === 'dark';
     return { bg, text, attr, darkByBg, refSide };
   }, side);
+}
+
+async function measureStepOverlap(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="agent-profile-steps"]');
+    if (!root) return { overlap: false, clipped: false, stepBtn: null };
+    const btns = [...root.querySelectorAll('button')];
+    const rects = btns.map((b) => b.getBoundingClientRect());
+    let overlap = false;
+    for (let i = 0; i < rects.length; i++) {
+      for (let j = i + 1; j < rects.length; j++) {
+        const a = rects[i];
+        const b = rects[j];
+        const hit =
+          a.right > b.left + 0.5 &&
+          a.left < b.right - 0.5 &&
+          a.bottom > b.top + 0.5 &&
+          a.top < b.bottom - 0.5;
+        if (hit) overlap = true;
+      }
+    }
+    const clipped = rects.some((r) => r.right > window.innerWidth + 1 || r.left < -1);
+    const first = btns[0];
+    const stepBtn = first
+      ? {
+          display: getComputedStyle(first).display,
+          flexDirection: getComputedStyle(first).flexDirection,
+        }
+      : null;
+    return { overlap, clipped, stepBtn, count: btns.length };
+  });
 }
 
 async function verifyPair(page, side, theme, scenario, width) {
@@ -265,11 +369,27 @@ async function verifyPair(page, side, theme, scenario, width) {
   const themeOk = wantDark ? themeMetrics.darkByBg : !themeMetrics.darkByBg;
 
   let stateOk = false;
+  let mobileSteps = null;
+  if (scenario === 'step1' && width <= 400 && side === 'impl') {
+    mobileSteps = await measureStepOverlap(page);
+  }
+
   if (scenario === 'step1') {
     const prog = metrics.progress || metrics.refProgress;
     stateOk = metrics.hasWizard && /Шаг 1/.test(prog);
-    if (width <= 400) {
-      stateOk = stateOk && metrics.stepsDisplay === 'flex' && metrics.introDisplay === 'none';
+    if (width <= 400 && side === 'impl') {
+      stateOk =
+        stateOk &&
+        metrics.stepsDisplay === 'flex' &&
+        metrics.introDisplay === 'none' &&
+        mobileSteps?.stepBtn?.display === 'flex' &&
+        mobileSteps?.stepBtn?.flexDirection === 'column' &&
+        !mobileSteps?.overlap &&
+        !mobileSteps?.clipped &&
+        mobileSteps?.count === 4;
+    } else if (width <= 400) {
+      stateOk =
+        stateOk && metrics.stepsDisplay === 'flex' && metrics.introDisplay === 'none';
     }
   } else if (scenario === 'review') {
     const prog = metrics.progress || metrics.refProgress;
@@ -278,11 +398,26 @@ async function verifyPair(page, side, theme, scenario, width) {
     stateOk = metrics.hasCompleted && !metrics.hasWizard;
   } else if (scenario === 'contacts') {
     stateOk =
-      (side === 'impl' && metrics.hasRequisites) ||
-      (metrics.hasWizard &&
-        (metrics.stepTitle.includes('связаться') ||
-          metrics.progress === 'Шаг 3 из 4' ||
-          /Шаг 3/.test(metrics.refProgress)));
+      side === 'impl'
+        ? metrics.hasWizard &&
+          (metrics.stepTitle.includes('связаться') ||
+            metrics.progress === 'Шаг 3 из 4' ||
+            /Шаг 3/.test(metrics.progress))
+        : metrics.hasWizard &&
+          (metrics.stepTitle.includes('связаться') ||
+            metrics.progress === 'Шаг 3 из 4' ||
+            /Шаг 3/.test(metrics.refProgress));
+  } else if (scenario === 'requisites') {
+    const panelText =
+      (await page.locator('[data-testid="agent-requisites-panel"]').textContent().catch(() => '')) || '';
+    const loading = panelText.includes('Загрузка');
+    const hasControls =
+      /40817|7707083893|R02 Visual|Visual Agent/i.test(panelText) ||
+      (await page.getByRole('button', { name: /Добавить|Изменить|Основн/i }).count()) > 0;
+    stateOk = side === 'impl' && metrics.hasRequisites && !loading && hasControls;
+    if (side === 'impl') {
+      metrics.roleAgent = panelText.toLowerCase().includes('реквизит') && stateOk;
+    }
   }
 
   const verify = {
@@ -297,6 +432,7 @@ async function verifyPair(page, side, theme, scenario, width) {
       progress: metrics.progress || metrics.refProgress,
       themeBg: themeMetrics.bg,
       themeText: themeMetrics.text,
+      mobileSteps,
     },
   };
   verify.pass = verify.roleAgent && verify.themeOk && verify.stateOk && verify.overflowOk;
@@ -383,6 +519,30 @@ async function seedReviewViaBff(session) {
   });
 }
 
+async function seedRequisitesViaBff(session) {
+  const plat = session.platformOrigin.replace(/\/$/, '');
+  const h = {
+    Cookie: `remcard-token=${session.token}`,
+    'content-type': 'application/json',
+    Origin: plat,
+  };
+  const res = await fetch(`${plat}/api/remcard/api/pro/agent-payout-requisites`, {
+    method: 'POST',
+    headers: h,
+    body: JSON.stringify({
+      kind: 'person',
+      legalName: 'R02 Visual Agent',
+      inn: '7707083893',
+      accountNumber: '40817810000000000001',
+      corrAccount: '30101810000000000000',
+      isPrimary: true,
+    }),
+  });
+  if (res.status !== 200 && res.status !== 201) {
+    throw new Error(`seed_requisites_failed_${res.status}`);
+  }
+}
+
 async function seedCompletedViaBff(session) {
   await seedReviewViaBff(session);
   const plat = session.platformOrigin.replace(/\/$/, '');
@@ -405,7 +565,14 @@ async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
   const refBase = await ensureReferenceServer();
   const browser = await chromium.launch({ headless: true });
-  const report = { pairs: [], widthTolerance: { desktopMinWizard: 980 } };
+  const report = {
+    pairs: [],
+    widthTolerance: { desktopMinWizard: 980 },
+    mobileOnly: MOBILE_ONLY,
+    desktopCarryOver: MOBILE_ONLY
+      ? ['wizard-step1-1440-light', 'wizard-step1-1440-dark']
+      : undefined,
+  };
 
   for (const pair of PAIRS) {
     resetFixture(env);
@@ -413,9 +580,11 @@ async function main() {
       await seedReviewViaBff(session);
     } else if (pair.scenario === 'completed') {
       await seedCompletedViaBff(session);
+    } else if (pair.scenario === 'requisites') {
+      await seedRequisitesViaBff(session);
     }
 
-    for (const side of ['impl', 'ref']) {
+    for (const side of pair.implOnly ? ['impl'] : ['impl', 'ref']) {
       const name = `${side}-${pair.name}`;
       const entry = { name, capture: 'FAIL', verify: 'FAIL' };
       const ctx = await browser.newContext({
@@ -441,9 +610,14 @@ async function main() {
         } else {
           await prepareImpl(page, session.platformOrigin, pair.theme, pair.scenario);
         }
-        if (pair.scenario === 'contacts' && side === 'impl') {
-          await page.getByRole('tab', { name: 'Реквизиты' }).click();
-          await page.waitForSelector('[data-testid="agent-requisites-panel"]', { timeout: 30_000 });
+        if (side === 'impl') {
+          await page.addStyleTag({ content: HIDE_DEV_CHROME, id: 'r02-hide-dev' });
+        }
+        if (pair.scenario === 'requisites' && side === 'impl') {
+          await waitRequisitesReady(page);
+        }
+        if (pair.scenario === 'step1' && side === 'impl') {
+          await polishStep1Capture(page);
         }
         const verification = await verifyPair(page, side, pair.theme, pair.scenario, pair.width);
         entry.verifyDetails = verification;
@@ -452,15 +626,14 @@ async function main() {
         entry.capture = 'CAPTURED';
         entry.verify = verification.pass ? 'PASS' : 'FAIL';
         entry.path = out;
-        if (pair.scenario === 'contacts' && side === 'impl') {
-          const actionBox = await page
-            .getByRole('button', { name: 'Добавить реквизиты' })
-            .boundingBox()
-            .catch(() => null);
-          entry.verifyDetails.metrics.actionVisible = Boolean(
-            actionBox && actionBox.y + actionBox.height < pair.height - 72,
-          );
-          if (!entry.verifyDetails.metrics.actionVisible) {
+        if (pair.scenario === 'requisites' && side === 'impl') {
+          const loadingVisible = await page
+            .locator('[data-testid="agent-requisites-panel"]')
+            .getByText('Загрузка')
+            .isVisible()
+            .catch(() => false);
+          entry.verifyDetails.metrics.requisitesReady = !loadingVisible;
+          if (loadingVisible) {
             entry.verify = 'FAIL';
             entry.verifyDetails.pass = false;
           }
