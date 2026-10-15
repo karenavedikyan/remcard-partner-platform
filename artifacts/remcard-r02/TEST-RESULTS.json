@@ -3,10 +3,10 @@
   "release": "R02.5 RC",
   "codeSha": {
     "navigator": "b6d910ee9c91405339b838d1c1ab83a1080ad4f0",
-    "platform": "7dd8295591da68d19e82e864b8fdd743a5bebdb7"
+    "platform": "0d22aceb76512acaae864ffaa20a62ea57ae36d3"
   },
   "docSha": {
-    "platformReport": "7dd8295591da68d19e82e864b8fdd743a5bebdb7"
+    "platformReport": "0d22aceb76512acaae864ffaa20a62ea57ae36d3"
   },
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
