@@ -6,6 +6,14 @@
   background: var(--bg);
 }
 
+/* Agent shell only: prototype dark canvas rgb(24,26,25) — globals stay #171a17 for legacy. */
+:global([data-theme="dark"]) .shell {
+  --bg: #181a19;
+  --surface: #202322;
+  --offset: #2b2f2c;
+  --line: #393d3a;
+}
+
 .sidebar {
   position: sticky;
   top: 0;

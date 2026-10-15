@@ -63,6 +63,8 @@ type AgentAppShellProps = {
   incomingCount?: number;
   notificationBell?: React.ReactNode;
   initialPrefs: CabinetUiPreferencesResponse;
+  /** Dev/screenshot fixture: pretend pathname without changing the route. */
+  fixturePathname?: string;
   children: React.ReactNode;
 };
 
@@ -71,9 +73,11 @@ export function AgentAppShell({
   incomingCount = 0,
   notificationBell,
   initialPrefs,
+  fixturePathname,
   children,
 }: AgentAppShellProps) {
   const pathname = usePathname();
+  const activePathname = fixturePathname ?? pathname;
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
   const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
@@ -83,7 +87,7 @@ export function AgentAppShell({
     [prefs.permittedKeys],
   );
   const primaryKeys = prefs.mobileNavKeys ?? [];
-  const activeKey = sectionKeyForPathname(pathname, permittedKeys);
+  const activeKey = sectionKeyForPathname(activePathname, permittedKeys);
   const primaryActive = activeKey != null && primaryKeys.includes(activeKey);
   const moreActive = activeKey != null && !primaryActive;
 
@@ -105,7 +109,7 @@ export function AgentAppShell({
   );
 
   const MoreIcon = NAV_ICONS.more;
-  const heading = pageTitle(pathname);
+  const heading = pageTitle(activePathname);
 
   return (
     <div className={styles.shell}>
@@ -119,13 +123,14 @@ export function AgentAppShell({
         <nav className={styles.nav}>
           {desktopKeys.map((key) => {
             const section = agentSectionByKey(key);
-            const active = isPathActive(pathname, section.href);
+            const active = isPathActive(activePathname, section.href);
             const badge =
               section.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
             return (
               <Link
                 key={key}
                 href={section.href}
+                data-testid={`nav-${key}`}
                 className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
                 aria-current={active ? "page" : undefined}
               >
@@ -179,7 +184,7 @@ export function AgentAppShell({
             <div>
               <span className={styles.pageEyebrow}>Агент RemCard</span>
               <h1 className={styles.pageTitle}>{heading}</h1>
-              <p className={styles.pageMuted}>{pageSubtitle(pathname)}</p>
+              <p className={styles.pageMuted}>{pageSubtitle(activePathname)}</p>
             </div>
           </header>
           {children}
@@ -189,11 +194,12 @@ export function AgentAppShell({
       <nav className={styles.mobileBottom} aria-label="Мобильная навигация">
         {primaryKeys.map((key) => {
           const section = agentSectionByKey(key);
-          const active = isPathActive(pathname, section.href);
+          const active = isPathActive(activePathname, section.href);
           return (
             <Link
               key={key}
               href={section.href}
+              data-testid={`nav-mobile-${key}`}
               className={`${styles.mobileBottomLink} ${active ? styles.mobileBottomLinkActive : ""}`}
               aria-current={active ? "page" : undefined}
             >
@@ -221,7 +227,7 @@ export function AgentAppShell({
       <MobileNavMoreSheet
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
-        pathname={pathname}
+        pathname={activePathname}
         permittedKeys={permittedKeys}
         primaryKeys={primaryKeys}
         onOpenCustomize={() => setEditorOpen(true)}

@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 
 const OUT_DIR =
-  process.env.R01_ARTIFACT_DIR?.trim() || "/opt/cursor/artifacts/remcard-r011/screenshots";
+  process.env.R01_ARTIFACT_DIR?.trim() || "/opt/cursor/artifacts/remcard-r012/screenshots";
 const PLATFORM_PORT = Number(process.env.R01_PLATFORM_PORT || 3012);
 const REFERENCE_ROOT =
   process.env.R01_REFERENCE_ROOT?.trim() ||
@@ -90,7 +90,8 @@ async function readShellMetrics(page) {
 async function prepareReferenceAgentHome(page, refBase, theme) {
   await page.goto(`${refBase}/roles.html`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.addStyleTag({
-    content: ".demo-top,.review-details,.registration,.choice-footer{display:none!important}",
+    content:
+      ".demo-top,.review-details,.registration,.choice-footer,.demo-toolbar{display:none!important}",
   });
   await page.waitForFunction(() => document.querySelector(".shell") != null, null, {
     timeout: 90_000,
@@ -136,14 +137,20 @@ async function prepareReferenceAgentHome(page, refBase, theme) {
 async function captureImplementation(page, theme, width, height) {
   const url = `${BASE}/dev/r01-agent-shell?theme=${theme}`;
   await page.goto(url, { waitUntil: "networkidle", timeout: 120_000 });
+  const resolvedTheme = theme === "dark" ? "dark" : "light";
   await page.waitForFunction(
     (expected) => document.documentElement.getAttribute("data-theme") === expected,
-    theme,
+    resolvedTheme,
     { timeout: 30_000 },
   );
   const metrics = await readShellMetrics(page);
-  if (metrics.dataTheme !== theme) {
-    throw new Error(`Impl data-theme ${metrics.dataTheme} != ${theme} (body ${metrics.bodyBg})`);
+  if (metrics.activeNavTestId !== "nav-home") {
+    throw new Error(`Impl active nav not home (got ${metrics.activeNavTestId})`);
+  }
+  if (metrics.dataTheme !== resolvedTheme) {
+    throw new Error(
+      `Impl data-theme ${metrics.dataTheme} != ${resolvedTheme} (body ${metrics.bodyBg})`,
+    );
   }
   if (width <= 680 && metrics.navAlignContent !== null) {
     /* mobile hides sidebar */

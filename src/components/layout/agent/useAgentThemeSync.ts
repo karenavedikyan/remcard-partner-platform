@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { shouldPersistThemeToServer } from "@/lib/agent-nav/theme-sync-policy";
 import {
   applyDataTheme,
   isThemePreference,
@@ -24,15 +23,48 @@ export function useAgentThemeSync(
   const persistRef = useRef(persistTheme);
   persistRef.current = persistTheme;
   const inFlight = useRef(false);
+  const queuedTheme = useRef<ThemePreference | null>(null);
+  const lastUserTheme = useRef<ThemePreference | null>(null);
+
+  const flushPersist = () => {
+    if (inFlight.current) return;
+    const target = queuedTheme.current;
+    if (target === null) return;
+    queuedTheme.current = null;
+    if (target === lastPersisted.current) return;
+
+    inFlight.current = true;
+    const previous = lastPersisted.current;
+    persistRef
+      .current(target)
+      .then(() => {
+        lastPersisted.current = target;
+      })
+      .catch(() => {
+        lastPersisted.current = previous;
+      })
+      .finally(() => {
+        inFlight.current = false;
+        flushPersist();
+      });
+  };
+
+  const queuePersist = (target: ThemePreference) => {
+    queuedTheme.current = target;
+    flushPersist();
+  };
 
   useEffect(() => {
     if (!pilotActive) {
       hydrated.current = false;
       lastPersisted.current = null;
+      lastUserTheme.current = null;
+      queuedTheme.current = null;
       return;
     }
     if (!serverTheme || !isThemePreference(serverTheme)) return;
-    hydrated.current = true;
+
+    hydrated.current = false;
     lastPersisted.current = serverTheme;
     writeStoredThemePreference(serverTheme);
     applyDataTheme(serverTheme);
@@ -40,24 +72,19 @@ export function useAgentThemeSync(
   }, [pilotActive, serverTheme, setTheme]);
 
   useEffect(() => {
-    if (
-      !shouldPersistThemeToServer(pilotActive, hydrated.current, theme, lastPersisted.current)
-    ) {
+    if (!pilotActive) return;
+
+    if (!hydrated.current && lastPersisted.current !== null) {
+      if (theme === lastPersisted.current) {
+        hydrated.current = true;
+        lastUserTheme.current = theme;
+      }
       return;
     }
-    if (inFlight.current) return;
-    const previous = lastPersisted.current;
-    inFlight.current = true;
-    persistRef
-      .current(theme)
-      .then(() => {
-        lastPersisted.current = theme;
-      })
-      .catch(() => {
-        lastPersisted.current = previous;
-      })
-      .finally(() => {
-        inFlight.current = false;
-      });
+
+    if (!hydrated.current) return;
+    if (lastUserTheme.current === theme) return;
+    lastUserTheme.current = theme;
+    queuePersist(theme);
   }, [pilotActive, theme]);
 }
