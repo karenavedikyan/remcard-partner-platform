@@ -13,6 +13,61 @@
   margin-bottom: 1rem;
 }
 
+.collectionToolbar {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.fieldInline {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--text-sm);
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.showSelect {
+  min-height: 44px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.listMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.selectPageLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.sortDetails {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.sortDetails summary {
+  cursor: pointer;
+  color: inherit;
+}
+
 .search {
   flex: 1 1 200px;
   min-width: 0;

@@ -1,39 +1,59 @@
-# RemCard R03.2-CLOSE — Release Report
+# RemCard R03 FINAL-3 — Release Report
 
 ## Verdict: **READY_FOR_PUBLICATION**
 
-Single honest local acceptance completed on **admin-test stack** (admin login → test-agent → R02-completed profile → R03 UI/BFF). No force-push, merge, deploy, or production DB changes.
+FINAL-3 closes the three remaining acceptance items on existing PRs [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) / [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680). No merge, deploy, production connect, or gate publication.
 
-## Code refs (unchanged PR bases)
+## Code refs (after FINAL-3 commit — see `TEST-RESULTS.json` for exact SHAs)
 
-| Repo | Branch | HEAD | Base |
-|------|--------|------|------|
-| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `eaa33f7` (after R03.2-CLOSE) | `release/prof-v1-20261007` |
-| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `251ec8bb` (after R03.2-CLOSE) | `release/prof-backend-v1-20261007` |
+| Repo | Branch | Base |
+|------|--------|------|
+| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `release/prof-v1-20261007` |
+| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `release/prof-backend-v1-20261007` |
 
-PRs: frontend [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15), backend [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680).
+Baseline before this turn: platform `7704489b`, navigator `251ec8bb`.
 
-## R03.2-CLOSE fixes (this turn)
+## FINAL-3 scope (only)
 
-1. **Stand + acceptance** — `scripts/r03-local-acceptance.mjs` requires BFF `GET /api/pro/r03/status` = 200 + `eligible`, healthy `/certificates` and `/clients` (headings + primary actions), admin→test-agent browser context, BFF idempotency retry; fails closed on errors. Frozen prototype served over HTTP (`127.0.0.1:8765`), not `file://`. **Admin DB** `remcard_admin_test_012` gets `prisma db push` for R03 tables via admin stack + acceptance preamble (fixes prior 500 on client create).
-2. **Client actions + safe share** — full SVG row actions (edit, share, archive/restore, delete) in cards/list; `SharePreviewDialog` opt-in for phone/email/city (default name-only) with regression test.
-3. **Lookup consumers** — `POST /api/client/certificates/add` uses shared display/legacy resolver + issuer prefix check + `isProfTestUser` exclusion; integration tests for display/raw/QR, wrong prefix, test-owner isolation, public JSON.
-4. **Migration test safety** — `assertProfR01RouteTestDb` before any connect/DDL; negative tests for checksum mismatch and untracked partial schema.
-5. **Preserved** — idempotency key, advisory lock, private alias, controlled runner, pagination, SVG actions (unchanged scope).
+### 1. Integrated agent shell + list toolbar
+
+- Admin-test stack enables `PROF_R01_AGENT_NAV_ENABLED` + `PROF_R03_AGENT_CERTIFICATES_ENABLED`; stale stack without R01 is restarted on the same ports (3040/3041).
+- `AgentAppShell` + `resolveAgentDesktopNavKeys`: desktop **Сертификаты / Клиенты** first; mobile defaults include certificates + **Ещё** (`data-testid="mobile-nav-more"`).
+- Shared `AgentR03ListToolbar`: search, **Показывать**, list/cards toggle, found count, select-page row (frozen order; no demo finance panels).
+
+### 2. Honest visual pairs
+
+- `scripts/lib/r03-prototype-ref.mjs`: agent role → cabinet → **nav:home** (certificates) / **nav:clients**; list/cards via `data-coll-action`; ref driven at 1440 then resized; ThemeToggle for dark impl/ref.
+- **8 verified matched pairs** + **1** single 320 smoke — see `visual-report.md` and `local-acceptance-report.json` (`visualPairCount: 8`).
+
+### 3. E2E path + gate-OFF
+
+- Admin → test-agent → R02 profile; **Сертификаты/Клиенты via real nav**; client create/rename-only; certificate **UI form** (partnership seed `scripts/r03AcceptancePartnerSeed.ts`); detail alias + test-owner public restriction; batch archive/restore; reload + admin return/re-enter alias; BFF idempotency retry.
+- **Gate OFF:** navigator restart with `PROF_R03_AGENT_CERTIFICATES_ENABLED=false`, BFF `featureEnabled: false`, `/certificates` blocked, `/recommendations` legacy path OK; stack restored to R03 on.
+
+## Flags / eligibility (admin-test 3040/3041)
+
+From last acceptance: `pilotActive: true`, `permittedKeys` includes `certificates` + `clients`, `mobileNavKeys`: certificates, partners, wallet, profile. Secrets not logged.
+
+## Commands (last green run)
+
+```bash
+# stack (if needed): ADMIN_TEST_PLATFORM_PORT=3040 ADMIN_TEST_BACKEND_PORT=3041 JWT_SECRET=… DATABASE_URL=… node scripts/admin-test-local-stack.mjs
+JWT_SECRET=… DATABASE_URL=… ADMIN_TEST_PLATFORM_PORT=3040 node scripts/r03-local-acceptance.mjs  # exit 0
+cd remcard-partner-platform && pnpm build && pnpm exec vitest run … # see TEST-RESULTS.json
+cd remcard-navigator && pnpm build
+```
 
 ## Evidence
 
-- **Acceptance JSON:** `artifacts/remcard-r03/local-acceptance-report.json` (`ok: true`, `verdict: READY_FOR_PUBLICATION`).
-- **BFF:** `bffR03Status: 200`, `bffIdempotencyRetry: 200`.
-- **Browser:** test session active, client create, share default-off + phone opt-in.
-- **Visuals (verified impl, 4 impl/ref pairs + detail + 320 smoke):** `artifacts/remcard-r03/visual/impl-*` / `ref-*` — working R03 sections only (no login/404).
-- **Migration:** `node --test scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs` pass; manifest SHA `b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168`.
+- `artifacts/remcard-r03/local-acceptance-report.json` — `ok: true`, `failures: []`
+- `artifacts/remcard-r03/visual-report.md` — 8 pairs + 1 single
+- `artifacts/remcard-r03/visual/impl-*` / `ref-*`
 
-## Environment note
+## Preserved from R03.2-CLOSE
 
-`r02-local-stack` BFF probe on port **3032** can hit a **stale listener** returning `403 Path not allowed` while a fresh Next dev on another port (e.g. 3040/3050) returns `401` (route allowed). Acceptance intentionally uses **admin-test** ports **3040/3041** after schema push; do not treat direct-backend-only smoke as UI acceptance.
+BFF 200, client action set, contact opt-in, test-owner exclusion on client add, migration guards — not re-audited.
 
-## Remaining / out of scope
+## Out of scope
 
-- R02-LIVE-UI #14 — separate PR, not merged here.
-- R04/R05, production merge/deploy, Tandoor/staff/branches/notifications — not touched.
+R02-LIVE-UI #14, R04/R05, staff/branches/notifications/Tandoor, merge/deploy/production.

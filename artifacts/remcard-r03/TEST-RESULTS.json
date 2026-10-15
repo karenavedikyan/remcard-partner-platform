@@ -1,67 +1,63 @@
 {
-  "generatedAt": "2026-10-15T18:36:00.000Z",
+  "generatedAt": "2026-10-15T19:45:00.000Z",
   "verdict": "READY_FOR_PUBLICATION",
   "ok": true,
   "repositories": {
     "frontend": {
       "path": "remcard-partner-platform",
-      "head": "eaa33f7",
       "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-v1-20261007",
-      "pr": 15
+      "pr": 15,
+      "headNote": "Set after FINAL-3 commit push; acceptance re-run updates platformGitSha in local-acceptance-report.json"
     },
     "backend": {
       "path": "remcard-navigator",
-      "head": "251ec8bb",
       "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-backend-v1-20261007",
-      "pr": 680
+      "pr": 680,
+      "headNote": "Set after FINAL-3 commit push"
     }
+  },
+  "acceptance": {
+    "stack": "admin-test (3040/3041, remcard_admin_test_012)",
+    "script": "scripts/r03-local-acceptance.mjs",
+    "exitCode": 0,
+    "visualMatchedPairs": 8,
+    "visualSingles": 1,
+    "reportPath": "artifacts/remcard-r03/local-acceptance-report.json",
+    "visualReportPath": "artifacts/remcard-r03/visual-report.md"
   },
   "commands": [
     {
-      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/components/agent-r03/SharePreviewDialog.test.tsx src/components/agent-r03/clientContactShare.test.ts src/lib/remcard-proxy-r03.test.ts",
+      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/lib/agent-nav/sections.test.ts src/components/agent-r03/SharePreviewDialog.test.tsx src/components/agent-r03/clientContactShare.test.ts src/lib/remcard-proxy-r03.test.ts",
       "exitCode": 0,
       "result": "pass"
     },
     {
-      "cmd": "cd remcard-navigator && DATABASE_URL=$DATABASE_URL pnpm exec vitest run src/lib/__tests__/profR03ClientCertificateAdd.integration.test.ts src/lib/__tests__/profR03CreateIdempotency.integration.test.ts",
+      "cmd": "cd remcard-partner-platform && pnpm build",
       "exitCode": 0,
       "result": "pass"
     },
     {
-      "cmd": "cd remcard-navigator && DATABASE_URL=$DATABASE_URL node --test scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs",
+      "cmd": "cd remcard-navigator && pnpm build",
       "exitCode": 0,
       "result": "pass"
     },
     {
-      "cmd": "cd remcard-partner-platform && ADMIN_TEST_PLATFORM_PORT=3040 ADMIN_TEST_BACKEND_PORT=3041 node scripts/admin-test-local-stack.mjs",
+      "cmd": "JWT_SECRET=… DATABASE_URL=… ADMIN_TEST_PLATFORM_PORT=3040 node scripts/r03-local-acceptance.mjs",
       "exitCode": 0,
-      "result": "pass"
-    },
-    {
-      "cmd": "cd remcard-partner-platform && node scripts/r03-local-acceptance.mjs",
-      "exitCode": 0,
-      "result": "pass"
+      "result": "pass",
+      "note": "Full secrets in cloud env only; see local-acceptance-report.json for measured flags and steps"
     }
   ],
-  "acceptance": {
-    "stack": "admin-test (3040/3041, remcard_admin_test_012)",
-    "bffR03Status": 200,
-    "browserAdminTestAgent": true,
-    "shareContactOptIn": true,
-    "bffIdempotencyRetry": 200,
-    "visualPairsVerified": 6,
-    "reportPath": "artifacts/remcard-r03/local-acceptance-report.json"
-  },
-  "migration": {
-    "manifestSha256": "b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168",
-    "integrationTest": "scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs",
-    "disposableGuard": "assertProfR01RouteTestDb before connect"
+  "final3": {
+    "integratedAgentNav": true,
+    "honestVisualPairs": 8,
+    "e2eCertificateUiForm": true,
+    "gateOffSmoke": true
   },
   "notes": [
-    "R02-LIVE-UI PR #14 not included.",
-    "r02-local-stack default port 3032 may answer with a stale non-current Next listener in this VM; admin-test stack 3040 used for honest BFF/UI acceptance.",
-    "Invalid prior visual PNGs (404/file ref) superseded by impl/ref pairs in artifacts/remcard-r03/visual/*-list-* and impl-clients-detail-375-light.png."
+    "Prior premature READY_FOR_PUBLICATION superseded by this FINAL-3 run.",
+    "R02-LIVE-UI PR #14 not included."
   ]
 }

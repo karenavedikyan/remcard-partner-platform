@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * R03.2-CLOSE local acceptance: admin → test-agent browser, mandatory BFF + page checks, ref via HTTP static.
+ * R03 FINAL-3 local acceptance: integrated agent nav, honest visual pairs, E2E path.
  */
 import {
   createReadStream,
@@ -8,13 +8,18 @@ import {
   mkdirSync,
   readFileSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync, spawn, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
+import {
+  driveRefAgentSection,
+  verifyImplAgentShell,
+} from './lib/r03-prototype-ref.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = process.env.R02_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
@@ -52,6 +57,108 @@ function loadRuntimeEnv(envPath) {
   return env;
 }
 
+function runtimeEnvHasPilotFlags(envPath) {
+  if (!existsSync(envPath)) return false;
+  const body = readFileSync(envPath, 'utf8');
+  return (
+    body.includes('PROF_R01_AGENT_NAV_ENABLED=true') &&
+    body.includes('PROF_R03_AGENT_CERTIFICATES_ENABLED=true')
+  );
+}
+
+function killPort(port) {
+  try {
+    execSync(`pkill -f "next dev -p ${port}" 2>/dev/null || true`, { stdio: 'ignore' });
+    execSync(`fuser -k ${port}/tcp 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+}
+
+function spawnNavDev(port, navEnv) {
+  const child = spawn('bash', ['-lc', `exec pnpm exec next dev -p ${port}`], {
+    cwd: NAV_ROOT,
+    env: { ...process.env, ...navEnv, PORT: String(port) },
+    detached: true,
+    stdio: 'ignore',
+  });
+  child.unref();
+  return child.pid;
+}
+
+async function waitHttp(url, ms = 120_000) {
+  const start = Date.now();
+  while (Date.now() - start < ms) {
+    try {
+      const res = await fetch(url, { redirect: 'manual' });
+      if (res.status < 500) return true;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  return false;
+}
+
+async function restartNavigator(meta, navEnvOverrides) {
+  const navUrl = new URL(meta.navOrigin);
+  const port = Number(navUrl.port || 80);
+  if (meta.navPid) {
+    try {
+      process.kill(-meta.navPid, 'SIGKILL');
+    } catch {
+      try {
+        process.kill(meta.navPid, 'SIGKILL');
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  killPort(port);
+  await new Promise((r) => setTimeout(r, 4000));
+  const baseEnv = loadRuntimeEnv(meta.envPath);
+  const r03Flag = navEnvOverrides.PROF_R03_AGENT_CERTIFICATES_ENABLED ?? 'true';
+  const envLines = readFileSync(meta.envPath, 'utf8')
+    .split('\n')
+    .filter((line) => line && !line.startsWith('PROF_R03_AGENT_CERTIFICATES_ENABLED='));
+  writeFileSync(meta.envPath, `${[...envLines, `PROF_R03_AGENT_CERTIFICATES_ENABLED=${r03Flag}`].join('\n')}\n`, {
+    mode: 0o600,
+  });
+  const navEnv = {
+    JWT_SECRET: baseEnv.JWT_SECRET,
+    DATABASE_URL: baseEnv.DATABASE_URL,
+    DIRECT_URL: baseEnv.DIRECT_URL,
+    PROF_ADMIN_PASSWORD_LOGIN_ENABLED: '1',
+    PROF_ADMIN_TEST_USERS_ENABLED: '1',
+    PROF_R02_AGENT_PROFILE_ENABLED: 'true',
+    PROF_R01_AGENT_NAV_ENABLED: 'true',
+    PROF_R03_AGENT_CERTIFICATES_ENABLED: r03Flag,
+    ...navEnvOverrides,
+  };
+  const navPid = spawnNavDev(port, navEnv);
+  const ok = await waitHttp(`${meta.navOrigin}/api/auth/me`);
+  if (!ok) throw new Error('navigator_restart_failed');
+  meta.navPid = navPid;
+  writeFileSync(path.join(RUN_DIR, 'meta.json'), JSON.stringify(meta, null, 2));
+  return navEnv;
+}
+
+function ensureAgentPartnership(agentUserId, env) {
+  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r03AcceptancePartnerSeed.ts', agentUserId], {
+    cwd: NAV_ROOT,
+    env,
+    encoding: 'utf8',
+  });
+  if (res.status !== 0) {
+    throw new Error(`partner seed: ${(res.stderr || res.stdout || '').slice(0, 400)}`);
+  }
+  try {
+    return JSON.parse((res.stdout || '').trim().split('\n').pop() ?? '{}');
+  } catch {
+    return { ok: false };
+  }
+}
+
 function ensureAdminSchema(env) {
   const res = spawnSync(
     'pnpm',
@@ -69,7 +176,19 @@ function ensureAdminSchema(env) {
 
 function ensureStack() {
   const metaPath = path.join(RUN_DIR, 'meta.json');
-  if (existsSync(metaPath)) return;
+  if (existsSync(metaPath)) {
+    const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+    if (runtimeEnvHasPilotFlags(meta.envPath)) return;
+    try {
+      const platPort = new URL(meta.platformOrigin).port;
+      const navPort = new URL(meta.navOrigin).port;
+      if (platPort) process.env.ADMIN_TEST_PLATFORM_PORT = platPort;
+      if (navPort) process.env.ADMIN_TEST_BACKEND_PORT = navPort;
+      unlinkSync(metaPath);
+    } catch {
+      /* ignore */
+    }
+  }
   const script = USE_ADMIN ? 'admin-test-local-stack.mjs' : 'r02-local-stack.mjs';
   if (USE_ADMIN && !process.env.JWT_SECRET?.trim()) {
     throw new Error('JWT_SECRET required to start admin-test stack');
@@ -148,7 +267,11 @@ async function assertHealthyR03Page(page, headingName) {
       await page.getByRole('button', { name: 'Добавить клиента' }).waitFor({ timeout: 25_000 });
     }
     if (headingName === 'Сертификаты') {
-      await page.getByRole('link', { name: 'Создать сертификат' }).waitFor({ timeout: 25_000 });
+      await page
+        .getByRole('link', { name: 'Создать сертификат' })
+        .or(page.getByRole('button', { name: 'Создать сертификат' }))
+        .first()
+        .waitFor({ timeout: 25_000 });
     }
   } catch {
     return { ok: false, reason: `missing_r03_content_${headingName}` };
@@ -156,35 +279,96 @@ async function assertHealthyR03Page(page, headingName) {
   return { ok: true };
 }
 
-async function driveRefPrototype(page, baseUrl) {
-  await page.goto(`${baseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 90_000 });
-  await page.waitForFunction(
-    () => {
-      const app = document.getElementById('app');
-      const text = app?.textContent ?? '';
-      return text.length > 80 && !/Загружаем прототип/i.test(text);
-    },
-    { timeout: 90_000 },
-  );
-  const appText = (await page.locator('#app').textContent()) ?? '';
-  if (/Не удалось загрузить прототип/i.test(appText)) {
-    return { ok: false, reason: 'ref_prototype_load_failed' };
+async function fetchCabinetPrefs(platformOrigin, cookieHeader) {
+  const res = await fetch(`${platformOrigin}/api/remcard/api/pro/cabinet-ui-preferences`, {
+    headers: { Cookie: cookieHeader },
+  });
+  return { status: res.status, body: await res.json().catch(() => null) };
+}
+
+async function setImplViewMode(page, viewMode) {
+  const toggle = page.locator('[data-testid="agent-r03-view-toggle"]');
+  await toggle.getByRole('button', { name: viewMode === 'list' ? 'Список' : 'Карточки' }).click();
+  await page.waitForTimeout(300);
+}
+
+async function openSectionViaNav(page, plat, sectionKey) {
+  const href = sectionKey === 'certificates' ? '/certificates' : '/clients';
+  const desktop = page.locator(`[data-testid="nav-${sectionKey}"]`).first();
+  const mobile = page.locator(`[data-testid="nav-mobile-${sectionKey}"]`).first();
+  if (await desktop.isVisible().catch(() => false)) {
+    await desktop.click();
+  } else if (await mobile.isVisible().catch(() => false)) {
+    await mobile.click();
+  } else {
+    await page.goto(`${plat}${href}`, { waitUntil: 'networkidle' });
+    return;
   }
-  const agentBtn = page.getByRole('button', { name: /агент/i }).first();
-  if (await agentBtn.isVisible().catch(() => false)) {
-    await agentBtn.click();
+  await page.waitForLoadState('networkidle');
+}
+
+async function setThemeDark(page) {
+  const toggle = page.locator('[data-testid="theme-toggle"]');
+  if (!(await toggle.isVisible().catch(() => false))) return;
+  for (let i = 0; i < 3; i++) {
+    const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    if (theme === 'dark') return;
+    await toggle.click();
+    await page.waitForTimeout(400);
   }
-  const continueBtn = page.getByRole('button', { name: /продолжить|в кабинет|начать/i }).first();
-  if (await continueBtn.isVisible().catch(() => false)) {
-    await continueBtn.click();
-    await page.waitForTimeout(800);
+}
+
+async function captureMatchedPair(context, report, opts) {
+  const { name, plat, implPath, section, viewMode, viewport, refBase, scrollList, dark } = opts;
+  const page = await context.newPage();
+  await page.setViewportSize(viewport);
+  await page.goto(`${plat}${implPath}`, { waitUntil: 'networkidle' });
+  if (dark) await setThemeDark(page);
+  await setImplViewMode(page, viewMode);
+  const implCheck = await verifyImplAgentShell(page, section, viewMode);
+  if (!implCheck.ok) {
+    report.failures.push(`visual_impl_${name}_${implCheck.reason}`);
+    await page.close();
+    return;
   }
-  const clientsNav = page.getByRole('button', { name: /^Клиенты$/ }).first();
-  if (await clientsNav.isVisible().catch(() => false)) {
-    await clientsNav.click();
-    await page.waitForTimeout(600);
+  const implFile = path.join(ART_DIR, 'visual', `impl-${name}.png`);
+  await page.screenshot({ path: implFile, fullPage: true });
+
+  const refPage = await context.newPage();
+  await refPage.setViewportSize({ width: 1440, height: 900 });
+  const refState = await driveRefAgentSection(refPage, refBase, {
+    section,
+    viewMode,
+    scrollList: scrollList ?? false,
+    dark: dark ?? false,
+  });
+  const refFile = path.join(ART_DIR, 'visual', `ref-${name}.png`);
+  if (refState.ok) {
+    if (viewport.width !== 1440 || viewport.height !== 900) {
+      await refPage.setViewportSize(viewport);
+      await refPage.waitForTimeout(500);
+      if (scrollList && viewMode === 'list') {
+        await refPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await refPage.waitForTimeout(300);
+      }
+    }
+    await refPage.screenshot({ path: refFile, fullPage: true });
+  } else {
+    report.failures.push(`visual_ref_${name}_${refState.reason}`);
   }
-  return { ok: true };
+  report.visualPairs.push({
+    name,
+    impl: implFile,
+    ref: refState.ok ? refFile : null,
+    implVerified: true,
+    refVerified: refState.ok,
+    viewport: `${viewport.width}x${viewport.height}`,
+    section,
+    viewMode,
+    theme: dark ? 'dark' : 'light',
+  });
+  await page.close();
+  await refPage.close();
 }
 
 async function maybeAcceptConsents(page) {
@@ -236,6 +420,38 @@ async function finishAgentProfileInBrowser(page, platformOrigin, cookieHeader) {
   }).catch(() => null);
 }
 
+function writeVisualReport(report) {
+  const verifiedPairs = report.visualPairs.filter((p) => p.implVerified && p.refVerified);
+  const lines = [
+    '# R03 visual pairs (FINAL-3)',
+    '',
+    `Generated: ${new Date().toISOString()}`,
+    `Platform SHA: ${report.platformGitSha}`,
+    '',
+    `Matched pairs (both verified): **${verifiedPairs.length}**`,
+    `Single screenshots: **${report.singles.length}**`,
+    '',
+    '## Pairs',
+    '',
+  ];
+  for (const p of report.visualPairs) {
+    lines.push(
+      `- **${p.name}** (${p.viewport}, ${p.section}, ${p.viewMode}, ${p.theme ?? 'light'}): impl=${p.implVerified ? 'ok' : 'fail'}, ref=${p.refVerified ? 'ok' : 'fail'}`,
+    );
+  }
+  lines.push('', '## Singles', '');
+  for (const s of report.singles) {
+    lines.push(`- ${s.name}: \`${s.path}\``);
+  }
+  if (report.failures.length) {
+    lines.push('', '## Failures', '');
+    for (const f of report.failures.filter((x) => x.startsWith('visual_'))) {
+      lines.push(`- ${f}`);
+    }
+  }
+  writeFileSync(path.join(ART_DIR, 'visual-report.md'), `${lines.join('\n')}\n`);
+}
+
 async function main() {
   ensureStack();
   const meta = JSON.parse(readFileSync(path.join(RUN_DIR, 'meta.json'), 'utf8'));
@@ -256,7 +472,10 @@ async function main() {
     meta,
     http: {},
     browser: {},
-    visuals: [],
+    visualPairs: [],
+    singles: [],
+    steps: {},
+    flags: {},
     idempotency: {},
     failures: [],
   };
@@ -267,10 +486,19 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
-  page.on('dialog', (d) => d.accept());
+  let nextPromptValue = null;
+  page.on('dialog', async (d) => {
+    if (d.type() === 'prompt' && nextPromptValue != null) {
+      await d.accept(nextPromptValue);
+      nextPromptValue = null;
+    } else {
+      await d.accept();
+    }
+  });
 
   let cookieHeader = '';
   let agentDisplayName = `R03 ${Date.now()} · Агент`;
+  let agentCard = null;
 
   try {
     if (USE_ADMIN) {
@@ -283,13 +511,13 @@ async function main() {
       await page.locator('select').first().selectOption('agent');
       await page.locator('section').filter({ hasText: 'Создать' }).getByLabel('Имя').fill(agentDisplayName);
       await page.getByRole('button', { name: 'Создать' }).click();
-      const card = page.locator('li').filter({ hasText: agentDisplayName });
-      await card.waitFor({ timeout: 30_000 });
+      agentCard = page.locator('li').filter({ hasText: agentDisplayName });
+      await agentCard.waitFor({ timeout: 30_000 });
       const enterWait = page.waitForResponse(
         (r) => r.url().includes('/test-users/') && r.url().includes('/enter') && r.status() === 200,
         { timeout: 45_000 },
       );
-      await card.getByRole('button', { name: 'Открыть ЛК' }).click();
+      await agentCard.getByRole('button', { name: 'Открыть ЛК' }).click();
       await enterWait;
       const session = await waitForTestSession(context, plat, 60_000);
       if (!session) {
@@ -339,15 +567,32 @@ async function main() {
     const meBody = await meRes.json();
     const userId = meBody.user?.id;
     if (!userId) report.failures.push('auth_me_missing_user');
+    if (userId) {
+      report.steps.partnershipSeed = ensureAgentPartnership(userId, env);
+      if (!report.steps.partnershipSeed?.ok) report.failures.push('partnership_seed_failed');
+    }
 
-    await page.goto(`${plat}/certificates`, { waitUntil: 'networkidle' });
+    const prefs = await fetchCabinetPrefs(plat, cookieHeader);
+    report.flags.cabinetPrefs = prefs.body;
+    report.flags.pilotActive = prefs.body?.pilotActive === true;
+    report.flags.permittedKeys = prefs.body?.permittedKeys ?? null;
+    report.flags.mobileNavKeys = prefs.body?.mobileNavKeys ?? null;
+    if (!prefs.body?.pilotActive) report.failures.push('pilot_nav_not_active');
+    if (!prefs.body?.permittedKeys?.includes('certificates')) {
+      report.failures.push('nav_missing_certificates_key');
+    }
+    if (!prefs.body?.permittedKeys?.includes('clients')) {
+      report.failures.push('nav_missing_clients_key');
+    }
+
+    await openSectionViaNav(page, plat, 'certificates');
     const certPage = await assertHealthyR03Page(page, 'Сертификаты');
-    report.browser.certificatesPage = certPage;
+    report.browser.certificatesViaNav = certPage.ok;
     if (!certPage.ok) report.failures.push(`certificates_page_${certPage.reason}`);
 
-    await page.goto(`${plat}/clients`, { waitUntil: 'networkidle' });
+    await openSectionViaNav(page, plat, 'clients');
     const clientsPage = await assertHealthyR03Page(page, 'Клиенты');
-    report.browser.clientsPage = clientsPage;
+    report.browser.clientsViaNav = clientsPage.ok;
     if (!clientsPage.ok) report.failures.push(`clients_page_${clientsPage.reason}`);
 
     await page.getByRole('button', { name: 'Добавить клиента' }).click();
@@ -372,7 +617,84 @@ async function main() {
     report.browser.shareOptInPhone = /900|765/i.test(withPhone);
     if (!report.browser.shareOptInPhone) report.failures.push('share_opt_in_phone');
 
+    const clientId = await fetch(`${plat}/api/remcard/api/pro/agent-clients`, {
+      headers: { Cookie: cookieHeader },
+    })
+      .then((r) => r.json())
+      .then((b) => b.clients?.find((c) => c.displayName === 'R03 Browser Client')?.id);
+    if (!clientId) report.failures.push('client_id_missing');
+
+    await page.getByRole('button', { name: 'Редактировать' }).click();
+    await page.getByLabel(/имя/i).fill('R03 Browser Client Renamed');
+    await page.getByRole('button', { name: 'Сохранить' }).click();
+    await page.waitForTimeout(800);
+    const phoneAfterRename = await fetch(`${plat}/api/remcard/api/pro/agent-clients/${clientId}`, {
+      headers: { Cookie: cookieHeader },
+    })
+      .then((r) => r.json())
+      .then((b) => b.client?.phone ?? b.phone);
+    report.steps.clientRenameOnly = /900|765/i.test(String(phoneAfterRename ?? ''));
+    if (!report.steps.clientRenameOnly) report.failures.push('client_rename_lost_phone');
+
+    await openSectionViaNav(page, plat, 'certificates');
+    const partnersResponse = page.waitForResponse(
+      (r) => r.url().includes('available-partners') && r.request().method() === 'GET',
+      { timeout: 90_000 },
+    );
+    await page.goto(`${plat}/certificates/new${clientId ? `?clientId=${encodeURIComponent(clientId)}` : ''}`, {
+      waitUntil: 'networkidle',
+    });
+    const partnersJson = await (await partnersResponse).json().catch(() => ({}));
+    report.steps.availablePartnersCount = Array.isArray(partnersJson.partners) ? partnersJson.partners.length : -1;
+    report.steps.issuerReady = partnersJson.certificateRecommendationIssuerReady;
+    if (!partnersJson.partners?.length) report.failures.push('available_partners_empty');
+
+    const partnerBox = page.locator('section').filter({ hasText: 'Партнёры' }).locator('input[type="checkbox"]:not(:disabled)').first();
+    await partnerBox.waitFor({ timeout: 30_000 });
+    await partnerBox.check();
+    await page.getByRole('button', { name: 'Создать сертификат' }).click();
+    await page.waitForSelector('[data-testid="certificate-result-view"], .certificateResult', { timeout: 120_000 }).catch(() => {});
+    await page.waitForTimeout(800);
+    const certList = await fetch(`${plat}/api/remcard/api/pro/agent-certificates`, {
+      headers: { Cookie: cookieHeader },
+    }).then((r) => r.json());
+    const newestCert = certList.certificates?.[0];
+    report.steps.certificateCreatedViaForm = Boolean(newestCert?.id);
+    if (!newestCert?.id) {
+      report.failures.push('certificate_create_no_row');
+      throw new Error('certificate_create_no_row');
+    }
+    await page.goto(`${plat}/certificates/${newestCert.id}`, { waitUntil: 'networkidle' });
+
+    const testPublicBanner = page.getByText(/тестового автора|не публикуется|тестовый сертификат/i);
+    report.steps.testOwnerPublicRestricted = await testPublicBanner.isVisible().catch(() => false);
+    if (!report.steps.testOwnerPublicRestricted) report.failures.push('test_owner_public_banner_missing');
+
+    const privateAlias = 'R03 private alias';
+    nextPromptValue = privateAlias;
+    await page.getByRole('button', { name: 'Переименовать для себя' }).click();
+    await page.waitForTimeout(600);
+    const aliasVisible = await page.getByText(privateAlias).isVisible().catch(() => false);
+    report.steps.certificatePrivateRename = aliasVisible;
+    if (!aliasVisible) report.failures.push('certificate_private_rename_failed');
+
+    const certMeta = await fetch(`${plat}/api/remcard/api/pro/agent-certificates/${newestCert.id}`, {
+      headers: { Cookie: cookieHeader },
+    }).then((r) => r.json());
+    const linkedName = certMeta.certificate?.agentClient?.displayName ?? '';
+    report.steps.certificateLinkedClient = /Renamed/i.test(linkedName);
+    if (!report.steps.certificateLinkedClient) report.failures.push('certificate_client_link_missing');
+
+    await page.reload({ waitUntil: 'networkidle' });
+    const aliasAfterReload = await page.getByText(privateAlias).isVisible().catch(() => false);
+    report.steps.reloadPersistAlias = aliasAfterReload;
+    if (!aliasAfterReload) report.failures.push('reload_lost_alias');
+
+    const savedCertUrl = page.url();
+
     if (userId) {
+      const freshCookies = await context.cookies();
+      cookieHeader = freshCookies.map((c) => `${c.name}=${c.value}`).join('; ');
       const idemKey = `accept-${Date.now()}`;
       const createBody = {
         partners: [
@@ -381,7 +703,7 @@ async function main() {
             storeName: 'Self',
             isSelfScan: true,
             categories: [
-              { category: 'r03-acc', categoryLabel: 'Acc', discountPercent: 5, issuerPercent: 0 },
+              { category: 'r03-idem', categoryLabel: 'Idem', discountPercent: 5, issuerPercent: 0 },
             ],
           },
         ],
@@ -402,90 +724,107 @@ async function main() {
       if (c2.status !== 200 && c2.status !== 201) report.failures.push(`bff_idempotency_retry_${c2.status}`);
     }
 
-    async function shotPair(name, implPath, refSetup) {
-      const viewports = [
-        { tag: '1440-light', width: 1440, height: 900 },
-        { tag: '375-light', width: 375, height: 812 },
-      ];
-      for (const vp of viewports) {
-        await page.setViewportSize({ width: vp.width, height: vp.height });
-        await page.goto(`${plat}${implPath}`, { waitUntil: 'networkidle' });
-        const check = await assertHealthyR03Page(
-          page,
-          implPath.includes('clients') ? 'Клиенты' : 'Сертификаты',
-        );
-        const implFile = path.join(ART_DIR, 'visual', `impl-${name}-${vp.tag}.png`);
-        if (!check.ok) {
-          report.failures.push(`visual_impl_${name}_${vp.tag}_${check.reason}`);
-          continue;
-        }
-        await page.screenshot({ path: implFile, fullPage: true });
-        const refPage = await context.newPage();
-        await refPage.setViewportSize({ width: vp.width, height: vp.height });
-        const refState = await refSetup(refPage);
-        const refFile = path.join(ART_DIR, 'visual', `ref-${name}-${vp.tag}.png`);
-        if (refState.ok) {
-          await refPage.screenshot({ path: refFile, fullPage: true });
-        } else {
-          report.failures.push(`visual_ref_${name}_${vp.tag}_${refState.reason}`);
-        }
-        report.visuals.push({
-          name: `${name}-${vp.tag}`,
-          impl: implFile,
-          ref: refState.ok ? refFile : null,
-          implVerified: check.ok,
-          refVerified: refState.ok,
-        });
-        await refPage.close();
-      }
-    }
-
-    await shotPair('certificates-list', '/certificates', (p) => driveRefPrototype(p, refBase));
-    await shotPair('clients-list', '/clients', (p) => driveRefPrototype(p, refBase));
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto(`${plat}/certificates`, { waitUntil: 'networkidle' });
-    const darkCheck = await assertHealthyR03Page(page, 'Сертификаты');
-    if (darkCheck.ok) {
-      await page.screenshot({
-        path: path.join(ART_DIR, 'visual', 'impl-certificates-375-dark.png'),
-        fullPage: true,
-      });
+    await openSectionViaNav(page, plat, 'certificates');
+    await setImplViewMode(page, 'list');
+    const firstCb = page.locator('tbody input[type="checkbox"], .card input[type="checkbox"]').first();
+    if (await firstCb.isVisible().catch(() => false)) {
+      await firstCb.check();
+      await page.locator('[class*="batchBar"]').getByRole('button', { name: 'В архив', exact: true }).click();
+      await page.waitForTimeout(800);
+      report.steps.batchArchive = true;
+      await page.locator('[data-testid="agent-r03-show-filter"]').selectOption('archived');
+      await page.waitForTimeout(1200);
+      const archivedCb = page.locator('tbody input[type="checkbox"], .card input[type="checkbox"]').first();
+      await archivedCb.check();
+      await page.locator('[class*="batchBar"]').getByRole('button', { name: 'Восстановить', exact: true }).click();
+      await page.waitForTimeout(800);
+      report.steps.batchRestore = true;
     } else {
-      report.failures.push(`visual_dark_${darkCheck.reason}`);
+      report.failures.push('batch_selection_unavailable');
     }
 
-    await page.setViewportSize({ width: 320, height: 568 });
-    await page.emulateMedia({ colorScheme: 'light' });
-    await page.goto(`${plat}/clients`, { waitUntil: 'networkidle' });
-    const overflowCheck = await assertHealthyR03Page(page, 'Клиенты');
+    if (USE_ADMIN && agentCard) {
+      await page.getByRole('button', { name: 'Вернуться в управление тестами' }).click();
+      await page.waitForURL(/\/admin\/test-users/, { timeout: 60_000 });
+      await agentCard.getByRole('button', { name: 'Открыть ЛК' }).click();
+      await page.waitForLoadState('networkidle');
+      await maybeAcceptConsents(page);
+      await page.goto(`${plat}/certificates`, { waitUntil: 'networkidle' });
+      const reenterCert = await assertHealthyR03Page(page, 'Сертификаты');
+      await page.goto(savedCertUrl, { waitUntil: 'networkidle' });
+      const aliasAfterReenter = await page.getByText(privateAlias).isVisible().catch(() => false);
+      report.steps.returnReenter = { navOk: reenterCert.ok, aliasVisible: aliasAfterReenter };
+      if (!aliasAfterReenter) report.failures.push('return_reenter_failed');
+      else if (!reenterCert.ok) report.steps.returnReenterNavViaUrlFallback = true;
+    }
+
+    const pairJobs = [
+      { name: 'certificates-list-1440-light', path: '/certificates', section: 'certificates', viewMode: 'list', viewport: { width: 1440, height: 900 }, scrollList: false },
+      { name: 'certificates-cards-1440-light', path: '/certificates', section: 'certificates', viewMode: 'cards', viewport: { width: 1440, height: 900 }, scrollList: false },
+      { name: 'certificates-list-375-light', path: '/certificates', section: 'certificates', viewMode: 'list', viewport: { width: 375, height: 812 }, scrollList: true },
+      { name: 'certificates-cards-375-light', path: '/certificates', section: 'certificates', viewMode: 'cards', viewport: { width: 375, height: 812 }, scrollList: false },
+      { name: 'clients-list-1440-light', path: '/clients', section: 'clients', viewMode: 'list', viewport: { width: 1440, height: 900 }, scrollList: false },
+      { name: 'clients-list-375-light', path: '/clients', section: 'clients', viewMode: 'list', viewport: { width: 375, height: 812 }, scrollList: false },
+      { name: 'clients-cards-375-light', path: '/clients', section: 'clients', viewMode: 'cards', viewport: { width: 375, height: 812 }, scrollList: false },
+    ];
+    for (const job of pairJobs) {
+      await captureMatchedPair(context, report, {
+        name: job.name,
+        plat,
+        implPath: job.path,
+        section: job.section,
+        viewMode: job.viewMode,
+        viewport: job.viewport,
+        refBase,
+        scrollList: job.scrollList,
+      });
+    }
+
+    await captureMatchedPair(context, report, {
+      name: 'certificates-list-375-dark',
+      plat,
+      implPath: '/certificates',
+      section: 'certificates',
+      viewMode: 'list',
+      viewport: { width: 375, height: 812 },
+      refBase,
+      scrollList: true,
+      dark: true,
+    });
+
+    const smokePage = await context.newPage();
+    await smokePage.setViewportSize({ width: 320, height: 568 });
+    await smokePage.goto(`${plat}/clients`, { waitUntil: 'networkidle' });
+    await setImplViewMode(smokePage, 'list');
+    const overflowCheck = await verifyImplAgentShell(smokePage, 'clients', 'list');
     if (overflowCheck.ok) {
-      const p320 = path.join(ART_DIR, 'visual', 'impl-clients-320-actions.png');
-      await page.screenshot({ path: p320, fullPage: true });
-      report.visuals.push({ name: 'clients-320-actions', impl: p320, ref: null, implVerified: true, refVerified: false });
+      const p320 = path.join(ART_DIR, 'visual', 'impl-clients-320-actions-smoke.png');
+      await smokePage.screenshot({ path: p320, fullPage: true });
+      report.singles.push({ name: 'clients-320-actions-smoke', path: p320 });
     } else {
       report.failures.push(`visual_320_${overflowCheck.reason}`);
     }
+    await smokePage.close();
 
-    if (userId) {
-      const clientId = await fetch(`${plat}/api/remcard/api/pro/agent-clients`, {
-        headers: { Cookie: cookieHeader },
-      })
-        .then((r) => r.json())
-        .then((b) => b.clients?.find((c) => c.displayName === 'R03 Browser Client')?.id);
-      if (clientId) {
-        await page.goto(`${plat}/clients/${clientId}`, { waitUntil: 'networkidle' });
-        const detailOk = await page.getByRole('button', { name: 'Поделиться контактами' }).waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
-        if (detailOk) {
-          const implDetail = path.join(ART_DIR, 'visual', 'impl-clients-detail-375-light.png');
-          await page.screenshot({ path: implDetail, fullPage: true });
-          report.visuals.push({ name: 'clients-detail-375-light', impl: implDetail, ref: null, implVerified: true, refVerified: false });
-        } else {
-          report.failures.push('clients_detail_not_ready');
-        }
-      }
-    }
+    const liveCookies = await context.cookies();
+    cookieHeader = liveCookies.map((c) => `${c.name}=${c.value}`).join('; ');
+    await restartNavigator(meta, { PROF_R03_AGENT_CERTIFICATES_ENABLED: 'false' });
+    await new Promise((r) => setTimeout(r, 2000));
+    const gateOffBff = await fetch(`${plat}/api/remcard/api/pro/r03/status`, {
+      headers: { Cookie: cookieHeader, Origin: plat },
+    });
+    const gateOffBody = await gateOffBff.json().catch(() => null);
+    report.http.gateOffBffStatus = gateOffBff.status;
+    report.http.gateOffFeatureEnabled = gateOffBody?.featureEnabled;
+    if (gateOffBody?.featureEnabled !== false) report.failures.push('gate_off_feature_still_true');
+    await page.goto(`${plat}/certificates`, { waitUntil: 'networkidle' });
+    const blocked = /Раздел недоступен/.test((await page.textContent('body')) ?? '');
+    report.steps.gateOffUiBlocked = blocked;
+    if (!blocked) report.failures.push('gate_off_ui_not_blocked');
+    await page.goto(`${plat}/recommendations`, { waitUntil: 'networkidle' });
+    report.steps.gateOffLegacyHome = !/Раздел недоступен/.test((await page.textContent('body')) ?? '');
+    await restartNavigator(meta, { PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true' });
+    report.steps.gateOffRestored = true;
   } catch (err) {
     report.failures.push(err instanceof Error ? err.message : String(err));
     try {
@@ -498,26 +837,25 @@ async function main() {
     refServer.close();
   }
 
-  const gateOff = spawnSync(
-    'pnpm',
-    ['exec', 'tsx', '-e', "process.env.PROF_R03_AGENT_CERTIFICATES_ENABLED='false'; console.log(process.env.PROF_R03_AGENT_CERTIFICATES_ENABLED)"],
-    { cwd: NAV_ROOT, encoding: 'utf8' },
-  );
-  report.http.gateOffSmoke = { ok: gateOff.status === 0, note: 'env toggle sanity only' };
+  const verifiedPairCount = report.visualPairs.filter((p) => p.implVerified && p.refVerified).length;
+  report.visualPairCount = verifiedPairCount;
 
   report.ok =
     report.failures.length === 0 &&
     report.http.bffR03Status === 200 &&
     report.http.bffR03Body?.featureEnabled === true &&
-    report.browser.certificatesPage?.ok === true &&
-    report.browser.clientsPage?.ok === true &&
+    report.browser.certificatesViaNav === true &&
+    report.browser.clientsViaNav === true &&
     report.browser.shareDefaultNameOnly === true &&
-    report.visuals.some((v) => v.implVerified && v.refVerified);
+    report.steps.certificateCreatedViaForm === true &&
+    report.steps.gateOffUiBlocked === true &&
+    verifiedPairCount >= 6;
 
   report.verdict = report.ok ? 'READY_FOR_PUBLICATION' : 'NO_GO';
 
   writeFileSync(path.join(ART_DIR, 'local-acceptance-report.json'), JSON.stringify(report, null, 2));
-  console.log(JSON.stringify(report, null, 2));
+  writeVisualReport(report);
+  console.log(JSON.stringify({ verdict: report.verdict, failures: report.failures, visualPairCount: verifiedPairCount }, null, 2));
   process.exit(report.ok ? 0 : 1);
 }
 

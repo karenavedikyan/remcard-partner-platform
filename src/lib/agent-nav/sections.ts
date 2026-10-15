@@ -51,6 +51,24 @@ export const AGENT_DESKTOP_NAV_KEYS: AgentNavSectionKey[] = [
   "profile",
 ];
 
+/** Frozen agent cabinet (R03): certificates/clients first; legacy sections stay in «Ещё» on mobile. */
+export const AGENT_R03_DESKTOP_NAV_KEYS: AgentNavSectionKey[] = [
+  "certificates",
+  "clients",
+  "partners",
+  "wallet",
+  "profile",
+];
+
+export function resolveAgentDesktopNavKeys(
+  permitted: readonly AgentNavSectionKey[],
+): AgentNavSectionKey[] {
+  const hasR03 =
+    permitted.includes("certificates") && permitted.includes("clients");
+  const order = hasR03 ? AGENT_R03_DESKTOP_NAV_KEYS : AGENT_DESKTOP_NAV_KEYS;
+  return order.filter((key) => permitted.includes(key));
+}
+
 export function agentSectionByKey(key: AgentNavSectionKey): AgentNavSectionDef {
   const found = AGENT_NAV_SECTIONS.find((s) => s.key === key);
   if (!found) throw new Error(`Unknown nav key: ${key}`);

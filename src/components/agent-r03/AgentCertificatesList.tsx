@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
+import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
 import styles from "./agent-r03.module.css";
 
 export function AgentCertificatesList() {
@@ -184,42 +185,33 @@ export function AgentCertificatesList() {
         <Link href="/certificates/new">
           <Button>Создать сертификат</Button>
         </Link>
-        <Button variant="secondary" onClick={() => setArchived((v) => !v)}>
-          {archived ? "Активные" : "Архив"}
-        </Button>
-        <div className={styles.viewToggle}>
-          <button
-            type="button"
-            data-active={viewMode === "cards"}
-            onClick={() => setViewMode("cards")}
-          >
-            Карточки
-          </button>
-          <button
-            type="button"
-            data-active={viewMode === "list"}
-            onClick={() => setViewMode("list")}
-          >
-            Список
-          </button>
-        </div>
       </div>
 
-      <div className={styles.toolbar}>
-        <input
-          className={styles.search}
-          type="search"
-          placeholder="Поиск: название, код, партнёр"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void load();
-          }}
-        />
-        <Button variant="secondary" onClick={() => void load()}>
-          Найти
-        </Button>
-      </div>
+      <AgentR03ListToolbar
+        searchPlaceholder="Название, партнёр или категория"
+        q={q}
+        onQChange={setQ}
+        onSearch={() => void load()}
+        archived={archived}
+        onShowChange={setArchived}
+        activeCount={archived ? 0 : items.length}
+        archivedCount={archived ? items.length : null}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        foundCount={items.length}
+        selectableIds={visibleIds}
+        selectedIds={selected}
+        onSelectPage={(checked) => {
+          setSelected((prev) => {
+            const next = new Set(prev);
+            for (const id of visibleIds) {
+              if (checked) next.add(id);
+              else next.delete(id);
+            }
+            return next;
+          });
+        }}
+      />
 
       {loadState === "loading" ? <p className={styles.loading}>Загрузка…</p> : null}
       {loadState === "error" ? (

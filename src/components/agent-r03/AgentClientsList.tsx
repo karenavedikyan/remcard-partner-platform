@@ -16,6 +16,7 @@ import { AgentClientFormDialog, type AgentClientFormValues } from "./AgentClient
 import { RecordRowActions } from "./RecordRowActions";
 import type { RecordRowAction } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
+import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
 import styles from "./agent-r03.module.css";
 
 export function AgentClientsList() {
@@ -131,41 +132,23 @@ export function AgentClientsList() {
     <>
       <div className={styles.pageActions}>
         <Button onClick={openCreate}>Добавить клиента</Button>
-        <Button variant="secondary" onClick={() => setArchived((v) => !v)}>
-          {archived ? "Активные" : "Архив"}
-        </Button>
-        <div className={styles.viewToggle}>
-          <button
-            type="button"
-            data-active={viewMode === "cards"}
-            onClick={() => setViewMode("cards")}
-          >
-            Карточки
-          </button>
-          <button
-            type="button"
-            data-active={viewMode === "list"}
-            onClick={() => setViewMode("list")}
-          >
-            Список
-          </button>
-        </div>
       </div>
-      <div className={styles.toolbar}>
-        <input
-          className={styles.search}
-          type="search"
-          placeholder="Имя, контакт, город"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void load();
-          }}
-        />
-        <Button variant="secondary" onClick={() => void load()}>
-          Найти
-        </Button>
-      </div>
+      <AgentR03ListToolbar
+        searchPlaceholder="Имя, контакт, город"
+        q={q}
+        onQChange={setQ}
+        onSearch={() => void load()}
+        archived={archived}
+        onShowChange={setArchived}
+        activeCount={archived ? 0 : items.length}
+        archivedCount={archived ? items.length : null}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        foundCount={items.length}
+        selectableIds={[]}
+        selectedIds={new Set()}
+        onSelectPage={() => {}}
+      />
 
       {loadState === "loading" && items.length === 0 ? (
         <p className={styles.loading}>Загрузка…</p>

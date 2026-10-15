@@ -14,7 +14,7 @@ import { MobileNavMoreSheet } from "@/components/layout/agent/MobileNavMoreSheet
 import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
 import { useAgentThemeSync } from "@/components/layout/agent/useAgentThemeSync";
 import {
-  AGENT_DESKTOP_NAV_KEYS,
+  resolveAgentDesktopNavKeys,
   agentSectionByKey,
   isPathActive,
   sectionKeyForPathname,
@@ -69,7 +69,7 @@ export function AgentAppShell({
   useAgentThemeSync(prefs.pilotActive, prefs.theme, saveTheme);
 
   const desktopKeys = useMemo(
-    () => AGENT_DESKTOP_NAV_KEYS.filter((key) => permittedKeys.includes(key)),
+    () => resolveAgentDesktopNavKeys(permittedKeys),
     [permittedKeys],
   );
 
@@ -173,6 +173,7 @@ export function AgentAppShell({
           className={`${styles.mobileBottomLink} ${moreActive ? styles.mobileBottomLinkActive : ""}`}
           aria-label="Ещё разделы"
           aria-current={moreActive ? "page" : undefined}
+          data-testid="mobile-nav-more"
           onClick={() => setMoreOpen(true)}
         >
           <span className={styles.mobileBottomIcon}>

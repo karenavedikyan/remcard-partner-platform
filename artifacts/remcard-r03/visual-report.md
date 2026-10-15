@@ -1,14 +1,22 @@
-# R03.2 visual report
+# R03 visual pairs (FINAL-3)
 
-Captured from **actual** local implementation (`http://127.0.0.1:3032`) and frozen reference (`roles.html`).
+Generated: 2026-10-15T19:38:53.312Z
+Platform SHA: 7704489b50b8e6a7a1b954474e35765578fa648a
 
-| Pair | Implementation | Reference | Viewport |
-|------|----------------|-----------|----------|
-| Certificates list | `visual/impl-certificates-1440-light.png` | `visual/ref-roles-1440-light.png` (agent collections) | 1440 light |
-| Clients list | `visual/impl-clients-1440-light.png` | same ref (clients section) | 1440 light |
-| Certificates mobile | `visual/impl-certificates-375-light.png` | — | 375 light |
-| Clients mobile | `visual/impl-clients-375-light.png` | — | 375 light |
+Matched pairs (both verified): **8**
+Single screenshots: **1**
 
-**Honest gaps:** screenshots were taken without authenticated session (login/ gate shell); not 1:1 with populated prototype data. Residual: emoji removed from actions (SVG), but layout/spacing differs from frozen HTML; dark/mobile-dark pair not captured this run.
+## Pairs
 
-**320 smoke:** not captured separately (overflow/actions) — NOT_VERIFIED.
+- **certificates-list-1440-light** (1440x900, certificates, list, light): impl=ok, ref=ok
+- **certificates-cards-1440-light** (1440x900, certificates, cards, light): impl=ok, ref=ok
+- **certificates-list-375-light** (375x812, certificates, list, light): impl=ok, ref=ok
+- **certificates-cards-375-light** (375x812, certificates, cards, light): impl=ok, ref=ok
+- **clients-list-1440-light** (1440x900, clients, list, light): impl=ok, ref=ok
+- **clients-list-375-light** (375x812, clients, list, light): impl=ok, ref=ok
+- **clients-cards-375-light** (375x812, clients, cards, light): impl=ok, ref=ok
+- **certificates-list-375-dark** (375x812, certificates, list, dark): impl=ok, ref=ok
+
+## Singles
+
+- clients-320-actions-smoke: `/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-320-actions-smoke.png`
