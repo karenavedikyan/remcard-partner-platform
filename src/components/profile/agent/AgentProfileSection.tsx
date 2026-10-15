@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
-import { activateAgentActivity, fetchAgentProfileStatus } from "@/lib/agent-profile/api";
+import { enableR02AgentActivity, fetchAgentProfileStatus } from "@/lib/agent-profile/api";
 import type { AgentProfileStatusResponse } from "@/lib/agent-profile/types";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
@@ -67,7 +67,7 @@ export function AgentProfileSection({
           onClick={async () => {
             setActivating(true);
             try {
-              const res = await activateAgentActivity();
+              const res = await enableR02AgentActivity();
               onActivitiesChange?.(res.user.partnerActivities ?? ["AGENT"]);
               await loadStatus();
             } catch (caught) {

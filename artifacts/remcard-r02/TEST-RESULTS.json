@@ -1,28 +1,45 @@
 {
-  "generatedAt": "2026-10-15T09:53:00Z",
+  "generatedAt": "2026-10-15T10:10:00Z",
+  "release": "R02.1 corrective",
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
+    "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
     "tests": [
-      { "command": "pnpm exec vitest run src/lib/__tests__/agentProfileDraft.test.ts", "exitCode": 0, "result": "PASS" },
-      { "command": "pnpm exec vitest run src/lib/__tests__/agentNavPilot.test.ts", "exitCode": 0, "result": "PASS" },
       {
-        "command": "pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
-        "exitCode": null,
-        "result": "NOT VERIFIED",
-        "reason": "No disposable loopback DATABASE_URL (remcard_r01_test) in this environment"
+        "command": "pnpm exec vitest run src/lib/__tests__/agentProfileDraft.test.ts",
+        "exitCode": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "DATABASE_URL/DIRECT_URL=loopback remcard_r01_test pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "3 scenarios: malformed JSON body, staff enable 403 + mixed finish preserves public fields, requisites revise immutability from DB"
+      },
+      {
+        "command": "node scripts/prof-r02-migrate.mjs after (db push fixture without ledger)",
+        "exitCode": 1,
+        "result": "EXPECTED_FAIL",
+        "notes": "Refuses after when schema came from prisma db push without ledger row"
       },
       { "command": "pnpm run build", "exitCode": 0, "result": "PASS" }
     ]
   },
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
+    "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
     "tests": [
-      { "command": "pnpm exec vitest run src/lib/contact-phone-display.test.ts src/lib/remcard-proxy-r02.test.ts", "exitCode": 0, "result": "PASS" },
+      {
+        "command": "pnpm exec vitest run src/lib/agent-profile/api.client.test.ts src/lib/contact-phone-display.test.ts src/lib/remcard-proxy-r02.test.ts",
+        "exitCode": 0,
+        "result": "PASS"
+      },
       { "command": "pnpm run build", "exitCode": 0, "result": "PASS" }
     ]
   },
   "visual": {
     "pairedScreenshots": "NOT VERIFIED",
-    "reason": "Requires local paired backend+frontend with gates on and auth fixture"
-  }
+    "reason": "R02.1 focused on functional fixes; screenshot matrix deferred to next local auth session"
+  },
+  "productionSmoke": "NOT RUN"
 }

@@ -6,7 +6,7 @@ describe("remcard-proxy R02 routes", () => {
     expect(isAllowedProxyRoute("GET", "/api/pro/agent-profile/status")).toBe(true);
     expect(isAllowedProxyRoute("PATCH", "/api/pro/agent-profile/draft")).toBe(true);
     expect(isAllowedProxyRoute("POST", "/api/pro/agent-profile/finish")).toBe(true);
-    expect(isAllowedProxyRoute("POST", "/api/pro/agent-activate")).toBe(true);
+    expect(isAllowedProxyRoute("POST", "/api/pro/agent-profile/enable-activity")).toBe(true);
     expect(isAllowedProxyRoute("GET", "/api/pro/agent-payout-requisites")).toBe(true);
     expect(isAllowedProxyRoute("PATCH", "/api/pro/agent-payout-requisites/clxyz123")).toBe(true);
   });

@@ -13,7 +13,10 @@ export type AgentProfileDraftResponse = {
   active: boolean;
   step: number;
   version: number;
+  draftEpoch: number;
   payload: AgentProfileDraftPayload;
+  savedProfile?: AgentProfileDraftPayload;
+  hasDraft?: boolean;
   profileComplete?: boolean;
 };
 
@@ -29,6 +32,7 @@ export type AgentProfileStatusResponse = {
 
 export type AgentRequisitesItem = {
   id: string;
+  legalSideId?: string;
   kind: "person" | "ip" | "company" | string;
   legalName: string;
   inn: string | null;

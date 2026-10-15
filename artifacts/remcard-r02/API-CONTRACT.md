@@ -16,9 +16,10 @@ All routes require `remcard-token` session and PRO cabinet access unless noted.
 |--------|------|------|---------|
 | GET | `/api/pro/agent-profile/status` | — | `{ featureEnabled, hasAgentActivity, eligible, profileComplete, userId }` |
 | GET | `/api/pro/agent-profile/draft` | — | `{ step, version, payload, profileComplete }` |
-| PATCH | `/api/pro/agent-profile/draft` | `{ expectedVersion?, step?, payload }` | `{ version, payload }`; `409` + `VERSION_CONFLICT` |
-| POST | `/api/pro/agent-profile/finish` | `{ expectedVersion? }` | `{ ok, profileComplete }`; field errors `400` |
-| POST | `/api/pro/agent-activate` | `{ companyKind? }` | adds `AGENT` to `partnerActivities` (owner auth) |
+| PATCH | `/api/pro/agent-profile/draft` | `{ expectedVersion, expectedEpoch, step?, fromStep?, mode: save\|advance, payload }` | `{ version, draftEpoch, payload }`; `409` + `keepLocal` |
+| POST | `/api/pro/agent-profile/finish` | `{ expectedVersion, expectedEpoch }` | `{ ok, profileComplete }`; field errors `400` |
+| POST | `/api/pro/agent-profile/enable-activity` | `{}` | R02-only: adds `AGENT` with owner/staff guards; no role/partnerType change |
+| POST | `/api/pro/agent-activate` | `{ companyKind? }` | **Legacy** (unchanged semantics) |
 | GET | `/api/pro/agent-payout-requisites` | — | `{ items[] }` masked accounts |
 | POST | `/api/pro/agent-payout-requisites` | requisites fields | `{ item }` |
 | GET | `/api/pro/agent-payout-requisites/:id` | — | full item for owner |

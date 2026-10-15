@@ -43,6 +43,7 @@ export default defineConfig({
       "src/lib/recommendation-create-draft.test.ts",
       "src/lib/contact-phone-display.test.ts",
       "src/lib/remcard-proxy-r02.test.ts",
+      "src/lib/agent-profile/api.client.test.ts",
     ],
     testTimeout: 30_000,
   },

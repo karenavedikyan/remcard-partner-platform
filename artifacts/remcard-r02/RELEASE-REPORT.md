@@ -1,54 +1,31 @@
-# RemCard R02 release candidate
+# RemCard R02.1 corrective RC
 
-## Repos / branches
+## PRs (same branches)
 
-| Repo | Base branch | Base SHA | Head branch |
-|------|-------------|----------|-------------|
-| remcard-navigator | `release/prof-backend-v1-20261007` | `810f109830df2154e05ca5f3d0ee736779e8cb44` | `cursor/r02-agent-profile-b3e3` |
-| remcard-partner-platform | `release/prof-v1-20261007` | `e1fceb679179d917f2c7fa102f6585f2bfd78090` | `cursor/r02-agent-profile-b3e3` |
+- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 (`cursor/r02-agent-profile-b3e3`)
+- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12 (`cursor/r02-agent-profile-b3e3`)
 
-PR links:
+## R02.1 fixes (vs first RC)
 
-- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678
-- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12
+| Area | Fix |
+|------|-----|
+| A Client | `remcardFetch` receives plain objects; regression test on BFF body serialization |
+| A Server | Rejects string/double-encoded JSON bodies (`parseJsonObjectBody`) |
+| B Activation | New `POST /api/pro/agent-profile/enable-activity` with owner/staff guards; legacy `agent-activate` untouched |
+| C Draft/finish | Partial draft save vs step advance validation; epoch+version lock; finish requires expectedVersion/epoch; no public displayName/city; agent-specific saved fields |
+| C UI | Save draft, skip persists step, 409 keep-local choice, pure agent hides legacy basics form |
+| D Requisites | legalSideId model, revise/edit/archive UI, corrAccount, field validation, DB snapshot immutability test |
+| E Migration | `connectionString` guard before connect; checksum mismatch refused; expanded schema verify |
+| E Dev | `/dev/r02-agent-profile` returns 404 in production build path via `notFound()` |
 
-## Ready for users (when gates enabled)
+## Publication order (controlled, not executed here)
 
-- Explicit **AGENT activity** entry via `/api/pro/agent-activate` or existing profile activities flow.
-- **4-step agent profile** (О себе → Аудитория → Контакты → Проверка) with server draft, version conflict handling, finish → working profile fields.
-- **Compact overview** after save with user ID and «Редактировать профиль».
-- **Requisites** tab: create, primary, apply-for-next-payout, revise (archives prior version).
-- **R01 eligibility tweak**: pilot shell requires explicit `AGENT` in `partnerActivities`, not wallet-only AGENT-like.
+1. Apply backend migration on staging via `node scripts/prof-r02-migrate.mjs before|apply|after` (loopback guard on disposable; staging uses ops URLs).
+2. Deploy backend with `PROF_R02_AGENT_PROFILE_ENABLED=0`.
+3. Deploy frontend proxy/UI.
+4. Staging smoke: gate off legacy → enable activity (owner) → draft/resume/finish → requisites revise.
+5. Rollback: disable gate; additive schema remains.
 
-Not in R02: certificates/clients (R03), partners search (R04), «Мне должны» (R05), production deploy.
+## Verification summary
 
-## Migrations
-
-- `20261015120000_prof_r02_agent_profile` (additive).
-- Runner: `node scripts/prof-r02-migrate.mjs before|apply|after` (loopback guard via `resolveProfHDatabaseTarget`).
-
-## Env names (no secret values)
-
-- Backend: `PROF_R02_AGENT_PROFILE_ENABLED`, `PROF_R01_AGENT_NAV_ENABLED` (unchanged default off).
-- Platform: `REMCARD_API_BASE_URL`, `NEXT_PUBLIC_APP_URL`.
-
-## Release sequence
-
-1. Apply backend migration on staging DB (controlled runner).
-2. Deploy backend with `PROF_R02_AGENT_PROFILE_ENABLED=0` (verify legacy).
-3. Deploy frontend proxy allowlist + UI.
-4. Enable `PROF_R02_AGENT_PROFILE_ENABLED` on staging only; production smoke separate from this RC.
-
-## Preflight / rollback
-
-- **Preflight**: `prof-r02-migrate.mjs before`, build + unit tests, optional route integration on disposable DB.
-- **Rollback**: leave gate off; additive tables safe; no backfill of historical payout snapshots.
-
-## Blockers
-
-- Route integration + visual pairs **NOT VERIFIED** in cloud VM (no test DB / no authenticated local stack).
-- Production smoke **NOT RUN** (explicitly out of scope).
-
-## Visual deviations
-
-- Pending paired screenshot pass against frozen ZIP (not captured in this environment).
+See `TEST-RESULTS.json`. Route integration **PASS** on disposable `remcard_r01_test`. Visual pairs **NOT VERIFIED** this iteration. Production smoke **NOT RUN**.

@@ -26,9 +26,15 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   const [loadError, setLoadError] = useState("");
   const [step, setStep] = useState(0);
   const [version, setVersion] = useState(0);
+  const [draftEpoch, setDraftEpoch] = useState(0);
+  const [savedProfile, setSavedProfile] = useState<AgentProfileDraftPayload>({});
+  const [hasDraft, setHasDraft] = useState(false);
   const [draft, setDraft] = useState<AgentProfileDraftPayload>({});
   const [editing, setEditing] = useState(true);
   const [profileComplete, setProfileComplete] = useState(false);
+  const [conflict, setConflict] = useState<{ serverVersion: number; serverEpoch: number } | null>(
+    null,
+  );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,10 +46,14 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     try {
       const data = await fetchAgentProfileDraft();
       setDraft(data.payload ?? {});
+      setSavedProfile(data.savedProfile ?? data.payload ?? {});
+      setHasDraft(Boolean(data.hasDraft));
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
       setVersion(data.version ?? 0);
+      setDraftEpoch(data.draftEpoch ?? 0);
       setProfileComplete(Boolean(data.profileComplete));
-      setEditing(!data.profileComplete);
+      setEditing(Boolean(data.hasDraft) || !data.profileComplete);
+      setConflict(null);
     } catch (caught) {
       setLoadError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить профиль",
@@ -58,23 +68,37 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   }, [hydrate, userId]);
 
   const persistDraft = useCallback(
-    (nextDraft: AgentProfileDraftPayload, nextStep: number, expectedVersion: number) => {
+    (
+      nextDraft: AgentProfileDraftPayload,
+      uiStep: number,
+      expectedVersion: number,
+      opts: { mode: "save" | "advance"; nextUiStep?: number },
+    ) => {
       const run = saveQueue.current.then(async () => {
         setSaving(true);
         try {
           const res = await patchAgentProfileDraft({
             expectedVersion,
-            step: nextStep + 1,
+            expectedEpoch: draftEpoch,
+            step: (opts.nextUiStep ?? uiStep) + 1,
+            fromStep: uiStep + 1,
+            mode: opts.mode,
             payload: nextDraft as Record<string, string>,
           });
           setDraft(res.payload ?? nextDraft);
           setVersion(res.version);
+          if (typeof res.draftEpoch === "number") setDraftEpoch(res.draftEpoch);
+          setHasDraft(true);
           setFieldErrors({});
-          return res.version;
+          setConflict(null);
+          return { version: res.version, epoch: res.draftEpoch ?? draftEpoch };
         } catch (caught) {
           if (caught instanceof RemcardApiError && caught.status === 409) {
-            setBanner({ kind: "error", text: "Черновик изменился. Обновляем…" });
-            await hydrate();
+            setConflict({ serverVersion: expectedVersion, serverEpoch: draftEpoch });
+            setBanner({
+              kind: "error",
+              text: "Черновик на сервере изменился. Сохраните локальные правки или загрузите серверную версию.",
+            });
           } else if (caught instanceof RemcardApiError && caught.body?.fields) {
             setFieldErrors(caught.body.fields as FieldErrors);
           } else {
@@ -87,12 +111,14 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
         } finally {
           setSaving(false);
         }
-        return expectedVersion;
       });
-      saveQueue.current = run.then(() => undefined);
+      saveQueue.current = run.then(
+        () => undefined,
+        () => undefined,
+      );
       return run;
     },
-    [hydrate],
+    [draftEpoch],
   );
 
   const updateField = (key: keyof AgentProfileDraftPayload, value: string) => {
@@ -112,7 +138,10 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     const last = STEPS.length - 1;
     if (step < last) {
       try {
-        await persistDraft(draft, step, version);
+        await persistDraft(draft, step, version, {
+          mode: "advance",
+          nextUiStep: step + 1,
+        });
         setStep((s) => Math.min(last, s + 1));
       } catch {
         /* errors shown */
@@ -120,10 +149,14 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       return;
     }
     try {
-      const newVersion = await persistDraft(draft, step, version);
-      const fin = await finishAgentProfile({ expectedVersion: newVersion });
+      const saved = await persistDraft(draft, step, version, { mode: "advance", nextUiStep: step });
+      const fin = await finishAgentProfile({
+        expectedVersion: saved.version,
+        expectedEpoch: saved.epoch,
+      });
       if (fin.profileComplete) {
         setProfileComplete(true);
+        setHasDraft(false);
         setEditing(false);
         setBanner({ kind: "success", text: "Профиль сохранён." });
         onProfileComplete?.();
@@ -136,10 +169,23 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     }
   };
 
+  const saveDraftOnly = async () => {
+    if (disabled || saving) return;
+    try {
+      await persistDraft(draft, step, version, { mode: "save", nextUiStep: step });
+      setBanner({ kind: "success", text: "Черновик сохранён. Можно продолжить позже." });
+    } catch {
+      /* shown */
+    }
+  };
+
   const skipStep = async () => {
     if (step >= STEPS.length - 2) return;
     try {
-      await persistDraft(draft, step, version);
+      await persistDraft(draft, step, version, {
+        mode: "save",
+        nextUiStep: step + 1,
+      });
       setStep((s) => s + 1);
     } catch {
       /* shown */
@@ -153,8 +199,9 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     return <p className={styles.bannerError}>{loadError}</p>;
   }
 
-  if (!editing && profileComplete) {
-    const name = draft.displayName?.trim() || "—";
+  if (!editing && profileComplete && !hasDraft) {
+    const display = savedProfile.displayName?.trim() ? savedProfile : draft;
+    const name = display.displayName?.trim() || "—";
     return (
       <div className={styles.pw} data-testid="agent-profile-summary">
         <section className={styles.summary}>
@@ -163,7 +210,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             <div>
               <span className={styles.kicker}>Агент</span>
               <h2 className={styles.title}>{name}</h2>
-              <p className={styles.intro}>{draft.city?.trim() || "Город не указан"}</p>
+              <p className={styles.intro}>{display.city?.trim() || "Город не указан"}</p>
             </div>
             <span className={styles.status}>Заполнено</span>
           </div>
@@ -181,25 +228,25 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
               <dt>Город</dt>
               <dd>{draft.city?.trim() || "Не указано"}</dd>
             </div>
-            {draft.audience ? (
+            {display.audience ? (
               <div>
                 <dt>Аудитория</dt>
-                <dd>{draft.audience}</dd>
+                <dd>{display.audience}</dd>
               </div>
             ) : null}
-            {draft.channel ? (
+            {display.channel ? (
               <div>
                 <dt>Канал</dt>
-                <dd>{draft.channel}</dd>
+                <dd>{display.channel}</dd>
               </div>
             ) : null}
             <div>
               <dt>Телефон</dt>
-              <dd>{formatPhoneForDisplay(draft.contactPhone) || "Не указано"}</dd>
+              <dd>{formatPhoneForDisplay(display.contactPhone) || "Не указано"}</dd>
             </div>
             <div>
               <dt>Email</dt>
-              <dd>{draft.contactEmail?.trim() || "Не указано"}</dd>
+              <dd>{display.contactEmail?.trim() || "Не указано"}</dd>
             </div>
           </dl>
           <p className={styles.footnote}>
@@ -285,6 +332,32 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
               {banner.text}
+            </p>
+          ) : null}
+          {conflict ? (
+            <div className={styles.bannerError} role="alert">
+              <p>Конфликт версии (сервер v{conflict.serverVersion}).</p>
+              <div className={styles.actionsRight}>
+                <button type="button" className={styles.btn} disabled={saving} onClick={() => void hydrate()}>
+                  Загрузить с сервера
+                </button>
+                <button
+                  type="button"
+                  className={styles.btn}
+                  disabled={saving}
+                  onClick={() => {
+                    setConflict(null);
+                    setBanner(null);
+                  }}
+                >
+                  Оставить мои правки
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {profileComplete && hasDraft ? (
+            <p className={styles.intro} role="status">
+              Есть незавершённый черновик — продолжите редактирование или сохраните черновик.
             </p>
           ) : null}
           <h2 className={styles.title} id="agent-profile-step-title">
@@ -444,12 +517,21 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                   <button
                     type="button"
                     className={styles.btn}
-                    disabled={disabled}
+                    disabled={disabled || saving}
                     onClick={() => setStep((s) => s - 1)}
                   >
                     Назад
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnQuiet}`}
+                  disabled={disabled || saving}
+                  data-testid="agent-profile-save-draft"
+                  onClick={() => void saveDraftOnly()}
+                >
+                  Сохранить черновик
+                </button>
               </div>
               <div className={styles.actionsRight}>
                 {step > 0 && step < STEPS.length - 1 ? (

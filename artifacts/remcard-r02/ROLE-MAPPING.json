@@ -1,39 +1,29 @@
 {
-  "contractVersion": "2026-10-15.r02",
-  "sources": [
-    {
-      "activitySignal": "partnerActivities includes AGENT",
-      "ownerContext": "principal wallet: role AGENT, employedView false, agentSubjectId === session userId",
-      "visibleProfile": "R02 agent wizard + requisites when PROF_R02_AGENT_PROFILE_ENABLED",
-      "preservedRights": "legacy working profile, store/company paths, wallet/scanner/team unchanged by activity toggle alone"
-    },
-    {
-      "activitySignal": "STORE or SERVICE without AGENT",
-      "ownerContext": "STORE/MASTER wallet",
-      "visibleProfile": "legacy ProfileEditor only; R01 shell only if AGENT activity added explicitly",
-      "preservedRights": "full legacy profile, branches, team, notifications"
-    },
-    {
-      "activitySignal": "mixed STORE/SERVICE + AGENT",
-      "ownerContext": "wallet resolver unchanged; agent slice via explicit AGENT activity",
-      "visibleProfile": "legacy profile remains; AgentProfileSection adds parallel agent path",
-      "preservedRights": "store/company working profile not replaced by agent wizard"
-    },
-    {
-      "activitySignal": "employed staff / employedView true",
-      "ownerContext": "employer wallet subject",
-      "visibleProfile": "no agent activity enable, no R02 draft/requisites edit",
-      "preservedRights": "staff cannot change employer requisites or enable AGENT"
-    },
-    {
-      "activitySignal": "companyKind GENERAL without AGENT activity",
-      "ownerContext": "not sufficient for R01 pilot or R02",
-      "visibleProfile": "legacy only",
-      "preservedRights": "wallet AGENT-like alone does not grant agent business profile"
-    }
-  ],
-  "gates": {
-    "PROF_R01_AGENT_NAV_ENABLED": "R01 shell; requires resolvePrincipalAgentBusiness + flag",
-    "PROF_R02_AGENT_PROFILE_ENABLED": "R02 wizard/requisites API; default off in production"
+  "contractVersion": "2026-10-15.r02.1",
+  "activation": {
+    "r02Path": "POST /api/pro/agent-profile/enable-activity",
+    "rules": [
+      "PRO cabinet user only (no CLIENT→PRO promotion)",
+      "assertPrincipalAgentOwnerContext before mutation (blocks employed partnerEmployee, branch staff without owned org, employed wallet view)",
+      "Adds AGENT to partnerActivities only; does not change partnerType/organization",
+      "Legacy POST /api/pro/agent-activate unchanged for existing callers"
+    ]
+  },
+  "eligibility": {
+    "resolvePrincipalAgentBusiness": "AGENT activity + owner context guard + principal agent wallet (employedView false)"
+  },
+  "profileFields": {
+    "finishWrites": [
+      "agentWorkingDisplayName",
+      "agentWorkingCity",
+      "agentWorkingProfileCompletedAt",
+      "agentRecommendAudience/Channel",
+      "partnershipContactPhone/Email",
+      "workingDisplayName/City only when pure AGENT activity (no STORE/SERVICE)"
+    ],
+    "finishDoesNotWrite": ["User.displayName", "User.city", "login phone", "catalog fields"]
+  },
+  "walletSideEffects": {
+    "note": "Adding AGENT activity may still affect resolveWalletContext classification for legacy wallet APIs; R02 UX is isolated via separate agent profile fields and enable path gates."
   }
 }

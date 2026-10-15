@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   createAgentRequisites,
+  fetchAgentRequisites,
   listAgentRequisites,
   patchAgentRequisites,
 } from "@/lib/agent-profile/api";
@@ -20,21 +21,39 @@ type AgentPayoutRequisitesPanelProps = {
   disabled?: boolean;
 };
 
+type FormState = {
+  kind: "person" | "ip" | "company";
+  legalName: string;
+  inn: string;
+  kpp: string;
+  bankName: string;
+  bik: string;
+  accountNumber: string;
+  corrAccount: string;
+};
+
+const emptyForm = (): FormState => ({
+  kind: "person",
+  legalName: "",
+  inn: "",
+  kpp: "",
+  bankName: "",
+  bik: "",
+  accountNumber: "",
+  corrAccount: "",
+});
+
 export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPanelProps) {
   const [items, setItems] = useState<AgentRequisitesItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [kind, setKind] = useState<"person" | "ip" | "company">("person");
-  const [form, setForm] = useState({
-    legalName: "",
-    inn: "",
-    kpp: "",
-    bankName: "",
-    bik: "",
-    accountNumber: "",
-    corrAccount: "",
-  });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm());
+  const dialogTitleId = useId();
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -53,28 +72,96 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     void reload();
   }, [reload]);
 
-  const onCreate = async (event: FormEvent) => {
-    event.preventDefault();
-    if (disabled) return;
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDialogOpen(false);
+        restoreFocusRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dialogOpen]);
+
+  const openCreate = (trigger: HTMLElement | null) => {
+    restoreFocusRef.current = trigger;
+    setEditId(null);
+    setForm(emptyForm());
+    setFieldErrors({});
+    setDialogOpen(true);
+  };
+
+  const openEdit = async (id: string, trigger: HTMLElement | null) => {
+    restoreFocusRef.current = trigger;
+    setPendingId(id);
+    setError("");
     try {
-      await createAgentRequisites({
-        kind,
-        ...form,
-        isPrimary: items.length === 0,
-      });
-      setDialogOpen(false);
+      const data = await fetchAgentRequisites(id);
+      const item = data.item;
+      setEditId(id);
       setForm({
-        legalName: "",
-        inn: "",
-        kpp: "",
-        bankName: "",
-        bik: "",
-        accountNumber: "",
-        corrAccount: "",
+        kind: (item.kind as FormState["kind"]) || "person",
+        legalName: item.legalName ?? "",
+        inn: item.inn ?? "",
+        kpp: item.kpp ?? "",
+        bankName: item.bankName ?? "",
+        bik: item.bik ?? "",
+        accountNumber: item.accountNumber ?? "",
+        corrAccount: item.corrAccount ?? "",
       });
+      setFieldErrors({});
+      setDialogOpen(true);
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось открыть реквизиты");
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (disabled || pendingId === "form") return;
+    setPendingId("form");
+    setFieldErrors({});
+    setError("");
+    try {
+      if (editId) {
+        await patchAgentRequisites(editId, { action: "revise", ...form });
+      } else {
+        await createAgentRequisites({
+          ...form,
+          isPrimary: items.length === 0,
+        });
+      }
+      setDialogOpen(false);
+      restoreFocusRef.current?.focus();
       await reload();
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Ошибка сохранения");
+      if (caught instanceof RemcardApiError && caught.body?.fields) {
+        setFieldErrors(caught.body.fields as Partial<Record<keyof FormState, string>>);
+      } else {
+        setError(caught instanceof RemcardApiError ? caught.message : "Ошибка сохранения");
+      }
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const runAction = async (id: string, action: "setPrimary" | "applyForNextPayout" | "archive") => {
+    if (disabled || pendingId) return;
+    if (action === "archive" && !window.confirm("Архивировать этот набор? Он не будет доступен для нового выбора.")) {
+      return;
+    }
+    setPendingId(id);
+    setError("");
+    try {
+      await patchAgentRequisites(id, { action });
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие");
+    } finally {
+      setPendingId(null);
     }
   };
 
@@ -82,8 +169,8 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     <section className={styles.card} data-testid="agent-requisites-panel">
       <h3 className={styles.title}>Реквизиты для выплат</h3>
       <p className={styles.intro}>
-        Необязательно для профиля. Выбор набора влияет только на следующие расчёты, не на уже
-        сохранённые документы.
+        Необязательно для профиля. Изменения создают новую версию банковского набора; старые версии
+        сохраняются для истории.
       </p>
       {error ? <p className={styles.bannerError}>{error}</p> : null}
       {loading ? <p className={styles.intro}>Загрузка…</p> : null}
@@ -96,14 +183,15 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                 {KIND_LABELS[item.kind] ?? item.kind}
                 {item.inn ? ` · ИНН ${item.inn}` : ""}
                 {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
+                {item.version ? ` · v${item.version}` : ""}
               </small>
               <div className={styles.actionsRight}>
                 {item.isPrimary ? <span className={styles.label}>Основной</span> : (
                   <button
                     type="button"
                     className={styles.btn}
-                    disabled={disabled}
-                    onClick={() => void patchAgentRequisites(item.id, { action: "setPrimary" }).then(reload)}
+                    disabled={disabled || pendingId === item.id}
+                    onClick={(e) => void runAction(item.id, "setPrimary")}
                   >
                     Сделать основным
                   </button>
@@ -114,14 +202,28 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                   <button
                     type="button"
                     className={styles.btn}
-                    disabled={disabled}
-                    onClick={() =>
-                      void patchAgentRequisites(item.id, { action: "applyForNextPayout" }).then(reload)
-                    }
+                    disabled={disabled || pendingId === item.id}
+                    onClick={(e) => void runAction(item.id, "applyForNextPayout")}
                   >
                     Применить для следующего расчёта
                   </button>
                 )}
+                <button
+                  type="button"
+                  className={styles.btn}
+                  disabled={disabled || pendingId === item.id}
+                  onClick={(e) => void openEdit(item.id, e.currentTarget)}
+                >
+                  Изменить
+                </button>
+                <button
+                  type="button"
+                  className={styles.btn}
+                  disabled={disabled || pendingId === item.id}
+                  onClick={(e) => void runAction(item.id, "archive")}
+                >
+                  Архивировать
+                </button>
               </div>
             </div>
           </li>
@@ -131,22 +233,28 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
         type="button"
         className={`${styles.btn} ${styles.btnPrimary}`}
         disabled={disabled}
-        onClick={() => setDialogOpen(true)}
+        onClick={(e) => openCreate(e.currentTarget)}
       >
         Добавить реквизиты
       </button>
 
       {dialogOpen ? (
-        <div role="dialog" aria-modal="true" aria-labelledby="req-dialog-title">
-          <form onSubmit={onCreate} className={styles.fields}>
-            <h4 id="req-dialog-title">Новый набор</h4>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={dialogTitleId}
+          className={styles.card}
+          style={{ marginTop: "1rem", maxHeight: "min(80vh, 640px)", overflow: "auto" }}
+        >
+          <form onSubmit={onSubmit} className={styles.fields}>
+            <h4 id={dialogTitleId}>{editId ? "Изменить набор" : "Новый набор"}</h4>
             <div className={styles.field}>
               <label htmlFor="req-kind">Тип</label>
               <select
                 id="req-kind"
-                value={kind}
-                disabled={disabled}
-                onChange={(e) => setKind(e.target.value as typeof kind)}
+                value={form.kind}
+                disabled={disabled || pendingId === "form"}
+                onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as FormState["kind"] }))}
               >
                 <option value="person">Физическое лицо</option>
                 <option value="ip">ИП</option>
@@ -159,28 +267,31 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                 id="req-name"
                 required
                 value={form.legalName}
-                disabled={disabled}
+                disabled={disabled || pendingId === "form"}
                 onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
               />
+              {fieldErrors.legalName ? <small>{fieldErrors.legalName}</small> : null}
             </div>
             <div className={styles.field}>
               <label htmlFor="req-inn">ИНН</label>
               <input
                 id="req-inn"
                 value={form.inn}
-                disabled={disabled}
+                disabled={disabled || pendingId === "form"}
                 onChange={(e) => setForm((f) => ({ ...f, inn: e.target.value }))}
               />
+              {fieldErrors.inn ? <small>{fieldErrors.inn}</small> : null}
             </div>
-            {kind === "company" ? (
+            {form.kind === "company" ? (
               <div className={styles.field}>
                 <label htmlFor="req-kpp">КПП</label>
                 <input
                   id="req-kpp"
                   value={form.kpp}
-                  disabled={disabled}
+                  disabled={disabled || pendingId === "form"}
                   onChange={(e) => setForm((f) => ({ ...f, kpp: e.target.value }))}
                 />
+                {fieldErrors.kpp ? <small>{fieldErrors.kpp}</small> : null}
               </div>
             ) : null}
             <div className={styles.field}>
@@ -188,36 +299,60 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
               <input
                 id="req-bank"
                 value={form.bankName}
-                disabled={disabled}
+                disabled={disabled || pendingId === "form"}
                 onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))}
               />
             </div>
-            <div className={styles.fieldsTwo}>
+            <div className={`${styles.fields} ${styles.fieldsTwo}`}>
               <div className={styles.field}>
                 <label htmlFor="req-bik">БИК</label>
                 <input
                   id="req-bik"
                   value={form.bik}
-                  disabled={disabled}
+                  disabled={disabled || pendingId === "form"}
                   onChange={(e) => setForm((f) => ({ ...f, bik: e.target.value }))}
                 />
+                {fieldErrors.bik ? <small>{fieldErrors.bik}</small> : null}
               </div>
               <div className={styles.field}>
                 <label htmlFor="req-acc">Расчётный счёт</label>
                 <input
                   id="req-acc"
                   value={form.accountNumber}
-                  disabled={disabled}
+                  disabled={disabled || pendingId === "form"}
                   onChange={(e) => setForm((f) => ({ ...f, accountNumber: e.target.value }))}
                 />
+                {fieldErrors.accountNumber ? <small>{fieldErrors.accountNumber}</small> : null}
               </div>
             </div>
+            <div className={styles.field}>
+              <label htmlFor="req-corr">Корреспондентский счёт</label>
+              <input
+                id="req-corr"
+                value={form.corrAccount}
+                disabled={disabled || pendingId === "form"}
+                onChange={(e) => setForm((f) => ({ ...f, corrAccount: e.target.value }))}
+              />
+              {fieldErrors.corrAccount ? <small>{fieldErrors.corrAccount}</small> : null}
+            </div>
             <div className={styles.actions}>
-              <button type="button" className={styles.btn} onClick={() => setDialogOpen(false)}>
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={pendingId === "form"}
+                onClick={() => {
+                  setDialogOpen(false);
+                  restoreFocusRef.current?.focus();
+                }}
+              >
                 Отмена
               </button>
-              <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={disabled}>
-                Сохранить
+              <button
+                type="submit"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={disabled || pendingId === "form"}
+              >
+                {pendingId === "form" ? "Сохранение…" : "Сохранить"}
               </button>
             </div>
           </form>

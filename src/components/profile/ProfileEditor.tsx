@@ -51,6 +51,7 @@ import {
 import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
+import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
   buildProfileSectionHref,
@@ -212,6 +213,7 @@ function ProfileEditorInner({
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const basicsEditable = profileBasicsEditable(profile);
+  const pureAgentMode = isPureAgentActivities(partnerActivities);
   const catalogEditable = catalogPublicationEditable(profile);
   const revisionBanner = showRevisionBanner(profile);
 
@@ -537,6 +539,13 @@ function ProfileEditorInner({
           basicsEditable={basicsEditable}
           onActivitiesChange={setPartnerActivities}
         />
+        {pureAgentMode ? (
+          <p className={styles.hint}>
+            Для профиля только с деятельностью «Агент» основные legacy-поля скрыты — используйте блок
+            «Профиль агента» выше.
+          </p>
+        ) : null}
+        {!pureAgentMode ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
@@ -742,6 +751,7 @@ function ProfileEditorInner({
             </Button>
           </div>
         </form>
+        ) : null}
         </>
         ) : null}
 
