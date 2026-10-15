@@ -5,59 +5,37 @@ import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 
 const OUT_DIR =
-  process.env.R01_ARTIFACT_DIR?.trim() ||
-  "/opt/cursor/artifacts/remcard-r01/screenshots";
+  process.env.R01_ARTIFACT_DIR?.trim() || "/opt/cursor/artifacts/remcard-r011/screenshots";
 const PLATFORM_PORT = Number(process.env.R01_PLATFORM_PORT || 3012);
 const REFERENCE_ROOT =
   process.env.R01_REFERENCE_ROOT?.trim() ||
   "/opt/cursor/artifacts/remcard-reference-20261014/reference/prototypes/remcard-profile-wizard";
 const BASE = `http://127.0.0.1:${PLATFORM_PORT}`;
 
-const SHOTS = [
-  { name: "impl-1440-light", url: `${BASE}/dev/r01-agent-shell`, width: 1440, height: 900, theme: "light" },
-  { name: "impl-1440-dark", url: `${BASE}/dev/r01-agent-shell`, width: 1440, height: 900, theme: "dark" },
-  { name: "impl-375-light", url: `${BASE}/dev/r01-agent-shell`, width: 375, height: 812, theme: "light" },
-  { name: "impl-375-dark", url: `${BASE}/dev/r01-agent-shell`, width: 375, height: 812, theme: "dark" },
-  { name: "impl-320-light-panel", url: `${BASE}/dev/r01-agent-shell`, width: 320, height: 700, theme: "light" },
-  {
-    name: "ref-1440-light",
-    file: path.join(REFERENCE_ROOT, "roles.html"),
-    hash: "#agent/home",
-    width: 1440,
-    height: 900,
-    theme: "light",
-  },
-  {
-    name: "ref-375-light",
-    file: path.join(REFERENCE_ROOT, "roles.html"),
-    hash: "#agent/home",
-    width: 375,
-    height: 812,
-    theme: "light",
-  },
+const PAIRS = [
+  { name: "1440-light", width: 1440, height: 900, theme: "light" },
+  { name: "1440-dark", width: 1440, height: 900, theme: "dark" },
+  { name: "375-light", width: 375, height: 812, theme: "light" },
+  { name: "375-dark", width: 375, height: 812, theme: "dark" },
 ];
 
-function waitForServer(url, timeoutMs = 120_000) {
+async function waitForServer(url, timeoutMs = 120_000) {
   const start = Date.now();
-  return new Promise((resolve, reject) => {
-    const tick = async () => {
-      try {
-        const res = await fetch(url, { redirect: "manual" });
-        if (res.ok || res.status === 404 || res.status === 307) return resolve();
-      } catch {
-        /* retry */
-      }
-      if (Date.now() - start > timeoutMs) reject(new Error(`Server not ready: ${url}`));
-      else setTimeout(tick, 500);
-    };
-    tick();
-  });
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { redirect: "manual" });
+      if (res.ok || res.status === 404 || res.status === 307) return;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error(`Server not ready: ${url}`);
 }
 
 async function ensurePlatformDev() {
   try {
     await waitForServer(`${BASE}/login`, 3000);
-    return null;
   } catch {
     const child = spawn("npm", ["run", "dev", "--", "-p", String(PLATFORM_PORT)], {
       cwd: new URL("..", import.meta.url).pathname,
@@ -66,7 +44,6 @@ async function ensurePlatformDev() {
     });
     child.unref();
     await waitForServer(`${BASE}/login`);
-    return child;
   }
 }
 
@@ -75,7 +52,6 @@ async function ensureReferenceServer() {
   const base = `http://127.0.0.1:${port}`;
   try {
     await waitForServer(`${base}/roles.html`, 2000);
-    return base;
   } catch {
     const child = spawn("python3", ["-m", "http.server", String(port)], {
       cwd: REFERENCE_ROOT,
@@ -84,8 +60,97 @@ async function ensureReferenceServer() {
     });
     child.unref();
     await waitForServer(`${base}/roles.html`);
-    return base;
   }
+  return base;
+}
+
+async function readShellMetrics(page) {
+  return page.evaluate(() => {
+    const root = document.documentElement;
+    const sidebarNav = document.querySelector("aside nav, .sidebar nav");
+    const navStyle = sidebarNav ? getComputedStyle(sidebarNav) : null;
+    const bg = getComputedStyle(document.body).backgroundColor;
+    return {
+      dataTheme: root.getAttribute("data-theme"),
+      bodyBg: bg,
+      navAlignContent: navStyle?.alignContent ?? null,
+      navGap: navStyle?.gap ?? null,
+      roleScenario:
+        document.querySelector("[data-testid=scenario-role]")?.value ??
+        document.querySelector("[data-control=role]")?.value ??
+        null,
+      activeNavTestId:
+        document.querySelector("[aria-current=page][data-testid^=nav-]")?.getAttribute(
+          "data-testid",
+        ) ?? null,
+    };
+  });
+}
+
+async function prepareReferenceAgentHome(page, refBase, theme) {
+  await page.goto(`${refBase}/roles.html`, { waitUntil: "networkidle", timeout: 120_000 });
+  await page.addStyleTag({
+    content: ".demo-top,.review-details,.registration,.choice-footer{display:none!important}",
+  });
+  await page.waitForFunction(() => document.querySelector(".shell") != null, null, {
+    timeout: 90_000,
+  });
+  await page.evaluate(() => {
+    const cabinet = document.querySelector('[data-action="view:cabinet"]');
+    if (cabinet && cabinet.getAttribute("aria-pressed") !== "true") {
+      cabinet.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    }
+    const sel = document.querySelector('[data-testid="scenario-role"]');
+    if (sel) {
+      sel.value = "agent";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    const home = document.querySelector('[data-testid="nav-home"]');
+    home?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  if (theme === "dark") {
+    const current = await page.getAttribute("html", "data-theme");
+    if (current !== "dark") {
+      await page.locator('[data-action="theme"]').click();
+    }
+  } else {
+    const current = await page.getAttribute("html", "data-theme");
+    if (current === "dark") {
+      await page.locator('[data-action="theme"]').click();
+    }
+  }
+  await page.waitForTimeout(400);
+  const metrics = await readShellMetrics(page);
+  if (metrics.roleScenario !== "agent") {
+    throw new Error(`Reference role not agent (got ${metrics.roleScenario})`);
+  }
+  if (metrics.activeNavTestId !== "nav-home") {
+    throw new Error(`Reference active nav not home (got ${metrics.activeNavTestId})`);
+  }
+  if (metrics.dataTheme !== theme) {
+    throw new Error(`Reference data-theme ${metrics.dataTheme} != ${theme}`);
+  }
+  return metrics;
+}
+
+async function captureImplementation(page, theme, width, height) {
+  const url = `${BASE}/dev/r01-agent-shell?theme=${theme}`;
+  await page.goto(url, { waitUntil: "networkidle", timeout: 120_000 });
+  await page.waitForFunction(
+    (expected) => document.documentElement.getAttribute("data-theme") === expected,
+    theme,
+    { timeout: 30_000 },
+  );
+  const metrics = await readShellMetrics(page);
+  if (metrics.dataTheme !== theme) {
+    throw new Error(`Impl data-theme ${metrics.dataTheme} != ${theme} (body ${metrics.bodyBg})`);
+  }
+  if (width <= 680 && metrics.navAlignContent !== null) {
+    /* mobile hides sidebar */
+  } else if (width > 680 && metrics.navAlignContent !== "start") {
+    throw new Error(`Sidebar nav align-content expected start, got ${metrics.navAlignContent}`);
+  }
+  return metrics;
 }
 
 async function main() {
@@ -95,43 +160,83 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const results = [];
 
-  for (const shot of SHOTS) {
+  for (const pair of PAIRS) {
+    for (const side of ["impl", "ref"]) {
+      const name = `${side}-${pair.name}`;
+      const context = await browser.newContext({
+        viewport: { width: pair.width, height: pair.height },
+        colorScheme: pair.theme,
+      });
+      const page = await context.newPage();
+      const entry = { name, capture: "FAIL", verify: "NOT_RUN" };
+      try {
+        let metrics;
+        if (side === "impl") {
+          metrics = await captureImplementation(page, pair.theme, pair.width, pair.height);
+        } else {
+          metrics = await prepareReferenceAgentHome(page, refBase, pair.theme);
+        }
+        const out = path.join(OUT_DIR, `${name}.png`);
+        const shell = page.locator(side === "impl" ? ".shell" : ".shell").first();
+        if (await shell.count()) {
+          await shell.screenshot({ path: out });
+        } else {
+          await page.screenshot({ path: out });
+        }
+        entry.capture = "CAPTURED";
+        entry.verify = "PASS";
+        entry.metrics = metrics;
+        entry.path = out;
+      } catch (error) {
+        entry.error = error instanceof Error ? error.message : String(error);
+        entry.verify = "FAIL";
+      } finally {
+        results.push(entry);
+        await context.close();
+      }
+    }
+  }
+
+  // 320 editor / replacement flow
+  {
     const context = await browser.newContext({
-      viewport: { width: shot.width, height: shot.height },
-      colorScheme: shot.theme,
+      viewport: { width: 320, height: 700 },
+      colorScheme: "light",
     });
     const page = await context.newPage();
+    const entry = { name: "impl-320-light-editor", capture: "FAIL", verify: "NOT_RUN" };
     try {
-      const url = shot.url
-        ? shot.url
-        : `${refBase}/${path.basename(shot.file)}${shot.hash ?? ""}`;
-      await page.goto(url, { waitUntil: "networkidle", timeout: 90_000 });
-      await page.waitForTimeout(shot.name.includes("320") ? 800 : 400);
-      if (shot.name.includes("320")) {
-        await page.getByRole("button", { name: "Ещё разделы" }).click();
-        await page.getByRole("button", { name: "Настроить нижнюю панель" }).click();
-        await page.waitForTimeout(300);
-      }
-      const out = path.join(OUT_DIR, `${shot.name}.png`);
-      await page.screenshot({ path: out, fullPage: false });
-      results.push({ name: shot.name, path: out, status: "PASS" });
+      await page.goto(`${BASE}/dev/r01-agent-shell?theme=light`, { waitUntil: "networkidle" });
+      await page.getByRole("button", { name: "Ещё разделы" }).click();
+      await page.getByRole("button", { name: "Настроить нижнюю панель" }).click();
+      const scanner = page.getByText("Сканер", { exact: true }).last();
+      await scanner.click();
+      await page.getByTestId("mobile-replace-wallet").click();
+      const out = path.join(OUT_DIR, "impl-320-light-editor.png");
+      await page.locator("dialog[open]").screenshot({ path: out });
+      entry.capture = "CAPTURED";
+      entry.verify = "PASS";
+      entry.path = out;
     } catch (error) {
-      results.push({
-        name: shot.name,
-        status: "FAIL",
-        error: error instanceof Error ? error.message : String(error),
-      });
+      entry.error = error instanceof Error ? error.message : String(error);
     } finally {
+      results.push(entry);
       await context.close();
     }
   }
 
   await browser.close();
+
+  const report = {
+    generatedAt: new Date().toISOString(),
+    note: "CAPTURED=PNG written; verify PASS=DOM/theme/shell checks passed",
+    results,
+  };
   await writeFile(
     path.join(path.dirname(OUT_DIR), "TEST-RESULTS-screenshots.json"),
-    JSON.stringify({ generatedAt: new Date().toISOString(), results }, null, 2),
+    JSON.stringify(report, null, 2),
   );
-  console.log(JSON.stringify({ outDir: OUT_DIR, results }, null, 2));
+  console.log(JSON.stringify(report, null, 2));
 }
 
 main().catch((err) => {

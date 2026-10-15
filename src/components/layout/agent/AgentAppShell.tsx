@@ -8,7 +8,6 @@ import { LogoutButton } from "@/components/auth/LogoutButton";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { IconChevronRight } from "@/components/layout/ThemeIcons";
 import { NAV_ICONS } from "@/components/layout/NavIcons";
 import { AgentNavIcon } from "@/components/layout/agent/AgentNavIcon";
 import { MobileNavEditorDialog } from "@/components/layout/agent/MobileNavEditorDialog";
@@ -36,6 +35,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/notifications": "Уведомления",
 };
 
+const HOME_SUBTITLE = "Рекомендуйте. Делитесь. Получайте бонусы.";
+
 function pageTitle(pathname: string): string {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   for (const key of AGENT_DESKTOP_NAV_KEYS) {
@@ -43,6 +44,11 @@ function pageTitle(pathname: string): string {
     if (href !== "/" && isPathActive(pathname, href)) return label;
   }
   return "Кабинет партнёра";
+}
+
+function pageSubtitle(pathname: string): string {
+  if (pathname === "/") return HOME_SUBTITLE;
+  return "RemCard PROF · агентский кабинет";
 }
 
 function userInitials(displayName: string): string {
@@ -87,39 +93,27 @@ export function AgentAppShell({
   useAgentThemeSync(prefs.pilotActive, prefs.theme, saveTheme);
 
   const desktopKeys = useMemo(
-    () =>
-      AGENT_DESKTOP_NAV_KEYS.filter((key) => permittedKeys.includes(key)),
+    () => AGENT_DESKTOP_NAV_KEYS.filter((key) => permittedKeys.includes(key)),
     [permittedKeys],
   );
 
   const onSavePanel = useCallback(
     async (keys: AgentNavSectionKey[]) => {
-      try {
-        await saveMobileNavKeys(keys);
-      } catch {
-        /* surface via future toast; keep local until retry */
-      }
+      await saveMobileNavKeys(keys);
     },
     [saveMobileNavKeys],
   );
 
   const MoreIcon = NAV_ICONS.more;
+  const heading = pageTitle(pathname);
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar} aria-label="Основная навигация">
-        <div className={styles.brandBlock}>
-          <BrandMark />
-        </div>
-
         <div className={styles.workspace}>
-          <span className={styles.workspaceAvatar} aria-hidden>
-            {initials}
-          </span>
-          <div className={styles.workspaceText}>
-            <div className={styles.workspaceName}>{displayName}</div>
-            <small className={styles.workspaceHint}>Рабочее пространство</small>
-          </div>
+          <span className={styles.workspaceEyebrow}>Ваше пространство</span>
+          <strong className={styles.workspaceName}>{displayName}</strong>
+          <small className={styles.workspaceHint}>Агент RemCard</small>
         </div>
 
         <nav className={styles.nav}>
@@ -145,36 +139,33 @@ export function AgentAppShell({
           })}
         </nav>
 
-        <div className={styles.sidebarFooter}>
-          <LogoutButton className={styles.sidebarLogoutButton} />
-          <small className={styles.sidebarTagline}>
-            RemCard PROF
+        <div className={styles.sidebarBottom}>
+          <small>
+            Основное под рукой.
             <br />
-            Партнёрство начинается с доверия
+            Дополнительные разделы в «Ещё».
           </small>
         </div>
       </aside>
 
-      <div className={styles.main}>
-        <header className={styles.topbar}>
-          <div className={styles.topbarStart}>
-            <div className={styles.breadcrumb}>
-              <span>Кабинет партнёра</span>
-              <IconChevronRight />
-              <strong>{pageTitle(pathname)}</strong>
+      <div className={styles.mainColumn}>
+        <header className={styles.cabinetBar}>
+          <div className={styles.cabinetBarStart}>
+            <div className={styles.mobileBrand}>
+              <BrandMark showSubtitle={false} />
             </div>
+            <span className={styles.desktopBarTitle}>{heading}</span>
           </div>
-
-          <div className={styles.topbarActions}>
+          <div className={styles.cabinetBarActions}>
             <ThemeToggle />
             <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
-            <div className={styles.topbarAccount}>
+            <div className={styles.desktopAccount}>
               <span className={styles.accountAvatar} aria-hidden>
                 {initials}
               </span>
               <div className={styles.accountCaption}>
                 <strong>{displayName}</strong>
-                <small>Агент RemCard</small>
+                <small>Агент</small>
               </div>
             </div>
             <div className={styles.mobileLogout} data-testid="mobile-logout">
@@ -183,12 +174,16 @@ export function AgentAppShell({
           </div>
         </header>
 
-        <main className={styles.content}>{children}</main>
-
-        <footer className={styles.shellFooter}>
-          <span>Вы работаете от имени {displayName}</span>
-          <span className={styles.shellFooterMuted}>RemCard PROF</span>
-        </footer>
+        <div className={styles.content}>
+          <header className={styles.pageHeader}>
+            <div>
+              <span className={styles.pageEyebrow}>Агент RemCard</span>
+              <h1 className={styles.pageTitle}>{heading}</h1>
+              <p className={styles.pageMuted}>{pageSubtitle(pathname)}</p>
+            </div>
+          </header>
+          {children}
+        </div>
       </div>
 
       <nav className={styles.mobileBottom} aria-label="Мобильная навигация">
@@ -202,8 +197,10 @@ export function AgentAppShell({
               className={`${styles.mobileBottomLink} ${active ? styles.mobileBottomLinkActive : ""}`}
               aria-current={active ? "page" : undefined}
             >
-              <AgentNavIcon section={section} />
-              {section.label}
+              <span className={styles.mobileBottomIcon}>
+                <AgentNavIcon section={section} />
+              </span>
+              <span className={styles.mobileBottomLabel}>{section.label}</span>
             </Link>
           );
         })}
@@ -214,8 +211,10 @@ export function AgentAppShell({
           aria-current={moreActive ? "page" : undefined}
           onClick={() => setMoreOpen(true)}
         >
-          <MoreIcon />
-          Ещё
+          <span className={styles.mobileBottomIcon}>
+            <MoreIcon />
+          </span>
+          <span className={styles.mobileBottomLabel}>Ещё</span>
         </button>
       </nav>
 

@@ -24,6 +24,7 @@ export function CabinetAppShellClient({
   if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
     return (
       <AgentAppShell
+        key={`${uiPrefs.contextKey ?? "none"}:${user.id}`}
         user={user}
         incomingCount={incomingCount}
         notificationBell={bell}

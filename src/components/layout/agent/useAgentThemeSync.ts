@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { shouldPersistThemeToServer } from "@/lib/agent-nav/theme-sync-policy";
 import {
   applyDataTheme,
   isThemePreference,
@@ -9,33 +10,54 @@ import {
   type ThemePreference,
 } from "@/lib/theme-preference";
 
-/** Hydrate theme from server prefs and persist toggles back when pilot is active. */
+type PersistThemeFn = (theme: ThemePreference) => Promise<unknown>;
+
+/** Hydrate theme from server prefs; persist only on explicit user theme changes. */
 export function useAgentThemeSync(
   pilotActive: boolean,
   serverTheme: ThemePreference | null,
-  persistTheme: (theme: ThemePreference) => Promise<unknown>,
+  persistTheme: PersistThemeFn,
 ) {
   const { theme, setTheme } = useTheme();
   const hydrated = useRef(false);
-  const skipNextPersist = useRef(false);
+  const lastPersisted = useRef<ThemePreference | null>(null);
+  const persistRef = useRef(persistTheme);
+  persistRef.current = persistTheme;
+  const inFlight = useRef(false);
 
   useEffect(() => {
-    if (!pilotActive || !serverTheme || !isThemePreference(serverTheme)) return;
-    if (hydrated.current) return;
+    if (!pilotActive) {
+      hydrated.current = false;
+      lastPersisted.current = null;
+      return;
+    }
+    if (!serverTheme || !isThemePreference(serverTheme)) return;
     hydrated.current = true;
-    skipNextPersist.current = true;
+    lastPersisted.current = serverTheme;
     writeStoredThemePreference(serverTheme);
     applyDataTheme(serverTheme);
     setTheme(serverTheme);
   }, [pilotActive, serverTheme, setTheme]);
 
   useEffect(() => {
-    if (!pilotActive) return;
-    if (skipNextPersist.current) {
-      skipNextPersist.current = false;
+    if (
+      !shouldPersistThemeToServer(pilotActive, hydrated.current, theme, lastPersisted.current)
+    ) {
       return;
     }
-    if (!hydrated.current) return;
-    void persistTheme(theme);
-  }, [pilotActive, persistTheme, theme]);
+    if (inFlight.current) return;
+    const previous = lastPersisted.current;
+    inFlight.current = true;
+    persistRef
+      .current(theme)
+      .then(() => {
+        lastPersisted.current = theme;
+      })
+      .catch(() => {
+        lastPersisted.current = previous;
+      })
+      .finally(() => {
+        inFlight.current = false;
+      });
+  }, [pilotActive, theme]);
 }

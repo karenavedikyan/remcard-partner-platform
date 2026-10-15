@@ -201,8 +201,21 @@
 
 .footer {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4) var(--space-4);
   border-top: 1px solid var(--line);
+}
+
+.footer > div:last-child {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.saveError {
+  font-size: var(--text-xs);
+  color: var(--primary);
+  margin: 0;
 }

@@ -3,6 +3,8 @@ import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { defaultAgentMobileNavKeys } from "@/lib/agent-nav/sections";
 import type { AuthUser } from "@/lib/types";
+import type { ThemePreference } from "@/lib/theme-preference";
+import { R01AgentShellFixtureBoot } from "./R01AgentShellFixtureBoot";
 
 const FIXTURE_USER: AuthUser = {
   id: "agent-fixture",
@@ -12,7 +14,7 @@ const FIXTURE_USER: AuthUser = {
   publicId: "RC-AGENT-FIX",
 };
 
-const PERMITTED = defaultAgentMobileNavKeys([
+const FULL_PERMITTED = [
   "home",
   "partners",
   "wallet",
@@ -21,33 +23,52 @@ const PERMITTED = defaultAgentMobileNavKeys([
   "history",
   "notifications",
   "profile",
-]);
+] as const;
 
-const FIXTURE_PREFS: CabinetUiPreferencesResponse = {
-  contractVersion: "2026-10-14.r01",
-  pilotEnabled: true,
-  pilotActive: true,
-  contextKey: "agent-wallet:fixture",
-  version: 1,
-  theme: "light",
-  mobileNavKeys: defaultAgentMobileNavKeys(PERMITTED),
-  permittedKeys: PERMITTED,
-  defaultMobileNavKeys: defaultAgentMobileNavKeys(PERMITTED),
-};
+function parseTheme(value: string | undefined): ThemePreference {
+  if (value === "dark" || value === "light" || value === "system") return value;
+  return "light";
+}
 
-export default function R01AgentShellFixturePage() {
+export default async function R01AgentShellFixturePage(props: {
+  searchParams?: Promise<{ theme?: string }>;
+}) {
   if (process.env.NODE_ENV === "production") {
     notFound();
   }
 
+  const searchParams = await props.searchParams;
+  const theme = parseTheme(searchParams?.theme);
+
+  const FIXTURE_PREFS: CabinetUiPreferencesResponse = {
+    contractVersion: "2026-10-14.r01",
+    pilotEnabled: true,
+    pilotActive: true,
+    contextKey: "agent-wallet:fixture",
+    version: 1,
+    theme,
+    mobileNavKeys: defaultAgentMobileNavKeys(FULL_PERMITTED),
+    permittedKeys: [...FULL_PERMITTED],
+    defaultMobileNavKeys: defaultAgentMobileNavKeys(FULL_PERMITTED),
+  };
+
+  const resolvedTheme = theme === "dark" ? "dark" : "light";
+
   return (
-    <AgentAppShell user={FIXTURE_USER} incomingCount={2} initialPrefs={FIXTURE_PREFS}>
-      <section style={{ minHeight: 240 }}>
-        <h1 style={{ fontSize: 28, marginBottom: 8 }}>Главная</h1>
-        <p style={{ color: "var(--muted)", fontSize: 14 }}>
-          Fixture shell для R01 (без live auth). Содержимое страницы не сравнивается с эталоном.
-        </p>
-      </section>
-    </AgentAppShell>
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.setAttribute('data-theme','${resolvedTheme}');try{localStorage.setItem('remcard-theme','${theme}');}catch(e){}`,
+        }}
+      />
+      <R01AgentShellFixtureBoot theme={theme} />
+      <AgentAppShell user={FIXTURE_USER} incomingCount={2} initialPrefs={FIXTURE_PREFS}>
+        <section style={{ minHeight: 120 }}>
+          <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
+            Fixture shell для R01 (без live auth). Контент страницы вне scope сравнения.
+          </p>
+        </section>
+      </AgentAppShell>
+    </>
   );
 }

@@ -22,7 +22,7 @@ type MobileNavEditorDialogProps = {
   initialKeys: AgentNavSectionKey[];
   permittedKeys: AgentNavSectionKey[];
   onClose: () => void;
-  onSave: (keys: AgentNavSectionKey[]) => void;
+  onSave: (keys: AgentNavSectionKey[]) => Promise<void>;
 };
 
 export function MobileNavEditorDialog({
@@ -38,10 +38,14 @@ export function MobileNavEditorDialog({
     draft: initialKeys,
     replacement: null,
   });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setState({ draft: [...initialKeys], replacement: null });
+      setSaveError(null);
+      setSaving(false);
     }
   }, [open, initialKeys]);
 
@@ -236,21 +240,36 @@ export function MobileNavEditorDialog({
         </div>
 
         <footer className={styles.footer}>
-          <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+          {saveError ? (
+            <p className={styles.saveError} role="alert">
+              {saveError}
+            </p>
+          ) : null}
+          <div>
+          <button type="button" className={styles.secondaryBtn} onClick={onClose} disabled={saving}>
             Отмена
           </button>
           <button
             type="button"
             className={styles.primaryBtn}
-            disabled={!canSaveMobileNavEditor(state)}
+            disabled={!canSaveMobileNavEditor(state) || saving}
             onClick={() => {
-              if (!canSaveMobileNavEditor(state)) return;
-              onSave(state.draft);
-              onClose();
+              if (!canSaveMobileNavEditor(state) || saving) return;
+              setSaving(true);
+              setSaveError(null);
+              void onSave(state.draft)
+                .then(() => onClose())
+                .catch((error: unknown) => {
+                  setSaveError(
+                    error instanceof Error ? error.message : "Не удалось сохранить панель",
+                  );
+                })
+                .finally(() => setSaving(false));
             }}
           >
-            Сохранить панель
+            {saving ? "Сохранение…" : "Сохранить панель"}
           </button>
+          </div>
         </footer>
       </form>
     </dialog>
