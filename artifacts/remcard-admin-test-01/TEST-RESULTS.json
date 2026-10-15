@@ -1,10 +1,10 @@
 {
-  "checkedAt": "2026-10-15T14:55:00Z",
+  "checkedAt": "2026-10-15T15:15:00Z",
   "release": "ADMIN-TEST-01.3",
   "backendCodeHead": "f027f49e8099fa7988dfe9cabc56e066a250d552",
   "frontendCodeHead": "8be085809432b3cdcefdf54c37b5631598c36061",
-  "backendBranchTip": "d2d887f6 (fixtures-only bootstrap for browser run)",
-  "frontendBranchTip": "dfdf43726f0ddbd428fb21f48c2bb0667837b81b",
+  "backendBranchTip": "d2d887f62915eb5c48466a383a9ccc604c623c1d",
+  "frontendBranchTip": "7f2b940e3bcb11db1c254fa1fcec0f353b8537ae",
   "build": {
     "remcard-navigator": "PASS (prior run on branch; not re-run this gate unless code changes)",
     "remcard-partner-platform": "PASS (prior run on branch; not re-run this gate unless code changes)"
@@ -70,5 +70,13 @@
     ]
   },
   "productionSmoke": "NOT_RUN",
-  "controlledPublication": "READY_FOR_OPERATOR_REVIEW (local disposable gate PASS; no production merge/deploy in this run)"
+  "controlledPublication": "READY_FOR_OWNER_APPROVAL (prep only; merge/deploy/apply/flags/credentials NOT_RUN)",
+  "controlledReleasePreflight": {
+    "productionConnect": "NOT_RUN",
+    "productionBackupReadiness": "NOT_RUN",
+    "prMergeability": { "navigator679": "MERGEABLE", "platform13": "MERGEABLE" },
+    "ci": { "navigator679": "FAIL_Vercel_deployment_blocked", "platform13": "no_checks_reported" },
+    "postReviewRuntimeOrSqlChanged": false,
+    "sqlChecksumsVerifiedOnBranchTip": true
+  }
 }
