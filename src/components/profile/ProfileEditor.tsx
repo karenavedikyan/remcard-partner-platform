@@ -492,7 +492,10 @@ function ProfileEditorInner({
   const workingMissing = workingProfileMissingFields(buildDraft());
   const workingComplete = workingProfileCabinetReady(buildDraft());
 
-  const showAside = activeSection !== "overview" && activeSection !== "team";
+  const showAside =
+    activeSection !== "overview" &&
+    activeSection !== "team" &&
+    !(pureAgentCompactUi && activeSection === "basics");
 
   return (
     <div className={styles.shell} id={moderationSection ? "moderation-remarks" : undefined}>

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const NAV_ROOT = process.env.R02_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
 const RUN_DIR = process.env.R02_RUN_DIR || '/tmp/r02-local-stack';
 const OUT_DIR = path.join(ROOT, 'artifacts/remcard-r02/screenshots');
 const REFERENCE_ROOT =
@@ -13,18 +14,32 @@ const REFERENCE_ROOT =
   '/opt/cursor/artifacts/remcard-reference-20261014/reference/prototypes/remcard-profile-wizard';
 const REF_PORT = Number(process.env.R02_REF_PORT || 8097);
 
+const SYNTH = {
+  displayName: 'R02 Visual Agent',
+  city: 'Краснодар',
+  audience: 'Знакомые и клиенты',
+  channel: 'https://example.com/visual',
+  contactPhone: '79001234567',
+  contactEmail: 'visual.agent@example.test',
+};
+
 const PAIRS = [
-  { name: 'wizard-step1-1440-light', width: 1440, height: 900, theme: 'light', step: 0, crop: 'wizard' },
-  { name: 'wizard-step1-375-light', width: 375, height: 812, theme: 'light', step: 0, crop: 'wizard' },
-  { name: 'wizard-step1-375-dark', width: 375, height: 812, theme: 'dark', step: 0, crop: 'wizard' },
-  { name: 'wizard-step1-1440-dark', width: 1440, height: 900, theme: 'dark', step: 0, crop: 'wizard' },
-  { name: 'summary-375-light', width: 375, height: 812, theme: 'light', step: 3, crop: 'wizard' },
-  { name: 'summary-375-dark', width: 375, height: 812, theme: 'dark', step: 3, crop: 'wizard' },
-  { name: 'profile-320-smoke', width: 320, height: 700, theme: 'light', step: 2, crop: 'page', preloadContacts: true },
+  { name: 'wizard-step1-1440-light', width: 1440, height: 900, theme: 'light', scenario: 'step1', crop: 'wizard' },
+  { name: 'wizard-step1-1440-dark', width: 1440, height: 900, theme: 'dark', scenario: 'step1', crop: 'wizard' },
+  { name: 'wizard-step1-375-light', width: 375, height: 812, theme: 'light', scenario: 'step1', crop: 'wizard' },
+  { name: 'wizard-step1-375-dark', width: 375, height: 812, theme: 'dark', scenario: 'step1', crop: 'wizard' },
+  { name: 'review-375-light', width: 375, height: 812, theme: 'light', scenario: 'review', crop: 'wizard' },
+  { name: 'review-375-dark', width: 375, height: 812, theme: 'dark', scenario: 'review', crop: 'wizard' },
+  { name: 'completed-375-light', width: 375, height: 812, theme: 'light', scenario: 'completed', crop: 'wizard' },
+  { name: 'completed-375-dark', width: 375, height: 812, theme: 'dark', scenario: 'completed', crop: 'wizard' },
+  { name: 'profile-320-smoke', width: 320, height: 700, theme: 'light', scenario: 'contacts', crop: 'page-full' },
 ];
 
 const REF_HIDE =
   '.demo-top,.review-details,.registration,.choice-footer,.demo-toolbar,.mobile-demo-settings,.review-toolbar{display:none!important}';
+
+const CAPTURE_MASK =
+  '[data-testid="agent-product-topbar"],nav[aria-label="Мобильная навигация"]{position:absolute!important;visibility:hidden!important;pointer-events:none!important}';
 
 async function ensureReferenceServer() {
   const base = `http://127.0.0.1:${REF_PORT}`;
@@ -52,11 +67,31 @@ async function ensureReferenceServer() {
   throw new Error('reference_server_unreachable');
 }
 
-async function readTheme(page) {
-  return page.evaluate(() => document.documentElement.getAttribute('data-theme') || 'light');
+async function setImplTheme(page, theme) {
+  const wantDark = theme === 'dark';
+  const toggle = page.getByTestId('theme-toggle');
+  await toggle.waitFor({ timeout: 60_000 });
+  for (let i = 0; i < 4; i++) {
+    const dark = await page.evaluate(() => {
+      const root = document.documentElement;
+      const bg = getComputedStyle(document.body).backgroundColor;
+      return root.getAttribute('data-theme') === 'dark' || bg === 'rgb(32, 35, 41)';
+    });
+    if (dark === wantDark) return;
+    await toggle.click();
+    await page.waitForTimeout(350);
+  }
 }
 
-async function prepareReference(page, refBase, theme, step) {
+async function setRefTheme(page, theme) {
+  const resolved = theme === 'dark' ? 'dark' : 'light';
+  if ((await page.evaluate(() => document.documentElement.getAttribute('data-theme') || 'light')) !== resolved) {
+    await page.locator('button[data-action="theme"]').click();
+    await page.waitForTimeout(300);
+  }
+}
+
+async function openReferenceAgentProfile(page, refBase) {
   await page.goto(`${refBase}/roles.html`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.waitForSelector('.topbar', { timeout: 60_000 });
   await page.evaluate(() => {
@@ -70,167 +105,316 @@ async function prepareReference(page, refBase, theme, step) {
       sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
     document.querySelector('[data-testid="nav-profile"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    const basics = document.querySelector('[data-profile-action="tab"][data-profile-id="basics"]');
-    basics?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    document
+      .querySelector('[data-profile-action="tab"][data-profile-id="basics"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
   await page.waitForSelector('.pw-layout, .pw', { timeout: 60_000 });
   await page.addStyleTag({ content: REF_HIDE });
-  const resolved = theme === 'dark' ? 'dark' : 'light';
-  if ((await readTheme(page)) !== resolved) {
-    await page.locator('button[data-action="theme"]').click();
-    await page.waitForTimeout(300);
-  }
-  if (step > 0) {
-    await page.evaluate((s) => {
-      const btn = document.querySelector(`[data-testid="pw-step-${s}"]`) ||
-        document.querySelectorAll('.pw-steps button')[s];
-      btn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    }, step);
-  }
 }
 
-async function prepareImpl(page, baseUrl, theme, step, opts = {}) {
-  await page.goto(`${baseUrl}/profile?section=basics`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-  if (theme === 'dark') {
-    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
-  }
-  await page.waitForSelector('[data-testid="agent-profile-wizard"]', { timeout: 60_000 });
-  if (opts.preloadedStep != null) {
-    await page.waitForSelector('#agent-profile-step-title', { timeout: 60_000 });
+async function fillReferenceBasics(page) {
+  await page.locator('[data-testid="pw-input-name"]').fill(SYNTH.displayName);
+  await page.locator('[data-testid="pw-input-city"]').fill(SYNTH.city);
+}
+
+async function referenceAdvance(page) {
+  await page.locator('[data-testid="pw-next"]').click();
+  await page.waitForTimeout(200);
+}
+
+async function prepareReference(page, refBase, theme, scenario) {
+  await openReferenceAgentProfile(page, refBase);
+  await setRefTheme(page, theme);
+  await fillReferenceBasics(page);
+  if (scenario === 'step1') {
     return;
   }
-  if (step > 0) {
-    const btn = page.locator(`[data-testid="agent-profile-step-${step}"]`);
-    await btn.waitFor({ state: 'visible', timeout: 60_000 });
-    const enabled = await btn.isEnabled();
-    if (enabled) await btn.click();
+  await referenceAdvance(page);
+  if (scenario === 'contacts') {
+    await page.locator('[data-testid="pw-skip"]').click();
+    await page.waitForSelector('[data-testid="pw-progress"]', { hasText: 'Шаг 3' });
+    return;
+  }
+  if (scenario === 'review' || scenario === 'completed') {
+    await page.locator('[data-testid="pw-input-audience"]').fill(SYNTH.audience);
+    await referenceAdvance(page);
+    await page.locator('[data-testid="pw-skip"]').click();
+    await page.waitForSelector('[data-testid="pw-progress"]', { timeout: 30_000 });
+  }
+  if (scenario === 'completed') {
+    await page.locator('[data-testid="pw-next"]').click();
+    await page.waitForSelector('[data-testid="pw-summary"]', { timeout: 30_000 });
   }
 }
 
-async function verifyState(page, side, theme, step) {
-  const data = await page.evaluate(() => {
-    const wizard = document.querySelector('[data-testid="agent-profile-wizard"], .pw-layout, .pw');
-    const roleSelect = document.querySelector('[data-testid="scenario-role"]');
-    const kickerEl = document.querySelector('.pw-kicker, [class*="kicker"]');
-    const journeyKicker = document.querySelector('.pw-journey .pw-kicker, .pw-journey > .pw-kicker');
-    const roleAgent =
-      roleSelect?.value === 'agent' ||
-      Boolean(journeyKicker?.textContent?.includes('Агент')) ||
-      Boolean(kickerEl?.textContent?.includes('Агент')) ||
-      document.body.innerText.includes('Агент');
-    const steps = ['О себе', 'Аудитория', 'Контакты', 'Проверка'].filter((s) =>
-      document.body.innerText.includes(s),
-    );
-    const root = wizard || document.documentElement;
-    const overflow = root.scrollWidth > root.clientWidth + 4;
-    return { hasWizard: Boolean(wizard), roleAgent, steps, overflow };
-  });
-  const themeActual = await readTheme(page);
-  const expectedTheme = theme === 'dark' ? 'dark' : 'light';
+async function prepareImpl(page, baseUrl, theme, scenario) {
+  await page.goto(`${baseUrl}/profile?section=basics`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await setImplTheme(page, theme);
+  if (scenario === 'completed') {
+    await page.waitForSelector('[data-testid="agent-profile-completed-summary"]', { timeout: 60_000 });
+    return;
+  }
+  await page.waitForSelector('[data-testid="agent-profile-wizard"]', { timeout: 60_000 });
+  if (scenario === 'review') {
+    await page.waitForSelector('[data-testid="agent-profile-progress"]', { hasText: 'Шаг 4 из 4' });
+    return;
+  }
+  if (scenario === 'step1') {
+    await page.getByTestId('agent-profile-input-displayName').fill(SYNTH.displayName);
+    await page.locator('#agent-city').fill(SYNTH.city);
+    return;
+  }
+  if (scenario === 'contacts') {
+    await walkImplWizardToContacts(page);
+    return;
+  }
+  await walkImplWizardToReview(page);
+}
+
+async function walkImplWizardToReview(page) {
+  await page.getByTestId('agent-profile-input-displayName').fill(SYNTH.displayName);
+  await page.locator('#agent-city').fill(SYNTH.city);
+  await page.getByTestId('agent-profile-next').click();
+  await page.waitForSelector('#agent-profile-step-title', { hasText: 'Кому вы рекомендуете?' });
+  await page.locator('#agent-audience').fill(SYNTH.audience);
+  await page.getByTestId('agent-profile-next').click();
+  await page.waitForSelector('#agent-profile-step-title', { hasText: 'Как с вами связаться?' });
+  await page.getByRole('button', { name: 'Пропустить' }).click();
+  await page.waitForSelector('[data-testid="agent-profile-progress"]', { hasText: 'Шаг 4 из 4' });
+}
+
+async function walkImplWizardToContacts(page) {
+  await page.getByTestId('agent-profile-input-displayName').fill(SYNTH.displayName);
+  await page.locator('#agent-city').fill(SYNTH.city);
+  await page.getByTestId('agent-profile-next').click();
+  await page.getByRole('button', { name: 'Пропустить' }).click();
+  await page.waitForSelector('#agent-profile-step-title', { hasText: 'Как с вами связаться?' });
+}
+
+async function readThemeMetrics(page, side) {
+  return page.evaluate((refSide) => {
+    const root =
+      document.querySelector('[data-testid="agent-profile-wizard"]') ||
+      document.querySelector('[data-testid="agent-profile-completed-summary"]') ||
+      document.querySelector('.pw-layout, .pw');
+    const card = root?.querySelector('section') || root;
+    const cs = card ? getComputedStyle(card) : getComputedStyle(document.documentElement);
+    const bg = cs.backgroundColor;
+    const text = cs.color;
+    const attr = document.documentElement.getAttribute('data-theme') || 'light';
+    const darkByBg =
+      bg === 'rgb(32, 35, 41)' || bg === 'rgb(41, 46, 54)' || attr === 'dark';
+    return { bg, text, attr, darkByBg, refSide };
+  }, side);
+}
+
+async function verifyPair(page, side, theme, scenario, width) {
+  const metrics = await page.evaluate(({ scenario: sc, viewportWidth }) => {
+    const wizard = document.querySelector('[data-testid="agent-profile-wizard"]');
+    const completed = document.querySelector('[data-testid="agent-profile-completed-summary"]');
+    const refSummary = document.querySelector('[data-testid="pw-summary"]');
+    const root = wizard || completed || document.querySelector('.pw-layout, .pw');
+    const requisites = document.querySelector('[data-testid="agent-requisites-panel"]');
+    const roleEl =
+      root?.querySelector('[data-testid="agent-profile-role-kicker"]') ||
+      root?.querySelector('.pw-summary-header .pw-kicker') ||
+      root?.querySelector('.pw-journey > .pw-kicker');
+    let roleAgent = roleEl?.textContent?.trim() === 'Агент';
+    if (sc === 'contacts' && requisites) {
+      roleAgent = requisites.textContent?.toLowerCase().includes('реквизит') ?? roleAgent;
+    }
+    const progress = document.querySelector('[data-testid="agent-profile-progress"]')?.textContent?.trim() || '';
+    const refProgress = document.querySelector('[data-testid="pw-progress"]')?.textContent?.trim() || '';
+    const stepTitle = document.querySelector('#agent-profile-step-title')?.textContent?.trim() || '';
+    const heading =
+      stepTitle ||
+      document.querySelector('.pw-card-top .pw-kicker')?.textContent?.trim() ||
+      '';
+    const overflowDoc = document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
+    const stepsList =
+      root?.querySelector('[data-testid="agent-profile-steps"]') || root?.querySelector('.pw-steps');
+    const stepsDisplay = stepsList ? getComputedStyle(stepsList).display : '';
+    const journeyIntro =
+      root?.querySelector('[data-testid="agent-profile-journey"] > p') ||
+      root?.querySelector('.pw-journey > p');
+    const introDisplay = journeyIntro ? getComputedStyle(journeyIntro).display : 'none';
+    const box = root?.getBoundingClientRect();
+    return {
+      roleAgent,
+      progress,
+      refProgress,
+      heading,
+      overflowDoc,
+      stepsDisplay,
+      introDisplay,
+      wizardWidth: box?.width ?? 0,
+      hasWizard: Boolean(
+        wizard || root?.querySelector('.pw-layout') || root?.querySelector('.pw-card'),
+      ),
+      hasCompleted: Boolean(completed || refSummary),
+      hasRequisites: Boolean(requisites),
+      scenario: sc,
+      viewportWidth,
+      stepTitle,
+    };
+  }, { scenario, viewportWidth: width });
+
+  const themeMetrics = await readThemeMetrics(page, side);
+  const wantDark = theme === 'dark';
+  const themeOk = wantDark ? themeMetrics.darkByBg : !themeMetrics.darkByBg;
+
+  let stateOk = false;
+  if (scenario === 'step1') {
+    const prog = metrics.progress || metrics.refProgress;
+    stateOk = metrics.hasWizard && /Шаг 1/.test(prog);
+    if (width <= 400) {
+      stateOk = stateOk && metrics.stepsDisplay === 'flex' && metrics.introDisplay === 'none';
+    }
+  } else if (scenario === 'review') {
+    const prog = metrics.progress || metrics.refProgress;
+    stateOk = !metrics.hasCompleted && /Шаг 4/.test(prog);
+  } else if (scenario === 'completed') {
+    stateOk = metrics.hasCompleted && !metrics.hasWizard;
+  } else if (scenario === 'contacts') {
+    stateOk =
+      (side === 'impl' && metrics.hasRequisites) ||
+      (metrics.hasWizard &&
+        (metrics.stepTitle.includes('связаться') ||
+          metrics.progress === 'Шаг 3 из 4' ||
+          /Шаг 3/.test(metrics.refProgress)));
+  }
+
   const verify = {
-    roleAgent: data.roleAgent,
-    themeOk: themeActual === expectedTheme,
-    stepLabelsOk: data.steps.length >= 3,
-    overflowOk: !data.overflow,
-    hasWizard: data.hasWizard,
+    roleAgent: metrics.roleAgent,
+    themeOk,
+    stateOk,
+    overflowOk: !metrics.overflowDoc,
+    metrics: {
+      wizardWidth: Math.round(metrics.wizardWidth),
+      stepsDisplay: metrics.stepsDisplay,
+      introDisplay: metrics.introDisplay,
+      progress: metrics.progress || metrics.refProgress,
+      themeBg: themeMetrics.bg,
+      themeText: themeMetrics.text,
+    },
   };
-  verify.pass =
-    verify.roleAgent && verify.themeOk && verify.stepLabelsOk && verify.hasWizard && verify.overflowOk;
-  if (side === 'ref' && step === 0) {
-    verify.pass = verify.pass && data.steps.includes('О себе');
+  verify.pass = verify.roleAgent && verify.themeOk && verify.stateOk && verify.overflowOk;
+  if (width >= 1200 && scenario === 'step1') {
+    verify.pass = verify.pass && metrics.wizardWidth >= 980;
   }
   return verify;
 }
 
-async function bffHeaders(session, plat) {
-  return {
+async function capture(page, pair, side, out) {
+  if (pair.crop === 'page-full') {
+    await page.screenshot({ path: out, fullPage: true });
+    return;
+  }
+  if (side === 'impl') {
+    await page.addStyleTag({ content: CAPTURE_MASK, id: 'r02-visual-mask' });
+  }
+  const loc = page
+    .locator(
+      '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-completed-summary"], .pw-layout, .pw, [data-testid="pw-summary"]',
+    )
+    .first();
+  await loc.screenshot({ path: out });
+  if (side === 'impl') {
+    await page.evaluate(() => document.getElementById('r02-visual-mask')?.remove());
+  }
+}
+
+function loadEnv() {
+  const meta = JSON.parse(readFileSync(path.join(RUN_DIR, 'meta.json'), 'utf8'));
+  const env = { ...process.env };
+  for (const line of readFileSync(meta.envPath, 'utf8').split('\n')) {
+    if (!line || line.startsWith('#')) continue;
+    const idx = line.indexOf('=');
+    if (idx <= 0) continue;
+    env[line.slice(0, idx)] = line.slice(idx + 1);
+  }
+  return { meta, env };
+}
+
+function resetFixture(env) {
+  spawnSync('pnpm', ['exec', 'tsx', 'scripts/r02-local-fixture.ts', 'reset-draft'], {
+    cwd: NAV_ROOT,
+    env,
+    encoding: 'utf8',
+  });
+}
+
+async function seedReviewViaBff(session) {
+  const plat = session.platformOrigin.replace(/\/$/, '');
+  const h = {
     Cookie: `remcard-token=${session.token}`,
     'content-type': 'application/json',
     Origin: plat,
   };
-}
-
-async function resetDraftStep1(session) {
-  const plat = session.platformOrigin.replace(/\/$/, '');
-  const draft = await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, {
-    headers: { Cookie: `remcard-token=${session.token}` },
+  let draft = await (await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, { headers: { Cookie: h.Cookie } })).json();
+  const patch = async (body) => {
+    const res = await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, { method: 'PATCH', headers: h, body: JSON.stringify(body) });
+    draft = await res.json();
+    return res.status;
+  };
+  await patch({
+    expectedVersion: draft.version ?? 0,
+    expectedEpoch: draft.draftEpoch ?? 0,
+    mode: 'advance',
+    fromStep: 1,
+    step: 2,
+    payload: { displayName: SYNTH.displayName, city: SYNTH.city },
   });
-  const body = await draft.json();
-  await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, {
-    method: 'PATCH',
-    headers: await bffHeaders(session, plat),
-    body: JSON.stringify({
-      expectedVersion: body.version ?? 0,
-      expectedEpoch: body.draftEpoch ?? 0,
-      mode: 'save',
-      step: 1,
-      payload: {
-        displayName: body.payload?.displayName || 'Local Agent Owner',
-        city: body.payload?.city || 'Krasnodar',
-      },
-    }),
+  await patch({
+    expectedVersion: draft.version ?? 0,
+    expectedEpoch: draft.draftEpoch ?? 0,
+    mode: 'advance',
+    fromStep: 2,
+    step: 3,
+    payload: { displayName: SYNTH.displayName, city: SYNTH.city, audience: SYNTH.audience },
   });
-}
-
-async function advanceDraftToReview(session) {
-  const plat = session.platformOrigin.replace(/\/$/, '');
-  const draft = await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, {
-    headers: { Cookie: `remcard-token=${session.token}` },
-  });
-  const body = await draft.json();
-  await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, {
-    method: 'PATCH',
-    headers: await bffHeaders(session, plat),
-    body: JSON.stringify({
-      expectedVersion: body.version ?? 0,
-      expectedEpoch: body.draftEpoch ?? 0,
-      mode: 'save',
-      step: 4,
-      payload: {
-        displayName: body.payload?.displayName || 'Local Agent Owner',
-        city: body.payload?.city || 'Krasnodar',
-        ...(body.payload ?? {}),
-      },
-    }),
+  await patch({
+    expectedVersion: draft.version ?? 0,
+    expectedEpoch: draft.draftEpoch ?? 0,
+    mode: 'save',
+    step: 4,
+    payload: { displayName: SYNTH.displayName, city: SYNTH.city, audience: SYNTH.audience },
   });
 }
 
-async function preloadContactsStep(session) {
+async function seedCompletedViaBff(session) {
+  await seedReviewViaBff(session);
   const plat = session.platformOrigin.replace(/\/$/, '');
-  const draft = await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, {
-    headers: { Cookie: `remcard-token=${session.token}` },
-  });
-  const body = await draft.json();
-  await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, {
-    method: 'PATCH',
-    headers: await bffHeaders(session, plat),
-    body: JSON.stringify({
-      expectedVersion: body.version ?? 0,
-      expectedEpoch: body.draftEpoch ?? 0,
-      mode: 'save',
-      step: 3,
-      payload: body.payload ?? {},
-    }),
+  const h = {
+    Cookie: `remcard-token=${session.token}`,
+    'content-type': 'application/json',
+    Origin: plat,
+  };
+  const draft = await (await fetch(`${plat}/api/remcard/api/pro/agent-profile/draft`, { headers: { Cookie: h.Cookie } })).json();
+  await fetch(`${plat}/api/remcard/api/pro/agent-profile/finish`, {
+    method: 'POST',
+    headers: h,
+    body: JSON.stringify({ expectedVersion: draft.version ?? 0, expectedEpoch: draft.draftEpoch ?? 0 }),
   });
 }
 
 async function main() {
   const session = JSON.parse(readFileSync(path.join(RUN_DIR, 'session.json'), 'utf8'));
-  const baseUrl = session.platformOrigin;
-  await resetDraftStep1(session);
+  const { env } = loadEnv();
   mkdirSync(OUT_DIR, { recursive: true });
   const refBase = await ensureReferenceServer();
   const browser = await chromium.launch({ headless: true });
-  const report = [];
+  const report = { pairs: [], widthTolerance: { desktopMinWizard: 980 } };
 
   for (const pair of PAIRS) {
-    if (pair.preloadContacts) {
-      await preloadContactsStep(session);
-    } else if (pair.step === 3) {
-      await advanceDraftToReview(session);
-    } else if (pair.step === 0) {
-      await resetDraftStep1(session);
+    resetFixture(env);
+    if (pair.scenario === 'review') {
+      await seedReviewViaBff(session);
+    } else if (pair.scenario === 'completed') {
+      await seedCompletedViaBff(session);
     }
+
     for (const side of ['impl', 'ref']) {
       const name = `${side}-${pair.name}`;
       const entry = { name, capture: 'FAIL', verify: 'FAIL' };
@@ -243,7 +427,7 @@ async function main() {
           {
             name: 'remcard-token',
             value: session.token,
-            url: baseUrl,
+            url: session.platformOrigin,
             httpOnly: true,
             secure: false,
             sameSite: 'Lax',
@@ -253,39 +437,66 @@ async function main() {
       const page = await ctx.newPage();
       try {
         if (side === 'ref') {
-          await prepareReference(page, refBase, pair.theme, pair.step ?? 0);
+          await prepareReference(page, refBase, pair.theme, pair.scenario);
         } else {
-          await prepareImpl(page, baseUrl, pair.theme, pair.step ?? 0, {
-            preloadedStep: pair.preloadContacts ? 2 : undefined,
-          });
+          await prepareImpl(page, session.platformOrigin, pair.theme, pair.scenario);
         }
-        const verification = await verifyState(page, side, pair.theme, pair.step ?? 0);
+        if (pair.scenario === 'contacts' && side === 'impl') {
+          await page.getByRole('tab', { name: 'Реквизиты' }).click();
+          await page.waitForSelector('[data-testid="agent-requisites-panel"]', { timeout: 30_000 });
+        }
+        const verification = await verifyPair(page, side, pair.theme, pair.scenario, pair.width);
         entry.verifyDetails = verification;
         const out = path.join(OUT_DIR, `${name}.png`);
-        if (pair.crop === 'page') {
-          await page.screenshot({ path: out, fullPage: true });
-        } else {
-          const loc = page.locator('[data-testid="agent-profile-wizard"], .pw-layout, .pw').first();
-          await loc.screenshot({ path: out });
-        }
+        await capture(page, pair, side, out);
         entry.capture = 'CAPTURED';
         entry.verify = verification.pass ? 'PASS' : 'FAIL';
         entry.path = out;
+        if (pair.scenario === 'contacts' && side === 'impl') {
+          const actionBox = await page
+            .getByRole('button', { name: 'Добавить реквизиты' })
+            .boundingBox()
+            .catch(() => null);
+          entry.verifyDetails.metrics.actionVisible = Boolean(
+            actionBox && actionBox.y + actionBox.height < pair.height - 72,
+          );
+          if (!entry.verifyDetails.metrics.actionVisible) {
+            entry.verify = 'FAIL';
+            entry.verifyDetails.pass = false;
+          }
+        }
       } catch (error) {
         entry.error = error instanceof Error ? error.message : String(error);
       }
-      report.push(entry);
+      report.pairs.push(entry);
       await ctx.close();
     }
+
+    if (pair.scenario === 'step1' && pair.width === 1440) {
+      const impl = report.pairs.find((p) => p.name === `impl-${pair.name}`);
+      const ref = report.pairs.find((p) => p.name === `ref-${pair.name}`);
+      if (impl?.verifyDetails?.metrics?.wizardWidth && ref?.verifyDetails?.metrics?.wizardWidth) {
+        const delta = Math.abs(impl.verifyDetails.metrics.wizardWidth - ref.verifyDetails.metrics.wizardWidth);
+        report.widthTolerance[`${pair.name}_delta`] = delta;
+        if (delta > 120) {
+          impl.verify = 'FAIL';
+          ref.verify = 'FAIL';
+          impl.verifyDetails.pass = false;
+          ref.verifyDetails.pass = false;
+          impl.verifyDetails.widthDelta = delta;
+        }
+      }
+    }
   }
+
   await browser.close();
-  writeFileSync(path.join(OUT_DIR, 'visual-report.json'), JSON.stringify({ pairs: report }, null, 2));
-  const failed = report.filter((r) => r.verify !== 'PASS' || r.capture !== 'CAPTURED');
+  writeFileSync(path.join(OUT_DIR, 'visual-report.json'), JSON.stringify(report, null, 2));
+  const failed = report.pairs.filter((r) => r.verify !== 'PASS' || r.capture !== 'CAPTURED');
   if (failed.length) {
     console.error(JSON.stringify({ error: 'visual_verify_failed', failed: failed.map((f) => f.name) }, null, 2));
     process.exit(1);
   }
-  console.log(JSON.stringify({ ok: true, outDir: OUT_DIR, pairs: report.length }));
+  console.log(JSON.stringify({ ok: true, outDir: OUT_DIR, pairs: report.pairs.length }));
 }
 
 main().catch((e) => {

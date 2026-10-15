@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = process.env.R02_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
 const RUN_DIR = process.env.R02_RUN_DIR || '/tmp/r02-local-stack';
-const ARTIFACT = path.join(ROOT, 'artifacts/remcard-r02/local-auth-evidence.json');
+const ARTIFACT_GATE_ON = path.join(ROOT, 'artifacts/remcard-r02/local-auth-evidence-gate-on.json');
+const ARTIFACT_GATE_OFF = path.join(ROOT, 'artifacts/remcard-r02/local-auth-evidence-gate-off.json');
 
 function loadRuntimeEnv(envPath) {
   const env = { ...process.env };
@@ -76,17 +77,16 @@ async function main() {
   const metaPath = path.join(RUN_DIR, 'meta.json');
   const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
   const env = loadRuntimeEnv(meta.envPath);
-  mkdirSync(path.dirname(ARTIFACT), { recursive: true });
+  const gateOn = meta.gateEnabled !== false;
+  const artifact = gateOn ? ARTIFACT_GATE_ON : ARTIFACT_GATE_OFF;
+  mkdirSync(path.dirname(artifact), { recursive: true });
 
   runNavFixture(env, 'push-schema');
   runNavFixture(env, 'seed');
   const token = runNavFixture(env, 'mint');
-
-  const report = { ok: false, steps: {} };
+  const report = { ok: false, gate: gateOn ? 'on' : 'off', steps: {} };
   report.steps.auth = await authChain(env, token);
   report.steps.csrf = await csrfNegative(env, token);
-
-  const gateOn = meta.gateEnabled !== false;
   const authOk =
     report.steps.auth.backendMe.status === 200 &&
     report.steps.auth.backendMe.body?.user?.id &&
@@ -102,14 +102,14 @@ async function main() {
 
   if (!authOk) {
     report.failure = 'auth_chain';
-    writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
+    writeFileSync(artifact, JSON.stringify(report, null, 2));
     console.error(JSON.stringify(report, null, 2));
     process.exit(1);
   }
 
   if (report.steps.csrf.status !== 403) {
     report.failure = 'csrf_expected_403';
-    writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
+    writeFileSync(artifact, JSON.stringify(report, null, 2));
     process.exit(1);
   }
 
@@ -117,7 +117,7 @@ async function main() {
   report.platformOrigin = meta.platformOrigin;
   report.navOrigin = meta.navOrigin;
   report.tokenIssuedFor = env.R02_FIXTURE_USER_ID;
-  writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
+  writeFileSync(artifact, JSON.stringify(report, null, 2));
   writeFileSync(path.join(RUN_DIR, 'session.json'), JSON.stringify({ token, platformOrigin: meta.platformOrigin }, null, 2), {
     mode: 0o600,
   });
@@ -130,15 +130,15 @@ async function main() {
     report.profileE2e = { exitCode: e2e.status ?? 1 };
     if (e2e.status !== 0) {
       report.failure = 'profile_e2e';
-      writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
+      writeFileSync(artifact, JSON.stringify(report, null, 2));
       console.error((e2e.stderr || e2e.stdout || '').slice(0, 800));
       process.exit(1);
     }
     report.profileE2e.artifact = 'artifacts/remcard-r02/profile-e2e-evidence.json';
   }
 
-  writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
-  console.log(JSON.stringify({ ok: true, artifact: ARTIFACT }));
+  writeFileSync(artifact, JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({ ok: true, artifact, gate: gateOn ? 'on' : 'off' }));
 }
 
 main().catch((e) => {

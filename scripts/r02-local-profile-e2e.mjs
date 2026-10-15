@@ -49,20 +49,41 @@ function bffPatchHeaders(session) {
   return { ...cookieHeaders(session), 'content-type': 'application/json', Origin: p };
 }
 
+function pickDraft(body) {
+  if (!body || typeof body !== 'object') return null;
+  return {
+    version: body.version ?? null,
+    draftEpoch: body.draftEpoch ?? null,
+    step: body.step ?? null,
+    hasDraft: body.hasDraft ?? null,
+    profileComplete: body.profileComplete ?? null,
+    payload: {
+      displayName: body.payload?.displayName ?? body.savedProfile?.displayName ?? null,
+      city: body.payload?.city ?? body.savedProfile?.city ?? null,
+    },
+  };
+}
+
+async function readFetchStep(res) {
+  const body = await res.json().catch(() => null);
+  return { status: res.status, ok: res.ok, body: pickDraft(body) ?? body };
+}
+
 async function wizardHttpFlow(session) {
   const p = plat(session);
   const steps = {};
-  steps.prefill = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
+  const prefillRes = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
     headers: cookieHeaders(session),
   });
-  const preBody = await steps.prefill.json();
+  const preBody = await prefillRes.json().catch(() => null);
+  steps.prefill = { status: prefillRes.status, ok: prefillRes.ok, body: pickDraft(preBody) };
   steps.prefillOk =
     steps.prefill.status === 200 &&
-    Boolean(preBody.payload?.displayName || preBody.savedProfile?.displayName);
+    Boolean(preBody?.payload?.displayName || preBody?.savedProfile?.displayName);
 
-  const v0 = preBody.version ?? 0;
-  const e0 = preBody.draftEpoch ?? 0;
-  steps.saveDraft = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
+  const v0 = preBody?.version ?? 0;
+  const e0 = preBody?.draftEpoch ?? 0;
+  const saveDraftRes = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
     method: 'PATCH',
     headers: bffPatchHeaders(session),
     body: JSON.stringify({
@@ -71,47 +92,55 @@ async function wizardHttpFlow(session) {
       mode: 'save',
       step: 1,
       payload: {
-        displayName: preBody.payload?.displayName || 'Local Agent Owner',
-        city: preBody.payload?.city || 'Krasnodar',
+        displayName: preBody?.payload?.displayName || 'Local Agent Owner',
+        city: preBody?.payload?.city || 'Krasnodar',
       },
     }),
   });
-  const saved = await steps.saveDraft.json();
-  steps.reload = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
+  const saved = await saveDraftRes.json().catch(() => null);
+  steps.saveDraft = { status: saveDraftRes.status, ok: saveDraftRes.ok, body: pickDraft(saved) };
+
+  const reloadRes = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
     headers: cookieHeaders(session),
   });
-  const reloaded = await steps.reload.json();
-  steps.reloadOk = steps.reload.status === 200 && (reloaded.version ?? 0) > v0;
+  const reloaded = await reloadRes.json().catch(() => null);
+  steps.reload = { status: reloadRes.status, ok: reloadRes.ok, body: pickDraft(reloaded) };
+  steps.reloadOk = steps.reload.status === 200 && (reloaded?.version ?? 0) > v0;
 
-  steps.skipContacts = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
+  const skipRes = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
     method: 'PATCH',
     headers: bffPatchHeaders(session),
     body: JSON.stringify({
-      expectedVersion: saved.version ?? reloaded.version ?? 0,
-      expectedEpoch: saved.draftEpoch ?? reloaded.draftEpoch ?? e0,
+      expectedVersion: saved?.version ?? reloaded?.version ?? 0,
+      expectedEpoch: saved?.draftEpoch ?? reloaded?.draftEpoch ?? e0,
       mode: 'save',
       step: 4,
-      payload: saved.payload ?? reloaded.payload ?? {},
+      payload: saved?.payload ?? reloaded?.payload ?? {},
     }),
   });
-  const afterSkip = await steps.skipContacts.json();
+  const afterSkip = await skipRes.json().catch(() => null);
+  steps.skipContacts = { status: skipRes.status, ok: skipRes.ok, body: pickDraft(afterSkip) };
 
-  steps.finish = await fetch(`${p}/api/remcard/api/pro/agent-profile/finish`, {
+  const finishRes = await fetch(`${p}/api/remcard/api/pro/agent-profile/finish`, {
     method: 'POST',
     headers: bffPatchHeaders(session),
     body: JSON.stringify({
-      expectedVersion: afterSkip.version ?? 0,
-      expectedEpoch: afterSkip.draftEpoch ?? e0,
+      expectedVersion: afterSkip?.version ?? 0,
+      expectedEpoch: afterSkip?.draftEpoch ?? e0,
     }),
   });
-  steps.afterFinish = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
+  steps.finish = { status: finishRes.status, ok: finishRes.ok };
+
+  const afterFinishRes = await fetch(`${p}/api/remcard/api/pro/agent-profile/draft`, {
     headers: cookieHeaders(session),
   });
-  const finishBody = await steps.afterFinish.json();
+  const finishBody = await afterFinishRes.json().catch(() => null);
+  steps.afterFinish = { status: afterFinishRes.status, ok: afterFinishRes.ok, body: pickDraft(finishBody) };
   steps.finishOk =
     steps.finish.status === 200 &&
     steps.afterFinish.status === 200 &&
-    Boolean(finishBody.profileComplete || !finishBody.hasDraft);
+    finishBody?.profileComplete === true &&
+    finishBody?.hasDraft === false;
 
   return steps;
 }
@@ -200,11 +229,11 @@ async function playwrightProfileSmoke(session) {
   await page.goto(`${baseUrl}/profile?section=basics`, { waitUntil: 'networkidle', timeout: 90_000 });
   await page.getByRole('heading', { name: 'Профиль агента' }).waitFor({ timeout: 60_000 });
   await page.waitForSelector(
-    '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-summary"]',
+    '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-completed-summary"]',
     { timeout: 60_000 },
   );
   const shell = page.locator(
-    '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-summary"]',
+    '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-completed-summary"]',
   );
   const wizardText = (await shell.count()) ? await shell.first().innerText() : '';
   const roleOk =
@@ -229,11 +258,11 @@ async function playwrightProfileSmoke(session) {
   const page2 = await ctx2.newPage();
   await page2.goto(`${baseUrl}/profile?section=basics`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await page2.waitForSelector(
-    '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-summary"], [data-testid="agent-requisites-panel"]',
+    '[data-testid="agent-profile-wizard"], [data-testid="agent-profile-completed-summary"], [data-testid="agent-requisites-panel"]',
     { timeout: 60_000 },
   );
   const reloadOk =
-    (await page2.locator('[data-testid="agent-profile-wizard"], [data-testid="agent-profile-summary"]').count()) >
+    (await page2.locator('[data-testid="agent-profile-wizard"], [data-testid="agent-profile-completed-summary"]').count()) >
     0;
 
   await browser.close();
@@ -252,9 +281,9 @@ async function main() {
   report.wizard = await wizardHttpFlow(session);
   const wizardOk =
     report.wizard.prefillOk &&
-    report.wizard.saveDraft.status === 200 &&
+    report.wizard.saveDraft?.status === 200 &&
     report.wizard.reloadOk &&
-    report.wizard.skipContacts.status === 200 &&
+    report.wizard.skipContacts?.status === 200 &&
     report.wizard.finishOk;
 
   report.requisites = await requisitesHttpFlow(session);

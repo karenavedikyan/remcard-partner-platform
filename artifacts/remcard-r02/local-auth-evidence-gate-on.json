@@ -1,5 +1,6 @@
 {
   "ok": true,
+  "gate": "on",
   "steps": {
     "auth": {
       "backendMe": {
@@ -8,14 +9,14 @@
           "user": {
             "id": "r02-local-pro-agent-v1",
             "publicId": "RC-R02-LOCAL-AGENT",
-            "displayName": "Local Agent Owner",
-            "workingDisplayName": "Local Agent Owner",
-            "workingCity": "Krasnodar",
+            "displayName": "R02 Visual Agent",
+            "workingDisplayName": "R02 Visual Agent",
+            "workingCity": "Краснодар",
             "photoUrl": null,
             "clientAvatarUrl": null,
             "specializations": [],
             "role": "PRO",
-            "city": "Krasnodar",
+            "city": "Краснодар",
             "partnerType": "COMPANY",
             "partnerActivities": [
               "AGENT"
@@ -43,14 +44,14 @@
           "user": {
             "id": "r02-local-pro-agent-v1",
             "publicId": "RC-R02-LOCAL-AGENT",
-            "displayName": "Local Agent Owner",
-            "workingDisplayName": "Local Agent Owner",
-            "workingCity": "Krasnodar",
+            "displayName": "R02 Visual Agent",
+            "workingDisplayName": "R02 Visual Agent",
+            "workingCity": "Краснодар",
             "photoUrl": null,
             "clientAvatarUrl": null,
             "specializations": [],
             "role": "PRO",
-            "city": "Krasnodar",
+            "city": "Краснодар",
             "partnerType": "COMPANY",
             "partnerActivities": [
               "AGENT"
@@ -76,17 +77,41 @@
         "status": 200,
         "body": {
           "contractVersion": "2026-10-15.r02",
-          "featureEnabled": false,
+          "featureEnabled": true,
           "hasAgentActivity": true,
-          "eligible": false,
-          "profileComplete": false,
-          "userId": "r02-local-pro-agent-v1"
+          "eligible": true,
+          "profileComplete": true,
+          "userId": "r02-local-pro-agent-v1",
+          "ineligibleReason": null
         }
       },
       "bffDraft": {
-        "status": 403,
+        "status": 200,
         "body": {
-          "error": "R02 недоступен"
+          "contractVersion": "2026-10-15.r02.1",
+          "pilotEnabled": true,
+          "active": true,
+          "step": 1,
+          "version": 0,
+          "draftEpoch": 4,
+          "payload": {
+            "displayName": "R02 Visual Agent",
+            "city": "Краснодар",
+            "audience": "",
+            "channel": "",
+            "contactPhone": "",
+            "contactEmail": ""
+          },
+          "savedProfile": {
+            "displayName": "",
+            "city": "",
+            "audience": "",
+            "channel": "",
+            "contactPhone": "",
+            "contactEmail": ""
+          },
+          "hasDraft": false,
+          "profileComplete": false
         }
       }
     },

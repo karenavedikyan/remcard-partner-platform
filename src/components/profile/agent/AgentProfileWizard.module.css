@@ -42,10 +42,59 @@
   align-items: start;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--pw-4);
+  }
+
+  .journey {
+    padding: 0;
+  }
+
+  .journey > .title,
+  .journey > .intro,
+  .journey > .kicker,
+  .journeyNote {
+    display: none;
+  }
+
+  .journey .steps {
+    display: flex;
+    margin: 0;
+    gap: var(--pw-2);
+  }
+
+  .journey .steps li {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stepBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    grid-template-columns: unset;
+    padding: var(--pw-2) var(--pw-1);
+    gap: var(--pw-2);
+    text-align: center;
+    font-size: var(--pw-xs);
+    min-height: auto;
+  }
+
+  .stepBtn small {
+    display: none;
+  }
+
+  .stepNumber {
+    grid-row: auto;
+    width: 28px;
+    height: 28px;
+  }
+
+  .pw {
+    margin-top: var(--pw-4);
   }
 }
 
@@ -238,8 +287,15 @@
 .actions {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: var(--pw-3);
-  margin-top: var(--pw-8);
+  margin-top: var(--pw-6);
+  flex-wrap: wrap;
+}
+
+.actionsLeft {
+  display: flex;
+  gap: var(--pw-2);
   flex-wrap: wrap;
 }
 
@@ -247,6 +303,22 @@
   display: flex;
   gap: var(--pw-2);
   flex-wrap: wrap;
+  align-items: center;
+  margin-left: auto;
+}
+
+.btnDraft {
+  min-height: 44px;
+  padding: var(--pw-2) var(--pw-3);
+  font-size: var(--pw-xs);
+  white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+  .actions {
+    scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 .btn {

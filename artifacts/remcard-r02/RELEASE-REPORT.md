@@ -1,36 +1,33 @@
-# RemCard R02.3 RC
+# RemCard R02.4 RC
 
-## PRs (same branches)
+## PRs (unchanged)
 
-- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 (base `release/prof-backend-v1-20261007`)
-- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12 (base `release/prof-v1-20261007`)
-- Branch: `cursor/r02-agent-profile-b3e3`
+- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 — code **b6d910ee** (unchanged in R02.4)
+- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12 — branch `cursor/r02-agent-profile-b3e3`
 
-## R02.3 closure (A / B / C)
+## R02.4 scope (visual + evidence only)
 
-| Group | Scope | Result |
-|-------|--------|--------|
-| **A** | Finish lifecycle: `persistDraft` keeps outer busy until `finishAgentProfile` completes (`releaseBusy: false` on final PATCH); generic network error on finish failure; regression tests 5/5 incl. double-submit + reject recovery | **PASS** |
-| **B** | Isolated loopback stack (`scripts/r02-local-stack.mjs`), random JWT in `/tmp/r02-local-stack/runtime.env` (not logged/committed), seed/mint fixture, auth chain backend→BFF, CSRF negative, full profile HTTP+Playwright (`r02-local-profile-e2e.mjs`), gate-off legacy HTTP (`r02-gate-off-smoke.mjs`) | **PASS** — evidence: `local-auth-evidence.json`, `profile-e2e-evidence.json` |
-| **C** | Reference via `roles.html` agent cabinet; impl on `/profile?section=basics` with cookie; VERIFY before CAPTURED PASS; 6 paired wizard/summary PNG sets + 320 smoke | **PASS** — `artifacts/remcard-r02/screenshots/visual-report.json` exit 0 |
+| Item | Result |
+|------|--------|
+| Mobile wizard (≤900px) | **PASS** — journey intro/kicker/note hidden; horizontal 4-step strip (`AgentProfileWizard.module.css` aligned with frozen `profile-wizard.css` ~1480–1515) |
+| Desktop usable width | **PASS** — pure-agent basics uses single-column grid (aside hidden); wizard ~1068px vs ref ~1096px (Δ28px in visual report) |
+| Wizard crop vs chrome | **PASS** — wizard element capture masks fixed topbar/mobile nav in runner only; full-page 320 smoke unchanged |
+| Review vs completed pairs | **PASS** — shared synthetic data + real step actions; `review-375` (step 4) and `completed-375` (post-finish summary) separated |
+| VERIFY rigor | **PASS** — role in wizard/summary kicker, computed theme colors, active step/progress, layout metrics; not label-only PASS |
+| Auth evidence | **PASS** — `local-auth-evidence-gate-on.json` / `local-auth-evidence-gate-off.json` (no overwrite); `profile-e2e-evidence.json` serialized fields, strict `finishOk` |
 
-## Backend delta (R02.3)
+## A / B (carry-over, not reworked)
 
-- Cookie header fallback for API auth: `getTokenFromRequest` + `proAuth` / `auth/me` (BFF/HTTP clients).
-- Local fixture: `scripts/r02-local-fixture.ts` (`push-schema`, `seed`, `mint`, `reset-draft`), loopback DB guard.
+- **A** finish busy lifecycle: closed in R02.3; regression 5/5 unchanged.
+- **B** local stack/HTTP: evidence files corrected; no new auth audit.
 
-## Schema / migration (unchanged in R02.3)
+## C visual pairs (18 captures, `visual-report.json` exit 0)
 
-- SQL: `prisma/migrations/20261015120000_prof_r02_agent_profile/migration.sql`
-- SHA-256: `4f52ccaf51dc4856271c77abbed34af082cdb9f027b230f61a4a235c18221566`
-- Controlled apply on disposable PG: **PASS** (same command as R02.2; no new migration audit).
+- step1: 1440 + 375, light/dark (impl/ref)
+- review-375 light/dark
+- completed-375 light/dark
+- profile-320-smoke full page (contacts flow + requisites tab impl)
 
-## Production smoke
+Production smoke **NOT RUN**. Merge/deploy/Timeweb **NOT RUN**.
 
-**NOT RUN** (per R02.3 scope).
-
-## Publication order
-
-Unchanged from R02.2; not executed (no merge/deploy/Timeweb).
-
-See `TEST-RESULTS.json` for exact HEAD SHAs, commands, and exit codes.
+See `TEST-RESULTS.json` for commands, exit codes, code/doc SHAs, migration checksum (unchanged).

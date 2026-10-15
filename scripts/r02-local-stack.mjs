@@ -157,6 +157,15 @@ async function main() {
     DIRECT_URL: DB_URL,
     R02_FIXTURE_USER_ID: 'r02-local-pro-agent-v1',
   };
+  const schemaProbe = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r02-local-fixture.ts', 'push-schema'], {
+    cwd: NAV_ROOT,
+    env: probeEnv,
+    encoding: 'utf8',
+  });
+  if (schemaProbe.status !== 0) {
+    console.error(JSON.stringify({ error: 'schema_probe_failed' }));
+    process.exit(1);
+  }
   const seedProbe = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r02-local-fixture.ts', 'seed'], {
     cwd: NAV_ROOT,
     env: probeEnv,

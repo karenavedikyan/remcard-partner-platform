@@ -251,12 +251,14 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     const display = savedProfile.displayName?.trim() ? savedProfile : draft;
     const name = display.displayName?.trim() || "—";
     return (
-      <div className={styles.pw} data-testid="agent-profile-summary">
+      <div className={styles.pw} data-testid="agent-profile-completed-summary">
         <section className={styles.summary}>
           <div className={styles.summaryHeader}>
             <div className={styles.avatar}>{name.slice(0, 2).toUpperCase()}</div>
             <div>
-              <span className={styles.kicker}>Агент</span>
+              <span className={styles.kicker} data-testid="agent-profile-role-kicker">
+            Агент
+          </span>
               <h2 className={styles.title}>{name}</h2>
               <p className={styles.intro}>{display.city?.trim() || "Город не указан"}</p>
             </div>
@@ -329,13 +331,15 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   return (
     <div className={styles.pw} data-testid="agent-profile-wizard">
       <div className={styles.layout}>
-        <aside className={styles.journey} aria-label="Шаги заполнения">
-          <span className={styles.kicker}>Агент</span>
+        <aside className={styles.journey} aria-label="Шаги заполнения" data-testid="agent-profile-journey">
+          <span className={styles.kicker} data-testid="agent-profile-role-kicker">
+            Агент
+          </span>
           <h2 className={styles.title}>Профиль без лишнего</h2>
           <p className={styles.intro}>
             Для начала достаточно имени и города. Канал или большая аудитория не обязательны.
           </p>
-          <ol className={styles.steps}>
+          <ol className={styles.steps} data-testid="agent-profile-steps">
             {STEPS.map((label, i) => (
               <li
                 key={label}
@@ -570,7 +574,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             ) : null}
 
             <div className={styles.actions}>
-              <div>
+              <div className={styles.actionsLeft}>
                 {step > 0 ? (
                   <button
                     type="button"
@@ -581,15 +585,6 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                     Назад
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnQuiet}`}
-                  disabled={disabled || saving}
-                  data-testid="agent-profile-save-draft"
-                  onClick={() => void saveDraftOnly()}
-                >
-                  Сохранить черновик
-                </button>
               </div>
               <div className={styles.actionsRight}>
                 {step > 0 && step < STEPS.length - 1 ? (
@@ -602,6 +597,15 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                     Пропустить
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnQuiet} ${styles.btnDraft}`}
+                  disabled={disabled || saving}
+                  data-testid="agent-profile-save-draft"
+                  onClick={() => void saveDraftOnly()}
+                >
+                  Сохранить черновик
+                </button>
                 <button
                   type="submit"
                   className={`${styles.btn} ${styles.btnPrimary}`}

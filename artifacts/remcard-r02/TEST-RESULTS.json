@@ -1,49 +1,35 @@
 {
-  "generatedAt": "2026-10-15T11:05:00Z",
-  "release": "R02.3 RC",
-  "baselineHead": {
-    "navigator": "228b8993ab405838e035ca14816782b79bbc0060",
-    "platform": "0b26351ca6690fe0a2d5fd2220b912c2ee33ef07"
+  "generatedAt": "2026-10-15T11:18:00Z",
+  "release": "R02.4 RC",
+  "codeSha": {
+    "navigator": "b6d910ee9c91405339b838d1c1ab83a1080ad4f0",
+    "platform": "TBD_AFTER_COMMIT"
+  },
+  "docSha": {
+    "platformReport": "TBD_AFTER_COMMIT"
   },
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
-    "headAfterCommit": "b6d910ee",
+    "runtimeChangedInR024": false,
     "migrationSqlSha256": "4f52ccaf51dc4856271c77abbed34af082cdb9f027b230f61a4a235c18221566",
     "tests": [
       {
-        "command": "pnpm exec vitest run src/app/api/auth/me/__tests__/route.test.ts",
+        "command": "unchanged from R02.3 — not re-run (no runtime diff)",
         "exitCode": 0,
-        "result": "PASS"
-      },
-      {
-        "command": "DATABASE_URL/DIRECT_URL=loopback remcard_r01_test PROF_R02_AGENT_PROFILE_ENABLED=1 pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
-        "exitCode": 0,
-        "result": "PASS",
-        "notes": "unchanged from R02.2; not re-run this session — schema/runtime unchanged"
-      },
-      {
-        "command": "PROF_R02_RUN_PG=1 node --test scripts/lib/__tests__/prof-r02-controlled-apply.integration.test.mjs",
-        "exitCode": 0,
-        "result": "PASS"
-      },
-      {
-        "command": "pnpm run build",
-        "exitCode": 0,
-        "result": "PASS"
+        "result": "PASS_CARRYOVER"
       }
     ]
   },
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
-    "headAfterCommit": "24e98cc",
     "tests": [
       {
         "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "5 tests incl. finish pending, double submit, network reject"
+        "notes": "5/5"
       },
       {
         "command": "pnpm run build",
@@ -51,32 +37,35 @@
         "result": "PASS"
       },
       {
-        "command": "node scripts/r02-local-stack.mjs && node scripts/r02-local-acceptance.mjs",
+        "command": "node scripts/r02-local-stack.mjs && R02_SKIP_PROFILE_E2E=1 node scripts/r02-local-acceptance.mjs",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "auth me chain, CSRF 403, profile E2E artifact"
+        "notes": "writes local-auth-evidence-gate-on.json"
       },
       {
-        "command": "node scripts/r02-profile-visual.mjs",
+        "command": "node scripts/r02-local-profile-e2e.mjs",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "14 captures; visual-report.json all VERIFY PASS"
+        "notes": "profile-e2e-evidence.json; finishOk requires profileComplete===true && hasDraft===false"
       },
       {
         "command": "PROF_R02_AGENT_PROFILE_ENABLED=0 node scripts/r02-local-stack.mjs && R02_SKIP_PROFILE_E2E=1 node scripts/r02-local-acceptance.mjs && node scripts/r02-gate-off-smoke.mjs",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "featureEnabled false; legacy data-profile-focus present; no wizard marker"
+        "notes": "local-auth-evidence-gate-off.json + legacy HTML marker"
+      },
+      {
+        "command": "node scripts/r02-profile-visual.mjs",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "18 pairs; desktop wizard width delta 28px; visual-report.json"
       }
     ]
   },
-  "r02_3": {
-    "A_finishBusyLifecycle": "PASS",
-    "B_localAuthBffE2e": "PASS",
-    "C_pairedVisual": "PASS"
-  },
-  "localAuthArtifacts": {
-    "http": "artifacts/remcard-r02/local-auth-evidence.json",
+  "r02_4": {
+    "C_visualDesignVerify": "PASS",
+    "evidenceGateOn": "artifacts/remcard-r02/local-auth-evidence-gate-on.json",
+    "evidenceGateOff": "artifacts/remcard-r02/local-auth-evidence-gate-off.json",
     "profileE2e": "artifacts/remcard-r02/profile-e2e-evidence.json",
     "visualReport": "artifacts/remcard-r02/screenshots/visual-report.json"
   },
