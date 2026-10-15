@@ -1,37 +1,24 @@
-# ADMIN-TEST-01.1 — corrective RC (same PRs)
+# ADMIN-TEST-01.2 — targeted acceptance
 
 **Date:** 2026-10-15  
-**Verdict:** Blockers from NO-GO review addressed in code; **full browser/PG lifecycle still required** before production enable.
+**Branch:** `cursor/admin-test-01-b3e3` (PRs [#679](https://github.com/karenavedikyan/remcard-navigator/pull/679) / [#13](https://github.com/karenavedikyan/remcard-partner-platform/pull/13))
 
-## PRs / branch
+| Repo | HEAD |
+|------|------|
+| remcard-navigator | `f027f49e8099fa7988dfe9cabc56e066a250d552` |
+| remcard-partner-platform | `ca948d7` (see `git log -1` on branch) |
 
-| Part | PR | Branch | Base |
-|------|-----|--------|------|
-| Backend | [navigator #679](https://github.com/karenavedikyan/remcard-navigator/pull/679) | `cursor/admin-test-01-b3e3` | `f68a966173b2f28aaca2537a834a1fb246f76703` |
-| Frontend | [platform #13](https://github.com/karenavedikyan/remcard-partner-platform/pull/13) | `cursor/admin-test-01-b3e3` | `7c1e435f3af2128038aee005d5576f01e47c037f` |
+## Closed in 01.2
 
-Replace `backendHead` / `frontendHead` in `TEST-RESULTS.json` with exact SHAs after merge preview (see git tip of branch).
+1. **Migration:** pinned manifest checksums; `--operator-production` with expected host/db/port; read-only `before` refuses untracked partial schema; integration tests on `remcard_admin_test_012` (strip→apply→after→idempotent).
+2. **Auth boundaries:** `verifySessionFromRequest` on `/api/auth/me`, `getServerUser`, consent withdraw; return-slot `adminTokenVersion`; upload removed from test allowlist (public upload documented separately).
+3. **Reset / limiter / bootstrap:** partnership contact fields in reset; admin rate-limit 503 fail-closed; bootstrap TTY-safe read + blocked admin reject + `finally` disconnect.
+4. **Evidence:** HTTP lifecycle JSON on disposable PG; login screenshots 1440/375/320; builds PASS.
 
-## Fixed in 01.1
+## Still NOT VERIFIED (NO-GO for production enable)
 
-1. **HTTP bodies:** object payloads; backend JSON object validation; no implicit default agent on malformed create.
-2. **Isolation:** fail-closed allowlist + `proAuth` test principal gate; catalog filter.
-3. **Return:** slot bound to delegation/test user; atomic consume + revoke; admin tokenVersion check.
-4. **disable:** `isProfTestUser` scope; 404 for real user id.
-5. **Admin auth:** 12h session; dual IP/login durable rate limits; password change UI + revoke.
-6. **Migration/bootstrap:** `prof-admin-migrate.mjs` before/apply/after + checksums; production operator bootstrap path.
-7. **UX:** admin shell link, filters, password page, flag-off admin login guard.
+- Full browser path: consent/readiness UX → R02 draft/finish → fresh GET → reset partnershipContact proof → disable → password-change UI.
+- Production migration `apply` on `192.168.0.4` (policy-only validation in agent run).
+- Exhaustive cron/outbox matrix.
 
-## Verified this run
-
-- `pnpm build` navigator, `npm run build` platform.
-- Unit: admin password, profAdminRequestBody, profTestRoutePolicy, prof-admin-api serialization.
-- Migration `--phase=before` on loopback `remcard_prof_test`.
-
-## Not claimed PASS
-
-- End-to-end browser login/create/enter/R02/return/reset/disable with flags on.
-- Exhaustive cron/outbox negative matrix.
-- Production deploy.
-
-See `TEST-RESULTS.json`, `AUTH-AND-TEST-ISOLATION.md`, `MIGRATION-AND-RELEASE.md`, `USER-GUIDE.md`.
+See `TEST-RESULTS.json`, `e2e-lifecycle-http.json`, `MIGRATION-AND-RELEASE.md`.

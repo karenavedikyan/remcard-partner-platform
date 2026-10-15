@@ -1,8 +1,8 @@
 {
   "checkedAt": "2026-10-15T13:45:00Z",
   "release": "ADMIN-TEST-01.2",
-  "backendHead": "pending-commit",
-  "frontendHead": "pending-commit",
+  "backendHead": "f027f49e8099fa7988dfe9cabc56e066a250d552",
+  "frontendHead": "ca948d7",
   "build": {
     "remcard-navigator": "PASS",
     "remcard-partner-platform": "PASS"
