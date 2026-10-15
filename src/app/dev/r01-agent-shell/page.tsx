@@ -58,7 +58,24 @@ export default async function R01AgentShellFixturePage(props: {
       initialPrefs={FIXTURE_PREFS}
       fixturePathname="/"
     >
-      <section style={{ minHeight: 120 }}>
+      <header style={{ marginBottom: 24 }}>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--muted)",
+          }}
+        >
+          Агент RemCard
+        </span>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "8px 0 0" }}>Главная</h1>
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "8px 0 0" }}>
+          Рекомендуйте. Делитесь. Получайте бонусы.
+        </p>
+      </header>
+      <section style={{ minHeight: 80 }}>
         <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
           Fixture shell для R01 (без live auth). Контент страницы вне scope сравнения.
         </p>

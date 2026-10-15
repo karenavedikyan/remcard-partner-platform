@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import type { AuthUser } from "@/lib/types";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -23,33 +22,6 @@ import {
 } from "@/lib/agent-nav/sections";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import styles from "./AgentAppShell.module.css";
-
-const PAGE_TITLES: Record<string, string> = {
-  "/": "Главная",
-  "/partners": "Партнёры",
-  "/recommendations": "Рекомендации",
-  "/scanner": "Сканер",
-  "/history": "История",
-  "/settlements": "Кошелёк",
-  "/profile": "Профиль",
-  "/notifications": "Уведомления",
-};
-
-const HOME_SUBTITLE = "Рекомендуйте. Делитесь. Получайте бонусы.";
-
-function pageTitle(pathname: string): string {
-  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  for (const key of AGENT_DESKTOP_NAV_KEYS) {
-    const { href, label } = agentSectionByKey(key);
-    if (href !== "/" && isPathActive(pathname, href)) return label;
-  }
-  return "Кабинет партнёра";
-}
-
-function pageSubtitle(pathname: string): string {
-  if (pathname === "/") return HOME_SUBTITLE;
-  return "RemCard PROF · агентский кабинет";
-}
 
 function userInitials(displayName: string): string {
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
@@ -109,86 +81,72 @@ export function AgentAppShell({
   );
 
   const MoreIcon = NAV_ICONS.more;
-  const heading = pageTitle(activePathname);
 
   return (
-    <div className={styles.shell}>
-      <aside className={styles.sidebar} aria-label="Основная навигация">
-        <div className={styles.workspace}>
-          <span className={styles.workspaceEyebrow}>Ваше пространство</span>
-          <strong className={styles.workspaceName}>{displayName}</strong>
-          <small className={styles.workspaceHint}>Агент RemCard</small>
+    <div className={styles.agentRoot}>
+      <header className={styles.productTopbar} data-testid="agent-product-topbar">
+        <div className={styles.topbarBrand}>
+          <BrandMark />
         </div>
-
-        <nav className={styles.nav}>
-          {desktopKeys.map((key) => {
-            const section = agentSectionByKey(key);
-            const active = isPathActive(activePathname, section.href);
-            const badge =
-              section.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
-            return (
-              <Link
-                key={key}
-                href={section.href}
-                data-testid={`nav-${key}`}
-                className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
-                aria-current={active ? "page" : undefined}
-              >
-                <span className={styles.navIcon}>
-                  <AgentNavIcon section={section} />
-                </span>
-                {section.label}
-                {badge ? <span className={styles.navBadge}>{badge}</span> : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className={styles.sidebarBottom}>
-          <small>
-            Основное под рукой.
-            <br />
-            Дополнительные разделы в «Ещё».
-          </small>
+        <div className={styles.topbarActions}>
+          <ThemeToggle />
+          <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
+          <Link href="/profile" className={styles.accountControl} data-testid="agent-account-control">
+            <span className={styles.accountAvatar} aria-hidden>
+              {initials}
+            </span>
+            <span className={styles.accountCaption}>
+              <strong>{displayName}</strong>
+              <small>Агент</small>
+            </span>
+          </Link>
         </div>
-      </aside>
+      </header>
 
-      <div className={styles.mainColumn}>
-        <header className={styles.cabinetBar}>
-          <div className={styles.cabinetBarStart}>
-            <div className={styles.mobileBrand}>
-              <BrandMark showSubtitle={false} />
-            </div>
-            <span className={styles.desktopBarTitle}>{heading}</span>
+      <div className={styles.shell}>
+        <aside className={styles.sidebar} aria-label="Основная навигация">
+          <div className={styles.workspace}>
+            <span className={styles.workspaceEyebrow}>Ваше пространство</span>
+            <strong className={styles.workspaceName}>{displayName}</strong>
+            <small className={styles.workspaceHint}>Агент RemCard</small>
           </div>
-          <div className={styles.cabinetBarActions}>
-            <ThemeToggle />
-            <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
-            <div className={styles.desktopAccount}>
-              <span className={styles.accountAvatar} aria-hidden>
-                {initials}
-              </span>
-              <div className={styles.accountCaption}>
-                <strong>{displayName}</strong>
-                <small>Агент</small>
-              </div>
-            </div>
-            <div className={styles.mobileLogout} data-testid="mobile-logout">
-              <LogoutButton className={styles.mobileLogoutButton} />
-            </div>
-          </div>
-        </header>
 
-        <div className={styles.content}>
-          <header className={styles.pageHeader}>
-            <div>
-              <span className={styles.pageEyebrow}>Агент RemCard</span>
-              <h1 className={styles.pageTitle}>{heading}</h1>
-              <p className={styles.pageMuted}>{pageSubtitle(activePathname)}</p>
-            </div>
-          </header>
-          {children}
-        </div>
+          <nav className={styles.nav}>
+            {desktopKeys.map((key) => {
+              const section = agentSectionByKey(key);
+              const active = isPathActive(activePathname, section.href);
+              const badge =
+                section.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
+              return (
+                <Link
+                  key={key}
+                  href={section.href}
+                  data-testid={`nav-${key}`}
+                  className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <span className={styles.navIcon}>
+                    <AgentNavIcon section={section} />
+                  </span>
+                  {section.label}
+                  {badge ? <span className={styles.navBadge}>{badge}</span> : null}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className={styles.sidebarBottom}>
+            <small>
+              Основное под рукой.
+              <br />
+              Дополнительные разделы в «Ещё».
+            </small>
+          </div>
+        </aside>
+
+        <main className={styles.mainColumn}>
+          <div className={styles.content}>{children}</div>
+        </main>
       </div>
 
       <nav className={styles.mobileBottom} aria-label="Мобильная навигация">
