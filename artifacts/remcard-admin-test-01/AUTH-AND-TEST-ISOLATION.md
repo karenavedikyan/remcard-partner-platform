@@ -1,36 +1,42 @@
-# Auth, sessions, test isolation (ADMIN-TEST-01)
+# AUTH and test isolation (ADMIN-TEST-01.1)
 
-## Admin password credential
+## Serialization (fixed)
 
-- Table `AdminPasswordCredential` → existing `User` with `staffRole` ADMIN or OWNER only.
-- Login normalized lowercase; verify uses scrypt + timing-safe compare; unknown login runs dummy scrypt.
-- Endpoint: `POST /api/pro/admin/auth/password-login` (flag + rate limit `auth:admin-password` key `IP:admin-login:<login>`).
-- Generic error `INVALID_CREDENTIALS` for wrong password / wrong role / disabled credential.
+- Platform `remcardFetch` stringifies `body` once (`api-client.ts`).
+- `prof-admin-api.ts` and admin UI pass **objects**, not `JSON.stringify(...)`.
+- Regression: `src/lib/prof-admin-api.test.ts` asserts `typeof JSON.parse(body) === "object"` and field preservation.
 
-## Delegated test session (confused-deputy mitigation)
+## Central enforcement
 
-1. Admin authenticated with staff JWT in `remcard-token`.
-2. **Enter:** server creates `ProfTestDelegation` + `ProfAdminReturnSlot`; replaces `remcard-token` with **test user** JWT containing `profTest: { delegationId, adminUserId }`; sets HttpOnly `remcard-admin-return=<slotId>` (host-only, no Domain).
-3. Frontend never receives admin JWT while in test context.
-4. **Return:** `POST /api/pro/admin/test-users/return` validates active delegation + slot; restores admin JWT; revokes delegation; clears return cookie.
+- `enforceProfTestPrincipalAccess` in `proAuth.getAuthenticatedUser` / `getProfCabinetUser` path:
+  - Test-marked users require valid `ProfTestDelegation` + flags on + admin actor still valid.
+  - Fail-closed route allowlist: `src/lib/profTestRoutePolicy.ts` (profile/draft/finish/requisites/preferences, consent/readiness, return, upload).
+  - Default **deny** for partnership invite, store order, admin APIs, etc.
+- `catalogExcludeProfTestUsers()` wired into `userPublishedInCatalogWhere()`.
 
-Test user JWT alone cannot call `/api/pro/admin/*` (requires staff on admin routes). Admin cookie cannot impersonate arbitrary userIds (enter checks `isProfTestUser` + disabled state).
+## Return slot binding
 
-## Test marker
+- `ProfAdminReturnSlot` stores `delegationId` + `testUserId`.
+- `returnFromProfTest` transaction: slot consume-once, delegation revoke, test user `tokenVersion++`, admin `tokenVersion` match on slot.
 
-- `User.isProfTestUser` set only in `createProfTestUser` service; not accepted from profile PATCH.
-- Audit: `PROF_TEST_USER_CREATED`, `PROF_TEST_ENTER`, `PROF_TEST_RESET`.
+## Session TTL
 
-## Enforcement map (fail-closed intent)
+- Admin password JWT/cookie max-age **12h** (Telegram/MAX remain 30d).
+- Test delegation JWT **12h**; cookie aligned on enter.
 
-| Family | Test principal |
-|--------|----------------|
-| `/api/pro/admin/*` | 403 |
-| Selected outbound writes (notifications invite, catalog submit) | 403 `PROF_TEST_BLOCKED` via `profTestGuard` (extend per release) |
-| Public partnership/catalog list queries | exclude `isProfTestUser: true` (apply in search routes incrementally) |
-| Background jobs | Document: test users must not enqueue real Telegram/SMS (NOT VERIFIED all workers) |
+## Rate limit
 
-## Revocation
+- `auth:admin-password`: independent durable buckets `ip:*` and `login:*` via `AuthRateLimitCounter` (PG fallback to in-memory).
 
-- Flag off → endpoints 404 DISABLED; existing delegations should be revoked on deploy script (manual step documented in MIGRATION-AND-RELEASE.md).
-- Admin `tokenVersion` bump invalidates sessions; disable test user blocks enter.
+## Enforcement map (actual surfaces)
+
+| Surface | Test principal |
+|---------|----------------|
+| `GET/PATCH /api/pro/profile` | Allow |
+| `/api/pro/agent-profile/*` (draft/finish/status) | Allow |
+| `/api/account/consent`, `/api/account/cabinet-readiness` | Allow |
+| `POST /api/pro/admin/test-users/return` | Allow |
+| `POST /api/partnership/invite`, `/api/store/order`, `/api/pro/admin/*` (except return) | Deny via proAuth |
+| Public catalog queries | Exclude `isProfTestUser` |
+
+Negative matrix for every cron producer: **not exhaustively run** in this turn; unreachable routes for test JWT are blocked at auth boundary.

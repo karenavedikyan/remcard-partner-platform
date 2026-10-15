@@ -1,42 +1,37 @@
-# ADMIN-TEST-01 RC
+# ADMIN-TEST-01.1 — corrective RC (same PRs)
 
-## Base / branches
+**Date:** 2026-10-15  
+**Verdict:** Blockers from NO-GO review addressed in code; **full browser/PG lifecycle still required** before production enable.
 
-| Repo | Release base SHA | Branch |
-|------|------------------|--------|
-| remcard-navigator | `f68a966173b2f28aaca2537a834a1fb246f76703` | `cursor/admin-test-01-b3e3` |
-| remcard-partner-platform | `7c1e435f3af2128038aee005d5576f01e47c037f` | `cursor/admin-test-01-b3e3` |
+## PRs / branch
 
-Release tips matched origin at run start (R02 merged into release branches).
+| Part | PR | Branch | Base |
+|------|-----|--------|------|
+| Backend | [navigator #679](https://github.com/karenavedikyan/remcard-navigator/pull/679) | `cursor/admin-test-01-b3e3` | `f68a966173b2f28aaca2537a834a1fb246f76703` |
+| Frontend | [platform #13](https://github.com/karenavedikyan/remcard-partner-platform/pull/13) | `cursor/admin-test-01-b3e3` | `7c1e435f3af2128038aee005d5576f01e47c037f` |
 
-| Repo | RC commit |
-|------|-----------|
-| remcard-navigator | `d5400c5b` → PR #679 |
-| remcard-partner-platform | `9f7fa98` → PR (draft) |
+Replace `backendHead` / `frontendHead` in `TEST-RESULTS.json` with exact SHAs after merge preview (see git tip of branch).
 
-## Delivered (RC)
+## Fixed in 01.1
 
-- Admin password login (staff ADMIN/OWNER only), feature flag `PROF_ADMIN_PASSWORD_LOGIN_ENABLED` (default off).
-- `/login` tabs: MAX/Telegram + «Вход администратора» when capability enabled.
-- `/admin/test-users` — create/list/enter/return/reset/disable test partners.
-- Test delegation JWT claim + `remcard-admin-return` cookie (admin token not exposed to JS).
-- `isProfTestUser` marker (server-only create); scrypt credentials; rate limit by IP+login.
-- Bootstrap CLI: `scripts/prof-admin-bootstrap-credential.ts` (stdin password, `--apply`, loopback DB guard).
-- BFF allowlist + admin return cookie forwarding.
-- Test mode banner in PROF cabinet.
+1. **HTTP bodies:** object payloads; backend JSON object validation; no implicit default agent on malformed create.
+2. **Isolation:** fail-closed allowlist + `proAuth` test principal gate; catalog filter.
+3. **Return:** slot bound to delegation/test user; atomic consume + revoke; admin tokenVersion check.
+4. **disable:** `isProfTestUser` scope; 404 for real user id.
+5. **Admin auth:** 12h session; dual IP/login durable rate limits; password change UI + revoke.
+6. **Migration/bootstrap:** `prof-admin-migrate.mjs` before/apply/after + checksums; production operator bootstrap path.
+7. **UX:** admin shell link, filters, password page, flag-off admin login guard.
 
-## NOT VERIFIED (this run)
+## Verified this run
 
-- Full browser e2e on disposable PG with seeded staff admin (requires local flags + migration apply + bootstrap).
-- Exhaustive cron/outbox audit for all outbound senders (enforcement map documents intended blocks; negative matrix partially covered by unit tests only).
-- Production Timeweb / prof.remcard.ru deploy.
+- `pnpm build` navigator, `npm run build` platform.
+- Unit: admin password, profAdminRequestBody, profTestRoutePolicy, prof-admin-api serialization.
+- Migration `--phase=before` on loopback `remcard_prof_test`.
 
-## Blockers for enable on production
+## Not claimed PASS
 
-1. Apply migration `20261015103000_admin_test_01` via controlled CLI on target DB.
-2. Set flags only after review: `PROF_ADMIN_PASSWORD_LOGIN_ENABLED`, `PROF_ADMIN_TEST_USERS_ENABLED`.
-3. Bootstrap credential via operator CLI (no env/git passwords).
+- End-to-end browser login/create/enter/R02/return/reset/disable with flags on.
+- Exhaustive cron/outbox negative matrix.
+- Production deploy.
 
-Production smoke: **NOT RUN**. Merge/deploy: **NOT RUN**.
-
-See sibling repo `artifacts/remcard-admin-test-01/` on navigator for backend migration checksum.
+See `TEST-RESULTS.json`, `AUTH-AND-TEST-ISOLATION.md`, `MIGRATION-AND-RELEASE.md`, `USER-GUIDE.md`.

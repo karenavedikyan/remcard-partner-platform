@@ -1,29 +1,40 @@
 {
-  "release": "ADMIN-TEST-01 RC",
-  "navigatorBaseSha": "f68a966173b2f28aaca2537a834a1fb246f76703",
-  "navigatorHeadSha": "d5400c5b",
-  "platformBaseSha": "7c1e435f3af2128038aee005d5576f01e47c037f",
-  "platformHeadSha": "9f7fa98",
-  "tests": [
-    {
-      "command": "pnpm exec vitest run src/lib/__tests__/adminPassword.test.ts",
-      "repo": "remcard-navigator",
-      "result": "PASS"
+  "checkedAt": "2026-10-15T13:30:00Z",
+  "verdict": "ADMIN-TEST-01.1 targeted fixes — integration/browser partial",
+  "backendHead": "pending-commit",
+  "frontendHead": "pending-commit",
+  "backendBase": "f68a966173b2f28aaca2537a834a1fb246f76703",
+  "frontendBase": "7c1e435f3af2128038aee005d5576f01e47c037f",
+  "unit": {
+    "navigator": {
+      "adminPassword.test.ts": "PASS 2/2",
+      "profAdminRequestBody.test.ts": "PASS 3/3",
+      "profTestRoutePolicy.test.ts": "PASS 2/2"
     },
-    {
-      "command": "pnpm exec prisma validate",
-      "repo": "remcard-navigator",
-      "result": "PASS"
-    },
-    {
-      "command": "pnpm run build",
-      "repo": "remcard-partner-platform",
-      "result": "PASS"
-    },
-    {
-      "command": "Full admin e2e on disposable PG",
-      "result": "NOT VERIFIED",
-      "notes": "Requires flags, migration apply, bootstrap credential"
+    "platform": {
+      "prof-admin-api.test.ts": "PASS 2/2 (object body, no double JSON.stringify)"
     }
+  },
+  "build": {
+    "remcard-navigator": "PASS (pnpm build)",
+    "remcard-partner-platform": "PASS (npm run build)"
+  },
+  "migration": {
+    "manifest": "scripts/admin-test-01-migrate-manifest.json",
+    "sha256": {
+      "20261015103000_admin_test_01": "cfade237b2b2f93f42399eca6d9495f4f13099b7121bc40c6efd535bef1af4fa",
+      "20261015200000_admin_test_01_1": "bce02cecc16ba667f0c485cab436e45e5008f4fc209ecb6b61abba24136b72a1"
+    },
+    "commands": [
+      "node scripts/prof-admin-migrate.mjs --phase=before",
+      "node scripts/prof-admin-migrate.mjs --phase=apply --apply",
+      "node scripts/prof-admin-migrate.mjs --phase=after"
+    ],
+    "localBefore": "PASS (loopback remcard_prof_test ledger read)",
+    "localApply": "PARTIAL — existing DB already has ADMIN-TEST-01 objects; ADD CONSTRAINT idempotence requires ledger row (controlled re-apply refuses duplicate constraint)"
+  },
+  "notRun": [
+    "Full Playwright login→create→enter→R02→return on disposable PG with flags enabled",
+    "Production deploy / Timeweb"
   ]
 }
