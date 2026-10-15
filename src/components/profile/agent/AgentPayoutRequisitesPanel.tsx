@@ -174,18 +174,17 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
       </p>
       {error ? <p className={styles.bannerError}>{error}</p> : null}
       {loading ? <p className={styles.intro}>Загрузка…</p> : null}
-      <ul className={styles.facts}>
+      <ul className={styles.requisitesList}>
         {items.map((item) => (
           <li key={item.id}>
-            <div>
-              <strong>{item.legalName}</strong>
-              <small>
-                {KIND_LABELS[item.kind] ?? item.kind}
-                {item.inn ? ` · ИНН ${item.inn}` : ""}
-                {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
-                {item.version ? ` · v${item.version}` : ""}
-              </small>
-              <div className={styles.actionsRight}>
+            <strong>{item.legalName}</strong>
+            <small>
+              {KIND_LABELS[item.kind] ?? item.kind}
+              {item.inn ? ` · ИНН ${item.inn}` : ""}
+              {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
+              {item.version ? ` · v${item.version}` : ""}
+            </small>
+            <div className={styles.requisitesItemActions}>
                 {item.isPrimary ? <span className={styles.label}>Основной</span> : (
                   <button
                     type="button"
@@ -225,7 +224,6 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                   Архивировать
                 </button>
               </div>
-            </div>
           </li>
         ))}
       </ul>

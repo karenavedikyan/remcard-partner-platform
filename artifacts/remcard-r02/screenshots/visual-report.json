@@ -24,7 +24,9 @@
               "flexDirection": "column"
             },
             "count": 4
-          }
+          },
+          "tokenScope": null,
+          "addButtonScrollVisible": null
         },
         "pass": true
       },
@@ -46,327 +48,13 @@
           "progress": "Шаг 1 из 4",
           "themeBg": "rgb(255, 255, 255)",
           "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
+          "mobileSteps": null,
+          "tokenScope": null,
+          "addButtonScrollVisible": null
         },
         "pass": true
       },
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-wizard-step1-375-light.png"
-    },
-    {
-      "name": "impl-wizard-step1-375-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 289,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 1 из 4",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": {
-            "overlap": false,
-            "clipped": false,
-            "stepBtn": {
-              "display": "flex",
-              "flexDirection": "column"
-            },
-            "count": 4
-          }
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-wizard-step1-375-dark.png"
-    },
-    {
-      "name": "ref-wizard-step1-375-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 343,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 1 из 4",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-wizard-step1-375-dark.png"
-    },
-    {
-      "name": "impl-review-375-light",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 289,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 4 из 4",
-          "themeBg": "rgb(255, 255, 255)",
-          "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-review-375-light.png"
-    },
-    {
-      "name": "ref-review-375-light",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 343,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 4 из 4",
-          "themeBg": "rgb(255, 255, 255)",
-          "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-review-375-light.png"
-    },
-    {
-      "name": "impl-review-375-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 289,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 4 из 4",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-review-375-dark.png"
-    },
-    {
-      "name": "ref-review-375-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 343,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 4 из 4",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-review-375-dark.png"
-    },
-    {
-      "name": "impl-completed-375-light",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 289,
-          "stepsDisplay": "",
-          "introDisplay": "none",
-          "progress": "",
-          "themeBg": "rgb(255, 255, 255)",
-          "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-completed-375-light.png"
-    },
-    {
-      "name": "ref-completed-375-light",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 343,
-          "stepsDisplay": "",
-          "introDisplay": "none",
-          "progress": "",
-          "themeBg": "rgb(255, 255, 255)",
-          "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-completed-375-light.png"
-    },
-    {
-      "name": "impl-completed-375-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 289,
-          "stepsDisplay": "",
-          "introDisplay": "none",
-          "progress": "",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-completed-375-dark.png"
-    },
-    {
-      "name": "ref-completed-375-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 343,
-          "stepsDisplay": "",
-          "introDisplay": "none",
-          "progress": "",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-completed-375-dark.png"
-    },
-    {
-      "name": "impl-profile-contacts-320-light",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 234,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 3 из 4",
-          "themeBg": "rgb(255, 255, 255)",
-          "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-profile-contacts-320-light.png"
-    },
-    {
-      "name": "ref-profile-contacts-320-light",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 288,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 3 из 4",
-          "themeBg": "rgb(255, 255, 255)",
-          "themeText": "rgb(40, 43, 48)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-profile-contacts-320-light.png"
-    },
-    {
-      "name": "impl-profile-contacts-320-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 234,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 3 из 4",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-profile-contacts-320-dark.png"
-    },
-    {
-      "name": "ref-profile-contacts-320-dark",
-      "capture": "CAPTURED",
-      "verify": "PASS",
-      "verifyDetails": {
-        "roleAgent": true,
-        "themeOk": true,
-        "stateOk": true,
-        "overflowOk": true,
-        "metrics": {
-          "wizardWidth": 288,
-          "stepsDisplay": "flex",
-          "introDisplay": "none",
-          "progress": "Шаг 3 из 4",
-          "themeBg": "rgb(32, 35, 41)",
-          "themeText": "rgb(240, 241, 243)",
-          "mobileSteps": null
-        },
-        "pass": true
-      },
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-profile-contacts-320-dark.png"
     },
     {
       "name": "impl-profile-requisites-320-light",
@@ -385,6 +73,38 @@
           "themeBg": "rgba(0, 0, 0, 0)",
           "themeText": "rgb(0, 0, 0)",
           "mobileSteps": null,
+          "tokenScope": {
+            "scopeVars": {
+              "pw2": "0.5rem",
+              "pwBg": "#fff",
+              "pwLine": "#dce0e3"
+            },
+            "tabVars": {
+              "pw2": "0.5rem",
+              "pwBg": "#fff",
+              "pwLine": "#dce0e3"
+            },
+            "tabActive": {
+              "gap": 12,
+              "paddingTop": 8,
+              "paddingLeft": 12,
+              "borderTopWidth": 1,
+              "backgroundColor": "rgb(255, 241, 241)",
+              "borderColor": "rgb(181, 42, 46)"
+            },
+            "tabInactive": {
+              "gap": 12,
+              "paddingTop": 8,
+              "paddingLeft": 12,
+              "borderTopWidth": 1,
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(220, 224, 227)"
+            },
+            "tabsDistinct": true,
+            "listItemBorder": true,
+            "varsOk": true
+          },
+          "addButtonScrollVisible": true,
           "requisitesReady": true
         },
         "pass": true
@@ -408,19 +128,111 @@
           "themeBg": "rgba(0, 0, 0, 0)",
           "themeText": "rgb(255, 255, 255)",
           "mobileSteps": null,
+          "tokenScope": {
+            "scopeVars": {
+              "pw2": "0.5rem",
+              "pwBg": "#202329",
+              "pwLine": "#454b54"
+            },
+            "tabVars": {
+              "pw2": "0.5rem",
+              "pwBg": "#202329",
+              "pwLine": "#454b54"
+            },
+            "tabActive": {
+              "gap": 12,
+              "paddingTop": 8,
+              "paddingLeft": 12,
+              "borderTopWidth": 1,
+              "backgroundColor": "rgb(60, 39, 43)",
+              "borderColor": "rgb(255, 148, 151)"
+            },
+            "tabInactive": {
+              "gap": 12,
+              "paddingTop": 8,
+              "paddingLeft": 12,
+              "borderTopWidth": 1,
+              "backgroundColor": "rgb(32, 35, 41)",
+              "borderColor": "rgb(69, 75, 84)"
+            },
+            "tabsDistinct": true,
+            "listItemBorder": true,
+            "varsOk": true
+          },
+          "addButtonScrollVisible": true,
           "requisitesReady": true
         },
         "pass": true
       },
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-profile-requisites-320-dark.png"
+    },
+    {
+      "name": "impl-profile-requisites-dialog-320-light",
+      "capture": "CAPTURED",
+      "verify": "PASS",
+      "verifyDetails": {
+        "roleAgent": true,
+        "themeOk": true,
+        "stateOk": true,
+        "overflowOk": true,
+        "metrics": {
+          "wizardWidth": 0,
+          "stepsDisplay": "",
+          "introDisplay": "none",
+          "progress": "",
+          "themeBg": "rgba(0, 0, 0, 0)",
+          "themeText": "rgb(0, 0, 0)",
+          "mobileSteps": null,
+          "tokenScope": {
+            "scopeVars": {
+              "pw2": "0.5rem",
+              "pwBg": "#fff",
+              "pwLine": "#dce0e3"
+            },
+            "tabVars": {
+              "pw2": "0.5rem",
+              "pwBg": "#fff",
+              "pwLine": "#dce0e3"
+            },
+            "tabActive": {
+              "gap": 12,
+              "paddingTop": 8,
+              "paddingLeft": 12,
+              "borderTopWidth": 1,
+              "backgroundColor": "rgb(255, 241, 241)",
+              "borderColor": "rgb(181, 42, 46)"
+            },
+            "tabInactive": {
+              "gap": 12,
+              "paddingTop": 8,
+              "paddingLeft": 12,
+              "borderTopWidth": 1,
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(220, 224, 227)"
+            },
+            "tabsDistinct": true,
+            "listItemBorder": true,
+            "varsOk": true
+          },
+          "addButtonScrollVisible": true
+        },
+        "pass": true
+      },
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/impl-profile-requisites-dialog-320-light.png"
     }
   ],
   "widthTolerance": {
     "desktopMinWizard": 980
   },
-  "mobileOnly": true,
+  "mobileOnly": false,
+  "r026Capture": true,
   "desktopCarryOver": [
     "wizard-step1-1440-light",
     "wizard-step1-1440-dark"
+  ],
+  "notLiteralParity": [
+    "desktop wizard width ~28px vs reference",
+    "completed status badge radius 6px vs ref pill",
+    "demo wallet banner not ported"
   ]
 }

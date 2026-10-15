@@ -52,10 +52,31 @@ const ALL_PAIRS = [
     crop: 'page-full',
     implOnly: true,
   },
+  {
+    name: 'profile-requisites-dialog-320-light',
+    width: 320,
+    height: 900,
+    theme: 'light',
+    scenario: 'requisites-dialog',
+    crop: 'page-full',
+    implOnly: true,
+  },
 ];
 
 const MOBILE_ONLY = process.env.R02_MOBILE_ONLY === '1';
-const PAIRS = MOBILE_ONLY ? ALL_PAIRS.filter((p) => p.width <= 375 || p.width === 320) : ALL_PAIRS;
+const R026_CAPTURE = process.env.R02_6_CAPTURE === '1';
+const PAIRS = R026_CAPTURE
+  ? ALL_PAIRS.filter((p) =>
+      [
+        'wizard-step1-375-light',
+        'profile-requisites-320-light',
+        'profile-requisites-320-dark',
+        'profile-requisites-dialog-320-light',
+      ].includes(p.name),
+    )
+  : MOBILE_ONLY
+    ? ALL_PAIRS.filter((p) => p.width <= 375 || p.width === 320)
+    : ALL_PAIRS;
 
 const HIDE_DEV_CHROME =
   'nextjs-portal,[data-nextjs-toast],next-route-announcer{display:none!important}';
@@ -194,10 +215,19 @@ async function prepareImpl(page, baseUrl, theme, scenario) {
     await walkImplWizardToContacts(page);
     return;
   }
-  if (scenario === 'requisites') {
+  if (scenario === 'requisites' || scenario === 'requisites-dialog') {
     return;
   }
   await walkImplWizardToReview(page);
+}
+
+async function openRequisitesCreateDialog(page) {
+  await waitRequisitesReady(page);
+  const addBtn = page.getByRole('button', { name: 'Добавить реквизиты' });
+  await addBtn.scrollIntoViewIfNeeded();
+  await addBtn.click();
+  await page.waitForSelector('[role="dialog"]', { timeout: 30_000 });
+  await page.locator('#req-acc').fill('40817810000000000999');
 }
 
 async function polishStep1Capture(page) {
@@ -214,7 +244,7 @@ async function polishStep1Capture(page) {
 }
 
 async function waitRequisitesReady(page) {
-  await page.getByRole('tab', { name: 'Реквизиты' }).click();
+  await page.locator('[data-testid="agent-profile-scope"]').getByRole('tab', { name: 'Реквизиты' }).click();
   const panel = page.locator('[data-testid="agent-requisites-panel"]');
   await panel.waitFor({ timeout: 60_000 });
   await page.waitForFunction(
@@ -280,6 +310,51 @@ async function readThemeMetrics(page, side) {
       bg === 'rgb(32, 35, 41)' || bg === 'rgb(41, 46, 54)' || attr === 'dark';
     return { bg, text, attr, darkByBg, refSide };
   }, side);
+}
+
+async function measureAgentTokens(page) {
+  return page.evaluate(() => {
+    const scope = document.querySelector('[data-testid="agent-profile-scope"]');
+    if (!scope) return { scopeVars: null, tabVars: null, tabsDistinct: false, listItemBorder: false };
+    const tablist = scope.querySelector('[role="tablist"]');
+    const activeTab = scope.querySelector('[role="tab"][aria-selected="true"]');
+    const inactiveTab = scope.querySelector('[role="tab"][aria-selected="false"]');
+    const readVars = (el) => {
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      return {
+        pw2: cs.getPropertyValue('--pw-2').trim(),
+        pwBg: cs.getPropertyValue('--pw-bg').trim(),
+        pwLine: cs.getPropertyValue('--pw-line').trim(),
+      };
+    };
+    const readBox = (el) => {
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      const gap = tablist ? parseFloat(getComputedStyle(tablist).gap) || 0 : 0;
+      return {
+        gap,
+        paddingTop: parseFloat(cs.paddingTop) || 0,
+        paddingLeft: parseFloat(cs.paddingLeft) || 0,
+        borderTopWidth: parseFloat(cs.borderTopWidth) || 0,
+        backgroundColor: cs.backgroundColor,
+        borderColor: cs.borderColor,
+      };
+    };
+    const listItem = document.querySelector('[data-testid="agent-requisites-panel"] ul > li');
+    return {
+      scopeVars: readVars(scope),
+      tabVars: readVars(activeTab || tablist?.querySelector('button')),
+      tabActive: readBox(activeTab),
+      tabInactive: readBox(inactiveTab),
+      tabsDistinct:
+        activeTab && inactiveTab
+          ? getComputedStyle(activeTab).backgroundColor !== getComputedStyle(inactiveTab).backgroundColor ||
+            getComputedStyle(activeTab).borderColor !== getComputedStyle(inactiveTab).borderColor
+          : false,
+      listItemBorder: listItem ? parseFloat(getComputedStyle(listItem).borderTopWidth) > 0 : false,
+    };
+  });
 }
 
 async function measureStepOverlap(page) {
@@ -407,16 +482,39 @@ async function verifyPair(page, side, theme, scenario, width) {
           (metrics.stepTitle.includes('связаться') ||
             metrics.progress === 'Шаг 3 из 4' ||
             /Шаг 3/.test(metrics.refProgress));
-  } else if (scenario === 'requisites') {
+  } else if (scenario === 'requisites' || scenario === 'requisites-dialog') {
     const panelText =
       (await page.locator('[data-testid="agent-requisites-panel"]').textContent().catch(() => '')) || '';
     const loading = panelText.includes('Загрузка');
     const hasControls =
-      /40817|7707083893|R02 Visual|Visual Agent/i.test(panelText) ||
+      /40817|7707083893|R02 Visual|Visual Agent|\*\*\*\*/i.test(panelText) ||
       (await page.getByRole('button', { name: /Добавить|Изменить|Основн/i }).count()) > 0;
     stateOk = side === 'impl' && metrics.hasRequisites && !loading && hasControls;
+    if (scenario === 'requisites-dialog') {
+      stateOk = stateOk && (await page.locator('[role="dialog"]').count()) > 0;
+    }
     if (side === 'impl') {
       metrics.roleAgent = panelText.toLowerCase().includes('реквизит') && stateOk;
+      const tokens = await measureAgentTokens(page);
+      const varsOk =
+        Boolean(tokens.scopeVars?.pw2) &&
+        Boolean(tokens.scopeVars?.pwBg) &&
+        Boolean(tokens.tabVars?.pw2 || tokens.tabVars?.pwLine) &&
+        (tokens.tabActive?.gap >= 8 || tokens.tabActive?.paddingLeft >= 8) &&
+        tokens.tabActive?.borderTopWidth >= 1 &&
+        tokens.tabsDistinct &&
+        (scenario === 'requisites-dialog' || tokens.listItemBorder);
+      metrics.tokenScope = { ...tokens, varsOk };
+      stateOk = stateOk && varsOk;
+      const addBtn = page
+        .locator('[data-testid="agent-requisites-panel"]')
+        .getByRole('button', { name: 'Добавить реквизиты' });
+      await addBtn.scrollIntoViewIfNeeded().catch(() => null);
+      const addVisible = await addBtn.isVisible().catch(() => false);
+      metrics.addButtonScrollVisible = addVisible;
+      if (scenario === 'requisites' && !addVisible) {
+        stateOk = false;
+      }
     }
   }
 
@@ -433,6 +531,8 @@ async function verifyPair(page, side, theme, scenario, width) {
       themeBg: themeMetrics.bg,
       themeText: themeMetrics.text,
       mobileSteps,
+      tokenScope: metrics.tokenScope ?? null,
+      addButtonScrollVisible: metrics.addButtonScrollVisible ?? null,
     },
   };
   verify.pass = verify.roleAgent && verify.themeOk && verify.stateOk && verify.overflowOk;
@@ -569,9 +669,15 @@ async function main() {
     pairs: [],
     widthTolerance: { desktopMinWizard: 980 },
     mobileOnly: MOBILE_ONLY,
-    desktopCarryOver: MOBILE_ONLY
+    r026Capture: R026_CAPTURE,
+    desktopCarryOver: MOBILE_ONLY || R026_CAPTURE
       ? ['wizard-step1-1440-light', 'wizard-step1-1440-dark']
       : undefined,
+    notLiteralParity: [
+      'desktop wizard width ~28px vs reference',
+      'completed status badge radius 6px vs ref pill',
+      'demo wallet banner not ported',
+    ],
   };
 
   for (const pair of PAIRS) {
@@ -580,7 +686,7 @@ async function main() {
       await seedReviewViaBff(session);
     } else if (pair.scenario === 'completed') {
       await seedCompletedViaBff(session);
-    } else if (pair.scenario === 'requisites') {
+    } else if (pair.scenario === 'requisites' || pair.scenario === 'requisites-dialog') {
       await seedRequisitesViaBff(session);
     }
 
@@ -613,8 +719,12 @@ async function main() {
         if (side === 'impl') {
           await page.addStyleTag({ content: HIDE_DEV_CHROME, id: 'r02-hide-dev' });
         }
-        if (pair.scenario === 'requisites' && side === 'impl') {
-          await waitRequisitesReady(page);
+        if ((pair.scenario === 'requisites' || pair.scenario === 'requisites-dialog') && side === 'impl') {
+          if (pair.scenario === 'requisites-dialog') {
+            await openRequisitesCreateDialog(page);
+          } else {
+            await waitRequisitesReady(page);
+          }
         }
         if (pair.scenario === 'step1' && side === 'impl') {
           await polishStep1Capture(page);

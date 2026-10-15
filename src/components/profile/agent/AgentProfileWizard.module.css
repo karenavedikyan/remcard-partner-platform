@@ -1,4 +1,5 @@
-.pw {
+.pw,
+.agentScope {
   --pw-accent: #b52a2e;
   --pw-text: #282b30;
   --pw-muted: #656970;
@@ -20,12 +21,20 @@
   font-family: var(--font-sans, Manrope, system-ui, sans-serif);
   font-size: var(--pw-base);
   color: var(--pw-text);
+}
+
+.pw {
   max-width: 1100px;
   margin: var(--pw-6) auto;
   min-width: 0;
 }
 
-:global([data-theme="dark"]) .pw {
+.agentScope {
+  min-width: 0;
+}
+
+:global([data-theme="dark"]) .pw,
+:global([data-theme="dark"]) .agentScope {
   --pw-accent: #ff9497;
   --pw-text: #f0f1f3;
   --pw-muted: #b1b6c0;
@@ -191,7 +200,8 @@
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   min-height: 44px;
   padding: var(--pw-3);
@@ -308,6 +318,43 @@
 .facts dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.requisitesList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--pw-4);
+  display: grid;
+  gap: var(--pw-3);
+}
+
+.requisitesList > li {
+  border: 1px solid var(--pw-line);
+  border-radius: 8px;
+  background: var(--pw-soft);
+  padding: var(--pw-4);
+  min-width: 0;
+}
+
+.requisitesList > li strong {
+  display: block;
+  font-size: var(--pw-sm);
+}
+
+.requisitesList > li small {
+  display: block;
+  margin-top: var(--pw-1);
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  line-height: 1.4;
+}
+
+.requisitesItemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pw-2);
+  margin-top: var(--pw-3);
+  align-items: center;
 }
 
 .summaryHeader {

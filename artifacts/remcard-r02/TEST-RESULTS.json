@@ -1,25 +1,18 @@
 {
-  "generatedAt": "2026-10-15T11:32:00Z",
-  "release": "R02.5 RC",
+  "generatedAt": "2026-10-15T11:52:00Z",
+  "release": "R02.6 RC",
   "codeSha": {
     "navigator": "b6d910ee9c91405339b838d1c1ab83a1080ad4f0",
-    "platform": "7dd8295591da68d19e82e864b8fdd743a5bebdb7"
+    "platform": "pending_commit"
   },
   "docSha": {
-    "platformReport": "7dd8295591da68d19e82e864b8fdd743a5bebdb7"
+    "platformReport": "pending_commit"
   },
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
-    "runtimeChangedInR025": false,
-    "migrationSqlSha256": "4f52ccaf51dc4856271c77abbed34af082cdb9f027b230f61a4a235c18221566",
-    "tests": [
-      {
-        "command": "unchanged from R02.3 — not re-run (no runtime diff)",
-        "exitCode": 0,
-        "result": "PASS_CARRYOVER"
-      }
-    ]
+    "runtimeChangedInR026": false,
+    "tests": [{ "result": "PASS_CARRYOVER", "notes": "unchanged b6d910ee" }]
   },
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
@@ -31,27 +24,19 @@
         "result": "PASS",
         "notes": "5/5"
       },
+      { "command": "pnpm run build", "exitCode": 0, "result": "PASS" },
       {
-        "command": "pnpm run build",
-        "exitCode": 0,
-        "result": "PASS"
-      },
-      {
-        "command": "R02_MOBILE_ONLY=1 node scripts/r02-profile-visual.mjs",
+        "command": "R02_6_CAPTURE=1 node scripts/r02-profile-visual.mjs",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "18 report rows; desktop 1440 carry-over; mobile child flex/overlap + requisites readiness"
+        "notes": "tokenScope in visual-report.json; computed-token-evidence.json"
       }
     ]
   },
-  "r02_5": {
-    "mobileCssCascade": "PASS",
-    "pureAgentCopy": "PASS",
-    "visualMobile": "PASS",
-    "evidenceGateOn": "artifacts/remcard-r02/local-auth-evidence-gate-on.json",
-    "evidenceGateOff": "artifacts/remcard-r02/local-auth-evidence-gate-off.json",
-    "profileE2e": "artifacts/remcard-r02/profile-e2e-evidence.json",
-    "visualReport": "artifacts/remcard-r02/screenshots/visual-report.json"
+  "r02_6": {
+    "agentScopeTokens": "PASS",
+    "requisitesListStyles": "PASS",
+    "visualCapture": "PASS"
   },
   "productionSmoke": "NOT RUN"
 }

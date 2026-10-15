@@ -110,35 +110,37 @@ export function AgentProfileSection({
           : "Заполняется отдельно от основных данных партнёра в этом разделе."
       }
     >
-      <div className={styles.tabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "profile"}
-          className={`${styles.tab} ${tab === "profile" ? styles.tabActive : ""}`}
-          onClick={() => setTab("profile")}
-        >
-          Профиль
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "requisites"}
-          className={`${styles.tab} ${tab === "requisites" ? styles.tabActive : ""}`}
-          onClick={() => setTab("requisites")}
-        >
-          Реквизиты
-        </button>
+      <div className={styles.agentScope} data-testid="agent-profile-scope">
+        <div className={styles.tabs} role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "profile"}
+            className={`${styles.tab} ${tab === "profile" ? styles.tabActive : ""}`}
+            onClick={() => setTab("profile")}
+          >
+            Профиль
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "requisites"}
+            className={`${styles.tab} ${tab === "requisites" ? styles.tabActive : ""}`}
+            onClick={() => setTab("requisites")}
+          >
+            Реквизиты
+          </button>
+        </div>
+        {tab === "profile" ? (
+          <AgentProfileWizard
+            userId={userId}
+            disabled={!basicsEditable}
+            onProfileComplete={() => void loadStatus()}
+          />
+        ) : (
+          <AgentPayoutRequisitesPanel disabled={!basicsEditable} />
+        )}
       </div>
-      {tab === "profile" ? (
-        <AgentProfileWizard
-          userId={userId}
-          disabled={!basicsEditable}
-          onProfileComplete={() => void loadStatus()}
-        />
-      ) : (
-        <AgentPayoutRequisitesPanel disabled={!basicsEditable} />
-      )}
     </Panel>
   );
 }

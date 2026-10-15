@@ -1,28 +1,30 @@
-# RemCard R02.5 RC
+# RemCard R02.6 RC
 
 ## PRs (unchanged)
 
-- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 — code **b6d910ee** (unchanged)
+- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 — **b6d910ee** (unchanged)
 - Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12 — branch `cursor/r02-agent-profile-b3e3`
 
-## R02.5 — targeted mobile CSS, pure-agent copy, evidence
+## Root cause (scoped fix)
 
-| Item | Result |
-|------|--------|
-| Mobile step cascade | **PASS** — `@media (max-width:900px)` moved after base rules; `.journey .stepBtn` uses `display:flex`, `grid-template-columns:none`, 28px circles, text under circle; impl 375 asserts computed child `flex`/`column`, no bbox overlap/clipping |
-| Footer actions (375) | **PASS** — `.actionsRight` nowrap row with compact `.btnDraft`; 320 allows wrap without oversized gaps |
-| Profile tabs (320) | **PASS** — scoped `.tabs`/`.tab` spacing at ≤480px |
-| Pure agent copy | **PASS** — removed legacy/«магазин» Panel hint for pure agent; removed ProfileEditor «скрыты поля магазина» banner |
-| Completed summary spacing | **PASS (partial vs ref)** — avatar 56px, status pill radius 6px; demo banner still not ported (intentional) |
-| Requisites 320 readiness | **PASS** — BFF seed + wait until «Загрузка…» gone; synthetic account visible; separate full-page `profile-contacts-320` / `profile-requisites-320` (no wizard mask) |
-| Desktop 1440 pairs | **carry-over** — not re-shot (`R02_MOBILE_ONLY=1`; prior impl/ref step1-1440) |
+`--pw-*` tokens lived only on `.pw` (wizard root). Tabs (`AgentProfileSection`) and `AgentPayoutRequisitesPanel` are **siblings** outside `.pw`, so `var(--pw-*)` was invalid → zero gap/padding/borders (“ПрофильРеквизиты”, bare requisites list).
 
-## Tests (frontend only)
+**Fix:** shared token block on `.pw, .agentScope`; dark theme on both; wrapper `[data-testid="agent-profile-scope"]` around tabs + wizard/requisites. Layout margins stay on `.pw` only. Requisites list uses `.requisitesList` / `.requisitesItemActions` (not wizard `.facts`).
 
-- `AgentProfileWizard.regression.test.tsx` — 5/5 PASS
-- `pnpm run build` — PASS
-- `R02_MOBILE_ONLY=1 node scripts/r02-profile-visual.mjs` — 18 pair entries PASS (`visual-report.json`: mobileSteps overlap, requisitesReady)
+## Evidence
 
-Backend suite **not re-run** (no navigator diff). Production smoke **NOT RUN**. Merge/deploy/Timeweb **NOT RUN**.
+| Check | Result |
+|-------|--------|
+| Computed tokens on scope/tabs | **PASS** — `--pw-2`, `--pw-bg`, `--pw-line` non-empty; tab gap ≥8px, padding ≥8px, border ≥1px; active ≠ inactive |
+| Requisites 320 ready list | **PASS** — seeded item, masked account, card borders |
+| Dialog 320 create | **PASS** — in-panel dialog (no portal); themed fields |
+| Wizard 375 regression | **PASS** — mobile steps flex/overlap unchanged |
+| Desktop / summary | **carry-over** — ~28px width Δ, status radius 6px vs ref pill, demo banner not ported |
 
-See `TEST-RESULTS.json` for SHAs and commands.
+Command: `R02_6_CAPTURE=1 node scripts/r02-profile-visual.mjs` → `visual-report.json` (`tokenScope`, `r026Capture`).
+
+Frontend: regression 5/5, `pnpm run build`. Backend **not re-run**.
+
+Production smoke **NOT RUN**. Merge/deploy **NOT RUN**.
+
+See `TEST-RESULTS.json` for SHAs.
