@@ -1,8 +1,8 @@
 {
   "checkedAt": "2026-10-15T13:30:00Z",
   "verdict": "ADMIN-TEST-01.1 targeted fixes — integration/browser partial",
-  "backendHead": "pending-commit",
-  "frontendHead": "pending-commit",
+  "backendHead": "b184852d",
+  "frontendHead": "4a11920",
   "backendBase": "f68a966173b2f28aaca2537a834a1fb246f76703",
   "frontendBase": "7c1e435f3af2128038aee005d5576f01e47c037f",
   "unit": {
