@@ -1,42 +1,37 @@
-# RemCard R03 FINAL-4 — Release Report
+# RemCard R03 — scoped fix (dark pair + certificate sort)
 
-## Verdict: **READY_FOR_REVIEW**
+## Verdict (this run): **READY_FOR_REVIEW** for the two items below only
 
-Targeted R03 UI/acceptance delta on existing PRs [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) / [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680). No merge, deploy, or production changes.
+PRs [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) / [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680). Full 1:1 visual parity with frozen reference is **not** claimed.
 
-## Code refs (acceptance run)
+## Code refs
 
-| Repo | Branch | HEAD | Base |
-|------|--------|------|------|
-| remcard-partner-platform | `cursor/r03-final-4-b3e3` | `e63a441` | `release/prof-v1-20261007` |
-| remcard-navigator | `cursor/r03-final-4-b3e3` | `50ae51cc` | `release/prof-backend-v1-20261007` |
+| Repo | Branch | HEAD (after this fix) | Base |
+|------|--------|------------------------|------|
+| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | see `TEST-RESULTS.json` | `release/prof-v1-20261007` |
+| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | see `TEST-RESULTS.json` | `release/prof-backend-v1-20261007` |
 
-FINAL-3 baseline: platform `219dd915` / runtime `bf05d2fd`; navigator `6da34993`.
+## 1. Dark pair — **FIXED / VERIFIED**
 
-## FINAL-4 mapping
+- Reference driver: `[data-action="theme"]` on frozen `remcard-profile-wizard` (was wrong selector).
+- `assertDarkTheme`: opaque cabinet surface + explicit theme; transparent `html` no longer false PASS (regression tests in `src/lib/r03-theme-assert.test.ts`).
+- Re-capture: `impl/ref-certificates-list-375-dark.png` @ 375×812; both measured dark (see `local-acceptance-report.json` → `themeEvidence`).
 
-| Requirement | Change |
-|-------------|--------|
-| Mobile list 375/320 without horizontal table scroll | `AgentR03Mobile*Row` + `@media (max-width: 680px)` list mode; desktop table retained |
-| Desktop list chrome | Bordered `collectionPanel` / `searchInput`, table wrap styling |
-| Certificate cards hierarchy | `AgentCertificateCard` + list DTO fields (`partnerStoreName`, `categorySummary`, …) |
-| Real filter/sort controls | `AgentR03ListToolbar` sort + cert status; server-side copy |
-| Server totals / pagination | GET meta (`totalCount`, `activeCount`, `archivedCount`, page 25/50/100, Назад/Далее) |
-| Client selection + batch | `batchAgentClients` + UI batch bar; cert batch preserved |
-| Acceptance false positives | Dark pair theme check (impl + ref), return/re-enter via nav, 2-ID batch, idempotency same ID, gate-OFF legacy `/recommendations`, 320 geometry smoke |
-| Seed safety | `r03AcceptancePartnerSeed.ts` refuses non-loopback / non-disposable DB |
+## 2. Certificate sort — **FIXED**
 
-## Evidence
+- **Decision:** use existing `Certificate.updatedAt` for `updated_desc` (no migration); distinct from `created_desc`.
+- Default certificate list sort: **`created_desc`** («Сначала новые»); stale/unknown query → `created_desc`.
+- Client `updated_desc` → `AgentClient.updatedAt` unchanged.
+- Tests: `src/lib/__tests__/agentR03ListQuery.test.ts`.
 
-- `local-acceptance-report.json` — `verdict: READY_FOR_REVIEW`, `visualPairCount: 8`, `failures: []`
-- `visual-report.md` — 8 matched pairs + 320 smoke single
-- `visual/impl-*` / `ref-*` under `artifacts/remcard-r03/visual/`
+## Commands (this run)
 
-## Remaining visual deltas (not defects)
+```bash
+pnpm exec vitest run src/lib/r03-theme-assert.test.ts src/lib/__tests__/agentR03ListQuery.test.ts
+pnpm build  # both repos
+R03_ONLY_DARK_PAIR=1 node scripts/r03-local-acceptance.mjs  # exit 0
+```
 
-- Synthetic admin-test data vs frozen demo rows; test banner; no demo finance panels (by design).
-- Certificate card body uses real partner/category fields only (no fabricated bonuses/conditions).
+## Out of scope (unchanged)
 
-## Out of scope
-
-R02-LIVE-UI #14, R04/R05, staff/branches/notifications, merge/deploy/production.
+Other UI/control deltas from FINAL-4; R02-LIVE-UI #14; R04/R05; staff/branches/notifications/Tandoor.

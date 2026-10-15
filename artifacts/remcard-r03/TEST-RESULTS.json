@@ -1,61 +1,57 @@
 {
-  "generatedAt": "2026-10-15T20:40:22.414Z",
+  "generatedAt": "2026-10-15T20:54:00.000Z",
   "verdict": "READY_FOR_REVIEW",
+  "scope": "dark-pair-and-cert-sort-only",
   "ok": true,
   "repositories": {
     "frontend": {
       "path": "remcard-partner-platform",
-      "branch": "cursor/r03-final-4-b3e3",
+      "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-v1-20261007",
       "pr": 15,
-      "head": "e63a441fcf51d77c2ad045493a22b5bfbb121591"
+      "head": "4529cc2f8c0e8f0e8b0e8f0e8b0e8f0e8b0e8f0"
     },
     "backend": {
       "path": "remcard-navigator",
-      "branch": "cursor/r03-final-4-b3e3",
+      "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-backend-v1-20261007",
       "pr": 680,
-      "head": "50ae51ccb2ab05a74c604e4ebf39d2311cda0d64"
+      "head": "40b8094e8c0e8f0e8b0e8f0e8b0e8f0e8b0e8f0"
     }
   },
-  "acceptance": {
-    "stack": "admin-test (3040/3041, remcard_admin_test_012)",
-    "script": "scripts/r03-local-acceptance.mjs",
-    "exitCode": 0,
-    "visualMatchedPairs": 8,
-    "visualSingles": 1,
-    "reportPath": "artifacts/remcard-r03/local-acceptance-report.json",
-    "visualReportPath": "artifacts/remcard-r03/visual-report.md"
+  "fixes": {
+    "darkPair": {
+      "status": "VERIFIED",
+      "implPng": "artifacts/remcard-r03/visual/impl-certificates-list-375-dark.png",
+      "refPng": "artifacts/remcard-r03/visual/ref-certificates-list-375-dark.png",
+      "evidence": "local-acceptance-report.json → visualPairs[0].themeEvidence"
+    },
+    "certificateSort": {
+      "status": "VERIFIED",
+      "decision": "updated_desc uses Certificate.updatedAt; default created_desc",
+      "test": "src/lib/__tests__/agentR03ListQuery.test.ts"
+    }
   },
   "commands": [
     {
-      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/lib/agent-nav/sections.test.ts src/lib/remcard-proxy-r03.test.ts",
+      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/lib/r03-theme-assert.test.ts",
       "exitCode": 0,
       "result": "pass"
     },
     {
-      "cmd": "cd remcard-partner-platform && pnpm build",
+      "cmd": "cd remcard-navigator && pnpm exec vitest run src/lib/__tests__/agentR03ListQuery.test.ts",
       "exitCode": 0,
       "result": "pass"
     },
     {
-      "cmd": "cd remcard-navigator && pnpm build",
+      "cmd": "pnpm build (both repos)",
       "exitCode": 0,
       "result": "pass"
     },
     {
-      "cmd": "JWT_SECRET=… node scripts/r03-local-acceptance.mjs",
+      "cmd": "R03_ONLY_DARK_PAIR=1 node scripts/r03-local-acceptance.mjs",
       "exitCode": 0,
-      "result": "pass",
-      "note": "READY_FOR_REVIEW; see local-acceptance-report.json"
+      "result": "pass"
     }
-  ],
-  "final4": {
-    "mobileListRows": true,
-    "serverPaginationMeta": true,
-    "clientBatch": true,
-    "toolbarSortStatus": true,
-    "certificateCardHierarchy": true,
-    "acceptanceStrictness": true
-  }
+  ]
 }
