@@ -1,33 +1,35 @@
 {
-  "release": "R03.1",
-  "status": "READY_FOR_REVIEW",
+  "release": "R03.2",
+  "verdict": "NO_GO",
   "backendPr": 680,
   "frontendPr": 15,
-  "backendHead": "1e379ee915c5094f65b8aef688e823c6fad490a3",
-  "frontendHead": "838855aa92b33c6a5dacd654638c27129d5db61a",
+  "backendBase": "release/prof-backend-v1-20261007",
+  "frontendBase": "release/prof-v1-20261007",
+  "reviewedCodeSha": {
+    "backendStart": "1e379ee915c5094f65b8aef688e823c6fad490a3",
+    "frontendStart": "ba58fe1649d72bed2d558c584c110790dbf80223"
+  },
   "migration": {
     "name": "20261015180000_prof_r03_agent_clients_certs",
-    "sha256": "b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168",
-    "runner": "scripts/prof-r03-migrate.mjs"
+    "sha256": "b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168"
   },
-  "tests": {
+  "testsRun": {
     "navigatorUnit": [
-      "src/lib/__tests__/agentClientPatch.test.ts",
-      "src/lib/__tests__/certificateLookupCode.test.ts",
-      "src/lib/__tests__/certificatePublicPayload.test.ts",
-      "src/lib/__tests__/profTestRoutePolicy.test.ts"
+      "agentClientPatch.test.ts",
+      "certificateLookupCode.test.ts",
+      "profR03CreateIdempotency.integration.test.ts"
     ],
-    "platformUnit": ["src/lib/remcard-proxy-r03.test.ts"],
-    "integrationPg": "src/lib/__tests__/profR03AgentClients.integration.test.ts (requires disposable DATABASE_URL)",
-    "browserE2e": "NOT_RUN_THIS_TURN — local admin→test-agent chain pending disposable stand"
+    "navigatorMigration": "scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs",
+    "platformUnit": ["create-idempotency.test.ts", "remcard-proxy-r03.test.ts"],
+    "builds": ["remcard-navigator pnpm run build", "remcard-partner-platform pnpm run build"]
   },
-  "evidence": {
-    "screenshots": "NOT_CAPTURED_THIS_TURN"
+  "localAcceptance": {
+    "script": "scripts/r03-local-acceptance.mjs",
+    "report": "artifacts/remcard-r03/local-acceptance-report.json",
+    "backendHttpOk": true,
+    "bffR03Ok": false,
+    "note": "BFF GET /api/remcard/api/pro/r03/status returned 403 in stack; direct backend 200"
   },
-  "remainders": [
-    "Full browser E2E + 6–10 visual pairs (1440/375 light/dark) not executed in this turn",
-    "Guest HTML template beyond issuerLabel/displayCode not re-audited in browser",
-    "Record row icons still prototype glyphs (not full SVG sprite set)",
-    "prof-r03-migrate integration test file not added (manifest checksum unit covered via core)"
-  ]
+  "visualsDir": "artifacts/remcard-r03/visual/",
+  "r02LiveUiDependency": "PR #14 separate; not merged in this run"
 }

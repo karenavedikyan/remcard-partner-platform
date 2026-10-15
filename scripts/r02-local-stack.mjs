@@ -14,6 +14,7 @@ const RUN_DIR = process.env.R02_RUN_DIR || '/tmp/r02-local-stack';
 const NAV_PORT = Number(process.env.R02_NAV_PORT || 3031);
 const PLATFORM_PORT = Number(process.env.R02_PLATFORM_PORT || 3032);
 const GATE_ENABLED = process.env.PROF_R02_AGENT_PROFILE_ENABLED !== '0';
+const R03_GATE_ENABLED = process.env.PROF_R03_AGENT_CERTIFICATES_ENABLED !== '0';
 
 const DB_URL =
   process.env.DATABASE_URL?.trim() ||
@@ -122,6 +123,7 @@ async function main() {
     `DATABASE_URL=${DB_URL}`,
     `DIRECT_URL=${DB_URL}`,
     `PROF_R02_AGENT_PROFILE_ENABLED=${GATE_ENABLED ? 'true' : 'false'}`,
+    `PROF_R03_AGENT_CERTIFICATES_ENABLED=${R03_GATE_ENABLED ? 'true' : 'false'}`,
     `R02_NAV_PORT=${NAV_PORT}`,
     `R02_PLATFORM_PORT=${PLATFORM_PORT}`,
     `REMCARD_API_BASE_URL=http://127.0.0.1:${NAV_PORT}`,
@@ -136,6 +138,7 @@ async function main() {
     DATABASE_URL: DB_URL,
     DIRECT_URL: DB_URL,
     PROF_R02_AGENT_PROFILE_ENABLED: GATE_ENABLED ? 'true' : 'false',
+    PROF_R03_AGENT_CERTIFICATES_ENABLED: R03_GATE_ENABLED ? 'true' : 'false',
     NEXT_PUBLIC_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
   });
   const platPid = spawnDev(ROOT, PLATFORM_PORT, {

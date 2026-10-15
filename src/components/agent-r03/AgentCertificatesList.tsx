@@ -94,6 +94,60 @@ export function AgentCertificatesList() {
     }
   }
 
+  function certRowActions(cert: AgentCertificateRow): import("./RecordRowActions").RecordRowAction[] {
+    return [
+      {
+        id: "share",
+        label: "Поделиться",
+        disabled: cert.status === "CANCELLED" || busy,
+        disabledReason: "Ссылка неактивна",
+        onClick: () => shareCert(cert),
+      },
+      {
+        id: "rename",
+        label: "Переименовать",
+        disabled: busy,
+        onClick: () => void renameCert(cert),
+      },
+      {
+        id: archived ? "restore" : "archive",
+        label: archived ? "Восстановить" : "В архив",
+        disabled: busy,
+        onClick: () => {
+          setBusy(true);
+          void patchAgentCertificate(cert.id, {
+            action: archived ? "restore" : "archive",
+          })
+            .then(() => load())
+            .catch((caught) => {
+              window.alert(
+                caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие",
+              );
+            })
+            .finally(() => setBusy(false));
+        },
+      },
+      {
+        id: "delete",
+        label: "Удалить",
+        disabled: cert.hasOrders || busy,
+        disabledReason: "Есть покупки — используйте архив",
+        onClick: () => {
+          if (!window.confirm("Удалить сертификат без возможности восстановления?")) return;
+          setBusy(true);
+          void deleteAgentCertificate(cert.id)
+            .then(() => load())
+            .catch((caught) => {
+              window.alert(
+                caught instanceof RemcardApiError ? caught.message : "Не удалось удалить",
+              );
+            })
+            .finally(() => setBusy(false));
+        },
+      },
+    ];
+  }
+
   function shareCert(cert: AgentCertificateRow) {
     const url = resolveCertificatePageUrl(cert);
     if (!url || cert.status === "CANCELLED") {
@@ -221,60 +275,7 @@ export function AgentCertificatesList() {
                 </span>
                 <RecordRowActions
                   ariaLabel="Действия с сертификатом"
-                  actions={[
-                    {
-                      id: "share",
-                      label: "Поделиться",
-                      disabled: cert.status === "CANCELLED",
-                      disabledReason: "Ссылка неактивна",
-                      onClick: () => void shareCert(cert),
-                    },
-                    {
-                      id: "rename",
-                      label: "Переименовать",
-                      onClick: () => void renameCert(cert),
-                    },
-                    {
-                      id: archived ? "restore" : "archive",
-                      label: archived ? "Восстановить" : "В архив",
-                      onClick: () => {
-                        setBusy(true);
-                        void patchAgentCertificate(cert.id, {
-                          action: archived ? "restore" : "archive",
-                        })
-                          .then(() => load())
-                          .catch((caught) => {
-                            window.alert(
-                              caught instanceof RemcardApiError
-                                ? caught.message
-                                : "Не удалось выполнить действие",
-                            );
-                          })
-                          .finally(() => setBusy(false));
-                      },
-                    },
-                    {
-                      id: "delete",
-                      label: "Удалить",
-                      disabled: cert.hasOrders,
-                      disabledReason: "Есть покупки — используйте архив",
-                      onClick: () => {
-                        if (!window.confirm("Удалить сертификат без возможности восстановления?"))
-                          return;
-                        setBusy(true);
-                        void deleteAgentCertificate(cert.id)
-                          .then(() => load())
-                          .catch((caught) => {
-                            window.alert(
-                              caught instanceof RemcardApiError
-                                ? caught.message
-                                : "Не удалось удалить",
-                            );
-                          })
-                          .finally(() => setBusy(false));
-                      },
-                    },
-                  ]}
+                  actions={certRowActions(cert)}
                 />
               </div>
             </article>
@@ -291,6 +292,9 @@ export function AgentCertificatesList() {
                 <th>Название</th>
                 <th>Код</th>
                 <th>Статус</th>
+                <th>
+                  <span className="sr-only">Действия</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -317,6 +321,9 @@ export function AgentCertificatesList() {
                   </td>
                   <td>{cert.displayCode}</td>
                   <td>{certificateStatusLabel(cert.status)}</td>
+                  <td>
+                    <RecordRowActions ariaLabel="Действия" actions={certRowActions(cert)} />
+                  </td>
                 </tr>
               ))}
             </tbody>

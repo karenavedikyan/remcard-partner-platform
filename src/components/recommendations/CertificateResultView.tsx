@@ -20,9 +20,11 @@ import styles from "./recommendations.module.css";
 
 type CertificateResultViewProps = {
   certificate: StoreCertificate;
+  /** Public-facing code (e.g. А-RC-…); never includes private alias. */
+  displayCode?: string | null;
 };
 
-export function CertificateResultView({ certificate }: CertificateResultViewProps) {
+export function CertificateResultView({ certificate, displayCode }: CertificateResultViewProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "ok" | "error">("idle");
   const [pdfError, setPdfError] = useState("");
@@ -136,7 +138,7 @@ export function CertificateResultView({ certificate }: CertificateResultViewProp
         </ul>
 
         <div className={styles.codeRow}>
-          <span className={styles.codeValue}>{certificate.promoCode}</span>
+          <span className={styles.codeValue}>{displayCode?.trim() || certificate.promoCode}</span>
         </div>
 
         {qrDataUrl ? (

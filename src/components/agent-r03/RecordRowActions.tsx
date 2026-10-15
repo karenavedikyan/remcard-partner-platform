@@ -1,5 +1,6 @@
 "use client";
 
+import { rowActionIcon } from "./RowActionIcons";
 import styles from "./agent-r03.module.css";
 
 export type RecordRowAction = {
@@ -40,11 +41,7 @@ export function RecordRowActions({ actions, ariaLabel }: RecordRowActionsProps) 
 }
 
 function ActionGlyph({ id }: { id: string }) {
-  if (id === "share") return <span aria-hidden>⎘</span>;
-  if (id === "rename") return <span aria-hidden>✎</span>;
-  if (id === "archive") return <span aria-hidden>▭</span>;
-  if (id === "restore") return <span aria-hidden>↺</span>;
-  if (id === "delete") return <span aria-hidden>🗑</span>;
-  if (id === "disable") return <span aria-hidden>⊘</span>;
+  const Icon = rowActionIcon(id);
+  if (Icon) return <Icon />;
   return <span aria-hidden>•</span>;
 }

@@ -32,7 +32,8 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     origin: request.headers.get("origin"),
     bodyText,
     idempotencyKeyHeader:
-      request.method === "POST" && pathname === "/api/store/order"
+      request.method === "POST" &&
+      (pathname === "/api/store/order" || pathname === "/api/pro/agent-certificates")
         ? request.headers.get("Idempotency-Key")
         : null,
   });
