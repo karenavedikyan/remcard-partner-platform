@@ -2,8 +2,8 @@
 
 ## PRs (same branches)
 
-- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 (`cursor/r02-agent-profile-b3e3`)
-- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12 (`cursor/r02-agent-profile-b3e3`)
+- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678 — HEAD `865895b5`
+- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12 — HEAD `383fbd7`
 
 ## R02.1 fixes (vs first RC)
 
