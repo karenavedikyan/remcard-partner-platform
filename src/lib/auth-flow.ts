@@ -11,6 +11,7 @@ const SAFE_RETURN_PREFIXES = [
   "/profile",
   "/recommendations",
   "/invite",
+  "/admin",
 ] as const;
 
 /** Allow only same-origin relative paths without protocol tricks. */

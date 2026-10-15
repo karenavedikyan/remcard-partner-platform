@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { requireProSession } from "@/lib/session";
-import { fetchRemcardUpstream } from "@/lib/remcard-server";
+import { fetchRemcardUpstream, getAuthMeServer } from "@/lib/remcard-server";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
 import type { PartnershipListResponse } from "@/lib/types";
@@ -15,6 +15,8 @@ type CabinetShellProps = {
 export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
   const user = await requireProSession(returnTo);
   const cookieHeader = (await headers()).get("cookie");
+  const authMe = await getAuthMeServer(cookieHeader);
+  const profTestSession = authMe.ok ? authMe.data.profTestSession ?? null : null;
   const list = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
@@ -54,6 +56,7 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
       user={user}
       incomingCount={attentionCount}
       uiPrefs={uiPrefs}
+      profTestSession={profTestSession}
     >
       {children}
     </CabinetAppShellClient>

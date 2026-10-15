@@ -1,0 +1,45 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { remcardFetch } from "@/lib/api-client";
+import styles from "./ProfTestModeBanner.module.css";
+
+export type ProfTestSessionInfo = {
+  active: boolean;
+  displayName: string;
+  partnerType?: string | null;
+  partnerActivities?: string[];
+};
+
+type Props = {
+  session: ProfTestSessionInfo;
+};
+
+export function ProfTestModeBanner({ session }: Props) {
+  const router = useRouter();
+  if (!session.active) return null;
+
+  const typeLabel =
+    session.partnerActivities?.includes("AGENT")
+      ? "Агент"
+      : session.partnerType ?? "Партнёр";
+
+  return (
+    <div className={styles.banner} role="status" data-testid="prof-test-mode-banner">
+      <span>
+        Тестовый режим · {session.displayName} · {typeLabel}
+      </span>
+      <button
+        type="button"
+        className={styles.btn}
+        onClick={async () => {
+          await remcardFetch("/api/pro/admin/test-users/return", { method: "POST" });
+          router.replace("/admin/test-users");
+          router.refresh();
+        }}
+      >
+        Вернуться в управление тестами
+      </button>
+    </div>
+  );
+}

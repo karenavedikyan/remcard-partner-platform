@@ -17,13 +17,35 @@ export const UPSTREAM_TIMEOUT_MS = 15_000;
 
 const SESSION_COOKIE = "remcard-token";
 const PRO_BRANCH_CONTEXT_COOKIE = "remcard-pro-branch";
-const ALLOWED_COOKIE_NAMES = new Set([SESSION_COOKIE, PRO_BRANCH_CONTEXT_COOKIE]);
+const ADMIN_RETURN_COOKIE = "remcard-admin-return";
+const ALLOWED_COOKIE_NAMES = new Set([
+  SESSION_COOKIE,
+  PRO_BRANCH_CONTEXT_COOKIE,
+  ADMIN_RETURN_COOKIE,
+]);
 const UNSAFE_LOCATION_CHARS = /[\u0000-\u001F\u007F\\]/;
 const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
 
 const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: RegExp }> =
   [
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/auth\/me$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/auth\/capabilities$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/admin\/auth\/password-login$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/admin\/auth\/change-password$/ },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/admin\/test-users$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/admin\/test-users\/return$/ },
+    {
+      methods: new Set(["POST", "PATCH"]),
+      pattern: /^\/api\/pro\/admin\/test-users\/[\w-]+$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/test-users\/[\w-]+\/enter$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/test-users\/[\w-]+\/reset$/,
+    },
     { methods: new Set(["POST"]), pattern: /^\/api\/upload$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/logout$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/verify-code$/ },
