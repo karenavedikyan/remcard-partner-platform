@@ -1,11 +1,12 @@
 {
-  "checkedAt": "2026-10-15T13:45:00Z",
-  "release": "ADMIN-TEST-01.2",
-  "backendHead": "f027f49e8099fa7988dfe9cabc56e066a250d552",
-  "frontendHead": "ca948d7",
+  "checkedAt": "2026-10-15T14:55:00Z",
+  "release": "ADMIN-TEST-01.3",
+  "backendCodeHead": "f027f49e8099fa7988dfe9cabc56e066a250d552",
+  "frontendCodeHead": "8be085809432b3cdcefdf54c37b5631598c36061",
+  "branchTipNote": "Branch tips may advance with artifact/script commits after the reviewed code SHAs above.",
   "build": {
-    "remcard-navigator": "PASS",
-    "remcard-partner-platform": "PASS"
+    "remcard-navigator": "PASS (prior run on branch; not re-run this gate unless code changes)",
+    "remcard-partner-platform": "PASS (prior run on branch; not re-run this gate unless code changes)"
   },
   "migration": {
     "manifestChecksumsPinned": true,
@@ -13,41 +14,60 @@
       "20261015103000_admin_test_01": "cfade237b2b2f93f42399eca6d9495f4f13099b7121bc40c6efd535bef1af4fa",
       "20261015200000_admin_test_01_1": "bce02cecc16ba667f0c485cab436e45e5008f4fc209ecb6b61abba24136b72a1"
     },
-    "integrationTests": "PASS 4/4 (strip→apply→after→idempotent, untracked refuse, wrong production target, manifest pin)",
-    "productionConnect": "NOT RUN (operator-production path validated by policy test only; target 192.168.0.4:5432/remcard)"
+    "integrationTests": "PASS 4/4 (disposable remcard_admin_test_012; unchanged SQL)",
+    "productionConnect": "NOT_RUN",
+    "productionApply": "NOT_RUN"
   },
   "httpLifecycle": {
     "artifact": "e2e-lifecycle-http.json",
     "database": "remcard_admin_test_012",
     "backend": "http://127.0.0.1:3010",
-    "stepsPass": [
-      "admin_password_login",
+    "mode": "direct HTTP to navigator (not browser)",
+    "result": "PASS"
+  },
+  "browserLifecycle": {
+    "artifact": "browser-lifecycle.json",
+    "database": "remcard_admin_test_012",
+    "platform": "http://127.0.0.1:3000",
+    "backendViaBff": "http://127.0.0.1:3010",
+    "mode": "Playwright UI + BFF proxy",
+    "result": "PASS",
+    "stepsVerified": [
+      "admin_login_form",
       "create_agent|master|store|company",
-      "enter_agent",
-      "auth_me_test",
-      "negative_partnership_invite",
-      "return_admin"
-    ],
-    "notRunInHttpScript": [
-      "consent/readiness UX path",
-      "R02 draft/save/reload/advance/finish",
-      "fresh-session GET after finish",
-      "reset after finish partnershipContact check",
-      "disable",
-      "password-change UI"
+      "enter_test_session",
+      "consent_ux (UI accept for new test user)",
+      "enter_agent_shell + banner",
+      "r02_save_draft_reload",
+      "r02_skip_audience_step",
+      "r02_contacts_draft_reload",
+      "r02_finish_profile",
+      "bff_get_after_finish",
+      "return_enter_fresh_bff_get",
+      "reset_profile_scope",
+      "disable_visible_in_list",
+      "disable_session_invalid",
+      "admin_password_change_ui",
+      "admin_password_old_rejected_new_works",
+      "negative_real_user_reset",
+      "negative_auth_me_after_password_bump",
+      "negative_return_replay",
+      "negative_partnership_invite_bff"
     ]
   },
   "screenshots": {
     "paths": [
+      "screenshots/admin-list-1440.png",
+      "screenshots/admin-list-375.png",
+      "screenshots/test-banner-1440.png",
+      "screenshots/profile-saved-1440.png",
+      "screenshots/profile-saved-375.png",
+      "screenshots/smoke-profile-320.png",
       "screenshots/login-admin-1440.png",
       "screenshots/login-admin-375.png",
       "screenshots/login-admin-320.png"
-    ],
-    "notCaptured": ["admin/test-users busy states", "test banner in profile (requires full browser session)"]
+    ]
   },
-  "unit": {
-    "profTestSessionValidator": "PASS",
-    "profTestRoutePolicy": "PASS",
-    "prof-admin-migrate.integration": "PASS"
-  }
+  "productionSmoke": "NOT_RUN",
+  "controlledPublication": "READY_FOR_OPERATOR_REVIEW (local disposable gate PASS; no production merge/deploy in this run)"
 }

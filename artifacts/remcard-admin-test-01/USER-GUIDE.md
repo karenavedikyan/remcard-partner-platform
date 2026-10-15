@@ -21,3 +21,13 @@
 ## Ограничения тестового режима
 
 В тестовом ЛК недоступны приглашения, заказы, публикация в каталог, staff-операции и прочие действия вне allowlist. Тестовые пользователи не показываются в публичном каталоге и partnership search.
+
+## Локальная приёмка (оператор / разработчик)
+
+Только loopback и отдельная БД `remcard_admin_test_012` (не production `DATABASE_URL`).
+
+1. Поднять stack: `node scripts/admin-test-local-stack.mjs` (platform repo; требуются `JWT_SECRET` и loopback `DATABASE_URL`).
+2. Прогон browser+BFF: `node scripts/admin-test-browser-lifecycle.mjs`.
+3. Дополнительно direct HTTP: в navigator `pnpm exec tsx scripts/admin-test-012-lifecycle.ts`.
+
+Артефакты: `artifacts/remcard-admin-test-01/browser-lifecycle.json`, `e2e-lifecycle-http.json`, скриншоты в `screenshots/`. Секреты и пароли в отчёты не включать.
