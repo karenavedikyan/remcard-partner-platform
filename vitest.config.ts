@@ -44,6 +44,7 @@ export default defineConfig({
       "src/lib/contact-phone-display.test.ts",
       "src/lib/remcard-proxy-r02.test.ts",
       "src/lib/remcard-proxy-r03.test.ts",
+      "src/lib/r03-theme-assert.test.ts",
       "src/lib/agent-r03/create-idempotency.test.ts",
       "src/lib/agent-nav/sections.test.ts",
       "src/components/agent-r03/clientContactShare.test.ts",

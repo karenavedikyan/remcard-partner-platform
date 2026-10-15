@@ -1,22 +1,20 @@
-# R03 visual pairs (FINAL-4)
+# R03 visual — dark pair fix (2026-10-15)
 
-Generated: 2026-10-15T20:40:22.414Z
-Platform SHA: a93475c898180f097592496ff7fd3cf864c563c3
+Platform SHA at capture: see `local-acceptance-report.json` (`platformGitSha`).
 
-Matched pairs (both verified): **8**
-Single screenshots: **1**
+## Dark pair (375×812, certificates list)
 
-## Pairs
+| Side | File | Verified |
+|------|------|----------|
+| Implementation | `visual/impl-certificates-list-375-dark.png` | yes |
+| Reference | `visual/ref-certificates-list-375-dark.png` | yes |
 
-- **certificates-list-1440-light** (1440x900, certificates, list, light): impl=ok, ref=ok
-- **certificates-cards-1440-light** (1440x900, certificates, cards, light): impl=ok, ref=ok
-- **certificates-list-375-light** (375x812, certificates, list, light): impl=ok, ref=ok
-- **certificates-cards-375-light** (375x812, certificates, cards, light): impl=ok, ref=ok
-- **clients-list-1440-light** (1440x900, clients, list, light): impl=ok, ref=ok
-- **clients-list-375-light** (375x812, clients, list, light): impl=ok, ref=ok
-- **clients-cards-375-light** (375x812, clients, cards, light): impl=ok, ref=ok
-- **certificates-list-375-dark** (375x812, certificates, list, dark): impl=ok, ref=ok
+### Measured theme/surface (evidence)
 
-## Singles
+**Implementation:** `dataTheme=dark`, `colorScheme=dark`, `htmlBg=rgba(0,0,0,0)`, `bodyBg=rgb(23,26,23)`, cabinet surface `rgb(24,26,25)` luma ≈ 25.
 
-- clients-320-actions-smoke: `/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-320-actions-smoke.png`
+**Reference:** `dataTheme=dark`, `colorScheme=dark`, `htmlBg=rgba(0,0,0,0)`, `bodyBg=rgb(24,26,25)`, cabinet surface `rgb(24,26,25)` luma ≈ 25.
+
+Capture: `R03_ONLY_DARK_PAIR=1 node scripts/r03-local-acceptance.mjs` → `READY_FOR_REVIEW`.
+
+Other visual pairs from prior FINAL-4 run not re-captured in this scoped fix.

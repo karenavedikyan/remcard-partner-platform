@@ -8,7 +8,7 @@
       "branch": "cursor/r03-final-4-b3e3",
       "base": "release/prof-v1-20261007",
       "pr": 15,
-      "head": "651253ba450184c656f5157f06f878d8fa4978a1"
+      "head": "e63a441fcf51d77c2ad045493a22b5bfbb121591"
     },
     "backend": {
       "path": "remcard-navigator",

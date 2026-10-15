@@ -46,7 +46,7 @@ export function AgentCertificatesList() {
   const [searchRevision, setSearchRevision] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  const [sort, setSort] = useState<AgentR03ListSort>("updated_desc");
+  const [sort, setSort] = useState<AgentR03ListSort>("created_desc");
   const [statusFilter, setStatusFilter] = useState("");
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [error, setError] = useState("");

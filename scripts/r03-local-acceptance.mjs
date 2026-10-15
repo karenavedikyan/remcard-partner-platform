@@ -20,6 +20,10 @@ import {
   driveRefAgentSection,
   verifyImplAgentShell,
 } from './lib/r03-prototype-ref.mjs';
+import {
+  assertDarkThemeMeasurement,
+  measureCabinetThemeInPage,
+} from './lib/r03-theme-assert.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = process.env.R02_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
@@ -315,53 +319,29 @@ async function openSectionViaNav(page, plat, sectionKey) {
   await page.waitForLoadState('networkidle');
 }
 
-async function readUiTheme(page) {
-  return page.evaluate(() => ({
-    dataTheme: document.documentElement.getAttribute('data-theme'),
-    colorScheme: getComputedStyle(document.documentElement).colorScheme,
-    bodyBg: getComputedStyle(document.body).backgroundColor,
-  }));
-}
-
-async function setThemeDark(page) {
-  const toggle = page.locator('[data-testid="theme-toggle"]');
-  if (!(await toggle.isVisible().catch(() => false))) return false;
-  for (let i = 0; i < 3; i++) {
-    const theme = await readUiTheme(page);
-    if (theme.dataTheme === 'dark' || theme.colorScheme === 'dark') return true;
-    await toggle.click();
-    await page.waitForTimeout(400);
-  }
-  const after = await readUiTheme(page);
-  return after.dataTheme === 'dark' || after.colorScheme === 'dark';
-}
-
-function parseRgbLuma(bg) {
-  const m = bg.match(/[\d.]+/g);
-  if (!m || m.length < 3) return 255;
-  return (Number(m[0]) + Number(m[1]) + Number(m[2])) / 3;
-}
-
-async function assertDarkTheme(page, label) {
-  const t = await page.evaluate(() => {
-    const html = document.documentElement;
-    const bodyBg = getComputedStyle(document.body).backgroundColor;
-    const htmlBg = getComputedStyle(html).backgroundColor;
-    return {
-      dataTheme: html.getAttribute('data-theme'),
-      htmlClass: html.className,
-      colorScheme: getComputedStyle(html).colorScheme,
-      bodyBg,
-      htmlBg,
-    };
+async function measurePageTheme(page) {
+  const raw = await page.evaluate(measureCabinetThemeInPage);
+  const verdict = assertDarkThemeMeasurement({
+    dataTheme: raw.dataTheme,
+    colorScheme: raw.colorScheme,
+    surfaceLuma: raw.surfaceLuma,
+    surfaceBg: raw.surfaceBg,
+    ...raw,
   });
-  const luma = Math.min(parseRgbLuma(t.bodyBg), parseRgbLuma(t.htmlBg));
-  const dark =
-    t.dataTheme === 'dark' ||
-    t.colorScheme === 'dark' ||
-    /\bdark\b/i.test(t.htmlClass) ||
-    luma < 95;
-  return { ok: dark, theme: t, luma, label };
+  return { raw, verdict };
+}
+
+async function ensurePageDark(page) {
+  const toggle = page.locator('[data-testid="theme-toggle"], [data-action="theme"]').first();
+  let last = await measurePageTheme(page);
+  for (let i = 0; i < 6; i++) {
+    if (last.verdict.ok) return last;
+    if (!(await toggle.isVisible().catch(() => false))) break;
+    await toggle.click();
+    await page.waitForTimeout(450);
+    last = await measurePageTheme(page);
+  }
+  return last;
 }
 
 async function captureMatchedPair(context, report, opts) {
@@ -369,11 +349,14 @@ async function captureMatchedPair(context, report, opts) {
   const page = await context.newPage();
   await page.setViewportSize(viewport);
   await page.goto(`${plat}${implPath}`, { waitUntil: 'networkidle' });
+  let implThemeEvidence = null;
   if (dark) {
-    const themed = await setThemeDark(page);
-    const implTheme = await assertDarkTheme(page, name);
-    if (!themed || !implTheme.ok) {
+    const implTheme = await ensurePageDark(page);
+    implThemeEvidence = implTheme.raw;
+    if (!implTheme.verdict.ok) {
       report.failures.push(`visual_impl_${name}_theme_not_dark`);
+      report.themeChecks = report.themeChecks ?? {};
+      report.themeChecks[`impl-${name}`] = implTheme;
       await page.close();
       return;
     }
@@ -384,6 +367,17 @@ async function captureMatchedPair(context, report, opts) {
     report.failures.push(`visual_impl_${name}_${implCheck.reason}`);
     await page.close();
     return;
+  }
+  if (dark) {
+    const implRecheck = await measurePageTheme(page);
+    implThemeEvidence = implRecheck.raw;
+    if (!implRecheck.verdict.ok) {
+      report.failures.push(`visual_impl_${name}_theme_not_dark_after_view`);
+      report.themeChecks = report.themeChecks ?? {};
+      report.themeChecks[`impl-${name}-final`] = implRecheck;
+      await page.close();
+      return;
+    }
   }
   const implFile = path.join(ART_DIR, 'visual', `impl-${name}.png`);
   await page.screenshot({ path: implFile, fullPage: true });
@@ -398,20 +392,24 @@ async function captureMatchedPair(context, report, opts) {
   });
   const refFile = path.join(ART_DIR, 'visual', `ref-${name}.png`);
   let refVerified = refState.ok;
+  let refThemeEvidence = null;
   if (refState.ok) {
-    if (dark) {
-      const refTheme = await assertDarkTheme(refPage, `${name}-ref`);
-      if (!refTheme.ok) {
-        refVerified = false;
-        report.failures.push(`visual_ref_${name}_theme_not_dark`);
-      }
-    }
     if (viewport.width !== 1440 || viewport.height !== 900) {
       await refPage.setViewportSize(viewport);
       await refPage.waitForTimeout(500);
       if (scrollList && viewMode === 'list') {
         await refPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await refPage.waitForTimeout(300);
+      }
+    }
+    if (dark) {
+      const refTheme = await measurePageTheme(refPage);
+      refThemeEvidence = refTheme.raw;
+      report.themeChecks = report.themeChecks ?? {};
+      report.themeChecks[`ref-${name}`] = refTheme;
+      if (!refTheme.verdict.ok) {
+        refVerified = false;
+        report.failures.push(`visual_ref_${name}_theme_not_dark`);
       }
     }
     if (refVerified) await refPage.screenshot({ path: refFile, fullPage: true });
@@ -428,6 +426,7 @@ async function captureMatchedPair(context, report, opts) {
     section,
     viewMode,
     theme: dark ? 'dark' : 'light',
+    themeEvidence: dark ? { impl: implThemeEvidence, ref: refThemeEvidence } : undefined,
   });
   await page.close();
   await refPage.close();
@@ -610,6 +609,32 @@ async function main() {
       cookieHeader = `remcard-token=${token}`;
       report.browser.testSession = { ok: true, mode: 'r02_mint_fixture' };
       await finishAgentProfileInBrowser(page, plat, cookieHeader);
+    }
+
+    if (process.env.R03_ONLY_DARK_PAIR === '1') {
+      await openSectionViaNav(page, plat, 'certificates');
+      await captureMatchedPair(context, report, {
+        name: 'certificates-list-375-dark',
+        plat,
+        implPath: '/certificates',
+        section: 'certificates',
+        viewMode: 'list',
+        viewport: { width: 375, height: 812 },
+        refBase,
+        scrollList: true,
+        dark: true,
+      });
+      const darkPair = report.visualPairs.find((p) => p.name === 'certificates-list-375-dark');
+      report.scope = 'dark-pair-only';
+      report.ok =
+        report.failures.length === 0 && darkPair?.implVerified === true && darkPair?.refVerified === true;
+      report.verdict = report.ok ? 'READY_FOR_REVIEW' : 'NO_GO';
+      writeFileSync(path.join(ART_DIR, 'local-acceptance-report.json'), JSON.stringify(report, null, 2));
+      writeVisualReport(report);
+      await browser.close();
+      refServer.close();
+      console.log(JSON.stringify({ verdict: report.verdict, failures: report.failures, darkPair }, null, 2));
+      process.exit(report.ok ? 0 : 1);
     }
 
     const bffR03 = await fetch(`${plat}/api/remcard/api/pro/r03/status`, {

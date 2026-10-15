@@ -2,119 +2,24 @@
   "ok": true,
   "verdict": "READY_FOR_REVIEW",
   "stack": "admin-test",
-  "platformGitSha": "a93475c898180f097592496ff7fd3cf864c563c3",
+  "platformGitSha": "e7a10a1e7bb309bb44d32020b4cbcec93c198af7",
   "navigatorGitSha": "50ae51ccb2ab05a74c604e4ebf39d2311cda0d64",
   "meta": {
     "navOrigin": "http://127.0.0.1:3041",
     "platformOrigin": "http://127.0.0.1:3040",
     "envPath": "/tmp/admin-test-local-stack/runtime.env",
-    "navPid": 177838,
-    "platPid": 171178,
+    "navPid": 180238,
+    "platPid": 180240,
     "database": "remcard_admin_test_012"
   },
-  "http": {
-    "bffR03Status": 200,
-    "bffR03Body": {
-      "contractVersion": "2026-10-15.r03",
-      "featureEnabled": true,
-      "hasAgentActivity": true,
-      "eligible": true,
-      "userId": "cmva01k9d0003jszvbofr9o0r",
-      "ineligibleReason": null
-    },
-    "navR03Status": 200,
-    "gateOffBffStatus": 200,
-    "gateOffFeatureEnabled": false
-  },
+  "http": {},
   "browser": {
     "testSession": {
       "ok": true,
-      "userId": "cmva01k9d0003jszvbofr9o0r"
-    },
-    "certificatesViaNav": true,
-    "clientsViaNav": true,
-    "clientCreated": true,
-    "shareDefaultNameOnly": true,
-    "shareOptInPhone": true
+      "userId": "cmva0o9vu0003jsi849md9rk7"
+    }
   },
   "visualPairs": [
-    {
-      "name": "certificates-list-1440-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-list-1440-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-list-1440-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "1440x900",
-      "section": "certificates",
-      "viewMode": "list",
-      "theme": "light"
-    },
-    {
-      "name": "certificates-cards-1440-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-cards-1440-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-cards-1440-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "1440x900",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "light"
-    },
-    {
-      "name": "certificates-list-375-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-list-375-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-list-375-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "375x812",
-      "section": "certificates",
-      "viewMode": "list",
-      "theme": "light"
-    },
-    {
-      "name": "certificates-cards-375-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-cards-375-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-cards-375-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "375x812",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "light"
-    },
-    {
-      "name": "clients-list-1440-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-list-1440-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-clients-list-1440-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "1440x900",
-      "section": "clients",
-      "viewMode": "list",
-      "theme": "light"
-    },
-    {
-      "name": "clients-list-375-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-list-375-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-clients-list-375-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "375x812",
-      "section": "clients",
-      "viewMode": "list",
-      "theme": "light"
-    },
-    {
-      "name": "clients-cards-375-light",
-      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-cards-375-light.png",
-      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-clients-cards-375-light.png",
-      "implVerified": true,
-      "refVerified": true,
-      "viewport": "375x812",
-      "section": "clients",
-      "viewMode": "cards",
-      "theme": "light"
-    },
     {
       "name": "certificates-list-375-dark",
       "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-list-375-dark.png",
@@ -124,115 +29,85 @@
       "viewport": "375x812",
       "section": "certificates",
       "viewMode": "list",
-      "theme": "dark"
-    }
-  ],
-  "singles": [
-    {
-      "name": "clients-320-actions-smoke",
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-320-actions-smoke.png"
-    }
-  ],
-  "steps": {
-    "partnershipSeed": {
-      "ok": true,
-      "storeUserId": "cmva01o8j0000js9lzozybmj9",
-      "partnershipId": "cmva01o8s0006js9lbg6eth7r"
-    },
-    "clientRenameOnly": true,
-    "availablePartnersCount": 1,
-    "issuerReady": true,
-    "certificateCreatedViaForm": true,
-    "testOwnerPublicRestricted": true,
-    "certificatePrivateRename": true,
-    "certificateLinkedClient": true,
-    "reloadPersistAlias": true,
-    "batchTargetIds": [
-      "cmva04il1000tjszvnc3xygx6",
-      "cmva01tvy000mjszvnxirska9"
-    ],
-    "batchArchive": true,
-    "batchRestore": true,
-    "returnReenter": {
-      "navOk": true,
-      "aliasVisible": true,
-      "certificates": {
-        "ok": true
-      },
-      "clients": {
-        "ok": true
+      "theme": "dark",
+      "themeEvidence": {
+        "impl": {
+          "dataTheme": "dark",
+          "colorScheme": "dark",
+          "htmlClass": "",
+          "bodyBg": "rgb(23, 26, 23)",
+          "htmlBg": "rgba(0, 0, 0, 0)",
+          "surfaceSource": "toolbar",
+          "surfaceBg": "rgb(24, 26, 25)",
+          "surfaceLuma": 25,
+          "surfaceRgb": {
+            "r": 24,
+            "g": 26,
+            "b": 25,
+            "a": 1
+          }
+        },
+        "ref": {
+          "dataTheme": "dark",
+          "colorScheme": "dark",
+          "htmlClass": "",
+          "bodyBg": "rgb(24, 26, 25)",
+          "htmlBg": "rgba(0, 0, 0, 0)",
+          "surfaceSource": "main",
+          "surfaceBg": "rgb(24, 26, 25)",
+          "surfaceLuma": 25,
+          "surfaceRgb": {
+            "r": 24,
+            "g": 26,
+            "b": 25,
+            "a": 1
+          }
+        }
       }
-    },
-    "smoke320": {
-      "shellOk": true,
-      "horizontalOverflow": false,
-      "rowCount": 1,
-      "actionsAboveNav": true
-    },
-    "gateOffUiBlocked": true,
-    "gateOffLegacyHome": true,
-    "gateOffRestored": true
-  },
-  "flags": {
-    "cabinetPrefs": {
-      "contractVersion": "2026-10-14.r01",
-      "pilotEnabled": true,
-      "pilotActive": true,
-      "contextKey": "agent-wallet:cmva01k9d0003jszvbofr9o0r",
-      "version": 0,
-      "theme": "system",
-      "mobileNavKeys": [
-        "certificates",
-        "partners",
-        "wallet",
-        "profile"
-      ],
-      "permittedKeys": [
-        "home",
-        "partners",
-        "wallet",
-        "recommendations",
-        "scanner",
-        "history",
-        "notifications",
-        "profile",
-        "certificates",
-        "clients"
-      ],
-      "defaultMobileNavKeys": [
-        "certificates",
-        "partners",
-        "wallet",
-        "profile"
-      ]
-    },
-    "pilotActive": true,
-    "permittedKeys": [
-      "home",
-      "partners",
-      "wallet",
-      "recommendations",
-      "scanner",
-      "history",
-      "notifications",
-      "profile",
-      "certificates",
-      "clients"
-    ],
-    "mobileNavKeys": [
-      "certificates",
-      "partners",
-      "wallet",
-      "profile"
-    ]
-  },
-  "idempotency": {
-    "bffFirst": 201,
-    "bffRetry": 200,
-    "firstId": "cmva04il1000tjszvnc3xygx6",
-    "retryId": "cmva04il1000tjszvnc3xygx6",
-    "sameId": true
-  },
+    }
+  ],
+  "singles": [],
+  "steps": {},
+  "flags": {},
+  "idempotency": {},
   "failures": [],
-  "visualPairCount": 8
+  "themeChecks": {
+    "ref-certificates-list-375-dark": {
+      "raw": {
+        "dataTheme": "dark",
+        "colorScheme": "dark",
+        "htmlClass": "",
+        "bodyBg": "rgb(24, 26, 25)",
+        "htmlBg": "rgba(0, 0, 0, 0)",
+        "surfaceSource": "main",
+        "surfaceBg": "rgb(24, 26, 25)",
+        "surfaceLuma": 25,
+        "surfaceRgb": {
+          "r": 24,
+          "g": 26,
+          "b": 25,
+          "a": 1
+        }
+      },
+      "verdict": {
+        "ok": true,
+        "reason": "explicit_dark_surface",
+        "dataTheme": "dark",
+        "colorScheme": "dark",
+        "surfaceLuma": 25,
+        "surfaceBg": "rgb(24, 26, 25)",
+        "htmlClass": "",
+        "bodyBg": "rgb(24, 26, 25)",
+        "htmlBg": "rgba(0, 0, 0, 0)",
+        "surfaceSource": "main",
+        "surfaceRgb": {
+          "r": 24,
+          "g": 26,
+          "b": 25,
+          "a": 1
+        }
+      }
+    }
+  },
+  "scope": "dark-pair-only"
 }
