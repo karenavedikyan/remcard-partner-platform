@@ -37,7 +37,7 @@
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
-    "headAfterCommit": "TBD_AFTER_PUSH",
+    "headAfterCommit": "3651370",
     "tests": [
       {
         "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
