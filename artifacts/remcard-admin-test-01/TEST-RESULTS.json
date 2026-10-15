@@ -3,7 +3,8 @@
   "release": "ADMIN-TEST-01.3",
   "backendCodeHead": "f027f49e8099fa7988dfe9cabc56e066a250d552",
   "frontendCodeHead": "8be085809432b3cdcefdf54c37b5631598c36061",
-  "branchTipNote": "Branch tips may advance with artifact/script commits after the reviewed code SHAs above.",
+  "backendBranchTip": "d2d887f6 (fixtures-only bootstrap for browser run)",
+  "frontendBranchTip": "514fa74f9d8b6964ad75a38a5bbc85bed00b5f4a",
   "build": {
     "remcard-navigator": "PASS (prior run on branch; not re-run this gate unless code changes)",
     "remcard-partner-platform": "PASS (prior run on branch; not re-run this gate unless code changes)"

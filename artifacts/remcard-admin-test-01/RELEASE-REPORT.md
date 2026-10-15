@@ -8,7 +8,7 @@
 | remcard-navigator | `f027f49e8099fa7988dfe9cabc56e066a250d552` | Backend / auth / test users |
 | remcard-partner-platform | `8be085809432b3cdcefdf54c37b5631598c36061` | Admin UI / BFF / R02 wizard |
 
-Branch tips may include follow-up commits for acceptance scripts and evidence artifacts only; reviewed application SHAs are unchanged unless a defect fix lands in the same PR.
+| Branch tip (this run) | `d2d887f6` (navigator) / `514fa74` (platform) — scripts + evidence only atop reviewed SHAs |
 
 ## Verified in this run (loopback `remcard_admin_test_012` only)
 
