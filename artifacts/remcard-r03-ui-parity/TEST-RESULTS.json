@@ -1,28 +1,40 @@
 {
-  "platformSha": "9dbf2e3cfb63bca545f3cd57a43d65d40ba59b5c",
-  "navigatorSha": "ce5a940a8d251f85fff30996ba002cbaa50f6530",
+  "platformSha": "934a9f482fc8c3bd269b6e7bfdcd9e2fa3ef13e8",
+  "navigatorSha": "d7329006bdcdde20905025670f4efc87cd62b678",
   "build": {
     "command": "npm run build",
-    "status": "see_ci_or_local"
+    "status": "pass",
+    "when": "2026-10-15"
   },
-  "vitest": [
-    "certificateOffers.test.ts",
-    "formatDiscountPercent.test.ts",
-    "sections.test.ts"
-  ],
+  "vitest": {
+    "command": "npx vitest run src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/lib/agent-nav/sections.test.ts",
+    "status": "pass",
+    "tests": 4
+  },
+  "navigatorTests": {
+    "command": "pnpm exec tsx --test src/lib/__tests__/agentCertificateList.test.ts",
+    "status": "pass",
+    "tests": 3
+  },
   "visualRunner": {
     "script": "scripts/r03-ui-parity-visual.mjs",
+    "stack": "admin-test-local-stack.mjs + loopback PG remcard_admin_test_012",
     "ok": true,
     "failures": [],
-    "captureCount": 18
+    "captureCount": 18,
+    "artifacts": "artifacts/remcard-r03-ui-parity/screenshots/",
+    "capturesJson": "artifacts/remcard-r03-ui-parity/screenshots/captures.json"
   },
-  "browserSmoke": [
-    "certificates_cards",
-    "certificates_list",
-    "certificates_search",
-    "filters_open",
-    "selection",
-    "client_create_open",
-    "reload"
-  ]
+  "browserSmoke": {
+    "status": "pass",
+    "steps": [
+      "certificates_cards",
+      "certificates_list",
+      "certificates_search",
+      "filters_open",
+      "selection",
+      "client_create_open",
+      "reload"
+    ]
+  }
 }

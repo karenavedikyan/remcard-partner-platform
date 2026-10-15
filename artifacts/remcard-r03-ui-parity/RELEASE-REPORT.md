@@ -4,8 +4,8 @@
 
 | Repo | Branch | HEAD (full) | Base |
 |------|--------|-------------|------|
-| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `167633f9ad149a0da54529538bba555c2d38dc4d` | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
-| remcard-navigator | `cursor/r03-ui-parity-b3e3` | `ce5a940a8d251f85fff30996ba002cbaa50f6530` | `40b8094e4bf2158fd7a10b1cc1c33474b90a77b3` |
+| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `934a9f482fc8c3bd269b6e7bfdcd9e2fa3ef13e8` | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
+| remcard-navigator | `cursor/r03-ui-parity-b3e3` | `d7329006bdcdde20905025670f4efc87cd62b678` | `40b8094e4bf2158fd7a10b1cc1c33474b90a77b3` |
 
 Release integration target: `release/prof-v1-20261007` (`a5b83b3` at fetch time).
 
