@@ -50,6 +50,7 @@ import {
 } from "./ProfileCabinetAccessContext";
 import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
+import { AgentProfileSection } from "./agent/AgentProfileSection";
 import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
   buildProfileSectionHref,
@@ -505,12 +506,20 @@ function ProfileEditorInner({
       <div className={styles.main}>
         <ProfileBranchContextSwitcher />
         {activeSection === "overview" ? (
-          <ProfileOverviewSection
-            profile={profile}
-            onNavigateSection={navigateSection}
-            hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
-            fixtureOverview={fixtureOverview}
-          />
+          <>
+            <AgentProfileSection
+              userId={profile.user.id}
+              partnerActivities={partnerActivities}
+              basicsEditable={basicsEditable}
+              onActivitiesChange={setPartnerActivities}
+            />
+            <ProfileOverviewSection
+              profile={profile}
+              onNavigateSection={navigateSection}
+              hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+              fixtureOverview={fixtureOverview}
+            />
+          </>
         ) : null}
         {revisionBanner && activeSection === "catalog" ? (
           <div className={styles.bannerWarn} role="status">
@@ -521,6 +530,13 @@ function ProfileEditorInner({
         ) : null}
 
         {activeSection === "basics" ? (
+        <>
+        <AgentProfileSection
+          userId={profile.user.id}
+          partnerActivities={partnerActivities}
+          basicsEditable={basicsEditable}
+          onActivitiesChange={setPartnerActivities}
+        />
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
@@ -726,6 +742,7 @@ function ProfileEditorInner({
             </Button>
           </div>
         </form>
+        </>
         ) : null}
 
         {activeSection === "catalog" ? (

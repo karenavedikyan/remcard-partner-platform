@@ -41,6 +41,8 @@ export default defineConfig({
       "src/components/profile/ProfileTeamSection.test.tsx",
       "src/lib/recommendation-profile-focus.test.ts",
       "src/lib/recommendation-create-draft.test.ts",
+      "src/lib/contact-phone-display.test.ts",
+      "src/lib/remcard-proxy-r02.test.ts",
     ],
     testTimeout: 30_000,
   },

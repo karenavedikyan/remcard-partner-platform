@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-10-15T09:53:00Z",
+  "navigator": {
+    "branch": "cursor/r02-agent-profile-b3e3",
+    "tests": [
+      { "command": "pnpm exec vitest run src/lib/__tests__/agentProfileDraft.test.ts", "exitCode": 0, "result": "PASS" },
+      { "command": "pnpm exec vitest run src/lib/__tests__/agentNavPilot.test.ts", "exitCode": 0, "result": "PASS" },
+      {
+        "command": "pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
+        "exitCode": null,
+        "result": "NOT VERIFIED",
+        "reason": "No disposable loopback DATABASE_URL (remcard_r01_test) in this environment"
+      },
+      { "command": "pnpm run build", "exitCode": 0, "result": "PASS" }
+    ]
+  },
+  "platform": {
+    "branch": "cursor/r02-agent-profile-b3e3",
+    "tests": [
+      { "command": "pnpm exec vitest run src/lib/contact-phone-display.test.ts src/lib/remcard-proxy-r02.test.ts", "exitCode": 0, "result": "PASS" },
+      { "command": "pnpm run build", "exitCode": 0, "result": "PASS" }
+    ]
+  },
+  "visual": {
+    "pairedScreenshots": "NOT VERIFIED",
+    "reason": "Requires local paired backend+frontend with gates on and auth fixture"
+  }
+}
