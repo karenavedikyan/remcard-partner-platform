@@ -52,14 +52,6 @@ export function AgentClientDetail({ clientId }: { clientId: string }) {
     await reload();
   }
 
-  function contactShareLines(c: AgentClientRow): string[] {
-    const lines: string[] = [c.displayName];
-    if (c.phone) lines.push(formatPhoneForDisplay(c.phone));
-    if (c.email) lines.push(c.email);
-    if (c.city) lines.push(c.city);
-    return lines;
-  }
-
   return (
     <AgentR03Gate>
       {error ? <p role="alert">{error}</p> : null}
@@ -166,8 +158,9 @@ export function AgentClientDetail({ clientId }: { clientId: string }) {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         title="Контакты клиента"
-        lines={client ? contactShareLines(client) : []}
+        lines={[]}
         url=""
+        clientContacts={client}
       />
     </AgentR03Gate>
   );

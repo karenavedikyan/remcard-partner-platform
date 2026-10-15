@@ -1,67 +1,95 @@
 {
   "ok": true,
-  "platformOrigin": "http://127.0.0.1:3032",
+  "verdict": "READY_FOR_PUBLICATION",
+  "stack": "admin-test",
+  "platformGitSha": "2d0250721d57e06835286efa3cb5ff7df525f620",
+  "navigatorGitSha": "fe3f6ba74c0ff935ba6c3fc090711f3d390c54c0",
+  "meta": {
+    "navOrigin": "http://127.0.0.1:3041",
+    "platformOrigin": "http://127.0.0.1:3040",
+    "envPath": "/tmp/admin-test-local-stack/runtime.env",
+    "navPid": 149360,
+    "platPid": 149361,
+    "database": "remcard_admin_test_012"
+  },
   "http": {
-    "r03Status": 200,
-    "r03Body": {
+    "bffR03Status": 200,
+    "bffR03Body": {
       "contractVersion": "2026-10-15.r03",
       "featureEnabled": true,
       "hasAgentActivity": true,
       "eligible": true,
-      "userId": "r02-local-pro-agent-v1",
+      "userId": "cmv9vr3qf0003jsnzb4880mx6",
       "ineligibleReason": null
     },
-    "bffR03Status": 403,
-    "clientCreate": 201,
-    "renameOnly": 200,
-    "phonePreserved": true
+    "navR03Status": 200,
+    "gateOffSmoke": {
+      "ok": true,
+      "note": "env toggle sanity only"
+    }
+  },
+  "browser": {
+    "testSession": {
+      "ok": true,
+      "userId": "cmv9vr3qf0003jsnzb4880mx6"
+    },
+    "certificatesPage": {
+      "ok": true
+    },
+    "clientsPage": {
+      "ok": true
+    },
+    "clientCreated": true,
+    "shareDefaultNameOnly": true,
+    "shareOptInPhone": true
   },
   "visuals": [
     {
-      "name": "impl-certificates-1440-light",
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-1440-light.png",
-      "viewport": {
-        "width": 1440,
-        "height": 900
-      }
+      "name": "certificates-list-1440-light",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-list-1440-light.png",
+      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-list-1440-light.png",
+      "implVerified": true,
+      "refVerified": true
     },
     {
-      "name": "impl-clients-1440-light",
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-1440-light.png",
-      "viewport": {
-        "width": 1440,
-        "height": 900
-      }
+      "name": "certificates-list-375-light",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-list-375-light.png",
+      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-certificates-list-375-light.png",
+      "implVerified": true,
+      "refVerified": true
     },
     {
-      "name": "impl-certificates-375-light",
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-certificates-375-light.png",
-      "viewport": {
-        "width": 375,
-        "height": 812
-      }
+      "name": "clients-list-1440-light",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-list-1440-light.png",
+      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-clients-list-1440-light.png",
+      "implVerified": true,
+      "refVerified": true
     },
     {
-      "name": "impl-clients-375-light",
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-375-light.png",
-      "viewport": {
-        "width": 375,
-        "height": 812
-      }
+      "name": "clients-list-375-light",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-list-375-light.png",
+      "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-clients-list-375-light.png",
+      "implVerified": true,
+      "refVerified": true
     },
     {
-      "name": "ref-roles-1440-light",
-      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/ref-roles-1440-light.png",
-      "viewport": {
-        "width": 1440,
-        "height": 900
-      }
+      "name": "clients-320-actions",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-320-actions.png",
+      "ref": null,
+      "implVerified": true,
+      "refVerified": false
+    },
+    {
+      "name": "clients-detail-375-light",
+      "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03/visual/impl-clients-detail-375-light.png",
+      "ref": null,
+      "implVerified": true,
+      "refVerified": false
     }
   ],
   "idempotency": {
-    "first": 201,
-    "retry": 200,
-    "sameStatus": true,
-    "listCount": 1
-  }
+    "bffFirst": 201,
+    "bffRetry": 200
+  },
+  "failures": []
 }

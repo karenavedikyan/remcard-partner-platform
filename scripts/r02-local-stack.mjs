@@ -207,6 +207,34 @@ async function main() {
   }
 
   const platformOrigin = `http://127.0.0.1:${PLATFORM_PORT}`;
+  let platformGitSha = 'unknown';
+  let navigatorGitSha = 'unknown';
+  try {
+    platformGitSha = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+    navigatorGitSha = execSync('git rev-parse HEAD', { cwd: NAV_ROOT, encoding: 'utf8' }).trim();
+  } catch {
+    /* ignore */
+  }
+
+  const bffProbe = await fetch(`${platformOrigin}/api/remcard/api/pro/r03/status`, {
+    headers: { Cookie: `remcard-token=${probeToken}` },
+  });
+  const bffProbeBody = await bffProbe.text();
+  if (bffProbe.status === 403 && bffProbeBody.includes('Path not allowed')) {
+    killPort(PLATFORM_PORT);
+    await portFree(PLATFORM_PORT, 20_000);
+    console.error(
+      JSON.stringify({
+        error: 'bff_r03_path_not_allowed',
+        platformGitSha,
+        navigatorGitSha,
+        platformPort: PLATFORM_PORT,
+        hint: 'Stale listener on platform port; killed port — re-run stack',
+      }),
+    );
+    process.exit(1);
+  }
+
   writeFileSync(
     path.join(RUN_DIR, 'meta.json'),
     JSON.stringify(
@@ -217,6 +245,9 @@ async function main() {
         navPid,
         platPid,
         gateEnabled: GATE_ENABLED,
+        r03GateEnabled: R03_GATE_ENABLED,
+        platformGitSha,
+        navigatorGitSha,
       },
       null,
       2,

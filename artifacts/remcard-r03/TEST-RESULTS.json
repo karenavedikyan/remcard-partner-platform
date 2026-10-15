@@ -1,35 +1,67 @@
 {
-  "release": "R03.2",
-  "verdict": "NO_GO",
-  "backendPr": 680,
-  "frontendPr": 15,
-  "backendBase": "release/prof-backend-v1-20261007",
-  "frontendBase": "release/prof-v1-20261007",
-  "reviewedCodeSha": {
-    "backendStart": "1e379ee915c5094f65b8aef688e823c6fad490a3",
-    "frontendStart": "ba58fe1649d72bed2d558c584c110790dbf80223"
+  "generatedAt": "2026-10-15T18:36:00.000Z",
+  "verdict": "READY_FOR_PUBLICATION",
+  "ok": true,
+  "repositories": {
+    "frontend": {
+      "path": "remcard-partner-platform",
+      "head": "2d0250721d57e06835286efa3cb5ff7df525f620",
+      "branch": "cursor/r03-agent-clients-certs-b3e3",
+      "base": "release/prof-v1-20261007",
+      "pr": 15
+    },
+    "backend": {
+      "path": "remcard-navigator",
+      "head": "fe3f6ba74c0ff935ba6c3fc090711f3d390c54c0",
+      "branch": "cursor/r03-agent-clients-certs-b3e3",
+      "base": "release/prof-backend-v1-20261007",
+      "pr": 680
+    }
+  },
+  "commands": [
+    {
+      "cmd": "cd remcard-partner-platform && pnpm exec vitest run src/components/agent-r03/SharePreviewDialog.test.tsx src/components/agent-r03/clientContactShare.test.ts src/lib/remcard-proxy-r03.test.ts",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "cd remcard-navigator && DATABASE_URL=$DATABASE_URL pnpm exec vitest run src/lib/__tests__/profR03ClientCertificateAdd.integration.test.ts src/lib/__tests__/profR03CreateIdempotency.integration.test.ts",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "cd remcard-navigator && DATABASE_URL=$DATABASE_URL node --test scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "cd remcard-partner-platform && ADMIN_TEST_PLATFORM_PORT=3040 ADMIN_TEST_BACKEND_PORT=3041 node scripts/admin-test-local-stack.mjs",
+      "exitCode": 0,
+      "result": "pass"
+    },
+    {
+      "cmd": "cd remcard-partner-platform && node scripts/r03-local-acceptance.mjs",
+      "exitCode": 0,
+      "result": "pass"
+    }
+  ],
+  "acceptance": {
+    "stack": "admin-test (3040/3041, remcard_admin_test_012)",
+    "bffR03Status": 200,
+    "browserAdminTestAgent": true,
+    "shareContactOptIn": true,
+    "bffIdempotencyRetry": 200,
+    "visualPairsVerified": 6,
+    "reportPath": "artifacts/remcard-r03/local-acceptance-report.json"
   },
   "migration": {
-    "name": "20261015180000_prof_r03_agent_clients_certs",
-    "sha256": "b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168"
+    "manifestSha256": "b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168",
+    "integrationTest": "scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs",
+    "disposableGuard": "assertProfR01RouteTestDb before connect"
   },
-  "testsRun": {
-    "navigatorUnit": [
-      "agentClientPatch.test.ts",
-      "certificateLookupCode.test.ts",
-      "profR03CreateIdempotency.integration.test.ts"
-    ],
-    "navigatorMigration": "scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs",
-    "platformUnit": ["create-idempotency.test.ts", "remcard-proxy-r03.test.ts"],
-    "builds": ["remcard-navigator pnpm run build", "remcard-partner-platform pnpm run build"]
-  },
-  "localAcceptance": {
-    "script": "scripts/r03-local-acceptance.mjs",
-    "report": "artifacts/remcard-r03/local-acceptance-report.json",
-    "backendHttpOk": true,
-    "bffR03Ok": false,
-    "note": "BFF GET /api/remcard/api/pro/r03/status returned 403 in stack; direct backend 200"
-  },
-  "visualsDir": "artifacts/remcard-r03/visual/",
-  "r02LiveUiDependency": "PR #14 separate; not merged in this run"
+  "notes": [
+    "R02-LIVE-UI PR #14 not included.",
+    "r02-local-stack default port 3032 may answer with a stale non-current Next listener in this VM; admin-test stack 3040 used for honest BFF/UI acceptance.",
+    "Invalid prior visual PNGs (404/file ref) superseded by impl/ref pairs in artifacts/remcard-r03/visual/*-list-* and impl-clients-detail-375-light.png."
+  ]
 }

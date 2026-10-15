@@ -14,6 +14,8 @@ import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { Button } from "@/components/ui/Button";
 import { AgentClientFormDialog, type AgentClientFormValues } from "./AgentClientFormDialog";
 import { RecordRowActions } from "./RecordRowActions";
+import type { RecordRowAction } from "./RecordRowActions";
+import { SharePreviewDialog } from "./SharePreviewDialog";
 import styles from "./agent-r03.module.css";
 
 export function AgentClientsList() {
@@ -26,6 +28,7 @@ export function AgentClientsList() {
   const [formOpen, setFormOpen] = useState(false);
   const [editClient, setEditClient] = useState<AgentClientRow | null>(null);
   const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [shareClient, setShareClient] = useState<AgentClientRow | null>(null);
 
   const load = useCallback(
     async (opts?: { cursor?: string | null; append?: boolean }) => {
@@ -83,6 +86,45 @@ export function AgentClientsList() {
   function openEdit(client: AgentClientRow) {
     setEditClient(client);
     setFormOpen(true);
+  }
+
+  function clientRowActions(client: AgentClientRow): RecordRowAction[] {
+    return [
+      {
+        id: "rename",
+        label: "Редактировать",
+        onClick: () => openEdit(client),
+      },
+      {
+        id: "share",
+        label: "Поделиться контактами",
+        onClick: () => setShareClient(client),
+      },
+      {
+        id: archived ? "restore" : "archive",
+        label: archived ? "Восстановить" : "В архив",
+        onClick: () =>
+          void patchAgentClient(client.id, {
+            action: archived ? "restore" : "archive",
+          }).then(() => load()),
+      },
+      {
+        id: "delete",
+        label: "Удалить",
+        disabled: client.certificateCount > 0,
+        disabledReason: "Есть связанные сертификаты",
+        onClick: () => {
+          if (!window.confirm("Удалить клиента?")) return;
+          void deleteAgentClient(client.id)
+            .then(() => load())
+            .catch((caught) => {
+              window.alert(
+                caught instanceof RemcardApiError ? caught.message : "Не удалось удалить",
+              );
+            });
+        },
+      },
+    ];
   }
 
   return (
@@ -163,39 +205,7 @@ export function AgentClientsList() {
                 <span className={styles.meta}>{archived ? "В архиве" : "Активен"}</span>
                 <RecordRowActions
                   ariaLabel="Действия с клиентом"
-                  actions={[
-                    {
-                      id: "rename",
-                      label: "Редактировать",
-                      onClick: () => openEdit(client),
-                    },
-                    {
-                      id: archived ? "restore" : "archive",
-                      label: archived ? "Восстановить" : "В архив",
-                      onClick: () =>
-                        void patchAgentClient(client.id, {
-                          action: archived ? "restore" : "archive",
-                        }).then(() => load()),
-                    },
-                    {
-                      id: "delete",
-                      label: "Удалить",
-                      disabled: client.certificateCount > 0,
-                      disabledReason: "Есть связанные сертификаты",
-                      onClick: () => {
-                        if (!window.confirm("Удалить клиента?")) return;
-                        void deleteAgentClient(client.id)
-                          .then(() => load())
-                          .catch((caught) => {
-                            window.alert(
-                              caught instanceof RemcardApiError
-                                ? caught.message
-                                : "Не удалось удалить",
-                            );
-                          });
-                      },
-                    },
-                  ]}
+                  actions={clientRowActions(client)}
                 />
               </div>
             </article>
@@ -226,16 +236,7 @@ export function AgentClientsList() {
                   </td>
                   <td>{archived ? "Архив" : "Активен"}</td>
                   <td>
-                    <RecordRowActions
-                      ariaLabel="Действия"
-                      actions={[
-                        {
-                          id: "rename",
-                          label: "Редактировать",
-                          onClick: () => openEdit(client),
-                        },
-                      ]}
-                    />
+                    <RecordRowActions ariaLabel="Действия" actions={clientRowActions(client)} />
                   </td>
                 </tr>
               ))}
@@ -251,6 +252,15 @@ export function AgentClientsList() {
           </Button>
         </div>
       ) : null}
+
+      <SharePreviewDialog
+        open={Boolean(shareClient)}
+        onClose={() => setShareClient(null)}
+        title="Контакты клиента"
+        lines={[]}
+        url=""
+        clientContacts={shareClient}
+      />
 
       <AgentClientFormDialog
         open={formOpen}

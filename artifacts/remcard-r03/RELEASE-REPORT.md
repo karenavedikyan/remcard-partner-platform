@@ -1,56 +1,39 @@
-# R03.2 release report
+# RemCard R03.2-CLOSE — Release Report
 
-## PRs and SHAs (post R03.2 commit — see git for exact HEAD after push)
+## Verdict: **READY_FOR_PUBLICATION**
 
-| Repo | PR | Base branch |
-|------|-----|-------------|
-| remcard-navigator | [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680) | `release/prof-backend-v1-20261007` (restored from erroneous `cursor/m4c-order-idempotency`) |
-| remcard-partner-platform | [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) | `release/prof-v1-20261007` |
+Single honest local acceptance completed on **admin-test stack** (admin login → test-agent → R02-completed profile → R03 UI/BFF). No force-push, merge, deploy, or production DB changes.
 
-**Reviewed code baseline (start of R03.2):** backend `1e379ee915c5094f65b8aef688e823c6fad490a3`, frontend `ba58fe1649d72bed2d558c584c110790dbf80223`.
+## Code refs (unchanged PR bases)
 
-### Branch / merge-base (item 0)
+| Repo | Branch | HEAD | Base |
+|------|--------|------|------|
+| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `2d0250721d57e06835286efa3cb5ff7df525f620` | `release/prof-v1-20261007` |
+| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `fe3f6ba74c0ff935ba6c3fc090711f3d390c54c0` | `release/prof-backend-v1-20261007` |
 
-- R03 branch adds **2 commits** over `release/prof-backend-v1-20261007`; merge-base matches release tip `eef176c9`.
-- Prior PR base `cursor/m4c-order-idempotency` was **125 commits skew** unrelated to R03; base on #680 **updated** to `release/prof-backend-v1-20261007` without force-push or rebase.
-- **R02-LIVE-UI #14** remains a **separate dependency** (not merged/published in this work); R03 local stack reuses R02 fixture/stack only.
+PRs: frontend [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15), backend [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680).
 
-## A — Stable create idempotency
+## R03.2-CLOSE fixes (this turn)
 
-- Frontend: `create-idempotency.ts` + `CertificateCreateForm` keeps one key per payload hash until success or payload change.
-- BFF: forwards `Idempotency-Key` for `POST /api/pro/agent-certificates`.
-- Backend: advisory lock + unique-conflict replay in store create transaction.
-- Tests: `create-idempotency.test.ts`, `profR03CreateIdempotency.integration.test.ts` (retry, conflict, parallel).
+1. **Stand + acceptance** — `scripts/r03-local-acceptance.mjs` requires BFF `GET /api/pro/r03/status` = 200 + `eligible`, healthy `/certificates` and `/clients` (headings + primary actions), admin→test-agent browser context, BFF idempotency retry; fails closed on errors. Frozen prototype served over HTTP (`127.0.0.1:8765`), not `file://`. **Admin DB** `remcard_admin_test_012` gets `prisma db push` for R03 tables via admin stack + acceptance preamble (fixes prior 500 on client create).
+2. **Client actions + safe share** — full SVG row actions (edit, share, archive/restore, delete) in cards/list; `SharePreviewDialog` opt-in for phone/email/city (default name-only) with regression test.
+3. **Lookup consumers** — `POST /api/client/certificates/add` uses shared display/legacy resolver + issuer prefix check + `isProfTestUser` exclusion; integration tests for display/raw/QR, wrong prefix, test-owner isolation, public JSON.
+4. **Migration test safety** — `assertProfR01RouteTestDb` before any connect/DDL; negative tests for checksum mismatch and untracked partial schema.
+5. **Preserved** — idempotency key, advisory lock, private alias, controlled runner, pagination, SVG actions (unchanged scope).
 
-## B — Prototype-aligned actions & detail
+## Evidence
 
-- `AgentCertificateDetail`: store `CertificateResultView` (QR/PDF/public), private rename, SVG row icons, disable confirm, test-public notice.
-- Lists/detail/table: full action sets; client share without notes; `AgentClientFormDialog`.
+- **Acceptance JSON:** `artifacts/remcard-r03/local-acceptance-report.json` (`ok: true`, `verdict: READY_FOR_PUBLICATION`).
+- **BFF:** `bffR03Status: 200`, `bffIdempotencyRetry: 200`.
+- **Browser:** test session active, client create, share default-off + phone opt-in.
+- **Visuals (verified impl, 4 impl/ref pairs + detail + 320 smoke):** `artifacts/remcard-r03/visual/impl-*` / `ref-*` — working R03 sections only (no login/404).
+- **Migration:** `node --test scripts/lib/__tests__/prof-r03-migrate.integration.test.mjs` pass; manifest SHA `b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168`.
 
-## C — Codes & isolation
+## Environment note
 
-- Lookup: only known issuer prefixes strip display form; unknown → legacy full string.
-- Guest: agent-branded title «Сертификат Ремкард», `displayCode` on public page.
-- Prof-test: `GET /api/pro/context`; public excludes `isProfTestUser`.
+`r02-local-stack` BFF probe on port **3032** can hit a **stale listener** returning `403 Path not allowed` while a fresh Next dev on another port (e.g. 3040/3050) returns `401` (route allowed). Acceptance intentionally uses **admin-test** ports **3040/3041** after schema push; do not treat direct-backend-only smoke as UI acceptance.
 
-## D — Controlled migration
+## Remaining / out of scope
 
-- `scripts/prof-r03-migrate.mjs` + integration test (manifest checksum, apply/after/repeat on disposable `DATABASE_URL`).
-- Migration SHA256: `b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168`.
-
-## E — Local acceptance run
-
-- Script: `scripts/r03-local-acceptance.mjs` (stack: `r02-local-stack.mjs` + `PROF_R03_AGENT_CERTIFICATES_ENABLED=true`).
-- **Backend direct (3031):** client create/rename partial PATCH, idempotency retry, single persisted cert — **PASS** (`local-acceptance-report.json`).
-- **BFF (3032) R03 API:** `GET /api/remcard/api/pro/r03/status` → **403 Path not allowed** in this environment while unit allowlist tests pass — **NOT_VERIFIED** full browser→BFF→backend for R03 mutations (needs Next dev reload investigation; not production).
-
-## F — Visuals
-
-- Captured under `artifacts/remcard-r03/visual/` (impl 1440/375 certificates+clients, ref `roles.html` 1440).
-- See `visual-report.md`.
-
-## Verdict
-
-**NO_GO for publication** — code/tests for R03.2 items are in place, but **full BFF R03 proxy path was not verified green** in the local stack run; admin→test-agent browser chain not executed end-to-end in this turn (visuals are gate/login shell without authenticated R03 data on screenshots).
-
-No merge, deploy, production DB, or gate changes performed.
+- R02-LIVE-UI #14 — separate PR, not merged here.
+- R04/R05, production merge/deploy, Tandoor/staff/branches/notifications — not touched.
