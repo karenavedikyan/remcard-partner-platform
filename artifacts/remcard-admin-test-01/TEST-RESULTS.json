@@ -1,7 +1,9 @@
 {
   "release": "ADMIN-TEST-01 RC",
   "navigatorBaseSha": "f68a966173b2f28aaca2537a834a1fb246f76703",
+  "navigatorHeadSha": "d5400c5b",
   "platformBaseSha": "7c1e435f3af2128038aee005d5576f01e47c037f",
+  "platformHeadSha": "9f7fa98",
   "tests": [
     {
       "command": "pnpm exec vitest run src/lib/__tests__/adminPassword.test.ts",

@@ -9,6 +9,11 @@
 
 Release tips matched origin at run start (R02 merged into release branches).
 
+| Repo | RC commit |
+|------|-----------|
+| remcard-navigator | `d5400c5b` → PR #679 |
+| remcard-partner-platform | `9f7fa98` → PR (draft) |
+
 ## Delivered (RC)
 
 - Admin password login (staff ADMIN/OWNER only), feature flag `PROF_ADMIN_PASSWORD_LOGIN_ENABLED` (default off).
