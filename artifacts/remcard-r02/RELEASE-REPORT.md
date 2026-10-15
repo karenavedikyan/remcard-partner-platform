@@ -7,7 +7,10 @@
 | remcard-navigator | `release/prof-backend-v1-20261007` | `810f109830df2154e05ca5f3d0ee736779e8cb44` | `cursor/r02-agent-profile-b3e3` |
 | remcard-partner-platform | `release/prof-v1-20261007` | `e1fceb679179d917f2c7fa102f6585f2bfd78090` | `cursor/r02-agent-profile-b3e3` |
 
-PR links: see GitHub after push (this report generated pre-PR).
+PR links:
+
+- Backend: https://github.com/karenavedikyan/remcard-navigator/pull/678
+- Frontend: https://github.com/karenavedikyan/remcard-partner-platform/pull/12
 
 ## Ready for users (when gates enabled)
 
