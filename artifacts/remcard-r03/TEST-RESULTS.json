@@ -1,31 +1,33 @@
 {
-  "release": "R03",
-  "checkedAt": "2026-10-15T17:08:00Z",
-  "productionBaseline": {
-    "frontend": "23bc996a9335753b1668a26d85ab5e419ae4edb0",
-    "backend": "eef176c92bd030473ad674c839b0808502f46d98"
-  },
-  "frontendDependency": {
-    "note": "R02-LIVE-UI PR #14 (8d61a66) not merged; R03 branch is off release HEAD. Merge order: optional R02-LIVE-UI → migration → backend → frontend → gate ON.",
-    "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/14"
-  },
-  "gate": {
-    "env": "PROF_R03_AGENT_CERTIFICATES_ENABLED",
-    "default": "OFF"
-  },
+  "release": "R03.1",
+  "status": "READY_FOR_REVIEW",
+  "backendPr": 680,
+  "frontendPr": 15,
+  "backendHead": "1e379ee915c5094f65b8aef688e823c6fad490a3",
+  "frontendHead": "838855aa92b33c6a5dacd654638c27129d5db61a",
   "migration": {
-    "id": "20261015180000_prof_r03_agent_clients_certs",
-    "additive": true
-  },
-  "build": {
-    "platform": "PASS",
-    "navigator": "PASS"
+    "name": "20261015180000_prof_r03_agent_clients_certs",
+    "sha256": "b67ab11176f50e3b5d4ce9798bbfdd99a701afd11aa7133d5d15078a6a1c1168",
+    "runner": "scripts/prof-r03-migrate.mjs"
   },
   "tests": {
-    "platform_remcard_proxy_r03": "PASS",
-    "navigator_certificateIssuerDisplay": "PASS",
-    "navigator_r03_agent_clients_integration": "PASS (disposable PG remcard_r01_test)"
+    "navigatorUnit": [
+      "src/lib/__tests__/agentClientPatch.test.ts",
+      "src/lib/__tests__/certificateLookupCode.test.ts",
+      "src/lib/__tests__/certificatePublicPayload.test.ts",
+      "src/lib/__tests__/profTestRoutePolicy.test.ts"
+    ],
+    "platformUnit": ["src/lib/remcard-proxy-r03.test.ts"],
+    "integrationPg": "src/lib/__tests__/profR03AgentClients.integration.test.ts (requires disposable DATABASE_URL)",
+    "browserE2e": "NOT_RUN_THIS_TURN — local admin→test-agent chain pending disposable stand"
   },
-  "browserE2EChain": "NOT_VERIFIED_THIS_RUN",
-  "status": "READY_FOR_REVIEW"
+  "evidence": {
+    "screenshots": "NOT_CAPTURED_THIS_TURN"
+  },
+  "remainders": [
+    "Full browser E2E + 6–10 visual pairs (1440/375 light/dark) not executed in this turn",
+    "Guest HTML template beyond issuerLabel/displayCode not re-audited in browser",
+    "Record row icons still prototype glyphs (not full SVG sprite set)",
+    "prof-r03-migrate integration test file not added (manifest checksum unit covered via core)"
+  ]
 }
