@@ -1,0 +1,120 @@
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.search {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.cardTop {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.cardMain {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.openLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.meta {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.cardBottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rowActions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-elevated, var(--surface));
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.iconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.batchBar {
+  position: sticky;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 8%);
+  margin-top: 1rem;
+}
+
+.loading,
+.empty,
+.errorBlock {
+  padding: 1rem 0;
+}
+
+.selectCol input {
+  width: 18px;
+  height: 18px;
+}

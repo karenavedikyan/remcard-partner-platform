@@ -3,6 +3,8 @@ import type { NavIconKey } from "@/components/layout/NavIcons";
 /** Stable R01 keys → existing cabinet routes (no /clients in R01). */
 export type AgentNavSectionKey =
   | "home"
+  | "certificates"
+  | "clients"
   | "partners"
   | "wallet"
   | "recommendations"
@@ -21,6 +23,13 @@ export type AgentNavSectionDef = {
 
 export const AGENT_NAV_SECTIONS: AgentNavSectionDef[] = [
   { key: "home", href: "/", label: "Главная", icon: "home" },
+  {
+    key: "certificates",
+    href: "/certificates",
+    label: "Сертификаты",
+    icon: "recommendations",
+  },
+  { key: "clients", href: "/clients", label: "Клиенты", icon: "partners" },
   { key: "partners", href: "/partners", label: "Партнёры", icon: "partners", badgeKey: "partners" },
   { key: "wallet", href: "/settlements", label: "Кошелёк", icon: "wallet" },
   { key: "recommendations", href: "/recommendations", label: "Рекомендации", icon: "recommendations" },
@@ -51,7 +60,8 @@ export function defaultAgentMobileNavKeys(
 ): AgentNavSectionKey[] {
   const has = (key: AgentNavSectionKey) => permitted.includes(key);
   const keys: AgentNavSectionKey[] = [];
-  if (has("home")) keys.push("home");
+  if (has("certificates")) keys.push("certificates");
+  else if (has("home")) keys.push("home");
   if (has("partners")) keys.push("partners");
   else if (has("scanner")) keys.push("scanner");
   if (has("wallet")) keys.push("wallet");

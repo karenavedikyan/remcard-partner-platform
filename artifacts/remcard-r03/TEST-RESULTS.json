@@ -1,0 +1,31 @@
+{
+  "release": "R03",
+  "checkedAt": "2026-10-15T17:08:00Z",
+  "productionBaseline": {
+    "frontend": "23bc996a9335753b1668a26d85ab5e419ae4edb0",
+    "backend": "eef176c92bd030473ad674c839b0808502f46d98"
+  },
+  "frontendDependency": {
+    "note": "R02-LIVE-UI PR #14 (8d61a66) not merged; R03 branch is off release HEAD. Merge order: optional R02-LIVE-UI → migration → backend → frontend → gate ON.",
+    "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/14"
+  },
+  "gate": {
+    "env": "PROF_R03_AGENT_CERTIFICATES_ENABLED",
+    "default": "OFF"
+  },
+  "migration": {
+    "id": "20261015180000_prof_r03_agent_clients_certs",
+    "additive": true
+  },
+  "build": {
+    "platform": "PASS",
+    "navigator": "PENDING_RUN"
+  },
+  "tests": {
+    "platform_remcard_proxy_r03": "PASS",
+    "navigator_certificateIssuerDisplay": "PASS",
+    "navigator_r03_agent_clients_integration": "PASS (disposable PG remcard_r01_test)"
+  },
+  "browserE2EChain": "NOT_VERIFIED_THIS_RUN",
+  "status": "READY_FOR_REVIEW"
+}
