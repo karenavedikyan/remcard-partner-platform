@@ -33,9 +33,13 @@ export function ProfTestModeBanner({ session }: Props) {
         type="button"
         className={styles.btn}
         onClick={async () => {
-          await remcardFetch("/api/pro/admin/test-users/return", { method: "POST" });
-          router.replace("/admin/test-users");
-          router.refresh();
+          try {
+            await remcardFetch("/api/pro/admin/test-users/return", { method: "POST" });
+            router.replace("/admin/test-users");
+            router.refresh();
+          } catch {
+            router.replace("/login?mode=admin&returnTo=%2Fadmin%2Ftest-users");
+          }
         }}
       >
         Вернуться в управление тестами

@@ -174,6 +174,11 @@ export function AppShell({
         </nav>
 
         <div className={styles.sidebarFooter}>
+          {user.staffRole === "ADMIN" || user.staffRole === "OWNER" ? (
+            <Link href="/admin/test-users" className={styles.adminToolsLink} onClick={closeMobileMenu}>
+              Тестовые пользователи
+            </Link>
+          ) : null}
           <LogoutButton className={styles.sidebarLogoutButton} />
           <small className={styles.sidebarTagline}>
             RemCard PROF

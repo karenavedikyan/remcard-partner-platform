@@ -23,6 +23,12 @@ export function LoginExperience({ returnTo, reason, initialStep, initialMode = "
       .catch(() => setAdminEnabled(false));
   }, []);
 
+  useEffect(() => {
+    if (!adminEnabled && mode === "admin") {
+      setMode("partner");
+    }
+  }, [adminEnabled, mode]);
+
   return (
     <div className={styles.shell}>
       <div className={styles.modeTabs} role="tablist">
@@ -47,7 +53,7 @@ export function LoginExperience({ returnTo, reason, initialStep, initialMode = "
           </button>
         ) : null}
       </div>
-      {mode === "partner" ? (
+      {mode === "partner" || !adminEnabled ? (
         <AuthFlow returnTo={returnTo} reason={reason} initialStep={initialStep} />
       ) : (
         <AdminPasswordLoginForm returnTo={returnTo} />
