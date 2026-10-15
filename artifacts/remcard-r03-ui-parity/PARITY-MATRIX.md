@@ -1,35 +1,40 @@
-# R03 UI parity matrix
+# R03 UI parity matrix (verified)
 
-Legend: **PASS** | **DIFF** | **NOT_VERIFIED**
+Legend: **PASS** (computed/functional) · **VISUAL_DIFF** (paired capture, expected/known delta) · **NOT_VERIFIED**
 
-| Area | Reference | Implementation | Status | Notes |
-|------|-----------|----------------|--------|-------|
-| Nav icon certificates | `nav-home`, Lucide house | `sections.certificates` → `home`, `AgentNavIcon` house paths | PASS | Route key stays `certificates` (prefs stable) |
-| Nav icon clients | `users-round` | `sections.clients` → `clients` icon | PASS | |
-| Nav icon partners | `handshake` | `partners` handshake paths | PASS | |
-| Nav icon wallet / profile | wallet / user-round | unchanged keys, SVG aligned | PASS | |
-| Page eyebrow | «АГЕНТ» | `PageHeading` eyebrow АГЕНТ | PASS | |
-| Certificates hero panel | `.panel.hero-task` + CTA | `AgentR03PageIntro` hero + link | PASS | Muted copy without bonus promise → **DIFF** text |
-| Stat cards row | 3 stats | 3 cards; count=`activeCount`; money **—** | DIFF | Money lacks API; honest caption |
-| Clients intro | muted paragraph | `AgentR03PageIntro` clients | PASS | |
-| View default | list | default list + localStorage override | PASS | |
-| Segmented list/cards | `.segment` | `.viewToggle` gray group + white active | PASS | Visual review on captures |
-| Toolbar one row | `.collection-tools` | `.collectionTools` flex row | PASS | |
-| Search without «Найти» | debounced search input | 400ms debounce, no button | PASS | Enter not required |
-| Search placeholders | cert / client strings | matching placeholders | PASS | Client note search via navigator `note` field |
-| Filter selects styled | `.field select` | `.filterSelect` / `.showSelect` | PASS | |
-| Meta row geometry | count / hint / select page rows | `.collectionCountRow` + `.selectPageRow` | PASS | |
-| Cards grid 2-col | `.collection-cards` | `.list` 2-col @1440 | PASS | 1-col ≤1050px |
-| Cert selection strip | `.collection-card-select` | `.collectionCardSelect` | PASS | |
-| Cert branded face | `.remcard-certificate` | gradient + top accent + R watermark | PASS | |
-| Multi-partner categories | terms in share text | `partnerOffers` DTO + card lines | PASS | No single blended % when categories differ |
-| List columns cert | Name+caption / Details / Status | Updated table columns | PASS | |
-| Client purchase status | purchase-based pill | `hasPurchases` from orders/usage | PASS | Archive tab uses «В архиве» |
-| Row icons | share-2, pencil, archive, trash-2 | `RowActionIcons` Lucide paths | PASS | |
-| List client eye/open | row action | `open` action in list only | PASS | |
-| Pagination | compact 25/50/100 + page text | `AgentR03Pagination` | PASS | |
-| Dark «Подробнее» | accent link | `--r03-accent` on `.certCardMore` | PASS | Theme assert on captures |
-| Select all found | bulk select all filtered | page checkbox only | DIFF | Documented functional gap |
-| Test banner | n/a | impl top test banner | DIFF | Functional exception |
+Evidence: `screenshots/captures.json` (2026-10-15T23:21:44Z), `screenshots/*-{ref,impl,diff}.png`, runner `scripts/r03-ui-parity-visual.mjs` exit 0.
 
-Screenshots: run `node scripts/r03-ui-parity-visual.mjs` with authenticated local stack (`R03_UI_IMPL_ORIGIN`).
+| Area | Reference | Implementation | Status | Evidence / notes |
+|------|-----------|----------------|--------|------------------|
+| Nav icon certificates (desktop) | house 20px | `nav-certificates` SVG 20×20 | PASS | computed `navIconWidth/Height=20` @1440 |
+| Nav icon clients | users-round | `clients` icon | PASS | desktop captures |
+| Nav icon partners | handshake | handshake paths | PASS | desktop captures |
+| Page eyebrow | АГЕНТ | PageHeading АГЕНТ | VISUAL_DIFF | diff ratio ~4–9%; test banner on impl |
+| Hero task panel | `.hero-task` | `AgentR03PageIntro` | VISUAL_DIFF | copy without bonus promise |
+| Stat cards money | demo ₽ | **—** + caption | VISUAL_DIFF | functional gap (documented) |
+| Stat count | demo count | `activeCount` server | PASS | seeded ≥3 certs |
+| View default list | list | list + localStorage | PASS | `activeViewLabel=Список` |
+| Segmented control | `.segment` | `.viewToggle` | PASS | computed active label |
+| Toolbar row | collection-tools | `.collectionTools` | PASS | toolbar visible all captures |
+| Search debounced | no «Найти» | debounce 400ms | PASS | smoke `certificates_search` |
+| Cards 2-col @1440 | ~559px cards | grid `559px 559px` | PASS | computed @ cards 1440 |
+| Cert terms disclosure | `details.certificate-terms` | `agent-cert-terms` | PASS | `termsPresent=true` cards |
+| Cert usage caption | ticket + usage text | ticket SVG + label | PASS | card region screenshots |
+| Cert footer | issuer + Подробнее ↗ | `certificateBottom` + arrow | PASS | card impl captures |
+| Actions row | separate strip | `recordCardActions` | PASS | card layout |
+| Fractional % | 5.5% | no round to int | PASS | seed cert + mapper tests |
+| Client purchase pill | purchase-based | `hasPurchases` | PASS | API field |
+| Pagination region | compact footer | pagination crop PNG | PASS | `*-impl-pagination.png` |
+| Select all found | all filtered | page only | VISUAL_DIFF | functional gap (documented) |
+| Test-mode banner | n/a | impl top bar | VISUAL_DIFF | excluded from product diff |
+| Full-page pixel diff | — | — | VISUAL_DIFF | ratio 0.04–0.09; banner/stats/copy |
+
+## Capture matrix (18/18 CAPTURED)
+
+| ID | diff ratio | view/theme |
+|----|------------|------------|
+| certificates-list-light-1440x900 | 0.044 | main |
+| certificates-cards-light-1440x900 | (see captures.json) | main |
+| … | … | 16 main + 2×320 smoke |
+
+All pairs include `-ref-full.png`, `-impl-full.png`, `-diff.png`. Cards views include `-impl-cert-card.png` where applicable.

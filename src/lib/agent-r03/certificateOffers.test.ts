@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { certificateListDetail, certificateUsageCaption } from "./certificateOffers";
+import { certificateListDetail, certificatePartnerSummary } from "./certificateOffers";
+import { formatDiscountPercent } from "./formatDiscountPercent";
 import type { AgentCertificateRow } from "./types";
 
 const base: AgentCertificateRow = {
@@ -42,6 +43,7 @@ describe("certificateOffers", () => {
     };
     expect(certificateListDetail(cert)).toContain("Doors shop: Двери 5%");
     expect(certificateListDetail(cert)).toContain("Plumber Co: Сантехника 5%");
-    expect(certificateUsageCaption(cert)).toContain("2 партнёра");
+    expect(certificatePartnerSummary(cert)).toContain("+1 партнёра");
+    expect(formatDiscountPercent(5.5)).toBe("5.5");
   });
 });

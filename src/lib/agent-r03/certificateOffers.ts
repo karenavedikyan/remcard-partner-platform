@@ -1,9 +1,21 @@
 import type { AgentCertificatePartnerOffer, AgentCertificateRow } from "./types";
+import { formatDiscountPercent } from "./formatDiscountPercent";
 
-export function formatOfferLine(offer: AgentCertificatePartnerOffer): string[] {
-  return offer.categories.map(
-    (cat) => `${cat.categoryLabel} — скидка ${cat.discountPercent}%`,
-  );
+export function certificatePartnerSummary(cert: AgentCertificateRow): string {
+  const first = cert.partnerOffers?.[0];
+  const firstCat = first?.categories?.[0];
+  if (first && firstCat) {
+    const cats =
+      cert.categorySummary ??
+      first.categories.map((c) => c.categoryLabel).join(', ');
+    const extraPartners =
+      cert.partnerCount > 1 ? ` · +${cert.partnerCount - 1} партнёра` : '';
+    return `${first.storeName} · ${cats}${extraPartners}`;
+  }
+  if (cert.partnerStoreName && cert.categorySummary) {
+    return `${cert.partnerStoreName} · ${cert.categorySummary}`;
+  }
+  return cert.directionLabel ?? cert.partnerStoreName ?? '—';
 }
 
 export function certificateListDetail(cert: AgentCertificateRow): string {
@@ -11,7 +23,8 @@ export function certificateListDetail(cert: AgentCertificateRow): string {
     return cert.partnerOffers
       .flatMap((offer) =>
         offer.categories.map(
-          (cat) => `${offer.storeName}: ${cat.categoryLabel} ${cat.discountPercent}%`,
+          (cat) =>
+            `${offer.storeName}: ${cat.categoryLabel} ${formatDiscountPercent(cat.discountPercent)}%`,
         ),
       )
       .join(" · ");

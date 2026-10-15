@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
-import { certificateUsageCaption } from "@/lib/agent-r03/certificateOffers";
+import { certificatePartnerSummary } from "@/lib/agent-r03/certificateOffers";
+import { formatDiscountPercent } from "@/lib/agent-r03/formatDiscountPercent";
+import { certificateUsageLabel } from "@/lib/agent-r03/certificateUsageLabel";
 import { certificateStatusLabel, certificateStatusTone } from "@/lib/certificate-labels";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
@@ -16,6 +18,24 @@ type Props = {
   actions: RecordRowAction[];
 };
 
+function IconTicket() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2 2 0 0 0 0 4v2a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-2a2 2 0 0 0 0-4Z" />
+      <path d="M13 5v2M13 17v2M13 11v2" />
+    </svg>
+  );
+}
+
+function IconArrowUpRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <path d="M7 17 17 7" />
+      <path d="M7 7h10v10" />
+    </svg>
+  );
+}
+
 export function AgentCertificateCard({
   cert,
   selected,
@@ -23,7 +43,9 @@ export function AgentCertificateCard({
   actions,
 }: Props) {
   const displayTitle = cert.userAlias ?? cert.title;
-  const usageCaption = certificateUsageCaption(cert);
+  const summaryLine = certificatePartnerSummary(cert);
+  const terms = cert.terms ?? [];
+  const issuer = cert.issuerDisplayName?.trim() || "агента";
 
   return (
     <div
@@ -38,7 +60,7 @@ export function AgentCertificateCard({
         />
         Выбрать
       </label>
-      <article className={`${styles.certCard} remcard-certificate`}>
+      <article className={`${styles.certCard} remcard-certificate`} data-testid="agent-cert-card">
         <span className={styles.certCardWatermark} aria-hidden>
           R
         </span>
@@ -55,36 +77,53 @@ export function AgentCertificateCard({
           <Link href={`/certificates/${cert.id}`} className={styles.certCardTitle}>
             {displayTitle}
           </Link>
-          {cert.partnerOffers?.length ? (
-            <div className={styles.certOffers}>
-              {cert.partnerOffers.map((offer) => (
-                <div key={`${offer.storeName}-${offer.categories.length}`}>
-                  <div className={styles.certOfferPartner}>{offer.storeName}</div>
-                  {offer.categories.map((cat) => (
-                    <p key={`${offer.storeName}-${cat.categoryLabel}`} className={styles.certOfferLine}>
-                      {cat.categoryLabel} — {cat.discountPercent}%
-                    </p>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className={styles.meta}>{usageCaption}</p>
-          )}
-          <p className={styles.meta}>
-            {cert.displayCode}
-            {cert.hasOrders ? " · есть покупки" : ""}
+          <p className={styles.meta}>{summaryLine}</p>
+          <p className={styles.usageCaption}>
+            <IconTicket />
+            <span>{certificateUsageLabel(cert)}</span>
           </p>
-          <p className={styles.meta}>
-            {cert.agentClient
-              ? `Клиент: ${cert.agentClient.displayName}`
-              : "Без клиента"}
-          </p>
+          {cert.agentClient ? (
+            <p className={styles.meta}>Клиент: {cert.agentClient.displayName}</p>
+          ) : null}
+          {terms.length > 0 ? (
+            <details className={styles.certificateTerms} data-testid="agent-cert-terms">
+              <summary>
+                Скидки по категориям <span className={styles.badgeCount}>{terms.length}</span>
+              </summary>
+              <div className={styles.termsBody}>
+                {terms.map((term) => (
+                  <div key={`${term.partnerName}-${term.categoryName}`} className={styles.termSummary}>
+                    <strong>{term.categoryName}</strong>
+                    <small>{term.partnerName}</small>
+                    <span>
+                      Клиенту <b>{formatDiscountPercent(term.discountPercent)}%</b>
+                      {term.agentBonusPercent != null && Number.isFinite(term.agentBonusPercent) ? (
+                        <>
+                          {" "}
+                          · ваш бонус <b>{formatDiscountPercent(term.agentBonusPercent)}%</b>
+                        </>
+                      ) : null}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </div>
-        <div className={styles.certCardFooter}>
-          <Link href={`/certificates/${cert.id}`} className={styles.certCardMore}>
-            Подробнее ↗
+        <div className={styles.certificateBottom}>
+          <small>
+            От {issuer}
+            {cert.displayCode ? ` · ${cert.displayCode}` : ""}
+          </small>
+          <Link
+            href={`/certificates/${cert.id}`}
+            className={styles.certCardMore}
+            data-testid="agent-cert-more"
+          >
+            Подробнее <IconArrowUpRight />
           </Link>
+        </div>
+        <div className={styles.recordCardActions}>
           <RecordRowActions ariaLabel="Действия с сертификатом" actions={actions} />
         </div>
       </article>

@@ -337,6 +337,89 @@
   word-break: break-word;
 }
 
+.usageCaption {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.usageCaption svg {
+  flex-shrink: 0;
+  color: var(--r03-accent);
+}
+
+.certificateTerms {
+  margin-top: 0.65rem;
+  border: 1px solid var(--r03-line);
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
+  background: color-mix(in srgb, var(--surface) 92%, var(--r03-offset));
+}
+
+.certificateTerms summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  list-style: none;
+}
+
+.certificateTerms summary::-webkit-details-marker {
+  display: none;
+}
+
+.badgeCount {
+  display: inline-flex;
+  min-width: 1.25rem;
+  justify-content: center;
+  padding: 0 0.35rem;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  background: var(--r03-offset);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.termsBody {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.termSummary {
+  display: grid;
+  gap: 0.15rem;
+  font-size: var(--text-sm);
+}
+
+.termSummary small {
+  color: var(--muted);
+}
+
+.certificateBottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding-top: 0.75rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--r03-line);
+}
+
+.certificateBottom small {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.recordCardActions {
+  padding-top: 0.65rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--r03-line);
+}
+
 .certCardFooter {
   display: flex;
   flex-wrap: wrap;
@@ -348,6 +431,9 @@
 }
 
 .certCardMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--r03-accent);

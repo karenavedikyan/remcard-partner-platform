@@ -50,6 +50,8 @@ export default defineConfig({
       "src/components/auth/LoginExperience.test.tsx",
       "src/lib/agent-r03/create-idempotency.test.ts",
       "src/lib/agent-nav/sections.test.ts",
+      "src/lib/agent-r03/certificateOffers.test.ts",
+      "src/lib/agent-r03/formatDiscountPercent.test.ts",
       "src/components/agent-r03/clientContactShare.test.ts",
       "src/lib/agent-profile/api.client.test.ts",
       "src/components/profile/agent/AgentProfileWizard.regression.test.tsx",

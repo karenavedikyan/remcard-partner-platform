@@ -1,38 +1,28 @@
 {
-  "platform": {
-    "branch": "cursor/r03-ui-parity-b3e3",
-    "build": {
-      "command": "npm run build",
-      "status": "pass"
-    },
-    "unitTests": {
-      "certificateOffers": {
-        "file": "src/lib/agent-r03/certificateOffers.test.ts",
-        "status": "not_in_vitest_include",
-        "note": "Logic covered by manual review; add to vitest include if CI gate needed"
-      },
-      "agentNavSections": {
-        "command": "vitest run src/lib/agent-nav/sections.test.ts",
-        "status": "not_run_this_session"
-      }
-    }
+  "platformSha": "9dbf2e3cfb63bca545f3cd57a43d65d40ba59b5c",
+  "navigatorSha": "ce5a940a8d251f85fff30996ba002cbaa50f6530",
+  "build": {
+    "command": "npm run build",
+    "status": "see_ci_or_local"
   },
-  "navigator": {
-    "branch": "cursor/r03-ui-parity-b3e3",
-    "changes": ["partnerOffers on certificate list", "hasPurchases on client list", "client search includes note"],
-    "integrationTests": {
-      "status": "not_run",
-      "reason": "DB-dependent suite not executed in this RC pass"
-    }
-  },
-  "visualVerification": {
+  "vitest": [
+    "certificateOffers.test.ts",
+    "formatDiscountPercent.test.ts",
+    "sections.test.ts"
+  ],
+  "visualRunner": {
     "script": "scripts/r03-ui-parity-visual.mjs",
-    "captures": "artifacts/remcard-r03-ui-parity/screenshots/",
-    "status": "pending_operator_stack",
-    "matrix": "2 pages × list/cards × light/dark × 1440/375 documented in script"
+    "ok": true,
+    "failures": [],
+    "captureCount": 18
   },
-  "browserSmoke": {
-    "status": "not_run",
-    "reason": "Requires local admin/r03 stack with agent session"
-  }
+  "browserSmoke": [
+    "certificates_cards",
+    "certificates_list",
+    "certificates_search",
+    "filters_open",
+    "selection",
+    "client_create_open",
+    "reload"
+  ]
 }

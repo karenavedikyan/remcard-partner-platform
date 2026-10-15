@@ -17,7 +17,12 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
 
   const roleSelect = page.locator('[data-testid="scenario-role"]');
   await roleSelect.waitFor({ state: 'attached', timeout: 30_000 });
-  await roleSelect.selectOption('agent');
+  await page.evaluate(() => {
+    const sel = document.querySelector('[data-testid="scenario-role"]');
+    if (!(sel instanceof HTMLSelectElement)) throw new Error('ref_role_select_missing');
+    sel.value = 'agent';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   await page.waitForTimeout(600);
   const roleAfter = await roleSelect.inputValue();
   if (roleAfter !== 'agent') {
@@ -25,14 +30,23 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
   }
 
   const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
-  await cabinetBtn.waitFor({ timeout: 20_000 });
-  await cabinetBtn.click();
-  await page.waitForTimeout(800);
+  await cabinetBtn.waitFor({ state: 'attached', timeout: 20_000 });
+  const cabinetPressed = await cabinetBtn.getAttribute('aria-pressed');
+  if (cabinetPressed !== 'true') {
+    await cabinetBtn.click({ force: true });
+    await page.waitForTimeout(800);
+  }
 
   const navKey = section === 'certificates' ? 'home' : 'clients';
-  const navBtn = page.locator(`[data-action="nav:${navKey}"], [data-testid="nav-${navKey}"]`).first();
-  await navBtn.waitFor({ timeout: 20_000 });
-  await navBtn.click();
+  const menuBtn = page.locator('[data-action="menu"]').first();
+  if (await menuBtn.isVisible().catch(() => false)) {
+    await menuBtn.click();
+    await page.waitForTimeout(400);
+  }
+  await page.evaluate((key) => {
+    const btn = document.querySelector(`[data-action="nav:${key}"], [data-testid="nav-${key}"]`);
+    if (btn instanceof HTMLElement) btn.click();
+  }, navKey);
   await page.waitForTimeout(600);
 
   const heading = section === 'certificates' ? 'Сертификаты' : 'Клиенты';
