@@ -36,6 +36,13 @@ Production deploy, flags, DB migrations, staff/branches/notifications APIs, bonu
 - Test-mode top banner remains on impl screenshots (functional exception).
 - Reference certificates nav uses `nav-home` + `house`; impl uses route key `certificates` with same house icon.
 
+## Visual capture RC (operator)
+
+- Runner: `node scripts/r03-ui-parity-visual.mjs` (stack via `admin-test-local-stack.mjs`, loopback PG `remcard_admin_test_012`).
+- Artifacts: `artifacts/remcard-r03-ui-parity/screenshots/` (76 PNG: ref/impl/diff, cert-card and pagination crops) + `screenshots/captures.json` (`ok: true`, 18 scenarios).
+- Matrix: `PARITY-MATRIX.md` — functional **PASS** where computed; full-page **VISUAL_DIFF** (~4–9% pixel ratio); **CAPTURED ≠ visual PASS**.
+- Tests: `TEST-RESULTS.json` (build, vitest, navigator mapper, browser smoke).
+
 ## Reference SHA256 (verified)
 
 - roles.html `d6c00f57928f6dc885e9dd714937d8ae897dfaedb8e5e806e46f0ea741a09859`
