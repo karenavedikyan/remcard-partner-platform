@@ -1,0 +1,370 @@
+/* Scoped agent shell tokens (reference roles.css / profile-wizard.css). */
+.agentRoot {
+  --bg: #f6f5f3;
+  --surface: #ffffff;
+  --offset: #efeeeb;
+  --ink: #242623;
+  --muted: #61645f;
+  --line: #dedfd9;
+  --primary: #bb3035;
+  --soft: #fae9e8;
+  --primary-fg: #ffffff;
+  --accent-fill: var(--primary);
+  --primary-hover: #9a3834;
+  --agent-sidebar-width: 15.125rem;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+:global([data-theme="dark"]) .agentRoot {
+  --bg: #181a19;
+  --surface: #222523;
+  --offset: #2b2f2c;
+  --ink: #f1f0eb;
+  --muted: #b5b9b2;
+  --line: #454b45;
+  --primary: #f49391;
+  --soft: #3b2729;
+  --primary-fg: #271b1a;
+}
+
+.productTopbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 86px;
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.topbarBrand {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.topbarBrand > div {
+  gap: 12px;
+}
+
+.topbarBrand svg {
+  width: 34px;
+  height: 34px;
+}
+
+.topbarBrand svg path {
+  stroke: var(--primary-fg);
+}
+
+.topbarBrand svg + span {
+  font-size: 20px;
+  letter-spacing: -0.05em;
+  line-height: 1.6;
+}
+
+.topbarBrand small {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.accountControl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+  min-height: 44px;
+}
+
+.accountAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--offset);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.accountCaption {
+  text-align: left;
+  max-width: 190px;
+}
+
+.accountCaption strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountCaption small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--agent-sidebar-width) minmax(0, 1fr);
+  background: var(--bg);
+}
+
+.sidebar {
+  position: sticky;
+  top: 86px;
+  align-self: start;
+  max-height: calc(100dvh - 86px);
+  min-height: calc(100dvh - 86px);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  z-index: 8;
+  overflow-y: auto;
+}
+
+.workspace {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workspaceEyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.workspaceName {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.workspaceHint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.nav {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  min-height: 46px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+}
+
+.navLink:hover {
+  background: var(--offset);
+}
+
+.navLinkActive {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.navIcon {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.navBadge {
+  margin-left: auto;
+  min-width: 1.25rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--accent-fill);
+  color: var(--primary-fg);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.sidebarBottom {
+  display: none;
+}
+
+.sidebarBottom small {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.mainColumn {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+  flex: 1;
+  box-sizing: border-box;
+  align-self: start;
+  min-width: 0;
+}
+
+.mobileBottom {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .agentRoot {
+    --agent-sidebar-width: 13.125rem;
+  }
+
+  .content {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 680px) {
+  .agentRoot {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+
+  .productTopbar {
+    min-height: 64px;
+    padding: 10px 16px;
+    gap: 8px;
+  }
+
+  .topbarBrand small {
+    display: block;
+  }
+
+  .topbarBrand svg + span {
+    font-size: 18px;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .accountCaption {
+    display: none;
+  }
+
+  .accountControl {
+    border-left: 0;
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 20px 16px;
+  }
+
+  .mobileBottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-around;
+    gap: 2px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 20px #00000008;
+  }
+
+  .mobileBottomLink {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    min-height: 58px;
+    max-width: 4.5rem;
+    text-decoration: none;
+    padding: 6px 2px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    border-radius: 10px;
+    font-size: 10px;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .mobileBottomIcon svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .mobileBottomLabel {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileBottomLinkActive {
+    background: var(--soft);
+    color: var(--primary);
+  }
+}

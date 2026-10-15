@@ -1,0 +1,97 @@
+.dialog {
+  border: 0;
+  padding: 0;
+  margin: auto auto 0;
+  max-width: 100%;
+  width: 100%;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.dialog::backdrop {
+  background: rgba(23, 32, 23, 0.45);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: min(70dvh, 520px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.header h2 {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  margin: 0;
+}
+
+.closeBtn {
+  border: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.nav {
+  display: grid;
+  gap: 0.25rem;
+  padding: var(--space-3) var(--space-4);
+  overflow-y: auto;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.linkActive {
+  background: var(--offset);
+  color: var(--primary);
+}
+
+.footer {
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.customizeBtn {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logoutBtn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+.footerHint {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin: 0;
+}
