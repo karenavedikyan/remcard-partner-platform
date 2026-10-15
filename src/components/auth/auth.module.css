@@ -399,6 +399,22 @@
   color: var(--accent, #b52a2e);
 }
 
+.adminStatus {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--muted, #61645f);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.adminBlocked {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line, #dce0e3);
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface, #fff);
+}
+
 .form {
   display: grid;
   gap: var(--space-4);

@@ -70,6 +70,28 @@ describe("AuthFlow", () => {
     expect(await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i })).toBeInTheDocument();
   });
 
+  it("does not redirect after unmount during delayed readiness", async () => {
+    vi.mocked(getAuthMe).mockResolvedValue({
+      user: { id: "store-1", role: "PRO" },
+    });
+    vi.mocked(remcardFetch).mockImplementation((path) => {
+      if (path === "/api/account/cabinet-readiness") {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(readyReadiness), 80);
+        });
+      }
+      return Promise.resolve({ ok: true });
+    });
+
+    const { unmount } = render(<AuthFlow returnTo="/admin/test-users" />);
+    await waitFor(() => {
+      expect(getAuthMe).toHaveBeenCalled();
+    });
+    unmount();
+    await new Promise((r) => setTimeout(r, 120));
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("submits code then confirms session and skips consents when ready", async () => {
     let sessionActive = false;
     vi.mocked(getAuthMe).mockImplementation(async () => ({
