@@ -1,15 +1,15 @@
 {
   "ok": true,
-  "verdict": "READY_FOR_PUBLICATION",
+  "verdict": "READY_FOR_REVIEW",
   "stack": "admin-test",
-  "platformGitSha": "bf05d2fd8c9cfd0953fa0bebc8dd86e51af63a4f",
-  "navigatorGitSha": "6da34993466c34f9d48e0fbc6b25b419eb248a9a",
+  "platformGitSha": "a93475c898180f097592496ff7fd3cf864c563c3",
+  "navigatorGitSha": "50ae51ccb2ab05a74c604e4ebf39d2311cda0d64",
   "meta": {
     "navOrigin": "http://127.0.0.1:3041",
     "platformOrigin": "http://127.0.0.1:3040",
     "envPath": "/tmp/admin-test-local-stack/runtime.env",
-    "navPid": 168870,
-    "platPid": 166664,
+    "navPid": 177838,
+    "platPid": 171178,
     "database": "remcard_admin_test_012"
   },
   "http": {
@@ -19,7 +19,7 @@
       "featureEnabled": true,
       "hasAgentActivity": true,
       "eligible": true,
-      "userId": "cmv9y2ir10003js15at5xp411",
+      "userId": "cmva01k9d0003jszvbofr9o0r",
       "ineligibleReason": null
     },
     "navR03Status": 200,
@@ -29,7 +29,7 @@
   "browser": {
     "testSession": {
       "ok": true,
-      "userId": "cmv9y2ir10003js15at5xp411"
+      "userId": "cmva01k9d0003jszvbofr9o0r"
     },
     "certificatesViaNav": true,
     "clientsViaNav": true,
@@ -136,8 +136,8 @@
   "steps": {
     "partnershipSeed": {
       "ok": true,
-      "storeUserId": "cmv9y2ndq0000jsf94z3n5bw8",
-      "partnershipId": "cmv9y2ndy0006jsf9c5kcawy3"
+      "storeUserId": "cmva01o8j0000js9lzozybmj9",
+      "partnershipId": "cmva01o8s0006js9lbg6eth7r"
     },
     "clientRenameOnly": true,
     "availablePartnersCount": 1,
@@ -147,13 +147,28 @@
     "certificatePrivateRename": true,
     "certificateLinkedClient": true,
     "reloadPersistAlias": true,
+    "batchTargetIds": [
+      "cmva04il1000tjszvnc3xygx6",
+      "cmva01tvy000mjszvnxirska9"
+    ],
     "batchArchive": true,
     "batchRestore": true,
     "returnReenter": {
-      "navOk": false,
-      "aliasVisible": true
+      "navOk": true,
+      "aliasVisible": true,
+      "certificates": {
+        "ok": true
+      },
+      "clients": {
+        "ok": true
+      }
     },
-    "returnReenterNavViaUrlFallback": true,
+    "smoke320": {
+      "shellOk": true,
+      "horizontalOverflow": false,
+      "rowCount": 1,
+      "actionsAboveNav": true
+    },
     "gateOffUiBlocked": true,
     "gateOffLegacyHome": true,
     "gateOffRestored": true
@@ -163,7 +178,7 @@
       "contractVersion": "2026-10-14.r01",
       "pilotEnabled": true,
       "pilotActive": true,
-      "contextKey": "agent-wallet:cmv9y2ir10003js15at5xp411",
+      "contextKey": "agent-wallet:cmva01k9d0003jszvbofr9o0r",
       "version": 0,
       "theme": "system",
       "mobileNavKeys": [
@@ -213,7 +228,10 @@
   },
   "idempotency": {
     "bffFirst": 201,
-    "bffRetry": 200
+    "bffRetry": 200,
+    "firstId": "cmva04il1000tjszvnc3xygx6",
+    "retryId": "cmva04il1000tjszvnc3xygx6",
+    "sameId": true
   },
   "failures": [],
   "visualPairCount": 8

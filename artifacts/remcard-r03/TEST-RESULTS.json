@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T19:45:00.000Z",
+  "generatedAt": "2026-10-15T19:50:00.000Z",
   "verdict": "READY_FOR_PUBLICATION",
   "ok": true,
   "repositories": {
@@ -8,14 +8,14 @@
       "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-v1-20261007",
       "pr": 15,
-      "headNote": "Set after FINAL-3 commit push; acceptance re-run updates platformGitSha in local-acceptance-report.json"
+      "head": "bf05d2fd8c9cfd0953fa0bebc8dd86e51af63a4f"
     },
     "backend": {
       "path": "remcard-navigator",
       "branch": "cursor/r03-agent-clients-certs-b3e3",
       "base": "release/prof-backend-v1-20261007",
       "pr": 680,
-      "headNote": "Set after FINAL-3 commit push"
+      "head": "6da34993466c34f9d48e0fbc6b25b419eb248a9a"
     }
   },
   "acceptance": {

@@ -47,9 +47,19 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
 
   if (opts.dark) {
     const themeBtn = page.locator('[data-testid="theme-toggle"], [data-action="toggle-theme"]').first();
-    if (await themeBtn.isVisible().catch(() => false)) {
-      await themeBtn.click();
-      await page.waitForTimeout(400);
+    for (let i = 0; i < 4; i++) {
+      const lum = await page.evaluate(() => {
+        const bg = getComputedStyle(document.body).backgroundColor;
+        const m = bg.match(/[\d.]+/g);
+        if (!m || m.length < 3) return 255;
+        return (Number(m[0]) + Number(m[1]) + Number(m[2])) / 3;
+      });
+      const dataTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+      if (dataTheme === 'dark' || lum < 95) break;
+      if (await themeBtn.isVisible().catch(() => false)) {
+        await themeBtn.click();
+        await page.waitForTimeout(400);
+      } else break;
     }
   }
 

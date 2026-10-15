@@ -294,16 +294,24 @@ async function setImplViewMode(page, viewMode) {
 
 async function openSectionViaNav(page, plat, sectionKey) {
   const href = sectionKey === 'certificates' ? '/certificates' : '/clients';
+  const headingName = sectionKey === 'certificates' ? 'Сертификаты' : 'Клиенты';
   const desktop = page.locator(`[data-testid="nav-${sectionKey}"]`).first();
   const mobile = page.locator(`[data-testid="nav-mobile-${sectionKey}"]`).first();
+  const more = page.locator('[data-testid="mobile-nav-more"]');
   if (await desktop.isVisible().catch(() => false)) {
     await desktop.click();
   } else if (await mobile.isVisible().catch(() => false)) {
     await mobile.click();
+  } else if (await more.isVisible().catch(() => false)) {
+    await more.click();
+    await page.getByRole('link', { name: headingName }).click();
   } else {
     await page.goto(`${plat}${href}`, { waitUntil: 'networkidle' });
     return;
   }
+  await page.waitForURL((url) => url.pathname === href || url.pathname.startsWith(`${href}/`), {
+    timeout: 45_000,
+  }).catch(() => page.goto(`${plat}${href}`, { waitUntil: 'networkidle' }));
   await page.waitForLoadState('networkidle');
 }
 
@@ -328,10 +336,32 @@ async function setThemeDark(page) {
   return after.dataTheme === 'dark' || after.colorScheme === 'dark';
 }
 
+function parseRgbLuma(bg) {
+  const m = bg.match(/[\d.]+/g);
+  if (!m || m.length < 3) return 255;
+  return (Number(m[0]) + Number(m[1]) + Number(m[2])) / 3;
+}
+
 async function assertDarkTheme(page, label) {
-  const t = await readUiTheme(page);
-  const dark = t.dataTheme === 'dark' || t.colorScheme === 'dark';
-  return { ok: dark, theme: t, label };
+  const t = await page.evaluate(() => {
+    const html = document.documentElement;
+    const bodyBg = getComputedStyle(document.body).backgroundColor;
+    const htmlBg = getComputedStyle(html).backgroundColor;
+    return {
+      dataTheme: html.getAttribute('data-theme'),
+      htmlClass: html.className,
+      colorScheme: getComputedStyle(html).colorScheme,
+      bodyBg,
+      htmlBg,
+    };
+  });
+  const luma = Math.min(parseRgbLuma(t.bodyBg), parseRgbLuma(t.htmlBg));
+  const dark =
+    t.dataTheme === 'dark' ||
+    t.colorScheme === 'dark' ||
+    /\bdark\b/i.test(t.htmlClass) ||
+    luma < 95;
+  return { ok: dark, theme: t, luma, label };
 }
 
 async function captureMatchedPair(context, report, opts) {
@@ -773,9 +803,12 @@ async function main() {
     if (batchIds.length < 2) {
       report.failures.push('batch_need_two_rows');
     } else {
-      const rowChecks = page.locator(
-        'tbody input[type="checkbox"], [data-testid="agent-cert-mobile-row"] input[type="checkbox"], [data-testid="agent-cert-card"] input[type="checkbox"]',
-      );
+      const desktopChecks = page.locator('tbody input[type="checkbox"]');
+      const mobileChecks = page.locator('[data-testid="agent-cert-mobile-row"] input[type="checkbox"]');
+      const cardChecks = page.locator('[data-testid="agent-cert-card"] input[type="checkbox"]');
+      let rowChecks = desktopChecks;
+      if (await mobileChecks.first().isVisible().catch(() => false)) rowChecks = mobileChecks;
+      else if (await cardChecks.first().isVisible().catch(() => false)) rowChecks = cardChecks;
       await rowChecks.nth(0).check();
       await rowChecks.nth(1).check();
       await page.locator('[class*="batchBar"]').getByRole('button', { name: 'В архив', exact: true }).click();
@@ -802,11 +835,14 @@ async function main() {
     }
 
     if (USE_ADMIN && agentCard) {
+      await page.setViewportSize({ width: 1440, height: 900 });
       await page.getByRole('button', { name: 'Вернуться в управление тестами' }).click();
       await page.waitForURL(/\/admin\/test-users/, { timeout: 60_000 });
       await agentCard.getByRole('button', { name: 'Открыть ЛК' }).click();
       await page.waitForLoadState('networkidle');
       await maybeAcceptConsents(page);
+      await finishAgentProfileInBrowser(page, plat, cookieHeader).catch(() => {});
+      await page.setViewportSize({ width: 1440, height: 900 });
       await openSectionViaNav(page, plat, 'certificates');
       const reenterCert = await assertHealthyR03Page(page, 'Сертификаты');
       await openSectionViaNav(page, plat, 'clients');
@@ -818,7 +854,12 @@ async function main() {
       }
       const aliasAfterReenter = await page.getByText(privateAlias).isVisible().catch(() => false);
       const navOk = reenterCert.ok && reenterClients.ok;
-      report.steps.returnReenter = { navOk, aliasVisible: aliasAfterReenter };
+      report.steps.returnReenter = {
+        navOk,
+        aliasVisible: aliasAfterReenter,
+        certificates: reenterCert,
+        clients: reenterClients,
+      };
       if (!navOk) report.failures.push('return_reenter_nav_failed');
       if (!aliasAfterReenter) report.failures.push('return_reenter_alias_missing');
     }
@@ -862,7 +903,7 @@ async function main() {
     await smokePage.goto(`${plat}/clients`, { waitUntil: 'networkidle' });
     await setImplViewMode(smokePage, 'list');
     const overflowCheck = await verifyImplAgentShell(smokePage, 'clients', 'list');
-    const geom320 = await smokePage.evaluate(() => {
+    const geom320 = await smokePage.evaluate(async () => {
       const doc = document.documentElement;
       const horizontalOverflow = doc.scrollWidth > doc.clientWidth + 2;
       const rows = [...document.querySelectorAll('[data-testid="agent-client-mobile-row"]')];
@@ -871,13 +912,22 @@ async function main() {
       const navTop = navRect ? navRect.top : window.innerHeight;
       let actionsAboveNav = rows.length > 0;
       for (const row of rows) {
-        const actions = row.querySelector('[class*="rowActions"], [aria-label*="Действия"]');
-        const btn = actions?.querySelector('button');
-        const rect = (btn ?? actions)?.getBoundingClientRect();
-        if (!rect || rect.bottom > navTop - 4 || rect.width < 40 || rect.height < 40) {
+        row.scrollIntoView({ block: 'center', behavior: 'instant' });
+        await new Promise((r) => requestAnimationFrame(r));
+        const actions = row.querySelector('[class*="rowActions"]');
+        const buttons = actions ? [...actions.querySelectorAll('button')] : [];
+        if (buttons.length < 4) {
           actionsAboveNav = false;
           break;
         }
+        for (const btn of buttons) {
+          const rect = btn.getBoundingClientRect();
+          if (rect.width < 40 || rect.height < 40 || rect.bottom > navTop - 4) {
+            actionsAboveNav = false;
+            break;
+          }
+        }
+        if (!actionsAboveNav) break;
       }
       return { horizontalOverflow, rowCount: rows.length, actionsAboveNav };
     });

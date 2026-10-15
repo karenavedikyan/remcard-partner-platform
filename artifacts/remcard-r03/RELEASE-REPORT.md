@@ -4,14 +4,14 @@
 
 FINAL-3 closes the three remaining acceptance items on existing PRs [#15](https://github.com/karenavedikyan/remcard-partner-platform/pull/15) / [#680](https://github.com/karenavedikyan/remcard-navigator/pull/680). No merge, deploy, production connect, or gate publication.
 
-## Code refs (after FINAL-3 commit — see `TEST-RESULTS.json` for exact SHAs)
+## Code refs (acceptance run on committed tree)
 
-| Repo | Branch | Base |
-|------|--------|------|
-| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `release/prof-v1-20261007` |
-| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `release/prof-backend-v1-20261007` |
+| Repo | Branch | HEAD | Base |
+|------|--------|------|------|
+| remcard-partner-platform | `cursor/r03-agent-clients-certs-b3e3` | `bf05d2fd` | `release/prof-v1-20261007` |
+| remcard-navigator | `cursor/r03-agent-clients-certs-b3e3` | `6da34993` | `release/prof-backend-v1-20261007` |
 
-Baseline before this turn: platform `7704489b`, navigator `251ec8bb`.
+Baseline before FINAL-3: platform `7704489b`, navigator `251ec8bb`.
 
 ## FINAL-3 scope (only)
 
