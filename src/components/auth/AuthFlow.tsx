@@ -50,6 +50,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   const router = useRouter();
   const submitLock = useRef(false);
   const codeConsumedRef = useRef(false);
+  const flowActiveRef = useRef(true);
   const [step, setStep] = useState<AuthFlowStep>("checking_session");
   const [code, setCode] = useState("");
   const [readiness, setReadiness] = useState<CabinetReadiness | null>(null);
@@ -64,6 +65,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
   const finishFlow = useCallback(
     (r: CabinetReadiness) => {
+      if (!flowActiveRef.current) return;
       const destination = resolveDestinationAfterAuth(r, returnTo ?? null);
       if (destination.startsWith("/onboarding")) {
         router.replace(destination);
@@ -133,15 +135,17 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
     [],
   );
 
-  const runSessionCheck = useCallback(async () => {
+  const runSessionCheck = useCallback(async (isActive: () => boolean) => {
     setError("");
     const meResult = await fetchAuthMeSafe();
+    if (!isActive()) return;
     if (!meResult.ok) {
       handleSessionFailure(meResult.kind, meResult.status);
       setBooting(false);
       return;
     }
     const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
+    if (!isActive()) return;
     if (blocked) {
       setError(blocked);
       setStep("blocked");
@@ -151,6 +155,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
 
     setStep("loading_readiness");
     const readinessResult = await fetchReadinessSafe();
+    if (!isActive()) return;
     if (!readinessResult.ok) {
       handleSessionFailure(readinessResult.kind, readinessResult.status);
       setBooting(false);
@@ -164,7 +169,14 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   runSessionCheckRef.current = runSessionCheck;
 
   useEffect(() => {
-    void runSessionCheckRef.current();
+    flowActiveRef.current = true;
+    let active = true;
+    const isActive = () => active && flowActiveRef.current;
+    void runSessionCheckRef.current(isActive);
+    return () => {
+      active = false;
+      flowActiveRef.current = false;
+    };
   }, []);
 
   const retrySessionCheck = useCallback(async () => {
@@ -173,7 +185,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
     setLoading(true);
     setError("");
     try {
-      await runSessionCheck();
+      await runSessionCheck(() => true);
     } finally {
       setLoading(false);
       submitLock.current = false;
