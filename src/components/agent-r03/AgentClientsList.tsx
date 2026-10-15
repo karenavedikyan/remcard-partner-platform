@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
+import { AgentR03PageIntro } from "./AgentR03PageIntro";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   batchAgentClients,
@@ -34,7 +37,15 @@ const emptyMeta: AgentR03ListMeta = {
   hasPrevPage: false,
 };
 
+function clientPurchaseStatus(client: AgentClientRow, archivedView: boolean) {
+  if (archivedView) return "В архиве";
+  if (client.hasPurchases === true) return "Есть покупки";
+  if (client.hasPurchases === false) return "Пока без покупок";
+  return "—";
+}
+
 export function AgentClientsList() {
+  const router = useRouter();
   const [items, setItems] = useState<AgentClientRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
   const [archived, setArchived] = useState(false);
@@ -52,6 +63,7 @@ export function AgentClientsList() {
   const [shareClient, setShareClient] = useState<AgentClientRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -84,9 +96,31 @@ export function AgentClientsList() {
   }, [appliedQ, archived, page, pageSize, sort, searchRevision]);
 
   useEffect(() => {
+    const stored = readAgentR03ViewMode("clients");
+    if (stored) setViewMode(stored);
+  }, []);
+
+  useEffect(() => {
     setSelected(new Set());
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const trimmed = qDraft.trim();
+      setAppliedQ((prev) => {
+        if (prev === trimmed) return prev;
+        setPage(1);
+        setSelected(new Set());
+        setSearchRevision((r) => r + 1);
+        return trimmed;
+      });
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [qDraft]);
 
   const visibleIds = useMemo(() => items.map((c) => c.id), [items]);
 
@@ -95,12 +129,16 @@ export function AgentClientsList() {
     setSelected(new Set());
   }
 
-  function runSearch() {
-    setAppliedQ(qDraft.trim());
-    setPage(1);
-    setSelected(new Set());
+  function resetAllFilters() {
+    setQDraft("");
+    setAppliedQ("");
+    setArchived(false);
+    setSort("updated_desc");
+    resetFiltersAndPage();
     setSearchRevision((r) => r + 1);
   }
+
+  const filtersActive = Boolean(appliedQ || archived || sort !== "updated_desc");
 
   async function submitClient(values: AgentClientFormValues) {
     const body = {
@@ -134,8 +172,17 @@ export function AgentClientsList() {
     setFormOpen(true);
   }
 
-  function clientRowActions(client: AgentClientRow): RecordRowAction[] {
-    return [
+  function clientRowActions(client: AgentClientRow, includeOpen = false): RecordRowAction[] {
+    const actions: RecordRowAction[] = [];
+    if (includeOpen) {
+      actions.push({
+        id: "open",
+        label: "Открыть",
+        disabled: busy,
+        onClick: () => router.push(`/clients/${client.id}`),
+      });
+    }
+    actions.push(
       {
         id: "share",
         label: "Поделиться контактами",
@@ -173,7 +220,8 @@ export function AgentClientsList() {
             });
         },
       },
-    ];
+    );
+    return actions;
   }
 
   async function runBatch(action: "archive" | "restore" | "delete") {
@@ -210,15 +258,17 @@ export function AgentClientsList() {
   const totalPages = Math.max(1, meta.totalPages ?? 1);
 
   return (
-    <>
+    <div className={styles.r03Root}>
+      <AgentR03PageIntro variant="clients" />
       <div className={styles.pageActions}>
         <Button onClick={openCreate}>Добавить клиента</Button>
       </div>
       <AgentR03ListToolbar
-        searchPlaceholder="Имя, контакт, город"
+        searchPlaceholder="Имя, контакт, город или задача"
         q={qDraft}
         onQChange={setQDraft}
-        onSearch={runSearch}
+        filtersActive={filtersActive}
+        onResetFilters={resetAllFilters}
         archived={archived}
         onShowChange={(v) => {
           setArchived(v);
@@ -229,6 +279,7 @@ export function AgentClientsList() {
         viewMode={viewMode}
         onViewModeChange={(mode) => {
           setViewMode(mode);
+          writeAgentR03ViewMode("clients", mode);
           setSelected(new Set());
         }}
         foundCount={meta.totalCount}
@@ -271,36 +322,44 @@ export function AgentClientsList() {
       {items.length > 0 && viewMode === "cards" ? (
         <div className={styles.list}>
           {items.map((client) => (
-            <article key={client.id} className={styles.card}>
-              <div className={styles.cardTop}>
-                <label className={styles.selectCol}>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(client.id)}
-                    onChange={(e) => toggleSelected(client.id, e.target.checked)}
-                  />
-                </label>
-                <div className={styles.cardMain}>
-                  <Link href={`/clients/${client.id}`} className={styles.openLink}>
-                    {client.displayName}
-                  </Link>
-                  <p className={styles.meta}>
+            <div
+              key={client.id}
+              className={`${styles.collectionCardShell} ${selected.has(client.id) ? styles.collectionCardShellSelected : ""}`}
+            >
+              <label className={styles.collectionCardSelect}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(client.id)}
+                  onChange={(e) => toggleSelected(client.id, e.target.checked)}
+                />
+                Выбрать
+              </label>
+              <article className={styles.card}>
+                <div className={styles.cardTop}>
+                  <div className={styles.cardMain}>
+                    <Link href={`/clients/${client.id}`} className={styles.openLink}>
+                      {client.displayName}
+                    </Link>
+                    <span className={styles.statusPill}>{clientPurchaseStatus(client, archived)}</span>
+                  </div>
+                </div>
+                <p className={styles.meta}>
+                  {client.certificateCount}{" "}
+                  {client.certificateCount === 1 ? "сертификат" : "сертификатов"}
+                </p>
+                <p className={styles.meta}>{client.note?.trim() || "Задача пока не указана"}</p>
+                <div className={styles.cardBottom}>
+                  <span className={styles.meta}>
                     {client.city ?? "Город не указан"}
                     {client.phone ? ` · ${formatPhoneForDisplay(client.phone)}` : ""}
-                    {client.certificateCount
-                      ? ` · сертификатов: ${client.certificateCount}`
-                      : ""}
-                  </p>
+                  </span>
+                  <RecordRowActions
+                    ariaLabel="Действия с клиентом"
+                    actions={clientRowActions(client)}
+                  />
                 </div>
-              </div>
-              <div className={styles.cardBottom}>
-                <span className={styles.meta}>{archived ? "В архиве" : "Активен"}</span>
-                <RecordRowActions
-                  ariaLabel="Действия с клиентом"
-                  actions={clientRowActions(client)}
-                />
-              </div>
-            </article>
+              </article>
+            </div>
           ))}
         </div>
       ) : null}
@@ -325,7 +384,7 @@ export function AgentClientsList() {
                 <tr>
                   <th />
                   <th>Клиент</th>
-                  <th>Контакты</th>
+                  <th>Подробности</th>
                   <th>Статус</th>
                   <th />
                 </tr>
@@ -341,15 +400,29 @@ export function AgentClientsList() {
                       />
                     </td>
                     <td>
-                      <Link href={`/clients/${client.id}`}>{client.displayName}</Link>
+                      <Link href={`/clients/${client.id}`} className={styles.collectionOpenLink}>
+                        {client.displayName}
+                      </Link>
+                      <small className={styles.collectionCaption}>
+                        {client.certificateCount} сертификатов
+                      </small>
                     </td>
-                    <td>
+                    <td className={styles.collectionDetail}>
+                      {client.note?.trim() || "Задача не указана"}
+                      <br />
                       {client.city ?? "—"}
                       {client.phone ? ` · ${formatPhoneForDisplay(client.phone)}` : ""}
                     </td>
-                    <td>{archived ? "Архив" : "Активен"}</td>
                     <td>
-                      <RecordRowActions ariaLabel="Действия" actions={clientRowActions(client)} />
+                      <span className={styles.statusPill}>
+                        {clientPurchaseStatus(client, archived)}
+                      </span>
+                    </td>
+                    <td>
+                      <RecordRowActions
+                        ariaLabel="Действия"
+                        actions={clientRowActions(client, true)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -427,6 +500,6 @@ export function AgentClientsList() {
         onClose={() => setFormOpen(false)}
         onSubmit={submitClient}
       />
-    </>
+    </div>
   );
 }

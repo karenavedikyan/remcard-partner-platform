@@ -24,7 +24,7 @@ export function RecordRowActions({ actions, ariaLabel }: RecordRowActionsProps) 
         <button
           key={action.id}
           type="button"
-          className={styles.iconBtn}
+          className={`${styles.iconBtn} ${action.id === "delete" ? styles.iconBtnDanger : ""}`}
           aria-label={action.label}
           title={action.disabled ? action.disabledReason ?? action.label : action.title ?? action.label}
           disabled={action.disabled}

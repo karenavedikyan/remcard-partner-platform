@@ -26,9 +26,10 @@ export function AgentR03Pagination({
 }: Props) {
   return (
     <div className={styles.paginationBar} data-testid="agent-r03-pagination">
-      <label className={styles.fieldInline}>
+      <label className={styles.fieldInlineCompact}>
         На странице
         <select
+          className={styles.pageSizeSelect}
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           data-testid="agent-r03-page-size"
@@ -40,7 +41,7 @@ export function AgentR03Pagination({
           ))}
         </select>
       </label>
-      <span className={styles.meta}>
+      <span className={styles.paginationMeta}>
         Страница {page} из {totalPages}
       </span>
       <div className={styles.paginationNav}>

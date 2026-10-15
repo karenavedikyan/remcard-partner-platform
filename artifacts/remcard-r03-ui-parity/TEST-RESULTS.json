@@ -1,0 +1,38 @@
+{
+  "platform": {
+    "branch": "cursor/r03-ui-parity-b3e3",
+    "build": {
+      "command": "npm run build",
+      "status": "pass"
+    },
+    "unitTests": {
+      "certificateOffers": {
+        "file": "src/lib/agent-r03/certificateOffers.test.ts",
+        "status": "not_in_vitest_include",
+        "note": "Logic covered by manual review; add to vitest include if CI gate needed"
+      },
+      "agentNavSections": {
+        "command": "vitest run src/lib/agent-nav/sections.test.ts",
+        "status": "not_run_this_session"
+      }
+    }
+  },
+  "navigator": {
+    "branch": "cursor/r03-ui-parity-b3e3",
+    "changes": ["partnerOffers on certificate list", "hasPurchases on client list", "client search includes note"],
+    "integrationTests": {
+      "status": "not_run",
+      "reason": "DB-dependent suite not executed in this RC pass"
+    }
+  },
+  "visualVerification": {
+    "script": "scripts/r03-ui-parity-visual.mjs",
+    "captures": "artifacts/remcard-r03-ui-parity/screenshots/",
+    "status": "pending_operator_stack",
+    "matrix": "2 pages × list/cards × light/dark × 1440/375 documented in script"
+  },
+  "browserSmoke": {
+    "status": "not_run",
+    "reason": "Requires local admin/r03 stack with agent session"
+  }
+}

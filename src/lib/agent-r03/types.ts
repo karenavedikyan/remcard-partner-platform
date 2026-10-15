@@ -18,6 +18,13 @@ export type AgentClientRow = {
   createdAt: string;
   updatedAt: string;
   certificateCount: number;
+  /** True when a linked certificate has confirmed usage/orders; false when none. */
+  hasPurchases?: boolean;
+};
+
+export type AgentCertificatePartnerOffer = {
+  storeName: string;
+  categories: Array<{ categoryLabel: string; discountPercent: number }>;
 };
 
 export type AgentCertificateRow = {
@@ -37,6 +44,7 @@ export type AgentCertificateRow = {
   partnerStoreName: string | null;
   partnerCount: number;
   categorySummary: string | null;
+  partnerOffers?: AgentCertificatePartnerOffer[];
   discountPercent: number;
   archivedInWorkspace: boolean;
   hasOrders: boolean;
