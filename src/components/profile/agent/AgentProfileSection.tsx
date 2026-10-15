@@ -104,6 +104,7 @@ export function AgentProfileSection({
   return (
     <Panel
       title="Профиль агента"
+      className={pureAgent ? styles.pureAgentPanel : undefined}
       hint={
         pureAgent
           ? undefined

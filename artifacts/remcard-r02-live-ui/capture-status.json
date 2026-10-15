@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "origin": "http://127.0.0.1:3032",
+  "report": {
+    "shots": [
+      "step1-375-light.png",
+      "step1-375-dark.png",
+      "step1-320-light.png",
+      "step1-320-dark.png",
+      "desktop-1440-light.png"
+    ],
+    "metrics": {
+      "step1-375-light": {
+        "contentWidth": 289,
+        "overflowDoc": false,
+        "footerSameRow": true,
+        "draftTop": 935,
+        "nextTop": 932
+      },
+      "step1-375-dark": {
+        "contentWidth": 289,
+        "overflowDoc": false,
+        "footerSameRow": true,
+        "draftTop": 935,
+        "nextTop": 932
+      },
+      "step1-320-light": {
+        "contentWidth": 234,
+        "overflowDoc": false,
+        "footerSameRow": false,
+        "draftTop": 848,
+        "nextTop": 900
+      },
+      "step1-320-dark": {
+        "contentWidth": 234,
+        "overflowDoc": false,
+        "footerSameRow": false,
+        "draftTop": 848,
+        "nextTop": 900
+      },
+      "desktop-1440-light": {
+        "contentWidth": 786,
+        "overflowDoc": false,
+        "footerSameRow": true,
+        "draftTop": 888,
+        "nextTop": 888
+      }
+    }
+  }
+}

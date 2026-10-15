@@ -33,6 +33,30 @@
   min-width: 0;
 }
 
+/* Pure-agent basics: one step card on mobile — flatten outer Panel chrome only (desktop unchanged). */
+.pureAgentPanel {
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .pureAgentPanel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .pureAgentPanel > h2 {
+    display: none;
+  }
+
+  .agentScope .pw {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-width: none;
+  }
+}
+
 :global([data-theme="dark"]) .pw,
 :global([data-theme="dark"]) .agentScope {
   --pw-accent: #ff9497;
@@ -528,7 +552,10 @@
     font-size: var(--pw-xs);
     text-align: center;
   }
+}
 
+/* 375: keep draft + primary on one row (900px nowrap rules). 320 and below: allow wrap without overflow. */
+@media (max-width: 359px) {
   .actions {
     flex-wrap: wrap;
     row-gap: var(--pw-2);
@@ -538,12 +565,14 @@
     flex-wrap: wrap;
     width: 100%;
     margin-left: 0;
-    justify-content: stretch;
+    justify-content: flex-end;
+    gap: var(--pw-2);
   }
 
   .actionsRight .btnDraft,
   .actionsRight .btnPrimary {
     flex: 1 1 auto;
-    min-width: min(100%, 140px);
+    min-width: 0;
+    max-width: 100%;
   }
 }

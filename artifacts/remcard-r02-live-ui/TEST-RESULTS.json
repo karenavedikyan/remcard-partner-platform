@@ -1,0 +1,30 @@
+{
+  "release": "R02-LIVE-UI",
+  "checkedAt": "2026-10-15T16:58:00Z",
+  "productionBaseline": {
+    "frontend": "23bc996a9335753b1668a26d85ab5e419ae4edb0",
+    "backend": "eef176c92bd030473ad674c839b0808502f46d98"
+  },
+  "build": "PASS",
+  "wizardRegressionTests": "PASS 5/5 (AgentProfileWizard.regression.test.tsx)",
+  "cssIntentTests": "PASS 2/2 (AgentProfileWizard.module.css.test.mjs)",
+  "visualCapture": {
+    "status": "VERIFIED",
+    "method": "Playwright on local R02 stack (3031/3032) with fixture test-agent token; next start after clean build",
+    "script": "scripts/r02-live-ui-capture.mjs",
+    "artifactsDir": "artifacts/remcard-r02-live-ui/screenshots",
+    "metrics": {
+      "step1-375-light": {
+        "contentWidthPx": 289,
+        "footerSameRow": true,
+        "overflowDoc": false,
+        "note": "Inner wizard section width; ref prototype ~343px — remainder likely profile shell horizontal padding (~43px/side vs ref); duplicate outer Panel removed on mobile"
+      },
+      "step1-320-light": {
+        "contentWidthPx": 234,
+        "footerSameRow": false,
+        "overflowDoc": false
+      }
+    }
+  }
+}
