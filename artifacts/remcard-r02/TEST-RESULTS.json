@@ -3,10 +3,10 @@
   "release": "R02.6 RC",
   "codeSha": {
     "navigator": "b6d910ee9c91405339b838d1c1ab83a1080ad4f0",
-    "platform": "pending_commit"
+    "platform": "731d01bcb59be8175a6546800916b391d1be1265"
   },
   "docSha": {
-    "platformReport": "pending_commit"
+    "platformReport": "731d01bcb59be8175a6546800916b391d1be1265"
   },
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
