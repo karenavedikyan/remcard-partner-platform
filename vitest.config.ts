@@ -44,6 +44,7 @@ export default defineConfig({
       "src/lib/contact-phone-display.test.ts",
       "src/lib/remcard-proxy-r02.test.ts",
       "src/lib/agent-profile/api.client.test.ts",
+      "src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
     ],
     testTimeout: 30_000,
   },

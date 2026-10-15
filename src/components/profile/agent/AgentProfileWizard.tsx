@@ -39,27 +39,40 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const hydrateGen = useRef(0);
+  const dirtyGen = useRef(0);
+  const versionRef = useRef(0);
+  const draftEpochRef = useRef(0);
+
+  const syncVersion = (nextVersion: number, nextEpoch: number) => {
+    versionRef.current = nextVersion;
+    draftEpochRef.current = nextEpoch;
+    setVersion(nextVersion);
+    setDraftEpoch(nextEpoch);
+  };
 
   const hydrate = useCallback(async () => {
+    const gen = ++hydrateGen.current;
     setLoading(true);
     setLoadError("");
     try {
       const data = await fetchAgentProfileDraft();
+      if (gen !== hydrateGen.current) return;
       setDraft(data.payload ?? {});
       setSavedProfile(data.savedProfile ?? data.payload ?? {});
       setHasDraft(Boolean(data.hasDraft));
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
-      setVersion(data.version ?? 0);
-      setDraftEpoch(data.draftEpoch ?? 0);
+      syncVersion(data.version ?? 0, data.draftEpoch ?? 0);
       setProfileComplete(Boolean(data.profileComplete));
       setEditing(Boolean(data.hasDraft) || !data.profileComplete);
       setConflict(null);
     } catch (caught) {
+      if (gen !== hydrateGen.current) return;
       setLoadError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить профиль",
       );
     } finally {
-      setLoading(false);
+      if (gen === hydrateGen.current) setLoading(false);
     }
   }, []);
 
@@ -72,29 +85,39 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       nextDraft: AgentProfileDraftPayload,
       uiStep: number,
       expectedVersion: number,
+      expectedEpoch: number,
       opts: { mode: "save" | "advance"; nextUiStep?: number },
     ) => {
       const run = saveQueue.current.then(async () => {
         setSaving(true);
+        const writeGen = dirtyGen.current;
         try {
           const res = await patchAgentProfileDraft({
             expectedVersion,
-            expectedEpoch: draftEpoch,
+            expectedEpoch,
             step: (opts.nextUiStep ?? uiStep) + 1,
             fromStep: uiStep + 1,
             mode: opts.mode,
             payload: nextDraft as Record<string, string>,
           });
+          if (writeGen !== dirtyGen.current) return null;
           setDraft(res.payload ?? nextDraft);
-          setVersion(res.version);
-          if (typeof res.draftEpoch === "number") setDraftEpoch(res.draftEpoch);
+          syncVersion(res.version, typeof res.draftEpoch === "number" ? res.draftEpoch : draftEpochRef.current);
           setHasDraft(true);
           setFieldErrors({});
           setConflict(null);
-          return { version: res.version, epoch: res.draftEpoch ?? draftEpoch };
+          return { version: res.version, epoch: res.draftEpoch ?? expectedEpoch };
         } catch (caught) {
           if (caught instanceof RemcardApiError && caught.status === 409) {
-            setConflict({ serverVersion: expectedVersion, serverEpoch: draftEpoch });
+            try {
+              const latest = await fetchAgentProfileDraft();
+              setConflict({
+                serverVersion: latest.version ?? expectedVersion,
+                serverEpoch: latest.draftEpoch ?? expectedEpoch,
+              });
+            } catch {
+              setConflict({ serverVersion: expectedVersion, serverEpoch: expectedEpoch });
+            }
             setBanner({
               kind: "error",
               text: "Черновик на сервере изменился. Сохраните локальные правки или загрузите серверную версию.",
@@ -118,10 +141,18 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       );
       return run;
     },
-    [draftEpoch],
+    [],
   );
 
+  const rebaseOntoServer = async () => {
+    const latest = await fetchAgentProfileDraft();
+    syncVersion(latest.version ?? 0, latest.draftEpoch ?? 0);
+    setConflict(null);
+    setBanner(null);
+  };
+
   const updateField = (key: keyof AgentProfileDraftPayload, value: string) => {
+    dirtyGen.current += 1;
     setDraft((prev) => ({ ...prev, [key]: value }));
     if (fieldErrors[key]) {
       setFieldErrors((prev) => {
@@ -138,7 +169,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     const last = STEPS.length - 1;
     if (step < last) {
       try {
-        await persistDraft(draft, step, version, {
+        await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
           mode: "advance",
           nextUiStep: step + 1,
         });
@@ -148,31 +179,41 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       }
       return;
     }
+    setSaving(true);
     try {
-      const saved = await persistDraft(draft, step, version, { mode: "advance", nextUiStep: step });
-      const fin = await finishAgentProfile({
+      const saved = await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+        mode: "advance",
+        nextUiStep: step,
+      });
+      if (!saved) return;
+      await finishAgentProfile({
         expectedVersion: saved.version,
         expectedEpoch: saved.epoch,
       });
-      if (fin.profileComplete) {
-        setProfileComplete(true);
-        setHasDraft(false);
-        setEditing(false);
-        setBanner({ kind: "success", text: "Профиль сохранён." });
-        onProfileComplete?.();
-        await hydrate();
-      }
+      setProfileComplete(true);
+      setHasDraft(false);
+      setEditing(false);
+      setBanner({ kind: "success", text: "Профиль сохранён." });
+      onProfileComplete?.();
+      await hydrate();
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.body?.fields) {
         setFieldErrors(caught.body.fields as FieldErrors);
+      } else if (caught instanceof RemcardApiError) {
+        setBanner({ kind: "error", text: caught.message });
       }
+    } finally {
+      setSaving(false);
     }
   };
 
   const saveDraftOnly = async () => {
     if (disabled || saving) return;
     try {
-      await persistDraft(draft, step, version, { mode: "save", nextUiStep: step });
+      await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+        mode: "save",
+        nextUiStep: step,
+      });
       setBanner({ kind: "success", text: "Черновик сохранён. Можно продолжить позже." });
     } catch {
       /* shown */
@@ -180,9 +221,9 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   };
 
   const skipStep = async () => {
-    if (step >= STEPS.length - 2) return;
+    if (step >= STEPS.length - 1) return;
     try {
-      await persistDraft(draft, step, version, {
+      await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
         mode: "save",
         nextUiStep: step + 1,
       });
@@ -226,7 +267,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             </div>
             <div>
               <dt>Город</dt>
-              <dd>{draft.city?.trim() || "Не указано"}</dd>
+              <dd>{display.city?.trim() || "Не указано"}</dd>
             </div>
             {display.audience ? (
               <div>
@@ -256,7 +297,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             <button
               type="button"
               className={`${styles.btn} ${styles.btnPrimary}`}
-              disabled={disabled}
+              disabled={disabled || saving}
               onClick={() => {
                 setEditing(true);
                 setStep(0);
@@ -300,7 +341,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                   className={styles.stepBtn}
                   aria-current={i === step ? "step" : undefined}
                   data-testid={`agent-profile-step-${i}`}
-                  disabled={disabled || i > step}
+                  disabled={disabled || saving || i > step}
                   onClick={() => setStep(i)}
                 >
                   <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
@@ -338,17 +379,19 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             <div className={styles.bannerError} role="alert">
               <p>Конфликт версии (сервер v{conflict.serverVersion}).</p>
               <div className={styles.actionsRight}>
-                <button type="button" className={styles.btn} disabled={saving} onClick={() => void hydrate()}>
+                <button
+                  type="button"
+                  className={styles.btn}
+                  disabled={saving}
+                  onClick={() => void hydrate()}
+                >
                   Загрузить с сервера
                 </button>
                 <button
                   type="button"
                   className={styles.btn}
                   disabled={saving}
-                  onClick={() => {
-                    setConflict(null);
-                    setBanner(null);
-                  }}
+                  onClick={() => void rebaseOntoServer()}
                 >
                   Оставить мои правки
                 </button>
@@ -367,7 +410,9 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             {step === 0 ? (
               <>
                 <div className={styles.fields}>
-                  <div className={`${styles.field} ${fieldErrors.displayName ? styles.fieldError : ""}`}>
+                  <div
+                    className={`${styles.field} ${fieldErrors.displayName ? styles.fieldError : ""}`}
+                  >
                     <label htmlFor="agent-displayName">
                       Ваше имя <span className={styles.required}>*</span>
                     </label>
@@ -376,7 +421,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                       name="displayName"
                       value={draft.displayName ?? ""}
                       placeholder="Например, Алексей Иванов"
-                      disabled={disabled}
+                      disabled={disabled || saving}
                       aria-invalid={Boolean(fieldErrors.displayName)}
                       data-testid="agent-profile-input-displayName"
                       onChange={(e) => updateField("displayName", e.target.value)}
@@ -392,7 +437,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                       name="city"
                       value={draft.city ?? ""}
                       placeholder="Например, Краснодар"
-                      disabled={disabled}
+                      disabled={disabled || saving}
                       data-testid="agent-profile-input-city"
                       onChange={(e) => updateField("city", e.target.value)}
                     />
@@ -417,19 +462,21 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                       id="agent-audience"
                       value={draft.audience ?? ""}
                       placeholder="Друзьям, клиентам, подписчикам"
-                      disabled={disabled}
+                      disabled={disabled || saving}
                       onChange={(e) => updateField("audience", e.target.value)}
                     />
                     <small>Коротко, своими словами.</small>
                   </div>
-                  <div className={`${styles.field} ${fieldErrors.channel ? styles.fieldError : ""}`}>
+                  <div
+                    className={`${styles.field} ${fieldErrors.channel ? styles.fieldError : ""}`}
+                  >
                     <label htmlFor="agent-channel">Ссылка на канал или страницу</label>
                     <input
                       id="agent-channel"
                       type="url"
                       value={draft.channel ?? ""}
                       placeholder="https://…"
-                      disabled={disabled}
+                      disabled={disabled || saving}
                       onChange={(e) => updateField("channel", e.target.value)}
                     />
                     <small>{fieldErrors.channel || "Можно оставить пустым."}</small>
@@ -444,7 +491,9 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                   Укажите удобный способ связи. Необязательные поля можно оставить пустыми.
                 </p>
                 <div className={`${styles.fields} ${styles.fieldsTwo}`}>
-                  <div className={`${styles.field} ${fieldErrors.contactPhone ? styles.fieldError : ""}`}>
+                  <div
+                    className={`${styles.field} ${fieldErrors.contactPhone ? styles.fieldError : ""}`}
+                  >
                     <label htmlFor="agent-phone">Телефон</label>
                     <input
                       id="agent-phone"
@@ -452,7 +501,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                       inputMode="tel"
                       value={formatPhoneForDisplay(draft.contactPhone) || draft.contactPhone || ""}
                       placeholder="+7 (___) ___-__-__"
-                      disabled={disabled}
+                      disabled={disabled || saving}
                       data-testid="agent-profile-input-phone"
                       onChange={(e) => updateField("contactPhone", formatPhoneInput(e.target.value))}
                     />
@@ -461,14 +510,16 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                         "Можно начать с 8 или 7. Для связи, не для повторного входа."}
                     </small>
                   </div>
-                  <div className={`${styles.field} ${fieldErrors.contactEmail ? styles.fieldError : ""}`}>
+                  <div
+                    className={`${styles.field} ${fieldErrors.contactEmail ? styles.fieldError : ""}`}
+                  >
                     <label htmlFor="agent-email">Email</label>
                     <input
                       id="agent-email"
                       type="email"
                       value={draft.contactEmail ?? ""}
                       placeholder="name@example.ru"
-                      disabled={disabled}
+                      disabled={disabled || saving}
                       onChange={(e) => updateField("contactEmail", e.target.value)}
                     />
                     <small>{fieldErrors.contactEmail || "Для письменных предложений."}</small>

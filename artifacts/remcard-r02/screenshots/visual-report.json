@@ -1,0 +1,53 @@
+{
+  "pairs": [
+    {
+      "name": "impl-1440-light",
+      "capture": "FAIL",
+      "verify": "FAIL",
+      "error": "page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('[data-testid=\"agent-profile-wizard\"]') to be visible\n"
+    },
+    {
+      "name": "ref-1440-light",
+      "capture": "CAPTURED",
+      "verify": "PASS",
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-1440-light.png"
+    },
+    {
+      "name": "impl-375-light",
+      "capture": "FAIL",
+      "verify": "FAIL",
+      "error": "page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('[data-testid=\"agent-profile-wizard\"]') to be visible\n"
+    },
+    {
+      "name": "ref-375-light",
+      "capture": "CAPTURED",
+      "verify": "PASS",
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-375-light.png"
+    },
+    {
+      "name": "impl-375-dark",
+      "capture": "FAIL",
+      "verify": "FAIL",
+      "error": "page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('[data-testid=\"agent-profile-wizard\"]') to be visible\n"
+    },
+    {
+      "name": "ref-375-dark",
+      "capture": "CAPTURED",
+      "verify": "PASS",
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-375-dark.png"
+    },
+    {
+      "name": "impl-320-contacts",
+      "capture": "FAIL",
+      "verify": "FAIL",
+      "error": "page.waitForSelector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator('[data-testid=\"agent-profile-wizard\"]') to be visible\n"
+    },
+    {
+      "name": "ref-320-contacts",
+      "capture": "CAPTURED",
+      "verify": "PASS",
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots/ref-320-contacts.png"
+    }
+  ],
+  "outDir": "/agent/repos/remcard-partner-platform/artifacts/remcard-r02/screenshots"
+}

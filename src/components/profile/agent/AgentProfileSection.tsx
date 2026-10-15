@@ -48,7 +48,9 @@ export function AgentProfileSection({
   }, [loadStatus, partnerActivities.join(",")]);
 
   if (loading) return null;
-  if (!status?.featureEnabled) return null;
+  if (!status?.featureEnabled) {
+    return error ? <p className={styles.bannerError}>{error}</p> : null;
+  }
 
   const hasAgent = status.hasAgentActivity || partnerActivities.includes("AGENT");
 

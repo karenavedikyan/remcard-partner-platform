@@ -1,45 +1,71 @@
 {
-  "generatedAt": "2026-10-15T10:10:00Z",
-  "release": "R02.1 corrective",
+  "generatedAt": "2026-10-15T10:38:00Z",
+  "release": "R02.2 RC",
   "navigator": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-navigator/pull/678",
+    "headAfterCommit": "pending-push",
     "tests": [
       {
-        "command": "pnpm exec vitest run src/lib/__tests__/agentProfileDraft.test.ts",
+        "command": "pnpm exec vitest run src/lib/__tests__/agentProfileDraft.test.ts src/lib/__tests__/agentProfileSeed.test.ts",
         "exitCode": 0,
         "result": "PASS"
       },
       {
-        "command": "DATABASE_URL/DIRECT_URL=loopback remcard_r01_test pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
+        "command": "DATABASE_URL/DIRECT_URL=loopback remcard_r01_test PROF_R02_AGENT_PROFILE_ENABLED=1 pnpm exec vitest run src/lib/__tests__/profR02AgentProfileRoute.integration.test.ts",
         "exitCode": 0,
         "result": "PASS",
-        "notes": "3 scenarios: malformed JSON body, staff enable 403 + mixed finish preserves public fields, requisites revise immutability from DB"
+        "notes": "5 scenarios incl. mixed contact isolation, working seed GET, STORE enable 409"
       },
       {
-        "command": "node scripts/prof-r02-migrate.mjs after (db push fixture without ledger)",
-        "exitCode": 1,
-        "result": "EXPECTED_FAIL",
-        "notes": "Refuses after when schema came from prisma db push without ledger row"
+        "command": "PROF_R02_RUN_PG=1 node --test scripts/lib/__tests__/prof-r02-controlled-apply.integration.test.mjs",
+        "exitCode": 0,
+        "result": "PASS",
+        "notes": "post-R01 fixture → apply → verify; idempotent second apply; checksum mismatch refuse"
       },
-      { "command": "pnpm run build", "exitCode": 0, "result": "PASS" }
+      {
+        "command": "pnpm run build",
+        "exitCode": 0,
+        "result": "PASS"
+      }
     ]
   },
   "platform": {
     "branch": "cursor/r02-agent-profile-b3e3",
     "pr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/12",
+    "headAfterCommit": "pending-push",
     "tests": [
       {
-        "command": "pnpm exec vitest run src/lib/agent-profile/api.client.test.ts src/lib/contact-phone-display.test.ts src/lib/remcard-proxy-r02.test.ts",
+        "command": "pnpm exec vitest run src/components/profile/agent/AgentProfileWizard.regression.test.tsx src/lib/agent-profile/api.client.test.ts src/lib/contact-phone-display.test.ts src/lib/remcard-proxy-r02.test.ts",
         "exitCode": 0,
         "result": "PASS"
       },
-      { "command": "pnpm run build", "exitCode": 0, "result": "PASS" }
+      {
+        "command": "pnpm run build",
+        "exitCode": 0,
+        "result": "PASS"
+      },
+      {
+        "command": "node scripts/r02-profile-visual.mjs (R02_SERVERS_READY=1, loopback stack)",
+        "exitCode": 1,
+        "result": "FAIL",
+        "notes": "impl: wizard not visible without auth; ref: theme control timeout on index.html — see artifacts/remcard-r02/screenshots/visual-report.json"
+      },
+      {
+        "command": "node scripts/r02-profile-bff-smoke.mjs",
+        "exitCode": 1,
+        "result": "FAIL",
+        "notes": "401 UNAUTHORIZED — dev navigator JWT_SECRET not aligned with mint script env"
+      }
     ]
   },
-  "visual": {
-    "pairedScreenshots": "NOT VERIFIED",
-    "reason": "R02.1 focused on functional fixes; screenshot matrix deferred to next local auth session"
+  "r02Items": {
+    "1_gateOffLegacy": "PASS",
+    "2_wizardInflight": "PASS",
+    "3_prefillMixed": "PASS",
+    "4_requisites": "PASS",
+    "5_controlledUpgrade": "PASS",
+    "6_visualBff": "PARTIAL_FAIL"
   },
   "productionSmoke": "NOT RUN"
 }

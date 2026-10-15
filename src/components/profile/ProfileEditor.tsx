@@ -52,6 +52,7 @@ import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
+import { fetchAgentProfileStatus } from "@/lib/agent-profile/api";
 import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
   buildProfileSectionHref,
@@ -213,7 +214,33 @@ function ProfileEditorInner({
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const basicsEditable = profileBasicsEditable(profile);
-  const pureAgentMode = isPureAgentActivities(partnerActivities);
+  const [agentR02Gate, setAgentR02Gate] = useState<{
+    featureEnabled: boolean;
+    eligible: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchAgentProfileStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setAgentR02Gate({
+            featureEnabled: status.featureEnabled,
+            eligible: status.eligible,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAgentR02Gate({ featureEnabled: false, eligible: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [partnerActivities.join(",")]);
+
+  const pureAgentCompactUi =
+    Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible) &&
+    isPureAgentActivities(partnerActivities);
   const catalogEditable = catalogPublicationEditable(profile);
   const revisionBanner = showRevisionBanner(profile);
 
@@ -539,13 +566,12 @@ function ProfileEditorInner({
           basicsEditable={basicsEditable}
           onActivitiesChange={setPartnerActivities}
         />
-        {pureAgentMode ? (
+        {pureAgentCompactUi ? (
           <p className={styles.hint}>
-            Для профиля только с деятельностью «Агент» основные legacy-поля скрыты — используйте блок
-            «Профиль агента» выше.
+            Основные поля магазина скрыты — профиль агента заполняется в блоке «Профиль агента» выше.
           </p>
         ) : null}
-        {!pureAgentMode ? (
+        {!pureAgentCompactUi ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
