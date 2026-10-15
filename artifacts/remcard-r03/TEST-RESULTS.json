@@ -19,7 +19,7 @@
   },
   "build": {
     "platform": "PASS",
-    "navigator": "PENDING_RUN"
+    "navigator": "PASS"
   },
   "tests": {
     "platform_remcard_proxy_r03": "PASS",
