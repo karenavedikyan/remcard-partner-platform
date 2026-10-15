@@ -1,20 +1,47 @@
 import { remcardFetch } from "@/lib/api-client";
-import type { AgentClientRow, AgentCertificateRow, AgentR03Status } from "./types";
+import type {
+  AgentClientRow,
+  AgentCertificateRow,
+  AgentR03ListMeta,
+  AgentR03Status,
+} from "./types";
 import type { CreateCertificateBody, StoreCertificate } from "@/lib/certificate-types";
 
 export function fetchAgentR03Status() {
   return remcardFetch<AgentR03Status>("/api/pro/r03/status");
 }
 
-export function fetchAgentClients(params?: { archived?: boolean; q?: string; cursor?: string }) {
+export function fetchAgentClients(params?: {
+  archived?: boolean;
+  q?: string;
+  cursor?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+}) {
   const q = new URLSearchParams();
   if (params?.archived) q.set("archived", "true");
   if (params?.q) q.set("q", params.q);
   if (params?.cursor) q.set("cursor", params.cursor);
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.sort) q.set("sort", params.sort);
   const suffix = q.toString() ? `?${q}` : "";
-  return remcardFetch<{ clients: AgentClientRow[]; nextCursor: string | null }>(
+  return remcardFetch<{ clients: AgentClientRow[]; nextCursor: string | null } & AgentR03ListMeta>(
     `/api/pro/agent-clients${suffix}`,
   );
+}
+
+export function batchAgentClients(body: {
+  action: "archive" | "restore" | "delete";
+  ids: string[];
+}) {
+  return remcardFetch<{
+    processedCount: number;
+    skippedCount: number;
+    processed: string[];
+    skipped: Array<{ id: string; reason: string }>;
+  }>("/api/pro/agent-clients/batch", { method: "POST", body });
 }
 
 export function createAgentClient(body: {
@@ -52,16 +79,24 @@ export function fetchAgentCertificates(params?: {
   q?: string;
   cursor?: string;
   agentClientId?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  status?: string;
 }) {
   const q = new URLSearchParams();
   if (params?.archived) q.set("archived", "true");
   if (params?.q) q.set("q", params.q);
   if (params?.cursor) q.set("cursor", params.cursor);
   if (params?.agentClientId) q.set("agentClientId", params.agentClientId);
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.sort) q.set("sort", params.sort);
+  if (params?.status) q.set("status", params.status);
   const suffix = q.toString() ? `?${q}` : "";
-  return remcardFetch<{ certificates: AgentCertificateRow[]; nextCursor: string | null }>(
-    `/api/pro/agent-certificates${suffix}`,
-  );
+  return remcardFetch<
+    { certificates: AgentCertificateRow[]; nextCursor: string | null } & AgentR03ListMeta
+  >(`/api/pro/agent-certificates${suffix}`);
 }
 
 export function createAgentCertificate(

@@ -307,15 +307,31 @@ async function openSectionViaNav(page, plat, sectionKey) {
   await page.waitForLoadState('networkidle');
 }
 
+async function readUiTheme(page) {
+  return page.evaluate(() => ({
+    dataTheme: document.documentElement.getAttribute('data-theme'),
+    colorScheme: getComputedStyle(document.documentElement).colorScheme,
+    bodyBg: getComputedStyle(document.body).backgroundColor,
+  }));
+}
+
 async function setThemeDark(page) {
   const toggle = page.locator('[data-testid="theme-toggle"]');
-  if (!(await toggle.isVisible().catch(() => false))) return;
+  if (!(await toggle.isVisible().catch(() => false))) return false;
   for (let i = 0; i < 3; i++) {
-    const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-    if (theme === 'dark') return;
+    const theme = await readUiTheme(page);
+    if (theme.dataTheme === 'dark' || theme.colorScheme === 'dark') return true;
     await toggle.click();
     await page.waitForTimeout(400);
   }
+  const after = await readUiTheme(page);
+  return after.dataTheme === 'dark' || after.colorScheme === 'dark';
+}
+
+async function assertDarkTheme(page, label) {
+  const t = await readUiTheme(page);
+  const dark = t.dataTheme === 'dark' || t.colorScheme === 'dark';
+  return { ok: dark, theme: t, label };
 }
 
 async function captureMatchedPair(context, report, opts) {
@@ -323,7 +339,15 @@ async function captureMatchedPair(context, report, opts) {
   const page = await context.newPage();
   await page.setViewportSize(viewport);
   await page.goto(`${plat}${implPath}`, { waitUntil: 'networkidle' });
-  if (dark) await setThemeDark(page);
+  if (dark) {
+    const themed = await setThemeDark(page);
+    const implTheme = await assertDarkTheme(page, name);
+    if (!themed || !implTheme.ok) {
+      report.failures.push(`visual_impl_${name}_theme_not_dark`);
+      await page.close();
+      return;
+    }
+  }
   await setImplViewMode(page, viewMode);
   const implCheck = await verifyImplAgentShell(page, section, viewMode);
   if (!implCheck.ok) {
@@ -343,7 +367,15 @@ async function captureMatchedPair(context, report, opts) {
     dark: dark ?? false,
   });
   const refFile = path.join(ART_DIR, 'visual', `ref-${name}.png`);
+  let refVerified = refState.ok;
   if (refState.ok) {
+    if (dark) {
+      const refTheme = await assertDarkTheme(refPage, `${name}-ref`);
+      if (!refTheme.ok) {
+        refVerified = false;
+        report.failures.push(`visual_ref_${name}_theme_not_dark`);
+      }
+    }
     if (viewport.width !== 1440 || viewport.height !== 900) {
       await refPage.setViewportSize(viewport);
       await refPage.waitForTimeout(500);
@@ -352,16 +384,16 @@ async function captureMatchedPair(context, report, opts) {
         await refPage.waitForTimeout(300);
       }
     }
-    await refPage.screenshot({ path: refFile, fullPage: true });
+    if (refVerified) await refPage.screenshot({ path: refFile, fullPage: true });
   } else {
     report.failures.push(`visual_ref_${name}_${refState.reason}`);
   }
   report.visualPairs.push({
     name,
     impl: implFile,
-    ref: refState.ok ? refFile : null,
+    ref: refVerified ? refFile : null,
     implVerified: true,
-    refVerified: refState.ok,
+    refVerified,
     viewport: `${viewport.width}x${viewport.height}`,
     section,
     viewMode,
@@ -423,7 +455,7 @@ async function finishAgentProfileInBrowser(page, platformOrigin, cookieHeader) {
 function writeVisualReport(report) {
   const verifiedPairs = report.visualPairs.filter((p) => p.implVerified && p.refVerified);
   const lines = [
-    '# R03 visual pairs (FINAL-3)',
+    '# R03 visual pairs (FINAL-4)',
     '',
     `Generated: ${new Date().toISOString()}`,
     `Platform SHA: ${report.platformGitSha}`,
@@ -719,28 +751,54 @@ async function main() {
         headers: h,
         body: JSON.stringify(createBody),
       });
+      const j1 = await c1.json().catch(() => ({}));
+      const j2 = await c2.json().catch(() => ({}));
       report.idempotency.bffFirst = c1.status;
       report.idempotency.bffRetry = c2.status;
-      if (c2.status !== 200 && c2.status !== 201) report.failures.push(`bff_idempotency_retry_${c2.status}`);
+      report.idempotency.firstId = j1.id ?? j1.certificate?.id ?? null;
+      report.idempotency.retryId = j2.id ?? j2.certificate?.id ?? null;
+      report.idempotency.sameId =
+        Boolean(report.idempotency.firstId) &&
+        report.idempotency.firstId === report.idempotency.retryId;
+      if (!report.idempotency.sameId) report.failures.push('bff_idempotency_not_same_id');
     }
 
     await openSectionViaNav(page, plat, 'certificates');
     await setImplViewMode(page, 'list');
-    const firstCb = page.locator('tbody input[type="checkbox"], .card input[type="checkbox"]').first();
-    if (await firstCb.isVisible().catch(() => false)) {
-      await firstCb.check();
+    const certListForBatch = await fetch(`${plat}/api/remcard/api/pro/agent-certificates?limit=25`, {
+      headers: { Cookie: cookieHeader },
+    }).then((r) => r.json());
+    const batchIds = (certListForBatch.certificates ?? []).slice(0, 2).map((c) => c.id);
+    report.steps.batchTargetIds = batchIds;
+    if (batchIds.length < 2) {
+      report.failures.push('batch_need_two_rows');
+    } else {
+      const rowChecks = page.locator(
+        'tbody input[type="checkbox"], [data-testid="agent-cert-mobile-row"] input[type="checkbox"], [data-testid="agent-cert-card"] input[type="checkbox"]',
+      );
+      await rowChecks.nth(0).check();
+      await rowChecks.nth(1).check();
       await page.locator('[class*="batchBar"]').getByRole('button', { name: 'В архив', exact: true }).click();
-      await page.waitForTimeout(800);
-      report.steps.batchArchive = true;
+      await page.waitForTimeout(1200);
+      const afterArchive = await fetch(
+        `${plat}/api/remcard/api/pro/agent-certificates?archived=true&limit=50`,
+        { headers: { Cookie: cookieHeader } },
+      ).then((r) => r.json());
+      const archivedIds = new Set((afterArchive.certificates ?? []).map((c) => c.id));
+      report.steps.batchArchive = batchIds.every((id) => archivedIds.has(id));
+      if (!report.steps.batchArchive) report.failures.push('batch_archive_ids_mismatch');
       await page.locator('[data-testid="agent-r03-show-filter"]').selectOption('archived');
       await page.waitForTimeout(1200);
-      const archivedCb = page.locator('tbody input[type="checkbox"], .card input[type="checkbox"]').first();
-      await archivedCb.check();
+      await rowChecks.nth(0).check();
+      await rowChecks.nth(1).check();
       await page.locator('[class*="batchBar"]').getByRole('button', { name: 'Восстановить', exact: true }).click();
-      await page.waitForTimeout(800);
-      report.steps.batchRestore = true;
-    } else {
-      report.failures.push('batch_selection_unavailable');
+      await page.waitForTimeout(1200);
+      const afterRestore = await fetch(`${plat}/api/remcard/api/pro/agent-certificates?limit=50`, {
+        headers: { Cookie: cookieHeader },
+      }).then((r) => r.json());
+      const activeIds = new Set((afterRestore.certificates ?? []).map((c) => c.id));
+      report.steps.batchRestore = batchIds.every((id) => activeIds.has(id));
+      if (!report.steps.batchRestore) report.failures.push('batch_restore_ids_mismatch');
     }
 
     if (USE_ADMIN && agentCard) {
@@ -749,13 +807,20 @@ async function main() {
       await agentCard.getByRole('button', { name: 'Открыть ЛК' }).click();
       await page.waitForLoadState('networkidle');
       await maybeAcceptConsents(page);
-      await page.goto(`${plat}/certificates`, { waitUntil: 'networkidle' });
+      await openSectionViaNav(page, plat, 'certificates');
       const reenterCert = await assertHealthyR03Page(page, 'Сертификаты');
-      await page.goto(savedCertUrl, { waitUntil: 'networkidle' });
+      await openSectionViaNav(page, plat, 'clients');
+      const reenterClients = await assertHealthyR03Page(page, 'Клиенты');
+      await openSectionViaNav(page, plat, 'certificates');
+      await page.getByRole('link', { name: privateAlias }).first().click({ timeout: 15_000 }).catch(() => {});
+      if (!(await page.getByText(privateAlias).isVisible().catch(() => false))) {
+        await page.goto(savedCertUrl, { waitUntil: 'networkidle' });
+      }
       const aliasAfterReenter = await page.getByText(privateAlias).isVisible().catch(() => false);
-      report.steps.returnReenter = { navOk: reenterCert.ok, aliasVisible: aliasAfterReenter };
-      if (!aliasAfterReenter) report.failures.push('return_reenter_failed');
-      else if (!reenterCert.ok) report.steps.returnReenterNavViaUrlFallback = true;
+      const navOk = reenterCert.ok && reenterClients.ok;
+      report.steps.returnReenter = { navOk, aliasVisible: aliasAfterReenter };
+      if (!navOk) report.failures.push('return_reenter_nav_failed');
+      if (!aliasAfterReenter) report.failures.push('return_reenter_alias_missing');
     }
 
     const pairJobs = [
@@ -797,12 +862,35 @@ async function main() {
     await smokePage.goto(`${plat}/clients`, { waitUntil: 'networkidle' });
     await setImplViewMode(smokePage, 'list');
     const overflowCheck = await verifyImplAgentShell(smokePage, 'clients', 'list');
-    if (overflowCheck.ok) {
+    const geom320 = await smokePage.evaluate(() => {
+      const doc = document.documentElement;
+      const horizontalOverflow = doc.scrollWidth > doc.clientWidth + 2;
+      const rows = [...document.querySelectorAll('[data-testid="agent-client-mobile-row"]')];
+      const nav = document.querySelector('[data-testid="mobile-nav-more"]');
+      const navRect = nav?.getBoundingClientRect();
+      const navTop = navRect ? navRect.top : window.innerHeight;
+      let actionsAboveNav = rows.length > 0;
+      for (const row of rows) {
+        const actions = row.querySelector('[class*="rowActions"], [aria-label*="Действия"]');
+        const btn = actions?.querySelector('button');
+        const rect = (btn ?? actions)?.getBoundingClientRect();
+        if (!rect || rect.bottom > navTop - 4 || rect.width < 40 || rect.height < 40) {
+          actionsAboveNav = false;
+          break;
+        }
+      }
+      return { horizontalOverflow, rowCount: rows.length, actionsAboveNav };
+    });
+    report.steps.smoke320 = { shellOk: overflowCheck.ok, ...geom320 };
+    if (!overflowCheck.ok) report.failures.push(`visual_320_${overflowCheck.reason}`);
+    if (geom320.horizontalOverflow) report.failures.push('visual_320_horizontal_overflow');
+    if (geom320.rowCount > 0 && !geom320.actionsAboveNav) {
+      report.failures.push('visual_320_actions_not_tappable');
+    }
+    if (overflowCheck.ok && !geom320.horizontalOverflow) {
       const p320 = path.join(ART_DIR, 'visual', 'impl-clients-320-actions-smoke.png');
       await smokePage.screenshot({ path: p320, fullPage: true });
       report.singles.push({ name: 'clients-320-actions-smoke', path: p320 });
-    } else {
-      report.failures.push(`visual_320_${overflowCheck.reason}`);
     }
     await smokePage.close();
 
@@ -822,9 +910,19 @@ async function main() {
     report.steps.gateOffUiBlocked = blocked;
     if (!blocked) report.failures.push('gate_off_ui_not_blocked');
     await page.goto(`${plat}/recommendations`, { waitUntil: 'networkidle' });
-    report.steps.gateOffLegacyHome = !/Раздел недоступен/.test((await page.textContent('body')) ?? '');
+    const legacyBody = (await page.textContent('body')) ?? '';
+    report.steps.gateOffLegacyHome =
+      !/Раздел недоступен/.test(legacyBody) &&
+      (/Рекоменда/i.test(legacyBody) || (await page.getByRole('heading', { name: /Рекоменда/i }).isVisible().catch(() => false)));
+    if (!report.steps.gateOffLegacyHome) report.failures.push('gate_off_legacy_recommendations_invalid');
     await restartNavigator(meta, { PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true' });
-    report.steps.gateOffRestored = true;
+    await new Promise((r) => setTimeout(r, 2000));
+    const gateOnBff = await fetch(`${plat}/api/remcard/api/pro/r03/status`, {
+      headers: { Cookie: cookieHeader, Origin: plat },
+    });
+    const gateOnBody = await gateOnBff.json().catch(() => null);
+    report.steps.gateOffRestored = gateOnBody?.featureEnabled === true;
+    if (!report.steps.gateOffRestored) report.failures.push('gate_off_restore_failed');
   } catch (err) {
     report.failures.push(err instanceof Error ? err.message : String(err));
     try {
@@ -840,6 +938,16 @@ async function main() {
   const verifiedPairCount = report.visualPairs.filter((p) => p.implVerified && p.refVerified).length;
   report.visualPairCount = verifiedPairCount;
 
+  const darkPairOk = report.visualPairs.some(
+    (p) => p.theme === 'dark' && p.implVerified && p.refVerified,
+  );
+  const returnNavOk = report.steps.returnReenter?.navOk !== false;
+  const batchOk = report.steps.batchArchive === true && report.steps.batchRestore === true;
+  const idemOk = report.idempotency.sameId !== false;
+  const smoke320Ok =
+    report.steps.smoke320?.horizontalOverflow !== true &&
+    (report.steps.smoke320?.rowCount === 0 || report.steps.smoke320?.actionsAboveNav === true);
+
   report.ok =
     report.failures.length === 0 &&
     report.http.bffR03Status === 200 &&
@@ -849,9 +957,16 @@ async function main() {
     report.browser.shareDefaultNameOnly === true &&
     report.steps.certificateCreatedViaForm === true &&
     report.steps.gateOffUiBlocked === true &&
+    report.steps.gateOffLegacyHome === true &&
+    report.steps.gateOffRestored === true &&
+    batchOk &&
+    idemOk &&
+    returnNavOk &&
+    darkPairOk &&
+    smoke320Ok &&
     verifiedPairCount >= 6;
 
-  report.verdict = report.ok ? 'READY_FOR_PUBLICATION' : 'NO_GO';
+  report.verdict = report.ok ? 'READY_FOR_REVIEW' : 'NO_GO';
 
   writeFileSync(path.join(ART_DIR, 'local-acceptance-report.json'), JSON.stringify(report, null, 2));
   writeVisualReport(report);

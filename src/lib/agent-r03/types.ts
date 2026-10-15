@@ -34,9 +34,26 @@ export type AgentCertificateRow = {
   userAlias: string | null;
   title: string;
   directionLabel: string | null;
+  partnerStoreName: string | null;
+  partnerCount: number;
+  categorySummary: string | null;
   discountPercent: number;
   archivedInWorkspace: boolean;
   hasOrders: boolean;
   agentClient: { id: string; displayName: string } | null;
   issuerKindSnapshot: string | null;
 };
+
+export type AgentR03ListMeta = {
+  page: number | null;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  activeCount: number;
+  archivedCount: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  sort?: string;
+};
+
+export type AgentR03ListSort = 'updated_desc' | 'name_asc' | 'name_desc' | 'created_desc';
