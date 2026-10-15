@@ -64,11 +64,21 @@ export function fetchAgentCertificates(params?: {
   );
 }
 
-export function createAgentCertificate(body: CreateCertificateBody & { agentClientId?: string }) {
+export function createAgentCertificate(
+  body: CreateCertificateBody & { agentClientId?: string },
+  options?: { idempotencyKey?: string },
+) {
   return remcardFetch<StoreCertificate>("/api/pro/agent-certificates", {
     method: "POST",
     body,
+    idempotencyKey: options?.idempotencyKey?.trim().slice(0, 128),
   });
+}
+
+export function fetchAgentCertificate(id: string) {
+  return remcardFetch<{ certificate: AgentCertificateRow }>(
+    `/api/pro/agent-certificates/${encodeURIComponent(id)}`,
+  );
 }
 
 export function patchAgentCertificate(id: string, body: Record<string, unknown>) {

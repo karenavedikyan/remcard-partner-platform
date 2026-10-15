@@ -118,3 +118,104 @@
   width: 18px;
   height: 18px;
 }
+
+.viewToggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.viewToggle button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.75rem;
+  border: none;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.viewToggle button[data-active="true"] {
+  background: var(--accent-soft, var(--surface-elevated, var(--surface)));
+  font-weight: 600;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.dataTable th,
+.dataTable td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 45%);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.dialogPanel {
+  width: min(480px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.1rem;
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: var(--text-sm);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.formError {
+  color: var(--danger, #b42318);
+  margin: 0;
+}
+
+.pager {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.sharePreview {
+  white-space: pre-wrap;
+  font: inherit;
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--surface-elevated, var(--surface));
+  border: 1px solid var(--border);
+}

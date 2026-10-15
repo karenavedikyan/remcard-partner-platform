@@ -241,7 +241,10 @@ export function resolveStoreOrderIdempotencyKey(
   rawHeader: string | null | undefined,
 ): { ok: true; key: string | null } | { ok: false; status: number; body: string } {
   const upper = method.toUpperCase();
-  if (upper === "POST" && BONUS_PAY_PATH.test(pathname)) {
+  if (
+    upper === "POST" &&
+    (BONUS_PAY_PATH.test(pathname) || pathname === "/api/pro/agent-certificates")
+  ) {
     const parsed = parseOptionalIdempotencyKey(rawHeader);
     if (!parsed.ok) {
       return {

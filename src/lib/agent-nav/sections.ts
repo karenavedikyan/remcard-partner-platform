@@ -41,6 +41,8 @@ export const AGENT_NAV_SECTIONS: AgentNavSectionDef[] = [
 
 export const AGENT_DESKTOP_NAV_KEYS: AgentNavSectionKey[] = [
   "home",
+  "certificates",
+  "clients",
   "partners",
   "wallet",
   "recommendations",

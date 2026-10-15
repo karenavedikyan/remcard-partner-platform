@@ -280,7 +280,7 @@ export function CertificateCreateForm({
         ? { ...payloadResult.body, agentClientId }
         : payloadResult.body;
       const result = agentR03
-        ? await createAgentCertificate(body)
+        ? await createAgentCertificate(body, { idempotencyKey: crypto.randomUUID() })
         : await remcardFetch<StoreCertificate>("/api/store/certificate", {
             method: "POST",
             body,

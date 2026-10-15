@@ -1,6 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
-import { CertificateDetail } from "@/components/recommendations/CertificateDetail";
+import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
@@ -25,7 +25,7 @@ export default async function CertificateDetailPage(props: PageProps) {
         description="Публичная ссылка, QR и PDF."
       />
       <AgentR03Gate>
-        <CertificateDetail certificateId={params.id} />
+        <AgentCertificateDetail certificateId={params.id} />
       </AgentR03Gate>
     </CabinetShell>
   );

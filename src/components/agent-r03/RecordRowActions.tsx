@@ -45,5 +45,6 @@ function ActionGlyph({ id }: { id: string }) {
   if (id === "archive") return <span aria-hidden>▭</span>;
   if (id === "restore") return <span aria-hidden>↺</span>;
   if (id === "delete") return <span aria-hidden>🗑</span>;
+  if (id === "disable") return <span aria-hidden>⊘</span>;
   return <span aria-hidden>•</span>;
 }

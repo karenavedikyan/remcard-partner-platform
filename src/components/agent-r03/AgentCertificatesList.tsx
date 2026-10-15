@@ -15,6 +15,7 @@ import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { RecordRowActions } from "./RecordRowActions";
+import { SharePreviewDialog } from "./SharePreviewDialog";
 import styles from "./agent-r03.module.css";
 
 export function AgentCertificatesList() {
@@ -25,14 +26,37 @@ export function AgentCertificatesList() {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [sharePreview, setSharePreview] = useState<{
+    lines: string[];
+    url: string;
+  } | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(
+    async (opts?: { cursor?: string; append?: boolean }) => {
     setLoadState("loading");
     setError("");
     try {
-      const data = await fetchAgentCertificates({ archived, q: q.trim() || undefined });
-      setItems(data.certificates ?? []);
-      setSelected(new Set());
+      const data = await fetchAgentCertificates({
+        archived,
+        q: q.trim() || undefined,
+        cursor: opts?.cursor,
+      });
+      const rows = data.certificates ?? [];
+      setItems((prev) => {
+        const merged = opts?.append ? [...prev, ...rows] : rows;
+        const visible = new Set(merged.map((c) => c.id));
+        setSelected((sel) => {
+          const next = new Set<string>();
+          for (const id of sel) {
+            if (visible.has(id)) next.add(id);
+          }
+          return next;
+        });
+        return merged;
+      });
+      setNextCursor(data.nextCursor ?? null);
       setLoadState("loaded");
     } catch (caught) {
       setLoadState("error");
@@ -40,7 +64,9 @@ export function AgentCertificatesList() {
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты",
       );
     }
-  }, [archived, q]);
+  },
+    [archived, q],
+  );
 
   useEffect(() => {
     void load();
@@ -68,27 +94,16 @@ export function AgentCertificatesList() {
     }
   }
 
-  async function shareCert(cert: AgentCertificateRow) {
+  function shareCert(cert: AgentCertificateRow) {
     const url = resolveCertificatePageUrl(cert);
     if (!url || cert.status === "CANCELLED") {
       window.alert("Публичная ссылка недоступна для этой записи.");
       return;
     }
-    const preview = `${cert.title}\nКод: ${cert.displayCode}\n${url}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Сертификат Ремкард", text: preview, url });
-        return;
-      } catch {
-        /* fallback */
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(preview);
-      window.alert("Текст скопирован в буфер обмена.");
-    } catch {
-      window.prompt("Скопируйте вручную:", preview);
-    }
+    setSharePreview({
+      lines: [`Код: ${cert.displayCode}`, url],
+      url,
+    });
   }
 
   async function renameCert(cert: AgentCertificateRow) {
@@ -118,6 +133,22 @@ export function AgentCertificatesList() {
         <Button variant="secondary" onClick={() => setArchived((v) => !v)}>
           {archived ? "Активные" : "Архив"}
         </Button>
+        <div className={styles.viewToggle}>
+          <button
+            type="button"
+            data-active={viewMode === "cards"}
+            onClick={() => setViewMode("cards")}
+          >
+            Карточки
+          </button>
+          <button
+            type="button"
+            data-active={viewMode === "list"}
+            onClick={() => setViewMode("list")}
+          >
+            Список
+          </button>
+        </div>
       </div>
 
       <div className={styles.toolbar}>
@@ -152,7 +183,7 @@ export function AgentCertificatesList() {
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length > 0 ? (
+      {loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
         <div className={styles.list}>
           {items.map((cert) => (
             <article key={cert.id} className={styles.card}>
@@ -206,10 +237,21 @@ export function AgentCertificatesList() {
                     {
                       id: archived ? "restore" : "archive",
                       label: archived ? "Восстановить" : "В архив",
-                      onClick: () =>
+                      onClick: () => {
+                        setBusy(true);
                         void patchAgentCertificate(cert.id, {
                           action: archived ? "restore" : "archive",
-                        }).then(load),
+                        })
+                          .then(() => load())
+                          .catch((caught) => {
+                            window.alert(
+                              caught instanceof RemcardApiError
+                                ? caught.message
+                                : "Не удалось выполнить действие",
+                            );
+                          })
+                          .finally(() => setBusy(false));
+                      },
                     },
                     {
                       id: "delete",
@@ -219,7 +261,17 @@ export function AgentCertificatesList() {
                       onClick: () => {
                         if (!window.confirm("Удалить сертификат без возможности восстановления?"))
                           return;
-                        void deleteAgentCertificate(cert.id).then(load);
+                        setBusy(true);
+                        void deleteAgentCertificate(cert.id)
+                          .then(() => load())
+                          .catch((caught) => {
+                            window.alert(
+                              caught instanceof RemcardApiError
+                                ? caught.message
+                                : "Не удалось удалить",
+                            );
+                          })
+                          .finally(() => setBusy(false));
                       },
                     },
                   ]}
@@ -227,6 +279,56 @@ export function AgentCertificatesList() {
               </div>
             </article>
           ))}
+        </div>
+      ) : null}
+
+      {loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
+        <div className={styles.tableWrap}>
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th />
+                <th>Название</th>
+                <th>Код</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((cert) => (
+                <tr key={cert.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(cert.id)}
+                      onChange={(e) => {
+                        setSelected((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(cert.id);
+                          else next.delete(cert.id);
+                          return next;
+                        });
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <Link href={`/certificates/${cert.id}`}>
+                      {cert.userAlias ?? cert.title}
+                    </Link>
+                  </td>
+                  <td>{cert.displayCode}</td>
+                  <td>{certificateStatusLabel(cert.status)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {nextCursor ? (
+        <div className={styles.pager}>
+          <Button variant="secondary" onClick={() => void load({ cursor: nextCursor, append: true })}>
+            Показать ещё
+          </Button>
         </div>
       ) : null}
 
@@ -256,6 +358,14 @@ export function AgentCertificatesList() {
           </Button>
         </div>
       ) : null}
+
+      <SharePreviewDialog
+        open={Boolean(sharePreview)}
+        title="Сертификат Ремкард"
+        lines={sharePreview?.lines ?? []}
+        url={sharePreview?.url ?? ""}
+        onClose={() => setSharePreview(null)}
+      />
     </>
   );
 }
