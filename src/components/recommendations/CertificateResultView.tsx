@@ -25,6 +25,7 @@ type CertificateResultViewProps = {
 };
 
 export function CertificateResultView({ certificate, displayCode }: CertificateResultViewProps) {
+  const shownCode = displayCode?.trim() || certificate.promoCode;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "ok" | "error">("idle");
   const [pdfError, setPdfError] = useState("");
@@ -138,13 +139,13 @@ export function CertificateResultView({ certificate, displayCode }: CertificateR
         </ul>
 
         <div className={styles.codeRow}>
-          <span className={styles.codeValue}>{displayCode?.trim() || certificate.promoCode}</span>
+          <span className={styles.codeValue}>{shownCode}</span>
         </div>
 
         {qrDataUrl ? (
           <div className={styles.qrBox}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} alt={`QR-код документа ${certificate.promoCode}`} />
+            <img src={qrDataUrl} alt={`QR-код документа ${shownCode}`} />
           </div>
         ) : null}
       </div>

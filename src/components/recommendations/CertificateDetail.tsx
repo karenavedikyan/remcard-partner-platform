@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { StoreCertificate } from "@/lib/certificate-types";
 import { Button } from "@/components/ui/Button";
+import { storeCertificateDisplayCode } from "@/lib/certificate-url";
 import { CertificateResultView } from "./CertificateResultView";
 import styles from "./recommendations.module.css";
 
@@ -71,7 +72,10 @@ export function CertificateDetail({ certificateId }: CertificateDetailProps) {
           <Button>Создать ещё</Button>
         </Link>
       </div>
-      <CertificateResultView certificate={certificate} />
+      <CertificateResultView
+        certificate={certificate}
+        displayCode={storeCertificateDisplayCode(certificate)}
+      />
     </>
   );
 }

@@ -39,7 +39,7 @@ async function main() {
     process.exit(1);
   }
 
-  await page.getByTestId("admin-password-form").waitFor({ timeout: 10_000 });
+  await page.getByLabel("Логин администратора").waitFor({ timeout: 10_000 });
   console.log(JSON.stringify({ ok: true, authMeCountDuringPending: authMeCount }));
   await browser.close();
 }

@@ -44,6 +44,8 @@ export default defineConfig({
       "src/lib/contact-phone-display.test.ts",
       "src/lib/remcard-proxy-r02.test.ts",
       "src/lib/remcard-proxy-r03.test.ts",
+      "src/lib/certificate-issuer-display.test.ts",
+      "src/components/recommendations/CertificateResultView.display-code.test.tsx",
       "src/lib/r03-theme-assert.test.ts",
       "src/components/auth/LoginExperience.test.tsx",
       "src/lib/agent-r03/create-idempotency.test.ts",
