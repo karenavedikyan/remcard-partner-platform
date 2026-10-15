@@ -1,0 +1,58 @@
+{
+  "startedAt": "2026-10-15T13:42:30.136Z",
+  "steps": [
+    {
+      "step": "admin_password_login",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "create_agent",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "create_master",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "create_store",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "create_company",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "list_test_users",
+      "status": 200,
+      "count": 4
+    },
+    {
+      "step": "enter_agent",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "auth_me_test",
+      "status": 200,
+      "isProfTestUser": true,
+      "profTestActive": true
+    },
+    {
+      "step": "negative_partnership_invite",
+      "status": 401,
+      "ok": true
+    },
+    {
+      "step": "return_admin",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "ok": true,
+  "backend": "http://127.0.0.1:3010"
+}

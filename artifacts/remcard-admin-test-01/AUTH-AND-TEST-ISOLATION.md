@@ -1,42 +1,27 @@
-# AUTH and test isolation (ADMIN-TEST-01.1)
+# AUTH and test isolation (ADMIN-TEST-01.2)
 
-## Serialization (fixed)
+## Central validator
 
-- Platform `remcardFetch` stringifies `body` once (`api-client.ts`).
-- `prof-admin-api.ts` and admin UI pass **objects**, not `JSON.stringify(...)`.
-- Regression: `src/lib/prof-admin-api.test.ts` asserts `typeof JSON.parse(body) === "object"` and field preservation.
+- `verifySessionFromRequest` / `enforceProfTestPrincipalAccess` (`profTestSessionValidator.ts`)
+- Wired into: `proAuth.getAuthenticatedUser`, `getServerUser`, `/api/auth/me` GET+PATCH, account consent withdraw
+- `resolveProfTestContext` checks: claim `adminUserId` = delegation, active return slot, slot `adminTokenVersion` = admin user, flags + credential + staff ADMIN/OWNER
 
-## Central enforcement
+## Enforcement map (reachable by test principal)
 
-- `enforceProfTestPrincipalAccess` in `proAuth.getAuthenticatedUser` / `getProfCabinetUser` path:
-  - Test-marked users require valid `ProfTestDelegation` + flags on + admin actor still valid.
-  - Fail-closed route allowlist: `src/lib/profTestRoutePolicy.ts` (profile/draft/finish/requisites/preferences, consent/readiness, return, upload).
-  - Default **deny** for partnership invite, store order, admin APIs, etc.
-- `catalogExcludeProfTestUsers()` wired into `userPublishedInCatalogWhere()`.
-
-## Return slot binding
-
-- `ProfAdminReturnSlot` stores `delegationId` + `testUserId`.
-- `returnFromProfTest` transaction: slot consume-once, delegation revoke, test user `tokenVersion++`, admin `tokenVersion` match on slot.
-
-## Session TTL
-
-- Admin password JWT/cookie max-age **12h** (Telegram/MAX remain 30d).
-- Test delegation JWT **12h**; cookie aligned on enter.
+| Route family | Verdict |
+|--------------|---------|
+| `/api/auth/me` GET/PATCH | Allow only with valid test session |
+| `/api/pro/profile`, agent-profile draft/finish/status | Allow |
+| `/api/account/consent`, `/api/account/cabinet-readiness` | Allow |
+| `/api/pro/admin/test-users/return` | Allow |
+| `/api/partnership/*` write, `/api/store/*`, staff/admin APIs | Deny (401/403 via proAuth) |
+| `/api/upload` POST | **Public unauthenticated upload remains**; test JWT **denied** (removed from allowlist) |
 
 ## Rate limit
 
-- `auth:admin-password`: independent durable buckets `ip:*` and `login:*` via `AuthRateLimitCounter` (PG fallback to in-memory).
+- Admin password: durable PG counters; **503 fail-closed** if storage unavailable (no memory fallback for this bucket).
 
-## Enforcement map (actual surfaces)
+## Evidence
 
-| Surface | Test principal |
-|---------|----------------|
-| `GET/PATCH /api/pro/profile` | Allow |
-| `/api/pro/agent-profile/*` (draft/finish/status) | Allow |
-| `/api/account/consent`, `/api/account/cabinet-readiness` | Allow |
-| `POST /api/pro/admin/test-users/return` | Allow |
-| `POST /api/partnership/invite`, `/api/store/order`, `/api/pro/admin/*` (except return) | Deny via proAuth |
-| Public catalog queries | Exclude `isProfTestUser` |
-
-Negative matrix for every cron producer: **not exhaustively run** in this turn; unreachable routes for test JWT are blocked at auth boundary.
+- HTTP: `e2e-lifecycle-http.json` (login, 4 creates, enter, auth/me banner, negative invite, return)
+- Unit: `profTestSessionValidator.test.ts`, `profTestRoutePolicy.test.ts`
