@@ -2,14 +2,14 @@
   "ok": true,
   "verdict": "READY_FOR_PUBLICATION",
   "stack": "admin-test",
-  "platformGitSha": "7704489b50b8e6a7a1b954474e35765578fa648a",
-  "navigatorGitSha": "251ec8bbb6bd74334fd85227cad8c4f95307cccc",
+  "platformGitSha": "bf05d2fd8c9cfd0953fa0bebc8dd86e51af63a4f",
+  "navigatorGitSha": "6da34993466c34f9d48e0fbc6b25b419eb248a9a",
   "meta": {
     "navOrigin": "http://127.0.0.1:3041",
     "platformOrigin": "http://127.0.0.1:3040",
     "envPath": "/tmp/admin-test-local-stack/runtime.env",
-    "navPid": 165240,
-    "platPid": 152069,
+    "navPid": 168870,
+    "platPid": 166664,
     "database": "remcard_admin_test_012"
   },
   "http": {
@@ -19,7 +19,7 @@
       "featureEnabled": true,
       "hasAgentActivity": true,
       "eligible": true,
-      "userId": "cmv9xu80j004kjspc06zfd05y",
+      "userId": "cmv9y2ir10003js15at5xp411",
       "ineligibleReason": null
     },
     "navR03Status": 200,
@@ -29,7 +29,7 @@
   "browser": {
     "testSession": {
       "ok": true,
-      "userId": "cmv9xu80j004kjspc06zfd05y"
+      "userId": "cmv9y2ir10003js15at5xp411"
     },
     "certificatesViaNav": true,
     "clientsViaNav": true,
@@ -136,8 +136,8 @@
   "steps": {
     "partnershipSeed": {
       "ok": true,
-      "storeUserId": "cmv9xubm70000jsmfhiv57d4y",
-      "partnershipId": "cmv9xubmf0006jsmfp9eha7im"
+      "storeUserId": "cmv9y2ndq0000jsf94z3n5bw8",
+      "partnershipId": "cmv9y2ndy0006jsf9c5kcawy3"
     },
     "clientRenameOnly": true,
     "availablePartnersCount": 1,
@@ -163,7 +163,7 @@
       "contractVersion": "2026-10-14.r01",
       "pilotEnabled": true,
       "pilotActive": true,
-      "contextKey": "agent-wallet:cmv9xu80j004kjspc06zfd05y",
+      "contextKey": "agent-wallet:cmv9y2ir10003js15at5xp411",
       "version": 0,
       "theme": "system",
       "mobileNavKeys": [
