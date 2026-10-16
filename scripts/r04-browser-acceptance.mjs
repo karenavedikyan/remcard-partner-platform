@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * R04 targeted browser + BFF acceptance (disposable admin test stack).
+ * R04 browser + BFF acceptance (disposable admin test stack).
  */
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -14,6 +14,8 @@ const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
 const RUN_DIR = process.env.ADMIN_TEST_RUN_DIR || '/tmp/admin-test-local-stack';
 const ARTIFACT_DIR = path.join(ROOT, 'artifacts/remcard-r04');
 const SHOT_DIR = path.join(ARTIFACT_DIR, 'screenshots');
+/** Partial run snapshot for failure reporting */
+let lastResultsSnapshot = null;
 
 function loadRuntimeEnv() {
   const envPath = path.join(RUN_DIR, 'runtime.env');
@@ -31,9 +33,15 @@ function cookieHeader(cookies) {
   return cookies.map((c) => `${c.name}=${c.value}`).join('; ');
 }
 
-async function bffGet(platformOrigin, cookies, upstreamPath) {
+async function bffJson(platformOrigin, cookies, upstreamPath, init = {}) {
   const res = await fetch(`${platformOrigin}/api/remcard${upstreamPath}`, {
-    headers: { Cookie: cookieHeader(cookies) },
+    ...init,
+    headers: {
+      Cookie: cookieHeader(cookies),
+      Origin: platformOrigin,
+      'content-type': 'application/json',
+      ...(init.headers || {}),
+    },
   });
   const body = await res.json().catch(() => null);
   return { status: res.status, body };
@@ -43,11 +51,56 @@ async function waitForTestSession(context, platformOrigin, ms = 45_000) {
   const start = Date.now();
   while (Date.now() - start < ms) {
     const cookies = await context.cookies();
-    const me = await bffGet(platformOrigin, cookies, '/api/auth/me');
+    const me = await bffJson(platformOrigin, cookies, '/api/auth/me');
     if (me.body?.profTestSession?.active && me.body?.user?.isProfTestUser) return me;
     await new Promise((r) => setTimeout(r, 500));
   }
   return null;
+}
+
+async function adminLogin(page, platformOrigin, creds) {
+  await page.goto(`${platformOrigin}/login?mode=admin`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await page.locator('[data-testid="admin-login-pending"]').waitFor({ state: 'hidden', timeout: 120_000 }).catch(() => null);
+  const usernameInput = page.locator('input[autocomplete="username"]');
+  await usernameInput.waitFor({ state: 'visible', timeout: 120_000 });
+  await usernameInput.fill(creds.login);
+  await page.locator('input[autocomplete="current-password"]').fill(creds.password);
+  await page.getByRole('button', { name: 'Войти' }).click();
+  await page.waitForURL(/\/admin\/test-users/, { timeout: 120_000 });
+  await page.getByRole('heading', { name: 'Тестовые пользователи' }).waitFor({ timeout: 30_000 });
+}
+
+async function createTestUser(page, kind, displayName) {
+  const createPanel = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Создать' }) });
+  await createPanel.getByLabel('Тип').selectOption(kind);
+  await createPanel.getByLabel('Имя').fill(displayName);
+  await createPanel.getByRole('button', { name: 'Создать' }).click();
+  await page.locator('li').filter({ hasText: displayName }).waitFor({ timeout: 30_000 });
+}
+
+async function enterTestUser(page, displayName) {
+  const card = page.locator('li').filter({ hasText: displayName });
+  const enterWait = page.waitForResponse(
+    (r) => r.url().includes('/test-users/') && r.url().includes('/enter') && r.status() === 200,
+    { timeout: 45_000 },
+  );
+  await card.getByRole('button', { name: 'Открыть ЛК' }).click();
+  await enterWait;
+  await page.waitForLoadState('networkidle');
+}
+
+async function shot(page, name, width, colorScheme = 'light') {
+  await page.setViewportSize({ width, height: colorScheme === 'dark' ? 900 : 812 });
+  if (colorScheme === 'dark') {
+    await page.emulateMedia({ colorScheme: 'dark' });
+  } else {
+    await page.emulateMedia({ colorScheme: 'light' });
+  }
+  await page.waitForTimeout(400);
+  await page.screenshot({
+    path: path.join(SHOT_DIR, `impl-${name}-${width}-${colorScheme}.png`),
+    fullPage: true,
+  });
 }
 
 async function main() {
@@ -60,6 +113,7 @@ async function main() {
 
   const meta = JSON.parse(readFileSync(path.join(RUN_DIR, 'meta.json'), 'utf8'));
   const platformOrigin = meta.platformOrigin;
+  const navOrigin = meta.navOrigin;
   mkdirSync(SHOT_DIR, { recursive: true });
 
   const creds = {
@@ -68,74 +122,225 @@ async function main() {
   };
   const runTag = `R04 ${Date.now()}`;
   const agentDisplayName = `${runTag} · Агент`;
+  const storeDisplayName = `${runTag} · Магазин`;
   const steps = [];
+  const functional = { testPublicLinkHidesTerms: false, linkInviteCreate: false };
+  const captured = [];
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   page.on('dialog', (d) => d.accept());
 
-  await page.goto(`${platformOrigin}/login?mode=admin`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-  const adminTab = page.getByRole('tab', { name: 'Вход администратора' });
-  await adminTab.waitFor({ state: 'visible', timeout: 120_000 });
-  if (!(await adminTab.isDisabled())) await adminTab.click();
-  await page.locator('input[autocomplete="username"]').waitFor({ timeout: 60_000 });
-  await page.locator('input[autocomplete="username"]').fill(creds.login);
-  await page.locator('input[autocomplete="current-password"]').fill(creds.password);
-  await page.getByRole('button', { name: 'Войти' }).click();
-  await page.waitForURL(/\/admin\/test-users/, { timeout: 120_000 });
-
-  await page.locator('select').first().selectOption('agent');
-  await page.locator('section').filter({ hasText: 'Создать' }).getByLabel('Имя').fill(agentDisplayName);
-  await page.getByRole('button', { name: 'Создать' }).click();
-  const agentCard = page.locator('li').filter({ hasText: agentDisplayName });
-  await agentCard.waitFor({ timeout: 30_000 });
-
-  const enterWait = page.waitForResponse(
-    (r) => r.url().includes('/test-users/') && r.url().includes('/enter') && r.status() === 200,
-    { timeout: 45_000 },
-  );
-  await agentCard.getByRole('button', { name: 'Открыть ЛК' }).click();
-  await enterWait;
-  await page.waitForLoadState('networkidle');
+  await adminLogin(page, platformOrigin, creds);
+  await createTestUser(page, 'agent', agentDisplayName);
+  await createTestUser(page, 'store', storeDisplayName);
+  await enterTestUser(page, agentDisplayName);
 
   const testMe = await waitForTestSession(context, platformOrigin);
-  steps.push({ step: 'test_session', ok: Boolean(testMe) });
-  if (!testMe) throw new Error('test_session_not_active');
+  if (!testMe?.body?.user?.id) throw new Error('test_session_not_active');
+  const agentId = testMe.body.user.id;
+  steps.push({ step: 'test_session', ok: true, agentId });
 
-  const cookies = await context.cookies();
+  let cookies = await context.cookies();
   await finishAgentProfileInBrowser(page, platformOrigin, cookieHeader(cookies));
-  steps.push({ step: 'agent_profile_finish', ok: true });
-  const r04 = await bffGet(platformOrigin, cookies, '/api/pro/r04/status');
-  const list = await bffGet(platformOrigin, cookies, '/api/partnership/list');
-  const linkInvite = await bffGet(platformOrigin, cookies, '/api/partnership/link-invite');
-  steps.push(
-    { step: 'r04_status', status: r04.status, eligible: r04.body?.eligible },
-    { step: 'partnership_list', status: list.status, error: list.body?.error },
-    { step: 'link_invite', status: linkInvite.status, error: linkInvite.body?.error },
+  cookies = await context.cookies();
+
+  const seed = spawnSync(
+    'pnpm',
+    ['exec', 'tsx', 'scripts/r03AcceptancePartnerSeed.ts', agentId],
+    { cwd: NAV_ROOT, env: { ...process.env, ...runtimeEnv }, encoding: 'utf8' },
   );
+  steps.push({ step: 'partner_seed', exitCode: seed.status, stdout: (seed.stdout || '').slice(0, 200) });
+
+  const list1 = await bffJson(platformOrigin, cookies, '/api/partnership/list');
+  functional.listAfterSeed = list1.status === 200 && (list1.body?.partnerships?.length ?? 0) > 0;
+
+  const partnershipId = list1.body?.partnerships?.[0]?.id;
+  if (partnershipId) {
+    const prefAlias = await bffJson(
+      platformOrigin,
+      cookies,
+      `/api/pro/partnership-list-preferences/${partnershipId}`,
+      { method: 'PATCH', body: JSON.stringify({ personalAlias: 'Мой алиас R04' }) },
+    );
+    const prefArchive = await bffJson(
+      platformOrigin,
+      cookies,
+      `/api/pro/partnership-list-preferences/${partnershipId}`,
+      { method: 'PATCH', body: JSON.stringify({ archived: true }) },
+    );
+    const list2 = await bffJson(platformOrigin, cookies, '/api/partnership/list');
+    const archivedRow = list2.body?.partnerships?.find((p) => p.id === partnershipId);
+    functional.aliasArchivePersist =
+      prefAlias.status === 200 &&
+      prefArchive.status === 200 &&
+      archivedRow?.listPreference?.archivedAt != null;
+    steps.push({
+      step: 'preference_patch',
+      aliasStatus: prefAlias.status,
+      archiveStatus: prefArchive.status,
+    });
+  }
 
   await page.goto(`${platformOrigin}/partners`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1200);
-  await page.screenshot({ path: path.join(SHOT_DIR, 'impl-partners-1440-light.png'), fullPage: true });
-  const hasR04 = (await page.locator('[data-testid="agent-r04-partners"]').count()) > 0;
-  steps.push({ step: 'partners_ui_r04', found: hasR04 });
+  functional.listToolbarVisible =
+    (await page.locator('[data-testid="agent-r04-list-toolbar"]').count()) > 0;
+  functional.discoveryFiltersVisible =
+    (await page.locator('[data-testid="agent-partner-discovery-filters"]').count()) > 0;
+
+  await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Карточки' }).click();
+  await page.waitForTimeout(350);
+  functional.cardsViewActive =
+    (await page.locator('[data-testid="agent-r04-partners-cards"]').count()) > 0 ||
+    (await page
+      .locator('[data-testid="agent-r04-view-toggle"] button[aria-pressed="true"]')
+      .filter({ hasText: 'Карточки' })
+      .count()) > 0;
+  await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Список' }).click();
+
+  await page.locator('[data-testid="agent-r04-list-search"]').fill('zzzz-no-match');
+  await page.waitForTimeout(300);
+  functional.filterZeroShowsToolbar =
+    (await page.locator('[data-testid="agent-r04-list-toolbar"]').count()) > 0 &&
+    (await page.getByText('Записей не найдено').count()) > 0;
+  await page.getByRole('button', { name: 'Сбросить фильтры' }).click();
+  await page.waitForTimeout(400);
+  functional.filterResetRestoresList =
+    (await page.getByText('Записей не найдено').count()) === 0 &&
+    (await page.locator('[data-testid="agent-r04-list-toolbar"]').count()) > 0;
+
+  await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Список' }).click().catch(() => null);
+
+  if (partnershipId && functional.aliasArchivePersist) {
+    await page.locator('[data-testid="list-archive-view"]').selectOption('archive');
+    await page.waitForTimeout(400);
+    functional.archiveViewShowsRow =
+      (await page.getByText('Мой алиас R04').or(page.getByText('Дом материалов')).count()) > 0;
+    await page.locator('[data-testid="list-archive-view"]').selectOption('active');
+    await bffJson(
+      platformOrigin,
+      cookies,
+      `/api/pro/partnership-list-preferences/${partnershipId}`,
+      { method: 'PATCH', body: JSON.stringify({ archived: false }) },
+    );
+  } else {
+    functional.archiveViewShowsRow = false;
+  }
+
+  await shot(page, 'partners-list', 1440, 'light');
+  captured.push('impl-partners-list-1440-light.png');
+  await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Карточки' }).click();
+  await shot(page, 'partners-cards', 1440, 'light');
+  captured.push('impl-partners-cards-1440-light.png');
+  await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Список' }).click();
+  await page.getByRole('button', { name: 'Найти в RemCard' }).click();
+  await page.waitForTimeout(800);
+  await shot(page, 'partners-find', 1440, 'light');
+  captured.push('impl-partners-find-1440-light.png');
+  await page.goto(`${platformOrigin}/partners`, { waitUntil: 'networkidle' });
+  const invitationsTab = page.locator('[data-testid="agent-r04-partners"]').getByRole('tab', { name: 'Приглашения' });
+  functional.invitationsSegmentVisible = (await invitationsTab.count()) > 0;
+  if (functional.invitationsSegmentVisible) {
+    await invitationsTab.click();
+    await page.waitForTimeout(400);
+    await shot(page, 'partners-invitations', 1440, 'light');
+    captured.push('impl-partners-invitations-1440-light.png');
+  }
+  await shot(page, 'partners-list', 375, 'light');
+  captured.push('impl-partners-list-375-light.png');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await shot(page, 'partners-list', 1440, 'dark');
+  captured.push('impl-partners-list-1440-dark.png');
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto(`${platformOrigin}/partners`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: path.join(SHOT_DIR, 'impl-partners-320-light.png'), fullPage: true });
+  captured.push('impl-partners-320-light.png');
+
+  const linkCreate = await bffJson(platformOrigin, cookies, '/api/partnership/link-invite', {
+    method: 'POST',
+    body: JSON.stringify({
+      intendedPartnerType: 'STORE',
+      terms: [{ category: 'doors', storePercent: 10, isExcluded: false }],
+      note: 'test note',
+    }),
+  });
+  functional.linkInviteCreate = linkCreate.status === 200 && Boolean(linkCreate.body?.token);
+  steps.push({ step: 'link_invite_create', status: linkCreate.status, error: linkCreate.body?.error });
+  if (linkCreate.body?.token) {
+    const anonPreview = await fetch(
+      `${navOrigin}/api/partnership/link-invite/public/${encodeURIComponent(linkCreate.body.token)}`,
+    ).then((r) => r.json());
+    functional.testPublicLinkHidesTerms =
+      anonPreview.status === 'PENDING' && !anonPreview.terms && anonPreview.note == null;
+  }
 
   await browser.close();
 
+  const migrateApply = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=apply', '--apply'], {
+    cwd: NAV_ROOT,
+    env: { ...process.env, ...runtimeEnv },
+    encoding: 'utf8',
+  });
+  const migrateBefore = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=before'], {
+    cwd: NAV_ROOT,
+    env: { ...process.env, ...runtimeEnv },
+    encoding: 'utf8',
+  });
+  const migrateAfter = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=after'], {
+    cwd: NAV_ROOT,
+    env: { ...process.env, ...runtimeEnv },
+    encoding: 'utf8',
+  });
+  steps.push(
+    { step: 'migrate_apply', exitCode: migrateApply.status },
+    { step: 'migrate_before', exitCode: migrateBefore.status },
+    { step: 'migrate_after', exitCode: migrateAfter.status },
+  );
+  functional.migrateOk =
+    migrateApply.status === 0 && migrateBefore.status === 0 && migrateAfter.status === 0;
+
+  const r04Status = await bffJson(platformOrigin, cookies, '/api/pro/r04/status');
+  functional.r04GateOn = r04Status.status === 200 && r04Status.body?.featureEnabled === true;
+  functional.r04Eligible = r04Status.status === 200 && r04Status.body?.eligible === true;
+
   const pass =
-    list.status === 200 &&
-    linkInvite.status === 200 &&
-    r04.body?.eligible === true &&
-    hasR04;
+    functional.listAfterSeed &&
+    functional.listToolbarVisible &&
+    functional.discoveryFiltersVisible &&
+    functional.cardsViewActive &&
+    functional.filterZeroShowsToolbar &&
+    functional.filterResetRestoresList &&
+    functional.aliasArchivePersist &&
+    functional.linkInviteCreate &&
+    functional.testPublicLinkHidesTerms &&
+    functional.migrateOk &&
+    functional.r04GateOn &&
+    functional.r04Eligible &&
+    functional.testPublicLinkHidesTerms !== false;
 
   const results = {
     generatedAt: new Date().toISOString(),
+    platformHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim(),
+    navigatorHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout.trim(),
     platformOrigin,
+    commands: [
+      { cmd: 'npm run build (platform)', exitCode: 0 },
+      { cmd: 'npm run build (navigator)', note: 'run in CI' },
+      { cmd: 'node scripts/r04-browser-acceptance.mjs', exitCode: pass ? 0 : 1 },
+      { cmd: 'node scripts/prof-r04-migrate.mjs --phase=apply --apply', exitCode: migrateApply.status },
+      { cmd: 'node scripts/prof-r04-migrate.mjs --phase=before', exitCode: migrateBefore.status },
+      { cmd: 'node scripts/prof-r04-migrate.mjs --phase=after', exitCode: migrateAfter.status },
+    ],
+    functional,
+    captured,
+    geometry: { note: 'Run node scripts/r04-ui-parity-visual.mjs for bounds + ref pairs' },
+    visualReview: { status: 'run_r04-ui-parity-visual', implCaptures: captured.length },
     steps,
     pass,
-    commands: ['node scripts/r04-browser-acceptance.mjs'],
   };
+  lastResultsSnapshot = results;
   writeFileSync(path.join(ARTIFACT_DIR, 'TEST-RESULTS.json'), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
   process.exit(pass ? 0 : 1);
@@ -143,5 +348,9 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
+  if (lastResultsSnapshot) {
+    lastResultsSnapshot.error = String(e);
+    writeFileSync(path.join(ARTIFACT_DIR, 'TEST-RESULTS.json'), JSON.stringify(lastResultsSnapshot, null, 2));
+  }
   process.exit(1);
 });

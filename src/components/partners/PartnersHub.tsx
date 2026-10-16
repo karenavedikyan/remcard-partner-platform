@@ -21,11 +21,19 @@ import {
 import {
   matchesListPartnerType,
   matchesListSpecialization,
+  matchesListStage,
   partnerDisplayTitle,
   partnershipPartnerUser,
+  sortPartnershipsDeterministic,
   type AgentPartnerTypeFilter,
 } from "@/lib/agent-r04/partner-filters";
 import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
+import {
+  AgentR04ListToolbar,
+  type AgentListSort,
+  type AgentListViewMode,
+} from "@/components/partners/AgentR04ListToolbar";
+import { AgentPartnerDiscoveryFilters } from "@/components/partners/AgentPartnerDiscoveryFilters";
 import Link from "next/link";
 import type {
   PartnerSearchResult,
@@ -110,7 +118,12 @@ export function PartnersHub({
   const [listSpecialization, setListSpecialization] = useState("");
   const [listCity, setListCity] = useState("");
   const [listStage, setListStage] = useState("");
+  const [listSort, setListSort] = useState<AgentListSort>("updated_desc");
+  const [listSearch, setListSearch] = useState("");
+  const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
   const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
+  const [discoverySpecialization, setDiscoverySpecialization] = useState("");
+  const [discoveryStageId, setDiscoveryStageId] = useState("");
   const [expandedTermsId, setExpandedTermsId] = useState<string | null>(null);
   const searchRequestGen = useRef(0);
 
@@ -214,6 +227,23 @@ export function PartnersHub({
         const archived = Boolean(p.listPreference?.archivedAt);
         return listArchiveView === "archive" ? archived : !archived;
       });
+      const q = listSearch.trim().toLowerCase();
+      if (q) {
+        rows = rows.filter((p) => {
+          const titles = partnerDisplayTitle(p, meId);
+          const partner = partnershipPartnerUser(p, meId);
+          const haystack = [
+            titles.official,
+            titles.alias ?? "",
+            partner.city ?? "",
+            partner.displayName ?? "",
+            partner.organizationName ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(q);
+        });
+      }
       if (listPartnerType || listSpecialization || listCity.trim() || listStage) {
         rows = rows.filter((p) => {
           const partner = partnershipPartnerUser(p, meId);
@@ -222,11 +252,16 @@ export function PartnersHub({
           }
           if (!matchesListPartnerType(partner, listPartnerType)) return false;
           if (!matchesListSpecialization(partner, listSpecialization)) return false;
-          if (listStage && !partner.storeCategories.includes(listStage)) {
-            const specHit = partner.specializations.includes(listStage);
-            if (!specHit) return false;
-          }
+          if (!matchesListStage(partner, listStage)) return false;
           return true;
+        });
+      }
+      rows = sortPartnershipsDeterministic(rows);
+      if (listSort === "name_asc") {
+        rows = [...rows].sort((a, b) => {
+          const ta = partnerDisplayTitle(a, meId).alias ?? partnerDisplayTitle(a, meId).official;
+          const tb = partnerDisplayTitle(b, meId).alias ?? partnerDisplayTitle(b, meId).official;
+          return ta.localeCompare(tb, "ru");
         });
       }
     }
@@ -238,10 +273,75 @@ export function PartnersHub({
     listCity,
     listPartnerType,
     listSpecialization,
+    listSearch,
+    listSort,
     listStage,
     meId,
     partnerships,
   ]);
+
+  useEffect(() => {
+    if (!isAgentR04) return;
+    if (!discoverySpecialization) {
+      setFilterProducts([]);
+      setFilterServices([]);
+      return;
+    }
+    const [group, id] = discoverySpecialization.split(":");
+    if (group === "products") {
+      setFilterProducts(id ? [id] : []);
+      setFilterServices([]);
+    } else if (group === "services") {
+      setFilterServices(id ? [id] : []);
+      setFilterProducts([]);
+    }
+  }, [discoverySpecialization, isAgentR04]);
+
+  useEffect(() => {
+    if (!isAgentR04) return;
+    setFilterStages(discoveryStageId ? [discoveryStageId] : []);
+  }, [discoveryStageId, isAgentR04]);
+
+  const listFilterChips = useMemo(() => {
+    if (!isAgentR04) return [];
+    const chips: { key: string; label: string; onClear: () => void }[] = [];
+    if (listPartnerType) {
+      chips.push({
+        key: "type",
+        label: `Тип: ${listPartnerType}`,
+        onClear: () => setListPartnerType(""),
+      });
+    }
+    if (listSpecialization) {
+      chips.push({
+        key: "spec",
+        label: `Специализация`,
+        onClear: () => setListSpecialization(""),
+      });
+    }
+    if (listStage) {
+      chips.push({ key: "stage", label: `Этап`, onClear: () => setListStage("") });
+    }
+    if (listCity.trim()) {
+      chips.push({
+        key: "city",
+        label: `Город: ${listCity.trim()}`,
+        onClear: () => setListCity(""),
+      });
+    }
+    return chips;
+  }, [isAgentR04, listCity, listPartnerType, listSpecialization, listStage]);
+
+  const resetListFilters = useCallback(() => {
+    setListArchiveView("active");
+    setListPartnerType("");
+    setListSpecialization("");
+    setListCity("");
+    setListStage("");
+    setListSort("updated_desc");
+    setListSearch("");
+    setTaxonomyFilterResetKey((k) => k + 1);
+  }, []);
 
   const resetSearchFilters = useCallback(() => {
     setQuery("");
@@ -249,6 +349,9 @@ export function PartnersHub({
     setFilterProducts([]);
     setFilterServices([]);
     setFilterStages([]);
+    setSearchPartnerType("");
+    setDiscoverySpecialization("");
+    setDiscoveryStageId("");
     setSearchRole(defaultSearchRole);
     setTaxonomyFilterResetKey((key) => key + 1);
     setSearchNextCursor(null);
@@ -380,71 +483,59 @@ export function PartnersHub({
       ) : null}
 
       {tab === "list" ? (
-        loadingList ? (
-          <Panel>Загрузка партнёрств…</Panel>
-        ) : visiblePartnerships.length === 0 ? (
-          <Panel
-            title={
-              isAgentR04 && listArchiveView === "archive"
-                ? "В архиве пока нет записей"
-                : "Партнёров пока нет"
-            }
-            hint={
-              isAgentR04
-                ? "Используйте «Найти в RemCard» или «Пригласить по ссылке» выше."
-                : "Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
-            }
-          />
-        ) : (
-          <>
-            {isAgentR04 ? (
-              <Panel compact>
-                <div className={styles.collectionCount}>
-                  <span>Найдено: {visiblePartnerships.length}</span>
-                  <label className={styles.compactField}>
-                    Показывать
-                    <select
-                      value={listArchiveView}
-                      onChange={(e) =>
-                        setListArchiveView(e.target.value as "active" | "archive")
-                      }
-                    >
-                      <option value="active">Активные</option>
-                      <option value="archive">Архив</option>
-                    </select>
-                  </label>
-                </div>
-                <details className={styles.filterFold}>
-                  <summary>Фильтры действующих</summary>
-                  <div className={styles.filterGrid}>
-                    <label className={styles.compactField}>
-                      Тип партнёра
-                      <select
-                        value={listPartnerType}
-                        onChange={(e) =>
-                          setListPartnerType(e.target.value as AgentPartnerTypeFilter)
-                        }
-                      >
-                        <option value="">Все типы</option>
-                        <option value="agent">Агент</option>
-                        <option value="specialist">Специалист</option>
-                        <option value="store">Магазин</option>
-                        <option value="company">Компания</option>
-                      </select>
-                    </label>
-                    <label className={styles.compactField}>
-                      Город
-                      <input
-                        value={listCity}
-                        onChange={(e) => setListCity(e.target.value)}
-                        placeholder="Любой"
-                      />
-                    </label>
-                  </div>
-                </details>
-              </Panel>
-            ) : null}
-            <div className={styles.list}>
+        <>
+          {isAgentR04 ? (
+            <Panel compact>
+              <AgentR04ListToolbar
+                count={visiblePartnerships.length}
+                searchQuery={listSearch}
+                onSearchQueryChange={setListSearch}
+                viewMode={listViewMode}
+                onViewModeChange={setListViewMode}
+                archiveView={listArchiveView}
+                onArchiveViewChange={setListArchiveView}
+                partnerType={listPartnerType}
+                specialization={listSpecialization}
+                stageId={listStage}
+                city={listCity}
+                sort={listSort}
+                onPartnerTypeChange={setListPartnerType}
+                onSpecializationChange={setListSpecialization}
+                onStageChange={setListStage}
+                onCityChange={setListCity}
+                onSortChange={setListSort}
+                onResetFilters={resetListFilters}
+                taxonomyResetKey={taxonomyFilterResetKey}
+                chips={listFilterChips}
+              />
+            </Panel>
+          ) : null}
+          {loadingList ? (
+            <Panel>Загрузка партнёрств…</Panel>
+          ) : visiblePartnerships.length === 0 ? (
+            <Panel
+              title={
+                isAgentR04 && listArchiveView === "archive"
+                  ? "В архиве пока нет записей"
+                  : isAgentR04 && (listFilterChips.length || listSearch.trim())
+                    ? "Записей не найдено"
+                    : "Партнёров пока нет"
+              }
+              hint={
+                isAgentR04
+                  ? listFilterChips.length || listSearch.trim()
+                    ? "Попробуйте другие условия или сбросьте фильтры."
+                    : "Используйте «Найти в RemCard» или «Пригласить по ссылке» выше."
+                  : "Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
+              }
+            />
+          ) : (
+            <div
+              className={
+                isAgentR04 && listViewMode === "cards" ? `${styles.list} ${styles.listCards}` : styles.list
+              }
+              data-testid={isAgentR04 ? `agent-r04-partners-${listViewMode}` : undefined}
+            >
             {visiblePartnerships.map((partnership) => {
               const partner =
                 partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
@@ -607,62 +698,44 @@ export function PartnersHub({
                 </Panel>
               );
             })}
-          </div>
-          </>
-        )
+            </div>
+          )}
+        </>
       ) : tab === "link" ? (
         <PartnerLinkInvitePanel meProfile={meProfile} />
       ) : (
         <>
           <Panel compact>
             {isAgentR04 ? (
-              <>
-                <p className={styles.searchLead}>
-                  Специализация и этап ремонта помогают найти исполнителя, даже если вы не знаете
-                  точное название.
-                </p>
-                <PartnerSearchFilters
-                  productIds={filterProducts}
-                  serviceIds={filterServices}
-                  stageIds={filterStages}
-                  onChangeProducts={setFilterProducts}
-                  onChangeServices={setFilterServices}
-                  onChangeStages={setFilterStages}
-                  taxonomyFilterResetKey={taxonomyFilterResetKey}
-                />
-              </>
+              <AgentPartnerDiscoveryFilters
+                specialization={discoverySpecialization}
+                stageId={discoveryStageId}
+                city={city}
+                partnerType={searchPartnerType}
+                onSpecializationChange={setDiscoverySpecialization}
+                onStageChange={setDiscoveryStageId}
+                onCityChange={setCity}
+                onPartnerTypeChange={setSearchPartnerType}
+                resetKey={taxonomyFilterResetKey}
+              />
             ) : null}
             <p className={styles.searchDescription}>{searchMeta.description}</p>
             <div className={styles.searchGrid}>
               <TextField
-                label="Поиск по имени"
+                label="Поиск"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={searchMeta.namePlaceholder}
-                hint="Поиск по публичному имени или названию организации"
+                hint="Слово, название или публичный ID"
               />
-              <TextField
-                label="Город"
-                value={city}
-                onChange={(event) => setCity(event.target.value)}
-              />
-              {isAgentR04 ? (
-                <label className={styles.roleField}>
-                  <span>Тип партнёра</span>
-                  <select
-                    value={searchPartnerType}
-                    onChange={(event) =>
-                      setSearchPartnerType(event.target.value as AgentPartnerTypeFilter)
-                    }
-                  >
-                    <option value="">Все типы</option>
-                    <option value="agent">Агент</option>
-                    <option value="specialist">Специалист</option>
-                    <option value="store">Магазин</option>
-                    <option value="company">Компания</option>
-                  </select>
-                </label>
-              ) : (
+              {!isAgentR04 ? (
+                <TextField
+                  label="Город"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                />
+              ) : null}
+              {!isAgentR04 ? (
                 <label className={styles.roleField}>
                   <span>Кого ищем</span>
                   <select
@@ -676,7 +749,7 @@ export function PartnersHub({
                     ))}
                   </select>
                 </label>
-              )}
+              ) : null}
               <div className={styles.searchAction}>
                 <Button
                   type="button"

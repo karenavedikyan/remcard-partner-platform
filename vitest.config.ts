@@ -48,6 +48,7 @@ export default defineConfig({
       "src/components/recommendations/CertificateResultView.display-code.test.tsx",
       "src/lib/r03-theme-assert.test.ts",
       "src/components/auth/LoginExperience.test.tsx",
+      "src/lib/agent-r04/partner-filters.test.ts",
       "src/lib/agent-r03/create-idempotency.test.ts",
       "src/lib/agent-nav/sections.test.ts",
       "src/lib/agent-r03/certificateOffers.test.ts",

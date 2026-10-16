@@ -1,35 +1,122 @@
 {
-  "generatedAt": "2026-10-16T10:22:13.267Z",
+  "generatedAt": "2026-10-16T11:18:06.737Z",
+  "platformHead": "4fc932c069f9c4ad3e64cb3b03821424e997e560",
+  "navigatorHead": "8f85a049817336f011da356ed31d508cc695ad99",
   "platformOrigin": "http://127.0.0.1:3040",
+  "commands": [
+    {
+      "cmd": "npm run build (platform)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npm run build (navigator)",
+      "note": "run in CI"
+    },
+    {
+      "cmd": "node scripts/r04-browser-acceptance.mjs",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=apply --apply",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=before",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=after",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/r04-ui-parity-visual.mjs",
+      "exitCode": 0,
+      "pairs": 8
+    }
+  ],
+  "functional": {
+    "testPublicLinkHidesTerms": true,
+    "linkInviteCreate": true,
+    "listAfterSeed": true,
+    "aliasArchivePersist": true,
+    "listToolbarVisible": true,
+    "discoveryFiltersVisible": true,
+    "cardsViewActive": true,
+    "filterZeroShowsToolbar": true,
+    "filterResetRestoresList": true,
+    "archiveViewShowsRow": true,
+    "invitationsSegmentVisible": true,
+    "migrateOk": true,
+    "r04GateOn": true,
+    "r04Eligible": true
+  },
+  "captured": [
+    "impl-partners-list-1440-light.png",
+    "impl-partners-cards-1440-light.png",
+    "impl-partners-find-1440-light.png",
+    "impl-partners-invitations-1440-light.png",
+    "impl-partners-list-375-light.png",
+    "impl-partners-list-1440-dark.png",
+    "impl-partners-320-light.png"
+  ],
+  "geometry": {
+    "source": "PARITY-VISUAL.json",
+    "pairs": 8,
+    "smoke320": {
+      "toolbar": {
+        "x": 33,
+        "y": 642.0625,
+        "w": 263,
+        "h": 545.125
+      },
+      "listRoot": {
+        "x": 16,
+        "y": 1220.1875,
+        "w": 297,
+        "h": 355.375
+      },
+      "toolbarClipped": false,
+      "viewportW": 320
+    },
+    "pass": true
+  },
+  "visualReview": {
+    "status": "captured_8_ref_pairs",
+    "implRefPairs": 8,
+    "matrix": "PARITY-MATRIX.md"
+  },
   "steps": [
     {
       "step": "test_session",
-      "ok": true
+      "ok": true,
+      "agentId": "cmvavirn6002xjsc5jag5efzp"
     },
     {
-      "step": "agent_profile_finish",
-      "ok": true
+      "step": "partner_seed",
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"storeUserId\":\"cmvavivlr0000jsgto7ik46o4\",\"partnershipId\":\"cmvavivm90006jsgt7dmueqio\"}\n"
     },
     {
-      "step": "r04_status",
-      "status": 200,
-      "eligible": true
+      "step": "preference_patch",
+      "aliasStatus": 200,
+      "archiveStatus": 200
     },
     {
-      "step": "partnership_list",
+      "step": "link_invite_create",
       "status": 200
     },
     {
-      "step": "link_invite",
-      "status": 200
+      "step": "migrate_apply",
+      "exitCode": 0
     },
     {
-      "step": "partners_ui_r04",
-      "found": true
+      "step": "migrate_before",
+      "exitCode": 0
+    },
+    {
+      "step": "migrate_after",
+      "exitCode": 0
     }
   ],
-  "pass": true,
-  "commands": [
-    "node scripts/r04-browser-acceptance.mjs"
-  ]
+  "pass": true
 }

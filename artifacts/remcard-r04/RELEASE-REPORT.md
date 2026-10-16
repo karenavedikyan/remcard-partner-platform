@@ -1,53 +1,40 @@
-# RemCard R04 — Agent Partners RC
+# RemCard R04 — Agent Partners RC (NO-GO remediation)
 
-## HEAD (pinned for this RC)
+## HEAD (update after push)
 
 | Repo | Branch | HEAD |
 |------|--------|------|
-| remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | `fb06c33aaf4ae2464f3b9f31810a52fa5ac46bab` |
-| remcard-navigator | `cursor/r04-agent-partners-b3e3` | `fb9078c45019aaf60d555ae20f6595dac71de1ed` |
+| remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | see `TEST-RESULTS.json` → `platformHead` |
+| remcard-navigator | `cursor/r04-agent-partners-b3e3` | see `TEST-RESULTS.json` → `navigatorHead` |
 
-Base release tags: `release/prof-v1-20261007` @ `2a4e5de`, `release/prof-backend-v1-20261007` @ `63f99425`.
+Review tips: platform `7ed2756`, navigator `fb9078c4` (base); RC commits extend both branches.
 
-## Gate
+## Scope closed (A–E)
 
-- `PROF_R04_AGENT_PARTNERS_ENABLED` — default OFF; server-only (not public env).
-- `/api/pro/r04/status` resolves eligibility via `resolvePrincipalAgentBusiness` + feature flag.
-- Gate OFF or ineligible → legacy `/partners` (`PartnersHub`) without regression.
+- **A** Collection UX: list/cards toggle, list search, compact specialization/stage filters, chips, archive selector, sort, SVG row actions; toolbar outside empty-results branch.
+- **B** Filters/archive without dead-end; working stage/specialization fields on list API; honest partner type; deterministic sort on full in-memory list.
+- **C** Share text strips contract/alias/notes; action error banner + retry; partial preference PATCH.
+- **D** Bidirectional test/real guards; link-invite accept realm check; public test link hides terms; agent invite categories; term-change POST in test allowlist.
+- **E** `scripts/prof-r04-migrate.mjs` before/apply/after + integration test on disposable DB.
 
-## Delivered
+## Acceptance
 
-- Agent UX: `AgentPartnersHub` + extended `PartnersHub` (`variant=agent-r04`): segments «Действующие» / «Приглашения», find/link actions, compact cards, alias/archive/share, search `role=agent` + `partnerType`.
-- Backend: test allowlist for partnership routes; `profTestPartnershipScope`; `PartnershipListPreference`; search type filter; R04 status; notification skip in test mode.
-- Migration: `20261016103000_prof_r04_partnership_list_preference` (SHA256 `c0e90f9055d0b035257c3a85737221ac78165c3cf43f269a5c652d466308065a`); manifest `scripts/prof-r04-migrate-manifest.json`.
-
-## Commands (this environment)
+| Layer | Artifact | Notes |
+|-------|----------|--------|
+| Functional | `TEST-RESULTS.json` → `functional` | Disposable admin stack, BFF chain, migrate |
+| Captured | `TEST-RESULTS.json` → `captured` + `screenshots/` | Browser runner impl shots |
+| Geometry | `PARITY-VISUAL.json` | Toolbar/list bounds, 320 smoke |
+| Visual review | `PARITY-MATRIX.md` | 8 impl/ref + 320 smoke |
 
 ```bash
-# Builds
-cd remcard-navigator && npm run build          # exit 0
-cd remcard-partner-platform && npm run build   # exit 0
-
-# Tests
-cd remcard-navigator && npm test -- --run src/lib/__tests__/partnershipSearchQuery.test.ts src/lib/__tests__/profTestRoutePolicy.test.ts  # exit 0
-
-# Disposable admin stack + R04 smoke
-cd remcard-partner-platform && node scripts/admin-test-local-stack.mjs  # exit 0
-cd remcard-partner-platform && node scripts/r04-browser-acceptance.mjs  # exit 0 (see TEST-RESULTS.json)
+cd remcard-partner-platform && npm run build
+cd remcard-navigator && npm run build
+cd remcard-navigator && pnpm vitest run src/lib/__tests__/profTestPartnershipScope.test.ts src/lib/__tests__/profTestRoutePolicy.test.ts
+cd remcard-partner-platform && npx vitest run src/lib/agent-r04/partner-filters.test.ts
+set -a && source /tmp/admin-test-local-stack/runtime.env && set +a
+cd remcard-navigator && node --test scripts/lib/__tests__/prof-r04-migrate.integration.test.mjs
+cd remcard-partner-platform && node scripts/r04-browser-acceptance.mjs
+cd remcard-partner-platform && node scripts/r04-ui-parity-visual.mjs
 ```
 
-## Browser chain (smoke)
-
-Test-agent delegation → profile finish → `partnership/list` 200, `link-invite` 200, R04 UI shell on `/partners`. Full A–G matrix partially automated; alias/archive/search pagination covered in code paths; extended visual parity pairs tracked in `PARITY-MATRIX.md`.
-
-## Rollout / rollback
-
-1. Apply migration via controlled `prof-r04-migrate` manifest (before/apply/after) on staging.
-2. Deploy navigator + platform RC branches to prof staging.
-3. Enable `PROF_R04_AGENT_PARTNERS_ENABLED=true` only after migration + smoke.
-4. Rollback: disable flag (instant legacy UX); migration is additive (no destructive rollback required).
-
-## Remaining / non-blockers for RC
-
-- Full 8+ impl/ref pixel matrix (1440/375 light/dark) — first impl capture in `screenshots/`; reference pairs to be completed in follow-up capture run on frozen `roles.js` SHA256 `0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc`.
-- Dedicated `prof-r04-migrate.mjs` runner (manifest pinned; can reuse admin migrate tooling pattern from R03).
+No merge, deploy, production DB push, or R05.

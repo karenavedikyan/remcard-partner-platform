@@ -16,8 +16,7 @@ export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
       {panel === "list" ? (
         <>
           <p className={styles.lead}>
-            Действующие партнёры и приглашения разделены как в эталоне. Архив скрывает запись только у
-            вас, не отменяя договор.
+            Архив скрывает запись только в вашем списке и не отменяет договор.
           </p>
           <div className={styles.segmentRow} role="tablist" aria-label="Раздел партнёров">
             <button

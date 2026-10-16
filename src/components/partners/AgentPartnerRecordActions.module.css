@@ -1,32 +1,13 @@
-.toolbar {
-  display: inline-flex;
+.wrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.errorRow {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
-}
-
-.iconBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.iconBtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-@media (max-width: 680px) {
-  .iconBtn {
-    width: 40px;
-    height: 40px;
-  }
+  font-size: var(--text-xs);
+  color: var(--primary);
 }

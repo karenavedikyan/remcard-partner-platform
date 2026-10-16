@@ -149,6 +149,10 @@ export type PartnershipUser = {
   specializations: string[];
   storeCategories: string[];
   partnerType: string | null;
+  partnerActivities?: string[];
+  workingProductCategoryIds?: string[];
+  workingServiceSpecializationIds?: string[];
+  workingNavigatorStageIds?: string[];
   organizationName?: string | null;
   organizationLogoUrl?: string | null;
 };

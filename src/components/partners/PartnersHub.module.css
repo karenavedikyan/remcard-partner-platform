@@ -3,6 +3,16 @@
   gap: var(--space-4);
 }
 
+.listCards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 680px) {
+  .listCards {
+    grid-template-columns: 1fr;
+  }
+}
+
 .cardHeader {
   display: flex;
   justify-content: space-between;

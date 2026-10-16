@@ -1,0 +1,263 @@
+{
+  "generatedAt": "2026-10-16T11:21:10.415Z",
+  "platformHead": "7ed2756ab09818227999dad7adcc191cae1c36c1",
+  "pairs": 8,
+  "matrixRows": 9,
+  "rows": [
+    {
+      "id": "P1",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P1-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 291,
+          "y": 527.796875,
+          "w": 1100,
+          "h": 336.03125
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 896.828125,
+          "w": 1134,
+          "h": 208.703125
+        },
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P1-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P2",
+      "panel": "list",
+      "viewMode": "cards",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P2-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 291,
+          "y": 527.796875,
+          "w": 1100,
+          "h": 336.03125
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 896.828125,
+          "w": 1134,
+          "h": 244.375
+        },
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P2-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "cards",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P3",
+      "panel": "find",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P3-1440-light.png",
+      "geometry": {
+        "toolbar": null,
+        "listRoot": null,
+        "toolbarClipped": null,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P3-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P4",
+      "panel": "invitations",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P4-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 291,
+          "y": 527.796875,
+          "w": 1100,
+          "h": 336.03125
+        },
+        "listRoot": null,
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P4-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "invitations"
+      }
+    },
+    {
+      "id": "P5",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 375,
+      "height": 812,
+      "theme": "light",
+      "impl": "impl-r04-P5-375-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 33,
+          "y": 642.28125,
+          "w": 309,
+          "h": 545.125
+        },
+        "listRoot": {
+          "x": 16,
+          "y": 1220.40625,
+          "w": 343,
+          "h": 355.375
+        },
+        "toolbarClipped": false,
+        "viewportW": 375
+      },
+      "ref": "ref-r04-P5-375-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P6",
+      "panel": "find",
+      "viewMode": "list",
+      "width": 375,
+      "height": 812,
+      "theme": "light",
+      "impl": "impl-r04-P6-375-light.png",
+      "geometry": {
+        "toolbar": null,
+        "listRoot": null,
+        "toolbarClipped": null,
+        "viewportW": 375
+      },
+      "ref": "ref-r04-P6-375-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P7",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark",
+      "impl": "impl-r04-P7-1440-dark.png",
+      "geometry": {
+        "toolbar": {
+          "x": 291,
+          "y": 527.796875,
+          "w": 1100,
+          "h": 336.03125
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 896.828125,
+          "w": 1134,
+          "h": 208.703125
+        },
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P7-1440-dark.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P8",
+      "panel": "list",
+      "viewMode": "cards",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark",
+      "impl": "impl-r04-P8-1440-dark.png",
+      "geometry": {
+        "toolbar": {
+          "x": 291,
+          "y": 527.796875,
+          "w": 1100,
+          "h": 336.03125
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 896.828125,
+          "w": 1134,
+          "h": 244.375
+        },
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P8-1440-dark.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "cards",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P9",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 320,
+      "height": 700,
+      "theme": "light",
+      "smoke": true,
+      "impl": "impl-r04-P9-320-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 33,
+          "y": 642.0625,
+          "w": 263,
+          "h": 545.125
+        },
+        "listRoot": {
+          "x": 16,
+          "y": 1220.1875,
+          "w": 297,
+          "h": 355.375
+        },
+        "toolbarClipped": false,
+        "viewportW": 320
+      },
+      "ref": null,
+      "refDrive": {
+        "ok": true,
+        "skipped": "smoke"
+      }
+    }
+  ],
+  "pass": true
+}

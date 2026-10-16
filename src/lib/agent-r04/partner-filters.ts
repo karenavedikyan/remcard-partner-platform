@@ -2,11 +2,19 @@ import type { Partnership, PartnershipUser } from "@/lib/types";
 
 export type AgentPartnerTypeFilter = "" | "agent" | "specialist" | "store" | "company";
 
-export function partnershipPartnerUser(partnership: Partnership, meId: string): PartnershipUser {
-  return partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
+export type PartnershipPartnerProfile = PartnershipUser & {
+  partnerActivities?: string[];
+  workingProductCategoryIds?: string[];
+  workingServiceSpecializationIds?: string[];
+  workingNavigatorStageIds?: string[];
+};
+
+export function partnershipPartnerUser(partnership: Partnership, meId: string): PartnershipPartnerProfile {
+  return (partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser) as PartnershipPartnerProfile;
 }
 
-export function resolvePublicPartnerType(user: PartnershipUser): AgentPartnerTypeFilter {
+export function resolvePublicPartnerType(user: PartnershipPartnerProfile): AgentPartnerTypeFilter {
+  if ((user.partnerActivities ?? []).includes("AGENT")) return "agent";
   if (user.partnerType === "STORE") return "store";
   if (user.partnerType === "COMPANY") return "company";
   if (user.partnerType === "MASTER") return "specialist";
@@ -24,48 +32,60 @@ export function partnerDisplayTitle(
 }
 
 export function matchesListPartnerType(
-  user: PartnershipUser,
+  user: PartnershipPartnerProfile,
   filter: AgentPartnerTypeFilter,
 ): boolean {
   if (!filter) return true;
-  if (filter === "agent") {
-    return false;
-  }
   return resolvePublicPartnerType(user) === filter;
 }
 
 export function matchesListSpecialization(
-  user: PartnershipUser,
+  user: PartnershipPartnerProfile,
   specialization: string,
 ): boolean {
   if (!specialization) return true;
   const [group, id] = specialization.split(":");
   if (!id) return true;
-  if (group === "products") {
-    return user.storeCategories.includes(id);
-  }
-  if (group === "services") {
-    return user.specializations.includes(id);
-  }
+  const products = user.workingProductCategoryIds?.length
+    ? user.workingProductCategoryIds
+    : user.storeCategories;
+  const services = user.workingServiceSpecializationIds?.length
+    ? user.workingServiceSpecializationIds
+    : user.specializations;
+  if (group === "products") return products.includes(id);
+  if (group === "services") return services.includes(id);
   return true;
 }
 
+export function matchesListStage(user: PartnershipPartnerProfile, stageId: string): boolean {
+  if (!stageId) return true;
+  const stages = user.workingNavigatorStageIds ?? [];
+  return stages.includes(stageId);
+}
+
+/** Public share card: no contract terms, alias, notes, or financial data. */
 export function buildPartnerShareText(partnership: Partnership, meId: string): string {
   const partner = partnershipPartnerUser(partnership, meId);
   const title = partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
   const city = partner.city?.trim() ? `Город: ${partner.city.trim()}` : "";
+  const typeLabel = resolvePublicPartnerType(partner);
   const type =
-    partner.partnerType === "STORE"
+    typeLabel === "store"
       ? "Тип: магазин"
-      : partner.partnerType === "MASTER"
+      : typeLabel === "specialist"
         ? "Тип: специалист"
-        : partner.partnerType === "COMPANY"
+        : typeLabel === "company"
           ? "Тип: компания"
-          : "";
-  const activeTerms = partnership.terms.filter((t) => !t.isExcluded).slice(0, 3);
-  const terms =
-    activeTerms.length > 0
-      ? `Условия (кратко): ${activeTerms.map((t) => `${t.categoryLabel} ${t.storePercent}%`).join("; ")}`
-      : "";
-  return [title, city, type, terms].filter(Boolean).join("\n");
+          : typeLabel === "agent"
+            ? "Тип: агент"
+            : "";
+  return [title, city, type].filter(Boolean).join("\n");
+}
+
+export function sortPartnershipsDeterministic(rows: Partnership[]): Partnership[] {
+  return [...rows].sort((a, b) => {
+    const byTime = b.updatedAt.localeCompare(a.updatedAt);
+    if (byTime !== 0) return byTime;
+    return a.id.localeCompare(b.id);
+  });
 }
