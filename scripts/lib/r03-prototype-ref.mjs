@@ -7,8 +7,8 @@ export const REF_PARITY_CAPTURE_CSS = `
   .review-toolbar,
   .review-details,
   details.review-details,
-  .page-header .pill,
   .app-footer { display: none !important; }
+  .page-header > .pill { display: none !important; }
 `;
 
 export async function applyRefParityCaptureStyles(page) {

@@ -15,7 +15,6 @@ import {
 } from "@/lib/agent-r03/api";
 import { CLIENT_SORT_OPTIONS } from "@/lib/agent-r03/listSortOptions";
 import type { AgentClientRow, AgentR03ListMeta, AgentR03ListSort } from "@/lib/agent-r03/types";
-import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { Button } from "@/components/ui/Button";
 import { AgentClientFormDialog, type AgentClientFormValues } from "./AgentClientFormDialog";
 import { RecordRowActions } from "./RecordRowActions";
@@ -261,6 +260,7 @@ export function AgentClientsList() {
       <div className={styles.pageActions}>
         <Button onClick={openCreate}>Добавить клиента</Button>
       </div>
+      <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
         searchPlaceholder="Имя, контакт, город или задача"
         q={qDraft}
@@ -318,7 +318,7 @@ export function AgentClientsList() {
       ) : null}
 
       {items.length > 0 && viewMode === "cards" ? (
-        <div className={styles.list}>
+        <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((client) => (
             <div
               key={client.id}
@@ -332,29 +332,22 @@ export function AgentClientsList() {
                 />
                 Выбрать
               </label>
-              <article className={styles.card}>
-                <div className={styles.cardTop}>
-                  <div className={styles.cardMain}>
-                    <Link href={`/clients/${client.id}`} className={styles.openLink}>
-                      {client.displayName}
-                    </Link>
-                    <span className={styles.purchasePill}>
-                      {clientPurchaseStatusLabel(client, archived)}
-                    </span>
-                  </div>
-                </div>
+              <article className={styles.clientCard}>
+                <span className={styles.purchasePill}>
+                  {clientPurchaseStatusLabel(client, archived)}
+                </span>
+                <Link href={`/clients/${client.id}`} className={styles.clientCardName}>
+                  {client.displayName}
+                </Link>
+                <p className={styles.clientCardDetail}>{clientRowDetail(client)}</p>
                 {clientRowCaption(client) ? (
-                  <p className={styles.meta}>{clientRowCaption(client)}</p>
+                  <p className={styles.clientCardTask}>{clientRowCaption(client)}</p>
                 ) : null}
-                <p className={styles.meta}>{clientRowDetail(client)}</p>
-                <div className={styles.cardBottom}>
-                  <span className={styles.meta}>
-                    {client.city ?? "Город не указан"}
-                    {client.phone ? ` · ${formatPhoneForDisplay(client.phone)}` : ""}
-                  </span>
+                <div className={styles.clientCardActions}>
                   <RecordRowActions
                     ariaLabel="Действия с клиентом"
                     actions={clientRowActions(client)}
+                    variant="cardToolbar"
                   />
                 </div>
               </article>
@@ -378,7 +371,7 @@ export function AgentClientsList() {
             ))}
           </div>
           <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-            <table className={`${styles.dataTable} ${styles.collectionTable}`}>
+            <table className={styles.collectionTable}>
               <thead>
                 <tr>
                   <th />
@@ -449,6 +442,7 @@ export function AgentClientsList() {
           hasNext={meta.hasNextPage}
         />
       ) : null}
+      </div>
 
       {selected.size > 0 ? (
         <div className={styles.batchBar}>

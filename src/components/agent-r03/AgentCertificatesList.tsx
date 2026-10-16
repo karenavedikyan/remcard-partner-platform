@@ -274,6 +274,7 @@ export function AgentCertificatesList() {
     <div className={styles.r03Root}>
       <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
 
+      <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
         searchPlaceholder="Название, партнёр или категория"
         q={qDraft}
@@ -339,7 +340,7 @@ export function AgentCertificatesList() {
       ) : null}
 
       {loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
-        <div className={styles.list}>
+        <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((cert) => (
             <AgentCertificateCard
               key={cert.id}
@@ -367,7 +368,7 @@ export function AgentCertificatesList() {
             ))}
           </div>
           <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-            <table className={`${styles.dataTable} ${styles.collectionTable}`}>
+            <table className={styles.collectionTable}>
               <thead>
                 <tr>
                   <th />
@@ -404,7 +405,7 @@ export function AgentCertificatesList() {
                         tone={certificateStatusTone(cert.status)}
                       />
                     </td>
-                    <td>
+                    <td className={styles.collectionRowAction}>
                       <RecordRowActions
                         ariaLabel="Действия"
                         actions={certRowActions(cert)}
@@ -441,6 +442,7 @@ export function AgentCertificatesList() {
           hasNext={meta.hasNextPage}
         />
       ) : null}
+      </div>
 
       {selected.size > 0 ? (
         <div className={styles.batchBar}>

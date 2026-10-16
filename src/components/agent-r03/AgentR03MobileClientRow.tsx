@@ -37,20 +37,24 @@ export function AgentR03MobileClientRow({
           />
         </label>
         <div className={styles.mobileRecordMain}>
+          <span className={styles.purchasePill}>
+            {clientPurchaseStatusLabel(client, archived)}
+          </span>
           <Link href={`/clients/${client.id}`} className={styles.mobileRecordTitle}>
             {client.displayName}
           </Link>
+          <p className={styles.meta}>{clientRowDetail(client)}</p>
           {clientRowCaption(client) ? (
             <p className={styles.meta}>{clientRowCaption(client)}</p>
           ) : null}
-          <p className={styles.meta}>{clientRowDetail(client)}</p>
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>
-        <span className={styles.purchasePill}>
-          {clientPurchaseStatusLabel(client, archived)}
-        </span>
-        <RecordRowActions ariaLabel="Действия с клиентом" actions={actions} />
+        <RecordRowActions
+          ariaLabel="Действия с клиентом"
+          actions={actions}
+          variant="cardToolbar"
+        />
       </div>
     </article>
   );

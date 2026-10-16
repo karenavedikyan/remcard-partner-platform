@@ -191,11 +191,20 @@
   padding: 0.85rem 1rem;
   display: grid;
   gap: 0.55rem;
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--r03-line);
+  border-radius: 12px;
+  background: var(--surface);
+  margin-bottom: 8px;
 }
 
 .mobileRecord:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.collectionPanel.mobileOnly {
+  border: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .mobileRecordTop {
@@ -221,7 +230,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 
@@ -590,19 +599,62 @@
   max-width: 28rem;
 }
 
-@media (max-width: 1050px) {
-  .list {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 680px) {
   .heroTask {
     grid-template-columns: 1fr;
   }
 
+  .heroCta {
+    width: 100%;
+  }
+
+  .heroCta :global(button),
+  .heroCta a {
+    width: 100%;
+    justify-content: center;
+  }
+
   .statsRow {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .statCard {
+    padding: 0.75rem;
+  }
+
+  .statValue {
+    font-size: var(--text-lg, 1.125rem);
+    margin: 0.35rem 0;
+  }
+
+  .statLabel,
+  .statCaption {
+    font-size: var(--text-xs, 0.75rem);
+  }
+
+  .collectionTools {
+    gap: 0.5rem;
+  }
+
+  .collectionSearch {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .collectionShowField {
+    flex: 1 1 140px;
+  }
+
+  .collectionView {
+    margin-left: auto;
+    align-self: flex-end;
+  }
+
+  .collectionFilters {
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
   }
 
   .collectionFooter {
@@ -700,6 +752,12 @@
   align-items: start;
 }
 
+@media (max-width: 1050px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+}
+
 .collectionCardShell {
   border: 1px solid var(--r03-line);
   border-radius: 16px;
@@ -723,6 +781,45 @@
   border-bottom: 1px solid var(--r03-line);
   background: var(--r03-offset);
   cursor: pointer;
+}
+
+.clientCard {
+  padding: 1rem 1.1rem 0.85rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.clientCardName {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: inherit;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.clientCardName:hover {
+  color: var(--r03-accent);
+  text-decoration: underline;
+}
+
+.clientCardDetail {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.clientCardTask {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.clientCardActions {
+  padding-top: 0.65rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--r03-line);
 }
 
 .card {
@@ -921,8 +1018,15 @@
   width: 22%;
 }
 
-.collectionTable th:last-child {
-  width: 108px;
+.collectionTable th:last-child,
+.collectionTable td.collectionRowAction {
+  width: 280px;
+  min-width: 280px;
+}
+
+.collectionTable td:nth-child(4) {
+  width: 22%;
+  min-width: 8.5rem;
 }
 
 .collectionRowAction {
@@ -941,8 +1045,8 @@
   text-decoration: underline;
 }
 
-.dataTable th,
-.dataTable td {
+.dataTable:not(.collectionTable) th,
+.dataTable:not(.collectionTable) td {
   border-bottom: 1px solid var(--border);
   padding: 0.65rem 0.5rem;
   text-align: left;

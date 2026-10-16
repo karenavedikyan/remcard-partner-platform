@@ -61,7 +61,7 @@ export function AgentR03ListToolbar({
   return (
     <div className={styles.collectionToolbar} data-testid="agent-r03-collection-toolbar">
       <div className={styles.collectionTools}>
-        <label className={`${styles.fieldSearch} ${styles.fieldSearchLabeled}`}>
+        <label className={`${styles.fieldSearch} ${styles.fieldSearchLabeled} ${styles.collectionSearch}`}>
           Поиск
           <input
             className={styles.searchInput}
@@ -72,7 +72,7 @@ export function AgentR03ListToolbar({
             data-testid="agent-r03-search"
           />
         </label>
-        <label className={styles.fieldInlineCompact}>
+        <label className={`${styles.fieldInlineCompact} ${styles.collectionShowField}`}>
           Показывать
           <select
             className={styles.showSelect}
@@ -85,7 +85,7 @@ export function AgentR03ListToolbar({
           </select>
         </label>
         <details
-          className={styles.sortDetails}
+          className={`${styles.sortDetails} ${styles.collectionFilters}`}
           data-testid="agent-r03-filters-panel"
           open={Boolean(statusFilter || (sort !== "created_desc" && sort !== "updated_desc"))}
         >
@@ -125,7 +125,7 @@ export function AgentR03ListToolbar({
             ) : null}
           </div>
         </details>
-        <div className={styles.viewToggle} data-testid="agent-r03-view-toggle">
+        <div className={`${styles.viewToggle} ${styles.collectionView}`} data-testid="agent-r03-view-toggle">
           <button
             type="button"
             data-active={viewMode === "list"}

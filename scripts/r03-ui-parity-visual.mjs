@@ -2,7 +2,7 @@
 /**
  * R03 UI parity: authenticated impl captures, reference pairs, computed checks, overlays.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -46,6 +46,17 @@ const SMOKE_MATRIX = [
   { section: 'clients', viewMode: 'list', theme: 'light', width: 320, height: 812, kind: 'smoke320' },
 ];
 
+const CORRECTIVE_MATRIX = [
+  ...MAIN_MATRIX.filter((r) => r.width === 375),
+  ...MAIN_MATRIX.filter((r) => r.section === 'clients' && r.viewMode === 'list' && r.width === 1440),
+  ...SMOKE_MATRIX,
+];
+
+function captureMatrix() {
+  if (process.env.R03_CORRECTIVE_CAPTURE === '1') return CORRECTIVE_MATRIX;
+  return [...MAIN_MATRIX, ...SMOKE_MATRIX];
+}
+
 function gitSha(cwd) {
   try {
     return execSync('git rev-parse HEAD', { cwd, encoding: 'utf8' }).trim();
@@ -84,39 +95,104 @@ async function applyImplCaptureStyles(page) {
   });
 }
 
-async function captureRegion(locator, outPath) {
-  if (await locator.isVisible().catch(() => false)) {
-    await locator.screenshot({ path: outPath });
-    return outPath;
-  }
-  return null;
+async function stabilizePageForCapture(page) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForFunction(() => Math.abs(window.scrollY) < 2, undefined, { timeout: 5000 }).catch(() => null);
+  await page.waitForLoadState('networkidle').catch(() => null);
+}
+
+async function captureRegion(page, locator, outPath) {
+  if (!(await locator.isVisible().catch(() => false))) return null;
+  await locator.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(120);
+  await page.evaluate(() => {
+    const y = window.scrollY;
+    window.scrollTo(0, y);
+  });
+  await locator.screenshot({ path: outPath });
+  return outPath;
+}
+
+function rectsOverlap(a, b) {
+  if (!a || !b) return false;
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
 }
 
 async function measureImplComputed(page, section, viewMode) {
   return page.evaluate(({ section, viewMode }) => {
+    function rectsOverlap(a, b) {
+      if (!a || !b) return false;
+      return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+    }
+
     const nav = document.querySelector(`[data-testid="nav-${section}"] svg`);
     const navBox = nav?.getBoundingClientRect();
-    const cardsGrid = document.querySelector('[data-testid="agent-cert-card-shell"]')?.parentElement;
+    const cardsGrid = document.querySelector('[data-testid="agent-r03-cards-grid"]');
     const gridStyle = cardsGrid ? getComputedStyle(cardsGrid) : null;
     const activeView = document.querySelector('[data-testid="agent-r03-view-toggle"] button[aria-pressed="true"]');
     const toolbar = document.querySelector('[data-testid="agent-r03-collection-toolbar"]');
     const pagination = document.querySelector('[data-testid="agent-r03-pagination"]');
     const terms = document.querySelector('[data-testid="agent-cert-terms"]');
-    const linkMore = document.querySelector('[data-testid="agent-cert-card"] .certCardMore, [data-testid="agent-cert-card"] a[class*="certCardMore"]');
+    const linkMore = document.querySelector('[data-testid="agent-cert-more"]');
     const moreColor = linkMore ? getComputedStyle(linkMore).color : null;
+    const vw = window.innerWidth;
+    const isMobile = vw <= 680;
+    const gridCols = gridStyle?.gridTemplateColumns?.trim() ?? null;
+    const gridTrackCount = gridCols ? gridCols.split(' ').filter(Boolean).length : 0;
+
+    let statusActionOverlap = false;
+    let actionClip = false;
+    const clientRow = document.querySelector('[data-testid="agent-r03-capture-body"] tbody tr');
+    if (clientRow && vw >= 681) {
+      const pill = clientRow.querySelector('[class*="purchasePill"]');
+      const pillBox = pill?.getBoundingClientRect();
+      const actionBtns = clientRow.querySelectorAll('[class*="certificateListAction"]');
+      for (const btn of actionBtns) {
+        const box = btn.getBoundingClientRect();
+        if (rectsOverlap(pillBox, box)) statusActionOverlap = true;
+        const rowBox = clientRow.getBoundingClientRect();
+        if (box.right > rowBox.right + 1 || box.left < rowBox.left - 1) actionClip = true;
+      }
+    }
+
+    const cardsColumnOk =
+      viewMode !== 'cards'
+        ? true
+        : isMobile
+          ? gridTrackCount === 1
+          : gridTrackCount === 2;
+
     return {
       navIconWidth: navBox?.width ?? null,
       navIconHeight: navBox?.height ?? null,
-      cardsGridColumns: gridStyle?.gridTemplateColumns ?? null,
+      cardsGridColumns: gridCols,
+      cardsGridTrackCount: gridTrackCount,
+      cardsColumnOk,
       activeViewLabel: activeView?.textContent?.trim() ?? null,
       toolbarVisible: Boolean(toolbar),
       paginationRect: pagination?.getBoundingClientRect() ?? null,
       termsPresent: Boolean(terms),
       moreLinkColor: moreColor,
+      statusActionOverlap,
+      actionClip,
       section,
       viewMode,
+      viewportWidth: vw,
     };
   }, { section, viewMode });
+}
+
+function assertComputedGeometry(computed, row) {
+  if (computed.activeViewLabel !== (row.viewMode === 'list' ? 'Список' : 'Карточки')) {
+    throw new Error(`view_mode_not_active:${computed.activeViewLabel}`);
+  }
+  if (row.viewMode === 'cards' && !computed.cardsColumnOk) {
+    throw new Error(`cards_grid_columns:${computed.cardsGridColumns}`);
+  }
+  if (row.section === 'clients' && row.viewMode === 'list' && row.width >= 681) {
+    if (computed.statusActionOverlap) throw new Error('client_status_action_overlap');
+    if (computed.actionClip) throw new Error('client_action_clip');
+  }
 }
 
 async function captureImpl(context, plat, cookieHeader, row) {
@@ -137,38 +213,43 @@ async function captureImpl(context, plat, cookieHeader, row) {
 
   await page.locator('[data-testid="agent-r03-found-count"]').waitFor({ timeout: 30_000 });
   await applyImplCaptureStyles(page);
+  await stabilizePageForCapture(page);
 
   const computed = await measureImplComputed(page, row.section, row.viewMode);
-  if (computed.activeViewLabel !== (row.viewMode === 'list' ? 'Список' : 'Карточки')) {
-    throw new Error(`view_mode_not_active:${computed.activeViewLabel}`);
-  }
+  assertComputedGeometry(computed, row);
 
   const id = slug(row);
   const fullPath = path.join(SHOTS, `${id}-impl-full.png`);
+  await stabilizePageForCapture(page);
   await page.screenshot({ path: fullPath, fullPage: true });
 
   const regions = {};
   regions.content = await captureRegion(
-    page.locator('[data-testid="agent-shell-content"]'),
+    page,
+    page.locator('[data-testid="agent-r03-capture-body"]'),
     path.join(SHOTS, `${id}-impl-content.png`),
   );
   regions.toolbar = await captureRegion(
+    page,
     page.locator('[data-testid="agent-r03-collection-toolbar"]'),
     path.join(SHOTS, `${id}-impl-toolbar.png`),
   );
   regions.pagination = await captureRegion(
+    page,
     page.locator('[data-testid="agent-r03-pagination"]'),
     path.join(SHOTS, `${id}-impl-pagination.png`),
   );
   if (row.viewMode === 'cards' && row.section === 'certificates') {
     regions.certCard = await captureRegion(
-      page.locator('[data-testid="agent-cert-card"]').first(),
+      page,
+      page.locator('[data-testid="agent-cert-card-shell"]').first(),
       path.join(SHOTS, `${id}-impl-cert-card.png`),
     );
   }
   if (row.section === 'clients' && row.viewMode === 'list') {
     regions.clientRow = await captureRegion(
-      page.locator('[data-testid="agent-shell-content"] tbody tr').first(),
+      page,
+      page.locator('[data-testid="agent-r03-capture-body"] tbody tr').first(),
       path.join(SHOTS, `${id}-impl-client-row.png`),
     );
   }
@@ -195,31 +276,37 @@ async function captureRef(context, refBase, row) {
       throw new Error('ref_theme_not_dark');
     }
   }
+  await stabilizePageForCapture(page);
   const id = slug(row);
   const fullPath = path.join(SHOTS, `${id}-ref-full.png`);
   await page.screenshot({ path: fullPath, fullPage: true });
 
   const regions = {};
   regions.content = await captureRegion(
-    page.locator('#main.content, main.content').first(),
+    page,
+    page.locator('.collection-tools').first().locator('xpath=..'),
     path.join(SHOTS, `${id}-ref-content.png`),
   );
   regions.toolbar = await captureRegion(
+    page,
     page.locator('.collection-tools').first(),
     path.join(SHOTS, `${id}-ref-toolbar.png`),
   );
   regions.pagination = await captureRegion(
+    page,
     page.locator('.collection-footer').first(),
     path.join(SHOTS, `${id}-ref-pagination.png`),
   );
   if (row.viewMode === 'cards' && row.section === 'certificates') {
     regions.certCard = await captureRegion(
-      page.locator('.remcard-certificate, .link-card.remcard-certificate').first(),
+      page,
+      page.locator('.collection-card-shell, .link-card.remcard-certificate').first(),
       path.join(SHOTS, `${id}-ref-cert-card.png`),
     );
   }
   if (row.section === 'clients' && row.viewMode === 'list') {
     regions.clientRow = await captureRegion(
+      page,
       page.locator('.collection-table tbody tr').first(),
       path.join(SHOTS, `${id}-ref-client-row.png`),
     );
@@ -315,11 +402,17 @@ async function main() {
     const { plat, context, storagePath, cookieHeader, userId } = boot;
     await seedUiParityFixtures(plat, cookieHeader, userId);
 
-    const authed = await browser.newContext({ storageState: storagePath });
-    smokeSteps = await runBrowserSmoke(authed, plat);
-    await authed.close();
+    const rowsToCapture = captureMatrix();
+    const corrective = process.env.R03_CORRECTIVE_CAPTURE === '1';
+    const capturesPath = path.join(SHOTS, 'captures.json');
+    let carriedCaptures = [];
+    if (corrective && existsSync(capturesPath)) {
+      const prev = JSON.parse(readFileSync(capturesPath, 'utf8'));
+      const replaceIds = new Set(rowsToCapture.map((r) => slug(r)));
+      carriedCaptures = (prev.captures ?? []).filter((c) => !replaceIds.has(c.id));
+    }
 
-    for (const row of [...MAIN_MATRIX, ...SMOKE_MATRIX]) {
+    for (const row of rowsToCapture) {
       const id = slug(row);
       try {
         const authCtx = await browser.newContext({ storageState: storagePath });
@@ -362,6 +455,12 @@ async function main() {
         captures.push({ id, ...row, status: 'FAILED', error: String(err) });
       }
     }
+
+    captures.unshift(...carriedCaptures);
+
+    const authed = await browser.newContext({ storageState: storagePath });
+    smokeSteps = await runBrowserSmoke(authed, plat);
+    await authed.close();
   } finally {
     await browser.close();
     refServer.close();
@@ -385,7 +484,12 @@ async function main() {
         platformSha,
         navigatorSha,
         build: { command: 'npm run build', status: 'see_ci_or_local' },
-        vitest: ['certificateOffers.test.ts', 'formatDiscountPercent.test.ts', 'sections.test.ts'],
+        vitest: [
+          'certificateOffers.test.ts',
+          'formatDiscountPercent.test.ts',
+          'clientListRow.test.ts',
+          'sections.test.ts',
+        ],
         visualRunner: { script: 'scripts/r03-ui-parity-visual.mjs', ok, failures, captureCount: captures.length },
         browserSmoke: smokeSteps,
       },
