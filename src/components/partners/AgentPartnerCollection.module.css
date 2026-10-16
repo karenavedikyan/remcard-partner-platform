@@ -158,12 +158,11 @@
   border-top: 1px solid var(--line);
 }
 
-.termsList {
+.termsLine {
   margin: 0;
-  padding-left: var(--space-5);
+  flex: 1 1 100%;
   font-size: var(--text-sm);
   color: var(--muted);
-  flex: 1 1 100%;
 }
 
 .waiting {

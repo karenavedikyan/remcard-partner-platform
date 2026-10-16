@@ -307,22 +307,41 @@ async function main() {
     );
     functional.incomingInviteAccept = acceptIncoming.status === 200;
     const listAfterAccept = await bffJson(platformOrigin, cookies, '/api/partnership/list');
+    const acceptedRow = (listAfterAccept.body?.partnerships ?? []).find(
+      (p) => p.id === pendingIncoming.id,
+    );
     functional.incomingBecomesActive =
-      listAfterAccept.status === 200 &&
-      (listAfterAccept.body?.partnerships ?? []).some(
-        (p) => p.id === pendingIncoming.id && p.status === 'ACTIVE',
+      listAfterAccept.status === 200 && acceptedRow?.status === 'ACTIVE';
+    const acceptedPartnerName =
+      acceptedRow?.storeUser?.displayName?.trim() ||
+      pendingIncoming.storeUser?.displayName?.trim() ||
+      'Свет и электрика';
+    const acceptedStoreUserId = acceptedRow?.storeUser?.id ?? pendingIncoming.storeUser?.id ?? null;
+    const availPartners = await bffJson(
+      platformOrigin,
+      cookies,
+      '/api/store/certificate/available-partners',
+    );
+    functional.r03AcceptedPartnerInAvailableApi =
+      availPartners.status === 200 &&
+      (availPartners.body?.partners ?? []).some(
+        (p) =>
+          p.storeUserId === acceptedStoreUserId ||
+          (p.storeName && String(p.storeName).includes(acceptedPartnerName)),
       );
     await page.goto(`${platformOrigin}/certificates/new`, { waitUntil: 'networkidle', timeout: 90_000 });
     functional.r03CreatePartnerFieldVisible =
       (await page.getByRole('heading', { name: 'Партнёры' }).count()) > 0;
-    functional.r03PartnerListsDomMaterials =
+    functional.r03AcceptedPartnerOnCreateForm =
       functional.r03CreatePartnerFieldVisible &&
-      (await page.getByText('Дом материалов').count()) > 0;
+      functional.incomingBecomesActive &&
+      (await page.locator('label').filter({ hasText: acceptedPartnerName }).count()) > 0;
   } else {
     functional.incomingInviteAccept = false;
     functional.incomingBecomesActive = false;
     functional.r03CreatePartnerFieldVisible = false;
-    functional.r03PartnerListsDomMaterials = false;
+    functional.r03AcceptedPartnerInAvailableApi = false;
+    functional.r03AcceptedPartnerOnCreateForm = false;
   }
 
   await browser.close();
@@ -369,7 +388,8 @@ async function main() {
     functional.incomingInviteAccept &&
     functional.incomingBecomesActive &&
     functional.r03CreatePartnerFieldVisible &&
-    functional.r03PartnerListsDomMaterials &&
+    functional.r03AcceptedPartnerInAvailableApi &&
+    functional.r03AcceptedPartnerOnCreateForm &&
     functional.migrateOk &&
     functional.r04GateOn &&
     functional.r04Eligible;

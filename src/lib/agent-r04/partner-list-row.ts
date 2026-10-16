@@ -54,6 +54,11 @@ export function partnerListSubtitle(partner: PartnershipPartnerProfile): string 
   return `${type} · ${city}`;
 }
 
+export function partnerListSpecOnly(partner: PartnershipPartnerProfile): string {
+  const spec = partnerSpecializationHint(partner);
+  return spec || "Специализация не указана";
+}
+
 export function partnerListDetail(partnership: Partnership, meId: string): string {
   const partner = partnershipPartnerUser(partnership, meId);
   const spec = partnerSpecializationHint(partner);

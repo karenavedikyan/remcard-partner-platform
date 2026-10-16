@@ -55,6 +55,7 @@ import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
 } from "@/lib/partnership-search-ui";
+import { partnerSearchResultMeta } from "@/lib/agent-r04/partner-search-meta";
 import styles from "./PartnersHub.module.css";
 
 export type PartnersHubProps = {
@@ -505,6 +506,98 @@ export function PartnersHub({
     }
   }
 
+  const agentDiscoveryFilterProps = {
+    specialization: discoverySpecialization,
+    stageId: discoveryStageId,
+    city,
+    partnerType: searchPartnerType,
+    onSpecializationChange: setDiscoverySpecialization,
+    onStageChange: setDiscoveryStageId,
+    onCityChange: setCity,
+    onPartnerTypeChange: setSearchPartnerType,
+    resetKey: taxonomyFilterResetKey,
+  };
+
+  const agentFindSearchControls = (
+    <>
+      <p className={styles.modalLead}>
+        Начните со специализации и этапа ремонта — так можно найти партнёра без точного названия.
+      </p>
+      <div className={styles.modalFilterBlock}>
+        <AgentPartnerDiscoveryFilters layout="modal-primary" {...agentDiscoveryFilterProps} />
+      </div>
+      <p className={styles.modalFilterHint}>
+        Специализация и этап работают вместе: показываем партнёров, которые подходят под оба условия.
+      </p>
+      <div className={styles.modalSearchRow}>
+        <TextField
+          label="Поиск (необязательно)"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Название, город или ID"
+          hint="Можно оставить пустым и искать только по фильтрам выше"
+        />
+        <Button
+          type="button"
+          onClick={() => {
+            setSearchNextCursor(null);
+            void loadSearch("reset");
+          }}
+          disabled={loadingSearch}
+        >
+          {loadingSearch ? "Поиск…" : "Найти"}
+        </Button>
+      </div>
+      <AgentPartnerDiscoveryFilters layout="modal-more" {...agentDiscoveryFilterProps} />
+    </>
+  );
+
+  const agentFindResultsBlock = (
+    <>
+      {searchError ? (
+        <p className={styles.error} role="alert">
+          {searchError}
+        </p>
+      ) : null}
+      <div
+        className={styles.modalResults}
+        data-testid="agent-partner-search-results"
+        data-loading={loadingSearch ? "true" : "false"}
+      >
+        {loadingSearch && searchResults.length === 0 ? (
+          <p className={styles.partnerMeta}>Загружаем результаты…</p>
+        ) : null}
+        {!loadingSearch &&
+          searchResults.slice(0, 12).map((partner) => {
+            const metaLines = partnerSearchResultMeta(partner);
+            return (
+              <article key={partner.id} className={styles.modalResultRow}>
+                <div>
+                  <strong>{partnerTitle(partner)}</strong>
+                  {metaLines.map((line) => (
+                    <p key={line} className={styles.partnerMeta}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={Boolean(inviteTarget)}
+                  onClick={() => setInviteTarget(partner)}
+                >
+                  Пригласить
+                </Button>
+              </article>
+            );
+          })}
+        {!loadingSearch && searchResults.length === 0 ? (
+          <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
+        ) : null}
+      </div>
+    </>
+  );
+
   if (isModalSurface) {
     return (
       <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
@@ -512,91 +605,8 @@ export function PartnersHub({
           <PartnerLinkInvitePanel meProfile={meProfile} />
         ) : (
           <>
-            <p className={styles.modalLead}>
-              Можно искать по названию, но это необязательно: достаточно выбрать специализацию и этап ремонта.
-            </p>
-            <div className={styles.modalSearchRow}>
-              <TextField
-                label="Поиск (необязательно)"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Название, город или ID"
-                hint="Название знать не нужно — фильтры ниже сузят выдачу"
-              />
-              <Button
-                type="button"
-                onClick={() => {
-                  setSearchNextCursor(null);
-                  void loadSearch("reset");
-                }}
-                disabled={loadingSearch}
-              >
-                {loadingSearch ? "Поиск…" : "Найти"}
-              </Button>
-            </div>
-            <div className={styles.modalFilterBlock}>
-              <p className={styles.modalFilterHint}>
-                Специализация и этап работают вместе: показываем партнёров, которые подходят под оба условия.
-              </p>
-              <AgentPartnerDiscoveryFilters
-                layout="modal-full"
-                specialization={discoverySpecialization}
-                stageId={discoveryStageId}
-                city={city}
-                partnerType={searchPartnerType}
-                onSpecializationChange={setDiscoverySpecialization}
-                onStageChange={setDiscoveryStageId}
-                onCityChange={setCity}
-                onPartnerTypeChange={setSearchPartnerType}
-                resetKey={taxonomyFilterResetKey}
-              />
-            </div>
-            {searchError ? (
-              <p className={styles.error} role="alert">
-                {searchError}
-              </p>
-            ) : null}
-            <div
-              className={styles.modalResults}
-              data-testid="agent-partner-search-results"
-              data-loading={loadingSearch ? "true" : "false"}
-            >
-              {loadingSearch && searchResults.length === 0 ? (
-                <p className={styles.partnerMeta}>Загружаем результаты…</p>
-              ) : null}
-              {!loadingSearch &&
-                searchResults.slice(0, 12).map((partner) => {
-                  const specLine = [
-                    ...(partner.storeCategories ?? []).slice(0, 2),
-                    ...(partner.specializations ?? []).slice(0, 2),
-                  ]
-                    .map((id) => displayCategoryLabel(id, id))
-                    .filter(Boolean)
-                    .join(", ");
-                  return (
-                    <article key={partner.id} className={styles.modalResultRow}>
-                      <div>
-                        <strong>{partnerTitle(partner)}</strong>
-                        <p className={styles.partnerMeta}>{partner.city ?? "Город не указан"}</p>
-                        {specLine ? (
-                          <p className={styles.partnerMeta}>Специализация: {specLine}</p>
-                        ) : null}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={Boolean(inviteTarget)}
-                        onClick={() => setInviteTarget(partner)}
-                      >
-                        Пригласить
-                      </Button>
-                    </article>
-                  );
-                })}
-              {!loadingSearch && searchResults.length === 0 ? (
-                <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
-              ) : null}
-            </div>
+            {agentFindSearchControls}
+            {agentFindResultsBlock}
             {inviteTarget ? (
               <PartnerInviteDialog
                 target={inviteTarget}
@@ -902,62 +912,58 @@ export function PartnersHub({
         <>
           <Panel compact>
             {isAgentR04 ? (
-              <AgentPartnerDiscoveryFilters
-                specialization={discoverySpecialization}
-                stageId={discoveryStageId}
-                city={city}
-                partnerType={searchPartnerType}
-                onSpecializationChange={setDiscoverySpecialization}
-                onStageChange={setDiscoveryStageId}
-                onCityChange={setCity}
-                onPartnerTypeChange={setSearchPartnerType}
-                resetKey={taxonomyFilterResetKey}
-              />
-            ) : null}
-            <p className={styles.searchDescription}>{searchMeta.description}</p>
-            <div className={styles.searchGrid}>
-              <TextField
-                label="Поиск"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={searchMeta.namePlaceholder}
-                hint="Слово, название или публичный ID"
-              />
-              {!isAgentR04 ? (
-                <TextField
-                  label="Город"
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                />
-              ) : null}
-              {!isAgentR04 ? (
-                <label className={styles.roleField}>
-                  <span>Кого ищем</span>
-                  <select
-                    value={searchRole}
-                    onChange={(event) => setSearchRole(event.target.value as SearchRole)}
-                  >
-                    {SEARCH_ROLE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              <div className={styles.searchAction}>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setSearchNextCursor(null);
-                    void loadSearch("reset");
-                  }}
-                  disabled={loadingSearch}
-                >
-                  {loadingSearch ? "Поиск…" : "Найти"}
-                </Button>
-              </div>
-            </div>
+              <>
+                {agentFindSearchControls}
+                {searchError ? (
+                  <p className={styles.error} role="alert">
+                    {searchError}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className={styles.searchDescription}>{searchMeta.description}</p>
+                <div className={styles.searchGrid}>
+                  <TextField
+                    label="Поиск"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={searchMeta.namePlaceholder}
+                    hint="Слово, название или публичный ID"
+                  />
+                  <TextField
+                    label="Город"
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                  />
+                  <label className={styles.roleField}>
+                    <span>Кого ищем</span>
+                    <select
+                      value={searchRole}
+                      onChange={(event) => setSearchRole(event.target.value as SearchRole)}
+                    >
+                      {SEARCH_ROLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className={styles.searchAction}>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setSearchNextCursor(null);
+                        void loadSearch("reset");
+                      }}
+                      disabled={loadingSearch}
+                    >
+                      {loadingSearch ? "Поиск…" : "Найти"}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
             {!isAgentR04 ? (
               <PartnerSearchFilters
                 productIds={filterProducts}

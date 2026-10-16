@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
-import { displayCategoryLabel } from "@/lib/category-display";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -12,6 +11,7 @@ import { partnershipActionIconId } from "@/lib/agent-r04/partnership-action-icon
 import type { AgentListViewMode } from "@/components/partners/AgentR04ListToolbar";
 import {
   partnerListDetail,
+  partnerListSpecOnly,
   partnerListSubtitle,
   partnerRowOfficialLine,
   partnerRowTitle,
@@ -19,11 +19,11 @@ import {
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
 import type { Partnership } from "@/lib/types";
-import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
-import { RecordRowActions } from "@/components/agent-r03/RecordRowActions";
+import { AgentPartnerWorkspaceActions } from "@/components/partners/AgentPartnerWorkspaceActions";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import type { RecordRowAction } from "@/components/agent-r03/RecordRowActions";
 import r03 from "@/components/agent-r03/agent-r03.module.css";
 import styles from "./AgentPartnerCollection.module.css";
 
@@ -53,51 +53,135 @@ type Props = {
   onPageSizeChange: (size: number) => void;
 };
 
-function mapRowActions(
+function businessActions(partnership: Partnership, meId: string) {
+  return getPartnershipUiActions(partnership, meId).filter((a) => a.kind !== "waiting");
+}
+
+function trailingSurfaceActions(
   partnership: Partnership,
   meId: string,
-  busyId: string | null,
   open: boolean,
-  onRunAction: (partnershipId: string, action: string) => void,
   onToggleDetails: () => void,
-) {
-  const actions = getPartnershipUiActions(partnership, meId);
-  return [
-    ...actions
-      .filter((a) => a.kind !== "waiting")
-      .map((a) => ({
-        id: partnershipActionIconId(a.kind),
-        label: a.label,
-        disabled: busyId === partnership.id,
-        onClick: () => onRunAction(partnership.id, a.kind),
-      })),
+): RecordRowAction[] {
+  const trailing: RecordRowAction[] = [
     {
       id: partnershipActionIconId("details"),
       label: open ? "Свернуть" : "Детали",
       onClick: onToggleDetails,
     },
   ];
+  if (businessActions(partnership, meId).length > 0) {
+    trailing.push({
+      id: partnershipActionIconId("more"),
+      label: "Ещё",
+      onClick: onToggleDetails,
+    });
+  }
+  return trailing;
 }
 
-export function AgentPartnerCollection({
-  partnerships,
+function ExpandedPartnerDetails({
+  partnership,
   meId,
-  viewMode,
   busyId,
   onRunAction,
   onUpdated,
-  termRequests,
   onLoadTermRequests,
   expandedTermPartnershipId,
-  selectedIds,
-  onToggleSelect,
-  onToggleSelectAll,
-  page,
-  pageSize,
-  totalCount,
-  onPageChange,
-  onPageSizeChange,
-}: Props) {
+  termState,
+}: {
+  partnership: Partnership;
+  meId: string;
+  busyId: string | null;
+  onRunAction: (partnershipId: string, action: string) => void;
+  onUpdated: () => void;
+  onLoadTermRequests: (id: string) => void;
+  expandedTermPartnershipId: string | null;
+  termState: TermRequestState | undefined;
+}) {
+  const actions = getPartnershipUiActions(partnership, meId);
+  const termsLine = partnerTermsDetail(partnership);
+  return (
+    <div className={styles.expandedInner}>
+      {actions
+        .filter((a) => a.kind !== "waiting")
+        .map((action) => (
+          <Button
+            key={action.kind}
+            variant={action.variant ?? "secondary"}
+            disabled={busyId === partnership.id}
+            onClick={() => onRunAction(partnership.id, action.kind)}
+          >
+            {action.label}
+          </Button>
+        ))}
+      {partnership.status === "ACTIVE" ? (
+        <>
+          <Button
+            variant="secondary"
+            disabled={busyId === partnership.id}
+            onClick={() => onLoadTermRequests(partnership.id)}
+          >
+            Изменение условий
+          </Button>
+          <Link href="/certificates" className={styles.certLink}>
+            Создать сертификат
+          </Link>
+        </>
+      ) : null}
+      {termsLine ? <p className={styles.termsLine}>{termsLine}</p> : null}
+      {actions
+        .filter((a) => a.kind === "waiting")
+        .map((a) => (
+          <p key={a.message} className={styles.waiting}>
+            {a.message}
+          </p>
+        ))}
+      {expandedTermPartnershipId === partnership.id && termState ? (
+        <TermChangePanel
+          partnership={partnership}
+          meId={meId}
+          requests={termState.state === "loaded" ? termState.requests : null}
+          loadState={
+            termState.state === "idle"
+              ? "loading"
+              : termState.state === "loaded"
+                ? "loaded"
+                : termState.state
+          }
+          loadError={termState.error}
+          onReload={() => onLoadTermRequests(partnership.id)}
+          onChanged={() => {
+            onUpdated();
+            onLoadTermRequests(partnership.id);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+export function AgentPartnerCollection(props: Props) {
+  const {
+    partnerships,
+    meId,
+    viewMode,
+    busyId,
+    onRunAction,
+    onUpdated,
+    termRequests,
+    onLoadTermRequests,
+    expandedTermPartnershipId,
+    selectedIds,
+    onToggleSelect,
+    onToggleSelectAll,
+    page,
+    pageSize,
+    totalCount,
+    onPageChange,
+    onPageSizeChange,
+  } = props;
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const pageIds = useMemo(() => partnerships.map((p) => p.id), [partnerships]);
   const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
@@ -123,12 +207,7 @@ export function AgentPartnerCollection({
         </select>
       </label>
       <span>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={page <= 0}
-          onClick={() => onPageChange(page - 1)}
-        >
+        <Button type="button" variant="secondary" disabled={page <= 0} onClick={() => onPageChange(page - 1)}>
           Назад
         </Button>{" "}
         <Button
@@ -151,7 +230,7 @@ export function AgentPartnerCollection({
             const partner = partnershipPartnerProfile(partnership, meId);
             const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
             const open = expandedId === partnership.id;
-            const termsLine = partnerTermsDetail(partnership);
+            const toggle = () => setExpandedId(open ? null : partnership.id);
             return (
               <article key={partnership.id} className={styles.partnerCard}>
                 <div className={styles.cardSelectRow}>
@@ -169,28 +248,30 @@ export function AgentPartnerCollection({
                     <p className={styles.cardMeta}>Официально: {partnerRowOfficialLine(partnership, meId)}</p>
                   ) : null}
                   <p className={styles.cardMeta}>{partnerListSubtitle(partner)}</p>
-                  <p className={styles.cardMeta}>{partnerListDetail(partnership, meId)}</p>
-                  {termsLine ? <p className={styles.cardMeta}>{termsLine}</p> : null}
+                  <p className={styles.cardMeta}>{partnerListSpecOnly(partner)}</p>
                 </div>
                 <div className={styles.cardFooter}>
-                  <RecordRowActions
+                  <AgentPartnerWorkspaceActions
+                    partnership={partnership}
+                    meId={meId}
+                    onUpdated={onUpdated}
                     variant="cardToolbar"
                     ariaLabel="Действия с партнёром"
-                    actions={[
-                      ...mapRowActions(partnership, meId, busyId, open, onRunAction, () =>
-                        setExpandedId(open ? null : partnership.id),
-                      ),
-                      {
-                        id: partnershipActionIconId("more"),
-                        label: "Ещё",
-                        onClick: () => setExpandedId(open ? null : partnership.id),
-                      },
-                    ]}
+                    trailingActions={trailingSurfaceActions(partnership, meId, open, toggle)}
                   />
                 </div>
                 {open ? (
                   <div className={styles.mobileMore}>
-                    <AgentPartnerRecordActions partnership={partnership} meId={meId} onUpdated={onUpdated} />
+                    <ExpandedPartnerDetails
+                      partnership={partnership}
+                      meId={meId}
+                      busyId={busyId}
+                      onRunAction={onRunAction}
+                      onUpdated={onUpdated}
+                      onLoadTermRequests={onLoadTermRequests}
+                      expandedTermPartnershipId={expandedTermPartnershipId}
+                      termState={termRequests[partnership.id]}
+                    />
                   </div>
                 ) : null}
               </article>
@@ -210,6 +291,7 @@ export function AgentPartnerCollection({
           const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
           const needsResponse = partnershipNeedsMyResponse(partnership, meId);
           const open = expandedId === partnership.id;
+          const toggle = () => setExpandedId(open ? null : partnership.id);
           return (
             <article key={partnership.id} className={r03.mobileRecord} data-testid="agent-partner-mobile-row">
               <div className={r03.mobileRecordTop}>
@@ -222,23 +304,33 @@ export function AgentPartnerCollection({
                 <div className={r03.mobileRecordMain}>
                   <p className={r03.mobileRecordTitle}>{partnerRowTitle(partnership, meId)}</p>
                   <p className={r03.meta}>{partnerListSubtitle(partner)}</p>
-                  <p className={r03.meta}>{partnerListDetail(partnership, meId)}</p>
+                  <p className={r03.meta}>{partnerListSpecOnly(partner)}</p>
                   {needsResponse ? <p className={r03.meta}>Ожидает вашего решения</p> : null}
                 </div>
               </div>
               <div className={r03.mobileRecordFooter}>
                 <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
-                <RecordRowActions
-                  ariaLabel="Действия с партнёром"
+                <AgentPartnerWorkspaceActions
+                  partnership={partnership}
+                  meId={meId}
+                  onUpdated={onUpdated}
                   variant="mobileFooter"
-                  actions={mapRowActions(partnership, meId, busyId, open, onRunAction, () =>
-                    setExpandedId(open ? null : partnership.id),
-                  )}
+                  ariaLabel="Действия с партнёром"
+                  trailingActions={trailingSurfaceActions(partnership, meId, open, toggle)}
                 />
               </div>
               {open ? (
                 <div className={styles.mobileMore}>
-                  <AgentPartnerRecordActions partnership={partnership} meId={meId} onUpdated={onUpdated} />
+                  <ExpandedPartnerDetails
+                    partnership={partnership}
+                    meId={meId}
+                    busyId={busyId}
+                    onRunAction={onRunAction}
+                    onUpdated={onUpdated}
+                    onLoadTermRequests={onLoadTermRequests}
+                    expandedTermPartnershipId={expandedTermPartnershipId}
+                    termState={termRequests[partnership.id]}
+                  />
                 </div>
               ) : null}
             </article>
@@ -274,10 +366,9 @@ export function AgentPartnerCollection({
             {partnerships.map((partnership) => {
               const partner = partnershipPartnerProfile(partnership, meId);
               const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-              const actions = getPartnershipUiActions(partnership, meId);
               const termState = termRequests[partnership.id];
               const open = expandedId === partnership.id;
-              const termsLine = partnerTermsDetail(partnership);
+              const toggle = () => setExpandedId(open ? null : partnership.id);
               return (
                 <Fragment key={partnership.id}>
                   <tr data-testid="agent-r04-partners-table-row">
@@ -296,74 +387,34 @@ export function AgentPartnerCollection({
                       ) : null}
                       <small className={styles.caption}>{partnerListSubtitle(partner)}</small>
                     </td>
-                    <td className={styles.detailCell}>
-                      {partnerListDetail(partnership, meId)}
-                      {termsLine ? <small className={styles.caption}>{termsLine}</small> : null}
-                    </td>
+                    <td className={styles.detailCell}>{partnerListSpecOnly(partner)}</td>
                     <td>
                       <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
                     </td>
                     <td className={styles.actionCell}>
-                      <RecordRowActions
-                        ariaLabel="Действия"
+                      <AgentPartnerWorkspaceActions
+                        partnership={partnership}
+                        meId={meId}
+                        onUpdated={onUpdated}
                         variant="listRow"
-                        actions={mapRowActions(partnership, meId, busyId, open, onRunAction, () =>
-                          setExpandedId(open ? null : partnership.id),
-                        )}
+                        ariaLabel="Действия"
+                        trailingActions={trailingSurfaceActions(partnership, meId, open, toggle)}
                       />
                     </td>
                   </tr>
                   {open ? (
                     <tr>
                       <td colSpan={5} className={styles.expandedRow}>
-                        <div className={styles.expandedInner}>
-                          <AgentPartnerRecordActions
-                            partnership={partnership}
-                            meId={meId}
-                            onUpdated={onUpdated}
-                          />
-                          {partnership.status === "ACTIVE" ? (
-                            <>
-                              <Button
-                                variant="secondary"
-                                disabled={busyId === partnership.id}
-                                onClick={() => onLoadTermRequests(partnership.id)}
-                              >
-                                Изменение условий
-                              </Button>
-                              <Link href="/certificates" className={styles.certLink}>
-                                Создать сертификат
-                              </Link>
-                            </>
-                          ) : null}
-                          {actions
-                            .filter((a) => a.kind === "waiting")
-                            .map((a) => (
-                              <p key={a.message} className={styles.waiting}>
-                                {a.message}
-                              </p>
-                            ))}
-                          {expandedTermPartnershipId === partnership.id && termState ? (
-                            <TermChangePanel
-                              partnership={partnership}
-                              meId={meId}
-                              requests={termState.state === "loaded" ? termState.requests : null}
-                              loadState={
-                                termState.state === "idle"
-                                  ? "loading"
-                                  : termState.state === "loaded"
-                                    ? "loaded"
-                                    : termState.state
-                              }
-                              loadError={termState.error}
-                              onReload={() => onLoadTermRequests(partnership.id)}
-                              onChanged={() => {
-                                onUpdated();
-                                onLoadTermRequests(partnership.id);
-                              }}
-                            />
-                          ) : null}
-                        </div>
+                        <ExpandedPartnerDetails
+                          partnership={partnership}
+                          meId={meId}
+                          busyId={busyId}
+                          onRunAction={onRunAction}
+                          onUpdated={onUpdated}
+                          onLoadTermRequests={onLoadTermRequests}
+                          expandedTermPartnershipId={expandedTermPartnershipId}
+                          termState={termState}
+                        />
                       </td>
                     </tr>
                   ) : null}

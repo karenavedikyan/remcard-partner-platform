@@ -53,12 +53,16 @@
   font-weight: 700;
   font-size: var(--text-sm);
   background: var(--accent, var(--primary));
-  color: var(--accent-ink, var(--on-accent, #1a1a1a));
+  color: #fff;
   cursor: pointer;
 }
 
+:global([data-theme="dark"]) .hubPrimary {
+  color: var(--accent-ink, #141414);
+}
+
 @media (prefers-color-scheme: dark) {
-  .hubPrimary {
+  :global(:root:not([data-theme="light"])) .hubPrimary {
     color: var(--accent-ink, #141414);
   }
 }
