@@ -4,7 +4,7 @@
 
 | Repo | Branch | HEAD (full) | Base |
 |------|--------|-------------|------|
-| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | PR tip: `8c3de97…` · capture code: `3b17ceb…` | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
+| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `911362a5c876fb62a25add4f6e97e7e546fb87cc` | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
 | remcard-navigator | `cursor/r03-ui-parity-b3e3` | `651150754af947a3ff896fe9431c68bd45ac5266` | `40b8094e4bf2158fd7a10b1cc1c33474b90a77b3` |
 
 Release integration target: `release/prof-v1-20261007` (`a5b83b3` at fetch time).
