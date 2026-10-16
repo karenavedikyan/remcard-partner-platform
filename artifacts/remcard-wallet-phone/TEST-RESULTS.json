@@ -1,6 +1,8 @@
 {
   "task": "WALLET-PHONE-01",
   "status": "READY_FOR_REVIEW",
+  "backendHead": "e2926a9d",
+  "frontendHead": "263c381",
   "accountExitRc": {
     "backendPr": "https://github.com/karenavedikyan/remcard-navigator/pull/687",
     "backendHead": "0a7e971e",
