@@ -70,6 +70,18 @@ async function shot(page, filePath) {
   return { path: filePath, sha256: sha256File(filePath) };
 }
 
+/** Detail evidence: viewport scroll top + panel crop (avoids sticky chrome over data). */
+async function shotOrderDetailEvidence(page, filePath) {
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
+  const detail = page.getByTestId('agent-r05-order-detail');
+  await detail.waitFor({ state: 'visible', timeout: 60_000 });
+  await detail.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
+  await page.waitForTimeout(150);
+  await detail.screenshot({ path: filePath });
+  return { path: filePath, sha256: sha256File(filePath) };
+}
+
 const REF_PROTOTYPE_ERROR = 'Не удалось загрузить прототип';
 
 function refContentType(filePath) {
@@ -223,7 +235,7 @@ async function verifyOrderDetailLayout(page) {
     const pageWide = document.documentElement.scrollWidth > window.innerWidth + 2;
     const valuesOk = values.length >= 4 && values.every(inShell);
     return {
-      ok: inShell(sum) && valuesOk && inViewport(shell) && !pageWide;
+      ok: inShell(sum) && valuesOk && inViewport(shell) && !pageWide,
       viewportWidth: vw,
       pageWide,
       sum,
@@ -247,7 +259,7 @@ async function captureImplDrill375(page, shots, tag, themeFn, platformOrigin, bu
   const card =
     (await rich.count()) > 0 ? rich.first() : page.getByTestId('agent-r05-order-card').first();
   await waitForImplOrderDetail(page, card);
-  out.push(await shot(page, path.join(shots, `impl-r05-order-detail-375-${tag}.png`)));
+  out.push(await shotOrderDetailEvidence(page, path.join(shots, `impl-r05-order-detail-375-${tag}.png`)));
   return out;
 }
 
@@ -373,6 +385,14 @@ async function waitForTestSession(context, platformOrigin, ms = 45_000) {
 
 async function main() {
   mkdirSync(ART, { recursive: true });
+  const nodeCheck = spawnSync('node', ['--check', 'scripts/r05-browser-acceptance.mjs'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (nodeCheck.status !== 0) {
+    console.error(nodeCheck.stderr || nodeCheck.stdout);
+    process.exit(1);
+  }
   const platBuild = spawnSync('pnpm', ['run', 'build'], { cwd: ROOT, encoding: 'utf8' });
   const navBuild = spawnSync('npm', ['run', 'build'], { cwd: NAV_ROOT, encoding: 'utf8' });
   spawnSync('node', ['scripts/admin-test-local-stack.mjs'], { cwd: ROOT, encoding: 'utf8' });
@@ -653,7 +673,7 @@ async function main() {
     functional.detail320LayoutOk = functional.detail320Layout.ok === true;
     functional.smoke320NoHorizontalScroll = functional.detail320Layout.pageWide !== true;
     functional.overview320LightThemeOk = await isLightBackground(page);
-    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-320-light.png')));
+    captures.push(await shotOrderDetailEvidence(page, path.join(shots, 'impl-r05-order-detail-320-light.png')));
 
     await ensureDark(page);
     await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
@@ -666,7 +686,7 @@ async function main() {
     await waitForImplOrderDetail(page, card320d);
     functional.detail320DarkLayout = await verifyOrderDetailLayout(page);
     functional.detail320DarkLayoutOk = functional.detail320DarkLayout.ok === true;
-    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-320-dark.png')));
+    captures.push(await shotOrderDetailEvidence(page, path.join(shots, 'impl-r05-order-detail-320-dark.png')));
   } else {
     await ensureLight(page);
     await page.setViewportSize({ width: 320, height: 568 });
@@ -832,6 +852,7 @@ async function main() {
     gitDirty: { platform: platDirty.length > 0, navigator: navDirty.length > 0 },
     rolesJsReferenceSha256: '0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc',
     commands: [
+      { cmd: 'node --check scripts/r05-browser-acceptance.mjs', exitCode: nodeCheck.status ?? 1 },
       { cmd: 'pnpm run build (platform)', exitCode: platBuild.status ?? 1 },
       { cmd: 'npm run build (navigator)', exitCode: navBuild.status ?? 1 },
       {
