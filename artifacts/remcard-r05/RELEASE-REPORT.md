@@ -27,4 +27,8 @@
 - `visualParityOk: false` — CAPTURED pairs, not pixel PASS.
 - Navigator **6f0e8a415d08df2b4da5f1e3499a58704afc4bb9** unchanged (no backend delta in R05.4).
 
+## R05.4 closure (runner)
+- `node --check scripts/r05-browser-acceptance.mjs` — recorded in `TEST-RESULTS.json` (comma fix in layout helper).
+- Order detail 375/320 PNGs: element crop of `[data-testid="agent-r05-order-detail"]` after `scrollTo(0)` (no sticky chrome over data).
+
 See `TEST-RESULTS.json` for HEAD SHAs, theme probes, layout metrics, and section PASS/FAIL.
