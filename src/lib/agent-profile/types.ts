@@ -34,6 +34,7 @@ export type AgentRequisitesItem = {
   id: string;
   legalSideId?: string;
   kind: "person" | "ip" | "company" | string;
+  label?: string | null;
   legalName: string;
   inn: string | null;
   kpp: string | null;

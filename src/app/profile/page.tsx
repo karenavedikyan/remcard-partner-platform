@@ -9,6 +9,10 @@ import {
   resolveProfileSectionFromQuery,
   type ProfileSectionId,
 } from "@/lib/profile-sections";
+import {
+  fetchAgentProfileGateServer,
+  isPureAgentCompactProfile,
+} from "@/lib/agent-profile/serverGate";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import {
   deriveProfileCabinetAccess,
@@ -34,11 +38,6 @@ export default async function ProfilePage(props: {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
   const focusField = parseProfileFocusFromQuery(searchParams?.focus);
-  const section: ProfileSectionId = resolveProfileSectionFromQuery({
-    section: searchParams?.section,
-    moderation: searchParams?.moderation,
-    branchId: searchParams?.branchId,
-  });
   const moderationSection = isModerationDeepLink({
     section: searchParams?.section,
     moderation: searchParams?.moderation,
@@ -64,6 +63,21 @@ export default async function ProfilePage(props: {
     );
   }
 
+  const initialAgentR02Gate = await fetchAgentProfileGateServer(cookieHeader);
+  const pureAgentCompact = isPureAgentCompactProfile(
+    profileResult.data.user.partnerActivities,
+    initialAgentR02Gate,
+  );
+
+  const section: ProfileSectionId = resolveProfileSectionFromQuery(
+    {
+      section: searchParams?.section,
+      moderation: searchParams?.moderation,
+      branchId: searchParams?.branchId,
+    },
+    { pureAgentCompact },
+  );
+
   const contextResult = await fetchRemcardUpstream<ProContextSnapshot>("/api/pro/context", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
@@ -77,9 +91,13 @@ export default async function ProfilePage(props: {
   return (
     <CabinetShell returnTo={safeReturnTo}>
       <PageHeading
-        eyebrow="Профиль партнёра"
-        title="Профиль"
-        description="Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard."
+        eyebrow={pureAgentCompact ? "Агент" : "Профиль партнёра"}
+        title={pureAgentCompact ? "Профиль агента" : "Профиль"}
+        description={
+          pureAgentCompact
+            ? "Пошаговый профиль и реквизиты для получения оплаты. Без каталога и организации."
+            : "Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard."
+        }
       />
       <ProfileEditor
         initial={profileResult.data}
@@ -89,6 +107,8 @@ export default async function ProfilePage(props: {
         focusBranchId={focusBranchId}
         focusField={focusField}
         returnTo={safeReturnTo}
+        initialAgentR02Gate={initialAgentR02Gate}
+        initialPureAgentCompact={pureAgentCompact}
       />
     </CabinetShell>
   );

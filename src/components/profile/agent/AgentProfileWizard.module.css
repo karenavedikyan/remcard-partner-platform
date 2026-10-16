@@ -357,6 +357,45 @@
   align-items: center;
 }
 
+.bankPanel {
+  margin-top: var(--pw-6);
+}
+
+.cardTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pw-2);
+  margin-bottom: var(--pw-3);
+}
+
+.cardTop .title {
+  margin: 0;
+  font-size: var(--pw-lg);
+}
+
+.optionalMark {
+  font-size: var(--pw-xs);
+  font-weight: 700;
+  color: var(--pw-muted);
+}
+
+.bankCardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pw-2);
+  justify-content: space-between;
+}
+
+.copyFallback {
+  width: 100%;
+  min-height: 4rem;
+  margin: var(--pw-2) 0;
+  font: inherit;
+}
+
 .summaryHeader {
   display: flex;
   gap: var(--pw-4);

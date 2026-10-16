@@ -101,6 +101,12 @@ type ProfileEditorProps = {
   section?: ProfileSectionId;
   focusBranchId?: string;
   focusField?: string;
+  initialAgentR02Gate?: {
+    featureEnabled: boolean;
+    eligible: boolean;
+    profileComplete: boolean;
+  } | null;
+  initialPureAgentCompact?: boolean;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -124,6 +130,8 @@ function ProfileEditorInner({
   section: sectionProp = "overview",
   focusBranchId,
   focusField,
+  initialAgentR02Gate = null,
+  initialPureAgentCompact = false,
 }: ProfileEditorProps) {
   const cabinetAccess = useProfileCabinetAccess();
   const router = useRouter();
@@ -218,7 +226,14 @@ function ProfileEditorInner({
   const [agentR02Gate, setAgentR02Gate] = useState<{
     featureEnabled: boolean;
     eligible: boolean;
-  } | null>(null);
+  } | null>(
+    initialAgentR02Gate
+      ? {
+          featureEnabled: initialAgentR02Gate.featureEnabled,
+          eligible: initialAgentR02Gate.eligible,
+        }
+      : null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -232,16 +247,22 @@ function ProfileEditorInner({
         }
       })
       .catch(() => {
-        if (!cancelled) setAgentR02Gate({ featureEnabled: false, eligible: false });
+        if (!cancelled && !initialAgentR02Gate) {
+          setAgentR02Gate({ featureEnabled: false, eligible: false });
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [partnerActivities.join(",")]);
+  }, [partnerActivities.join(","), initialAgentR02Gate]);
 
+  const pureAgentActivities = isPureAgentActivities(partnerActivities);
   const pureAgentCompactUi =
-    Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible) &&
-    isPureAgentActivities(partnerActivities);
+    pureAgentActivities &&
+    (initialPureAgentCompact ||
+      Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible));
+  const agentNavPending =
+    pureAgentActivities && !initialPureAgentCompact && agentR02Gate === null;
   const sectionNavItems = useMemo(
     () => profileSectionNav({ pureAgentCompact: pureAgentCompactUi }),
     [pureAgentCompactUi],
@@ -533,8 +554,22 @@ function ProfileEditorInner({
         </p>
       ) : null}
 
-      <nav className={styles.sectionNav} aria-label="Разделы профиля">
-        <ul className={styles.tabStrip} role="tablist">
+      <nav
+        className={styles.sectionNav}
+        aria-label="Разделы профиля"
+        aria-busy={agentNavPending || undefined}
+      >
+        {agentNavPending ? (
+          <p className={styles.hint} role="status" data-testid="profile-nav-pending">
+            Загрузка разделов профиля…
+          </p>
+        ) : null}
+        <ul
+          className={styles.tabStrip}
+          role="tablist"
+          hidden={agentNavPending}
+          aria-hidden={agentNavPending}
+        >
           {sectionNavItems.map((item) => (
             <li key={item.id} role="presentation">
               <button
@@ -556,7 +591,7 @@ function ProfileEditorInner({
       >
       <div className={styles.main}>
         {!pureAgentCompactUi ? <ProfileBranchContextSwitcher /> : null}
-        {activeSection === "overview" ? (
+        {activeSection === "overview" && !agentNavPending ? (
           <>
             <AgentProfileSection
               userId={profile.user.id}
@@ -583,7 +618,7 @@ function ProfileEditorInner({
           </div>
         ) : null}
 
-        {activeSection === "basics" ? (
+        {activeSection === "basics" && !agentNavPending ? (
         <>
         <AgentProfileSection
           userId={profile.user.id}

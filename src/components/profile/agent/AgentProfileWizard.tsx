@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
+  discardAgentProfileDraft,
   fetchAgentProfileDraft,
   finishAgentProfile,
   patchAgentProfileDraft,
@@ -13,6 +14,46 @@ import styles from "./AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Аудитория", "Контакты", "Проверка"] as const;
 
+type FieldErrors = Partial<Record<keyof AgentProfileDraftPayload, string>>;
+
+function validateRequiredIdentity(draft: AgentProfileDraftPayload): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!draft.displayName?.trim()) errors.displayName = "Укажите имя";
+  if (!draft.city?.trim()) errors.city = "Укажите город";
+  return errors;
+}
+
+function draftsEqual(a: AgentProfileDraftPayload, b: AgentProfileDraftPayload): boolean {
+  const keys: (keyof AgentProfileDraftPayload)[] = [
+    "displayName",
+    "city",
+    "audience",
+    "channel",
+    "contactPhone",
+    "contactEmail",
+  ];
+  return keys.every((k) => (a[k] ?? "").trim() === (b[k] ?? "").trim());
+}
+
+function reviewFacts(draft: AgentProfileDraftPayload) {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: "Имя", value: draft.displayName?.trim() || "Не указано" },
+    { label: "Город", value: draft.city?.trim() || "Не указано" },
+    {
+      label: "Телефон",
+      value: formatPhoneForDisplay(draft.contactPhone) || "Не указано",
+    },
+    { label: "Email", value: draft.contactEmail?.trim() || "Не указано" },
+  ];
+  if (draft.audience?.trim()) {
+    rows.push({ label: "Аудитория", value: draft.audience.trim() });
+  }
+  if (draft.channel?.trim()) {
+    rows.push({ label: "Канал", value: draft.channel.trim() });
+  }
+  return rows;
+}
+
 type AgentProfileWizardProps = {
   userId: string;
   disabled?: boolean;
@@ -20,8 +61,6 @@ type AgentProfileWizardProps = {
   /** Open editor on saved profile (basics tab) without nested profile/requisites switch. */
   startInEditMode?: boolean;
 };
-
-type FieldErrors = Partial<Record<keyof AgentProfileDraftPayload, string>>;
 
 export function AgentProfileWizard({
   userId,
@@ -50,6 +89,7 @@ export function AgentProfileWizard({
   const dirtyGen = useRef(0);
   const versionRef = useRef(0);
   const draftEpochRef = useRef(0);
+  const editBaselineRef = useRef<AgentProfileDraftPayload>({});
 
   const syncVersion = (nextVersion: number, nextEpoch: number) => {
     versionRef.current = nextVersion;
@@ -173,11 +213,85 @@ export function AgentProfileWizard({
     }
   };
 
+  const goToStep = async (target: number) => {
+    if (target === step || disabled || saving) return;
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+    if (target !== step + 1) return;
+    if (step === 0) {
+      const localErrors = validateRequiredIdentity(draft);
+      if (Object.keys(localErrors).length) {
+        setFieldErrors(localErrors);
+        return;
+      }
+    }
+    try {
+      await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+        mode: "advance",
+        nextUiStep: target,
+      });
+      setStep(target);
+    } catch {
+      /* errors shown */
+    }
+  };
+
+  const cancelEditing = async () => {
+    if (disabled || saving) return;
+    const dirty = !draftsEqual(draft, editBaselineRef.current);
+    if (dirty && !window.confirm("Отменить изменения? Несохранённые правки будут потеряны.")) {
+      return;
+    }
+    if (hasDraft) {
+      try {
+        await discardAgentProfileDraft({ expectedEpoch: draftEpochRef.current });
+      } catch (caught) {
+        setBanner({
+          kind: "error",
+          text:
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось сбросить черновик",
+        });
+        return;
+      }
+    }
+    setEditing(false);
+    setBanner(null);
+    await hydrate();
+  };
+
+  useEffect(() => {
+    if (!editing) return;
+    const dirty = !draftsEqual(draft, editBaselineRef.current);
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [draft, editing]);
+
+  useEffect(() => {
+    if (editing && profileComplete) {
+      editBaselineRef.current = { ...savedProfile };
+    }
+  }, [editing, profileComplete, savedProfile]);
+
   const onSubmitStep = async (event: FormEvent) => {
     event.preventDefault();
     if (disabled || saving) return;
     const last = STEPS.length - 1;
     if (step < last) {
+      if (step === 0) {
+        const localErrors = validateRequiredIdentity(draft);
+        if (Object.keys(localErrors).length) {
+          setFieldErrors(localErrors);
+          return;
+        }
+      }
       try {
         await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
           mode: "advance",
@@ -279,34 +393,12 @@ export function AgentProfileWizard({
             </p>
           ) : null}
           <dl className={styles.facts}>
-            <div>
-              <dt>Имя</dt>
-              <dd>{name}</dd>
-            </div>
-            <div>
-              <dt>Город</dt>
-              <dd>{display.city?.trim() || "Не указано"}</dd>
-            </div>
-            {display.audience ? (
-              <div>
-                <dt>Аудитория</dt>
-                <dd>{display.audience}</dd>
+            {reviewFacts(display).map((row) => (
+              <div key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
               </div>
-            ) : null}
-            {display.channel ? (
-              <div>
-                <dt>Канал</dt>
-                <dd>{display.channel}</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt>Телефон</dt>
-              <dd>{formatPhoneForDisplay(display.contactPhone) || "Не указано"}</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{display.contactEmail?.trim() || "Не указано"}</dd>
-            </div>
+            ))}
           </dl>
           <p className={styles.footnote}>
             ID {userId}. Сохранение профиля не публикует вас в каталоге для клиентов.
@@ -317,6 +409,7 @@ export function AgentProfileWizard({
               className={`${styles.btn} ${styles.btnPrimary}`}
               disabled={disabled || saving}
               onClick={() => {
+                editBaselineRef.current = { ...savedProfile };
                 setEditing(true);
                 setStep(0);
                 setBanner(null);
@@ -362,7 +455,7 @@ export function AgentProfileWizard({
                   aria-current={i === step ? "step" : undefined}
                   data-testid={`agent-profile-step-${i}`}
                   disabled={disabled || saving || i > step}
-                  onClick={() => setStep(i)}
+                  onClick={() => void goToStep(i)}
                 >
                   <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
                   <span>{label}</span>
@@ -551,30 +644,12 @@ export function AgentProfileWizard({
             {step === 3 ? (
               <>
                 <dl className={styles.facts}>
-                  <div>
-                    <dt>Имя</dt>
-                    <dd>{draft.displayName?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Город</dt>
-                    <dd>{draft.city?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Аудитория</dt>
-                    <dd>{draft.audience?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Канал</dt>
-                    <dd>{draft.channel?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Телефон</dt>
-                    <dd>{formatPhoneForDisplay(draft.contactPhone) || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Email</dt>
-                    <dd>{draft.contactEmail?.trim() || "Не указано"}</dd>
-                  </div>
+                  {reviewFacts(draft).map((row) => (
+                    <div key={row.label}>
+                      <dt>{row.label}</dt>
+                      <dd>{row.value}</dd>
+                    </div>
+                  ))}
                 </dl>
                 <p className={styles.footnote}>
                   Сохранение профиля не публикует вас для клиентов и не отправляет данные в каталог.
@@ -589,9 +664,20 @@ export function AgentProfileWizard({
                     type="button"
                     className={styles.btn}
                     disabled={disabled || saving}
-                    onClick={() => setStep((s) => s - 1)}
+                    onClick={() => void goToStep(step - 1)}
                   >
                     Назад
+                  </button>
+                ) : null}
+                {profileComplete && editing ? (
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnQuiet}`}
+                    disabled={disabled || saving}
+                    data-testid="agent-profile-cancel-edit"
+                    onClick={() => void cancelEditing()}
+                  >
+                    Отменить
                   </button>
                 ) : null}
               </div>

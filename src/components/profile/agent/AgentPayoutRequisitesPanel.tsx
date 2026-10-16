@@ -23,6 +23,7 @@ type AgentPayoutRequisitesPanelProps = {
 
 type FormState = {
   kind: "person" | "ip" | "company";
+  label: string;
   legalName: string;
   inn: string;
   kpp: string;
@@ -34,6 +35,7 @@ type FormState = {
 
 const emptyForm = (): FormState => ({
   kind: "person",
+  label: "",
   legalName: "",
   inn: "",
   kpp: "",
@@ -49,7 +51,10 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState("");
+  const copyFallbackRef = useRef<HTMLTextAreaElement>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const dialogTitleId = useId();
@@ -73,23 +78,23 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
   }, [reload]);
 
   useEffect(() => {
-    if (!dialogOpen) return;
+    if (!formOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setDialogOpen(false);
+        setFormOpen(false);
         restoreFocusRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dialogOpen]);
+  }, [formOpen]);
 
   const openCreate = (trigger: HTMLElement | null) => {
     restoreFocusRef.current = trigger;
     setEditId(null);
     setForm(emptyForm());
     setFieldErrors({});
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
   const openEdit = async (id: string, trigger: HTMLElement | null) => {
@@ -102,6 +107,7 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
       setEditId(id);
       setForm({
         kind: (item.kind as FormState["kind"]) || "person",
+        label: item.label ?? "",
         legalName: item.legalName ?? "",
         inn: item.inn ?? "",
         kpp: item.kpp ?? "",
@@ -111,7 +117,7 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
         corrAccount: item.corrAccount ?? "",
       });
       setFieldErrors({});
-      setDialogOpen(true);
+      setFormOpen(true);
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось открыть реквизиты");
     } finally {
@@ -131,10 +137,11 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
       } else {
         await createAgentRequisites({
           ...form,
+          label: form.label.trim() || undefined,
           isPrimary: items.length === 0,
         });
       }
-      setDialogOpen(false);
+      setFormOpen(false);
       restoreFocusRef.current?.focus();
       await reload();
     } catch (caught) {
@@ -165,78 +172,173 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     }
   };
 
+  const formatCopyText = (item: AgentRequisitesItem) =>
+    [
+      item.label?.trim() || item.legalName,
+      KIND_LABELS[item.kind] ?? item.kind,
+      item.inn ? `ИНН ${item.inn}` : null,
+      item.bankName,
+      item.bik ? `БИК ${item.bik}` : null,
+      item.accountNumber ? `Р/с ${item.accountNumber}` : item.accountNumberMasked,
+      item.corrAccount ? `К/с ${item.corrAccount}` : item.corrAccountMasked,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+  const copyItem = async (item: AgentRequisitesItem) => {
+    const text = formatCopyText(item);
+    setCopyStatus("");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyStatus("Скопировано в буфер обмена");
+    } catch {
+      if (copyFallbackRef.current) {
+        copyFallbackRef.current.hidden = false;
+        copyFallbackRef.current.value = text;
+        copyFallbackRef.current.select();
+        setCopyStatus("Скопируйте текст вручную из поля ниже");
+      } else {
+        setCopyStatus("Не удалось скопировать автоматически");
+      }
+    }
+  };
+
   return (
-    <section className={styles.card} data-testid="agent-requisites-panel">
-      <h3 className={styles.title}>Реквизиты для выплат</h3>
+    <section className={`${styles.card} ${styles.bankPanel}`} data-testid="bank-panel">
+      <div className={styles.cardTop}>
+        <h2 className={styles.title}>Реквизиты для получения оплаты</h2>
+        <span className={styles.optionalMark}>Необязательно</span>
+      </div>
       <p className={styles.intro}>
-        Необязательно для профиля. Изменения создают новую версию банковского набора; старые версии
-        сохраняются для истории.
+        Добавьте банковский счёт для безналичных выплат. Это не требуется для сохранения профиля.
       </p>
       {error ? <p className={styles.bannerError}>{error}</p> : null}
       {loading ? <p className={styles.intro}>Загрузка…</p> : null}
+      {!loading && items.length === 0 && !formOpen ? (
+        <p className={styles.intro}>
+          Пока нет сохранённых реквизитов. Добавьте счёт, когда будете готовы получать оплату.
+        </p>
+      ) : null}
       <ul className={styles.requisitesList}>
         {items.map((item) => (
-          <li key={item.id}>
-            <strong>{item.legalName}</strong>
+          <li key={item.id} className={styles.bankCard}>
+            <div className={styles.bankCardHead}>
+              <strong>{item.label?.trim() || item.legalName}</strong>
+              {item.isPrimary ? <span className={styles.status}>Основные</span> : null}
+            </div>
             <small>
               {KIND_LABELS[item.kind] ?? item.kind}
               {item.inn ? ` · ИНН ${item.inn}` : ""}
+              {item.bankName ? ` · ${item.bankName}` : ""}
               {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
-              {item.version ? ` · v${item.version}` : ""}
             </small>
+            {expandedId === item.id ? (
+              <dl className={styles.facts}>
+                <div>
+                  <dt>Получатель</dt>
+                  <dd>{item.legalName}</dd>
+                </div>
+                {item.bik ? (
+                  <div>
+                    <dt>БИК</dt>
+                    <dd>{item.bik}</dd>
+                  </div>
+                ) : null}
+                {item.accountNumber ? (
+                  <div>
+                    <dt>Расчётный счёт</dt>
+                    <dd>{item.accountNumber}</dd>
+                  </div>
+                ) : null}
+                {item.corrAccount ? (
+                  <div>
+                    <dt>Корр. счёт</dt>
+                    <dd>{item.corrAccount}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            ) : null}
             <div className={styles.requisitesItemActions}>
-                {item.isPrimary ? <span className={styles.label}>Основной</span> : (
-                  <button
-                    type="button"
-                    className={styles.btn}
-                    disabled={disabled || pendingId === item.id}
-                    onClick={(e) => void runAction(item.id, "setPrimary")}
-                  >
-                    Сделать основным
-                  </button>
-                )}
-                {item.applyForNextPayout ? (
-                  <span className={styles.label}>Для следующего расчёта</span>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.btn}
-                    disabled={disabled || pendingId === item.id}
-                    onClick={(e) => void runAction(item.id, "applyForNextPayout")}
-                  >
-                    Применить для следующего расчёта
-                  </button>
-                )}
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={disabled || pendingId === item.id}
+                onClick={() => setExpandedId((id) => (id === item.id ? null : item.id))}
+              >
+                {expandedId === item.id ? "Скрыть" : "Посмотреть"}
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={disabled || pendingId === item.id}
+                onClick={() => void copyItem(item)}
+              >
+                Скопировать
+              </button>
+              {!item.isPrimary ? (
                 <button
                   type="button"
                   className={styles.btn}
                   disabled={disabled || pendingId === item.id}
-                  onClick={(e) => void openEdit(item.id, e.currentTarget)}
+                  onClick={() => void runAction(item.id, "setPrimary")}
                 >
-                  Изменить
+                  Сделать основными
                 </button>
+              ) : null}
+              {item.applyForNextPayout ? (
+                <span className={styles.label}>Для следующего расчёта</span>
+              ) : (
                 <button
                   type="button"
                   className={styles.btn}
                   disabled={disabled || pendingId === item.id}
-                  onClick={(e) => void runAction(item.id, "archive")}
+                  onClick={() => void runAction(item.id, "applyForNextPayout")}
                 >
-                  Архивировать
+                  Применить для следующего расчёта
                 </button>
-              </div>
+              )}
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={disabled || pendingId === item.id}
+                onClick={(e) => void openEdit(item.id, e.currentTarget)}
+              >
+                Изменить
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={disabled || pendingId === item.id}
+                onClick={() => void runAction(item.id, "archive")}
+              >
+                Архивировать
+              </button>
+            </div>
           </li>
         ))}
       </ul>
+      {copyStatus ? (
+        <p className={styles.intro} role="status" data-testid="bank-copy-status">
+          {copyStatus}
+        </p>
+      ) : null}
+      <textarea
+        ref={copyFallbackRef}
+        className={styles.copyFallback}
+        hidden
+        readOnly
+        aria-label="Реквизиты для ручного копирования"
+      />
       <button
         type="button"
         className={`${styles.btn} ${styles.btnPrimary}`}
         disabled={disabled}
         onClick={(e) => openCreate(e.currentTarget)}
       >
-        Добавить реквизиты
+        {items.length ? "Добавить ещё реквизиты" : "Добавить реквизиты"}
       </button>
 
-      {dialogOpen ? (
+      {formOpen ? (
         <div
           role="dialog"
           aria-modal="true"
@@ -247,7 +349,18 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
           <form onSubmit={onSubmit} className={styles.fields}>
             <h4 id={dialogTitleId}>{editId ? "Изменить набор" : "Новый набор"}</h4>
             <div className={styles.field}>
-              <label htmlFor="req-kind">Тип</label>
+              <label htmlFor="req-label">Название набора</label>
+              <input
+                id="req-label"
+                value={form.label}
+                disabled={disabled || pendingId === "form"}
+                placeholder="Например, Основной счёт"
+                onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+              />
+              <small>Необязательно. Помогает отличать несколько наборов.</small>
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="req-kind">Тип получателя</label>
               <select
                 id="req-kind"
                 value={form.kind}
@@ -339,7 +452,7 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                 className={styles.btn}
                 disabled={pendingId === "form"}
                 onClick={() => {
-                  setDialogOpen(false);
+                  setFormOpen(false);
                   restoreFocusRef.current?.focus();
                 }}
               >
