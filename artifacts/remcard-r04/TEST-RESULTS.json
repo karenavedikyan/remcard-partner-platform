@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-16T11:44:55.077Z",
-  "platformHead": "d646698ff329a3700731519f3e482710b00322fd",
+  "generatedAt": "2026-10-16T12:04:25.493Z",
+  "platformHead": "98c9ab01f4917fe61d5fb52727f14d16fc704fb3",
   "navigatorHead": "045682144366b7e20a3bb25e5106a3e4ecbc9ccd",
   "platformOrigin": "http://127.0.0.1:3040",
   "commands": [
     {
-      "cmd": "npm run build (platform)",
+      "cmd": "pnpm run build (platform)",
       "exitCode": 0
     },
     {
@@ -17,11 +17,11 @@
       "exitCode": 0
     },
     {
-      "cmd": "node scripts/prof-r04-migrate.mjs --phase=apply --apply",
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=before",
       "exitCode": 0
     },
     {
-      "cmd": "node scripts/prof-r04-migrate.mjs --phase=before",
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=apply --apply",
       "exitCode": 0
     },
     {
@@ -39,11 +39,13 @@
     "cardsViewActive": true,
     "filterZeroShowsToolbar": true,
     "filterResetRestoresList": true,
-    "archiveViewShowsRow": false,
+    "archiveViewShowsRow": true,
+    "aliasVisibleAfterReload": true,
     "invitationsSegmentVisible": true,
     "incomingInviteAccept": true,
     "incomingBecomesActive": true,
     "r03CreatePartnerFieldVisible": true,
+    "r03PartnerListsDomMaterials": true,
     "migrateOk": true,
     "r04GateOn": true,
     "r04Eligible": true
@@ -58,22 +60,25 @@
     "impl-partners-320-light.png"
   ],
   "geometry": {
-    "note": "Run node scripts/r04-ui-parity-visual.mjs for bounds + ref pairs"
+    "pairs": 8,
+    "visualParityOk": false,
+    "p1FirstRowH": 84.34375,
+    "listTableH": 194.578125
   },
   "visualReview": {
-    "status": "run_r04-ui-parity-visual",
-    "implCaptures": 7
+    "visualParityOk": false,
+    "note": "Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS."
   },
   "steps": [
     {
       "step": "test_session",
       "ok": true,
-      "agentId": "cmvawh90j005ljsnsqmmu9a0o"
+      "agentId": "cmvax64ah0003jsu6ml2py9yc"
     },
     {
       "step": "partner_seed",
       "exitCode": 0,
-      "stdout": "{\"ok\":true,\"active\":[\"cmvawhcjp0006js9ms1v1z9bz\",\"cmvawhck1000ejs9mei3gh1cy\"],\"incoming\":\"cmvawhck5000hjs9mjok339vm\",\"outgoing\":\"cmvawhckc000njs9mzlspnh3s\"}\n"
+      "stdout": "{\"ok\":true,\"active\":[\"cmvax69vw0006js7nztmjvjuu\",\"cmvax69w6000ejs7nxcqbtjdx\"],\"archiveTargetId\":\"cmvax69vw0006js7nztmjvjuu\",\"incoming\":\"cmvax69wd000hjs7nxv0o30jp\",\"outgoing\":\"cmvax69wk000njs7n5lxqguwf"
     },
     {
       "step": "preference_patch",
@@ -85,11 +90,11 @@
       "status": 200
     },
     {
-      "step": "migrate_apply",
+      "step": "migrate_before",
       "exitCode": 0
     },
     {
-      "step": "migrate_before",
+      "step": "migrate_apply",
       "exitCode": 0
     },
     {
@@ -97,6 +102,5 @@
       "exitCode": 0
     }
   ],
-  "pass": true,
-  "captureTreeClean": true
+  "pass": true
 }

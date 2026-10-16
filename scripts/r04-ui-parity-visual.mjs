@@ -44,13 +44,18 @@ async function measureGeometry(page) {
     };
     const vw = window.innerWidth;
     const clipOk = (r) => r && r.x >= -1 && r.y >= -1 && r.x + r.w <= vw + 1;
-    const listTable = document.querySelector('[data-testid="agent-r04-partners-list"] table');
+    const listTable = document.querySelector('[data-testid="agent-r04-partners-table"]');
+    const firstRow = document.querySelector('[data-testid="agent-r04-partners-table-row"]');
     const cardGrid = document.querySelector('[data-testid="agent-r04-partners-cards"]');
     const modal = document.querySelector('[data-testid="agent-partner-hub-modal"]');
     return {
       toolbar: rect(toolbar),
       listRoot: rect(document.querySelector('[data-testid="agent-r04-partners-list"], [data-testid="agent-r04-partners-cards"]')),
       listTable: rect(listTable),
+      firstRow: rect(firstRow),
+      firstRowTitleCell: firstRow
+        ? rect(firstRow.querySelector('td:nth-child(2)'))
+        : null,
       cardGrid: rect(cardGrid),
       modal: rect(modal),
       toolbarClipped: toolbar ? !clipOk(rect(toolbar)) : null,
@@ -67,6 +72,11 @@ async function captureImpl(page, plat, row) {
   await ensurePageTheme(page, row.theme);
   if (row.panel === 'find') {
     await openImplR04Panel(page, 'find', plat);
+    await page
+      .locator('[data-testid="agent-partner-search-results"][data-loading="false"]')
+      .waitFor({ state: 'visible', timeout: 45_000 })
+      .catch(() => null);
+    await page.waitForTimeout(300);
   } else if (row.panel === 'invitations') {
     await openImplR04Panel(page, 'invitations', plat);
     await page.locator('[data-testid="agent-invites-incoming"]').click().catch(() => null);
@@ -77,7 +87,13 @@ async function captureImpl(page, plat, row) {
   }
   await page.waitForTimeout(400);
   const name = `impl-r04-${row.id}-${row.width}-${row.theme}.png`;
-  await page.screenshot({ path: path.join(SHOTS, name), fullPage: !row.smoke });
+  const shotOpts = { path: path.join(SHOTS, name) };
+  if (row.panel === 'find' || row.smoke) {
+    shotOpts.fullPage = false;
+  } else {
+    shotOpts.fullPage = true;
+  }
+  await page.screenshot(shotOpts);
   const geometry = await measureGeometry(page);
   return { impl: name, geometry };
 }
@@ -154,7 +170,14 @@ async function main() {
     visualParityOk: false,
     visualReviewNote:
       'Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS.',
-    pass: pairs >= 8 && rows.every((r) => !r.geometry?.toolbarClipped),
+    pass:
+      pairs >= 8 &&
+      rows.every((r) => !r.geometry?.toolbarClipped) &&
+      rows.every((r) => {
+        if (r.viewMode !== 'list' || r.panel !== 'list') return true;
+        const h = r.geometry?.firstRow?.h;
+        return h == null || h <= 120;
+      }),
   };
   writeFileSync(path.join(ART, 'PARITY-VISUAL.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));

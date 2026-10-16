@@ -29,14 +29,13 @@ export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
     setModalOpen(true);
   }, []);
 
+  const lead =
+    segment === "active"
+      ? "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас."
+      : "Приглашения, которые ждут решения или отправлены вами.";
+
   return (
     <div className={styles.shell} data-testid="agent-r04-partners">
-      <p className={styles.lead}>
-        {segment === "active"
-          ? "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас."
-          : "Приглашения, которые ждут решения или отправлены вами."}
-      </p>
-
       <div className={styles.segmentRow} role="tablist" aria-label="Раздел партнёров">
         <button
           type="button"
@@ -57,6 +56,8 @@ export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
           Приглашения
         </button>
       </div>
+
+      <p className={styles.lead}>{lead}</p>
 
       {segment === "invitations" ? (
         <div className={styles.inviteFlowRow} role="tablist" aria-label="Направление приглашений">

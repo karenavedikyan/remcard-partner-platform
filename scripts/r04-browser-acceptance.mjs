@@ -104,6 +104,9 @@ async function shot(page, name, width, colorScheme = 'light') {
 }
 
 async function main() {
+  const platBuild = spawnSync('pnpm', ['run', 'build'], { cwd: ROOT, encoding: 'utf8' });
+  const navBuild = spawnSync('npm', ['run', 'build'], { cwd: NAV_ROOT, encoding: 'utf8' });
+  spawnSync('node', ['scripts/admin-test-local-stack.mjs'], { cwd: ROOT, encoding: 'utf8' });
   const runtimeEnv = loadRuntimeEnv();
   spawnSync('pnpm', ['exec', 'tsx', 'scripts/admin-test-012-lifecycle.ts', '--fixtures-only'], {
     cwd: NAV_ROOT,
@@ -151,12 +154,17 @@ async function main() {
     ['exec', 'tsx', 'scripts/r04ParityPartnerSeed.ts', agentId],
     { cwd: NAV_ROOT, env: { ...process.env, ...runtimeEnv }, encoding: 'utf8' },
   );
+  const seedPayload = JSON.parse((seed.stdout || '').trim().split('\n').pop() || '{}');
   steps.push({ step: 'partner_seed', exitCode: seed.status, stdout: (seed.stdout || '').slice(0, 200) });
 
   const list1 = await bffJson(platformOrigin, cookies, '/api/partnership/list');
   functional.listAfterSeed = list1.status === 200 && (list1.body?.partnerships?.length ?? 0) > 0;
 
-  const partnershipId = list1.body?.partnerships?.[0]?.id;
+  const partnershipId =
+    seedPayload.archiveTargetId ||
+    list1.body?.partnerships?.find(
+      (p) => p.status === 'ACTIVE' && p.storeUser?.displayName === 'Дом материалов',
+    )?.id;
   if (partnershipId) {
     const prefAlias = await bffJson(
       platformOrigin,
@@ -213,19 +221,25 @@ async function main() {
   await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Список' }).click().catch(() => null);
 
   if (partnershipId && functional.aliasArchivePersist) {
+    await page.reload({ waitUntil: 'networkidle' });
     await page.locator('[data-testid="list-archive-view"]').selectOption('archive');
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
     functional.archiveViewShowsRow =
-      (await page.getByText('Мой алиас R04').or(page.getByText('Дом материалов')).count()) > 0;
-    await page.locator('[data-testid="list-archive-view"]').selectOption('active');
+      (await page.getByText('Мой алиас R04').count()) > 0;
     await bffJson(
       platformOrigin,
       cookies,
       `/api/pro/partnership-list-preferences/${partnershipId}`,
       { method: 'PATCH', body: JSON.stringify({ archived: false }) },
     );
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.locator('[data-testid="list-archive-view"]').selectOption('active');
+    await page.waitForTimeout(400);
+    functional.aliasVisibleAfterReload =
+      (await page.getByText('Мой алиас R04').count()) > 0;
   } else {
     functional.archiveViewShowsRow = false;
+    functional.aliasVisibleAfterReload = false;
   }
 
   await shot(page, 'partners-list', 1440, 'light');
@@ -300,22 +314,25 @@ async function main() {
       );
     await page.goto(`${platformOrigin}/certificates/new`, { waitUntil: 'networkidle', timeout: 90_000 });
     functional.r03CreatePartnerFieldVisible =
-      (await page.locator('select[name="partnerId"], [data-testid="certificate-partner-select"]').count()) >
-        0 || (await page.getByLabel(/партн/i).count()) > 0;
+      (await page.getByRole('heading', { name: 'Партнёры' }).count()) > 0;
+    functional.r03PartnerListsDomMaterials =
+      functional.r03CreatePartnerFieldVisible &&
+      (await page.getByText('Дом материалов').count()) > 0;
   } else {
     functional.incomingInviteAccept = false;
     functional.incomingBecomesActive = false;
     functional.r03CreatePartnerFieldVisible = false;
+    functional.r03PartnerListsDomMaterials = false;
   }
 
   await browser.close();
 
-  const migrateApply = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=apply', '--apply'], {
+  const migrateBefore = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=before'], {
     cwd: NAV_ROOT,
     env: { ...process.env, ...runtimeEnv },
     encoding: 'utf8',
   });
-  const migrateBefore = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=before'], {
+  const migrateApply = spawnSync('node', ['scripts/prof-r04-migrate.mjs', '--phase=apply', '--apply'], {
     cwd: NAV_ROOT,
     env: { ...process.env, ...runtimeEnv },
     encoding: 'utf8',
@@ -326,8 +343,8 @@ async function main() {
     encoding: 'utf8',
   });
   steps.push(
-    { step: 'migrate_apply', exitCode: migrateApply.status },
     { step: 'migrate_before', exitCode: migrateBefore.status },
+    { step: 'migrate_apply', exitCode: migrateApply.status },
     { step: 'migrate_after', exitCode: migrateAfter.status },
   );
   functional.migrateOk =
@@ -345,13 +362,17 @@ async function main() {
     functional.filterZeroShowsToolbar &&
     functional.filterResetRestoresList &&
     functional.aliasArchivePersist &&
+    functional.archiveViewShowsRow &&
+    functional.aliasVisibleAfterReload &&
     functional.linkInviteCreate &&
     functional.testPublicLinkHidesTerms &&
+    functional.incomingInviteAccept &&
+    functional.incomingBecomesActive &&
+    functional.r03CreatePartnerFieldVisible &&
+    functional.r03PartnerListsDomMaterials &&
     functional.migrateOk &&
     functional.r04GateOn &&
-    functional.r04Eligible &&
-    functional.testPublicLinkHidesTerms !== false &&
-    functional.incomingBecomesActive !== false;
+    functional.r04Eligible;
 
   const results = {
     generatedAt: new Date().toISOString(),
@@ -359,11 +380,11 @@ async function main() {
     navigatorHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout.trim(),
     platformOrigin,
     commands: [
-      { cmd: 'npm run build (platform)', exitCode: 0 },
-      { cmd: 'npm run build (navigator)', exitCode: 0 },
+      { cmd: 'pnpm run build (platform)', exitCode: platBuild.status ?? 1 },
+      { cmd: 'npm run build (navigator)', exitCode: navBuild.status ?? 1 },
       { cmd: 'node scripts/r04-browser-acceptance.mjs', exitCode: pass ? 0 : 1 },
-      { cmd: 'node scripts/prof-r04-migrate.mjs --phase=apply --apply', exitCode: migrateApply.status },
       { cmd: 'node scripts/prof-r04-migrate.mjs --phase=before', exitCode: migrateBefore.status },
+      { cmd: 'node scripts/prof-r04-migrate.mjs --phase=apply --apply', exitCode: migrateApply.status },
       { cmd: 'node scripts/prof-r04-migrate.mjs --phase=after', exitCode: migrateAfter.status },
     ],
     functional,

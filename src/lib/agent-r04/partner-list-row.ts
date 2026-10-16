@@ -1,6 +1,6 @@
 import { displayCategoryLabel } from "@/lib/category-display";
+import { masterDirectionLabel } from "@/lib/master-direction-label";
 import {
-  matchesListSpecialization,
   partnershipPartnerUser,
   partnerDisplayTitle,
   resolvePublicPartnerType,
@@ -20,6 +20,15 @@ export function partnerTypeLabel(user: PartnershipPartnerProfile): string {
   return t ? TYPE_LABELS[t] ?? t : "Партнёр";
 }
 
+function labelSpecializationId(id: string): string {
+  const trimmed = id.trim();
+  if (!trimmed) return "";
+  const fromMaster = masterDirectionLabel(trimmed);
+  if (fromMaster !== "Категория") return fromMaster;
+  const fromCategory = displayCategoryLabel(trimmed, "");
+  return fromCategory && fromCategory !== "Категория" ? fromCategory : "";
+}
+
 export function partnerSpecializationHint(user: PartnershipPartnerProfile): string {
   const products = user.workingProductCategoryIds?.length
     ? user.workingProductCategoryIds
@@ -27,22 +36,37 @@ export function partnerSpecializationHint(user: PartnershipPartnerProfile): stri
   const services = user.workingServiceSpecializationIds?.length
     ? user.workingServiceSpecializationIds
     : user.specializations;
-  const parts: string[] = [];
-  if (products?.length) parts.push(`Товары: ${products.slice(0, 2).join(", ")}`);
-  if (services?.length) parts.push(`Услуги: ${services.slice(0, 2).join(", ")}`);
-  return parts.join(" · ");
+  const labels: string[] = [];
+  for (const id of products ?? []) {
+    const label = labelSpecializationId(id);
+    if (label) labels.push(label);
+  }
+  for (const id of services ?? []) {
+    const label = labelSpecializationId(id);
+    if (label) labels.push(label);
+  }
+  return [...new Set(labels)].slice(0, 3).join(", ");
 }
 
 export function partnerListSubtitle(partner: PartnershipPartnerProfile): string {
   const city = partner.city?.trim() || "Город не указан";
   const type = partnerTypeLabel(partner);
-  const spec = partnerSpecializationHint(partner);
-  return [type, city, spec].filter(Boolean).join(" · ");
+  return `${type} · ${city}`;
 }
 
 export function partnerListDetail(partnership: Partnership, meId: string): string {
+  const partner = partnershipPartnerUser(partnership, meId);
+  const spec = partnerSpecializationHint(partner);
+  const city = partner.city?.trim();
+  if (spec && city) return `${city} · ${spec}`;
+  if (spec) return spec;
+  if (city) return city;
+  return "Специализация не указана";
+}
+
+export function partnerTermsDetail(partnership: Partnership): string {
   const activeTerms = partnership.terms.filter((t) => !t.isExcluded);
-  if (!activeTerms.length) return "Условия не указаны";
+  if (!activeTerms.length) return "";
   return activeTerms
     .slice(0, 3)
     .map((t) => `${displayCategoryLabel(t.category, t.categoryLabel)} ${t.storePercent}%`)

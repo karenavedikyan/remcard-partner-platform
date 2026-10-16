@@ -10,7 +10,7 @@
 }
 
 .sheet {
-  width: min(820px, calc(100vw - 32px));
+  width: min(560px, calc(100vw - 32px));
   max-height: min(92vh, 900px);
   display: flex;
   flex-direction: column;

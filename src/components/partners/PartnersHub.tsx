@@ -129,6 +129,9 @@ export function PartnersHub({
   const [listSort, setListSort] = useState<AgentListSort>("updated_desc");
   const [listSearch, setListSearch] = useState("");
   const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
+  const [listPage, setListPage] = useState(0);
+  const [listPageSize, setListPageSize] = useState(25);
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [discoverySpecialization, setDiscoverySpecialization] = useState("");
   const [discoveryStageId, setDiscoveryStageId] = useState("");
@@ -294,6 +297,45 @@ export function PartnersHub({
     meId,
     partnerships,
   ]);
+
+  useEffect(() => {
+    setListPage(0);
+  }, [
+    agentInvitationFlow,
+    agentSegment,
+    listArchiveView,
+    listCity,
+    listPartnerType,
+    listSearch,
+    listSort,
+    listSpecialization,
+    listStage,
+  ]);
+
+  const pagedPartnerships = useMemo(() => {
+    const start = listPage * listPageSize;
+    return visiblePartnerships.slice(start, start + listPageSize);
+  }, [listPage, listPageSize, visiblePartnerships]);
+
+  const togglePartnerSelect = useCallback((id: string) => {
+    setSelectedPartnerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const togglePartnerSelectAll = useCallback((ids: string[], checked: boolean) => {
+    setSelectedPartnerIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!isAgentR04) return;
@@ -470,24 +512,16 @@ export function PartnersHub({
           <PartnerLinkInvitePanel meProfile={meProfile} />
         ) : (
           <>
-            <AgentPartnerDiscoveryFilters
-              layout="modal-full"
-              specialization={discoverySpecialization}
-              stageId={discoveryStageId}
-              city={city}
-              partnerType={searchPartnerType}
-              onSpecializationChange={setDiscoverySpecialization}
-              onStageChange={setDiscoveryStageId}
-              onCityChange={setCity}
-              onPartnerTypeChange={setSearchPartnerType}
-              resetKey={taxonomyFilterResetKey}
-            />
+            <p className={styles.modalLead}>
+              Можно искать по названию, но это необязательно: достаточно выбрать специализацию и этап ремонта.
+            </p>
             <div className={styles.modalSearchRow}>
               <TextField
-                label="Поиск"
+                label="Поиск (необязательно)"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Название, город или ID"
+                hint="Название знать не нужно — фильтры ниже сузят выдачу"
               />
               <Button
                 type="button"
@@ -500,28 +534,65 @@ export function PartnersHub({
                 {loadingSearch ? "Поиск…" : "Найти"}
               </Button>
             </div>
+            <div className={styles.modalFilterBlock}>
+              <p className={styles.modalFilterHint}>
+                Специализация и этап работают вместе: показываем партнёров, которые подходят под оба условия.
+              </p>
+              <AgentPartnerDiscoveryFilters
+                layout="modal-full"
+                specialization={discoverySpecialization}
+                stageId={discoveryStageId}
+                city={city}
+                partnerType={searchPartnerType}
+                onSpecializationChange={setDiscoverySpecialization}
+                onStageChange={setDiscoveryStageId}
+                onCityChange={setCity}
+                onPartnerTypeChange={setSearchPartnerType}
+                resetKey={taxonomyFilterResetKey}
+              />
+            </div>
             {searchError ? (
               <p className={styles.error} role="alert">
                 {searchError}
               </p>
             ) : null}
-            <div className={styles.modalResults} data-testid="agent-partner-search-results">
-              {searchResults.slice(0, 12).map((partner) => (
-                <article key={partner.id} className={styles.modalResultRow}>
-                  <div>
-                    <strong>{partnerTitle(partner)}</strong>
-                    <p className={styles.partnerMeta}>{partner.city ?? "Город не указан"}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={Boolean(inviteTarget)}
-                    onClick={() => setInviteTarget(partner)}
-                  >
-                    Пригласить
-                  </Button>
-                </article>
-              ))}
+            <div
+              className={styles.modalResults}
+              data-testid="agent-partner-search-results"
+              data-loading={loadingSearch ? "true" : "false"}
+            >
+              {loadingSearch && searchResults.length === 0 ? (
+                <p className={styles.partnerMeta}>Загружаем результаты…</p>
+              ) : null}
+              {!loadingSearch &&
+                searchResults.slice(0, 12).map((partner) => {
+                  const specLine = [
+                    ...(partner.storeCategories ?? []).slice(0, 2),
+                    ...(partner.specializations ?? []).slice(0, 2),
+                  ]
+                    .map((id) => displayCategoryLabel(id, id))
+                    .filter(Boolean)
+                    .join(", ");
+                  return (
+                    <article key={partner.id} className={styles.modalResultRow}>
+                      <div>
+                        <strong>{partnerTitle(partner)}</strong>
+                        <p className={styles.partnerMeta}>{partner.city ?? "Город не указан"}</p>
+                        {specLine ? (
+                          <p className={styles.partnerMeta}>Специализация: {specLine}</p>
+                        ) : null}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={Boolean(inviteTarget)}
+                        onClick={() => setInviteTarget(partner)}
+                      >
+                        Пригласить
+                      </Button>
+                    </article>
+                  );
+                })}
               {!loadingSearch && searchResults.length === 0 ? (
                 <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
               ) : null}
@@ -584,6 +655,7 @@ export function PartnersHub({
           {isAgentR04 ? (
             <div className={styles.agentToolbarShell}>
               <AgentR04ListToolbar
+                listMode={agentSegment === "invitations" ? "invitations" : "active"}
                 count={visiblePartnerships.length}
                 searchQuery={listSearch}
                 onSearchQueryChange={setListSearch}
@@ -636,7 +708,7 @@ export function PartnersHub({
             />
           ) : isAgentR04 ? (
             <AgentPartnerCollection
-              partnerships={visiblePartnerships}
+              partnerships={pagedPartnerships}
               meId={meId}
               viewMode={listViewMode}
               busyId={busyId}
@@ -645,6 +717,17 @@ export function PartnersHub({
               termRequests={termRequests}
               onLoadTermRequests={(id) => void loadTermRequests(id)}
               expandedTermPartnershipId={expandedTermPartnershipId}
+              selectedIds={selectedPartnerIds}
+              onToggleSelect={togglePartnerSelect}
+              onToggleSelectAll={togglePartnerSelectAll}
+              page={listPage}
+              pageSize={listPageSize}
+              totalCount={visiblePartnerships.length}
+              onPageChange={setListPage}
+              onPageSizeChange={(size) => {
+                setListPageSize(size);
+                setListPage(0);
+              }}
             />
           ) : (
             <div className={styles.list}>

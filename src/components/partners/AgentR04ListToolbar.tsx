@@ -11,6 +11,7 @@ export type AgentListViewMode = "list" | "cards";
 type Chip = { key: string; label: string; onClear: () => void };
 
 type Props = {
+  listMode?: "active" | "invitations";
   count: number;
   searchQuery: string;
   onSearchQueryChange: (q: string) => void;
@@ -34,6 +35,7 @@ type Props = {
 };
 
 export function AgentR04ListToolbar(props: Props) {
+  const invitations = props.listMode === "invitations";
   const hasFilters =
     props.chips.length > 0 ||
     props.archiveView === "archive" ||
@@ -42,6 +44,7 @@ export function AgentR04ListToolbar(props: Props) {
 
   return (
     <div className={styles.root} data-testid="agent-r04-list-toolbar">
+      {!invitations ? (
       <AgentPartnerDiscoveryFilters
         layout="list-main"
         specialization={props.specialization}
@@ -54,6 +57,7 @@ export function AgentR04ListToolbar(props: Props) {
         onPartnerTypeChange={props.onPartnerTypeChange}
         resetKey={props.taxonomyResetKey}
       />
+      ) : null}
 
       <div className={styles.toolsRow}>
         <label className={styles.searchField}>
@@ -65,6 +69,7 @@ export function AgentR04ListToolbar(props: Props) {
             data-testid="agent-r04-list-search"
           />
         </label>
+        {!invitations ? (
         <label className={styles.compactSelect}>
           <span className={styles.srOnly}>Показывать</span>
           <select
@@ -77,6 +82,8 @@ export function AgentR04ListToolbar(props: Props) {
             <option value="archive">Архив</option>
           </select>
         </label>
+        ) : null}
+        {!invitations ? (
         <details className={styles.moreFilters}>
           <summary>Ещё фильтры и сортировка</summary>
           <div className={styles.moreGrid}>
@@ -104,6 +111,8 @@ export function AgentR04ListToolbar(props: Props) {
             </label>
           </div>
         </details>
+        ) : null}
+        {!invitations ? (
         <div className={styles.viewToggle} data-testid="agent-r04-view-toggle">
           <button
             type="button"
@@ -122,6 +131,7 @@ export function AgentR04ListToolbar(props: Props) {
             Карточки
           </button>
         </div>
+        ) : null}
       </div>
 
       <div className={styles.collectionCount}>

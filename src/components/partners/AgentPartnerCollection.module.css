@@ -7,17 +7,28 @@
 .partnerCard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg, 12px);
   background: var(--surface);
-  min-width: 0;
+  overflow: hidden;
 }
 
-.cardTop {
+.cardSelectRow {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.cardBody {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 auto;
 }
 
 .cardTitle {
@@ -26,20 +37,108 @@
   font-weight: 700;
 }
 
-.cardMeta,
-.cardDetail {
+.cardMeta {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--muted);
   line-height: 1.45;
 }
 
-.cardActions {
+.cardFooter {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  justify-content: flex-end;
   align-items: center;
-  margin-top: var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--text-sm);
+}
+
+.dataTable col.colSelect {
+  width: 44px;
+}
+
+.dataTable col.colName {
+  width: 32%;
+}
+
+.dataTable col.colDetail {
+  width: 34%;
+}
+
+.dataTable col.colStatus {
+  width: 14%;
+}
+
+.dataTable col.colActions {
+  width: 120px;
+}
+
+.dataTable th,
+.dataTable td {
+  padding: 0.65rem 0.75rem;
+  vertical-align: top;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.dataTable th {
+  font-weight: 650;
+  color: var(--muted);
+  background: var(--surface-muted, var(--offset));
+}
+
+.dataTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dataTable tbody tr:hover td {
+  background: rgb(0 0 0 / 0.02);
+}
+
+.titleCell strong {
+  display: block;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.caption {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.detailCell {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.actionCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.selectCell {
+  text-align: center;
+  vertical-align: middle;
 }
 
 .expandedRow {
@@ -80,8 +179,33 @@
   text-decoration: none;
 }
 
+.listFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.listFooter select {
+  margin-left: var(--space-2);
+}
+
 @media (max-width: 680px) {
   .cardGrid {
     grid-template-columns: 1fr;
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+}
+
+@media (min-width: 681px) {
+  .mobileOnly {
+    display: none;
   }
 }

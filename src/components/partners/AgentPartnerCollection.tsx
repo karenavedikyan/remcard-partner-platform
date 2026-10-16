@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
 import { getPartnershipUiActions, partnershipNeedsMyResponse } from "@/lib/partnership-rules";
+import { partnershipActionIconId } from "@/lib/agent-r04/partnership-action-icons";
 import type { AgentListViewMode } from "@/components/partners/AgentR04ListToolbar";
 import {
   partnerListDetail,
   partnerListSubtitle,
   partnerRowOfficialLine,
   partnerRowTitle,
+  partnerTermsDetail,
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
 import type { Partnership } from "@/lib/types";
@@ -41,7 +43,41 @@ type Props = {
   termRequests: Record<string, TermRequestState>;
   onLoadTermRequests: (partnershipId: string) => void;
   expandedTermPartnershipId: string | null;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: (ids: string[], checked: boolean) => void;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
 };
+
+function mapRowActions(
+  partnership: Partnership,
+  meId: string,
+  busyId: string | null,
+  open: boolean,
+  onRunAction: (partnershipId: string, action: string) => void,
+  onToggleDetails: () => void,
+) {
+  const actions = getPartnershipUiActions(partnership, meId);
+  return [
+    ...actions
+      .filter((a) => a.kind !== "waiting")
+      .map((a) => ({
+        id: partnershipActionIconId(a.kind),
+        label: a.label,
+        disabled: busyId === partnership.id,
+        onClick: () => onRunAction(partnership.id, a.kind),
+      })),
+    {
+      id: partnershipActionIconId("details"),
+      label: open ? "Свернуть" : "Детали",
+      onClick: onToggleDetails,
+    },
+  ];
+}
 
 export function AgentPartnerCollection({
   partnerships,
@@ -53,61 +89,136 @@ export function AgentPartnerCollection({
   termRequests,
   onLoadTermRequests,
   expandedTermPartnershipId,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  page,
+  pageSize,
+  totalCount,
+  onPageChange,
+  onPageSizeChange,
 }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const pageIds = useMemo(() => partnerships.map((p) => p.id), [partnerships]);
+  const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const footer = (
+    <div className={styles.listFooter} data-testid="agent-r04-list-pagination">
+      <span>
+        Страница {page + 1} из {pageCount} · всего {totalCount}
+      </span>
+      <label>
+        На странице
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          aria-label="Записей на странице"
+        >
+          {[10, 25, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={page <= 0}
+          onClick={() => onPageChange(page - 1)}
+        >
+          Назад
+        </Button>{" "}
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={page + 1 >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Вперёд
+        </Button>
+      </span>
+    </div>
+  );
 
   if (viewMode === "cards") {
     return (
-      <div className={styles.cardGrid} data-testid="agent-r04-partners-cards">
-        {partnerships.map((partnership) => {
-          const partner = partnershipPartnerProfile(partnership, meId);
-          const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-          const actions = getPartnershipUiActions(partnership, meId);
-          return (
-            <article key={partnership.id} className={styles.partnerCard}>
-              <div className={styles.cardTop}>
-                <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
-              </div>
-              <h3 className={styles.cardTitle}>{partnerRowTitle(partnership, meId)}</h3>
-              {partnerRowOfficialLine(partnership, meId) ? (
-                <p className={styles.cardMeta}>Официально: {partnerRowOfficialLine(partnership, meId)}</p>
-              ) : null}
-              <p className={styles.cardMeta}>{partnerListSubtitle(partner)}</p>
-              <p className={styles.cardDetail}>{partnerListDetail(partnership, meId)}</p>
-              <div className={styles.cardActions}>
-                <AgentPartnerRecordActions partnership={partnership} meId={meId} onUpdated={onUpdated} />
-                {actions
-                  .filter((a) => a.kind !== "waiting")
-                  .slice(0, 2)
-                  .map((action) => (
-                    <Button
-                      key={action.kind}
-                      variant={action.variant ?? "secondary"}
-                      disabled={busyId === partnership.id}
-                      onClick={() => onRunAction(partnership.id, action.kind)}
-                    >
-                      {action.label}
-                    </Button>
-                  ))}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      <>
+        <div className={styles.cardGrid} data-testid="agent-r04-partners-cards">
+          {partnerships.map((partnership) => {
+            const partner = partnershipPartnerProfile(partnership, meId);
+            const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
+            const open = expandedId === partnership.id;
+            const termsLine = partnerTermsDetail(partnership);
+            return (
+              <article key={partnership.id} className={styles.partnerCard}>
+                <div className={styles.cardSelectRow}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(partnership.id)}
+                    onChange={() => onToggleSelect(partnership.id)}
+                    aria-label="Выбрать карточку"
+                  />
+                  <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
+                </div>
+                <div className={styles.cardBody}>
+                  <h3 className={styles.cardTitle}>{partnerRowTitle(partnership, meId)}</h3>
+                  {partnerRowOfficialLine(partnership, meId) ? (
+                    <p className={styles.cardMeta}>Официально: {partnerRowOfficialLine(partnership, meId)}</p>
+                  ) : null}
+                  <p className={styles.cardMeta}>{partnerListSubtitle(partner)}</p>
+                  <p className={styles.cardMeta}>{partnerListDetail(partnership, meId)}</p>
+                  {termsLine ? <p className={styles.cardMeta}>{termsLine}</p> : null}
+                </div>
+                <div className={styles.cardFooter}>
+                  <RecordRowActions
+                    variant="cardToolbar"
+                    ariaLabel="Действия с партнёром"
+                    actions={[
+                      ...mapRowActions(partnership, meId, busyId, open, onRunAction, () =>
+                        setExpandedId(open ? null : partnership.id),
+                      ),
+                      {
+                        id: partnershipActionIconId("more"),
+                        label: "Ещё",
+                        onClick: () => setExpandedId(open ? null : partnership.id),
+                      },
+                    ]}
+                  />
+                </div>
+                {open ? (
+                  <div className={styles.mobileMore}>
+                    <AgentPartnerRecordActions partnership={partnership} meId={meId} onUpdated={onUpdated} />
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+        {footer}
+      </>
     );
   }
 
   return (
     <div data-testid="agent-r04-partners-list">
-      <div className={`${r03.collectionPanel} ${r03.mobileOnly}`}>
+      <div className={`${r03.collectionPanel} ${styles.mobileOnly}`}>
         {partnerships.map((partnership) => {
           const partner = partnershipPartnerProfile(partnership, meId);
           const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-          const actions = getPartnershipUiActions(partnership, meId);
           const needsResponse = partnershipNeedsMyResponse(partnership, meId);
+          const open = expandedId === partnership.id;
           return (
             <article key={partnership.id} className={r03.mobileRecord} data-testid="agent-partner-mobile-row">
               <div className={r03.mobileRecordTop}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(partnership.id)}
+                  onChange={() => onToggleSelect(partnership.id)}
+                  aria-label="Выбрать партнёра"
+                />
                 <div className={r03.mobileRecordMain}>
                   <p className={r03.mobileRecordTitle}>{partnerRowTitle(partnership, meId)}</p>
                   <p className={r03.meta}>{partnerListSubtitle(partner)}</p>
@@ -120,24 +231,12 @@ export function AgentPartnerCollection({
                 <RecordRowActions
                   ariaLabel="Действия с партнёром"
                   variant="mobileFooter"
-                  actions={[
-                    ...actions
-                      .filter((a) => a.kind !== "waiting")
-                      .map((a) => ({
-                        id: a.kind,
-                        label: a.label,
-                        disabled: busyId === partnership.id,
-                        onClick: () => onRunAction(partnership.id, a.kind),
-                      })),
-                    {
-                      id: "more",
-                      label: "Ещё",
-                      onClick: () => setExpandedId((id) => (id === partnership.id ? null : partnership.id)),
-                    },
-                  ]}
+                  actions={mapRowActions(partnership, meId, busyId, open, onRunAction, () =>
+                    setExpandedId(open ? null : partnership.id),
+                  )}
                 />
               </div>
-              {expandedId === partnership.id ? (
+              {open ? (
                 <div className={styles.mobileMore}>
                   <AgentPartnerRecordActions partnership={partnership} meId={meId} onUpdated={onUpdated} />
                 </div>
@@ -146,10 +245,25 @@ export function AgentPartnerCollection({
           );
         })}
       </div>
-      <div className={`${r03.tableWrap} ${r03.desktopOnly}`}>
-        <table className={r03.collectionTable}>
+      <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
+        <table className={styles.dataTable} data-testid="agent-r04-partners-table">
+          <colgroup>
+            <col className={styles.colSelect} />
+            <col className={styles.colName} />
+            <col className={styles.colDetail} />
+            <col className={styles.colStatus} />
+            <col className={styles.colActions} />
+          </colgroup>
           <thead>
             <tr>
+              <th className={styles.selectCell}>
+                <input
+                  type="checkbox"
+                  aria-label="Выбрать все на странице"
+                  checked={allSelected}
+                  onChange={(e) => onToggleSelectAll(pageIds, e.target.checked)}
+                />
+              </th>
               <th>Название</th>
               <th>Подробности</th>
               <th>Статус</th>
@@ -163,47 +277,45 @@ export function AgentPartnerCollection({
               const actions = getPartnershipUiActions(partnership, meId);
               const termState = termRequests[partnership.id];
               const open = expandedId === partnership.id;
+              const termsLine = partnerTermsDetail(partnership);
               return (
                 <Fragment key={partnership.id}>
-                  <tr>
-                    <td>
+                  <tr data-testid="agent-r04-partners-table-row">
+                    <td className={styles.selectCell}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(partnership.id)}
+                        onChange={() => onToggleSelect(partnership.id)}
+                        aria-label={`Выбрать ${partnerRowTitle(partnership, meId)}`}
+                      />
+                    </td>
+                    <td className={styles.titleCell}>
                       <strong>{partnerRowTitle(partnership, meId)}</strong>
                       {partnerRowOfficialLine(partnership, meId) ? (
-                        <small className={r03.collectionCaption}>
-                          {partnerRowOfficialLine(partnership, meId)}
-                        </small>
+                        <small className={styles.caption}>{partnerRowOfficialLine(partnership, meId)}</small>
                       ) : null}
-                      <small className={r03.collectionCaption}>{partnerListSubtitle(partner)}</small>
+                      <small className={styles.caption}>{partnerListSubtitle(partner)}</small>
                     </td>
-                    <td className={r03.collectionDetail}>{partnerListDetail(partnership, meId)}</td>
+                    <td className={styles.detailCell}>
+                      {partnerListDetail(partnership, meId)}
+                      {termsLine ? <small className={styles.caption}>{termsLine}</small> : null}
+                    </td>
                     <td>
                       <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
                     </td>
-                    <td className={r03.collectionRowAction}>
+                    <td className={styles.actionCell}>
                       <RecordRowActions
                         ariaLabel="Действия"
                         variant="listRow"
-                        actions={[
-                          ...actions
-                            .filter((a) => a.kind !== "waiting")
-                            .map((a) => ({
-                              id: a.kind,
-                              label: a.label,
-                              disabled: busyId === partnership.id,
-                              onClick: () => onRunAction(partnership.id, a.kind),
-                            })),
-                          {
-                            id: "details",
-                            label: open ? "Свернуть" : "Детали",
-                            onClick: () => setExpandedId(open ? null : partnership.id),
-                          },
-                        ]}
+                        actions={mapRowActions(partnership, meId, busyId, open, onRunAction, () =>
+                          setExpandedId(open ? null : partnership.id),
+                        )}
                       />
                     </td>
                   </tr>
                   {open ? (
                     <tr>
-                      <td colSpan={4} className={styles.expandedRow}>
+                      <td colSpan={5} className={styles.expandedRow}>
                         <div className={styles.expandedInner}>
                           <AgentPartnerRecordActions
                             partnership={partnership}
@@ -251,16 +363,6 @@ export function AgentPartnerCollection({
                               }}
                             />
                           ) : null}
-                          {partnership.terms.length ? (
-                            <ul className={styles.termsList}>
-                              {partnership.terms.map((term) => (
-                                <li key={term.id}>
-                                  {displayCategoryLabel(term.category, term.categoryLabel)} —{" "}
-                                  {term.isExcluded ? "—" : `${term.storePercent}%`}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -271,6 +373,7 @@ export function AgentPartnerCollection({
           </tbody>
         </table>
       </div>
+      {footer}
     </div>
   );
 }

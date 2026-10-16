@@ -49,6 +49,8 @@ export default defineConfig({
       "src/lib/r03-theme-assert.test.ts",
       "src/components/auth/LoginExperience.test.tsx",
       "src/lib/agent-r04/partner-filters.test.ts",
+      "src/lib/agent-r04/partner-list-row.test.ts",
+      "src/lib/agent-r04/partnership-action-icons.test.ts",
       "src/lib/agent-r03/create-idempotency.test.ts",
       "src/lib/agent-nav/sections.test.ts",
       "src/lib/agent-r03/certificateOffers.test.ts",
