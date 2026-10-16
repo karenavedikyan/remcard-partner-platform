@@ -23,7 +23,7 @@
 
 | Repo | Tip |
 |------|-----|
-| Platform | 0e6539a6e60db6bc24183ea0d3f5eeb0b8d0f09b |
-| Navigator | 0e6539a6e60db6bc24183ea0d3f5eeb0b8d0f09b |
+| Platform | `2f8704dae9c466e2cb11f834eaed901fe2456013` |
+| Navigator | `f8310b1f92fe2abc790661bcae5886c73415176c` |
 
 See `TEST-RESULTS.json` for commands, exit codes, and counts.
