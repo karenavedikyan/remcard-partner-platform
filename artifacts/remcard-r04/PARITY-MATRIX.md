@@ -1,4 +1,4 @@
-# R04 parity matrix (R04.3)
+# R04 parity matrix (R04.4)
 
 Reference: `roles.js` SHA256 `0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc`.
 
@@ -15,6 +15,16 @@ Reference: `roles.js` SHA256 `0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1
 - P4 invitations: no active/archive toolbar in impl when on invitation segment.
 - Modal captures: viewport-only (not fullPage) for P3/P6/modal-320.
 
+## R04.4 recapture
+
+| IDs | Reason |
+|-----|--------|
+| P1,P2,P7,P8 | Direct action toolbar on list/cards |
+| P3,P6,modal-320 | Find modal filter order + meta lines |
+| P5,P9 | Mobile list + hub CTA color |
+
+P4 / invitation extras: carry-over from R04.3 accepted captures (`a03ca3c` era) unless re-run manually.
+
 ## Visual review
 
-`visualParityOk: false` — automated pairs/row-height only. Remaining deltas for human review: card micro-spacing vs ref, modal width vs ref on very wide screens, test-session banner offset.
+`visualParityOk: false` — automated pairs/row-height only. Exceptions: test banner, micro copy/spacing vs ref. Remaining deltas for human review: card micro-spacing vs ref, modal width vs ref on very wide screens.

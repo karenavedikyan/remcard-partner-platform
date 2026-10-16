@@ -1,34 +1,34 @@
-# RemCard R04.3 — Agent Partners targeted correction
+# RemCard R04.4 — Agent Partners (three remainders)
 
-## HEAD (after push)
+## HEAD
 
 | Repo | Branch | HEAD |
 |------|--------|------|
-| remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | `TEST-RESULTS.json` → `platformHead` |
-| remcard-navigator | `cursor/r04-agent-partners-b3e3` | `TEST-RESULTS.json` → `navigatorHead` |
+| remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | `a337b40` (code/capture `a337b40`) |
+| remcard-navigator | `cursor/r04-agent-partners-b3e3` | `4d275090657113b5765e90e2e1bee4c7eaa36fce` (unchanged) |
 
-## R04.3 fixes (review blockers)
+Review baseline carried from R04.3: platform `a03ca3c`, navigator `4d275090`.
 
-1. **Desktop table** — local `agent-r04-partners-table` CSS (no R03 checkbox column mismatch); row-height guard in `PARITY-VISUAL.json`.
-2. **Action icons** — partnership kinds mapped to SVG (accept/reject/pause/resume/revoke/eye/more); no fallback «•» for R04 row actions.
-3. **Acceptance** — archive uses `archiveTargetId` ACTIVE fixture; pass includes archive/alias/R03 partner checks; builds run with real exit codes; migrate order before→apply→after.
-4. **Cards** — select strip, divider, compact icon footer (business actions in «Ещё»/details).
-5. **Fixtures** — «Мастерская интерьера» as COMPANY + Russian labels via taxonomy helpers; seed guard on hostname+DB+test user.
-6. **Hub** — outlined tabs, lead after tabs; invitations toolbar without archive/view-mode noise.
-7. **Modal** — ~560px, copy/hints, filter block order, loaded-state capture, Escape/focus trap/scroll lock; viewport shots for modal rows.
-8. **List** — row selection + pagination footer.
+## R04.4 delta (only open items)
 
-## Commands (recorded in TEST-RESULTS.json)
+1. **Direct workspace actions** — list/cards/mobile show share, rename, archive/restore, details (eye), more on the surface via `AgentPartnerWorkspaceActions`; pause/resume and other business actions stay in expanded details. Card face drops duplicate city/terms line (percent terms remain in details).
+2. **Find modal order** — ref sequence: lead → contrast spec/stage block with field hints → combined-filter hint → optional search + «Найти» → collapsed city/type → results with `partnerSearchResultMeta`. Filter CSS: `min-width:0`, `width:100%`, grid gap. Hub primary CTA: white on red in light (`data-theme`/system dark keeps accent-ink).
+3. **R03 accept proof** — after accepting incoming «Свет и электрика», acceptance checks ACTIVE via fresh list GET, `available-partners` API, and the partner label on `/certificates/new` (not pre-existing «Дом материалов»).
+
+## Commands (exit codes in `TEST-RESULTS.json`)
 
 ```bash
-cd remcard-partner-platform && pnpm run build
-cd remcard-navigator && npm run build
-cd remcard-partner-platform && pnpm exec vitest run src/lib/agent-r04/partner-list-row.test.ts src/lib/agent-r04/partnership-action-icons.test.ts src/lib/agent-r04/partner-filters.test.ts
-set -a && source /tmp/admin-test-local-stack/runtime.env && set +a
-cd remcard-partner-platform && node scripts/r04-browser-acceptance.mjs
-cd remcard-partner-platform && node scripts/r04-ui-parity-visual.mjs
+cd remcard-partner-platform && pnpm exec vitest run src/components/partners/PartnersHub.test.tsx   # 0
+cd remcard-partner-platform && node scripts/r04-browser-acceptance.mjs   # 0 (includes build)
+cd remcard-partner-platform && node scripts/r04-ui-parity-visual.mjs   # 0
 ```
 
-**Status:** READY_FOR_REVIEW — `visualParityOk: false` until operator compares impl/ref composition.
+## Captures (R04.4 recapture)
 
-No merge / deploy / production / R05.
+Re-shot: P1, P2, P3, P5, P6, P7, P8, P9, modal-320, acceptance impl-partners-* (same run as acceptance/visual).
+
+Carry-over unchanged from R04.3 operator review (same SHA as prior ref pairs): P4 invitations, ref-r04-* reference PNGs, invite in/out extras unless listed above.
+
+**Status:** READY_FOR_REVIEW — `visualParityOk: false` (human composition sign-off still required).
+
+No merge / deploy / production DB / flags / R05.

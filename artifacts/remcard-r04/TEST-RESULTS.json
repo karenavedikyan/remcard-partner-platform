@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-16T12:04:25.493Z",
-  "platformHead": "1a09b27e5cbf75e8cc8cad9728ef583b5be51cf0",
+  "generatedAt": "2026-10-16T12:22:26.095Z",
+  "platformHead": "a337b407dfe2a8bad3bba7ec29d7af42cb868524",
   "navigatorHead": "4d275090657113b5765e90e2e1bee4c7eaa36fce",
   "platformOrigin": "http://127.0.0.1:3040",
   "commands": [
@@ -44,8 +44,9 @@
     "invitationsSegmentVisible": true,
     "incomingInviteAccept": true,
     "incomingBecomesActive": true,
+    "r03AcceptedPartnerInAvailableApi": true,
     "r03CreatePartnerFieldVisible": true,
-    "r03PartnerListsDomMaterials": true,
+    "r03AcceptedPartnerOnCreateForm": true,
     "migrateOk": true,
     "r04GateOn": true,
     "r04Eligible": true
@@ -60,25 +61,27 @@
     "impl-partners-320-light.png"
   ],
   "geometry": {
-    "pairs": 8,
-    "visualParityOk": false,
-    "p1FirstRowH": 84.34375,
-    "listTableH": 194.578125
+    "note": "Run node scripts/r04-ui-parity-visual.mjs for bounds + ref pairs"
   },
+  "r04Phase": "R04.4",
+  "status": "READY_FOR_REVIEW",
   "visualReview": {
+    "status": "captured",
+    "implCaptures": 7,
+    "parityVisualPass": true,
     "visualParityOk": false,
-    "note": "Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS."
+    "captureCodeSha": "a337b40"
   },
   "steps": [
     {
       "step": "test_session",
       "ok": true,
-      "agentId": "cmvax64ah0003jsu6ml2py9yc"
+      "agentId": "cmvaxt9h50003js9pkaj161mr"
     },
     {
       "step": "partner_seed",
       "exitCode": 0,
-      "stdout": "{\"ok\":true,\"active\":[\"cmvax69vw0006js7nztmjvjuu\",\"cmvax69w6000ejs7nxcqbtjdx\"],\"archiveTargetId\":\"cmvax69vw0006js7nztmjvjuu\",\"incoming\":\"cmvax69wd000hjs7nxv0o30jp\",\"outgoing\":\"cmvax69wk000njs7n5lxqguwf"
+      "stdout": "{\"ok\":true,\"active\":[\"cmvaxtfe00006jsn6wbkdel4r\",\"cmvaxtfed000ejsn6s6cn9dai\"],\"archiveTargetId\":\"cmvaxtfe00006jsn6wbkdel4r\",\"incoming\":\"cmvaxtfei000hjsn6xc9bnlr3\",\"outgoing\":\"cmvaxtfep000njsn6vuo1x184"
     },
     {
       "step": "preference_patch",
@@ -102,6 +105,5 @@
       "exitCode": 0
     }
   ],
-  "pass": true,
-  "captureTreeClean": true
+  "pass": true
 }
