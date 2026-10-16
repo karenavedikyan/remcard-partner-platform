@@ -1,6 +1,6 @@
 {
-  "platformSha": "3b17ceb",
-  "navigatorSha": "65115075",
+  "platformSha": "3b17cebbdae9bd02bfe7906944c0e8d825a80133",
+  "navigatorSha": "651150754af947a3ff896fe9431c68bd45ac5266",
   "build": {
     "command": "npm run build",
     "status": "pass",
