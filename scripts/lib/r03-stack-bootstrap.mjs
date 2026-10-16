@@ -200,6 +200,18 @@ export function ensureAgentPartnership(agentUserId, env) {
   return JSON.parse((res.stdout || '').trim().split('\n').pop() ?? '{}');
 }
 
+export function markParityCertificateUsage(certId, env) {
+  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r03ParityMarkUsage.ts', certId], {
+    cwd: NAV_ROOT,
+    env,
+    encoding: 'utf8',
+  });
+  if (res.status !== 0) {
+    throw new Error(`parity usage mark: ${(res.stderr || res.stdout || '').slice(0, 400)}`);
+  }
+  return JSON.parse((res.stdout || '').trim().split('\n').pop() ?? '{}');
+}
+
 export async function bootstrapAdminAgentSession(browser, opts = {}) {
   const meta = ensureStack();
   const env = loadRuntimeEnv(meta.envPath);
@@ -211,11 +223,15 @@ export async function bootstrapAdminAgentSession(browser, opts = {}) {
   const page = await context.newPage();
 
   await page.goto(`${plat}/login?mode=admin`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-  await page.locator('[data-testid="admin-login-pending"]').waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => null);
-  const adminTab = page.getByRole('tab', { name: 'Вход администратора' });
-  await adminTab.waitFor({ state: 'visible', timeout: 45_000 });
-  await adminTab.click();
-  await page.locator('input[autocomplete="username"]').fill(ADMIN_CREDS.login);
+  await page.locator('[data-testid="admin-login-pending"]').waitFor({ state: 'hidden', timeout: 90_000 }).catch(() => null);
+  const usernameInput = page.locator('input[autocomplete="username"]');
+  if (!(await usernameInput.isVisible().catch(() => false))) {
+    const adminTab = page.getByRole('tab', { name: 'Вход администратора' });
+    await adminTab.waitFor({ state: 'attached', timeout: 45_000 });
+    await adminTab.click({ force: true });
+  }
+  await usernameInput.waitFor({ state: 'visible', timeout: 45_000 });
+  await usernameInput.fill(ADMIN_CREDS.login);
   await page.locator('input[autocomplete="current-password"]').fill(ADMIN_CREDS.password);
   await page.getByRole('button', { name: 'Войти' }).click();
   await page.waitForURL(/\/admin\/test-users/, { timeout: 60_000 });
@@ -243,12 +259,23 @@ export async function bootstrapAdminAgentSession(browser, opts = {}) {
   const userId = session.me.body?.user?.id;
   if (!userId) throw new Error('auth_me_missing_user');
 
-  ensureAgentPartnership(userId, { ...env, PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true' });
+  const partnership = ensureAgentPartnership(userId, { ...env, PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true' });
 
   const storagePath = path.join(RUN_DIR, 'ui-parity-storage-state.json');
   await context.storageState({ path: storagePath });
 
-  return { meta, plat, env, context, page, cookieHeader: session.cookieHeader, userId, storagePath, agentLabel };
+  return {
+    meta,
+    plat,
+    env,
+    context,
+    page,
+    cookieHeader: session.cookieHeader,
+    userId,
+    storagePath,
+    agentLabel,
+    partnership,
+  };
 }
 
 export async function measurePageTheme(page) {
@@ -309,8 +336,11 @@ export async function openImplSection(page, plat, section) {
   await page.waitForLoadState('networkidle').catch(() => null);
 }
 
-export async function seedUiParityFixtures(plat, cookieHeader, userId) {
+export async function seedUiParityFixtures(plat, cookieHeader, userId, opts = {}) {
+  const partnership = opts.partnership ?? {};
+  const stackEnv = opts.env ?? process.env;
   const headers = { Cookie: cookieHeader, 'content-type': 'application/json', Origin: plat };
+  const storeUserId = partnership.storeUserId || userId;
   const clients = [];
   for (let i = 0; i < PARITY_CLIENTS.length; i++) {
     const row = PARITY_CLIENTS[i];
@@ -332,16 +362,17 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId) {
     {
       partners: [
         {
-          storeUserId: userId,
-          storeName: 'Self',
-          isSelfScan: true,
+          storeUserId,
+          storeName: 'Дом материалов',
+          isSelfScan: storeUserId === userId,
           categories: [
+            { category: 'floor', categoryLabel: 'Напольные покрытия', discountPercent: 10, issuerPercent: 0 },
             { category: 'doors', categoryLabel: 'Двери', discountPercent: 5, issuerPercent: 0 },
-            { category: 'floor', categoryLabel: 'Напольные покрытия', discountPercent: 7, issuerPercent: 0 },
           ],
         },
       ],
       userAlias: PARITY_CERT_ALIASES[0],
+      agentClientId: clients[0]?.id,
     },
     {
       partners: [
@@ -378,6 +409,11 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId) {
     const body = await res.json();
     if (!res.ok) throw new Error(`seed_cert_${i}:${body.error || res.status}`);
     certs.push(body.certificate ?? body);
+  }
+
+  const parityCertId = certs[0]?.id;
+  if (parityCertId) {
+    markParityCertificateUsage(parityCertId, stackEnv);
   }
 
   return { clients, certs };

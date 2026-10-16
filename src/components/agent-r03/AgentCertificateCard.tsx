@@ -5,8 +5,10 @@ import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { certificatePartnerSummary } from "@/lib/agent-r03/certificateOffers";
 import { formatDiscountPercent } from "@/lib/agent-r03/formatDiscountPercent";
 import { certificateUsageLabel } from "@/lib/agent-r03/certificateUsageLabel";
-import { certificateStatusLabel, certificateStatusTone } from "@/lib/certificate-labels";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  certificateLifecycleStatusLabel,
+  certificatePurchaseStatusLabel,
+} from "@/lib/agent-r03/certificatePurchaseStatus";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 
@@ -64,10 +66,7 @@ export function AgentCertificateCard({
         <div className={styles.certCardHead}>
           <div className={styles.certCardHeadText}>
             <span className={styles.certCardEyebrow}>RemCard · сертификат</span>
-            <StatusBadge
-              label={certificateStatusLabel(cert.status)}
-              tone={certificateStatusTone(cert.status)}
-            />
+            <span className={styles.purchasePill}>{certificatePurchaseStatusLabel(cert)}</span>
           </div>
         </div>
         <div className={styles.certCardBody}>
@@ -79,6 +78,7 @@ export function AgentCertificateCard({
             <IconTicket />
             <span>{certificateUsageLabel(cert)}</span>
           </p>
+          <p className={styles.certLifecycleCaption}>{certificateLifecycleStatusLabel(cert)}</p>
           {cert.agentClient ? (
             <p className={styles.meta}>Клиент: {cert.agentClient.displayName}</p>
           ) : null}
@@ -108,7 +108,10 @@ export function AgentCertificateCard({
           ) : null}
         </div>
         <div className={styles.certificateBottom}>
-          <small>
+          <small
+            className={styles.certificateBottomMeta}
+            title={`От ${issuer}${cert.displayCode ? ` · ${cert.displayCode}` : ""}`}
+          >
             От {issuer}
             {cert.displayCode ? ` · ${cert.displayCode}` : ""}
           </small>

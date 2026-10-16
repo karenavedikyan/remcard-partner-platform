@@ -17,10 +17,9 @@ import {
   CERT_STATUS_FILTER_OPTIONS,
 } from "@/lib/agent-r03/listSortOptions";
 import type { AgentCertificateRow, AgentR03ListMeta, AgentR03ListSort } from "@/lib/agent-r03/types";
-import { certificateStatusLabel, certificateStatusTone } from "@/lib/certificate-labels";
+import { certificatePurchaseStatusLabel } from "@/lib/agent-r03/certificatePurchaseStatus";
 import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
 import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
@@ -400,10 +399,9 @@ export function AgentCertificatesList() {
                     </td>
                     <td className={styles.collectionDetail}>{certificateListDetail(cert)}</td>
                     <td>
-                      <StatusBadge
-                        label={certificateStatusLabel(cert.status)}
-                        tone={certificateStatusTone(cert.status)}
-                      />
+                      <span className={styles.purchasePill}>
+                        {certificatePurchaseStatusLabel(cert)}
+                      </span>
                     </td>
                     <td className={styles.collectionRowAction}>
                       <RecordRowActions

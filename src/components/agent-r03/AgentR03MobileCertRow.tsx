@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
-import { certificateStatusLabel } from "@/lib/certificate-labels";
+import { certificatePurchaseStatusLabel } from "@/lib/agent-r03/certificatePurchaseStatus";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 
@@ -39,7 +39,7 @@ export function AgentR03MobileCertRow({ cert, selected, onSelectChange, actions 
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>
-        <span className={styles.statusPill}>{certificateStatusLabel(cert.status)}</span>
+        <span className={styles.purchasePill}>{certificatePurchaseStatusLabel(cert)}</span>
         <RecordRowActions
           ariaLabel="Действия с сертификатом"
           actions={actions}

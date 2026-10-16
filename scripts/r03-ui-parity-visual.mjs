@@ -55,9 +55,27 @@ const CORRECTIVE_MATRIX = [
   ...SMOKE_MATRIX,
 ];
 
-const DELTA_MATRIX = [
-  ...MAIN_MATRIX.filter((r) => r.width === 375),
-  ...SMOKE_MATRIX.filter((r) => r.kind === 'cards320'),
+const MATCHED_PAIR_ROWS = [
+  {
+    section: 'certificates',
+    viewMode: 'cards',
+    theme: 'light',
+    width: 1440,
+    height: 900,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.certSearch,
+    implSearch: false,
+  },
+  {
+    section: 'certificates',
+    viewMode: 'cards',
+    theme: 'dark',
+    width: 1440,
+    height: 900,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.certSearch,
+    implSearch: false,
+  },
   {
     section: 'certificates',
     viewMode: 'cards',
@@ -69,6 +87,34 @@ const DELTA_MATRIX = [
     implSearch: false,
   },
   {
+    section: 'certificates',
+    viewMode: 'cards',
+    theme: 'dark',
+    width: 375,
+    height: 812,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.certSearch,
+    implSearch: false,
+  },
+  {
+    section: 'clients',
+    viewMode: 'list',
+    theme: 'light',
+    width: 1440,
+    height: 900,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.clientSearch,
+  },
+  {
+    section: 'clients',
+    viewMode: 'list',
+    theme: 'dark',
+    width: 1440,
+    height: 900,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.clientSearch,
+  },
+  {
     section: 'clients',
     viewMode: 'list',
     theme: 'light',
@@ -77,6 +123,21 @@ const DELTA_MATRIX = [
     kind: 'matched',
     searchQuery: PARITY_MATCH.clientSearch,
   },
+  {
+    section: 'clients',
+    viewMode: 'list',
+    theme: 'dark',
+    width: 375,
+    height: 812,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.clientSearch,
+  },
+];
+
+const DELTA_MATRIX = [
+  ...MAIN_MATRIX.filter((r) => r.width === 375),
+  ...SMOKE_MATRIX.filter((r) => r.kind === 'cards320'),
+  ...MATCHED_PAIR_ROWS.filter((r) => r.width === 375),
 ];
 
 const VIEWPORT_MATRIX = [
@@ -122,7 +183,16 @@ const VIEWPORT_MATRIX = [
   },
 ];
 
+const TAIL_MATRIX = [
+  ...SMOKE_MATRIX,
+  ...MATCHED_PAIR_ROWS,
+  ...VIEWPORT_MATRIX.filter((r) => r.width === 320),
+];
+
 function captureMatrix() {
+  if (process.env.R03_PARITY_TAIL_CAPTURE === '1') {
+    return TAIL_MATRIX;
+  }
   if (process.env.R03_DELTA_CAPTURE === '1') {
     return [...DELTA_MATRIX, ...VIEWPORT_MATRIX];
   }
@@ -572,8 +642,8 @@ async function main() {
   let smokeSteps = [];
   try {
     const boot = await bootstrapAdminAgentSession(browser);
-    const { plat, context, storagePath, cookieHeader, userId } = boot;
-    await seedUiParityFixtures(plat, cookieHeader, userId);
+    const { plat, context, storagePath, cookieHeader, userId, partnership, env } = boot;
+    await seedUiParityFixtures(plat, cookieHeader, userId, { partnership, env });
 
     const rowsToCapture = captureMatrix();
     const mergeCarry =
@@ -706,9 +776,16 @@ async function main() {
           'certificateOffers.test.ts',
           'formatDiscountPercent.test.ts',
           'clientListRow.test.ts',
+          'certificatePurchaseStatus.test.ts',
           'sections.test.ts',
         ],
-        visualRunner: { script: 'scripts/r03-ui-parity-visual.mjs', ok, failures, captureCount: captures.length },
+        visualRunner: {
+          script: 'scripts/r03-ui-parity-visual.mjs',
+          env: process.env.R03_PARITY_TAIL_CAPTURE === '1' ? 'R03_PARITY_TAIL_CAPTURE=1' : undefined,
+          ok,
+          failures,
+          captureCount: captures.length,
+        },
         browserSmoke: smokeSteps,
       },
       null,

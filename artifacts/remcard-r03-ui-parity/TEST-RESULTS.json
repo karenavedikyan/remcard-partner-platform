@@ -1,21 +1,35 @@
 {
-  "platformSha": "386d2f51b4896e38f893cafc6cb0c026167b71d9",
-  "navigatorSha": "651150754af947a3ff896fe9431c68bd45ac5266",
-  "build": {
-    "command": "npm run build",
-    "status": "see_ci_or_local"
-  },
-  "vitest": [
-    "certificateOffers.test.ts",
-    "formatDiscountPercent.test.ts",
-    "clientListRow.test.ts",
-    "sections.test.ts"
+  "platformSha": "0e6539a6e60db6bc24183ea0d3f5eeb0b8d0f09b",
+  "navigatorSha": "f8310b1f92fe2abc790661bcae5886c73415176c",
+  "verifiedAt": "2026-10-16T07:56:00.000Z",
+  "ok": true,
+  "steps": [
+    {
+      "cmd": "npm run build",
+      "cwd": "remcard-partner-platform",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npx vitest run src/lib/agent-r03/certificatePurchaseStatus.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/lib/profile-sections.test.ts",
+      "exitCode": 0,
+      "testFiles": 5,
+      "testsPassed": 14
+    },
+    {
+      "cmd": "R03_PARITY_TAIL_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs",
+      "exitCode": 0,
+      "captureCount": 16,
+      "visualRunnerOk": true,
+      "failures": []
+    }
   ],
   "visualRunner": {
     "script": "scripts/r03-ui-parity-visual.mjs",
+    "env": "R03_PARITY_TAIL_CAPTURE=1",
     "ok": true,
     "failures": [],
-    "captureCount": 30
+    "captureCount": 16,
+    "note": "CAPTURED rows are evidence only; pixel diffs are not a visual PASS claim."
   },
   "browserSmoke": [
     "certificates_cards",
