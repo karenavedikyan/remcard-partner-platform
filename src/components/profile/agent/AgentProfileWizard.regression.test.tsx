@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   fetchAgentProfileDraft: vi.fn(),
   patchAgentProfileDraft: vi.fn(),
   finishAgentProfile: vi.fn(),
+  discardAgentProfileDraft: vi.fn(),
 }));
 vi.mock("@/lib/agent-profile/api", () => api);
 
@@ -16,8 +17,20 @@ const initial = {
   draftEpoch: 0,
   hasDraft: true,
   profileComplete: false,
+  profileSaved: false,
   payload: { displayName: "Тестовый агент", city: "Краснодар", contactPhone: "" },
   savedProfile: {},
+};
+
+const savedComplete = {
+  ...initial,
+  step: 1,
+  version: 3,
+  hasDraft: false,
+  profileComplete: true,
+  profileSaved: true,
+  payload: { displayName: "Сохранённый", city: "Краснодар" },
+  savedProfile: { displayName: "Сохранённый", city: "Краснодар" },
 };
 
 describe("Independent R02.1 wizard review", () => {
@@ -87,6 +100,51 @@ describe("Independent R02.1 wizard review", () => {
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
     expect(api.finishAgentProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows summary status badge on saved profile overview", async () => {
+    api.fetchAgentProfileDraft.mockResolvedValue(savedComplete);
+    render(<AgentProfileWizard userId="demo-agent-id" />);
+    await screen.findByTestId("agent-profile-summary-status");
+    expect(screen.getByTestId("agent-profile-summary-status")).toHaveTextContent("Заполнено");
+  });
+
+  it("cancel on saved profile discards draft and returns to summary", async () => {
+    api.fetchAgentProfileDraft
+      .mockResolvedValueOnce({
+        ...savedComplete,
+        hasDraft: true,
+        profileComplete: false,
+        version: 4,
+        draftEpoch: 2,
+      })
+      .mockResolvedValue(savedComplete);
+    api.discardAgentProfileDraft.mockResolvedValue({ discarded: true });
+    render(<AgentProfileWizard userId="synthetic-review-agent" startInEditMode />);
+    await screen.findByTestId("agent-profile-cancel-edit");
+    fireEvent.click(screen.getByTestId("agent-profile-cancel-edit"));
+    await waitFor(() => expect(api.discardAgentProfileDraft).toHaveBeenCalledWith({
+      expectedEpoch: 2,
+      expectedVersion: 4,
+    }));
+    await screen.findByTestId("agent-profile-completed-summary");
+  });
+
+  it("cancel with local-only edits resets without DELETE", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.fetchAgentProfileDraft.mockResolvedValue({
+      ...savedComplete,
+      hasDraft: false,
+      profileComplete: true,
+    });
+    render(<AgentProfileWizard userId="synthetic-review-agent" startInEditMode />);
+    await screen.findByTestId("agent-profile-input-displayName");
+    fireEvent.change(screen.getByTestId("agent-profile-input-displayName"), {
+      target: { value: "Локальная правка" },
+    });
+    fireEvent.click(screen.getByTestId("agent-profile-cancel-edit"));
+    await waitFor(() => expect(api.discardAgentProfileDraft).not.toHaveBeenCalled());
+    await screen.findByTestId("agent-profile-completed-summary");
   });
 
   it("shows a network error and re-enables submit after finish rejection", async () => {

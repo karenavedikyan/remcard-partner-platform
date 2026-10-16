@@ -34,6 +34,39 @@
   max-width: 100%;
 }
 
+.pureAgentProduction {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  gap: 24px;
+}
+
+.pureAgentProduction .sectionNav {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pureAgentProduction .tabStrip {
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line, var(--border));
+  scrollbar-width: thin;
+}
+
+.pureAgentProduction .tabButton {
+  font-size: 14px;
+  padding: 0 0 12px;
+  min-height: 48px;
+}
+
+.pureAgentProduction .tabButtonActive::after {
+  height: 3px;
+  background: var(--accent-emphasis, #c12b2f);
+}
+
 .sectionNav {
   min-width: 0;
   width: 100%;

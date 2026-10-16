@@ -3,6 +3,11 @@
 import Link from "next/link";
 import type { AgentClientRow } from "@/lib/agent-r03/types";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
+import {
+  clientPurchaseStatusLabel,
+  clientRowDetail,
+  clientRowMobileSubtitle,
+} from "@/lib/agent-r03/clientListRow";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 
@@ -21,13 +26,12 @@ export function AgentR03MobileClientRow({
   onSelectChange,
   actions,
 }: Props) {
-  const certLine =
-    client.certificateCount > 0
-      ? `${client.certificateCount} сертификат${client.certificateCount === 1 ? "" : client.certificateCount < 5 ? "а" : "ов"}`
-      : "Пока без сертификатов";
-
   return (
-    <article className={styles.mobileRecord} data-testid="agent-client-mobile-row">
+    <article
+      className={styles.mobileRecord}
+      data-testid="agent-client-mobile-row"
+      data-parity-client-id={client.id}
+    >
       <div className={styles.mobileRecordTop}>
         <label className={styles.selectCol}>
           <input
@@ -40,17 +44,19 @@ export function AgentR03MobileClientRow({
           <Link href={`/clients/${client.id}`} className={styles.mobileRecordTitle}>
             {client.displayName}
           </Link>
-          <p className={styles.meta}>
-            {[client.city, client.phone ? formatPhoneForDisplay(client.phone) : null]
-              .filter(Boolean)
-              .join(" · ") || "Контакты не указаны"}
-          </p>
-          <p className={styles.meta}>{certLine}</p>
+          <p className={styles.meta}>{clientRowMobileSubtitle(client)}</p>
+          <p className={styles.meta}>{clientRowDetail(client)}</p>
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>
-        <span className={styles.statusPill}>{archived ? "В архиве" : "Активен"}</span>
-        <RecordRowActions ariaLabel="Действия с клиентом" actions={actions} />
+        <span className={styles.purchasePill}>
+          {clientPurchaseStatusLabel(client, archived)}
+        </span>
+        <RecordRowActions
+          ariaLabel="Действия с клиентом"
+          actions={actions}
+          variant="mobileFooter"
+        />
       </div>
     </article>
   );

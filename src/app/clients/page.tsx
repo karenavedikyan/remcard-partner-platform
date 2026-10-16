@@ -18,9 +18,9 @@ export default async function ClientsPage() {
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading
-        eyebrow="RemCard PROF"
+        eyebrow="АГЕНТ"
         title="Клиенты"
-        description="Карточки клиентов и связанные сертификаты агента."
+        description="Клиенты, с которыми вы работаете в кабинете."
       />
       <AgentR03Gate>
         <AgentClientsList />

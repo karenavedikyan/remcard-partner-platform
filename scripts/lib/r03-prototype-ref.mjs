@@ -2,6 +2,19 @@
  * Drive frozen remcard-profile-wizard prototype to a verified agent cabinet section.
  */
 
+export const REF_PARITY_CAPTURE_CSS = `
+  .demo-top,
+  .review-toolbar,
+  .review-details,
+  details.review-details,
+  .app-footer { display: none !important; }
+  .page-header > .pill { display: none !important; }
+`;
+
+export async function applyRefParityCaptureStyles(page) {
+  await page.addStyleTag({ content: REF_PARITY_CAPTURE_CSS });
+}
+
 export async function driveRefAgentSection(page, baseUrl, opts) {
   const section = opts.section;
   const viewMode = opts.viewMode ?? 'list';
@@ -17,7 +30,12 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
 
   const roleSelect = page.locator('[data-testid="scenario-role"]');
   await roleSelect.waitFor({ state: 'attached', timeout: 30_000 });
-  await roleSelect.selectOption('agent');
+  await page.evaluate(() => {
+    const sel = document.querySelector('[data-testid="scenario-role"]');
+    if (!(sel instanceof HTMLSelectElement)) throw new Error('ref_role_select_missing');
+    sel.value = 'agent';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   await page.waitForTimeout(600);
   const roleAfter = await roleSelect.inputValue();
   if (roleAfter !== 'agent') {
@@ -25,14 +43,23 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
   }
 
   const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
-  await cabinetBtn.waitFor({ timeout: 20_000 });
-  await cabinetBtn.click();
-  await page.waitForTimeout(800);
+  await cabinetBtn.waitFor({ state: 'attached', timeout: 20_000 });
+  const cabinetPressed = await cabinetBtn.getAttribute('aria-pressed');
+  if (cabinetPressed !== 'true') {
+    await cabinetBtn.click({ force: true });
+    await page.waitForTimeout(800);
+  }
 
   const navKey = section === 'certificates' ? 'home' : 'clients';
-  const navBtn = page.locator(`[data-action="nav:${navKey}"], [data-testid="nav-${navKey}"]`).first();
-  await navBtn.waitFor({ timeout: 20_000 });
-  await navBtn.click();
+  const menuBtn = page.locator('[data-action="menu"]').first();
+  if (await menuBtn.isVisible().catch(() => false)) {
+    await menuBtn.click();
+    await page.waitForTimeout(400);
+  }
+  await page.evaluate((key) => {
+    const btn = document.querySelector(`[data-action="nav:${key}"], [data-testid="nav-${key}"]`);
+    if (btn instanceof HTMLElement) btn.click();
+  }, navKey);
   await page.waitForTimeout(600);
 
   const heading = section === 'certificates' ? 'Сертификаты' : 'Клиенты';
@@ -67,6 +94,20 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(400);
   }
+
+  if (opts.searchQuery) {
+    await page.evaluate((q) => {
+      const input = document.querySelector('[data-coll-control="q"]');
+      if (input instanceof HTMLInputElement) {
+        input.value = q;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, opts.searchQuery);
+    await page.waitForTimeout(500);
+  }
+
+  await applyRefParityCaptureStyles(page);
 
   const verify = await verifyRefAgentSection(page, opts);
   if (!verify.ok) return verify;
@@ -134,7 +175,7 @@ export async function verifyImplAgentShell(page, section, viewMode) {
   const heading = section === 'certificates' ? 'Сертификаты' : 'Клиенты';
   await page.getByRole('heading', { name: heading }).waitFor({ timeout: 20_000 });
 
-  const listToggle = page.locator('[data-testid="agent-r03-view-toggle"] button[data-active="true"]');
+  const listToggle = page.locator('[data-testid="agent-r03-view-toggle"] button[aria-pressed="true"]');
   const activeText = ((await listToggle.textContent()) ?? '').trim();
   if (viewMode === 'list' && !activeText.includes('Список')) {
     return { ok: false, reason: 'impl_not_list_view' };

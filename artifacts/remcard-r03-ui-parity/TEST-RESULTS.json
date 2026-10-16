@@ -1,0 +1,45 @@
+{
+  "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+  "navigatorSha": "996b7b22270a8fc2513c6b35a6bee979101f28e3",
+  "verifiedAt": "2026-10-16T09:09:30.000Z",
+  "ok": true,
+  "steps": [
+    {
+      "cmd": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npx vitest run src/lib/agent-r03/certificatePurchaseStatus.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/components/agent-r03/RecordRowActions.test.tsx src/lib/profile-sections.test.ts",
+      "exitCode": 0,
+      "testFiles": 6,
+      "testsPassed": 16
+    },
+    {
+      "cmd": "R03_PARITY_CERT_CLIP_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs",
+      "exitCode": 0,
+      "captureCount": 16,
+      "failures": [],
+      "note": "Merged carry-over; replaced cert matched 1440/375 light+dark, cards320, viewport320"
+    }
+  ],
+  "visualRunner": {
+    "script": "scripts/r03-ui-parity-visual.mjs",
+    "env": "R03_PARITY_CERT_CLIP_CAPTURE=1",
+    "ok": true,
+    "failures": [],
+    "captureCount": 16,
+    "platformWorkingTreeDirty": true
+  },
+  "browserSmoke": [
+    "certificates_cards",
+    "cert_terms_open",
+    "certificates_list",
+    "certificates_search",
+    "filters_open",
+    "client_create_open",
+    "client_rename",
+    "client_archive",
+    "client_restore",
+    "reload"
+  ]
+}

@@ -1,4 +1,5 @@
 import type { StoreCertificate } from "@/lib/certificate-types";
+import { formatCertificateDisplayCode } from "@/lib/certificate-issuer-display";
 
 export function getCertificatePublicBaseUrl(): string | null {
   const fromEnv =
@@ -94,4 +95,9 @@ export function clientVisibleDiscountSummary(cert: StoreCertificate): string {
     .sort((a, b) => a - b)
     .map((p) => `${p}%`)
     .join(", ");
+}
+
+/** User-facing code on create/detail cards; promoCode and QR resolver stay raw. */
+export function storeCertificateDisplayCode(cert: StoreCertificate): string {
+  return formatCertificateDisplayCode(cert.promoCode, cert.issuerKindSnapshot ?? null);
 }

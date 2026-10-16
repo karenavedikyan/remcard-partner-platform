@@ -18,9 +18,9 @@ export default async function CertificatesPage() {
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading
-        eyebrow="RemCard PROF"
+        eyebrow="АГЕНТ"
         title="Сертификаты"
-        description="Создавайте сертификаты для клиентов, делитесь ссылкой и управляйте архивом."
+        description="Рекомендуйте. Делитесь ссылками."
       />
       <AgentR03Gate>
         <AgentCertificatesList />

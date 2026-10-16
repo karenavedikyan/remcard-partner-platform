@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
+  discardAgentProfileDraft,
   fetchAgentProfileDraft,
   finishAgentProfile,
   patchAgentProfileDraft,
@@ -13,15 +14,63 @@ import styles from "./AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Аудитория", "Контакты", "Проверка"] as const;
 
+type FieldErrors = Partial<Record<keyof AgentProfileDraftPayload, string>>;
+
+function validateRequiredIdentity(draft: AgentProfileDraftPayload): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!draft.displayName?.trim()) errors.displayName = "Укажите имя";
+  if (!draft.city?.trim()) errors.city = "Укажите город";
+  return errors;
+}
+
+function draftsEqual(a: AgentProfileDraftPayload, b: AgentProfileDraftPayload): boolean {
+  const keys: (keyof AgentProfileDraftPayload)[] = [
+    "displayName",
+    "city",
+    "audience",
+    "channel",
+    "contactPhone",
+    "contactEmail",
+  ];
+  return keys.every((k) => (a[k] ?? "").trim() === (b[k] ?? "").trim());
+}
+
+function reviewFacts(draft: AgentProfileDraftPayload) {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: "Имя", value: draft.displayName?.trim() || "Не указано" },
+    { label: "Город", value: draft.city?.trim() || "Не указано" },
+    {
+      label: "Телефон",
+      value: formatPhoneForDisplay(draft.contactPhone) || "Не указано",
+    },
+    { label: "Email", value: draft.contactEmail?.trim() || "Не указано" },
+  ];
+  if (draft.audience?.trim()) {
+    rows.push({ label: "Аудитория", value: draft.audience.trim() });
+  }
+  if (draft.channel?.trim()) {
+    rows.push({ label: "Канал", value: draft.channel.trim() });
+  }
+  return rows;
+}
+
 type AgentProfileWizardProps = {
   userId: string;
   disabled?: boolean;
   onProfileComplete?: () => void;
+  /** Open editor on saved profile (basics tab) without nested profile/requisites switch. */
+  startInEditMode?: boolean;
+  /** Pure-agent basics tab: return to overview after cancel. */
+  onExitEditMode?: () => void;
 };
 
-type FieldErrors = Partial<Record<keyof AgentProfileDraftPayload, string>>;
-
-export function AgentProfileWizard({ userId, disabled, onProfileComplete }: AgentProfileWizardProps) {
+export function AgentProfileWizard({
+  userId,
+  disabled,
+  onProfileComplete,
+  startInEditMode = false,
+  onExitEditMode,
+}: AgentProfileWizardProps) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [step, setStep] = useState(0);
@@ -32,6 +81,8 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   const [draft, setDraft] = useState<AgentProfileDraftPayload>({});
   const [editing, setEditing] = useState(true);
   const [profileComplete, setProfileComplete] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const forceViewSummaryRef = useRef(false);
   const [conflict, setConflict] = useState<{ serverVersion: number; serverEpoch: number } | null>(
     null,
   );
@@ -43,6 +94,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
   const dirtyGen = useRef(0);
   const versionRef = useRef(0);
   const draftEpochRef = useRef(0);
+  const editBaselineRef = useRef<AgentProfileDraftPayload>({});
 
   const syncVersion = (nextVersion: number, nextEpoch: number) => {
     versionRef.current = nextVersion;
@@ -63,8 +115,18 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       setHasDraft(Boolean(data.hasDraft));
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
       syncVersion(data.version ?? 0, data.draftEpoch ?? 0);
+      const saved =
+        typeof data.profileSaved === "boolean"
+          ? data.profileSaved
+          : Boolean(data.profileComplete);
+      setProfileSaved(saved);
       setProfileComplete(Boolean(data.profileComplete));
-      setEditing(Boolean(data.hasDraft) || !data.profileComplete);
+      if (forceViewSummaryRef.current) {
+        forceViewSummaryRef.current = false;
+        setEditing(false);
+      } else {
+        setEditing(startInEditMode || Boolean(data.hasDraft) || !saved);
+      }
       setConflict(null);
     } catch (caught) {
       if (gen !== hydrateGen.current) return;
@@ -74,7 +136,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     } finally {
       if (gen === hydrateGen.current) setLoading(false);
     }
-  }, []);
+  }, [startInEditMode]);
 
   useEffect(() => {
     void hydrate();
@@ -164,11 +226,96 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     }
   };
 
+  const goToStep = async (target: number) => {
+    if (target === step || disabled || saving) return;
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+    if (target !== step + 1) return;
+    if (step === 0) {
+      const localErrors = validateRequiredIdentity(draft);
+      if (Object.keys(localErrors).length) {
+        setFieldErrors(localErrors);
+        return;
+      }
+    }
+    try {
+      await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+        mode: "advance",
+        nextUiStep: target,
+      });
+      setStep(target);
+    } catch {
+      /* errors shown */
+    }
+  };
+
+  const cancelEditing = async () => {
+    if (disabled || saving) return;
+    const dirty = !draftsEqual(draft, editBaselineRef.current);
+    if (dirty && !window.confirm("Отменить изменения? Несохранённые правки будут потеряны.")) {
+      return;
+    }
+    if (hasDraft) {
+      try {
+        await discardAgentProfileDraft({
+          expectedEpoch: draftEpochRef.current,
+          expectedVersion: versionRef.current,
+        });
+      } catch (caught) {
+        setBanner({
+          kind: "error",
+          text:
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось сбросить черновик",
+        });
+        return;
+      }
+    } else {
+      setDraft({ ...savedProfile });
+      setHasDraft(false);
+    }
+    forceViewSummaryRef.current = true;
+    setEditing(false);
+    setBanner(null);
+    if (startInEditMode && onExitEditMode) {
+      onExitEditMode();
+      return;
+    }
+    await hydrate();
+  };
+
+  useEffect(() => {
+    if (!editing) return;
+    const dirty = !draftsEqual(draft, editBaselineRef.current);
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [draft, editing]);
+
+  useEffect(() => {
+    if (editing && profileSaved) {
+      editBaselineRef.current = { ...savedProfile };
+    }
+  }, [editing, profileSaved, savedProfile]);
+
   const onSubmitStep = async (event: FormEvent) => {
     event.preventDefault();
     if (disabled || saving) return;
     const last = STEPS.length - 1;
     if (step < last) {
+      if (step === 0) {
+        const localErrors = validateRequiredIdentity(draft);
+        if (Object.keys(localErrors).length) {
+          setFieldErrors(localErrors);
+          return;
+        }
+      }
       try {
         await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
           mode: "advance",
@@ -192,6 +339,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
         expectedEpoch: saved.epoch,
       });
       setProfileComplete(true);
+      setProfileSaved(true);
       setHasDraft(false);
       setEditing(false);
       setBanner({ kind: "success", text: "Профиль сохранён." });
@@ -247,67 +395,47 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     return <p className={styles.bannerError}>{loadError}</p>;
   }
 
-  if (!editing && profileComplete && !hasDraft) {
+  if (!editing && profileSaved) {
     const display = savedProfile.displayName?.trim() ? savedProfile : draft;
     const name = display.displayName?.trim() || "—";
     return (
       <div className={styles.pw} data-testid="agent-profile-completed-summary">
-        <section className={styles.summary}>
+        <section className={styles.summary} data-testid="pw-summary">
           <div className={styles.summaryHeader}>
             <div className={styles.avatar}>{name.slice(0, 2).toUpperCase()}</div>
-            <div>
+            <div className={styles.summaryIdentity}>
               <span className={styles.kicker} data-testid="agent-profile-role-kicker">
-            Агент
-          </span>
-              <h2 className={styles.title}>{name}</h2>
-              <p className={styles.intro}>{display.city?.trim() || "Город не указан"}</p>
+                Агент
+              </span>
+              <h2 className={styles.summaryTitle}>{name}</h2>
+              <p className={styles.cityMuted}>
+                {display.city?.trim() || "Город не указан"}
+              </p>
             </div>
-            <span className={styles.status}>Заполнено</span>
+            <span className={styles.summaryStatus} data-testid="agent-profile-summary-status">
+              Заполнено
+            </span>
           </div>
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
               {banner.text}
             </p>
           ) : null}
-          <dl className={styles.facts}>
-            <div>
-              <dt>Имя</dt>
-              <dd>{name}</dd>
-            </div>
-            <div>
-              <dt>Город</dt>
-              <dd>{display.city?.trim() || "Не указано"}</dd>
-            </div>
-            {display.audience ? (
-              <div>
-                <dt>Аудитория</dt>
-                <dd>{display.audience}</dd>
+          <dl className={styles.summaryFacts}>
+            {reviewFacts(display).map((row) => (
+              <div key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
               </div>
-            ) : null}
-            {display.channel ? (
-              <div>
-                <dt>Канал</dt>
-                <dd>{display.channel}</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt>Телефон</dt>
-              <dd>{formatPhoneForDisplay(display.contactPhone) || "Не указано"}</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{display.contactEmail?.trim() || "Не указано"}</dd>
-            </div>
+            ))}
           </dl>
-          <p className={styles.footnote}>
-            ID {userId}. Сохранение профиля не публикует вас в каталоге для клиентов.
-          </p>
-          <div className={styles.actions}>
+          <div className={styles.summaryActions}>
             <button
               type="button"
               className={`${styles.btn} ${styles.btnPrimary}`}
               disabled={disabled || saving}
               onClick={() => {
+                editBaselineRef.current = { ...savedProfile };
                 setEditing(true);
                 setStep(0);
                 setBanner(null);
@@ -315,6 +443,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             >
               Редактировать профиль
             </button>
+            <span className={styles.summaryId}>ID {userId}</span>
           </div>
         </section>
       </div>
@@ -353,7 +482,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                   aria-current={i === step ? "step" : undefined}
                   data-testid={`agent-profile-step-${i}`}
                   disabled={disabled || saving || i > step}
-                  onClick={() => setStep(i)}
+                  onClick={() => void goToStep(i)}
                 >
                   <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
                   <span>{label}</span>
@@ -409,7 +538,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
               </div>
             </div>
           ) : null}
-          {profileComplete && hasDraft ? (
+          {profileSaved && hasDraft ? (
             <p className={styles.intro} role="status">
               Есть незавершённый черновик — продолжите редактирование или сохраните черновик.
             </p>
@@ -542,30 +671,12 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
             {step === 3 ? (
               <>
                 <dl className={styles.facts}>
-                  <div>
-                    <dt>Имя</dt>
-                    <dd>{draft.displayName?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Город</dt>
-                    <dd>{draft.city?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Аудитория</dt>
-                    <dd>{draft.audience?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Канал</dt>
-                    <dd>{draft.channel?.trim() || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Телефон</dt>
-                    <dd>{formatPhoneForDisplay(draft.contactPhone) || "Не указано"}</dd>
-                  </div>
-                  <div>
-                    <dt>Email</dt>
-                    <dd>{draft.contactEmail?.trim() || "Не указано"}</dd>
-                  </div>
+                  {reviewFacts(draft).map((row) => (
+                    <div key={row.label}>
+                      <dt>{row.label}</dt>
+                      <dd>{row.value}</dd>
+                    </div>
+                  ))}
                 </dl>
                 <p className={styles.footnote}>
                   Сохранение профиля не публикует вас для клиентов и не отправляет данные в каталог.
@@ -580,9 +691,20 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
                     type="button"
                     className={styles.btn}
                     disabled={disabled || saving}
-                    onClick={() => setStep((s) => s - 1)}
+                    onClick={() => void goToStep(step - 1)}
                   >
                     Назад
+                  </button>
+                ) : null}
+                {profileSaved && editing ? (
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnQuiet}`}
+                    disabled={disabled || saving}
+                    data-testid="agent-profile-cancel-edit"
+                    onClick={() => void cancelEditing()}
+                  >
+                    Отменить
                   </button>
                 ) : null}
               </div>

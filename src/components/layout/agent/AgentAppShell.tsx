@@ -145,7 +145,9 @@ export function AgentAppShell({
         </aside>
 
         <main className={styles.mainColumn}>
-          <div className={styles.content}>{children}</div>
+          <div className={styles.content} data-testid="agent-shell-content">
+            {children}
+          </div>
         </main>
       </div>
 

@@ -41,6 +41,7 @@ import {
 } from "@/lib/agent-r03/create-idempotency";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
+import { storeCertificateDisplayCode } from "@/lib/certificate-url";
 import { CertificateResultView } from "./CertificateResultView";
 import styles from "./recommendations.module.css";
 
@@ -324,7 +325,12 @@ export function CertificateCreateForm({
   }
 
   if (created) {
-    return <CertificateResultView certificate={created} />;
+    return (
+      <CertificateResultView
+        certificate={created}
+        displayCode={storeCertificateDisplayCode(created)}
+      />
+    );
   }
 
   return (

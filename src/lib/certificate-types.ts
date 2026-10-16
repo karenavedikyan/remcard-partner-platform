@@ -1,3 +1,5 @@
+export type CertificateIssuerKindSnapshot = "AGENT" | "STORE" | "COMPANY" | "SPECIALIST";
+
 export type CertificateStatus =
   | "ACTIVE"
   | "USED_PARTIALLY"
@@ -27,6 +29,7 @@ export type StoreCertificate = {
   id: string;
   promoCode: string;
   qrCode: string;
+  issuerKindSnapshot?: CertificateIssuerKindSnapshot | null;
   status: CertificateStatus;
   validUntil: string | null;
   maxUsages: number;

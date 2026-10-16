@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { certificateListDetail } from "@/lib/agent-r03/certificateOffers";
+import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
+import { AgentR03PageIntro } from "./AgentR03PageIntro";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   batchAgentCertificates,
@@ -14,10 +17,12 @@ import {
   CERT_STATUS_FILTER_OPTIONS,
 } from "@/lib/agent-r03/listSortOptions";
 import type { AgentCertificateRow, AgentR03ListMeta, AgentR03ListSort } from "@/lib/agent-r03/types";
-import { certificateStatusLabel, certificateStatusTone } from "@/lib/certificate-labels";
+import {
+  certificateLifecycleStatusLabel,
+  certificatePurchaseStatusLabel,
+} from "@/lib/agent-r03/certificatePurchaseStatus";
 import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
 import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
@@ -52,7 +57,8 @@ export function AgentCertificatesList() {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "list">("list");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sharePreview, setSharePreview] = useState<{
     lines: string[];
     url: string;
@@ -92,9 +98,31 @@ export function AgentCertificatesList() {
   }, [appliedQ, archived, page, pageSize, sort, statusFilter, searchRevision]);
 
   useEffect(() => {
+    const stored = readAgentR03ViewMode("certificates");
+    if (stored) setViewMode(stored);
+  }, []);
+
+  useEffect(() => {
     setSelected(new Set());
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const trimmed = qDraft.trim();
+      setAppliedQ((prev) => {
+        if (prev === trimmed) return prev;
+        setPage(1);
+        setSelected(new Set());
+        setSearchRevision((r) => r + 1);
+        return trimmed;
+      });
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [qDraft]);
 
   const visibleIds = useMemo(() => items.map((c) => c.id), [items]);
 
@@ -103,12 +131,17 @@ export function AgentCertificatesList() {
     setSelected(new Set());
   }
 
-  function runSearch() {
-    setAppliedQ(qDraft.trim());
-    setPage(1);
-    setSelected(new Set());
+  function resetAllFilters() {
+    setQDraft("");
+    setAppliedQ("");
+    setArchived(false);
+    setStatusFilter("");
+    setSort("created_desc");
+    resetFiltersAndPage();
     setSearchRevision((r) => r + 1);
   }
+
+  const filtersActive = Boolean(appliedQ || archived || statusFilter || sort !== "created_desc");
 
   async function runBatch(action: "archive" | "restore" | "delete") {
     const ids = [...selected];
@@ -227,19 +260,29 @@ export function AgentCertificatesList() {
   const currentPage = meta.page ?? page;
   const totalPages = Math.max(1, meta.totalPages ?? 1);
 
-  return (
-    <>
-      <div className={styles.pageActions}>
-        <Link href="/certificates/new">
-          <Button>Создать сертификат</Button>
-        </Link>
-      </div>
+  function formatCertDate(iso: string) {
+    try {
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  }
 
+  return (
+    <div className={styles.r03Root}>
+      <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
+
+      <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
         searchPlaceholder="Название, партнёр или категория"
         q={qDraft}
         onQChange={setQDraft}
-        onSearch={runSearch}
+        filtersActive={filtersActive}
+        onResetFilters={resetAllFilters}
         archived={archived}
         onShowChange={(v) => {
           setArchived(v);
@@ -250,6 +293,7 @@ export function AgentCertificatesList() {
         viewMode={viewMode}
         onViewModeChange={(mode) => {
           setViewMode(mode);
+          writeAgentR03ViewMode("certificates", mode);
           setSelected(new Set());
         }}
         foundCount={meta.totalCount}
@@ -298,7 +342,7 @@ export function AgentCertificatesList() {
       ) : null}
 
       {loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
-        <div className={styles.list}>
+        <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((cert) => (
             <AgentCertificateCard
               key={cert.id}
@@ -326,12 +370,12 @@ export function AgentCertificatesList() {
             ))}
           </div>
           <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-            <table className={styles.dataTable}>
+            <table className={styles.collectionTable}>
               <thead>
                 <tr>
                   <th />
                   <th>Название</th>
-                  <th>Код</th>
+                  <th>Подробности</th>
                   <th>Статус</th>
                   <th>
                     <span className="sr-only">Действия</span>
@@ -349,19 +393,28 @@ export function AgentCertificatesList() {
                       />
                     </td>
                     <td>
-                      <Link href={`/certificates/${cert.id}`}>
+                      <Link href={`/certificates/${cert.id}`} className={styles.collectionOpenLink}>
                         {cert.userAlias ?? cert.title}
                       </Link>
+                      <small className={styles.collectionCaption}>
+                        {cert.displayCode} · {formatCertDate(cert.createdAt)}
+                      </small>
                     </td>
-                    <td>{cert.displayCode}</td>
+                    <td className={styles.collectionDetail}>{certificateListDetail(cert)}</td>
                     <td>
-                      <StatusBadge
-                        label={certificateStatusLabel(cert.status)}
-                        tone={certificateStatusTone(cert.status)}
+                      <span className={styles.purchasePill}>
+                        {certificatePurchaseStatusLabel(cert)}
+                      </span>
+                      <small className={styles.collectionLifecycle}>
+                        {certificateLifecycleStatusLabel(cert)}
+                      </small>
+                    </td>
+                    <td className={styles.collectionRowAction}>
+                      <RecordRowActions
+                        ariaLabel="Действия"
+                        actions={certRowActions(cert)}
+                        variant="listRow"
                       />
-                    </td>
-                    <td>
-                      <RecordRowActions ariaLabel="Действия" actions={certRowActions(cert)} />
                     </td>
                   </tr>
                 ))}
@@ -393,6 +446,7 @@ export function AgentCertificatesList() {
           hasNext={meta.hasNextPage}
         />
       ) : null}
+      </div>
 
       {selected.size > 0 ? (
         <div className={styles.batchBar}>
@@ -419,6 +473,6 @@ export function AgentCertificatesList() {
         url={sharePreview?.url ?? ""}
         onClose={() => setSharePreview(null)}
       />
-    </>
+    </div>
   );
 }

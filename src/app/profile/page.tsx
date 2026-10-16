@@ -9,6 +9,10 @@ import {
   resolveProfileSectionFromQuery,
   type ProfileSectionId,
 } from "@/lib/profile-sections";
+import {
+  fetchAgentProfileGateServer,
+  isPureAgentCompactProfile,
+} from "@/lib/agent-profile/serverGate";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import {
   deriveProfileCabinetAccess,
@@ -17,7 +21,7 @@ import {
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
 import { parseProfileFocusFromQuery } from "@/lib/recommendation-profile-focus";
-
+import pureAgentStyles from "./pureAgentProfilePage.module.css";
 export const dynamic = "force-dynamic";
 
 const RETURN_PATH = "/profile";
@@ -34,11 +38,6 @@ export default async function ProfilePage(props: {
   const searchParams = await props.searchParams;
   const safeReturnTo = sanitizeReturnTo(searchParams?.returnTo) ?? RETURN_PATH;
   const focusField = parseProfileFocusFromQuery(searchParams?.focus);
-  const section: ProfileSectionId = resolveProfileSectionFromQuery({
-    section: searchParams?.section,
-    moderation: searchParams?.moderation,
-    branchId: searchParams?.branchId,
-  });
   const moderationSection = isModerationDeepLink({
     section: searchParams?.section,
     moderation: searchParams?.moderation,
@@ -64,6 +63,21 @@ export default async function ProfilePage(props: {
     );
   }
 
+  const initialAgentR02Gate = await fetchAgentProfileGateServer(cookieHeader);
+  const pureAgentCompact = isPureAgentCompactProfile(
+    profileResult.data.user.partnerActivities,
+    initialAgentR02Gate,
+  );
+
+  const section: ProfileSectionId = resolveProfileSectionFromQuery(
+    {
+      section: searchParams?.section,
+      moderation: searchParams?.moderation,
+      branchId: searchParams?.branchId,
+    },
+    { pureAgentCompact },
+  );
+
   const contextResult = await fetchRemcardUpstream<ProContextSnapshot>("/api/pro/context", {
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
@@ -74,12 +88,16 @@ export default async function ProfilePage(props: {
     contextReady,
   });
 
-  return (
-    <CabinetShell returnTo={safeReturnTo}>
+  const profileChrome = (
+    <>
       <PageHeading
         eyebrow="Профиль партнёра"
         title="Профиль"
-        description="Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard."
+        description={
+          pureAgentCompact
+            ? "Рабочие данные для партнёрства и рекомендаций. Заполнение не публикует вас в каталоге RemCard."
+            : "Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard."
+        }
       />
       <ProfileEditor
         initial={profileResult.data}
@@ -89,7 +107,17 @@ export default async function ProfilePage(props: {
         focusBranchId={focusBranchId}
         focusField={focusField}
         returnTo={safeReturnTo}
+        initialAgentR02Gate={initialAgentR02Gate}
+        initialPureAgentCompact={pureAgentCompact}
       />
-    </CabinetShell>
+    </>
   );
+
+  const body = pureAgentCompact ? (
+    <div className={pureAgentStyles.pureAgentProfileChrome}>{profileChrome}</div>
+  ) : (
+    profileChrome
+  );
+
+  return <CabinetShell returnTo={safeReturnTo}>{body}</CabinetShell>;
 }
