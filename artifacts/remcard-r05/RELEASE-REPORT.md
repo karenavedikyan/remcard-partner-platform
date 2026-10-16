@@ -1,33 +1,24 @@
-# R05.2 — RELEASE REPORT
+# R05.3 — RELEASE REPORT
 
 | Repo | PR | Branch |
 |------|-----|--------|
 | remcard-navigator | [#686](https://github.com/karenavedikyan/remcard-navigator/pull/686) | `cursor/r05-agent-receivables-b3e3` |
 | remcard-partner-platform | [#23](https://github.com/karenavedikyan/remcard-partner-platform/pull/23) | `cursor/r05-agent-receivables-b3e3` |
 
-## 1 — Partner aggregate + drill-down (P0)
+## Scope (R05.3 only)
 
-- Top-level `partnerGroupKey` = `{storeUserId}:branch:{branchId|hq}` (no `certificatePartnerId`).
-- Orders API filters by `groupKey`; UI passes `selectedPartner.groupKey`.
-- Regression: `agentReceivables.readmodel.test.ts` + BFF probe `r05P0TwoCertAggregateSeed.ts` (M1 Test Store, 10 000 + 20 000 kop → one card, drill-down sum match).
+1. **Reference evidence** — frozen prototype served over `http://127.0.0.1:<port>/roles.html` (not `file://`); Playwright flow cabinet → agent → wallet → `settlement-direction:in` → partners/orders/detail; FAIL on «Не удалось загрузить прототип»; `roles.js` SHA gate.
+2. **Mobile detail + requisites** — order detail loading/error/retry; captures wait for BFF + lines + history; requisites under `agentScope` with `--pw-*` token checks; table scroll contained on 375/320.
+3. **Applicable visual** — wallet panel + bordered tabs; focus header sizing; grid 3/2 desktop verified via computed columns + PNGs.
 
-## 2 — Partner sort «По дате покупки»
+**Unchanged (R05.2 accepted):** partner aggregate key, purchase sort, incoming-only settlements, financial read model — navigator HEAD unchanged unless noted in `TEST-RESULTS.json`.
 
-- `earliestPurchaseAt` on partner groups; `sortPartnerGroups` handles `due-asc` with `groupKey` tie-breaker (purchase date, not payout due).
+**Not claimed:** pixel-perfect parity (`visualParityOk: false`); identical demo vs seed datasets.
 
-## 3 — Visual (frozen reference alignment)
+## Evidence
 
-- Overview tile: amount left under label, accent panel, CTA «Посмотреть партнёров».
-- Wallet tabs: «Взаиморасчёты / Реквизиты» via `AgentReceivablesWallet` + `AgentPayoutRequisitesPanel` (read-only).
-- Partners: horizontal compact rows; focus header → view → search drawer → list; grid densities 3/2/1.
-- Orders/detail: reference-like summary + breakdown blocks.
+- Paired PNGs: `impl-r05-*` and `ref-r05-{overview,partners,orders,order-detail}-{1440,375}-light|dark.png`
+- Requisites: `impl-r05-requisites-375-light.png`, `impl-r05-requisites-375-dark.png`
+- Grids: `impl-r05-partners-1440-light-small.png`, `-medium.png`
 
-**Not claimed:** pixel-perfect 1:1 with prototype demo data.
-
-## 4 — Evidence
-
-- `artifacts/remcard-r05/screenshots/impl-r05-*` + `ref-r05-prototype-entry-1440-light.png`
-- Light captures reset `colorScheme` / `data-theme` before shot.
-- `TEST-RESULTS.json`: real vitest exit code, all functional gates in `pass`.
-
-See `TEST-RESULTS.json` for HEAD SHAs and section PASS/FAIL.
+See `TEST-RESULTS.json` for exact HEAD SHAs, command exit codes, and section PASS/FAIL.
