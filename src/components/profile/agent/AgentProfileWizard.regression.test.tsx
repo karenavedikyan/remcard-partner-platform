@@ -102,6 +102,13 @@ describe("Independent R02.1 wizard review", () => {
     expect(api.finishAgentProfile).toHaveBeenCalledTimes(1);
   });
 
+  it("shows summary status badge on saved profile overview", async () => {
+    api.fetchAgentProfileDraft.mockResolvedValue(savedComplete);
+    render(<AgentProfileWizard userId="demo-agent-id" />);
+    await screen.findByTestId("agent-profile-summary-status");
+    expect(screen.getByTestId("agent-profile-summary-status")).toHaveTextContent("Заполнено");
+  });
+
   it("cancel on saved profile discards draft and returns to summary", async () => {
     api.fetchAgentProfileDraft
       .mockResolvedValueOnce({

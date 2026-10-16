@@ -287,6 +287,50 @@ function widthDelta(a, b) {
   return Math.abs(a.w - b.w);
 }
 
+async function assertMobileSummaryBadge(page) {
+  const metrics = await page.evaluate(() => {
+    const summary = document.querySelector('[data-testid="pw-summary"]');
+    const badge = document.querySelector('[data-testid="agent-profile-summary-status"]');
+    if (!summary || !badge) {
+      return { ok: false, reason: 'missing_nodes' };
+    }
+    const sw = summary.getBoundingClientRect().width;
+    const bw = badge.getBoundingClientRect().width;
+    const text = badge.textContent?.trim() ?? '';
+    return {
+      ok: bw > 0 && bw < sw - 48 && bw < 160,
+      summaryWidth: Math.round(sw),
+      badgeWidth: Math.round(bw),
+      text,
+    };
+  });
+  if (!metrics.ok) {
+    throw new Error(`mobile_summary_badge_${JSON.stringify(metrics)}`);
+  }
+  return metrics;
+}
+
+async function assertPureAgentTabDivider(page) {
+  const metrics = await page.evaluate(() => {
+    const tablist = document.querySelector('nav[aria-label="Разделы профиля"] [role="tablist"]');
+    if (!tablist) {
+      return { ok: false, reason: 'missing_tablist' };
+    }
+    const cs = getComputedStyle(tablist);
+    const borderPx = Number.parseFloat(cs.borderBottomWidth) || 0;
+    const width = Math.round(tablist.getBoundingClientRect().width);
+    return {
+      ok: borderPx >= 1 && width >= 280,
+      borderBottomWidth: cs.borderBottomWidth,
+      tablistWidth: width,
+    };
+  });
+  if (!metrics.ok) {
+    throw new Error(`pure_agent_tab_divider_${JSON.stringify(metrics)}`);
+  }
+  return metrics;
+}
+
 async function ensureReferenceServer() {
   const base = `http://127.0.0.1:${REF_PORT}`;
   try {
@@ -423,6 +467,7 @@ async function capturePairs(session, refBase) {
   const browser = await chromium.launch({ headless: true });
   const saved = [];
   const geometryChecks = [];
+  const cssChecks = [];
   try {
     for (const cap of CAPTURES) {
       const pairLayouts = {};
@@ -485,6 +530,30 @@ async function capturePairs(session, refBase) {
             sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, footFile))).digest('hex'),
           };
         }
+        if (
+          side === 'impl' &&
+          cap.state === 'overview-complete' &&
+          (cap.w === 375 || cap.w === 320)
+        ) {
+          const badgeMetrics = await assertMobileSummaryBadge(page);
+          cssChecks.push({
+            cap: cap.stem,
+            check: 'mobile_summary_badge_content_sized',
+            summaryWidth: badgeMetrics.summaryWidth,
+            badgeWidth: badgeMetrics.badgeWidth,
+            ok: badgeMetrics.ok,
+          });
+        }
+        if (side === 'impl' && cap.state === 'overview-complete' && cap.w === 1440) {
+          const tabMetrics = await assertPureAgentTabDivider(page);
+          cssChecks.push({
+            cap: cap.stem,
+            check: 'pure_agent_tab_divider',
+            tablistWidth: tabMetrics.tablistWidth,
+            borderBottomWidth: tabMetrics.borderBottomWidth,
+            ok: tabMetrics.ok,
+          });
+        }
         saved.push(entry);
         await ctx.close();
       }
@@ -507,7 +576,7 @@ async function capturePairs(session, refBase) {
   } finally {
     await browser.close();
   }
-  return { shots: saved, geometryChecks };
+  return { shots: saved, geometryChecks, cssChecks };
 }
 
 async function runBrowserAcceptance(session) {
@@ -642,7 +711,7 @@ async function main() {
   const bankCount = await dedupeBankRecords(session);
   await assertSingleBankRecord(session);
   const refBase = await ensureReferenceServer();
-  const { shots: screenshots, geometryChecks } = await capturePairs(session, refBase);
+  const { shots: screenshots, geometryChecks, cssChecks } = await capturePairs(session, refBase);
   const migration = await runLabelMigrationEvidence();
   if (process.env.PROF_R02_RUN_PG === '1' && migration.exitCode != null) {
     migration.ran = true;
@@ -650,15 +719,28 @@ async function main() {
 
   const captureOk = screenshots.length >= CAPTURES.length * 2;
   const geometryOk = geometryChecks.every((g) => g.ok);
+  const cssOk = cssChecks.every((c) => c.ok);
   const expandedSha = screenshots.find((s) => s.file === 'ref-bank-expanded-375-light.png')?.sha256;
   const formSha = screenshots.find((s) => s.file === 'ref-bank-form-375-light.png')?.sha256;
   const report = {
-    ok: http.ok && ui.ok && captureOk && geometryOk,
+    ok: http.ok && ui.ok && captureOk && geometryOk && cssOk,
     functionalOk: http.ok && ui.ok,
     captureOk,
     geometryOk,
     geometryChecks,
-    visualParityOk: geometryOk,
+    cssOk,
+    cssChecks,
+    visualParityOk: false,
+    visualReview: {
+      status: 'pending_owner_signoff',
+      scope: 'geometry_and_css_gates_only',
+      documentedExceptions: [
+        'Product PageHeading intro is longer than frozen ref demo copy (explains ~46px top offset at 375).',
+        'Excluded demo success banner, footnotes, and real user IDs from pixel comparison.',
+        'Summary and bank block heights may differ where demo-only copy is absent on impl.',
+        'No universal full-page or mobile pixel diff; owner PNG review still required.',
+      ],
+    },
     bankStateParity: {
       dedupedCount: bankCount,
       refExpandedVsFormDistinct: Boolean(expandedSha && formSha && expandedSha !== formSha),

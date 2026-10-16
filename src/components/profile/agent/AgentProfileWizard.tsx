@@ -412,7 +412,9 @@ export function AgentProfileWizard({
                 {display.city?.trim() || "Город не указан"}
               </p>
             </div>
-            <span className={styles.summaryStatus}>Заполнено</span>
+            <span className={styles.summaryStatus} data-testid="agent-profile-summary-status">
+              Заполнено
+            </span>
           </div>
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
