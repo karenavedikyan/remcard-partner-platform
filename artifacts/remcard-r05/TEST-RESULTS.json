@@ -1,7 +1,13 @@
 {
-  "generatedAt": "2026-10-16T13:38:03.984Z",
-  "platformHead": "e7779c4dd9c7bc29a0a0326985e1950e2cf71212",
-  "navigatorHead": "81ad0625ec33132aaafb436fa767c96a43f9fce4",
+  "generatedAt": "2026-10-16T14:10:34.630Z",
+  "contractVersion": "2026-10-16.r05.1",
+  "platformHead": "9fb1e744bb88d76b945b275a3e525152b01057af",
+  "navigatorHead": "33a9eb14671ad31ad1952679608000a104cf6437",
+  "gitDirty": {
+    "platform": true,
+    "navigator": false
+  },
+  "rolesJsReferenceSha256": "0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc",
   "commands": [
     {
       "cmd": "pnpm run build (platform)",
@@ -10,6 +16,11 @@
     {
       "cmd": "npm run build (navigator)",
       "exitCode": 0
+    },
+    {
+      "cmd": "vitest agentReceivables*.test.ts agentR05IncomingOnly.test.ts",
+      "exitCode": 0,
+      "note": "run on navigator before commit"
     },
     {
       "cmd": "node scripts/r05-browser-acceptance.mjs",
@@ -22,21 +33,70 @@
     "overviewOk": true,
     "tileVisible": true,
     "partnersVisible": true,
-    "partnersApiOk": true
+    "partnersApiOk": true,
+    "categorySearchOk": true,
+    "paginationPage5Ok": true,
+    "incomingOnlySettlements": true,
+    "settlementsStatus": 200,
+    "settlementsPayableCount": 0,
+    "uiPaginationOk": true,
+    "smoke320NoHorizontalScroll": true
   },
   "steps": [
     {
       "step": "test_session",
       "ok": true,
-      "agentId": "cmvb0ixs20003js9nc8gu0syd"
+      "agentId": "cmvb1ok5r0003jslt0kmcipde"
     },
     {
       "step": "r05_seed",
       "exitCode": 0,
-      "stdout": "{\"ok\":true,\"orderId\":\"cmvb0j3370006jsmx31otq4e4\",\"agentBonusId\":\"cmvb0j33b0009jsmx82gabuxc\",\"confirmedKopecks\":540000,\"storeDisplay\":\"seed-store\"}\n"
+      "stdout": "{\"ok\":true,\"orderId\":\"cmvb1op8e000bjsz2yyjtyls4\",\"rowsCreated\":125,\"bulk\":125,\"storeDisplay\":\"seed-store\"}\n"
     }
   ],
+  "captures": [
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-light.png",
+      "sha256": "2f222a1131e100fb386143d839cf13c9053db97a50af6f89512be74404e0b3e4"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light.png",
+      "sha256": "c31a966b162467907c81c2b6dd0d0fb91dbecf76602ddafc02b3897914c8964c"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-large.png",
+      "sha256": "fd2b8521b062aa7364e18dca99f4b8214e84caafb6bf5734112d82fd2137f9dd"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-1440-light.png",
+      "sha256": "e45d90d41c72ac92646ed7f7b1bb7e65d430b087f9010c507c838cfe8e43bc8c"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-1440-light.png",
+      "sha256": "bfe750514f86d97269b7c89703b7863cc0c609625c261be1fcd6c7a7cd775dc1"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-dark.png",
+      "sha256": "c11fd8cc317821e1e1a1ef90fda69d2c754b05281d45d721fc1e48e48ffb715e"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-375-light.png",
+      "sha256": "ef64f2e56adf0cd92f05e2314c64b5094cc10b150467ee8b468f6e64b81ab1b5"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-320-light.png",
+      "sha256": "6239f3d0023911ce0a0f8cd332c2c89d68d730f31cd1158339abb07a756bd314"
+    }
+  ],
+  "sections": {
+    "A": "PASS",
+    "B": "PASS",
+    "C": "PASS",
+    "D": "PASS",
+    "E": "PASS"
+  },
   "pass": true,
   "status": "READY_FOR_REVIEW",
-  "visualParityOk": false
+  "visualParityOk": false,
+  "visualParityNote": "CAPTURED impl PNGs under artifacts/remcard-r05/screenshots; ref prototype uses frozen demo dataset — not pixel-perfect."
 }

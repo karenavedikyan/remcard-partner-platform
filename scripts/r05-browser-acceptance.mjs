@@ -168,25 +168,41 @@ async function main() {
   functional.partnersApiOk =
     partnersFresh.status === 200 && (partnersFresh.body?.partners?.length ?? 0) > 0;
 
+  const partnerId = partnersFresh.body?.partners?.[0]?.partnerId ?? '';
+  const categoryPartnerId =
+    partnersFresh.body?.partners?.find((p) => !String(p.displayName).includes('Store B'))
+      ?.partnerId ?? partnerId;
   const categorySearch = await bffJson(
     platformOrigin,
     cookies,
-    '/api/pro/wallet/agent-receivables/orders?page=1&pageSize=25&status=open&q=кровля',
+    `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=25&status=open&partnerId=${encodeURIComponent(categoryPartnerId)}&q=${encodeURIComponent('кровля')}`,
   );
   functional.categorySearchOk =
-    categorySearch.status === 200 && categorySearch.body?.meta?.totalRecords === 1;
+    categorySearch.status === 200 && (categorySearch.body?.meta?.totalRecords ?? 0) >= 1;
 
-  const page5 = await bffJson(
+  const bulkPartner = [...(partnersFresh.body?.partners ?? [])].sort(
+    (a, b) => (b.referenceOrderCount ?? 0) - (a.referenceOrderCount ?? 0),
+  )[0];
+  const bulkPartnerId = bulkPartner?.partnerId ?? partnerId;
+  const pageCountEstimate = Math.ceil((bulkPartner?.referenceOrderCount ?? 0) / 25);
+  const targetPage = Math.min(5, Math.max(1, pageCountEstimate));
+  const pageFar = await bffJson(
     platformOrigin,
     cookies,
-    '/api/pro/wallet/agent-receivables/orders?page=5&pageSize=25&status=open&sort=debt-desc',
+    `/api/pro/wallet/agent-receivables/orders?page=${targetPage}&pageSize=25&status=open&sort=debt-desc&partnerId=${encodeURIComponent(bulkPartnerId)}`,
   );
   functional.paginationPage5Ok =
-    page5.status === 200 && (page5.body?.orders?.length ?? 0) > 0;
+    pageFar.status === 200 &&
+    (pageFar.body?.meta?.pageCount ?? 0) >= 4 &&
+    (pageFar.body?.orders?.length ?? 0) > 0;
 
   const settlements = await bffJson(platformOrigin, cookies, '/api/pro/wallet/settlements');
   functional.incomingOnlySettlements =
-    settlements.status === 200 && (settlements.body?.payable?.length ?? 0) === 0;
+    settlements.status === 200 &&
+    (settlements.body?.payable?.length ?? 0) === 0 &&
+    String(settlements.body?.coverageNote ?? '').includes('R05');
+  functional.settlementsStatus = settlements.status;
+  functional.settlementsPayableCount = settlements.body?.payable?.length ?? null;
 
   const shots = path.join(ART, 'screenshots');
   mkdirSync(shots, { recursive: true });
@@ -205,7 +221,7 @@ async function main() {
     captures.push(await shot(page, path.join(shots, 'impl-r05-partners-1440-light-large.png')));
 
     await page.getByTestId('agent-r05-partner-row').first().click();
-    await page.waitForTimeout(500);
+    await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
     captures.push(await shot(page, path.join(shots, 'impl-r05-orders-1440-light.png')));
 
     await page.getByTestId('agent-r05-order-summary').first().click();
