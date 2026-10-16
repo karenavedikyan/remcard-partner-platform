@@ -213,12 +213,17 @@ async function verifyOrderDetailLayout(page) {
       (el) => box(el),
     );
     const shell = box(root);
-    const tableWrap = root.querySelector('[data-testid="agent-r05-order-lines-table"]')?.closest('div');
-    const tableBox = tableWrap ? box(tableWrap) : null;
+    const inShell = (r) =>
+      r &&
+      shell &&
+      r.width > 0 &&
+      r.height > 0 &&
+      r.left >= shell.left - 1 &&
+      r.right <= shell.right + 1;
     const pageWide = document.documentElement.scrollWidth > window.innerWidth + 2;
-    const valuesOk = values.length >= 4 && values.every(inViewport);
+    const valuesOk = values.length >= 4 && values.every(inShell);
     return {
-      ok: inViewport(sum) && valuesOk && inViewport(shell) && !pageWide,
+      ok: inShell(sum) && valuesOk && inViewport(shell) && !pageWide;
       viewportWidth: vw,
       pageWide,
       sum,
