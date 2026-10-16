@@ -4,7 +4,7 @@
 
 | Repo | Branch | HEAD (full) | Base |
 |------|--------|-------------|------|
-| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | see latest commit on branch | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
+| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `386d2f51b4896e38f893cafc6cb0c026167b71d9` | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
 | remcard-navigator | `cursor/r03-ui-parity-b3e3` | `651150754af947a3ff896fe9431c68bd45ac5266` | `40b8094e4bf2158fd7a10b1cc1c33474b90a77b3` |
 
 Corrective baseline (accepted, not reworked): runtime `911362a5c876fb62a25add4f6e97e7e546fb87cc`, captures `2026-10-16T04:58:46Z`.

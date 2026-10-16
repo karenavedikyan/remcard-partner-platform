@@ -1,5 +1,5 @@
 {
-  "platformSha": "9f32286ef79b85ccf5b7869c0a97120e40a4be6f",
+  "platformSha": "386d2f51b4896e38f893cafc6cb0c026167b71d9",
   "navigatorSha": "651150754af947a3ff896fe9431c68bd45ac5266",
   "build": {
     "command": "npm run build",
