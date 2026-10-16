@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
-import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
+import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesWallet";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
@@ -32,11 +32,11 @@ export default async function SettlementsPage() {
         title={r05Eligible ? "Кошелёк" : "Взаиморасчёты"}
         description={
           r05Eligible
-            ? "Входящие обязательства партнёров. Просмотр без выплат и сверок."
+            ? "Входящие обязательства партнёров и реквизиты для получения оплаты."
             : "Открытые обязательства и завершённые выплаты между партнёрами."
         }
       />
-      {r05Eligible ? <AgentReceivablesHub /> : <SettlementsHub />}
+      {r05Eligible ? <AgentReceivablesWallet /> : <SettlementsHub />}
     </CabinetShell>
   );
 }

@@ -1,63 +1,33 @@
-# R05.1 — RELEASE REPORT
+# R05.2 — RELEASE REPORT
 
 | Repo | PR | Branch |
 |------|-----|--------|
 | remcard-navigator | [#686](https://github.com/karenavedikyan/remcard-navigator/pull/686) | `cursor/r05-agent-receivables-b3e3` |
 | remcard-partner-platform | [#23](https://github.com/karenavedikyan/remcard-partner-platform/pull/23) | `cursor/r05-agent-receivables-b3e3` |
 
-## A — Historical requisites
+## 1 — Partner aggregate + drill-down (P0)
 
-| Fix | Command / check | Result |
-|-----|-----------------|--------|
-| `partnerLegalFromOrder` uses `storeName` only for historical name; INN not taken from live org | `vitest agentReceivables.readmodel.test.ts` | PASS |
-| Missing snapshot → «Исторические реквизиты не сохранены» + optional `currentProfileCaption` | UI order detail + partner `legalCaption` | PASS |
-| Stable `partnerGroupKey` (`storeUserId` + `certificatePartnerId` + branch) | readmodel + integration INN change test | PASS (integration if PG) |
-| SOURCE-OF-TRUTH payer chain | `artifacts/remcard-r05/SOURCE-OF-TRUTH.md` | updated |
+- Top-level `partnerGroupKey` = `{storeUserId}:branch:{branchId|hq}` (no `certificatePartnerId`).
+- Orders API filters by `groupKey`; UI passes `selectedPartner.groupKey`.
+- Regression: `agentReceivables.readmodel.test.ts` + BFF probe `r05P0TwoCertAggregateSeed.ts` (M1 Test Store, 10 000 + 20 000 kop → one card, drill-down sum match).
 
-## B — Filters / search / totals
+## 2 — Partner sort «По дате покупки»
 
-| Fix | Check | Result |
-|-----|-------|--------|
-| Partners API respects `status` (no forced `open`) | readmodel pending filter test | PASS |
-| Period `from`/`to` on purchase UTC date | UI date inputs + meta `periodField` | PASS |
-| Category search full set | BFF `q=кровля` + readmodel | PASS |
-| `selectionTotalKopecks` vs cabinet overview | UI `ledger-totals` | PASS |
-| Sort tie-breaker `sortId` | readmodel | PASS |
-| Ledger view densities | CSS `[data-ledger-view]` | PASS (not pixel-ref) |
+- `earliestPurchaseAt` on partner groups; `sortPartnerGroups` handles `due-asc` with `groupKey` tie-breaker (purchase date, not payout due).
 
-## C — Confirmed debt integrity
+## 3 — Visual (frozen reference alignment)
 
-| Fix | Check | Result |
-|-----|-------|--------|
-| Line/accrual mismatch → `needs_review` before totals | `evaluateAccrualLineIntegrity` + `buildOverview` test | PASS |
-| Detail uses same integrity helper | shared code path | PASS |
+- Overview tile: amount left under label, accent panel, CTA «Посмотреть партнёров».
+- Wallet tabs: «Взаиморасчёты / Реквизиты» via `AgentReceivablesWallet` + `AgentPayoutRequisitesPanel` (read-only).
+- Partners: horizontal compact rows; focus header → view → search drawer → list; grid densities 3/2/1.
+- Orders/detail: reference-like summary + breakdown blocks.
 
-## D — Incoming-only
+**Not claimed:** pixel-perfect 1:1 with prototype demo data.
 
-| Fix | Check | Result |
-|-----|-------|--------|
-| Settlements strip payables when R05 eligible | `agentR05IncomingOnly.test.ts` + BFF settlements | PASS |
-| Gate OFF unchanged | not exercised in this run | NOT_VERIFIED |
+## 4 — Evidence
 
-## E — Browser / evidence
+- `artifacts/remcard-r05/screenshots/impl-r05-*` + `ref-r05-prototype-entry-1440-light.png`
+- Light captures reset `colorScheme` / `data-theme` before shot.
+- `TEST-RESULTS.json`: real vitest exit code, all functional gates in `pass`.
 
-| Step | Result |
-|------|--------|
-| admin → agent → overview → partners → orders → detail → pagination → densities | see `TEST-RESULTS.json` |
-| PNG | `artifacts/remcard-r05/screenshots/impl-r05-*.png` (SHA in JSON) |
-| Ref parity | **NOT pixel-perfect** — frozen ref uses demo dataset |
-
-## Evidence (impl PNG)
-
-Committed under `artifacts/remcard-r05/screenshots/` — e.g. `impl-r05-overview-1440-light.png`, `impl-r05-partners-1440-light.png`, `impl-r05-orders-1440-light.png`, `impl-r05-order-detail-1440-light.png`, dark/375/320 variants. SHA-256 in `TEST-RESULTS.json` → `captures[]`.
-
-Ref prototype (`roles.js` SHA `0c9a8be6…`) uses demo data — **not** pixel-perfect parity.
-
-## Status (last run)
-
-| HEAD | SHA |
-|------|-----|
-| remcard-navigator | `33a9eb14671ad31ad1952679608000a104cf6437` |
-| remcard-partner-platform | see `TEST-RESULTS.json` after commit |
-
-`TEST-RESULTS.json`: **READY_FOR_REVIEW** when `pass: true`.
+See `TEST-RESULTS.json` for HEAD SHAs and section PASS/FAIL.

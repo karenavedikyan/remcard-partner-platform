@@ -31,6 +31,8 @@ export type AgentReceivablePartnerGroup = {
   overdueCount: number;
   dueSoonCount: number;
   referenceOrderCount: number;
+  earliestPurchaseAt: string | null;
+  legalSideCount: number;
   nearestDueDate: string | null;
   r04PartnershipId: string | null;
 };

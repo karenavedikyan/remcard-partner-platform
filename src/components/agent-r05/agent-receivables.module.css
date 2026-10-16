@@ -4,14 +4,101 @@
   font-family: var(--font-body, "Manrope", system-ui, sans-serif);
 }
 
-.lead {
+.muted {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--muted);
   line-height: 1.55;
 }
 
-.backRow {
+.presentation {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.totalTile {
+  display: grid;
+  gap: var(--space-4);
+  text-align: left;
+  padding: var(--space-6);
+  border: 1px solid var(--accent, var(--primary));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent, var(--primary)) 8%, var(--surface));
+  color: var(--text);
+  cursor: pointer;
+  width: 100%;
+}
+
+.totalTile > span:first-child {
+  font-size: var(--text-lg);
+  font-weight: 750;
+}
+
+.totalTile > strong {
+  font-size: clamp(1.7rem, 4vw, 2.1rem);
+  line-height: 1.2;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.totalTile small {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.helpNote {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.helpNote summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: list-item;
+}
+
+.focusHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-block: var(--space-2);
+}
+
+.focusHeader h2 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xl);
+}
+
+.focusHeader > strong {
+  font-size: var(--text-xl);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.focusHeaderLabel {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.breadcrumb .backBtn {
+  padding: var(--space-2) 0;
+}
+
+.backRow,
+.breadcrumb {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
@@ -28,72 +115,10 @@
   font-size: var(--text-sm);
 }
 
-.incomingTile {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-}
-
-.incomingTile:hover {
-  border-color: var(--accent, var(--primary));
-}
-
-.incomingTile strong {
-  display: block;
-  font-size: var(--text-lg);
-}
-
-.incomingTile span {
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
-.amount {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.partnerRow {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  background: var(--surface);
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-}
-
-.partnerRow:hover {
-  border-color: var(--accent, var(--primary));
-}
-
-.partnerTitle {
-  margin: 0 0 var(--space-1);
-  font-weight: 750;
-}
-
-.meta {
+.selectionFootnote {
   margin: 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
-.statsRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
   font-size: var(--text-xs);
   color: var(--muted);
-  margin-top: var(--space-2);
 }
 
 .filters {
@@ -123,9 +148,86 @@
   width: 100%;
   box-sizing: border-box;
   padding: var(--space-2) var(--space-3);
+  min-height: 44px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--surface);
+  color: var(--text);
+}
+
+.dateRange {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.ledgerGrid {
+  display: grid;
+  align-items: start;
+  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.partnerCompact {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.partnerCompact:hover {
+  border-color: var(--accent, var(--primary));
+}
+
+.partnerCompact > span:first-child {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.partnerTitle {
+  margin: 0;
+  font-weight: 750;
+}
+
+.legalCaption {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.partnerMeta {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.cardExtra {
+  display: none;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.partnerNumber {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.partnerNumber strong {
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
 }
 
 .orderCard {
@@ -135,8 +237,9 @@
   background: var(--surface);
 }
 
-.orderSummary {
+.orderCard > details > summary {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-4);
@@ -144,9 +247,54 @@
   list-style: none;
 }
 
+.orderCard > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lineInfo {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.lineValue {
+  display: grid;
+  gap: var(--space-1);
+  text-align: right;
+}
+
+.lineValue strong {
+  font-variant-numeric: tabular-nums;
+}
+
 .orderBody {
   padding: 0 var(--space-4) var(--space-4);
   border-top: 1px solid var(--line);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.breakdown {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.breakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.breakdown dt {
+  color: var(--muted);
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
 }
 
 .lineTable {
@@ -189,42 +337,80 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
+  justify-content: space-between;
   font-size: var(--text-sm);
+  padding-top: var(--space-3);
 }
 
-.viewControl {
-  display: flex;
-  justify-content: flex-end;
+.shell[data-ledger-view="medium"] .cardExtra,
+.shell[data-ledger-view="large"] .cardExtra {
+  display: block;
 }
 
-.dateRange {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+.shell[data-ledger-view="small"] .ledgerGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.shell[data-ledger-view="small"] .partnerRow,
-.shell[data-ledger-view="small"] .orderCard {
-  padding: var(--space-2);
+.shell[data-ledger-view="medium"] .ledgerGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.shell[data-ledger-view="medium"] .partnerRow,
-.shell[data-ledger-view="medium"] .orderCard {
-  padding: var(--space-5);
+.shell[data-ledger-view="small"] .partnerCompact,
+.shell[data-ledger-view="medium"] .partnerCompact,
+.shell[data-ledger-view="large"] .partnerCompact {
+  flex-direction: column;
+  align-items: stretch;
 }
 
-.shell[data-ledger-view="large"] .partnerRow,
-.shell[data-ledger-view="large"] .orderCard {
+.shell[data-ledger-view="small"] .partnerNumber,
+.shell[data-ledger-view="medium"] .partnerNumber,
+.shell[data-ledger-view="large"] .partnerNumber {
+  justify-content: space-between;
+}
+
+.shell[data-ledger-view="small"] .orderCard > details > summary,
+.shell[data-ledger-view="medium"] .orderCard > details > summary {
+  flex-wrap: wrap;
+}
+
+.shell[data-ledger-view="small"] .lineValue,
+.shell[data-ledger-view="medium"] .lineValue {
+  text-align: left;
+  flex: 1 1 100%;
+}
+
+.shell[data-ledger-view="list"] .partnerCompact,
+.shell[data-ledger-view="list"] .orderCard > details > summary {
+  padding: var(--space-3);
+}
+
+.shell[data-ledger-view="large"] .partnerCompact,
+.shell[data-ledger-view="large"] .orderCard > details > summary {
   padding: var(--space-6);
 }
 
-.shell[data-ledger-view="large"] .amount {
-  font-size: calc(var(--text-xl) * 1.15);
+.shell[data-ledger-view="large"] .partnerNumber strong,
+.shell[data-ledger-view="large"] .lineValue strong {
+  font-size: calc(var(--text-xl) * 1.05);
 }
 
-.shell[data-ledger-view="list"] .partnerRow,
-.shell[data-ledger-view="list"] .orderSummary {
-  padding: var(--space-3);
+.shell[data-ledger-view="list"] .totalTile {
+  padding: var(--space-4);
+  gap: var(--space-2);
+}
+
+.shell[data-ledger-view="large"] .totalTile {
+  padding: var(--space-6);
+}
+
+.ledgerGrid > article:has(> details[open]) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .shell[data-ledger-view="small"] .ledgerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 680px) {
@@ -232,12 +418,15 @@
     grid-template-columns: 1fr;
   }
 
-  .incomingTile {
-    flex-direction: column;
-    align-items: flex-start;
+  .shell[data-ledger-view] .ledgerGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .amount {
-    font-size: var(--text-lg);
+  .focusHeader {
+    flex-wrap: wrap;
+  }
+
+  .focusHeader > strong {
+    text-align: left;
   }
 }

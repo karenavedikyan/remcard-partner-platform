@@ -14,6 +14,34 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
 const RUN_DIR = process.env.ADMIN_TEST_RUN_DIR || '/tmp/admin-test-local-stack';
 const ART = path.join(ROOT, 'artifacts/remcard-r05');
+const REF_ROOT =
+  '/opt/cursor/artifacts/remcard-reference-20261014/reference/prototypes/remcard-profile-wizard';
+
+async function ensureLight(page) {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => {
+    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.style.colorScheme = 'light';
+  });
+}
+
+async function ensureDark(page) {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.colorScheme = 'dark';
+  });
+}
+
+async function isLightBackground(page) {
+  return page.evaluate(() => {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return true;
+    const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    return (r + g + b) / 3 > 128;
+  });
+}
 
 function loadRuntimeEnv() {
   const env = { ...process.env };
@@ -132,6 +160,13 @@ async function main() {
   await finishAgentProfileInBrowser(page, platformOrigin, cookieHeader(cookies));
   cookies = await context.cookies();
 
+  const p0Seed = spawnSync(
+    'pnpm',
+    ['exec', 'tsx', 'scripts/r05P0TwoCertAggregateSeed.ts', agentId],
+    { cwd: NAV_ROOT, env: { ...process.env, ...runtimeEnv }, encoding: 'utf8' },
+  );
+  steps.push({ step: 'r05_p0_two_cert_seed', exitCode: p0Seed.status });
+
   const seed = spawnSync(
     'pnpm',
     ['exec', 'tsx', 'scripts/r05ParityReceivablesSeed.ts', agentId, '125'],
@@ -142,6 +177,20 @@ async function main() {
     },
   );
   steps.push({ step: 'r05_seed', exitCode: seed.status, stdout: (seed.stdout || '').slice(0, 200) });
+
+  const vitest = spawnSync(
+    'npm',
+    [
+      'run',
+      'test',
+      '--',
+      '--run',
+      'src/lib/__tests__/agentReceivables.readmodel.test.ts',
+      'src/lib/__tests__/agentReceivables.test.ts',
+      'src/lib/__tests__/agentR05IncomingOnly.test.ts',
+    ],
+    { cwd: NAV_ROOT, encoding: 'utf8' },
+  );
 
   const r05 = await bffJson(platformOrigin, cookies, '/api/pro/r05/status');
   functional.r05GateOn = r05.body?.featureEnabled === true;
@@ -168,28 +217,55 @@ async function main() {
   functional.partnersApiOk =
     partnersFresh.status === 200 && (partnersFresh.body?.partners?.length ?? 0) > 0;
 
+  const m1Cards = (partnersFresh.body?.partners ?? []).filter((p) =>
+    String(p.displayName).includes('M1 Test Store'),
+  );
+  functional.p0SingleM1Card = m1Cards.length === 1;
+  const m1GroupKey = m1Cards[0]?.groupKey ?? '';
+  const m1Orders = m1GroupKey
+    ? await bffJson(
+        platformOrigin,
+        cookies,
+        `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=25&status=open&groupKey=${encodeURIComponent(m1GroupKey)}`,
+      )
+    : { status: 0, body: null };
+  functional.p0DrilldownSumOk =
+    m1Orders.status === 200 &&
+    m1Orders.body?.meta?.selectionTotalKopecks === m1Cards[0]?.confirmedDebtKopecks &&
+    (m1Orders.body?.meta?.totalRecords ?? 0) === 2;
+
+  const dueAsc = await bffJson(
+    platformOrigin,
+    cookies,
+    '/api/pro/wallet/agent-receivables/partners?page=1&pageSize=25&status=open&sort=due-asc',
+  );
+  if ((dueAsc.body?.partners?.length ?? 0) >= 2) {
+    const a = dueAsc.body.partners[0]?.earliestPurchaseAt ?? '';
+    const b = dueAsc.body.partners[1]?.earliestPurchaseAt ?? '';
+    functional.partnerDueAscOk = a <= b;
+  } else {
+    functional.partnerDueAscOk = dueAsc.status === 200;
+  }
+
   const partnerId = partnersFresh.body?.partners?.[0]?.partnerId ?? '';
-  const categoryPartnerId =
-    partnersFresh.body?.partners?.find((p) => !String(p.displayName).includes('Store B'))
-      ?.partnerId ?? partnerId;
+  const bulkPartner = [...(partnersFresh.body?.partners ?? [])].sort(
+    (a, b) => (b.referenceOrderCount ?? 0) - (a.referenceOrderCount ?? 0),
+  )[0];
+  const bulkGroupKey = bulkPartner?.groupKey ?? '';
   const categorySearch = await bffJson(
     platformOrigin,
     cookies,
-    `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=25&status=open&partnerId=${encodeURIComponent(categoryPartnerId)}&q=${encodeURIComponent('кровля')}`,
+    `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=25&status=open&groupKey=${encodeURIComponent(bulkGroupKey)}&q=${encodeURIComponent('кровля')}`,
   );
   functional.categorySearchOk =
     categorySearch.status === 200 && (categorySearch.body?.meta?.totalRecords ?? 0) >= 1;
 
-  const bulkPartner = [...(partnersFresh.body?.partners ?? [])].sort(
-    (a, b) => (b.referenceOrderCount ?? 0) - (a.referenceOrderCount ?? 0),
-  )[0];
-  const bulkPartnerId = bulkPartner?.partnerId ?? partnerId;
   const pageCountEstimate = Math.ceil((bulkPartner?.referenceOrderCount ?? 0) / 25);
   const targetPage = Math.min(5, Math.max(1, pageCountEstimate));
   const pageFar = await bffJson(
     platformOrigin,
     cookies,
-    `/api/pro/wallet/agent-receivables/orders?page=${targetPage}&pageSize=25&status=open&sort=debt-desc&partnerId=${encodeURIComponent(bulkPartnerId)}`,
+    `/api/pro/wallet/agent-receivables/orders?page=${targetPage}&pageSize=25&status=open&sort=debt-desc&groupKey=${encodeURIComponent(bulkGroupKey)}`,
   );
   functional.paginationPage5Ok =
     pageFar.status === 200 &&
@@ -208,7 +284,9 @@ async function main() {
   mkdirSync(shots, { recursive: true });
   const captures = [];
 
+  await ensureLight(page);
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+  functional.overview1440LightThemeOk = await isLightBackground(page);
   captures.push(await shot(page, path.join(shots, 'impl-r05-overview-1440-light.png')));
 
   if (functional.tileVisible) {
@@ -236,38 +314,75 @@ async function main() {
       await page.getByTestId('ledger-pagination').getByRole('button', { name: 'Далее' }).click();
       await page.waitForTimeout(300);
     }
+  } else {
+    functional.uiPaginationOk = false;
   }
 
-  await page.emulateMedia({ colorScheme: 'dark' });
+  await ensureDark(page);
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
   captures.push(await shot(page, path.join(shots, 'impl-r05-overview-1440-dark.png')));
 
+  await ensureLight(page);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
-  captures.push(await shot(page, path.join(shots, 'impl-r05-overview-375-light.png')));
+  if (functional.tileVisible) {
+    await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+    captures.push(await shot(page, path.join(shots, 'impl-r05-overview-375-light.png')));
+    await page.getByTestId('agent-r05-incoming-tile').click();
+    await page.waitForTimeout(300);
+    functional.overview375LightThemeOk = await isLightBackground(page);
+    captures.push(await shot(page, path.join(shots, 'impl-r05-partners-375-light.png')));
+    await page.getByTestId('agent-r05-partner-row').first().click();
+    await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
+    captures.push(await shot(page, path.join(shots, 'impl-r05-orders-375-light.png')));
+    await page.getByTestId('agent-r05-order-summary').first().click();
+    await page.getByRole('button', { name: 'Подробности' }).first().click();
+    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-375-light.png')));
+  }
 
+  await ensureLight(page);
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
   functional.smoke320NoHorizontalScroll =
     (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
     true;
+  functional.overview320LightThemeOk = await isLightBackground(page);
   captures.push(await shot(page, path.join(shots, 'impl-r05-overview-320-light.png')));
+
+  const refPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await refPage.goto(`file://${REF_ROOT}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
+  await refPage.waitForTimeout(2000);
+  functional.refRolesLoaded = (await refPage.locator('#app').count()) > 0;
+  if (functional.refRolesLoaded) {
+    await ensureLight(refPage);
+    captures.push(await shot(refPage, path.join(shots, 'ref-r05-prototype-entry-1440-light.png')));
+  }
+  await refPage.close();
 
   await browser.close();
 
   const pass =
     platBuild.status === 0 &&
     navBuild.status === 0 &&
+    p0Seed.status === 0 &&
     seed.status === 0 &&
+    vitest.status === 0 &&
     functional.r05GateOn &&
     functional.r05Eligible &&
     functional.overviewOk &&
     functional.tileVisible &&
     functional.partnersVisible &&
     functional.partnersApiOk &&
+    functional.p0SingleM1Card &&
+    functional.p0DrilldownSumOk &&
+    functional.partnerDueAscOk &&
     functional.categorySearchOk &&
     functional.paginationPage5Ok &&
-    functional.incomingOnlySettlements;
+    functional.incomingOnlySettlements &&
+    functional.uiPaginationOk &&
+    functional.smoke320NoHorizontalScroll &&
+    functional.overview1440LightThemeOk &&
+    functional.overview375LightThemeOk &&
+    functional.overview320LightThemeOk;
 
   const navDirty = spawnSync('git', ['status', '--porcelain'], { cwd: NAV_ROOT, encoding: 'utf8' })
     .stdout.trim();
@@ -276,7 +391,7 @@ async function main() {
 
   const results = {
     generatedAt: new Date().toISOString(),
-    contractVersion: '2026-10-16.r05.1',
+    contractVersion: '2026-10-16.r05.2',
     platformHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim(),
     navigatorHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout.trim(),
     gitDirty: { platform: platDirty.length > 0, navigator: navDirty.length > 0 },
@@ -285,9 +400,8 @@ async function main() {
       { cmd: 'pnpm run build (platform)', exitCode: platBuild.status ?? 1 },
       { cmd: 'npm run build (navigator)', exitCode: navBuild.status ?? 1 },
       {
-        cmd: 'vitest agentReceivables*.test.ts agentR05IncomingOnly.test.ts',
-        exitCode: 0,
-        note: 'run on navigator before commit',
+        cmd: 'npm run test -- --run agentReceivables*.test.ts (navigator)',
+        exitCode: vitest.status ?? 1,
       },
       { cmd: 'node scripts/r05-browser-acceptance.mjs', exitCode: pass ? 0 : 1 },
     ],
@@ -295,14 +409,21 @@ async function main() {
     steps,
     captures,
     sections: {
-      A: functional.partnersApiOk ? 'PASS' : 'FAIL',
-      B:
-        functional.categorySearchOk && functional.paginationPage5Ok && functional.partnersApiOk
+      '1_partner_aggregate': functional.p0SingleM1Card && functional.p0DrilldownSumOk ? 'PASS' : 'FAIL',
+      '2_partner_sort': functional.partnerDueAscOk ? 'PASS' : 'FAIL',
+      '3_visual_reference':
+        functional.tileVisible &&
+        functional.partnersVisible &&
+        functional.overview1440LightThemeOk
           ? 'PASS'
           : 'FAIL',
-      C: functional.overviewOk ? 'PASS' : 'FAIL',
-      D: functional.incomingOnlySettlements ? 'PASS' : 'FAIL',
-      E: functional.tileVisible && functional.partnersVisible ? 'PASS' : 'FAIL',
+      '4_evidence':
+        functional.overview320LightThemeOk &&
+        functional.overview375LightThemeOk &&
+        functional.smoke320NoHorizontalScroll &&
+        functional.uiPaginationOk
+          ? 'PASS'
+          : 'FAIL',
     },
     pass,
     status: pass ? 'READY_FOR_REVIEW' : 'BLOCKED',
