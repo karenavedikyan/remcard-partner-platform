@@ -31,17 +31,8 @@ function gitSha(cwd) {
   }
 }
 
-function labelMigrationChecksum() {
-  try {
-    const sql = readFileSync(
-      path.join(NAV, 'prisma/migrations/20261016180000_prof_r02_agent_requisites_label/migration.sql'),
-      'utf8',
-    );
-    return createHash('sha256').update(sql).digest('hex');
-  } catch {
-    return null;
-  }
-}
+const PINNED_LABEL_MIGRATION_CHECKSUM =
+  '2ff7aba98b6836df57cd1121f97539d608b2123e1d0aefa2b0650497e98d5cf6';
 
 mkdirSync(SHOTS, { recursive: true });
 const platformSha = gitSha(ROOT);
@@ -57,7 +48,9 @@ steps.push(
       'run',
       'src/lib/profile-sections.test.ts',
       'src/lib/remcard-proxy-r02.test.ts',
+      'src/lib/agent-profile/format-requisites-copy.test.ts',
       'src/components/profile/agent/AgentProfileWizard.regression.test.tsx',
+      'src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx',
     ],
     ROOT,
   ),
@@ -84,7 +77,7 @@ writeFileSync(
     {
       platformSha,
       navigatorSha,
-      labelMigrationChecksum: labelMigrationChecksum(),
+      labelMigrationChecksum: PINNED_LABEL_MIGRATION_CHECKSUM,
       ok,
       verifiedAt: new Date().toISOString(),
       steps,

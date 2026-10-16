@@ -9,6 +9,10 @@ import {
   patchAgentRequisites,
 } from "@/lib/agent-profile/api";
 import type { AgentRequisitesItem } from "@/lib/agent-profile/types";
+import {
+  formatRequisitesCopyText,
+  hasFullRequisitesForCopy,
+} from "@/lib/agent-profile/format-requisites-copy";
 import styles from "./AgentProfileWizard.module.css";
 
 const KIND_LABELS: Record<string, string> = {
@@ -217,26 +221,15 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     }
   };
 
-  const formatCopyText = (item: AgentRequisitesItem) => {
-    const lines: string[] = [];
-    if (item.label?.trim()) lines.push(`Название: ${item.label.trim()}`);
-    lines.push(item.legalName);
-    lines.push(KIND_LABELS[item.kind] ?? item.kind);
-    if (item.inn) lines.push(`ИНН ${item.inn}`);
-    if (item.kpp) lines.push(`КПП ${item.kpp}`);
-    if (item.bankName) lines.push(item.bankName);
-    if (item.bik) lines.push(`БИК ${item.bik}`);
-    const account = item.accountNumber ?? item.accountNumberMasked;
-    if (account) lines.push(`Р/с ${account}`);
-    const corr = item.corrAccount ?? item.corrAccountMasked;
-    if (corr) lines.push(`К/с ${corr}`);
-    return lines.join("\n");
-  };
-
   const copyItem = async (item: AgentRequisitesItem) => {
-    const full = (await ensureFullDetail(item.id)) ?? mergeListWithDetail(item);
-    const text = formatCopyText(full);
     setCopyStatus("");
+    setError("");
+    const full = await ensureFullDetail(item.id);
+    if (!full || !hasFullRequisitesForCopy(full)) {
+      setError("Не удалось загрузить полные реквизиты для копирования. Повторите попытку.");
+      return;
+    }
+    const text = formatRequisitesCopyText(full);
     try {
       await navigator.clipboard.writeText(text);
       setCopyStatus("Скопировано в буфер обмена");

@@ -1,46 +1,46 @@
-# Agent profile parity RC (corrective pass — not owner RC)
+# Agent profile parity RC (evidence pass)
 
-**Not merge/deploy/production.** R03-PARITY-TAIL waits on full profile RC.
+**Not merge/deploy/production.** R03-PARITY-TAIL remains queued until owner accepts this RC.
 
-## Git
+## Git (update after push)
 
-| Repo | Branch | Tip (this pass) | PR |
-|------|--------|-----------------|-----|
-| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | `0b77bc47e99923662ecaff7e1682f405fc711dae` | **#19** |
-| remcard-navigator | `cursor/agent-profile-parity-b3e3` | `5a4b14ccfcd358a9eef2d0272835be8799bebb49` | **#682** |
+| Repo | Branch | PR |
+|------|--------|-----|
+| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | **#19** |
+| remcard-navigator | `cursor/agent-profile-parity-b3e3` | **#682** |
 
-**Base stack:** R03 UI parity (#18 / #681); prior tips `67f48bc` (platform docs chain) / `a84f5678` (backend) superseded by commits above for this corrective pass.
+Tips and SHAs: see `TEST-RESULTS.json` and `profile-parity-e2e.json` in this folder.
 
-**Stack base:** `cursor/r03-ui-parity-b3e3` (#18 / #681).
-
-## This corrective pass
-
-- **Draft discard:** BFF `DELETE` on `/api/pro/agent-profile/draft` only; prof test allowlist; `expectedVersion`+epoch on DELETE; `profileSaved` on GET; wizard cancel/hydrate + basics → overview.
-- **Bank:** detail GET for view/copy; copy includes label, legalName, KPP, full accounts; revise label + `expectedVersion`; version check before revise side effects.
-- **Migration:** additive `label` column migration + `prof-r02-requisites-label-migrate.mjs` (checksum pinned in TEST-RESULTS).
-- **Tests:** proxy/policy regression; wizard cancel tests; navigator route integration (draft DELETE, label detail, revise 409).
-
-## Verification
+## Verification commands
 
 ```bash
-# Platform
+# Platform (disposable DB + JWT for E2E)
+cd remcard-partner-platform
 npm run build
-npx vitest run src/lib/profile-sections.test.ts src/lib/remcard-proxy-r02.test.ts \
-  src/components/profile/agent/AgentProfileWizard.regression.test.tsx
-node scripts/agent-profile-parity-rc.mjs
+JWT_SECRET=$(openssl rand -base64 32) node scripts/agent-profile-parity-rc.mjs
 
-# Navigator
-npm run build
-npx vitest run src/lib/__tests__/profTestRoutePolicy.test.ts
-# With disposable DB:
+# Navigator migration (disposable DB)
+cd remcard-navigator
 PROF_R02_RUN_PG=1 node --test scripts/lib/__tests__/prof-r02-requisites-label-controlled-apply.integration.test.mjs
 ```
 
-## Evidence remainder (honest)
+## Evidence (this pass)
 
-- **PNG matrix:** `scripts/agent-profile-parity-full.mjs` ready; run failed locally after prod `next start` on 3031/3032 — `GET /api/auth/me` returns `{ user: null }` for fixture-minted token (JWT/env alignment on long-running servers). Earlier probe: stale `next dev` on 3032 returned `Path not allowed` for `/pro/r03/status` until production start.
-- **No CAPTURED / pixel PASS** until screenshots land under `artifacts/remcard-agent-profile-parity/screenshots/`.
+- **Unit:** 20 vitest (sections, proxy, wizard cancel, requisites copy + panel).
+- **HTTP:** draft save/discard, masked list + authorized detail, bank create (parity runner).
+- **Browser:** overview→edit→cancel; basics→cancel→overview; dirty confirm reject/accept; saved draft reload→cancel (confirm on discard dirty draft).
+- **Visual:** 9 scenarios × impl+ref PNG at 1440/375 light/dark + 320 smoke; reference from `/opt/cursor/artifacts/remcard-reference-20261014/.../remcard-profile-wizard`.
+- **Theme:** `data-theme` + surface luma assertions (not `classList.dark`).
 
-## Documented capture exceptions
+## Visual honesty
 
-- Test banner on impl; product chrome may be masked per existing r02 visual rules.
+Pairs are **structural comparisons**, not pixel PASS:
+
+- Impl includes RemCard product shell (top bar, mobile nav); reference is prototype cabinet slice.
+- Impl may show test-user banner when present; reference hides demo chrome via documented CSS in runner only on ref side.
+- Typography, spacing, and color tokens differ; dark mode pairs share theme intent but not identical hex/luma.
+
+## Capture exceptions (documented)
+
+- Reference runner hides `.demo-top`, `.review-details`, etc. on ref captures only.
+- Full-page screenshots include page chrome where applicable.

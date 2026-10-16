@@ -55,6 +55,8 @@ export default defineConfig({
       "src/lib/agent-r03/clientListRow.test.ts",
       "src/components/agent-r03/clientContactShare.test.ts",
       "src/lib/agent-profile/api.client.test.ts",
+      "src/lib/agent-profile/format-requisites-copy.test.ts",
+      "src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx",
       "src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
     ],
     testTimeout: 30_000,

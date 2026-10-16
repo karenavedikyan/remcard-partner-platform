@@ -1,0 +1,112 @@
+{
+  "ok": true,
+  "stack": {
+    "platformGitSha": "b2f0d2b746d351176a520d3e33aa63f0ec672968",
+    "navigatorGitSha": "5a4b14ccfcd358a9eef2d0272835be8799bebb49",
+    "platformOrigin": "http://127.0.0.1:3044",
+    "navOrigin": "http://127.0.0.1:3043",
+    "userId": "r02-local-pro-agent-v1"
+  },
+  "http": {
+    "saveDraft": 200,
+    "profileSaved": true,
+    "hasDraft": true,
+    "discard": 200,
+    "afterDiscardComplete": true,
+    "afterDiscardHasDraft": false,
+    "bankCreate": 200,
+    "listMasked": true,
+    "detailLabel": "Личный счёт",
+    "detailAccount": "40817810000000000001",
+    "ok": true
+  },
+  "ui": {
+    "overviewEditCancel": true,
+    "basicsDirectCancel": true,
+    "dirtyCancelRejected": true,
+    "dirtyCancelAccepted": true,
+    "draftReloadValue": "Draft After Saved",
+    "afterCancelHasDraft": false,
+    "afterCancelSavedName": "Parity Visual Agent",
+    "ok": true
+  },
+  "screenshots": [
+    {
+      "file": "impl-overview-1440-light.png",
+      "sha256": "bd3e5e83ba1d76b2ce819a7c5570962d0e61b26582cccb50cc45fbed240756ce"
+    },
+    {
+      "file": "ref-overview-1440-light.png",
+      "sha256": "2e4d4b921af47c7841b27078bf9decedfaab2b11929a37dc2570541511b52c69"
+    },
+    {
+      "file": "impl-overview-1440-dark.png",
+      "sha256": "b7928762a0fe250101151316625f009221490341a573c41de9bd11e50873638d"
+    },
+    {
+      "file": "ref-overview-1440-dark.png",
+      "sha256": "44b6166b532ee0f71a8f02ee1392f1da5b489f4f8a6b4f5c3eab930685dcb754"
+    },
+    {
+      "file": "impl-overview-375-light.png",
+      "sha256": "9c80c3bc083a8bd39caa243aec7cbb85e39d65c45b3fbd8b1db7d79ddbaa410e"
+    },
+    {
+      "file": "ref-overview-375-light.png",
+      "sha256": "45f01cfcc9224d35f0fa9768324eb36838b6da85f31f8d4e367e1b8ff9daa1d1"
+    },
+    {
+      "file": "impl-overview-375-dark.png",
+      "sha256": "8cb184a97a82b2898cb269a7157592b2211e2791b469872e528af3a19e96b0af"
+    },
+    {
+      "file": "ref-overview-375-dark.png",
+      "sha256": "c462557e4aa3761298be7c0d1b6ae2646a8d0afe21254bf28de8ab0b8acdb598"
+    },
+    {
+      "file": "impl-overview-320-light.png",
+      "sha256": "9a1454239c92e525c009aa0346ef733245853e4189231622a2fdbcb3d3311b09"
+    },
+    {
+      "file": "ref-overview-320-light.png",
+      "sha256": "8695a8fef38d9ec3b9972d75f9dc24bd66840c1a0e0606cd1d4df79a4eb4a009"
+    },
+    {
+      "file": "impl-wizard-step1-375-light.png",
+      "sha256": "623c2d50076869dbf35b12d581434f821d05bd8f3997d0599361be0ec26a6934"
+    },
+    {
+      "file": "ref-wizard-step1-375-light.png",
+      "sha256": "bb7eb927bb9478353964f2cf9df21c318ddc0dd4255c67c7904df543d53be20f"
+    },
+    {
+      "file": "impl-bank-collapsed-375-light.png",
+      "sha256": "5c6f22816aa78359c6277d1ed33a9bc543952912e2620a88d6743a2ae25fdb30"
+    },
+    {
+      "file": "ref-bank-collapsed-375-light.png",
+      "sha256": "45f01cfcc9224d35f0fa9768324eb36838b6da85f31f8d4e367e1b8ff9daa1d1"
+    },
+    {
+      "file": "impl-bank-expanded-375-light.png",
+      "sha256": "2bc42e95c549860133a377b75d71e5ddf691eb05d4d7c32aa37ae3eaea149d55"
+    },
+    {
+      "file": "ref-bank-expanded-375-light.png",
+      "sha256": "15ea6d9a7b12783ee258f6a7da65acac3033e2a7344d49bd9d6cc349c1f15e27"
+    },
+    {
+      "file": "impl-bank-form-375-light.png",
+      "sha256": "cf15f962041be65c4c55f7836ccf51f6d367ffe05f00ffa0a238a3c0f5b72935"
+    },
+    {
+      "file": "ref-bank-form-375-light.png",
+      "sha256": "15ea6d9a7b12783ee258f6a7da65acac3033e2a7344d49bd9d6cc349c1f15e27"
+    }
+  ],
+  "migration": {
+    "skipped": true,
+    "reason": "PROF_R02_RUN_PG not set"
+  },
+  "capturedAt": "2026-10-16T06:20:53.287Z"
+}
