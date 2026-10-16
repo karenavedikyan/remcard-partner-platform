@@ -9,7 +9,8 @@ import {
   patchAgentProfileDraft,
 } from "@/lib/agent-profile/api";
 import type { AgentProfileDraftPayload } from "@/lib/agent-profile/types";
-import { formatPhoneForDisplay, formatPhoneInput } from "@/lib/contact-phone-display";
+import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
+import { AgentPhoneField } from "@/components/profile/agent/AgentPhoneField";
 import styles from "./AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Аудитория", "Контакты", "Проверка"] as const;
@@ -634,21 +635,13 @@ export function AgentProfileWizard({
                   <div
                     className={`${styles.field} ${fieldErrors.contactPhone ? styles.fieldError : ""}`}
                   >
-                    <label htmlFor="agent-phone">Телефон</label>
-                    <input
-                      id="agent-phone"
-                      type="tel"
-                      inputMode="tel"
-                      value={formatPhoneForDisplay(draft.contactPhone) || draft.contactPhone || ""}
-                      placeholder="+7 (___) ___-__-__"
+                    <AgentPhoneField
+                      value={draft.contactPhone ?? ""}
                       disabled={disabled || saving}
-                      data-testid="agent-profile-input-phone"
-                      onChange={(e) => updateField("contactPhone", formatPhoneInput(e.target.value))}
+                      error={fieldErrors.contactPhone}
+                      onChange={(next) => updateField("contactPhone", next)}
                     />
-                    <small>
-                      {fieldErrors.contactPhone ||
-                        "Можно начать с 8 или 7. Для связи, не для повторного входа."}
-                    </small>
+                    <small>Для связи, не для повторного входа.</small>
                   </div>
                   <div
                     className={`${styles.field} ${fieldErrors.contactEmail ? styles.fieldError : ""}`}

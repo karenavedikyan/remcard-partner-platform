@@ -288,6 +288,10 @@ describe("remcard proxy transport checks", () => {
       isAllowedProxyRoute("GET", "/api/pro/wallet/agent-receivables/orders/cabcdefghijklmnopqrst"),
       true,
     );
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/wallet/agent-receivables/export"),
+      true,
+    );
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/cabinet-ui-preferences"), true);
     assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/cabinet-ui-preferences"), true);
     assert.equal(

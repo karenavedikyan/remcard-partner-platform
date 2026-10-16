@@ -1,4 +1,4 @@
-import { remcardFetch } from "@/lib/api-client";
+import { remcardFetch, remcardFetchBlob } from "@/lib/api-client";
 
 export type AgentR05Status = {
   contractVersion: string;
@@ -117,6 +117,30 @@ export function fetchAgentReceivableOrders(params: URLSearchParams) {
   return remcardFetch<{ orders: AgentReceivableRecord[]; meta: AgentReceivablesMeta }>(
     `/api/pro/wallet/agent-receivables/orders?${params.toString()}`,
   );
+}
+
+export type AgentReceivablesExportKind = "overview" | "partners" | "orders";
+
+export async function downloadAgentReceivablesExport(
+  kind: AgentReceivablesExportKind,
+  params: URLSearchParams,
+) {
+  const query = new URLSearchParams(params);
+  query.set("exportKind", kind);
+  const { blob, filename } = await remcardFetchBlob(
+    `/api/pro/wallet/agent-receivables/export?${query.toString()}`,
+    { method: "POST" },
+  );
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download =
+    filename ??
+    `RemCard-agent-receivables-${kind}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function fetchAgentReceivableOrderDetail(orderId: string) {
