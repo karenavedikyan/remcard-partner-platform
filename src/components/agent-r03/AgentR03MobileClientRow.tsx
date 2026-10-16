@@ -3,6 +3,11 @@
 import Link from "next/link";
 import type { AgentClientRow } from "@/lib/agent-r03/types";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
+import {
+  clientPurchaseStatusLabel,
+  clientRowCaption,
+  clientRowDetail,
+} from "@/lib/agent-r03/clientListRow";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 
@@ -21,11 +26,6 @@ export function AgentR03MobileClientRow({
   onSelectChange,
   actions,
 }: Props) {
-  const certLine =
-    client.certificateCount > 0
-      ? `${client.certificateCount} сертификат${client.certificateCount === 1 ? "" : client.certificateCount < 5 ? "а" : "ов"}`
-      : "Пока без сертификатов";
-
   return (
     <article className={styles.mobileRecord} data-testid="agent-client-mobile-row">
       <div className={styles.mobileRecordTop}>
@@ -37,20 +37,26 @@ export function AgentR03MobileClientRow({
           />
         </label>
         <div className={styles.mobileRecordMain}>
+          <div className={styles.mobileRecordStatusRow}>
+            <span className={styles.purchasePill}>
+              {clientPurchaseStatusLabel(client, archived)}
+            </span>
+          </div>
           <Link href={`/clients/${client.id}`} className={styles.mobileRecordTitle}>
             {client.displayName}
           </Link>
-          <p className={styles.meta}>
-            {[client.city, client.phone ? formatPhoneForDisplay(client.phone) : null]
-              .filter(Boolean)
-              .join(" · ") || "Контакты не указаны"}
-          </p>
-          <p className={styles.meta}>{certLine}</p>
+          <p className={styles.meta}>{clientRowDetail(client)}</p>
+          {clientRowCaption(client) ? (
+            <p className={styles.meta}>{clientRowCaption(client)}</p>
+          ) : null}
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>
-        <span className={styles.statusPill}>{archived ? "В архиве" : "Активен"}</span>
-        <RecordRowActions ariaLabel="Действия с клиентом" actions={actions} />
+        <RecordRowActions
+          ariaLabel="Действия с клиентом"
+          actions={actions}
+          variant="cardToolbar"
+        />
       </div>
     </article>
   );

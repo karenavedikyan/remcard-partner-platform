@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import type { AgentR03ListSort } from "@/lib/agent-r03/types";
 import styles from "./agent-r03.module.css";
 
@@ -8,7 +7,6 @@ type Props = {
   searchPlaceholder: string;
   q: string;
   onQChange: (value: string) => void;
-  onSearch: () => void;
   archived: boolean;
   onShowChange: (archived: boolean) => void;
   activeCount: number;
@@ -25,13 +23,14 @@ type Props = {
   statusFilter?: string;
   onStatusFilterChange?: (value: string) => void;
   statusOptions?: Array<{ value: string; label: string }>;
+  onResetFilters?: () => void;
+  filtersActive?: boolean;
 };
 
 export function AgentR03ListToolbar({
   searchPlaceholder,
   q,
   onQChange,
-  onSearch,
   archived,
   onShowChange,
   activeCount,
@@ -48,14 +47,21 @@ export function AgentR03ListToolbar({
   statusFilter = "",
   onStatusFilterChange,
   statusOptions,
+  onResetFilters,
+  filtersActive = false,
 }: Props) {
   const pageAllSelected =
     selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
 
+  const archiveHint =
+    archived
+      ? "Архив не отключает ссылки и не расторгает сотрудничество."
+      : "Выделите записи, чтобы работать с ними вместе.";
+
   return (
     <div className={styles.collectionToolbar} data-testid="agent-r03-collection-toolbar">
-      <div className={styles.toolbarRow}>
-        <label className={styles.fieldInline}>
+      <div className={styles.collectionTools}>
+        <label className={`${styles.fieldSearch} ${styles.fieldSearchLabeled} ${styles.collectionSearch}`}>
           Поиск
           <input
             className={styles.searchInput}
@@ -63,87 +69,96 @@ export function AgentR03ListToolbar({
             placeholder={searchPlaceholder}
             value={q}
             onChange={(e) => onQChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearch();
-            }}
+            data-testid="agent-r03-search"
           />
         </label>
-        <Button type="button" variant="secondary" onClick={onSearch}>
-          Найти
-        </Button>
-        <label className={styles.fieldInline}>
-          Показывать
-          <select
-            className={styles.showSelect}
-            value={archived ? "archived" : "active"}
-            onChange={(e) => onShowChange(e.target.value === "archived")}
-            data-testid="agent-r03-show-filter"
-          >
-            <option value="active">Активные ({activeCount})</option>
-            <option value="archived">Архив ({archivedCount})</option>
-          </select>
-        </label>
-        <div className={styles.viewToggle} data-testid="agent-r03-view-toggle">
-          <button
-            type="button"
-            data-active={viewMode === "list"}
-            aria-pressed={viewMode === "list"}
-            onClick={() => onViewModeChange("list")}
-          >
-            Список
-          </button>
-          <button
-            type="button"
-            data-active={viewMode === "cards"}
-            aria-pressed={viewMode === "cards"}
-            onClick={() => onViewModeChange("cards")}
-          >
-            Карточки
-          </button>
-        </div>
-      </div>
-      <details className={styles.sortDetails} data-testid="agent-r03-filters-panel">
-        <summary>Фильтры и сортировка</summary>
-        <div className={styles.filterGrid}>
-          <label className={styles.fieldInline}>
-            Сортировка
+        <div className={styles.collectionToolsSecondRow}>
+          <label className={`${styles.fieldInlineCompact} ${styles.collectionShowField}`}>
+            Показывать
             <select
-              value={sort}
-              onChange={(e) => onSortChange(e.target.value as AgentR03ListSort)}
-              data-testid="agent-r03-sort"
+              className={styles.showSelect}
+              value={archived ? "archived" : "active"}
+              onChange={(e) => onShowChange(e.target.value === "archived")}
+              data-testid="agent-r03-show-filter"
             >
-              {sortOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
+              <option value="active">Активные ({activeCount})</option>
+              <option value="archived">Архив ({archivedCount})</option>
             </select>
           </label>
-          {statusOptions && onStatusFilterChange ? (
-            <label className={styles.fieldInline}>
-              Статус
+          <div className={`${styles.viewToggle} ${styles.collectionView}`} data-testid="agent-r03-view-toggle">
+            <button
+              type="button"
+              data-active={viewMode === "list"}
+              aria-pressed={viewMode === "list"}
+              onClick={() => onViewModeChange("list")}
+            >
+              Список
+            </button>
+            <button
+              type="button"
+              data-active={viewMode === "cards"}
+              aria-pressed={viewMode === "cards"}
+              onClick={() => onViewModeChange("cards")}
+            >
+              Карточки
+            </button>
+          </div>
+        </div>
+        <details
+          className={`${styles.sortDetails} ${styles.collectionFilters}`}
+          data-testid="agent-r03-filters-panel"
+          open={Boolean(statusFilter || (sort !== "created_desc" && sort !== "updated_desc"))}
+        >
+          <summary>Фильтры и сортировка</summary>
+          <div className={styles.filterGrid}>
+            <label className={styles.fieldInlineCompact}>
+              Сортировка
               <select
-                value={statusFilter}
-                onChange={(e) => onStatusFilterChange(e.target.value)}
-                data-testid="agent-r03-status-filter"
+                className={styles.filterSelect}
+                value={sort}
+                onChange={(e) => onSortChange(e.target.value as AgentR03ListSort)}
+                data-testid="agent-r03-sort"
               >
-                {statusOptions.map((opt) => (
-                  <option key={opt.value || "all"} value={opt.value}>
+                {sortOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
               </select>
             </label>
-          ) : null}
-        </div>
-        <p className={styles.meta}>
-          Поиск, вкладка и сортировка применяются на сервере ко всей выдаче.
-        </p>
-      </details>
-      <div className={styles.listMetaRow}>
+            {statusOptions && onStatusFilterChange ? (
+              <label className={styles.fieldInlineCompact}>
+                Статус
+                <select
+                  className={styles.filterSelect}
+                  value={statusFilter}
+                  onChange={(e) => onStatusFilterChange(e.target.value)}
+                  data-testid="agent-r03-status-filter"
+                >
+                  {statusOptions.map((opt) => (
+                    <option key={opt.value || "all"} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
+        </details>
+      </div>
+
+      <div className={styles.collectionCountRow}>
         <span data-testid="agent-r03-found-count">Найдено: {foundCount}</span>
-        <span className={styles.meta}>Выделите записи, чтобы работать с ними вместе.</span>
-        {selectableIds.length > 0 ? (
+        {filtersActive && onResetFilters ? (
+          <button type="button" className={styles.resetFiltersBtn} onClick={onResetFilters}>
+            Сбросить фильтры
+          </button>
+        ) : null}
+        <small className={styles.collectionHint}>{archiveHint}</small>
+      </div>
+
+      {selectableIds.length > 0 ? (
+        <div className={styles.selectPageRow}>
           <label className={styles.selectPageLabel}>
             <input
               type="checkbox"
@@ -152,8 +167,8 @@ export function AgentR03ListToolbar({
             />
             Выбрать страницу ({selectableIds.length})
           </label>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

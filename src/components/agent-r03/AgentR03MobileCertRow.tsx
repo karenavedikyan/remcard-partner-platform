@@ -40,7 +40,11 @@ export function AgentR03MobileCertRow({ cert, selected, onSelectChange, actions 
       </div>
       <div className={styles.mobileRecordFooter}>
         <span className={styles.statusPill}>{certificateStatusLabel(cert.status)}</span>
-        <RecordRowActions ariaLabel="Действия с сертификатом" actions={actions} />
+        <RecordRowActions
+          ariaLabel="Действия с сертификатом"
+          actions={actions}
+          variant="cardToolbar"
+        />
       </div>
     </article>
   );

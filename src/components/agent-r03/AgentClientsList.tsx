@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
+import { AgentR03PageIntro } from "./AgentR03PageIntro";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   batchAgentClients,
@@ -12,7 +15,6 @@ import {
 } from "@/lib/agent-r03/api";
 import { CLIENT_SORT_OPTIONS } from "@/lib/agent-r03/listSortOptions";
 import type { AgentClientRow, AgentR03ListMeta, AgentR03ListSort } from "@/lib/agent-r03/types";
-import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { Button } from "@/components/ui/Button";
 import { AgentClientFormDialog, type AgentClientFormValues } from "./AgentClientFormDialog";
 import { RecordRowActions } from "./RecordRowActions";
@@ -21,6 +23,11 @@ import { SharePreviewDialog } from "./SharePreviewDialog";
 import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
 import { AgentR03Pagination } from "./AgentR03Pagination";
 import { AgentR03MobileClientRow } from "./AgentR03MobileClientRow";
+import {
+  clientPurchaseStatusLabel,
+  clientRowCaption,
+  clientRowDetail,
+} from "@/lib/agent-r03/clientListRow";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -35,6 +42,7 @@ const emptyMeta: AgentR03ListMeta = {
 };
 
 export function AgentClientsList() {
+  const router = useRouter();
   const [items, setItems] = useState<AgentClientRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
   const [archived, setArchived] = useState(false);
@@ -52,6 +60,7 @@ export function AgentClientsList() {
   const [shareClient, setShareClient] = useState<AgentClientRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -84,9 +93,31 @@ export function AgentClientsList() {
   }, [appliedQ, archived, page, pageSize, sort, searchRevision]);
 
   useEffect(() => {
+    const stored = readAgentR03ViewMode("clients");
+    if (stored) setViewMode(stored);
+  }, []);
+
+  useEffect(() => {
     setSelected(new Set());
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const trimmed = qDraft.trim();
+      setAppliedQ((prev) => {
+        if (prev === trimmed) return prev;
+        setPage(1);
+        setSelected(new Set());
+        setSearchRevision((r) => r + 1);
+        return trimmed;
+      });
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [qDraft]);
 
   const visibleIds = useMemo(() => items.map((c) => c.id), [items]);
 
@@ -95,12 +126,16 @@ export function AgentClientsList() {
     setSelected(new Set());
   }
 
-  function runSearch() {
-    setAppliedQ(qDraft.trim());
-    setPage(1);
-    setSelected(new Set());
+  function resetAllFilters() {
+    setQDraft("");
+    setAppliedQ("");
+    setArchived(false);
+    setSort("updated_desc");
+    resetFiltersAndPage();
     setSearchRevision((r) => r + 1);
   }
+
+  const filtersActive = Boolean(appliedQ || archived || sort !== "updated_desc");
 
   async function submitClient(values: AgentClientFormValues) {
     const body = {
@@ -134,8 +169,17 @@ export function AgentClientsList() {
     setFormOpen(true);
   }
 
-  function clientRowActions(client: AgentClientRow): RecordRowAction[] {
-    return [
+  function clientRowActions(client: AgentClientRow, includeOpen = false): RecordRowAction[] {
+    const actions: RecordRowAction[] = [];
+    if (includeOpen) {
+      actions.push({
+        id: "open",
+        label: "Открыть",
+        disabled: busy,
+        onClick: () => router.push(`/clients/${client.id}`),
+      });
+    }
+    actions.push(
       {
         id: "share",
         label: "Поделиться контактами",
@@ -173,7 +217,8 @@ export function AgentClientsList() {
             });
         },
       },
-    ];
+    );
+    return actions;
   }
 
   async function runBatch(action: "archive" | "restore" | "delete") {
@@ -210,15 +255,18 @@ export function AgentClientsList() {
   const totalPages = Math.max(1, meta.totalPages ?? 1);
 
   return (
-    <>
+    <div className={styles.r03Root}>
+      <AgentR03PageIntro variant="clients" />
       <div className={styles.pageActions}>
         <Button onClick={openCreate}>Добавить клиента</Button>
       </div>
+      <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
-        searchPlaceholder="Имя, контакт, город"
+        searchPlaceholder="Имя, контакт, город или задача"
         q={qDraft}
         onQChange={setQDraft}
-        onSearch={runSearch}
+        filtersActive={filtersActive}
+        onResetFilters={resetAllFilters}
         archived={archived}
         onShowChange={(v) => {
           setArchived(v);
@@ -229,6 +277,7 @@ export function AgentClientsList() {
         viewMode={viewMode}
         onViewModeChange={(mode) => {
           setViewMode(mode);
+          writeAgentR03ViewMode("clients", mode);
           setSelected(new Set());
         }}
         foundCount={meta.totalCount}
@@ -269,38 +318,40 @@ export function AgentClientsList() {
       ) : null}
 
       {items.length > 0 && viewMode === "cards" ? (
-        <div className={styles.list}>
+        <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((client) => (
-            <article key={client.id} className={styles.card}>
-              <div className={styles.cardTop}>
-                <label className={styles.selectCol}>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(client.id)}
-                    onChange={(e) => toggleSelected(client.id, e.target.checked)}
-                  />
-                </label>
-                <div className={styles.cardMain}>
-                  <Link href={`/clients/${client.id}`} className={styles.openLink}>
-                    {client.displayName}
-                  </Link>
-                  <p className={styles.meta}>
-                    {client.city ?? "Город не указан"}
-                    {client.phone ? ` · ${formatPhoneForDisplay(client.phone)}` : ""}
-                    {client.certificateCount
-                      ? ` · сертификатов: ${client.certificateCount}`
-                      : ""}
-                  </p>
-                </div>
-              </div>
-              <div className={styles.cardBottom}>
-                <span className={styles.meta}>{archived ? "В архиве" : "Активен"}</span>
-                <RecordRowActions
-                  ariaLabel="Действия с клиентом"
-                  actions={clientRowActions(client)}
+            <div
+              key={client.id}
+              className={`${styles.collectionCardShell} ${selected.has(client.id) ? styles.collectionCardShellSelected : ""}`}
+            >
+              <label className={styles.collectionCardSelect}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(client.id)}
+                  onChange={(e) => toggleSelected(client.id, e.target.checked)}
                 />
-              </div>
-            </article>
+                Выбрать
+              </label>
+              <article className={styles.clientCard}>
+                <span className={styles.purchasePill}>
+                  {clientPurchaseStatusLabel(client, archived)}
+                </span>
+                <Link href={`/clients/${client.id}`} className={styles.clientCardName}>
+                  {client.displayName}
+                </Link>
+                <p className={styles.clientCardDetail}>{clientRowDetail(client)}</p>
+                {clientRowCaption(client) ? (
+                  <p className={styles.clientCardTask}>{clientRowCaption(client)}</p>
+                ) : null}
+                <div className={styles.clientCardActions}>
+                  <RecordRowActions
+                    ariaLabel="Действия с клиентом"
+                    actions={clientRowActions(client)}
+                    variant="cardToolbar"
+                  />
+                </div>
+              </article>
+            </div>
           ))}
         </div>
       ) : null}
@@ -320,12 +371,12 @@ export function AgentClientsList() {
             ))}
           </div>
           <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-            <table className={styles.dataTable}>
+            <table className={styles.collectionTable}>
               <thead>
                 <tr>
                   <th />
                   <th>Клиент</th>
-                  <th>Контакты</th>
+                  <th>Подробности</th>
                   <th>Статус</th>
                   <th />
                 </tr>
@@ -341,15 +392,25 @@ export function AgentClientsList() {
                       />
                     </td>
                     <td>
-                      <Link href={`/clients/${client.id}`}>{client.displayName}</Link>
+                      <Link href={`/clients/${client.id}`} className={styles.collectionOpenLink}>
+                        {client.displayName}
+                      </Link>
+                      {clientRowCaption(client) ? (
+                        <small className={styles.collectionCaption}>{clientRowCaption(client)}</small>
+                      ) : null}
                     </td>
+                    <td className={styles.collectionDetail}>{clientRowDetail(client)}</td>
                     <td>
-                      {client.city ?? "—"}
-                      {client.phone ? ` · ${formatPhoneForDisplay(client.phone)}` : ""}
+                      <span className={styles.purchasePill}>
+                        {clientPurchaseStatusLabel(client, archived)}
+                      </span>
                     </td>
-                    <td>{archived ? "Архив" : "Активен"}</td>
-                    <td>
-                      <RecordRowActions ariaLabel="Действия" actions={clientRowActions(client)} />
+                    <td className={styles.collectionRowAction}>
+                      <RecordRowActions
+                        ariaLabel="Действия"
+                        actions={clientRowActions(client, true)}
+                        variant="listRow"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -381,6 +442,7 @@ export function AgentClientsList() {
           hasNext={meta.hasNextPage}
         />
       ) : null}
+      </div>
 
       {selected.size > 0 ? (
         <div className={styles.batchBar}>
@@ -427,6 +489,6 @@ export function AgentClientsList() {
         onClose={() => setFormOpen(false)}
         onSubmit={submitClient}
       />
-    </>
+    </div>
   );
 }

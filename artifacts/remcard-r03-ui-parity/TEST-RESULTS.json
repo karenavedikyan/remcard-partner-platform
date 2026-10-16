@@ -1,0 +1,32 @@
+{
+  "platformSha": "386d2f51b4896e38f893cafc6cb0c026167b71d9",
+  "navigatorSha": "651150754af947a3ff896fe9431c68bd45ac5266",
+  "build": {
+    "command": "npm run build",
+    "status": "see_ci_or_local"
+  },
+  "vitest": [
+    "certificateOffers.test.ts",
+    "formatDiscountPercent.test.ts",
+    "clientListRow.test.ts",
+    "sections.test.ts"
+  ],
+  "visualRunner": {
+    "script": "scripts/r03-ui-parity-visual.mjs",
+    "ok": true,
+    "failures": [],
+    "captureCount": 30
+  },
+  "browserSmoke": [
+    "certificates_cards",
+    "cert_terms_open",
+    "certificates_list",
+    "certificates_search",
+    "filters_open",
+    "client_create_open",
+    "client_rename",
+    "client_archive",
+    "client_restore",
+    "reload"
+  ]
+}
