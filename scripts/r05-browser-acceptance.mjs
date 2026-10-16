@@ -208,7 +208,7 @@ async function main() {
     await page.waitForTimeout(500);
     captures.push(await shot(page, path.join(shots, 'impl-r05-orders-1440-light.png')));
 
-    await page.locator('[data-testid="agent-r05-orders"] .orderSummary').first().click();
+    await page.getByTestId('agent-r05-order-summary').first().click();
     await page.getByRole('button', { name: 'Подробности' }).first().click();
     await page.waitForTimeout(500);
     captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-1440-light.png')));

@@ -488,9 +488,10 @@ export function AgentReceivablesHub() {
           </p>
         ) : null}
         {orders.map((order) => (
-          <article key={order.accrualId} className={styles.orderCard}>
+          <article key={order.accrualId} className={styles.orderCard} data-testid="agent-r05-order-card">
             <div
               className={styles.orderSummary}
+              data-testid="agent-r05-order-summary"
               role="button"
               tabIndex={0}
               onClick={() =>
