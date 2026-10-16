@@ -1,6 +1,6 @@
 {
-  "platformSha": "pending_after_push",
-  "navigatorSha": "pending_after_push",
+  "platformSha": "3b17ceb",
+  "navigatorSha": "65115075",
   "build": {
     "command": "npm run build",
     "status": "pass",
