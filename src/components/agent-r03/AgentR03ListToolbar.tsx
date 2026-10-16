@@ -72,18 +72,38 @@ export function AgentR03ListToolbar({
             data-testid="agent-r03-search"
           />
         </label>
-        <label className={`${styles.fieldInlineCompact} ${styles.collectionShowField}`}>
-          Показывать
-          <select
-            className={styles.showSelect}
-            value={archived ? "archived" : "active"}
-            onChange={(e) => onShowChange(e.target.value === "archived")}
-            data-testid="agent-r03-show-filter"
-          >
-            <option value="active">Активные ({activeCount})</option>
-            <option value="archived">Архив ({archivedCount})</option>
-          </select>
-        </label>
+        <div className={styles.collectionToolsSecondRow}>
+          <label className={`${styles.fieldInlineCompact} ${styles.collectionShowField}`}>
+            Показывать
+            <select
+              className={styles.showSelect}
+              value={archived ? "archived" : "active"}
+              onChange={(e) => onShowChange(e.target.value === "archived")}
+              data-testid="agent-r03-show-filter"
+            >
+              <option value="active">Активные ({activeCount})</option>
+              <option value="archived">Архив ({archivedCount})</option>
+            </select>
+          </label>
+          <div className={`${styles.viewToggle} ${styles.collectionView}`} data-testid="agent-r03-view-toggle">
+            <button
+              type="button"
+              data-active={viewMode === "list"}
+              aria-pressed={viewMode === "list"}
+              onClick={() => onViewModeChange("list")}
+            >
+              Список
+            </button>
+            <button
+              type="button"
+              data-active={viewMode === "cards"}
+              aria-pressed={viewMode === "cards"}
+              onClick={() => onViewModeChange("cards")}
+            >
+              Карточки
+            </button>
+          </div>
+        </div>
         <details
           className={`${styles.sortDetails} ${styles.collectionFilters}`}
           data-testid="agent-r03-filters-panel"
@@ -125,24 +145,6 @@ export function AgentR03ListToolbar({
             ) : null}
           </div>
         </details>
-        <div className={`${styles.viewToggle} ${styles.collectionView}`} data-testid="agent-r03-view-toggle">
-          <button
-            type="button"
-            data-active={viewMode === "list"}
-            aria-pressed={viewMode === "list"}
-            onClick={() => onViewModeChange("list")}
-          >
-            Список
-          </button>
-          <button
-            type="button"
-            data-active={viewMode === "cards"}
-            aria-pressed={viewMode === "cards"}
-            onClick={() => onViewModeChange("cards")}
-          >
-            Карточки
-          </button>
-        </div>
       </div>
 
       <div className={styles.collectionCountRow}>

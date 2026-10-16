@@ -37,9 +37,11 @@ export function AgentR03MobileClientRow({
           />
         </label>
         <div className={styles.mobileRecordMain}>
-          <span className={styles.purchasePill}>
-            {clientPurchaseStatusLabel(client, archived)}
-          </span>
+          <div className={styles.mobileRecordStatusRow}>
+            <span className={styles.purchasePill}>
+              {clientPurchaseStatusLabel(client, archived)}
+            </span>
+          </div>
           <Link href={`/clients/${client.id}`} className={styles.mobileRecordTitle}>
             {client.displayName}
           </Link>

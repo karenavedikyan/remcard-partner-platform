@@ -19,6 +19,7 @@ import {
   startStaticRefServer,
   ROOT,
 } from './lib/r03-stack-bootstrap.mjs';
+import { PARITY_MATCH } from './lib/r03-parity-fixture.mjs';
 
 const ART = path.join(ROOT, 'artifacts/remcard-r03-ui-parity');
 const SHOTS = path.join(ART, 'screenshots');
@@ -44,6 +45,8 @@ for (const section of ['certificates', 'clients']) {
 const SMOKE_MATRIX = [
   { section: 'certificates', viewMode: 'list', theme: 'light', width: 320, height: 812, kind: 'smoke320' },
   { section: 'clients', viewMode: 'list', theme: 'light', width: 320, height: 812, kind: 'smoke320' },
+  { section: 'certificates', viewMode: 'cards', theme: 'light', width: 320, height: 812, kind: 'cards320' },
+  { section: 'clients', viewMode: 'cards', theme: 'light', width: 320, height: 812, kind: 'cards320' },
 ];
 
 const CORRECTIVE_MATRIX = [
@@ -52,7 +55,77 @@ const CORRECTIVE_MATRIX = [
   ...SMOKE_MATRIX,
 ];
 
+const DELTA_MATRIX = [
+  ...MAIN_MATRIX.filter((r) => r.width === 375),
+  ...SMOKE_MATRIX.filter((r) => r.kind === 'cards320'),
+  {
+    section: 'certificates',
+    viewMode: 'cards',
+    theme: 'light',
+    width: 375,
+    height: 812,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.certSearch,
+    implSearch: false,
+  },
+  {
+    section: 'clients',
+    viewMode: 'list',
+    theme: 'light',
+    width: 375,
+    height: 812,
+    kind: 'matched',
+    searchQuery: PARITY_MATCH.clientSearch,
+  },
+];
+
+const VIEWPORT_MATRIX = [
+  { section: 'certificates', viewMode: 'cards', theme: 'light', width: 375, height: 812, scroll: 'top', kind: 'viewport' },
+  {
+    section: 'certificates',
+    viewMode: 'cards',
+    theme: 'light',
+    width: 375,
+    height: 812,
+    scroll: 'toolbar',
+    kind: 'viewport',
+  },
+  { section: 'clients', viewMode: 'list', theme: 'light', width: 375, height: 812, scroll: 'top', kind: 'viewport' },
+  {
+    section: 'clients',
+    viewMode: 'list',
+    theme: 'light',
+    width: 375,
+    height: 812,
+    scroll: 'toolbar',
+    kind: 'viewport',
+  },
+  { section: 'certificates', viewMode: 'cards', theme: 'light', width: 320, height: 812, scroll: 'top', kind: 'viewport' },
+  {
+    section: 'certificates',
+    viewMode: 'cards',
+    theme: 'light',
+    width: 320,
+    height: 812,
+    scroll: 'toolbar',
+    kind: 'viewport',
+  },
+  { section: 'clients', viewMode: 'list', theme: 'light', width: 320, height: 812, scroll: 'top', kind: 'viewport' },
+  {
+    section: 'clients',
+    viewMode: 'list',
+    theme: 'light',
+    width: 320,
+    height: 812,
+    scroll: 'toolbar',
+    kind: 'viewport',
+  },
+];
+
 function captureMatrix() {
+  if (process.env.R03_DELTA_CAPTURE === '1') {
+    return [...DELTA_MATRIX, ...VIEWPORT_MATRIX];
+  }
   if (process.env.R03_CORRECTIVE_CAPTURE === '1') return CORRECTIVE_MATRIX;
   return [...MAIN_MATRIX, ...SMOKE_MATRIX];
 }
@@ -66,7 +139,19 @@ function gitSha(cwd) {
 }
 
 function slug(row) {
-  return `${row.section}-${row.viewMode}-${row.theme}-${row.width}x${row.height}${row.kind === 'smoke320' ? '-smoke320' : ''}`;
+  const kindSuffix =
+    row.kind === 'main'
+      ? ''
+      : row.kind === 'smoke320'
+        ? '-smoke320'
+        : row.kind === 'cards320'
+          ? '-cards320'
+          : row.kind === 'matched'
+            ? '-matched'
+            : row.kind === 'viewport'
+              ? `-viewport-${row.scroll}`
+              : `-${row.kind}`;
+  return `${row.section}-${row.viewMode}-${row.theme}-${row.width}x${row.height}${kindSuffix}`;
 }
 
 function writeOverlayDiff(refPath, implPath, outPath) {
@@ -162,6 +247,36 @@ async function measureImplComputed(page, section, viewMode) {
           ? gridTrackCount === 1
           : gridTrackCount === 2;
 
+    const searchInput = document.querySelector('[data-testid="agent-r03-search"]');
+    const showSelect = document.querySelector('[data-testid="agent-r03-show-filter"]');
+    const viewToggle = document.querySelector('[data-testid="agent-r03-view-toggle"]');
+    const searchBox = searchInput?.getBoundingClientRect();
+    const showBox = showSelect?.getBoundingClientRect();
+    const viewBox = viewToggle?.getBoundingClientRect();
+    const filtersPanel = document.querySelector('[data-testid="agent-r03-filters-panel"]');
+    const filtersBox = filtersPanel?.getBoundingClientRect();
+
+    let toolbarRowOk = true;
+    if (isMobile && searchBox && showBox && viewBox) {
+      const searchOwnRow = searchBox.bottom <= showBox.top + 4;
+      const showViewSameRow = Math.abs(showBox.top - viewBox.top) <= 6;
+      const filtersBelow =
+        !filtersBox || filtersBox.top >= Math.max(showBox.bottom, viewBox.bottom) - 2;
+      toolbarRowOk = searchOwnRow && showViewSameRow && filtersBelow;
+    }
+
+    const bottomNav = document.querySelector('nav[aria-label="Мобильная навигация"]');
+    const bottomNavBox = bottomNav?.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const bottomNavPinned =
+      bottomNavBox != null && Math.abs(bottomNavBox.bottom - vh) <= 4 && bottomNavBox.top < vh;
+
+    const searchAccessible =
+      searchBox != null &&
+      searchBox.top >= 0 &&
+      searchBox.bottom <= vh &&
+      searchBox.width > 40;
+
     return {
       navIconWidth: navBox?.width ?? null,
       navIconHeight: navBox?.height ?? null,
@@ -170,6 +285,10 @@ async function measureImplComputed(page, section, viewMode) {
       cardsColumnOk,
       activeViewLabel: activeView?.textContent?.trim() ?? null,
       toolbarVisible: Boolean(toolbar),
+      toolbarRowOk,
+      bottomNavPinned,
+      searchAccessible,
+      scrollY: window.scrollY,
       paginationRect: pagination?.getBoundingClientRect() ?? null,
       termsPresent: Boolean(terms),
       moreLinkColor: moreColor,
@@ -193,6 +312,44 @@ function assertComputedGeometry(computed, row) {
     if (computed.statusActionOverlap) throw new Error('client_status_action_overlap');
     if (computed.actionClip) throw new Error('client_action_clip');
   }
+  if (row.width <= 680 && row.kind !== 'viewport' && computed.toolbarRowOk === false) {
+    throw new Error('mobile_toolbar_layout');
+  }
+  if (row.kind === 'viewport') {
+    if (!computed.bottomNavPinned) throw new Error('bottom_nav_not_pinned');
+    if (row.scroll === 'toolbar' && !computed.searchAccessible) {
+      throw new Error('search_not_accessible_after_scroll');
+    }
+  }
+}
+
+async function applyImplSearch(page, query) {
+  const search = page.locator('[data-testid="agent-r03-search"]');
+  await search.fill(query);
+  await page.waitForResponse(
+    (r) =>
+      (r.url().includes('/agent-certificates') || r.url().includes('/agent-clients')) &&
+      r.request().method() === 'GET' &&
+      r.status() === 200,
+    { timeout: 25_000 },
+  ).catch(() => null);
+  await page.waitForTimeout(200);
+}
+
+async function scrollForViewportCapture(page, scrollMode) {
+  if (scrollMode === 'top') {
+    await page.evaluate(() => window.scrollTo(0, 0));
+  } else if (scrollMode === 'toolbar') {
+    await page.locator('[data-testid="agent-r03-collection-toolbar"]').scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      const toolbar = document.querySelector('[data-testid="agent-r03-collection-toolbar"]');
+      if (toolbar instanceof HTMLElement) {
+        const y = toolbar.getBoundingClientRect().top + window.scrollY - 8;
+        window.scrollTo(0, Math.max(0, y));
+      }
+    });
+  }
+  await page.waitForTimeout(250);
 }
 
 async function captureImpl(context, plat, cookieHeader, row) {
@@ -212,14 +369,29 @@ async function captureImpl(context, plat, cookieHeader, row) {
   if (r03 && r03.status !== 200) throw new Error(`r03_status_${r03.status}`);
 
   await page.locator('[data-testid="agent-r03-found-count"]').waitFor({ timeout: 30_000 });
+  if (row.searchQuery && row.implSearch !== false) {
+    await applyImplSearch(page, row.implSearchQuery ?? row.searchQuery);
+  }
   await applyImplCaptureStyles(page);
   await stabilizePageForCapture(page);
+
+  if (row.kind === 'viewport') {
+    await scrollForViewportCapture(page, row.scroll);
+  }
 
   const computed = await measureImplComputed(page, row.section, row.viewMode);
   assertComputedGeometry(computed, row);
 
   const id = slug(row);
-  const fullPath = path.join(SHOTS, `${id}-impl-full.png`);
+  let fullPath = null;
+  if (row.kind === 'viewport') {
+    fullPath = path.join(SHOTS, `${id}-impl-viewport.png`);
+    await page.screenshot({ path: fullPath, fullPage: false });
+    await page.close();
+    return { fullPath, computed, regions: {} };
+  }
+
+  fullPath = path.join(SHOTS, `${id}-impl-full.png`);
   await stabilizePageForCapture(page);
   await page.screenshot({ path: fullPath, fullPage: true });
 
@@ -265,6 +437,7 @@ async function captureRef(context, refBase, row) {
     section: row.section,
     viewMode: row.viewMode,
     dark: row.theme === 'dark',
+    searchQuery: row.searchQuery,
   });
   if (!driven.ok) throw new Error(`ref_drive:${driven.reason}`);
   if (row.theme === 'dark') {
@@ -403,23 +576,51 @@ async function main() {
     await seedUiParityFixtures(plat, cookieHeader, userId);
 
     const rowsToCapture = captureMatrix();
-    const corrective = process.env.R03_CORRECTIVE_CAPTURE === '1';
+    const mergeCarry =
+      process.env.R03_CORRECTIVE_CAPTURE === '1' || process.env.R03_DELTA_CAPTURE === '1';
     const capturesPath = path.join(SHOTS, 'captures.json');
     let carriedCaptures = [];
-    if (corrective && existsSync(capturesPath)) {
-      const prev = JSON.parse(readFileSync(capturesPath, 'utf8'));
+    let prevRun = null;
+    if (mergeCarry && existsSync(capturesPath)) {
+      prevRun = JSON.parse(readFileSync(capturesPath, 'utf8'));
       const replaceIds = new Set(rowsToCapture.map((r) => slug(r)));
-      carriedCaptures = (prev.captures ?? []).filter((c) => !replaceIds.has(c.id));
+      carriedCaptures = (prevRun.captures ?? [])
+        .filter((c) => !replaceIds.has(c.id))
+        .map((c) => ({
+          ...c,
+          carryOverFrom: c.carryOverFrom ?? {
+            platformSha: c.platformSha ?? prevRun.platformSha,
+            capturedAt: c.capturedAt ?? prevRun.capturedAt,
+          },
+        }));
     }
+
+    const capturedAt = new Date().toISOString();
 
     for (const row of rowsToCapture) {
       const id = slug(row);
       try {
         const authCtx = await browser.newContext({ storageState: storagePath });
         const impl = await captureImpl(authCtx, plat, boot.cookieHeader, row);
+        await authCtx.close();
+
+        if (row.kind === 'viewport') {
+          captures.push({
+            id,
+            ...row,
+            status: 'CAPTURED',
+            platformSha,
+            capturedAt,
+            carryOverFrom: null,
+            implFull: impl.fullPath,
+            computed: impl.computed,
+            regions: { impl: impl.regions },
+          });
+          continue;
+        }
+
         const refCtx = await browser.newContext();
         const ref = await captureRef(refCtx, refBase, row);
-        await authCtx.close();
         await refCtx.close();
 
         const diffPath = path.join(SHOTS, `${id}-diff.png`);
@@ -443,16 +644,33 @@ async function main() {
           id,
           ...row,
           status: 'CAPTURED',
+          platformSha,
+          capturedAt,
+          carryOverFrom: null,
           implFull: impl.fullPath,
           refFull: ref.fullPath,
           diff: diffPath,
           diffStats,
           computed: impl.computed,
+          dataParity:
+            row.kind === 'matched'
+              ? {
+                  note: 'Single-row fixture aligned to roles.js Anna + demo-audience-certificate via search',
+                  verified: 'PARTIAL',
+                }
+              : undefined,
           regions: { impl: impl.regions, ref: ref.regions, diffs: regionDiffs },
         });
       } catch (err) {
         failures.push(`${id}:${err.message || err}`);
-        captures.push({ id, ...row, status: 'FAILED', error: String(err) });
+        captures.push({
+          id,
+          ...row,
+          status: 'FAILED',
+          platformSha,
+          capturedAt,
+          error: String(err),
+        });
       }
     }
 

@@ -95,6 +95,18 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
     await page.waitForTimeout(400);
   }
 
+  if (opts.searchQuery) {
+    await page.evaluate((q) => {
+      const input = document.querySelector('[data-coll-control="q"]');
+      if (input instanceof HTMLInputElement) {
+        input.value = q;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, opts.searchQuery);
+    await page.waitForTimeout(500);
+  }
+
   await applyRefParityCaptureStyles(page);
 
   const verify = await verifyRefAgentSection(page, opts);

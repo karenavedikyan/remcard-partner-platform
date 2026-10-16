@@ -217,6 +217,13 @@
 .mobileRecordMain {
   flex: 1 1 auto;
   min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.mobileRecordStatusRow {
+  display: block;
+  width: 100%;
 }
 
 .mobileRecordTitle {
@@ -633,30 +640,6 @@
     font-size: var(--text-xs, 0.75rem);
   }
 
-  .collectionTools {
-    gap: 0.5rem;
-  }
-
-  .collectionSearch {
-    flex: 1 1 100%;
-    width: 100%;
-  }
-
-  .collectionShowField {
-    flex: 1 1 140px;
-  }
-
-  .collectionView {
-    margin-left: auto;
-    align-self: flex-end;
-  }
-
-  .collectionFilters {
-    order: 3;
-    flex-basis: 100%;
-    width: 100%;
-  }
-
   .collectionFooter {
     gap: 0.65rem;
     font-size: 12px;
@@ -787,6 +770,12 @@
   padding: 1rem 1.1rem 0.85rem;
   display: grid;
   gap: 0.45rem;
+}
+
+.clientCard .purchasePill {
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
 }
 
 .clientCardName {
@@ -1129,3 +1118,68 @@
   background: var(--surface-elevated, var(--surface));
   border: 1px solid var(--border);
 }
+
+/* R03 collection toolbar — responsive overrides after base (.collectionTools, .fieldInlineCompact) */
+.collectionSearch {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.collectionToolsSecondRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.collectionShowField {
+  flex: 0 1 165px;
+  min-width: 9rem;
+}
+
+.collectionView {
+  margin-left: auto;
+  align-self: flex-end;
+  flex: 0 0 auto;
+}
+
+.collectionFilters {
+  flex: 0 1 auto;
+}
+
+@media (max-width: 680px) {
+  .collectionTools {
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .collectionSearch {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .collectionToolsSecondRow {
+    flex: 1 1 100%;
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .collectionShowField {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .collectionView {
+    margin-left: 0;
+    flex: 0 0 auto;
+  }
+
+  .collectionFilters {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
