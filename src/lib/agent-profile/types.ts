@@ -17,6 +17,8 @@ export type AgentProfileDraftResponse = {
   payload: AgentProfileDraftPayload;
   savedProfile?: AgentProfileDraftPayload;
   hasDraft?: boolean;
+  /** Saved profile on server (independent of open draft). */
+  profileSaved?: boolean;
   profileComplete?: boolean;
 };
 
@@ -34,6 +36,7 @@ export type AgentRequisitesItem = {
   id: string;
   legalSideId?: string;
   kind: "person" | "ip" | "company" | string;
+  label?: string | null;
   legalName: string;
   inn: string | null;
   kpp: string | null;

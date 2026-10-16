@@ -85,7 +85,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/agent-profile\/status$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-profile\/enable-activity$/ },
-    { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/agent-profile\/draft$/ },
+    { methods: new Set(["GET", "PATCH", "DELETE"]), pattern: /^\/api\/pro\/agent-profile\/draft$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-profile\/finish$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-activate$/ },
     { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/agent-payout-requisites$/ },

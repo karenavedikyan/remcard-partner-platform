@@ -216,11 +216,18 @@ async function main() {
     /* ignore */
   }
 
-  const bffProbe = await fetch(`${platformOrigin}/api/remcard/api/pro/r03/status`, {
-    headers: { Cookie: `remcard-token=${probeToken}` },
-  });
-  const bffProbeBody = await bffProbe.text();
-  if (bffProbe.status === 403 && bffProbeBody.includes('Path not allowed')) {
+  let bffProbeStatus = 0;
+  let bffProbeBody = '';
+  for (let i = 0; i < 45; i++) {
+    const bffProbe = await fetch(`${platformOrigin}/api/remcard/api/pro/r03/status`, {
+      headers: { Cookie: `remcard-token=${probeToken}` },
+    });
+    bffProbeStatus = bffProbe.status;
+    bffProbeBody = await bffProbe.text();
+    if (bffProbeStatus !== 403 || !bffProbeBody.includes('Path not allowed')) break;
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  if (bffProbeStatus === 403 && bffProbeBody.includes('Path not allowed')) {
     killPort(PLATFORM_PORT);
     await portFree(PLATFORM_PORT, 20_000);
     console.error(
@@ -229,7 +236,7 @@ async function main() {
         platformGitSha,
         navigatorGitSha,
         platformPort: PLATFORM_PORT,
-        hint: 'Stale listener on platform port; killed port — re-run stack',
+        hint: 'Platform BFF still rejecting /pro/r03/status after warm-up — re-run stack',
       }),
     );
     process.exit(1);
