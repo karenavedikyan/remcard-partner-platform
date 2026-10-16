@@ -1,8 +1,8 @@
 {
   "ok": true,
   "stack": {
-    "platformGitSha": "b2f0d2b746d351176a520d3e33aa63f0ec672968",
-    "navigatorGitSha": "5a4b14ccfcd358a9eef2d0272835be8799bebb49",
+    "platformGitSha": "a94d672ecb1a36801592feab3801ed977678a314",
+    "navigatorGitSha": "7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7",
     "platformOrigin": "http://127.0.0.1:3044",
     "navOrigin": "http://127.0.0.1:3043",
     "userId": "r02-local-pro-agent-v1"
@@ -105,8 +105,9 @@
     }
   ],
   "migration": {
-    "skipped": true,
-    "reason": "PROF_R02_RUN_PG not set"
+    "exitCode": 0,
+    "stdout": "TAP version 13\n# Subtest: prof-r02 requisites label controlled apply\n    # Subtest: manifest checksum matches pinned sha256\n    ok 1 - manifest checksum matches pinned sha256\n      ---\n      duration_ms: 0.824267\n      ...\n    # Subtest: applies label column after R02 baseline with pinned checksum\n    ok 2 - applies label column after R02 baseline with pinned checksum\n      ---\n      duration_ms: 121.705713\n      ...\n    1..2\nok 1 - prof-r02 requisites label controlled apply\n  ---\n  duration_ms: 143.055923\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 208.251482\n",
+    "ran": true
   },
-  "capturedAt": "2026-10-16T06:20:53.287Z"
+  "capturedAt": "2026-10-16T06:23:26.280Z"
 }

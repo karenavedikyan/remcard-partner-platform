@@ -2,14 +2,14 @@
 
 **Not merge/deploy/production.** R03-PARITY-TAIL remains queued until owner accepts this RC.
 
-## Git (update after push)
+## Git
 
-| Repo | Branch | PR |
-|------|--------|-----|
-| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | **#19** |
-| remcard-navigator | `cursor/agent-profile-parity-b3e3` | **#682** |
+| Repo | Branch | Tip | PR |
+|------|--------|-----|-----|
+| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | `a94d672ecb1a36801592feab3801ed977678a314` | **#19** |
+| remcard-navigator | `cursor/agent-profile-parity-b3e3` | `7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7` | **#682** |
 
-Tips and SHAs: see `TEST-RESULTS.json` and `profile-parity-e2e.json` in this folder.
+Structured E2E: `profile-parity-e2e.json` · gate: `TEST-RESULTS.json` (`ok: true`, 18 PNG).
 
 ## Verification commands
 
