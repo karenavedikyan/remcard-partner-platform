@@ -114,14 +114,25 @@ async function refHasPrototypeError(page) {
   return text.includes(REF_PROTOTYPE_ERROR);
 }
 
+async function clickRefControl(locator) {
+  try {
+    await locator.click({ timeout: 5000 });
+  } catch {
+    await locator.click({ force: true });
+  }
+}
+
 async function navigateReferenceWallet(refPage, baseUrl) {
   await refPage.goto(`${baseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
   if (await refHasPrototypeError(refPage)) {
     return { ok: false, reason: 'prototype_load_error' };
   }
-  await refPage.getByTestId('view-cabinet').click();
+  const cabinetBtn = refPage.getByTestId('view-cabinet');
+  if ((await cabinetBtn.getAttribute('aria-pressed')) !== 'true') {
+    await clickRefControl(cabinetBtn);
+  }
   await refPage.getByTestId('scenario-role').selectOption('agent');
-  await refPage.getByTestId('nav-wallet').click();
+  await clickRefControl(refPage.getByTestId('nav-wallet'));
   await refPage.locator('[data-testid="settlement-direction:in"]').waitFor({ timeout: 60_000 });
   await refPage.addStyleTag({
     content: '.demo-top, .review-toolbar { display: none !important; }',
@@ -145,35 +156,69 @@ async function captureReferenceStates(refPage, shots, tag, themeFn) {
   await refPage.locator('.settlement-partner-compact').first().click();
   await refPage.locator('[data-testid^="settlement-record-"]').first().waitFor({ timeout: 30_000 });
   out.push(await shot(refPage, path.join(shots, `ref-r05-orders-${tag}.png`)));
-  const orderBtn = refPage.locator('[data-testid^="settlement-order:"]').first();
-  if ((await orderBtn.count()) > 0) {
-    await orderBtn.click();
-    await refPage.locator('[data-testid="settlement-reference"]').waitFor({ timeout: 30_000 });
-    out.push(await shot(refPage, path.join(shots, `ref-r05-order-detail-${tag}.png`)));
-  }
+  const recordDetails = refPage.locator('.settlement-compact-record > details').first();
+  await recordDetails.locator(':scope > summary').click();
+  const orderBtn = recordDetails.locator('[data-testid^="settlement-order:"]').first();
+  await orderBtn.waitFor({ state: 'visible', timeout: 30_000 });
+  await orderBtn.click();
+  await refPage.locator('[data-testid="settlement-reference"]').waitFor({ timeout: 30_000 });
+  out.push(await shot(refPage, path.join(shots, `ref-r05-order-detail-${tag}.png`)));
   return out;
 }
 
-async function waitForImplOrderDetail(page) {
-  const detailResponse = page.waitForResponse(
-    (r) =>
-      r.url().includes('/agent-receivables/orders/') &&
-      !r.url().includes('?') &&
-      r.status() === 200,
-    { timeout: 90_000 },
-  );
-  await page.getByRole('button', { name: 'Подробности' }).first().click();
-  const res = await detailResponse;
-  const body = await res.json().catch(() => null);
-  await page.getByTestId('agent-r05-order-detail').waitFor({ timeout: 60_000 });
+async function waitForImplOrderDetail(page, cardLocator) {
+  const card = cardLocator ?? page.getByTestId('agent-r05-order-card').first();
+  await card.waitFor({ state: 'visible', timeout: 60_000 });
+  const details = card.locator('details');
+  const summary = card.locator('summary');
+  if ((await details.getAttribute('open')) == null) {
+    await summary.click();
+  }
+  const detailBtn = card.getByRole('button', { name: 'Подробности' });
+  await detailBtn.waitFor({ state: 'visible', timeout: 30_000 });
+  const detailResponse = page
+    .waitForResponse(
+      (r) =>
+        r.request().method() === 'GET' &&
+        /\/agent-receivables\/orders\/[^/?]+/.test(r.url()) &&
+        r.status() === 200,
+      { timeout: 90_000 },
+    )
+    .catch(() => null);
+  await detailBtn.click();
+  await detailResponse;
+  const error = page.getByTestId('agent-r05-order-detail-error');
+  if (await error.isVisible().catch(() => false)) {
+    const msg = await error.innerText().catch(() => 'order_detail_error');
+    throw new Error(msg);
+  }
+  const detail = page.getByTestId('agent-r05-order-detail');
+  await detail.waitFor({ timeout: 90_000 });
   await page.getByTestId('agent-r05-order-detail-heading').waitFor({ state: 'visible', timeout: 30_000 });
-  await page.locator('[data-testid="agent-r05-order-detail"] .lineTable tbody tr').first().waitFor({
-    timeout: 30_000,
-  });
-  await page.locator('[data-testid="agent-r05-order-detail"] .timeline li').first().waitFor({
-    timeout: 30_000,
-  });
-  return body?.record?.orderNumber ?? '';
+  await detail.getByTestId('agent-r05-order-lines-table').waitFor({ timeout: 30_000 });
+  await detail.getByTestId('agent-r05-order-history').locator('li').first().waitFor({ timeout: 30_000 });
+  const lineRows = await detail.locator('[data-testid="agent-r05-order-lines-table"] tbody tr').count();
+  if (lineRows < 1) {
+    throw new Error('order_detail_missing_category_lines');
+  }
+  return page.getByTestId('agent-r05-order-detail-heading').innerText();
+}
+
+function pickRichOrderCard(page) {
+  const rich = page.getByTestId('agent-r05-order-card').filter({ hasText: /кров/i });
+  return rich;
+}
+
+async function openPartnerOrders(page, preferredName) {
+  const rows = page.getByTestId('agent-r05-partner-row');
+  if (preferredName) {
+    const named = rows.filter({ hasText: preferredName });
+    if ((await named.count()) > 0) {
+      await named.first().click();
+      return;
+    }
+  }
+  await rows.first().click();
 }
 
 async function readPartnerGridColumns(page) {
@@ -405,6 +450,8 @@ async function main() {
   functional.settlementsStatus = settlements.status;
   functional.settlementsPayableCount = settlements.body?.payable?.length ?? null;
 
+  const bulkPartnerLabel = bulkPartner?.displayName ?? '';
+
   const shots = path.join(ART, 'screenshots');
   mkdirSync(shots, { recursive: true });
   const captures = [];
@@ -445,12 +492,14 @@ async function main() {
     await page.waitForTimeout(200);
     captures.push(await shot(page, path.join(shots, 'impl-r05-partners-1440-light-large.png')));
 
-    await page.getByTestId('agent-r05-partner-row').first().click();
+    await openPartnerOrders(page, bulkPartnerLabel);
     await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
     captures.push(await shot(page, path.join(shots, 'impl-r05-orders-1440-light.png')));
 
-    await page.getByTestId('agent-r05-order-summary').first().click();
-    functional.orderDetail1440OrderNumber = await waitForImplOrderDetail(page);
+    const rich1440 = pickRichOrderCard(page);
+    const card1440 =
+      (await rich1440.count()) > 0 ? rich1440.first() : page.getByTestId('agent-r05-order-card').first();
+    functional.orderDetail1440OrderNumber = await waitForImplOrderDetail(page, card1440);
     functional.orderDetail1440Loaded = functional.orderDetail1440OrderNumber.length > 0;
     captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-1440-light.png')));
 
@@ -478,11 +527,13 @@ async function main() {
     await page.waitForTimeout(300);
     functional.overview375LightThemeOk = await isLightBackground(page);
     captures.push(await shot(page, path.join(shots, 'impl-r05-partners-375-light.png')));
-    await page.getByTestId('agent-r05-partner-row').first().click();
+    await openPartnerOrders(page, bulkPartnerLabel);
     await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
     captures.push(await shot(page, path.join(shots, 'impl-r05-orders-375-light.png')));
-    await page.getByTestId('agent-r05-order-summary').first().click();
-    functional.orderDetail375OrderNumber = await waitForImplOrderDetail(page);
+    const rich375 = pickRichOrderCard(page);
+    const card375 =
+      (await rich375.count()) > 0 ? rich375.first() : page.getByTestId('agent-r05-order-card').first();
+    functional.orderDetail375OrderNumber = await waitForImplOrderDetail(page, card375);
     functional.orderDetail375Loaded = functional.orderDetail375OrderNumber.length > 0;
     functional.detail375NoHorizontalScroll =
       (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
@@ -501,10 +552,12 @@ async function main() {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
     await page.getByTestId('agent-r05-incoming-tile').click();
-    await page.getByTestId('agent-r05-partner-row').first().click();
+    await openPartnerOrders(page, bulkPartnerLabel);
     await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
-    await page.getByTestId('agent-r05-order-summary').first().click();
-    await waitForImplOrderDetail(page);
+    const rich320 = pickRichOrderCard(page);
+    const card320 =
+      (await rich320.count()) > 0 ? rich320.first() : page.getByTestId('agent-r05-order-card').first();
+    await waitForImplOrderDetail(page, card320);
     functional.smoke320NoHorizontalScroll =
       (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
       true;
@@ -578,14 +631,20 @@ async function main() {
     }
     await refPage1440.close();
 
-    const refPage375 = await browser.newPage({ viewport: { width: 375, height: 812 } });
+    const refPage375 = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const nav375 = await navigateReferenceWallet(refPage375, refBaseUrl);
     functional.ref375Loaded = nav375.ok;
     if (nav375.ok) {
+      await refPage375.setViewportSize({ width: 375, height: 812 });
       captures.push(...(await captureReferenceStates(refPage375, shots, '375-light', ensureLight)));
-      await ensureDark(refPage375);
-      await navigateReferenceWallet(refPage375, refBaseUrl);
-      captures.push(...(await captureReferenceStates(refPage375, shots, '375-dark', ensureDark)));
+      await refPage375.setViewportSize({ width: 1440, height: 900 });
+      await refPage375.goto(`${refBaseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
+      const nav375Dark = await navigateReferenceWallet(refPage375, refBaseUrl);
+      functional.ref375DarkLoaded = nav375Dark.ok;
+      if (nav375Dark.ok) {
+        await refPage375.setViewportSize({ width: 375, height: 812 });
+        captures.push(...(await captureReferenceStates(refPage375, shots, '375-dark', ensureDark)));
+      }
     }
     await refPage375.close();
   } finally {

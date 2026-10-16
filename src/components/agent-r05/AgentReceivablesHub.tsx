@@ -672,7 +672,8 @@ export function AgentReceivablesHub() {
         ) : null}
         <details open>
           <summary>Категории, скидки и вознаграждение</summary>
-          <table className={styles.lineTable}>
+          <div className={styles.lineTableWrap}>
+          <table className={styles.lineTable} data-testid="agent-r05-order-lines-table">
             <thead>
               <tr>
                 <th>Категория</th>
@@ -698,8 +699,9 @@ export function AgentReceivablesHub() {
               ))}
             </tbody>
           </table>
+          </div>
         </details>
-        <ol className={styles.timeline}>
+        <ol className={styles.timeline} data-testid="agent-r05-order-history">
           {history.map((event) => (
             <li key={`${event.at}-${event.title}`}>
               <strong>{event.title}</strong>

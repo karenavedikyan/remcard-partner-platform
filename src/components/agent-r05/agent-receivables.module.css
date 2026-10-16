@@ -1,6 +1,9 @@
 .shell {
   display: grid;
   gap: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
   font-family: var(--font-body, "Manrope", system-ui, sans-serif);
 }
 
@@ -298,8 +301,15 @@
   color: var(--muted);
 }
 
+.lineTableWrap {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
 .lineTable {
   width: 100%;
+  min-width: 36rem;
   border-collapse: collapse;
   font-size: var(--text-sm);
 }
