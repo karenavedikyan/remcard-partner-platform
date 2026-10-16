@@ -4,8 +4,8 @@
 
 | Repo | Branch | HEAD |
 |------|--------|------|
-| remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | (see git log at publish) |
-| remcard-navigator | `cursor/r04-agent-partners-b3e3` | (see git log at publish) |
+| remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | `fb06c33aaf4ae2464f3b9f31810a52fa5ac46bab` |
+| remcard-navigator | `cursor/r04-agent-partners-b3e3` | `fb9078c45019aaf60d555ae20f6595dac71de1ed` |
 
 Base release tags: `release/prof-v1-20261007` @ `2a4e5de`, `release/prof-backend-v1-20261007` @ `63f99425`.
 
