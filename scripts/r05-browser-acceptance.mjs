@@ -145,24 +145,104 @@ async function navigateReferenceWallet(refPage, baseUrl) {
   return { ok: demo && tile, reason: demo && tile ? null : 'missing_wallet_states' };
 }
 
-async function captureReferenceStates(refPage, shots, tag, themeFn) {
-  await themeFn(refPage);
+async function ensureRefPrototypeTheme(refPage, theme) {
+  await refPage.emulateMedia({ colorScheme: theme });
+  const current =
+    (await refPage.evaluate(() => document.documentElement.getAttribute('data-theme'))) || 'light';
+  if (current !== theme) {
+    await clickRefControl(refPage.locator('[data-action="theme"]'));
+    await refPage.waitForFunction(
+      (t) => document.documentElement.getAttribute('data-theme') === t,
+      theme,
+      { timeout: 15_000 },
+    );
+  }
+}
+
+async function readRefSettlementTheme(refPage) {
+  return refPage.evaluate(() => {
+    const dataTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const demo = document.querySelector('[data-testid="settlement-demo"]');
+    const bg = demo ? getComputedStyle(demo).backgroundColor : '';
+    const color = demo ? getComputedStyle(demo).color : '';
+    const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    const lum = m ? (Number(m[1]) + Number(m[2]) + Number(m[3])) / 3 : 128;
+    return { dataTheme, settlementBg: bg, settlementColor: color, settlementBgDark: lum < 128 };
+  });
+}
+
+async function captureReferenceDrill375(refPage, shots, tag, theme) {
+  await ensureRefPrototypeTheme(refPage, theme);
+  const probe = await readRefSettlementTheme(refPage);
+  const out = { captures: [], probe };
   await refPage.locator('[data-testid="settlement-direction:in"]').waitFor({ timeout: 30_000 });
-  const out = [];
-  out.push(await shot(refPage, path.join(shots, `ref-r05-overview-${tag}.png`)));
   await refPage.locator('[data-testid="settlement-direction:in"]').click();
+  await ensureRefPrototypeTheme(refPage, theme);
   await refPage.locator('.settlement-partner-compact').first().waitFor({ timeout: 30_000 });
-  out.push(await shot(refPage, path.join(shots, `ref-r05-partners-${tag}.png`)));
+  out.captures.push(await shot(refPage, path.join(shots, `ref-r05-partners-${tag}.png`)));
   await refPage.locator('.settlement-partner-compact').first().click();
+  await ensureRefPrototypeTheme(refPage, theme);
   await refPage.locator('[data-testid^="settlement-record-"]').first().waitFor({ timeout: 30_000 });
-  out.push(await shot(refPage, path.join(shots, `ref-r05-orders-${tag}.png`)));
+  out.captures.push(await shot(refPage, path.join(shots, `ref-r05-orders-${tag}.png`)));
   const recordDetails = refPage.locator('.settlement-compact-record > details').first();
   await recordDetails.locator(':scope > summary').click();
   const orderBtn = recordDetails.locator('[data-testid^="settlement-order:"]').first();
   await orderBtn.waitFor({ state: 'visible', timeout: 30_000 });
   await orderBtn.click();
+  await ensureRefPrototypeTheme(refPage, theme);
   await refPage.locator('[data-testid="settlement-reference"]').waitFor({ timeout: 30_000 });
-  out.push(await shot(refPage, path.join(shots, `ref-r05-order-detail-${tag}.png`)));
+  out.captures.push(await shot(refPage, path.join(shots, `ref-r05-order-detail-${tag}.png`)));
+  out.probeAfter = await readRefSettlementTheme(refPage);
+  return out;
+}
+
+async function verifyOrderDetailLayout(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="agent-r05-order-detail"]');
+    if (!root) return { ok: false, reason: 'missing_detail_root' };
+    const vw = window.innerWidth;
+    const box = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+    };
+    const inViewport = (r) =>
+      r && r.width > 0 && r.height > 0 && r.left >= -1 && r.right <= vw + 1;
+    const sum = box(root.querySelector('[data-testid="agent-r05-order-detail-sum"]'));
+    const values = [...root.querySelectorAll('[data-testid="agent-r05-order-breakdown"] dd')].map(
+      (el) => box(el),
+    );
+    const shell = box(root);
+    const tableWrap = root.querySelector('[data-testid="agent-r05-order-lines-table"]')?.closest('div');
+    const tableBox = tableWrap ? box(tableWrap) : null;
+    const pageWide = document.documentElement.scrollWidth > window.innerWidth + 2;
+    const valuesOk = values.length >= 4 && values.every(inViewport);
+    return {
+      ok: inViewport(sum) && valuesOk && inViewport(shell) && !pageWide,
+      viewportWidth: vw,
+      pageWide,
+      sum,
+      values,
+      shellRight: shell?.right ?? null,
+    };
+  });
+}
+
+async function captureImplDrill375(page, shots, tag, themeFn, platformOrigin, bulkPartnerLabel) {
+  await themeFn(page);
+  await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await page.getByTestId('agent-r05-incoming-tile').click();
+  await page.waitForTimeout(250);
+  const out = [];
+  out.push(await shot(page, path.join(shots, `impl-r05-partners-375-${tag}.png`)));
+  await openPartnerOrders(page, bulkPartnerLabel);
+  await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
+  out.push(await shot(page, path.join(shots, `impl-r05-orders-375-${tag}.png`)));
+  const rich = pickRichOrderCard(page);
+  const card =
+    (await rich.count()) > 0 ? rich.first() : page.getByTestId('agent-r05-order-card').first();
+  await waitForImplOrderDetail(page, card);
+  out.push(await shot(page, path.join(shots, `impl-r05-order-detail-375-${tag}.png`)));
   return out;
 }
 
@@ -464,6 +544,11 @@ async function main() {
   functional.detail375NoHorizontalScroll = false;
   functional.refRolesLoaded = false;
   functional.refPrototypeLoadError = true;
+  functional.detail375LayoutOk = false;
+  functional.detail375DarkLayoutOk = false;
+  functional.detail320LayoutOk = false;
+  functional.detail320DarkLayoutOk = false;
+  functional.ref375DarkDistinctFromLight = false;
 
   await ensureLight(page);
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
@@ -523,28 +608,29 @@ async function main() {
   if (functional.tileVisible) {
     await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
     captures.push(await shot(page, path.join(shots, 'impl-r05-overview-375-light.png')));
-    await page.getByTestId('agent-r05-incoming-tile').click();
-    await page.waitForTimeout(300);
     functional.overview375LightThemeOk = await isLightBackground(page);
-    captures.push(await shot(page, path.join(shots, 'impl-r05-partners-375-light.png')));
-    await openPartnerOrders(page, bulkPartnerLabel);
-    await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
-    captures.push(await shot(page, path.join(shots, 'impl-r05-orders-375-light.png')));
-    const rich375 = pickRichOrderCard(page);
-    const card375 =
-      (await rich375.count()) > 0 ? rich375.first() : page.getByTestId('agent-r05-order-card').first();
-    functional.orderDetail375OrderNumber = await waitForImplOrderDetail(page, card375);
+    captures.push(
+      ...(await captureImplDrill375(page, shots, 'light', ensureLight, platformOrigin, bulkPartnerLabel)),
+    );
+    functional.orderDetail375OrderNumber = await page
+      .getByTestId('agent-r05-order-detail-heading')
+      .innerText()
+      .catch(() => '');
     functional.orderDetail375Loaded = functional.orderDetail375OrderNumber.length > 0;
-    functional.detail375NoHorizontalScroll =
-      (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
-      true;
-    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-375-light.png')));
+    functional.detail375Layout = await verifyOrderDetailLayout(page);
+    functional.detail375LayoutOk = functional.detail375Layout.ok === true;
+    functional.detail375NoHorizontalScroll = functional.detail375Layout.pageWide !== true;
 
-    await ensureDark(page);
-    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-375-dark.png')));
+    captures.push(
+      ...(await captureImplDrill375(page, shots, 'dark', ensureDark, platformOrigin, bulkPartnerLabel)),
+    );
+    functional.detail375DarkLayout = await verifyOrderDetailLayout(page);
+    functional.detail375DarkLayoutOk = functional.detail375DarkLayout.ok === true;
   } else {
     functional.orderDetail375Loaded = false;
     functional.detail375NoHorizontalScroll = false;
+    functional.detail375LayoutOk = false;
+    functional.detail375DarkLayoutOk = false;
   }
 
   if (functional.tileVisible) {
@@ -558,11 +644,24 @@ async function main() {
     const card320 =
       (await rich320.count()) > 0 ? rich320.first() : page.getByTestId('agent-r05-order-card').first();
     await waitForImplOrderDetail(page, card320);
-    functional.smoke320NoHorizontalScroll =
-      (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
-      true;
+    functional.detail320Layout = await verifyOrderDetailLayout(page);
+    functional.detail320LayoutOk = functional.detail320Layout.ok === true;
+    functional.smoke320NoHorizontalScroll = functional.detail320Layout.pageWide !== true;
     functional.overview320LightThemeOk = await isLightBackground(page);
     captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-320-light.png')));
+
+    await ensureDark(page);
+    await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+    await page.getByTestId('agent-r05-incoming-tile').click();
+    await openPartnerOrders(page, bulkPartnerLabel);
+    await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
+    const rich320d = pickRichOrderCard(page);
+    const card320d =
+      (await rich320d.count()) > 0 ? rich320d.first() : page.getByTestId('agent-r05-order-card').first();
+    await waitForImplOrderDetail(page, card320d);
+    functional.detail320DarkLayout = await verifyOrderDetailLayout(page);
+    functional.detail320DarkLayoutOk = functional.detail320DarkLayout.ok === true;
+    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-320-dark.png')));
   } else {
     await ensureLight(page);
     await page.setViewportSize({ width: 320, height: 568 });
@@ -616,37 +715,54 @@ async function main() {
 
   const { server: refServer, baseUrl: refBaseUrl } = await startRefStaticServer(REF_ROOT);
   try {
-    const refPage1440 = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-    const nav1440 = await navigateReferenceWallet(refPage1440, refBaseUrl);
-    functional.refRolesLoaded = nav1440.ok;
-    functional.refPrototypeLoadError = !nav1440.ok;
-    functional.refNavReason = nav1440.reason;
-    if (nav1440.ok) {
-      captures.push(...(await captureReferenceStates(refPage1440, shots, '1440-light', ensureLight)));
-    } else {
-      await ensureLight(refPage1440);
-      captures.push(
-        await shot(refPage1440, path.join(shots, 'ref-r05-prototype-entry-1440-light-FAIL.png')),
+    const refProbePage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const navProbe = await navigateReferenceWallet(refProbePage, refBaseUrl);
+    functional.refRolesLoaded = navProbe.ok;
+    functional.refPrototypeLoadError = !navProbe.ok;
+    functional.refNavReason = navProbe.reason;
+    await refProbePage.close();
+
+    const refPage375Light = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const nav375Light = await navigateReferenceWallet(refPage375Light, refBaseUrl);
+    functional.ref375Loaded = nav375Light.ok;
+    let refPartners375LightSha = '';
+    let refPartners375DarkSha = '';
+    if (nav375Light.ok) {
+      await refPage375Light.setViewportSize({ width: 375, height: 812 });
+      const lightPack = await captureReferenceDrill375(refPage375Light, shots, '375-light', 'light');
+      functional.ref375LightThemeProbe = lightPack.probe;
+      functional.ref375LightThemeOk =
+        lightPack.probe.dataTheme === 'light' && lightPack.probe.settlementBgDark === false;
+      captures.push(...lightPack.captures);
+      refPartners375LightSha = sha256File(
+        path.join(shots, 'ref-r05-partners-375-light.png'),
       );
     }
-    await refPage1440.close();
+    await refPage375Light.close();
 
-    const refPage375 = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-    const nav375 = await navigateReferenceWallet(refPage375, refBaseUrl);
-    functional.ref375Loaded = nav375.ok;
-    if (nav375.ok) {
-      await refPage375.setViewportSize({ width: 375, height: 812 });
-      captures.push(...(await captureReferenceStates(refPage375, shots, '375-light', ensureLight)));
-      await refPage375.setViewportSize({ width: 1440, height: 900 });
-      await refPage375.goto(`${refBaseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
-      const nav375Dark = await navigateReferenceWallet(refPage375, refBaseUrl);
-      functional.ref375DarkLoaded = nav375Dark.ok;
-      if (nav375Dark.ok) {
-        await refPage375.setViewportSize({ width: 375, height: 812 });
-        captures.push(...(await captureReferenceStates(refPage375, shots, '375-dark', ensureDark)));
-      }
+    const refPage375Dark = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const nav375Dark = await navigateReferenceWallet(refPage375Dark, refBaseUrl);
+    functional.ref375DarkLoaded = nav375Dark.ok;
+    if (nav375Dark.ok) {
+      await refPage375Dark.setViewportSize({ width: 375, height: 812 });
+      const darkPack = await captureReferenceDrill375(refPage375Dark, shots, '375-dark', 'dark');
+      functional.ref375DarkThemeProbe = darkPack.probeAfter ?? darkPack.probe;
+      functional.ref375DarkThemeOk =
+        functional.ref375DarkThemeProbe?.dataTheme === 'dark' &&
+        functional.ref375DarkThemeProbe?.settlementBgDark === true;
+      captures.push(...darkPack.captures);
+      refPartners375DarkSha = sha256File(path.join(shots, 'ref-r05-partners-375-dark.png'));
     }
-    await refPage375.close();
+    await refPage375Dark.close();
+
+    functional.ref375DarkDistinctFromLight =
+      refPartners375LightSha.length > 0 &&
+      refPartners375DarkSha.length > 0 &&
+      refPartners375LightSha !== refPartners375DarkSha;
+    functional.ref375DarkSha = {
+      partnersLight: refPartners375LightSha,
+      partnersDark: refPartners375DarkSha,
+    };
   } finally {
     refServer.close();
   }
@@ -658,7 +774,10 @@ async function main() {
     functional.rolesJsSha256Ok === true &&
     functional.refPrototypeLoadError !== true &&
     functional.orderDetail1440Loaded === true &&
-    functional.orderDetail375Loaded === true;
+    functional.orderDetail375Loaded === true &&
+    functional.ref375DarkDistinctFromLight === true &&
+    functional.ref375DarkThemeOk === true &&
+    functional.ref375LightThemeOk === true;
 
   const pass =
     platBuild.status === 0 &&
@@ -689,7 +808,11 @@ async function main() {
     functional.gridMediumDesktopOk &&
     functional.requisites375LightTokensOk &&
     functional.requisites375DarkTokensOk &&
-    functional.detail375NoHorizontalScroll;
+    functional.detail375NoHorizontalScroll &&
+    functional.detail375LayoutOk &&
+    functional.detail375DarkLayoutOk &&
+    functional.detail320LayoutOk &&
+    functional.detail320DarkLayoutOk;
 
   const navDirty = spawnSync('git', ['status', '--porcelain'], { cwd: NAV_ROOT, encoding: 'utf8' })
     .stdout.trim();
@@ -698,7 +821,7 @@ async function main() {
 
   const results = {
     generatedAt: new Date().toISOString(),
-    contractVersion: '2026-10-16.r05.3',
+    contractVersion: '2026-10-16.r05.4',
     platformHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim(),
     navigatorHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout.trim(),
     gitDirty: { platform: platDirty.length > 0, navigator: navDirty.length > 0 },
@@ -737,7 +860,11 @@ async function main() {
         functional.smoke320NoHorizontalScroll &&
         functional.uiPaginationOk &&
         functional.orderDetail375Loaded &&
-        functional.detail375NoHorizontalScroll
+        functional.detail375NoHorizontalScroll &&
+        functional.detail375LayoutOk &&
+        functional.detail375DarkLayoutOk &&
+        functional.detail320LayoutOk &&
+        functional.detail320DarkLayoutOk
           ? 'PASS'
           : 'FAIL',
     },
@@ -745,7 +872,7 @@ async function main() {
     status: pass ? 'READY_FOR_REVIEW' : 'BLOCKED',
     visualParityOk: false,
     visualParityNote:
-      'Paired impl/ref PNGs captured with HTTP reference server and wallet-state gates; datasets differ — not pixel-perfect.',
+      'CAPTURED impl/ref drill PNGs (375 partners/orders/detail light+dark) with theme probes; not pixel-perfect.',
   };
   writeFileSync(path.join(ART, 'TEST-RESULTS.json'), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));

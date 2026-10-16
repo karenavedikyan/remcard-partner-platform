@@ -305,7 +305,7 @@ export function AgentReceivablesHub() {
 
   const viewControl = (
     <div className={styles.presentation}>
-      <label className={styles.field}>
+      <div className={styles.viewControl}>
         <span>Вид данных</span>
         <select
           value={prefs.view}
@@ -317,7 +317,7 @@ export function AgentReceivablesHub() {
           <option value="medium">Средние карточки</option>
           <option value="large">Крупные карточки</option>
         </select>
-      </label>
+      </div>
     </div>
   );
 
@@ -636,10 +636,12 @@ export function AgentReceivablesHub() {
             <span className={styles.focusHeaderLabel}>Заказ</span>
             <h2 data-testid="agent-r05-order-detail-heading">{record.orderNumber}</h2>
           </div>
-          <strong>{formatKopecks(record.remainingKopecks || record.obligationKopecks)}</strong>
+          <strong data-testid="agent-r05-order-detail-sum">
+            {formatKopecks(record.remainingKopecks || record.obligationKopecks)}
+          </strong>
         </div>
         <p className={styles.meta}>{record.partnerLegal.name}</p>
-        <dl className={styles.breakdown}>
+        <dl className={styles.breakdown} data-testid="agent-r05-order-breakdown">
           <div>
             <dt>Клиент</dt>
             <dd>{record.clientLabel ?? "—"}</dd>
