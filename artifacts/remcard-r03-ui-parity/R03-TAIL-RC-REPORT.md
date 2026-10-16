@@ -23,7 +23,7 @@ Navigator chain documented on **#683**: #681 → #682 → #683.
 
 | Repo | Tip |
 |------|-----|
-| Platform | `TEST-RESULTS.json` → `platformSha` (commit bundling tail); capture HEAD `1c2435c7ef6835709c149209b2fdcc92364c4778` + dirty tree per `captureEvidence` |
+| Platform | `65daa3e0623f37d07660cc873324360770b4a215` (bundles code + artifacts); capture at `1c2435c7ef6835709c149209b2fdcc92364c4778` + dirty tree per `captureEvidence` |
 | Navigator | `02c06daf0fa42ea71de3d55f4b988b4fe865522e` |
 
 CAPTURED ≠ pixel PASS. Bonus «—» unchanged.
