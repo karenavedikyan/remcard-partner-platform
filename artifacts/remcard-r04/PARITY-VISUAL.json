@@ -374,5 +374,6 @@
   "visualParityOk": false,
   "visualReviewNote": "Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS.",
   "pass": true,
-  "navigatorHead": "045682144366b7e20a3bb25e5106a3e4ecbc9ccd"
+  "navigatorHead": "045682144366b7e20a3bb25e5106a3e4ecbc9ccd",
+  "captureTreeClean": true
 }
