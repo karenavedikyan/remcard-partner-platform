@@ -7,7 +7,9 @@
 
 ## Branch / PR
 
-- `cursor/r05-agent-receivables-b3e3` → draft PR into each release branch.
+- Platform [PR #23](https://github.com/karenavedikyan/remcard-partner-platform/pull/23) · `f9b55e9`
+- Navigator [PR #686](https://github.com/karenavedikyan/remcard-navigator/pull/686) · `db9053bc`
+- Branch: `cursor/r05-agent-receivables-b3e3` → each `release/prof-*-v1-20261007`.
 
 ## Scope delivered
 
