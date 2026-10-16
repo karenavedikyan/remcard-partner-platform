@@ -3,6 +3,7 @@ import {
   clientPurchaseStatusLabel,
   clientRowCaption,
   clientRowDetail,
+  clientRowMobileSubtitle,
 } from "./clientListRow";
 import type { AgentClientRow } from "./types";
 
@@ -24,6 +25,10 @@ describe("clientListRow", () => {
   it("puts task under name and cert summary in details", () => {
     expect(clientRowCaption(base)).toBe("Задача parity");
     expect(clientRowDetail(base)).toBe("2 сертификата · бонус —");
+  });
+
+  it("formats mobile list subtitle as task · city", () => {
+    expect(clientRowMobileSubtitle(base)).toBe("Краснодар · Задача parity");
   });
 
   it("uses purchase status labels from hasPurchases", () => {

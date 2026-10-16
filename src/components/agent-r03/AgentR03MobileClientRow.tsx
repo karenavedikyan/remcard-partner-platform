@@ -5,8 +5,8 @@ import type { AgentClientRow } from "@/lib/agent-r03/types";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import {
   clientPurchaseStatusLabel,
-  clientRowCaption,
   clientRowDetail,
+  clientRowMobileSubtitle,
 } from "@/lib/agent-r03/clientListRow";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
@@ -27,7 +27,11 @@ export function AgentR03MobileClientRow({
   actions,
 }: Props) {
   return (
-    <article className={styles.mobileRecord} data-testid="agent-client-mobile-row">
+    <article
+      className={styles.mobileRecord}
+      data-testid="agent-client-mobile-row"
+      data-parity-client-id={client.id}
+    >
       <div className={styles.mobileRecordTop}>
         <label className={styles.selectCol}>
           <input
@@ -37,25 +41,21 @@ export function AgentR03MobileClientRow({
           />
         </label>
         <div className={styles.mobileRecordMain}>
-          <div className={styles.mobileRecordStatusRow}>
-            <span className={styles.purchasePill}>
-              {clientPurchaseStatusLabel(client, archived)}
-            </span>
-          </div>
           <Link href={`/clients/${client.id}`} className={styles.mobileRecordTitle}>
             {client.displayName}
           </Link>
+          <p className={styles.meta}>{clientRowMobileSubtitle(client)}</p>
           <p className={styles.meta}>{clientRowDetail(client)}</p>
-          {clientRowCaption(client) ? (
-            <p className={styles.meta}>{clientRowCaption(client)}</p>
-          ) : null}
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>
+        <span className={styles.purchasePill}>
+          {clientPurchaseStatusLabel(client, archived)}
+        </span>
         <RecordRowActions
           ariaLabel="Действия с клиентом"
           actions={actions}
-          variant="cardToolbar"
+          variant="mobileFooter"
         />
       </div>
     </article>

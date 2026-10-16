@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
-import { certificateStatusLabel } from "@/lib/certificate-labels";
+import {
+  certificateLifecycleStatusLabel,
+  certificatePurchaseStatusLabel,
+} from "@/lib/agent-r03/certificatePurchaseStatus";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 
@@ -17,7 +20,11 @@ export function AgentR03MobileCertRow({ cert, selected, onSelectChange, actions 
   const title = cert.userAlias ?? cert.title;
 
   return (
-    <article className={styles.mobileRecord} data-testid="agent-cert-mobile-row">
+    <article
+      className={styles.mobileRecord}
+      data-testid="agent-cert-mobile-row"
+      data-parity-cert-id={cert.id}
+    >
       <div className={styles.mobileRecordTop}>
         <label className={styles.selectCol}>
           <input
@@ -39,11 +46,14 @@ export function AgentR03MobileCertRow({ cert, selected, onSelectChange, actions 
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>
-        <span className={styles.statusPill}>{certificateStatusLabel(cert.status)}</span>
+        <div className={styles.mobileRecordFooterStatus}>
+          <span className={styles.purchasePill}>{certificatePurchaseStatusLabel(cert)}</span>
+          <span className={styles.collectionLifecycle}>{certificateLifecycleStatusLabel(cert)}</span>
+        </div>
         <RecordRowActions
           ariaLabel="Действия с сертификатом"
           actions={actions}
-          variant="cardToolbar"
+          variant="mobileFooter"
         />
       </div>
     </article>
