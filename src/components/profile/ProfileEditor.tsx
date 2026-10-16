@@ -56,7 +56,8 @@ import { fetchAgentProfileStatus } from "@/lib/agent-profile/api";
 import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
   buildProfileSectionHref,
-  PROFILE_SECTION_NAV,
+  isPureAgentProfileSection,
+  profileSectionNav,
   resolveProfileSectionFromQuery,
   type ProfileSectionId,
 } from "@/lib/profile-sections";
@@ -100,6 +101,12 @@ type ProfileEditorProps = {
   section?: ProfileSectionId;
   focusBranchId?: string;
   focusField?: string;
+  initialAgentR02Gate?: {
+    featureEnabled: boolean;
+    eligible: boolean;
+    profileComplete: boolean;
+  } | null;
+  initialPureAgentCompact?: boolean;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -123,6 +130,8 @@ function ProfileEditorInner({
   section: sectionProp = "overview",
   focusBranchId,
   focusField,
+  initialAgentR02Gate = null,
+  initialPureAgentCompact = false,
 }: ProfileEditorProps) {
   const cabinetAccess = useProfileCabinetAccess();
   const router = useRouter();
@@ -217,7 +226,14 @@ function ProfileEditorInner({
   const [agentR02Gate, setAgentR02Gate] = useState<{
     featureEnabled: boolean;
     eligible: boolean;
-  } | null>(null);
+  } | null>(
+    initialAgentR02Gate
+      ? {
+          featureEnabled: initialAgentR02Gate.featureEnabled,
+          eligible: initialAgentR02Gate.eligible,
+        }
+      : null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -231,16 +247,26 @@ function ProfileEditorInner({
         }
       })
       .catch(() => {
-        if (!cancelled) setAgentR02Gate({ featureEnabled: false, eligible: false });
+        if (!cancelled && !initialAgentR02Gate) {
+          setAgentR02Gate({ featureEnabled: false, eligible: false });
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [partnerActivities.join(",")]);
+  }, [partnerActivities.join(","), initialAgentR02Gate]);
 
+  const pureAgentActivities = isPureAgentActivities(partnerActivities);
   const pureAgentCompactUi =
-    Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible) &&
-    isPureAgentActivities(partnerActivities);
+    pureAgentActivities &&
+    (initialPureAgentCompact ||
+      Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible));
+  const agentNavPending =
+    pureAgentActivities && !initialPureAgentCompact && agentR02Gate === null;
+  const sectionNavItems = useMemo(
+    () => profileSectionNav({ pureAgentCompact: pureAgentCompactUi }),
+    [pureAgentCompactUi],
+  );
   const catalogEditable = catalogPublicationEditable(profile);
   const revisionBanner = showRevisionBanner(profile);
 
@@ -393,13 +419,27 @@ function ProfileEditorInner({
   }, [initial, applyProfile]);
 
   useEffect(() => {
-    const fromUrl = resolveProfileSectionFromQuery({
-      section: searchParams.get("section"),
-      moderation: searchParams.get("moderation"),
-      branchId: searchParams.get("branchId"),
-    });
+    const fromUrl = resolveProfileSectionFromQuery(
+      {
+        section: searchParams.get("section"),
+        moderation: searchParams.get("moderation"),
+        branchId: searchParams.get("branchId"),
+      },
+      { pureAgentCompact: pureAgentCompactUi },
+    );
     setActiveSection(fromUrl);
-  }, [searchParams]);
+    if (!pureAgentCompactUi) return;
+    const rawSection = searchParams.get("section")?.trim();
+    const forbiddenDeepLink =
+      Boolean(searchParams.get("branchId")?.trim()) ||
+      searchParams.get("moderation") === "1" ||
+      rawSection === "moderation" ||
+      (rawSection && !isPureAgentProfileSection(rawSection as ProfileSectionId));
+    if (forbiddenDeepLink) {
+      const href = buildProfileSectionHref(fromUrl, new URLSearchParams(searchParams.toString()));
+      router.replace(href, { scroll: false });
+    }
+  }, [searchParams, pureAgentCompactUi, router]);
 
   const currentDraft = buildDraft();
   draftRef.current = currentDraft;
@@ -498,7 +538,10 @@ function ProfileEditorInner({
     !(pureAgentCompactUi && activeSection === "basics");
 
   return (
-    <div className={styles.shell} id={moderationSection ? "moderation-remarks" : undefined}>
+    <div
+      className={`${styles.shell} ${pureAgentCompactUi ? styles.pureAgentProduction : ""}`}
+      id={moderationSection ? "moderation-remarks" : undefined}
+    >
       {showBack ? (
         <p className={styles.hint}>
           <Link
@@ -514,9 +557,23 @@ function ProfileEditorInner({
         </p>
       ) : null}
 
-      <nav className={styles.sectionNav} aria-label="Разделы профиля">
-        <ul className={styles.tabStrip} role="tablist">
-          {PROFILE_SECTION_NAV.map((item) => (
+      <nav
+        className={styles.sectionNav}
+        aria-label="Разделы профиля"
+        aria-busy={agentNavPending || undefined}
+      >
+        {agentNavPending ? (
+          <p className={styles.hint} role="status" data-testid="profile-nav-pending">
+            Загрузка разделов профиля…
+          </p>
+        ) : null}
+        <ul
+          className={styles.tabStrip}
+          role="tablist"
+          hidden={agentNavPending}
+          aria-hidden={agentNavPending}
+        >
+          {sectionNavItems.map((item) => (
             <li key={item.id} role="presentation">
               <button
                 type="button"
@@ -536,21 +593,24 @@ function ProfileEditorInner({
         className={`${styles.grid} ${showAside ? "" : styles.gridSingle}`}
       >
       <div className={styles.main}>
-        <ProfileBranchContextSwitcher />
-        {activeSection === "overview" ? (
+        {!pureAgentCompactUi ? <ProfileBranchContextSwitcher /> : null}
+        {activeSection === "overview" && !agentNavPending ? (
           <>
             <AgentProfileSection
               userId={profile.user.id}
               partnerActivities={partnerActivities}
               basicsEditable={basicsEditable}
               onActivitiesChange={setPartnerActivities}
+              layout={pureAgentCompactUi ? "parity-overview" : "default"}
             />
-            <ProfileOverviewSection
-              profile={profile}
-              onNavigateSection={navigateSection}
-              hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
-              fixtureOverview={fixtureOverview}
-            />
+            {!pureAgentCompactUi ? (
+              <ProfileOverviewSection
+                profile={profile}
+                onNavigateSection={navigateSection}
+                hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+                fixtureOverview={fixtureOverview}
+              />
+            ) : null}
           </>
         ) : null}
         {revisionBanner && activeSection === "catalog" ? (
@@ -561,13 +621,17 @@ function ProfileEditorInner({
           </div>
         ) : null}
 
-        {activeSection === "basics" ? (
+        {activeSection === "basics" && !agentNavPending ? (
         <>
         <AgentProfileSection
           userId={profile.user.id}
           partnerActivities={partnerActivities}
           basicsEditable={basicsEditable}
           onActivitiesChange={setPartnerActivities}
+          layout={pureAgentCompactUi ? "parity-basics" : "default"}
+          onExitEditMode={
+            pureAgentCompactUi ? () => navigateSection("overview") : undefined
+          }
         />
         {!pureAgentCompactUi ? (
         <form onSubmit={saveProfile}>
@@ -779,7 +843,7 @@ function ProfileEditorInner({
         </>
         ) : null}
 
-        {activeSection === "catalog" ? (
+        {activeSection === "catalog" && !pureAgentCompactUi ? (
           <ProfileCatalogSection
             profile={profile}
             draft={buildDraft()}
@@ -819,7 +883,7 @@ function ProfileEditorInner({
           />
         ) : null}
 
-        {activeSection === "branches" ? (
+        {activeSection === "branches" && !pureAgentCompactUi ? (
           <ProfileBranchesSection
             defaultCity={city}
             hasOrganization={Boolean(profile.organization)}
@@ -828,7 +892,9 @@ function ProfileEditorInner({
           />
         ) : null}
 
-        {activeSection === "team" ? <ProfileTeamSection fixtureOverview={fixtureOverview} /> : null}
+        {activeSection === "team" && !pureAgentCompactUi ? (
+          <ProfileTeamSection fixtureOverview={fixtureOverview} />
+        ) : null}
 
         {activeSection === "notifications" ? (
           <NotificationSettingsPanel

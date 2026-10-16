@@ -15,6 +15,23 @@ export const PROFILE_SECTION_NAV: { id: ProfileSectionId; label: string }[] = [
   { id: "notifications", label: "Уведомления" },
 ];
 
+/** Reference agent cabinet: overview, basics, notifications only. */
+export const PURE_AGENT_PROFILE_SECTION_NAV = PROFILE_SECTION_NAV.filter((item) =>
+  (["overview", "basics", "notifications"] as ProfileSectionId[]).includes(item.id),
+);
+
+const PURE_AGENT_SECTIONS = new Set<ProfileSectionId>(
+  PURE_AGENT_PROFILE_SECTION_NAV.map((item) => item.id),
+);
+
+export function profileSectionNav(opts?: { pureAgentCompact?: boolean }) {
+  return opts?.pureAgentCompact ? PURE_AGENT_PROFILE_SECTION_NAV : PROFILE_SECTION_NAV;
+}
+
+export function isPureAgentProfileSection(section: ProfileSectionId): boolean {
+  return PURE_AGENT_SECTIONS.has(section);
+}
+
 const LEGACY_SECTION_ALIASES: Record<string, ProfileSectionId> = {
   moderation: "catalog",
 };
@@ -29,10 +46,25 @@ export type ProfileSectionQueryInput = {
   branchId?: string | null;
 };
 
+export type ResolveProfileSectionOptions = {
+  /** Principal pure agent with R02 profile gate — disallow business-only tabs/deep links. */
+  pureAgentCompact?: boolean;
+};
+
 export function resolveProfileSectionFromQuery(
   input: ProfileSectionQueryInput,
+  opts?: ResolveProfileSectionOptions,
 ): ProfileSectionId {
+  const pureAgentCompact = Boolean(opts?.pureAgentCompact);
   const raw = input.section?.trim();
+
+  if (pureAgentCompact) {
+    if (raw && isPureAgentProfileSection(raw as ProfileSectionId)) {
+      return raw as ProfileSectionId;
+    }
+    return "overview";
+  }
+
   if (raw && LEGACY_SECTION_ALIASES[raw]) {
     return LEGACY_SECTION_ALIASES[raw];
   }

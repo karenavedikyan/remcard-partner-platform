@@ -1,0 +1,466 @@
+{
+  "ok": true,
+  "functionalOk": true,
+  "captureOk": true,
+  "geometryOk": true,
+  "geometryChecks": [
+    {
+      "viewport": 1440,
+      "cap": "overview-1440-light",
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "ok": true
+    },
+    {
+      "viewport": 1440,
+      "cap": "overview-1440-dark",
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "ok": true
+    },
+    {
+      "viewport": 375,
+      "cap": "overview-375-light",
+      "ok": true,
+      "target": {
+        "summaryW": 343,
+        "summaryX": 16,
+        "bankW": 343,
+        "bankX": 16
+      },
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "summaryXDelta": 0,
+      "bankXDelta": 0,
+      "impl": {
+        "summary": {
+          "w": 343,
+          "h": 699,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 510,
+          "x": 16,
+          "y": 1140
+        }
+      },
+      "ref": {
+        "summary": {
+          "w": 343,
+          "h": 780,
+          "x": 16,
+          "y": 322
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 616,
+          "x": 16,
+          "y": 1233
+        }
+      }
+    },
+    {
+      "viewport": 375,
+      "cap": "overview-375-dark",
+      "ok": true,
+      "target": {
+        "summaryW": 343,
+        "summaryX": 16,
+        "bankW": 343,
+        "bankX": 16
+      },
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "summaryXDelta": 0,
+      "bankXDelta": 0,
+      "impl": {
+        "summary": {
+          "w": 343,
+          "h": 699,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 510,
+          "x": 16,
+          "y": 1140
+        }
+      },
+      "ref": {
+        "summary": {
+          "w": 343,
+          "h": 780,
+          "x": 16,
+          "y": 322
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 616,
+          "x": 16,
+          "y": 1233
+        }
+      }
+    },
+    {
+      "viewport": 320,
+      "cap": "overview-320-light",
+      "ok": true,
+      "target": {
+        "summaryW": 288,
+        "summaryX": 16,
+        "bankW": 288,
+        "bankX": 16
+      },
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "summaryXDelta": 0,
+      "bankXDelta": 0,
+      "impl": {
+        "summary": {
+          "w": 288,
+          "h": 767,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 288,
+          "h": 510,
+          "x": 16,
+          "y": 1208
+        }
+      },
+      "ref": {
+        "summary": {
+          "w": 288,
+          "h": 852,
+          "x": 16,
+          "y": 342
+        },
+        "bankPanel": {
+          "w": 288,
+          "h": 659,
+          "x": 16,
+          "y": 1326
+        }
+      }
+    }
+  ],
+  "cssOk": true,
+  "cssChecks": [
+    {
+      "cap": "overview-1440-light",
+      "check": "pure_agent_tab_divider",
+      "tablistWidth": 1096,
+      "borderBottomWidth": "1px",
+      "ok": true
+    },
+    {
+      "cap": "overview-1440-dark",
+      "check": "pure_agent_tab_divider",
+      "tablistWidth": 1096,
+      "borderBottomWidth": "1px",
+      "ok": true
+    },
+    {
+      "cap": "overview-375-light",
+      "check": "mobile_summary_badge_content_sized",
+      "summaryWidth": 343,
+      "badgeWidth": 87,
+      "ok": true
+    },
+    {
+      "cap": "overview-375-dark",
+      "check": "mobile_summary_badge_content_sized",
+      "summaryWidth": 343,
+      "badgeWidth": 87,
+      "ok": true
+    },
+    {
+      "cap": "overview-320-light",
+      "check": "mobile_summary_badge_content_sized",
+      "summaryWidth": 288,
+      "badgeWidth": 87,
+      "ok": true
+    }
+  ],
+  "visualParityOk": false,
+  "visualReview": {
+    "status": "reviewed_with_documented_exceptions",
+    "scope": "geometry_and_css_gates_only",
+    "documentedExceptions": [
+      "Product PageHeading intro is longer than frozen ref demo copy (explains ~46px top offset at 375).",
+      "Excluded demo success banner, footnotes, and real user IDs from pixel comparison.",
+      "Summary and bank block heights may differ where demo-only copy is absent on impl.",
+      "No universal full-page or mobile pixel diff; owner PNG review still required."
+    ]
+  },
+  "bankStateParity": {
+    "dedupedCount": 1,
+    "refExpandedVsFormDistinct": false
+  },
+  "stack": {
+    "platformGitSha": "ce2921e23785d6383190e34f18fe2d9c8b86f4f4",
+    "captureSourceNote": "E2E stack.platformGitSha is the verified code tip at acceptance; older capture runs may have used a pre-fix snapshot — owner reviewed PNGs at ce2921e.",
+    "navigatorGitSha": "7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7",
+    "platformOrigin": "http://127.0.0.1:3044",
+    "navOrigin": "http://127.0.0.1:3043",
+    "userId": "r02-local-pro-agent-v1"
+  },
+  "http": {
+    "saveDraft": 200,
+    "profileSaved": true,
+    "hasDraft": true,
+    "discard": 200,
+    "afterDiscardComplete": true,
+    "afterDiscardHasDraft": false,
+    "bankListCount": 1,
+    "listMasked": true,
+    "detailLabel": "Личный счёт",
+    "detailAccount": "40817810000000000001",
+    "ok": true
+  },
+  "ui": {
+    "overviewEditCancel": true,
+    "basicsDirectCancel": true,
+    "dirtyCancelRejected": true,
+    "dirtyCancelAccepted": true,
+    "draftReloadValue": "Draft After Saved",
+    "afterCancelHasDraft": false,
+    "afterCancelSavedName": "Parity Visual Agent",
+    "ok": true
+  },
+  "screenshots": [
+    {
+      "file": "impl-overview-1440-light.png",
+      "sha256": "8bd04bbc79cecc6ca88ee091930ce8c544f51d7e546471a13cd1192b1951e3dc",
+      "layout": {
+        "summary": {
+          "w": 564,
+          "h": 453,
+          "x": 559,
+          "y": 358
+        },
+        "bankPanel": {
+          "w": 1096,
+          "h": 373,
+          "x": 293,
+          "y": 883
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      }
+    },
+    {
+      "file": "ref-overview-1440-light.png",
+      "sha256": "626ef19e4840ed41ac477f7f09b80f33e34a27b7c92ae3fb8a37b6fd2d41b259",
+      "layout": {
+        "summary": {
+          "w": 564,
+          "h": 507,
+          "x": 559,
+          "y": 351
+        },
+        "bankPanel": {
+          "w": 1096,
+          "h": 440,
+          "x": 293,
+          "y": 971
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      }
+    },
+    {
+      "file": "impl-overview-1440-dark.png",
+      "sha256": "79e6a4faf28dd8c8fdf3c749f663ed999276de8259b5e38fb6b34d6026714b55",
+      "layout": {
+        "summary": {
+          "w": 564,
+          "h": 453,
+          "x": 559,
+          "y": 358
+        },
+        "bankPanel": {
+          "w": 1096,
+          "h": 373,
+          "x": 293,
+          "y": 883
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      }
+    },
+    {
+      "file": "ref-overview-1440-dark.png",
+      "sha256": "cb7184718f6359ee168ca3e211897465f0e2cbcc822f620dbb25a6643c8963ad",
+      "layout": {
+        "summary": {
+          "w": 564,
+          "h": 507,
+          "x": 559,
+          "y": 351
+        },
+        "bankPanel": {
+          "w": 1096,
+          "h": 440,
+          "x": 293,
+          "y": 971
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      }
+    },
+    {
+      "file": "impl-overview-375-light.png",
+      "sha256": "7fe00083fe24b64b9e0a8a1c3578838a0eae7ea8627853e1b8121540ed388693",
+      "layout": {
+        "summary": {
+          "w": 343,
+          "h": 699,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 510,
+          "x": 16,
+          "y": 1140
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-overview-375-light-viewport-top.png",
+        "sha256": "94eaca04a85933dd478d808a1f30379df43901f89d9790f11004e6ab9908ec2f"
+      }
+    },
+    {
+      "file": "ref-overview-375-light.png",
+      "sha256": "46c8f4ca62e30eabd42df28d5cdd420b6e34d185629c6f88f56e4e5f4440f354",
+      "layout": {
+        "summary": {
+          "w": 343,
+          "h": 780,
+          "x": 16,
+          "y": 322
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 616,
+          "x": 16,
+          "y": 1233
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-overview-375-light-viewport-top.png",
+        "sha256": "641ddf7c436abb66661c2ea5a2cd6f96ac67b58775b9d6435be8af542faf9d28"
+      }
+    },
+    {
+      "file": "impl-overview-375-dark.png",
+      "sha256": "e42e0cd842ccfe60778a88e19a7aba4680cde20907988ca9e6f135fe123730b0",
+      "layout": {
+        "summary": {
+          "w": 343,
+          "h": 699,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 510,
+          "x": 16,
+          "y": 1140
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-overview-375-dark-viewport-top.png",
+        "sha256": "32bf654362e3f7b27104cf058283407df5e7897f8e1c8ddbd9a2ac87ad7697ca"
+      }
+    },
+    {
+      "file": "ref-overview-375-dark.png",
+      "sha256": "c177b4b2617e6bd0b3211983151a5024474388f86b5a9dedcc839238cdb897b2",
+      "layout": {
+        "summary": {
+          "w": 343,
+          "h": 780,
+          "x": 16,
+          "y": 322
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 616,
+          "x": 16,
+          "y": 1233
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-overview-375-dark-viewport-top.png",
+        "sha256": "4b0c244dd04e07110272f2cb2e31c0b57a6042b3ad3ce1eca6590bc4889025ee"
+      }
+    },
+    {
+      "file": "impl-overview-320-light.png",
+      "sha256": "9415c2ea8c9a5ddd269668624aef66d9f28c06c214c8a6ae9731a814f81454f9",
+      "layout": {
+        "summary": {
+          "w": 288,
+          "h": 767,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 288,
+          "h": 510,
+          "x": 16,
+          "y": 1208
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-overview-320-light-viewport-top.png",
+        "sha256": "04e294605a1a6447b707f6876bfe644763838f9c3114c4bc81a1780bee404bcc"
+      }
+    },
+    {
+      "file": "ref-overview-320-light.png",
+      "sha256": "15d20652ee01cbe371c3fbfadb046add786b8797247bb6c5931a8e7d3c24409a",
+      "layout": {
+        "summary": {
+          "w": 288,
+          "h": 852,
+          "x": 16,
+          "y": 342
+        },
+        "bankPanel": {
+          "w": 288,
+          "h": 659,
+          "x": 16,
+          "y": 1326
+        },
+        "bankRecords": 1,
+        "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-overview-320-light-viewport-top.png",
+        "sha256": "2c26f125ab49651d469da0914efdb4c3e38fd01ef7f7cfb0568fa61889c6715b"
+      }
+    }
+  ],
+  "migration": {
+    "skipped": true,
+    "reason": "PROF_R02_RUN_PG not set"
+  },
+  "capturedAt": "2026-10-16T07:44:33.513Z"
+}
