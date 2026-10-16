@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
 import { usePathname } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import type { AuthUser } from "@/lib/types";
@@ -91,15 +92,9 @@ export function AgentAppShell({
         <div className={styles.topbarActions}>
           <ThemeToggle />
           <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
-          <Link href="/profile" className={styles.accountControl} data-testid="agent-account-control">
-            <span className={styles.accountAvatar} aria-hidden>
-              {initials}
-            </span>
-            <span className={styles.accountCaption}>
-              <strong>{displayName}</strong>
-              <small>Агент</small>
-            </span>
-          </Link>
+          <div data-testid="agent-account-control">
+            <AccountSessionMenu displayName={displayName} roleLabel="Агент" />
+          </div>
         </div>
       </header>
 

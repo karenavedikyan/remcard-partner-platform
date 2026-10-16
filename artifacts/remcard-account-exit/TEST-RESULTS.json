@@ -1,0 +1,45 @@
+{
+  "task": "ACCOUNT-EXIT-01",
+  "status": "READY_FOR_REVIEW",
+  "backendReleaseBase": "2a531f4ff3fb491f2949e96e5be406b1030f06c6",
+  "frontendReleaseBase": "3476511fb2be17bb73b3032e08c67fe3b17dc701",
+  "commands": [
+    {
+      "cmd": "cd remcard-navigator && npm test -- src/lib/__tests__/authSessionLogout.test.ts src/app/api/auth/logout-all-sessions/__tests__/route.test.ts",
+      "exitCode": 0,
+      "note": "6 tests passed"
+    },
+    {
+      "cmd": "cd remcard-partner-platform && npm run test:component -- src/components/layout/AppShell.test.tsx",
+      "exitCode": 0,
+      "note": "2 tests passed"
+    },
+    {
+      "cmd": "cd remcard-partner-platform && npm run test:proxy",
+      "exitCode": 0,
+      "note": "240 tests passed incl. logout-all BFF allowlist"
+    },
+    {
+      "cmd": "cd remcard-partner-platform && npm run build",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/account-exit-browser-acceptance.mjs",
+      "exitCode": null,
+      "note": "NOT_RUN: local next start returned HTTP 500 for all routes in this VM snapshot (infra); script ready at BASE_URL"
+    }
+  ],
+  "dualSessionAb": {
+    "status": "NOT_VERIFIED",
+    "reason": "Requires disposable backend + two browser contexts with test user; not executed against live prof.remcard.ru per task boundary"
+  },
+  "visualCaptures": {
+    "status": "NOT_CAPTURED",
+    "reason": "Playwright script prepared; blocked by local server 500 in snapshot environment"
+  },
+  "expectedBehavior": {
+    "currentDevice": "POST /api/auth/logout clears HttpOnly cookies; no tokenVersion bump for ordinary PRO",
+    "allDevices": "POST /api/auth/logout-all-sessions increments tokenVersion and clears cookies",
+    "profTest": "Revokes delegation and return slots; bumps test user tokenVersion only"
+  }
+}

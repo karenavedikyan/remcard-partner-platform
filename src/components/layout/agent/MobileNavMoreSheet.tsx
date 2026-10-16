@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import {
   agentSectionByKey,
   isPathActive,
@@ -100,7 +99,6 @@ export function MobileNavMoreSheet({
               Текущий раздел открыт из «Ещё».
             </p>
           ) : null}
-          <LogoutButton className={styles.logoutBtn} data-testid="mobile-more-logout" />
         </footer>
       </div>
     </dialog>

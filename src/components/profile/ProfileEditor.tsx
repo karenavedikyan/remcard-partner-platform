@@ -37,6 +37,7 @@ import { ProfileBranchesSection } from "./ProfileBranchesSection";
 import { ProfileCatalogSection } from "./ProfileCatalogSection";
 import { ProfileTeamSection } from "./ProfileTeamSection";
 import type { ProProfileResponse } from "@/lib/types";
+import { ProfileSessionActions } from "@/components/account-session/ProfileSessionActions";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField";
@@ -958,6 +959,7 @@ function ProfileEditorInner({
           </Panel>
         )}
 
+        <ProfileSessionActions />
       </div>
 
       {showAside ? (
