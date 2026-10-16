@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-10-16T12:22:26.095Z",
+  "platformHead": "a337b407dfe2a8bad3bba7ec29d7af42cb868524",
+  "navigatorHead": "4d275090657113b5765e90e2e1bee4c7eaa36fce",
+  "platformOrigin": "http://127.0.0.1:3040",
+  "commands": [
+    {
+      "cmd": "pnpm run build (platform)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npm run build (navigator)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/r04-browser-acceptance.mjs",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=before",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=apply --apply",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/prof-r04-migrate.mjs --phase=after",
+      "exitCode": 0
+    }
+  ],
+  "functional": {
+    "testPublicLinkHidesTerms": true,
+    "linkInviteCreate": true,
+    "listAfterSeed": true,
+    "aliasArchivePersist": true,
+    "listToolbarVisible": true,
+    "discoveryFiltersVisible": true,
+    "cardsViewActive": true,
+    "filterZeroShowsToolbar": true,
+    "filterResetRestoresList": true,
+    "archiveViewShowsRow": true,
+    "aliasVisibleAfterReload": true,
+    "invitationsSegmentVisible": true,
+    "incomingInviteAccept": true,
+    "incomingBecomesActive": true,
+    "r03AcceptedPartnerInAvailableApi": true,
+    "r03CreatePartnerFieldVisible": true,
+    "r03AcceptedPartnerOnCreateForm": true,
+    "migrateOk": true,
+    "r04GateOn": true,
+    "r04Eligible": true
+  },
+  "captured": [
+    "impl-partners-list-1440-light.png",
+    "impl-partners-cards-1440-light.png",
+    "impl-partners-find-1440-light.png",
+    "impl-partners-invitations-1440-light.png",
+    "impl-partners-list-375-light.png",
+    "impl-partners-list-1440-dark.png",
+    "impl-partners-320-light.png"
+  ],
+  "geometry": {
+    "note": "Run node scripts/r04-ui-parity-visual.mjs for bounds + ref pairs"
+  },
+  "r04Phase": "R04.4",
+  "status": "READY_FOR_REVIEW",
+  "visualReview": {
+    "status": "captured",
+    "implCaptures": 7,
+    "parityVisualPass": true,
+    "visualParityOk": false,
+    "captureCodeSha": "a337b40"
+  },
+  "steps": [
+    {
+      "step": "test_session",
+      "ok": true,
+      "agentId": "cmvaxt9h50003js9pkaj161mr"
+    },
+    {
+      "step": "partner_seed",
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"active\":[\"cmvaxtfe00006jsn6wbkdel4r\",\"cmvaxtfed000ejsn6s6cn9dai\"],\"archiveTargetId\":\"cmvaxtfe00006jsn6wbkdel4r\",\"incoming\":\"cmvaxtfei000hjsn6xc9bnlr3\",\"outgoing\":\"cmvaxtfep000njsn6vuo1x184"
+    },
+    {
+      "step": "preference_patch",
+      "aliasStatus": 200,
+      "archiveStatus": 200
+    },
+    {
+      "step": "link_invite_create",
+      "status": 200
+    },
+    {
+      "step": "migrate_before",
+      "exitCode": 0
+    },
+    {
+      "step": "migrate_apply",
+      "exitCode": 0
+    },
+    {
+      "step": "migrate_after",
+      "exitCode": 0
+    }
+  ],
+  "pass": true
+}

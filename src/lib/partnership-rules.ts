@@ -46,7 +46,7 @@ export type PartnershipUiAction =
   | { kind: PartnershipActionKind; label: string; variant?: "primary" | "secondary" }
   | { kind: "waiting"; message: string };
 
-export type SearchRole = "store" | "pro";
+export type SearchRole = "store" | "pro" | "agent";
 
 export const SEARCH_ROLE_OPTIONS: ReadonlyArray<{
   value: SearchRole;
@@ -65,6 +65,12 @@ export const SEARCH_ROLE_OPTIONS: ReadonlyArray<{
     label: "Магазины, мастера и компании",
     description: "Партнёры с одобренным профилем (магазины, мастера, компании)",
     namePlaceholder: "Название магазина или имя",
+  },
+  {
+    value: "agent",
+    label: "Партнёры агента",
+    description: "Партнёры с одобренным профилем в каталоге RemCard",
+    namePlaceholder: "Слово, название или публичный ID",
   },
 ];
 
@@ -313,6 +319,11 @@ export function getPartnershipUiActions(
   }
 
   return [];
+}
+
+export function partnershipAgentSegment(status: string): "active" | "invitations" {
+  if (status === "ACTIVE" || status === "PAUSED") return "active";
+  return "invitations";
 }
 
 export function defaultSearchRoleForUser(user: PartnerSideProfile): SearchRole {

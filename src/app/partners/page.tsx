@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
+import { AgentPartnersHub } from "@/components/partners/AgentPartnersHub";
 import { PartnersHub } from "@/components/partners/PartnersHub";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
@@ -7,6 +8,7 @@ import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
 import { partnersPageReturnPath } from "@/lib/partners-return-path";
+import type { AgentR04Status } from "@/lib/agent-r04/api";
 
 export const dynamic = "force-dynamic";
 
@@ -35,14 +37,28 @@ export default async function PartnersPage(props: {
     );
   }
 
+  const r04Result = await fetchRemcardUpstream<AgentR04Status>("/api/pro/r04/status", {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
+  const r04Eligible =
+    r04Result.ok && r04Result.data.featureEnabled && r04Result.data.eligible;
+
   return (
     <CabinetShell returnTo={returnPath}>
       <PageHeading
-        eyebrow="Партнёрская сеть"
-        title="Мои партнёры"
-        description="Список партнёров, поиск по каталогу, приглашения и согласование условий."
+        eyebrow={r04Eligible ? "АГЕНТ" : "Партнёрская сеть"}
+        title={r04Eligible ? "Партнёры" : "Мои партнёры"}
+        description={
+          r04Eligible
+            ? "Действующие партнёры, поиск в RemCard и согласование условий."
+            : "Список партнёров, поиск по каталогу, приглашения и согласование условий."
+        }
       />
-      <PartnersHub meId={user.id} initialProfile={profileResult.data} />
+      {r04Eligible ? (
+        <AgentPartnersHub meId={user.id} initialProfile={profileResult.data} />
+      ) : (
+        <PartnersHub meId={user.id} initialProfile={profileResult.data} />
+      )}
     </CabinetShell>
   );
 }

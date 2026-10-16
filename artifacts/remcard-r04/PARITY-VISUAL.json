@@ -1,0 +1,465 @@
+{
+  "generatedAt": "2026-10-16T12:23:52.655Z",
+  "platformHead": "a337b407dfe2a8bad3bba7ec29d7af42cb868524",
+  "pairs": 8,
+  "matrixRows": 9,
+  "extraCaptures": [
+    "impl-r04-inv-incoming-1440-light.png",
+    "impl-r04-inv-outgoing-1440-light.png",
+    "impl-r04-modal-320-light.png"
+  ],
+  "rows": [
+    {
+      "id": "P1",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P1-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 274,
+          "y": 573.3125,
+          "w": 1134,
+          "h": 167.34375
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 238.203125
+        },
+        "listTable": {
+          "x": 275,
+          "y": 757.65625,
+          "w": 1132,
+          "h": 176.015625
+        },
+        "firstRow": {
+          "x": 275,
+          "y": 802.609375,
+          "w": 1132,
+          "h": 65.78125
+        },
+        "firstRowTitleCell": {
+          "x": 335.734375,
+          "y": 802.609375,
+          "w": 362.234375,
+          "h": 65.78125
+        },
+        "cardGrid": null,
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P1-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P2",
+      "panel": "list",
+      "viewMode": "cards",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P2-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 274,
+          "y": 573.3125,
+          "w": 1134,
+          "h": 167.34375
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 235.34375
+        },
+        "listTable": null,
+        "firstRow": null,
+        "firstRowTitleCell": null,
+        "cardGrid": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 235.34375
+        },
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P2-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "cards",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P3",
+      "panel": "find",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P3-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 274,
+          "y": 573.3125,
+          "w": 1134,
+          "h": 167.34375
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 238.203125
+        },
+        "listTable": {
+          "x": 275,
+          "y": 757.65625,
+          "w": 1132,
+          "h": 176.015625
+        },
+        "firstRow": {
+          "x": 275,
+          "y": 802.609375,
+          "w": 1132,
+          "h": 65.78125
+        },
+        "firstRowTitleCell": {
+          "x": 335.734375,
+          "y": 802.609375,
+          "w": 362.234375,
+          "h": 65.78125
+        },
+        "cardGrid": null,
+        "modal": {
+          "x": 440,
+          "y": 54,
+          "w": 560,
+          "h": 792
+        },
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P3-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P4",
+      "panel": "invitations",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "impl": "impl-r04-P4-1440-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 274,
+          "y": 542.390625,
+          "w": 1134,
+          "h": 79.265625
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 637.65625,
+          "w": 1134,
+          "h": 172.421875
+        },
+        "listTable": {
+          "x": 275,
+          "y": 638.65625,
+          "w": 1132,
+          "h": 110.234375
+        },
+        "firstRow": {
+          "x": 275,
+          "y": 683.609375,
+          "w": 1132,
+          "h": 65.28125
+        },
+        "firstRowTitleCell": {
+          "x": 335.734375,
+          "y": 683.609375,
+          "w": 362.234375,
+          "h": 65.28125
+        },
+        "cardGrid": null,
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P4-1440-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "invitations"
+      }
+    },
+    {
+      "id": "P5",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 375,
+      "height": 812,
+      "theme": "light",
+      "impl": "impl-r04-P5-375-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 16,
+          "y": 675.453125,
+          "w": 343,
+          "h": 343.15625
+        },
+        "listRoot": {
+          "x": 16,
+          "y": 1034.609375,
+          "w": 343,
+          "h": 508.828125
+        },
+        "listTable": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "firstRow": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "firstRowTitleCell": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "cardGrid": null,
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 375
+      },
+      "ref": "ref-r04-P5-375-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P6",
+      "panel": "find",
+      "viewMode": "list",
+      "width": 375,
+      "height": 812,
+      "theme": "light",
+      "impl": "impl-r04-P6-375-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 16,
+          "y": 675.453125,
+          "w": 343,
+          "h": 343.15625
+        },
+        "listRoot": {
+          "x": 16,
+          "y": 1034.609375,
+          "w": 343,
+          "h": 508.828125
+        },
+        "listTable": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "firstRow": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "firstRowTitleCell": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "cardGrid": null,
+        "modal": {
+          "x": 0,
+          "y": 48.734375,
+          "w": 375,
+          "h": 763.265625
+        },
+        "toolbarClipped": false,
+        "viewportW": 375
+      },
+      "ref": "ref-r04-P6-375-light.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P7",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark",
+      "impl": "impl-r04-P7-1440-dark.png",
+      "geometry": {
+        "toolbar": {
+          "x": 274,
+          "y": 573.3125,
+          "w": 1134,
+          "h": 167.34375
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 238.203125
+        },
+        "listTable": {
+          "x": 275,
+          "y": 757.65625,
+          "w": 1132,
+          "h": 176.015625
+        },
+        "firstRow": {
+          "x": 275,
+          "y": 802.609375,
+          "w": 1132,
+          "h": 65.78125
+        },
+        "firstRowTitleCell": {
+          "x": 335.734375,
+          "y": 802.609375,
+          "w": 362.234375,
+          "h": 65.78125
+        },
+        "cardGrid": null,
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P7-1440-dark.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "list",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P8",
+      "panel": "list",
+      "viewMode": "cards",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark",
+      "impl": "impl-r04-P8-1440-dark.png",
+      "geometry": {
+        "toolbar": {
+          "x": 274,
+          "y": 573.3125,
+          "w": 1134,
+          "h": 167.34375
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 235.34375
+        },
+        "listTable": null,
+        "firstRow": null,
+        "firstRowTitleCell": null,
+        "cardGrid": {
+          "x": 274,
+          "y": 756.65625,
+          "w": 1134,
+          "h": 235.34375
+        },
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 1440
+      },
+      "ref": "ref-r04-P8-1440-dark.png",
+      "refDrive": {
+        "ok": true,
+        "viewMode": "cards",
+        "segment": "active"
+      }
+    },
+    {
+      "id": "P9",
+      "panel": "list",
+      "viewMode": "list",
+      "width": 320,
+      "height": 700,
+      "theme": "light",
+      "smoke": true,
+      "impl": "impl-r04-P9-320-light.png",
+      "geometry": {
+        "toolbar": {
+          "x": 16,
+          "y": 722.515625,
+          "w": 288,
+          "h": 393.15625
+        },
+        "listRoot": {
+          "x": 16,
+          "y": 1131.671875,
+          "w": 288,
+          "h": 565.390625
+        },
+        "listTable": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "firstRow": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "firstRowTitleCell": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "cardGrid": null,
+        "modal": null,
+        "toolbarClipped": false,
+        "viewportW": 320
+      },
+      "ref": null,
+      "refDrive": {
+        "ok": true,
+        "skipped": "smoke"
+      }
+    }
+  ],
+  "visualParityOk": false,
+  "visualReviewNote": "Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS.",
+  "pass": true
+}

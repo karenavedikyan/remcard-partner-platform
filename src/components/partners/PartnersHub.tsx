@@ -13,10 +13,28 @@ import {
   countNeedsMyResponse,
   defaultSearchRoleForUser,
   getPartnershipUiActions,
+  partnershipAgentSegment,
   partnershipNeedsMyResponse,
   profileUserToPartnerSide,
   type SearchRole,
 } from "@/lib/partnership-rules";
+import {
+  matchesListPartnerType,
+  matchesListSpecialization,
+  matchesListStage,
+  partnerDisplayTitle,
+  partnershipPartnerUser,
+  sortPartnershipsDeterministic,
+  type AgentPartnerTypeFilter,
+} from "@/lib/agent-r04/partner-filters";
+import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
+import {
+  AgentR04ListToolbar,
+  type AgentListSort,
+  type AgentListViewMode,
+} from "@/components/partners/AgentR04ListToolbar";
+import { AgentPartnerDiscoveryFilters } from "@/components/partners/AgentPartnerDiscoveryFilters";
+import Link from "next/link";
 import type {
   PartnerSearchResult,
   Partnership,
@@ -32,16 +50,25 @@ import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
 import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
 } from "@/lib/partnership-search-ui";
+import { partnerSearchResultMeta } from "@/lib/agent-r04/partner-search-meta";
 import styles from "./PartnersHub.module.css";
 
-type PartnersHubProps = {
+export type PartnersHubProps = {
   meId: string;
   initialProfile: ProProfileResponse;
   onAttentionCountChange?: (count: number) => void;
+  variant?: "legacy" | "agent-r04";
+  agentSegment?: "active" | "invitations";
+  agentInvitationFlow?: "incoming" | "outgoing";
+  agentModalSurface?: "find" | "link";
+  onCloseAgentModal?: () => void;
+  forcedTab?: TabId;
+  defaultSearchRole?: SearchRole;
 };
 
 type TabId = "list" | "find" | "link";
@@ -56,10 +83,23 @@ function partnerTitle(partner: { displayName: string | null; organizationName?: 
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
-export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: PartnersHubProps) {
+export function PartnersHub({
+  meId,
+  initialProfile,
+  onAttentionCountChange,
+  variant = "legacy",
+  agentSegment,
+  agentInvitationFlow,
+  agentModalSurface,
+  onCloseAgentModal,
+  forcedTab,
+  defaultSearchRole: defaultSearchRoleProp,
+}: PartnersHubProps) {
+  const isAgentR04 = variant === "agent-r04";
+  const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
   const searchParams = useSearchParams();
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
-  const [tab, setTab] = useState<TabId>("list");
+  const [tab, setTab] = useState<TabId>(forcedTab ?? "list");
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
@@ -82,7 +122,32 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
+  const [listArchiveView, setListArchiveView] = useState<"active" | "archive">("active");
+  const [listPartnerType, setListPartnerType] = useState<AgentPartnerTypeFilter>("");
+  const [listSpecialization, setListSpecialization] = useState("");
+  const [listCity, setListCity] = useState("");
+  const [listStage, setListStage] = useState("");
+  const [listSort, setListSort] = useState<AgentListSort>("updated_desc");
+  const [listSearch, setListSearch] = useState("");
+  const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
+  const [listPage, setListPage] = useState(0);
+  const [listPageSize, setListPageSize] = useState(25);
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
+  const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
+  const [discoverySpecialization, setDiscoverySpecialization] = useState("");
+  const [discoveryStageId, setDiscoveryStageId] = useState("");
+  const [expandedTermsId, setExpandedTermsId] = useState<string | null>(null);
   const searchRequestGen = useRef(0);
+
+  useEffect(() => {
+    if (forcedTab) setTab(forcedTab);
+  }, [forcedTab]);
+
+  useEffect(() => {
+    if (isAgentR04 && defaultSearchRoleProp) {
+      setSearchRole(defaultSearchRoleProp);
+    }
+  }, [defaultSearchRoleProp, isAgentR04]);
 
   const inviterSide = useMemo(
     () => profileUserToPartnerSide(meProfile.user, meProfile.organization),
@@ -133,6 +198,9 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
         if (filterProducts.length) params.set("product", filterProducts.join(","));
         if (filterServices.length) params.set("service", filterServices.join(","));
         if (filterStages.length) params.set("stage", filterStages.join(","));
+        if (isAgentR04 && searchPartnerType) {
+          params.set("partnerType", searchPartnerType);
+        }
         if (mode === "append" && cursor) {
           params.set("cursor", cursor);
         }
@@ -158,8 +226,180 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
         }
       }
     },
-    [city, filterProducts, filterServices, filterStages, query, searchRole],
+    [city, filterProducts, filterServices, filterStages, isAgentR04, query, searchPartnerType, searchRole],
   );
+
+  const visiblePartnerships = useMemo(() => {
+    let rows = partnerships;
+    if (isAgentR04 && agentSegment) {
+      rows = rows.filter((p) => partnershipAgentSegment(p.status) === agentSegment);
+    }
+    if (isAgentR04 && agentSegment === "invitations" && agentInvitationFlow) {
+      rows = rows.filter((p) => {
+        const outgoing = p.initiatedBy === meId;
+        return agentInvitationFlow === "outgoing" ? outgoing : !outgoing;
+      });
+    }
+    if (isAgentR04) {
+      rows = rows.filter((p) => {
+        const archived = Boolean(p.listPreference?.archivedAt);
+        return listArchiveView === "archive" ? archived : !archived;
+      });
+      const q = listSearch.trim().toLowerCase();
+      if (q) {
+        rows = rows.filter((p) => {
+          const titles = partnerDisplayTitle(p, meId);
+          const partner = partnershipPartnerUser(p, meId);
+          const haystack = [
+            titles.official,
+            titles.alias ?? "",
+            partner.city ?? "",
+            partner.displayName ?? "",
+            partner.organizationName ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(q);
+        });
+      }
+      if (listPartnerType || listSpecialization || listCity.trim() || listStage) {
+        rows = rows.filter((p) => {
+          const partner = partnershipPartnerUser(p, meId);
+          if (listCity.trim() && (partner.city ?? "").toLowerCase() !== listCity.trim().toLowerCase()) {
+            return false;
+          }
+          if (!matchesListPartnerType(partner, listPartnerType)) return false;
+          if (!matchesListSpecialization(partner, listSpecialization)) return false;
+          if (!matchesListStage(partner, listStage)) return false;
+          return true;
+        });
+      }
+      rows = sortPartnershipsDeterministic(rows);
+      if (listSort === "name_asc") {
+        rows = [...rows].sort((a, b) => {
+          const ta = partnerDisplayTitle(a, meId).alias ?? partnerDisplayTitle(a, meId).official;
+          const tb = partnerDisplayTitle(b, meId).alias ?? partnerDisplayTitle(b, meId).official;
+          return ta.localeCompare(tb, "ru");
+        });
+      }
+    }
+    return rows;
+  }, [
+    agentInvitationFlow,
+    agentSegment,
+    isAgentR04,
+    listArchiveView,
+    listCity,
+    listPartnerType,
+    listSpecialization,
+    listSearch,
+    listSort,
+    listStage,
+    meId,
+    partnerships,
+  ]);
+
+  useEffect(() => {
+    setListPage(0);
+  }, [
+    agentInvitationFlow,
+    agentSegment,
+    listArchiveView,
+    listCity,
+    listPartnerType,
+    listSearch,
+    listSort,
+    listSpecialization,
+    listStage,
+  ]);
+
+  const pagedPartnerships = useMemo(() => {
+    const start = listPage * listPageSize;
+    return visiblePartnerships.slice(start, start + listPageSize);
+  }, [listPage, listPageSize, visiblePartnerships]);
+
+  const togglePartnerSelect = useCallback((id: string) => {
+    setSelectedPartnerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const togglePartnerSelectAll = useCallback((ids: string[], checked: boolean) => {
+    setSelectedPartnerIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isAgentR04) return;
+    if (!discoverySpecialization) {
+      setFilterProducts([]);
+      setFilterServices([]);
+      return;
+    }
+    const [group, id] = discoverySpecialization.split(":");
+    if (group === "products") {
+      setFilterProducts(id ? [id] : []);
+      setFilterServices([]);
+    } else if (group === "services") {
+      setFilterServices(id ? [id] : []);
+      setFilterProducts([]);
+    }
+  }, [discoverySpecialization, isAgentR04]);
+
+  useEffect(() => {
+    if (!isAgentR04) return;
+    setFilterStages(discoveryStageId ? [discoveryStageId] : []);
+  }, [discoveryStageId, isAgentR04]);
+
+  const listFilterChips = useMemo(() => {
+    if (!isAgentR04) return [];
+    const chips: { key: string; label: string; onClear: () => void }[] = [];
+    if (listPartnerType) {
+      chips.push({
+        key: "type",
+        label: `Тип: ${listPartnerType}`,
+        onClear: () => setListPartnerType(""),
+      });
+    }
+    if (listSpecialization) {
+      chips.push({
+        key: "spec",
+        label: `Специализация`,
+        onClear: () => setListSpecialization(""),
+      });
+    }
+    if (listStage) {
+      chips.push({ key: "stage", label: `Этап`, onClear: () => setListStage("") });
+    }
+    if (listCity.trim()) {
+      chips.push({
+        key: "city",
+        label: `Город: ${listCity.trim()}`,
+        onClear: () => setListCity(""),
+      });
+    }
+    return chips;
+  }, [isAgentR04, listCity, listPartnerType, listSpecialization, listStage]);
+
+  const resetListFilters = useCallback(() => {
+    setListArchiveView("active");
+    setListPartnerType("");
+    setListSpecialization("");
+    setListCity("");
+    setListStage("");
+    setListSort("updated_desc");
+    setListSearch("");
+    setTaxonomyFilterResetKey((k) => k + 1);
+  }, []);
 
   const resetSearchFilters = useCallback(() => {
     setQuery("");
@@ -167,6 +407,9 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     setFilterProducts([]);
     setFilterServices([]);
     setFilterStages([]);
+    setSearchPartnerType("");
+    setDiscoverySpecialization("");
+    setDiscoveryStageId("");
     setSearchRole(defaultSearchRole);
     setTaxonomyFilterResetKey((key) => key + 1);
     setSearchNextCursor(null);
@@ -180,7 +423,17 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     if (tab !== "find") return;
     setSearchNextCursor(null);
     void loadSearch("reset");
-  }, [tab, city, filterProducts, filterServices, filterStages, query, searchRole, loadSearch]);
+  }, [
+    tab,
+    city,
+    filterProducts,
+    filterServices,
+    filterStages,
+    query,
+    searchPartnerType,
+    searchRole,
+    loadSearch,
+  ]);
 
   const attentionCount = useMemo(
     () => countNeedsMyResponse(partnerships, meId),
@@ -253,17 +506,139 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     }
   }
 
+  const agentDiscoveryFilterProps = {
+    specialization: discoverySpecialization,
+    stageId: discoveryStageId,
+    city,
+    partnerType: searchPartnerType,
+    onSpecializationChange: setDiscoverySpecialization,
+    onStageChange: setDiscoveryStageId,
+    onCityChange: setCity,
+    onPartnerTypeChange: setSearchPartnerType,
+    resetKey: taxonomyFilterResetKey,
+  };
+
+  const agentFindSearchControls = (
+    <>
+      <p className={styles.modalLead}>
+        Начните со специализации и этапа ремонта — так можно найти партнёра без точного названия.
+      </p>
+      <div className={styles.modalFilterBlock}>
+        <AgentPartnerDiscoveryFilters layout="modal-primary" {...agentDiscoveryFilterProps} />
+      </div>
+      <p className={styles.modalFilterHint}>
+        Специализация и этап работают вместе: показываем партнёров, которые подходят под оба условия.
+      </p>
+      <div className={styles.modalSearchRow}>
+        <TextField
+          label="Поиск (необязательно)"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Название, город или ID"
+          hint="Можно оставить пустым и искать только по фильтрам выше"
+        />
+        <Button
+          type="button"
+          onClick={() => {
+            setSearchNextCursor(null);
+            void loadSearch("reset");
+          }}
+          disabled={loadingSearch}
+        >
+          {loadingSearch ? "Поиск…" : "Найти"}
+        </Button>
+      </div>
+      <AgentPartnerDiscoveryFilters layout="modal-more" {...agentDiscoveryFilterProps} />
+    </>
+  );
+
+  const agentFindResultsBlock = (
+    <>
+      {searchError ? (
+        <p className={styles.error} role="alert">
+          {searchError}
+        </p>
+      ) : null}
+      <div
+        className={styles.modalResults}
+        data-testid="agent-partner-search-results"
+        data-loading={loadingSearch ? "true" : "false"}
+      >
+        {loadingSearch && searchResults.length === 0 ? (
+          <p className={styles.partnerMeta}>Загружаем результаты…</p>
+        ) : null}
+        {!loadingSearch &&
+          searchResults.slice(0, 12).map((partner) => {
+            const metaLines = partnerSearchResultMeta(partner);
+            return (
+              <article key={partner.id} className={styles.modalResultRow}>
+                <div>
+                  <strong>{partnerTitle(partner)}</strong>
+                  {metaLines.map((line) => (
+                    <p key={line} className={styles.partnerMeta}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={Boolean(inviteTarget)}
+                  onClick={() => setInviteTarget(partner)}
+                >
+                  Пригласить
+                </Button>
+              </article>
+            );
+          })}
+        {!loadingSearch && searchResults.length === 0 ? (
+          <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
+        ) : null}
+      </div>
+    </>
+  );
+
+  if (isModalSurface) {
+    return (
+      <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
+        {agentModalSurface === "link" ? (
+          <PartnerLinkInvitePanel meProfile={meProfile} />
+        ) : (
+          <>
+            {agentFindSearchControls}
+            {agentFindResultsBlock}
+            {inviteTarget ? (
+              <PartnerInviteDialog
+                target={inviteTarget}
+                meProfile={meProfile}
+                busy={Boolean(busyId)}
+                onClose={() => setInviteTarget(null)}
+                onSent={() => {
+                  setInviteTarget(null);
+                  onCloseAgentModal?.();
+                  void loadList();
+                }}
+              />
+            ) : null}
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <Tabs
-        active={tab}
-        onChange={setTab}
-        items={[
-          { id: "list", label: "Мои партнёры", count: partnerships.length || undefined },
-          { id: "find", label: "Найти в RemCard" },
-          { id: "link", label: "Пригласить по ссылке" },
-        ]}
-      />
+    <div className={isAgentR04 ? styles.agentR04Root : undefined} data-variant={variant}>
+      {!isAgentR04 ? (
+        <Tabs
+          active={tab}
+          onChange={setTab}
+          items={[
+            { id: "list", label: "Мои партнёры", count: partnerships.length || undefined },
+            { id: "find", label: "Найти в RemCard" },
+            { id: "link", label: "Пригласить по ссылке" },
+          ]}
+        />
+      ) : null}
 
       {attentionCount > 0 ? (
         <Panel compact>
@@ -286,18 +661,92 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
       ) : null}
 
       {tab === "list" ? (
-        loadingList ? (
-          <Panel>Загрузка партнёрств…</Panel>
-        ) : partnerships.length === 0 ? (
-          <Panel
-            title="Партнёров пока нет"
-            hint="Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
-          />
-        ) : (
-          <div className={styles.list}>
-            {partnerships.map((partnership) => {
+        <>
+          {isAgentR04 ? (
+            <div className={styles.agentToolbarShell}>
+              <AgentR04ListToolbar
+                listMode={agentSegment === "invitations" ? "invitations" : "active"}
+                count={visiblePartnerships.length}
+                searchQuery={listSearch}
+                onSearchQueryChange={setListSearch}
+                viewMode={listViewMode}
+                onViewModeChange={setListViewMode}
+                archiveView={listArchiveView}
+                onArchiveViewChange={setListArchiveView}
+                partnerType={listPartnerType}
+                specialization={listSpecialization}
+                stageId={listStage}
+                city={listCity}
+                sort={listSort}
+                onPartnerTypeChange={setListPartnerType}
+                onSpecializationChange={setListSpecialization}
+                onStageChange={setListStage}
+                onCityChange={setListCity}
+                onSortChange={setListSort}
+                onResetFilters={resetListFilters}
+                taxonomyResetKey={taxonomyFilterResetKey}
+                chips={listFilterChips}
+              />
+            </div>
+          ) : null}
+          {loadingList ? (
+            <Panel>Загрузка партнёрств…</Panel>
+          ) : visiblePartnerships.length === 0 ? (
+            <Panel
+              title={
+                isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "incoming"
+                  ? "Входящих приглашений пока нет"
+                  : isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "outgoing"
+                    ? "Отправленных приглашений пока нет"
+                    : isAgentR04 && listArchiveView === "archive"
+                      ? "В архиве пока нет записей"
+                      : isAgentR04 && (listFilterChips.length || listSearch.trim())
+                        ? "Записей не найдено"
+                        : "Партнёров пока нет"
+              }
+              hint={
+                isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "incoming"
+                  ? "Здесь появятся предложения партнёров, которые можно принять или отклонить."
+                  : isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "outgoing"
+                    ? "Здесь будут приглашения, которые вы отправили и которые ждут ответа."
+                    : isAgentR04
+                      ? listFilterChips.length || listSearch.trim()
+                        ? "Попробуйте другие условия или сбросьте фильтры."
+                        : "Нажмите «Найти или пригласить партнёра», чтобы отправить первое приглашение."
+                      : "Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
+              }
+            />
+          ) : isAgentR04 ? (
+            <AgentPartnerCollection
+              partnerships={pagedPartnerships}
+              meId={meId}
+              viewMode={listViewMode}
+              busyId={busyId}
+              onRunAction={(id, action) => void runPartnershipAction(id, action)}
+              onUpdated={() => void loadList()}
+              termRequests={termRequests}
+              onLoadTermRequests={(id) => void loadTermRequests(id)}
+              expandedTermPartnershipId={expandedTermPartnershipId}
+              selectedIds={selectedPartnerIds}
+              onToggleSelect={togglePartnerSelect}
+              onToggleSelectAll={togglePartnerSelectAll}
+              page={listPage}
+              pageSize={listPageSize}
+              totalCount={visiblePartnerships.length}
+              onPageChange={setListPage}
+              onPageSizeChange={(size) => {
+                setListPageSize(size);
+                setListPage(0);
+              }}
+            />
+          ) : (
+            <div className={styles.list}>
+            {visiblePartnerships.map((partnership) => {
               const partner =
                 partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
+              const titles = isAgentR04
+                ? partnerDisplayTitle(partnership, meId)
+                : { official: partnerTitle(partner), alias: null };
               const statusLabel =
                 PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
               const needsResponse = partnershipNeedsMyResponse(partnership, meId);
@@ -307,44 +756,94 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 requests: [],
                 error: "",
               };
+              const activeTerms = partnership.terms.filter((t) => !t.isExcluded);
+              const termsPreview = activeTerms
+                .slice(0, 2)
+                .map((t) => `${displayCategoryLabel(t.category, t.categoryLabel)} ${t.storePercent}%`)
+                .join(" · ");
 
               return (
-                <Panel key={partnership.id} compact>
+                <Panel key={partnership.id} compact className={isAgentR04 ? styles.agentCard : undefined}>
                   <div className={styles.cardHeader}>
                     <div>
-                      <h3>{partnerTitle(partner)}</h3>
+                      <h3>{titles.alias ?? titles.official}</h3>
+                      {titles.alias ? (
+                        <p className={styles.partnerMeta}>Официально: {titles.official}</p>
+                      ) : null}
                       <p className={styles.partnerMeta}>
                         {partner.city ?? "Город не указан"}
                         {needsResponse ? " · ожидает вашего решения" : ""}
                       </p>
                     </div>
-                    <StatusBadge
-                      label={statusLabel}
-                      tone={partnershipStatusTone(partnership.status)}
-                    />
+                    <div className={styles.cardHeaderAside}>
+                      {isAgentR04 ? (
+                        <AgentPartnerRecordActions
+                          partnership={partnership}
+                          meId={meId}
+                          onUpdated={() => void loadList()}
+                        />
+                      ) : null}
+                      <StatusBadge
+                        label={statusLabel}
+                        tone={partnershipStatusTone(partnership.status)}
+                      />
+                    </div>
                   </div>
 
                   {partnership.note ? (
                     <p className={styles.note}>Комментарий: {partnership.note}</p>
                   ) : null}
 
-                  <p className={styles.termsCaption}>Действующие условия</p>
-                  <table className={styles.termsTable}>
-                    <thead>
-                      <tr>
-                        <th>Категория</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {partnership.terms.map((term) => (
-                        <tr key={term.id}>
-                          <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
-                          <td>{term.isExcluded ? "—" : `${term.storePercent}%`}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {isAgentR04 ? (
+                    <>
+                      <p className={styles.termsCaption}>
+                        Условия: {termsPreview || "—"}
+                        {activeTerms.length > 2 ? (
+                          <button
+                            type="button"
+                            className={styles.termsToggle}
+                            onClick={() =>
+                              setExpandedTermsId((id) =>
+                                id === partnership.id ? null : partnership.id,
+                              )
+                            }
+                          >
+                            {expandedTermsId === partnership.id ? "Свернуть" : "Подробнее"}
+                          </button>
+                        ) : null}
+                      </p>
+                      {expandedTermsId === partnership.id ? (
+                        <ul className={styles.termsCompactList}>
+                          {activeTerms.map((term) => (
+                            <li key={term.id}>
+                              {displayCategoryLabel(term.category, term.categoryLabel)} —{" "}
+                              {term.storePercent}%
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <p className={styles.termsCaption}>Действующие условия</p>
+                      <table className={styles.termsTable}>
+                        <thead>
+                          <tr>
+                            <th>Категория</th>
+                            <th>%</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {partnership.terms.map((term) => (
+                            <tr key={term.id}>
+                              <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
+                              <td>{term.isExcluded ? "—" : `${term.storePercent}%`}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
 
                   <div className={styles.rowActions}>
                     {actions.map((action) =>
@@ -364,13 +863,20 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                       ),
                     )}
                     {partnership.status === "ACTIVE" ? (
-                      <Button
-                        variant="secondary"
-                        disabled={busyId === partnership.id}
-                        onClick={() => void loadTermRequests(partnership.id)}
-                      >
-                        Изменение условий
-                      </Button>
+                      <>
+                        <Button
+                          variant="secondary"
+                          disabled={busyId === partnership.id}
+                          onClick={() => void loadTermRequests(partnership.id)}
+                        >
+                          Изменение условий
+                        </Button>
+                        {isAgentR04 ? (
+                          <Link href="/certificates" className={styles.certLink}>
+                            Создать сертификат
+                          </Link>
+                        ) : null}
+                      </>
                     ) : null}
                   </div>
 
@@ -397,62 +903,86 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 </Panel>
               );
             })}
-          </div>
-        )
+            </div>
+          )}
+        </>
       ) : tab === "link" ? (
         <PartnerLinkInvitePanel meProfile={meProfile} />
       ) : (
         <>
           <Panel compact>
-            <p className={styles.searchDescription}>{searchMeta.description}</p>
-            <div className={styles.searchGrid}>
-              <TextField
-                label="Поиск по имени"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={searchMeta.namePlaceholder}
-                hint="Поиск по публичному имени или названию организации"
+            {isAgentR04 ? (
+              <>
+                {agentFindSearchControls}
+                {searchError ? (
+                  <p className={styles.error} role="alert">
+                    {searchError}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className={styles.searchDescription}>{searchMeta.description}</p>
+                <div className={styles.searchGrid}>
+                  <TextField
+                    label="Поиск"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={searchMeta.namePlaceholder}
+                    hint="Слово, название или публичный ID"
+                  />
+                  <TextField
+                    label="Город"
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                  />
+                  <label className={styles.roleField}>
+                    <span>Кого ищем</span>
+                    <select
+                      value={searchRole}
+                      onChange={(event) => setSearchRole(event.target.value as SearchRole)}
+                    >
+                      {SEARCH_ROLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className={styles.searchAction}>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setSearchNextCursor(null);
+                        void loadSearch("reset");
+                      }}
+                      disabled={loadingSearch}
+                    >
+                      {loadingSearch ? "Поиск…" : "Найти"}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+            {!isAgentR04 ? (
+              <PartnerSearchFilters
+                productIds={filterProducts}
+                serviceIds={filterServices}
+                stageIds={filterStages}
+                onChangeProducts={setFilterProducts}
+                onChangeServices={setFilterServices}
+                onChangeStages={setFilterStages}
+                taxonomyFilterResetKey={taxonomyFilterResetKey}
               />
-              <TextField
-                label="Город"
-                value={city}
-                onChange={(event) => setCity(event.target.value)}
-              />
-              <label className={styles.roleField}>
-                <span>Кого ищем</span>
-                <select
-                  value={searchRole}
-                  onChange={(event) => setSearchRole(event.target.value as SearchRole)}
-                >
-                  {SEARCH_ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className={styles.searchAction}>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setSearchNextCursor(null);
-                    void loadSearch("reset");
-                  }}
-                  disabled={loadingSearch}
-                >
-                  {loadingSearch ? "Поиск…" : "Найти"}
+            ) : null}
+            {isAgentR04 && (query || city || searchPartnerType || hasCustomFilters) ? (
+              <div className={styles.collectionCount}>
+                <span>Результаты поиска: {searchResults.length}{searchNextCursor ? "+" : ""}</span>
+                <Button type="button" variant="secondary" onClick={resetSearchFilters}>
+                  Сбросить фильтры
                 </Button>
               </div>
-            </div>
-            <PartnerSearchFilters
-              productIds={filterProducts}
-              serviceIds={filterServices}
-              stageIds={filterStages}
-              onChangeProducts={setFilterProducts}
-              onChangeServices={setFilterServices}
-              onChangeStages={setFilterStages}
-              taxonomyFilterResetKey={taxonomyFilterResetKey}
-            />
+            ) : null}
           </Panel>
 
           {loadingSearch && searchResults.length === 0 ? (
@@ -590,7 +1120,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
           busy={busyId === inviteTarget.id}
           onClose={() => setInviteTarget(null)}
           onSent={() => {
-            setTab("list");
+            setTab(isAgentR04 ? (forcedTab ?? "list") : "list");
             void loadList();
           }}
         />

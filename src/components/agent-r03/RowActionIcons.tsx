@@ -91,6 +91,60 @@ export function IconEye(props: P) {
   );
 }
 
+export function IconMore(props: P) {
+  return (
+    <Base {...props}>
+      <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    </Base>
+  );
+}
+
+export function IconCheck(props: P) {
+  return (
+    <Base {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </Base>
+  );
+}
+
+export function IconX(props: P) {
+  return (
+    <Base {...props}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </Base>
+  );
+}
+
+export function IconPause(props: P) {
+  return (
+    <Base {...props}>
+      <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none" />
+      <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none" />
+    </Base>
+  );
+}
+
+export function IconPlay(props: P) {
+  return (
+    <Base {...props}>
+      <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />
+    </Base>
+  );
+}
+
+export function IconRevoke(props: P) {
+  return (
+    <Base {...props}>
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 3v6h6" />
+      <path d="M9 9 3 3" />
+    </Base>
+  );
+}
+
 export function rowActionIcon(id: string) {
   if (id === "share") return IconShare;
   if (id === "rename") return IconEdit;
@@ -99,5 +153,11 @@ export function rowActionIcon(id: string) {
   if (id === "delete") return IconDelete;
   if (id === "disable") return IconDisable;
   if (id === "open") return IconEye;
+  if (id === "more") return IconMore;
+  if (id === "accept") return IconCheck;
+  if (id === "reject") return IconX;
+  if (id === "pause") return IconPause;
+  if (id === "resume") return IconPlay;
+  if (id === "revoke") return IconRevoke;
   return null;
 }

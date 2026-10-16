@@ -180,12 +180,14 @@ describe("PartnersHub search empty state", () => {
       expect(screen.getByRole("button", { name: /Пригласить знакомого партнёра/i })).toBeEnabled();
     });
 
-    await userEvent.type(screen.getByLabelText(/Поиск по имени/i), "Магазин");
+    expect(screen.getByLabelText(/Город/i)).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText(/Имя мастера или компании/i);
+    await userEvent.type(searchInput, "Магазин");
     await userEvent.type(screen.getByPlaceholderText(/двери, сантехника/i), "двер");
     expect(screen.getByRole("button", { name: /Сбросить фильтры/i })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Сбросить фильтры/i }));
-    expect(screen.getByLabelText(/Поиск по имени/i)).toHaveValue("");
+    expect(searchInput).toHaveValue("");
     expect(screen.getByPlaceholderText(/двери, сантехника/i)).toHaveValue("");
   });
 
