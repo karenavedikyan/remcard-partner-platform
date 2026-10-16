@@ -1,10 +1,10 @@
 {
   "generatedAt": "2026-10-16T14:10:34.630Z",
   "contractVersion": "2026-10-16.r05.1",
-  "platformHead": "9fb1e744bb88d76b945b275a3e525152b01057af",
+  "platformHead": "4fff0362d49ba5f6b5623d7cae9961685fc50cf9",
   "navigatorHead": "33a9eb14671ad31ad1952679608000a104cf6437",
   "gitDirty": {
-    "platform": true,
+    "platform": false,
     "navigator": false
   },
   "rolesJsReferenceSha256": "0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc",
