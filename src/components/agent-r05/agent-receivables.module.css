@@ -2,8 +2,10 @@
   display: grid;
   gap: var(--space-4);
   min-width: 0;
+  width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  box-sizing: border-box;
   font-family: var(--font-body, "Manrope", system-ui, sans-serif);
 }
 
@@ -102,6 +104,8 @@
   justify-content: space-between;
   gap: var(--space-4);
   margin-block: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .focusHeader h2 {
@@ -111,8 +115,11 @@
 }
 
 .focusHeader > strong {
+  display: block;
   font-size: var(--text-lg);
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-variant-numeric: tabular-nums;
 }
 
@@ -517,8 +524,14 @@
     width: 100%;
   }
 
+  .breakdown div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
   .breakdown dd {
     text-align: left;
-    flex-basis: 100%;
+    word-break: break-word;
   }
 }
