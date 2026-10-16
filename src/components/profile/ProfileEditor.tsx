@@ -626,6 +626,9 @@ function ProfileEditorInner({
           basicsEditable={basicsEditable}
           onActivitiesChange={setPartnerActivities}
           layout={pureAgentCompactUi ? "parity-basics" : "default"}
+          onExitEditMode={
+            pureAgentCompactUi ? () => navigateSection("overview") : undefined
+          }
         />
         {!pureAgentCompactUi ? (
         <form onSubmit={saveProfile}>

@@ -17,6 +17,8 @@ export type AgentProfileDraftResponse = {
   payload: AgentProfileDraftPayload;
   savedProfile?: AgentProfileDraftPayload;
   hasDraft?: boolean;
+  /** Saved profile on server (independent of open draft). */
+  profileSaved?: boolean;
   profileComplete?: boolean;
 };
 

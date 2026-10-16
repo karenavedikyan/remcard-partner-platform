@@ -53,9 +53,12 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [formOpen, setFormOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailById, setDetailById] = useState<Record<string, AgentRequisitesItem>>({});
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState("");
   const copyFallbackRef = useRef<HTMLTextAreaElement>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [editExpectedVersion, setEditExpectedVersion] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const dialogTitleId = useId();
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -89,9 +92,35 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     return () => window.removeEventListener("keydown", onKey);
   }, [formOpen]);
 
+  const ensureFullDetail = useCallback(
+    async (id: string): Promise<AgentRequisitesItem | null> => {
+      const cached = detailById[id];
+      if (cached?.accountNumber != null || cached?.corrAccount != null) {
+        return cached;
+      }
+      setDetailLoadingId(id);
+      try {
+        const data = await fetchAgentRequisites(id);
+        const item = data.item;
+        setDetailById((prev) => ({ ...prev, [id]: item }));
+        return item;
+      } catch (caught) {
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить реквизиты");
+        return null;
+      } finally {
+        setDetailLoadingId((cur) => (cur === id ? null : cur));
+      }
+    },
+    [detailById],
+  );
+
+  const mergeListWithDetail = (item: AgentRequisitesItem): AgentRequisitesItem =>
+    detailById[item.id] ? { ...item, ...detailById[item.id] } : item;
+
   const openCreate = (trigger: HTMLElement | null) => {
     restoreFocusRef.current = trigger;
     setEditId(null);
+    setEditExpectedVersion(null);
     setForm(emptyForm());
     setFieldErrors({});
     setFormOpen(true);
@@ -102,9 +131,9 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     setPendingId(id);
     setError("");
     try {
-      const data = await fetchAgentRequisites(id);
-      const item = data.item;
+      const item = (await ensureFullDetail(id)) ?? (await fetchAgentRequisites(id)).item;
       setEditId(id);
+      setEditExpectedVersion(item.version);
       setForm({
         kind: (item.kind as FormState["kind"]) || "person",
         label: item.label ?? "",
@@ -133,7 +162,15 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     setError("");
     try {
       if (editId) {
-        await patchAgentRequisites(editId, { action: "revise", ...form });
+        const body: Record<string, unknown> = {
+          action: "revise",
+          ...form,
+          label: form.label.trim() || null,
+        };
+        if (editExpectedVersion != null) {
+          body.expectedVersion = editExpectedVersion;
+        }
+        await patchAgentRequisites(editId, body);
       } else {
         await createAgentRequisites({
           ...form,
@@ -143,6 +180,8 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
       }
       setFormOpen(false);
       restoreFocusRef.current?.focus();
+      setDetailById({});
+      setExpandedId(null);
       await reload();
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.body?.fields) {
@@ -164,6 +203,12 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     setError("");
     try {
       await patchAgentRequisites(id, { action });
+      setDetailById((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      if (expandedId === id) setExpandedId(null);
       await reload();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие");
@@ -172,21 +217,25 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
     }
   };
 
-  const formatCopyText = (item: AgentRequisitesItem) =>
-    [
-      item.label?.trim() || item.legalName,
-      KIND_LABELS[item.kind] ?? item.kind,
-      item.inn ? `ИНН ${item.inn}` : null,
-      item.bankName,
-      item.bik ? `БИК ${item.bik}` : null,
-      item.accountNumber ? `Р/с ${item.accountNumber}` : item.accountNumberMasked,
-      item.corrAccount ? `К/с ${item.corrAccount}` : item.corrAccountMasked,
-    ]
-      .filter(Boolean)
-      .join("\n");
+  const formatCopyText = (item: AgentRequisitesItem) => {
+    const lines: string[] = [];
+    if (item.label?.trim()) lines.push(`Название: ${item.label.trim()}`);
+    lines.push(item.legalName);
+    lines.push(KIND_LABELS[item.kind] ?? item.kind);
+    if (item.inn) lines.push(`ИНН ${item.inn}`);
+    if (item.kpp) lines.push(`КПП ${item.kpp}`);
+    if (item.bankName) lines.push(item.bankName);
+    if (item.bik) lines.push(`БИК ${item.bik}`);
+    const account = item.accountNumber ?? item.accountNumberMasked;
+    if (account) lines.push(`Р/с ${account}`);
+    const corr = item.corrAccount ?? item.corrAccountMasked;
+    if (corr) lines.push(`К/с ${corr}`);
+    return lines.join("\n");
+  };
 
   const copyItem = async (item: AgentRequisitesItem) => {
-    const text = formatCopyText(item);
+    const full = (await ensureFullDetail(item.id)) ?? mergeListWithDetail(item);
+    const text = formatCopyText(full);
     setCopyStatus("");
     try {
       await navigator.clipboard.writeText(text);
@@ -201,6 +250,15 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
         setCopyStatus("Не удалось скопировать автоматически");
       }
     }
+  };
+
+  const toggleExpanded = async (item: AgentRequisitesItem) => {
+    if (expandedId === item.id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(item.id);
+    await ensureFullDetail(item.id);
   };
 
   return (
@@ -220,7 +278,10 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
         </p>
       ) : null}
       <ul className={styles.requisitesList}>
-        {items.map((item) => (
+        {items.map((item) => {
+          const display = mergeListWithDetail(item);
+          const loadingDetail = detailLoadingId === item.id;
+          return (
           <li key={item.id} className={styles.bankCard}>
             <div className={styles.bankCardHead}>
               <strong>{item.label?.trim() || item.legalName}</strong>
@@ -233,37 +294,53 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
               {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
             </small>
             {expandedId === item.id ? (
+              loadingDetail ? (
+                <p className={styles.intro}>Загрузка полных реквизитов…</p>
+              ) : (
               <dl className={styles.facts}>
+                {display.label?.trim() ? (
+                  <div>
+                    <dt>Название</dt>
+                    <dd>{display.label.trim()}</dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>Получатель</dt>
-                  <dd>{item.legalName}</dd>
+                  <dd>{display.legalName}</dd>
                 </div>
-                {item.bik ? (
+                {display.kpp ? (
+                  <div>
+                    <dt>КПП</dt>
+                    <dd>{display.kpp}</dd>
+                  </div>
+                ) : null}
+                {display.bik ? (
                   <div>
                     <dt>БИК</dt>
-                    <dd>{item.bik}</dd>
+                    <dd>{display.bik}</dd>
                   </div>
                 ) : null}
-                {item.accountNumber ? (
+                {display.accountNumber ? (
                   <div>
                     <dt>Расчётный счёт</dt>
-                    <dd>{item.accountNumber}</dd>
+                    <dd>{display.accountNumber}</dd>
                   </div>
                 ) : null}
-                {item.corrAccount ? (
+                {display.corrAccount ? (
                   <div>
                     <dt>Корр. счёт</dt>
-                    <dd>{item.corrAccount}</dd>
+                    <dd>{display.corrAccount}</dd>
                   </div>
                 ) : null}
               </dl>
+              )
             ) : null}
             <div className={styles.requisitesItemActions}>
               <button
                 type="button"
                 className={styles.btn}
-                disabled={disabled || pendingId === item.id}
-                onClick={() => setExpandedId((id) => (id === item.id ? null : item.id))}
+                disabled={disabled || pendingId === item.id || loadingDetail}
+                onClick={() => void toggleExpanded(item)}
               >
                 {expandedId === item.id ? "Скрыть" : "Посмотреть"}
               </button>
@@ -315,7 +392,8 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
               </button>
             </div>
           </li>
-        ))}
+        );
+        })}
       </ul>
       {copyStatus ? (
         <p className={styles.intro} role="status" data-testid="bank-copy-status">

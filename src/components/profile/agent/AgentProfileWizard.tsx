@@ -60,6 +60,8 @@ type AgentProfileWizardProps = {
   onProfileComplete?: () => void;
   /** Open editor on saved profile (basics tab) without nested profile/requisites switch. */
   startInEditMode?: boolean;
+  /** Pure-agent basics tab: return to overview after cancel. */
+  onExitEditMode?: () => void;
 };
 
 export function AgentProfileWizard({
@@ -67,6 +69,7 @@ export function AgentProfileWizard({
   disabled,
   onProfileComplete,
   startInEditMode = false,
+  onExitEditMode,
 }: AgentProfileWizardProps) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -78,6 +81,8 @@ export function AgentProfileWizard({
   const [draft, setDraft] = useState<AgentProfileDraftPayload>({});
   const [editing, setEditing] = useState(true);
   const [profileComplete, setProfileComplete] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const forceViewSummaryRef = useRef(false);
   const [conflict, setConflict] = useState<{ serverVersion: number; serverEpoch: number } | null>(
     null,
   );
@@ -110,10 +115,18 @@ export function AgentProfileWizard({
       setHasDraft(Boolean(data.hasDraft));
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
       syncVersion(data.version ?? 0, data.draftEpoch ?? 0);
+      const saved =
+        typeof data.profileSaved === "boolean"
+          ? data.profileSaved
+          : Boolean(data.profileComplete);
+      setProfileSaved(saved);
       setProfileComplete(Boolean(data.profileComplete));
-      setEditing(
-        startInEditMode || Boolean(data.hasDraft) || !data.profileComplete,
-      );
+      if (forceViewSummaryRef.current) {
+        forceViewSummaryRef.current = false;
+        setEditing(false);
+      } else {
+        setEditing(startInEditMode || Boolean(data.hasDraft) || !saved);
+      }
       setConflict(null);
     } catch (caught) {
       if (gen !== hydrateGen.current) return;
@@ -246,7 +259,10 @@ export function AgentProfileWizard({
     }
     if (hasDraft) {
       try {
-        await discardAgentProfileDraft({ expectedEpoch: draftEpochRef.current });
+        await discardAgentProfileDraft({
+          expectedEpoch: draftEpochRef.current,
+          expectedVersion: versionRef.current,
+        });
       } catch (caught) {
         setBanner({
           kind: "error",
@@ -257,9 +273,17 @@ export function AgentProfileWizard({
         });
         return;
       }
+    } else {
+      setDraft({ ...savedProfile });
+      setHasDraft(false);
     }
+    forceViewSummaryRef.current = true;
     setEditing(false);
     setBanner(null);
+    if (startInEditMode && onExitEditMode) {
+      onExitEditMode();
+      return;
+    }
     await hydrate();
   };
 
@@ -275,10 +299,10 @@ export function AgentProfileWizard({
   }, [draft, editing]);
 
   useEffect(() => {
-    if (editing && profileComplete) {
+    if (editing && profileSaved) {
       editBaselineRef.current = { ...savedProfile };
     }
-  }, [editing, profileComplete, savedProfile]);
+  }, [editing, profileSaved, savedProfile]);
 
   const onSubmitStep = async (event: FormEvent) => {
     event.preventDefault();
@@ -315,6 +339,7 @@ export function AgentProfileWizard({
         expectedEpoch: saved.epoch,
       });
       setProfileComplete(true);
+      setProfileSaved(true);
       setHasDraft(false);
       setEditing(false);
       setBanner({ kind: "success", text: "Профиль сохранён." });
@@ -370,7 +395,7 @@ export function AgentProfileWizard({
     return <p className={styles.bannerError}>{loadError}</p>;
   }
 
-  if (!editing && profileComplete && !hasDraft) {
+  if (!editing && profileSaved) {
     const display = savedProfile.displayName?.trim() ? savedProfile : draft;
     const name = display.displayName?.trim() || "—";
     return (
@@ -511,7 +536,7 @@ export function AgentProfileWizard({
               </div>
             </div>
           ) : null}
-          {profileComplete && hasDraft ? (
+          {profileSaved && hasDraft ? (
             <p className={styles.intro} role="status">
               Есть незавершённый черновик — продолжите редактирование или сохраните черновик.
             </p>
@@ -669,7 +694,7 @@ export function AgentProfileWizard({
                     Назад
                   </button>
                 ) : null}
-                {profileComplete && editing ? (
+                {profileSaved && editing ? (
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}

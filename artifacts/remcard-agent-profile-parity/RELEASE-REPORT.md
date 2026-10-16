@@ -1,48 +1,44 @@
-# Agent profile parity RC (in progress toward owner RC)
+# Agent profile parity RC (corrective pass — not owner RC)
 
-**Not merge/deploy/production.** R03-PARITY-TAIL waits on this control point.
+**Not merge/deploy/production.** R03-PARITY-TAIL waits on full profile RC.
 
-## Git
+## Git (update after push)
 
-| Repo | Branch | Role |
-|------|--------|------|
-| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` PR **#19** | UI + server gate on `/profile` |
-| remcard-navigator | `cursor/agent-profile-parity-b3e3` | DELETE draft, requisites `label` column |
+| Repo | Branch | PR |
+|------|--------|-----|
+| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | **#19** |
+| remcard-navigator | `cursor/agent-profile-parity-b3e3` | **#682** |
 
-**Stack base:** `cursor/r03-ui-parity-b3e3` (PR **#18** @ `daf9410…`).
+**Stack base:** `cursor/r03-ui-parity-b3e3` (#18 / #681).
 
-## Verified commands (this run)
+## This corrective pass
+
+- **Draft discard:** BFF `DELETE` on `/api/pro/agent-profile/draft` only; prof test allowlist; `expectedVersion`+epoch on DELETE; `profileSaved` on GET; wizard cancel/hydrate + basics → overview.
+- **Bank:** detail GET for view/copy; copy includes label, legalName, KPP, full accounts; revise label + `expectedVersion`; version check before revise side effects.
+- **Migration:** additive `label` column migration + `prof-r02-requisites-label-migrate.mjs` (checksum pinned in TEST-RESULTS).
+- **Tests:** proxy/policy regression; wizard cancel tests; navigator route integration (draft DELETE, label detail, revise 409).
+
+## Verification
 
 ```bash
-npm run build                                    # exit 0
-npx vitest run src/lib/profile-sections.test.ts \
-  src/components/profile/agent/AgentProfileWizard.regression.test.tsx  # 13/13 pass
-node scripts/agent-profile-parity-rc.mjs         # writes TEST-RESULTS.json
-# Optional captures:
-AGENT_PROFILE_VISUAL=1 node scripts/agent-profile-parity-rc.mjs
+# Platform
+npm run build
+npx vitest run src/lib/profile-sections.test.ts src/lib/remcard-proxy-r02.test.ts \
+  src/components/profile/agent/AgentProfileWizard.regression.test.tsx
+node scripts/agent-profile-parity-rc.mjs
+
+# Navigator
+npm run build
+npx vitest run src/lib/__tests__/profTestRoutePolicy.test.ts
+# With disposable DB:
+PROF_R02_RUN_PG=1 node --test scripts/lib/__tests__/prof-r02-requisites-label-controlled-apply.integration.test.mjs
 ```
 
-See `TEST-RESULTS.json` for `platformSha`, step exit codes, and counts.
+## Evidence remainder (honest)
 
-## Closed since first slice (accepted)
+- **PNG matrix:** `scripts/agent-profile-parity-full.mjs` ready; run failed locally after prod `next start` on 3031/3032 — `GET /api/auth/me` returns `{ user: null }` for fixture-minted token (JWT/env alignment on long-running servers). Earlier probe: stale `next dev` on 3032 returned `Path not allowed` for `/pro/r03/status` until production start.
+- **No CAPTURED / pixel PASS** until screenshots land under `artifacts/remcard-agent-profile-parity/screenshots/`.
 
-- Pure agent tabs (Обзор / Основные данные / Уведомления)
-- No legacy `ProfileOverviewSection` / branch switcher in compact mode
-- Parity overview: wizard + bank; basics opens editor; no nested Профиль/Реквизиты tabs
+## Documented capture exceptions
 
-## Added this pass
-
-- **SSR agent gate** on `/profile` — avoids 6-tab flash when server resolves eligibility
-- **Wizard:** step advance validates name/city; review facts order; **Отменить** with draft discard (DELETE `/agent-profile/draft`)
-- **Bank:** reference heading/marker, optional **Название набора**, view/hide, copy + manual fallback, no `vN` in primary UI
-
-## Honest remainder (owner scope)
-
-- Full paired ref/impl PNG matrix (1440/375/320, light/dark, saved/wizard/bank states)
-- Browser E2E matrix (finish/reload/bank types/409) as dedicated script run
-- Pixel/visual PASS claims — **not** asserted until captures land in `screenshots/`
-
-## Operator notes
-
-- Test banner remains visible on impl captures (documented exception).
-- Demo-only reference chrome may be hidden per existing r02 visual allowlist.
+- Test banner on impl; product chrome may be masked per existing r02 visual rules.

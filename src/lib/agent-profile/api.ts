@@ -27,7 +27,10 @@ export async function patchAgentProfileDraft(body: {
   });
 }
 
-export async function discardAgentProfileDraft(body: { expectedEpoch: number }) {
+export async function discardAgentProfileDraft(body: {
+  expectedEpoch: number;
+  expectedVersion: number;
+}) {
   return remcardFetch<{ discarded: boolean }>("/api/pro/agent-profile/draft", {
     method: "DELETE",
     body,

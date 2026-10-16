@@ -24,6 +24,7 @@ type AgentProfileSectionProps = {
   basicsEditable: boolean;
   onActivitiesChange?: (activities: string[]) => void;
   layout?: AgentProfileSectionLayout;
+  onExitEditMode?: () => void;
 };
 
 export function AgentProfileSection({
@@ -32,6 +33,7 @@ export function AgentProfileSection({
   basicsEditable,
   onActivitiesChange,
   layout = "default",
+  onExitEditMode,
 }: AgentProfileSectionProps) {
   const [status, setStatus] = useState<AgentProfileStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +120,7 @@ export function AgentProfileSection({
       disabled={!basicsEditable}
       onProfileComplete={() => void loadStatus()}
       startInEditMode={parityBasics}
+      onExitEditMode={parityBasics ? onExitEditMode : undefined}
     />
   );
 
