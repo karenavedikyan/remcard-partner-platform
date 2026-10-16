@@ -25,64 +25,108 @@ function loadRuntimeEnv() {
   return env;
 }
 
-async function bffJson(origin, cookies, upstreamPath) {
-  const res = await fetch(`${origin}/api/remcard${upstreamPath}`, {
+function cookieHeader(cookies) {
+  return cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+}
+
+async function bffJson(platformOrigin, cookies, upstreamPath) {
+  const res = await fetch(`${platformOrigin}/api/remcard${upstreamPath}`, {
     headers: {
-      Cookie: cookies.map((c) => `${c.name}=${c.value}`).join('; '),
-      Origin: origin,
+      Cookie: cookieHeader(cookies),
+      Origin: platformOrigin,
     },
   });
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
-async function main() {
-  mkdirSync(ART, { recursive: true });
-  const runtimeEnv = loadRuntimeEnv();
-  const platformOrigin = runtimeEnv.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3040';
-
-  const platBuild = spawnSync('pnpm', ['run', 'build'], { cwd: ROOT, encoding: 'utf8' });
-  const navBuild = spawnSync('npm', ['run', 'build'], { cwd: NAV_ROOT, encoding: 'utf8' });
-  spawnSync('node', ['scripts/admin-test-local-stack.mjs'], {
-    cwd: ROOT,
-    env: runtimeEnv,
-    encoding: 'utf8',
-  });
-
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
-  const functional = {};
-  const steps = [];
-
+async function adminLogin(page, platformOrigin, creds) {
   await page.goto(`${platformOrigin}/login?mode=admin`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
-  const creds = { login: process.env.PROF_ADMIN_LOGIN || 'admin', password: process.env.PROF_ADMIN_PASSWORD || 'admin' };
-  await page.locator('input[autocomplete="username"]').fill(creds.login);
+  await page.locator('[data-testid="admin-login-pending"]').waitFor({ state: 'hidden', timeout: 120_000 }).catch(() => null);
+  const usernameInput = page.locator('input[autocomplete="username"]');
+  await usernameInput.waitFor({ state: 'visible', timeout: 120_000 });
+  await usernameInput.fill(creds.login);
   await page.locator('input[autocomplete="current-password"]').fill(creds.password);
   await page.getByRole('button', { name: 'Войти' }).click();
   await page.waitForURL(/\/admin\/test-users/, { timeout: 120_000 });
+}
 
-  const agentLabel = `R05 agent ${Date.now()}`;
+async function createTestUser(page, kind, displayName) {
   const createPanel = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Создать' }) });
-  await createPanel.getByLabel('Тип').selectOption('agent');
-  await createPanel.getByLabel('Имя').fill(agentLabel);
+  await createPanel.getByLabel('Тип').selectOption(kind);
+  await createPanel.getByLabel('Имя').fill(displayName);
   await createPanel.getByRole('button', { name: 'Создать' }).click();
-  await page.locator('li').filter({ hasText: agentLabel }).waitFor({ timeout: 30_000 });
-  await page.locator('li').filter({ hasText: agentLabel }).getByRole('button', { name: 'Открыть ЛК' }).click();
+  await page.locator('li').filter({ hasText: displayName }).waitFor({ timeout: 30_000 });
+}
+
+async function enterTestUser(page, displayName) {
+  const card = page.locator('li').filter({ hasText: displayName });
+  const enterWait = page.waitForResponse(
+    (r) => r.url().includes('/test-users/') && r.url().includes('/enter') && r.status() === 200,
+    { timeout: 45_000 },
+  );
+  await card.getByRole('button', { name: 'Открыть ЛК' }).click();
+  await enterWait;
   await page.waitForLoadState('networkidle');
-  await finishAgentProfileInBrowser(page, platformOrigin);
+}
 
-  const cookies = await context.cookies();
-  const me = await bffJson(platformOrigin, cookies, '/api/auth/me');
-  const agentId = me.body?.user?.id;
-  steps.push({ step: 'test_session', ok: Boolean(agentId), agentId });
+async function waitForTestSession(context, platformOrigin, ms = 45_000) {
+  const start = Date.now();
+  while (Date.now() - start < ms) {
+    const cookies = await context.cookies();
+    const me = await bffJson(platformOrigin, cookies, '/api/auth/me');
+    if (me.body?.profTestSession?.active && me.body?.user?.isProfTestUser) return me;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return null;
+}
 
-  const seed = spawnSync('npx', ['tsx', 'scripts/r05ParityReceivablesSeed.ts', agentId], {
+async function main() {
+  mkdirSync(ART, { recursive: true });
+  const platBuild = spawnSync('pnpm', ['run', 'build'], { cwd: ROOT, encoding: 'utf8' });
+  const navBuild = spawnSync('npm', ['run', 'build'], { cwd: NAV_ROOT, encoding: 'utf8' });
+  spawnSync('node', ['scripts/admin-test-local-stack.mjs'], { cwd: ROOT, encoding: 'utf8' });
+  const runtimeEnv = loadRuntimeEnv();
+  spawnSync('pnpm', ['exec', 'tsx', 'scripts/admin-test-012-lifecycle.ts', '--fixtures-only'], {
     cwd: NAV_ROOT,
-    env: runtimeEnv,
+    env: { ...process.env, ...runtimeEnv },
     encoding: 'utf8',
   });
-  steps.push({ step: 'r05_seed', exitCode: seed.status });
+
+  const meta = JSON.parse(readFileSync(path.join(RUN_DIR, 'meta.json'), 'utf8'));
+  const platformOrigin = meta.platformOrigin;
+  const creds = {
+    login: process.env.ADMIN_TEST_LOGIN?.trim() || 'e2e-admin@remcard.test',
+    password: process.env.ADMIN_TEST_PASSWORD?.trim() || 'E2E-Admin-Pass-12chars',
+  };
+
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  page.on('dialog', (d) => d.accept());
+
+  const agentDisplayName = `R05 ${Date.now()} · Агент`;
+  const steps = [];
+  const functional = {};
+
+  await adminLogin(page, platformOrigin, creds);
+  await createTestUser(page, 'agent', agentDisplayName);
+  await enterTestUser(page, agentDisplayName);
+
+  const testMe = await waitForTestSession(context, platformOrigin);
+  if (!testMe?.body?.user?.id) throw new Error('test_session_not_active');
+  const agentId = testMe.body.user.id;
+  steps.push({ step: 'test_session', ok: true, agentId });
+
+  let cookies = await context.cookies();
+  await finishAgentProfileInBrowser(page, platformOrigin, cookieHeader(cookies));
+  cookies = await context.cookies();
+
+  const seed = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r05ParityReceivablesSeed.ts', agentId], {
+    cwd: NAV_ROOT,
+    env: { ...process.env, ...runtimeEnv },
+    encoding: 'utf8',
+  });
+  steps.push({ step: 'r05_seed', exitCode: seed.status, stdout: (seed.stdout || '').slice(0, 200) });
 
   const r05 = await bffJson(platformOrigin, cookies, '/api/pro/r05/status');
   functional.r05GateOn = r05.body?.featureEnabled === true;
@@ -106,7 +150,15 @@ async function main() {
     cookies,
     '/api/pro/wallet/agent-receivables/partners?page=1&pageSize=25&status=open&sort=debt-desc',
   );
-  functional.partnersApiOk = partnersFresh.status === 200 && (partnersFresh.body?.partners?.length ?? 0) > 0;
+  functional.partnersApiOk =
+    partnersFresh.status === 200 && (partnersFresh.body?.partners?.length ?? 0) > 0;
+
+  const shots = path.join(ART, 'screenshots');
+  mkdirSync(shots, { recursive: true });
+  await page.screenshot({
+    path: path.join(shots, 'impl-r05-partners-1440-light.png'),
+    fullPage: true,
+  });
 
   await browser.close();
 
@@ -134,6 +186,7 @@ async function main() {
     steps,
     pass,
     status: pass ? 'READY_FOR_REVIEW' : 'BLOCKED',
+    visualParityOk: false,
   };
   writeFileSync(path.join(ART, 'TEST-RESULTS.json'), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));

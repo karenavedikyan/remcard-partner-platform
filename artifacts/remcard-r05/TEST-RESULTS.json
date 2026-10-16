@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-10-16T13:38:03.984Z",
+  "platformHead": "e7779c4dd9c7bc29a0a0326985e1950e2cf71212",
+  "navigatorHead": "81ad0625ec33132aaafb436fa767c96a43f9fce4",
+  "commands": [
+    {
+      "cmd": "pnpm run build (platform)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npm run build (navigator)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/r05-browser-acceptance.mjs",
+      "exitCode": 0
+    }
+  ],
+  "functional": {
+    "r05GateOn": true,
+    "r05Eligible": true,
+    "overviewOk": true,
+    "tileVisible": true,
+    "partnersVisible": true,
+    "partnersApiOk": true
+  },
+  "steps": [
+    {
+      "step": "test_session",
+      "ok": true,
+      "agentId": "cmvb0ixs20003js9nc8gu0syd"
+    },
+    {
+      "step": "r05_seed",
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"orderId\":\"cmvb0j3370006jsmx31otq4e4\",\"agentBonusId\":\"cmvb0j33b0009jsmx82gabuxc\",\"confirmedKopecks\":540000,\"storeDisplay\":\"seed-store\"}\n"
+    }
+  ],
+  "pass": true,
+  "status": "READY_FOR_REVIEW",
+  "visualParityOk": false
+}
