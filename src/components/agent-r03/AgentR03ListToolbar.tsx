@@ -61,8 +61,8 @@ export function AgentR03ListToolbar({
   return (
     <div className={styles.collectionToolbar} data-testid="agent-r03-collection-toolbar">
       <div className={styles.collectionTools}>
-        <label className={styles.fieldSearch}>
-          <span className="sr-only">Поиск</span>
+        <label className={`${styles.fieldSearch} ${styles.fieldSearchLabeled}`}>
+          Поиск
           <input
             className={styles.searchInput}
             type="search"

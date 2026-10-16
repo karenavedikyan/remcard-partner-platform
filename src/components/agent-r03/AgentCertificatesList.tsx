@@ -367,7 +367,7 @@ export function AgentCertificatesList() {
             ))}
           </div>
           <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-            <table className={styles.dataTable}>
+            <table className={`${styles.dataTable} ${styles.collectionTable}`}>
               <thead>
                 <tr>
                   <th />
@@ -405,7 +405,11 @@ export function AgentCertificatesList() {
                       />
                     </td>
                     <td>
-                      <RecordRowActions ariaLabel="Действия" actions={certRowActions(cert)} />
+                      <RecordRowActions
+                        ariaLabel="Действия"
+                        actions={certRowActions(cert)}
+                        variant="listRow"
+                      />
                     </td>
                   </tr>
                 ))}

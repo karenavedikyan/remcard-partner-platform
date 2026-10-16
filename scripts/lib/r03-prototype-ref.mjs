@@ -2,6 +2,19 @@
  * Drive frozen remcard-profile-wizard prototype to a verified agent cabinet section.
  */
 
+export const REF_PARITY_CAPTURE_CSS = `
+  .demo-top,
+  .review-toolbar,
+  .review-details,
+  details.review-details,
+  .page-header .pill,
+  .app-footer { display: none !important; }
+`;
+
+export async function applyRefParityCaptureStyles(page) {
+  await page.addStyleTag({ content: REF_PARITY_CAPTURE_CSS });
+}
+
 export async function driveRefAgentSection(page, baseUrl, opts) {
   const section = opts.section;
   const viewMode = opts.viewMode ?? 'list';
@@ -81,6 +94,8 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(400);
   }
+
+  await applyRefParityCaptureStyles(page);
 
   const verify = await verifyRefAgentSection(page, opts);
   if (!verify.ok) return verify;

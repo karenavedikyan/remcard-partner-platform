@@ -1,21 +1,20 @@
 {
-  "platformSha": "7371e4ac079ae2b09e770ec5b00b145a3f6d9db6",
-  "platformShaCaptureCode": "934a9f482fc8c3bd269b6e7bfdcd9e2fa3ef13e8",
-  "navigatorSha": "d7329006bdcdde20905025670f4efc87cd62b678",
+  "platformSha": "pending_after_push",
+  "navigatorSha": "pending_after_push",
   "build": {
     "command": "npm run build",
     "status": "pass",
-    "when": "2026-10-15"
+    "when": "2026-10-16"
   },
   "vitest": {
-    "command": "npx vitest run src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/lib/agent-nav/sections.test.ts",
+    "command": "npx vitest run src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-nav/sections.test.ts",
     "status": "pass",
-    "tests": 4
+    "tests": 6
   },
   "navigatorTests": {
     "command": "pnpm exec tsx --test src/lib/__tests__/agentCertificateList.test.ts",
     "status": "pass",
-    "tests": 3
+    "tests": 4
   },
   "visualRunner": {
     "script": "scripts/r03-ui-parity-visual.mjs",
@@ -23,6 +22,7 @@
     "ok": true,
     "failures": [],
     "captureCount": 18,
+    "pngCount": 237,
     "artifacts": "artifacts/remcard-r03-ui-parity/screenshots/",
     "capturesJson": "artifacts/remcard-r03-ui-parity/screenshots/captures.json"
   },
@@ -30,11 +30,15 @@
     "status": "pass",
     "steps": [
       "certificates_cards",
+      "cert_terms_open",
       "certificates_list",
       "certificates_search",
       "filters_open",
       "selection",
       "client_create_open",
+      "client_rename",
+      "client_archive",
+      "client_restore",
       "reload"
     ]
   }

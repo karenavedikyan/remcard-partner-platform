@@ -18,6 +18,7 @@ import {
   assertDarkThemeMeasurement,
   measureCabinetThemeInPage,
 } from './r03-theme-assert.mjs';
+import { PARITY_CERT_ALIASES, PARITY_CLIENTS } from './r03-parity-fixture.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const NAV_ROOT = process.env.R02_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
@@ -311,14 +312,15 @@ export async function openImplSection(page, plat, section) {
 export async function seedUiParityFixtures(plat, cookieHeader, userId) {
   const headers = { Cookie: cookieHeader, 'content-type': 'application/json', Origin: plat };
   const clients = [];
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 0; i < PARITY_CLIENTS.length; i++) {
+    const row = PARITY_CLIENTS[i];
     const res = await fetch(`${plat}/api/remcard/api/pro/agent-clients`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        displayName: `Parity Client ${i} with long display name for layout`,
-        city: i === 1 ? 'Краснодар' : 'Сочи',
-        note: i === 2 ? 'Задача: подобрать материалы для ремонта' : 'Задача parity',
+        displayName: row.displayName,
+        city: row.city,
+        note: row.note,
       }),
     });
     const body = await res.json();
@@ -339,7 +341,7 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId) {
           ],
         },
       ],
-      userAlias: 'Parity cert multi-category',
+      userAlias: PARITY_CERT_ALIASES[0],
     },
     {
       partners: [
@@ -350,7 +352,7 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId) {
           categories: [{ category: 'plumb', categoryLabel: 'Сантехника', discountPercent: 5.5, issuerPercent: 0 }],
         },
       ],
-      userAlias: 'Parity fractional 5.5%',
+      userAlias: PARITY_CERT_ALIASES[1],
     },
     {
       partners: [
@@ -362,7 +364,7 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId) {
         },
       ],
       agentClientId: clients[0]?.id,
-      userAlias: 'Parity linked client cert',
+      userAlias: PARITY_CERT_ALIASES[2],
     },
   ];
 

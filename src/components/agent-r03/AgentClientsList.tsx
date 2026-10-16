@@ -24,6 +24,11 @@ import { SharePreviewDialog } from "./SharePreviewDialog";
 import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
 import { AgentR03Pagination } from "./AgentR03Pagination";
 import { AgentR03MobileClientRow } from "./AgentR03MobileClientRow";
+import {
+  clientPurchaseStatusLabel,
+  clientRowCaption,
+  clientRowDetail,
+} from "@/lib/agent-r03/clientListRow";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -36,13 +41,6 @@ const emptyMeta: AgentR03ListMeta = {
   hasNextPage: false,
   hasPrevPage: false,
 };
-
-function clientPurchaseStatus(client: AgentClientRow, archivedView: boolean) {
-  if (archivedView) return "В архиве";
-  if (client.hasPurchases === true) return "Есть покупки";
-  if (client.hasPurchases === false) return "Пока без покупок";
-  return "—";
-}
 
 export function AgentClientsList() {
   const router = useRouter();
@@ -340,14 +338,15 @@ export function AgentClientsList() {
                     <Link href={`/clients/${client.id}`} className={styles.openLink}>
                       {client.displayName}
                     </Link>
-                    <span className={styles.statusPill}>{clientPurchaseStatus(client, archived)}</span>
+                    <span className={styles.purchasePill}>
+                      {clientPurchaseStatusLabel(client, archived)}
+                    </span>
                   </div>
                 </div>
-                <p className={styles.meta}>
-                  {client.certificateCount}{" "}
-                  {client.certificateCount === 1 ? "сертификат" : "сертификатов"}
-                </p>
-                <p className={styles.meta}>{client.note?.trim() || "Задача пока не указана"}</p>
+                {clientRowCaption(client) ? (
+                  <p className={styles.meta}>{clientRowCaption(client)}</p>
+                ) : null}
+                <p className={styles.meta}>{clientRowDetail(client)}</p>
                 <div className={styles.cardBottom}>
                   <span className={styles.meta}>
                     {client.city ?? "Город не указан"}
@@ -379,7 +378,7 @@ export function AgentClientsList() {
             ))}
           </div>
           <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-            <table className={styles.dataTable}>
+            <table className={`${styles.dataTable} ${styles.collectionTable}`}>
               <thead>
                 <tr>
                   <th />
@@ -403,25 +402,21 @@ export function AgentClientsList() {
                       <Link href={`/clients/${client.id}`} className={styles.collectionOpenLink}>
                         {client.displayName}
                       </Link>
-                      <small className={styles.collectionCaption}>
-                        {client.certificateCount} сертификатов
-                      </small>
+                      {clientRowCaption(client) ? (
+                        <small className={styles.collectionCaption}>{clientRowCaption(client)}</small>
+                      ) : null}
                     </td>
-                    <td className={styles.collectionDetail}>
-                      {client.note?.trim() || "Задача не указана"}
-                      <br />
-                      {client.city ?? "—"}
-                      {client.phone ? ` · ${formatPhoneForDisplay(client.phone)}` : ""}
-                    </td>
+                    <td className={styles.collectionDetail}>{clientRowDetail(client)}</td>
                     <td>
-                      <span className={styles.statusPill}>
-                        {clientPurchaseStatus(client, archived)}
+                      <span className={styles.purchasePill}>
+                        {clientPurchaseStatusLabel(client, archived)}
                       </span>
                     </td>
-                    <td>
+                    <td className={styles.collectionRowAction}>
                       <RecordRowActions
                         ariaLabel="Действия"
                         actions={clientRowActions(client, true)}
+                        variant="listRow"
                       />
                     </td>
                   </tr>

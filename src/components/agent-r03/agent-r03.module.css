@@ -63,13 +63,15 @@
 }
 
 .statValue {
-  font-size: 1.75rem;
+  display: block;
+  font-size: var(--text-xl, 1.25rem);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: 1.25;
+  margin: 0.5rem 0;
 }
 
-.statCard small {
+.statCaption {
   font-size: var(--text-sm);
   color: var(--muted);
 }
@@ -129,6 +131,11 @@
   font-size: var(--text-sm);
   flex: 1 1 280px;
   min-width: 0;
+}
+
+.fieldSearchLabeled {
+  font-weight: 700;
+  align-self: end;
 }
 
 .showSelect,
@@ -229,58 +236,86 @@
   color: var(--muted);
 }
 
-.paginationBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
+.purchasePill {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 0.15rem 0.65rem;
+  border: 1px solid var(--r03-line);
+  border-radius: 999px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.collectionFooter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-top: 1rem;
-}
-
-.paginationBar .fieldInlineCompact {
-  flex: 0 0 auto;
-  width: auto;
-}
-
-.paginationBar .pageSizeSelect {
-  width: auto;
-  min-width: 4.5rem;
-}
-
-.paginationMeta {
-  margin-left: auto;
   font-size: var(--text-sm);
   color: var(--muted);
 }
 
-.paginationNav {
+.collectionFooterField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+
+.collectionFooterSelect {
+  width: 5rem;
+  min-height: 40px;
+  padding: 0.35rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--r03-line);
+  background: var(--surface);
+  font: inherit;
+}
+
+.collectionFooterPages {
+  font-size: inherit;
+  color: inherit;
+}
+
+.collectionFooterNav {
   display: flex;
   gap: 0.5rem;
+  margin-left: auto;
 }
 
 .certCard {
   border: 0;
   border-radius: 0;
-  padding: 1.25rem 1.25rem 1rem;
-  background: linear-gradient(135deg, var(--surface) 50%, color-mix(in srgb, var(--r03-accent) 6%, var(--surface)));
-  border-top: 4px solid var(--r03-accent);
+  padding: 1.25rem;
+  background: linear-gradient(
+    135deg,
+    var(--surface) 50%,
+    color-mix(in srgb, var(--r03-accent) 6%, var(--surface))
+  );
+  border-top: 3px solid var(--r03-accent);
   display: grid;
   gap: 0.75rem;
   position: relative;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.certCardWatermark {
+.certCard:global(.remcard-certificate)::before {
+  content: "R";
   position: absolute;
-  right: 1rem;
-  top: 3.5rem;
-  font-size: 4rem;
-  font-weight: 900;
-  color: color-mix(in srgb, var(--r03-accent) 12%, transparent);
-  line-height: 1;
+  font-size: 110px;
+  font-weight: 800;
+  right: 24px;
+  top: 32px;
+  color: var(--r03-accent);
+  opacity: 0.055;
   pointer-events: none;
-  user-select: none;
+  line-height: 1;
 }
 
 .certOffers {
@@ -330,8 +365,9 @@
 }
 
 .certCardTitle {
-  font-weight: 700;
-  font-size: 1.05rem;
+  font-weight: 800;
+  font-size: 1.375rem;
+  line-height: 1.25;
   color: inherit;
   text-decoration: none;
   word-break: break-word;
@@ -340,34 +376,58 @@
 .usageCaption {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  margin: 0.35rem 0 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  font-size: 12px;
+  color: var(--ink);
 }
 
 .usageCaption svg {
   flex-shrink: 0;
+  width: 17px;
+  height: 17px;
   color: var(--r03-accent);
 }
 
 .certificateTerms {
-  margin-top: 0.65rem;
-  border: 1px solid var(--r03-line);
-  border-radius: 10px;
-  padding: 0.35rem 0.65rem;
-  background: color-mix(in srgb, var(--surface) 92%, var(--r03-offset));
+  border-top: 1px solid var(--r03-line);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
 }
 
 .certificateTerms summary {
   cursor: pointer;
-  font-size: var(--text-sm);
+  font-size: 14px;
   font-weight: 600;
   list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
 }
 
 .certificateTerms summary::-webkit-details-marker {
   display: none;
+}
+
+.certificateTerms summary::after {
+  content: "+";
+  font-size: 20px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.certificateTerms[open] > summary::after {
+  content: "−";
+}
+
+.certificateTerms[open] > summary {
+  margin-bottom: 1rem;
 }
 
 .badgeCount {
@@ -375,7 +435,7 @@
   min-width: 1.25rem;
   justify-content: center;
   padding: 0 0.35rem;
-  margin-left: 0.35rem;
+  margin-left: 0;
   border-radius: 999px;
   background: var(--r03-offset);
   font-size: 0.75rem;
@@ -384,14 +444,16 @@
 
 .termsBody {
   display: grid;
-  gap: 0.5rem;
-  margin-top: 0.65rem;
+  gap: 0;
+  margin-top: 0;
 }
 
 .termSummary {
   display: grid;
-  gap: 0.15rem;
-  font-size: var(--text-sm);
+  gap: 0.25rem;
+  font-size: 14px;
+  border-top: 1px solid var(--r03-line);
+  padding: 0.75rem 0;
 }
 
 .termSummary small {
@@ -403,21 +465,73 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.65rem;
-  padding-top: 0.75rem;
-  margin-top: 0.35rem;
-  border-top: 1px solid var(--r03-line);
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--r03-line);
 }
 
 .certificateBottom small {
   color: var(--muted);
-  font-size: var(--text-sm);
+  font-size: 12px;
 }
 
 .recordCardActions {
-  padding-top: 0.65rem;
-  margin-top: 0.35rem;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
   border-top: 1px solid var(--r03-line);
+}
+
+.recordActionToolbarEnd {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.certificateListActions {
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.certificateListAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.certificateListAction:hover,
+.certificateListAction:focus-visible {
+  color: var(--ink);
+  background: var(--r03-offset);
+  border-color: var(--r03-line);
+}
+
+.certificateListActionDanger {
+  color: var(--r03-accent);
+}
+
+.certificateListActionDanger:hover {
+  background: color-mix(in srgb, var(--r03-accent) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--r03-accent) 35%, var(--r03-line));
+}
+
+.certificateListAction:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.certCard:has(> .recordCardActions) .certificateBottom {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-top: 1rem;
 }
 
 .certCardFooter {
@@ -489,6 +603,17 @@
 
   .statsRow {
     grid-template-columns: 1fr;
+  }
+
+  .collectionFooter {
+    gap: 0.65rem;
+    font-size: 12px;
+  }
+
+  .collectionFooterNav {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
   }
 
   .collectionHint {
@@ -736,15 +861,84 @@
 
 .tableWrap {
   overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+}
+
+.collectionTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
   background: var(--surface);
+  border: 1px solid var(--r03-line);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 14px;
 }
 
 .dataTable {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--text-sm);
+}
+
+.collectionTable th,
+.collectionTable td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  border: 0;
+  border-bottom: 1px solid var(--r03-line);
+}
+
+.collectionTable th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--r03-offset);
+}
+
+.collectionTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.collectionTable tr:hover td {
+  background: var(--r03-offset);
+}
+
+.collectionTable .selectCol,
+.collectionTable th:first-child,
+.collectionTable td:first-child {
+  width: 46px;
+  text-align: center;
+}
+
+.collectionTable th:nth-child(2) {
+  width: 29%;
+}
+
+.collectionTable th:nth-child(4) {
+  width: 22%;
+}
+
+.collectionTable th:last-child {
+  width: 108px;
+}
+
+.collectionRowAction {
+  text-align: right;
+}
+
+.collectionOpenLink {
+  font-weight: 700;
+  line-height: 1.5;
+  color: inherit;
+  text-decoration: none;
+}
+
+.collectionOpenLink:hover {
+  color: var(--r03-accent);
+  text-decoration: underline;
 }
 
 .dataTable th,

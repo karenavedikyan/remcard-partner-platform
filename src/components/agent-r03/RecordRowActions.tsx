@@ -15,16 +15,35 @@ export type RecordRowAction = {
 type RecordRowActionsProps = {
   actions: RecordRowAction[];
   ariaLabel: string;
+  /** Reference card toolbar: actions aligned end with compact icon buttons. */
+  variant?: "default" | "cardToolbar" | "listRow";
 };
 
-export function RecordRowActions({ actions, ariaLabel }: RecordRowActionsProps) {
+export function RecordRowActions({ actions, ariaLabel, variant = "default" }: RecordRowActionsProps) {
+  const toolbarClass =
+    variant === "cardToolbar"
+      ? `${styles.rowActions} ${styles.recordActionToolbarEnd}`
+      : variant === "listRow"
+        ? `${styles.rowActions} ${styles.certificateListActions}`
+        : styles.rowActions;
+
+  const btnClass = (id: string) => {
+    if (variant === "listRow") {
+      return `${styles.certificateListAction} ${id === "delete" ? styles.certificateListActionDanger : ""}`;
+    }
+    if (variant === "cardToolbar") {
+      return `${styles.certificateListAction} ${id === "delete" ? styles.certificateListActionDanger : ""}`;
+    }
+    return `${styles.iconBtn} ${id === "delete" ? styles.iconBtnDanger : ""}`;
+  };
+
   return (
-    <div className={styles.rowActions} role="toolbar" aria-label={ariaLabel}>
+    <div className={toolbarClass} role="toolbar" aria-label={ariaLabel}>
       {actions.map((action) => (
         <button
           key={action.id}
           type="button"
-          className={`${styles.iconBtn} ${action.id === "delete" ? styles.iconBtnDanger : ""}`}
+          className={btnClass(action.id)}
           aria-label={action.label}
           title={action.disabled ? action.disabledReason ?? action.label : action.title ?? action.label}
           disabled={action.disabled}

@@ -4,7 +4,7 @@
 
 | Repo | Branch | HEAD (full) | Base |
 |------|--------|-------------|------|
-| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | `7371e4ac079ae2b09e770ec5b00b145a3f6d9db6` | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
+| remcard-partner-platform | `cursor/r03-ui-parity-b3e3` | *(see PR HEAD after push)* | `#17` @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7` |
 | remcard-navigator | `cursor/r03-ui-parity-b3e3` | `d7329006bdcdde20905025670f4efc87cd62b678` | `40b8094e4bf2158fd7a10b1cc1c33474b90a77b3` |
 
 Release integration target: `release/prof-v1-20261007` (`a5b83b3` at fetch time).

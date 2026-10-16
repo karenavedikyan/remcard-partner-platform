@@ -1,40 +1,31 @@
-# R03 UI parity matrix (verified)
+# R03 UI parity matrix (2026-10-16)
 
-Legend: **PASS** (computed/functional) · **VISUAL_DIFF** (paired capture, expected/known delta) · **NOT_VERIFIED**
+Legend: **FUNC_PASS** · **VISUAL_DIFF** (paired PNG; operator review) · **NOT_VERIFIED** · **CAPTURED** (evidence only)
 
-Evidence: `screenshots/captures.json` (2026-10-15T23:21:44Z), `screenshots/*-{ref,impl,diff}.png`, runner `scripts/r03-ui-parity-visual.mjs` exit 0.
+Evidence: `screenshots/captures.json` (`2026-10-16T04:36:52Z`), region crops (`*-content/toolbar/pagination/cert-card/client-row`), runner exit `ok: true`.
 
-| Area | Reference | Implementation | Status | Evidence / notes |
-|------|-----------|----------------|--------|------------------|
-| Nav icon certificates (desktop) | house 20px | `nav-certificates` SVG 20×20 | PASS | computed `navIconWidth/Height=20` @1440 |
-| Nav icon clients | users-round | `clients` icon | PASS | desktop captures |
-| Nav icon partners | handshake | handshake paths | PASS | desktop captures |
-| Page eyebrow | АГЕНТ | PageHeading АГЕНТ | VISUAL_DIFF | diff ratio ~4–9%; test banner on impl |
-| Hero task panel | `.hero-task` | `AgentR03PageIntro` | VISUAL_DIFF | copy without bonus promise |
-| Stat cards money | demo ₽ | **—** + caption | VISUAL_DIFF | functional gap (documented) |
-| Stat count | demo count | `activeCount` server | PASS | seeded ≥3 certs |
-| View default list | list | list + localStorage | PASS | `activeViewLabel=Список` |
-| Segmented control | `.segment` | `.viewToggle` | PASS | computed active label |
-| Toolbar row | collection-tools | `.collectionTools` | PASS | toolbar visible all captures |
-| Search debounced | no «Найти» | debounce 400ms | PASS | smoke `certificates_search` |
-| Cards 2-col @1440 | ~559px cards | grid `559px 559px` | PASS | computed @ cards 1440 |
-| Cert terms disclosure | `details.certificate-terms` | `agent-cert-terms` | PASS | `termsPresent=true` cards |
-| Cert usage caption | ticket + usage text | ticket SVG + label | PASS | card region screenshots |
-| Cert footer | issuer + Подробнее ↗ | `certificateBottom` + arrow | PASS | card impl captures |
-| Actions row | separate strip | `recordCardActions` | PASS | card layout |
-| Fractional % | 5.5% | no round to int | PASS | seed cert + mapper tests |
-| Client purchase pill | purchase-based | `hasPurchases` | PASS | API field |
-| Pagination region | compact footer | pagination crop PNG | PASS | `*-impl-pagination.png` |
-| Select all found | all filtered | page only | VISUAL_DIFF | functional gap (documented) |
-| Test-mode banner | n/a | impl top bar | VISUAL_DIFF | excluded from product diff |
-| Full-page pixel diff | — | — | VISUAL_DIFF | ratio 0.04–0.09; banner/stats/copy |
+Allowed compare exceptions (documented): impl **test-mode banner**; stat money **—**; reference demo chrome hidden at capture via CSS injection (not frozen file edits); **different demo entity names/counts** vs parity seed — use **content crops** + component crops, not raw full-page ratio alone.
 
-## Capture matrix (18/18 CAPTURED)
+| # | Area | Status | Notes / crop diff @1440 light |
+|---|------|--------|-------------------------------|
+| 1 | Cert card title/watermark/padding | VISUAL_DIFF | `certificates-cards-light-1440x900-diff-certCard.png` ratio **0.053** — closer R/title/fold; not signed off |
+| 2 | Terms disclosure (fold-list) | FUNC_PASS + VISUAL_DIFF | `termsPresent`; closed summary row + `+`; crop still ~5% |
+| 3 | Card actions row end-aligned | FUNC_PASS + VISUAL_DIFF | `recordActionToolbarEnd` / list actions; verify crop |
+| 4 | Cert footer issuer + Подробнее | FUNC_PASS + VISUAL_DIFF | dashed bottom + separate actions strip |
+| 5 | Stat row typography | FUNC_PASS + VISUAL_DIFF | real `activeCount`; money **—** |
+| 6 | Client table header/borders | FUNC_PASS + VISUAL_DIFF | `collectionTable` offset header; content crop ~4.3% clients list |
+| 7 | Purchase status pill | FUNC_PASS + VISUAL_DIFF | `hasPurchases`; `purchasePill` nowrap; client-row crop ~4.1% |
+| 8 | Client row composition | FUNC_PASS + VISUAL_DIFF | caption=task, detail=certs+«бонус —» |
+| 9 | Visible «Поиск» label | FUNC_PASS + VISUAL_DIFF | toolbar crop ~5.9% |
+| 10 | Pagination row layout | FUNC_PASS + VISUAL_DIFF | `collectionFooter`; pagination crop ~2.2% |
+| 11 | Paired capture methodology | CAPTURED | 18 main + 320 smoke; content/toolbar/pagination/card/row crops + diffs |
+| 12 | Matrix honesty | FUNC_PASS | no visual PASS without crop review |
 
-| ID | diff ratio | view/theme |
-|----|------------|------------|
-| certificates-list-light-1440x900 | 0.044 | main |
-| certificates-cards-light-1440x900 | (see captures.json) | main |
-| … | … | 16 main + 2×320 smoke |
+## Remaining product gaps (not masked)
 
-All pairs include `-ref-full.png`, `-impl-full.png`, `-diff.png`. Cards views include `-impl-cert-card.png` where applicable.
+- Stat **Начислено / Получено**: **—** (no API).
+- Client detail **«ваш бонус ₽»** in reference → impl **«бонус —»** in list detail (honest).
+- **Select-all-across-pages**: not implemented.
+- Reference vs impl **record counts/names** differ; full-page diff **~4–10%**; **content-region** diffs **~3.4–4.3%** @1440 light.
+
+Merge base unchanged: **PR #17** @ `375d2636613b4d2f0a3bec89a691ad7eb8c05ad7`.

@@ -73,6 +73,25 @@ function writeOverlayDiff(refPath, implPath, outPath) {
   return { width: w, height: h, mismatchedPixels: mismatched, ratio: mismatched / (w * h) };
 }
 
+async function applyImplCaptureStyles(page) {
+  await page.addStyleTag({
+    content: `
+      nextjs-portal,
+      [data-nextjs-toast],
+      #webpack-dev-server-client-overlay,
+      [data-nextjs-dialog-overlay] { display: none !important; }
+    `,
+  });
+}
+
+async function captureRegion(locator, outPath) {
+  if (await locator.isVisible().catch(() => false)) {
+    await locator.screenshot({ path: outPath });
+    return outPath;
+  }
+  return null;
+}
+
 async function measureImplComputed(page, section, viewMode) {
   return page.evaluate(({ section, viewMode }) => {
     const nav = document.querySelector(`[data-testid="nav-${section}"] svg`);
@@ -117,27 +136,41 @@ async function captureImpl(context, plat, cookieHeader, row) {
   if (r03 && r03.status !== 200) throw new Error(`r03_status_${r03.status}`);
 
   await page.locator('[data-testid="agent-r03-found-count"]').waitFor({ timeout: 30_000 });
+  await applyImplCaptureStyles(page);
 
   const computed = await measureImplComputed(page, row.section, row.viewMode);
   if (computed.activeViewLabel !== (row.viewMode === 'list' ? 'Список' : 'Карточки')) {
     throw new Error(`view_mode_not_active:${computed.activeViewLabel}`);
   }
 
-  const fullPath = path.join(SHOTS, `${slug(row)}-impl-full.png`);
+  const id = slug(row);
+  const fullPath = path.join(SHOTS, `${id}-impl-full.png`);
   await page.screenshot({ path: fullPath, fullPage: true });
 
   const regions = {};
-  const pagination = page.locator('[data-testid="agent-r03-pagination"]');
-  if (await pagination.isVisible().catch(() => false)) {
-    regions.pagination = path.join(SHOTS, `${slug(row)}-impl-pagination.png`);
-    await pagination.screenshot({ path: regions.pagination });
-  }
+  regions.content = await captureRegion(
+    page.locator('[data-testid="agent-shell-content"]'),
+    path.join(SHOTS, `${id}-impl-content.png`),
+  );
+  regions.toolbar = await captureRegion(
+    page.locator('[data-testid="agent-r03-collection-toolbar"]'),
+    path.join(SHOTS, `${id}-impl-toolbar.png`),
+  );
+  regions.pagination = await captureRegion(
+    page.locator('[data-testid="agent-r03-pagination"]'),
+    path.join(SHOTS, `${id}-impl-pagination.png`),
+  );
   if (row.viewMode === 'cards' && row.section === 'certificates') {
-    const card = page.locator('[data-testid="agent-cert-card"]').first();
-    if (await card.isVisible().catch(() => false)) {
-      regions.certCard = path.join(SHOTS, `${slug(row)}-impl-cert-card.png`);
-      await card.screenshot({ path: regions.certCard });
-    }
+    regions.certCard = await captureRegion(
+      page.locator('[data-testid="agent-cert-card"]').first(),
+      path.join(SHOTS, `${id}-impl-cert-card.png`),
+    );
+  }
+  if (row.section === 'clients' && row.viewMode === 'list') {
+    regions.clientRow = await captureRegion(
+      page.locator('[data-testid="agent-shell-content"] tbody tr').first(),
+      path.join(SHOTS, `${id}-impl-client-row.png`),
+    );
   }
 
   await page.close();
@@ -162,10 +195,38 @@ async function captureRef(context, refBase, row) {
       throw new Error('ref_theme_not_dark');
     }
   }
-  const fullPath = path.join(SHOTS, `${slug(row)}-ref-full.png`);
+  const id = slug(row);
+  const fullPath = path.join(SHOTS, `${id}-ref-full.png`);
   await page.screenshot({ path: fullPath, fullPage: true });
+
+  const regions = {};
+  regions.content = await captureRegion(
+    page.locator('#main.content, main.content').first(),
+    path.join(SHOTS, `${id}-ref-content.png`),
+  );
+  regions.toolbar = await captureRegion(
+    page.locator('.collection-tools').first(),
+    path.join(SHOTS, `${id}-ref-toolbar.png`),
+  );
+  regions.pagination = await captureRegion(
+    page.locator('.collection-footer').first(),
+    path.join(SHOTS, `${id}-ref-pagination.png`),
+  );
+  if (row.viewMode === 'cards' && row.section === 'certificates') {
+    regions.certCard = await captureRegion(
+      page.locator('.remcard-certificate, .link-card.remcard-certificate').first(),
+      path.join(SHOTS, `${id}-ref-cert-card.png`),
+    );
+  }
+  if (row.section === 'clients' && row.viewMode === 'list') {
+    regions.clientRow = await captureRegion(
+      page.locator('.collection-table tbody tr').first(),
+      path.join(SHOTS, `${id}-ref-client-row.png`),
+    );
+  }
+
   await page.close();
-  return { fullPath };
+  return { fullPath, regions };
 }
 
 async function runBrowserSmoke(context, plat) {
@@ -176,6 +237,12 @@ async function runBrowserSmoke(context, plat) {
     await openImplSection(page, plat, 'certificates');
     await setImplViewMode(page, 'cards');
     steps.push('certificates_cards');
+    const terms = page.locator('[data-testid="agent-cert-terms"]').first();
+    if (await terms.isVisible().catch(() => false)) {
+      await terms.locator('summary').click();
+      await page.waitForTimeout(200);
+      steps.push('cert_terms_open');
+    }
     await setImplViewMode(page, 'list');
     steps.push('certificates_list');
     await page.locator('[data-testid="agent-r03-search"]').fill('Parity');
@@ -192,11 +259,37 @@ async function runBrowserSmoke(context, plat) {
       steps.push('selection');
     }
     await openImplSection(page, plat, 'clients');
+    await setImplViewMode(page, 'list');
     await page.getByRole('button', { name: 'Добавить клиента' }).click();
     await page.getByLabel(/имя/i).fill('Parity Smoke Client');
     await page.getByRole('button', { name: 'Добавить', exact: true }).click();
     await page.getByRole('link', { name: 'Parity Smoke Client' }).waitFor({ timeout: 20_000 });
     steps.push('client_create_open');
+    const smokeRow = page.locator('tr').filter({ hasText: 'Parity Smoke Client' }).first();
+    await smokeRow.getByLabel('Редактировать').click();
+    await page.getByLabel(/имя/i).fill('Parity Smoke Renamed');
+    await page.getByRole('button', { name: 'Сохранить' }).click();
+    await page.getByRole('link', { name: 'Parity Smoke Renamed' }).waitFor({ timeout: 20_000 });
+    steps.push('client_rename');
+    const archiveBtn = page
+      .locator('tr')
+      .filter({ hasText: 'Parity Smoke Renamed' })
+      .first()
+      .getByRole('button', { name: 'В архив' });
+    if (await archiveBtn.isVisible().catch(() => false)) {
+      await archiveBtn.click();
+      steps.push('client_archive');
+      await page.getByLabel(/показывать/i).selectOption('archived');
+      await page.waitForResponse(
+        (r) => r.url().includes('/agent-clients') && r.status() === 200,
+        { timeout: 20_000 },
+      );
+      const restoreBtn = page.getByRole('button', { name: 'Восстановить' }).first();
+      if (await restoreBtn.isVisible().catch(() => false)) {
+        await restoreBtn.click();
+        steps.push('client_restore');
+      }
+    }
     await page.reload({ waitUntil: 'networkidle' });
     steps.push('reload');
   } finally {
@@ -238,6 +331,20 @@ async function main() {
 
         const diffPath = path.join(SHOTS, `${id}-diff.png`);
         const diffStats = writeOverlayDiff(ref.fullPath, impl.fullPath, diffPath);
+        const regionDiffs = {};
+        for (const key of ['content', 'toolbar', 'pagination', 'certCard', 'clientRow']) {
+          const implPath = impl.regions?.[key];
+          const refPath = ref.regions?.[key];
+          if (implPath && refPath) {
+            const regionDiffPath = path.join(SHOTS, `${id}-diff-${key}.png`);
+            regionDiffs[key] = {
+              impl: implPath,
+              ref: refPath,
+              diff: regionDiffPath,
+              stats: writeOverlayDiff(refPath, implPath, regionDiffPath),
+            };
+          }
+        }
 
         captures.push({
           id,
@@ -248,7 +355,7 @@ async function main() {
           diff: diffPath,
           diffStats,
           computed: impl.computed,
-          regions: impl.regions,
+          regions: { impl: impl.regions, ref: ref.regions, diffs: regionDiffs },
         });
       } catch (err) {
         failures.push(`${id}:${err.message || err}`);

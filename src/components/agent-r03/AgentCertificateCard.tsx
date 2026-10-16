@@ -60,10 +60,7 @@ export function AgentCertificateCard({
         />
         Выбрать
       </label>
-      <article className={`${styles.certCard} remcard-certificate`} data-testid="agent-cert-card">
-        <span className={styles.certCardWatermark} aria-hidden>
-          R
-        </span>
+      <article className={`${styles.certCard} remcard-certificate link-card`} data-testid="agent-cert-card">
         <div className={styles.certCardHead}>
           <div className={styles.certCardHeadText}>
             <span className={styles.certCardEyebrow}>RemCard · сертификат</span>
@@ -74,7 +71,7 @@ export function AgentCertificateCard({
           </div>
         </div>
         <div className={styles.certCardBody}>
-          <Link href={`/certificates/${cert.id}`} className={styles.certCardTitle}>
+          <Link href={`/certificates/${cert.id}`} className={`${styles.certCardTitle} card-title`}>
             {displayTitle}
           </Link>
           <p className={styles.meta}>{summaryLine}</p>
@@ -86,7 +83,7 @@ export function AgentCertificateCard({
             <p className={styles.meta}>Клиент: {cert.agentClient.displayName}</p>
           ) : null}
           {terms.length > 0 ? (
-            <details className={styles.certificateTerms} data-testid="agent-cert-terms">
+            <details className={`${styles.certificateTerms} fold-list certificate-terms`} data-testid="agent-cert-terms">
               <summary>
                 Скидки по категориям <span className={styles.badgeCount}>{terms.length}</span>
               </summary>
@@ -124,7 +121,11 @@ export function AgentCertificateCard({
           </Link>
         </div>
         <div className={styles.recordCardActions}>
-          <RecordRowActions ariaLabel="Действия с сертификатом" actions={actions} />
+          <RecordRowActions
+            ariaLabel="Действия с сертификатом"
+            actions={actions}
+            variant="cardToolbar"
+          />
         </div>
       </article>
     </div>

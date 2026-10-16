@@ -66,7 +66,7 @@ export function AgentR03PageIntro({ variant, certificateActiveCount }: Props) {
           <div key={stat.label} className={styles.statCard}>
             <span className={styles.statLabel}>{stat.label}</span>
             <strong className={styles.statValue}>{stat.value}</strong>
-            <small>{stat.caption}</small>
+            <small className={styles.statCaption}>{stat.caption}</small>
           </div>
         ))}
       </div>
