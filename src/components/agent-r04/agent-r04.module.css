@@ -1,0 +1,19 @@
+.loading {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  padding: var(--space-4) 0;
+}
+
+.errorBlock {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.errorBlock p {
+  margin: 0;
+  color: var(--primary);
+}

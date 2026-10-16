@@ -166,6 +166,10 @@ export type Partnership = {
   terms: PartnershipTerm[];
   storeUser: PartnershipUser;
   proUser: PartnershipUser;
+  listPreference?: {
+    personalAlias: string | null;
+    archivedAt: string | null;
+  } | null;
 };
 
 export type PartnershipListResponse = {

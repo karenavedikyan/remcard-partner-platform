@@ -13,10 +13,20 @@ import {
   countNeedsMyResponse,
   defaultSearchRoleForUser,
   getPartnershipUiActions,
+  partnershipAgentSegment,
   partnershipNeedsMyResponse,
   profileUserToPartnerSide,
   type SearchRole,
 } from "@/lib/partnership-rules";
+import {
+  matchesListPartnerType,
+  matchesListSpecialization,
+  partnerDisplayTitle,
+  partnershipPartnerUser,
+  type AgentPartnerTypeFilter,
+} from "@/lib/agent-r04/partner-filters";
+import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
+import Link from "next/link";
 import type {
   PartnerSearchResult,
   Partnership,
@@ -38,10 +48,14 @@ import {
 } from "@/lib/partnership-search-ui";
 import styles from "./PartnersHub.module.css";
 
-type PartnersHubProps = {
+export type PartnersHubProps = {
   meId: string;
   initialProfile: ProProfileResponse;
   onAttentionCountChange?: (count: number) => void;
+  variant?: "legacy" | "agent-r04";
+  agentSegment?: "active" | "invitations";
+  forcedTab?: TabId;
+  defaultSearchRole?: SearchRole;
 };
 
 type TabId = "list" | "find" | "link";
@@ -56,10 +70,19 @@ function partnerTitle(partner: { displayName: string | null; organizationName?: 
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
-export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: PartnersHubProps) {
+export function PartnersHub({
+  meId,
+  initialProfile,
+  onAttentionCountChange,
+  variant = "legacy",
+  agentSegment,
+  forcedTab,
+  defaultSearchRole: defaultSearchRoleProp,
+}: PartnersHubProps) {
+  const isAgentR04 = variant === "agent-r04";
   const searchParams = useSearchParams();
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
-  const [tab, setTab] = useState<TabId>("list");
+  const [tab, setTab] = useState<TabId>(forcedTab ?? "list");
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
@@ -82,7 +105,24 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
+  const [listArchiveView, setListArchiveView] = useState<"active" | "archive">("active");
+  const [listPartnerType, setListPartnerType] = useState<AgentPartnerTypeFilter>("");
+  const [listSpecialization, setListSpecialization] = useState("");
+  const [listCity, setListCity] = useState("");
+  const [listStage, setListStage] = useState("");
+  const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
+  const [expandedTermsId, setExpandedTermsId] = useState<string | null>(null);
   const searchRequestGen = useRef(0);
+
+  useEffect(() => {
+    if (forcedTab) setTab(forcedTab);
+  }, [forcedTab]);
+
+  useEffect(() => {
+    if (isAgentR04 && defaultSearchRoleProp) {
+      setSearchRole(defaultSearchRoleProp);
+    }
+  }, [defaultSearchRoleProp, isAgentR04]);
 
   const inviterSide = useMemo(
     () => profileUserToPartnerSide(meProfile.user, meProfile.organization),
@@ -133,6 +173,9 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
         if (filterProducts.length) params.set("product", filterProducts.join(","));
         if (filterServices.length) params.set("service", filterServices.join(","));
         if (filterStages.length) params.set("stage", filterStages.join(","));
+        if (isAgentR04 && searchPartnerType) {
+          params.set("partnerType", searchPartnerType);
+        }
         if (mode === "append" && cursor) {
           params.set("cursor", cursor);
         }
@@ -158,8 +201,47 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
         }
       }
     },
-    [city, filterProducts, filterServices, filterStages, query, searchRole],
+    [city, filterProducts, filterServices, filterStages, isAgentR04, query, searchPartnerType, searchRole],
   );
+
+  const visiblePartnerships = useMemo(() => {
+    let rows = partnerships;
+    if (isAgentR04 && agentSegment) {
+      rows = rows.filter((p) => partnershipAgentSegment(p.status) === agentSegment);
+    }
+    if (isAgentR04) {
+      rows = rows.filter((p) => {
+        const archived = Boolean(p.listPreference?.archivedAt);
+        return listArchiveView === "archive" ? archived : !archived;
+      });
+      if (listPartnerType || listSpecialization || listCity.trim() || listStage) {
+        rows = rows.filter((p) => {
+          const partner = partnershipPartnerUser(p, meId);
+          if (listCity.trim() && (partner.city ?? "").toLowerCase() !== listCity.trim().toLowerCase()) {
+            return false;
+          }
+          if (!matchesListPartnerType(partner, listPartnerType)) return false;
+          if (!matchesListSpecialization(partner, listSpecialization)) return false;
+          if (listStage && !partner.storeCategories.includes(listStage)) {
+            const specHit = partner.specializations.includes(listStage);
+            if (!specHit) return false;
+          }
+          return true;
+        });
+      }
+    }
+    return rows;
+  }, [
+    agentSegment,
+    isAgentR04,
+    listArchiveView,
+    listCity,
+    listPartnerType,
+    listSpecialization,
+    listStage,
+    meId,
+    partnerships,
+  ]);
 
   const resetSearchFilters = useCallback(() => {
     setQuery("");
@@ -180,7 +262,17 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
     if (tab !== "find") return;
     setSearchNextCursor(null);
     void loadSearch("reset");
-  }, [tab, city, filterProducts, filterServices, filterStages, query, searchRole, loadSearch]);
+  }, [
+    tab,
+    city,
+    filterProducts,
+    filterServices,
+    filterStages,
+    query,
+    searchPartnerType,
+    searchRole,
+    loadSearch,
+  ]);
 
   const attentionCount = useMemo(
     () => countNeedsMyResponse(partnerships, meId),
@@ -254,16 +346,18 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
   }
 
   return (
-    <div>
-      <Tabs
-        active={tab}
-        onChange={setTab}
-        items={[
-          { id: "list", label: "Мои партнёры", count: partnerships.length || undefined },
-          { id: "find", label: "Найти в RemCard" },
-          { id: "link", label: "Пригласить по ссылке" },
-        ]}
-      />
+    <div className={isAgentR04 ? styles.agentR04Root : undefined} data-variant={variant}>
+      {!isAgentR04 ? (
+        <Tabs
+          active={tab}
+          onChange={setTab}
+          items={[
+            { id: "list", label: "Мои партнёры", count: partnerships.length || undefined },
+            { id: "find", label: "Найти в RemCard" },
+            { id: "link", label: "Пригласить по ссылке" },
+          ]}
+        />
+      ) : null}
 
       {attentionCount > 0 ? (
         <Panel compact>
@@ -288,16 +382,75 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
       {tab === "list" ? (
         loadingList ? (
           <Panel>Загрузка партнёрств…</Panel>
-        ) : partnerships.length === 0 ? (
+        ) : visiblePartnerships.length === 0 ? (
           <Panel
-            title="Партнёров пока нет"
-            hint="Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
+            title={
+              isAgentR04 && listArchiveView === "archive"
+                ? "В архиве пока нет записей"
+                : "Партнёров пока нет"
+            }
+            hint={
+              isAgentR04
+                ? "Используйте «Найти в RemCard» или «Пригласить по ссылке» выше."
+                : "Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
+            }
           />
         ) : (
-          <div className={styles.list}>
-            {partnerships.map((partnership) => {
+          <>
+            {isAgentR04 ? (
+              <Panel compact>
+                <div className={styles.collectionCount}>
+                  <span>Найдено: {visiblePartnerships.length}</span>
+                  <label className={styles.compactField}>
+                    Показывать
+                    <select
+                      value={listArchiveView}
+                      onChange={(e) =>
+                        setListArchiveView(e.target.value as "active" | "archive")
+                      }
+                    >
+                      <option value="active">Активные</option>
+                      <option value="archive">Архив</option>
+                    </select>
+                  </label>
+                </div>
+                <details className={styles.filterFold}>
+                  <summary>Фильтры действующих</summary>
+                  <div className={styles.filterGrid}>
+                    <label className={styles.compactField}>
+                      Тип партнёра
+                      <select
+                        value={listPartnerType}
+                        onChange={(e) =>
+                          setListPartnerType(e.target.value as AgentPartnerTypeFilter)
+                        }
+                      >
+                        <option value="">Все типы</option>
+                        <option value="agent">Агент</option>
+                        <option value="specialist">Специалист</option>
+                        <option value="store">Магазин</option>
+                        <option value="company">Компания</option>
+                      </select>
+                    </label>
+                    <label className={styles.compactField}>
+                      Город
+                      <input
+                        value={listCity}
+                        onChange={(e) => setListCity(e.target.value)}
+                        placeholder="Любой"
+                      />
+                    </label>
+                  </div>
+                </details>
+              </Panel>
+            ) : null}
+            <div className={styles.list}>
+            {visiblePartnerships.map((partnership) => {
               const partner =
                 partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
+              const titles = isAgentR04
+                ? partnerDisplayTitle(partnership, meId)
+                : { official: partnerTitle(partner), alias: null };
               const statusLabel =
                 PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
               const needsResponse = partnershipNeedsMyResponse(partnership, meId);
@@ -307,44 +460,94 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 requests: [],
                 error: "",
               };
+              const activeTerms = partnership.terms.filter((t) => !t.isExcluded);
+              const termsPreview = activeTerms
+                .slice(0, 2)
+                .map((t) => `${displayCategoryLabel(t.category, t.categoryLabel)} ${t.storePercent}%`)
+                .join(" · ");
 
               return (
-                <Panel key={partnership.id} compact>
+                <Panel key={partnership.id} compact className={isAgentR04 ? styles.agentCard : undefined}>
                   <div className={styles.cardHeader}>
                     <div>
-                      <h3>{partnerTitle(partner)}</h3>
+                      <h3>{titles.alias ?? titles.official}</h3>
+                      {titles.alias ? (
+                        <p className={styles.partnerMeta}>Официально: {titles.official}</p>
+                      ) : null}
                       <p className={styles.partnerMeta}>
                         {partner.city ?? "Город не указан"}
                         {needsResponse ? " · ожидает вашего решения" : ""}
                       </p>
                     </div>
-                    <StatusBadge
-                      label={statusLabel}
-                      tone={partnershipStatusTone(partnership.status)}
-                    />
+                    <div className={styles.cardHeaderAside}>
+                      {isAgentR04 ? (
+                        <AgentPartnerRecordActions
+                          partnership={partnership}
+                          meId={meId}
+                          onUpdated={() => void loadList()}
+                        />
+                      ) : null}
+                      <StatusBadge
+                        label={statusLabel}
+                        tone={partnershipStatusTone(partnership.status)}
+                      />
+                    </div>
                   </div>
 
                   {partnership.note ? (
                     <p className={styles.note}>Комментарий: {partnership.note}</p>
                   ) : null}
 
-                  <p className={styles.termsCaption}>Действующие условия</p>
-                  <table className={styles.termsTable}>
-                    <thead>
-                      <tr>
-                        <th>Категория</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {partnership.terms.map((term) => (
-                        <tr key={term.id}>
-                          <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
-                          <td>{term.isExcluded ? "—" : `${term.storePercent}%`}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {isAgentR04 ? (
+                    <>
+                      <p className={styles.termsCaption}>
+                        Условия: {termsPreview || "—"}
+                        {activeTerms.length > 2 ? (
+                          <button
+                            type="button"
+                            className={styles.termsToggle}
+                            onClick={() =>
+                              setExpandedTermsId((id) =>
+                                id === partnership.id ? null : partnership.id,
+                              )
+                            }
+                          >
+                            {expandedTermsId === partnership.id ? "Свернуть" : "Подробнее"}
+                          </button>
+                        ) : null}
+                      </p>
+                      {expandedTermsId === partnership.id ? (
+                        <ul className={styles.termsCompactList}>
+                          {activeTerms.map((term) => (
+                            <li key={term.id}>
+                              {displayCategoryLabel(term.category, term.categoryLabel)} —{" "}
+                              {term.storePercent}%
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <p className={styles.termsCaption}>Действующие условия</p>
+                      <table className={styles.termsTable}>
+                        <thead>
+                          <tr>
+                            <th>Категория</th>
+                            <th>%</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {partnership.terms.map((term) => (
+                            <tr key={term.id}>
+                              <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
+                              <td>{term.isExcluded ? "—" : `${term.storePercent}%`}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
 
                   <div className={styles.rowActions}>
                     {actions.map((action) =>
@@ -364,13 +567,20 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                       ),
                     )}
                     {partnership.status === "ACTIVE" ? (
-                      <Button
-                        variant="secondary"
-                        disabled={busyId === partnership.id}
-                        onClick={() => void loadTermRequests(partnership.id)}
-                      >
-                        Изменение условий
-                      </Button>
+                      <>
+                        <Button
+                          variant="secondary"
+                          disabled={busyId === partnership.id}
+                          onClick={() => void loadTermRequests(partnership.id)}
+                        >
+                          Изменение условий
+                        </Button>
+                        {isAgentR04 ? (
+                          <Link href="/certificates" className={styles.certLink}>
+                            Создать сертификат
+                          </Link>
+                        ) : null}
+                      </>
                     ) : null}
                   </div>
 
@@ -398,12 +608,30 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
               );
             })}
           </div>
+          </>
         )
       ) : tab === "link" ? (
         <PartnerLinkInvitePanel meProfile={meProfile} />
       ) : (
         <>
           <Panel compact>
+            {isAgentR04 ? (
+              <>
+                <p className={styles.searchLead}>
+                  Специализация и этап ремонта помогают найти исполнителя, даже если вы не знаете
+                  точное название.
+                </p>
+                <PartnerSearchFilters
+                  productIds={filterProducts}
+                  serviceIds={filterServices}
+                  stageIds={filterStages}
+                  onChangeProducts={setFilterProducts}
+                  onChangeServices={setFilterServices}
+                  onChangeStages={setFilterStages}
+                  taxonomyFilterResetKey={taxonomyFilterResetKey}
+                />
+              </>
+            ) : null}
             <p className={styles.searchDescription}>{searchMeta.description}</p>
             <div className={styles.searchGrid}>
               <TextField
@@ -418,19 +646,37 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 value={city}
                 onChange={(event) => setCity(event.target.value)}
               />
-              <label className={styles.roleField}>
-                <span>Кого ищем</span>
-                <select
-                  value={searchRole}
-                  onChange={(event) => setSearchRole(event.target.value as SearchRole)}
-                >
-                  {SEARCH_ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {isAgentR04 ? (
+                <label className={styles.roleField}>
+                  <span>Тип партнёра</span>
+                  <select
+                    value={searchPartnerType}
+                    onChange={(event) =>
+                      setSearchPartnerType(event.target.value as AgentPartnerTypeFilter)
+                    }
+                  >
+                    <option value="">Все типы</option>
+                    <option value="agent">Агент</option>
+                    <option value="specialist">Специалист</option>
+                    <option value="store">Магазин</option>
+                    <option value="company">Компания</option>
+                  </select>
+                </label>
+              ) : (
+                <label className={styles.roleField}>
+                  <span>Кого ищем</span>
+                  <select
+                    value={searchRole}
+                    onChange={(event) => setSearchRole(event.target.value as SearchRole)}
+                  >
+                    {SEARCH_ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <div className={styles.searchAction}>
                 <Button
                   type="button"
@@ -444,15 +690,25 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
                 </Button>
               </div>
             </div>
-            <PartnerSearchFilters
-              productIds={filterProducts}
-              serviceIds={filterServices}
-              stageIds={filterStages}
-              onChangeProducts={setFilterProducts}
-              onChangeServices={setFilterServices}
-              onChangeStages={setFilterStages}
-              taxonomyFilterResetKey={taxonomyFilterResetKey}
-            />
+            {!isAgentR04 ? (
+              <PartnerSearchFilters
+                productIds={filterProducts}
+                serviceIds={filterServices}
+                stageIds={filterStages}
+                onChangeProducts={setFilterProducts}
+                onChangeServices={setFilterServices}
+                onChangeStages={setFilterStages}
+                taxonomyFilterResetKey={taxonomyFilterResetKey}
+              />
+            ) : null}
+            {isAgentR04 && (query || city || searchPartnerType || hasCustomFilters) ? (
+              <div className={styles.collectionCount}>
+                <span>Результаты поиска: {searchResults.length}{searchNextCursor ? "+" : ""}</span>
+                <Button type="button" variant="secondary" onClick={resetSearchFilters}>
+                  Сбросить фильтры
+                </Button>
+              </div>
+            ) : null}
           </Panel>
 
           {loadingSearch && searchResults.length === 0 ? (
@@ -590,7 +846,7 @@ export function PartnersHub({ meId, initialProfile, onAttentionCountChange }: Pa
           busy={busyId === inviteTarget.id}
           onClose={() => setInviteTarget(null)}
           onSent={() => {
-            setTab("list");
+            setTab(isAgentR04 ? (forcedTab ?? "list") : "list");
             void loadList();
           }}
         />

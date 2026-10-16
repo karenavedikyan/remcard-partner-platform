@@ -129,6 +129,7 @@ async function main() {
     `PROF_R02_AGENT_PROFILE_ENABLED=true`,
     `PROF_R01_AGENT_NAV_ENABLED=true`,
     `PROF_R03_AGENT_CERTIFICATES_ENABLED=true`,
+    `PROF_R04_AGENT_PARTNERS_ENABLED=true`,
     `ADMIN_TEST_BACKEND_PORT=${NAV_PORT}`,
     `ADMIN_TEST_PLATFORM_PORT=${PLATFORM_PORT}`,
     `REMCARD_API_BASE_URL=http://127.0.0.1:${NAV_PORT}`,
@@ -146,6 +147,7 @@ async function main() {
     PROF_R02_AGENT_PROFILE_ENABLED: 'true',
     PROF_R01_AGENT_NAV_ENABLED: 'true',
     PROF_R03_AGENT_CERTIFICATES_ENABLED: 'true',
+    PROF_R04_AGENT_PARTNERS_ENABLED: 'true',
   };
   const navPid = spawnDev(NAV_ROOT, NAV_PORT, navEnv);
   const platPid = spawnDev(ROOT, PLATFORM_PORT, {

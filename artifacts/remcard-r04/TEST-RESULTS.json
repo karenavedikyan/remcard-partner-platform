@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-10-16T10:22:13.267Z",
+  "platformOrigin": "http://127.0.0.1:3040",
+  "steps": [
+    {
+      "step": "test_session",
+      "ok": true
+    },
+    {
+      "step": "agent_profile_finish",
+      "ok": true
+    },
+    {
+      "step": "r04_status",
+      "status": 200,
+      "eligible": true
+    },
+    {
+      "step": "partnership_list",
+      "status": 200
+    },
+    {
+      "step": "link_invite",
+      "status": 200
+    },
+    {
+      "step": "partners_ui_r04",
+      "found": true
+    }
+  ],
+  "pass": true,
+  "commands": [
+    "node scripts/r04-browser-acceptance.mjs"
+  ]
+}
