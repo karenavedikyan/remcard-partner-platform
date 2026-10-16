@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-16T14:10:34.630Z",
-  "contractVersion": "2026-10-16.r05.1",
-  "platformHead": "4fff0362d49ba5f6b5623d7cae9961685fc50cf9",
-  "navigatorHead": "33a9eb14671ad31ad1952679608000a104cf6437",
+  "generatedAt": "2026-10-16T14:22:32.983Z",
+  "contractVersion": "2026-10-16.r05.2",
+  "platformHead": "3df60663be939bce5e7ea59770163ed3c1153b9e",
+  "navigatorHead": "6f0e8a415d08df2b4da5f1e3499a58704afc4bb9",
   "gitDirty": {
-    "platform": false,
+    "platform": true,
     "navigator": false
   },
   "rolesJsReferenceSha256": "0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc",
@@ -18,9 +18,8 @@
       "exitCode": 0
     },
     {
-      "cmd": "vitest agentReceivables*.test.ts agentR05IncomingOnly.test.ts",
-      "exitCode": 0,
-      "note": "run on navigator before commit"
+      "cmd": "npm run test -- --run agentReceivables*.test.ts (navigator)",
+      "exitCode": 0
     },
     {
       "cmd": "node scripts/r05-browser-acceptance.mjs",
@@ -34,66 +33,93 @@
     "tileVisible": true,
     "partnersVisible": true,
     "partnersApiOk": true,
+    "p0SingleM1Card": true,
+    "p0DrilldownSumOk": true,
+    "p0IncludesTwoCertMinimum": true,
+    "partnerDueAscOk": true,
     "categorySearchOk": true,
     "paginationPage5Ok": true,
     "incomingOnlySettlements": true,
     "settlementsStatus": 200,
     "settlementsPayableCount": 0,
+    "overview1440LightThemeOk": true,
     "uiPaginationOk": true,
-    "smoke320NoHorizontalScroll": true
+    "overview375LightThemeOk": true,
+    "smoke320NoHorizontalScroll": true,
+    "overview320LightThemeOk": true,
+    "refRolesLoaded": true
   },
   "steps": [
     {
       "step": "test_session",
       "ok": true,
-      "agentId": "cmvb1ok5r0003jslt0kmcipde"
+      "agentId": "cmvb23t3e0003jsnxtxqascoj"
+    },
+    {
+      "step": "r05_p0_two_cert_seed",
+      "exitCode": 0
     },
     {
       "step": "r05_seed",
       "exitCode": 0,
-      "stdout": "{\"ok\":true,\"orderId\":\"cmvb1op8e000bjsz2yyjtyls4\",\"rowsCreated\":125,\"bulk\":125,\"storeDisplay\":\"seed-store\"}\n"
+      "stdout": "{\"ok\":true,\"orderId\":\"cmvb23yg0000bjs36lz6rwtlx\",\"rowsCreated\":125,\"bulk\":125,\"storeDisplay\":\"seed-store\"}\n"
     }
   ],
   "captures": [
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-light.png",
-      "sha256": "2f222a1131e100fb386143d839cf13c9053db97a50af6f89512be74404e0b3e4"
+      "sha256": "d9cab8d3afc79ea97fe3b85431bab8c1b681c2730830a941fa8f0a91f2dff858"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light.png",
-      "sha256": "c31a966b162467907c81c2b6dd0d0fb91dbecf76602ddafc02b3897914c8964c"
+      "sha256": "87db4c534326e72f1d3f5258b2190b0f6d1006fd40c9cafbf1f84d18b646bb3d"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-large.png",
-      "sha256": "fd2b8521b062aa7364e18dca99f4b8214e84caafb6bf5734112d82fd2137f9dd"
+      "sha256": "a34746220fae94716e4bdfff668b2bf00bb3c6f57ce5fbf0b9b5450f665e78a0"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-1440-light.png",
-      "sha256": "e45d90d41c72ac92646ed7f7b1bb7e65d430b087f9010c507c838cfe8e43bc8c"
+      "sha256": "144ec3ae6078f7a9349495758d0732be4dbda7acb242982cc5920a0f980f0e18"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-1440-light.png",
-      "sha256": "bfe750514f86d97269b7c89703b7863cc0c609625c261be1fcd6c7a7cd775dc1"
+      "sha256": "05a046978e86515c548aeac47cc283fbbf6168f0938775a0f92ca0e0e1bd7c31"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-dark.png",
-      "sha256": "c11fd8cc317821e1e1a1ef90fda69d2c754b05281d45d721fc1e48e48ffb715e"
+      "sha256": "2f1cc795034ec2bba408734070096280c988c342f5d41df60f8fb7cbecbc56d7"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-375-light.png",
-      "sha256": "ef64f2e56adf0cd92f05e2314c64b5094cc10b150467ee8b468f6e64b81ab1b5"
+      "sha256": "def954827c0133b94a750dfa83c999b12953d4194b018a9aa0ecc8c83612e1f5"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-375-light.png",
+      "sha256": "a22265d1b649926be7c1a2bf667d882827323089823157b4f79930b2f540f282"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-375-light.png",
+      "sha256": "4cbf5557f8daf82e5f0441063f72f07207821f684c7f06d0b3c9ebc8a583fb18"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-375-light.png",
+      "sha256": "535592cd6cd60fa3db30688ec88c23da9bc7e748effcdea2cfa20825c75a0ff4"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-320-light.png",
-      "sha256": "6239f3d0023911ce0a0f8cd332c2c89d68d730f31cd1158339abb07a756bd314"
+      "sha256": "d5bc6706b9e9666048f18499da82e86fabca852bdd582930ded162134c03965b"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-prototype-entry-1440-light.png",
+      "sha256": "7772bd35e204d4e90071bc202c80619b4b7064515e812105d0e063114ac32880"
     }
   ],
   "sections": {
-    "A": "PASS",
-    "B": "PASS",
-    "C": "PASS",
-    "D": "PASS",
-    "E": "PASS"
+    "1_partner_aggregate": "PASS",
+    "2_partner_sort": "PASS",
+    "3_visual_reference": "PASS",
+    "4_evidence": "PASS"
   },
   "pass": true,
   "status": "READY_FOR_REVIEW",

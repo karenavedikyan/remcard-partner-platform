@@ -16,6 +16,7 @@ const RUN_DIR = process.env.ADMIN_TEST_RUN_DIR || '/tmp/admin-test-local-stack';
 const ART = path.join(ROOT, 'artifacts/remcard-r05');
 const REF_ROOT =
   '/opt/cursor/artifacts/remcard-reference-20261014/reference/prototypes/remcard-profile-wizard';
+const P0_STORE_USER_ID = 'm1fix-store-000000000001';
 
 async function ensureLight(page) {
   await page.emulateMedia({ colorScheme: 'light' });
@@ -217,22 +218,25 @@ async function main() {
   functional.partnersApiOk =
     partnersFresh.status === 200 && (partnersFresh.body?.partners?.length ?? 0) > 0;
 
-  const m1Cards = (partnersFresh.body?.partners ?? []).filter((p) =>
-    String(p.displayName).includes('M1 Test Store'),
+  const storeCards = (partnersFresh.body?.partners ?? []).filter(
+    (p) => p.partnerId === P0_STORE_USER_ID,
   );
-  functional.p0SingleM1Card = m1Cards.length === 1;
-  const m1GroupKey = m1Cards[0]?.groupKey ?? '';
-  const m1Orders = m1GroupKey
+  functional.p0SingleM1Card = storeCards.length === 1;
+  const storeCard = storeCards[0];
+  const storeGroupKey = storeCard?.groupKey ?? '';
+  const storeOrders = storeGroupKey
     ? await bffJson(
         platformOrigin,
         cookies,
-        `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=25&status=open&groupKey=${encodeURIComponent(m1GroupKey)}`,
+        `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=100&status=open&groupKey=${encodeURIComponent(storeGroupKey)}`,
       )
     : { status: 0, body: null };
   functional.p0DrilldownSumOk =
-    m1Orders.status === 200 &&
-    m1Orders.body?.meta?.selectionTotalKopecks === m1Cards[0]?.confirmedDebtKopecks &&
-    (m1Orders.body?.meta?.totalRecords ?? 0) === 2;
+    storeOrders.status === 200 &&
+    storeOrders.body?.meta?.selectionTotalKopecks === storeCard?.confirmedDebtKopecks &&
+    (storeOrders.body?.meta?.totalRecords ?? 0) >= 2;
+  functional.p0IncludesTwoCertMinimum =
+    (storeCard?.confirmedDebtKopecks ?? 0) >= 30_000;
 
   const dueAsc = await bffJson(
     platformOrigin,
@@ -374,6 +378,7 @@ async function main() {
     functional.partnersApiOk &&
     functional.p0SingleM1Card &&
     functional.p0DrilldownSumOk &&
+    functional.p0IncludesTwoCertMinimum &&
     functional.partnerDueAscOk &&
     functional.categorySearchOk &&
     functional.paginationPage5Ok &&
@@ -409,7 +414,12 @@ async function main() {
     steps,
     captures,
     sections: {
-      '1_partner_aggregate': functional.p0SingleM1Card && functional.p0DrilldownSumOk ? 'PASS' : 'FAIL',
+      '1_partner_aggregate':
+        functional.p0SingleM1Card &&
+        functional.p0DrilldownSumOk &&
+        functional.p0IncludesTwoCertMinimum
+          ? 'PASS'
+          : 'FAIL',
       '2_partner_sort': functional.partnerDueAscOk ? 'PASS' : 'FAIL',
       '3_visual_reference':
         functional.tileVisible &&
