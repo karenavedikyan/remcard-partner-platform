@@ -216,7 +216,7 @@ async function fillReferenceBankForm(page) {
   await page.locator('[data-testid="bank-bik"]').fill(b.bik);
   await page.locator('[data-testid="bank-account"]').fill(b.accountNumber);
   await page.locator('[data-testid="bank-correspondent"]').fill(b.corrAccount);
-  await page.locator('[data-testid="bank-inn"]').fill('770708389301');
+  await page.locator('[data-testid="bank-inn"]').fill(b.inn);
 }
 
 async function seedReferenceBankRecord(page) {
@@ -233,20 +233,58 @@ async function seedReferenceBankRecord(page) {
 
 async function measureCaptureLayout(page) {
   return page.evaluate(() => {
-    const pick = (sel) => {
-      const el = document.querySelector(sel);
+    const pick = (el) => {
       if (!el) return null;
       const r = el.getBoundingClientRect();
-      return { w: Math.round(r.width), h: Math.round(r.height), y: Math.round(r.top) };
+      return {
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+        x: Math.round(r.left + window.scrollX),
+        y: Math.round(r.top + window.scrollY),
+      };
     };
+    const summaryEl =
+      document.querySelector('[data-testid="pw-summary"]') ||
+      document.querySelector('[data-testid="agent-profile-completed-summary"] section');
     return {
-      summary: pick('[data-testid="agent-profile-completed-summary"], [data-testid="pw-summary"]'),
-      facts: pick('.pw-facts, [class*="summaryFacts"]'),
-      bankPanel: pick('[data-testid="bank-panel"]'),
-      bankCards: document.querySelectorAll('.cab-bank-card, [class*="bankCard"]').length,
-      bankForm: pick('[data-bank-form], [data-testid="agent-requisites-form"]'),
+      summary: pick(summaryEl),
+      bankPanel: pick(document.querySelector('[data-testid="bank-panel"]')),
+      bankRecords: document.querySelectorAll('[data-testid="bank-record"], .cab-bank-card').length,
+      bankForm: pick(
+        document.querySelector('[data-bank-form]') ||
+          document.querySelector('[data-testid="agent-requisites-form"]'),
+      ),
     };
   });
+}
+
+async function ensureNoBankRecords(session) {
+  const list = await bffJson(session, '/api/pro/agent-payout-requisites');
+  for (const item of list.body?.items ?? []) {
+    await bffJson(session, `/api/pro/agent-payout-requisites/${encodeURIComponent(item.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action: 'archive' }),
+    });
+  }
+}
+
+async function ensureBankSeeded(session) {
+  const list = await bffJson(session, '/api/pro/agent-payout-requisites');
+  if ((list.body?.items?.length ?? 0) >= 1) {
+    return;
+  }
+  const bank = await bffJson(session, '/api/pro/agent-payout-requisites', {
+    method: 'POST',
+    body: JSON.stringify({ ...PARITY_SYNTH.bank, isPrimary: true }),
+  });
+  if (bank.status !== 200) {
+    throw new Error(`ensure_bank_seed_${bank.status}`);
+  }
+}
+
+function widthDelta(a, b) {
+  if (!a?.w || !b?.w) return null;
+  return Math.abs(a.w - b.w);
 }
 
 async function ensureReferenceServer() {
@@ -318,13 +356,26 @@ async function prepareReferenceState(page, refBase, theme, state) {
     const expand = page.locator('[data-testid^="cab-bank-expand"]').first();
     await expand.scrollIntoViewIfNeeded();
     await expand.click({ timeout: 15_000 });
-    await page.waitForSelector('.pw-facts dt', { timeout: 15_000 });
+    await page.waitForSelector('.pw-facts dt:has-text("ИНН")', { timeout: 15_000 });
+    const records = await page.locator('.cab-bank-card').count();
+    if (records !== 1) throw new Error(`ref_bank_record_count_${records}`);
+  }
+  if (state === 'wizard-step1') {
+    const name = await page.locator('[data-testid="pw-input-name"]').inputValue();
+    if (name !== PARITY_SYNTH.displayName) throw new Error(`ref_wizard_name_mismatch_${name}`);
+    if ((await page.locator('.cab-bank-card').count()) !== 0) {
+      throw new Error('ref_wizard_has_bank_records');
+    }
   }
 }
 
 async function prepareImplState(page, session, theme, state) {
   const base = plat(session);
+  if (state !== 'wizard-step1') {
+    await ensureBankSeeded(session);
+  }
   if (state === 'wizard-step1') {
+    await ensureNoBankRecords(session);
     await page.goto(`${base}/profile?section=overview`, { waitUntil: 'networkidle', timeout: 120_000 });
     await page.waitForSelector('[data-testid="agent-profile-completed-summary"]', { timeout: 90_000 });
     await setCabinetTheme(page, theme);
@@ -336,9 +387,9 @@ async function prepareImplState(page, session, theme, state) {
   await page.waitForSelector('[data-testid="agent-profile-completed-summary"]', { timeout: 90_000 });
   await setCabinetTheme(page, theme);
   if (['overview-complete', 'bank-collapsed', 'bank-expanded'].includes(state)) {
-    const bankCount = await page.locator('[data-testid="bank-panel"] li').count();
+    const bankCount = await page.locator('[data-testid="bank-record"]').count();
     if (bankCount !== 1) {
-      throw new Error(`impl_bank_card_count_${bankCount}`);
+      throw new Error(`impl_bank_record_count_${bankCount}`);
     }
   }
   if (state === 'bank-form') {
@@ -349,7 +400,21 @@ async function prepareImplState(page, session, theme, state) {
   } else if (state === 'bank-expanded') {
     const view = page.getByRole('button', { name: 'Посмотреть' }).first();
     await view.click();
-    await page.waitForSelector('dt:has-text("Счёт")', { timeout: 30_000 });
+    await page.waitForSelector('[data-testid="bank-detail-inn"]', { timeout: 30_000 });
+    const inn = await page.getByTestId('bank-detail-inn').textContent();
+    if (inn?.replace(/\D/g, '') !== PARITY_SYNTH.bank.inn.replace(/\D/g, '')) {
+      throw new Error(`impl_bank_inn_mismatch_${inn}`);
+    }
+  }
+  if (state === 'wizard-step1') {
+    const name = await page.getByTestId('agent-profile-input-displayName').inputValue();
+    if (name !== PARITY_SYNTH.displayName) {
+      throw new Error(`impl_wizard_name_mismatch_${name}`);
+    }
+    const records = await page.locator('[data-testid="bank-record"]').count();
+    if (records !== 0) {
+      throw new Error(`impl_wizard_bank_count_${records}`);
+    }
   }
 }
 
@@ -357,8 +422,10 @@ async function capturePairs(session, refBase) {
   mkdirSync(SHOTS, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const saved = [];
+  const geometryChecks = [];
   try {
     for (const cap of CAPTURES) {
+      const pairLayouts = {};
       for (const side of ['impl', 'ref']) {
         const ctx = await browser.newContext({ viewport: { width: cap.w, height: cap.h } });
         const page = await ctx.newPage();
@@ -379,9 +446,11 @@ async function capturePairs(session, refBase) {
         }
         await page.evaluate(() => {
           document.activeElement?.blur?.();
+          window.scrollTo(0, 0);
         });
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(250);
         const layout = await measureCaptureLayout(page);
+        pairLayouts[side] = layout;
         const file = `${side}-${cap.stem}.png`;
         await page.screenshot({ path: path.join(SHOTS, file), fullPage: true });
         const entry = {
@@ -389,15 +458,25 @@ async function capturePairs(session, refBase) {
           sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, file))).digest('hex'),
           layout,
         };
-        if (cap.state === 'bank-form' && cap.w === 375) {
-          await page.evaluate(() => window.scrollTo(0, 0));
+        const needsTop =
+          (cap.state === 'overview-complete' || cap.state === 'wizard-step1') &&
+          (cap.w === 375 || cap.w === 320);
+        if (needsTop) {
           const topFile = `${side}-${cap.stem}-viewport-top.png`;
           await page.screenshot({ path: path.join(SHOTS, topFile), fullPage: false });
           entry.viewportTop = {
             file: topFile,
             sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, topFile))).digest('hex'),
           };
-          const footer = page.locator('[data-testid="bank-save"], [data-testid="bank-save"]').last();
+        }
+        if (cap.state === 'bank-form' && cap.w === 375) {
+          const topFile = `${side}-${cap.stem}-viewport-top.png`;
+          await page.screenshot({ path: path.join(SHOTS, topFile), fullPage: false });
+          entry.viewportTop = {
+            file: topFile,
+            sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, topFile))).digest('hex'),
+          };
+          const footer = page.locator('[data-testid="bank-save"]').last();
           await footer.scrollIntoViewIfNeeded();
           const footFile = `${side}-${cap.stem}-form-footer.png`;
           await page.screenshot({ path: path.join(SHOTS, footFile), fullPage: false });
@@ -409,11 +488,26 @@ async function capturePairs(session, refBase) {
         saved.push(entry);
         await ctx.close();
       }
+      if (cap.w === 1440 && cap.state === 'overview-complete') {
+        const summaryDelta = widthDelta(pairLayouts.impl?.summary, pairLayouts.ref?.summary);
+        const bankDelta = widthDelta(pairLayouts.impl?.bankPanel, pairLayouts.ref?.bankPanel);
+        geometryChecks.push({
+          cap: cap.stem,
+          summaryWidthDelta: summaryDelta,
+          bankWidthDelta: bankDelta,
+          ok: summaryDelta != null && bankDelta != null && summaryDelta <= 4 && bankDelta <= 4,
+        });
+        if (summaryDelta == null || bankDelta == null || summaryDelta > 4 || bankDelta > 4) {
+          throw new Error(
+            `geometry_1440_summaryDelta_${summaryDelta}_bankDelta_${bankDelta}`,
+          );
+        }
+      }
     }
   } finally {
     await browser.close();
   }
-  return saved;
+  return { shots: saved, geometryChecks };
 }
 
 async function runBrowserAcceptance(session) {
@@ -450,8 +544,12 @@ async function runBrowserAcceptance(session) {
   await page.goto(`${base}/profile?section=basics`, { waitUntil: 'networkidle', timeout: 120_000 });
   await page.waitForSelector('[data-testid="agent-profile-wizard"]', { timeout: 90_000 });
   await page.getByTestId('agent-profile-cancel-edit').click();
-  await page.waitForLoadState('networkidle');
-  await page.goto(`${base}/profile`, { waitUntil: 'networkidle', timeout: 120_000 });
+  await page.waitForURL(
+    (url) =>
+      url.pathname === '/profile' &&
+      (url.searchParams.get('section') === 'overview' || !url.searchParams.get('section')),
+    { timeout: 60_000 },
+  );
   await page.waitForSelector('[data-testid="agent-profile-completed-summary"]', { timeout: 90_000 });
   const basicsSection = await page.evaluate(() => new URLSearchParams(location.search).get('section'));
   steps.basicsDirectCancel = basicsSection === 'overview' || basicsSection === null;
@@ -544,20 +642,23 @@ async function main() {
   const bankCount = await dedupeBankRecords(session);
   await assertSingleBankRecord(session);
   const refBase = await ensureReferenceServer();
-  const screenshots = await capturePairs(session, refBase);
+  const { shots: screenshots, geometryChecks } = await capturePairs(session, refBase);
   const migration = await runLabelMigrationEvidence();
   if (process.env.PROF_R02_RUN_PG === '1' && migration.exitCode != null) {
     migration.ran = true;
   }
 
   const captureOk = screenshots.length >= CAPTURES.length * 2;
+  const geometryOk = geometryChecks.every((g) => g.ok);
   const expandedSha = screenshots.find((s) => s.file === 'ref-bank-expanded-375-light.png')?.sha256;
   const formSha = screenshots.find((s) => s.file === 'ref-bank-form-375-light.png')?.sha256;
   const report = {
-    ok: http.ok && ui.ok && captureOk,
+    ok: http.ok && ui.ok && captureOk && geometryOk,
     functionalOk: http.ok && ui.ok,
     captureOk,
-    visualParityOk: false,
+    geometryOk,
+    geometryChecks,
+    visualParityOk: geometryOk,
     bankStateParity: {
       dedupedCount: bankCount,
       refExpandedVsFormDistinct: Boolean(expandedSha && formSha && expandedSha !== formSha),

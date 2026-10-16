@@ -18,7 +18,7 @@
   --pw-5: 1.25rem;
   --pw-6: 1.5rem;
   --pw-8: 2rem;
-  font-family: var(--font-sans, Manrope, system-ui, sans-serif);
+  font-family: inherit;
   font-size: var(--pw-base);
   color: var(--pw-text);
 }
@@ -27,17 +27,29 @@
   max-width: 1100px;
   margin: var(--pw-6) auto;
   min-width: 0;
-}
-
-.completedShell {
-  width: 100%;
-  max-width: 100%;
-  margin: var(--pw-6) auto 0;
-  min-width: 0;
+  width: auto;
 }
 
 .agentScope {
   min-width: 0;
+  width: 100%;
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.agentScope > .pw {
+  max-width: 1100px;
+  margin: var(--pw-6) auto;
+  width: auto;
+  justify-self: center;
+}
+
+.agentScope > .bankPanel {
+  max-width: none;
+  width: 100%;
+  margin: var(--pw-6) 0;
+  justify-self: stretch;
 }
 
 :global([data-theme="dark"]) .pw,
@@ -339,20 +351,26 @@
   gap: var(--pw-3);
 }
 
-.requisitesList > li {
-  border: 1px solid var(--pw-line);
-  border-radius: 8px;
-  background: var(--pw-soft);
-  padding: var(--pw-4);
+.requisitesList > li.bankRecord {
+  border: 0;
+  border-bottom: 1px solid var(--pw-line);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--pw-5) 0;
   min-width: 0;
+  list-style: none;
 }
 
-.requisitesList > li strong {
+.requisitesList > li.bankRecord:first-of-type {
+  padding-top: 0;
+}
+
+.requisitesList > li.bankRecord strong {
   display: block;
   font-size: var(--pw-sm);
 }
 
-.requisitesList > li small {
+.requisitesList > li.bankRecord small {
   display: block;
   margin-top: var(--pw-1);
   font-size: var(--pw-xs);
@@ -368,17 +386,6 @@
   align-items: center;
 }
 
-.bankCard {
-  border-bottom: 1px solid var(--pw-line);
-  padding: var(--pw-5) 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.bankCard:first-of-type {
-  padding-top: 0;
-}
-
 .bankActionsPrimary {
   display: flex;
   flex-wrap: wrap;
@@ -391,7 +398,23 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--pw-2);
-  margin-bottom: var(--pw-2);
+  margin-top: var(--pw-2);
+}
+
+.bankMoreActions {
+  margin-top: var(--pw-2);
+  font-size: var(--pw-sm);
+}
+
+.bankMoreActions summary {
+  cursor: pointer;
+  color: var(--pw-muted);
+  font-weight: 700;
+  list-style: none;
+}
+
+.bankMoreActions summary::-webkit-details-marker {
+  display: none;
 }
 
 .btnBankAdd {
@@ -476,8 +499,7 @@
   margin-bottom: var(--pw-6);
 }
 
-.summaryHeadMain {
-  flex: 1;
+.summaryIdentity {
   min-width: 0;
 }
 
@@ -495,11 +517,8 @@
 }
 
 .summaryStatus {
-  display: inline-block;
-  margin-top: var(--pw-3);
+  margin-left: auto;
   font-size: var(--pw-xs);
-  font-weight: 600;
-  color: var(--pw-text);
   background: var(--pw-soft);
   padding: var(--pw-2) var(--pw-3);
   border-radius: 6px;
@@ -732,6 +751,17 @@
   .summaryActions {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .summaryHeader {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .summaryStatus {
+    margin-left: 0;
+    order: 3;
+    flex-basis: 100%;
   }
 }
 

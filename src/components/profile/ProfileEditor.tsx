@@ -538,7 +538,10 @@ function ProfileEditorInner({
     !(pureAgentCompactUi && activeSection === "basics");
 
   return (
-    <div className={styles.shell} id={moderationSection ? "moderation-remarks" : undefined}>
+    <div
+      className={`${styles.shell} ${pureAgentCompactUi ? styles.pureAgentProduction : ""}`}
+      id={moderationSection ? "moderation-remarks" : undefined}
+    >
       {showBack ? (
         <p className={styles.hint}>
           <Link

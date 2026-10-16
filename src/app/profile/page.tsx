@@ -21,8 +21,7 @@ import {
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
 import { parseProfileFocusFromQuery } from "@/lib/recommendation-profile-focus";
-import guideStyles from "./profileAgentGuide.module.css";
-
+import pureAgentStyles from "./pureAgentProfilePage.module.css";
 export const dynamic = "force-dynamic";
 
 const RETURN_PATH = "/profile";
@@ -114,13 +113,11 @@ export default async function ProfilePage(props: {
     </>
   );
 
-  return (
-    <CabinetShell returnTo={safeReturnTo}>
-      {pureAgentCompact ? (
-        <div className={guideStyles.guide}>{profileChrome}</div>
-      ) : (
-        profileChrome
-      )}
-    </CabinetShell>
+  const body = pureAgentCompact ? (
+    <div className={pureAgentStyles.pureAgentProfileChrome}>{profileChrome}</div>
+  ) : (
+    profileChrome
   );
+
+  return <CabinetShell returnTo={safeReturnTo}>{body}</CabinetShell>;
 }

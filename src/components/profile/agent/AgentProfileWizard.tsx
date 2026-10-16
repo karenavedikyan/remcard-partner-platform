@@ -399,11 +399,11 @@ export function AgentProfileWizard({
     const display = savedProfile.displayName?.trim() ? savedProfile : draft;
     const name = display.displayName?.trim() || "—";
     return (
-      <div className={styles.completedShell} data-testid="agent-profile-completed-summary">
-        <section className={styles.summary}>
+      <div className={styles.pw} data-testid="agent-profile-completed-summary">
+        <section className={styles.summary} data-testid="pw-summary">
           <div className={styles.summaryHeader}>
             <div className={styles.avatar}>{name.slice(0, 2).toUpperCase()}</div>
-            <div className={styles.summaryHeadMain}>
+            <div className={styles.summaryIdentity}>
               <span className={styles.kicker} data-testid="agent-profile-role-kicker">
                 Агент
               </span>
@@ -411,8 +411,8 @@ export function AgentProfileWizard({
               <p className={styles.cityMuted}>
                 {display.city?.trim() || "Город не указан"}
               </p>
-              <span className={styles.summaryStatus}>Заполнено</span>
             </div>
+            <span className={styles.summaryStatus}>Заполнено</span>
           </div>
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>

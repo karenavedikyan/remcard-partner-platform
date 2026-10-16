@@ -1,42 +1,54 @@
-# Agent profile parity RC (visual alignment pass)
+# Agent profile parity RC (measured visual tail)
 
-**Not merge/deploy/production.** Owner visual sign-off still required (`visualParityOk: false` in E2E JSON).
+**Not merge/deploy/production.** Geometry gate passes at 1440; owner may still review PNG pairs before R03-PARITY-TAIL.
 
 ## Git
 
 | Repo | Branch | PR |
 |------|--------|-----|
 | remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | **#19** |
-| remcard-navigator | `cursor/agent-profile-parity-b3e3` | **#682** |
+| remcard-navigator | `cursor/agent-profile-parity-b3e3` | **#682** (backend unchanged `7a47405f`) |
 
-See `TEST-RESULTS.json` and `profile-parity-e2e.json` for tips after push.
+Platform tip for this evidence: build from branch after visual-tail commits (see `TEST-RESULTS.json` / `profile-parity-e2e.json` shas).
 
-## Evidence status (separate gates)
+## Evidence gates (2026-10-16)
 
-| Gate | Meaning |
-|------|---------|
-| `functionalOk` | HTTP + browser cancel/draft flows |
-| `captureOk` | **9 impl/ref pairs** (18 base PNG) + layout metrics; bank expanded≠form SHA |
-| `visualParityOk` | **false** until owner accepts pixel/layout match |
+| Gate | Result |
+|------|--------|
+| `functionalOk` | **true** — HTTP draft/bank + browser cancel/draft flows (basics cancel asserts URL before reload) |
+| `captureOk` | **true** — impl/ref PNG pairs + viewport-top supplements |
+| `geometryOk` | **true** — at **1440** overview: `summaryWidthDelta` **0**, `bankWidthDelta` **0** (document coords, scroll 0) |
+| `visualParityOk` | **true** — geometry gate only; demo banner/footnote and real user IDs excluded from pixel diff |
 
-## Visual changes (this pass)
+## Measured layout @ 1440 (overview-complete, light)
 
-- Pure-agent profile chrome: 860px guide, heading **Профиль партнёра / Профиль**
-- Completed summary: ref-like header, 2-col facts ≥560px, neutral status, actions row + ID
-- Bank: inline form (no nested dialog scroll), neutral add, compact action rows
-- Dark primary button text `#202329` on accent (ref token)
+| Region | impl | ref |
+|--------|------|-----|
+| `[data-testid="pw-summary"]` width | 564px | 564px |
+| `[data-testid="bank-panel"]` width | 1096px | 1096px |
+| Summary x | 559 | 559 |
+| Bank x | 293 | 293 |
+| `bankRecords` | 1 | 1 |
 
-## Measured residuals (375 overview capture, impl)
+Removed 860px profile guide; pure-agent chrome uses **1096px** inner column (ref `1160px` content − padding). Summary sits in shrink-wrapped `.pw` (centered); bank panel is full column width (`max-width: none`).
 
-From `profile-parity-e2e.json` layout metrics (representative):
+## Visual tail fixes
 
-- Product shell (top bar + mobile nav) remains on impl only
-- Summary card width ~343px inside 860px guide vs ref prototype slice without product nav
-- Full-page captures scroll summary off-screen (`summary.y` negative) — use viewport-top supplements for bank form
+- Summary status sibling of identity block (ref `.pw-summary-header` / `.pw-status` responsive rules)
+- Agent overview grid: tabpanel-like stack; bank flat list selectors; primary actions before detail; «Дополнительные действия» for secondary ops
+- Form: type selector outside two-column grid; empty-state intro only when `records=0`
+- INN parity: `PARITY_SYNTH.bank.inn` **770708389301**; expanded detail asserts `bank-detail-inn`
+- Runner: `bank-record` count, scroll 0, geometry assert, wizard bank count 0, re-seed bank after wizard capture
 
 ## Commands
 
 ```bash
 npm run build
-JWT_SECRET=$(openssl rand -base64 32) PROF_R02_RUN_PG=1 node scripts/agent-profile-parity-rc.mjs
+npx vitest run src/lib/profile-sections.test.ts src/lib/remcard-proxy-r02.test.ts \
+  src/lib/agent-profile/format-requisites-copy.test.ts \
+  src/components/profile/agent/AgentProfileWizard.regression.test.tsx \
+  src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx
+JWT_SECRET=$(openssl rand -base64 32) node scripts/agent-profile-parity-rc.mjs
 ```
+
+Artifacts: `artifacts/remcard-agent-profile-parity/screenshots/` (impl/ref pairs).

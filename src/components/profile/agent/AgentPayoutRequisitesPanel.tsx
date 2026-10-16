@@ -280,6 +280,20 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
           data-testid="agent-requisites-form"
         >
           <h3 id={dialogTitleId}>{editId ? "Изменить реквизиты" : "Новые реквизиты"}</h3>
+          <div className={styles.field}>
+            <label htmlFor="req-kind">Тип получателя</label>
+            <select
+              id="req-kind"
+              data-testid="bank-type"
+              value={form.kind}
+              disabled={disabled || pendingId === "form"}
+              onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as FormState["kind"] }))}
+            >
+              <option value="person">Физическое лицо</option>
+              <option value="ip">ИП</option>
+              <option value="company">Юридическое лицо</option>
+            </select>
+          </div>
           <div className={`${styles.fields} ${styles.fieldsTwo}`}>
             <div className={styles.field}>
               <label htmlFor="req-label">Название набора</label>
@@ -292,20 +306,6 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                 autoComplete="off"
               />
               <small>Например, Личный счёт или Основной счёт компании.</small>
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="req-kind">Тип получателя</label>
-              <select
-                id="req-kind"
-                data-testid="bank-type"
-                value={form.kind}
-                disabled={disabled || pendingId === "form"}
-                onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as FormState["kind"] }))}
-              >
-                <option value="person">Физическое лицо</option>
-                <option value="ip">ИП</option>
-                <option value="company">Юридическое лицо</option>
-              </select>
             </div>
             <div className={styles.field}>
               <label htmlFor="req-name">
@@ -454,17 +454,22 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
         </form>
       ) : (
         <>
-          <p className={styles.intro}>
-            {items.length === 0
-              ? "Добавьте банковский счёт, на который партнёры смогут перечислять оплату по безналичному расчёту. Это необязательно для заполнения профиля."
-              : "Добавьте банковский счёт для безналичных выплат. Это не требуется для сохранения профиля."}
-          </p>
+          {items.length === 0 ? (
+            <p className={styles.intro}>
+              Добавьте банковский счёт, на который партнёры смогут перечислять оплату по безналичному
+              расчёту. Это необязательно для заполнения профиля.
+            </p>
+          ) : null}
           <ul className={styles.requisitesList}>
             {items.map((item) => {
               const display = mergeListWithDetail(item);
               const loadingDetail = detailLoadingId === item.id;
               return (
-                <li key={item.id} className={styles.bankCard}>
+                <li
+                  key={item.id}
+                  className={styles.bankRecord}
+                  data-testid="bank-record"
+                >
                   <div className={styles.bankCardHead}>
                     <strong>{item.label?.trim() || item.legalName}</strong>
                     {item.isPrimary ? <span className={styles.status}>Основные</span> : null}
@@ -474,11 +479,37 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                     {item.bankName ? ` · ${item.bankName}` : ""}
                     {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
                   </small>
+                  <div className={styles.bankActionsPrimary}>
+                    <button
+                      type="button"
+                      className={styles.btn}
+                      disabled={disabled || pendingId === item.id || loadingDetail}
+                      onClick={() => void toggleExpanded(item)}
+                    >
+                      {expandedId === item.id ? "Скрыть" : "Посмотреть"}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btn}
+                      disabled={disabled || pendingId === item.id}
+                      onClick={() => void copyItem(item)}
+                    >
+                      Скопировать
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btn}
+                      disabled={disabled || pendingId === item.id}
+                      onClick={(e) => void openEdit(item.id, e.currentTarget)}
+                    >
+                      Изменить
+                    </button>
+                  </div>
                   {expandedId === item.id ? (
                     loadingDetail ? (
                       <p className={styles.intro}>Загрузка полных реквизитов…</p>
                     ) : (
-                      <dl className={styles.summaryFacts}>
+                      <dl className={styles.summaryFacts} data-testid="bank-record-detail">
                         <div>
                           <dt>Тип получателя</dt>
                           <dd>{KIND_LABELS[display.kind] ?? display.kind}</dd>
@@ -512,7 +543,7 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                         {display.inn ? (
                           <div>
                             <dt>ИНН</dt>
-                            <dd>{display.inn}</dd>
+                            <dd data-testid="bank-detail-inn">{display.inn}</dd>
                           </div>
                         ) : null}
                         {display.kpp ? (
@@ -524,64 +555,41 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                       </dl>
                     )
                   ) : null}
-                  <div className={styles.bankActionsPrimary}>
-                    <button
-                      type="button"
-                      className={styles.btn}
-                      disabled={disabled || pendingId === item.id || loadingDetail}
-                      onClick={() => void toggleExpanded(item)}
-                    >
-                      {expandedId === item.id ? "Скрыть" : "Посмотреть"}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.btn}
-                      disabled={disabled || pendingId === item.id}
-                      onClick={() => void copyItem(item)}
-                    >
-                      Скопировать
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.btn}
-                      disabled={disabled || pendingId === item.id}
-                      onClick={(e) => void openEdit(item.id, e.currentTarget)}
-                    >
-                      Изменить
-                    </button>
-                  </div>
-                  <div className={styles.bankActionsSecondary}>
-                    {!item.isPrimary ? (
+                  <details className={styles.bankMoreActions}>
+                    <summary>Дополнительные действия</summary>
+                    <div className={styles.bankActionsSecondary}>
+                      {!item.isPrimary ? (
+                        <button
+                          type="button"
+                          className={styles.btn}
+                          disabled={disabled || pendingId === item.id}
+                          onClick={() => void runAction(item.id, "setPrimary")}
+                        >
+                          Сделать основными
+                        </button>
+                      ) : null}
+                      {item.applyForNextPayout ? (
+                        <span className={styles.label}>Для следующего расчёта</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.btn}
+                          disabled={disabled || pendingId === item.id}
+                          onClick={() => void runAction(item.id, "applyForNextPayout")}
+                        >
+                          Применить для следующего расчёта
+                        </button>
+                      )}
                       <button
                         type="button"
                         className={styles.btn}
                         disabled={disabled || pendingId === item.id}
-                        onClick={() => void runAction(item.id, "setPrimary")}
+                        onClick={() => void runAction(item.id, "archive")}
                       >
-                        Сделать основными
+                        Архивировать
                       </button>
-                    ) : null}
-                    {item.applyForNextPayout ? (
-                      <span className={styles.label}>Для следующего расчёта</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className={styles.btn}
-                        disabled={disabled || pendingId === item.id}
-                        onClick={() => void runAction(item.id, "applyForNextPayout")}
-                      >
-                        Применить для следующего расчёта
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className={styles.btn}
-                      disabled={disabled || pendingId === item.id}
-                      onClick={() => void runAction(item.id, "archive")}
-                    >
-                      Архивировать
-                    </button>
-                  </div>
+                    </div>
+                  </details>
                 </li>
               );
             })}

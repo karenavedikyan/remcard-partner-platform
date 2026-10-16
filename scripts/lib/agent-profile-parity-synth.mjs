@@ -10,7 +10,7 @@ export const PARITY_SYNTH = {
     kind: 'person',
     label: 'Личный счёт',
     legalName: 'Parity Visual Agent',
-    inn: '7707083893',
+    inn: '770708389301',
     bankName: 'Тест Банк',
     bik: '044525225',
     accountNumber: '40817810000000000001',

@@ -2,13 +2,28 @@
   "ok": true,
   "functionalOk": true,
   "captureOk": true,
-  "visualParityOk": false,
+  "geometryOk": true,
+  "geometryChecks": [
+    {
+      "cap": "overview-1440-light",
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "ok": true
+    },
+    {
+      "cap": "overview-1440-dark",
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "ok": true
+    }
+  ],
+  "visualParityOk": true,
   "bankStateParity": {
     "dedupedCount": 1,
     "refExpandedVsFormDistinct": true
   },
   "stack": {
-    "platformGitSha": "3c625fcca8cb02c60e4c03311d77cc418f32a4f6",
+    "platformGitSha": "d13735bc535b661be7c8ced08b1f71bdc727e586",
     "navigatorGitSha": "7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7",
     "platformOrigin": "http://127.0.0.1:3044",
     "navOrigin": "http://127.0.0.1:3043",
@@ -40,24 +55,21 @@
   "screenshots": [
     {
       "file": "impl-overview-1440-light.png",
-      "sha256": "fb781853251bda0e0aba2e5da15c6f8e04a882e330343126f4f801cb1210c595",
+      "sha256": "33c63bffe697391897adac00e5d5ed1ae9a1c29cd03f5a6faa16dc23b3fa2879",
       "layout": {
         "summary": {
-          "w": 860,
-          "h": 501,
+          "w": 564,
+          "h": 453,
+          "x": 559,
           "y": 357
         },
-        "facts": {
-          "w": 794,
-          "h": 185,
-          "y": 546
-        },
         "bankPanel": {
-          "w": 860,
-          "h": 448,
+          "w": 1096,
+          "h": 373,
+          "x": 293,
           "y": 882
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
@@ -68,42 +80,36 @@
         "summary": {
           "w": 564,
           "h": 507,
-          "y": -217
-        },
-        "facts": {
-          "w": 498,
-          "h": 185,
-          "y": -18
+          "x": 559,
+          "y": 351
         },
         "bankPanel": {
           "w": 1096,
           "h": 440,
-          "y": 403
+          "x": 293,
+          "y": 971
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
     {
       "file": "impl-overview-1440-dark.png",
-      "sha256": "72a2b11fffab8c272ea8e2b0b3e7c51042a39f417517bb0ccb2865dc983bfe0e",
+      "sha256": "b725ff3e9d7c4e566e66dad5998571a76b278dc11b13cae8373972912e440524",
       "layout": {
         "summary": {
-          "w": 860,
-          "h": 501,
+          "w": 564,
+          "h": 453,
+          "x": 559,
           "y": 357
         },
-        "facts": {
-          "w": 794,
-          "h": 185,
-          "y": 546
-        },
         "bankPanel": {
-          "w": 860,
-          "h": 448,
+          "w": 1096,
+          "h": 373,
+          "x": 293,
           "y": 882
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
@@ -114,341 +120,336 @@
         "summary": {
           "w": 564,
           "h": 507,
-          "y": -217
-        },
-        "facts": {
-          "w": 498,
-          "h": 185,
-          "y": -18
+          "x": 559,
+          "y": 351
         },
         "bankPanel": {
           "w": 1096,
           "h": 440,
-          "y": 403
+          "x": 293,
+          "y": 971
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
     {
       "file": "impl-overview-375-light.png",
-      "sha256": "278b10d2b9ef6018cedb71803deee1c0de77aa660f5223f951185eec02647845",
+      "sha256": "eb87618390258a698f22ef23fa542e9f5913f27b25351f5cd881b05dd4246967",
       "layout": {
         "summary": {
           "w": 343,
-          "h": 699,
+          "h": 703,
+          "x": 16,
           "y": 368
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": 541
         },
         "bankPanel": {
           "w": 343,
-          "h": 707,
-          "y": 1091
+          "h": 510,
+          "x": 16,
+          "y": 1143
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-overview-375-light-viewport-top.png",
+        "sha256": "196915a2b06d864360c5498b2892ddc935fccd9c3f911490b0e1a84bcca7d319"
       }
     },
     {
       "file": "ref-overview-375-light.png",
-      "sha256": "fedd9d6df78236a6fba5f8dc7c67a23cb8002bd2eb3a98fc63fc9ecb682d3b30",
+      "sha256": "46c8f4ca62e30eabd42df28d5cdd420b6e34d185629c6f88f56e4e5f4440f354",
       "layout": {
         "summary": {
           "w": 343,
           "h": 780,
-          "y": -854
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -598
+          "x": 16,
+          "y": 322
         },
         "bankPanel": {
           "w": 343,
           "h": 616,
-          "y": 57
+          "x": 16,
+          "y": 1233
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-overview-375-light-viewport-top.png",
+        "sha256": "641ddf7c436abb66661c2ea5a2cd6f96ac67b58775b9d6435be8af542faf9d28"
       }
     },
     {
       "file": "impl-overview-375-dark.png",
-      "sha256": "ba0442c3308dfa4c789e2c3efbf5843ad38aa31c83cb47b8e8f87ed41b374f25",
+      "sha256": "c38fc4f72b0c4253ceed10d44289fa2cb0d54f872ec17f8ef2e97a73ff286780",
       "layout": {
         "summary": {
           "w": 343,
-          "h": 699,
+          "h": 703,
+          "x": 16,
           "y": 368
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": 541
         },
         "bankPanel": {
           "w": 343,
-          "h": 707,
-          "y": 1091
+          "h": 510,
+          "x": 16,
+          "y": 1143
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-overview-375-dark-viewport-top.png",
+        "sha256": "91dfd97a0c6673738ceac05ff36dd8dbf882c7dbb6773d16a36fc6d41d4bc28e"
       }
     },
     {
       "file": "ref-overview-375-dark.png",
-      "sha256": "ac4af9f3cffbab38ea3ded6e9996cedd4d60461ff3cfb6e37be473db1f4e4322",
+      "sha256": "c177b4b2617e6bd0b3211983151a5024474388f86b5a9dedcc839238cdb897b2",
       "layout": {
         "summary": {
           "w": 343,
           "h": 780,
-          "y": -854
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -598
+          "x": 16,
+          "y": 322
         },
         "bankPanel": {
           "w": 343,
           "h": 616,
-          "y": 57
+          "x": 16,
+          "y": 1233
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-overview-375-dark-viewport-top.png",
+        "sha256": "4b0c244dd04e07110272f2cb2e31c0b57a6042b3ad3ce1eca6590bc4889025ee"
       }
     },
     {
       "file": "impl-overview-320-light.png",
-      "sha256": "ef3fc20a56434da79d6d367b4b22c05a116a7989513f082fce10442e913b4795",
+      "sha256": "58f00851b850ba1aa1f08b6f732da8b6e1cd89e0ffa00914a26abdd188327d3a",
       "layout": {
         "summary": {
           "w": 288,
-          "h": 726,
+          "h": 775,
+          "x": 16,
           "y": 368
-        },
-        "facts": {
-          "w": 246,
-          "h": 373,
-          "y": 568
         },
         "bankPanel": {
           "w": 288,
-          "h": 729,
-          "y": 1118
+          "h": 510,
+          "x": 16,
+          "y": 1215
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-overview-320-light-viewport-top.png",
+        "sha256": "6ddaa8e4e9724041598f63ce247c534bb4144aa15e4acea81bcb8788e99d9426"
       }
     },
     {
       "file": "ref-overview-320-light.png",
-      "sha256": "bf5a95993d8095f9bb68795ee63d458f0337a71dcd934686bddd41990c6fbe65",
+      "sha256": "15d20652ee01cbe371c3fbfadb046add786b8797247bb6c5931a8e7d3c24409a",
       "layout": {
         "summary": {
           "w": 288,
           "h": 852,
-          "y": -1082
-        },
-        "facts": {
-          "w": 246,
-          "h": 373,
-          "y": -753
+          "x": 16,
+          "y": 342
         },
         "bankPanel": {
           "w": 288,
           "h": 659,
-          "y": -98
+          "x": 16,
+          "y": 1326
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-overview-320-light-viewport-top.png",
+        "sha256": "2c26f125ab49651d469da0914efdb4c3e38fd01ef7f7cfb0568fa61889c6715b"
       }
     },
     {
       "file": "impl-wizard-step1-375-light.png",
-      "sha256": "de9be5fc1361114422524715afe77140d697be9c465b3996081f997dc32b085d",
+      "sha256": "8aba3afb245e93b7b2333db0b18c5c53e69b7ff5855a60d0db24e9a49f29717a",
       "layout": {
         "summary": null,
-        "facts": null,
         "bankPanel": {
           "w": 343,
-          "h": 707,
-          "y": 489
+          "h": 327,
+          "x": 16,
+          "y": 1122
         },
-        "bankCards": 2,
+        "bankRecords": 0,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "impl-wizard-step1-375-light-viewport-top.png",
+        "sha256": "75af71b78ca61fdc464096b6e69e4716b16936436f1e62605464895363c27b9c"
       }
     },
     {
       "file": "ref-wizard-step1-375-light.png",
-      "sha256": "9c28adb805b4db48bee497620d3b45329a31588c3338d269ddd595f31b96dd55",
+      "sha256": "3a22b79f878b5366722f8c48152b20ba8398c119053962b6c23758140f02f703",
       "layout": {
         "summary": null,
-        "facts": null,
         "bankPanel": {
           "w": 343,
           "h": 327,
-          "y": 787
+          "x": 16,
+          "y": 1108
         },
-        "bankCards": 0,
+        "bankRecords": 0,
         "bankForm": null
+      },
+      "viewportTop": {
+        "file": "ref-wizard-step1-375-light-viewport-top.png",
+        "sha256": "a86267e887c4b7593ba2c03303f4cc040358f15c45c5b2700b83ff37ce764694"
       }
     },
     {
       "file": "impl-bank-collapsed-375-light.png",
-      "sha256": "064b9375dc61b76e86524d304256a30e754c1b65315fafdca09d8ff9ce995fe0",
+      "sha256": "fca91167670b1a08c7197e26e2c30b7202d87055ac0b519c13654febf4d9b89f",
       "layout": {
         "summary": {
           "w": 343,
-          "h": 699,
+          "h": 703,
+          "x": 16,
           "y": 368
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": 541
         },
         "bankPanel": {
           "w": 343,
-          "h": 707,
-          "y": 1091
+          "h": 510,
+          "x": 16,
+          "y": 1143
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
     {
       "file": "ref-bank-collapsed-375-light.png",
-      "sha256": "fedd9d6df78236a6fba5f8dc7c67a23cb8002bd2eb3a98fc63fc9ecb682d3b30",
+      "sha256": "46c8f4ca62e30eabd42df28d5cdd420b6e34d185629c6f88f56e4e5f4440f354",
       "layout": {
         "summary": {
           "w": 343,
           "h": 780,
-          "y": -854
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -598
+          "x": 16,
+          "y": 322
         },
         "bankPanel": {
           "w": 343,
           "h": 616,
-          "y": 57
+          "x": 16,
+          "y": 1233
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
     {
       "file": "impl-bank-expanded-375-light.png",
-      "sha256": "5a4dfdf3750d074dd40bc0696154080d2b0d525a61a8c34f43cbb618abb4ef77",
+      "sha256": "302624b126d7575ed93f5a574cd647262142b408f6f5d81c87daa3944a916ff7",
       "layout": {
         "summary": {
           "w": 343,
-          "h": 699,
-          "y": -617
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -444
+          "h": 703,
+          "x": 16,
+          "y": 368
         },
         "bankPanel": {
           "w": 343,
-          "h": 1146,
-          "y": 106
+          "h": 957,
+          "x": 16,
+          "y": 1143
         },
-        "bankCards": 2,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
     {
       "file": "ref-bank-expanded-375-light.png",
-      "sha256": "d913fd9717b6cf5789855b94b15ee70f702f5623746cd3cb2fbb68604fe79fed",
+      "sha256": "ec1537889398df431848eefb7ad4d72026568843fffa87e57807baed85979894",
       "layout": {
         "summary": {
           "w": 343,
           "h": 780,
-          "y": -854
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -598
+          "x": 16,
+          "y": 322
         },
         "bankPanel": {
           "w": 343,
           "h": 1056,
-          "y": 57
+          "x": 16,
+          "y": 1233
         },
-        "bankCards": 1,
+        "bankRecords": 1,
         "bankForm": null
       }
     },
     {
       "file": "impl-bank-form-375-light.png",
-      "sha256": "b64a5d013987c9b5d8992506c3caf1cb420bb3f20b69c3005460d8d6f4ada60b",
+      "sha256": "c91415b448fecdb037bcb8c2f04d7c23cf1cc20ba545a318a433e3d947aa2a7e",
       "layout": {
         "summary": {
           "w": 343,
-          "h": 699,
-          "y": -728
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -555
+          "h": 703,
+          "x": 16,
+          "y": 368
         },
         "bankPanel": {
           "w": 343,
-          "h": 1307,
-          "y": -5
+          "h": 1287,
+          "x": 16,
+          "y": 1143
         },
-        "bankCards": 0,
+        "bankRecords": 0,
         "bankForm": {
           "w": 301,
-          "h": 1166,
-          "y": 115
+          "h": 1146,
+          "x": 37,
+          "y": 1263
         }
       },
       "viewportTop": {
         "file": "impl-bank-form-375-light-viewport-top.png",
-        "sha256": "b60eb5baa56490998be95092602b29146a2e28c74d90199bb90fe0961fa285e7"
+        "sha256": "781631f2ea2f85d31b5e392df38fca71985e006012ffa4281f88c78118487c56"
       },
       "formFooter": {
         "file": "impl-bank-form-375-light-form-footer.png",
-        "sha256": "9b8d1a87cb6562d9272f896400ec0d78186f07528d4d278f606e4aa2eb6ee389"
+        "sha256": "0f99e8a9e3e91f52dfa402055991faa223217ed3f5b682d2284b29c3f6a5c80d"
       }
     },
     {
       "file": "ref-bank-form-375-light.png",
-      "sha256": "db8c096b5da2dc929d27ea6b2da28e8a4176414c67c02eb0242983e7bb20c508",
+      "sha256": "9d9a071860c324984b517b4cd92cea7a451a9b4aa9fe070fe213e7f2a105f8bc",
       "layout": {
         "summary": {
           "w": 343,
           "h": 780,
-          "y": -854
-        },
-        "facts": {
-          "w": 301,
-          "h": 373,
-          "y": -598
+          "x": 16,
+          "y": 322
         },
         "bankPanel": {
           "w": 343,
           "h": 1553,
-          "y": 57
+          "x": 16,
+          "y": 1233
         },
-        "bankCards": 0,
+        "bankRecords": 0,
         "bankForm": {
           "w": 301,
           "h": 1316,
-          "y": 181
+          "x": 37,
+          "y": 1357
         }
       },
       "viewportTop": {
@@ -462,9 +463,8 @@
     }
   ],
   "migration": {
-    "exitCode": 0,
-    "stdout": "TAP version 13\n# Subtest: prof-r02 requisites label controlled apply\n    # Subtest: manifest checksum matches pinned sha256\n    ok 1 - manifest checksum matches pinned sha256\n      ---\n      duration_ms: 0.80392\n      ...\n    # Subtest: applies label column after R02 baseline with pinned checksum\n    ok 2 - applies label column after R02 baseline with pinned checksum\n      ---\n      duration_ms: 120.144178\n      ...\n    1..2\nok 1 - prof-r02 requisites label controlled apply\n  ---\n  duration_ms: 141.5469\n  type: 'suite'\n  ...\n1..1\n# tests 2\n# suites 1\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 198.857298\n",
-    "ran": true
+    "skipped": true,
+    "reason": "PROF_R02_RUN_PG not set"
   },
-  "capturedAt": "2026-10-16T06:43:27.153Z"
+  "capturedAt": "2026-10-16T07:32:02.876Z"
 }
