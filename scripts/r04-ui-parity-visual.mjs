@@ -37,8 +37,6 @@ const MATRIX = [
 async function measureGeometry(page) {
   return page.evaluate(() => {
     const toolbar = document.querySelector('[data-testid="agent-r04-list-toolbar"]');
-    const actions = document.querySelector('[data-testid="agent-r04-partners-list"] [class*="recordAction"]')
-      || document.querySelector('[data-testid="agent-r04-partners-cards"]');
     const rect = (el) => {
       if (!el) return null;
       const r = el.getBoundingClientRect();
@@ -46,9 +44,15 @@ async function measureGeometry(page) {
     };
     const vw = window.innerWidth;
     const clipOk = (r) => r && r.x >= -1 && r.y >= -1 && r.x + r.w <= vw + 1;
+    const listTable = document.querySelector('[data-testid="agent-r04-partners-list"] table');
+    const cardGrid = document.querySelector('[data-testid="agent-r04-partners-cards"]');
+    const modal = document.querySelector('[data-testid="agent-partner-hub-modal"]');
     return {
       toolbar: rect(toolbar),
       listRoot: rect(document.querySelector('[data-testid="agent-r04-partners-list"], [data-testid="agent-r04-partners-cards"]')),
+      listTable: rect(listTable),
+      cardGrid: rect(cardGrid),
+      modal: rect(modal),
       toolbarClipped: toolbar ? !clipOk(rect(toolbar)) : null,
       viewportW: vw,
     };
@@ -57,12 +61,16 @@ async function measureGeometry(page) {
 
 async function captureImpl(page, plat, row) {
   await page.setViewportSize({ width: row.width, height: row.height });
-  await ensurePageTheme(page, row.theme);
   await page.goto(`${plat}/partners`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await page.keyboard.press('Escape').catch(() => null);
+  await page.waitForTimeout(200);
+  await ensurePageTheme(page, row.theme);
   if (row.panel === 'find') {
     await openImplR04Panel(page, 'find', plat);
   } else if (row.panel === 'invitations') {
     await openImplR04Panel(page, 'invitations', plat);
+    await page.locator('[data-testid="agent-invites-incoming"]').click().catch(() => null);
+    await page.waitForTimeout(300);
   }
   if (row.panel === 'list' && row.viewMode === 'cards') {
     await setImplR04ViewMode(page, 'cards');
@@ -108,6 +116,28 @@ async function main() {
     rows.push({ ...row, ...impl, ...ref });
   }
 
+  const extra = [];
+  for (const spec of [
+    { name: 'impl-r04-inv-incoming-1440-light.png', tab: 'invitations', sub: 'incoming' },
+    { name: 'impl-r04-inv-outgoing-1440-light.png', tab: 'invitations', sub: 'outgoing' },
+    { name: 'impl-r04-modal-320-light.png', tab: 'find', width: 320, height: 700 },
+  ]) {
+    await session.page.setViewportSize({
+      width: spec.width ?? 1440,
+      height: spec.height ?? 900,
+    });
+    await session.page.goto(`${session.plat}/partners`, { waitUntil: 'networkidle', timeout: 90_000 });
+    if (spec.tab === 'invitations') {
+      await openImplR04Panel(session.page, 'invitations', session.plat);
+      await session.page.locator(`[data-testid="agent-invites-${spec.sub}"]`).click();
+      await session.page.waitForTimeout(400);
+    } else {
+      await openImplR04Panel(session.page, 'find', session.plat);
+    }
+    await session.page.screenshot({ path: path.join(SHOTS, spec.name), fullPage: !spec.width });
+    extra.push(spec.name);
+  }
+
   await session.context.close();
   await refPage.close();
   await browser.close();
@@ -119,7 +149,11 @@ async function main() {
     platformHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim(),
     pairs,
     matrixRows: rows.length,
+    extraCaptures: extra,
     rows,
+    visualParityOk: false,
+    visualReviewNote:
+      'Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS.',
     pass: pairs >= 8 && rows.every((r) => !r.geometry?.toolbarClipped),
   };
   writeFileSync(path.join(ART, 'PARITY-VISUAL.json'), JSON.stringify(report, null, 2));

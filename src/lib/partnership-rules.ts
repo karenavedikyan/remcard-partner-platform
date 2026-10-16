@@ -69,7 +69,7 @@ export const SEARCH_ROLE_OPTIONS: ReadonlyArray<{
   {
     value: "agent",
     label: "Партнёры агента",
-    description: "Поиск по каталогу RemCard для principal agent owner",
+    description: "Партнёры с одобренным профилем в каталоге RemCard",
     namePlaceholder: "Слово, название или публичный ID",
   },
 ];

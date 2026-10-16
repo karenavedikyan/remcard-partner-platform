@@ -1,8 +1,13 @@
 {
-  "generatedAt": "2026-10-16T11:21:10.415Z",
-  "platformHead": "7ed2756ab09818227999dad7adcc191cae1c36c1",
+  "generatedAt": "2026-10-16T11:42:37.882Z",
+  "platformHead": "02dd8efbc900734380c82a8689b21f28fa84bf3c",
   "pairs": 8,
   "matrixRows": 9,
+  "extraCaptures": [
+    "impl-r04-inv-incoming-1440-light.png",
+    "impl-r04-inv-outgoing-1440-light.png",
+    "impl-r04-modal-320-light.png"
+  ],
   "rows": [
     {
       "id": "P1",
@@ -14,17 +19,25 @@
       "impl": "impl-r04-P1-1440-light.png",
       "geometry": {
         "toolbar": {
-          "x": 291,
-          "y": 527.796875,
-          "w": 1100,
-          "h": 336.03125
+          "x": 274,
+          "y": 531.71875,
+          "w": 1134,
+          "h": 167.34375
         },
         "listRoot": {
           "x": 274,
-          "y": 896.828125,
+          "y": 715.0625,
           "w": 1134,
-          "h": 208.703125
+          "h": 1356.765625
         },
+        "listTable": {
+          "x": 274,
+          "y": 715.0625,
+          "w": 1134,
+          "h": 1356.765625
+        },
+        "cardGrid": null,
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 1440
       },
@@ -45,17 +58,25 @@
       "impl": "impl-r04-P2-1440-light.png",
       "geometry": {
         "toolbar": {
-          "x": 291,
-          "y": 527.796875,
-          "w": 1100,
-          "h": 336.03125
+          "x": 274,
+          "y": 531.71875,
+          "w": 1134,
+          "h": 167.34375
         },
         "listRoot": {
           "x": 274,
-          "y": 896.828125,
+          "y": 715.0625,
           "w": 1134,
-          "h": 244.375
+          "h": 217.53125
         },
+        "listTable": null,
+        "cardGrid": {
+          "x": 274,
+          "y": 715.0625,
+          "w": 1134,
+          "h": 217.53125
+        },
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 1440
       },
@@ -75,9 +96,32 @@
       "theme": "light",
       "impl": "impl-r04-P3-1440-light.png",
       "geometry": {
-        "toolbar": null,
-        "listRoot": null,
-        "toolbarClipped": null,
+        "toolbar": {
+          "x": 274,
+          "y": 531.71875,
+          "w": 1134,
+          "h": 167.34375
+        },
+        "listRoot": {
+          "x": 274,
+          "y": 715.0625,
+          "w": 1134,
+          "h": 1356.765625
+        },
+        "listTable": {
+          "x": 274,
+          "y": 715.0625,
+          "w": 1134,
+          "h": 1356.765625
+        },
+        "cardGrid": null,
+        "modal": {
+          "x": 310,
+          "y": 259.171875,
+          "w": 820,
+          "h": 381.65625
+        },
+        "toolbarClipped": false,
         "viewportW": 1440
       },
       "ref": "ref-r04-P3-1440-light.png",
@@ -97,12 +141,25 @@
       "impl": "impl-r04-P4-1440-light.png",
       "geometry": {
         "toolbar": {
-          "x": 291,
-          "y": 527.796875,
-          "w": 1100,
-          "h": 336.03125
+          "x": 274,
+          "y": 510.796875,
+          "w": 1134,
+          "h": 167.34375
         },
-        "listRoot": null,
+        "listRoot": {
+          "x": 274,
+          "y": 694.140625,
+          "w": 1134,
+          "h": 634.953125
+        },
+        "listTable": {
+          "x": 274,
+          "y": 694.140625,
+          "w": 1134,
+          "h": 634.953125
+        },
+        "cardGrid": null,
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 1440
       },
@@ -123,17 +180,25 @@
       "impl": "impl-r04-P5-375-light.png",
       "geometry": {
         "toolbar": {
-          "x": 33,
-          "y": 642.28125,
-          "w": 309,
-          "h": 545.125
+          "x": 16,
+          "y": 608.265625,
+          "w": 343,
+          "h": 343.15625
         },
         "listRoot": {
           "x": 16,
-          "y": 1220.40625,
+          "y": 967.421875,
           "w": 343,
-          "h": 355.375
+          "h": 347.09375
         },
+        "listTable": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "cardGrid": null,
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 375
       },
@@ -153,9 +218,32 @@
       "theme": "light",
       "impl": "impl-r04-P6-375-light.png",
       "geometry": {
-        "toolbar": null,
-        "listRoot": null,
-        "toolbarClipped": null,
+        "toolbar": {
+          "x": 16,
+          "y": 608.265625,
+          "w": 343,
+          "h": 343.15625
+        },
+        "listRoot": {
+          "x": 16,
+          "y": 967.421875,
+          "w": 343,
+          "h": 347.09375
+        },
+        "listTable": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "cardGrid": null,
+        "modal": {
+          "x": 0,
+          "y": 48.734375,
+          "w": 375,
+          "h": 763.265625
+        },
+        "toolbarClipped": false,
         "viewportW": 375
       },
       "ref": "ref-r04-P6-375-light.png",
@@ -175,17 +263,25 @@
       "impl": "impl-r04-P7-1440-dark.png",
       "geometry": {
         "toolbar": {
-          "x": 291,
-          "y": 527.796875,
-          "w": 1100,
-          "h": 336.03125
+          "x": 274,
+          "y": 531.71875,
+          "w": 1134,
+          "h": 167.34375
         },
         "listRoot": {
           "x": 274,
-          "y": 896.828125,
+          "y": 715.0625,
           "w": 1134,
-          "h": 208.703125
+          "h": 1356.765625
         },
+        "listTable": {
+          "x": 274,
+          "y": 715.0625,
+          "w": 1134,
+          "h": 1356.765625
+        },
+        "cardGrid": null,
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 1440
       },
@@ -206,17 +302,25 @@
       "impl": "impl-r04-P8-1440-dark.png",
       "geometry": {
         "toolbar": {
-          "x": 291,
-          "y": 527.796875,
-          "w": 1100,
-          "h": 336.03125
+          "x": 274,
+          "y": 531.71875,
+          "w": 1134,
+          "h": 167.34375
         },
         "listRoot": {
           "x": 274,
-          "y": 896.828125,
+          "y": 715.0625,
           "w": 1134,
-          "h": 244.375
+          "h": 217.53125
         },
+        "listTable": null,
+        "cardGrid": {
+          "x": 274,
+          "y": 715.0625,
+          "w": 1134,
+          "h": 217.53125
+        },
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 1440
       },
@@ -238,17 +342,25 @@
       "impl": "impl-r04-P9-320-light.png",
       "geometry": {
         "toolbar": {
-          "x": 33,
-          "y": 642.0625,
-          "w": 263,
-          "h": 545.125
+          "x": 16,
+          "y": 629.734375,
+          "w": 288,
+          "h": 393.15625
         },
         "listRoot": {
           "x": 16,
-          "y": 1220.1875,
-          "w": 297,
-          "h": 355.375
+          "y": 1038.890625,
+          "w": 288,
+          "h": 391.875
         },
+        "listTable": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        "cardGrid": null,
+        "modal": null,
         "toolbarClipped": false,
         "viewportW": 320
       },
@@ -259,5 +371,7 @@
       }
     }
   ],
+  "visualParityOk": false,
+  "visualReviewNote": "Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS.",
   "pass": true
 }

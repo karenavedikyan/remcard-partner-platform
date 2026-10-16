@@ -50,6 +50,7 @@ import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
 import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
@@ -62,6 +63,9 @@ export type PartnersHubProps = {
   onAttentionCountChange?: (count: number) => void;
   variant?: "legacy" | "agent-r04";
   agentSegment?: "active" | "invitations";
+  agentInvitationFlow?: "incoming" | "outgoing";
+  agentModalSurface?: "find" | "link";
+  onCloseAgentModal?: () => void;
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
 };
@@ -84,10 +88,14 @@ export function PartnersHub({
   onAttentionCountChange,
   variant = "legacy",
   agentSegment,
+  agentInvitationFlow,
+  agentModalSurface,
+  onCloseAgentModal,
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
 }: PartnersHubProps) {
   const isAgentR04 = variant === "agent-r04";
+  const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
   const searchParams = useSearchParams();
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
   const [tab, setTab] = useState<TabId>(forcedTab ?? "list");
@@ -222,6 +230,12 @@ export function PartnersHub({
     if (isAgentR04 && agentSegment) {
       rows = rows.filter((p) => partnershipAgentSegment(p.status) === agentSegment);
     }
+    if (isAgentR04 && agentSegment === "invitations" && agentInvitationFlow) {
+      rows = rows.filter((p) => {
+        const outgoing = p.initiatedBy === meId;
+        return agentInvitationFlow === "outgoing" ? outgoing : !outgoing;
+      });
+    }
     if (isAgentR04) {
       rows = rows.filter((p) => {
         const archived = Boolean(p.listPreference?.archivedAt);
@@ -267,6 +281,7 @@ export function PartnersHub({
     }
     return rows;
   }, [
+    agentInvitationFlow,
     agentSegment,
     isAgentR04,
     listArchiveView,
@@ -448,6 +463,88 @@ export function PartnersHub({
     }
   }
 
+  if (isModalSurface) {
+    return (
+      <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
+        {agentModalSurface === "link" ? (
+          <PartnerLinkInvitePanel meProfile={meProfile} />
+        ) : (
+          <>
+            <AgentPartnerDiscoveryFilters
+              layout="modal-full"
+              specialization={discoverySpecialization}
+              stageId={discoveryStageId}
+              city={city}
+              partnerType={searchPartnerType}
+              onSpecializationChange={setDiscoverySpecialization}
+              onStageChange={setDiscoveryStageId}
+              onCityChange={setCity}
+              onPartnerTypeChange={setSearchPartnerType}
+              resetKey={taxonomyFilterResetKey}
+            />
+            <div className={styles.modalSearchRow}>
+              <TextField
+                label="Поиск"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Название, город или ID"
+              />
+              <Button
+                type="button"
+                onClick={() => {
+                  setSearchNextCursor(null);
+                  void loadSearch("reset");
+                }}
+                disabled={loadingSearch}
+              >
+                {loadingSearch ? "Поиск…" : "Найти"}
+              </Button>
+            </div>
+            {searchError ? (
+              <p className={styles.error} role="alert">
+                {searchError}
+              </p>
+            ) : null}
+            <div className={styles.modalResults} data-testid="agent-partner-search-results">
+              {searchResults.slice(0, 12).map((partner) => (
+                <article key={partner.id} className={styles.modalResultRow}>
+                  <div>
+                    <strong>{partnerTitle(partner)}</strong>
+                    <p className={styles.partnerMeta}>{partner.city ?? "Город не указан"}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={Boolean(inviteTarget)}
+                    onClick={() => setInviteTarget(partner)}
+                  >
+                    Пригласить
+                  </Button>
+                </article>
+              ))}
+              {!loadingSearch && searchResults.length === 0 ? (
+                <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
+              ) : null}
+            </div>
+            {inviteTarget ? (
+              <PartnerInviteDialog
+                target={inviteTarget}
+                meProfile={meProfile}
+                busy={Boolean(busyId)}
+                onClose={() => setInviteTarget(null)}
+                onSent={() => {
+                  setInviteTarget(null);
+                  onCloseAgentModal?.();
+                  void loadList();
+                }}
+              />
+            ) : null}
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={isAgentR04 ? styles.agentR04Root : undefined} data-variant={variant}>
       {!isAgentR04 ? (
@@ -485,7 +582,7 @@ export function PartnersHub({
       {tab === "list" ? (
         <>
           {isAgentR04 ? (
-            <Panel compact>
+            <div className={styles.agentToolbarShell}>
               <AgentR04ListToolbar
                 count={visiblePartnerships.length}
                 searchQuery={listSearch}
@@ -508,34 +605,49 @@ export function PartnersHub({
                 taxonomyResetKey={taxonomyFilterResetKey}
                 chips={listFilterChips}
               />
-            </Panel>
+            </div>
           ) : null}
           {loadingList ? (
             <Panel>Загрузка партнёрств…</Panel>
           ) : visiblePartnerships.length === 0 ? (
             <Panel
               title={
-                isAgentR04 && listArchiveView === "archive"
-                  ? "В архиве пока нет записей"
-                  : isAgentR04 && (listFilterChips.length || listSearch.trim())
-                    ? "Записей не найдено"
-                    : "Партнёров пока нет"
+                isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "incoming"
+                  ? "Входящих приглашений пока нет"
+                  : isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "outgoing"
+                    ? "Отправленных приглашений пока нет"
+                    : isAgentR04 && listArchiveView === "archive"
+                      ? "В архиве пока нет записей"
+                      : isAgentR04 && (listFilterChips.length || listSearch.trim())
+                        ? "Записей не найдено"
+                        : "Партнёров пока нет"
               }
               hint={
-                isAgentR04
-                  ? listFilterChips.length || listSearch.trim()
-                    ? "Попробуйте другие условия или сбросьте фильтры."
-                    : "Используйте «Найти в RemCard» или «Пригласить по ссылке» выше."
-                  : "Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
+                isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "incoming"
+                  ? "Здесь появятся предложения партнёров, которые можно принять или отклонить."
+                  : isAgentR04 && agentSegment === "invitations" && agentInvitationFlow === "outgoing"
+                    ? "Здесь будут приглашения, которые вы отправили и которые ждут ответа."
+                    : isAgentR04
+                      ? listFilterChips.length || listSearch.trim()
+                        ? "Попробуйте другие условия или сбросьте фильтры."
+                        : "Нажмите «Найти или пригласить партнёра», чтобы отправить первое приглашение."
+                      : "Перейдите во вкладку «Найти партнёра», чтобы отправить первое приглашение."
               }
             />
+          ) : isAgentR04 ? (
+            <AgentPartnerCollection
+              partnerships={visiblePartnerships}
+              meId={meId}
+              viewMode={listViewMode}
+              busyId={busyId}
+              onRunAction={(id, action) => void runPartnershipAction(id, action)}
+              onUpdated={() => void loadList()}
+              termRequests={termRequests}
+              onLoadTermRequests={(id) => void loadTermRequests(id)}
+              expandedTermPartnershipId={expandedTermPartnershipId}
+            />
           ) : (
-            <div
-              className={
-                isAgentR04 && listViewMode === "cards" ? `${styles.list} ${styles.listCards}` : styles.list
-              }
-              data-testid={isAgentR04 ? `agent-r04-partners-${listViewMode}` : undefined}
-            >
+            <div className={styles.list}>
             {visiblePartnerships.map((partnership) => {
               const partner =
                 partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;

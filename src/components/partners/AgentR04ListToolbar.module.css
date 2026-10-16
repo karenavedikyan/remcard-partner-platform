@@ -1,47 +1,62 @@
 .root {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
 
-.collectionCount {
+.toolsRow {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: center;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
-.collectionCount > span {
-  font-weight: 700;
-  color: var(--ink);
+  gap: var(--space-2);
+  align-items: flex-end;
 }
 
 .searchField {
-  display: grid;
-  gap: var(--space-1);
-  font-size: var(--text-sm);
-  font-weight: 650;
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
-.searchField input {
+.searchField input,
+.compactSelect select,
+.field select,
+.field input {
+  width: 100%;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--surface);
   font: inherit;
+  min-height: 40px;
 }
 
-.controlRow {
-  display: flex;
-  flex-wrap: wrap;
+.compactSelect {
+  flex: 0 1 120px;
+}
+
+.moreFilters {
+  flex: 0 1 auto;
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.moreFilters summary {
+  cursor: pointer;
+  list-style: none;
+  padding: var(--space-2) 0;
+}
+
+.moreGrid {
+  display: grid;
   gap: var(--space-3);
-  align-items: flex-end;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: var(--space-2);
 }
 
-.controlRow .field {
-  flex: 1 1 140px;
+.field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 650;
 }
 
 .viewToggle {
@@ -72,18 +87,18 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
 }
 
-.field {
-  display: grid;
-  gap: var(--space-1);
+.collectionCount {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
   font-size: var(--text-sm);
-  font-weight: 650;
+  color: var(--muted);
 }
 
-.field select {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  background: var(--surface);
+.collectionCount > span {
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .chips {
@@ -102,14 +117,33 @@
   cursor: pointer;
 }
 
-.hint {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 @media (max-width: 680px) {
-  .controlRow {
+  .toolsRow {
+    align-items: stretch;
+  }
+
+  .viewToggle {
+    margin-left: 0;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .viewToggle button {
+    flex: 1;
+  }
+
+  .moreGrid {
     grid-template-columns: 1fr;
   }
 }

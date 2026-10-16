@@ -1,40 +1,37 @@
-# RemCard R04 — Agent Partners RC (NO-GO remediation)
+# RemCard R04.2 — Agent Partners visual pass
 
-## HEAD (update after push)
+## HEAD (after push)
 
 | Repo | Branch | HEAD |
 |------|--------|------|
 | remcard-partner-platform | `cursor/r04-agent-partners-b3e3` | see `TEST-RESULTS.json` → `platformHead` |
 | remcard-navigator | `cursor/r04-agent-partners-b3e3` | see `TEST-RESULTS.json` → `navigatorHead` |
 
-Review tips: platform `7ed2756`, navigator `fb9078c4` (base); RC commits extend both branches.
+## R04.2 UI (platform)
 
-## Scope closed (A–E)
-
-- **A** Collection UX: list/cards toggle, list search, compact specialization/stage filters, chips, archive selector, sort, SVG row actions; toolbar outside empty-results branch.
-- **B** Filters/archive without dead-end; working stage/specialization fields on list API; honest partner type; deterministic sort on full in-memory list.
-- **C** Share text strips contract/alias/notes; action error banner + retry; partial preference PATCH.
-- **D** Bidirectional test/real guards; link-invite accept realm check; public test link hides terms; agent invite categories; term-change POST in test allowlist.
-- **E** `scripts/prof-r04-migrate.mjs` before/apply/after + integration test on disposable DB.
+- Distinct **list** (desktop table + mobile rows) vs **cards** grid (`AgentPartnerCollection`).
+- Hub: tabs «Мои партнёры / Приглашения», **Входящие / Отправленные**, single CTA «Найти или пригласить партнёра», modal/drawer with find/link tabs.
+- Compact toolbar order aligned to ref; stage/city in «Ещё фильтры»; working list filters preserved.
+- Stable parity seed: «Дом материалов», «Мастерская интерьера», incoming/outgoing **INVITED** fixtures.
 
 ## Acceptance
 
-| Layer | Artifact | Notes |
+| Layer | Artifact | Result |
 |-------|----------|--------|
-| Functional | `TEST-RESULTS.json` → `functional` | Disposable admin stack, BFF chain, migrate |
-| Captured | `TEST-RESULTS.json` → `captured` + `screenshots/` | Browser runner impl shots |
-| Geometry | `PARITY-VISUAL.json` | Toolbar/list bounds, 320 smoke |
-| Visual review | `PARITY-MATRIX.md` | 8 impl/ref + 320 smoke |
+| Functional + BFF | `TEST-RESULTS.json` | disposable stack, seed, filters, modal shots, incoming accept → ACTIVE, R03 create partner field |
+| Captured | `screenshots/impl-r04-*`, `ref-r04-*` | 8 pairs + extras |
+| Geometry | `PARITY-VISUAL.json` | bounds + mode distinction |
+| Visual review | `PARITY-MATRIX.md` | **not** 1:1 PASS (`visualParityOk: false`) |
 
 ```bash
-cd remcard-partner-platform && npm run build
-cd remcard-navigator && npm run build
-cd remcard-navigator && pnpm vitest run src/lib/__tests__/profTestPartnershipScope.test.ts src/lib/__tests__/profTestRoutePolicy.test.ts
-cd remcard-partner-platform && npx vitest run src/lib/agent-r04/partner-filters.test.ts
+cd remcard-partner-platform && pnpm run build   # exit 0
+cd remcard-navigator && npm run build           # exit 0
+cd remcard-partner-platform && pnpm exec vitest run src/components/partners/PartnersHub.test.tsx src/lib/agent-r04/partner-filters.test.ts
 set -a && source /tmp/admin-test-local-stack/runtime.env && set +a
-cd remcard-navigator && node --test scripts/lib/__tests__/prof-r04-migrate.integration.test.mjs
 cd remcard-partner-platform && node scripts/r04-browser-acceptance.mjs
 cd remcard-partner-platform && node scripts/r04-ui-parity-visual.mjs
 ```
 
-No merge, deploy, production DB push, or R05.
+**Status:** READY_FOR_REVIEW — functional/geometry green; visual parity requires human compare of impl/ref PNGs.
+
+No merge, deploy, production DB, or R05.

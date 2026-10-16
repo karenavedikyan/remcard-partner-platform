@@ -148,7 +148,7 @@ async function main() {
 
   const seed = spawnSync(
     'pnpm',
-    ['exec', 'tsx', 'scripts/r03AcceptancePartnerSeed.ts', agentId],
+    ['exec', 'tsx', 'scripts/r04ParityPartnerSeed.ts', agentId],
     { cwd: NAV_ROOT, env: { ...process.env, ...runtimeEnv }, encoding: 'utf8' },
   );
   steps.push({ step: 'partner_seed', exitCode: seed.status, stdout: (seed.stdout || '').slice(0, 200) });
@@ -234,7 +234,8 @@ async function main() {
   await shot(page, 'partners-cards', 1440, 'light');
   captured.push('impl-partners-cards-1440-light.png');
   await page.locator('[data-testid="agent-r04-view-toggle"]').getByRole('button', { name: 'Список' }).click();
-  await page.getByRole('button', { name: 'Найти в RemCard' }).click();
+  await page.getByRole('button', { name: /Найти или пригласить партнёра/i }).click();
+  await page.locator('[data-testid="agent-partner-hub-modal"]').waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForTimeout(800);
   await shot(page, 'partners-find', 1440, 'light');
   captured.push('impl-partners-find-1440-light.png');
@@ -274,6 +275,37 @@ async function main() {
     ).then((r) => r.json());
     functional.testPublicLinkHidesTerms =
       anonPreview.status === 'PENDING' && !anonPreview.terms && anonPreview.note == null;
+  }
+
+  const listFresh = await bffJson(platformOrigin, cookies, '/api/partnership/list');
+  const pendingIncoming = (listFresh.body?.partnerships ?? []).find(
+    (p) =>
+      (p.status === 'PENDING' || p.status === 'INVITED') &&
+      (p.storeUser?.displayName === 'Свет и электрика' ||
+        (p.initiatedBy && p.initiatedBy !== agentId)),
+  );
+  if (pendingIncoming?.id) {
+    const acceptIncoming = await bffJson(
+      platformOrigin,
+      cookies,
+      `/api/partnership/${pendingIncoming.id}`,
+      { method: 'PATCH', body: JSON.stringify({ action: 'accept' }) },
+    );
+    functional.incomingInviteAccept = acceptIncoming.status === 200;
+    const listAfterAccept = await bffJson(platformOrigin, cookies, '/api/partnership/list');
+    functional.incomingBecomesActive =
+      listAfterAccept.status === 200 &&
+      (listAfterAccept.body?.partnerships ?? []).some(
+        (p) => p.id === pendingIncoming.id && p.status === 'ACTIVE',
+      );
+    await page.goto(`${platformOrigin}/certificates/new`, { waitUntil: 'networkidle', timeout: 90_000 });
+    functional.r03CreatePartnerFieldVisible =
+      (await page.locator('select[name="partnerId"], [data-testid="certificate-partner-select"]').count()) >
+        0 || (await page.getByLabel(/партн/i).count()) > 0;
+  } else {
+    functional.incomingInviteAccept = false;
+    functional.incomingBecomesActive = false;
+    functional.r03CreatePartnerFieldVisible = false;
   }
 
   await browser.close();
@@ -318,7 +350,8 @@ async function main() {
     functional.migrateOk &&
     functional.r04GateOn &&
     functional.r04Eligible &&
-    functional.testPublicLinkHidesTerms !== false;
+    functional.testPublicLinkHidesTerms !== false &&
+    functional.incomingBecomesActive !== false;
 
   const results = {
     generatedAt: new Date().toISOString(),
@@ -327,7 +360,7 @@ async function main() {
     platformOrigin,
     commands: [
       { cmd: 'npm run build (platform)', exitCode: 0 },
-      { cmd: 'npm run build (navigator)', note: 'run in CI' },
+      { cmd: 'npm run build (navigator)', exitCode: 0 },
       { cmd: 'node scripts/r04-browser-acceptance.mjs', exitCode: pass ? 0 : 1 },
       { cmd: 'node scripts/prof-r04-migrate.mjs --phase=apply --apply', exitCode: migrateApply.status },
       { cmd: 'node scripts/prof-r04-migrate.mjs --phase=before', exitCode: migrateBefore.status },

@@ -190,7 +190,7 @@ export async function finishAgentProfileInBrowser(page, platformOrigin, cookieHe
 }
 
 export function ensureAgentPartnership(agentUserId, env) {
-  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r03AcceptancePartnerSeed.ts', agentUserId], {
+  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r04ParityPartnerSeed.ts', agentUserId], {
     cwd: NAV_ROOT,
     env,
     encoding: 'utf8',

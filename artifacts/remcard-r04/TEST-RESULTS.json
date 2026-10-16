@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-16T11:18:06.737Z",
-  "platformHead": "4fc932c069f9c4ad3e64cb3b03821424e997e560",
+  "generatedAt": "2026-10-16T11:44:55.077Z",
+  "platformHead": "02dd8efbc900734380c82a8689b21f28fa84bf3c",
   "navigatorHead": "8f85a049817336f011da356ed31d508cc695ad99",
   "platformOrigin": "http://127.0.0.1:3040",
   "commands": [
@@ -10,7 +10,7 @@
     },
     {
       "cmd": "npm run build (navigator)",
-      "note": "run in CI"
+      "exitCode": 0
     },
     {
       "cmd": "node scripts/r04-browser-acceptance.mjs",
@@ -27,11 +27,6 @@
     {
       "cmd": "node scripts/prof-r04-migrate.mjs --phase=after",
       "exitCode": 0
-    },
-    {
-      "cmd": "node scripts/r04-ui-parity-visual.mjs",
-      "exitCode": 0,
-      "pairs": 8
     }
   ],
   "functional": {
@@ -44,8 +39,11 @@
     "cardsViewActive": true,
     "filterZeroShowsToolbar": true,
     "filterResetRestoresList": true,
-    "archiveViewShowsRow": true,
+    "archiveViewShowsRow": false,
     "invitationsSegmentVisible": true,
+    "incomingInviteAccept": true,
+    "incomingBecomesActive": true,
+    "r03CreatePartnerFieldVisible": true,
     "migrateOk": true,
     "r04GateOn": true,
     "r04Eligible": true
@@ -60,41 +58,22 @@
     "impl-partners-320-light.png"
   ],
   "geometry": {
-    "source": "PARITY-VISUAL.json",
-    "pairs": 8,
-    "smoke320": {
-      "toolbar": {
-        "x": 33,
-        "y": 642.0625,
-        "w": 263,
-        "h": 545.125
-      },
-      "listRoot": {
-        "x": 16,
-        "y": 1220.1875,
-        "w": 297,
-        "h": 355.375
-      },
-      "toolbarClipped": false,
-      "viewportW": 320
-    },
-    "pass": true
+    "note": "Run node scripts/r04-ui-parity-visual.mjs for bounds + ref pairs"
   },
   "visualReview": {
-    "status": "captured_8_ref_pairs",
-    "implRefPairs": 8,
-    "matrix": "PARITY-MATRIX.md"
+    "status": "run_r04-ui-parity-visual",
+    "implCaptures": 7
   },
   "steps": [
     {
       "step": "test_session",
       "ok": true,
-      "agentId": "cmvavirn6002xjsc5jag5efzp"
+      "agentId": "cmvawh90j005ljsnsqmmu9a0o"
     },
     {
       "step": "partner_seed",
       "exitCode": 0,
-      "stdout": "{\"ok\":true,\"storeUserId\":\"cmvavivlr0000jsgto7ik46o4\",\"partnershipId\":\"cmvavivm90006jsgt7dmueqio\"}\n"
+      "stdout": "{\"ok\":true,\"active\":[\"cmvawhcjp0006js9ms1v1z9bz\",\"cmvawhck1000ejs9mei3gh1cy\"],\"incoming\":\"cmvawhck5000hjs9mjok339vm\",\"outgoing\":\"cmvawhckc000njs9mzlspnh3s\"}\n"
     },
     {
       "step": "preference_patch",

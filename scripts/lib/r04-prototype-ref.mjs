@@ -106,8 +106,9 @@ export async function openImplR04Panel(page, panel, platformOrigin) {
   const base = platformOrigin.replace(/\/$/, '');
   await page.goto(`${base}/partners`, { waitUntil: 'networkidle' });
   if (panel === 'find') {
-    await page.getByRole('button', { name: 'Найти в RemCard' }).click();
-    await page.waitForTimeout(600);
+    await page.getByRole('button', { name: /Найти или пригласить партнёра/i }).click();
+    await page.locator('[data-testid="agent-partner-hub-modal"]').waitFor({ state: 'visible', timeout: 20_000 });
+    await page.waitForTimeout(400);
   } else if (panel === 'invitations') {
     const tab = page.locator('[data-testid="agent-r04-partners"]').getByRole('tab', { name: 'Приглашения' });
     await tab.click({ timeout: 20_000 });
