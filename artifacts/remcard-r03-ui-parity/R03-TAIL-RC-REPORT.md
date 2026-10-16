@@ -23,7 +23,7 @@ Navigator chain documented on **#683**: #681 → #682 → #683.
 
 | Repo | Tip |
 |------|-----|
-| Platform | `366b479e6d70bbdff210a12736f801319e6420b5` (tip); code bundle `65daa3e0623f37d07660cc873324360770b4a215`; capture at `1c2435c7ef6835709c149209b2fdcc92364c4778` + dirty tree per `captureEvidence` |
+| Platform | Evidence bundle `65daa3e0623f37d07660cc873324360770b4a215`; branch tip `b415996218e9b6ae37dbbc1895579c49ca2f448c`; capture at `1c2435c7ef6835709c149209b2fdcc92364c4778` + dirty tree per `captureEvidence` |
 | Navigator | `02c06daf0fa42ea71de3d55f4b988b4fe865522e` |
 
 CAPTURED ≠ pixel PASS. Bonus «—» unchanged.
