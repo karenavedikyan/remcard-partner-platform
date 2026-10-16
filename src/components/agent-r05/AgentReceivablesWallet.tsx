@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
 import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
+import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
 import walletStyles from "./agent-receivables-wallet.module.css";
 
 type WalletTab = "settlements" | "requisites";
@@ -34,11 +35,18 @@ export function AgentReceivablesWallet() {
           Реквизиты
         </button>
       </div>
-      {tab === "settlements" ? (
-        <AgentReceivablesHub />
-      ) : (
-        <AgentPayoutRequisitesPanel disabled />
-      )}
+      <div className={walletStyles.panel}>
+        {tab === "settlements" ? (
+          <AgentReceivablesHub />
+        ) : (
+          <div
+            className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}
+            data-testid="agent-r05-requisites-scope"
+          >
+            <AgentPayoutRequisitesPanel disabled />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

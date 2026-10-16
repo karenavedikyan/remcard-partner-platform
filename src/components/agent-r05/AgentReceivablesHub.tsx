@@ -579,6 +579,42 @@ export function AgentReceivablesHub() {
     );
   }
 
+  if (screen === "order") {
+    if (loading && !orderDetail) {
+      return (
+        <div className={styles.shell} data-testid="agent-r05-order-detail-loading">
+          <p className={styles.meta}>Загружаем заказ…</p>
+        </div>
+      );
+    }
+    if (error && !orderDetail) {
+      return (
+        <div className={styles.shell} data-testid="agent-r05-order-detail-error">
+          <div className={styles.backRow}>
+            <button
+              type="button"
+              className={styles.backBtn}
+              onClick={() => {
+                setScreen("orders");
+                setSelectedOrderId(null);
+              }}
+            >
+              ← Заказы партнёра
+            </button>
+          </div>
+          <p className={styles.error} role="alert">
+            {error}{" "}
+            {selectedOrderId ? (
+              <Button type="button" onClick={() => void reloadOrderDetail(selectedOrderId)}>
+                Повторить
+              </Button>
+            ) : null}
+          </p>
+        </div>
+      );
+    }
+  }
+
   if (screen === "order" && orderDetail) {
     const { record, lines, totalsMismatch, history } = orderDetail;
     return (
@@ -598,7 +634,7 @@ export function AgentReceivablesHub() {
         <div className={styles.focusHeader}>
           <div>
             <span className={styles.focusHeaderLabel}>Заказ</span>
-            <h2>{record.orderNumber}</h2>
+            <h2 data-testid="agent-r05-order-detail-heading">{record.orderNumber}</h2>
           </div>
           <strong>{formatKopecks(record.remainingKopecks || record.obligationKopecks)}</strong>
         </div>

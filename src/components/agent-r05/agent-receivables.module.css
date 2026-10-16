@@ -73,16 +73,17 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-block: var(--space-2);
+  margin-block: var(--space-4);
 }
 
 .focusHeader h2 {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-xl);
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-lg);
+  line-height: 1.4;
 }
 
 .focusHeader > strong {
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }

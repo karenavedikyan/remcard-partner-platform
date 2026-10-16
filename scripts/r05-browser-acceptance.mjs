@@ -3,7 +3,8 @@
  * R05 agent receivables: API + browser smoke on disposable admin stack.
  */
 import { createHash } from 'node:crypto';
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -67,6 +68,126 @@ function sha256File(filePath) {
 async function shot(page, filePath) {
   await page.screenshot({ path: filePath, fullPage: true });
   return { path: filePath, sha256: sha256File(filePath) };
+}
+
+const REF_PROTOTYPE_ERROR = 'Не удалось загрузить прототип';
+
+function refContentType(filePath) {
+  if (filePath.endsWith('.html')) return 'text/html; charset=utf-8';
+  if (filePath.endsWith('.js')) return 'text/javascript; charset=utf-8';
+  if (filePath.endsWith('.css')) return 'text/css; charset=utf-8';
+  if (filePath.endsWith('.svg')) return 'image/svg+xml';
+  if (filePath.endsWith('.png')) return 'image/png';
+  return 'application/octet-stream';
+}
+
+function startRefStaticServer(rootDir) {
+  return new Promise((resolve, reject) => {
+    const root = path.resolve(rootDir);
+    const server = http.createServer((req, res) => {
+      try {
+        const urlPath = decodeURIComponent(new URL(req.url ?? '/', 'http://127.0.0.1').pathname);
+        const rel = urlPath === '/' ? '/roles.html' : urlPath;
+        const filePath = path.normalize(path.join(root, rel));
+        if (!filePath.startsWith(root) || !existsSync(filePath) || statSync(filePath).isDirectory()) {
+          res.writeHead(404);
+          res.end();
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': refContentType(filePath) });
+        createReadStream(filePath).pipe(res);
+      } catch {
+        res.writeHead(500);
+        res.end();
+      }
+    });
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      resolve({ server, baseUrl: `http://127.0.0.1:${port}` });
+    });
+  });
+}
+
+async function refHasPrototypeError(page) {
+  const text = await page.locator('#app').innerText().catch(() => '');
+  return text.includes(REF_PROTOTYPE_ERROR);
+}
+
+async function navigateReferenceWallet(refPage, baseUrl) {
+  await refPage.goto(`${baseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
+  if (await refHasPrototypeError(refPage)) {
+    return { ok: false, reason: 'prototype_load_error' };
+  }
+  await refPage.getByTestId('view-cabinet').click();
+  await refPage.getByTestId('scenario-role').selectOption('agent');
+  await refPage.getByTestId('nav-wallet').click();
+  await refPage.locator('[data-testid="settlement-direction:in"]').waitFor({ timeout: 60_000 });
+  await refPage.addStyleTag({
+    content: '.demo-top, .review-toolbar { display: none !important; }',
+  });
+  if (await refHasPrototypeError(refPage)) {
+    return { ok: false, reason: 'prototype_error_after_nav' };
+  }
+  const demo = (await refPage.locator('[data-testid="settlement-demo"]').count()) > 0;
+  const tile = (await refPage.locator('[data-testid="settlement-direction:in"]').count()) > 0;
+  return { ok: demo && tile, reason: demo && tile ? null : 'missing_wallet_states' };
+}
+
+async function captureReferenceStates(refPage, shots, tag, themeFn) {
+  await themeFn(refPage);
+  await refPage.locator('[data-testid="settlement-direction:in"]').waitFor({ timeout: 30_000 });
+  const out = [];
+  out.push(await shot(refPage, path.join(shots, `ref-r05-overview-${tag}.png`)));
+  await refPage.locator('[data-testid="settlement-direction:in"]').click();
+  await refPage.locator('.settlement-partner-compact').first().waitFor({ timeout: 30_000 });
+  out.push(await shot(refPage, path.join(shots, `ref-r05-partners-${tag}.png`)));
+  await refPage.locator('.settlement-partner-compact').first().click();
+  await refPage.locator('[data-testid^="settlement-record-"]').first().waitFor({ timeout: 30_000 });
+  out.push(await shot(refPage, path.join(shots, `ref-r05-orders-${tag}.png`)));
+  const orderBtn = refPage.locator('[data-testid^="settlement-order:"]').first();
+  if ((await orderBtn.count()) > 0) {
+    await orderBtn.click();
+    await refPage.locator('[data-testid="settlement-reference"]').waitFor({ timeout: 30_000 });
+    out.push(await shot(refPage, path.join(shots, `ref-r05-order-detail-${tag}.png`)));
+  }
+  return out;
+}
+
+async function waitForImplOrderDetail(page) {
+  const detailResponse = page.waitForResponse(
+    (r) =>
+      r.url().includes('/agent-receivables/orders/') &&
+      !r.url().includes('?') &&
+      r.status() === 200,
+    { timeout: 90_000 },
+  );
+  await page.getByRole('button', { name: 'Подробности' }).first().click();
+  const res = await detailResponse;
+  const body = await res.json().catch(() => null);
+  await page.getByTestId('agent-r05-order-detail').waitFor({ timeout: 60_000 });
+  await page.getByTestId('agent-r05-order-detail-heading').waitFor({ state: 'visible', timeout: 30_000 });
+  await page.locator('[data-testid="agent-r05-order-detail"] .lineTable tbody tr').first().waitFor({
+    timeout: 30_000,
+  });
+  await page.locator('[data-testid="agent-r05-order-detail"] .timeline li').first().waitFor({
+    timeout: 30_000,
+  });
+  return body?.record?.orderNumber ?? '';
+}
+
+async function readPartnerGridColumns(page) {
+  return page.evaluate(() => {
+    const grid = document.querySelector('[data-testid="ledger-partners"]');
+    if (!grid) return null;
+    return getComputedStyle(grid).gridTemplateColumns;
+  });
+}
+
+function gridHasColumnCount(columnsValue, count) {
+  if (!columnsValue) return false;
+  const parts = columnsValue.split(/\s+/).filter(Boolean);
+  return parts.length === count;
 }
 
 async function bffJson(platformOrigin, cookies, upstreamPath) {
@@ -287,6 +408,15 @@ async function main() {
   const shots = path.join(ART, 'screenshots');
   mkdirSync(shots, { recursive: true });
   const captures = [];
+  functional.orderDetail1440Loaded = false;
+  functional.orderDetail375Loaded = false;
+  functional.gridSmallDesktopOk = false;
+  functional.gridMediumDesktopOk = false;
+  functional.requisites375LightTokensOk = false;
+  functional.requisites375DarkTokensOk = false;
+  functional.detail375NoHorizontalScroll = false;
+  functional.refRolesLoaded = false;
+  functional.refPrototypeLoadError = true;
 
   await ensureLight(page);
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
@@ -298,6 +428,19 @@ async function main() {
     await page.waitForTimeout(400);
     captures.push(await shot(page, path.join(shots, 'impl-r05-partners-1440-light.png')));
 
+    await page.getByTestId('ledger-view').selectOption('small');
+    await page.waitForTimeout(250);
+    const gridSmall = await readPartnerGridColumns(page);
+    functional.gridSmallDesktopColumns = gridSmall;
+    functional.gridSmallDesktopOk = gridHasColumnCount(gridSmall, 3);
+    captures.push(await shot(page, path.join(shots, 'impl-r05-partners-1440-light-small.png')));
+    await page.getByTestId('ledger-view').selectOption('medium');
+    await page.waitForTimeout(250);
+    const gridMedium = await readPartnerGridColumns(page);
+    functional.gridMediumDesktopColumns = gridMedium;
+    functional.gridMediumDesktopOk = gridHasColumnCount(gridMedium, 2);
+    captures.push(await shot(page, path.join(shots, 'impl-r05-partners-1440-light-medium.png')));
+
     await page.getByTestId('ledger-view').selectOption('large');
     await page.waitForTimeout(200);
     captures.push(await shot(page, path.join(shots, 'impl-r05-partners-1440-light-large.png')));
@@ -307,8 +450,8 @@ async function main() {
     captures.push(await shot(page, path.join(shots, 'impl-r05-orders-1440-light.png')));
 
     await page.getByTestId('agent-r05-order-summary').first().click();
-    await page.getByRole('button', { name: 'Подробности' }).first().click();
-    await page.waitForTimeout(500);
+    functional.orderDetail1440OrderNumber = await waitForImplOrderDetail(page);
+    functional.orderDetail1440Loaded = functional.orderDetail1440OrderNumber.length > 0;
     captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-1440-light.png')));
 
     await page.getByRole('button', { name: '← Заказы партнёра' }).click();
@@ -339,30 +482,124 @@ async function main() {
     await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
     captures.push(await shot(page, path.join(shots, 'impl-r05-orders-375-light.png')));
     await page.getByTestId('agent-r05-order-summary').first().click();
-    await page.getByRole('button', { name: 'Подробности' }).first().click();
+    functional.orderDetail375OrderNumber = await waitForImplOrderDetail(page);
+    functional.orderDetail375Loaded = functional.orderDetail375OrderNumber.length > 0;
+    functional.detail375NoHorizontalScroll =
+      (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
+      true;
     captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-375-light.png')));
+
+    await ensureDark(page);
+    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-375-dark.png')));
+  } else {
+    functional.orderDetail375Loaded = false;
+    functional.detail375NoHorizontalScroll = false;
+  }
+
+  if (functional.tileVisible) {
+    await ensureLight(page);
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+    await page.getByTestId('agent-r05-incoming-tile').click();
+    await page.getByTestId('agent-r05-partner-row').first().click();
+    await page.getByTestId('agent-r05-order-card').first().waitFor({ timeout: 60_000 });
+    await page.getByTestId('agent-r05-order-summary').first().click();
+    await waitForImplOrderDetail(page);
+    functional.smoke320NoHorizontalScroll =
+      (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
+      true;
+    functional.overview320LightThemeOk = await isLightBackground(page);
+    captures.push(await shot(page, path.join(shots, 'impl-r05-order-detail-320-light.png')));
+  } else {
+    await ensureLight(page);
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+    functional.smoke320NoHorizontalScroll =
+      (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
+      true;
+    functional.overview320LightThemeOk = await isLightBackground(page);
+    captures.push(await shot(page, path.join(shots, 'impl-r05-overview-320-light.png')));
   }
 
   await ensureLight(page);
-  await page.setViewportSize({ width: 320, height: 568 });
+  await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
-  functional.smoke320NoHorizontalScroll =
-    (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2)) ===
-    true;
-  functional.overview320LightThemeOk = await isLightBackground(page);
-  captures.push(await shot(page, path.join(shots, 'impl-r05-overview-320-light.png')));
+  await page.getByTestId('agent-r05-tab-requisites').click();
+  await page.getByTestId('bank-panel').waitFor({ timeout: 60_000 });
+  functional.requisites375LightTokens = await page.evaluate(() => {
+    const scope = document.querySelector('[data-testid="agent-r05-requisites-scope"]');
+    if (!scope) return { ok: false, reason: 'missing_agent_scope' };
+    const style = getComputedStyle(scope);
+    const bg = style.getPropertyValue('--pw-bg').trim();
+    const line = style.getPropertyValue('--pw-line').trim();
+    const soft = style.getPropertyValue('--pw-2').trim();
+    return {
+      ok: bg.length > 0 && line.length > 0 && soft.length > 0,
+      '--pw-bg': bg,
+      '--pw-line': line,
+      '--pw-2': soft,
+    };
+  });
+  functional.requisites375LightTokensOk = functional.requisites375LightTokens.ok === true;
+  captures.push(await shot(page, path.join(shots, 'impl-r05-requisites-375-light.png')));
 
-  const refPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await refPage.goto(`file://${REF_ROOT}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
-  await refPage.waitForTimeout(2000);
-  functional.refRolesLoaded = (await refPage.locator('#app').count()) > 0;
-  if (functional.refRolesLoaded) {
-    await ensureLight(refPage);
-    captures.push(await shot(refPage, path.join(shots, 'ref-r05-prototype-entry-1440-light.png')));
+  await ensureDark(page);
+  await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await page.getByTestId('agent-r05-tab-requisites').click();
+  await page.getByTestId('bank-panel').waitFor({ timeout: 60_000 });
+  functional.requisites375DarkTokens = await page.evaluate(() => {
+    const scope = document.querySelector('[data-testid="agent-r05-requisites-scope"]');
+    if (!scope) return { ok: false };
+    const style = getComputedStyle(scope);
+    const bg = style.getPropertyValue('--pw-bg').trim();
+    return { ok: bg.length > 0, '--pw-bg': bg };
+  });
+  functional.requisites375DarkTokensOk = functional.requisites375DarkTokens.ok === true;
+  captures.push(await shot(page, path.join(shots, 'impl-r05-requisites-375-dark.png')));
+
+  const rolesJsPath = path.join(REF_ROOT, 'roles.js');
+  functional.rolesJsSha256Ok =
+    sha256File(rolesJsPath) === '0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc';
+
+  const { server: refServer, baseUrl: refBaseUrl } = await startRefStaticServer(REF_ROOT);
+  try {
+    const refPage1440 = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const nav1440 = await navigateReferenceWallet(refPage1440, refBaseUrl);
+    functional.refRolesLoaded = nav1440.ok;
+    functional.refPrototypeLoadError = !nav1440.ok;
+    functional.refNavReason = nav1440.reason;
+    if (nav1440.ok) {
+      captures.push(...(await captureReferenceStates(refPage1440, shots, '1440-light', ensureLight)));
+    } else {
+      await ensureLight(refPage1440);
+      captures.push(
+        await shot(refPage1440, path.join(shots, 'ref-r05-prototype-entry-1440-light-FAIL.png')),
+      );
+    }
+    await refPage1440.close();
+
+    const refPage375 = await browser.newPage({ viewport: { width: 375, height: 812 } });
+    const nav375 = await navigateReferenceWallet(refPage375, refBaseUrl);
+    functional.ref375Loaded = nav375.ok;
+    if (nav375.ok) {
+      captures.push(...(await captureReferenceStates(refPage375, shots, '375-light', ensureLight)));
+      await ensureDark(refPage375);
+      await navigateReferenceWallet(refPage375, refBaseUrl);
+      captures.push(...(await captureReferenceStates(refPage375, shots, '375-dark', ensureDark)));
+    }
+    await refPage375.close();
+  } finally {
+    refServer.close();
   }
-  await refPage.close();
 
   await browser.close();
+
+  functional.visualReferenceGateOk =
+    functional.refRolesLoaded === true &&
+    functional.rolesJsSha256Ok === true &&
+    functional.refPrototypeLoadError !== true &&
+    functional.orderDetail1440Loaded === true &&
+    functional.orderDetail375Loaded === true;
 
   const pass =
     platBuild.status === 0 &&
@@ -387,7 +624,13 @@ async function main() {
     functional.smoke320NoHorizontalScroll &&
     functional.overview1440LightThemeOk &&
     functional.overview375LightThemeOk &&
-    functional.overview320LightThemeOk;
+    functional.overview320LightThemeOk &&
+    functional.visualReferenceGateOk &&
+    functional.gridSmallDesktopOk &&
+    functional.gridMediumDesktopOk &&
+    functional.requisites375LightTokensOk &&
+    functional.requisites375DarkTokensOk &&
+    functional.detail375NoHorizontalScroll;
 
   const navDirty = spawnSync('git', ['status', '--porcelain'], { cwd: NAV_ROOT, encoding: 'utf8' })
     .stdout.trim();
@@ -396,7 +639,7 @@ async function main() {
 
   const results = {
     generatedAt: new Date().toISOString(),
-    contractVersion: '2026-10-16.r05.2',
+    contractVersion: '2026-10-16.r05.3',
     platformHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim(),
     navigatorHead: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout.trim(),
     gitDirty: { platform: platDirty.length > 0, navigator: navDirty.length > 0 },
@@ -422,16 +665,20 @@ async function main() {
           : 'FAIL',
       '2_partner_sort': functional.partnerDueAscOk ? 'PASS' : 'FAIL',
       '3_visual_reference':
-        functional.tileVisible &&
-        functional.partnersVisible &&
-        functional.overview1440LightThemeOk
+        functional.visualReferenceGateOk &&
+        functional.gridSmallDesktopOk &&
+        functional.gridMediumDesktopOk &&
+        functional.requisites375LightTokensOk &&
+        functional.requisites375DarkTokensOk
           ? 'PASS'
           : 'FAIL',
       '4_evidence':
         functional.overview320LightThemeOk &&
         functional.overview375LightThemeOk &&
         functional.smoke320NoHorizontalScroll &&
-        functional.uiPaginationOk
+        functional.uiPaginationOk &&
+        functional.orderDetail375Loaded &&
+        functional.detail375NoHorizontalScroll
           ? 'PASS'
           : 'FAIL',
     },
@@ -439,7 +686,7 @@ async function main() {
     status: pass ? 'READY_FOR_REVIEW' : 'BLOCKED',
     visualParityOk: false,
     visualParityNote:
-      'CAPTURED impl PNGs under artifacts/remcard-r05/screenshots; ref prototype uses frozen demo dataset — not pixel-perfect.',
+      'Paired impl/ref PNGs captured with HTTP reference server and wallet-state gates; datasets differ — not pixel-perfect.',
   };
   writeFileSync(path.join(ART, 'TEST-RESULTS.json'), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
