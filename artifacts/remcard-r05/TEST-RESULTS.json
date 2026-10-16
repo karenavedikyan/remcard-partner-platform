@@ -1,0 +1,426 @@
+{
+  "generatedAt": "2026-10-16T16:34:51.367Z",
+  "contractVersion": "2026-10-16.r05.4",
+  "platformHead": "f38395486ea774f645739ae3eb1a9453f46fe12d",
+  "navigatorHead": "6f0e8a415d08df2b4da5f1e3499a58704afc4bb9",
+  "gitDirty": {
+    "platform": true,
+    "navigator": false
+  },
+  "rolesJsReferenceSha256": "0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc",
+  "commands": [
+    {
+      "cmd": "node --check scripts/r05-browser-acceptance.mjs",
+      "exitCode": 0
+    },
+    {
+      "cmd": "pnpm run build (platform)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npm run build (navigator)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "npm run test -- --run agentReceivables*.test.ts (navigator)",
+      "exitCode": 0
+    },
+    {
+      "cmd": "node scripts/r05-browser-acceptance.mjs",
+      "exitCode": 0
+    }
+  ],
+  "functional": {
+    "r05GateOn": true,
+    "r05Eligible": true,
+    "overviewOk": true,
+    "tileVisible": true,
+    "partnersVisible": true,
+    "partnersApiOk": true,
+    "p0SingleM1Card": true,
+    "p0DrilldownSumOk": true,
+    "p0IncludesTwoCertMinimum": true,
+    "partnerDueAscOk": true,
+    "categorySearchOk": true,
+    "paginationPage5Ok": true,
+    "incomingOnlySettlements": true,
+    "settlementsStatus": 200,
+    "settlementsPayableCount": 0,
+    "orderDetail1440Loaded": true,
+    "orderDetail375Loaded": true,
+    "gridSmallDesktopOk": true,
+    "gridMediumDesktopOk": true,
+    "requisites375LightTokensOk": true,
+    "requisites375DarkTokensOk": true,
+    "detail375NoHorizontalScroll": true,
+    "refRolesLoaded": true,
+    "refPrototypeLoadError": false,
+    "detail375LayoutOk": true,
+    "detail375DarkLayoutOk": true,
+    "detail320LayoutOk": true,
+    "detail320DarkLayoutOk": true,
+    "ref375DarkDistinctFromLight": true,
+    "overview1440LightThemeOk": true,
+    "gridSmallDesktopColumns": "358.656px 358.672px 358.656px",
+    "gridMediumDesktopColumns": "542px 542px",
+    "orderDetail1440OrderNumber": "SLIOS76Z",
+    "uiPaginationOk": true,
+    "overview375LightThemeOk": true,
+    "orderDetail375OrderNumber": "SLIOS76Z",
+    "detail375Layout": {
+      "ok": true,
+      "viewportWidth": 375,
+      "pageWide": false,
+      "sum": {
+        "left": 37,
+        "right": 338,
+        "top": 118.796875,
+        "bottom": 147.59375,
+        "width": 301,
+        "height": 28.796875
+      },
+      "values": [
+        {
+          "left": 49,
+          "right": 326,
+          "top": 264.375,
+          "bottom": 286.765625,
+          "width": 277,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 326,
+          "top": 329.15625,
+          "bottom": 351.546875,
+          "width": 277,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 326,
+          "top": 393.9375,
+          "bottom": 416.328125,
+          "width": 277,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 326,
+          "top": 458.71875,
+          "bottom": 481.109375,
+          "width": 277,
+          "height": 22.390625
+        }
+      ],
+      "shellRight": 338
+    },
+    "detail375DarkLayout": {
+      "ok": true,
+      "viewportWidth": 375,
+      "pageWide": false,
+      "sum": {
+        "left": 37,
+        "right": 338,
+        "top": 118.796875,
+        "bottom": 147.59375,
+        "width": 301,
+        "height": 28.796875
+      },
+      "values": [
+        {
+          "left": 49,
+          "right": 326,
+          "top": 264.375,
+          "bottom": 286.765625,
+          "width": 277,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 326,
+          "top": 329.15625,
+          "bottom": 351.546875,
+          "width": 277,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 326,
+          "top": 393.9375,
+          "bottom": 416.328125,
+          "width": 277,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 326,
+          "top": 458.71875,
+          "bottom": 481.109375,
+          "width": 277,
+          "height": 22.390625
+        }
+      ],
+      "shellRight": 338
+    },
+    "detail320Layout": {
+      "ok": true,
+      "viewportWidth": 320,
+      "pageWide": false,
+      "sum": {
+        "left": 37,
+        "right": 283,
+        "top": -240.71875,
+        "bottom": -211.921875,
+        "width": 246,
+        "height": 28.796875
+      },
+      "values": [
+        {
+          "left": 49,
+          "right": 271,
+          "top": -95.140625,
+          "bottom": -72.75,
+          "width": 222,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 271,
+          "top": -30.359375,
+          "bottom": -7.96875,
+          "width": 222,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 271,
+          "top": 34.421875,
+          "bottom": 56.8125,
+          "width": 222,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 271,
+          "top": 99.203125,
+          "bottom": 121.59375,
+          "width": 222,
+          "height": 22.390625
+        }
+      ],
+      "shellRight": 283
+    },
+    "smoke320NoHorizontalScroll": true,
+    "overview320LightThemeOk": true,
+    "detail320DarkLayout": {
+      "ok": true,
+      "viewportWidth": 320,
+      "pageWide": false,
+      "sum": {
+        "left": 37,
+        "right": 283,
+        "top": -240.71875,
+        "bottom": -211.921875,
+        "width": 246,
+        "height": 28.796875
+      },
+      "values": [
+        {
+          "left": 49,
+          "right": 271,
+          "top": -95.140625,
+          "bottom": -72.75,
+          "width": 222,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 271,
+          "top": -30.359375,
+          "bottom": -7.96875,
+          "width": 222,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 271,
+          "top": 34.421875,
+          "bottom": 56.8125,
+          "width": 222,
+          "height": 22.390625
+        },
+        {
+          "left": 49,
+          "right": 271,
+          "top": 99.203125,
+          "bottom": 121.59375,
+          "width": 222,
+          "height": 22.390625
+        }
+      ],
+      "shellRight": 283
+    },
+    "requisites375LightTokens": {
+      "ok": true,
+      "--pw-bg": "#fff",
+      "--pw-line": "#dce0e3",
+      "--pw-2": "0.5rem"
+    },
+    "requisites375DarkTokens": {
+      "ok": true,
+      "--pw-bg": "#202329"
+    },
+    "rolesJsSha256Ok": true,
+    "refNavReason": null,
+    "ref375Loaded": true,
+    "ref375LightThemeProbe": {
+      "dataTheme": "light",
+      "settlementBg": "rgb(255, 255, 255)",
+      "settlementColor": "rgb(40, 43, 48)",
+      "settlementBgDark": false
+    },
+    "ref375LightThemeOk": true,
+    "ref375DarkLoaded": true,
+    "ref375DarkThemeProbe": {
+      "dataTheme": "dark",
+      "settlementBg": "rgb(32, 35, 41)",
+      "settlementColor": "rgb(240, 241, 243)",
+      "settlementBgDark": true
+    },
+    "ref375DarkThemeOk": true,
+    "ref375DarkSha": {
+      "partnersLight": "08ee11c0a2e6814623f010607bf1223d46c17593f151dbec204acc3d77d24ce5",
+      "partnersDark": "cf3c5afa3c771db1a43ca6467938aebc2c7343f9de8d440b01848f81b0fb01a6"
+    },
+    "visualReferenceGateOk": true
+  },
+  "steps": [
+    {
+      "step": "test_session",
+      "ok": true,
+      "agentId": "cmvb6tms00003jsvef2g7p2h3"
+    },
+    {
+      "step": "r05_p0_two_cert_seed",
+      "exitCode": 0
+    },
+    {
+      "step": "r05_seed",
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"orderId\":\"cmvb6ts09000bjsaih32o9d27\",\"rowsCreated\":125,\"bulk\":125,\"storeDisplay\":\"seed-store\"}\n"
+    }
+  ],
+  "captures": [
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-light.png",
+      "sha256": "397ab5cab143f2d8d8fa60099b0e05eb57c367d43ef14e9b96fb789989bb295e"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light.png",
+      "sha256": "327e02808401d844bb9110ad95f9d4062b2582ade04234cee11e4797b3f48f7b"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-small.png",
+      "sha256": "89539ef1bdf54ed1758d1162f85e4ffa273d552c01abf0ce2847edfb4ee1f6ad"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-medium.png",
+      "sha256": "c2d6338b6dc3d55c050a93a6b538b5702420be0ba784c6d2cf00c13aba807833"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-large.png",
+      "sha256": "b021a762c0ca20a988dfd327539f3b1f48b518f0f72b66819594543c839895b0"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-1440-light.png",
+      "sha256": "fdf44cf0c6e51a4d8fc9f21537ea0a834311b9b701fe9cf8c471c7f4f8c95ad4"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-1440-light.png",
+      "sha256": "9305db6a0ac34c7e6542b1d811de8ed2fc2416a09e8fd0d173a22d05305e45db"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-dark.png",
+      "sha256": "692102df796f5a2b2963aa6a5a6cfdcf574e4cfb9bda2643260c67218e80350c"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-375-light.png",
+      "sha256": "13db470f8f1f883dbf43c8bfcbb074f5c0b2f4e8f303bac6c923a39f9b24bf2f"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-375-light.png",
+      "sha256": "cf1c36cb21280aee54cd90ed6e53ca2c2a73b54baa5842abbc30f4a930da01ec"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-375-light.png",
+      "sha256": "df5166e12d1e2feec306e6e7b6a70b2af957dbfce3f218f9cca55580274b95f5"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-375-light.png",
+      "sha256": "95d5392438ad5371966cf9820c870b224e2954d2ec5961f763b2a4054bb1e179"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-375-dark.png",
+      "sha256": "faf120bef385e7a3baf2fdb83e17d5375939d49a7c6a23b521ac0feb2f4d2a8c"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-375-dark.png",
+      "sha256": "907ce7ab59143f8770d8f54a1e1331b92bb9ae7c2e69d6c35dd62059e462219a"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-375-dark.png",
+      "sha256": "99121671baf936427b1709c329822c9ebf9c6435a1bec398a486981c6daaacd8"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-320-light.png",
+      "sha256": "792a89c51d413e0b3cd9917cbab9ff4e619573c729259057dae2279635602146"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-320-dark.png",
+      "sha256": "d47d9826ca6ff3a884fa2be8d61037a353066a78f9ada120cd08d76cb4fe9018"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-requisites-375-light.png",
+      "sha256": "b411764a2bf8d5c26b409d337c177ea80b139bcbc8a7b8d02c61a5136add450b"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-requisites-375-dark.png",
+      "sha256": "e08dbad0f6f6341d25faf3b68a8c232629650b4fb5138a800d8f36187ef3e209"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-partners-375-light.png",
+      "sha256": "08ee11c0a2e6814623f010607bf1223d46c17593f151dbec204acc3d77d24ce5"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-orders-375-light.png",
+      "sha256": "e938555ae9598cb7b3fe2784050c5f30f693a3acd2971dba853920f7f214bae2"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-order-detail-375-light.png",
+      "sha256": "3609e22fc62f5e50a385c5082949238102cf03353e62118b30877f2dfdcfd0a9"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-partners-375-dark.png",
+      "sha256": "cf3c5afa3c771db1a43ca6467938aebc2c7343f9de8d440b01848f81b0fb01a6"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-orders-375-dark.png",
+      "sha256": "66a86d424eff812ea0a1cccc3b45c6133c126f4bbe349843646a1d621b0bab56"
+    },
+    {
+      "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-order-detail-375-dark.png",
+      "sha256": "1995d12b0033498ec855078610bfa78634ac846fc40b527485757c8f71ad4995"
+    }
+  ],
+  "sections": {
+    "1_partner_aggregate": "PASS",
+    "2_partner_sort": "PASS",
+    "3_visual_reference": "PASS",
+    "4_evidence": "PASS"
+  },
+  "pass": true,
+  "status": "READY_FOR_REVIEW",
+  "visualParityOk": false,
+  "visualParityNote": "CAPTURED impl/ref drill PNGs (375 partners/orders/detail light+dark) with theme probes; not pixel-perfect."
+}
