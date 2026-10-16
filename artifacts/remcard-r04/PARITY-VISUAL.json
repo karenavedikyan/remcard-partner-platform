@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-16T11:42:37.882Z",
-  "platformHead": "02dd8efbc900734380c82a8689b21f28fa84bf3c",
+  "platformHead": "d646698ff329a3700731519f3e482710b00322fd",
   "pairs": 8,
   "matrixRows": 9,
   "extraCaptures": [
@@ -373,5 +373,6 @@
   ],
   "visualParityOk": false,
   "visualReviewNote": "Automated pairs/geometry only; composition vs ref requires human review — not 1:1 PASS.",
-  "pass": true
+  "pass": true,
+  "navigatorHead": "045682144366b7e20a3bb25e5106a3e4ecbc9ccd"
 }
