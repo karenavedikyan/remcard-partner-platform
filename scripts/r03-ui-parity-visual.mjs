@@ -20,6 +20,16 @@ import {
   ROOT,
 } from './lib/r03-stack-bootstrap.mjs';
 import { PARITY_MATCH } from './lib/r03-parity-fixture.mjs';
+import {
+  assertImplMatchedCertificate,
+  assertImplMatchedClient,
+  assertRefMatchedCertificate,
+  assertRefMatchedClient,
+  measureMobileListFooterRow,
+  parityCertCardLocator,
+  parityClientDesktopRowLocator,
+  parityClientMobileRowLocator,
+} from './lib/r03-parity-match.mjs';
 
 const ART = path.join(ROOT, 'artifacts/remcard-r03-ui-parity');
 const SHOTS = path.join(ART, 'screenshots');
@@ -63,8 +73,7 @@ const MATCHED_PAIR_ROWS = [
     width: 1440,
     height: 900,
     kind: 'matched',
-    searchQuery: PARITY_MATCH.certSearch,
-    implSearch: false,
+    refSearchQuery: PARITY_MATCH.certSearch,
   },
   {
     section: 'certificates',
@@ -73,8 +82,7 @@ const MATCHED_PAIR_ROWS = [
     width: 1440,
     height: 900,
     kind: 'matched',
-    searchQuery: PARITY_MATCH.certSearch,
-    implSearch: false,
+    refSearchQuery: PARITY_MATCH.certSearch,
   },
   {
     section: 'certificates',
@@ -83,8 +91,7 @@ const MATCHED_PAIR_ROWS = [
     width: 375,
     height: 812,
     kind: 'matched',
-    searchQuery: PARITY_MATCH.certSearch,
-    implSearch: false,
+    refSearchQuery: PARITY_MATCH.certSearch,
   },
   {
     section: 'certificates',
@@ -93,8 +100,7 @@ const MATCHED_PAIR_ROWS = [
     width: 375,
     height: 812,
     kind: 'matched',
-    searchQuery: PARITY_MATCH.certSearch,
-    implSearch: false,
+    refSearchQuery: PARITY_MATCH.certSearch,
   },
   {
     section: 'clients',
@@ -208,6 +214,49 @@ function gitSha(cwd) {
   }
 }
 
+function gitDirty(cwd) {
+  try {
+    const out = execSync('git status --porcelain', { cwd, encoding: 'utf8' }).trim();
+    return out.length > 0;
+  } catch {
+    return null;
+  }
+}
+
+function preservedStepsFromExistingResults() {
+  try {
+    const existing = JSON.parse(
+      readFileSync(path.join(ART, 'TEST-RESULTS.json'), 'utf8'),
+    );
+    return (existing.steps ?? []).filter(
+      (step) =>
+        typeof step?.cmd === 'string' &&
+        (step.cmd.includes('npm run build') || step.cmd.includes('next build')),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function runTailVerificationSteps() {
+  const steps = [...preservedStepsFromExistingResults()];
+  const vitestCmd =
+    'npx vitest run src/lib/agent-r03/certificatePurchaseStatus.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/components/agent-r03/RecordRowActions.test.tsx src/lib/profile-sections.test.ts';
+  try {
+    const out = execSync(vitestCmd, { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' });
+    const testsPassed = Number((out.match(/Tests\s+(\d+) passed/) ?? [])[1] ?? 0);
+    const testFiles = Number((out.match(/Test Files\s+(\d+) passed/) ?? [])[1] ?? 0);
+    steps.push({ cmd: vitestCmd, exitCode: 0, testFiles, testsPassed });
+  } catch (err) {
+    steps.push({
+      cmd: vitestCmd,
+      exitCode: err.status ?? 1,
+      stderr: String(err.stderr ?? err.stdout ?? '').slice(0, 400),
+    });
+  }
+  return steps;
+}
+
 function slug(row) {
   const kindSuffix =
     row.kind === 'main'
@@ -256,14 +305,26 @@ async function stabilizePageForCapture(page) {
   await page.waitForLoadState('networkidle').catch(() => null);
 }
 
-async function captureRegion(page, locator, outPath) {
+async function captureRegion(page, locator, outPath, opts = {}) {
   if (!(await locator.isVisible().catch(() => false))) return null;
   await locator.scrollIntoViewIfNeeded();
   await page.waitForTimeout(120);
-  await page.evaluate(() => {
-    const y = window.scrollY;
-    window.scrollTo(0, y);
-  });
+  if (opts.avoidStickyTopbar) {
+    const topbarHeight = await page.evaluate(
+      () => document.querySelector('[data-testid="agent-product-topbar"]')?.getBoundingClientRect().height ?? 72,
+    );
+    await locator.evaluate((el, offset) => {
+      const rect = el.getBoundingClientRect();
+      const y = rect.top + window.scrollY - offset - 8;
+      window.scrollTo(0, Math.max(0, y));
+    }, topbarHeight);
+    await page.waitForTimeout(150);
+  } else {
+    await page.evaluate(() => {
+      const y = window.scrollY;
+      window.scrollTo(0, y);
+    });
+  }
   await locator.screenshot({ path: outPath });
   return outPath;
 }
@@ -422,10 +483,21 @@ async function scrollForViewportCapture(page, scrollMode) {
   await page.waitForTimeout(250);
 }
 
-async function captureImpl(context, plat, cookieHeader, row) {
+async function clearAgentR03ViewPrefs(page, origin) {
+  await page.goto(origin, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('remcard.agent-r03.view.')) localStorage.removeItem(key);
+    }
+  });
+}
+
+async function captureImpl(context, plat, cookieHeader, row, parity) {
   const page = await context.newPage();
   await page.setViewportSize({ width: row.width, height: row.height });
-  await page.goto(plat, { waitUntil: 'domcontentloaded' });
+  if (row.kind === 'matched') {
+    await clearAgentR03ViewPrefs(page, plat);
+  }
   await openImplSection(page, plat, row.section);
   await ensurePageTheme(page, row.theme);
   await setImplViewMode(page, row.viewMode);
@@ -439,8 +511,42 @@ async function captureImpl(context, plat, cookieHeader, row) {
   if (r03 && r03.status !== 200) throw new Error(`r03_status_${r03.status}`);
 
   await page.locator('[data-testid="agent-r03-found-count"]').waitFor({ timeout: 30_000 });
-  if (row.searchQuery && row.implSearch !== false) {
+  if (row.kind === 'matched' && row.section === 'certificates') {
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="agent-r03-found-count"]');
+      const text = el?.textContent ?? '';
+      const n = Number(text.replace(/[^\d]/g, ''));
+      return Number.isFinite(n) && n > 0;
+    }, { timeout: 45_000 });
+  }
+  if (row.searchQuery) {
     await applyImplSearch(page, row.implSearchQuery ?? row.searchQuery);
+  }
+  if (row.kind === 'matched' && row.section === 'certificates' && row.viewMode === 'cards') {
+    await page.locator('[data-testid="agent-r03-cards-grid"]').waitFor({ state: 'visible', timeout: 45_000 });
+    const parityCard = parity?.certId
+      ? page.locator(`[data-parity-cert-id="${parity.certId}"]`)
+      : page.locator('[data-testid="agent-cert-card-shell"]').filter({ hasText: PARITY_MATCH.certAlias }).first();
+    await parityCard.waitFor({ state: 'visible', timeout: 45_000 });
+  }
+  if (row.kind === 'matched' && row.section === 'certificates') {
+    await assertImplMatchedCertificate(page, parity);
+  }
+  if (row.kind === 'matched' && row.section === 'clients') {
+    await assertImplMatchedClient(page, parity, row.viewMode, row.width);
+    if (row.width <= 680) {
+      const footer = await measureMobileListFooterRow(page, 'agent-client-mobile-row');
+      if (!footer.ok) throw new Error(`mobile_client_footer:${JSON.stringify(footer)}`);
+    }
+  }
+  if (
+    row.kind === 'matched' &&
+    row.section === 'certificates' &&
+    row.viewMode === 'list' &&
+    row.width <= 680
+  ) {
+    const footer = await measureMobileListFooterRow(page, 'agent-cert-mobile-row');
+    if (!footer.ok) throw new Error(`mobile_cert_footer:${JSON.stringify(footer)}`);
   }
   await applyImplCaptureStyles(page);
   await stabilizePageForCapture(page);
@@ -482,17 +588,31 @@ async function captureImpl(context, plat, cookieHeader, row) {
     path.join(SHOTS, `${id}-impl-pagination.png`),
   );
   if (row.viewMode === 'cards' && row.section === 'certificates') {
+    const certLocator =
+      row.kind === 'matched'
+        ? parityCertCardLocator(page, parity?.certId)
+        : page.locator('[data-testid="agent-cert-card-shell"]').first();
     regions.certCard = await captureRegion(
       page,
-      page.locator('[data-testid="agent-cert-card-shell"]').first(),
+      certLocator,
       path.join(SHOTS, `${id}-impl-cert-card.png`),
+      { avoidStickyTopbar: row.width >= 900 },
     );
   }
   if (row.section === 'clients' && row.viewMode === 'list') {
+    const clientLocator =
+      row.kind === 'matched'
+        ? row.width <= 680
+          ? parityClientMobileRowLocator(page, parity?.clientId)
+          : parityClientDesktopRowLocator(page, parity?.clientId)
+        : row.width <= 680
+          ? page.locator('[data-testid="agent-client-mobile-row"]').first()
+          : page.locator('[data-testid="agent-r03-capture-body"] tbody tr').first();
     regions.clientRow = await captureRegion(
       page,
-      page.locator('[data-testid="agent-r03-capture-body"] tbody tr').first(),
+      clientLocator,
       path.join(SHOTS, `${id}-impl-client-row.png`),
+      { avoidStickyTopbar: row.width >= 900 },
     );
   }
 
@@ -507,9 +627,15 @@ async function captureRef(context, refBase, row) {
     section: row.section,
     viewMode: row.viewMode,
     dark: row.theme === 'dark',
-    searchQuery: row.searchQuery,
+    searchQuery: row.refSearchQuery ?? row.searchQuery,
   });
   if (!driven.ok) throw new Error(`ref_drive:${driven.reason}`);
+  if (row.kind === 'matched' && row.section === 'certificates') {
+    await assertRefMatchedCertificate(page);
+  }
+  if (row.kind === 'matched' && row.section === 'clients') {
+    await assertRefMatchedClient(page);
+  }
   if (row.theme === 'dark') {
     const theme = await page.evaluate(() => ({
       dataTheme: document.documentElement.getAttribute('data-theme'),
@@ -541,18 +667,25 @@ async function captureRef(context, refBase, row) {
     path.join(SHOTS, `${id}-ref-pagination.png`),
   );
   if (row.viewMode === 'cards' && row.section === 'certificates') {
-    regions.certCard = await captureRegion(
-      page,
-      page.locator('.collection-card-shell, .link-card.remcard-certificate').first(),
-      path.join(SHOTS, `${id}-ref-cert-card.png`),
-    );
+    const refCertLoc =
+      row.kind === 'matched'
+        ? page
+            .locator('.collection-card-shell, .link-card.remcard-certificate')
+            .filter({ hasText: PARITY_MATCH.certAlias })
+            .first()
+        : page.locator('.collection-card-shell, .link-card.remcard-certificate').first();
+    regions.certCard = await captureRegion(page, refCertLoc, path.join(SHOTS, `${id}-ref-cert-card.png`), {
+      avoidStickyTopbar: row.kind === 'matched' && row.width >= 900,
+    });
   }
   if (row.section === 'clients' && row.viewMode === 'list') {
-    regions.clientRow = await captureRegion(
-      page,
-      page.locator('.collection-table tbody tr').first(),
-      path.join(SHOTS, `${id}-ref-client-row.png`),
-    );
+    const refClientLoc =
+      row.kind === 'matched'
+        ? page.locator('.collection-table tbody tr').filter({ hasText: PARITY_MATCH.client.displayName }).first()
+        : page.locator('.collection-table tbody tr').first();
+    regions.clientRow = await captureRegion(page, refClientLoc, path.join(SHOTS, `${id}-ref-client-row.png`), {
+      avoidStickyTopbar: row.kind === 'matched' && row.width >= 900,
+    });
   }
 
   await page.close();
@@ -640,10 +773,13 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
 
   let smokeSteps = [];
+  let verificationSteps = null;
+  let parityFixture = null;
   try {
     const boot = await bootstrapAdminAgentSession(browser);
     const { plat, context, storagePath, cookieHeader, userId, partnership, env } = boot;
-    await seedUiParityFixtures(plat, cookieHeader, userId, { partnership, env });
+    const seed = await seedUiParityFixtures(plat, cookieHeader, userId, { partnership, env });
+    parityFixture = seed.parity;
 
     const rowsToCapture = captureMatrix();
     const mergeCarry =
@@ -671,7 +807,7 @@ async function main() {
       const id = slug(row);
       try {
         const authCtx = await browser.newContext({ storageState: storagePath });
-        const impl = await captureImpl(authCtx, plat, boot.cookieHeader, row);
+        const impl = await captureImpl(authCtx, plat, boot.cookieHeader, row, parityFixture);
         await authCtx.close();
 
         if (row.kind === 'viewport') {
@@ -725,8 +861,9 @@ async function main() {
           dataParity:
             row.kind === 'matched'
               ? {
-                  note: 'Single-row fixture aligned to roles.js Anna + demo-audience-certificate via search',
-                  verified: 'PARTIAL',
+                  note: 'Asserted fixture row (search + field checks) before crop',
+                  verified: 'ASSERTED',
+                  parityFixture,
                 }
               : undefined,
           regions: { impl: impl.regions, ref: ref.regions, diffs: regionDiffs },
@@ -754,30 +891,45 @@ async function main() {
     refServer.close();
   }
 
+  if (process.env.R03_PARITY_TAIL_CAPTURE === '1') {
+    verificationSteps = runTailVerificationSteps();
+  }
+
   const ok = failures.length === 0 && captures.every((c) => c.status === 'CAPTURED');
+  const capturedAt = new Date().toISOString();
   const capturesJson = {
-    capturedAt: new Date().toISOString(),
-    platformSha,
-    navigatorSha,
+    capturedAt,
+    platformGitSha: platformSha,
+    navigatorGitSha: navigatorSha,
+    platformWorkingTreeDirty: gitDirty(ROOT),
+    note:
+      'platformGitSha is repo HEAD at capture time; local dev stack may serve a working tree without rebuild.',
     ok,
     failures,
     captures,
     smokeSteps,
+    verificationSteps,
   };
   writeFileSync(path.join(SHOTS, 'captures.json'), JSON.stringify(capturesJson, null, 2));
   writeFileSync(
     path.join(ART, 'TEST-RESULTS.json'),
     JSON.stringify(
       {
-        platformSha,
+        platformSha: platformSha,
         navigatorSha,
-        build: { command: 'npm run build', status: 'see_ci_or_local' },
-        vitest: [
-          'certificateOffers.test.ts',
-          'formatDiscountPercent.test.ts',
-          'clientListRow.test.ts',
-          'certificatePurchaseStatus.test.ts',
-          'sections.test.ts',
+        verifiedAt: capturedAt,
+        ok,
+        steps: [
+          ...(verificationSteps ?? []),
+          {
+            cmd:
+              process.env.R03_PARITY_TAIL_CAPTURE === '1'
+                ? 'R03_PARITY_TAIL_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs'
+                : 'node scripts/r03-ui-parity-visual.mjs',
+            exitCode: ok ? 0 : 1,
+            captureCount: captures.length,
+            failures,
+          },
         ],
         visualRunner: {
           script: 'scripts/r03-ui-parity-visual.mjs',
@@ -785,6 +937,7 @@ async function main() {
           ok,
           failures,
           captureCount: captures.length,
+          platformWorkingTreeDirty: gitDirty(ROOT),
         },
         browserSmoke: smokeSteps,
       },

@@ -17,7 +17,10 @@ import {
   CERT_STATUS_FILTER_OPTIONS,
 } from "@/lib/agent-r03/listSortOptions";
 import type { AgentCertificateRow, AgentR03ListMeta, AgentR03ListSort } from "@/lib/agent-r03/types";
-import { certificatePurchaseStatusLabel } from "@/lib/agent-r03/certificatePurchaseStatus";
+import {
+  certificateLifecycleStatusLabel,
+  certificatePurchaseStatusLabel,
+} from "@/lib/agent-r03/certificatePurchaseStatus";
 import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { Button } from "@/components/ui/Button";
 import { RecordRowActions } from "./RecordRowActions";
@@ -402,6 +405,9 @@ export function AgentCertificatesList() {
                       <span className={styles.purchasePill}>
                         {certificatePurchaseStatusLabel(cert)}
                       </span>
+                      <small className={styles.collectionLifecycle}>
+                        {certificateLifecycleStatusLabel(cert)}
+                      </small>
                     </td>
                     <td className={styles.collectionRowAction}>
                       <RecordRowActions

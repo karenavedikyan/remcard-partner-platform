@@ -28,7 +28,7 @@ describe("clientListRow", () => {
   });
 
   it("formats mobile list subtitle as task · city", () => {
-    expect(clientRowMobileSubtitle(base)).toBe("Задача parity · Краснодар");
+    expect(clientRowMobileSubtitle(base)).toBe("Краснодар · Задача parity");
   });
 
   it("uses purchase status labels from hasPurchases", () => {

@@ -241,9 +241,18 @@
   gap: 0.5rem;
 }
 
+.mobileRecordFooterStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .mobileRecordFooter .purchasePill {
   flex: 0 1 auto;
-  max-width: calc(100% - 160px);
+  max-width: 100%;
 }
 
 .statusPill {
@@ -518,6 +527,22 @@
 .recordActionToolbarEnd {
   justify-content: flex-end;
   width: 100%;
+}
+
+.mobileRecordFooterActions {
+  justify-content: flex-end;
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 0;
+}
+
+.collectionLifecycle {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
 }
 
 .certificateListActions {

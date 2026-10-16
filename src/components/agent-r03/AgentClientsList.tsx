@@ -383,7 +383,7 @@ export function AgentClientsList() {
               </thead>
               <tbody>
                 {items.map((client) => (
-                  <tr key={client.id}>
+                  <tr key={client.id} data-parity-client-id={client.id}>
                     <td>
                       <input
                         type="checkbox"

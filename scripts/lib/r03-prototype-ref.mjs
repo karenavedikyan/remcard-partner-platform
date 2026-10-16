@@ -175,7 +175,7 @@ export async function verifyImplAgentShell(page, section, viewMode) {
   const heading = section === 'certificates' ? 'Сертификаты' : 'Клиенты';
   await page.getByRole('heading', { name: heading }).waitFor({ timeout: 20_000 });
 
-  const listToggle = page.locator('[data-testid="agent-r03-view-toggle"] button[data-active="true"]');
+  const listToggle = page.locator('[data-testid="agent-r03-view-toggle"] button[aria-pressed="true"]');
   const activeText = ((await listToggle.textContent()) ?? '').trim();
   if (viewMode === 'list' && !activeText.includes('Список')) {
     return { ok: false, reason: 'impl_not_list_view' };

@@ -18,7 +18,8 @@ import {
   assertDarkThemeMeasurement,
   measureCabinetThemeInPage,
 } from './r03-theme-assert.mjs';
-import { PARITY_CERT_ALIASES, PARITY_CLIENTS } from './r03-parity-fixture.mjs';
+import { PARITY_CERT_ALIASES, PARITY_CLIENTS, PARITY_MATCH } from './r03-parity-fixture.mjs';
+import { PARITY_AGENT_DISPLAY_NAME } from './r03-parity-agent.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const NAV_ROOT = process.env.R02_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
@@ -161,7 +162,7 @@ export async function finishAgentProfileInBrowser(page, platformOrigin, cookieHe
   await maybeAcceptConsents(page);
   const wizard = page.locator('[data-testid="agent-profile-wizard"]');
   if (await wizard.isVisible().catch(() => false)) {
-    await page.getByTestId('agent-profile-input-displayName').fill('R03 UI Parity Agent');
+    await page.getByTestId('agent-profile-input-displayName').fill(PARITY_AGENT_DISPLAY_NAME);
     await page.locator('#agent-city').fill('Краснодар');
     await page.getByTestId('agent-profile-save-draft').click();
     await page.waitForResponse(
@@ -200,8 +201,11 @@ export function ensureAgentPartnership(agentUserId, env) {
   return JSON.parse((res.stdout || '').trim().split('\n').pop() ?? '{}');
 }
 
-export function markParityCertificateUsage(certId, env) {
-  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r03ParityMarkUsage.ts', certId], {
+export function markParityCertificateUsage(certId, agentUserId, env) {
+  const res = spawnSync(
+    'pnpm',
+    ['exec', 'tsx', 'scripts/r03ParityMarkUsage.ts', certId, agentUserId],
+    {
     cwd: NAV_ROOT,
     env,
     encoding: 'utf8',
@@ -222,22 +226,17 @@ export async function bootstrapAdminAgentSession(browser, opts = {}) {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto(`${plat}/login?mode=admin`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-  await page.locator('[data-testid="admin-login-pending"]').waitFor({ state: 'hidden', timeout: 90_000 }).catch(() => null);
+  await page.goto(`${plat}/login?mode=admin`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await page.locator('[data-testid="admin-login-pending"]').waitFor({ state: 'hidden', timeout: 120_000 }).catch(() => null);
   const usernameInput = page.locator('input[autocomplete="username"]');
-  if (!(await usernameInput.isVisible().catch(() => false))) {
-    const adminTab = page.getByRole('tab', { name: 'Вход администратора' });
-    await adminTab.waitFor({ state: 'attached', timeout: 45_000 });
-    await adminTab.click({ force: true });
-  }
-  await usernameInput.waitFor({ state: 'visible', timeout: 45_000 });
+  await usernameInput.waitFor({ state: 'visible', timeout: 120_000 });
   await usernameInput.fill(ADMIN_CREDS.login);
   await page.locator('input[autocomplete="current-password"]').fill(ADMIN_CREDS.password);
   await page.getByRole('button', { name: 'Войти' }).click();
   await page.waitForURL(/\/admin\/test-users/, { timeout: 60_000 });
   await page.getByRole('heading', { name: 'Тестовые пользователи' }).waitFor({ timeout: 30_000 });
 
-  const agentLabel = opts.agentLabel || `R03 UI Parity ${Date.now()}`;
+  const agentLabel = opts.agentLabel || `${PARITY_AGENT_DISPLAY_NAME} ${Date.now()}`;
   const createPanel = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Создать' }) });
   await createPanel.getByLabel('Тип').selectOption('agent');
   await createPanel.getByLabel('Имя').fill(agentLabel);
@@ -394,7 +393,6 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId, opts = {}
           categories: [{ category: 'misc', categoryLabel: 'Общее', discountPercent: 5, issuerPercent: 0 }],
         },
       ],
-      agentClientId: clients[0]?.id,
       userAlias: PARITY_CERT_ALIASES[2],
     },
   ];
@@ -412,9 +410,37 @@ export async function seedUiParityFixtures(plat, cookieHeader, userId, opts = {}
   }
 
   const parityCertId = certs[0]?.id;
+  const parityClientId = clients[0]?.id;
   if (parityCertId) {
-    markParityCertificateUsage(parityCertId, stackEnv);
+    const aliasRes = await fetch(`${plat}/api/remcard/api/pro/agent-certificates/${parityCertId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ userAlias: PARITY_CERT_ALIASES[0] }),
+    });
+    if (!aliasRes.ok) {
+      const aliasBody = await aliasRes.json().catch(() => ({}));
+      throw new Error(`parity_cert_alias_patch:${aliasBody.error ?? aliasRes.status}`);
+    }
+    markParityCertificateUsage(parityCertId, userId, stackEnv);
   }
 
-  return { clients, certs };
+  const listRes = await fetch(`${plat}/api/remcard/api/pro/agent-certificates`, {
+    headers: { Cookie: cookieHeader, Origin: plat },
+  });
+  const listBody = await listRes.json();
+  const parityListed = (listBody.certificates ?? []).some((c) => c.id === parityCertId);
+  if (!parityListed) {
+    throw new Error(`parity_cert_missing_after_seed:${listBody.error ?? listRes.status}`);
+  }
+
+  return {
+    clients,
+    certs,
+    parity: {
+      certId: parityCertId,
+      clientId: parityClientId,
+      certAlias: PARITY_MATCH.certAlias,
+      agentDisplayName: PARITY_AGENT_DISPLAY_NAME,
+    },
+  };
 }

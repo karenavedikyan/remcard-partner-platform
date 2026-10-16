@@ -16,13 +16,15 @@ type RecordRowActionsProps = {
   actions: RecordRowAction[];
   ariaLabel: string;
   /** Reference card toolbar: actions aligned end with compact icon buttons. */
-  variant?: "default" | "cardToolbar" | "listRow";
+  variant?: "default" | "cardToolbar" | "listRow" | "mobileFooter";
 };
 
 export function RecordRowActions({ actions, ariaLabel, variant = "default" }: RecordRowActionsProps) {
   const toolbarClass =
     variant === "cardToolbar"
       ? `${styles.rowActions} ${styles.recordActionToolbarEnd}`
+      : variant === "mobileFooter"
+        ? `${styles.rowActions} ${styles.mobileRecordFooterActions}`
       : variant === "listRow"
         ? `${styles.rowActions} ${styles.certificateListActions}`
         : styles.rowActions;
@@ -31,7 +33,7 @@ export function RecordRowActions({ actions, ariaLabel, variant = "default" }: Re
     if (variant === "listRow") {
       return `${styles.certificateListAction} ${id === "delete" ? styles.certificateListActionDanger : ""}`;
     }
-    if (variant === "cardToolbar") {
+    if (variant === "cardToolbar" || variant === "mobileFooter") {
       return `${styles.certificateListAction} ${id === "delete" ? styles.certificateListActionDanger : ""}`;
     }
     return `${styles.iconBtn} ${id === "delete" ? styles.iconBtnDanger : ""}`;

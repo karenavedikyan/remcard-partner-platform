@@ -16,12 +16,12 @@ export function clientRowCaption(client: AgentClientRow): string {
   return client.city?.trim() || "";
 }
 
-/** Mobile list subtitle: task · city (frozen reference list density). */
+/** Mobile list subtitle: city · task (frozen reference collection detail order). */
 export function clientRowMobileSubtitle(client: AgentClientRow): string {
   const task = client.note?.trim();
   const city = client.city?.trim();
-  if (task && city) return `${task} · ${city}`;
-  return task || city || "Добавьте задачу в карточке";
+  if (city && task) return `${city} · ${task}`;
+  return city || task || "Добавьте задачу в карточке";
 }
 
 /** Details column: certificate count + honest bonus placeholder (no totals API). */

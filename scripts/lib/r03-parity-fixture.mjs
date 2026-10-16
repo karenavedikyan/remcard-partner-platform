@@ -3,12 +3,15 @@
 /** Minimal ref-aligned row for matched-pair crops (roles.js client-anna + demo-audience-certificate). */
 export const PARITY_MATCH = {
   clientSearch: 'Анна',
-  certSearch: 'Ремонт для подписчиков',
+  /** Ref prototype search token (alias also contains middle dot). */
+  certSearch: 'подписчиков',
   client: {
     displayName: 'Анна · демо',
     city: 'Краснодар',
-    note: 'Подбирает напольные покрытия для квартиры. Удобнее связаться вечером.',
+    /** Matches frozen ref `need` (roles.js client-anna), not the long private note field. */
+    note: 'Ремонт квартиры',
     refPurchaseStatus: 'Есть покупки',
+    refCertificateCount: 1,
   },
   certAlias: 'Ремонт для подписчиков · демо',
 };

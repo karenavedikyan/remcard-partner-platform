@@ -27,7 +27,11 @@ export function AgentR03MobileClientRow({
   actions,
 }: Props) {
   return (
-    <article className={styles.mobileRecord} data-testid="agent-client-mobile-row">
+    <article
+      className={styles.mobileRecord}
+      data-testid="agent-client-mobile-row"
+      data-parity-client-id={client.id}
+    >
       <div className={styles.mobileRecordTop}>
         <label className={styles.selectCol}>
           <input
@@ -51,7 +55,7 @@ export function AgentR03MobileClientRow({
         <RecordRowActions
           ariaLabel="Действия с клиентом"
           actions={actions}
-          variant="cardToolbar"
+          variant="mobileFooter"
         />
       </div>
     </article>

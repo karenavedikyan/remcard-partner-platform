@@ -38,4 +38,13 @@ describe("certificatePurchaseStatusLabel", () => {
     expect(certificateLifecycleStatusLabel(base)).toBe("Активен");
     expect(certificatePurchaseStatusLabel(base)).toBe("Ожидает покупки");
   });
+
+  it("does not show awaiting purchase on terminal lifecycle statuses", () => {
+    expect(certificatePurchaseStatusLabel({ ...base, status: "CANCELLED", hasOrders: false })).toBe(
+      "Отменён",
+    );
+    expect(certificatePurchaseStatusLabel({ ...base, status: "EXPIRED", hasOrders: false })).toBe(
+      "Истёк",
+    );
+  });
 });

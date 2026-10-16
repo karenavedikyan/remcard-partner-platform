@@ -1,25 +1,28 @@
 {
-  "platformSha": "ca9545f5b00b6d62d44324ac854219f4900ce8a1",
-  "navigatorSha": "f8310b1f92fe2abc790661bcae5886c73415176c",
-  "verifiedAt": "2026-10-16T07:56:00.000Z",
+  "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+  "navigatorSha": "02c06daf0fa42ea71de3d55f4b988b4fe865522e",
+  "verifiedAt": "2026-10-16T08:51:00.000Z",
   "ok": true,
+  "captureEvidence": {
+    "platformGitShaAtCapture": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+    "platformWorkingTreeDirtyAtCapture": true,
+    "note": "Screenshots taken against HEAD plus uncommitted tail fixes; platformSha below is the commit that bundles code and artifacts."
+  },
   "steps": [
     {
       "cmd": "npm run build",
-      "cwd": "remcard-partner-platform",
       "exitCode": 0
     },
     {
-      "cmd": "npx vitest run src/lib/agent-r03/certificatePurchaseStatus.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/lib/profile-sections.test.ts",
+      "cmd": "npx vitest run src/lib/agent-r03/certificatePurchaseStatus.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/components/agent-r03/RecordRowActions.test.tsx src/lib/profile-sections.test.ts",
       "exitCode": 0,
-      "testFiles": 5,
-      "testsPassed": 14
+      "testFiles": 6,
+      "testsPassed": 16
     },
     {
       "cmd": "R03_PARITY_TAIL_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs",
       "exitCode": 0,
       "captureCount": 16,
-      "visualRunnerOk": true,
       "failures": []
     }
   ],
@@ -29,7 +32,7 @@
     "ok": true,
     "failures": [],
     "captureCount": 16,
-    "note": "CAPTURED rows are evidence only; pixel diffs are not a visual PASS claim."
+    "platformWorkingTreeDirty": true
   },
   "browserSmoke": [
     "certificates_cards",

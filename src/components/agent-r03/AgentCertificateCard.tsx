@@ -53,6 +53,7 @@ export function AgentCertificateCard({
     <div
       className={`${styles.collectionCardShell} ${selected ? styles.collectionCardShellSelected : ""}`}
       data-testid="agent-cert-card-shell"
+      data-parity-cert-id={cert.id}
     >
       <label className={styles.collectionCardSelect}>
         <input
