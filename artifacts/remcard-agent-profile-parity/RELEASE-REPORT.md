@@ -2,12 +2,14 @@
 
 **Not merge/deploy/production.** R03-PARITY-TAIL waits on full profile RC.
 
-## Git (update after push)
+## Git
 
-| Repo | Branch | PR |
-|------|--------|-----|
-| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | **#19** |
-| remcard-navigator | `cursor/agent-profile-parity-b3e3` | **#682** |
+| Repo | Branch | Tip (this pass) | PR |
+|------|--------|-----------------|-----|
+| remcard-partner-platform | `cursor/agent-profile-parity-b3e3` | `0b77bc47e99923662ecaff7e1682f405fc711dae` | **#19** |
+| remcard-navigator | `cursor/agent-profile-parity-b3e3` | `5a4b14ccfcd358a9eef2d0272835be8799bebb49` | **#682** |
+
+**Base stack:** R03 UI parity (#18 / #681); prior tips `67f48bc` (platform docs chain) / `a84f5678` (backend) superseded by commits above for this corrective pass.
 
 **Stack base:** `cursor/r03-ui-parity-b3e3` (#18 / #681).
 
