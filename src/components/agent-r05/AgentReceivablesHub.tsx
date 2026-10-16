@@ -618,7 +618,7 @@ export function AgentReceivablesHub() {
   if (screen === "order" && orderDetail) {
     const { record, lines, totalsMismatch, history } = orderDetail;
     return (
-      <div className={styles.shell} data-testid="agent-r05-order-detail">
+      <div className={`${styles.shell} ${styles.orderDetailShell}`} data-testid="agent-r05-order-detail">
         <div className={styles.backRow}>
           <button
             type="button"
