@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildProfileSectionHref,
+  profileSectionNav,
   resolveProfileSectionFromQuery,
 } from "./profile-sections";
 
@@ -32,5 +33,22 @@ describe("profile-sections", () => {
       new URLSearchParams("returnTo=%2Finvite%2Fx"),
     );
     expect(href).toBe("/profile?returnTo=%2Finvite%2Fx&section=basics");
+  });
+
+  it("pure agent nav exposes only overview, basics, notifications", () => {
+    const nav = profileSectionNav({ pureAgentCompact: true });
+    expect(nav.map((item) => item.id)).toEqual(["overview", "basics", "notifications"]);
+  });
+
+  it("pure agent resolver normalizes forbidden deep links to overview", () => {
+    expect(
+      resolveProfileSectionFromQuery(
+        { section: "catalog", moderation: "1", branchId: "br_1" },
+        { pureAgentCompact: true },
+      ),
+    ).toBe("overview");
+    expect(
+      resolveProfileSectionFromQuery({ section: "notifications" }, { pureAgentCompact: true }),
+    ).toBe("notifications");
   });
 });

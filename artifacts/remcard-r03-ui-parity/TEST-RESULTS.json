@@ -3,8 +3,11 @@
   "navigatorSha": "651150754af947a3ff896fe9431c68bd45ac5266",
   "build": {
     "command": "npm run build",
-    "status": "see_ci_or_local"
+    "status": "pass",
+    "verifiedAt": "2026-10-16T05:14:21Z"
   },
+  "r03DeltaFinalReport": "artifacts/remcard-r03-ui-parity/R03-DELTA-FINAL-REPORT.md",
+  "platformBranchTip": "a247876",
   "vitest": [
     "certificateOffers.test.ts",
     "formatDiscountPercent.test.ts",

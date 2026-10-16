@@ -17,11 +17,18 @@ type AgentProfileWizardProps = {
   userId: string;
   disabled?: boolean;
   onProfileComplete?: () => void;
+  /** Open editor on saved profile (basics tab) without nested profile/requisites switch. */
+  startInEditMode?: boolean;
 };
 
 type FieldErrors = Partial<Record<keyof AgentProfileDraftPayload, string>>;
 
-export function AgentProfileWizard({ userId, disabled, onProfileComplete }: AgentProfileWizardProps) {
+export function AgentProfileWizard({
+  userId,
+  disabled,
+  onProfileComplete,
+  startInEditMode = false,
+}: AgentProfileWizardProps) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [step, setStep] = useState(0);
@@ -64,7 +71,9 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
       syncVersion(data.version ?? 0, data.draftEpoch ?? 0);
       setProfileComplete(Boolean(data.profileComplete));
-      setEditing(Boolean(data.hasDraft) || !data.profileComplete);
+      setEditing(
+        startInEditMode || Boolean(data.hasDraft) || !data.profileComplete,
+      );
       setConflict(null);
     } catch (caught) {
       if (gen !== hydrateGen.current) return;
@@ -74,7 +83,7 @@ export function AgentProfileWizard({ userId, disabled, onProfileComplete }: Agen
     } finally {
       if (gen === hydrateGen.current) setLoading(false);
     }
-  }, []);
+  }, [startInEditMode]);
 
   useEffect(() => {
     void hydrate();

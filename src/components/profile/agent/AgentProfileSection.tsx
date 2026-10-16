@@ -11,11 +11,19 @@ import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import { AgentPayoutRequisitesPanel } from "./AgentPayoutRequisitesPanel";
 import styles from "./AgentProfileWizard.module.css";
 
+export type AgentProfileSectionLayout =
+  | "default"
+  /** Pure agent overview: wizard/summary + bank block, no nested tabs. */
+  | "parity-overview"
+  /** Pure agent basics tab: edit wizard only. */
+  | "parity-basics";
+
 type AgentProfileSectionProps = {
   userId: string;
   partnerActivities: string[];
   basicsEditable: boolean;
   onActivitiesChange?: (activities: string[]) => void;
+  layout?: AgentProfileSectionLayout;
 };
 
 export function AgentProfileSection({
@@ -23,6 +31,7 @@ export function AgentProfileSection({
   partnerActivities,
   basicsEditable,
   onActivitiesChange,
+  layout = "default",
 }: AgentProfileSectionProps) {
   const [status, setStatus] = useState<AgentProfileStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +109,34 @@ export function AgentProfileSection({
   }
 
   const pureAgent = isPureAgentActivities(partnerActivities);
+  const parityOverview = layout === "parity-overview";
+  const parityBasics = layout === "parity-basics";
+
+  const wizard = (
+    <AgentProfileWizard
+      userId={userId}
+      disabled={!basicsEditable}
+      onProfileComplete={() => void loadStatus()}
+      startInEditMode={parityBasics}
+    />
+  );
+
+  if (parityOverview) {
+    return (
+      <div className={styles.agentScope} data-testid="agent-profile-scope">
+        {wizard}
+        <AgentPayoutRequisitesPanel disabled={!basicsEditable} />
+      </div>
+    );
+  }
+
+  if (parityBasics) {
+    return (
+      <div className={styles.agentScope} data-testid="agent-profile-scope">
+        {wizard}
+      </div>
+    );
+  }
 
   return (
     <Panel
@@ -131,15 +168,7 @@ export function AgentProfileSection({
             Реквизиты
           </button>
         </div>
-        {tab === "profile" ? (
-          <AgentProfileWizard
-            userId={userId}
-            disabled={!basicsEditable}
-            onProfileComplete={() => void loadStatus()}
-          />
-        ) : (
-          <AgentPayoutRequisitesPanel disabled={!basicsEditable} />
-        )}
+        {tab === "profile" ? wizard : <AgentPayoutRequisitesPanel disabled={!basicsEditable} />}
       </div>
     </Panel>
   );
