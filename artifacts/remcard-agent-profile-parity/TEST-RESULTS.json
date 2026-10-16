@@ -1,8 +1,8 @@
 {
-  "platformSha": "972a82f504d8a5df0973a3ccb0a692563e231700",
-  "navigatorSha": "0aa8db4c60a0b722e8c6b6f3c20cccfea284e790",
+  "platformSha": "b13453fa850e779b9a37019eafa4415726e12786",
+  "navigatorSha": "a84f5678b44aa591a7802908e9630fa978c56c34",
   "ok": true,
-  "verifiedAt": "2026-10-16T05:36:56.848Z",
+  "verifiedAt": "2026-10-16T05:37:36.270Z",
   "steps": [
     {
       "cmd": "npm run build",
@@ -13,7 +13,7 @@
     {
       "cmd": "npx vitest run src/lib/profile-sections.test.ts src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
       "exitCode": 0,
-      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/profile-sections.test.ts (8 tests) 4ms\n ✓ src/components/profile/agent/AgentProfileWizard.regression.test.tsx (5 tests) 289ms\n\n Test Files  2 passed (2)\n      Tests  13 passed (13)\n   Start at  05:36:55\n   Duration  904ms (transform 138ms, setup 216ms, collect 148ms, tests 293ms, environment 481ms, prepare 96ms)\n\n",
+      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/profile-sections.test.ts (8 tests) 4ms\n ✓ src/components/profile/agent/AgentProfileWizard.regression.test.tsx (5 tests) 287ms\n\n Test Files  2 passed (2)\n      Tests  13 passed (13)\n   Start at  05:37:35\n   Duration  942ms (transform 132ms, setup 244ms, collect 164ms, tests 291ms, environment 497ms, prepare 98ms)\n\n",
       "stderr": ""
     }
   ],
