@@ -5,16 +5,147 @@
   "geometryOk": true,
   "geometryChecks": [
     {
+      "viewport": 1440,
       "cap": "overview-1440-light",
       "summaryWidthDelta": 0,
       "bankWidthDelta": 0,
       "ok": true
     },
     {
+      "viewport": 1440,
       "cap": "overview-1440-dark",
       "summaryWidthDelta": 0,
       "bankWidthDelta": 0,
       "ok": true
+    },
+    {
+      "viewport": 375,
+      "cap": "overview-375-light",
+      "ok": true,
+      "target": {
+        "summaryW": 343,
+        "summaryX": 16,
+        "bankW": 343,
+        "bankX": 16
+      },
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "summaryXDelta": 0,
+      "bankXDelta": 0,
+      "impl": {
+        "summary": {
+          "w": 343,
+          "h": 699,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 510,
+          "x": 16,
+          "y": 1140
+        }
+      },
+      "ref": {
+        "summary": {
+          "w": 343,
+          "h": 780,
+          "x": 16,
+          "y": 322
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 616,
+          "x": 16,
+          "y": 1233
+        }
+      }
+    },
+    {
+      "viewport": 375,
+      "cap": "overview-375-dark",
+      "ok": true,
+      "target": {
+        "summaryW": 343,
+        "summaryX": 16,
+        "bankW": 343,
+        "bankX": 16
+      },
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "summaryXDelta": 0,
+      "bankXDelta": 0,
+      "impl": {
+        "summary": {
+          "w": 343,
+          "h": 699,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 510,
+          "x": 16,
+          "y": 1140
+        }
+      },
+      "ref": {
+        "summary": {
+          "w": 343,
+          "h": 780,
+          "x": 16,
+          "y": 322
+        },
+        "bankPanel": {
+          "w": 343,
+          "h": 616,
+          "x": 16,
+          "y": 1233
+        }
+      }
+    },
+    {
+      "viewport": 320,
+      "cap": "overview-320-light",
+      "ok": true,
+      "target": {
+        "summaryW": 288,
+        "summaryX": 16,
+        "bankW": 288,
+        "bankX": 16
+      },
+      "summaryWidthDelta": 0,
+      "bankWidthDelta": 0,
+      "summaryXDelta": 0,
+      "bankXDelta": 0,
+      "impl": {
+        "summary": {
+          "w": 288,
+          "h": 767,
+          "x": 16,
+          "y": 369
+        },
+        "bankPanel": {
+          "w": 288,
+          "h": 510,
+          "x": 16,
+          "y": 1208
+        }
+      },
+      "ref": {
+        "summary": {
+          "w": 288,
+          "h": 852,
+          "x": 16,
+          "y": 342
+        },
+        "bankPanel": {
+          "w": 288,
+          "h": 659,
+          "x": 16,
+          "y": 1326
+        }
+      }
     }
   ],
   "cssOk": true,
@@ -36,14 +167,14 @@
     {
       "cap": "overview-375-light",
       "check": "mobile_summary_badge_content_sized",
-      "summaryWidth": 302,
+      "summaryWidth": 343,
       "badgeWidth": 87,
       "ok": true
     },
     {
       "cap": "overview-375-dark",
       "check": "mobile_summary_badge_content_sized",
-      "summaryWidth": 302,
+      "summaryWidth": 343,
       "badgeWidth": 87,
       "ok": true
     },
@@ -68,10 +199,10 @@
   },
   "bankStateParity": {
     "dedupedCount": 1,
-    "refExpandedVsFormDistinct": true
+    "refExpandedVsFormDistinct": false
   },
   "stack": {
-    "platformGitSha": "e70cb9ea8abc95f2335b1900b044f6950ccbfb99",
+    "platformGitSha": "c804f8b76bf2442964e35f3249ad749f62bf346d",
     "navigatorGitSha": "7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7",
     "platformOrigin": "http://127.0.0.1:3044",
     "navOrigin": "http://127.0.0.1:3043",
@@ -143,7 +274,7 @@
     },
     {
       "file": "impl-overview-1440-dark.png",
-      "sha256": "53e294ad8ddec8a69a7276a4a2f01fa2599a1ec4b33e5d2282332abec819ea8b",
+      "sha256": "79e6a4faf28dd8c8fdf3c749f663ed999276de8259b5e38fb6b34d6026714b55",
       "layout": {
         "summary": {
           "w": 564,
@@ -183,12 +314,12 @@
     },
     {
       "file": "impl-overview-375-light.png",
-      "sha256": "d8a735f4ce8e91d65ad33278cfb84ae6d5ffb5c73a37a6039e243a5a1660ba30",
+      "sha256": "7fe00083fe24b64b9e0a8a1c3578838a0eae7ea8627853e1b8121540ed388693",
       "layout": {
         "summary": {
-          "w": 302,
+          "w": 343,
           "h": 699,
-          "x": 37,
+          "x": 16,
           "y": 369
         },
         "bankPanel": {
@@ -202,7 +333,7 @@
       },
       "viewportTop": {
         "file": "impl-overview-375-light-viewport-top.png",
-        "sha256": "861c029c4751f6a6a8f5ee783e0320311f81e1ed1cd61de1612efb1aa511ceba"
+        "sha256": "94eaca04a85933dd478d808a1f30379df43901f89d9790f11004e6ab9908ec2f"
       }
     },
     {
@@ -231,12 +362,12 @@
     },
     {
       "file": "impl-overview-375-dark.png",
-      "sha256": "753284c746b7308bf2e838a6d9b38a96c6e9576b4fbb13d18117d152c15e9151",
+      "sha256": "e42e0cd842ccfe60778a88e19a7aba4680cde20907988ca9e6f135fe123730b0",
       "layout": {
         "summary": {
-          "w": 302,
+          "w": 343,
           "h": 699,
-          "x": 37,
+          "x": 16,
           "y": 369
         },
         "bankPanel": {
@@ -250,7 +381,7 @@
       },
       "viewportTop": {
         "file": "impl-overview-375-dark-viewport-top.png",
-        "sha256": "06d73c01a3468593b7c9615df2f968bf11365959f1787d25f25f15bf124ced89"
+        "sha256": "32bf654362e3f7b27104cf058283407df5e7897f8e1c8ddbd9a2ac87ad7697ca"
       }
     },
     {
@@ -279,11 +410,11 @@
     },
     {
       "file": "impl-overview-320-light.png",
-      "sha256": "e47d499845976912069b4bdad8baee68cdb7885ffbbd1ce279c4ced6907de160",
+      "sha256": "9415c2ea8c9a5ddd269668624aef66d9f28c06c214c8a6ae9731a814f81454f9",
       "layout": {
         "summary": {
           "w": 288,
-          "h": 726,
+          "h": 767,
           "x": 16,
           "y": 369
         },
@@ -291,14 +422,14 @@
           "w": 288,
           "h": 510,
           "x": 16,
-          "y": 1167
+          "y": 1208
         },
         "bankRecords": 1,
         "bankForm": null
       },
       "viewportTop": {
         "file": "impl-overview-320-light-viewport-top.png",
-        "sha256": "47887ff58f3b995a4e8669c445753203e47f7fc9b2d6d93b22b85d200f63e6a5"
+        "sha256": "04e294605a1a6447b707f6876bfe644763838f9c3114c4bc81a1780bee404bcc"
       }
     },
     {
@@ -324,195 +455,11 @@
         "file": "ref-overview-320-light-viewport-top.png",
         "sha256": "2c26f125ab49651d469da0914efdb4c3e38fd01ef7f7cfb0568fa61889c6715b"
       }
-    },
-    {
-      "file": "impl-wizard-step1-375-light.png",
-      "sha256": "9de2d55c94392e2a20cef709cfcef1cbbc7014d684f59a63e3bcc7ec523f0b34",
-      "layout": {
-        "summary": null,
-        "bankPanel": {
-          "w": 343,
-          "h": 327,
-          "x": 16,
-          "y": 1123
-        },
-        "bankRecords": 0,
-        "bankForm": null
-      },
-      "viewportTop": {
-        "file": "impl-wizard-step1-375-light-viewport-top.png",
-        "sha256": "60dbb449ccb80e01dcfd40e02a11c5a7bf5e4bbba38db258edfeb6453926aa4f"
-      }
-    },
-    {
-      "file": "ref-wizard-step1-375-light.png",
-      "sha256": "3a22b79f878b5366722f8c48152b20ba8398c119053962b6c23758140f02f703",
-      "layout": {
-        "summary": null,
-        "bankPanel": {
-          "w": 343,
-          "h": 327,
-          "x": 16,
-          "y": 1108
-        },
-        "bankRecords": 0,
-        "bankForm": null
-      },
-      "viewportTop": {
-        "file": "ref-wizard-step1-375-light-viewport-top.png",
-        "sha256": "a86267e887c4b7593ba2c03303f4cc040358f15c45c5b2700b83ff37ce764694"
-      }
-    },
-    {
-      "file": "impl-bank-collapsed-375-light.png",
-      "sha256": "0f8fc3e3120ad5e9c918620c121e29992788cadf2826d859733253e51090a276",
-      "layout": {
-        "summary": {
-          "w": 302,
-          "h": 699,
-          "x": 37,
-          "y": 369
-        },
-        "bankPanel": {
-          "w": 343,
-          "h": 510,
-          "x": 16,
-          "y": 1140
-        },
-        "bankRecords": 1,
-        "bankForm": null
-      }
-    },
-    {
-      "file": "ref-bank-collapsed-375-light.png",
-      "sha256": "46c8f4ca62e30eabd42df28d5cdd420b6e34d185629c6f88f56e4e5f4440f354",
-      "layout": {
-        "summary": {
-          "w": 343,
-          "h": 780,
-          "x": 16,
-          "y": 322
-        },
-        "bankPanel": {
-          "w": 343,
-          "h": 616,
-          "x": 16,
-          "y": 1233
-        },
-        "bankRecords": 1,
-        "bankForm": null
-      }
-    },
-    {
-      "file": "impl-bank-expanded-375-light.png",
-      "sha256": "e43ab62a59cef22ee7abdcb5c8ea30c91523c4b1ddf4456be6f5e81b0af4b77a",
-      "layout": {
-        "summary": {
-          "w": 302,
-          "h": 699,
-          "x": 37,
-          "y": 369
-        },
-        "bankPanel": {
-          "w": 343,
-          "h": 957,
-          "x": 16,
-          "y": 1140
-        },
-        "bankRecords": 1,
-        "bankForm": null
-      }
-    },
-    {
-      "file": "ref-bank-expanded-375-light.png",
-      "sha256": "ec1537889398df431848eefb7ad4d72026568843fffa87e57807baed85979894",
-      "layout": {
-        "summary": {
-          "w": 343,
-          "h": 780,
-          "x": 16,
-          "y": 322
-        },
-        "bankPanel": {
-          "w": 343,
-          "h": 1056,
-          "x": 16,
-          "y": 1233
-        },
-        "bankRecords": 1,
-        "bankForm": null
-      }
-    },
-    {
-      "file": "impl-bank-form-375-light.png",
-      "sha256": "7eb8eac5f43b1e202b870b4464ca02aa376c0fa279681e2cad0f02feb0a8cbe8",
-      "layout": {
-        "summary": {
-          "w": 302,
-          "h": 699,
-          "x": 37,
-          "y": 369
-        },
-        "bankPanel": {
-          "w": 343,
-          "h": 1287,
-          "x": 16,
-          "y": 1140
-        },
-        "bankRecords": 0,
-        "bankForm": {
-          "w": 301,
-          "h": 1146,
-          "x": 37,
-          "y": 1260
-        }
-      },
-      "viewportTop": {
-        "file": "impl-bank-form-375-light-viewport-top.png",
-        "sha256": "eb92b644c280c5471786a3c9ca14f9872b76e702371aa0f4b07869a260227cd1"
-      },
-      "formFooter": {
-        "file": "impl-bank-form-375-light-form-footer.png",
-        "sha256": "0f99e8a9e3e91f52dfa402055991faa223217ed3f5b682d2284b29c3f6a5c80d"
-      }
-    },
-    {
-      "file": "ref-bank-form-375-light.png",
-      "sha256": "9d9a071860c324984b517b4cd92cea7a451a9b4aa9fe070fe213e7f2a105f8bc",
-      "layout": {
-        "summary": {
-          "w": 343,
-          "h": 780,
-          "x": 16,
-          "y": 322
-        },
-        "bankPanel": {
-          "w": 343,
-          "h": 1553,
-          "x": 16,
-          "y": 1233
-        },
-        "bankRecords": 0,
-        "bankForm": {
-          "w": 301,
-          "h": 1316,
-          "x": 37,
-          "y": 1357
-        }
-      },
-      "viewportTop": {
-        "file": "ref-bank-form-375-light-viewport-top.png",
-        "sha256": "641ddf7c436abb66661c2ea5a2cd6f96ac67b58775b9d6435be8af542faf9d28"
-      },
-      "formFooter": {
-        "file": "ref-bank-form-375-light-form-footer.png",
-        "sha256": "7a60e520f5254f3258c231c35c55d5d5db2d898780b0120b1449017e976861ea"
-      }
     }
   ],
   "migration": {
     "skipped": true,
     "reason": "PROF_R02_RUN_PG not set"
   },
-  "capturedAt": "2026-10-16T07:38:34.078Z"
+  "capturedAt": "2026-10-16T07:44:33.513Z"
 }

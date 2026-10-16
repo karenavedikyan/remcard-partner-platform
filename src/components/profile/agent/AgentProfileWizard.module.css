@@ -744,6 +744,19 @@
 }
 
 @media (max-width: 560px) {
+  .agentScope > .pw[data-testid="agent-profile-completed-summary"] {
+    width: 100%;
+    max-width: 100%;
+    justify-self: stretch;
+    margin: var(--pw-6) 0;
+    box-sizing: border-box;
+  }
+
+  .agentScope > .pw[data-testid="agent-profile-completed-summary"] .summary {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .summaryFacts {
     grid-template-columns: 1fr;
   }
@@ -780,6 +793,31 @@
     justify-self: start;
     width: max-content;
     max-width: 100%;
+  }
+}
+
+@media (max-width: 359px) {
+  .summaryHeader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .summaryHeader .avatar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .summaryIdentity {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .summaryStatus {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .summaryTitle {
+    overflow-wrap: anywhere;
   }
 }
 

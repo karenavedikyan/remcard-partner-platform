@@ -28,7 +28,7 @@ const REF_PORT = Number(process.env.AGENT_PROFILE_REF_PORT || 8098);
 const REF_HIDE =
   '.demo-top,.review-details,.registration,.choice-footer,.demo-toolbar,.mobile-demo-settings,.review-toolbar{display:none!important}';
 
-const CAPTURES = [
+const CAPTURES_FULL = [
   { stem: 'overview-1440-light', w: 1440, h: 900, theme: 'light', state: 'overview-complete' },
   { stem: 'overview-1440-dark', w: 1440, h: 900, theme: 'dark', state: 'overview-complete' },
   { stem: 'overview-375-light', w: 375, h: 812, theme: 'light', state: 'overview-complete' },
@@ -39,6 +39,17 @@ const CAPTURES = [
   { stem: 'bank-expanded-375-light', w: 375, h: 812, theme: 'light', state: 'bank-expanded' },
   { stem: 'bank-form-375-light', w: 375, h: 812, theme: 'light', state: 'bank-form' },
 ];
+
+const CAPTURES_OVERVIEW_TAIL = [
+  { stem: 'overview-1440-light', w: 1440, h: 900, theme: 'light', state: 'overview-complete' },
+  { stem: 'overview-1440-dark', w: 1440, h: 900, theme: 'dark', state: 'overview-complete' },
+  { stem: 'overview-375-light', w: 375, h: 812, theme: 'light', state: 'overview-complete' },
+  { stem: 'overview-375-dark', w: 375, h: 812, theme: 'dark', state: 'overview-complete' },
+  { stem: 'overview-320-light', w: 320, h: 700, theme: 'light', state: 'overview-complete' },
+];
+
+const CAPTURES =
+  process.env.AGENT_PROFILE_OVERVIEW_TAIL === '1' ? CAPTURES_OVERVIEW_TAIL : CAPTURES_FULL;
 
 function plat(session) {
   return session.platformOrigin.replace(/\/$/, '');
@@ -285,6 +296,58 @@ async function ensureBankSeeded(session) {
 function widthDelta(a, b) {
   if (!a?.w || !b?.w) return null;
   return Math.abs(a.w - b.w);
+}
+
+function axisDelta(a, b) {
+  if (a == null || b == null) return null;
+  return Math.abs(a - b);
+}
+
+const MOBILE_OVERVIEW_TARGETS = {
+  375: { summaryW: 343, summaryX: 16, bankW: 343, bankX: 16 },
+  320: { summaryW: 288, summaryX: 16, bankW: 288, bankX: 16 },
+};
+
+function mobileOverviewGeometryOk(capW, implLayout, refLayout) {
+  const target = MOBILE_OVERVIEW_TARGETS[capW];
+  if (!target) return { ok: false, reason: 'no_target' };
+  const summaryWidthDelta = widthDelta(implLayout?.summary, refLayout?.summary);
+  const bankWidthDelta = widthDelta(implLayout?.bankPanel, refLayout?.bankPanel);
+  const summaryXDelta = axisDelta(implLayout?.summary?.x, refLayout?.summary?.x);
+  const bankXDelta = axisDelta(implLayout?.bankPanel?.x, refLayout?.bankPanel?.x);
+  const implSummaryWDelta = axisDelta(implLayout?.summary?.w, target.summaryW);
+  const implSummaryXDelta = axisDelta(implLayout?.summary?.x, target.summaryX);
+  const implBankWDelta = axisDelta(implLayout?.bankPanel?.w, target.bankW);
+  const implBankXDelta = axisDelta(implLayout?.bankPanel?.x, target.bankX);
+  const ok =
+    summaryWidthDelta != null &&
+    bankWidthDelta != null &&
+    summaryWidthDelta <= 4 &&
+    bankWidthDelta <= 4 &&
+    summaryXDelta != null &&
+    bankXDelta != null &&
+    summaryXDelta <= 4 &&
+    bankXDelta <= 4 &&
+    implSummaryWDelta <= 4 &&
+    implSummaryXDelta <= 4 &&
+    implBankWDelta <= 4 &&
+    implBankXDelta <= 4;
+  return {
+    ok,
+    target,
+    summaryWidthDelta,
+    bankWidthDelta,
+    summaryXDelta,
+    bankXDelta,
+    impl: {
+      summary: implLayout?.summary,
+      bankPanel: implLayout?.bankPanel,
+    },
+    ref: {
+      summary: refLayout?.summary,
+      bankPanel: refLayout?.bankPanel,
+    },
+  };
 }
 
 async function assertMobileSummaryBadge(page) {
@@ -561,6 +624,7 @@ async function capturePairs(session, refBase) {
         const summaryDelta = widthDelta(pairLayouts.impl?.summary, pairLayouts.ref?.summary);
         const bankDelta = widthDelta(pairLayouts.impl?.bankPanel, pairLayouts.ref?.bankPanel);
         geometryChecks.push({
+          viewport: cap.w,
           cap: cap.stem,
           summaryWidthDelta: summaryDelta,
           bankWidthDelta: bankDelta,
@@ -570,6 +634,22 @@ async function capturePairs(session, refBase) {
           throw new Error(
             `geometry_1440_summaryDelta_${summaryDelta}_bankDelta_${bankDelta}`,
           );
+        }
+      }
+      if (
+        cap.state === 'overview-complete' &&
+        (cap.w === 375 || cap.w === 320) &&
+        pairLayouts.impl &&
+        pairLayouts.ref
+      ) {
+        const mobile = mobileOverviewGeometryOk(cap.w, pairLayouts.impl, pairLayouts.ref);
+        geometryChecks.push({
+          viewport: cap.w,
+          cap: cap.stem,
+          ...mobile,
+        });
+        if (!mobile.ok) {
+          throw new Error(`geometry_mobile_${cap.w}_${cap.stem}_${JSON.stringify(mobile)}`);
         }
       }
     }
