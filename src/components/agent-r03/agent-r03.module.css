@@ -322,6 +322,7 @@
   border: 0;
   border-radius: 0;
   padding: 1.25rem;
+  box-sizing: border-box;
   background: linear-gradient(
     135deg,
     var(--surface) 50%,
@@ -370,6 +371,8 @@
   display: flex;
   gap: 0.65rem;
   align-items: flex-start;
+  min-width: 0;
+  width: 100%;
 }
 
 .certCardHeadText {
@@ -380,6 +383,13 @@
   justify-content: space-between;
   gap: 0.5rem;
   min-width: 0;
+  width: 100%;
+}
+
+.certCardHeadText .purchasePill {
+  flex: 0 1 auto;
+  max-width: 100%;
+  margin-left: auto;
 }
 
 .certCardEyebrow {
@@ -391,7 +401,10 @@
 
 .certCardBody {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.25rem;
+  min-width: 0;
+  width: 100%;
 }
 
 .certCardTitle {
@@ -428,6 +441,10 @@
   border-right: 0;
   border-bottom: 0;
   background: transparent;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .certificateTerms summary {
@@ -439,6 +456,10 @@
   align-items: center;
   gap: 0.75rem;
   min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .certificateTerms summary::-webkit-details-marker {
@@ -499,6 +520,10 @@
   margin-top: 1.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px dashed var(--r03-line);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .certificateBottom small,
@@ -522,6 +547,39 @@
   padding-top: 0.75rem;
   margin-top: 0.75rem;
   border-top: 1px solid var(--r03-line);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.collectionCardShell > .certCard {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.collectionCardShell .recordActionToolbarEnd {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 420px) {
+  .collectionCardShell > .certCard {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .certificateBottom {
+    gap: 0.45rem;
+  }
+
+  .certCardMore {
+    font-size: 0.8125rem;
+  }
 }
 
 .recordActionToolbarEnd {
@@ -792,6 +850,8 @@
   min-width: 0;
   overflow: hidden;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  box-sizing: border-box;
 }
 
 .collectionCardShellSelected {

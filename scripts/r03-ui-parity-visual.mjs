@@ -26,6 +26,7 @@ import {
   assertRefMatchedCertificate,
   assertRefMatchedClient,
   measureMobileListFooterRow,
+  measureCertCardShellClip,
   parityCertCardLocator,
   parityClientDesktopRowLocator,
   parityClientMobileRowLocator,
@@ -195,7 +196,18 @@ const TAIL_MATRIX = [
   ...VIEWPORT_MATRIX.filter((r) => r.width === 320),
 ];
 
+const CERT_CARD_CLIP_MATRIX = [
+  ...MATCHED_PAIR_ROWS.filter((r) => r.section === 'certificates' && r.viewMode === 'cards'),
+  SMOKE_MATRIX.find((r) => r.section === 'certificates' && r.kind === 'cards320'),
+  VIEWPORT_MATRIX.find(
+    (r) => r.section === 'certificates' && r.viewMode === 'cards' && r.width === 320 && r.scroll === 'top',
+  ),
+].filter(Boolean);
+
 function captureMatrix() {
+  if (process.env.R03_PARITY_CERT_CLIP_CAPTURE === '1') {
+    return CERT_CARD_CLIP_MATRIX;
+  }
   if (process.env.R03_PARITY_TAIL_CAPTURE === '1') {
     return TAIL_MATRIX;
   }
@@ -532,6 +544,26 @@ async function captureImpl(context, plat, cookieHeader, row, parity) {
   if (row.kind === 'matched' && row.section === 'certificates') {
     await assertImplMatchedCertificate(page, parity);
   }
+  if (row.kind === 'cards320' && row.section === 'certificates') {
+    await applyImplSearch(page, PARITY_MATCH.certSearch);
+    await page.locator('[data-testid="agent-r03-cards-grid"]').waitFor({ state: 'visible', timeout: 45_000 });
+    await assertImplMatchedCertificate(page, parity);
+  }
+  let certCardShellClip = null;
+  if (row.section === 'certificates' && row.viewMode === 'cards' && row.kind !== 'viewport') {
+    certCardShellClip = await measureCertCardShellClip(page, parity?.certId);
+    if (!certCardShellClip.ok) {
+      throw new Error(`cert_card_shell_clip:${JSON.stringify(certCardShellClip)}`);
+    }
+  }
+  if (row.kind === 'viewport' && row.section === 'certificates' && row.viewMode === 'cards') {
+    await applyImplSearch(page, PARITY_MATCH.certSearch);
+    await page.locator('[data-testid="agent-r03-cards-grid"]').waitFor({ state: 'visible', timeout: 45_000 });
+    certCardShellClip = await measureCertCardShellClip(page, parity?.certId);
+    if (!certCardShellClip.ok) {
+      throw new Error(`cert_card_shell_clip:${JSON.stringify(certCardShellClip)}`);
+    }
+  }
   if (row.kind === 'matched' && row.section === 'clients') {
     await assertImplMatchedClient(page, parity, row.viewMode, row.width);
     if (row.width <= 680) {
@@ -556,6 +588,7 @@ async function captureImpl(context, plat, cookieHeader, row, parity) {
   }
 
   const computed = await measureImplComputed(page, row.section, row.viewMode);
+  if (certCardShellClip) computed.certCardShellClip = certCardShellClip;
   assertComputedGeometry(computed, row);
 
   const id = slug(row);
@@ -589,7 +622,7 @@ async function captureImpl(context, plat, cookieHeader, row, parity) {
   );
   if (row.viewMode === 'cards' && row.section === 'certificates') {
     const certLocator =
-      row.kind === 'matched'
+      row.kind === 'matched' || row.kind === 'cards320'
         ? parityCertCardLocator(page, parity?.certId)
         : page.locator('[data-testid="agent-cert-card-shell"]').first();
     regions.certCard = await captureRegion(
@@ -783,7 +816,9 @@ async function main() {
 
     const rowsToCapture = captureMatrix();
     const mergeCarry =
-      process.env.R03_CORRECTIVE_CAPTURE === '1' || process.env.R03_DELTA_CAPTURE === '1';
+      process.env.R03_CORRECTIVE_CAPTURE === '1' ||
+      process.env.R03_DELTA_CAPTURE === '1' ||
+      process.env.R03_PARITY_CERT_CLIP_CAPTURE === '1';
     const capturesPath = path.join(SHOTS, 'captures.json');
     let carriedCaptures = [];
     let prevRun = null;
@@ -891,7 +926,10 @@ async function main() {
     refServer.close();
   }
 
-  if (process.env.R03_PARITY_TAIL_CAPTURE === '1') {
+  if (
+    process.env.R03_PARITY_TAIL_CAPTURE === '1' ||
+    process.env.R03_PARITY_CERT_CLIP_CAPTURE === '1'
+  ) {
     verificationSteps = runTailVerificationSteps();
   }
 
@@ -923,9 +961,11 @@ async function main() {
           ...(verificationSteps ?? []),
           {
             cmd:
-              process.env.R03_PARITY_TAIL_CAPTURE === '1'
-                ? 'R03_PARITY_TAIL_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs'
-                : 'node scripts/r03-ui-parity-visual.mjs',
+              process.env.R03_PARITY_CERT_CLIP_CAPTURE === '1'
+                ? 'R03_PARITY_CERT_CLIP_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs'
+                : process.env.R03_PARITY_TAIL_CAPTURE === '1'
+                  ? 'R03_PARITY_TAIL_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs'
+                  : 'node scripts/r03-ui-parity-visual.mjs',
             exitCode: ok ? 0 : 1,
             captureCount: captures.length,
             failures,
@@ -933,7 +973,12 @@ async function main() {
         ],
         visualRunner: {
           script: 'scripts/r03-ui-parity-visual.mjs',
-          env: process.env.R03_PARITY_TAIL_CAPTURE === '1' ? 'R03_PARITY_TAIL_CAPTURE=1' : undefined,
+          env:
+            process.env.R03_PARITY_CERT_CLIP_CAPTURE === '1'
+              ? 'R03_PARITY_CERT_CLIP_CAPTURE=1'
+              : process.env.R03_PARITY_TAIL_CAPTURE === '1'
+                ? 'R03_PARITY_TAIL_CAPTURE=1'
+                : undefined,
           ok,
           failures,
           captureCount: captures.length,

@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-10-16T08:49:30.514Z",
-  "platformGitSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+  "capturedAt": "2026-10-16T09:08:18.096Z",
+  "platformGitSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
   "navigatorGitSha": "02c06daf0fa42ea71de3d55f4b988b4fe865522e",
   "platformWorkingTreeDirty": true,
   "note": "platformGitSha is repo HEAD at capture time; local dev stack may serve a working tree without rebuild.",
@@ -18,7 +18,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-list-light-320x812-smoke320-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-list-light-320x812-smoke320-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-list-light-320x812-smoke320-diff.png",
@@ -117,7 +120,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-320x812-smoke320-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-320x812-smoke320-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-320x812-smoke320-diff.png",
@@ -219,118 +225,6 @@
       }
     },
     {
-      "id": "certificates-cards-light-320x812-cards320",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "light",
-      "width": 320,
-      "height": 812,
-      "kind": "cards320",
-      "status": "CAPTURED",
-      "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-      "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
-      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-full.png",
-      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-full.png",
-      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff.png",
-      "diffStats": {
-        "width": 320,
-        "height": 2029,
-        "mismatchedPixels": 63528,
-        "ratio": 0.0978437654016757
-      },
-      "computed": {
-        "navIconWidth": 0,
-        "navIconHeight": 0,
-        "cardsGridColumns": "288px",
-        "cardsGridTrackCount": 1,
-        "cardsColumnOk": true,
-        "activeViewLabel": "Карточки",
-        "toolbarVisible": true,
-        "toolbarRowOk": true,
-        "bottomNavPinned": true,
-        "searchAccessible": false,
-        "scrollY": 0,
-        "paginationRect": {
-          "x": 16,
-          "y": 2529.390625,
-          "width": 288,
-          "height": 97.390625,
-          "top": 2529.390625,
-          "right": 304,
-          "bottom": 2626.78125,
-          "left": 16
-        },
-        "termsPresent": true,
-        "moreLinkColor": "rgb(36, 38, 35)",
-        "statusActionOverlap": false,
-        "actionClip": false,
-        "section": "certificates",
-        "viewMode": "cards",
-        "viewportWidth": 320
-      },
-      "regions": {
-        "impl": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-cert-card.png"
-        },
-        "ref": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-cert-card.png"
-        },
-        "diffs": {
-          "content": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-content.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-content.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-content.png",
-            "stats": {
-              "width": 288,
-              "height": 1105,
-              "mismatchedPixels": 27092,
-              "ratio": 0.08513071895424837
-            }
-          },
-          "toolbar": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-toolbar.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-toolbar.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-toolbar.png",
-            "stats": {
-              "width": 288,
-              "height": 270,
-              "mismatchedPixels": 7141,
-              "ratio": 0.09183384773662552
-            }
-          },
-          "pagination": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-pagination.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-pagination.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-pagination.png",
-            "stats": {
-              "width": 288,
-              "height": 98,
-              "mismatchedPixels": 1022,
-              "ratio": 0.036210317460317464
-            }
-          },
-          "certCard": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-cert-card.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-cert-card.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-certCard.png",
-            "stats": {
-              "width": 288,
-              "height": 450,
-              "mismatchedPixels": 9650,
-              "ratio": 0.07445987654320987
-            }
-          }
-        }
-      }
-    },
-    {
       "id": "clients-cards-light-320x812-cards320",
       "section": "clients",
       "viewMode": "cards",
@@ -341,7 +235,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-cards-light-320x812-cards320-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-cards-light-320x812-cards320-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-cards-light-320x812-cards320-diff.png",
@@ -430,498 +327,6 @@
       }
     },
     {
-      "id": "certificates-cards-light-1440x900-matched",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "light",
-      "width": 1440,
-      "height": 900,
-      "kind": "matched",
-      "refSearchQuery": "подписчиков",
-      "status": "CAPTURED",
-      "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-      "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
-      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-full.png",
-      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-full.png",
-      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff.png",
-      "diffStats": {
-        "width": 1440,
-        "height": 1470,
-        "mismatchedPixels": 94746,
-        "ratio": 0.044759070294784584
-      },
-      "computed": {
-        "navIconWidth": 20,
-        "navIconHeight": 20,
-        "cardsGridColumns": "559px 559px",
-        "cardsGridTrackCount": 2,
-        "cardsColumnOk": true,
-        "activeViewLabel": "Карточки",
-        "toolbarVisible": true,
-        "toolbarRowOk": true,
-        "bottomNavPinned": false,
-        "searchAccessible": true,
-        "scrollY": 0,
-        "paginationRect": {
-          "x": 274,
-          "y": 1769.515625,
-          "width": 1134,
-          "height": 48.1875,
-          "top": 1769.515625,
-          "right": 1408,
-          "bottom": 1817.703125,
-          "left": 274
-        },
-        "termsPresent": true,
-        "moreLinkColor": "rgb(36, 38, 35)",
-        "statusActionOverlap": false,
-        "actionClip": false,
-        "section": "certificates",
-        "viewMode": "cards",
-        "viewportWidth": 1440
-      },
-      "dataParity": {
-        "note": "Asserted fixture row (search + field checks) before crop",
-        "verified": "ASSERTED",
-        "parityFixture": {
-          "certId": "cmvaq5n7s008ijsrx1g2f7iy8",
-          "clientId": "cmvaq5n1e008ajsrxalysej6k",
-          "certAlias": "Ремонт для подписчиков · демо",
-          "agentDisplayName": "R03 Parity Agent"
-        }
-      },
-      "regions": {
-        "impl": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-cert-card.png"
-        },
-        "ref": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-cert-card.png"
-        },
-        "diffs": {
-          "content": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-content.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-content.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-content.png",
-            "stats": {
-              "width": 1134,
-              "height": 753,
-              "mismatchedPixels": 32015,
-              "ratio": 0.037492592826811506
-            }
-          },
-          "toolbar": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-toolbar.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-toolbar.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-toolbar.png",
-            "stats": {
-              "width": 1134,
-              "height": 83,
-              "mismatchedPixels": 4272,
-              "ratio": 0.04538790080958756
-            }
-          },
-          "pagination": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-pagination.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-pagination.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-pagination.png",
-            "stats": {
-              "width": 1134,
-              "height": 49,
-              "mismatchedPixels": 1246,
-              "ratio": 0.022423784328546234
-            }
-          },
-          "certCard": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-cert-card.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-cert-card.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-certCard.png",
-            "stats": {
-              "width": 559,
-              "height": 435,
-              "mismatchedPixels": 13682,
-              "ratio": 0.056266321222215365
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "certificates-cards-dark-1440x900-matched",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "dark",
-      "width": 1440,
-      "height": 900,
-      "kind": "matched",
-      "refSearchQuery": "подписчиков",
-      "status": "CAPTURED",
-      "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-      "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
-      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-full.png",
-      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-full.png",
-      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff.png",
-      "diffStats": {
-        "width": 1440,
-        "height": 1470,
-        "mismatchedPixels": 202450,
-        "ratio": 0.0956396447467876
-      },
-      "computed": {
-        "navIconWidth": 20,
-        "navIconHeight": 20,
-        "cardsGridColumns": "559px 559px",
-        "cardsGridTrackCount": 2,
-        "cardsColumnOk": true,
-        "activeViewLabel": "Карточки",
-        "toolbarVisible": true,
-        "toolbarRowOk": true,
-        "bottomNavPinned": false,
-        "searchAccessible": true,
-        "scrollY": 0,
-        "paginationRect": {
-          "x": 274,
-          "y": 1769.515625,
-          "width": 1134,
-          "height": 48.1875,
-          "top": 1769.515625,
-          "right": 1408,
-          "bottom": 1817.703125,
-          "left": 274
-        },
-        "termsPresent": true,
-        "moreLinkColor": "rgb(241, 240, 235)",
-        "statusActionOverlap": false,
-        "actionClip": false,
-        "section": "certificates",
-        "viewMode": "cards",
-        "viewportWidth": 1440
-      },
-      "dataParity": {
-        "note": "Asserted fixture row (search + field checks) before crop",
-        "verified": "ASSERTED",
-        "parityFixture": {
-          "certId": "cmvaq5n7s008ijsrx1g2f7iy8",
-          "clientId": "cmvaq5n1e008ajsrxalysej6k",
-          "certAlias": "Ремонт для подписчиков · демо",
-          "agentDisplayName": "R03 Parity Agent"
-        }
-      },
-      "regions": {
-        "impl": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-cert-card.png"
-        },
-        "ref": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-cert-card.png"
-        },
-        "diffs": {
-          "content": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-content.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-content.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-content.png",
-            "stats": {
-              "width": 1134,
-              "height": 753,
-              "mismatchedPixels": 44931,
-              "ratio": 0.05261845036081424
-            }
-          },
-          "toolbar": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-toolbar.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-toolbar.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-toolbar.png",
-            "stats": {
-              "width": 1134,
-              "height": 83,
-              "mismatchedPixels": 4616,
-              "ratio": 0.049042731773655465
-            }
-          },
-          "pagination": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-pagination.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-pagination.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-pagination.png",
-            "stats": {
-              "width": 1134,
-              "height": 49,
-              "mismatchedPixels": 1430,
-              "ratio": 0.025735161789583558
-            }
-          },
-          "certCard": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-cert-card.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-cert-card.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-certCard.png",
-            "stats": {
-              "width": 559,
-              "height": 435,
-              "mismatchedPixels": 16197,
-              "ratio": 0.06660909259145024
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "certificates-cards-light-375x812-matched",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "light",
-      "width": 375,
-      "height": 812,
-      "kind": "matched",
-      "refSearchQuery": "подписчиков",
-      "status": "CAPTURED",
-      "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-      "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
-      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-full.png",
-      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-full.png",
-      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff.png",
-      "diffStats": {
-        "width": 375,
-        "height": 1906,
-        "mismatchedPixels": 70822,
-        "ratio": 0.0990863938440014
-      },
-      "computed": {
-        "navIconWidth": 0,
-        "navIconHeight": 0,
-        "cardsGridColumns": "343px",
-        "cardsGridTrackCount": 1,
-        "cardsColumnOk": true,
-        "activeViewLabel": "Карточки",
-        "toolbarVisible": true,
-        "toolbarRowOk": true,
-        "bottomNavPinned": true,
-        "searchAccessible": false,
-        "scrollY": 0,
-        "paginationRect": {
-          "x": 16,
-          "y": 2492.578125,
-          "width": 343,
-          "height": 97.390625,
-          "top": 2492.578125,
-          "right": 359,
-          "bottom": 2589.96875,
-          "left": 16
-        },
-        "termsPresent": true,
-        "moreLinkColor": "rgb(36, 38, 35)",
-        "statusActionOverlap": false,
-        "actionClip": false,
-        "section": "certificates",
-        "viewMode": "cards",
-        "viewportWidth": 375
-      },
-      "dataParity": {
-        "note": "Asserted fixture row (search + field checks) before crop",
-        "verified": "ASSERTED",
-        "parityFixture": {
-          "certId": "cmvaq5n7s008ijsrx1g2f7iy8",
-          "clientId": "cmvaq5n1e008ajsrxalysej6k",
-          "certAlias": "Ремонт для подписчиков · демо",
-          "agentDisplayName": "R03 Parity Agent"
-        }
-      },
-      "regions": {
-        "impl": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-cert-card.png"
-        },
-        "ref": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-cert-card.png"
-        },
-        "diffs": {
-          "content": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-content.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-content.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-content.png",
-            "stats": {
-              "width": 343,
-              "height": 1006,
-              "mismatchedPixels": 27565,
-              "ratio": 0.07988512076230662
-            }
-          },
-          "toolbar": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-toolbar.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-toolbar.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-toolbar.png",
-            "stats": {
-              "width": 343,
-              "height": 215,
-              "mismatchedPixels": 6499,
-              "ratio": 0.08812800867855448
-            }
-          },
-          "pagination": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-pagination.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-pagination.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-pagination.png",
-            "stats": {
-              "width": 343,
-              "height": 98,
-              "mismatchedPixels": 1223,
-              "ratio": 0.03638364966978045
-            }
-          },
-          "certCard": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-cert-card.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-cert-card.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-certCard.png",
-            "stats": {
-              "width": 343,
-              "height": 481,
-              "mismatchedPixels": 12680,
-              "ratio": 0.07685640338701563
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "certificates-cards-dark-375x812-matched",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "dark",
-      "width": 375,
-      "height": 812,
-      "kind": "matched",
-      "refSearchQuery": "подписчиков",
-      "status": "CAPTURED",
-      "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-      "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
-      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-full.png",
-      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-full.png",
-      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff.png",
-      "diffStats": {
-        "width": 375,
-        "height": 1906,
-        "mismatchedPixels": 119075,
-        "ratio": 0.16659671213711089
-      },
-      "computed": {
-        "navIconWidth": 0,
-        "navIconHeight": 0,
-        "cardsGridColumns": "343px",
-        "cardsGridTrackCount": 1,
-        "cardsColumnOk": true,
-        "activeViewLabel": "Карточки",
-        "toolbarVisible": true,
-        "toolbarRowOk": true,
-        "bottomNavPinned": true,
-        "searchAccessible": false,
-        "scrollY": 0,
-        "paginationRect": {
-          "x": 16,
-          "y": 2492.578125,
-          "width": 343,
-          "height": 97.390625,
-          "top": 2492.578125,
-          "right": 359,
-          "bottom": 2589.96875,
-          "left": 16
-        },
-        "termsPresent": true,
-        "moreLinkColor": "rgb(241, 240, 235)",
-        "statusActionOverlap": false,
-        "actionClip": false,
-        "section": "certificates",
-        "viewMode": "cards",
-        "viewportWidth": 375
-      },
-      "dataParity": {
-        "note": "Asserted fixture row (search + field checks) before crop",
-        "verified": "ASSERTED",
-        "parityFixture": {
-          "certId": "cmvaq5n7s008ijsrx1g2f7iy8",
-          "clientId": "cmvaq5n1e008ajsrxalysej6k",
-          "certAlias": "Ремонт для подписчиков · демо",
-          "agentDisplayName": "R03 Parity Agent"
-        }
-      },
-      "regions": {
-        "impl": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-cert-card.png"
-        },
-        "ref": {
-          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-content.png",
-          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-toolbar.png",
-          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-pagination.png",
-          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-cert-card.png"
-        },
-        "diffs": {
-          "content": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-content.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-content.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-content.png",
-            "stats": {
-              "width": 343,
-              "height": 1006,
-              "mismatchedPixels": 33082,
-              "ratio": 0.09587373716882379
-            }
-          },
-          "toolbar": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-toolbar.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-toolbar.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-toolbar.png",
-            "stats": {
-              "width": 343,
-              "height": 215,
-              "mismatchedPixels": 7905,
-              "ratio": 0.10719370804800325
-            }
-          },
-          "pagination": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-pagination.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-pagination.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-pagination.png",
-            "stats": {
-              "width": 343,
-              "height": 98,
-              "mismatchedPixels": 1632,
-              "ratio": 0.048551198905218064
-            }
-          },
-          "certCard": {
-            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-cert-card.png",
-            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-cert-card.png",
-            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-certCard.png",
-            "stats": {
-              "width": 343,
-              "height": 481,
-              "mismatchedPixels": 15287,
-              "ratio": 0.09265803143354163
-            }
-          }
-        }
-      }
-    },
-    {
       "id": "clients-list-light-1440x900-matched",
       "section": "clients",
       "viewMode": "list",
@@ -933,7 +338,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-1440x900-matched-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-1440x900-matched-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-1440x900-matched-diff.png",
@@ -1056,7 +464,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-dark-1440x900-matched-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-dark-1440x900-matched-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-dark-1440x900-matched-diff.png",
@@ -1179,7 +590,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-375x812-matched-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-375x812-matched-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-375x812-matched-diff.png",
@@ -1302,7 +716,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-dark-375x812-matched-impl-full.png",
       "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-dark-375x812-matched-ref-full.png",
       "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-dark-375x812-matched-diff.png",
@@ -1414,54 +831,6 @@
       }
     },
     {
-      "id": "certificates-cards-light-320x812-viewport-top",
-      "section": "certificates",
-      "viewMode": "cards",
-      "theme": "light",
-      "width": 320,
-      "height": 812,
-      "scroll": "top",
-      "kind": "viewport",
-      "status": "CAPTURED",
-      "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-      "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
-      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-viewport-top-impl-viewport.png",
-      "computed": {
-        "navIconWidth": 0,
-        "navIconHeight": 0,
-        "cardsGridColumns": "288px",
-        "cardsGridTrackCount": 1,
-        "cardsColumnOk": true,
-        "activeViewLabel": "Карточки",
-        "toolbarVisible": true,
-        "toolbarRowOk": true,
-        "bottomNavPinned": true,
-        "searchAccessible": false,
-        "scrollY": 0,
-        "paginationRect": {
-          "x": 16,
-          "y": 2529.390625,
-          "width": 288,
-          "height": 97.390625,
-          "top": 2529.390625,
-          "right": 304,
-          "bottom": 2626.78125,
-          "left": 16
-        },
-        "termsPresent": true,
-        "moreLinkColor": "rgb(36, 38, 35)",
-        "statusActionOverlap": false,
-        "actionClip": false,
-        "section": "certificates",
-        "viewMode": "cards",
-        "viewportWidth": 320
-      },
-      "regions": {
-        "impl": {}
-      }
-    },
-    {
       "id": "certificates-cards-light-320x812-viewport-toolbar",
       "section": "certificates",
       "viewMode": "cards",
@@ -1473,7 +842,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-viewport-toolbar-impl-viewport.png",
       "computed": {
         "navIconWidth": 0,
@@ -1521,7 +893,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-320x812-viewport-top-impl-viewport.png",
       "computed": {
         "navIconWidth": 0,
@@ -1569,7 +944,10 @@
       "status": "CAPTURED",
       "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
       "capturedAt": "2026-10-16T08:47:38.764Z",
-      "carryOverFrom": null,
+      "carryOverFrom": {
+        "platformSha": "1c2435c7ef6835709c149209b2fdcc92364c4778",
+        "capturedAt": "2026-10-16T08:47:38.764Z"
+      },
       "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/clients-list-light-320x812-viewport-toolbar-impl-viewport.png",
       "computed": {
         "navIconWidth": 0,
@@ -1604,6 +982,658 @@
       "regions": {
         "impl": {}
       }
+    },
+    {
+      "id": "certificates-cards-light-1440x900-matched",
+      "section": "certificates",
+      "viewMode": "cards",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "kind": "matched",
+      "refSearchQuery": "подписчиков",
+      "status": "CAPTURED",
+      "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+      "capturedAt": "2026-10-16T09:07:27.020Z",
+      "carryOverFrom": null,
+      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-full.png",
+      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-full.png",
+      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff.png",
+      "diffStats": {
+        "width": 1440,
+        "height": 1470,
+        "mismatchedPixels": 94667,
+        "ratio": 0.04472174981103553
+      },
+      "computed": {
+        "navIconWidth": 20,
+        "navIconHeight": 20,
+        "cardsGridColumns": "559px 559px",
+        "cardsGridTrackCount": 2,
+        "cardsColumnOk": true,
+        "activeViewLabel": "Карточки",
+        "toolbarVisible": true,
+        "toolbarRowOk": true,
+        "bottomNavPinned": false,
+        "searchAccessible": true,
+        "scrollY": 0,
+        "paginationRect": {
+          "x": 274,
+          "y": 1769.515625,
+          "width": 1134,
+          "height": 48.1875,
+          "top": 1769.515625,
+          "right": 1408,
+          "bottom": 1817.703125,
+          "left": 274
+        },
+        "termsPresent": true,
+        "moreLinkColor": "rgb(36, 38, 35)",
+        "statusActionOverlap": false,
+        "actionClip": false,
+        "section": "certificates",
+        "viewMode": "cards",
+        "viewportWidth": 1440
+      },
+      "dataParity": {
+        "note": "Asserted fixture row (search + field checks) before crop",
+        "verified": "ASSERTED",
+        "parityFixture": {
+          "certId": "cmvaqv4dw003ijsti7kct2z8o",
+          "clientId": "cmvaqv47p003ajstijf6oexrg",
+          "certAlias": "Ремонт для подписчиков · демо",
+          "agentDisplayName": "R03 Parity Agent"
+        }
+      },
+      "regions": {
+        "impl": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-cert-card.png"
+        },
+        "ref": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-cert-card.png"
+        },
+        "diffs": {
+          "content": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-content.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-content.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-content.png",
+            "stats": {
+              "width": 1134,
+              "height": 753,
+              "mismatchedPixels": 32004,
+              "ratio": 0.0374797107864837
+            }
+          },
+          "toolbar": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-toolbar.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-toolbar.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-toolbar.png",
+            "stats": {
+              "width": 1134,
+              "height": 83,
+              "mismatchedPixels": 4265,
+              "ratio": 0.04531352924927222
+            }
+          },
+          "pagination": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-pagination.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-pagination.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-pagination.png",
+            "stats": {
+              "width": 1134,
+              "height": 49,
+              "mismatchedPixels": 1246,
+              "ratio": 0.022423784328546234
+            }
+          },
+          "certCard": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-impl-cert-card.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-ref-cert-card.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-1440x900-matched-diff-certCard.png",
+            "stats": {
+              "width": 559,
+              "height": 435,
+              "mismatchedPixels": 13673,
+              "ratio": 0.0562293093167191
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "certificates-cards-dark-1440x900-matched",
+      "section": "certificates",
+      "viewMode": "cards",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "kind": "matched",
+      "refSearchQuery": "подписчиков",
+      "status": "CAPTURED",
+      "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+      "capturedAt": "2026-10-16T09:07:27.020Z",
+      "carryOverFrom": null,
+      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-full.png",
+      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-full.png",
+      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff.png",
+      "diffStats": {
+        "width": 1440,
+        "height": 1470,
+        "mismatchedPixels": 202425,
+        "ratio": 0.09562783446712018
+      },
+      "computed": {
+        "navIconWidth": 20,
+        "navIconHeight": 20,
+        "cardsGridColumns": "559px 559px",
+        "cardsGridTrackCount": 2,
+        "cardsColumnOk": true,
+        "activeViewLabel": "Карточки",
+        "toolbarVisible": true,
+        "toolbarRowOk": true,
+        "bottomNavPinned": false,
+        "searchAccessible": true,
+        "scrollY": 0,
+        "paginationRect": {
+          "x": 274,
+          "y": 1769.515625,
+          "width": 1134,
+          "height": 48.1875,
+          "top": 1769.515625,
+          "right": 1408,
+          "bottom": 1817.703125,
+          "left": 274
+        },
+        "termsPresent": true,
+        "moreLinkColor": "rgb(241, 240, 235)",
+        "statusActionOverlap": false,
+        "actionClip": false,
+        "section": "certificates",
+        "viewMode": "cards",
+        "viewportWidth": 1440
+      },
+      "dataParity": {
+        "note": "Asserted fixture row (search + field checks) before crop",
+        "verified": "ASSERTED",
+        "parityFixture": {
+          "certId": "cmvaqv4dw003ijsti7kct2z8o",
+          "clientId": "cmvaqv47p003ajstijf6oexrg",
+          "certAlias": "Ремонт для подписчиков · демо",
+          "agentDisplayName": "R03 Parity Agent"
+        }
+      },
+      "regions": {
+        "impl": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-cert-card.png"
+        },
+        "ref": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-cert-card.png"
+        },
+        "diffs": {
+          "content": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-content.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-content.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-content.png",
+            "stats": {
+              "width": 1134,
+              "height": 753,
+              "mismatchedPixels": 44929,
+              "ratio": 0.05261610817166373
+            }
+          },
+          "toolbar": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-toolbar.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-toolbar.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-toolbar.png",
+            "stats": {
+              "width": 1134,
+              "height": 83,
+              "mismatchedPixels": 4626,
+              "ratio": 0.04914897685982023
+            }
+          },
+          "pagination": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-pagination.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-pagination.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-pagination.png",
+            "stats": {
+              "width": 1134,
+              "height": 49,
+              "mismatchedPixels": 1430,
+              "ratio": 0.025735161789583558
+            }
+          },
+          "certCard": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-impl-cert-card.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-ref-cert-card.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-1440x900-matched-diff-certCard.png",
+            "stats": {
+              "width": 559,
+              "height": 435,
+              "mismatchedPixels": 16179,
+              "ratio": 0.06653506878045772
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "certificates-cards-light-375x812-matched",
+      "section": "certificates",
+      "viewMode": "cards",
+      "theme": "light",
+      "width": 375,
+      "height": 812,
+      "kind": "matched",
+      "refSearchQuery": "подписчиков",
+      "status": "CAPTURED",
+      "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+      "capturedAt": "2026-10-16T09:07:27.020Z",
+      "carryOverFrom": null,
+      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-full.png",
+      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-full.png",
+      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff.png",
+      "diffStats": {
+        "width": 375,
+        "height": 1906,
+        "mismatchedPixels": 70786,
+        "ratio": 0.09903602658272123
+      },
+      "computed": {
+        "navIconWidth": 0,
+        "navIconHeight": 0,
+        "cardsGridColumns": "343px",
+        "cardsGridTrackCount": 1,
+        "cardsColumnOk": true,
+        "activeViewLabel": "Карточки",
+        "toolbarVisible": true,
+        "toolbarRowOk": true,
+        "bottomNavPinned": true,
+        "searchAccessible": false,
+        "scrollY": 0,
+        "paginationRect": {
+          "x": 16,
+          "y": 2514.96875,
+          "width": 343,
+          "height": 97.390625,
+          "top": 2514.96875,
+          "right": 359,
+          "bottom": 2612.359375,
+          "left": 16
+        },
+        "termsPresent": true,
+        "moreLinkColor": "rgb(36, 38, 35)",
+        "statusActionOverlap": false,
+        "actionClip": false,
+        "section": "certificates",
+        "viewMode": "cards",
+        "viewportWidth": 375
+      },
+      "dataParity": {
+        "note": "Asserted fixture row (search + field checks) before crop",
+        "verified": "ASSERTED",
+        "parityFixture": {
+          "certId": "cmvaqv4dw003ijsti7kct2z8o",
+          "clientId": "cmvaqv47p003ajstijf6oexrg",
+          "certAlias": "Ремонт для подписчиков · демо",
+          "agentDisplayName": "R03 Parity Agent"
+        }
+      },
+      "regions": {
+        "impl": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-cert-card.png"
+        },
+        "ref": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-cert-card.png"
+        },
+        "diffs": {
+          "content": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-content.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-content.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-content.png",
+            "stats": {
+              "width": 343,
+              "height": 1006,
+              "mismatchedPixels": 27626,
+              "ratio": 0.08006190263665819
+            }
+          },
+          "toolbar": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-toolbar.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-toolbar.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-toolbar.png",
+            "stats": {
+              "width": 343,
+              "height": 215,
+              "mismatchedPixels": 6499,
+              "ratio": 0.08812800867855448
+            }
+          },
+          "pagination": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-pagination.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-pagination.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-pagination.png",
+            "stats": {
+              "width": 343,
+              "height": 99,
+              "mismatchedPixels": 1223,
+              "ratio": 0.03601613805695438
+            }
+          },
+          "certCard": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-impl-cert-card.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-ref-cert-card.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-375x812-matched-diff-certCard.png",
+            "stats": {
+              "width": 343,
+              "height": 481,
+              "mismatchedPixels": 12659,
+              "ratio": 0.07672911754544408
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "certificates-cards-dark-375x812-matched",
+      "section": "certificates",
+      "viewMode": "cards",
+      "theme": "dark",
+      "width": 375,
+      "height": 812,
+      "kind": "matched",
+      "refSearchQuery": "подписчиков",
+      "status": "CAPTURED",
+      "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+      "capturedAt": "2026-10-16T09:07:27.020Z",
+      "carryOverFrom": null,
+      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-full.png",
+      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-full.png",
+      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff.png",
+      "diffStats": {
+        "width": 375,
+        "height": 1906,
+        "mismatchedPixels": 119065,
+        "ratio": 0.16658272123119972
+      },
+      "computed": {
+        "navIconWidth": 0,
+        "navIconHeight": 0,
+        "cardsGridColumns": "343px",
+        "cardsGridTrackCount": 1,
+        "cardsColumnOk": true,
+        "activeViewLabel": "Карточки",
+        "toolbarVisible": true,
+        "toolbarRowOk": true,
+        "bottomNavPinned": true,
+        "searchAccessible": false,
+        "scrollY": 0,
+        "paginationRect": {
+          "x": 16,
+          "y": 2514.96875,
+          "width": 343,
+          "height": 97.390625,
+          "top": 2514.96875,
+          "right": 359,
+          "bottom": 2612.359375,
+          "left": 16
+        },
+        "termsPresent": true,
+        "moreLinkColor": "rgb(241, 240, 235)",
+        "statusActionOverlap": false,
+        "actionClip": false,
+        "section": "certificates",
+        "viewMode": "cards",
+        "viewportWidth": 375
+      },
+      "dataParity": {
+        "note": "Asserted fixture row (search + field checks) before crop",
+        "verified": "ASSERTED",
+        "parityFixture": {
+          "certId": "cmvaqv4dw003ijsti7kct2z8o",
+          "clientId": "cmvaqv47p003ajstijf6oexrg",
+          "certAlias": "Ремонт для подписчиков · демо",
+          "agentDisplayName": "R03 Parity Agent"
+        }
+      },
+      "regions": {
+        "impl": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-cert-card.png"
+        },
+        "ref": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-cert-card.png"
+        },
+        "diffs": {
+          "content": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-content.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-content.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-content.png",
+            "stats": {
+              "width": 343,
+              "height": 1006,
+              "mismatchedPixels": 33148,
+              "ratio": 0.09606500936074515
+            }
+          },
+          "toolbar": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-toolbar.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-toolbar.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-toolbar.png",
+            "stats": {
+              "width": 343,
+              "height": 215,
+              "mismatchedPixels": 7905,
+              "ratio": 0.10719370804800325
+            }
+          },
+          "pagination": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-pagination.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-pagination.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-pagination.png",
+            "stats": {
+              "width": 343,
+              "height": 99,
+              "mismatchedPixels": 1632,
+              "ratio": 0.0480607827546603
+            }
+          },
+          "certCard": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-impl-cert-card.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-ref-cert-card.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-dark-375x812-matched-diff-certCard.png",
+            "stats": {
+              "width": 343,
+              "height": 481,
+              "mismatchedPixels": 14913,
+              "ratio": 0.09039113120745774
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "certificates-cards-light-320x812-cards320",
+      "section": "certificates",
+      "viewMode": "cards",
+      "theme": "light",
+      "width": 320,
+      "height": 812,
+      "kind": "cards320",
+      "status": "CAPTURED",
+      "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+      "capturedAt": "2026-10-16T09:07:27.020Z",
+      "carryOverFrom": null,
+      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-full.png",
+      "refFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-full.png",
+      "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff.png",
+      "diffStats": {
+        "width": 320,
+        "height": 1857,
+        "mismatchedPixels": 60512,
+        "ratio": 0.10183091007000539
+      },
+      "computed": {
+        "navIconWidth": 0,
+        "navIconHeight": 0,
+        "cardsGridColumns": "288px",
+        "cardsGridTrackCount": 1,
+        "cardsColumnOk": true,
+        "activeViewLabel": "Карточки",
+        "toolbarVisible": true,
+        "toolbarRowOk": true,
+        "bottomNavPinned": true,
+        "searchAccessible": false,
+        "scrollY": 0,
+        "paginationRect": {
+          "x": 16,
+          "y": 1649.296875,
+          "width": 288,
+          "height": 97.390625,
+          "top": 1649.296875,
+          "right": 304,
+          "bottom": 1746.6875,
+          "left": 16
+        },
+        "termsPresent": true,
+        "moreLinkColor": "rgb(36, 38, 35)",
+        "statusActionOverlap": false,
+        "actionClip": false,
+        "section": "certificates",
+        "viewMode": "cards",
+        "viewportWidth": 320
+      },
+      "regions": {
+        "impl": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-cert-card.png"
+        },
+        "ref": {
+          "content": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-content.png",
+          "toolbar": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-toolbar.png",
+          "pagination": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-pagination.png",
+          "certCard": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-cert-card.png"
+        },
+        "diffs": {
+          "content": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-content.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-content.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-content.png",
+            "stats": {
+              "width": 288,
+              "height": 997,
+              "mismatchedPixels": 23968,
+              "ratio": 0.08347264014265017
+            }
+          },
+          "toolbar": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-toolbar.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-toolbar.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-toolbar.png",
+            "stats": {
+              "width": 288,
+              "height": 270,
+              "mismatchedPixels": 7901,
+              "ratio": 0.10160751028806585
+            }
+          },
+          "pagination": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-pagination.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-pagination.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-pagination.png",
+            "stats": {
+              "width": 288,
+              "height": 98,
+              "mismatchedPixels": 996,
+              "ratio": 0.0352891156462585
+            }
+          },
+          "certCard": {
+            "impl": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-impl-cert-card.png",
+            "ref": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-ref-cert-card.png",
+            "diff": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-cards320-diff-certCard.png",
+            "stats": {
+              "width": 288,
+              "height": 535,
+              "mismatchedPixels": 13377,
+              "ratio": 0.08681853582554518
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "certificates-cards-light-320x812-viewport-top",
+      "section": "certificates",
+      "viewMode": "cards",
+      "theme": "light",
+      "width": 320,
+      "height": 812,
+      "scroll": "top",
+      "kind": "viewport",
+      "status": "CAPTURED",
+      "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+      "capturedAt": "2026-10-16T09:07:27.020Z",
+      "carryOverFrom": null,
+      "implFull": "/agent/repos/remcard-partner-platform/artifacts/remcard-r03-ui-parity/screenshots/certificates-cards-light-320x812-viewport-top-impl-viewport.png",
+      "computed": {
+        "navIconWidth": 0,
+        "navIconHeight": 0,
+        "cardsGridColumns": "288px",
+        "cardsGridTrackCount": 1,
+        "cardsColumnOk": true,
+        "activeViewLabel": "Карточки",
+        "toolbarVisible": true,
+        "toolbarRowOk": true,
+        "bottomNavPinned": true,
+        "searchAccessible": false,
+        "scrollY": 0,
+        "paginationRect": {
+          "x": 16,
+          "y": 1649.296875,
+          "width": 288,
+          "height": 97.390625,
+          "top": 1649.296875,
+          "right": 304,
+          "bottom": 1746.6875,
+          "left": 16
+        },
+        "termsPresent": true,
+        "moreLinkColor": "rgb(36, 38, 35)",
+        "statusActionOverlap": false,
+        "actionClip": false,
+        "section": "certificates",
+        "viewMode": "cards",
+        "viewportWidth": 320
+      },
+      "regions": {
+        "impl": {}
+      }
     }
   ],
   "smokeSteps": [
@@ -1618,12 +1648,5 @@
     "client_restore",
     "reload"
   ],
-  "verificationSteps": [
-    {
-      "cmd": "npx vitest run src/lib/agent-r03/certificatePurchaseStatus.test.ts src/lib/agent-r03/clientListRow.test.ts src/lib/agent-r03/certificateOffers.test.ts src/lib/agent-r03/formatDiscountPercent.test.ts src/components/agent-r03/RecordRowActions.test.tsx src/lib/profile-sections.test.ts",
-      "exitCode": 0,
-      "testFiles": 6,
-      "testsPassed": 16
-    }
-  ]
+  "verificationSteps": null
 }

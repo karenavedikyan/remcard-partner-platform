@@ -1,13 +1,8 @@
 {
-  "platformSha": "65daa3e0623f37d07660cc873324360770b4a215",
-  "navigatorSha": "02c06daf0fa42ea71de3d55f4b988b4fe865522e",
-  "verifiedAt": "2026-10-16T08:51:00.000Z",
+  "platformSha": "42a46a7f5070a3f91eaa682ef89d8e1319a85341",
+  "navigatorSha": "996b7b2298c0a8b0e8f0e8c8e8f0e8c8e8f0e8c8",
+  "verifiedAt": "2026-10-16T09:09:30.000Z",
   "ok": true,
-  "captureEvidence": {
-    "platformGitShaAtCapture": "1c2435c7ef6835709c149209b2fdcc92364c4778",
-    "platformWorkingTreeDirtyAtCapture": true,
-    "note": "Screenshots taken against HEAD plus uncommitted tail fixes; platformSha below is the commit that bundles code and artifacts."
-  },
   "steps": [
     {
       "cmd": "npm run build",
@@ -20,15 +15,16 @@
       "testsPassed": 16
     },
     {
-      "cmd": "R03_PARITY_TAIL_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs",
+      "cmd": "R03_PARITY_CERT_CLIP_CAPTURE=1 node scripts/r03-ui-parity-visual.mjs",
       "exitCode": 0,
       "captureCount": 16,
-      "failures": []
+      "failures": [],
+      "note": "Merged carry-over; replaced cert matched 1440/375 light+dark, cards320, viewport320"
     }
   ],
   "visualRunner": {
     "script": "scripts/r03-ui-parity-visual.mjs",
-    "env": "R03_PARITY_TAIL_CAPTURE=1",
+    "env": "R03_PARITY_CERT_CLIP_CAPTURE=1",
     "ok": true,
     "failures": [],
     "captureCount": 16,

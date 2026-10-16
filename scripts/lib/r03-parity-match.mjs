@@ -85,6 +85,66 @@ export async function assertRefMatchedClient(page) {
   if (!text.includes('Есть покупки')) throw new Error('ref_parity_client_purchase');
 }
 
+export async function measureCertCardShellClip(page, certId) {
+  return page.evaluate((id) => {
+    const shell = id
+      ? document.querySelector(
+          `[data-testid="agent-cert-card-shell"][data-parity-cert-id="${CSS.escape(id)}"]`,
+        )
+      : document.querySelector('[data-testid="agent-cert-card-shell"]');
+    if (!shell) return { ok: false, reason: 'shell_missing' };
+
+    const shellRect = shell.getBoundingClientRect();
+    const shellStyle = getComputedStyle(shell);
+    const padL = Number.parseFloat(shellStyle.paddingLeft) || 0;
+    const padR = Number.parseFloat(shellStyle.paddingRight) || 0;
+    const tol = 0.5;
+    const shellLeft = shellRect.left + padL;
+    const shellRight = shellRect.right - padR;
+
+    const clippedParts = [];
+    const measure = (label, el) => {
+      if (!el) {
+        clippedParts.push({ label, missing: true });
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const clipped =
+        r.right > shellRight + tol ||
+        r.left < shellLeft - tol ||
+        r.width < 2 ||
+        r.height < 2;
+      if (clipped) {
+        clippedParts.push({
+          label,
+          left: r.left,
+          right: r.right,
+          shellLeft,
+          shellRight,
+          width: r.width,
+        });
+      }
+    };
+
+    measure('purchasePill', shell.querySelector('[class*="purchasePill"]'));
+    measure('termsSummary', shell.querySelector('[data-testid="agent-cert-terms"] summary'));
+    measure('moreLink', shell.querySelector('[data-testid="agent-cert-more"]'));
+    shell.querySelectorAll('[class*="certificateListAction"]').forEach((btn, index) => {
+      measure(`action_${index}`, btn);
+    });
+
+    const horizontalOverflow = shell.scrollWidth > shell.clientWidth + 2;
+    return {
+      ok: clippedParts.length === 0 && !horizontalOverflow,
+      horizontalOverflow,
+      clientWidth: shell.clientWidth,
+      scrollWidth: shell.scrollWidth,
+      shellRight,
+      clippedParts,
+    };
+  }, certId ?? null);
+}
+
 export async function measureMobileListFooterRow(page, testId) {
   return page.evaluate((rowTestId) => {
     const row = document.querySelector(`[data-testid="${rowTestId}"]`);
