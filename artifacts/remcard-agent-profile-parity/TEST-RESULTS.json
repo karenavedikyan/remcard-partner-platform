@@ -1,9 +1,9 @@
 {
-  "platformSha": "1004d01065b91d9fb685e9624db4bad53544b4ce",
+  "platformSha": "3c625fcca8cb02c60e4c03311d77cc418f32a4f6",
   "navigatorSha": "7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7",
   "labelMigrationChecksum": "2ff7aba98b6836df57cd1121f97539d608b2123e1d0aefa2b0650497e98d5cf6",
-  "ok": false,
-  "verifiedAt": "2026-10-16T06:35:23.235Z",
+  "ok": true,
+  "verifiedAt": "2026-10-16T06:43:27.161Z",
   "steps": [
     {
       "cmd": "npm run build",
@@ -14,17 +14,19 @@
     {
       "cmd": "npx vitest run src/lib/profile-sections.test.ts src/lib/remcard-proxy-r02.test.ts src/lib/agent-profile/format-requisites-copy.test.ts src/components/profile/agent/AgentProfileWizard.regression.test.tsx src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx",
       "exitCode": 0,
-      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/profile-sections.test.ts (8 tests) 4ms\n ✓ src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx (2 tests) 110ms\n ✓ src/components/profile/agent/AgentProfileWizard.regression.test.tsx (7 tests) 354ms\n ✓ src/lib/remcard-proxy-r02.test.ts (1 test) 3ms\n ✓ src/lib/agent-profile/format-requisites-copy.test.ts (2 tests) 2ms\n\n Test Files  5 passed (5)\n      Tests  20 passed (20)\n   Start at  06:34:01\n   Duration  1.33s (transform 255ms, setup 629ms, collect 347ms, tests 473ms, environment 1.26s, prepare 283ms)\n\n",
+      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/profile-sections.test.ts (8 tests) 4ms\n ✓ src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx (2 tests) 110ms\n ✓ src/components/profile/agent/AgentProfileWizard.regression.test.tsx (7 tests) 356ms\n ✓ src/lib/remcard-proxy-r02.test.ts (1 test) 2ms\n ✓ src/lib/agent-profile/format-requisites-copy.test.ts (2 tests) 2ms\n\n Test Files  5 passed (5)\n      Tests  20 passed (20)\n   Start at  06:41:44\n   Duration  1.27s (transform 257ms, setup 600ms, collect 348ms, tests 474ms, environment 1.27s, prepare 274ms)\n\n",
       "stderr": ""
     }
   ],
   "e2e": {
-    "exitCode": 1,
+    "exitCode": 0,
     "cmd": "node scripts/agent-profile-parity-full.mjs"
   },
   "screenshots": [
     "impl-bank-collapsed-375-light.png",
     "impl-bank-expanded-375-light.png",
+    "impl-bank-form-375-light-form-footer.png",
+    "impl-bank-form-375-light-viewport-top.png",
     "impl-bank-form-375-light.png",
     "impl-overview-1440-dark.png",
     "impl-overview-1440-light.png",
@@ -34,6 +36,8 @@
     "impl-wizard-step1-375-light.png",
     "ref-bank-collapsed-375-light.png",
     "ref-bank-expanded-375-light.png",
+    "ref-bank-form-375-light-form-footer.png",
+    "ref-bank-form-375-light-viewport-top.png",
     "ref-bank-form-375-light.png",
     "ref-overview-1440-dark.png",
     "ref-overview-1440-light.png",
@@ -44,6 +48,6 @@
   ],
   "visual": {
     "skipped": false,
-    "pngCount": 18
+    "pngCount": 22
   }
 }
