@@ -1,34 +1,52 @@
-# RemCard R05 — Agent receivables (read-only)
+# R05.1 — RELEASE REPORT
 
-## Release base (unchanged)
+| Repo | PR | Branch |
+|------|-----|--------|
+| remcard-navigator | [#686](https://github.com/karenavedikyan/remcard-navigator/pull/686) | `cursor/r05-agent-receivables-b3e3` |
+| remcard-partner-platform | [#23](https://github.com/karenavedikyan/remcard-partner-platform/pull/23) | `cursor/r05-agent-receivables-b3e3` |
 
-- Platform `release/prof-v1-20261007` @ `5266041264ed09033f03cfde88ef5c91b2757e04`
-- Navigator `release/prof-backend-v1-20261007` @ `c217be012c2989085c54a1aa9e15d5824e5bfeb5`
+## A — Historical requisites
 
-## Branch / PR
+| Fix | Command / check | Result |
+|-----|-----------------|--------|
+| `partnerLegalFromOrder` uses `storeName` only for historical name; INN not taken from live org | `vitest agentReceivables.readmodel.test.ts` | PASS |
+| Missing snapshot → «Исторические реквизиты не сохранены» + optional `currentProfileCaption` | UI order detail + partner `legalCaption` | PASS |
+| Stable `partnerGroupKey` (`storeUserId` + `certificatePartnerId` + branch) | readmodel + integration INN change test | PASS (integration if PG) |
+| SOURCE-OF-TRUTH payer chain | `artifacts/remcard-r05/SOURCE-OF-TRUTH.md` | updated |
 
-- Platform [PR #23](https://github.com/karenavedikyan/remcard-partner-platform/pull/23) · `f9b55e9`
-- Navigator [PR #686](https://github.com/karenavedikyan/remcard-navigator/pull/686) · `db9053bc`
-- Branch: `cursor/r05-agent-receivables-b3e3` → each `release/prof-*-v1-20261007`.
+## B — Filters / search / totals
 
-## Scope delivered
+| Fix | Check | Result |
+|-----|-------|--------|
+| Partners API respects `status` (no forced `open`) | readmodel pending filter test | PASS |
+| Period `from`/`to` on purchase UTC date | UI date inputs + meta `periodField` | PASS |
+| Category search full set | BFF `q=кровля` + readmodel | PASS |
+| `selectionTotalKopecks` vs cabinet overview | UI `ledger-totals` | PASS |
+| Sort tie-breaker `sortId` | readmodel | PASS |
+| Ledger view densities | CSS `[data-ledger-view]` | PASS (not pixel-ref) |
 
-- Gate `PROF_R05_AGENT_RECEIVABLES_ENABLED` (default OFF) + `GET /api/pro/r05/status`.
-- Read APIs: overview, partners, orders, order detail (AgentBonus-only read model).
-- Agent `/settlements` → compact «Мне должны» UX when eligible; legacy hub otherwise.
-- Disposable seed `r05ParityReceivablesSeed.ts` + `r05-browser-acceptance.mjs`.
-- No DB migration; no payout UI; no gate enable in production.
+## C — Confirmed debt integrity
 
-## Blockers / gaps (honest)
+| Fix | Check | Result |
+|-----|-------|--------|
+| Line/accrual mismatch → `needs_review` before totals | `evaluateAccrualLineIntegrity` + `buildOverview` test | PASS |
+| Detail uses same integrity helper | shared code path | PASS |
 
-- **Partial payouts** for AgentBonus not in canonical store — UI shows full paid or open only.
-- **Due date / overdue / soon** filters stubbed until persisted terms exist.
-- **Visual parity** vs frozen prototype: automated capture script minimal; operator visual sign-off required (`visualParityOk: false`).
+## D — Incoming-only
 
-## Migration
+| Fix | Check | Result |
+|-----|-------|--------|
+| Settlements strip payables when R05 eligible | `agentR05IncomingOnly.test.ts` + BFF settlements | PASS |
+| Gate OFF unchanged | not exercised in this run | NOT_VERIFIED |
 
-- None required.
+## E — Browser / evidence
+
+| Step | Result |
+|------|--------|
+| admin → agent → overview → partners → orders → detail → pagination → densities | see `TEST-RESULTS.json` |
+| PNG | `artifacts/remcard-r05/screenshots/impl-r05-*.png` (SHA in JSON) |
+| Ref parity | **NOT pixel-perfect** — frozen ref uses demo dataset |
 
 ## Status
 
-See `TEST-RESULTS.json` for commands and `READY_FOR_REVIEW` / `BLOCKED`.
+See `TEST-RESULTS.json` for `READY_FOR_REVIEW` / `BLOCKED`, exact HEAD SHAs, exit codes.

@@ -50,6 +50,11 @@ export type AgentReceivableRecord = {
     inn: string | null;
     kpp: string | null;
     snapshotNote: string | null;
+    historicalRequisitesSaved: boolean;
+    missingHistoricalNote: string | null;
+    currentProfileName: string | null;
+    currentProfileInn: string | null;
+    currentProfileCaption: string | null;
   };
   clientLabel: string | null;
   purchaseAt: string;
@@ -64,10 +69,13 @@ export type AgentReceivableRecord = {
 export type AgentReceivablesMeta = {
   totalRecords: number;
   confirmedTotalKopecks: number;
+  selectionTotalKopecks: number;
   page: number;
   pageSize: number;
   pageCount: number;
   sort: string;
+  periodField: "purchaseAt";
+  periodTimezone: "UTC";
 };
 
 export type AgentReceivableOrderLine = {

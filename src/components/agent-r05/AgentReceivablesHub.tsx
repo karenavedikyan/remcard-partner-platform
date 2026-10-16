@@ -60,6 +60,8 @@ function buildQuery(input: {
   q: string;
   status: string;
   sort: string;
+  from: string;
+  to: string;
   page: number;
   pageSize: number;
   partnerId?: string | null;
@@ -68,6 +70,8 @@ function buildQuery(input: {
   if (input.q) params.set("q", input.q);
   params.set("status", input.status);
   params.set("sort", input.sort);
+  if (input.from) params.set("from", input.from);
+  if (input.to) params.set("to", input.to);
   params.set("page", String(input.page));
   params.set("pageSize", String(input.pageSize));
   if (input.partnerId) params.set("partnerId", input.partnerId);
@@ -94,6 +98,8 @@ export function AgentReceivablesHub() {
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("open");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [sort, setSort] = useState("debt-desc");
   const [page, setPage] = useState(1);
   const [prefs, setPrefs] = useState(loadPrefs);
@@ -120,6 +126,8 @@ export function AgentReceivablesHub() {
         q,
         status,
         sort,
+        from: fromDate,
+        to: toDate,
         page,
         pageSize: prefs.pageSize,
       });
@@ -131,7 +139,7 @@ export function AgentReceivablesHub() {
     } finally {
       setLoading(false);
     }
-  }, [page, prefs.pageSize, q, sort, status]);
+  }, [fromDate, page, prefs.pageSize, q, sort, status, toDate]);
 
   const reloadOrders = useCallback(async () => {
     if (!selectedPartner) return;
@@ -142,6 +150,8 @@ export function AgentReceivablesHub() {
         q,
         status,
         sort,
+        from: fromDate,
+        to: toDate,
         page,
         pageSize: prefs.pageSize,
         partnerId: selectedPartner.partnerId,
@@ -154,7 +164,7 @@ export function AgentReceivablesHub() {
     } finally {
       setLoading(false);
     }
-  }, [page, prefs.pageSize, q, selectedPartner, sort, status]);
+  }, [fromDate, page, prefs.pageSize, q, selectedPartner, sort, status, toDate]);
 
   const reloadOrderDetail = useCallback(async (orderId: string) => {
     setLoading(true);
@@ -190,9 +200,14 @@ export function AgentReceivablesHub() {
     if (screen === "order" && selectedOrderId) void reloadOrderDetail(selectedOrderId);
   }, [reloadOrderDetail, screen, selectedOrderId]);
 
-  const totalLabel = useMemo(
-    () => formatKopecks(overview?.confirmedTotalKopecks ?? meta?.confirmedTotalKopecks ?? 0),
-    [meta?.confirmedTotalKopecks, overview?.confirmedTotalKopecks],
+  const cabinetTotalLabel = useMemo(
+    () => formatKopecks(overview?.confirmedTotalKopecks ?? 0),
+    [overview?.confirmedTotalKopecks],
+  );
+
+  const selectionTotalLabel = useMemo(
+    () => formatKopecks(meta?.selectionTotalKopecks ?? overview?.confirmedTotalKopecks ?? 0),
+    [meta?.selectionTotalKopecks, overview?.confirmedTotalKopecks],
   );
 
   function onViewChange(view: LedgerView) {
@@ -219,13 +234,36 @@ export function AgentReceivablesHub() {
             setQ(e.target.value);
             setPage(1);
           }}
-          placeholder="Партнёр, заказ, сертификат, клиент"
+          placeholder="Партнёр, заказ, сертификат, клиент, категория"
           data-testid="ledger-search"
         />
       </label>
       <details open={filtersOpen} onToggle={(e) => setFiltersOpen(e.currentTarget.open)}>
         <summary>Фильтры и сортировка</summary>
         <div className={styles.filterGrid}>
+          <label className={styles.field}>
+            <span>Период (UTC, дата покупки)</span>
+            <div className={styles.dateRange}>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setPage(1);
+                }}
+                data-testid="ledger-from"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setPage(1);
+                }}
+                data-testid="ledger-to"
+              />
+            </div>
+          </label>
           <label className={styles.field}>
             <span>Состояние</span>
             <select
@@ -370,8 +408,12 @@ export function AgentReceivablesHub() {
           <button type="button" className={styles.backBtn} onClick={() => setScreen("overview")}>
             ← Кошелёк
           </button>
-          <strong>Мне должны · {totalLabel}</strong>
+          <strong>Мне должны</strong>
         </div>
+        <p className={styles.meta} data-testid="ledger-totals">
+          Подтверждённый итог кабинета: {cabinetTotalLabel}
+          {meta ? <> · Сумма выборки: {selectionTotalLabel}</> : null}
+        </p>
         {filterBlock}
         {viewControl}
         {error ? (
@@ -519,6 +561,14 @@ export function AgentReceivablesHub() {
         </div>
         <h2>Заказ {record.orderNumber}</h2>
         <p className={styles.meta}>{record.partnerLegal.name}</p>
+        {record.partnerLegal.missingHistoricalNote ? (
+          <p className={styles.coverage} role="status">
+            {record.partnerLegal.missingHistoricalNote}
+          </p>
+        ) : null}
+        {record.partnerLegal.currentProfileCaption ? (
+          <p className={styles.coverage}>{record.partnerLegal.currentProfileCaption}</p>
+        ) : null}
         {totalsMismatch ? (
           <p className={styles.error} role="alert">
             Сумма строк заказа не совпадает с начислением — показаны обе величины.

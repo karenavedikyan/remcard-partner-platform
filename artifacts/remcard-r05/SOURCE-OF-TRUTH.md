@@ -1,41 +1,64 @@
-# R05 — Agent receivables source of truth
+# R05 — Agent receivables source of truth (r05.1)
+
+## Chain: order → accrual → confirmation
+
+1. **Purchase:** `POST /api/store/order` creates `Order` with `certificatePartnerId` (accepting store), `storeUserId` (executor), line `OrderItem` rows.
+2. **Agent accrual:** `AgentBonus` row (`orderId` unique) with `agentUserId` = certificate issuer agent, `amount` = agent reward, `status` lifecycle (`CALCULATED` → `CONFIRMED`/`AVAILABLE` → `PAID`).
+3. **Payer for R05:** **`certificatePartner.storeUserId`** — partner who accepted the certificate at purchase. Not `Order.storeUserId` when staff executes on behalf of store (see `proSettlements.integration.test.ts` staff transfer case).
+4. **RemCard-initiated payout:** `AgentBonus` has no `BonusPayoutRecord`; `paidAt`/`payoutMethod` on `AgentBonus` when status `PAID`. No partial remainder in schema.
+
+Code: `src/lib/agentReceivables/loadAgentReceivables.ts` (`mapRecord`, `classifyRow`, `evaluateAccrualLineIntegrity`).
 
 ## Canonical ledger
 
-- **Primary rows:** `AgentBonus` where `agentUserId` = principal agent owner (`resolvePrincipalAgentBusiness`).
-- **Not summed with `Bonus`:** for agent-issued certificates the accrual is `AgentBonus`; `Bonus.proUserId` receivable is the master/issuer path when issuer is not agent-classified. R05 UI reads **only AgentBonus** to avoid double counting one order.
-- **No parallel ledger:** HTTP `GET /api/pro/wallet/settlements` unchanged; R05 uses dedicated read routes under `/api/pro/wallet/agent-receivables/*`.
+- **Rows:** `AgentBonus` for `resolvePrincipalAgentBusiness` owner only.
+- **Not doubled with `Bonus`:** R05 read routes use AgentBonus only. Legacy `GET /api/pro/wallet/settlements` unchanged contract; R05 pilot filters payables when gate+eligible (`agentR05IncomingOnly.ts`).
 
-## Inclusion rules
+## Inclusion / exclusion
 
-| Check | Effect |
-|-------|--------|
-| `certificatePartner` missing | `needs_review`, excluded from confirmed total |
-| `Order.status` CANCELLED/RETURNED | treated as cancelled debt |
-| `Order.isSelfScan` | excluded (`needs_review`) |
-| `AgentBonus.status` CALCULATED | pending — not in confirmed debt |
-| CONFIRMED / AVAILABLE | open debt = full `amount` (kopecks) |
-| PAID | history; paid = full amount via `paidAt` (no BonusPayoutRecord on AgentBonus) |
-| CANCELLED | history, debt 0 |
+| Check | State | Confirmed total |
+|-------|--------|-----------------|
+| No `certificatePartner` | `needs_review` | excluded |
+| `Order.isSelfScan` | `needs_review` | excluded |
+| Line sum ≠ accrual (>1 kop) | `needs_review` | excluded |
+| Lines present, no reward breakdown | `needs_review` | excluded |
+| `Order` CANCELLED/RETURNED | `cancelled` | excluded |
+| `AgentBonus.CANCELLED` | `cancelled` | excluded |
+| `CALCULATED` | `pending` | excluded |
+| `CONFIRMED`/`AVAILABLE` | `open` | `remainingKopecks` = obligation |
+| `PAID` | `paid` | history only |
 
-## Payments / remainder
+## Historical legal side
 
-- AgentBonus has **no** `BonusPayoutRecord` child; partial payout is **not** modeled in canonical data (documented gap — UI must not invent partial remainders).
-- Remaining = obligation kopecks when open; 0 when paid/cancelled/pending.
+- **Immutable on order:** `CertificatePartner.storeName` (order-era trade name). **No INN/KPP snapshot** on `CertificatePartner` / `Order` in schema.
+- **UI:** `partnerLegal.inn` only when `historicalRequisitesSaved`; otherwise `missingHistoricalNote` = «Исторические реквизиты не сохранены». Current org from `organizationsOwned[0]` in `currentProfileCaption` only — never mixed into historical INN.
+- **Grouping:** `partnerGroupKey` = `{storeUserId}:cp:{certificatePartnerId}:branch:{branchId|hq}` — stable when current INN/name changes.
 
-## Counterparty
+## Filters / period / search
 
-- Payer side = `certificatePartner.storeUserId` (confirmed accepting store), not `Order.storeUserId` executor.
-- Legal caption from saved `certificatePartner.storeName` + owner org INN when present; current profile may differ (shown in copy).
+- **Period field:** `Order.createdAt` exposed as `purchaseAt` ISO; filter compares UTC calendar date (`YYYY-MM-DD`) on `from`/`to` query params.
+- **Status:** same `recordMatchesFilter` for overview rows, partners, orders (no forced `open` on partners API).
+- **Search:** partner name, legal name, order number, certificate code, client, creator, **order line categories** (`categorySearchText`) on full set before pagination.
+- **Totals:** `meta.selectionTotalKopecks` respects active status filter; `meta.confirmedTotalKopecks` = open remaining within filtered set; overview `confirmedTotalKopecks` = cabinet-wide open total.
+
+## Partial payments
+
+Not stored on `AgentBonus` — UI must not show partial remainders; paid = full obligation.
 
 ## Due date
 
-- No persisted payout term on order → UI label **«Не согласован»**; overdue/soon filters disabled until real dates exist.
+Not persisted → `dueLabel` «Не согласован»; `overdue`/`soon` filters return empty (not offered in UI).
 
 ## Rounding
 
-- API amounts in **integer kopecks**; display divides by 100 once. Line totals compared to accrual with 1 kopeck tolerance.
+Integer kopecks via `kopecksFromAmount`; line vs accrual tolerance **1 kopeck** (`ACCRUAL_LINES_TOLERANCE_KOPECKS`).
+
+## Incoming-only (gate ON + eligible)
+
+- `GET /api/pro/wallet/settlements` → `payable: []`, receivable without `payoutActions`, completed receivable-only.
+- `GET /api/pro/wallet/balance` for AGENT already AgentBonus-only (no outgoing).
+- Gate OFF: legacy behaviour preserved.
 
 ## Gate
 
-- `PROF_R05_AGENT_RECEIVABLES_ENABLED` (default OFF). Eligibility: `resolvePrincipalAgentBusiness` only.
+`PROF_R05_AGENT_RECEIVABLES_ENABLED` (default OFF). Read routes 404 when OFF.
