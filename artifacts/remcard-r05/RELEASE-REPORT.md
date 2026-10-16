@@ -1,24 +1,30 @@
-# R05.3 — RELEASE REPORT
+# R05.4 — RELEASE REPORT
 
 | Repo | PR | Branch |
 |------|-----|--------|
 | remcard-navigator | [#686](https://github.com/karenavedikyan/remcard-navigator/pull/686) | `cursor/r05-agent-receivables-b3e3` |
 | remcard-partner-platform | [#23](https://github.com/karenavedikyan/remcard-partner-platform/pull/23) | `cursor/r05-agent-receivables-b3e3` |
 
-## Scope (R05.3 only)
+## Scope (three closure items)
 
-1. **Reference evidence** — frozen prototype served over `http://127.0.0.1:<port>/roles.html` (not `file://`); Playwright flow cabinet → agent → wallet → `settlement-direction:in` → partners/orders/detail; FAIL on «Не удалось загрузить прототип»; `roles.js` SHA gate.
-2. **Mobile detail + requisites** — order detail loading/error/retry; captures wait for BFF + lines + history; requisites under `agentScope` with `--pw-*` token checks; table scroll contained on 375/320.
-3. **Applicable visual** — wallet panel + bordered tabs; focus header sizing; grid 3/2 desktop verified via computed columns + PNGs.
+### 1. Mobile order detail layout
+- Breakdown rows stack inside `orderDetailShell` (container queries); sum uses `word-break: break-all` so NBSP amounts wrap.
+- Acceptance checks **shell bounding boxes** for sum + four `dd` values and `document.scrollWidth` on 375/320 (table scroll isolated in `.lineTableWrap`).
+- Loading/error/retry unchanged.
 
-**Unchanged (R05.2 accepted):** partner aggregate key, purchase sort, incoming-only settlements, financial read model — navigator HEAD unchanged unless noted in `TEST-RESULTS.json`.
+### 2. Real dark reference (375)
+- Frozen prototype theme via **`[data-action="theme"]`** (internal `i.theme`), not DOM-only override.
+- Probes: `data-theme`, settlement-demo computed bg (dark → luminance &lt; 128).
+- **Distinct SHA:** `ref-r05-partners-375-light.png` ≠ `ref-r05-partners-375-dark.png`.
+- Matched drill captures: `ref-r05-{partners,orders,order-detail}-375-{light,dark}.png` and `impl-r05-{partners,orders,order-detail}-375-{light,dark}.png`.
+- Added `impl-r05-order-detail-320-{light,dark}.png`.
 
-**Not claimed:** pixel-perfect parity (`visualParityOk: false`); identical demo vs seed datasets.
+### 3. Small CSS
+- «Вид данных»: inline `viewControl` row (reference-style label + select).
+- «Поиск и фильтры»: bottom border only, transparent background.
 
-## Evidence
+## Honest limits
+- `visualParityOk: false` — CAPTURED pairs, not pixel PASS.
+- Navigator **6f0e8a415d08df2b4da5f1e3499a58704afc4bb9** unchanged (no backend delta in R05.4).
 
-- Paired PNGs: `impl-r05-*` and `ref-r05-{overview,partners,orders,order-detail}-{1440,375}-light|dark.png`
-- Requisites: `impl-r05-requisites-375-light.png`, `impl-r05-requisites-375-dark.png`
-- Grids: `impl-r05-partners-1440-light-small.png`, `-medium.png`
-
-See `TEST-RESULTS.json` for exact HEAD SHAs, command exit codes, and section PASS/FAIL.
+See `TEST-RESULTS.json` for HEAD SHAs, theme probes, layout metrics, and section PASS/FAIL.
