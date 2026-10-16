@@ -21,6 +21,7 @@ import {
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
 import { parseProfileFocusFromQuery } from "@/lib/recommendation-profile-focus";
+import guideStyles from "./profileAgentGuide.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -88,14 +89,14 @@ export default async function ProfilePage(props: {
     contextReady,
   });
 
-  return (
-    <CabinetShell returnTo={safeReturnTo}>
+  const profileChrome = (
+    <>
       <PageHeading
-        eyebrow={pureAgentCompact ? "Агент" : "Профиль партнёра"}
-        title={pureAgentCompact ? "Профиль агента" : "Профиль"}
+        eyebrow="Профиль партнёра"
+        title="Профиль"
         description={
           pureAgentCompact
-            ? "Пошаговый профиль и реквизиты для получения оплаты. Без каталога и организации."
+            ? "Рабочие данные для партнёрства и рекомендаций. Заполнение не публикует вас в каталоге RemCard."
             : "Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard."
         }
       />
@@ -110,6 +111,16 @@ export default async function ProfilePage(props: {
         initialAgentR02Gate={initialAgentR02Gate}
         initialPureAgentCompact={pureAgentCompact}
       />
+    </>
+  );
+
+  return (
+    <CabinetShell returnTo={safeReturnTo}>
+      {pureAgentCompact ? (
+        <div className={guideStyles.guide}>{profileChrome}</div>
+      ) : (
+        profileChrome
+      )}
     </CabinetShell>
   );
 }

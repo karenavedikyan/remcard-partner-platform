@@ -115,10 +115,33 @@ async function seedSyntheticProfile(session, env) {
   });
   if (finish.status !== 200) throw new Error(`finish_${finish.status}`);
 
-  await bffJson(session, '/api/pro/agent-payout-requisites', {
+  const bank = await bffJson(session, '/api/pro/agent-payout-requisites', {
     method: 'POST',
     body: JSON.stringify({ ...PARITY_SYNTH.bank, isPrimary: true }),
   });
+  if (bank.status !== 200) throw new Error(`bank_seed_${bank.status}`);
+}
+
+async function dedupeBankRecords(session) {
+  const list = await bffJson(session, '/api/pro/agent-payout-requisites');
+  const items = list.body?.items ?? [];
+  for (const extra of items.slice(1)) {
+    await bffJson(session, `/api/pro/agent-payout-requisites/${encodeURIComponent(extra.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action: 'archive' }),
+    });
+  }
+  const after = await bffJson(session, '/api/pro/agent-payout-requisites');
+  return after.body?.items?.length ?? 0;
+}
+
+async function assertSingleBankRecord(session) {
+  const list = await bffJson(session, '/api/pro/agent-payout-requisites');
+  const items = list.body?.items ?? [];
+  if (items.length !== 1) {
+    throw new Error(`bank_record_count_${items.length}_expected_1`);
+  }
+  return items[0];
 }
 
 async function httpAcceptance(session, env) {
@@ -151,16 +174,12 @@ async function httpAcceptance(session, env) {
   out.afterDiscardComplete = after.body?.profileComplete;
   out.afterDiscardHasDraft = after.body?.hasDraft;
 
-  const create = await bffJson(session, '/api/pro/agent-payout-requisites', {
-    method: 'POST',
-    body: JSON.stringify({ ...PARITY_SYNTH.bank, isPrimary: true }),
-  });
-  out.bankCreate = create.status;
-  const id = create.body?.item?.id;
   const list = await bffJson(session, '/api/pro/agent-payout-requisites');
+  const id = list.body?.items?.[0]?.id;
   const detail = id
     ? await bffJson(session, `/api/pro/agent-payout-requisites/${encodeURIComponent(id)}`)
     : null;
+  out.bankListCount = list.body?.items?.length ?? 0;
   out.listMasked = list.body?.items?.[0]?.accountNumber == null;
   out.detailLabel = detail?.body?.item?.label;
   out.detailAccount = detail?.body?.item?.accountNumber;
@@ -168,11 +187,66 @@ async function httpAcceptance(session, env) {
   out.ok =
     out.saveDraft === 200 &&
     out.discard === 200 &&
-    out.bankCreate === 200 &&
+    out.bankListCount >= 1 &&
     out.listMasked === true &&
     out.detailLabel === PARITY_SYNTH.bank.label &&
     Boolean(out.detailAccount);
   return out;
+}
+
+async function walkReferenceProfileComplete(page) {
+  await page.locator('[data-testid="pw-input-name"]').fill(PARITY_SYNTH.displayName);
+  await page.locator('[data-testid="pw-input-city"]').fill(PARITY_SYNTH.city);
+  await page.locator('[data-testid="pw-next"]').click();
+  await page.locator('[data-testid="pw-input-audience"]').fill(PARITY_SYNTH.audience);
+  await page.locator('[data-testid="pw-input-channel"]').fill(PARITY_SYNTH.channel);
+  await page.locator('[data-testid="pw-next"]').click();
+  await page.locator('[data-testid="pw-input-contactPhone"]').fill('+79001234567');
+  await page.locator('[data-testid="pw-input-contactEmail"]').fill(PARITY_SYNTH.contactEmail);
+  await page.locator('[data-testid="pw-next"]').click();
+  await page.locator('[data-testid="pw-next"]').click();
+  await page.waitForSelector('[data-testid="pw-summary"]', { timeout: 30_000 });
+}
+
+async function fillReferenceBankForm(page) {
+  const b = PARITY_SYNTH.bank;
+  await page.locator('[data-testid="bank-label"]').fill(b.label);
+  await page.locator('[data-testid="bank-recipient"]').fill(b.legalName);
+  await page.locator('[data-testid="bank-bank"]').fill(b.bankName);
+  await page.locator('[data-testid="bank-bik"]').fill(b.bik);
+  await page.locator('[data-testid="bank-account"]').fill(b.accountNumber);
+  await page.locator('[data-testid="bank-correspondent"]').fill(b.corrAccount);
+  await page.locator('[data-testid="bank-inn"]').fill('770708389301');
+}
+
+async function seedReferenceBankRecord(page) {
+  const add = page.locator('[data-testid="cab-bank-add"]').first();
+  await add.scrollIntoViewIfNeeded();
+  await add.click({ timeout: 30_000 });
+  await page.waitForSelector('[data-bank-form]', { timeout: 15_000 });
+  await fillReferenceBankForm(page);
+  await page.locator('[data-testid="bank-save"]').click();
+  await page.waitForSelector('.cab-bank-card, [data-testid^="cab-bank-expand"]', {
+    timeout: 30_000,
+  });
+}
+
+async function measureCaptureLayout(page) {
+  return page.evaluate(() => {
+    const pick = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height), y: Math.round(r.top) };
+    };
+    return {
+      summary: pick('[data-testid="agent-profile-completed-summary"], [data-testid="pw-summary"]'),
+      facts: pick('.pw-facts, [class*="summaryFacts"]'),
+      bankPanel: pick('[data-testid="bank-panel"]'),
+      bankCards: document.querySelectorAll('.cab-bank-card, [class*="bankCard"]').length,
+      bankForm: pick('[data-bank-form], [data-testid="agent-requisites-form"]'),
+    };
+  });
 }
 
 async function ensureReferenceServer() {
@@ -221,56 +295,61 @@ async function prepareReferenceState(page, refBase, theme, state) {
   await openReferenceAgent(refBase, page);
   await setReferenceTheme(page, theme);
   if (state === 'wizard-step1') {
-    await page.locator('[data-testid="pw-input-name"]').fill(PARITY_SYNTH.displayName);
-    await page.locator('[data-testid="pw-input-city"]').fill(PARITY_SYNTH.city);
+    await walkReferenceProfileComplete(page);
+    await page.getByRole('button', { name: 'Редактировать профиль' }).click();
+    await page.waitForSelector('[data-testid="pw-input-name"]', { timeout: 30_000 });
     return;
   }
   if (state.startsWith('overview') || state.startsWith('bank')) {
-    await page.locator('[data-testid="pw-input-name"]').fill(PARITY_SYNTH.displayName);
-    await page.locator('[data-testid="pw-input-city"]').fill(PARITY_SYNTH.city);
-    await page.locator('[data-testid="pw-next"]').click();
-    await page.locator('[data-testid="pw-input-audience"]').fill(PARITY_SYNTH.audience);
-    await page.locator('[data-testid="pw-next"]').click();
-    await page.locator('[data-testid="pw-skip"]').click();
-    await page.locator('[data-testid="pw-next"]').click();
-    await page.waitForSelector('[data-testid="pw-summary"]', { timeout: 30_000 });
+    await walkReferenceProfileComplete(page);
+  }
+  if (
+    state.startsWith('overview') ||
+    state === 'bank-collapsed' ||
+    state === 'bank-expanded' ||
+    state === 'bank-form'
+  ) {
+    await seedReferenceBankRecord(page);
   }
   if (state === 'bank-form') {
-    const add = page.locator('[data-testid="cab-bank-add"]').first();
-    await add.scrollIntoViewIfNeeded();
-    await add.click({ timeout: 30_000 });
-    await page.waitForSelector('[data-bank-form], [data-testid="bank-recipient"]', {
-      timeout: 15_000,
-    });
+    await page.locator('[data-testid="cab-bank-add"]').last().click({ timeout: 30_000 });
+    await page.waitForSelector('[data-bank-form]', { timeout: 15_000 });
   } else if (state === 'bank-expanded') {
-    await page.locator('[data-testid="cab-bank-add"]').first().click({ timeout: 15_000 }).catch(() => {});
-    await page.waitForTimeout(300);
     const expand = page.locator('[data-testid^="cab-bank-expand"]').first();
-    if (await expand.count()) await expand.click();
+    await expand.scrollIntoViewIfNeeded();
+    await expand.click({ timeout: 15_000 });
+    await page.waitForSelector('.pw-facts dt', { timeout: 15_000 });
   }
 }
 
 async function prepareImplState(page, session, theme, state) {
   const base = plat(session);
   if (state === 'wizard-step1') {
-    await page.goto(`${base}/profile?section=basics`, { waitUntil: 'networkidle', timeout: 120_000 });
-    await page.waitForSelector('[data-testid="agent-profile-wizard"]', { timeout: 90_000 });
+    await page.goto(`${base}/profile?section=overview`, { waitUntil: 'networkidle', timeout: 120_000 });
+    await page.waitForSelector('[data-testid="agent-profile-completed-summary"]', { timeout: 90_000 });
     await setCabinetTheme(page, theme);
-    await page.getByTestId('agent-profile-input-displayName').fill(PARITY_SYNTH.displayName);
-    await page.locator('#agent-city').fill(PARITY_SYNTH.city);
+    await page.getByRole('button', { name: 'Редактировать профиль' }).click();
+    await page.waitForSelector('[data-testid="agent-profile-wizard"]', { timeout: 30_000 });
     return;
   }
   await page.goto(`${base}/profile?section=overview`, { waitUntil: 'networkidle', timeout: 120_000 });
-  await page.waitForSelector('[data-testid="agent-profile-scope"]', { timeout: 90_000 });
+  await page.waitForSelector('[data-testid="agent-profile-completed-summary"]', { timeout: 90_000 });
   await setCabinetTheme(page, theme);
+  if (['overview-complete', 'bank-collapsed', 'bank-expanded'].includes(state)) {
+    const bankCount = await page.locator('[data-testid="bank-panel"] li').count();
+    if (bankCount !== 1) {
+      throw new Error(`impl_bank_card_count_${bankCount}`);
+    }
+  }
   if (state === 'bank-form') {
     const add = page.getByRole('button', { name: /Добавить.*реквизит/i });
+    await add.scrollIntoViewIfNeeded();
     await add.click();
-    await page.waitForSelector('#req-label', { timeout: 30_000 });
+    await page.waitForSelector('[data-testid="agent-requisites-form"]', { timeout: 30_000 });
   } else if (state === 'bank-expanded') {
     const view = page.getByRole('button', { name: 'Посмотреть' }).first();
     await view.click();
-    await page.waitForSelector('dt:has-text("Расчётный счёт")', { timeout: 30_000 });
+    await page.waitForSelector('dt:has-text("Счёт")', { timeout: 30_000 });
   }
 }
 
@@ -298,9 +377,36 @@ async function capturePairs(session, refBase) {
         } else {
           await prepareReferenceState(page, refBase, cap.theme, cap.state);
         }
+        await page.evaluate(() => {
+          document.activeElement?.blur?.();
+        });
+        await page.waitForTimeout(200);
+        const layout = await measureCaptureLayout(page);
         const file = `${side}-${cap.stem}.png`;
         await page.screenshot({ path: path.join(SHOTS, file), fullPage: true });
-        saved.push({ file, sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, file))).digest('hex') });
+        const entry = {
+          file,
+          sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, file))).digest('hex'),
+          layout,
+        };
+        if (cap.state === 'bank-form' && cap.w === 375) {
+          await page.evaluate(() => window.scrollTo(0, 0));
+          const topFile = `${side}-${cap.stem}-viewport-top.png`;
+          await page.screenshot({ path: path.join(SHOTS, topFile), fullPage: false });
+          entry.viewportTop = {
+            file: topFile,
+            sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, topFile))).digest('hex'),
+          };
+          const footer = page.locator('[data-testid="bank-save"], [data-testid="bank-save"]').last();
+          await footer.scrollIntoViewIfNeeded();
+          const footFile = `${side}-${cap.stem}-form-footer.png`;
+          await page.screenshot({ path: path.join(SHOTS, footFile), fullPage: false });
+          entry.formFooter = {
+            file: footFile,
+            sha256: createHash('sha256').update(readFileSync(path.join(SHOTS, footFile))).digest('hex'),
+          };
+        }
+        saved.push(entry);
         await ctx.close();
       }
     }
@@ -435,6 +541,8 @@ async function main() {
 
   const http = await httpAcceptance(session, env);
   const ui = await runBrowserAcceptance(session);
+  const bankCount = await dedupeBankRecords(session);
+  await assertSingleBankRecord(session);
   const refBase = await ensureReferenceServer();
   const screenshots = await capturePairs(session, refBase);
   const migration = await runLabelMigrationEvidence();
@@ -442,8 +550,18 @@ async function main() {
     migration.ran = true;
   }
 
+  const captureOk = screenshots.length >= CAPTURES.length * 2;
+  const expandedSha = screenshots.find((s) => s.file === 'ref-bank-expanded-375-light.png')?.sha256;
+  const formSha = screenshots.find((s) => s.file === 'ref-bank-form-375-light.png')?.sha256;
   const report = {
-    ok: http.ok && ui.ok && screenshots.length >= CAPTURES.length * 2,
+    ok: http.ok && ui.ok && captureOk,
+    functionalOk: http.ok && ui.ok,
+    captureOk,
+    visualParityOk: false,
+    bankStateParity: {
+      dedupedCount: bankCount,
+      refExpandedVsFormDistinct: Boolean(expandedSha && formSha && expandedSha !== formSha),
+    },
     stack: {
       platformGitSha: stack.meta.platformGitSha,
       navigatorGitSha: stack.meta.navigatorGitSha,

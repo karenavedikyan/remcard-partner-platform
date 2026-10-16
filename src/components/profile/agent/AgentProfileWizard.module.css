@@ -29,6 +29,13 @@
   min-width: 0;
 }
 
+.completedShell {
+  width: 100%;
+  max-width: 100%;
+  margin: var(--pw-6) auto 0;
+  min-width: 0;
+}
+
 .agentScope {
   min-width: 0;
 }
@@ -293,6 +300,10 @@
   color: #fff;
 }
 
+:global([data-theme="dark"]) .btnPrimary {
+  color: #202329;
+}
+
 .btnQuiet {
   border-color: transparent;
   background: transparent;
@@ -353,8 +364,70 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--pw-2);
-  margin-top: var(--pw-3);
+  margin: var(--pw-4) 0;
   align-items: center;
+}
+
+.bankCard {
+  border-bottom: 1px solid var(--pw-line);
+  padding: var(--pw-5) 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.bankCard:first-of-type {
+  padding-top: 0;
+}
+
+.bankActionsPrimary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pw-2);
+  margin: var(--pw-4) 0;
+  align-items: center;
+}
+
+.bankActionsSecondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pw-2);
+  margin-bottom: var(--pw-2);
+}
+
+.btnBankAdd {
+  min-height: 44px;
+  padding: var(--pw-3) var(--pw-5);
+  border-radius: 8px;
+  border: 1px solid var(--pw-line);
+  background: var(--pw-bg);
+  color: var(--pw-text);
+  font-weight: 700;
+  font-size: var(--pw-sm);
+  cursor: pointer;
+  margin-top: var(--pw-4);
+}
+
+.bankInlineForm {
+  margin-top: var(--pw-4);
+  padding-top: var(--pw-4);
+  border-top: 1px solid var(--pw-line);
+}
+
+.bankInlineForm h3 {
+  margin: 0 0 var(--pw-5);
+  font-size: var(--pw-base);
+  font-weight: 750;
+}
+
+.bankFormActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pw-3);
+  margin-top: var(--pw-6);
+  padding-top: var(--pw-5);
+  border-top: 1px solid var(--pw-line);
+  flex-wrap: wrap;
 }
 
 .bankPanel {
@@ -398,16 +471,80 @@
 
 .summaryHeader {
   display: flex;
+  align-items: center;
   gap: var(--pw-4);
-  align-items: flex-start;
   margin-bottom: var(--pw-6);
+}
+
+.summaryHeadMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.summaryTitle {
+  margin: 0;
+  font-size: var(--pw-lg);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.cityMuted {
+  margin: var(--pw-1) 0 0;
+  color: var(--pw-muted);
+  font-size: var(--pw-sm);
+}
+
+.summaryStatus {
+  display: inline-block;
+  margin-top: var(--pw-3);
+  font-size: var(--pw-xs);
+  font-weight: 600;
+  color: var(--pw-text);
+  background: var(--pw-soft);
+  padding: var(--pw-2) var(--pw-3);
+  border-radius: 6px;
+}
+
+.summaryFacts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--pw-5);
+}
+
+.summaryFacts dt {
+  color: var(--pw-muted);
+  font-size: var(--pw-xs);
+  margin-bottom: var(--pw-1);
+}
+
+.summaryFacts dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--pw-sm);
+  overflow-wrap: anywhere;
+}
+
+.summaryActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pw-4);
+  margin-top: var(--pw-6);
+  padding-top: var(--pw-5);
+  border-top: 1px solid var(--pw-line);
   flex-wrap: wrap;
+}
+
+.summaryId {
+  font-size: var(--pw-sm);
+  color: var(--pw-muted);
 }
 
 .avatar {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--pw-tint);
   color: var(--pw-accent);
   display: grid;
@@ -417,11 +554,11 @@
 }
 
 .status {
-  margin-left: auto;
+  margin-left: var(--pw-2);
   font-size: var(--pw-xs);
-  font-weight: 800;
-  color: var(--pw-accent);
-  background: var(--pw-tint);
+  font-weight: 600;
+  color: var(--pw-text);
+  background: var(--pw-soft);
   padding: var(--pw-2) var(--pw-3);
   border-radius: 6px;
 }
@@ -577,12 +714,37 @@
     flex-wrap: wrap;
     width: 100%;
     margin-left: 0;
-    justify-content: stretch;
+    justify-content: flex-end;
   }
 
   .actionsRight .btnDraft,
   .actionsRight .btnPrimary {
-    flex: 1 1 auto;
-    min-width: min(100%, 140px);
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .summaryFacts {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .bankActionsPrimary,
+  .bankActionsSecondary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bankActionsPrimary .btn,
+  .bankActionsSecondary .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

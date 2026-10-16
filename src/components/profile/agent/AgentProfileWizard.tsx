@@ -399,25 +399,27 @@ export function AgentProfileWizard({
     const display = savedProfile.displayName?.trim() ? savedProfile : draft;
     const name = display.displayName?.trim() || "—";
     return (
-      <div className={styles.pw} data-testid="agent-profile-completed-summary">
+      <div className={styles.completedShell} data-testid="agent-profile-completed-summary">
         <section className={styles.summary}>
           <div className={styles.summaryHeader}>
             <div className={styles.avatar}>{name.slice(0, 2).toUpperCase()}</div>
-            <div>
+            <div className={styles.summaryHeadMain}>
               <span className={styles.kicker} data-testid="agent-profile-role-kicker">
-            Агент
-          </span>
-              <h2 className={styles.title}>{name}</h2>
-              <p className={styles.intro}>{display.city?.trim() || "Город не указан"}</p>
+                Агент
+              </span>
+              <h2 className={styles.summaryTitle}>{name}</h2>
+              <p className={styles.cityMuted}>
+                {display.city?.trim() || "Город не указан"}
+              </p>
+              <span className={styles.summaryStatus}>Заполнено</span>
             </div>
-            <span className={styles.status}>Заполнено</span>
           </div>
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
               {banner.text}
             </p>
           ) : null}
-          <dl className={styles.facts}>
+          <dl className={styles.summaryFacts}>
             {reviewFacts(display).map((row) => (
               <div key={row.label}>
                 <dt>{row.label}</dt>
@@ -425,10 +427,7 @@ export function AgentProfileWizard({
               </div>
             ))}
           </dl>
-          <p className={styles.footnote}>
-            ID {userId}. Сохранение профиля не публикует вас в каталоге для клиентов.
-          </p>
-          <div className={styles.actions}>
+          <div className={styles.summaryActions}>
             <button
               type="button"
               className={`${styles.btn} ${styles.btnPrimary}`}
@@ -442,6 +441,7 @@ export function AgentProfileWizard({
             >
               Редактировать профиль
             </button>
+            <span className={styles.summaryId}>ID {userId}</span>
           </div>
         </section>
       </div>
