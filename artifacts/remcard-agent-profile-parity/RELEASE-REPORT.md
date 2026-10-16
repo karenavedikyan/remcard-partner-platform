@@ -1,6 +1,8 @@
 # Agent profile parity RC
 
-**Not merge/deploy/production.** Dimensions and functional/state gates accepted; owner PNG sign-off tracked separately (`visualReview`).
+**Reviewer acceptance:** `reviewed_with_documented_exceptions` (see `PROFILE-ACCEPTANCE.md`).  
+**Code tip:** `ce2921e23785d6383190e34f18fe2d9c8b86f4f4`.  
+**Not merge/deploy/production.** `visualParityOk` remains **false** (not universal pixel parity).
 
 ## Git
 
@@ -18,7 +20,12 @@
 | `geometryOk` | 1440 overview summary/bank **widths** Δ≤4px |
 | `cssOk` | Mobile summary badge content-sized; pure-agent tab divider present |
 | `visualParityOk` | **false** — not a universal pixel pass |
-| `visualReview.status` | `pending_owner_signoff` — see `documentedExceptions` in JSON |
+| `visualReview.status` | `reviewed_with_documented_exceptions` — see JSON + `PROFILE-ACCEPTANCE.md` |
+
+## SHA clarity
+
+- **Code tip (this RC):** `ce2921e…` on branch `cursor/agent-profile-parity-b3e3`.
+- **`profile-parity-e2e.json` → `stack.platformGitSha`:** HEAD at stack boot when captures ran (may differ from tip if JSON was not regenerated after the last commit).
 
 ## Documented visual exceptions (not geometry failures)
 

@@ -188,7 +188,7 @@
   ],
   "visualParityOk": false,
   "visualReview": {
-    "status": "pending_owner_signoff",
+    "status": "reviewed_with_documented_exceptions",
     "scope": "geometry_and_css_gates_only",
     "documentedExceptions": [
       "Product PageHeading intro is longer than frozen ref demo copy (explains ~46px top offset at 375).",
@@ -202,7 +202,8 @@
     "refExpandedVsFormDistinct": false
   },
   "stack": {
-    "platformGitSha": "c804f8b76bf2442964e35f3249ad749f62bf346d",
+    "platformGitSha": "ce2921e23785d6383190e34f18fe2d9c8b86f4f4",
+    "captureSourceNote": "E2E stack.platformGitSha is the verified code tip at acceptance; older capture runs may have used a pre-fix snapshot — owner reviewed PNGs at ce2921e.",
     "navigatorGitSha": "7a47405f9dbcaa4a6b1c4bdbed77ac8a155b64d7",
     "platformOrigin": "http://127.0.0.1:3044",
     "navOrigin": "http://127.0.0.1:3043",

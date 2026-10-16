@@ -11,4 +11,4 @@ Legend: **CLOSED** · **PARTIAL** · **OPEN** · **NOT_RUN**
 | 5 | Evidence capture + E2E | **CLOSED** | `functionalOk` / `captureOk` / `geometryOk` / `cssOk` separate from owner `visualReview` |
 | 6 | Label SQL migration (#682) | **CLOSED** | Pinned checksum |
 
-**Owner visual review:** `visualParityOk: false`, `visualReview.status: pending_owner_signoff` — not blocking R03-PARITY-TAIL queue entry, but tail work is separate from profile dimension acceptance.
+**Owner visual review:** `visualParityOk: false`, `visualReview.status: reviewed_with_documented_exceptions` (checkpoint `ce2921e`, see `PROFILE-ACCEPTANCE.md`). R03-PARITY-TAIL is a separate branch/PR.
