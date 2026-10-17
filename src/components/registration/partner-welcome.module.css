@@ -106,6 +106,17 @@
   color: var(--primary-fg);
 }
 
+:global([data-theme="dark"]) .primaryBtn {
+  background: var(--soft);
+  color: var(--ink);
+}
+
+:global([data-theme="dark"]) .primaryBtn:hover,
+:global([data-theme="dark"]) .primaryBtn:focus-visible {
+  background: var(--offset);
+  color: var(--ink);
+}
+
 .primaryBtn:hover {
   background: var(--primary-hover);
 }

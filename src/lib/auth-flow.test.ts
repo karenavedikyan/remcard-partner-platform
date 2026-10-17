@@ -51,6 +51,10 @@ describe("sanitizeReturnTo", () => {
     assert.equal(sanitizeReturnTo("//evil.test"), null);
     assert.equal(sanitizeReturnTo("/login"), null);
     assert.equal(sanitizeReturnTo("/onboarding"), null);
+    assert.equal(
+      sanitizeReturnTo("/onboarding?partnerType=MASTER"),
+      "/onboarding?partnerType=MASTER",
+    );
     assert.equal(sanitizeReturnTo("/join/foo"), null);
   });
 
@@ -194,6 +198,19 @@ describe("resolveDestinationAfterAuth", () => {
     assert.equal(
       resolveDestinationAfterAuth(ready, "/scanner", { registrationAgentJoin: true }),
       "/scanner",
+    );
+  });
+
+  it("routes legacy onboarding partnerType directly without returnTo loop", () => {
+    const profile: CabinetReadiness = {
+      ...needsConsents,
+      nextStep: "profile",
+      needsProfileOnboarding: true,
+      missingConsents: [],
+    };
+    assert.equal(
+      resolveDestinationAfterAuth(profile, "/onboarding?partnerType=STORE"),
+      "/onboarding?partnerType=STORE",
     );
   });
 

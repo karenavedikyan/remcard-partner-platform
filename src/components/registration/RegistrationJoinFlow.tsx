@@ -9,16 +9,26 @@ import { TextField } from "@/components/ui/FormField";
 import { fetchRegistrationCapabilitiesClient } from "@/lib/registration/capabilities";
 import {
   bindRegistrationDraftOwner,
-  buildLegacyOnboardingLoginHref,
   buildJoinHref,
+  buildLegacyOnboardingLoginHref,
   clearAllRegistrationDrafts,
-  clearRegistrationDraft,
+  clearDraftOnOwnerMismatch,
+  getRegistrationDraftOwner,
+  loadAgentDraftForUser,
   loadRegistrationDraft,
   loadRegistrationWizardState,
   maybeStorageRecoveryNotice,
   mergeRegistrationDraftFields,
   saveRegistrationWizardState,
 } from "@/lib/registration/draft";
+import {
+  buildEmployeeLegacyJoinHref,
+  buildEmployeeLoginHref,
+  buildJoinAuthReturnTo,
+  buildJoinFinishHref,
+  resolveAgentRegistrationCompleteHref,
+  buildWelcomeHref,
+} from "@/lib/registration/routing";
 import { fetchAuthMeSafe } from "@/lib/auth-session";
 import {
   mapAgentFinishError,
@@ -27,6 +37,7 @@ import {
 } from "@/lib/registration/agent-finish";
 import type { RegistrationCapabilities, RegistrationKind } from "@/lib/registration/types";
 import { REGISTRATION_KIND_LABELS } from "@/lib/registration/types";
+import { JoinProgress } from "./JoinProgress";
 import { RegistrationPublicShell } from "./RegistrationPublicShell";
 import styles from "./registration-join.module.css";
 
@@ -37,6 +48,14 @@ const ALL_KINDS: RegistrationKind[] = [
   "company",
   "employee",
 ];
+
+const KIND_ICONS: Record<RegistrationKind, string> = {
+  agent: "AG",
+  specialist: "SP",
+  store: "ST",
+  company: "CO",
+  employee: "EM",
+};
 
 type WizardStep = "types" | "name" | "city" | "auth" | "finish";
 
@@ -49,14 +68,6 @@ function parseRoleLanding(searchParams: URLSearchParams): RegistrationKind | nul
   return null;
 }
 
-function agentProgressStep(step: WizardStep): number {
-  if (step === "types") return 1;
-  if (step === "name") return 2;
-  if (step === "city") return 3;
-  if (step === "auth") return 4;
-  return 5;
-}
-
 export function RegistrationJoinFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,6 +75,11 @@ export function RegistrationJoinFlow() {
   const roleLanding = parseRoleLanding(searchParams);
   const inviteToken = searchParams.get("invite");
   const contextReturnTo = searchParams.get("returnTo");
+
+  const joinContext = useMemo(
+    () => ({ invite: inviteToken, returnTo: contextReturnTo }),
+    [inviteToken, contextReturnTo],
+  );
 
   const [caps, setCaps] = useState<RegistrationCapabilities | null>(null);
   const [storageNotice] = useState(() => maybeStorageRecoveryNotice());
@@ -77,12 +93,13 @@ export function RegistrationJoinFlow() {
   const finishLock = useRef(false);
   const idempotencyKey = useRef(`agent-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
+  const finishHref = buildJoinFinishHref(joinContext);
+  const authReturnTo = buildJoinAuthReturnTo(joinContext);
+
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash : "";
     const match = hash.match(/^#register\/(agent|specialist|store|company|employee)$/);
-    if (match) {
-      setKind(match[1] as RegistrationKind);
-    }
+    if (match) setKind(match[1] as RegistrationKind);
   }, []);
 
   useEffect(() => {
@@ -100,20 +117,13 @@ export function RegistrationJoinFlow() {
   useEffect(() => {
     if (phase === "finish") {
       setStep("finish");
+      setKind("agent");
       return;
     }
     const saved = loadRegistrationWizardState();
     if (saved?.kind) {
       setKind(saved.kind);
-      if (saved.step !== "auth") {
-        setStep(saved.step);
-      }
-    }
-  }, [phase]);
-
-  useEffect(() => {
-    if (phase === "finish") {
-      setKind("agent");
+      setStep(saved.step);
     }
   }, [phase]);
 
@@ -126,29 +136,13 @@ export function RegistrationJoinFlow() {
 
   const agentPathActive = Boolean(caps?.agentRegistrationPathEnabled);
   const welcomeActive = Boolean(caps?.welcomeEnabled);
-
   const isAgentNewPath =
     agentPathActive && (kind === "agent" || (phase === "finish" && step === "finish"));
-
-  const continueDisabled = !kind;
 
   useEffect(() => {
     if (phase === "finish" || step === "finish") return;
     saveRegistrationWizardState({ step, kind, updatedAt: Date.now() });
   }, [step, kind, phase]);
-
-  const goLegacy = useCallback(
-    (selected: RegistrationKind) => {
-      if (selected === "employee") {
-        const q = new URLSearchParams({ role: "employee", legacy: "1" });
-        if (inviteToken) q.set("invite", inviteToken);
-        router.push(`/join?${q.toString()}`);
-        return;
-      }
-      router.push(buildLegacyOnboardingLoginHref(selected));
-    },
-    [inviteToken, router],
-  );
 
   const onContinueFromTypes = () => {
     if (!kind) return;
@@ -158,10 +152,10 @@ export function RegistrationJoinFlow() {
       return;
     }
     if (kind === "employee") {
-      router.push("/join?role=employee&legacy=1");
+      router.push(buildEmployeeLegacyJoinHref(joinContext));
       return;
     }
-    goLegacy(kind);
+    router.push(buildLegacyOnboardingLoginHref(kind));
   };
 
   const onContinueName = () => {
@@ -192,7 +186,37 @@ export function RegistrationJoinFlow() {
     setBusy(true);
     setError("");
     try {
-      const draft = loadRegistrationDraft("agent");
+      const me = await fetchAuthMeSafe();
+      if (!me.ok || !me.data.user?.id) {
+        setError("Сессия не подтверждена. Войдите снова.");
+        finishLock.current = false;
+        setBusy(false);
+        return;
+      }
+      const userId = me.data.user.id;
+      if (clearDraftOnOwnerMismatch(userId)) {
+        setError(
+          "Черновик принадлежал другому входу. Заполните имя и город заново для текущего аккаунта.",
+        );
+        setStep("name");
+        finishLock.current = false;
+        setBusy(false);
+        return;
+      }
+      const owner = getRegistrationDraftOwner();
+      if (owner && owner !== userId) {
+        clearAllRegistrationDrafts();
+        setError("Черновик привязан к другому аккаунту. Начните регистрацию заново.");
+        setStep("types");
+        finishLock.current = false;
+        setBusy(false);
+        return;
+      }
+      if (!owner) {
+        bindRegistrationDraftOwner(userId);
+      }
+
+      const draft = loadAgentDraftForUser(userId);
       const name = draft?.fields.displayName?.trim() ?? displayName.trim();
       const cityValue = draft?.fields.city?.trim() ?? city.trim();
       if (!name || !cityValue) {
@@ -202,6 +226,7 @@ export function RegistrationJoinFlow() {
         setBusy(false);
         return;
       }
+
       await postAgentRegistrationFinish({
         displayName: name,
         city: cityValue,
@@ -215,7 +240,7 @@ export function RegistrationJoinFlow() {
         return;
       }
       clearAllRegistrationDrafts();
-      router.replace("/partners");
+      router.replace(resolveAgentRegistrationCompleteHref(joinContext));
       router.refresh();
     } catch (e) {
       setError(mapAgentFinishError(e));
@@ -223,17 +248,28 @@ export function RegistrationJoinFlow() {
     } finally {
       setBusy(false);
     }
-  }, [city, displayName, router]);
+  }, [city, displayName, joinContext, router]);
 
   useEffect(() => {
     if (step !== "finish" || !isAgentNewPath || !capsLoaded || !agentPathActive) return;
-    void fetchAuthMeSafe().then((me) => {
-      if (me.ok && me.data.user?.id) {
-        bindRegistrationDraftOwner(me.data.user.id);
-      }
-    });
     void runAgentFinish();
   }, [step, isAgentNewPath, capsLoaded, agentPathActive, runAgentFinish]);
+
+  const handleAuthenticated = useCallback(
+    (userId: string) => {
+      const owner = getRegistrationDraftOwner();
+      if (owner && owner !== userId) {
+        clearAllRegistrationDrafts();
+        setError("Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.");
+        setStep("name");
+        return;
+      }
+      if (!owner) {
+        bindRegistrationDraftOwner(userId);
+      }
+    },
+    [],
+  );
 
   const typeHint = useMemo(() => {
     if (!roleLanding || !kind) return null;
@@ -243,9 +279,14 @@ export function RegistrationJoinFlow() {
     return null;
   }, [kind, roleLanding]);
 
+  const loginRecovery = `/login?${new URLSearchParams({
+    returnTo: authReturnTo,
+    registration: "agent",
+  }).toString()}`;
+
   if (!capsLoaded) {
     return (
-      <RegistrationPublicShell>
+      <RegistrationPublicShell loginHref={loginRecovery}>
         <p className={styles.status}>Загружаем…</p>
       </RegistrationPublicShell>
     );
@@ -266,21 +307,16 @@ export function RegistrationJoinFlow() {
   }
 
   if (step === "auth" && isAgentNewPath) {
-    const loginRecovery = `/login?${new URLSearchParams({
-      returnTo: "/join?phase=finish",
-      registration: "agent",
-    }).toString()}`;
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
         <div className={styles.joinPage}>
-          <ol className={styles.progress} aria-label="Шаги регистрации">
-            <li aria-current="step">4. Вход</li>
-          </ol>
+          <JoinProgress current="auth" />
           {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
           <AuthFlow
-            returnTo="/join?phase=finish"
+            returnTo={authReturnTo}
             registrationAgentJoin
             layout="embedded"
+            onAuthenticated={handleAuthenticated}
           />
           <div className={styles.footerActions}>
             <Button type="button" variant="secondary" onClick={() => setStep("city")}>
@@ -294,20 +330,15 @@ export function RegistrationJoinFlow() {
 
   if (step === "finish" && isAgentNewPath) {
     return (
-      <RegistrationPublicShell>
+      <RegistrationPublicShell loginHref={loginRecovery}>
         <div className={styles.finishWrap}>
+          <JoinProgress current="done" />
           <h1>Завершение регистрации</h1>
           {error ? <p className={styles.error}>{error}</p> : null}
           {busy && !error ? <p className={styles.status}>Сохраняем профиль агента…</p> : null}
           {!busy && error ? (
             <div className={styles.footerActions}>
-              <Link
-                href={`/login?${new URLSearchParams({
-                  returnTo: "/join?phase=finish",
-                  registration: "agent",
-                }).toString()}`}
-                className={styles.secondaryLink}
-              >
+              <Link href={loginRecovery} className={styles.secondaryLink}>
                 Войти снова
               </Link>
               <Button type="button" onClick={() => void runAgentFinish()}>
@@ -320,24 +351,22 @@ export function RegistrationJoinFlow() {
     );
   }
 
-  if (searchParams.get("legacy") === "1" && kind === "employee") {
+  if (searchParams.get("legacy") === "1" && (kind === "employee" || roleLanding === "employee")) {
     return (
-      <RegistrationPublicShell>
+      <RegistrationPublicShell loginHref={buildEmployeeLoginHref(joinContext)}>
         <div className={styles.fallback}>
           <h1>Сотрудник организации</h1>
-          <p>
-            Доступ открывается по приглашению от партнёра. Примите приглашение по ссылке или войдите,
-            если оно уже отправлено.
+          <p className={styles.workspaceNote}>
+            Рабочее пространство организации открывается только после принятого приглашения. Без
+            приглашения доступ к данным организации не выдаётся.
           </p>
-          <Link
-            href={`/login?${new URLSearchParams({
-              returnTo: inviteToken ? `/invite/${inviteToken}` : "/",
-            }).toString()}`}
-            className={styles.primaryLink}
-          >
+          {inviteToken ? (
+            <p className={styles.hint}>Приглашение сохранено в контексте входа. Автоматически не принимаем.</p>
+          ) : null}
+          <Link href={buildEmployeeLoginHref(joinContext)} className={styles.primaryLink}>
             Войти
           </Link>
-          <Link href={buildJoinHref({ invite: inviteToken, returnTo: contextReturnTo })} className={styles.secondaryLink}>
+          <Link href={buildJoinHref(joinContext)} className={styles.secondaryLink}>
             Выбрать другой тип
           </Link>
         </div>
@@ -346,16 +375,17 @@ export function RegistrationJoinFlow() {
   }
 
   return (
-    <RegistrationPublicShell>
+    <RegistrationPublicShell loginHref={loginRecovery}>
       <div className={styles.joinPage}>
         {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
         {step === "types" ? (
           <>
-            <ol className={styles.progress} aria-label="Шаги регистрации">
-              <li aria-current="step">1. Тип партнёра</li>
-            </ol>
-            <h1>Кто вы в RemCard?</h1>
-            <p className={styles.muted}>Сравните типы партнёров и выберите подходящий.</p>
+            <JoinProgress current="types" />
+            <h1>Выберите тип партнёра</h1>
+            <p className={styles.workspaceNote}>
+              У каждого типа своё рабочее пространство в RemCard. Сравните описания и выберите
+              подходящий вариант до продолжения.
+            </p>
             {typeHint ? <p className={styles.hint}>{typeHint}</p> : null}
             <ul className={styles.typeList}>
               {ALL_KINDS.map((k) => (
@@ -371,7 +401,10 @@ export function RegistrationJoinFlow() {
                         setError("");
                       }}
                     />
-                    <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
+                    <span className={styles.typeCardHeader}>
+                      <span className={styles.typeCardIcon}>{KIND_ICONS[k]}</span>
+                      <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
+                    </span>
                     <span className={styles.typeDesc}>{REGISTRATION_KIND_LABELS[k].description}</span>
                   </label>
                 </li>
@@ -379,22 +412,22 @@ export function RegistrationJoinFlow() {
             </ul>
             {error ? <p className={styles.error}>{error}</p> : null}
             <div className={styles.footerActions}>
-              <Link href="/">Назад</Link>
-              <Button type="button" disabled={continueDisabled} onClick={onContinueFromTypes}>
+              <Link href={buildWelcomeHref(joinContext)}>Назад</Link>
+              <Button type="button" disabled={!kind} onClick={onContinueFromTypes}>
                 Продолжить
               </Button>
             </div>
+            <p className={styles.loginHint}>
+              Уже есть аккаунт? <Link href={loginRecovery}>Войти</Link>
+            </p>
           </>
         ) : null}
 
         {step === "name" && isAgentNewPath ? (
           <>
-            <ol className={styles.progress} aria-label="Шаги регистрации">
-              <li>1. Тип</li>
-              <li aria-current="step">2. Имя</li>
-            </ol>
-            <p className={styles.context}>Регистрация агента RemCard</p>
-            <h1>Как к вам обращаться?</h1>
+            <JoinProgress current="data" />
+            <h1>Ваши данные</h1>
+            <p className={styles.muted}>Как к вам обращаться?</p>
             <TextField
               label="Имя"
               value={displayName}
@@ -416,13 +449,9 @@ export function RegistrationJoinFlow() {
 
         {step === "city" && isAgentNewPath ? (
           <>
-            <ol className={styles.progress} aria-label="Шаги регистрации">
-              <li>1. Тип</li>
-              <li>2. Имя</li>
-              <li aria-current="step">3. Город</li>
-            </ol>
-            <p className={styles.context}>Регистрация агента RemCard</p>
-            <h1>В каком городе вы работаете?</h1>
+            <JoinProgress current="data" />
+            <h1>Ваши данные</h1>
+            <p className={styles.muted}>В каком городе вы работаете?</p>
             <TextField
               label="Город"
               value={city}

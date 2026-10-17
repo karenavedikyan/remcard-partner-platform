@@ -4,20 +4,82 @@
   padding-top: var(--space-6);
 }
 
-.progress {
+.entryProgress {
   display: flex;
   gap: var(--space-4);
   list-style: none;
   padding: 0;
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-6);
   font-size: 0.75rem;
   color: var(--muted);
   flex-wrap: wrap;
 }
 
-.progress [aria-current="step"] {
+.entryProgress li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.entryProgress li > span {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.entryProgress [aria-current="step"] {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.entryProgress [aria-current="step"] > span {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-fg);
+}
+
+.typeCardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--offset);
   color: var(--primary);
   font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.typeCardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.loginHint {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.loginHint a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.workspaceNote {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 0 var(--space-5);
+  max-width: 52ch;
 }
 
 .context {

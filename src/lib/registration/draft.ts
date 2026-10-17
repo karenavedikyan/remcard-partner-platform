@@ -160,6 +160,24 @@ export function mergeRegistrationDraftFields(
   return saveRegistrationDraft(kind, { ...(existing?.fields ?? {}), ...patch });
 }
 
+/** Reject draft when bound to another authenticated subject. */
+export function loadAgentDraftForUser(userId: string): RegistrationDraft | null {
+  const owner = getRegistrationDraftOwner();
+  if (owner && owner !== userId) {
+    return null;
+  }
+  return loadRegistrationDraft("agent", userId);
+}
+
+export function clearDraftOnOwnerMismatch(userId: string): boolean {
+  const owner = getRegistrationDraftOwner();
+  if (owner && owner !== userId) {
+    clearAllRegistrationDrafts();
+    return true;
+  }
+  return false;
+}
+
 export type RegistrationWizardPersisted = {
   step: "types" | "name" | "city" | "auth";
   kind: RegistrationKind | "";

@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-10-17T09:26:40.618Z",
+  "results": [
+    {
+      "name": "reload_restores_auth_step",
+      "pass": true
+    },
+    {
+      "name": "owner_mismatch_blocks_finish",
+      "pass": true
+    },
+    {
+      "name": "employee_invite_preserved",
+      "pass": true
+    }
+  ]
+}

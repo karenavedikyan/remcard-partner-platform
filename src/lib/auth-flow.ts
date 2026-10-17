@@ -111,7 +111,10 @@ export function resolveDestinationAfterAuth(
       options?.registrationAgentJoin &&
       (target === "/join" || target?.startsWith("/join?"))
     ) {
-      return "/join?phase=finish";
+      return target?.includes("phase=finish") ? target : "/join?phase=finish";
+    }
+    if (target?.startsWith("/onboarding?") && target.includes("partnerType=")) {
+      return target;
     }
     return target
       ? `/onboarding?returnTo=${encodeURIComponent(target)}`

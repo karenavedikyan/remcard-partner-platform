@@ -42,7 +42,7 @@ const BLOCKING_CONSENT_STATUSES = new Set<ConsentRequirementStatus>([
 export function registrationConsentRequirements(
   readiness: CabinetReadiness,
 ): ConsentRequirement[] {
-  return readiness.missingConsents.filter((c) => BLOCKING_CONSENT_STATUSES.has(c.status));
+  return readiness.missingConsents;
 }
 
 export function hasPendingRegistrationConsents(readiness: CabinetReadiness): boolean {

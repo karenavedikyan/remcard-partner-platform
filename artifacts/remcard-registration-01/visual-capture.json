@@ -1,0 +1,19 @@
+{
+  "base": "http://127.0.0.1:3020",
+  "capturedAt": "2026-10-17T09:29:12.687Z",
+  "files": [
+    "reg012-welcome-1440-light.png",
+    "reg012-welcome-375-light.png",
+    "reg012-welcome-375-dark.png",
+    "reg012-welcome-320-dark.png",
+    "reg012-types-375-dark.png",
+    "reg012-types-1440-light.png",
+    "reg012-data-375-dark.png",
+    "reg012-auth-375-dark.png"
+  ],
+  "assertions": [
+    "cta_contrast_light",
+    "cta_contrast_dark",
+    "no_320_overflow"
+  ]
+}

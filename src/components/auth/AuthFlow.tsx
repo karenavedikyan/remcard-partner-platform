@@ -43,6 +43,7 @@ type AuthFlowProps = {
   /** Agent registration via /join uses finish step instead of legacy onboarding. */
   registrationAgentJoin?: boolean;
   layout?: "full" | "embedded";
+  onAuthenticated?: (userId: string) => void;
 };
 
 type RetryKind = "network" | "server" | "session_lost";
@@ -58,6 +59,7 @@ export function AuthFlow({
   reason,
   registrationAgentJoin,
   layout = "full",
+  onAuthenticated,
 }: AuthFlowProps) {
   const router = useRouter();
   const submitLock = useRef(false);
@@ -162,6 +164,9 @@ export function AuthFlow({
       setBooting(false);
       return;
     }
+    if (meResult.data.user?.id) {
+      onAuthenticated?.(meResult.data.user.id);
+    }
     const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
     if (!isActive()) return;
     if (blocked) {
@@ -245,6 +250,9 @@ export function AuthFlow({
         if (!meResult.ok) {
           handleSessionFailure(meResult.kind, meResult.status);
           return;
+        }
+        if (meResult.data.user?.id) {
+          onAuthenticated?.(meResult.data.user.id);
         }
         const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
         if (blocked) {

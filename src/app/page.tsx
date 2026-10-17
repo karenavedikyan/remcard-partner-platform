@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage(
   props: {
-    searchParams?: Promise<{ reason?: string }>;
+    searchParams?: Promise<{ reason?: string; invite?: string; returnTo?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -26,7 +26,12 @@ export default async function HomePage(
   if (!user) {
     const registrationCaps = await fetchRegistrationCapabilitiesServer(cookieHeader);
     if (registrationCaps.welcomeEnabled && registrationCaps.agentRegistrationPathEnabled) {
-      return <PartnerWelcome />;
+      return (
+        <PartnerWelcome
+          inviteToken={searchParams?.invite ?? null}
+          returnTo={searchParams?.returnTo ?? null}
+        />
+      );
     }
     return <SessionGate reason={searchParams?.reason} />;
   }
