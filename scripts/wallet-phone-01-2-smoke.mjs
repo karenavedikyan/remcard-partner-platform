@@ -16,8 +16,11 @@ const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
 const RUN_DIR = process.env.ADMIN_TEST_RUN_DIR || '/tmp/admin-test-local-stack';
 const ART = path.join(ROOT, 'artifacts/remcard-wallet-phone');
 const VIS = path.join(ART, 'visual-01-2');
+const CODE_PLATFORM = process.env.WALLET_CODE_PLATFORM_SHA?.trim() || 'a8f694703829e45920c84273b76a55cd40808f3d';
 const requireNav = createRequire(path.join(NAV_ROOT, 'package.json'));
 const ExcelJS = requireNav('exceljs');
+
+const EXPORT_SCOPE_QUERY = 'status=open&sort=debt-desc';
 
 function loadRuntimeEnv() {
   const env = { ...process.env };
@@ -139,20 +142,125 @@ function cellPlain(value) {
   return String(value);
 }
 
+function rubCellToKopecks(raw) {
+  const normalized = cellPlain(raw).replace(/\s/g, '').replace(',', '.');
+  if (!normalized) return 0;
+  const num = Number(normalized);
+  if (!Number.isFinite(num)) return 0;
+  return Math.round(num * 100);
+}
+
 async function readXlsxStats(buffer) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer);
   const orders = wb.getWorksheet('Заказы');
   const info = wb.getWorksheet('Описание');
-  const rowCount = Math.max(0, (orders?.rowCount ?? 1) - 1);
+  if (!orders) throw new Error('orders_sheet_missing');
+
+  const headerRow = orders.getRow(1);
+  const colByHeader = new Map();
+  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    colByHeader.set(cellPlain(cell.value).trim(), colNumber);
+  });
+  const accrualCol = colByHeader.get('ID начисления');
+  const remainingCol = colByHeader.get('Остаток, ₽');
+  if (!accrualCol || !remainingCol) throw new Error('orders_columns_missing');
+
+  const accrualIds = new Set();
+  let remainingSumKopecks = 0;
+  let dataRowCount = 0;
+  orders.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber === 1) return;
+    dataRowCount += 1;
+    const accrualId = cellPlain(row.getCell(accrualCol).value).trim();
+    if (accrualId) accrualIds.add(accrualId);
+    remainingSumKopecks += rubCellToKopecks(row.getCell(remainingCol).value);
+  });
+
   let filterCount = null;
-  for (const row of info?.getRows() ?? []) {
-    const key = cellPlain(row.getCell(1).value);
-    if (key.includes('Количество записей')) {
-      filterCount = Number(cellPlain(row.getCell(2).value).replace(/\D/g, '')) || null;
-    }
+  if (info) {
+    info.eachRow({ includeEmpty: false }, (row) => {
+      const key = cellPlain(row.getCell(1).value);
+      if (key.includes('Количество записей')) {
+        filterCount = Number(cellPlain(row.getCell(2).value).replace(/\D/g, '')) || null;
+      }
+    });
   }
-  return { rowCount, filterCount, sheetNames: wb.worksheets.map((s) => s.name) };
+
+  return {
+    rowCount: dataRowCount,
+    uniqueAccrualCount: accrualIds.size,
+    remainingSumKopecks,
+    filterCount,
+    sheetNames: wb.worksheets.map((s) => s.name),
+  };
+}
+
+async function fetchBffExportScope(platformOrigin, cookies) {
+  const partnersPath = `/api/pro/wallet/agent-receivables/partners?page=1&pageSize=8000&${EXPORT_SCOPE_QUERY}`;
+  const partners = await bffJson(platformOrigin, cookies, partnersPath);
+  if (partners.status !== 200) {
+    return {
+      ok: false,
+      partnersStatus: partners.status,
+      apiTotalRecords: null,
+      selectionTotalKopecks: null,
+      partnerGroupKeys: [],
+    };
+  }
+
+  const groupKeys = (partners.body?.partners ?? []).map((p) => p.groupKey).filter(Boolean);
+  let apiTotalRecords = 0;
+  const orderStatuses = [];
+  for (const groupKey of groupKeys) {
+    const ordersPath = `/api/pro/wallet/agent-receivables/orders?page=1&pageSize=8000&${EXPORT_SCOPE_QUERY}&groupKey=${encodeURIComponent(groupKey)}`;
+    const orders = await bffJson(platformOrigin, cookies, ordersPath);
+    orderStatuses.push({ groupKey, status: orders.status });
+    if (orders.status !== 200) {
+      return {
+        ok: false,
+        partnersStatus: 200,
+        ordersStatus: orders.status,
+        failedGroupKey: groupKey,
+        apiTotalRecords: null,
+        selectionTotalKopecks: partners.body?.meta?.selectionTotalKopecks ?? null,
+        partnerGroupKeys: groupKeys,
+        orderStatuses,
+      };
+    }
+    apiTotalRecords += orders.body?.meta?.totalRecords ?? 0;
+  }
+
+  return {
+    ok: true,
+    partnersStatus: 200,
+    apiTotalRecords,
+    selectionTotalKopecks: partners.body?.meta?.selectionTotalKopecks ?? null,
+    partnerGroupKeys: groupKeys,
+    orderStatuses,
+  };
+}
+
+async function waitForPartnersSurfaceReady(page) {
+  await page.getByTestId('agent-r05-partners').waitFor({ state: 'visible', timeout: 60_000 });
+  await page.waitForFunction(
+    () => {
+      const shell = document.querySelector('[data-testid="agent-r05-partners"]');
+      if (!shell) return false;
+      const loadingText = shell.textContent ?? '';
+      if (loadingText.includes('Загружаем партнёров')) return false;
+      const rows = document.querySelectorAll('[data-testid="agent-r05-partner-row"]');
+      if (rows.length === 0) return false;
+      const exportBtn = document.querySelector('[data-testid="ledger-export-xlsx"]');
+      return exportBtn instanceof HTMLButtonElement && !exportBtn.disabled;
+    },
+    { timeout: 90_000 },
+  );
+}
+
+async function openIncomingPartners(page) {
+  await page.getByTestId('agent-r05-incoming-tile').click();
+  await waitForPartnersSurfaceReady(page);
 }
 
 async function gridColumnCount(page) {
@@ -164,9 +272,37 @@ async function gridColumnCount(page) {
   });
 }
 
-async function capturePartnersLayout(page, filePath) {
+async function capturePartnersLayout(page, filePath, expectedView) {
+  const metrics = await page.evaluate((expected) => {
+    const rows = document.querySelectorAll('[data-testid="agent-r05-partner-row"]');
+    const first = rows[0];
+    const flex = first ? getComputedStyle(first).flexDirection : null;
+    const height = first ? Math.round(first.getBoundingClientRect().height) : null;
+    const exportBtn = document.querySelector('[data-testid="ledger-export-xlsx"]');
+    return {
+      partnerRowCount: rows.length,
+      documentWidth: document.documentElement.clientWidth,
+      effectiveView: document.querySelector('[data-ledger-view]')?.getAttribute('data-ledger-view'),
+      selectedView: document.querySelector('[data-testid="ledger-view"]')?.value ?? null,
+      firstPartnerFlexDirection: flex,
+      firstPartnerCardHeightPx: height,
+      ledgerTotals: document.querySelector('[data-testid="ledger-totals"]')?.textContent?.trim() ?? null,
+      exportEnabled: exportBtn instanceof HTMLButtonElement && !exportBtn.disabled,
+      loadingPartnersVisible: (document.querySelector('[data-testid="agent-r05-partners"]')?.textContent ?? '').includes(
+        'Загружаем партнёров',
+      ),
+    };
+  }, expectedView);
+
+  if (metrics.partnerRowCount <= 0) throw new Error('capture_without_partner_rows');
+  if (metrics.loadingPartnersVisible) throw new Error('capture_while_loading_partners');
+  if (!metrics.exportEnabled) throw new Error('capture_export_disabled');
+  if (metrics.effectiveView !== expectedView) {
+    throw new Error(`capture_view_mismatch expected=${expectedView} effective=${metrics.effectiveView}`);
+  }
+
   await page.screenshot({ path: filePath, fullPage: true });
-  return { path: filePath, sha256: sha256(readFileSync(filePath)) };
+  return { path: filePath, sha256: sha256(readFileSync(filePath)), tag: expectedView, ...metrics };
 }
 
 async function main() {
@@ -179,13 +315,24 @@ async function main() {
     password: process.env.ADMIN_TEST_PASSWORD?.trim() || 'E2E-Admin-Pass-12chars',
   };
 
+  const platformHead = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout?.trim();
+  const navigatorHead = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout?.trim();
+  const dirtyPorcelain =
+    spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).stdout?.trim() || '';
+
   const report = {
     task: 'WALLET-PHONE-01.2',
     platformOrigin,
     runtimeSha256: sha256(readFileSync(path.join(RUN_DIR, 'runtime.env'))),
-    git: {
-      platform: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout?.trim(),
-      navigator: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' }).stdout?.trim(),
+    codeUnderTest: {
+      platform: CODE_PLATFORM,
+      navigator: navigatorHead,
+      note: 'runtime.env SHA256 alone does not prove executable UI; stack built via npm run build + admin-test-local-stack',
+    },
+    gitCapture: {
+      platformDocumentHead: platformHead,
+      navigatorHead,
+      dirtyPorcelain: dirtyPorcelain || null,
     },
     hydration: {},
     bffExport: {},
@@ -215,29 +362,25 @@ async function main() {
     encoding: 'utf8',
   });
 
-  const ordersMetaApi = await bffJson(
-    platformOrigin,
-    cookies,
-    '/api/pro/wallet/agent-receivables/orders?page=1&pageSize=1&status=open&sort=debt-desc',
-  );
-  report.bffExport.apiTotalRecords = ordersMetaApi.body?.meta?.totalRecords ?? 0;
+  const bffScope = await fetchBffExportScope(platformOrigin, cookies);
+  report.bffExport.scope = bffScope;
+  report.bffExport.apiTotalRecords = bffScope.apiTotalRecords;
 
   await page.goto(`${platformOrigin}/settlements`, { waitUntil: 'networkidle', timeout: 90_000 });
-  await page.getByTestId('agent-r05-incoming-tile').click();
+  await openIncomingPartners(page);
 
-  // Hydration: list default on first paint after reload with stored large
   await page.evaluate(() => {
     localStorage.setItem('agent-r05-receivables-prefs', JSON.stringify({ view: 'large', pageSize: 25 }));
   });
   await page.reload({ waitUntil: 'networkidle' });
-  await page.getByTestId('agent-r05-incoming-tile').click();
-  await page.waitForTimeout(300);
+  await openIncomingPartners(page);
   report.hydration.afterReload = await page.evaluate(() => ({
     selected: document.querySelector('[data-testid=ledger-view]')?.value,
     effective: document.querySelector('[data-ledger-view]')?.getAttribute('data-ledger-view'),
     partnerFlexDirection: getComputedStyle(
       document.querySelector('[data-testid=agent-r05-partner-row]') ?? document.body,
     ).flexDirection,
+    partnerRowCount: document.querySelectorAll('[data-testid=agent-r05-partner-row]').length,
   }));
 
   for (const [tag, width] of [
@@ -246,31 +389,40 @@ async function main() {
     ['320-list', 320],
     ['320-large', 320],
   ]) {
-    const vp = { width, height: 800 };
-    await page.setViewportSize(vp);
     const view = tag.endsWith('large') ? 'large' : 'list';
+    await page.setViewportSize({ width, height: 800 });
     await page.evaluate((v) => {
       localStorage.setItem('agent-r05-receivables-prefs', JSON.stringify({ view: v, pageSize: 25 }));
     }, view);
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByTestId('agent-r05-incoming-tile').click();
-    await page.waitForSelector('[data-testid=ledger-view]');
+    await openIncomingPartners(page);
     await page.waitForFunction(
       (expected) =>
         document.querySelector('[data-ledger-view]')?.getAttribute('data-ledger-view') === expected &&
         document.querySelector('[data-testid=ledger-view]')?.value === expected,
       view,
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     );
-    report.captures.push(await capturePartnersLayout(page, path.join(VIS, `impl-partners-${tag}.png`)));
+    report.captures.push(await capturePartnersLayout(page, path.join(VIS, `impl-partners-${tag}.png`), view));
   }
+
+  const listCapture = report.captures.find((c) => c.tag === 'list' && c.documentWidth === 375);
+  const largeCapture = report.captures.find((c) => c.tag === 'large' && c.documentWidth === 375);
+  report.hydration.mobileLayout375 = {
+    listFlex: listCapture?.firstPartnerFlexDirection ?? null,
+    largeFlex: largeCapture?.firstPartnerFlexDirection ?? null,
+    listCardHeightPx: listCapture?.firstPartnerCardHeightPx ?? null,
+    largeCardHeightPx: largeCapture?.firstPartnerCardHeightPx ?? null,
+    listRowCount: listCapture?.partnerRowCount ?? 0,
+    largeRowCount: largeCapture?.partnerRowCount ?? 0,
+  };
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => {
     localStorage.setItem('agent-r05-receivables-prefs', JSON.stringify({ view: 'small', pageSize: 25 }));
   });
   await page.reload({ waitUntil: 'networkidle' });
-  await page.getByTestId('agent-r05-incoming-tile').click();
+  await openIncomingPartners(page);
   await page.waitForFunction(
     () => document.querySelector('[data-ledger-view]')?.getAttribute('data-ledger-view') === 'small',
   );
@@ -282,7 +434,8 @@ async function main() {
   report.hydration.desktopMediumColumns = await gridColumnCount(page);
 
   await page.getByRole('button', { name: /Все взаиморасчёты/ }).click();
-  await page.getByTestId('ledger-export-xlsx').waitFor({ state: 'visible' });
+  await page.getByTestId('agent-r05-incoming-tile').click();
+  await waitForPartnersSurfaceReady(page);
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 120_000 }),
     page.getByTestId('ledger-export-xlsx').click(),
@@ -294,19 +447,31 @@ async function main() {
   report.bffExport.bytes = xlsxBuf.length;
   try {
     report.bffExport.stats = await readXlsxStats(xlsxBuf);
+    report.bffExport.independentlyVerifiedReference = {
+      uniqueAccrualCount: 30,
+      remainingRub: 17175,
+      note: 'User independent read of smoke-export-01-2.xlsx; optional cross-check',
+    };
+    const stats = report.bffExport.stats;
+    const scopeOk = bffScope.ok === true;
+    const count = stats.uniqueAccrualCount;
+    report.bffExport.apiRowCountMatchesExport =
+      scopeOk && bffScope.apiTotalRecords != null && bffScope.apiTotalRecords === count;
+    report.bffExport.selectionTotalMatchesXlsx =
+      bffScope.selectionTotalKopecks != null &&
+      bffScope.selectionTotalKopecks === stats.remainingSumKopecks;
     report.bffExport.pass =
-      report.bffExport.stats.rowCount > 25 &&
-      (report.bffExport.stats.filterCount == null ||
-        report.bffExport.stats.rowCount === report.bffExport.stats.filterCount);
+      scopeOk &&
+      stats.filterCount != null &&
+      stats.filterCount === count &&
+      stats.rowCount === count &&
+      report.bffExport.apiRowCountMatchesExport &&
+      report.bffExport.selectionTotalMatchesXlsx;
   } catch (error) {
     report.bffExport.pass = false;
     report.bffExport.readError = error instanceof Error ? error.message : String(error);
+    report.bffExport.apiRowCountMatchesExport = false;
   }
-
-  report.bffExport.apiRowCountMatchesExport =
-    report.bffExport.apiTotalRecords > 0
-      ? report.bffExport.stats?.rowCount === report.bffExport.apiTotalRecords
-      : report.bffExport.stats?.rowCount > 25;
 
   await page.goto(`${platformOrigin}/profile?section=basics`, { waitUntil: 'networkidle', timeout: 90_000 });
   await maybeAcceptConsents(page);
@@ -345,7 +510,14 @@ async function main() {
   report.hydration.pass =
     report.hydration.afterReload.selected === 'large' &&
     report.hydration.afterReload.effective === 'large' &&
-    report.hydration.desktopSmallColumns !== report.hydration.desktopMediumColumns;
+    report.hydration.afterReload.partnerRowCount > 0 &&
+    report.hydration.desktopSmallColumns !== report.hydration.desktopMediumColumns &&
+    report.hydration.mobileLayout375.listFlex === 'row' &&
+    report.hydration.mobileLayout375.largeFlex === 'column' &&
+    report.hydration.mobileLayout375.listRowCount > 0 &&
+    report.hydration.mobileLayout375.largeRowCount > 0 &&
+    (report.hydration.mobileLayout375.largeCardHeightPx ?? 0) >
+      (report.hydration.mobileLayout375.listCardHeightPx ?? 0);
 
   report.pass = report.hydration.pass && report.bffExport.pass && report.phonePersistence.pass;
 

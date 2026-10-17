@@ -2,27 +2,64 @@
   "task": "WALLET-PHONE-01.2",
   "platformOrigin": "http://127.0.0.1:3040",
   "runtimeSha256": "e9e274717c77ec72ea4adc131532b2e57e38489b846fa7dc9084053fb014d718",
-  "git": {
-    "platform": "95a6838f6b678187c209178f816a66d91d3fe8fb",
-    "navigator": "e1b12dfd9002c663f910205b475bfdad9e23b646"
+  "codeUnderTest": {
+    "platform": "a8f694703829e45920c84273b76a55cd40808f3d",
+    "navigator": "e1b12dfd9002c663f910205b475bfdad9e23b646",
+    "note": "runtime.env SHA256 alone does not prove executable UI; stack built via npm run build + admin-test-local-stack"
+  },
+  "gitCapture": {
+    "platformDocumentHead": "cd08b1684b229003f5bde8ef161c50cbaffa93a9",
+    "navigatorHead": "e1b12dfd9002c663f910205b475bfdad9e23b646",
+    "dirtyPorcelain": "M scripts/wallet-phone-01-2-smoke.mjs"
   },
   "hydration": {
     "afterReload": {
       "selected": "large",
       "effective": "large",
-      "partnerFlexDirection": "column"
+      "partnerFlexDirection": "column",
+      "partnerRowCount": 2
+    },
+    "mobileLayout375": {
+      "listFlex": "row",
+      "largeFlex": "column",
+      "listCardHeightPx": 117,
+      "largeCardHeightPx": 224,
+      "listRowCount": 2,
+      "largeRowCount": 2
     },
     "desktopSmallColumns": 3,
     "desktopMediumColumns": 2,
     "pass": true
   },
   "bffExport": {
-    "apiTotalRecords": 0,
-    "suggestedFilename": "RemCard-agent-receivables-overview-2026-10-17.xlsx",
-    "bytes": 17254,
+    "scope": {
+      "ok": true,
+      "partnersStatus": 200,
+      "apiTotalRecords": 30,
+      "selectionTotalKopecks": 1717500,
+      "partnerGroupKeys": [
+        "m1fix-store-000000000001:branch:hq",
+        "r05-seed-store-b-000001:branch:hq"
+      ],
+      "orderStatuses": [
+        {
+          "groupKey": "m1fix-store-000000000001:branch:hq",
+          "status": 200
+        },
+        {
+          "groupKey": "r05-seed-store-b-000001:branch:hq",
+          "status": 200
+        }
+      ]
+    },
+    "apiTotalRecords": 30,
+    "suggestedFilename": "RemCard-agent-receivables-partners-2026-10-17.xlsx",
+    "bytes": 17257,
     "stats": {
       "rowCount": 30,
-      "filterCount": null,
+      "uniqueAccrualCount": 30,
+      "remainingSumKopecks": 1717500,
+      "filterCount": 30,
       "sheetNames": [
         "Описание",
         "Партнёры",
@@ -31,8 +68,14 @@
         "История"
       ]
     },
-    "pass": true,
-    "apiRowCountMatchesExport": true
+    "independentlyVerifiedReference": {
+      "uniqueAccrualCount": 30,
+      "remainingRub": 17175,
+      "note": "User independent read of smoke-export-01-2.xlsx; optional cross-check"
+    },
+    "apiRowCountMatchesExport": true,
+    "selectionTotalMatchesXlsx": true,
+    "pass": true
   },
   "phonePersistence": {
     "canonical": "+79186360099",
@@ -41,19 +84,59 @@
   "captures": [
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-wallet-phone/visual-01-2/impl-partners-375-list.png",
-      "sha256": "b2ce623419f14d57306c2996d3886f496062c7318f37d462fb5b0c026441658d"
+      "sha256": "c0183a94a9ea54ffd3653fe10e34e187d46598627a976d68c4c8a26f6f2c9566",
+      "tag": "list",
+      "partnerRowCount": 2,
+      "documentWidth": 375,
+      "effectiveView": "list",
+      "selectedView": "list",
+      "firstPartnerFlexDirection": "row",
+      "firstPartnerCardHeightPx": 117,
+      "ledgerTotals": "17 175 ₽",
+      "exportEnabled": true,
+      "loadingPartnersVisible": false
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-wallet-phone/visual-01-2/impl-partners-375-large.png",
-      "sha256": "0f790620db0892dbe699c7f35a925cf64a3b2f9fd7035393649fafb44e07da59"
+      "sha256": "73a89558d417e41c44a6aa8ddd75cc1719fda06678b56d646de534b58bf9a9e5",
+      "tag": "large",
+      "partnerRowCount": 2,
+      "documentWidth": 375,
+      "effectiveView": "large",
+      "selectedView": "large",
+      "firstPartnerFlexDirection": "column",
+      "firstPartnerCardHeightPx": 224,
+      "ledgerTotals": "17 175 ₽",
+      "exportEnabled": true,
+      "loadingPartnersVisible": false
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-wallet-phone/visual-01-2/impl-partners-320-list.png",
-      "sha256": "7167ee7ddbdbc51af2fa9bd1f8323906f09d71f40540630d35acaab28cac2088"
+      "sha256": "682567fd1d98a9ca1de557628b6e59588d65e2df25f3818f7b0303d724961497",
+      "tag": "list",
+      "partnerRowCount": 2,
+      "documentWidth": 320,
+      "effectiveView": "list",
+      "selectedView": "list",
+      "firstPartnerFlexDirection": "row",
+      "firstPartnerCardHeightPx": 156,
+      "ledgerTotals": "17 175 ₽",
+      "exportEnabled": true,
+      "loadingPartnersVisible": false
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-wallet-phone/visual-01-2/impl-partners-320-large.png",
-      "sha256": "3163bc2a1ce9037a12d85996c35bd84a0c292bcc7005ddf4ca6df9b32df32643"
+      "sha256": "bf6490e786c00fb0db2a7feb8ac922f4e810cdcd126d1ab67ed69a424ef61b7e",
+      "tag": "large",
+      "partnerRowCount": 2,
+      "documentWidth": 320,
+      "effectiveView": "large",
+      "selectedView": "large",
+      "firstPartnerFlexDirection": "column",
+      "firstPartnerCardHeightPx": 224,
+      "ledgerTotals": "17 175 ₽",
+      "exportEnabled": true,
+      "loadingPartnersVisible": false
     }
   ],
   "pass": true
