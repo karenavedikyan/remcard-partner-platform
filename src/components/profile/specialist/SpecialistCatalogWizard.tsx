@@ -407,7 +407,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
           {step === 4 ? (
             <div>
-              <CatalogPublicationPreview profile={profile} draft={draft} />
+              <CatalogPublicationPreview profile={profile} draft={draft} variant="specialist" />
               {missing.length > 0 ? (
                 <ul className={catalogStyles.reviewList}>
                   {missing.map((m) => (

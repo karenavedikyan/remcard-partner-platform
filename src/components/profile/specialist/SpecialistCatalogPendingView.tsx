@@ -64,7 +64,7 @@ export function SpecialistCatalogPendingView({ profile, draft }: Props) {
 
       <details className={styles.submitted}>
         <summary>Посмотреть отправленную карточку</summary>
-        <CatalogPublicationPreview profile={profile} draft={draft} />
+        <CatalogPublicationPreview profile={profile} draft={draft} variant="specialist" />
       </details>
 
       <div className={styles.actions}>
