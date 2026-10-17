@@ -316,8 +316,8 @@ export function RegistrationJoinFlow() {
     const roleLabel = kind ? REGISTRATION_KIND_LABELS[kind].title : "Агент";
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
-        <div className={`${styles.joinPage} ${entryStyles.registrationEntryScope}`}>
-          <JoinProgress current="auth" />
+        <div className={`${styles.entryFlowPage} ${entryStyles.registrationEntryScope}`}>
+          <JoinProgress current="auth" layout="dataRegistration" />
           {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
           {!authCodeVerified ? (
             <RegistrationAuthStep

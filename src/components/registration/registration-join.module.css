@@ -8,7 +8,14 @@
 .dataRegistration {
   max-width: 1140px;
   margin: 0 auto;
-  padding: var(--space-6) 0 var(--space-8);
+  padding: var(--space-10) var(--space-8) 4rem;
+}
+
+/* Matches frozen `.registration.entry-page` shell (auth / narrow entry flow). */
+.entryFlowPage {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-8) 4rem;
 }
 
 /* Types step only — matches frozen prototype .registration / .role-grid (not wizard width). */
@@ -458,14 +465,15 @@
   }
 
   .entryProgress.entryProgressDataRegistration li {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: var(--space-1);
-    white-space: normal;
+    white-space: nowrap;
     line-height: 1.2;
+    font-size: var(--text-xs);
   }
 
   .entryProgress.entryProgressDataRegistration li > span {

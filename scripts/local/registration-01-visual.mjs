@@ -281,9 +281,16 @@ function rgbClose(a, b, tol = 2) {
   return a.every((v, i) => Math.abs(v - b[i]) <= tol);
 }
 
-async function measurePrimaryProviderButton(page) {
-  const scope = page.locator('[data-testid="registration-entry-auth-providers"]');
-  const btn = scope.getByRole("button").first();
+async function resetPointerFromButtons(page) {
+  await page.mouse.move(8, 8);
+  await page.waitForTimeout(220);
+}
+
+async function measurePrimaryProviderButton(page, kind = "implementation") {
+  const btn =
+    kind === "reference"
+      ? page.locator(".entry-providers .btn.primary, .entry-providers .btn").first()
+      : page.locator('[data-testid="registration-entry-auth-providers"]').getByRole("button").first();
   if ((await btn.count()) === 0) return null;
   const normal = await btn.evaluate((el) => {
     const s = getComputedStyle(el);
@@ -292,20 +299,82 @@ async function measurePrimaryProviderButton(page) {
   await btn.hover();
   await page.waitForTimeout(120);
   const hoverBg = await btn.evaluate((el) => getComputedStyle(el).backgroundColor);
+  await resetPointerFromButtons(page);
   return { ...normal, hoverBg };
 }
 
-async function measureFormLayoutGrid(page) {
-  return page.evaluate(() => {
-    const root = document.querySelector('[data-testid="registration-entry-data"]');
-    const grid = root?.children[1] ?? null;
-    if (!grid) return null;
-    const style = getComputedStyle(grid);
-    return {
-      gridTemplateColumns: style.gridTemplateColumns,
-      gap: style.gap,
+async function measureDataFormGeometry(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const round = (n) => Math.round(n * 100) / 100;
+    const boxOf = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: round(r.x), y: round(r.y), width: round(r.width), height: round(r.height) };
     };
-  });
+    let shell = null;
+    let grid = null;
+    if (sourceKind === "reference") {
+      shell = document.querySelector("main.registration.entry-page, main.registration");
+      grid = document.querySelector(".form-layout");
+    } else {
+      shell =
+        document.querySelector('[data-testid="registration-entry-data"]')?.parentElement ??
+        document.querySelector('[data-testid="registration-entry-auth-providers"]')?.closest("div");
+      grid = document.querySelector('[data-testid="registration-entry-data"]')?.children[1] ?? null;
+    }
+    const gridChildren = grid ? [...grid.children] : [];
+    const mainPanel = gridChildren[0] ?? null;
+    const asidePanel = gridChildren[1] ?? null;
+    const gridStyle = grid ? getComputedStyle(grid) : null;
+    const colParts =
+      gridStyle?.gridTemplateColumns?.split(/\s+/).map((c) => parseFloat(c)).filter((n) => n > 0) ??
+      [];
+    return {
+      shell: boxOf(shell),
+      grid: boxOf(grid),
+      mainPanel: boxOf(mainPanel),
+      asidePanel: boxOf(asidePanel),
+      gridGapPx: gridStyle ? round(parseFloat(gridStyle.gap) || 0) : null,
+      columnRatio:
+        colParts.length === 2 ? round((colParts[0] / colParts[1]) * 1000) / 1000 : null,
+      gridTemplateColumns: gridStyle?.gridTemplateColumns ?? null,
+    };
+  }, kind);
+}
+
+async function measureAuthProvidersTitle(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const h1 =
+      sourceKind === "reference"
+        ? document.querySelector(".entry-single h1, main h1")
+        : document.querySelector("#reg-auth-title");
+    if (!h1) return null;
+    const style = getComputedStyle(h1);
+    const lh = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
+    return {
+      fontSizePx: Math.round(parseFloat(style.fontSize) * 100) / 100,
+      lineHeightPx: Math.round(lh * 100) / 100,
+      lines: Math.round(h1.getBoundingClientRect().height / lh),
+      widthPx: Math.round(h1.getBoundingClientRect().width),
+    };
+  }, kind);
+}
+
+async function measureProgressLabelLines(page, kind) {
+  return page.evaluate(() => {
+    const list =
+      document.querySelector('ol[aria-label="Этапы регистрации"]') ??
+      document.querySelector(".entry-progress");
+    if (!list) return null;
+    return [...list.querySelectorAll("li")].map((li) => {
+      const style = getComputedStyle(li);
+      const lh = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
+      return {
+        lines: Math.round(li.getBoundingClientRect().height / lh),
+        heightPx: Math.round(li.getBoundingClientRect().height),
+      };
+    });
+  }, kind);
 }
 
 async function measureDataPanelHeader(page) {
@@ -350,50 +419,99 @@ async function measureCityFieldFocus(page) {
   });
 }
 
-function assertRegistrationCssGates({ step, theme, width, kind, metrics }) {
+function assertBoxParity(label, refBox, implBox, tol = 4) {
+  if (!refBox || !implBox) return [`${label}: missing geometry`];
   const failures = [];
-  if (kind !== "implementation" || !metrics) return failures;
-
-  if (step === "auth-providers" && theme === "dark" && metrics.providerBtn) {
-    const targetBg = [244, 147, 145];
-    const targetFg = [39, 27, 26];
-    const targetHover = [232, 133, 131];
-    const bg = parseRgbTriplet(metrics.providerBtn.bg);
-    const fg = parseRgbTriplet(metrics.providerBtn.fg);
-    const hoverBg = parseRgbTriplet(metrics.providerBtn.hoverBg);
-    if (!rgbClose(bg, targetBg)) failures.push(`${width}:provider-btn-bg: ${metrics.providerBtn.bg}`);
-    if (!rgbClose(fg, targetFg)) failures.push(`${width}:provider-btn-fg: ${metrics.providerBtn.fg}`);
-    if (!rgbClose(hoverBg, targetHover)) failures.push(`${width}:provider-btn-hover: ${metrics.providerBtn.hoverBg}`);
+  for (const key of ["x", "y", "width", "height"]) {
+    const d = Math.abs(refBox[key] - implBox[key]);
+    if (d > tol) failures.push(`${label}.${key}: ref=${refBox[key]} impl=${implBox[key]} (tol ${tol}px)`);
   }
+  return failures;
+}
 
-  if (step === "data-name" && width === 1440 && metrics.formGrid) {
-    const cols = metrics.formGrid.gridTemplateColumns ?? "";
-    const parts = cols.split(/\s+/).map((c) => parseFloat(c)).filter((n) => Number.isFinite(n) && n > 0);
-    if (parts.length !== 2) {
-      failures.push(`1440:formGrid columns: ${cols}`);
-    } else {
-      const ratio = parts[0] / parts[1];
-      if (ratio < 1.08 || ratio > 1.12) {
-        failures.push(`1440:formGrid ratio: ${ratio.toFixed(3)} (expected ~1.1)`);
+function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetrics }) {
+  const failures = [];
+  if (!implMetrics) return failures;
+
+  if (step === "auth-providers" && theme === "dark" && refMetrics?.providerBtn && implMetrics?.providerBtn) {
+    for (const key of ["bg", "fg", "hoverBg"]) {
+      const refRgb = parseRgbTriplet(refMetrics.providerBtn[key]);
+      const implRgb = parseRgbTriplet(implMetrics.providerBtn[key]);
+      if (!rgbClose(refRgb, implRgb, 3)) {
+        failures.push(
+          `${width}:provider-btn-${key}: ref=${refMetrics.providerBtn[key]} impl=${implMetrics.providerBtn[key]}`,
+        );
       }
     }
   }
 
-  if (step.startsWith("data") && [375, 320].includes(width) && metrics.progressMarkers) {
-    if (!metrics.progressMarkers.some((t) => t === "✓")) {
+  if (step === "data-name" && width === 1440 && refMetrics?.formGeometry && implMetrics?.formGeometry) {
+    failures.push(
+      ...assertBoxParity("shell", refMetrics.formGeometry.shell, implMetrics.formGeometry.shell, 6),
+    );
+    failures.push(
+      ...assertBoxParity("grid", refMetrics.formGeometry.grid, implMetrics.formGeometry.grid, 6),
+    );
+    failures.push(
+      ...assertBoxParity(
+        "mainPanel",
+        refMetrics.formGeometry.mainPanel,
+        implMetrics.formGeometry.mainPanel,
+        8,
+      ),
+    );
+    failures.push(
+      ...assertBoxParity(
+        "asidePanel",
+        refMetrics.formGeometry.asidePanel,
+        implMetrics.formGeometry.asidePanel,
+        8,
+      ),
+    );
+    const refRatio = refMetrics.formGeometry.columnRatio;
+    const implRatio = implMetrics.formGeometry.columnRatio;
+    if (refRatio != null && implRatio != null && Math.abs(refRatio - implRatio) > 0.06) {
+      failures.push(`1440:formGrid ratio: ref=${refRatio} impl=${implRatio}`);
+    }
+    const refGap = refMetrics.formGeometry.gridGapPx;
+    const implGap = implMetrics.formGeometry.gridGapPx;
+    if (refGap != null && implGap != null && Math.abs(refGap - implGap) > 2) {
+      failures.push(`1440:formGrid gap: ref=${refGap} impl=${implGap}`);
+    }
+  }
+
+  if (step.startsWith("data") && [375, 320].includes(width) && implMetrics.progressMarkers) {
+    if (!implMetrics.progressMarkers.some((t) => t === "✓")) {
       failures.push(`${width}:${step}:progress missing completed checkmark`);
     }
   }
 
-  if (step.startsWith("data") && [375, 320].includes(width) && metrics.progressRow) {
-    const spread = metrics.progressRow.stageTopSpread ?? 0;
+  if (step.startsWith("data") && [375, 320].includes(width) && implMetrics.progressRow) {
+    const spread = implMetrics.progressRow.stageTopSpread ?? 0;
     if (spread > 1) {
       failures.push(`${width}:${step}:progress stageTopSpread=${spread}`);
     }
   }
 
-  if (step.startsWith("data") && [375, 320].includes(width) && metrics.panelHeader) {
-    const h = metrics.panelHeader;
+  if (step.startsWith("data") && [375, 320].includes(width) && implMetrics.progressLabels) {
+    for (let i = 0; i < implMetrics.progressLabels.length; i++) {
+      if (implMetrics.progressLabels[i].lines > 1) {
+        failures.push(`${width}:${step}:progress label[${i}] lines=${implMetrics.progressLabels[i].lines}`);
+      }
+    }
+    if (refMetrics?.progressLabels) {
+      for (let i = 0; i < refMetrics.progressLabels.length; i++) {
+        const refL = refMetrics.progressLabels[i]?.lines ?? 1;
+        const implL = implMetrics.progressLabels[i]?.lines ?? 1;
+        if (refL !== implL) {
+          failures.push(`${width}:${step}:progress label[${i}] lines ref=${refL} impl=${implL}`);
+        }
+      }
+    }
+  }
+
+  if (step.startsWith("data") && [375, 320].includes(width) && implMetrics.panelHeader) {
+    const h = implMetrics.panelHeader;
     if (h.hintMarginLeftAuto) {
       failures.push(`${width}:${step}:stepHint still margin-left:auto on mobile`);
     }
@@ -405,31 +523,43 @@ function assertRegistrationCssGates({ step, theme, width, kind, metrics }) {
     }
   }
 
-  if (step === "data-city" && metrics.cityField) {
-    if (metrics.cityField.value) failures.push(`${width}:data-city: input value must be empty`);
-    if (metrics.cityField.hasFocusRing) failures.push(`${width}:data-city: focus ring must be absent`);
-    if (metrics.cityField.activeIsInput) failures.push(`${width}:data-city: input must not be focused`);
+  if (step === "data-city" && implMetrics.cityField) {
+    if (implMetrics.cityField.value) failures.push(`${width}:data-city: input value must be empty`);
+    if (implMetrics.cityField.hasFocusRing) failures.push(`${width}:data-city: focus ring must be absent`);
+    if (implMetrics.cityField.activeIsInput) failures.push(`${width}:data-city: input must not be focused`);
   }
 
-  if (step === "auth-providers" && width === 320 && metrics.authTitleLines != null) {
-    if (metrics.authTitleLines > 2) {
-      failures.push(`320:auth-providers:titleLines=${metrics.authTitleLines} (ref 2)`);
+  if (step === "auth-providers" && width === 320 && refMetrics?.authTitle && implMetrics?.authTitle) {
+    if (implMetrics.authTitle.lines > 2) {
+      failures.push(`320:auth-providers:titleLines=${implMetrics.authTitle.lines}`);
+    }
+    if (Math.abs(refMetrics.authTitle.fontSizePx - implMetrics.authTitle.fontSizePx) > 1.5) {
+      failures.push(
+        `320:auth-title-font: ref=${refMetrics.authTitle.fontSizePx}px impl=${implMetrics.authTitle.fontSizePx}px`,
+      );
     }
   }
 
   return failures;
 }
 
-async function measureAuthTitleLines(page) {
-  return page.evaluate(() => {
-    const h1 =
-      document.querySelector("#reg-auth-title, #entry-auth-title, .entry-single h1, h1");
-    if (!h1) return null;
-    const style = getComputedStyle(h1);
-    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
-    const lines = Math.round(h1.getBoundingClientRect().height / lineHeight);
-    return lines;
-  });
+async function collectEntryStepMetrics(page, step, width, kind) {
+  const isData = step.startsWith("data");
+  const isAuthProviders = step === "auth-providers";
+  return {
+    providerBtn: isAuthProviders ? await measurePrimaryProviderButton(page, kind) : null,
+    formGeometry:
+      step === "data-name" && width === 1440 ? await measureDataFormGeometry(page, kind) : null,
+    panelHeader: isData ? await measureDataPanelHeader(page) : null,
+    progressMarkers: isData ? await measureProgressMarkers(page) : null,
+    progressRow:
+      isData && [375, 320].includes(width) ? await measureProgressRow(page, kind) : null,
+    progressLabels:
+      isData && [375, 320].includes(width) ? await measureProgressLabelLines(page, kind) : null,
+    cityField: step === "data-city" ? await measureCityFieldFocus(page) : null,
+    authTitle:
+      isAuthProviders && width === 320 ? await measureAuthProvidersTitle(page, kind) : null,
+  };
 }
 
 function assertProgressRowParity(refProgress, implProgress, width) {
@@ -728,19 +858,21 @@ async function main() {
   for (const { step, suffix, theme, width } of entryStepMatrix) {
     const refFile = `ref-${step}-${suffix}.png`;
     const implFile = `impl-${step}-${suffix}.png`;
+    let refEntryMetrics = null;
     {
       const context = await browser.newContext();
       const page = await context.newPage();
       await openPrototypeAgentStep(page, theme, width, step);
       await applyPrototypeTheme(page, theme);
       await hidePrototypeDemoChrome(page);
+      refEntryMetrics = await collectEntryStepMetrics(page, step, width, "reference");
       captures.push(
         await captureRecord(page, refFile, width, theme, step, "reference", async (p) => {
           const h1 = await p.locator("h1").first().innerText();
           if (step.startsWith("data") && !/(обращаться|город)/i.test(h1)) throw new Error(`ref ${step} h1=${h1}`);
           if (step === "auth-providers" && !/подтверд|вход/i.test(h1)) throw new Error(`ref auth h1=${h1}`);
           if (step === "auth-code" && !/код/i.test(h1)) throw new Error(`ref code h1=${h1}`);
-        }, null),
+        }, refEntryMetrics),
       );
       await context.close();
     }
@@ -759,27 +891,14 @@ async function main() {
       await hideDevChrome(page);
       await page.waitForSelector('[data-testid="registration-types-grid"] label', { timeout: 30_000 });
       await openImplAgentStep(page, step);
-      const implCssMetrics = {
-        providerBtn:
-          step === "auth-providers" ? await measurePrimaryProviderButton(page) : null,
-        formGrid: step === "data-name" && width === 1440 ? await measureFormLayoutGrid(page) : null,
-        panelHeader: step.startsWith("data") ? await measureDataPanelHeader(page) : null,
-        progressMarkers: step.startsWith("data") ? await measureProgressMarkers(page) : null,
-        progressRow:
-          step.startsWith("data") && [375, 320].includes(width)
-            ? await measureProgressRow(page, "implementation")
-            : null,
-        cityField: step === "data-city" ? await measureCityFieldFocus(page) : null,
-        authTitleLines:
-          step === "auth-providers" && width === 320 ? await measureAuthTitleLines(page) : null,
-      };
+      const implCssMetrics = await collectEntryStepMetrics(page, step, width, "implementation");
       parityFailures.push(
         ...assertRegistrationCssGates({
           step,
           theme,
           width,
-          kind: "implementation",
-          metrics: implCssMetrics,
+          refMetrics: refEntryMetrics,
+          implMetrics: implCssMetrics,
         }),
       );
       captures.push(
