@@ -232,8 +232,6 @@ async function openRefCatalogProfile(page) {
 async function prepareCatalogPreviewStep(page) {
   await page.locator('#sc-public-name').fill(PREVIEW_FIXTURE.publicName);
   await page.locator('#sc-city').fill(PREVIEW_FIXTURE.city);
-  await page.getByRole('button', { name: 'Сохранить черновик' }).click();
-  await page.getByText(/Черновик публикации сохранён/i).waitFor({ timeout: 30_000 });
   await advanceCatalogSteps(page, 4);
   await page.getByText(/Можно отправить заявку/i).waitFor({ timeout: 30_000 });
 }
@@ -575,12 +573,6 @@ async function main() {
       height: 568,
     }),
   );
-
-  spawnSync('pnpm', ['exec', 'tsx', 'scripts/r06-local-fixture.ts', 'reset-e2e'], {
-    cwd: NAV_ROOT,
-    env,
-    encoding: 'utf8',
-  });
 
   const pendingPrep = await context.newPage();
   await pendingPrep.goto(`${implBase}/profile?section=catalog`, { waitUntil: 'load' });
