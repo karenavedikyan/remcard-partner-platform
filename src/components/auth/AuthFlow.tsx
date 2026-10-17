@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
 import type { CabinetReadiness } from "@/lib/cabinet-readiness";
-import { loginConsentRequirements } from "@/lib/cabinet-readiness";
+import {
+  hasPendingRegistrationConsents,
+  loginConsentRequirements,
+  registrationConsentRequirements,
+} from "@/lib/cabinet-readiness";
 import {
   isDocumentVersionMismatch,
   recordConsentRequirements,
@@ -36,6 +40,10 @@ type AuthFlowProps = {
   reason?: string;
   /** Legacy hint only; session is always checked on mount. */
   initialStep?: AuthFlowStep;
+  /** Agent registration via /join uses finish step instead of legacy onboarding. */
+  registrationAgentJoin?: boolean;
+  layout?: "full" | "embedded";
+  onAuthenticated?: (userId: string) => void;
 };
 
 type RetryKind = "network" | "server" | "session_lost";
@@ -46,7 +54,13 @@ const REASON_MESSAGES: Record<string, string> = {
   role: "Для доступа нужен профиль партнёра.",
 };
 
-export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
+export function AuthFlow({
+  returnTo,
+  reason,
+  registrationAgentJoin,
+  layout = "full",
+  onAuthenticated,
+}: AuthFlowProps) {
   const router = useRouter();
   const submitLock = useRef(false);
   const codeConsumedRef = useRef(false);
@@ -66,7 +80,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   const finishFlow = useCallback(
     (r: CabinetReadiness) => {
       if (!flowActiveRef.current) return;
-      const destination = resolveDestinationAfterAuth(r, returnTo ?? null);
+      const destination = resolveDestinationAfterAuth(r, returnTo ?? null, {
+        registrationAgentJoin,
+      });
       if (destination.startsWith("/onboarding")) {
         router.replace(destination);
       } else {
@@ -74,12 +90,16 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
       }
       router.refresh();
     },
-    [returnTo, router],
+    [registrationAgentJoin, returnTo, router],
   );
 
   const applyReadiness = useCallback(
     (r: CabinetReadiness) => {
       setReadiness(r);
+      if (registrationAgentJoin && hasPendingRegistrationConsents(r)) {
+        setStep("consents");
+        return;
+      }
       const next = resolveAuthFlowFromReadiness(r);
       if (next === "complete") {
         finishFlow(r);
@@ -102,7 +122,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
       }
       setStep("consents");
     },
-    [finishFlow],
+    [finishFlow, registrationAgentJoin, returnTo, router],
   );
 
   const handleSessionFailure = useCallback(
@@ -143,6 +163,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
       handleSessionFailure(meResult.kind, meResult.status);
       setBooting(false);
       return;
+    }
+    if (meResult.data.user?.id) {
+      onAuthenticated?.(meResult.data.user.id);
     }
     const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
     if (!isActive()) return;
@@ -228,6 +251,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
           handleSessionFailure(meResult.kind, meResult.status);
           return;
         }
+        if (meResult.data.user?.id) {
+          onAuthenticated?.(meResult.data.user.id);
+        }
         const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
         if (blocked) {
           setError(blocked);
@@ -268,7 +294,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
         if (!r) {
           return;
         }
-        const pending = loginConsentRequirements(r);
+        const pending = registrationAgentJoin
+          ? registrationConsentRequirements(r)
+          : loginConsentRequirements(r);
         if (pending.length === 0) {
           applyReadiness(r);
           return;
@@ -286,7 +314,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
           return;
         }
 
-        const stillPending = loginConsentRequirements(refreshed);
+        const stillPending = registrationAgentJoin
+          ? registrationConsentRequirements(refreshed)
+          : loginConsentRequirements(refreshed);
         if (stillPending.length > 0) {
           setConsentResetToken((value) => value + 1);
           setStep("consents");
@@ -328,7 +358,11 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   );
 
   const reasonMessage = reason ? REASON_MESSAGES[reason] : null;
-  const pendingConsents = readiness ? loginConsentRequirements(readiness) : [];
+  const pendingConsents = readiness
+    ? registrationAgentJoin
+      ? registrationConsentRequirements(readiness)
+      : loginConsentRequirements(readiness)
+    : [];
 
   if (booting || step === "checking_session" || step === "loading_readiness") {
     return (
@@ -433,6 +467,62 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
     );
   }
 
+  const codeForm = (
+    <>
+      {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <span className={styles.codeStepLabel}>Шаг 1. Получите код</span>
+      <div className={styles.botLinks}>
+        <a
+          className={`${styles.botLink} ${styles.botLinkPrimary}`}
+          href={telegramBotUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Получить код в Telegram
+        </a>
+        <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
+          Получить код в MAX
+        </a>
+      </div>
+      <p className={styles.botStepHint}>Откроется бот. Получите код и вернитесь на эту страницу.</p>
+
+      <div className={styles.codeStep}>
+        <span className={styles.codeStepLabel}>Шаг 2. Введите код</span>
+        <form onSubmit={(event) => void submitCode(event)}>
+          <OtpInput
+            value={code}
+            onChange={setCode}
+            disabled={loading}
+            aria-label="Код из сообщения"
+          />
+          <Button type="submit" disabled={loading || code.length !== 6}>
+            {loading ? "Проверяем…" : "Продолжить"}
+          </Button>
+        </form>
+      </div>
+
+      <p className={styles.notice}>Нет кода? Отправьте боту команду /login.</p>
+    </>
+  );
+
+  if (layout === "embedded") {
+    return (
+      <section className={styles.embeddedAuth} aria-labelledby="embedded-auth-title">
+        <h2 id="embedded-auth-title" className={styles.embeddedAuthTitle}>
+          Подтвердите вход
+        </h2>
+        <p className={styles.lead}>MAX или Telegram — как при обычном входе в кабинет.</p>
+        {codeForm}
+      </section>
+    );
+  }
+
   return (
     <main className={styles.page}>
       <header className={styles.entryHeader}>
@@ -487,47 +577,7 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
             пользовались раньше.
           </p>
 
-          {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
-          {error ? (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          <span className={styles.codeStepLabel}>Шаг 1. Получите код</span>
-          <div className={styles.botLinks}>
-            <a
-              className={`${styles.botLink} ${styles.botLinkPrimary}`}
-              href={telegramBotUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Получить код в Telegram
-            </a>
-            <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
-              Получить код в MAX
-            </a>
-          </div>
-          <p className={styles.botStepHint}>
-            Откроется бот. Получите код и вернитесь на эту страницу.
-          </p>
-
-          <div className={styles.codeStep}>
-            <span className={styles.codeStepLabel}>Шаг 2. Введите код</span>
-            <form onSubmit={(event) => void submitCode(event)}>
-              <OtpInput
-                value={code}
-                onChange={setCode}
-                disabled={loading}
-                aria-label="Код из сообщения"
-              />
-              <Button type="submit" disabled={loading || code.length !== 6}>
-                {loading ? "Проверяем…" : "Продолжить"}
-              </Button>
-            </form>
-          </div>
-
-          <p className={styles.notice}>Нет кода? Отправьте боту команду /login.</p>
+          {codeForm}
         </section>
       </div>
     </main>

@@ -12,6 +12,7 @@ const SAFE_RETURN_PREFIXES = [
   "/recommendations",
   "/invite",
   "/admin",
+  "/join",
 ] as const;
 
 /** Allow only same-origin relative paths without protocol tricks. */
@@ -24,7 +25,16 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
     return null;
   }
   const path = trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
-  if (path === "/login" || path.startsWith("/login/") || path === "/onboarding") {
+  if (path === "/login" || path.startsWith("/login/") || path.startsWith("/join/")) {
+    return null;
+  }
+  if (path === "/onboarding") {
+    if (!trimmed.includes("partnerType=")) {
+      return null;
+    }
+    return trimmed;
+  }
+  if (path.startsWith("/onboarding/")) {
     return null;
   }
   const allowed = SAFE_RETURN_PREFIXES.some(
@@ -79,9 +89,34 @@ export function mapAccessDeniedMessage(readiness: CabinetReadiness): string {
   return "Доступ в кабинет пока недоступен. Проверьте профиль и соглашения или обратитесь в поддержку.";
 }
 
+export type ResolveDestinationOptions = {
+  /** Agent registration join defers legacy onboarding to /join finish step. */
+  registrationAgentJoin?: boolean;
+};
+
+/** Ready account in agent join: preserve invite/nested returnTo; plain join → cabinet. */
+export function resolveReadyRegistrationAgentJoinDestination(returnTo: string | null): string {
+  const safe = sanitizeReturnTo(returnTo);
+  if (!safe || safe === "/join") return "/partners";
+  if (safe.startsWith("/join?")) {
+    const query = safe.includes("?") ? safe.slice(safe.indexOf("?") + 1) : "";
+    const params = new URLSearchParams(query);
+    const inviteRaw = params.get("invite")?.trim();
+    if (inviteRaw && /^[\w-]+$/.test(inviteRaw)) {
+      const invitePath = `/invite/${inviteRaw}`;
+      if (sanitizeReturnTo(invitePath)) return invitePath;
+    }
+    const nested = sanitizeReturnTo(params.get("returnTo"));
+    if (nested && !nested.startsWith("/join")) return nested;
+    return "/partners";
+  }
+  return safe;
+}
+
 export function resolveDestinationAfterAuth(
   readiness: CabinetReadiness,
   returnTo: string | null,
+  options?: ResolveDestinationOptions,
 ): string {
   if (hasPendingLoginConsents(readiness)) {
     const params = new URLSearchParams({ step: "consents" });
@@ -91,12 +126,28 @@ export function resolveDestinationAfterAuth(
   }
   if (readiness.needsProfileOnboarding) {
     const target = sanitizeReturnTo(returnTo);
+    if (
+      options?.registrationAgentJoin &&
+      (target === "/join" || target?.startsWith("/join?"))
+    ) {
+      return target?.includes("phase=finish") ? target : "/join?phase=finish";
+    }
+    if (target?.startsWith("/onboarding?") && target.includes("partnerType=")) {
+      return target;
+    }
     return target
       ? `/onboarding?returnTo=${encodeURIComponent(target)}`
       : "/onboarding";
   }
   if (readiness.canAccessCabinet) {
-    return sanitizeReturnTo(returnTo) ?? "/";
+    const safe = sanitizeReturnTo(returnTo);
+    if (options?.registrationAgentJoin) {
+      if (!safe || safe === "/join" || safe.startsWith("/join?")) {
+        return resolveReadyRegistrationAgentJoinDestination(safe);
+      }
+      return safe;
+    }
+    return safe ?? "/";
   }
   return "/?reason=role";
 }

@@ -1,0 +1,70 @@
+.root {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.header {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.brandText {
+  display: grid;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.brandText strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.brandText span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.loginLink {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--space-5) var(--space-8);
+}
+
+@media (max-width: 760px) {
+  .header {
+    padding-inline: var(--space-4);
+  }
+  .main {
+    padding-inline: var(--space-4);
+  }
+}

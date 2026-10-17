@@ -14,9 +14,16 @@ type Props = {
   reason?: string;
   initialStep?: "consents";
   initialMode?: "partner" | "admin";
+  registrationAgentJoin?: boolean;
 };
 
-export function LoginExperience({ returnTo, reason, initialStep, initialMode = "partner" }: Props) {
+export function LoginExperience({
+  returnTo,
+  reason,
+  initialStep,
+  initialMode = "partner",
+  registrationAgentJoin,
+}: Props) {
   const [mode, setMode] = useState<"partner" | "admin">(initialMode);
   const [adminCaps, setAdminCaps] = useState<AdminCapabilitiesState>("pending");
 
@@ -70,7 +77,13 @@ export function LoginExperience({ returnTo, reason, initialStep, initialMode = "
         ) : null}
       </div>
       {showPartnerFlow ? (
-        <AuthFlow returnTo={returnTo} reason={reason} initialStep={initialStep} />
+        <AuthFlow
+          returnTo={returnTo}
+          reason={reason}
+          initialStep={initialStep}
+          registrationAgentJoin={registrationAgentJoin}
+          layout="full"
+        />
       ) : null}
       {showAdminPending ? (
         <p className={styles.adminStatus} role="status" data-testid="admin-login-pending">

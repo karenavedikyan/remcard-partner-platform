@@ -38,6 +38,7 @@ type OnboardingFormProps = {
   returnTo: string | null;
   initialCity?: string | null;
   initialDisplayName?: string | null;
+  initialPartnerType?: PartnerTypeOption;
 };
 
 type RetryKind = "network" | "server" | "session_lost" | null;
@@ -48,6 +49,7 @@ export function OnboardingForm({
   returnTo,
   initialCity,
   initialDisplayName,
+  initialPartnerType,
 }: OnboardingFormProps) {
   const router = useRouter();
   const submitLock = useRef(false);
@@ -60,7 +62,9 @@ export function OnboardingForm({
     organizationSaved: false,
   });
 
-  const [partnerType, setPartnerType] = useState<PartnerTypeOption | "">("");
+  const [partnerType, setPartnerType] = useState<PartnerTypeOption | "">(
+    initialPartnerType ?? "",
+  );
   const [city, setCity] = useState(initialCity?.trim() ?? "");
   const [representativeName, setRepresentativeName] = useState(initialDisplayName?.trim() ?? "");
   const [organizationName, setOrganizationName] = useState("");

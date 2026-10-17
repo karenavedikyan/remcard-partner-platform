@@ -10,10 +10,16 @@ export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage(
   props: {
-    searchParams?: Promise<{ returnTo?: string }>;
+    searchParams?: Promise<{ returnTo?: string; partnerType?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
+  const initialPartnerType =
+    searchParams?.partnerType === "MASTER" ||
+    searchParams?.partnerType === "STORE" ||
+    searchParams?.partnerType === "COMPANY"
+      ? searchParams.partnerType
+      : undefined;
   const cookieHeader = (await headers()).get("cookie");
   const auth = await getAuthMeServer(cookieHeader);
   if (!auth.ok || !auth.data.user) {
@@ -48,6 +54,7 @@ export default async function OnboardingPage(
       returnTo={sanitizeReturnTo(searchParams?.returnTo)}
       initialCity={auth.data.user.city}
       initialDisplayName={auth.data.user.displayName}
+      initialPartnerType={initialPartnerType}
     />
   );
 }

@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-10-17T10:29:54.359Z",
+  "results": [
+    {
+      "name": "ready_user_invite_after_auth",
+      "pass": true
+    },
+    {
+      "name": "reload_restores_auth_step",
+      "pass": true
+    },
+    {
+      "name": "owner_mismatch_blocks_finish",
+      "pass": true
+    },
+    {
+      "name": "employee_invite_preserved",
+      "pass": true
+    }
+  ]
+}

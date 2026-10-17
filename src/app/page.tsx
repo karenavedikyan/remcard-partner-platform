@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SessionGate } from "@/components/auth/SessionGate";
+import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { CabinetShell } from "@/components/layout/CabinetShell";
@@ -15,18 +17,27 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage(
   props: {
-    searchParams?: Promise<{ reason?: string }>;
+    searchParams?: Promise<{ reason?: string; invite?: string; returnTo?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
+  const cookieHeader = (await headers()).get("cookie");
   const user = await getSessionUser();
   if (!user) {
+    const registrationCaps = await fetchRegistrationCapabilitiesServer(cookieHeader);
+    if (registrationCaps.welcomeEnabled && registrationCaps.agentRegistrationPathEnabled) {
+      return (
+        <PartnerWelcome
+          inviteToken={searchParams?.invite ?? null}
+          returnTo={searchParams?.returnTo ?? null}
+        />
+      );
+    }
     return <SessionGate reason={searchParams?.reason} />;
   }
   if (user.isBlocked) {
     return <SessionGate reason="blocked" />;
   }
-  const cookieHeader = (await headers()).get("cookie");
   const readinessResult = await fetchRemcardUpstream<CabinetReadiness>(
     "/api/account/cabinet-readiness",
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
