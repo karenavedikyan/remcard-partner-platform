@@ -1,11 +1,33 @@
 {
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceGitSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "runDir": "/tmp/r06-abc-evidence-mvcqh0oj",
+  "probedAt": "2026-10-17T18:35:18.512Z",
+  "probeReportPath": "/tmp/r06-abc-evidence-mvcqh0oj/probe-report.json",
+  "runtime": {
+    "navigator": {
+      "gitHead": "04613f09400b54c894fa192a81b09834c8797fd5",
+      "nextBuildId": "0Oy6yLzASzhhJpjFK-4KR",
+      "gitDirty": true,
+      "port": 3033
+    },
+    "platform": {
+      "applicationCodeSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
+      "builtGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+      "nextBuildId": "O5Cl_4Hejc7eoUhbXyYLz",
+      "gitDirty": true,
+      "port": 3034
+    }
+  },
+  "runner": {
+    "captureRunGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+    "navigatorGitHead": "04613f09400b54c894fa192a81b09834c8797fd5",
+    "docsTipOnly": true
+  },
   "codeSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
-  "captureSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
-  "navigatorSha": "98749816d0fa4f1722aac0c53e1e10b68ca3bdac",
-  "platformSha": "f898f2727e0333701d8ae314d42208f018792dae",
-  "runDir": "/tmp/r06-local-stack",
+  "captureSha": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+  "platformSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
   "matchedPairCount": 13,
   "implOnlySmokeCount": 1,
   "pairs": [
@@ -108,6 +130,10 @@
       "width": 375
     }
   ],
-  "carryOverFromCaptureSha": null,
-  "note": "Matched impl/ref pairs + 1 impl-only smoke for final R06.3 visual set; CAPTURED ≠ visual PASS"
+  "carryOver": {
+    "priorFullAcceptanceTipSha": "afea396c2d68817301756eaa521b9c8ea832c605",
+    "backendMigrationEvidenceSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+    "note": "Navigator 04613f09 migration negatives not re-run this pass unless backend edits"
+  },
+  "note": "Manifest runtime SHAs from stack meta.json + probe; runner head is capture script checkout. CAPTURED ≠ visual PASS"
 }

@@ -7,6 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { advanceCatalogSteps } from './lib/r06-playwright-catalog.mjs';
 import {
+  gitRevParse,
+  loadRunMeta,
+  probeRunStack,
+  writeJson,
+} from './lib/r06-provenance.mjs';
+import {
   assertImplCatalogDirections,
   assertImplCatalogPreviewReady,
   assertRefCatalogDirections,
@@ -406,7 +412,19 @@ async function openRefBasicsTab(page) {
 }
 
 async function main() {
-  const meta = JSON.parse(readFileSync(path.join(RUN_DIR, 'meta.json'), 'utf8'));
+  const expectNavigatorSha =
+    process.env.R06_EXPECT_NAV_SHA || '04613f09400b54c894fa192a81b09834c8797fd5';
+  const expectPlatformCodeSha =
+    process.env.R06_EXPECT_PLATFORM_CODE_SHA || 'e18487ad634e9a8e33ebbb08d55eb16aa3b8d889';
+  await probeRunStack({
+    runDir: RUN_DIR,
+    navRoot: NAV_ROOT,
+    platRoot: ROOT,
+    expectNavigatorSha,
+    expectPlatformCodeSha,
+  });
+
+  const meta = loadRunMeta(RUN_DIR);
   const env = loadEnv(meta.envPath);
   const implBase = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
   mkdirSync(OUT, { recursive: true });
@@ -758,25 +776,62 @@ async function main() {
   await browser.close();
   protoProc.kill();
 
-  const CAPTURE_SHA = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+  const runnerPlatformHead = gitRevParse(ROOT);
+  const runnerNavigatorHead = gitRevParse(NAV_ROOT);
+  const runtimeNav = meta.runtime.navigator.gitHead;
+  const runtimePlatCode = meta.runtime.platform.applicationCodeSha;
+  const runtimePlatBuilt = meta.runtime.platform.gitHead;
   const matchedPairs = captures.filter((c) => c.refPath);
   const implOnlySmoke = captures.filter((c) => !c.refPath);
   const manifest = {
     referenceSha: REF_SHA,
     referenceGitSha: REF_GIT_SHA,
-    codeSha: CODE_SHA,
-    captureSha: CAPTURE_SHA,
-    navigatorSha: execSync('git rev-parse HEAD', { cwd: NAV_ROOT, encoding: 'utf8' }).trim(),
-    platformSha: CAPTURE_SHA,
     runDir: RUN_DIR,
+    probedAt: new Date().toISOString(),
+    probeReportPath: path.join(RUN_DIR, 'probe-report.json'),
+    runtime: {
+      navigator: {
+        gitHead: runtimeNav,
+        nextBuildId: meta.runtime.navigator.nextBuildId,
+        gitDirty: meta.runtime.navigator.gitDirty,
+        port: meta.navPort,
+      },
+      platform: {
+        applicationCodeSha: runtimePlatCode,
+        builtGitHead: runtimePlatBuilt,
+        nextBuildId: meta.runtime.platform.nextBuildId,
+        gitDirty: meta.runtime.platform.gitDirty,
+        port: meta.platformPort,
+      },
+    },
+    runner: {
+      captureRunGitHead: runnerPlatformHead,
+      navigatorGitHead: runnerNavigatorHead,
+      docsTipOnly: runnerPlatformHead !== runtimePlatCode,
+    },
+    /** @deprecated aliases — use runtime.* */
+    codeSha: runtimePlatCode,
+    captureSha: runnerPlatformHead,
+    navigatorSha: runtimeNav,
+    platformSha: runtimePlatCode,
     matchedPairCount: matchedPairs.length,
     implOnlySmokeCount: implOnlySmoke.length,
     pairs: captures,
-    carryOverFromCaptureSha: process.env.R06_CARRY_OVER_SHA || null,
+    carryOver: {
+      priorFullAcceptanceTipSha: 'afea396c2d68817301756eaa521b9c8ea832c605',
+      backendMigrationEvidenceSha: runtimeNav,
+      note: 'Navigator 04613f09 migration negatives not re-run this pass unless backend edits',
+    },
     note:
-      'Matched impl/ref pairs + 1 impl-only smoke for final R06.3 visual set; CAPTURED ≠ visual PASS',
+      'Manifest runtime SHAs from stack meta.json + probe; runner head is capture script checkout. CAPTURED ≠ visual PASS',
   };
-  writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  writeJson(path.join(OUT, 'manifest.json'), manifest);
+  writeJson(path.join(RUN_DIR, 'visual-capture-finished.json'), {
+    finishedAt: new Date().toISOString(),
+    manifestPath: path.join(OUT, 'manifest.json'),
+    matchedPairCount: matchedPairs.length,
+    runnerPlatformHead,
+  });
   console.log(
     JSON.stringify({
       ok: true,

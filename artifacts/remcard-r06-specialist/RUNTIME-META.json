@@ -1,0 +1,46 @@
+{
+  "runId": "r06-abc-evidence-mvcqh0oj",
+  "createdAt": "2026-10-17T18:33:40.320Z",
+  "envPath": "/tmp/r06-abc-evidence-mvcqh0oj/runtime.env",
+  "gateEnabled": true,
+  "navPort": 3033,
+  "platformPort": 3034,
+  "navDist": ".next-r06-local-nav",
+  "platDist": ".next-r06-local-plat",
+  "expectedPins": {
+    "navigator": "04613f09400b54c894fa192a81b09834c8797fd5",
+    "platformApplicationCode": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889"
+  },
+  "runtime": {
+    "navigator": {
+      "gitHead": "04613f09400b54c894fa192a81b09834c8797fd5",
+      "gitBranch": "cursor/r06-specialist-profile-catalog-b3e3",
+      "gitDirty": true,
+      "gitDirtyFiles": [
+        "M tsconfig.json"
+      ],
+      "nextBuildId": "0Oy6yLzASzhhJpjFK-4KR"
+    },
+    "platform": {
+      "gitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+      "gitBranch": "cursor/r06-specialist-profile-catalog-b3e3",
+      "gitDirty": true,
+      "gitDirtyFiles": [
+        "M artifacts/remcard-r06-specialist/screenshots/manifest.json",
+        " M next-env.d.ts",
+        " M scripts/r06-browser-bff.mjs",
+        " M scripts/r06-local-acceptance.mjs",
+        " M scripts/r06-local-stack.mjs",
+        " M scripts/r06-visual-pairs.mjs",
+        "?? artifacts/remcard-r06-specialist/PROVENANCE-MISMATCH-ROOT-CAUSE.json",
+        "?? scripts/lib/r06-provenance.mjs",
+        "?? scripts/r06-abc-evidence-rerun.mjs",
+        "?? scripts/r06-probe-stack.mjs"
+      ],
+      "nextBuildId": "O5Cl_4Hejc7eoUhbXyYLz",
+      "applicationCodeSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889"
+    }
+  },
+  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+  "platformSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889"
+}

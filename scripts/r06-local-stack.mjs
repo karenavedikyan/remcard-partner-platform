@@ -3,6 +3,11 @@ import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
 import { execSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  collectRepoFacts,
+  resolveApplicationCodeSha,
+  writeJson,
+} from './lib/r06-provenance.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = process.env.R06_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
@@ -178,17 +183,60 @@ async function main() {
     process.exit(1);
   }
 
+  const expectNavigatorSha =
+    process.env.R06_EXPECT_NAV_SHA || '04613f09400b54c894fa192a81b09834c8797fd5';
+  const expectPlatformCodeSha =
+    process.env.R06_EXPECT_PLATFORM_CODE_SHA || 'e18487ad634e9a8e33ebbb08d55eb16aa3b8d889';
+
+  const navFacts = collectRepoFacts(NAV_ROOT, NAV_DIST);
+  const platFacts = collectRepoFacts(ROOT, PLAT_DIST);
+  let applicationCodeSha;
+  try {
+    applicationCodeSha = resolveApplicationCodeSha(ROOT, expectPlatformCodeSha);
+  } catch (e) {
+    console.error(JSON.stringify({ error: 'platform_pin_failed', message: e.message }));
+    process.exit(1);
+  }
+  if (navFacts.gitHead !== expectNavigatorSha) {
+    console.error(
+      JSON.stringify({
+        error: 'navigator_pin_mismatch',
+        expected: expectNavigatorSha,
+        actual: navFacts.gitHead,
+      }),
+    );
+    process.exit(1);
+  }
+
   const meta = {
+    runId: path.basename(RUN_DIR),
+    createdAt: new Date().toISOString(),
     envPath,
     gateEnabled: GATE,
     navPort: NAV_PORT,
     platformPort: PLATFORM_PORT,
     navDist: NAV_DIST,
     platDist: PLAT_DIST,
-    navigatorSha: execSync('git rev-parse HEAD', { cwd: NAV_ROOT, encoding: 'utf8' }).trim(),
-    platformSha: execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim(),
+    expectedPins: {
+      navigator: expectNavigatorSha,
+      platformApplicationCode: expectPlatformCodeSha,
+    },
+    runtime: {
+      navigator: navFacts,
+      platform: { ...platFacts, applicationCodeSha },
+    },
+    /** @deprecated use runtime.* — kept for older readers */
+    navigatorSha: navFacts.gitHead,
+    platformSha: applicationCodeSha,
   };
-  writeFileSync(path.join(RUN_DIR, 'meta.json'), JSON.stringify(meta, null, 2));
+  writeJson(path.join(RUN_DIR, 'meta.json'), meta);
+  writeJson(path.join(RUN_DIR, 'stack-finished.json'), {
+    finishedAt: new Date().toISOString(),
+    navigatorBuildId: navFacts.nextBuildId,
+    platformBuildId: platFacts.nextBuildId,
+    platformBuiltGitHead: platFacts.gitHead,
+    platformApplicationCodeSha: applicationCodeSha,
+  });
   console.log(JSON.stringify({ ok: true, runDir: RUN_DIR, ...meta }));
 }
 

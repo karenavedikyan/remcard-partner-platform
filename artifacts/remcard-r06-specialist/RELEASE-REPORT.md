@@ -45,7 +45,11 @@ Owner scope after accepted **`afea396`** / runtime **`c89cea4`**: composition-on
 | Prior docs/full acceptance tip | `afea396` |
 | Legacy preview isolation (unchanged this pass) | `c89cea4` |
 | Navigator pinned | `04613f09` |
-| A/B/C platform runtime + capture | `e18487a` |
+| A/B/C platform **application code** (built) | `e18487a` |
+| Docs/runner tip at evidence rerun | `c0996e1` → superseded by provenance commit |
+| Provenance-safe rerun `R06_RUN_DIR` | `/tmp/r06-abc-evidence-mvcqh0oj` (see `RUNTIME-META.json`, `PROBE-REPORT.json`, `EVIDENCE-RERUN.log.json`) |
+
+**Prior SHA mismatch (STOP root cause):** PNGs were captured against manually started `next start` while default `/tmp/r06-local-stack/meta.json` still referenced **`f898f272` / `98749816`**. Manifest copied those until manual JSON edit in `c0996e1` — see `PROVENANCE-MISMATCH-ROOT-CAUSE.json`. Remediation: stack writes `meta.runtime` + BUILD_ID; `r06-probe-stack.mjs` fails closed before BFF/visual.
 
 **Visual set:** 13 matched impl/ref + 320 smoke — `artifacts/remcard-r06-specialist/screenshots/`. Recaptured for A/B/C: `profile-catalog-wizard*`, `profile-catalog-preview*`, `profile-specialization-step*`, `profile-completed-summary*`, smoke. Pending triple **smoke only** (composition unchanged). **CAPTURED ≠ visual PASS** (no % score).
 

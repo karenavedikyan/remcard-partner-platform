@@ -12,6 +12,7 @@ import {
   ensureCatalogStep,
   fillCatalogStepRequirements,
 } from './lib/r06-playwright-catalog.mjs';
+import { loadRunMeta, probeRunStack } from './lib/r06-provenance.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
@@ -101,7 +102,18 @@ async function fillCatalogBasics(page) {
 
 async function main() {
   assertRunDir();
-  const meta = JSON.parse(readFileSync(path.join(RUN_DIR, 'meta.json'), 'utf8'));
+  const expectNavigatorSha =
+    process.env.R06_EXPECT_NAV_SHA || '04613f09400b54c894fa192a81b09834c8797fd5';
+  const expectPlatformCodeSha =
+    process.env.R06_EXPECT_PLATFORM_CODE_SHA || 'e18487ad634e9a8e33ebbb08d55eb16aa3b8d889';
+  await probeRunStack({
+    runDir: RUN_DIR,
+    navRoot: NAV_ROOT,
+    platRoot: ROOT,
+    expectNavigatorSha,
+    expectPlatformCodeSha,
+  });
+  const meta = loadRunMeta(RUN_DIR);
   const env = loadEnv(meta.envPath);
   const base = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
 
