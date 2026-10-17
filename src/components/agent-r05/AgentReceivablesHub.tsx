@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
+  downloadAgentReceivablesExport,
   fetchAgentReceivableOrderDetail,
   fetchAgentReceivableOrders,
   fetchAgentReceivablePartners,
@@ -16,35 +17,15 @@ import {
 } from "@/lib/agent-r05/api";
 import { formatKopecks } from "@/lib/agent-r05/money";
 import { Button } from "@/components/ui/Button";
+import {
+  defaultReceivablesPrefs,
+  loadReceivablesPrefsFromStorage,
+  saveReceivablesPrefs,
+  type LedgerView,
+} from "@/lib/agent-r05/receivables-prefs";
 import styles from "./agent-receivables.module.css";
 
 type Screen = "overview" | "partners" | "orders" | "order";
-
-type LedgerView = "list" | "small" | "medium" | "large";
-
-const PREFS_KEY = "agent-r05-receivables-prefs";
-
-function loadPrefs(): { view: LedgerView; pageSize: number } {
-  if (typeof window === "undefined") return { view: "list", pageSize: 25 };
-  try {
-    const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return { view: "list", pageSize: 25 };
-    const parsed = JSON.parse(raw) as { view?: LedgerView; pageSize?: number };
-    const pageSize = [25, 50, 100].includes(parsed.pageSize ?? 25) ? parsed.pageSize! : 25;
-    const view = parsed.view ?? "list";
-    return { view, pageSize };
-  } catch {
-    return { view: "list", pageSize: 25 };
-  }
-}
-
-function savePrefs(view: LedgerView, pageSize: number) {
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({ view, pageSize }));
-  } catch {
-    /* ignore */
-  }
-}
 
 function formatWhen(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -104,8 +85,14 @@ export function AgentReceivablesHub() {
   const [toDate, setToDate] = useState("");
   const [sort, setSort] = useState("debt-desc");
   const [page, setPage] = useState(1);
-  const [prefs, setPrefs] = useState(loadPrefs);
+  const [prefs, setPrefs] = useState(defaultReceivablesPrefs);
+
+  useEffect(() => {
+    setPrefs(loadReceivablesPrefsFromStorage());
+  }, []);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   const reloadOverview = useCallback(async () => {
     setLoading(true);
@@ -215,13 +202,52 @@ export function AgentReceivablesHub() {
   function onViewChange(view: LedgerView) {
     const next = { ...prefs, view };
     setPrefs(next);
-    savePrefs(next.view, next.pageSize);
+    saveReceivablesPrefs(next.view, next.pageSize);
   }
+
+  const runExport = useCallback(async () => {
+    if (exporting) return;
+    setExportError("");
+    setExporting(true);
+    try {
+      const exportKind =
+        screen === "orders" ? "orders" : screen === "partners" ? "partners" : "overview";
+      const params = buildQuery({
+        q,
+        status,
+        sort,
+        from: fromDate,
+        to: toDate,
+        page: 1,
+        pageSize: prefs.pageSize,
+        partnerId: selectedPartner?.partnerId,
+        groupKey: selectedPartner?.groupKey,
+      });
+      await downloadAgentReceivablesExport(exportKind, params);
+    } catch (caught) {
+      setExportError(
+        caught instanceof RemcardApiError ? caught.message : "Не удалось выгрузить Excel",
+      );
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    exporting,
+    fromDate,
+    prefs.pageSize,
+    q,
+    screen,
+    selectedPartner?.groupKey,
+    selectedPartner?.partnerId,
+    sort,
+    status,
+    toDate,
+  ]);
 
   function onPageSizeChange(size: number) {
     const next = { ...prefs, pageSize: size };
     setPrefs(next);
-    savePrefs(next.view, next.pageSize);
+    saveReceivablesPrefs(next.view, next.pageSize);
     setPage(1);
   }
 
@@ -311,6 +337,7 @@ export function AgentReceivablesHub() {
           value={prefs.view}
           onChange={(e) => onViewChange(e.target.value as LedgerView)}
           data-testid="ledger-view"
+          aria-label="Размер карточек"
         >
           <option value="list">Строки</option>
           <option value="small">Малые карточки</option>
@@ -318,6 +345,24 @@ export function AgentReceivablesHub() {
           <option value="large">Крупные карточки</option>
         </select>
       </div>
+      <Button
+        type="button"
+        variant="secondary"
+        className={styles.exportBtn}
+        data-testid="ledger-export-xlsx"
+        disabled={exporting || loading}
+        onClick={() => void runExport()}
+      >
+        {exporting ? "Готовим Excel…" : "Excel (.xlsx)"}
+      </Button>
+      {exportError ? (
+        <p className={styles.error} role="alert">
+          {exportError}{" "}
+          <Button type="button" variant="secondary" onClick={() => void runExport()}>
+            Повторить
+          </Button>
+        </p>
+      ) : null}
     </div>
   );
 

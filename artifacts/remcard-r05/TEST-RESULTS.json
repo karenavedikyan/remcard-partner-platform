@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-16T16:34:51.367Z",
+  "generatedAt": "2026-10-17T04:44:15.272Z",
   "contractVersion": "2026-10-16.r05.4",
-  "platformHead": "f38395486ea774f645739ae3eb1a9453f46fe12d",
-  "navigatorHead": "6f0e8a415d08df2b4da5f1e3499a58704afc4bb9",
+  "platformHead": "d12f3185aee96ba867b436eb7e7591f86211923d",
+  "navigatorHead": "e2926a9db9d4153c61fcac518b120e00eb76bf96",
   "gitDirty": {
     "platform": true,
-    "navigator": false
+    "navigator": true
   },
   "rolesJsReferenceSha256": "0c9a8be699670e94345e4d0e1a3a331f4402966ca26c4b74c1ab98e0daf7e5bc",
   "commands": [
@@ -61,12 +61,12 @@
     "detail320DarkLayoutOk": true,
     "ref375DarkDistinctFromLight": true,
     "overview1440LightThemeOk": true,
-    "gridSmallDesktopColumns": "358.656px 358.672px 358.656px",
-    "gridMediumDesktopColumns": "542px 542px",
-    "orderDetail1440OrderNumber": "SLIOS76Z",
+    "gridSmallDesktopColumns": "356px 356px 356px",
+    "gridMediumDesktopColumns": "540px 540px",
+    "orderDetail1440OrderNumber": "9GG3MJ63",
     "uiPaginationOk": true,
     "overview375LightThemeOk": true,
-    "orderDetail375OrderNumber": "SLIOS76Z",
+    "orderDetail375OrderNumber": "9GG3MJ63",
     "detail375Layout": {
       "ok": true,
       "viewportWidth": 375,
@@ -170,8 +170,8 @@
       "sum": {
         "left": 37,
         "right": 283,
-        "top": -240.71875,
-        "bottom": -211.921875,
+        "top": -291.71875,
+        "bottom": -262.921875,
         "width": 246,
         "height": 28.796875
       },
@@ -179,32 +179,32 @@
         {
           "left": 49,
           "right": 271,
-          "top": -95.140625,
-          "bottom": -72.75,
+          "top": -146.140625,
+          "bottom": -123.75,
           "width": 222,
           "height": 22.390625
         },
         {
           "left": 49,
           "right": 271,
-          "top": -30.359375,
-          "bottom": -7.96875,
+          "top": -81.359375,
+          "bottom": -58.96875,
           "width": 222,
           "height": 22.390625
         },
         {
           "left": 49,
           "right": 271,
-          "top": 34.421875,
-          "bottom": 56.8125,
+          "top": -16.578125,
+          "bottom": 5.8125,
           "width": 222,
           "height": 22.390625
         },
         {
           "left": 49,
           "right": 271,
-          "top": 99.203125,
-          "bottom": 121.59375,
+          "top": 48.203125,
+          "bottom": 70.59375,
           "width": 222,
           "height": 22.390625
         }
@@ -220,8 +220,8 @@
       "sum": {
         "left": 37,
         "right": 283,
-        "top": -240.71875,
-        "bottom": -211.921875,
+        "top": -291.71875,
+        "bottom": -262.921875,
         "width": 246,
         "height": 28.796875
       },
@@ -229,32 +229,32 @@
         {
           "left": 49,
           "right": 271,
-          "top": -95.140625,
-          "bottom": -72.75,
+          "top": -146.140625,
+          "bottom": -123.75,
           "width": 222,
           "height": 22.390625
         },
         {
           "left": 49,
           "right": 271,
-          "top": -30.359375,
-          "bottom": -7.96875,
+          "top": -81.359375,
+          "bottom": -58.96875,
           "width": 222,
           "height": 22.390625
         },
         {
           "left": 49,
           "right": 271,
-          "top": 34.421875,
-          "bottom": 56.8125,
+          "top": -16.578125,
+          "bottom": 5.8125,
           "width": 222,
           "height": 22.390625
         },
         {
           "left": 49,
           "right": 271,
-          "top": 99.203125,
-          "bottom": 121.59375,
+          "top": 48.203125,
+          "bottom": 70.59375,
           "width": 222,
           "height": 22.390625
         }
@@ -299,7 +299,7 @@
     {
       "step": "test_session",
       "ok": true,
-      "agentId": "cmvb6tms00003jsvef2g7p2h3"
+      "agentId": "cmvbwvoa30003jscwsowgk4s6"
     },
     {
       "step": "r05_p0_two_cert_seed",
@@ -308,85 +308,85 @@
     {
       "step": "r05_seed",
       "exitCode": 0,
-      "stdout": "{\"ok\":true,\"orderId\":\"cmvb6ts09000bjsaih32o9d27\",\"rowsCreated\":125,\"bulk\":125,\"storeDisplay\":\"seed-store\"}\n"
+      "stdout": "{\"ok\":true,\"orderId\":\"cmvbwvua2000bjss19uwgr1gc\",\"rowsCreated\":125,\"bulk\":125,\"storeDisplay\":\"seed-store\"}\n"
     }
   ],
   "captures": [
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-light.png",
-      "sha256": "397ab5cab143f2d8d8fa60099b0e05eb57c367d43ef14e9b96fb789989bb295e"
+      "sha256": "5c4bcb6fed3bb840b3ebc3269d0d52d8209832b909b29feb1a8cf00873947734"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light.png",
-      "sha256": "327e02808401d844bb9110ad95f9d4062b2582ade04234cee11e4797b3f48f7b"
+      "sha256": "37c93cb9da96b885f52ecf4732d918c0384577f9d0932c0eff322498be4231d2"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-small.png",
-      "sha256": "89539ef1bdf54ed1758d1162f85e4ffa273d552c01abf0ce2847edfb4ee1f6ad"
+      "sha256": "5b02dbd6fedc480a9c2e3c12b91305303ccff945f6b498e375d1513c1e918a64"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-medium.png",
-      "sha256": "c2d6338b6dc3d55c050a93a6b538b5702420be0ba784c6d2cf00c13aba807833"
+      "sha256": "73836e323f7be12a870eb049bec44e2949b791113216e7ba49b513fd8ae1a658"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-1440-light-large.png",
-      "sha256": "b021a762c0ca20a988dfd327539f3b1f48b518f0f72b66819594543c839895b0"
+      "sha256": "f44c57845c6366e74a4a5e86353b66ade1ea7306133de162f04ab770b47cb7f2"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-1440-light.png",
-      "sha256": "fdf44cf0c6e51a4d8fc9f21537ea0a834311b9b701fe9cf8c471c7f4f8c95ad4"
+      "sha256": "331c7b837432a8fb3879f5d40d502da859308b5308a348ecac7363d65bcbcf93"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-1440-light.png",
-      "sha256": "9305db6a0ac34c7e6542b1d811de8ed2fc2416a09e8fd0d173a22d05305e45db"
+      "sha256": "e5708549c38d0d40dae79bc60dc771ee1a849fb4893977a07970f2e3af390689"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-1440-dark.png",
-      "sha256": "692102df796f5a2b2963aa6a5a6cfdcf574e4cfb9bda2643260c67218e80350c"
+      "sha256": "c3e279462b84b2e2743ffd0cdba552b93ca6a2bf3dc470d7194ffaa3b780f524"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-overview-375-light.png",
-      "sha256": "13db470f8f1f883dbf43c8bfcbb074f5c0b2f4e8f303bac6c923a39f9b24bf2f"
+      "sha256": "cc817963c0b6f3a08b1b343c2970ac2a4ba431ca540007f1b1055ccb9a96ebca"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-375-light.png",
-      "sha256": "cf1c36cb21280aee54cd90ed6e53ca2c2a73b54baa5842abbc30f4a930da01ec"
+      "sha256": "341279acdf175d87909aaffcaf1327e87947dd07b565a23547fb309aa5da50b9"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-375-light.png",
-      "sha256": "df5166e12d1e2feec306e6e7b6a70b2af957dbfce3f218f9cca55580274b95f5"
+      "sha256": "a7aa7d85f9ad9945ade0c260bba244f29ade8534000f804a544a11c7e48a69e6"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-375-light.png",
-      "sha256": "95d5392438ad5371966cf9820c870b224e2954d2ec5961f763b2a4054bb1e179"
+      "sha256": "e9203e49cd1e273d142e94328101bfd5aa8ca94210d1d69a4e04438117728bf9"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-partners-375-dark.png",
-      "sha256": "faf120bef385e7a3baf2fdb83e17d5375939d49a7c6a23b521ac0feb2f4d2a8c"
+      "sha256": "a237fa0f7a0a4974c6603c1136965743447e2154d4b96f010d9e922920400fcd"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-orders-375-dark.png",
-      "sha256": "907ce7ab59143f8770d8f54a1e1331b92bb9ae7c2e69d6c35dd62059e462219a"
+      "sha256": "0363a9129055cfba301770d00e5e85d9fd2cb9fe3a0b7244ec118b5a889a80e4"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-375-dark.png",
-      "sha256": "99121671baf936427b1709c329822c9ebf9c6435a1bec398a486981c6daaacd8"
+      "sha256": "cdeb2db6663bc12709d40d0fcd8cc08c4423c77de72a01ecd79a5864940d80c0"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-320-light.png",
-      "sha256": "792a89c51d413e0b3cd9917cbab9ff4e619573c729259057dae2279635602146"
+      "sha256": "f9579375eb950230331fea7fbe81f8642010fffb4cb369c0f7a8fbe0d1bc3dae"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-order-detail-320-dark.png",
-      "sha256": "d47d9826ca6ff3a884fa2be8d61037a353066a78f9ada120cd08d76cb4fe9018"
+      "sha256": "c8b7ec07e1c444a43c9140143c8791e1130f446df59f77d3c2d1dca0987bebb0"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-requisites-375-light.png",
-      "sha256": "b411764a2bf8d5c26b409d337c177ea80b139bcbc8a7b8d02c61a5136add450b"
+      "sha256": "5920aa40669d904a62f12deebe4304ad07456de277a909a3b773cbad2406d6dc"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/impl-r05-requisites-375-dark.png",
-      "sha256": "e08dbad0f6f6341d25faf3b68a8c232629650b4fb5138a800d8f36187ef3e209"
+      "sha256": "59f8e80286b8ef40ceb20c3be304820278dcbe62b85503b3afd1a903f53d2f7a"
     },
     {
       "path": "/agent/repos/remcard-partner-platform/artifacts/remcard-r05/screenshots/ref-r05-partners-375-light.png",

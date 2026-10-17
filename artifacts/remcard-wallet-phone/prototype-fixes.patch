@@ -1,0 +1,29 @@
+diff --git a/profile-wizard.css b/profile-wizard.css
+--- a/profile-wizard.css
++++ b/profile-wizard.css
+@@ -16,7 +16,7 @@
+ .pw .ledger-view-control>span { color:var(--pw-muted); }
+ .pw .ledger-view-control select { width:auto; min-height:44px; padding:var(--pw-2) var(--pw-3); border:1px solid var(--pw-line); border-radius:var(--pw-radius); background:var(--pw-bg); color:var(--pw-text); }
+ .pw .ledger-data-grid { display:grid; align-items:start; gap:var(--pw-3); grid-template-columns:minmax(0,1fr); }
+-.pw .ledger-data-grid>* { min-width:0; }
++.pw .ledger-data-grid>* { min-width:0; box-sizing:border-box; }
+ .pw .ledger-card-extra { display:none; }
+ .pw [data-ledger-view="medium"] .ledger-card-extra,.pw [data-ledger-view="large"] .ledger-card-extra { display:block; }
+ .pw [data-ledger-view="small"] .ledger-data-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+@@ -29,6 +29,7 @@
+ .pw .settlement-line-value .settlement-status { width:fit-content; }
+ .pw [data-ledger-view="list"] .settlement-partner-compact,.pw [data-ledger-view="list"] .settlement-compact-record>details>summary { padding:var(--pw-3); }
+ .pw [data-ledger-view="list"] .settlement-line-info,.pw [data-ledger-view="list"] .settlement-line-value { gap:var(--pw-1); font-size:var(--pw-sm); }
++.pw .settlement-partner-number>strong,.pw .settlement-line-value>strong { font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+ .pw [data-ledger-view="large"] .settlement-partner-compact,.pw [data-ledger-view="large"] .settlement-compact-record>details>summary { padding:var(--pw-6); }
+ .pw [data-ledger-view="large"] .settlement-line-value>strong,.pw [data-ledger-view="large"] .settlement-partner-number>strong { font-size:var(--pw-lg); }
+ .pw .ledger-data-grid>article:has(>details[open]) { grid-column:1 / -1; }
+@@ -80,7 +81,7 @@
+ .pw .settlement-partner-compact { width:100%; display:flex; align-items:center; justify-content:space-between; gap:var(--pw-4); padding:var(--pw-4); border:1px solid var(--pw-line); border-radius:var(--pw-radius); background:var(--pw-bg); color:var(--pw-text); text-align:left; cursor:pointer; }
+ .pw .settlement-partner-compact>span:first-child { display:grid; gap:var(--pw-2); min-width:0; }
+ .pw .settlement-partner-compact small { color:var(--pw-muted); }
+-.pw .settlement-partner-number { display:flex; align-items:center; gap:var(--pw-3); white-space:nowrap; }
++.pw .settlement-partner-number { display:flex; align-items:center; gap:var(--pw-3); white-space:normal; }
+ .pw .settlement-partner-number>span { color:var(--pw-muted); }
+ .pw .settlement-compact-record { border:1px solid var(--pw-line); border-radius:var(--pw-radius); background:var(--pw-bg); overflow:hidden; }
+ .pw .settlement-compact-record>details>summary { display:flex; justify-content:space-between; align-items:flex-start; gap:var(--pw-3); padding:var(--pw-4); cursor:pointer; list-style:none; }

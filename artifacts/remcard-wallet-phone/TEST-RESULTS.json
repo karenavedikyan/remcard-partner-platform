@@ -1,0 +1,37 @@
+{
+  "task": "WALLET-PHONE-01.2",
+  "status": "READY_FOR_REVIEW",
+  "backendHead": "e1b12dfd",
+  "frontendHead": "a8f6947",
+  "frontendDocumentHead": "cd08b16",
+  "codeUnderTestPlatform": "a8f6947",
+  "backendPr": "https://github.com/karenavedikyan/remcard-navigator/pull/688",
+  "frontendPr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/25",
+  "blocks": {
+    "hydrationLedgerView": "PASS",
+    "bffExcelDownload": "PASS",
+    "phonePersistenceUiBff": "PASS",
+    "carryOverPhoneXlsxPrototype": "PASS"
+  },
+  "commands": [
+    {
+      "cmd": "cd remcard-partner-platform && npx vitest run src/components/agent-r05/AgentReceivablesHub.hydration.test.tsx src/lib/agent-r05/receivables-prefs.test.ts",
+      "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-partner-platform && npm run build",
+      "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-partner-platform && ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/wallet-phone-01-2-smoke.mjs",
+      "exitCode": 0,
+      "note": "Evidence tail: partner-ready waits + strict BFF/XLSX parity; see SMOKE-01-2.json gitCapture/codeUnderTest"
+    }
+  ],
+  "smokeArtifact": "artifacts/remcard-wallet-phone/SMOKE-01-2.json",
+  "visualCaptures01_2": {
+    "status": "CAPTURED",
+    "dir": "artifacts/remcard-wallet-phone/visual-01-2",
+    "count": 4
+  }
+}

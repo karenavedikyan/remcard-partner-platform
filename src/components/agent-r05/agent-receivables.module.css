@@ -212,8 +212,18 @@
 .ledgerGrid {
   display: grid;
   align-items: start;
-  gap: var(--space-2);
+  gap: var(--space-3);
   grid-template-columns: minmax(0, 1fr);
+}
+
+.ledgerGrid > * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.exportBtn {
+  min-height: 44px;
+  white-space: normal;
 }
 
 .partnerCompact {
@@ -270,7 +280,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .partnerNumber strong {
@@ -303,6 +315,11 @@
   display: grid;
   gap: var(--space-1);
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lineInfo strong {
+  overflow-wrap: anywhere;
 }
 
 .lineValue {
@@ -491,6 +508,21 @@
 .shell[data-ledger-view="list"] .partnerCompact,
 .shell[data-ledger-view="list"] .orderCard > details > summary {
   padding: var(--space-3);
+}
+
+.shell[data-ledger-view="list"] .lineInfo,
+.shell[data-ledger-view="list"] .lineValue {
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.shell[data-ledger-view="list"] .lineValue {
+  text-align: right;
+}
+
+.shell[data-ledger-view="medium"] .lineInfo,
+.shell[data-ledger-view="large"] .lineInfo {
+  gap: var(--space-2);
 }
 
 .shell[data-ledger-view="large"] .partnerCompact,
