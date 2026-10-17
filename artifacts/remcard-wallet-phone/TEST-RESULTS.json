@@ -2,7 +2,7 @@
   "task": "WALLET-PHONE-01.2",
   "status": "READY_FOR_REVIEW",
   "backendHead": "e1b12dfd",
-  "frontendHead": "pending-push",
+  "frontendHead": "a8f6947",
   "backendPr": "https://github.com/karenavedikyan/remcard-navigator/pull/688",
   "frontendPr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/25",
   "blocks": {
