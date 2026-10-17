@@ -1,13 +1,13 @@
 {
   "implBase": "http://127.0.0.1:3035",
   "protoBase": "http://127.0.0.1:3099",
-  "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
-  "runnerSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+  "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
+  "runnerSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
   "buildId": null,
   "treeDirty": true,
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceShaImmutable": "771cc658a415a5d05b964f29f675d32db449198b",
-  "capturedAt": "2026-10-17T21:18:14.023Z",
+  "capturedAt": "2026-10-17T21:19:59.806Z",
   "pngFileCount": 26,
   "pairCount": 13,
   "captureCount": 26,
@@ -85,7 +85,7 @@
       "step": "data-name",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -149,7 +149,7 @@
       "step": "data-name",
       "theme": "light",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -179,7 +179,7 @@
             "x": 860.28,
             "y": 254.19,
             "width": 397.72,
-            "height": 366.36
+            "height": 399.63
           },
           "gridGapPx": 32,
           "columnRatio": 1.62497,
@@ -218,7 +218,7 @@
       "step": "data-name",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1120,
@@ -248,19 +248,19 @@
         "progressLabels": [
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -338,11 +338,11 @@
       "step": "data-name",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1106,
-      "fullPageHeight": 1106,
+      "pngHeight": 1130,
+      "fullPageHeight": 1130,
       "layout": {
         "providerBtn": null,
         "formGeometry": null,
@@ -363,29 +363,29 @@
           "display": "flex",
           "gridTemplateColumns": "none",
           "stageTops": [
-            -194,
-            -194,
-            -194,
-            -194
+            -218,
+            -218,
+            -218,
+            -218
           ],
           "stageTopSpread": 0
         },
         "progressLabels": [
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -396,11 +396,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 16,
-                "y": -164,
+                "y": -188,
                 "width": 78.08,
                 "height": 17,
                 "right": 94.08,
-                "bottom": -147
+                "bottom": -171
               }
             },
             {
@@ -409,11 +409,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 108.63,
-                "y": -164,
+                "y": -188,
                 "width": 80.8,
                 "height": 17,
                 "right": 189.42,
-                "bottom": -147
+                "bottom": -171
               }
             },
             {
@@ -422,11 +422,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 203.95,
-                "y": -164,
+                "y": -188,
                 "width": 92.59,
                 "height": 17,
                 "right": 296.55,
-                "bottom": -147
+                "bottom": -171
               }
             },
             {
@@ -435,11 +435,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 311.09,
-                "y": -164,
+                "y": -188,
                 "width": 47.91,
                 "height": 17,
                 "right": 359,
-                "bottom": -147
+                "bottom": -171
               }
             }
           ],
@@ -453,8 +453,8 @@
         },
         "formFooterRow": {
           "tops": [
-            318,
-            318
+            294,
+            294
           ],
           "singleRow": true
         },
@@ -469,7 +469,7 @@
       "step": "data-city",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -505,7 +505,7 @@
       "step": "data-city",
       "theme": "light",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -546,7 +546,7 @@
       "step": "data-city",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1172,
@@ -576,19 +576,19 @@
         "progressLabels": [
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -670,11 +670,11 @@
       "step": "data-city",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1158,
-      "fullPageHeight": 1158,
+      "pngHeight": 1182,
+      "fullPageHeight": 1182,
       "layout": {
         "providerBtn": null,
         "formGeometry": null,
@@ -695,29 +695,29 @@
           "display": "flex",
           "gridTemplateColumns": "none",
           "stageTops": [
-            -194,
-            -194,
-            -194,
-            -194
+            -218,
+            -218,
+            -218,
+            -218
           ],
           "stageTopSpread": 0
         },
         "progressLabels": [
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -728,11 +728,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 16,
-                "y": -164,
+                "y": -188,
                 "width": 78.08,
                 "height": 17,
                 "right": 94.08,
-                "bottom": -147
+                "bottom": -171
               }
             },
             {
@@ -741,11 +741,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 108.63,
-                "y": -164,
+                "y": -188,
                 "width": 80.8,
                 "height": 17,
                 "right": 189.42,
-                "bottom": -147
+                "bottom": -171
               }
             },
             {
@@ -754,11 +754,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 203.95,
-                "y": -164,
+                "y": -188,
                 "width": 92.59,
                 "height": 17,
                 "right": 296.55,
-                "bottom": -147
+                "bottom": -171
               }
             },
             {
@@ -767,11 +767,11 @@
               "lineHeightPx": 14.47,
               "labelBox": {
                 "x": 311.09,
-                "y": -164,
+                "y": -188,
                 "width": 47.91,
                 "height": 17,
                 "right": 359,
-                "bottom": -147
+                "bottom": -171
               }
             }
           ],
@@ -785,8 +785,8 @@
         },
         "formFooterRow": {
           "tops": [
-            370,
-            371
+            346,
+            347
           ],
           "singleRow": true
         },
@@ -805,7 +805,7 @@
       "step": "auth-providers",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -836,7 +836,7 @@
       "step": "auth-providers",
       "theme": "light",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -867,7 +867,7 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 905,
@@ -896,19 +896,19 @@
         "progressLabels": [
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 19
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -986,7 +986,7 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
@@ -1015,19 +1015,19 @@
         "progressLabels": [
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           },
           {
             "lines": 1,
-            "labelHeightPx": 14
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -1105,7 +1105,7 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 873,
@@ -1132,7 +1132,7 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
@@ -1159,7 +1159,7 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 1004,
@@ -1186,7 +1186,7 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 762,
@@ -1213,7 +1213,7 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 943,
@@ -1241,20 +1241,20 @@
         },
         "progressLabels": [
           {
-            "lines": 3,
-            "labelHeightPx": 38
+            "lines": 2,
+            "labelHeightPx": 36
           },
           {
-            "lines": 3,
-            "labelHeightPx": 38
+            "lines": 2,
+            "labelHeightPx": 36
           },
           {
-            "lines": 3,
-            "labelHeightPx": 38
+            "lines": 1,
+            "labelHeightPx": 17
           },
           {
-            "lines": 3,
-            "labelHeightPx": 38
+            "lines": 1,
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -1337,7 +1337,7 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/join",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 784,
@@ -1366,19 +1366,19 @@
         "progressLabels": [
           {
             "lines": 2,
-            "labelHeightPx": 29
+            "labelHeightPx": 31
           },
           {
             "lines": 2,
-            "labelHeightPx": 29
+            "labelHeightPx": 31
           },
           {
-            "lines": 2,
-            "labelHeightPx": 29
+            "lines": 1,
+            "labelHeightPx": 17
           },
           {
-            "lines": 2,
-            "labelHeightPx": 29
+            "lines": 1,
+            "labelHeightPx": 17
           }
         ],
         "progressTextLayout": {
@@ -1461,7 +1461,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 965,
@@ -1484,7 +1484,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3035/",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -1507,7 +1507,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1369,
@@ -1530,7 +1530,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3035/",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1263,
@@ -1553,7 +1553,7 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1369,
@@ -1576,7 +1576,7 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1263,
@@ -1599,7 +1599,7 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 1423,
@@ -1622,7 +1622,7 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3035/",
-      "codeSha": "7cd7dcdd02c1970f588eec43fda5a1028f9beb84",
+      "codeSha": "e17b63850a18d28cba48b5001b08ea21d2864b18",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 1369,
@@ -1640,13 +1640,7 @@
       "verify": "passed"
     }
   ],
-  "layoutParityFailures": [
-    "asidePanel.height: ref=401.52 impl=366.36",
-    "320:auth-providers:progress label[0] lines ref=3 impl=2",
-    "320:auth-providers:progress label[1] lines ref=3 impl=2",
-    "320:auth-providers:progress label[2] lines ref=3 impl=2",
-    "320:auth-providers:progress label[3] lines ref=3 impl=2"
-  ],
+  "layoutParityFailures": [],
   "documentedExceptions": [
     {
       "kind": "shellTopOffsetVsPrototypeHeader",
@@ -1656,9 +1650,9 @@
       "note": "Absolute shell Y includes app header vs prototype topbar; grid.relY still gated ref vs impl."
     }
   ],
-  "typesGridGeometryStatus": "NO-GO",
-  "pairedCaptureStatus": "NO-GO-layout-parity",
-  "captureStatus": "NO-GO-layout-parity",
+  "typesGridGeometryStatus": "within-tolerance",
+  "pairedCaptureStatus": "pairs-captured-with-layout-metrics",
+  "captureStatus": "geometry-within-tolerance",
   "invalidSupersededRefs": [],
   "remainingVisualGaps": [
     "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
