@@ -7,8 +7,8 @@ Branch: `cursor/registration-01-b3e3`
 
 | Repo | Base branch | Branch HEAD |
 |------|-------------|-------------|
-| remcard-partner-platform | `release/prof-v1-20261007` | `72c7e50f32d600c9a876630c1bbc5f9b0df96e46` (unchanged base + registration commits on branch) |
-| remcard-navigator | `release/prof-backend-v1-20261007` | `29069dc85e6add5fa28fe225ad490bc66ea6e92f` (unchanged base + registration commits on branch) |
+| remcard-partner-platform | `release/prof-v1-20261007` | `655e77e` (`72c7e50` base) |
+| remcard-navigator | `release/prof-backend-v1-20261007` | `33b4c8e1` (`29069dc8` base) |
 
 ## Frozen reference
 
