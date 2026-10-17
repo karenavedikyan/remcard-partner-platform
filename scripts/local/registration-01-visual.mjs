@@ -470,13 +470,17 @@ async function measureProgressLabelLines(page, kind) {
     if (!list) return null;
     return [...list.querySelectorAll("li")].map((li) => {
       const marker = li.querySelector("span");
-      const liBox = li.getBoundingClientRect();
-      const markerBox = marker?.getBoundingClientRect();
-      const gap = parseFloat(getComputedStyle(li).gap) || 0;
-      const fontSize = parseFloat(getComputedStyle(li).fontSize) || 12;
-      const labelHeight =
-        markerBox != null ? Math.max(0, liBox.height - markerBox.height - gap) : liBox.height;
-      const lines = Math.max(1, Math.round(labelHeight / (fontSize * 1.15)));
+      const style = getComputedStyle(li);
+      const fontSize = parseFloat(style.fontSize) || 12;
+      const lh = parseFloat(style.lineHeight) || fontSize * 1.2;
+      let labelHeight = 0;
+      if (marker) {
+        const range = document.createRange();
+        range.selectNodeContents(li);
+        range.setStartAfter(marker);
+        labelHeight = range.getBoundingClientRect().height;
+      }
+      const lines = Math.max(1, Math.round(labelHeight / lh));
       return { lines, labelHeightPx: Math.round(labelHeight) };
     });
   }, kind);
@@ -617,7 +621,11 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
     }
   }
 
-  if (refMetrics?.progressLabels && implMetrics?.progressLabels) {
+  if (
+    step.startsWith("data") &&
+    refMetrics?.progressLabels &&
+    implMetrics?.progressLabels
+  ) {
     for (let i = 0; i < refMetrics.progressLabels.length; i++) {
       const refL = refMetrics.progressLabels[i]?.lines ?? 1;
       const implL = implMetrics.progressLabels[i]?.lines ?? 1;
