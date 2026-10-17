@@ -3,9 +3,9 @@
   "platformOrigin": "http://127.0.0.1:3040",
   "backendOrigin": "http://127.0.0.1:3041",
   "codeUnderTest": {
-    "platform": "39242fa834958931cf037f7854efcf82bdda282f",
-    "navigator": "184df821978ddd5e08eb860665c7b4f9aba3d51d",
-    "docs": "39242fa834958931cf037f7854efcf82bdda282f"
+    "platform": "d176555b114af2708fffafaf36242806193bdbd0",
+    "navigator": "d14dce14f7bcdcc261f3aab2746036abb3161094",
+    "docs": "d176555b114af2708fffafaf36242806193bdbd0"
   },
   "runtime": {
     "platformOrigin": "http://127.0.0.1:3040",
@@ -207,16 +207,16 @@
   },
   "abSessions": {
     "mode": "ordinary-dual-jwt",
-    "userId": "cmvc053v4005qjscglueg042v",
+    "userId": "cmvc05pa30063jscgzqydqbqy",
     "meBefore": {
       "a": {
         "status": 200,
-        "userId": "cmvc053v4005qjscglueg042v",
+        "userId": "cmvc05pa30063jscgzqydqbqy",
         "hasUser": true
       },
       "b": {
         "status": 200,
-        "userId": "cmvc053v4005qjscglueg042v",
+        "userId": "cmvc05pa30063jscgzqydqbqy",
         "hasUser": true
       }
     },
@@ -229,13 +229,13 @@
       },
       "b": {
         "status": 200,
-        "userId": "cmvc053v4005qjscglueg042v",
+        "userId": "cmvc05pa30063jscgzqydqbqy",
         "hasUser": true
       }
     },
     "meReloginA": {
       "status": 200,
-      "userId": "cmvc053v4005qjscglueg042v",
+      "userId": "cmvc05pa30063jscgzqydqbqy",
       "hasUser": true
     },
     "logoutAllStatus": 200,
@@ -258,9 +258,23 @@
     "directLogoutAllWithCsrfNoOrigin": 403
   },
   "delegated": {
-    "status": "SEE_DELEGATED_SMOKE",
+    "status": "PASS",
+    "distinctDelegations": true,
     "artifact": "DELEGATED-SMOKE.json"
   },
   "pass": true,
-  "blocker": null
+  "blocker": null,
+  "visualCapture": {
+    "artifact": "VISUAL-CAPTURE.json",
+    "codeUnderTest": {
+      "platform": "39242fa834958931cf037f7854efcf82bdda282f",
+      "navigator": "184df821978ddd5e08eb860665c7b4f9aba3d51d"
+    },
+    "menuBoundsOk": true,
+    "signedOutLive": {
+      "skipped": false,
+      "capture": "320-light-signed-out.png",
+      "url": "http://127.0.0.1:3040/account/signed-out?scope=current"
+    }
+  }
 }
