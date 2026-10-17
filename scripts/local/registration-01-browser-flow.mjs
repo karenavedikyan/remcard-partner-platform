@@ -242,12 +242,10 @@ async function main() {
   });
 
   const consentSection = page.locator('[data-testid="registration-auth-consents"]');
-  await consentSection.getByRole("button", { name: /^Продолжить$/ }).click();
-  await page.waitForTimeout(400);
-  const consentBlock = await consentSection.innerText();
+  const continueBtn = consentSection.getByRole("button", { name: /^Продолжить$/ });
   results.push({
     name: "auth_consents_negative_submit_without_checks",
-    pass: /примите все обязательные/i.test(consentBlock),
+    pass: !(await continueBtn.isEnabled()),
   });
 
   const boxes = consentSection.getByRole("checkbox");

@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-17T19:45:22.163Z",
+  "capturedAt": "2026-10-17T20:15:12.121Z",
   "results": [
     {
       "name": "ready_user_invite_after_auth",
@@ -34,7 +34,23 @@
       "pass": true
     },
     {
-      "name": "auth_otp_success_readiness_consents_fixture",
+      "name": "auth_flow_shows_consents_after_verify",
+      "pass": true
+    },
+    {
+      "name": "auth_consents_negative_submit_without_checks",
+      "pass": true
+    },
+    {
+      "name": "auth_consents_individual_checkboxes_and_submit",
+      "pass": true
+    },
+    {
+      "name": "auth_consents_fresh_readiness_routes_to_finish",
+      "pass": true
+    },
+    {
+      "name": "auth_negative_finish_before_consents",
       "pass": true
     },
     {
