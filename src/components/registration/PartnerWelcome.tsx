@@ -63,14 +63,15 @@ export function PartnerWelcome({ inviteToken, returnTo }: Props) {
   const joinHref = buildJoinHref({ invite: inviteToken, returnTo });
 
   return (
-    <RegistrationPublicShell loginHref="/login">
+    <RegistrationPublicShell loginHref="/login" loginBeforeTheme>
       <div className={styles.page} data-testid="registration-welcome">
         <section className={styles.hero} aria-labelledby="welcome-title">
           <div className={styles.copy}>
             <p className={styles.kicker}>Для тех, кто помогает с ремонтом</p>
             <h1 id="welcome-title">
               <span className={styles.headingMain}>
-                Обмениваемся<span className={styles.headingAccent}> клиентами,</span>
+                Обмениваемся
+                <span className={styles.headingAccent}>клиентами,</span>
               </span>
               <span className={styles.headingRest}>
                 которым нужен ремонт

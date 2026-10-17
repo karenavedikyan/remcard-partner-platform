@@ -8,8 +8,11 @@ const FALLBACK: RegistrationCapabilities = {
   legacyLoginPathEnabled: true,
 };
 
-/** Local visual capture only (`REGISTRATION_SSR_WELCOME=1` on dev server). Not for production. */
+/** Local visual capture only: `REGISTRATION_SSR_WELCOME=1` + `NODE_ENV=development`. Fail-closed elsewhere. */
 function registrationWelcomeSsrDevOverride(): RegistrationCapabilities | null {
+  if (process.env.NODE_ENV !== "development") {
+    return null;
+  }
   if (process.env.REGISTRATION_SSR_WELCOME !== "1") {
     return null;
   }

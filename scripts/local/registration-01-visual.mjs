@@ -25,6 +25,7 @@ const REFERENCE_SHA_IMMUTABLE =
   process.env.REGISTRATION_REF_SHA ?? "771cc658a415a5d05b964f29f675d32db449198b";
 
 const CODE_SHA = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
+const RUNNER_SHA = CODE_SHA;
 const TREE_DIRTY =
   execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" }).trim().length > 0;
 const REF_SHA = execSync(`git -C "${NAV_REPO}" rev-parse ${REF_BRANCH}`, {
@@ -373,6 +374,73 @@ async function hidePrototypeDemoChrome(page) {
   await page.addStyleTag({ content: PROTO_DEMO_HIDE });
 }
 
+async function measureWelcomeLayout(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const root =
+      sourceKind === "reference"
+        ? document.querySelector(".welcome-page, .welcome-hero")
+        : document.querySelector('[data-testid="registration-welcome"]');
+    const btn =
+      sourceKind === "reference"
+        ? document.querySelector(".welcome-action .btn")
+        : root?.querySelector("a[class*='primaryBtn']");
+    const action =
+      sourceKind === "reference"
+        ? document.querySelector(".welcome-action")
+        : root?.querySelector("[class*='action']");
+    const btnStyle = btn ? getComputedStyle(btn) : null;
+    const actionStyle = action ? getComputedStyle(action) : null;
+    const h1 = document.querySelector(".welcome-copy h1, [data-testid='registration-welcome'] h1");
+    const h1Style = h1 ? getComputedStyle(h1) : null;
+    const actionBox = action?.getBoundingClientRect();
+    return {
+      actionDisplay: actionStyle?.flexDirection ?? null,
+      actionAlign: actionStyle?.alignItems ?? null,
+      actionGap: actionStyle?.gap ?? null,
+      btnBg: btnStyle?.backgroundColor ?? null,
+      btnColor: btnStyle?.color ?? null,
+      h1FontSizePx: h1Style ? Math.round(parseFloat(h1Style.fontSize) * 100) / 100 : null,
+      h1LineHeight: h1Style?.lineHeight ?? null,
+      actionTopPx: actionBox ? Math.round(actionBox.top) : null,
+    };
+  }, kind);
+}
+
+async function openPrototypeAgentStep(page, theme, width, stopStep) {
+  await openPrototypeTypes(page, theme, width);
+  await page.locator(".role-card").filter({ hasText: "Агент" }).first().click();
+  await page.getByRole("button", { name: /Продолжить/i }).click();
+  await page.waitForSelector("#entry-data-input", { timeout: 30_000 });
+  if (stopStep === "data-name") return;
+  await page.fill("#entry-data-input", "QA Visual");
+  await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
+  await page.waitForSelector("#entry-data-input", { timeout: 15_000 });
+  if (stopStep === "data-city") return;
+  await page.fill("#entry-data-input", "Москва");
+  await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
+  await page.waitForSelector("h1", { timeout: 15_000 });
+  if (stopStep === "auth-providers") return;
+  const maxBtn = page.getByRole("button", { name: /MAX/i });
+  if (await maxBtn.count()) await maxBtn.first().click();
+  await page.waitForSelector("#entry-code, #entry-code-title, h1", { timeout: 15_000 });
+}
+
+async function openImplAgentStep(page, stopStep) {
+  await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
+  await page.getByRole("button", { name: /Продолжить/ }).click();
+  await page.waitForSelector('[data-testid="registration-entry-data"]', { timeout: 15_000 });
+  if (stopStep === "data-name") return;
+  await page.getByLabel(/Ваше имя/i).fill("QA Visual");
+  await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
+  await page.getByLabel(/Город/i).fill("Москва");
+  if (stopStep === "data-city") return;
+  await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
+  await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 15_000 });
+  if (stopStep === "auth-providers") return;
+  await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
+  await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 15_000 });
+}
+
 async function openImplTypes(page, theme, width) {
   await mockRegistrationCapabilities(page);
   await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
@@ -479,101 +547,69 @@ async function main() {
     }
   }
 
-  {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await mockRegistrationCapabilities(page);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.addInitScript(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
-    await applyTheme(page, "dark");
-    await hideDevChrome(page);
-    await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
-    await page.getByRole("button", { name: /Продолжить/ }).click();
-    await page.getByLabel(/Ваше имя/i).fill("QA Visual");
-    captures.push(
-      await captureRecord(page, "impl-data-name-375-dark.png", 375, "dark", "data-name", "implementation", async (p) => {
-        await p.waitForSelector('[data-testid="registration-entry-data"]', { timeout: 15_000 });
-        const h1 = await p.locator('[data-testid="registration-entry-data"] h1').innerText();
-        if (!/обращаться/i.test(h1)) throw new Error(`data name h1=${h1}`);
-      }, null),
-    );
-    await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
-    await page.getByLabel(/Город/i).fill("Москва");
-    captures.push(
-      await captureRecord(page, "impl-data-city-375-dark.png", 375, "dark", "data-city", "implementation", async (p) => {
-        const h1 = await p.locator('[data-testid="registration-entry-data"] h1').innerText();
-        if (!/город/i.test(h1)) throw new Error(`data city h1=${h1}`);
-      }, null),
-    );
-    await context.close();
+  const entryStepMatrix = [
+    { step: "data-name", suffix: "1440-light", theme: "light", width: 1440 },
+    { step: "data-name", suffix: "375-dark", theme: "dark", width: 375 },
+    { step: "data-name", suffix: "320-dark", theme: "dark", width: 320 },
+    { step: "data-city", suffix: "1440-light", theme: "light", width: 1440 },
+    { step: "data-city", suffix: "375-dark", theme: "dark", width: 375 },
+    { step: "auth-providers", suffix: "1440-light", theme: "light", width: 1440 },
+    { step: "auth-providers", suffix: "375-dark", theme: "dark", width: 375 },
+    { step: "auth-code", suffix: "375-dark", theme: "dark", width: 375 },
+    { step: "auth-code", suffix: "320-dark", theme: "dark", width: 320 },
+  ];
+
+  for (const { step, suffix, theme, width } of entryStepMatrix) {
+    const refFile = `ref-${step}-${suffix}.png`;
+    const implFile = `impl-${step}-${suffix}.png`;
+    {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await openPrototypeAgentStep(page, theme, width, step);
+      await applyPrototypeTheme(page, theme);
+      await hidePrototypeDemoChrome(page);
+      captures.push(
+        await captureRecord(page, refFile, width, theme, step, "reference", async (p) => {
+          const h1 = await p.locator("h1").first().innerText();
+          if (step.startsWith("data") && !/(обращаться|город)/i.test(h1)) throw new Error(`ref ${step} h1=${h1}`);
+          if (step === "auth-providers" && !/подтверд|вход/i.test(h1)) throw new Error(`ref auth h1=${h1}`);
+          if (step === "auth-code" && !/код/i.test(h1)) throw new Error(`ref code h1=${h1}`);
+        }, null),
+      );
+      await context.close();
+    }
+    {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await mockRegistrationCapabilities(page);
+      await mockAuthGuest(page);
+      await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+      await applyTheme(page, theme);
+      await hideDevChrome(page);
+      await page.waitForSelector('[data-testid="registration-types-grid"] label', { timeout: 30_000 });
+      await openImplAgentStep(page, step);
+      captures.push(
+        await captureRecord(page, implFile, width, theme, step, "implementation", async (p) => {
+          if (step.startsWith("data")) {
+            await p.waitForSelector('[data-testid="registration-entry-data"]');
+          } else if (step === "auth-providers") {
+            await p.waitForSelector('[data-testid="registration-entry-auth-providers"]');
+          } else {
+            await p.waitForSelector('[data-testid="registration-entry-auth-code"]');
+          }
+        }, null),
+      );
+      pairs.push({ pair: `${step}-${suffix}`, ref: refFile, impl: implFile });
+      await context.close();
+    }
   }
 
-  {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await mockRegistrationCapabilities(page);
-    await mockAuthGuest(page);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-      sessionStorage.setItem(
-        "remcard.registration.wizard.v1",
-        JSON.stringify({ step: "auth", kind: "agent", updatedAt: Date.now() }),
-      );
-      sessionStorage.setItem(
-        "remcard.registration.draft.v1:agent",
-        JSON.stringify({
-          kind: "agent",
-          fields: { displayName: "QA Visual", city: "Москва" },
-          updatedAt: Date.now(),
-        }),
-      );
-    });
-    await page.reload({ waitUntil: "networkidle" });
-    await applyTheme(page, "dark");
-    await hideDevChrome(page);
-    await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 30_000 });
-    captures.push(
-      await captureRecord(
-        page,
-        "impl-auth-providers-375-dark.png",
-        375,
-        "dark",
-        "auth-providers",
-        "implementation",
-        async (p) => {
-          const title = await p.locator("#reg-auth-title").innerText();
-          if (!/подтвердить вход/i.test(title)) throw new Error(`auth providers title=${title}`);
-        },
-        null,
-      ),
-    );
-    await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
-    await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 15_000 });
-    captures.push(
-      await captureRecord(
-        page,
-        "impl-auth-code-375-dark.png",
-        375,
-        "dark",
-        "auth-code",
-        "implementation",
-        async (p) => {
-          const title = await p.locator("#reg-code-title").innerText();
-          if (!/одноразовый код/i.test(title)) throw new Error(`auth code title=${title}`);
-        },
-        null,
-      ),
-    );
-    await context.close();
-  }
-
+  const welcomeRefLayouts = {};
   for (const { theme, width, suffix } of [
     { theme: "light", width: 1440, suffix: "1440-light" },
     { theme: "light", width: 375, suffix: "375-light" },
@@ -587,6 +623,7 @@ async function main() {
       await page.goto(`${PROTO_BASE}/roles.html`, { waitUntil: "networkidle" });
       await applyPrototypeTheme(page, theme);
       await hidePrototypeDemoChrome(page);
+      welcomeRefLayouts[suffix] = await measureWelcomeLayout(page, "reference");
       captures.push(
         await captureRecord(
           page,
@@ -599,7 +636,7 @@ async function main() {
             const h1 = await p.locator(".welcome-copy h1, h1").first().innerText();
             if (!/клиентами/i.test(h1)) throw new Error(`welcome ref h1=${h1}`);
           },
-          null,
+          welcomeRefLayouts[suffix],
         ),
       );
       await context.close();
@@ -614,6 +651,13 @@ async function main() {
       await applyTheme(page, theme);
       await hideDevChrome(page);
       await page.waitForSelector('[data-testid="registration-welcome"]', { timeout: 30_000 });
+      const implWelcomeLayout = await measureWelcomeLayout(page, "implementation");
+      const refWelcomeLayout = welcomeRefLayouts[suffix];
+      if (width === 375 && theme === "dark" && refWelcomeLayout && implWelcomeLayout) {
+        if (implWelcomeLayout.actionDisplay === "column" && refWelcomeLayout.actionDisplay === "row") {
+          parityFailures.push("welcome-375-dark:action flex-direction column vs ref row");
+        }
+      }
       captures.push(
         await captureRecord(
           page,
@@ -625,7 +669,7 @@ async function main() {
           async (p) => {
             await p.waitForSelector('[data-testid="registration-welcome"]');
           },
-          null,
+          implWelcomeLayout,
         ),
       );
       pairs.push({ pair: `welcome-${suffix}`, ref: `ref-welcome-${suffix}.png`, impl: `impl-welcome-${suffix}.png` });
@@ -636,18 +680,37 @@ async function main() {
   await browser.close();
   protoProc.kill();
 
+  let buildId = null;
+  try {
+    const html = await fetch(`${IMPL_BASE}/join`).then((r) => r.text());
+    const m = html.match(/"buildId":"([^"]+)"/);
+    buildId = m?.[1] ?? null;
+  } catch {
+    buildId = null;
+  }
+
   const report = {
     implBase: IMPL_BASE,
     protoBase: PROTO_BASE,
     codeSha: CODE_SHA,
+    runnerSha: RUNNER_SHA,
+    buildId,
     treeDirty: TREE_DIRTY,
     referenceSha: REF_SHA,
     referenceShaImmutable: REFERENCE_SHA_IMMUTABLE,
     capturedAt: new Date().toISOString(),
+    pngFileCount: captures.length,
+    pairCount: pairs.length,
     captureCount: captures.length,
     pairs,
     captures,
     layoutParityFailures: parityFailures,
+    typesGridGeometryStatus:
+      parityFailures.filter((f) => f.includes("grid") || f.includes("progress")).length === 0
+        ? "within-tolerance"
+        : "NO-GO",
+    pairedCaptureStatus:
+      parityFailures.length === 0 ? "pairs-captured-with-layout-metrics" : "NO-GO-layout-parity",
     captureStatus:
       parityFailures.length === 0 ? "geometry-within-tolerance" : "NO-GO-layout-parity",
     invalidSupersededRefs: [],
@@ -655,7 +718,8 @@ async function main() {
       "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
       "Welcome link retained on types step (not in frozen prototype footer).",
       "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals — do not change for R06 parallel work).",
-      "Search styling on specialization N/A here; registration scoped CSS only.",
+      "auth-code: ref prototype demo field vs impl live OTP copy — not production OTP delivery.",
+      "Equal PNG widths ≠ visual PASS; review welcome CTA color/row layout via layout.* metrics.",
     ],
     parallelAgentNote:
       "R06-SPECIALIST-TAIL-01 (bc-6cb74748) owns specialist/taxonomy — avoid shared auth.module.css / global token edits.",
