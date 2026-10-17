@@ -1,0 +1,477 @@
+"use client";
+
+import { FormEvent, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { RemcardApiError } from "@/lib/api-client";
+import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
+import { catalogPublicationStatusLabel } from "@/lib/profile-catalog-completeness";
+import { specialistCatalogMissingForSubmit } from "@/lib/specialist-r06/catalog-completeness";
+import {
+  canSubmitProfileForModeration,
+  catalogPublicationEditable,
+  effectiveCatalogStatus,
+} from "@/lib/profile-catalog-state";
+import {
+  persistCatalogDraftOnly,
+  submitProfileForModerationReview,
+  type ProfileDraft,
+} from "@/lib/profile-save";
+import type { ProProfileResponse } from "@/lib/types";
+import { CATALOG_STATUS_LABELS, catalogStatusTone } from "@/lib/partnership-labels";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TextAreaField, TextField } from "@/components/ui/FormField";
+import { CatalogCategoryAvatar } from "../CatalogCategoryAvatar";
+import { CatalogPublicationPreview } from "../CatalogPublicationPreview";
+import { ProfileDirectionsPicker } from "../ProfileDirectionsPicker";
+import { AgentPhoneField, type AgentPhoneFieldHandle } from "../agent/AgentPhoneField";
+import type { CatalogPrefillField, CatalogTouchedMap } from "@/lib/specialist-r06/catalog-prefill";
+import { markCatalogFieldTouched } from "@/lib/specialist-r06/catalog-prefill";
+import editorStyles from "../ProfileEditor.module.css";
+import styles from "../agent/AgentProfileWizard.module.css";
+
+const STEPS = ["Карточка", "Направления", "Контакты", "Оформление", "Предпросмотр"] as const;
+
+export type SpecialistCatalogWizardProps = {
+  profile: ProProfileResponse;
+  draft: ProfileDraft;
+  catalogEditable: boolean;
+  catalogTouched: CatalogTouchedMap;
+  onCatalogTouchedChange: (next: CatalogTouchedMap) => void;
+  onProfileUpdated: (next: ProProfileResponse) => void;
+  catalogPublicName: string;
+  onCatalogPublicNameChange: (value: string) => void;
+  catalogCity: string;
+  onCatalogCityChange: (value: string) => void;
+  showFullName: boolean;
+  onShowFullNameChange: (value: boolean) => void;
+  catalogImageUrl: string;
+  onCatalogImageUrlChange: (value: string) => void;
+  description: string;
+  onDescriptionChange: (value: string) => void;
+  specializations: string[];
+  onSpecializationsChange: (ids: string[]) => void;
+  catalogStageIds: string[];
+  onCatalogStageIdsChange: (ids: string[]) => void;
+  website: string;
+  onWebsiteChange: (value: string) => void;
+  telegram: string;
+  onTelegramChange: (value: string) => void;
+  publicEmail: string;
+  onPublicEmailChange: (value: string) => void;
+  publicPhone: string;
+  onPublicPhoneChange: (value: string) => void;
+  onPullWorkingDirections: () => void;
+  workingServiceIds: string[];
+  workingStageIds: string[];
+};
+
+function touchField(
+  props: SpecialistCatalogWizardProps,
+  field: CatalogPrefillField,
+) {
+  props.onCatalogTouchedChange(markCatalogFieldTouched(props.catalogTouched, field));
+}
+
+export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
+  const {
+    profile,
+    draft,
+    catalogEditable,
+    onProfileUpdated,
+    catalogPublicName,
+    onCatalogPublicNameChange,
+    catalogCity,
+    onCatalogCityChange,
+    showFullName,
+    onShowFullNameChange,
+    catalogImageUrl,
+    onCatalogImageUrlChange,
+    description,
+    onDescriptionChange,
+    specializations,
+    onSpecializationsChange,
+    catalogStageIds,
+    onCatalogStageIdsChange,
+    website,
+    onWebsiteChange,
+    telegram,
+    onTelegramChange,
+    publicEmail,
+    onPublicEmailChange,
+    publicPhone,
+    onPublicPhoneChange,
+    onPullWorkingDirections,
+    workingServiceIds,
+    workingStageIds,
+  } = props;
+
+  const router = useRouter();
+  const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const publicPhoneRef = useRef<AgentPhoneFieldHandle>(null);
+
+  const catalogStatus = effectiveCatalogStatus(profile);
+  const statusLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
+  const publicationLabel = catalogPublicationStatusLabel(profile);
+  const canSubmit = canSubmitProfileForModeration(profile);
+  const missing = useMemo(() => specialistCatalogMissingForSubmit(profile, draft), [profile, draft]);
+  const draftPending = profile.catalogPublication?.draftPending || profile.user.catalogDraftPending;
+
+  const submitLabel =
+    catalogStatus === "NEEDS_REVISION"
+      ? "Отправить повторно"
+      : catalogStatus === "APPROVED" && draftPending
+        ? "Отправить повторно"
+        : "Отправить на публикацию";
+
+  async function saveDraft(event?: FormEvent) {
+    event?.preventDefault();
+    const committed = publicPhoneRef.current?.commitPending();
+    if (committed !== undefined && committed !== publicPhone) {
+      onPublicPhoneChange(committed);
+      touchField(props, "publicPhone");
+    }
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const next = await persistCatalogDraftOnly(profile, {
+        ...draft,
+        publicPhone: committed ?? publicPhone,
+        catalogTouched: props.catalogTouched,
+      } as ProfileDraft);
+      onProfileUpdated(next);
+      setSuccess("Черновик публикации сохранён");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitPublication() {
+    const committed = publicPhoneRef.current?.commitPending();
+    const draftForSubmit = {
+      ...draft,
+      publicPhone: committed ?? publicPhone,
+      catalogTouched: props.catalogTouched,
+    } as ProfileDraft;
+    if (specialistCatalogMissingForSubmit(profile, draftForSubmit).length > 0) {
+      setError("Заполните обязательные поля перед отправкой.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+    try {
+      const next = await submitProfileForModerationReview(profile, draftForSubmit);
+      onProfileUpdated(next);
+      setSuccess("Заявка отправлена. Ожидает подтверждения — карточка ещё не опубликована.");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const stepMissing = (idx: number): string | null => {
+    if (idx === 0) {
+      if (!catalogPublicName.trim()) return "Публичное имя";
+      if (!catalogCity.trim()) return "Город";
+    }
+    if (idx === 1) {
+      if (specializations.length === 0) return "Услуги";
+      if (catalogStageIds.length === 0) return "Этапы";
+    }
+    return null;
+  };
+
+  return (
+    <div className={styles.pw} data-testid="specialist-catalog-wizard">
+      <div className={styles.layout}>
+        <aside className={styles.journey} aria-label="Этапы каталога">
+          <span className={styles.kicker}>Публичная страница</span>
+          <h2 className={styles.title}>Подключение к каталогу</h2>
+          <p className={styles.intro}>
+            Уже сохранённые данные подставляем из рабочего профиля — проверьте и при необходимости
+            измените. Черновик не публикуется; отправка на проверку только в конце.
+          </p>
+          <div className={editorStyles.statusRow}>
+            <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
+            <StatusBadge label={statusLabel} tone={catalogStatusTone(catalogStatus)} />
+          </div>
+          <ol className={styles.steps}>
+            {STEPS.map((label, i) => (
+              <li
+                key={label}
+                className={
+                  i === step ? styles.stepCurrent : i < step ? styles.stepDone : undefined
+                }
+              >
+                <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
+                <span>{label}</span>
+              </li>
+            ))}
+          </ol>
+        </aside>
+        <section className={styles.card}>
+          <span className={styles.kicker}>
+            Шаг {step + 1} из {STEPS.length}
+          </span>
+          <h2 className={styles.title}>{STEPS[step]}</h2>
+          {error ? <p className={styles.bannerError}>{error}</p> : null}
+          {success ? <p className={styles.bannerSuccess}>{success}</p> : null}
+
+          {step === 0 ? (
+            <div className={styles.fields}>
+              <div className={styles.field}>
+                <label htmlFor="sc-public-name">Публичное имя</label>
+                <input
+                  id="sc-public-name"
+                  value={catalogPublicName}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "catalogPublicName");
+                    onCatalogPublicNameChange(e.target.value);
+                  }}
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="sc-city">Город в каталоге</label>
+                <input
+                  id="sc-city"
+                  value={catalogCity}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "catalogCity");
+                    onCatalogCityChange(e.target.value);
+                  }}
+                />
+              </div>
+              <label className={editorStyles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={showFullName}
+                  disabled={!catalogEditable}
+                  onChange={(e) => onShowFullNameChange(e.target.checked)}
+                />
+                <span>Показывать полное имя в каталоге</span>
+              </label>
+              <CatalogCategoryAvatar
+                imageUrl={catalogImageUrl}
+                categories={specializations}
+                partnerType="MASTER"
+              />
+            </div>
+          ) : null}
+
+          {step === 1 ? (
+            <div id="catalog-products">
+              <p className={styles.intro}>
+                Специалист публикует услуги и этапы ремонта, не товары.
+              </p>
+              {(workingServiceIds.length > 0 || workingStageIds.length > 0) && (
+                <button
+                  type="button"
+                  className={styles.btn}
+                  disabled={!catalogEditable}
+                  onClick={() => {
+                    onPullWorkingDirections();
+                    touchField(props, "specializations");
+                    touchField(props, "navigatorStageIds");
+                  }}
+                >
+                  Взять услуги и этапы из рабочего профиля
+                </button>
+              )}
+              <ProfileDirectionsPicker
+                disabled={!catalogEditable}
+                catalogMode
+                productCategoryIds={[]}
+                serviceSpecializationIds={specializations}
+                navigatorStageIds={catalogStageIds}
+                primaryDirection={null}
+                onChangeProducts={() => {}}
+                onChangeServices={(ids) => {
+                  touchField(props, "specializations");
+                  onSpecializationsChange(ids);
+                }}
+                onChangeStages={(ids) => {
+                  touchField(props, "navigatorStageIds");
+                  onCatalogStageIdsChange(ids);
+                }}
+                onChangePrimary={() => {}}
+              />
+              <span id="catalog-stages" className={editorStyles.visuallyHidden} />
+            </div>
+          ) : null}
+
+          {step === 2 ? (
+            <div id="catalog-contacts" className={styles.fields}>
+              <AgentPhoneField
+                ref={publicPhoneRef}
+                value={publicPhone}
+                disabled={!catalogEditable}
+                onChange={(v) => {
+                  touchField(props, "publicPhone");
+                  onPublicPhoneChange(v);
+                }}
+              />
+              <div className={styles.field}>
+                <label htmlFor="sc-email">Email для клиентов</label>
+                <input
+                  id="sc-email"
+                  value={publicEmail}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "publicEmail");
+                    onPublicEmailChange(e.target.value);
+                  }}
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="sc-tg">Telegram</label>
+                <input
+                  id="sc-tg"
+                  value={telegram}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "telegram");
+                    onTelegramChange(e.target.value);
+                  }}
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="sc-web">Сайт</label>
+                <input
+                  id="sc-web"
+                  value={website}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "website");
+                    onWebsiteChange(e.target.value);
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {step === 3 ? (
+            <div className={styles.fields}>
+              <p className={styles.intro}>Фото и описание необязательны.</p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept={CATALOG_IMAGE_ACCEPT}
+                className={editorStyles.visuallyHidden}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  void uploadCatalogImage(file).then((result) => {
+                    setUploading(false);
+                    if (result.ok) onCatalogImageUrlChange(result.url);
+                    else setUploadError(result.error);
+                  });
+                }}
+              />
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={!catalogEditable || uploading}
+                onClick={() => fileRef.current?.click()}
+              >
+                {uploading ? "Загрузка…" : catalogImageUrl ? "Заменить фото" : "Добавить фото"}
+              </button>
+              {uploadError ? <p className={styles.bannerError}>{uploadError}</p> : null}
+              <TextAreaField
+                label="Описание"
+                value={description}
+                disabled={!catalogEditable}
+                onChange={(e) => {
+                  touchField(props, "description");
+                  onDescriptionChange(e.target.value);
+                }}
+              />
+            </div>
+          ) : null}
+
+          {step === 4 ? (
+            <div>
+              <CatalogPublicationPreview profile={profile} draft={draft} />
+              {missing.length > 0 ? (
+                <ul className={styles.reviewList}>
+                  {missing.map((m) => (
+                    <li key={m.id}>{m.label}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.intro}>Можно отправить заявку на модерацию.</p>
+              )}
+              {catalogStatus === "PENDING" ? (
+                <p className={styles.bannerSuccess}>Заявка на проверке — карточка ещё не опубликована.</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className={styles.actionsRight}>
+            {step > 0 ? (
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={saving || submitting}
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+              >
+                Назад
+              </button>
+            ) : null}
+            {step < 4 ? (
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={saving}
+                onClick={() => {
+                  const miss = stepMissing(step);
+                  if (miss) {
+                    setError(`Заполните: ${miss}. Незавершённую карточку можно сохранить как черновик.`);
+                    return;
+                  }
+                  setError("");
+                  setStep((s) => Math.min(4, s + 1));
+                }}
+              >
+                {step === 3 ? "Предпросмотр" : "Далее"}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={styles.btn}
+              disabled={saving || submitting || !catalogPublicationEditable(profile)}
+              onClick={() => void saveDraft()}
+            >
+              {saving ? "Сохранение…" : "Сохранить черновик"}
+            </button>
+            {step === 4 && canSubmit && missing.length === 0 ? (
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={submitting || saving}
+                onClick={() => void submitPublication()}
+              >
+                {submitting ? "Отправка…" : submitLabel}
+              </button>
+            ) : null}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

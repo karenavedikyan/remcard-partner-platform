@@ -52,6 +52,14 @@ import {
 import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
+import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
+import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
+import {
+  mergeCatalogPrefill,
+  parseCatalogTouched,
+  workingProfileCatalogSeed,
+  type CatalogTouchedMap,
+} from "@/lib/specialist-r06/catalog-prefill";
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import { fetchAgentProfileStatus } from "@/lib/agent-profile/api";
 import type { WorkingPrimaryDirection } from "@/lib/types";
@@ -195,6 +203,16 @@ function ProfileEditorInner({
   const [partnerActivities, setPartnerActivities] = useState<string[]>(
     user.partnerActivities ?? [],
   );
+  const [specialistR06Ui, setSpecialistR06Ui] = useState(false);
+  const catalogDraftRaw = initial.user.catalogDraft as Record<string, unknown> | null | undefined;
+  const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() => {
+    const raw = catalogDraftRaw?.navigatorStageIds;
+    return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+  });
+  const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
+    parseCatalogTouched(catalogDraftRaw?.catalogTouched),
+  );
+  const specialistPrefillRef = useRef(false);
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
@@ -338,6 +356,14 @@ function ProfileEditorInner({
     website,
   ]);
 
+  const buildCatalogDraft = useCallback((): ProfileDraft => {
+    return {
+      ...buildDraft(),
+      navigatorStageIds: catalogNavigatorStageIds,
+      catalogTouched,
+    };
+  }, [buildDraft, catalogNavigatorStageIds, catalogTouched]);
+
   const savedSnapshotRef = useRef(profileDraftFromProfile(initial));
   const savedCatalogSnapshotRef = useRef(catalogDraftFromProfile(initial));
   const syncedUserIdRef = useRef(initial.user.id);
@@ -378,6 +404,12 @@ function ProfileEditorInner({
     setPartnershipContactPhone(w?.partnershipContactPhone ?? "");
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
     setPartnerActivities(u.partnerActivities ?? catalogForm.partnerActivities ?? []);
+    const rawDraft = u.catalogDraft as Record<string, unknown> | null | undefined;
+    const stages = rawDraft?.navigatorStageIds;
+    setCatalogNavigatorStageIds(
+      Array.isArray(stages) ? stages.filter((x): x is string => typeof x === "string") : [],
+    );
+    setCatalogTouched(parseCatalogTouched(rawDraft?.catalogTouched));
   }, []);
 
   const loadNotes = useCallback(async () => {
@@ -404,6 +436,34 @@ function ProfileEditorInner({
     }
     void loadNotes();
   }, [cabinetAccess.canFetchModerationNotes, loadNotes]);
+
+  useEffect(() => {
+    if (!specialistR06Ui || specialistPrefillRef.current) return;
+    specialistPrefillRef.current = true;
+    const seed = workingProfileCatalogSeed(profile);
+    const merged = mergeCatalogPrefill(buildCatalogDraft(), seed, catalogTouched);
+    if (merged.catalogPublicName && !catalogPublicName.trim()) {
+      setCatalogPublicName(merged.catalogPublicName);
+    }
+    if (merged.catalogCity && !catalogCity.trim()) {
+      setCatalogCity(merged.catalogCity);
+    }
+    if (merged.specializations.length && specializations.length === 0) {
+      setSpecializations(merged.specializations);
+    }
+    if (merged.navigatorStageIds.length && catalogNavigatorStageIds.length === 0) {
+      setCatalogNavigatorStageIds(merged.navigatorStageIds);
+    }
+  }, [
+    specialistR06Ui,
+    profile,
+    buildCatalogDraft,
+    catalogTouched,
+    catalogPublicName,
+    catalogCity,
+    specializations.length,
+    catalogNavigatorStageIds.length,
+  ]);
 
   useEffect(() => {
     if (initial.user.id !== syncedUserIdRef.current) {
@@ -634,7 +694,12 @@ function ProfileEditorInner({
             pureAgentCompactUi ? () => navigateSection("overview") : undefined
           }
         />
-        {!pureAgentCompactUi ? (
+        <SpecialistProfileSection
+          partnerType={profile.user.partnerType}
+          onR06ActiveChange={setSpecialistR06Ui}
+          onWorkingProfileSaved={() => window.location.reload()}
+        />
+        {!pureAgentCompactUi && !specialistR06Ui ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
@@ -844,7 +909,52 @@ function ProfileEditorInner({
         </>
         ) : null}
 
-        {activeSection === "catalog" && !pureAgentCompactUi ? (
+        {activeSection === "catalog" && !pureAgentCompactUi && specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg ? (
+          <SpecialistCatalogSection
+            partnerType={partnerType}
+            profile={profile}
+            draft={buildCatalogDraft()}
+            catalogEditable={catalogEditable}
+            catalogTouched={catalogTouched}
+            onCatalogTouchedChange={setCatalogTouched}
+            onProfileUpdated={applyProfile}
+            catalogPublicName={catalogPublicName}
+            onCatalogPublicNameChange={setCatalogPublicName}
+            catalogCity={catalogCity}
+            onCatalogCityChange={setCatalogCity}
+            showFullName={showFullName}
+            onShowFullNameChange={setShowFullName}
+            catalogImageUrl={catalogImageUrl}
+            onCatalogImageUrlChange={setCatalogImageUrl}
+            description={description}
+            onDescriptionChange={setDescription}
+            specializations={specializations}
+            onSpecializationsChange={setSpecializations}
+            catalogStageIds={catalogNavigatorStageIds}
+            onCatalogStageIdsChange={setCatalogNavigatorStageIds}
+            website={website}
+            onWebsiteChange={setWebsite}
+            telegram={telegram}
+            onTelegramChange={setTelegram}
+            publicEmail={publicEmail}
+            onPublicEmailChange={setPublicEmail}
+            publicPhone={publicPhone}
+            onPublicPhoneChange={setPublicPhone}
+            workingServiceIds={serviceSpecializationIds}
+            workingStageIds={navigatorStageIds}
+            onPullWorkingDirections={() => {
+              setSpecializations([...serviceSpecializationIds]);
+              setCatalogNavigatorStageIds([...navigatorStageIds]);
+              setCatalogTouched((t) => ({
+                ...t,
+                specializations: true,
+                navigatorStageIds: true,
+              }));
+            }}
+          />
+        ) : null}
+
+        {activeSection === "catalog" && !pureAgentCompactUi && !(specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg) ? (
           <ProfileCatalogSection
             profile={profile}
             draft={buildDraft()}

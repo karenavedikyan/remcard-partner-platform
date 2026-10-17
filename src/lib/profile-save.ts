@@ -34,6 +34,8 @@ export type ProfileDraft = {
   partnershipContactPhone: string;
   partnershipContactEmail: string;
   partnerActivities: string[];
+  /** R06: per-field touched flags stored in catalogDraft JSON on server. */
+  catalogTouched?: Record<string, boolean>;
 };
 
 export function validateProfileDraft(
@@ -205,6 +207,8 @@ export async function persistCatalogDraftOnly(
         publicPhone: draft.publicPhone.trim() || null,
         showFullName: draft.showFullName,
         photoUrl: draft.catalogImageUrl.trim() || null,
+        navigatorStageIds: draft.navigatorStageIds,
+        catalogTouched: draft.catalogTouched ?? undefined,
       },
     });
   }
