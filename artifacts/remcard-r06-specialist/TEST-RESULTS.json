@@ -2,11 +2,12 @@
   "ok": true,
   "gate": "on",
   "navigatorSha": "551d39053fcc6b50c157fdba0888e32134d9f87a",
-  "platformSha": "f0f4e2388b3715303f8dc83437b8b0b461f52d81",
+  "platformSha": "1b672226fa2bb8d91d13aa9dbb5bfe34f0af0bd3",
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "steps": {
     "migrationControlled": {
-      "exitCode": 0
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"checksums\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"pinned\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"before\":{\"tar"
     },
     "integrationVitest": {
       "exitCode": 0
@@ -14,13 +15,14 @@
     "unitTsx": {
       "exitCode": 0
     },
-    "platformBuild": {
+    "platformVitest": {
       "exitCode": 0
     },
-    "visualCapture": {
-      "exitCode": 0,
-      "stdout": "{\"ok\":true,\"count\":6,\"out\":\"/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots\"}\n",
-      "stderr": ""
+    "browserBff": {
+      "exitCode": 0
+    },
+    "visualPairs": {
+      "exitCode": 0
     }
   }
 }

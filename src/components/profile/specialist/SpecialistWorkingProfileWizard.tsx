@@ -11,6 +11,10 @@ import {
 } from "@/lib/specialist-r06/api";
 import type { SpecialistProfileDraftPayload } from "@/lib/specialist-r06/types";
 import { SPECIALIST_PRESETS, applySpecialistPreset } from "@/lib/specialist-r06/presets";
+import {
+  specialistIdListDisplay,
+  specialistKindDisplayLabel,
+} from "@/lib/specialist-r06/display-labels";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profile/agent/AgentPhoneField";
 import type { ProProfileResponse } from "@/lib/types";
@@ -84,7 +88,11 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
       return true;
     } catch (e) {
       if (e instanceof RemcardApiError && e.status === 409) {
-        setBanner({ kind: "error", text: "Конфликт версии. Обновите страницу." });
+        await hydrate();
+        setBanner({
+          kind: "error",
+          text: "Конфликт версии. Черновик обновлён — повторите сохранение.",
+        });
       } else {
         setBanner({
           kind: "error",
@@ -137,9 +145,12 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
     try {
       await finishSpecialistProfile({ expectedVersion: version });
       const refreshed = await refreshProfile();
+      const synced = await fetchSpecialistProfileDraft();
+      setVersion(synced.version ?? 0);
+      setDraft(synced.payload ?? {});
+      setSavedProfile(synced.savedProfile ?? synced.payload ?? {});
       setProfileComplete(true);
       setEditing(false);
-      setSavedProfile(draft);
       setBanner({ kind: "success", text: "Рабочий профиль сохранён." });
       onWorkingProfileSaved?.(refreshed);
     } catch (e) {
@@ -196,15 +207,20 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
           <dl className={styles.summaryFacts}>
             <div>
               <dt>Специализация</dt>
-              <dd>{savedProfile.specialistKind || savedProfile.specialistTitle || "—"}</dd>
+              <dd>
+                {specialistKindDisplayLabel(
+                  savedProfile.specialistKind,
+                  savedProfile.specialistTitle,
+                )}
+              </dd>
             </div>
             <div>
               <dt>Услуги</dt>
-              <dd>{(savedProfile.serviceSpecializationIds ?? []).join(", ") || "—"}</dd>
+              <dd>{specialistIdListDisplay(savedProfile.serviceSpecializationIds)}</dd>
             </div>
             <div>
               <dt>Этапы</dt>
-              <dd>{(savedProfile.navigatorStageIds ?? []).join(", ") || "—"}</dd>
+              <dd>{specialistIdListDisplay(savedProfile.navigatorStageIds)}</dd>
             </div>
           </dl>
           <div className={styles.summaryActions}>
@@ -213,9 +229,22 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               className={`${styles.btn} ${styles.btnPrimary}`}
               disabled={saving}
               onClick={() => {
-                setEditing(true);
-                setStep(0);
-                setBanner(null);
+                void (async () => {
+                  setSaving(true);
+                  setBanner(null);
+                  try {
+                    const data = await fetchSpecialistProfileDraft();
+                    setDraft(data.payload ?? {});
+                    setSavedProfile(data.savedProfile ?? data.payload ?? {});
+                    setVersion(data.version ?? 0);
+                    setStep(0);
+                    setEditing(true);
+                  } catch {
+                    setBanner({ kind: "error", text: "Не удалось открыть черновик для редактирования." });
+                  } finally {
+                    setSaving(false);
+                  }
+                })();
               }}
             >
               Редактировать профиль
@@ -416,13 +445,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   <strong>Город:</strong> {draft.city}
                 </li>
                 <li>
-                  <strong>Специализация:</strong> {draft.specialistKind || draft.specialistTitle || "—"}
+                  <strong>Специализация:</strong>{" "}
+                  {specialistKindDisplayLabel(draft.specialistKind, draft.specialistTitle)}
                 </li>
                 <li>
-                  <strong>Услуги:</strong> {(draft.serviceSpecializationIds ?? []).join(", ") || "—"}
+                  <strong>Услуги:</strong> {specialistIdListDisplay(draft.serviceSpecializationIds)}
                 </li>
                 <li>
-                  <strong>Этапы:</strong> {(draft.navigatorStageIds ?? []).join(", ") || "—"}
+                  <strong>Этапы:</strong> {specialistIdListDisplay(draft.navigatorStageIds)}
                 </li>
               </ul>
             ) : null}

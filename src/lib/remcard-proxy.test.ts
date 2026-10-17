@@ -351,6 +351,8 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedMutatingOrigin(null), false);
     assert.equal(isAllowedMutatingOrigin("http://evil.example"), false);
     assert.equal(isAllowedMutatingOrigin("http://localhost:3000"), true);
+    assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048", "127.0.0.1:3048"), true);
+    assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048", "evil.example"), false);
   });
 
   it("detects statuses that must not include a body", () => {

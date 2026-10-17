@@ -52,9 +52,23 @@ async function main() {
     NAV_ROOT,
     env,
   );
-  const build = run(['pnpm', 'run', 'build'], ROOT, env);
-
-  const visual = run(['node', 'scripts/r06-visual-capture.mjs'], ROOT, {
+  const platformUnit = run(
+    [
+      'pnpm',
+      'exec',
+      'vitest',
+      'run',
+      'src/components/profile/specialist/SpecialistWorkingProfileWizard.version.test.tsx',
+      'src/lib/profile-save.submit.test.tsx',
+    ],
+    ROOT,
+    env,
+  );
+  const browserBff = run(['node', 'scripts/r06-browser-bff.mjs'], ROOT, {
+    ...env,
+    R06_RUN_DIR: runDir,
+  });
+  const visual = run(['node', 'scripts/r06-visual-pairs.mjs'], ROOT, {
     ...env,
     R06_RUN_DIR: runDir,
   });
@@ -66,11 +80,12 @@ async function main() {
     platformSha: meta.platformSha,
     referenceSha: '771cc658a415a5d05b964f29f675d32db449198b',
     steps: {
-      migrationControlled: { exitCode: migration.exitCode },
+      migrationControlled: { exitCode: migration.exitCode, stdout: migration.stdout.slice(0, 500) },
       integrationVitest: { exitCode: integration.exitCode },
       unitTsx: { exitCode: unit.exitCode },
-      platformBuild: { exitCode: build.exitCode },
-      visualCapture: visual,
+      platformVitest: { exitCode: platformUnit.exitCode },
+      browserBff: { exitCode: browserBff.exitCode },
+      visualPairs: { exitCode: visual.exitCode },
     },
   };
 
@@ -78,7 +93,8 @@ async function main() {
     migration.exitCode === 0 &&
     integration.exitCode === 0 &&
     unit.exitCode === 0 &&
-    build.exitCode === 0 &&
+    platformUnit.exitCode === 0 &&
+    browserBff.exitCode === 0 &&
     visual.exitCode === 0;
 
   mkdirSync(path.dirname(ARTIFACT), { recursive: true });

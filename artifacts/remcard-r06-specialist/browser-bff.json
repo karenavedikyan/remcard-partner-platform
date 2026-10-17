@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "steps": {
+    "finish": {
+      "ok": true
+    },
+    "reloadAfterFinish": {
+      "ok": true
+    },
+    "editSaveAfterFinish": {
+      "ok": true
+    },
+    "reloadAfterEditSave": {
+      "ok": true
+    },
+    "catalogWizard": {
+      "ok": true
+    },
+    "catalogSubmitPending": {
+      "ok": true,
+      "patch": 200,
+      "submit": 200
+    },
+    "pendingFreshGet": {
+      "ok": true,
+      "catalogStatus": "PENDING"
+    }
+  },
+  "csrf": {
+    "status": 403,
+    "ok": true
+  },
+  "gateOff": {
+    "featureEnabled": true,
+    "eligible": true
+  }
+}

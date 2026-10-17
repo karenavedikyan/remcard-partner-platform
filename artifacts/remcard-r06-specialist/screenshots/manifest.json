@@ -1,13 +1,75 @@
 {
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
-  "platformSha": "f0f4e2388b3715303f8dc83437b8b0b461f52d81",
+  "codeSha": "1b672226fa2bb8d91d13aa9dbb5bfe34f0af0bd3",
+  "captureSha": "1b672226fa2bb8d91d13aa9dbb5bfe34f0af0bd3",
   "navigatorSha": "551d39053fcc6b50c157fdba0888e32134d9f87a",
-  "captures": [
-    "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-basics-wizard-1440-light.png",
-    "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-1440-light.png",
-    "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-basics-wizard-375-light.png",
-    "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-375-light.png",
-    "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-375-dark.png",
-    "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-320-smoke.png"
-  ]
+  "platformSha": "1b672226fa2bb8d91d13aa9dbb5bfe34f0af0bd3",
+  "runDir": "/tmp/r06-r062-v3",
+  "pairs": [
+    {
+      "name": "profile-completed-summary",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-completed-summary-impl-1440-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-completed-summary-ref-1440-light.png",
+      "refError": null,
+      "theme": "light",
+      "width": 1440
+    },
+    {
+      "name": "profile-specialization-step",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-specialization-step-impl-1440-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-specialization-step-ref-1440-light.png",
+      "refError": null,
+      "theme": "light",
+      "width": 1440
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-1440-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-1440-light.png",
+      "refError": null,
+      "theme": "light",
+      "width": 1440
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-375-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-375-light.png",
+      "refError": null,
+      "theme": "light",
+      "width": 375
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-375-dark.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-375-dark.png",
+      "refError": null,
+      "theme": "dark",
+      "width": 375
+    },
+    {
+      "name": "profile-catalog-preview",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-preview-impl-375-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-preview-ref-375-light.png",
+      "refError": null,
+      "theme": "light",
+      "width": 375
+    },
+    {
+      "name": "profile-catalog-pending",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-pending-impl-1440-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-pending-ref-1440-light.png",
+      "refError": null,
+      "theme": "light",
+      "width": 1440
+    },
+    {
+      "name": "profile-catalog-wizard-smoke",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-smoke-impl-320-light.png",
+      "refPath": null,
+      "refError": null,
+      "theme": "light",
+      "width": 320
+    }
+  ],
+  "note": "ref captures use frozen prototype cabinet+specialist; pixel parity not auto-scored"
 }

@@ -12,6 +12,8 @@ const NAV_PORT = Number(process.env.R06_NAV_PORT || 3033);
 const PLATFORM_PORT = Number(process.env.R06_PLATFORM_PORT || 3034);
 const GATE = process.env.PROF_R06_SPECIALIST_PROFILE_ENABLED !== '0';
 const DB_URL = 'postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/remcard_r01_test';
+const NAV_DIST = process.env.R06_NAV_DIST_DIR || '.next-r06-local-nav';
+const PLAT_DIST = process.env.R06_PLAT_DIST_DIR || '.next-r06-local-plat';
 
 function assertLoopback(url) {
   const u = new URL(url);
@@ -34,13 +36,13 @@ async function wait(url, ms = 180000) {
   return false;
 }
 
-function spawnDev(cwd, port, extra) {
+function spawnStart(cwd, port, extra) {
   const child = spawn(
     'bash',
-    ['-lc', `exec pnpm exec next dev -p ${port}`],
+    ['-lc', `exec pnpm exec next start -p ${port}`],
     {
       cwd,
-      env: { ...process.env, ...extra, PORT: String(port) },
+      env: { ...process.env, ...extra, PORT: String(port), NODE_ENV: 'production' },
       detached: true,
       stdio: 'ignore',
     },
@@ -48,8 +50,18 @@ function spawnDev(cwd, port, extra) {
   child.unref();
 }
 
+function killPort(port) {
+  try {
+    execSync(`fuser -k ${port}/tcp 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+}
+
 async function main() {
   assertLoopback(DB_URL);
+  killPort(NAV_PORT);
+  killPort(PLATFORM_PORT);
   mkdirSync(RUN_DIR, { recursive: true });
   const jwtSecret = randomBytes(32).toString('base64url');
   const envPath = path.join(RUN_DIR, 'runtime.env');
@@ -78,6 +90,7 @@ async function main() {
   );
   chmodSync(envPath, 0o600);
 
+  const platformPublicUrl = `http://127.0.0.1:${PLATFORM_PORT}`;
   const stackEnv = {
     ...process.env,
     JWT_SECRET: jwtSecret,
@@ -85,8 +98,11 @@ async function main() {
     DIRECT_URL: DB_URL,
     PROF_R06_SPECIALIST_PROFILE_ENABLED: GATE ? 'true' : 'false',
     R06_FIXTURE_USER_ID: 'r06-local-specialist-v1',
+    NEXT_PUBLIC_APP_URL: platformPublicUrl,
+    REMCARD_API_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
   };
-  execSync('pnpm exec tsx scripts/r06-local-fixture.ts push-schema', {
+
+  execSync('node scripts/r06-migration-controlled.mjs', {
     cwd: NAV_ROOT,
     env: stackEnv,
     stdio: 'inherit',
@@ -97,15 +113,28 @@ async function main() {
     stdio: 'inherit',
   });
 
-  spawnDev(NAV_ROOT, NAV_PORT, {
+  execSync('pnpm run build', {
+    cwd: NAV_ROOT,
+    env: { ...stackEnv, R06_NEXT_DIST_DIR: NAV_DIST },
+    stdio: 'inherit',
+  });
+  execSync('pnpm run build', {
+    cwd: ROOT,
+    env: { ...stackEnv, R06_NEXT_DIST_DIR: PLAT_DIST },
+    stdio: 'inherit',
+  });
+
+  spawnStart(NAV_ROOT, NAV_PORT, {
     JWT_SECRET: jwtSecret,
     DATABASE_URL: DB_URL,
     DIRECT_URL: DB_URL,
     PROF_R06_SPECIALIST_PROFILE_ENABLED: GATE ? 'true' : 'false',
+    R06_NEXT_DIST_DIR: NAV_DIST,
   });
-  spawnDev(ROOT, PLATFORM_PORT, {
+  spawnStart(ROOT, PLATFORM_PORT, {
     REMCARD_API_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
-    NEXT_PUBLIC_APP_URL: `http://127.0.0.1:${PLATFORM_PORT}`,
+    NEXT_PUBLIC_APP_URL: platformPublicUrl,
+    R06_NEXT_DIST_DIR: PLAT_DIST,
   });
 
   const navOk = await wait(`http://127.0.0.1:${NAV_PORT}/api/health`);
@@ -120,6 +149,8 @@ async function main() {
     gateEnabled: GATE,
     navPort: NAV_PORT,
     platformPort: PLATFORM_PORT,
+    navDist: NAV_DIST,
+    platDist: PLAT_DIST,
     navigatorSha: execSync('git rev-parse HEAD', { cwd: NAV_ROOT, encoding: 'utf8' }).trim(),
     platformSha: execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim(),
   };

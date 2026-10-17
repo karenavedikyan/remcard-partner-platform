@@ -1,4 +1,4 @@
-# R06-SPECIALIST-01 / R06.1 — RELEASE-REPORT
+# R06-SPECIALIST-01 / R06.2 — RELEASE-REPORT
 
 ## PRs
 
@@ -18,26 +18,24 @@
 | `20261017123000_prof_r06_specialist_profile/migration.sql` | `66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc` |
 | `20261017140000_prof_r06_1_specialist_fields/migration.sql` | `1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589` |
 
-Controlled disposable path: `remcard-navigator/scripts/r06-migration-controlled.mjs` (loopback DB only).
+Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scripts/lib/prof-r06-controlled-apply.mjs` (ledger SQL apply, before/apply/after, pinned checksums both migrations, loopback DB guard). **Not** `prisma db push` as apply.
 
-## R06.1 closed blockers
+## R06.2 — addressed in this pass
 
-1. **Catalog draft for unpublished specialists** — `buildCatalogDraftUpdate` always uses JSON draft when not live public; stages/touched via `catalogNavigatorStageIds`; approve maps `navigatorStageIds` → `catalogNavigatorStageIds` on User.
-2. **Specialist picker** — `specialistMode` on directions picker: services + stages editable; products hidden; server rejects store categories / invalid trade IDs for catalog submit.
-3. **Working vs public identity** — finish persists working fields + `specialistKind` / `specialistTitle` / work contacts; no live `displayName`/`city` writes; summary UI without forced reload.
-4. **Eligibility & PATCH contract** — COMPANY/STORE/org owner/staff blocked; AGENT-only MASTER blocked; finish does not force `partnerType`; `navigatorStageIds` PATCH stays working; catalog stages use `catalogNavigatorStageIds`.
-5. **Tab-independent R06 gate** — server + client status fetch on profile mount; direct `/profile?section=catalog` consistent.
-6. **Working profile UX/validation** — save/skip, work mode, site/Telegram, phone/email validation, valid service IDs on submit.
-7. **Local acceptance + PNG** — stack + `r06-local-acceptance.mjs` (no skip-as-pass); Playwright captures under `artifacts/remcard-r06-specialist/screenshots/`.
-8. **Migration runner** — pinned checksum + post-apply schema probe in controlled script.
-9. **Regressions** — gate-off draft 403; AGENT-only status ineligible (integration).
+1. **409 after finish → edit:** `SpecialistWorkingProfileWizard` re-fetches draft on finish (version reset) and before «Редактировать профиль»; 409 triggers hydrate + user message. Regression: `SpecialistWorkingProfileWizard.version.test.tsx`.
+2. **Summary/review labels:** `display-labels.ts` maps preset kinds and direction IDs; `other` shows custom `specialistTitle`.
+3. **Browser/BFF chain:** `scripts/r06-browser-bff.mjs` — Playwright UI finish → edit/save/reload → catalog → PATCH/submit → pending GET; CSRF 403 probe; artifact `browser-bff.json`.
+4. **Stack/capture:** `r06-local-stack.mjs` — kill ports, `next build` + `next start`, separate `R06_NEXT_DIST_DIR`, controlled migration; BFF origin allows request `Host` when public URL port differs.
+5. **Visual pairs:** `scripts/r06-visual-pairs.mjs` — wait loaded wizard (no loader), fonts, app theme; impl `-impl-` PNGs; ref from frozen prototype cabinet+specialist (`roles.html`); manifest lists `codeSha` / `captureSha` / `referenceSha` separately. **Pixel parity not auto-scored.**
+6. **Controlled migration:** real SQL + ledger; checksum mismatch / reapply covered in runner (local disposable DB only).
 
-## Out of scope / remaining gaps
+## Still open (owner decision)
 
-- **Taxonomy “propose new option” auto-add:** not implemented. Blocker: no safe, idempotent mapping from free-text proposals to navigator stage/trade IDs without product-owned taxonomy pipeline (would risk duplicate or wrong-order stages). R06 uses existing IDs/presets only.
-- **Pixel-perfect visual diff** vs frozen reference: not automated; PNG pairs are runtime captures only.
-- **Browser E2E** through platform BFF for full PATCH/finish/reload chain: integration tests cover API routes; stack JWT cookie path used for screenshots only.
-- No merge, deploy, production DB/flags, or registration deploy continuation.
+- **Taxonomy auto-add for free-text proposals:** not implemented. Blocker: no safe idempotent mapping from ad-hoc text to stable navigator stage/trade IDs without a product-owned taxonomy pipeline (risk of duplicate IDs, wrong order, retroactive stage changes). R06 continues to use existing preset/direction IDs only.
+
+## Out of scope
+
+No merge, deploy, production DB/flags, or registration deploy continuation.
 
 ## Branches
 
