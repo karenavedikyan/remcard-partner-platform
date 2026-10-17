@@ -1,33 +1,43 @@
 {
   "ok": true,
   "gate": "on",
-  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
-  "platformSha": "e23b2f58416547170794b3a0f93f10b639578924",
-  "captureSha": "e23b2f58416547170794b3a0f93f10b639578924",
-  "runDir": "/tmp/r06-r063-v2",
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
-  "steps": {
-    "migrationControlled": {
-      "exitCode": 0,
-      "stdout": "{\"ok\":true,\"checksums\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"pinned\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"before\":{\"tar"
-    },
-    "migrationNegatives": {
+  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+  "runtimeAppSha": "3a67e1449494e9033ce4f530bb64cd5afe3eef55",
+  "runnerSha": "3a67e1449494e9033ce4f530bb64cd5afe3eef55",
+  "fullAcceptanceSha": "3a67e1449494e9033ce4f530bb64cd5afe3eef55",
+  "captureSha": "3a67e1449494e9033ce4f530bb64cd5afe3eef55",
+  "specialistUiSha": "41a13065c8396df273009fedb999b073bd57aa27",
+  "docsOnlyTipSha": "a47c9bf4493b886d5cd2957a7eb33a52865c5fcb",
+  "verifiedFromSha": "a47c9bf4493b886d5cd2957a7eb33a52865c5fcb",
+  "runDir": "/tmp/r06-r063-final",
+  "commands": [
+    {
+      "cmd": "R06_RUN_DIR=/tmp/r06-r063-final R06_NAV_PORT=3055 R06_PLATFORM_PORT=3056 node scripts/r06-local-stack.mjs",
       "exitCode": 0
     },
-    "integrationVitest": {
+    {
+      "cmd": "R06_RUN_DIR=/tmp/r06-r063-final node scripts/r06-local-acceptance.mjs",
       "exitCode": 0
     },
-    "unitTsx": {
-      "exitCode": 0
-    },
-    "platformVitest": {
-      "exitCode": 0
-    },
-    "browserBff": {
-      "exitCode": 0
-    },
-    "visualPairs": {
+    {
+      "cmd": "pnpm run build (platform, via stack)",
       "exitCode": 0
     }
+  ],
+  "visual": {
+    "matchedPairCount": 13,
+    "implOnlySmokeCount": 1,
+    "carryOverFromCaptureSha": null,
+    "note": "CAPTURED ≠ visual PASS; strict preview fixture asserts unchanged"
+  },
+  "steps": {
+    "migrationControlled": { "exitCode": 0 },
+    "migrationNegatives": { "exitCode": 0 },
+    "integrationVitest": { "exitCode": 0 },
+    "unitTsx": { "exitCode": 0 },
+    "platformVitest": { "exitCode": 0 },
+    "browserBff": { "exitCode": 0 },
+    "visualPairs": { "exitCode": 0 }
   }
 }

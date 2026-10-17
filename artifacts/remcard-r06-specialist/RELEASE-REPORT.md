@@ -20,16 +20,30 @@
 
 Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scripts/lib/prof-r06-controlled-apply.mjs` (ledger SQL apply, before/apply/after, pinned checksums both migrations, loopback DB guard). **Not** `prisma db push` as apply.
 
-## R06.3 visual acceptance tail — closed this pass
+## R06.3 FINAL VISUAL — evidence refresh (not publication GO)
 
-1. **Catalog CSS:** scoped `--cw-*` fields/buttons in `SpecialistCatalogWizard.module.css`; primary uses `btn` + `btnPrimary`; Playwright asserts input border/padding/min-height and primary visibility/background on step 0 (no masks).
-2. **Specialization desktop:** full-width profile/catalog columns (hide aside for specialist basics/catalog); working wizard uses non-compact direction grids; layout width assert ≥520px card.
-3. **Completed summary:** contacts with empty fallbacks, directions chips, «Хотите появиться в каталоге?» + «Перейти к каталогу».
-4. **Pending:** dedicated `SpecialistCatalogPendingView` from real `PENDING` status (no wizard step 0 / duplicate badges).
-5. **Preview evidence:** shared fixture (`R06 Visual Catalog`, Krasnodar, `design`/`planning`, `L1-1`, phone) with strict impl/ref readiness (publicName, city, directions, contact, submit enabled); manifest **7 matched pairs + 1 impl-only smoke** (320px).
-6. **Migration negatives:** strict expected codes; ledger probe fails on missing fixture or guard bypass; unit regression in `prof-r06-migration-negative-runner.test.mjs`.
+Specialist UI parity vs ref `771cc658…` at **`41a1306`** (tiles/chips/footer, catalog step 0, preview, pending amber, completed summary). Harness/stack fixes through **`3a67e14`**.
 
-**Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-v2`, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`. Runtime/capture SHA **e23b2f5** (platform) / **04613f09** (navigator). Ref **771cc658a415a5d05b964f29f675d32db449198b**.
+**Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-final`, ports 3055/3056, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`.
+
+| SHA role | Value |
+|----------|--------|
+| runtime / runner / full acceptance / capture | `3a67e14` |
+| specialist UI | `41a1306` |
+| docs-only tip (prior artifacts) | `a47c9bf` |
+| navigator (unchanged) | `04613f09` |
+
+**Visual manifest:** **13 matched impl/ref pairs + 1 impl-only smoke (320px)** — `artifacts/remcard-r06-specialist/screenshots/manifest.json`. **CAPTURED ≠ visual PASS.**
+
+1. **Specialization:** tile grid + selected box (Услуга/Этап), `btn`+`btnPrimary` on Далее/Завершить; draft reset in runner between captures.
+2. **Catalog step 0:** intro card, single publication badge, revert local edits, avatar only on styling step.
+3. **Preview:** separate Услуга/Этап chips, formatted phone; strict fixture asserts (not city-only).
+4. **Pending:** horizontal progress desktop, amber wait, soft next-steps block, secondary back; real PENDING submit in runner.
+5. **Completed:** prefixed chips, catalog CTA block; no demo banner.
+
+**Migration negatives:** unchanged on navigator **`04613f09`** (not re-run scope unless backend edits).
+
+Prior tail (e23b2f5 / 7-pair set) superseded by this capture set at **`3a67e14`**.
 
 ## R06.3 acceptance blockers — prior pass
 
