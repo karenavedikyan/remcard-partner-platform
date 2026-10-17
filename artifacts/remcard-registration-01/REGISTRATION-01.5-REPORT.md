@@ -2,7 +2,10 @@
 
 ## HEAD (post-fix)
 
-Recorded at commit time via `git rev-parse HEAD` in CI/local after push.
+| Repo | SHA |
+|------|-----|
+| remcard-navigator | `66c1e1ef0391ca77891ef6f0fcd4e2f524a70bcf` |
+| remcard-partner-platform | `91bcf151ed2848af468607a89ac9677f2a3eceeb` |
 
 ## Typecheck / build
 
@@ -29,7 +32,7 @@ Recorded at commit time via `git rev-parse HEAD` in CI/local after push.
 
 ## P1 visual (changed pairs)
 
-Re-capture after commit (`treeDirty: false`): welcome 375 dark (description lines + CTA spacing), data name/city 1440 light (1140 container + footer), providers 375 dark (scoped salmon tokens), OTP/wizard 320 smoke (progress label wrap).
+Target pairs to re-capture (`treeDirty: false`): welcome 375 dark, data name/city 1440 light, providers 375 dark, wizard 320 smoke. Local run of `registration-01-visual.mjs` against `:3020` timed out on `/join` types grid (upstream capabilities false without live mock path); re-run in CI/agent with script mocks + `REGISTRATION_SSR_WELCOME=1` dev.
 
 ## Documented product differences (not 1:1)
 
