@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthFlow } from "@/components/auth/AuthFlow";
 import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/FormField";
 import { fetchRegistrationCapabilitiesClient } from "@/lib/registration/capabilities";
 import {
   bindRegistrationDraftOwner,
@@ -38,6 +37,8 @@ import {
 import type { RegistrationCapabilities, RegistrationKind } from "@/lib/registration/types";
 import { REGISTRATION_KIND_LABELS } from "@/lib/registration/types";
 import { JoinProgress } from "./JoinProgress";
+import { RegistrationAuthStep } from "./RegistrationAuthStep";
+import { RegistrationEntryDataStep } from "./RegistrationEntryDataStep";
 import { RegistrationKindIcon } from "./RegistrationKindIcons";
 import { RegistrationPublicShell } from "./RegistrationPublicShell";
 import styles from "./registration-join.module.css";
@@ -85,6 +86,7 @@ export function RegistrationJoinFlow() {
   const [busy, setBusy] = useState(false);
   const finishLock = useRef(false);
   const idempotencyKey = useRef(`agent-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const [authCodeVerified, setAuthCodeVerified] = useState(false);
 
   const finishHref = buildJoinFinishHref(joinContext);
   const authReturnTo = buildJoinAuthReturnTo(joinContext);
@@ -300,22 +302,29 @@ export function RegistrationJoinFlow() {
   }
 
   if (step === "auth" && isAgentNewPath) {
+    const roleLabel = kind ? REGISTRATION_KIND_LABELS[kind].title : "Агент";
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
         <div className={styles.joinPage}>
           <JoinProgress current="auth" />
           {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
-          <AuthFlow
-            returnTo={authReturnTo}
-            registrationAgentJoin
-            layout="embedded"
-            onAuthenticated={handleAuthenticated}
-          />
-          <div className={styles.footerActions}>
-            <Button type="button" variant="secondary" onClick={() => setStep("city")}>
-              Назад
-            </Button>
-          </div>
+          {!authCodeVerified ? (
+            <RegistrationAuthStep
+              roleLabel={roleLabel}
+              displayName={displayName.trim()}
+              city={city.trim()}
+              onBackToData={() => setStep("city")}
+              onAuthenticated={handleAuthenticated}
+              onCodeVerified={() => setAuthCodeVerified(true)}
+            />
+          ) : (
+            <AuthFlow
+              returnTo={authReturnTo}
+              registrationAgentJoin
+              layout="embedded"
+              onAuthenticated={handleAuthenticated}
+            />
+          )}
         </div>
       </RegistrationPublicShell>
     );
@@ -438,51 +447,39 @@ export function RegistrationJoinFlow() {
 
       {step !== "types" ? (
       <div className={styles.joinPage}>
-        {step === "name" && isAgentNewPath ? (
+        {step === "name" && isAgentNewPath && kind ? (
           <>
             <JoinProgress current="data" />
-            <h1>Ваши данные</h1>
-            <p className={styles.muted}>Как к вам обращаться?</p>
-            <TextField
-              label="Имя"
+            <RegistrationEntryDataStep
+              kind={kind}
+              field="name"
+              stepIndex={0}
+              stepTotal={2}
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              autoComplete="name"
-              maxLength={120}
+              error={error || undefined}
+              onChange={setDisplayName}
+              onBack={() => setStep("types")}
+              onSubmit={onContinueName}
+              onChangeType={() => setStep("types")}
             />
-            {error ? <p className={styles.error}>{error}</p> : null}
-            <div className={styles.footerActions}>
-              <Button type="button" variant="secondary" onClick={() => setStep("types")}>
-                Назад
-              </Button>
-              <Button type="button" onClick={onContinueName}>
-                Продолжить
-              </Button>
-            </div>
           </>
         ) : null}
 
-        {step === "city" && isAgentNewPath ? (
+        {step === "city" && isAgentNewPath && kind ? (
           <>
             <JoinProgress current="data" />
-            <h1>Ваши данные</h1>
-            <p className={styles.muted}>В каком городе вы работаете?</p>
-            <TextField
-              label="Город"
+            <RegistrationEntryDataStep
+              kind={kind}
+              field="city"
+              stepIndex={1}
+              stepTotal={2}
               value={city}
-              onChange={(e) => setCity(e.target.value)}
-              autoComplete="address-level2"
-              maxLength={120}
+              error={error || undefined}
+              onChange={setCity}
+              onBack={() => setStep("name")}
+              onSubmit={onContinueCity}
+              onChangeType={() => setStep("types")}
             />
-            {error ? <p className={styles.error}>{error}</p> : null}
-            <div className={styles.footerActions}>
-              <Button type="button" variant="secondary" onClick={() => setStep("name")}>
-                Назад
-              </Button>
-              <Button type="button" onClick={onContinueCity}>
-                Продолжить
-              </Button>
-            </div>
           </>
         ) : null}
       </div>

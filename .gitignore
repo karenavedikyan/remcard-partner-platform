@@ -46,3 +46,4 @@ pnpm-debug.log*
 .vscode/
 *.swp
 *.swo
+.next-r06-local-plat/
