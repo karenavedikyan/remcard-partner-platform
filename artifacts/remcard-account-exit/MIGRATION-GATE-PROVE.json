@@ -1,0 +1,154 @@
+{
+  "task": "ACCOUNT-EXIT-01.4-migration-gate-prove",
+  "pinnedSha256": "19631a45ea14f592c00057ca7e617bac8f2dce8f16112184ce0091a1ae72ec51",
+  "scenarios": {
+    "checksumMismatch": {
+      "pass": true,
+      "note": "pinned file matches ACCOUNT_EXIT_AUTH_SESSION_REVOCATION_SQL_SHA256"
+    },
+    "partialBeforeApply": {
+      "pass": true,
+      "error": "partial_or_untracked_schema: column_missing:userId,column_missing:sessionKey,column_missing:expiresAt,column_missing:revokedAt,unique_userId_sessionKey_missing_or_wrong,index_expiresAt_missing_or_wrong,fk_user_cascade_missing"
+    },
+    "absentApplyThenNoop": {
+      "pass": true,
+      "beforePhase": "READY_TO_APPLY",
+      "first": {
+        "ok": true,
+        "code": "applied",
+        "applyExitCode": 0,
+        "skipped": false,
+        "migrationName": "20261017120000_auth_session_revocation",
+        "checksum": "19631a45ea14f592c00057ca7e617bac8f2dce8f16112184ce0091a1ae72ec51",
+        "target": "127.0.0.1:5432/remcard_admin_test_012"
+      },
+      "second": {
+        "ok": true,
+        "code": "noop",
+        "applyExitCode": 0,
+        "skipped": true,
+        "phase": "ALREADY_APPLIED",
+        "target": "127.0.0.1:5432/remcard_admin_test_012",
+        "checksum": "19631a45ea14f592c00057ca7e617bac8f2dce8f16112184ce0091a1ae72ec51",
+        "evaluation": {
+          "ok": true,
+          "mismatches": [],
+          "snapshot": {
+            "present": true,
+            "columns": [
+              {
+                "name": "id",
+                "dataType": "text",
+                "isNullable": "NO"
+              },
+              {
+                "name": "userId",
+                "dataType": "text",
+                "isNullable": "NO"
+              },
+              {
+                "name": "sessionKey",
+                "dataType": "text",
+                "isNullable": "NO"
+              },
+              {
+                "name": "expiresAt",
+                "dataType": "timestamp without time zone",
+                "isNullable": "NO"
+              },
+              {
+                "name": "revokedAt",
+                "dataType": "timestamp without time zone",
+                "isNullable": "NO"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "AuthSessionRevocation_expiresAt_idx",
+                "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+              },
+              {
+                "name": "AuthSessionRevocation_pkey",
+                "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+              },
+              {
+                "name": "AuthSessionRevocation_userId_sessionKey_key",
+                "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+              }
+            ],
+            "primaryKeyColumns": [
+              "id"
+            ],
+            "foreignKeys": [
+              {
+                "name": "AuthSessionRevocation_userId_fkey",
+                "column": "userId",
+                "foreignTable": "User",
+                "onDelete": "CASCADE"
+              }
+            ]
+          }
+        },
+        "snapshot": {
+          "present": true,
+          "columns": [
+            {
+              "name": "id",
+              "dataType": "text",
+              "isNullable": "NO"
+            },
+            {
+              "name": "userId",
+              "dataType": "text",
+              "isNullable": "NO"
+            },
+            {
+              "name": "sessionKey",
+              "dataType": "text",
+              "isNullable": "NO"
+            },
+            {
+              "name": "expiresAt",
+              "dataType": "timestamp without time zone",
+              "isNullable": "NO"
+            },
+            {
+              "name": "revokedAt",
+              "dataType": "timestamp without time zone",
+              "isNullable": "NO"
+            }
+          ],
+          "indexes": [
+            {
+              "name": "AuthSessionRevocation_expiresAt_idx",
+              "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+            },
+            {
+              "name": "AuthSessionRevocation_pkey",
+              "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+            },
+            {
+              "name": "AuthSessionRevocation_userId_sessionKey_key",
+              "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+            }
+          ],
+          "primaryKeyColumns": [
+            "id"
+          ],
+          "foreignKeys": [
+            {
+              "name": "AuthSessionRevocation_userId_fkey",
+              "column": "userId",
+              "foreignTable": "User",
+              "onDelete": "CASCADE"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pass": true,
+  "disposableLedgerHygiene": {
+    "rolledBackUnfinished": 1
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "task": "ACCOUNT-EXIT-01.3",
+  "platformOrigin": "http://127.0.0.1:3040",
+  "backendOrigin": "http://127.0.0.1:3041",
+  "codeUnderTest": {
+    "platform": "34ed685e53194aac169583907788d4ae895929f4",
+    "navigator": "d14dce14f7bcdcc261f3aab2746036abb3161094",
+    "docs": "34ed685e53194aac169583907788d4ae895929f4"
+  },
+  "runtime": {
+    "platformOrigin": "http://127.0.0.1:3040",
+    "backendOrigin": "http://127.0.0.1:3041",
+    "stackMeta": {
+      "navOrigin": "http://127.0.0.1:3041",
+      "platformOrigin": "http://127.0.0.1:3040",
+      "envPath": "/tmp/admin-test-local-stack/runtime.env",
+      "navPid": 500141,
+      "platPid": 500142,
+      "database": "remcard_admin_test_012"
+    }
+  },
+  "migration": {
+    "scope": "disposable_smoke_test_only",
+    "operatorScript": "remcard-navigator/scripts/apply-account-exit-auth-session-revocation.mjs",
+    "migrationDir": "20261017120000_auth_session_revocation",
+    "migrationSqlSha256": "19631a45ea14f592c00057ca7e617bac8f2dce8f16112184ce0091a1ae72ec51",
+    "pinnedSha256": "19631a45ea14f592c00057ca7e617bac8f2dce8f16112184ce0091a1ae72ec51",
+    "checksumMatch": true,
+    "before": {
+      "phase": "ALREADY_APPLIED",
+      "ok": true,
+      "mismatches": [],
+      "present": true
+    },
+    "applyRuns": [
+      {
+        "pass": 1,
+        "code": "noop",
+        "exitCode": 0,
+        "skipped": true
+      },
+      {
+        "pass": 2,
+        "code": "noop",
+        "exitCode": 0,
+        "skipped": true
+      }
+    ],
+    "afterFirstApply": {
+      "ok": true,
+      "mismatches": [],
+      "snapshot": {
+        "present": true,
+        "columns": [
+          {
+            "name": "id",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "userId",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "sessionKey",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "expiresAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          },
+          {
+            "name": "revokedAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "AuthSessionRevocation_expiresAt_idx",
+            "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+          },
+          {
+            "name": "AuthSessionRevocation_pkey",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+          },
+          {
+            "name": "AuthSessionRevocation_userId_sessionKey_key",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+          }
+        ],
+        "primaryKeyColumns": [
+          "id"
+        ],
+        "foreignKeys": [
+          {
+            "name": "AuthSessionRevocation_userId_fkey",
+            "column": "userId",
+            "foreignTable": "User",
+            "onDelete": "CASCADE"
+          }
+        ]
+      }
+    },
+    "afterSecondApply": {
+      "ok": true,
+      "mismatches": [],
+      "snapshot": {
+        "present": true,
+        "columns": [
+          {
+            "name": "id",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "userId",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "sessionKey",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "expiresAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          },
+          {
+            "name": "revokedAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "AuthSessionRevocation_expiresAt_idx",
+            "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+          },
+          {
+            "name": "AuthSessionRevocation_pkey",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+          },
+          {
+            "name": "AuthSessionRevocation_userId_sessionKey_key",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+          }
+        ],
+        "primaryKeyColumns": [
+          "id"
+        ],
+        "foreignKeys": [
+          {
+            "name": "AuthSessionRevocation_userId_fkey",
+            "column": "userId",
+            "foreignTable": "User",
+            "onDelete": "CASCADE"
+          }
+        ]
+      }
+    },
+    "pass": true,
+    "blocker": null
+  },
+  "abSessions": {
+    "mode": "ordinary-dual-jwt",
+    "userId": "cmvc0bvuo006gjscgb5z2vohf",
+    "meBefore": {
+      "a": {
+        "status": 200,
+        "userId": "cmvc0bvuo006gjscgb5z2vohf",
+        "hasUser": true
+      },
+      "b": {
+        "status": 200,
+        "userId": "cmvc0bvuo006gjscgb5z2vohf",
+        "hasUser": true
+      }
+    },
+    "logoutCurrentStatus": 200,
+    "meAfterCurrent": {
+      "a": {
+        "status": 200,
+        "userId": null,
+        "hasUser": false
+      },
+      "b": {
+        "status": 200,
+        "userId": "cmvc0bvuo006gjscgb5z2vohf",
+        "hasUser": true
+      }
+    },
+    "meReloginA": {
+      "status": 200,
+      "userId": "cmvc0bvuo006gjscgb5z2vohf",
+      "hasUser": true
+    },
+    "logoutAllStatus": 200,
+    "meAfterAll": {
+      "a": {
+        "status": 200,
+        "userId": null,
+        "hasUser": false
+      },
+      "b": {
+        "status": 200,
+        "userId": null,
+        "hasUser": false
+      }
+    }
+  },
+  "csrf": {
+    "directLogoutAllWithoutCsrf": 403,
+    "bffLogoutAllWithoutCsrf": 403,
+    "directLogoutAllWithCsrfNoOrigin": 403
+  },
+  "delegated": {
+    "status": "PASS",
+    "distinctDelegations": true,
+    "artifact": "DELEGATED-SMOKE.json"
+  },
+  "pass": true,
+  "blocker": null,
+  "visualCapture": {
+    "artifact": "VISUAL-CAPTURE.json",
+    "codeUnderTest": {
+      "platform": "39242fa834958931cf037f7854efcf82bdda282f",
+      "navigator": "184df821978ddd5e08eb860665c7b4f9aba3d51d"
+    },
+    "menuBoundsOk": true,
+    "signedOutLive": {
+      "skipped": false,
+      "capture": "320-light-signed-out.png",
+      "url": "http://127.0.0.1:3040/account/signed-out?scope=current"
+    }
+  }
+}

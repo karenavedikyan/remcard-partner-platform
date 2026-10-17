@@ -1,0 +1,99 @@
+{
+  "task": "ACCOUNT-EXIT-01.3-delegated",
+  "platformOrigin": "http://127.0.0.1:3040",
+  "testUserId": "cmvc04byn004djscg3w4m2eib",
+  "delegationIds": {
+    "a": "cmvc04dof004jjscgueh07ump",
+    "b": "cmvc04hqy004qjscg4pbd19zc",
+    "distinct": true
+  },
+  "steps": {
+    "meBefore": {
+      "a": {
+        "status": 200,
+        "hasUser": true,
+        "isProfTestUser": true,
+        "profTestActive": true
+      },
+      "b": {
+        "status": 200,
+        "hasUser": true,
+        "isProfTestUser": true,
+        "profTestActive": true
+      }
+    },
+    "meAfterLogoutCurrentA": {
+      "a": {
+        "status": 200,
+        "hasUser": false,
+        "isProfTestUser": false,
+        "profTestActive": false
+      },
+      "b": {
+        "status": 200,
+        "hasUser": true,
+        "isProfTestUser": true,
+        "profTestActive": true
+      }
+    },
+    "meAfterReenterA": {
+      "a": {
+        "status": 200,
+        "hasUser": true,
+        "isProfTestUser": true,
+        "profTestActive": true
+      },
+      "b": {
+        "status": 200,
+        "hasUser": true,
+        "isProfTestUser": true,
+        "profTestActive": true
+      }
+    },
+    "cancelAllUi": {
+      "logoutAllPosted": false,
+      "me": {
+        "a": {
+          "status": 200,
+          "hasUser": true,
+          "isProfTestUser": true,
+          "profTestActive": true
+        },
+        "b": {
+          "status": 200,
+          "hasUser": true,
+          "isProfTestUser": true,
+          "profTestActive": true
+        }
+      }
+    },
+    "meAfterConfirmAll": {
+      "a": {
+        "status": 200,
+        "hasUser": false,
+        "isProfTestUser": false,
+        "profTestActive": false
+      },
+      "b": {
+        "status": 200,
+        "hasUser": false,
+        "isProfTestUser": false,
+        "profTestActive": false
+      }
+    },
+    "adminMeAfterAll": {
+      "status": 200,
+      "hasUser": true,
+      "isProfTestUser": false,
+      "profTestActive": false
+    },
+    "otherUserMe": {
+      "status": 200,
+      "hasUser": true,
+      "isProfTestUser": true,
+      "profTestActive": true
+    }
+  },
+  "pass": true,
+  "blocker": null
+}

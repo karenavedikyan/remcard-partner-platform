@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { AuthUser } from "@/lib/types";
-import { LogoutButton } from "@/components/auth/LogoutButton";
+import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
@@ -179,7 +179,6 @@ export function AppShell({
               Тестовые пользователи
             </Link>
           ) : null}
-          <LogoutButton className={styles.sidebarLogoutButton} />
           <small className={styles.sidebarTagline}>
             RemCard PROF
             <br />
@@ -213,18 +212,7 @@ export function AppShell({
           <div className={styles.topbarActions}>
             <ThemeToggle />
             <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
-            <div className={styles.topbarAccount}>
-              <span className={styles.accountAvatar} aria-hidden>
-                {initials}
-              </span>
-              <div className={styles.accountCaption}>
-                <strong>{displayName}</strong>
-                <small>Владелец профиля</small>
-              </div>
-            </div>
-            <div className={styles.mobileLogout} data-testid="mobile-logout">
-              <LogoutButton className={styles.mobileLogoutButton} />
-            </div>
+            <AccountSessionMenu displayName={displayName} roleLabel="Владелец профиля" />
           </div>
         </header>
 

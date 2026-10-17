@@ -1,0 +1,80 @@
+{
+  "task": "ACCOUNT-EXIT-01.3-visual",
+  "baseUrl": "http://127.0.0.1:3040",
+  "fixture": "http://127.0.0.1:3040/dev-fixtures/account-session",
+  "codeUnderTest": {
+    "platform": "39242fa834958931cf037f7854efcf82bdda282f",
+    "navigator": "184df821978ddd5e08eb860665c7b4f9aba3d51d"
+  },
+  "captures": [
+    "375-light-menu.png",
+    "375-dark-menu.png",
+    "320-light-menu.png",
+    "320-dark-menu.png",
+    "320-light-signed-out.png"
+  ],
+  "menuBounds": {
+    "375-light": {
+      "bounds": {
+        "innerWidth": 375,
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "menu": {
+          "left": 8,
+          "right": 348,
+          "top": 89.5,
+          "bottom": 308.484375
+        }
+      },
+      "ok": true
+    },
+    "375-dark": {
+      "bounds": {
+        "innerWidth": 375,
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "menu": {
+          "left": 8,
+          "right": 348,
+          "top": 89.5,
+          "bottom": 308.484375
+        }
+      },
+      "ok": true
+    },
+    "320-light": {
+      "bounds": {
+        "innerWidth": 320,
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "menu": {
+          "left": 8,
+          "right": 312,
+          "top": 89.5,
+          "bottom": 308.484375
+        }
+      },
+      "ok": true
+    },
+    "320-dark": {
+      "bounds": {
+        "innerWidth": 320,
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "menu": {
+          "left": 8,
+          "right": 312,
+          "top": 89.5,
+          "bottom": 308.484375
+        }
+      },
+      "ok": true
+    }
+  },
+  "signedOutLive": {
+    "skipped": false,
+    "capture": "320-light-signed-out.png",
+    "url": "http://127.0.0.1:3040/account/signed-out?scope=current"
+  },
+  "exitCode": 0
+}

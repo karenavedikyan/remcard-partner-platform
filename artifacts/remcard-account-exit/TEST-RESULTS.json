@@ -1,0 +1,75 @@
+{
+  "task": "ACCOUNT-EXIT-01.2",
+  "status": "READY_FOR_REVIEW",
+  "backendHead": "d14dce1",
+  "frontendHead": "d176555",
+  "commands": [
+    {
+      "cmd": "cd remcard-navigator && npm test -- src/lib/__tests__/accountExitSecurityAcceptance.test.ts src/lib/__tests__/authSessionLogout.test.ts",
+      "exitCode": 0,
+      "note": "8 independent + 4 unit = 12 PASS"
+    },
+    {
+      "cmd": "cd remcard-partner-platform && npx vitest run src/components/account-session/AccountSessionMenu.acceptance.test.tsx",
+      "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-partner-platform && npx vitest run src/lib/agent-profile/api.client.test.ts",
+      "exitCode": 0,
+      "note": "01.3 CSRF scoped to logout paths only"
+    },
+    {
+      "cmd": "ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/account-exit-functional-smoke.mjs",
+      "exitCode": 0,
+      "artifact": "artifacts/remcard-account-exit/FUNCTIONAL-SMOKE.json",
+      "note": "Ordinary A/B + migration gate + CSRF negatives"
+    },
+    {
+      "cmd": "ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/account-exit-delegated-smoke.mjs",
+      "exitCode": 0,
+      "artifact": "artifacts/remcard-account-exit/DELEGATED-SMOKE.json"
+    },
+    {
+      "cmd": "BASE_URL=http://127.0.0.1:3040 LIVE_SIGNED_OUT=1 node scripts/account-exit-browser-acceptance.mjs",
+      "exitCode": 0,
+      "artifact": "artifacts/remcard-account-exit/VISUAL-CAPTURE.json",
+      "note": "320/375 menu bounds + live 320 signed-out (not fixture preview)"
+    }
+  ],
+  "dualSessionAb": {
+    "status": "PASS",
+    "artifact": "FUNCTIONAL-SMOKE.json"
+  },
+  "delegatedAb": {
+    "status": "PASS",
+    "artifact": "DELEGATED-SMOKE.json",
+    "distinctDelegations": true
+  },
+  "visualCaptures": {
+    "status": "CAPTURED",
+    "artifact": "VISUAL-CAPTURE.json",
+    "menu320375": "320/375 light+dark menu PNGs with bounds left>=0",
+    "signedOut320": "320-light-signed-out.png live after logout"
+  },
+  "fixes01_2": [
+    "PATCH /api/auth/me honors session revocation",
+    "staffAuth/adminStaffApi/withRateLimit/proServerContext revocation checks",
+    "legacy session key = sha256(signed JWT), fail-closed logout without exp",
+    "CSRF-only logout guard (no Origin bypass)",
+    "Functional smoke: real user + dual JWT + CSRF negatives"
+  ],
+  "tail01_4": {
+    "status": "READY_FOR_REVIEW",
+    "migrationGateProve": "artifacts/remcard-account-exit/MIGRATION-GATE-PROVE.json",
+    "operatorApply": "remcard-navigator/scripts/apply-account-exit-auth-session-revocation.mjs",
+    "preConnectSafetyTests": "node --test scripts/lib/__tests__/account-exit-preconnect-safety.test.mjs (0 connect on refused target)",
+    "visualCaptureNote": "01.3 PNGs accepted by review; VISUAL-CAPTURE code SHA = commit at capture time (pre-01.4 tips), not retroactively rewritten"
+  },
+  "tail01_3": {
+    "status": "READY_FOR_REVIEW",
+    "migrationDoc": "remcard-navigator/docs/ACCOUNT-EXIT-AUTH-SESSION-REVOCATION-MIGRATION.md rollout order fixed",
+    "migrationGate": "FUNCTIONAL-SMOKE.json migration before/after + SHA256 + double apply",
+    "menu320": "viewport-clamped fixed positioning; VISUAL-CAPTURE menuBounds all ok",
+    "csrfClient": "requireCsrf only on logout POSTs; api.client.test PASS"
+  }
+}

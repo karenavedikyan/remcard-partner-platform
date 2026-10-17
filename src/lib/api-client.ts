@@ -1,3 +1,4 @@
+import { withCsrfHeaders } from "@/lib/client-csrf";
 import { appConfig } from "@/lib/config";
 import type { AuthMeResponse } from "@/lib/types";
 
@@ -44,18 +45,24 @@ type FetchOptions = {
   signal?: AbortSignal;
   /** Required for POST /api/store/order purchase attempts. */
   idempotencyKey?: string;
+  /** Logout mutations require CSRF (ACCOUNT-EXIT). */
+  requireCsrf?: boolean;
 };
 
 export type RemcardFetchMeta = {
   idempotentReplayed: boolean;
 };
 
-function buildRemcardFetchHeaders(options: FetchOptions): HeadersInit {
+async function buildRemcardFetchHeaders(options: FetchOptions): Promise<HeadersInit> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   if (options.idempotencyKey) {
     headers["Idempotency-Key"] = options.idempotencyKey;
+  }
+  const method = options.method ?? "GET";
+  if (method !== "GET" && options.requireCsrf) {
+    await withCsrfHeaders(headers);
   }
   return headers;
 }
@@ -114,7 +121,7 @@ export async function remcardFetchWithMeta<T>(
   try {
     response = await fetch(`/api/remcard${normalizedPath}`, {
       method: options.method ?? "GET",
-      headers: buildRemcardFetchHeaders(options),
+      headers: await buildRemcardFetchHeaders(options),
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       credentials: "include",
       cache: "no-store",

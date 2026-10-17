@@ -5,13 +5,14 @@ import { AppShell } from "./AppShell";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
-vi.mock("@/components/auth/LogoutButton", () => ({
-  LogoutButton: ({ className }: { className?: string }) => (
-    <button type="button" className={className}>
-      Выйти
-    </button>
+vi.mock("@/components/account-session/AccountSessionMenu", () => ({
+  AccountSessionMenu: ({ displayName, roleLabel }: { displayName: string; roleLabel: string }) => (
+    <div data-testid="account-session-menu-fixture">
+      {displayName} · {roleLabel}
+    </div>
   ),
 }));
 
@@ -26,12 +27,10 @@ function renderShell() {
 }
 
 describe("AppShell", () => {
-  it("renders logout in sidebar and mobile topbar", () => {
+  it("renders account session menu in topbar", () => {
     renderShell();
-
-    const logoutButtons = screen.getAllByRole("button", { name: "Выйти" });
-    expect(logoutButtons).toHaveLength(2);
-    expect(screen.getByTestId("mobile-logout")).toBeTruthy();
+    expect(screen.getByTestId("account-session-menu-fixture")).toHaveTextContent("Тестовый партнёр");
+    expect(screen.getByTestId("account-session-menu-fixture")).toHaveTextContent("Владелец профиля");
   });
 
   it("exposes theme toggle and notification bell composition slot", () => {
