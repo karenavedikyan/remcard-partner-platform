@@ -2,11 +2,12 @@
 /**
  * ACCOUNT-EXIT-01.2: dual-session A/B (ordinary PRO JWTs) on disposable stack.
  */
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { chromium } from "playwright";
+import { runAuthSessionRevocationMigrationGate } from "./account-exit-migration-verify.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const NAV = path.resolve(ROOT, "../remcard-navigator");
@@ -127,41 +128,35 @@ async function main() {
     password: process.env.ADMIN_TEST_PASSWORD?.trim() || "E2E-Admin-Pass-12chars",
   };
 
+  const platformHead = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout?.trim();
+  const navigatorHead = spawnSync("git", ["rev-parse", "HEAD"], { cwd: NAV, encoding: "utf8" }).stdout?.trim();
+  const docsHead = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout?.trim();
+
   const report = {
-    task: "ACCOUNT-EXIT-01.2",
+    task: "ACCOUNT-EXIT-01.3",
     platformOrigin,
     backendOrigin,
+    codeUnderTest: {
+      platform: platformHead,
+      navigator: navigatorHead,
+      docs: docsHead,
+    },
+    runtime: {
+      platformOrigin,
+      backendOrigin,
+      stackMeta: meta,
+    },
     migration: {},
     abSessions: { mode: "ordinary-dual-jwt" },
     csrf: {},
-    delegated: { status: "NOT_RUN", note: "Prof-test enter shares one delegation; use targeted tests for delegated A/B" },
-    gitCapture: {
-      platform: spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout?.trim(),
-      navigator: spawnSync("git", ["rev-parse", "HEAD"], { cwd: NAV, encoding: "utf8" }).stdout?.trim(),
-    },
+    delegated: { status: "SEE_DELEGATED_SMOKE", artifact: "DELEGATED-SMOKE.json" },
     pass: false,
     blocker: null,
   };
 
-  const migrationSql = readFileSync(
-    path.join(NAV, "prisma/migrations/20261017120000_auth_session_revocation/migration.sql"),
-    "utf8",
-  );
-  const migrate = spawnSync(
-    "pnpm",
-    ["exec", "prisma", "db", "execute", "--stdin", "--schema", "prisma/schema.prisma"],
-    {
-      cwd: NAV,
-      env: { ...process.env, ...env, DATABASE_URL: env.DATABASE_URL },
-      encoding: "utf8",
-      input: migrationSql,
-    },
-  );
-  report.migration.exitCode = migrate.status ?? 1;
-  report.migration.note = "Idempotent AuthSessionRevocation DDL on disposable PG";
-  if (migrate.status !== 0 && !/already exists/i.test(`${migrate.stderr}${migrate.stdout}`)) {
-    report.blocker = "PG AuthSessionRevocation apply failed";
-    report.migration.stderr = migrate.stderr?.slice(0, 400) ?? null;
+  report.migration = await runAuthSessionRevocationMigrationGate(env.DATABASE_URL, env);
+  if (!report.migration.pass) {
+    report.blocker = report.migration.blocker ?? "migration_gate_failed";
     writeFileSync(path.join(ART, "FUNCTIONAL-SMOKE.json"), JSON.stringify(report, null, 2));
     process.exit(1);
   }
@@ -262,6 +257,35 @@ async function main() {
     a: await bffMe(platformOrigin, cookieJarFromToken(tokenA2)),
     b: await bffMe(platformOrigin, cookieB),
   };
+
+  const delegatedPath = path.join(ART, "DELEGATED-SMOKE.json");
+  if (existsSync(delegatedPath)) {
+    try {
+      const del = JSON.parse(readFileSync(delegatedPath, "utf8"));
+      report.delegated = {
+        status: del.pass ? "PASS" : "FAIL",
+        distinctDelegations: del.delegationIds?.distinct ?? null,
+        artifact: "DELEGATED-SMOKE.json",
+      };
+    } catch {
+      report.delegated = { status: "READ_ERROR", artifact: "DELEGATED-SMOKE.json" };
+    }
+  }
+
+  const visualPath = path.join(ART, "VISUAL-CAPTURE.json");
+  if (existsSync(visualPath)) {
+    try {
+      const visual = JSON.parse(readFileSync(visualPath, "utf8"));
+      report.visualCapture = {
+        artifact: "VISUAL-CAPTURE.json",
+        codeUnderTest: visual.codeUnderTest ?? null,
+        menuBoundsOk: Object.values(visual.menuBounds ?? {}).every((row) => row.ok),
+        signedOutLive: visual.signedOutLive ?? null,
+      };
+    } catch {
+      report.visualCapture = { artifact: "VISUAL-CAPTURE.json", status: "READ_ERROR" };
+    }
+  }
 
   report.pass =
     report.csrf.directLogoutAllWithoutCsrf === 403 &&

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import {
   IconChevronDown,
   IconLogOut,
@@ -28,6 +28,7 @@ type AccountSessionMenuProps = {
 export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMenuProps) {
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const {
     pending,
@@ -70,6 +71,31 @@ export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMen
     return () => document.removeEventListener("keydown", onKey);
   }, [closeMenu, open]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    const menu = menuRef.current;
+    const trigger = triggerRef.current;
+    if (!menu || !trigger) return;
+
+    const pad = 8;
+    const gap = 8;
+    const maxWidth = 340;
+    const vw = window.innerWidth;
+    const width = Math.min(maxWidth, vw - pad * 2);
+    menu.style.width = `${width}px`;
+    menu.style.position = "fixed";
+    menu.style.right = "auto";
+    menu.style.left = "0px";
+    menu.style.top = "0px";
+
+    const tr = trigger.getBoundingClientRect();
+    let left = tr.right - width;
+    left = Math.max(pad, Math.min(left, vw - width - pad));
+    const top = tr.bottom + gap;
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+  }, [open, displayName]);
+
   const initials = initialsFromName(displayName);
 
   return (
@@ -108,6 +134,7 @@ export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMen
         </button>
         {open ? (
           <div
+            ref={menuRef}
             className={styles.menu}
             id={menuId}
             role="menu"

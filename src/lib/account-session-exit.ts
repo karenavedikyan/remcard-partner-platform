@@ -27,6 +27,7 @@ export async function postLogoutCurrentDevice(): Promise<void> {
   await remcardFetch<{ ok: true; scope: AccountExitScope }>(ACCOUNT_LOGOUT_CURRENT_PATH, {
     method: "POST",
     body: {},
+    requireCsrf: true,
   });
 }
 
@@ -34,6 +35,7 @@ export async function postLogoutAllDevices(): Promise<void> {
   await remcardFetch<{ ok: true; scope: AccountExitScope }>(ACCOUNT_LOGOUT_ALL_PATH, {
     method: "POST",
     body: {},
+    requireCsrf: true,
   });
 }
 

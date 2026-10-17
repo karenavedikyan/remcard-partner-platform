@@ -14,25 +14,42 @@
       "exitCode": 0
     },
     {
+      "cmd": "cd remcard-partner-platform && npx vitest run src/lib/agent-profile/api.client.test.ts",
+      "exitCode": 0,
+      "note": "01.3 CSRF scoped to logout paths only"
+    },
+    {
       "cmd": "ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/account-exit-functional-smoke.mjs",
       "exitCode": 0,
       "artifact": "artifacts/remcard-account-exit/FUNCTIONAL-SMOKE.json",
-      "note": "Dual ordinary JWT A/B + CSRF negatives on disposable stack"
+      "note": "Ordinary A/B + migration gate + CSRF negatives"
     },
     {
-      "cmd": "BASE_URL=http://127.0.0.1:3040 node scripts/account-exit-browser-acceptance.mjs",
+      "cmd": "ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/account-exit-delegated-smoke.mjs",
       "exitCode": 0,
-      "note": "12 PNG captures menu/dialog 1440/375 + 320 profile"
+      "artifact": "artifacts/remcard-account-exit/DELEGATED-SMOKE.json"
+    },
+    {
+      "cmd": "BASE_URL=http://127.0.0.1:3040 LIVE_SIGNED_OUT=1 node scripts/account-exit-browser-acceptance.mjs",
+      "exitCode": 0,
+      "artifact": "artifacts/remcard-account-exit/VISUAL-CAPTURE.json",
+      "note": "320/375 menu bounds + live 320 signed-out (not fixture preview)"
     }
   ],
   "dualSessionAb": {
     "status": "PASS",
     "artifact": "FUNCTIONAL-SMOKE.json"
   },
+  "delegatedAb": {
+    "status": "PASS",
+    "artifact": "DELEGATED-SMOKE.json",
+    "distinctDelegations": true
+  },
   "visualCaptures": {
     "status": "CAPTURED",
-    "dir": "artifacts/remcard-account-exit",
-    "count": 12
+    "artifact": "VISUAL-CAPTURE.json",
+    "menu320375": "320/375 light+dark menu PNGs with bounds left>=0",
+    "signedOut320": "320-light-signed-out.png live after logout"
   },
   "fixes01_2": [
     "PATCH /api/auth/me honors session revocation",
@@ -41,8 +58,11 @@
     "CSRF-only logout guard (no Origin bypass)",
     "Functional smoke: real user + dual JWT + CSRF negatives"
   ],
-  "delegatedAb": {
-    "status": "NOT_RUN",
-    "note": "Covered by unit tests; prof-test enter shares one delegation in browser smoke"
+  "tail01_3": {
+    "status": "READY_FOR_REVIEW",
+    "migrationDoc": "remcard-navigator/docs/ACCOUNT-EXIT-AUTH-SESSION-REVOCATION-MIGRATION.md rollout order fixed",
+    "migrationGate": "FUNCTIONAL-SMOKE.json migration before/after + SHA256 + double apply",
+    "menu320": "viewport-clamped fixed positioning; VISUAL-CAPTURE menuBounds all ok",
+    "csrfClient": "requireCsrf only on logout POSTs; api.client.test PASS"
   }
 }

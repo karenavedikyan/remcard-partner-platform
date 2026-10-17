@@ -1,23 +1,222 @@
 {
-  "task": "ACCOUNT-EXIT-01.2",
+  "task": "ACCOUNT-EXIT-01.3",
   "platformOrigin": "http://127.0.0.1:3040",
   "backendOrigin": "http://127.0.0.1:3041",
+  "codeUnderTest": {
+    "platform": "39242fa834958931cf037f7854efcf82bdda282f",
+    "navigator": "184df821978ddd5e08eb860665c7b4f9aba3d51d",
+    "docs": "39242fa834958931cf037f7854efcf82bdda282f"
+  },
+  "runtime": {
+    "platformOrigin": "http://127.0.0.1:3040",
+    "backendOrigin": "http://127.0.0.1:3041",
+    "stackMeta": {
+      "navOrigin": "http://127.0.0.1:3041",
+      "platformOrigin": "http://127.0.0.1:3040",
+      "envPath": "/tmp/admin-test-local-stack/runtime.env",
+      "navPid": 500141,
+      "platPid": 500142,
+      "database": "remcard_admin_test_012"
+    }
+  },
   "migration": {
-    "exitCode": 1,
-    "note": "Idempotent AuthSessionRevocation DDL on disposable PG"
+    "migrationSqlSha256": "19631a45ea14f592c00057ca7e617bac8f2dce8f16112184ce0091a1ae72ec51",
+    "migrationDir": "20261017120000_auth_session_revocation",
+    "before": {
+      "ok": true,
+      "mismatches": [],
+      "snapshot": {
+        "present": true,
+        "columns": [
+          {
+            "name": "id",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "userId",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "sessionKey",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "expiresAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          },
+          {
+            "name": "revokedAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "AuthSessionRevocation_expiresAt_idx",
+            "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+          },
+          {
+            "name": "AuthSessionRevocation_pkey",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+          },
+          {
+            "name": "AuthSessionRevocation_userId_sessionKey_key",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "name": "AuthSessionRevocation_userId_fkey",
+            "column": "userId",
+            "foreignTable": "User",
+            "onDelete": "CASCADE"
+          }
+        ]
+      }
+    },
+    "afterFirstApply": {
+      "ok": true,
+      "mismatches": [],
+      "snapshot": {
+        "present": true,
+        "columns": [
+          {
+            "name": "id",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "userId",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "sessionKey",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "expiresAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          },
+          {
+            "name": "revokedAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "AuthSessionRevocation_expiresAt_idx",
+            "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+          },
+          {
+            "name": "AuthSessionRevocation_pkey",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+          },
+          {
+            "name": "AuthSessionRevocation_userId_sessionKey_key",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "name": "AuthSessionRevocation_userId_fkey",
+            "column": "userId",
+            "foreignTable": "User",
+            "onDelete": "CASCADE"
+          }
+        ]
+      }
+    },
+    "afterSecondApply": {
+      "ok": true,
+      "mismatches": [],
+      "snapshot": {
+        "present": true,
+        "columns": [
+          {
+            "name": "id",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "userId",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "sessionKey",
+            "dataType": "text",
+            "isNullable": "NO"
+          },
+          {
+            "name": "expiresAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          },
+          {
+            "name": "revokedAt",
+            "dataType": "timestamp without time zone",
+            "isNullable": "NO"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "AuthSessionRevocation_expiresAt_idx",
+            "def": "CREATE INDEX \"AuthSessionRevocation_expiresAt_idx\" ON public.\"AuthSessionRevocation\" USING btree (\"expiresAt\")"
+          },
+          {
+            "name": "AuthSessionRevocation_pkey",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_pkey\" ON public.\"AuthSessionRevocation\" USING btree (id)"
+          },
+          {
+            "name": "AuthSessionRevocation_userId_sessionKey_key",
+            "def": "CREATE UNIQUE INDEX \"AuthSessionRevocation_userId_sessionKey_key\" ON public.\"AuthSessionRevocation\" USING btree (\"userId\", \"sessionKey\")"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "name": "AuthSessionRevocation_userId_fkey",
+            "column": "userId",
+            "foreignTable": "User",
+            "onDelete": "CASCADE"
+          }
+        ]
+      }
+    },
+    "applyRuns": [
+      {
+        "pass": 1,
+        "exitCode": 1,
+        "stderrTail": "Error: ERROR: relation \"AuthSessionRevocation\" already exists\n\n\n"
+      },
+      {
+        "pass": 2,
+        "exitCode": 1,
+        "stderrTail": "Error: ERROR: relation \"AuthSessionRevocation\" already exists\n\n\n"
+      }
+    ],
+    "pass": true,
+    "blocker": null
   },
   "abSessions": {
     "mode": "ordinary-dual-jwt",
-    "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+    "userId": "cmvc053v4005qjscglueg042v",
     "meBefore": {
       "a": {
         "status": 200,
-        "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+        "userId": "cmvc053v4005qjscglueg042v",
         "hasUser": true
       },
       "b": {
         "status": 200,
-        "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+        "userId": "cmvc053v4005qjscglueg042v",
         "hasUser": true
       }
     },
@@ -30,13 +229,13 @@
       },
       "b": {
         "status": 200,
-        "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+        "userId": "cmvc053v4005qjscglueg042v",
         "hasUser": true
       }
     },
     "meReloginA": {
       "status": 200,
-      "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+      "userId": "cmvc053v4005qjscglueg042v",
       "hasUser": true
     },
     "logoutAllStatus": 200,
@@ -59,12 +258,8 @@
     "directLogoutAllWithCsrfNoOrigin": 403
   },
   "delegated": {
-    "status": "NOT_RUN",
-    "note": "Prof-test enter shares one delegation; use targeted tests for delegated A/B"
-  },
-  "gitCapture": {
-    "platform": "735a0d451a8b979ff1b2bf1badb5cb9235f63e27",
-    "navigator": "c124a58e271f438fc22707eb61637c81430ea2ab"
+    "status": "SEE_DELEGATED_SMOKE",
+    "artifact": "DELEGATED-SMOKE.json"
   },
   "pass": true,
   "blocker": null

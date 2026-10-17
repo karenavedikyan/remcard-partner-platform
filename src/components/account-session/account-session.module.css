@@ -65,11 +65,10 @@
 }
 
 .menu {
-  position: absolute;
+  position: fixed;
   z-index: 120;
-  right: 0;
-  top: calc(100% + var(--space-2, 0.5rem));
-  width: min(340px, calc(100vw - 2rem));
+  width: min(340px, calc(100vw - 1rem));
+  max-width: calc(100vw - 1rem);
   padding: var(--space-2, 0.5rem);
   border: 1px solid var(--line);
   border-radius: 12px;

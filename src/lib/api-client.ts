@@ -45,6 +45,8 @@ type FetchOptions = {
   signal?: AbortSignal;
   /** Required for POST /api/store/order purchase attempts. */
   idempotencyKey?: string;
+  /** Logout mutations require CSRF (ACCOUNT-EXIT). */
+  requireCsrf?: boolean;
 };
 
 export type RemcardFetchMeta = {
@@ -59,7 +61,7 @@ async function buildRemcardFetchHeaders(options: FetchOptions): Promise<HeadersI
     headers["Idempotency-Key"] = options.idempotencyKey;
   }
   const method = options.method ?? "GET";
-  if (method !== "GET") {
+  if (method !== "GET" && options.requireCsrf) {
     await withCsrfHeaders(headers);
   }
   return headers;
