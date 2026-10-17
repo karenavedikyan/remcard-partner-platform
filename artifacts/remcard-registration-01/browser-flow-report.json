@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-17T19:41:54.927Z",
+  "capturedAt": "2026-10-17T19:45:22.163Z",
   "results": [
     {
       "name": "ready_user_invite_after_auth",
@@ -19,11 +19,11 @@
     },
     {
       "name": "auth_otp_invalid_code_shows_error",
-      "pass": false
+      "pass": true
     },
     {
       "name": "auth_otp_server_fail_shows_error",
-      "pass": false
+      "pass": true
     },
     {
       "name": "auth_code_back_to_providers",

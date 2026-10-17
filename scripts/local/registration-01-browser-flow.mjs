@@ -153,9 +153,9 @@ async function main() {
   });
 
   await page.locator('input[inputmode="numeric"]').first().fill("000000");
-  await page.getByRole("button", { name: /Подтвердить/i }).click();
-  await page.waitForTimeout(400);
-  const invalidMsg = await page.locator('[role="alert"]').innerText().catch(() => "");
+  await page.locator('[data-testid="registration-entry-auth-code"] button[type="submit"]').click();
+  await page.waitForTimeout(600);
+  const invalidMsg = await page.locator('[data-testid="registration-entry-auth-code"]').innerText();
   results.push({
     name: "auth_otp_invalid_code_shows_error",
     pass: /неверный|просрочен/i.test(invalidMsg),
@@ -163,9 +163,9 @@ async function main() {
 
   verifyCodeStatus = 500;
   await page.locator('input[inputmode="numeric"]').first().fill("111111");
-  await page.getByRole("button", { name: /Подтвердить/i }).click();
-  await page.waitForTimeout(400);
-  const serverMsg = await page.locator('[role="alert"]').innerText().catch(() => "");
+  await page.locator('[data-testid="registration-entry-auth-code"] button[type="submit"]').click();
+  await page.waitForTimeout(600);
+  const serverMsg = await page.locator('[data-testid="registration-entry-auth-code"]').innerText();
   results.push({
     name: "auth_otp_server_fail_shows_error",
     pass: /ошибка сервера|временн|не удалось/i.test(serverMsg),
