@@ -1,5 +1,22 @@
 /* Scoped subset aligned to prototype registration-entry.css (20261017). */
 
+.registrationEntryScope {
+  --reg-entry-primary: #bb3035;
+  --reg-entry-primary-fg: #ffffff;
+  --reg-entry-primary-hover: #a6282d;
+}
+
+:global([data-theme="dark"]) .registrationEntryScope {
+  --reg-entry-primary: #e8a89f;
+  --reg-entry-primary-fg: #1c1514;
+  --reg-entry-primary-hover: #f0b8b0;
+}
+
+.registrationEntryScope {
+  --primary: var(--reg-entry-primary);
+  --primary-fg: var(--reg-entry-primary-fg);
+}
+
 .entryRoleContext {
   display: flex;
   align-items: center;
@@ -48,9 +65,14 @@
 .panelHeaderRow {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.panelHeaderRow .stepHint {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .eyebrow {
@@ -97,6 +119,8 @@
 
 .formFooter {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
   margin-top: var(--space-2);
@@ -160,8 +184,9 @@
 .entryTitle {
   font-size: clamp(1.35rem, 2.5vw, 1.75rem);
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.3;
   letter-spacing: -0.03em;
+  padding-top: 0.125rem;
 }
 
 .entryLead {

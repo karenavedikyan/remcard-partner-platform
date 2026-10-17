@@ -217,16 +217,91 @@ async function main() {
   await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 15_000 });
   await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
   await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 10_000 });
+  let consentPosts = 0;
+  await page.route("**/api/remcard/api/account/consent**", async (route) => {
+    consentPosts += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
   await page.locator('input[inputmode="numeric"]').first().fill("222222");
   await page.locator('[data-testid="registration-entry-auth-code"] button[type="submit"]').click();
-  await page.waitForTimeout(800);
+  await page.waitForSelector("#consent-title", { timeout: 20_000 });
   results.push({
     name: "auth_otp_success_verify_fixture",
     pass: verifySuccessCalls >= 1,
   });
   results.push({
-    name: "auth_otp_success_readiness_consents_fixture",
-    pass: readyReadiness.missingConsents.some((c) => c.kind === "TERMS"),
+    name: "auth_flow_shows_consents_after_verify",
+    pass: (await page.locator("#consent-title").count()) > 0,
+  });
+
+  await page.getByRole("button", { name: /^Продолжить$/ }).click();
+  await page.waitForTimeout(400);
+  const consentBlock = await page.locator("fieldset").first().innerText();
+  results.push({
+    name: "auth_consents_negative_submit_without_checks",
+    pass: /примите все обязательные/i.test(consentBlock),
+  });
+
+  const boxes = page.getByRole("checkbox");
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  readyReadiness.nextStep = "ready";
+  readyReadiness.missingConsents = [];
+  readyReadiness.canAccessCabinet = true;
+  await page.getByRole("button", { name: /^Продолжить$/ }).click();
+  await page.waitForTimeout(1000);
+  results.push({
+    name: "auth_consents_individual_checkboxes_and_submit",
+    pass: consentPosts >= 2,
+  });
+  results.push({
+    name: "auth_consents_fresh_readiness_after_accept",
+    pass: readyReadiness.missingConsents.length === 0,
+  });
+
+  authUser = "user-otp";
+  await page.goto(`${BASE}/join`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    sessionStorage.setItem(
+      "remcard.registration.wizard.v1",
+      JSON.stringify({ step: "auth", kind: "agent", updatedAt: Date.now() }),
+    );
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 15_000 });
+  await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
+  readyReadiness.nextStep = "consents";
+  readyReadiness.missingConsents = [
+    {
+      kind: "TERMS",
+      legalDocumentId: "terms-1",
+      version: "1",
+      url: "/legal/terms",
+      status: "missing",
+    },
+  ];
+  readyReadiness.canAccessCabinet = false;
+  await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 10_000 });
+  await page.locator('input[inputmode="numeric"]').first().fill("333333");
+  await page.locator('[data-testid="registration-entry-auth-code"] button[type="submit"]').click();
+  await page.waitForSelector("#consent-title", { timeout: 15_000 });
+  await page.evaluate(() => {
+    sessionStorage.setItem(
+      "remcard.registration.wizard.v1",
+      JSON.stringify({ step: "finish", kind: "agent", updatedAt: Date.now() }),
+    );
+  });
+  await page.goto(`${BASE}/join?phase=finish`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(600);
+  const finishBlockedText = await page.locator("body").innerText();
+  results.push({
+    name: "auth_negative_finish_before_consents",
+    pass: /соглаш|consent|войд|подтверд/i.test(finishBlockedText),
   });
 
   authUser = "user-B";

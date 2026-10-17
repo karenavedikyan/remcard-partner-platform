@@ -80,9 +80,10 @@ export function PartnerWelcome({ inviteToken, returnTo }: Props) {
               </span>
             </h1>
             <p className={styles.description}>
-              Знакомим наших клиентов с партнёрами RemCard.
-              <br />
-              Помогаем каждому найти своё.
+              <span className={styles.descriptionLine}>
+                Знакомим наших клиентов с партнёрами RemCard.
+              </span>
+              <span className={styles.descriptionLine}>Помогаем каждому найти своё.</span>
             </p>
             <p className={styles.target}>
               <svg viewBox="0 0 24 24" aria-hidden="true">

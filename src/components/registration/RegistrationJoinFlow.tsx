@@ -41,6 +41,7 @@ import { RegistrationAuthStep } from "./RegistrationAuthStep";
 import { RegistrationEntryDataStep } from "./RegistrationEntryDataStep";
 import { RegistrationKindIcon } from "./RegistrationKindIcons";
 import { RegistrationPublicShell } from "./RegistrationPublicShell";
+import entryStyles from "./registration-entry.module.css";
 import styles from "./registration-join.module.css";
 
 const ALL_KINDS: RegistrationKind[] = [
@@ -305,7 +306,7 @@ export function RegistrationJoinFlow() {
     const roleLabel = kind ? REGISTRATION_KIND_LABELS[kind].title : "Агент";
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
-        <div className={styles.joinPage}>
+        <div className={`${styles.joinPage} ${entryStyles.registrationEntryScope}`}>
           <JoinProgress current="auth" />
           {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
           {!authCodeVerified ? (
@@ -446,7 +447,13 @@ export function RegistrationJoinFlow() {
       ) : null}
 
       {step !== "types" ? (
-      <div className={styles.joinPage}>
+      <div
+        className={
+          step === "name" || step === "city"
+            ? `${styles.dataRegistration} ${entryStyles.registrationEntryScope}`
+            : `${styles.joinPage} ${entryStyles.registrationEntryScope}`
+        }
+      >
         {step === "name" && isAgentNewPath && kind ? (
           <>
             <JoinProgress current="data" />
