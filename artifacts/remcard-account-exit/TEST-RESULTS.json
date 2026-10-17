@@ -62,6 +62,7 @@
     "status": "READY_FOR_REVIEW",
     "migrationGateProve": "artifacts/remcard-account-exit/MIGRATION-GATE-PROVE.json",
     "operatorApply": "remcard-navigator/scripts/apply-account-exit-auth-session-revocation.mjs",
+    "preConnectSafetyTests": "node --test scripts/lib/__tests__/account-exit-preconnect-safety.test.mjs (0 connect on refused target)",
     "visualCaptureNote": "01.3 PNGs accepted by review; VISUAL-CAPTURE code SHA = commit at capture time (pre-01.4 tips), not retroactively rewritten"
   },
   "tail01_3": {

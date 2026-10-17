@@ -11,8 +11,10 @@ import pg from '../../remcard-navigator/node_modules/pg/lib/index.js';
 import {
   ACCOUNT_EXIT_AUTH_SESSION_REVOCATION_MIGRATION,
   ACCOUNT_EXIT_AUTH_SESSION_REVOCATION_SQL_SHA256,
+  ACCOUNT_EXIT_DISPOSABLE_SMOKE_DATABASES,
   applyAccountExitAuthSessionRevocationMigration,
   assertAccountExitAuthSessionRevocationBeforeApply,
+  assertAccountExitAuthSessionRevocationPreConnect,
   evaluateAuthSessionRevocationSchema,
   inspectAuthSessionRevocationSnapshot,
   loadAccountExitAuthSessionRevocationMigration,
@@ -29,7 +31,10 @@ export function migrationSqlSha256() {
   return loadAccountExitAuthSessionRevocationMigration().checksum;
 }
 
-const SMOKE_OPTIONS = { mode: 'local-test' };
+const SMOKE_OPTIONS = {
+  mode: 'local-test',
+  allowedLocalDatabases: ACCOUNT_EXIT_DISPOSABLE_SMOKE_DATABASES,
+};
 
 /**
  * Read-only before + controlled apply (ledger) + second noop apply on disposable PG.
@@ -42,9 +47,9 @@ export async function runAuthSessionRevocationMigrationGate(databaseUrl, cwdEnv 
     DIRECT_URL: databaseUrl,
   };
 
-  let pinnedChecksum;
+  let target;
   try {
-    pinnedChecksum = loadAccountExitAuthSessionRevocationMigration().checksum;
+    target = assertAccountExitAuthSessionRevocationPreConnect(env, SMOKE_OPTIONS);
   } catch (error) {
     return {
       scope: 'disposable_smoke_test_only',
@@ -56,7 +61,8 @@ export async function runAuthSessionRevocationMigrationGate(databaseUrl, cwdEnv 
     };
   }
 
-  const client = new pg.Client({ connectionString: databaseUrl });
+  const pinnedChecksum = target.checksum;
+  const client = new pg.Client({ connectionString: target.connectionString });
   await client.connect();
 
   const report = {
