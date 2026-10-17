@@ -1,11 +1,11 @@
 {
-  "implBase": "http://127.0.0.1:3020",
+  "implBase": "http://127.0.0.1:3022",
   "protoBase": "http://127.0.0.1:3099",
-  "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
-  "treeDirty": false,
+  "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+  "treeDirty": true,
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
-  "referenceBranch": "origin/implementation/remcard-reference-20261014",
-  "capturedAt": "2026-10-17T09:59:06.254Z",
+  "referenceShaImmutable": "771cc658a415a5d05b964f29f675d32db449198b",
+  "capturedAt": "2026-10-17T10:29:45.573Z",
   "captureCount": 12,
   "pairs": [
     {
@@ -41,11 +41,35 @@
       "step": "types",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 944,
       "fullPageHeight": 944,
+      "layout": {
+        "grid": {
+          "x": 182,
+          "width": 1076,
+          "columnCount": 3,
+          "columnWidthsPx": [
+            348,
+            348,
+            348
+          ],
+          "gridTemplateColumns": "348px 348px 348px"
+        },
+        "h1": {
+          "fontSizePx": 32,
+          "lineHeight": "40px"
+        },
+        "card": {
+          "backgroundColor": "rgb(255, 255, 255)",
+          "color": "rgb(36, 38, 35)",
+          "display": "flex",
+          "flexDirection": "column",
+          "minHeight": "210px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -53,12 +77,36 @@
       "kind": "implementation",
       "step": "types",
       "theme": "light",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 1185,
-      "fullPageHeight": 1185,
+      "pngHeight": 1027,
+      "fullPageHeight": 1027,
+      "layout": {
+        "grid": {
+          "x": 182,
+          "width": 1076,
+          "columnCount": 3,
+          "columnWidthsPx": [
+            348,
+            348,
+            348
+          ],
+          "gridTemplateColumns": "348px 348px 348px"
+        },
+        "h1": {
+          "fontSizePx": 34,
+          "lineHeight": "42.5px"
+        },
+        "card": {
+          "backgroundColor": "rgb(255, 255, 255)",
+          "color": "rgb(37, 41, 35)",
+          "display": "flex",
+          "flexDirection": "column",
+          "minHeight": "210px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -67,11 +115,35 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 944,
-      "fullPageHeight": 944,
+      "pngHeight": 1153,
+      "fullPageHeight": 1153,
+      "layout": {
+        "grid": {
+          "x": 182,
+          "width": 1076,
+          "columnCount": 3,
+          "columnWidthsPx": [
+            348,
+            348,
+            348
+          ],
+          "gridTemplateColumns": "348px 348px 348px"
+        },
+        "h1": {
+          "fontSizePx": 32,
+          "lineHeight": "40px"
+        },
+        "card": {
+          "backgroundColor": "rgb(34, 37, 35)",
+          "color": "rgb(241, 240, 235)",
+          "display": "flex",
+          "flexDirection": "column",
+          "minHeight": "210px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -79,12 +151,36 @@
       "kind": "implementation",
       "step": "types",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 1185,
-      "fullPageHeight": 1185,
+      "pngHeight": 1027,
+      "fullPageHeight": 1027,
+      "layout": {
+        "grid": {
+          "x": 182,
+          "width": 1076,
+          "columnCount": 3,
+          "columnWidthsPx": [
+            348,
+            348,
+            348
+          ],
+          "gridTemplateColumns": "348px 348px 348px"
+        },
+        "h1": {
+          "fontSizePx": 34,
+          "lineHeight": "42.5px"
+        },
+        "card": {
+          "backgroundColor": "rgb(32, 37, 32)",
+          "color": "rgb(240, 241, 236)",
+          "display": "flex",
+          "flexDirection": "column",
+          "minHeight": "210px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -93,11 +189,33 @@
       "step": "types",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1511,
-      "fullPageHeight": 1511,
+      "pngHeight": 1471,
+      "fullPageHeight": 1471,
+      "layout": {
+        "grid": {
+          "x": 16,
+          "width": 343,
+          "columnCount": 1,
+          "columnWidthsPx": [
+            343
+          ],
+          "gridTemplateColumns": "343px"
+        },
+        "h1": {
+          "fontSizePx": 24,
+          "lineHeight": "30px"
+        },
+        "card": {
+          "backgroundColor": "rgb(255, 255, 255)",
+          "color": "rgb(36, 38, 35)",
+          "display": "grid",
+          "flexDirection": "column",
+          "minHeight": "0px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -105,12 +223,34 @@
       "kind": "implementation",
       "step": "types",
       "theme": "light",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1377,
-      "fullPageHeight": 1377,
+      "pngHeight": 1785,
+      "fullPageHeight": 1785,
+      "layout": {
+        "grid": {
+          "x": 32,
+          "width": 311,
+          "columnCount": 1,
+          "columnWidthsPx": [
+            311
+          ],
+          "gridTemplateColumns": "311px"
+        },
+        "h1": {
+          "fontSizePx": 26,
+          "lineHeight": "32.5px"
+        },
+        "card": {
+          "backgroundColor": "rgb(255, 255, 255)",
+          "color": "rgb(37, 41, 35)",
+          "display": "grid",
+          "flexDirection": "column",
+          "minHeight": "0px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -119,11 +259,33 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1511,
-      "fullPageHeight": 1511,
+      "pngHeight": 1710,
+      "fullPageHeight": 1710,
+      "layout": {
+        "grid": {
+          "x": 16,
+          "width": 343,
+          "columnCount": 1,
+          "columnWidthsPx": [
+            343
+          ],
+          "gridTemplateColumns": "343px"
+        },
+        "h1": {
+          "fontSizePx": 24,
+          "lineHeight": "30px"
+        },
+        "card": {
+          "backgroundColor": "rgb(34, 37, 35)",
+          "color": "rgb(241, 240, 235)",
+          "display": "grid",
+          "flexDirection": "column",
+          "minHeight": "0px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -131,12 +293,34 @@
       "kind": "implementation",
       "step": "types",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1377,
-      "fullPageHeight": 1377,
+      "pngHeight": 1785,
+      "fullPageHeight": 1785,
+      "layout": {
+        "grid": {
+          "x": 32,
+          "width": 311,
+          "columnCount": 1,
+          "columnWidthsPx": [
+            311
+          ],
+          "gridTemplateColumns": "311px"
+        },
+        "h1": {
+          "fontSizePx": 26,
+          "lineHeight": "32.5px"
+        },
+        "card": {
+          "backgroundColor": "rgb(32, 37, 32)",
+          "color": "rgb(240, 241, 236)",
+          "display": "grid",
+          "flexDirection": "column",
+          "minHeight": "0px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -145,11 +329,33 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 1620,
-      "fullPageHeight": 1620,
+      "pngHeight": 1819,
+      "fullPageHeight": 1819,
+      "layout": {
+        "grid": {
+          "x": 16,
+          "width": 288,
+          "columnCount": 1,
+          "columnWidthsPx": [
+            288
+          ],
+          "gridTemplateColumns": "288px"
+        },
+        "h1": {
+          "fontSizePx": 24,
+          "lineHeight": "30px"
+        },
+        "card": {
+          "backgroundColor": "rgb(34, 37, 35)",
+          "color": "rgb(241, 240, 235)",
+          "display": "grid",
+          "flexDirection": "column",
+          "minHeight": "0px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -157,12 +363,34 @@
       "kind": "implementation",
       "step": "types",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 1544,
-      "fullPageHeight": 1544,
+      "pngHeight": 1939,
+      "fullPageHeight": 1939,
+      "layout": {
+        "grid": {
+          "x": 32,
+          "width": 256,
+          "columnCount": 1,
+          "columnWidthsPx": [
+            256
+          ],
+          "gridTemplateColumns": "256px"
+        },
+        "h1": {
+          "fontSizePx": 26,
+          "lineHeight": "32.5px"
+        },
+        "card": {
+          "backgroundColor": "rgb(32, 37, 32)",
+          "color": "rgb(240, 241, 236)",
+          "display": "grid",
+          "flexDirection": "column",
+          "minHeight": "0px"
+        }
+      },
       "verify": "passed"
     },
     {
@@ -170,12 +398,13 @@
       "kind": "implementation",
       "step": "data",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
       "fullPageHeight": 812,
+      "layout": null,
       "verify": "passed"
     },
     {
@@ -183,32 +412,34 @@
       "kind": "implementation",
       "step": "auth",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
+      "url": "http://127.0.0.1:3022/join",
+      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1061,
       "fullPageHeight": 1061,
+      "layout": null,
       "verify": "passed"
     }
   ],
-  "invalidSupersededRefs": [
-    "ref-types-375-dark.png (review-011 implementation snapshot)"
-  ],
-  "supersededImpl": [
-    "reg012-*",
-    "reg013-*",
-    "ref-types-375-light.png (review-01 extract)"
-  ],
+  "layoutParityFailures1440": [],
+  "captureStatus": "geometry-1440-within-tolerance",
+  "invalidSupersededRefs": [],
   "remainingVisualGaps": [
     "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
-    "Prototype ref hides demo-top/review-toolbar/disclaimer only; product copy unchanged.",
-    "Welcome hero not in this types-focused capture set."
+    "1440 h1: impl ~34px vs ref 32px (platform --text-xl clamp).",
+    "375 types: grid x/width differs (shell padding vs ref registration padding).",
+    "Types page height: impl taller (eyebrow + welcome link + progress spacing).",
+    "Welcome link retained on types step (not in frozen prototype footer).",
+    "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals)."
   ],
   "assertions": [
     "step_verify",
     "viewport_verify",
     "theme_verify",
-    "no_horizontal_overflow"
+    "no_horizontal_overflow",
+    "dev_overlay_hidden_post_navigation",
+    "dark_card_computed_settled",
+    "layout_json_embedded"
   ]
 }
