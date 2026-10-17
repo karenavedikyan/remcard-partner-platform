@@ -1,11 +1,13 @@
 {
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceGitSha": "771cc658a415a5d05b964f29f675d32db449198b",
-  "codeSha": "634e8949a3d8d3048511ebcde1cbe0e3036c1442",
-  "captureSha": "634e8949a3d8d3048511ebcde1cbe0e3036c1442",
-  "navigatorSha": "3c964614ecbcadea0b9986d4d0da771899e88edc",
-  "platformSha": "634e8949a3d8d3048511ebcde1cbe0e3036c1442",
-  "runDir": "/tmp/r06-r063-v1",
+  "codeSha": "7d24c6bfa8bd6cf3c2ca57cf4dc8ab809c4ec233",
+  "captureSha": "7d24c6bfa8bd6cf3c2ca57cf4dc8ab809c4ec233",
+  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+  "platformSha": "dfecedcfdd807eb83bd83f4225ff579d08c84fd7",
+  "runDir": "/tmp/r06-r063-v2",
+  "matchedPairCount": 7,
+  "implOnlySmokeCount": 1,
   "pairs": [
     {
       "name": "profile-completed-summary",
@@ -50,19 +52,19 @@
       "width": 375
     },
     {
-      "name": "profile-catalog-pending",
-      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-pending-impl-1440-light.png",
-      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-pending-ref-1440-light.png",
-      "theme": "light",
-      "width": 1440
-    },
-    {
       "name": "profile-catalog-wizard-smoke",
       "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-smoke-impl-320-light.png",
       "refPath": null,
       "theme": "light",
       "width": 320
+    },
+    {
+      "name": "profile-catalog-pending",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-pending-impl-1440-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-pending-ref-1440-light.png",
+      "theme": "light",
+      "width": 1440
     }
   ],
-  "note": "ref captures use frozen prototype cabinet+specialist; pixel parity not auto-scored"
+  "note": "7 matched impl/ref pairs + 1 impl-only smoke; pixel parity not auto-scored (CAPTURED ≠ PASS)"
 }

@@ -1,29 +1,31 @@
 {
   "ok": true,
   "gate": "on",
-  "runDir": "/tmp/r06-r063-v1",
+  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+  "platformSha": "dfecedcfdd807eb83bd83f4225ff579d08c84fd7",
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
-  "navigatorSha": "3c964614ecbcadea0b9986d4d0da771899e88edc",
-  "platformSha": "634e8949a3d8d3048511ebcde1cbe0e3036c1442",
-  "runtimeStackSha": {
-    "navigator": "3c964614ecbcadea0b9986d4d0da771899e88edc",
-    "platform": "634e8949a3d8d3048511ebcde1cbe0e3036c1442"
-  },
-  "captureSha": "634e8949a3d8d3048511ebcde1cbe0e3036c1442",
-  "testCounts": {
-    "navigatorIntegrationVitest": { "exitCode": 0, "testsPassed": 7 },
-    "navigatorUnitTsx": { "exitCode": 0, "testsPassed": 10 },
-    "platformVitest": { "exitCode": 0, "testsPassed": 3 },
-    "browserBffGateOffVitest": { "exitCode": 0, "testsPassed": 1 }
-  },
   "steps": {
-    "migrationControlled": { "exitCode": 0, "mode": "full", "afterOk": true, "reapplyOk": true },
-    "migrationNegatives": { "exitCode": 0 },
-    "integrationVitest": { "exitCode": 0 },
-    "unitTsx": { "exitCode": 0 },
-    "platformVitest": { "exitCode": 0 },
-    "browserBff": { "exitCode": 0 },
-    "visualPairs": { "exitCode": 0, "pairCount": 8 }
-  },
-  "log": "/tmp/r06-r063-v1/acceptance-at-634e894.log"
+    "migrationControlled": {
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"checksums\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"pinned\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"before\":{\"tar"
+    },
+    "migrationNegatives": {
+      "exitCode": 0
+    },
+    "integrationVitest": {
+      "exitCode": 0
+    },
+    "unitTsx": {
+      "exitCode": 0
+    },
+    "platformVitest": {
+      "exitCode": 0
+    },
+    "browserBff": {
+      "exitCode": 0
+    },
+    "visualPairs": {
+      "exitCode": 0
+    }
+  }
 }

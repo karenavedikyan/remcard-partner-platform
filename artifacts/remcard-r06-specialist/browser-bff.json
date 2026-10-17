@@ -44,7 +44,7 @@
     "migration": {
       "exitCode": 0,
       "ok": true,
-      "stdout": "{\"ok\":true,\"results\":[{\"name\":\"invalid_host\",\"ok\":true,\"message\":\"refusing_non_loopback_host\"},{\"name\":\"wrong_database\",\"ok\":true,\"message\":\"refusing_non_allowlisted_database\"},{\"name\":\"ledger_checksum_mismatch\",\"ok\":true,\"message\":\"ledger_checksum_mismatch:20261017123000_prof_r06_specialist_profile\"},{\"name\":\"before_happy_or_applied\",\"ok\":true,\"message\":\"before passed\"}]}\n"
+      "stdout": "{\"ok\":true,\"results\":[{\"name\":\"invalid_host\",\"ok\":true,\"message\":\"refusing_non_loopback_host\"},{\"name\":\"wrong_database\",\"ok\":true,\"message\":\"refusing_non_allowlisted_database\"},{\"name\":\"ledger_checksum_mismatch\",\"ok\":true,\"message\":\"ledger_checksum_mismatch:20261017123000_prof_r06_specialist_profile\"},{\"name\":\"ledger_checksum_guard_regression\",\"ok\":true,\"message\":\"guard rejected corrupted ledger\"}"
     }
   },
   "csrf": {
