@@ -22,14 +22,14 @@ Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scr
 
 ## R06.3 FINAL VISUAL — evidence refresh (not publication GO)
 
-Specialist UI parity vs ref `771cc658…` at **`41a1306`** (tiles/chips/footer, catalog step 0, preview, pending amber, completed summary). Harness/stack fixes through **`3a67e14`**.
+Specialist UI parity vs ref `771cc658…` at **`41a1306`** (tiles/chips/footer, catalog step 0, preview, pending amber, completed summary). Harness/stack **`3a67e14`**. **Legacy preview regression fix **`c89cea4`**: `CatalogPublicationPreview` default restores Товары/legacy tags; `variant="specialist"` only from specialist wizard/pending + scoped CSS.
 
 **Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-final`, ports 3055/3056, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`.
 
 | SHA role | Value |
 |----------|--------|
-| runtime / runner / full acceptance / capture | `3a67e14` |
-| specialist UI | `41a1306` |
+| runtime / runner / full acceptance / capture | `c89cea4` |
+| specialist UI (incl. preview variant) | `41a1306` + `c89cea4` |
 | docs-only tip (prior artifacts) | `a47c9bf` |
 | navigator (unchanged) | `04613f09` |
 
