@@ -1,121 +1,177 @@
 {
-  "base": "http://127.0.0.1:3020",
-  "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-  "refSha": "origin/implementation/remcard-reference-20261014",
-  "capturedAt": "2026-10-17T09:45:25.621Z",
-  "superseded": [
-    "reg012-welcome-1440-light.png",
-    "reg012-welcome-375-light.png",
-    "reg012-welcome-375-dark.png",
-    "reg012-welcome-320-dark.png",
-    "reg012-types-375-dark.png",
-    "reg012-types-1440-light.png",
-    "reg012-data-375-dark.png",
-    "reg012-auth-375-dark.png"
+  "implBase": "http://127.0.0.1:3020",
+  "protoBase": "http://127.0.0.1:3099",
+  "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+  "treeDirty": true,
+  "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "referenceBranch": "origin/implementation/remcard-reference-20261014",
+  "capturedAt": "2026-10-17T09:58:32.969Z",
+  "captureCount": 12,
+  "pairs": [
+    {
+      "pair": "types-1440-light",
+      "ref": "ref-types-1440-light.png",
+      "impl": "impl-types-1440-light.png"
+    },
+    {
+      "pair": "types-1440-dark",
+      "ref": "ref-types-1440-dark.png",
+      "impl": "impl-types-1440-dark.png"
+    },
+    {
+      "pair": "types-375-light",
+      "ref": "ref-types-375-light.png",
+      "impl": "impl-types-375-light.png"
+    },
+    {
+      "pair": "types-375-dark",
+      "ref": "ref-types-375-dark.png",
+      "impl": "impl-types-375-dark.png"
+    },
+    {
+      "pair": "types-320-dark",
+      "ref": "ref-types-320-dark.png",
+      "impl": "impl-types-320-dark.png"
+    }
   ],
   "captures": [
     {
-      "file": "reg013-welcome-1440-light.png",
-      "step": "welcome",
+      "file": "ref-types-1440-light.png",
+      "kind": "reference",
+      "step": "types",
       "theme": "light",
-      "url": "http://127.0.0.1:3020/",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 900,
-      "fullPageHeight": 900,
+      "pngHeight": 944,
+      "fullPageHeight": 944,
       "verify": "passed"
     },
     {
-      "file": "reg013-welcome-375-light.png",
-      "step": "welcome",
+      "file": "impl-types-1440-light.png",
+      "kind": "implementation",
+      "step": "types",
       "theme": "light",
-      "url": "http://127.0.0.1:3020/",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-      "viewportWidth": 375,
-      "pngWidth": 375,
-      "pngHeight": 1321,
-      "fullPageHeight": 1321,
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1185,
+      "fullPageHeight": 1185,
       "verify": "passed"
     },
     {
-      "file": "reg013-welcome-375-dark.png",
-      "step": "welcome",
+      "file": "ref-types-1440-dark.png",
+      "kind": "reference",
+      "step": "types",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-      "viewportWidth": 375,
-      "pngWidth": 375,
-      "pngHeight": 1321,
-      "fullPageHeight": 1321,
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 944,
+      "fullPageHeight": 944,
       "verify": "passed"
     },
     {
-      "file": "reg013-welcome-320-dark.png",
-      "step": "welcome",
+      "file": "impl-types-1440-dark.png",
+      "kind": "implementation",
+      "step": "types",
       "theme": "dark",
-      "url": "http://127.0.0.1:3020/",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1185,
+      "fullPageHeight": 1185,
+      "verify": "passed"
+    },
+    {
+      "file": "ref-types-375-light.png",
+      "kind": "reference",
+      "step": "types",
+      "theme": "light",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1511,
+      "fullPageHeight": 1511,
+      "verify": "passed"
+    },
+    {
+      "file": "impl-types-375-light.png",
+      "kind": "implementation",
+      "step": "types",
+      "theme": "light",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1377,
+      "fullPageHeight": 1377,
+      "verify": "passed"
+    },
+    {
+      "file": "ref-types-375-dark.png",
+      "kind": "reference",
+      "step": "types",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1511,
+      "fullPageHeight": 1511,
+      "verify": "passed"
+    },
+    {
+      "file": "impl-types-375-dark.png",
+      "kind": "implementation",
+      "step": "types",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1377,
+      "fullPageHeight": 1377,
+      "verify": "passed"
+    },
+    {
+      "file": "ref-types-320-dark.png",
+      "kind": "reference",
+      "step": "types",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 1339,
-      "fullPageHeight": 1339,
+      "pngHeight": 1620,
+      "fullPageHeight": 1620,
       "verify": "passed"
     },
     {
-      "file": "reg013-types-1440-light.png",
-      "step": "types",
-      "theme": "light",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-      "viewportWidth": 1440,
-      "pngWidth": 1440,
-      "pngHeight": 995,
-      "fullPageHeight": 995,
-      "verify": "passed"
-    },
-    {
-      "file": "reg013-types-1440-dark.png",
+      "file": "impl-types-320-dark.png",
+      "kind": "implementation",
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3020/join",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-      "viewportWidth": 1440,
-      "pngWidth": 1440,
-      "pngHeight": 995,
-      "fullPageHeight": 995,
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 1544,
+      "fullPageHeight": 1544,
       "verify": "passed"
     },
     {
-      "file": "reg013-types-375-light.png",
-      "step": "types",
-      "theme": "light",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-      "viewportWidth": 375,
-      "pngWidth": 375,
-      "pngHeight": 1127,
-      "fullPageHeight": 1127,
-      "verify": "passed"
-    },
-    {
-      "file": "reg013-types-375-dark.png",
-      "step": "types",
-      "theme": "dark",
-      "url": "http://127.0.0.1:3020/join",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
-      "viewportWidth": 375,
-      "pngWidth": 375,
-      "pngHeight": 1127,
-      "fullPageHeight": 1127,
-      "verify": "passed"
-    },
-    {
-      "file": "reg013-data-375-dark.png",
+      "file": "impl-data-375-dark.png",
+      "kind": "implementation",
       "step": "data",
       "theme": "dark",
       "url": "http://127.0.0.1:3020/join",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
@@ -123,43 +179,36 @@
       "verify": "passed"
     },
     {
-      "file": "reg013-auth-375-dark.png",
+      "file": "impl-auth-375-dark.png",
+      "kind": "implementation",
       "step": "auth",
       "theme": "dark",
       "url": "http://127.0.0.1:3020/join",
-      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "codeSha": "2f15d9c07c023d9a4036ad454a3823dc8129bc1c",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1065,
-      "fullPageHeight": 1065,
+      "pngHeight": 1061,
+      "fullPageHeight": 1061,
       "verify": "passed"
     }
   ],
-  "refs": [
-    {
-      "file": "ref-types-375-light.png",
-      "refSha": "origin/implementation/remcard-reference-20261014",
-      "refPath": "docs/reference/registration-20261017/review-01/registration-review-ref-types-375.png",
-      "pngWidth": 375,
-      "pngHeight": 1710
-    },
-    {
-      "file": "ref-types-375-dark.png",
-      "refSha": "origin/implementation/remcard-reference-20261014",
-      "refPath": "docs/reference/registration-20261017/review-011/reg011-types-375-dark.png",
-      "pngWidth": 375,
-      "pngHeight": 964
-    }
+  "invalidSupersededRefs": [
+    "ref-types-375-dark.png (review-011 implementation snapshot)"
+  ],
+  "supersededImpl": [
+    "reg012-*",
+    "reg013-*",
+    "ref-types-375-light.png (review-01 extract)"
   ],
   "remainingVisualGaps": [
-    "Frozen reference ships type picker PNG only at 375px (light ref + dark review-011); no 1440 type/ref pair in repo.",
-    "Progress step pixel parity not scored; labels/layout aligned in code only.",
-    "Welcome hero illustration differs from static reference export (accepted in 01.1)."
+    "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
+    "Prototype ref hides demo-top/review-toolbar/disclaimer only; product copy unchanged.",
+    "Welcome hero not in this types-focused capture set."
   ],
   "assertions": [
-    "cta_contrast_light",
-    "cta_contrast_dark",
-    "no_320_overflow",
-    "step_verify_before_capture"
+    "step_verify",
+    "viewport_verify",
+    "theme_verify",
+    "no_horizontal_overflow"
   ]
 }

@@ -1,28 +1,25 @@
-# REGISTRATION-01.3 — test results
+# REGISTRATION-01.3 visual finish — test results
 
-Date: 2026-10-17  
-Scope: invite continuation for ready users + join visual/progress/icons + evidence runner.
+Date: 2026-10-17
 
-## Platform (this revision)
+## Executed (this revision)
 
-| Command | Exit | Count |
-|---------|------|-------|
-| `pnpm exec tsx --test src/lib/auth-flow.test.ts src/lib/registration/routing.test.ts` | 0 | **30 PASS** |
+| Command | Exit | Result |
+|---------|------|--------|
+| `pnpm exec tsx --test src/lib/auth-flow.test.ts src/lib/registration/routing.test.ts src/lib/registration/draft.test.ts` | 0 | **33 PASS** |
 | `pnpm run build` | 0 | **PASS** |
-| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-visual.mjs` | 0 | **PASS** (13 impl captures + 2 ref extracts; step/viewport verify) |
-| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-browser-flow.mjs` | 0 | **4/4 PASS** |
+| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-visual.mjs` | 0 | **12 captures** (5 ref+impl type pairs incl. 320 smoke + data/auth impl) |
+| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-browser-flow.mjs` | 0 | **4/4 PASS** (ready invite carry-forward) |
 
-Browser flows: ready user + invite redirect, auth reload, owner mismatch, employee invite.
+## SHAs
 
-## Navigator (carry-over, no code change in 01.3)
+- **Code (capture):** see `visual-capture.json` → `codeSha` (must match branch tip after evidence commit)
+- **Frozen reference:** `771cc658a415a5d05b964f29f675d32db449198b` (`implementation/remcard-reference-20261014`)
 
-| Command | Exit | Count | SHA |
-|---------|------|-------|-----|
-| `DATABASE_URL=postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/remcard_r01_test vitest run profAgentRegistrationFinish.integration.test.ts` | — | **7 PASS** (not re-run) | `9fa871f3` |
-| Probes `registration-review` + `registration-011-review` | — | **4 PASS** (not re-run) | `9fa871f3` |
+## Carry-over (not re-run)
+
+- Navigator PG integration **7 PASS** @ `9fa871f3`
 
 ## NOT_RUN
 
-- Live MAX/Telegram OAuth  
-- Production / shared staging DB  
-- Full cabinet re-audit  
+- Live MAX/Telegram, production deploy, full cabinet audit

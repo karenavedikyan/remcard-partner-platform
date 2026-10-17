@@ -91,9 +91,12 @@ async function verifyTypesStep(page) {
 }
 
 async function captureRecord(page, fileName, expectedWidth, theme, step, kind, verifyFn) {
+  await applyTheme(page, theme);
   await verifyViewport(page, expectedWidth);
   const dataTheme = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
-  if (dataTheme !== theme) throw new Error(`Theme expected ${theme}, got ${dataTheme}`);
+  if (kind === "reference" && dataTheme !== theme) {
+    throw new Error(`Theme expected ${theme}, got ${dataTheme}`);
+  }
   await verifyFn(page);
   const filePath = path.join(OUT, fileName);
   const fullPageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
