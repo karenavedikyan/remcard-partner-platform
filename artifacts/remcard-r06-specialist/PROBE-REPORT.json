@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "runDir": "/tmp/r06-abc-evidence-mvcqh0oj",
+  "ports": {
+    "nav": 3033,
+    "platform": 3034
+  },
+  "runtime": {
+    "navigatorGitHead": "04613f09400b54c894fa192a81b09834c8797fd5",
+    "platformBuiltGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+    "platformApplicationCodeSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
+    "navigatorBuildId": "0Oy6yLzASzhhJpjFK-4KR",
+    "platformBuildId": "O5Cl_4Hejc7eoUhbXyYLz"
+  },
+  "runner": {
+    "platformGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+    "docsOnlyDeltaFromCodeSha": [
+      "artifacts/remcard-r06-specialist/RELEASE-REPORT.md",
+      "artifacts/remcard-r06-specialist/TEST-RESULTS.json",
+      "artifacts/remcard-r06-specialist/screenshots/manifest.json",
+      "artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-smoke-impl-320-light.png",
+      "artifacts/remcard-r06-specialist/screenshots/profile-completed-summary-ref-1440-light.png",
+      "scripts/r06-visual-pairs.mjs"
+    ]
+  },
+  "http": {
+    "navHealthStatus": 200,
+    "platLoginStatus": 200
+  },
+  "mismatches": [],
+  "probedAt": "2026-10-17T18:34:30.998Z"
+}

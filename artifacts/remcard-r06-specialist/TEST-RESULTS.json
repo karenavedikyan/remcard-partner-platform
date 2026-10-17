@@ -1,0 +1,101 @@
+{
+  "ok": true,
+  "gate": "on",
+  "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "runDir": "/tmp/r06-abc-evidence-mvcqh0oj",
+  "probeReportPath": "/tmp/r06-abc-evidence-mvcqh0oj/probe-report.json",
+  "runtime": {
+    "navigator": {
+      "gitHead": "04613f09400b54c894fa192a81b09834c8797fd5",
+      "nextBuildId": "0Oy6yLzASzhhJpjFK-4KR",
+      "gitDirty": true,
+      "port": 3033
+    },
+    "platform": {
+      "applicationCodeSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
+      "builtGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+      "nextBuildId": "O5Cl_4Hejc7eoUhbXyYLz",
+      "gitDirty": true,
+      "port": 3034
+    }
+  },
+  "runner": {
+    "acceptanceInvokedPlatformGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+    "docsTipOnly": true
+  },
+  "probe": {
+    "ok": true,
+    "runDir": "/tmp/r06-abc-evidence-mvcqh0oj",
+    "ports": {
+      "nav": 3033,
+      "platform": 3034
+    },
+    "runtime": {
+      "navigatorGitHead": "04613f09400b54c894fa192a81b09834c8797fd5",
+      "platformBuiltGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+      "platformApplicationCodeSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
+      "navigatorBuildId": "0Oy6yLzASzhhJpjFK-4KR",
+      "platformBuildId": "O5Cl_4Hejc7eoUhbXyYLz"
+    },
+    "runner": {
+      "platformGitHead": "c0996e1df27af87217d3a23f289ed11b0f1b761a",
+      "docsOnlyDeltaFromCodeSha": [
+        "artifacts/remcard-r06-specialist/RELEASE-REPORT.md",
+        "artifacts/remcard-r06-specialist/TEST-RESULTS.json",
+        "artifacts/remcard-r06-specialist/screenshots/manifest.json",
+        "artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-smoke-impl-320-light.png",
+        "artifacts/remcard-r06-specialist/screenshots/profile-completed-summary-ref-1440-light.png",
+        "scripts/r06-visual-pairs.mjs"
+      ]
+    },
+    "http": {
+      "navHealthStatus": 200,
+      "platLoginStatus": 200
+    },
+    "mismatches": [],
+    "probedAt": "2026-10-17T18:33:43.012Z"
+  },
+  "priorFullAcceptanceTipSha": "afea396c2d68817301756eaa521b9c8ea832c605",
+  "legacyPreviewRuntimeSha": "c89cea48766c0c8149122075da4251be7eeb4969",
+  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
+  "platformSha": "e18487ad634e9a8e33ebbb08d55eb16aa3b8d889",
+  "steps": {
+    "migrationControlled": {
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"checksums\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"pinned\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},\"before\":{\"tar"
+    },
+    "migrationNegatives": {
+      "exitCode": 0
+    },
+    "integrationVitest": {
+      "exitCode": 0,
+      "testsPassed": 7
+    },
+    "unitTsx": {
+      "exitCode": 0,
+      "testsPassed": null
+    },
+    "platformVitest": {
+      "exitCode": 0,
+      "testsPassed": 4
+    },
+    "browserBff": {
+      "exitCode": 0
+    },
+    "visualPairs": {
+      "exitCode": 0
+    }
+  },
+  "carryOver": {
+    "note": "Full PG migration negative suite last pinned at navigator 04613f09; not re-attributed to new docs SHAs",
+    "backendEvidenceSha": "04613f09400b54c894fa192a81b09834c8797fd5"
+  },
+  "openScope": [
+    "taxonomy auto-add — not implemented"
+  ],
+  "visualExceptionsNot1to1": [
+    "specialization search styling vs ref",
+    "footer submit alignment / full-width mobile",
+    "catalog CTA primary vs ref secondary"
+  ]
+}

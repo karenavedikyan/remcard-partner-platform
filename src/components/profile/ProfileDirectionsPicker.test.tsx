@@ -44,6 +44,22 @@ describe("ProfileDirectionsPicker", () => {
     expect(screen.getByText(/Товар: Двери ×/)).toBeTruthy();
   });
 
+  it("uses default checkbox layout unless tileLayout is enabled", async () => {
+    const { container } = render(
+      <ProfileDirectionsPicker
+        productCategoryIds={[]}
+        serviceSpecializationIds={[]}
+        navigatorStageIds={[]}
+        primaryDirection={null}
+        onChangeProducts={vi.fn()}
+        onChangeServices={vi.fn()}
+        onChangeStages={vi.fn()}
+        onChangePrimary={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(container.querySelector('[data-direction-picker-layout="default"]')).toBeTruthy());
+  });
+
   it("clears primary when removing product chip", async () => {
     const onPrimary = vi.fn();
     const onProducts = vi.fn();

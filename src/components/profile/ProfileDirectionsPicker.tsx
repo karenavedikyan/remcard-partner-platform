@@ -15,6 +15,14 @@ type ProfileDirectionsPickerProps = {
   disabled?: boolean;
   /** Catalog publication: no working-profile stage/primary editors. */
   catalogMode?: boolean;
+  /** R06 specialist: services + stages only, no products. */
+  specialistMode?: boolean;
+  /** Tighter scrollable grids (catalog). Profile wizard uses full-width grids. */
+  compactSpecialistGrid?: boolean;
+  /** Ref-like direction tiles (working profile specialization). */
+  tileLayout?: boolean;
+  /** Stages (+ primary when not catalog) in a collapsible block. */
+  collapseAdvancedDirections?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -37,6 +45,21 @@ function matchesFilter(item: PartnerTaxonomyItem, q: string): boolean {
   return item.label.toLowerCase().includes(needle) || item.id.toLowerCase().includes(needle);
 }
 
+function orderedVisibleItems(
+  all: PartnerTaxonomyItem[],
+  selectedIds: string[],
+  q: string,
+): PartnerTaxonomyItem[] {
+  const selected = selectedIds
+    .map((id) => all.find((item) => item.id === id))
+    .filter((item): item is PartnerTaxonomyItem => Boolean(item));
+  const selectedSet = new Set(selectedIds);
+  const rest = all.filter(
+    (item) => !selectedSet.has(item.id) && matchesFilter(item, q),
+  );
+  return [...selected, ...rest];
+}
+
 export function ProfileDirectionsPicker({
   productCategoryIds,
   serviceSpecializationIds,
@@ -44,6 +67,10 @@ export function ProfileDirectionsPicker({
   primaryDirection,
   disabled,
   catalogMode,
+  specialistMode,
+  compactSpecialistGrid = true,
+  tileLayout = false,
+  collapseAdvancedDirections = false,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -90,7 +117,7 @@ export function ProfileDirectionsPicker({
       map.set(`service:${item.id}`, `Услуга: ${item.label}`);
     }
     for (const item of fullTaxonomy?.stages ?? []) {
-      map.set(`stage:${item.id}`, item.label);
+      map.set(`stage:${item.id}`, `Этап: ${item.label}`);
     }
     return map;
   }, [fullTaxonomy]);
@@ -141,11 +168,20 @@ export function ProfileDirectionsPicker({
         },
       });
     }
+    for (const id of navigatorStageIds) {
+      chips.push({
+        key: `st-${id}`,
+        label: labelByKey.get(`stage:${id}`) ?? `Этап: ${id}`,
+        remove: () => onChangeStages(navigatorStageIds.filter((x) => x !== id)),
+      });
+    }
     return chips;
   }, [
     labelByKey,
+    navigatorStageIds,
     onChangeProducts,
     onChangeServices,
+    onChangeStages,
     productCategoryIds,
     serviceSpecializationIds,
     removePrimaryIfNeeded,
@@ -184,13 +220,47 @@ export function ProfileDirectionsPicker({
   }
 
   return (
-    <div className={styles.wrap}>
+    <div
+      className={
+        specialistMode && compactSpecialistGrid
+          ? `${styles.wrap} ${styles.specialistCompact}`
+          : styles.wrap
+      }
+      data-direction-picker-layout={tileLayout ? "tiles" : "default"}
+    >
       <p className={styles.lead}>
-        Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать
-        одно направление или оба.
+        {specialistMode
+          ? "Выберите услуги и этапы ремонта, где вы можете помочь."
+          : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
       </p>
 
-      {selectedChips.length === 0 ? (
+      {tileLayout ? (
+        <section className={styles.selectionSummary} aria-label="Выбранные направления">
+          <div className={styles.selectionHeading}>
+            <strong>Уже выбрано</strong>
+            <small>Услуги и этапы сохраняются при смене вида</small>
+          </div>
+          {selectedChips.length === 0 ? (
+            <p className={styles.empty}>Пока ничего не выбрано — отметьте направления ниже.</p>
+          ) : (
+            <ul className={styles.chips}>
+              {selectedChips.map((chip) => (
+                <li key={chip.key}>
+                  <button
+                    type="button"
+                    className={styles.chip}
+                    disabled={disabled}
+                    onClick={chip.remove}
+                    aria-label={`Убрать ${chip.label}`}
+                  >
+                    {chip.label} ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : selectedChips.length === 0 ? (
         <p className={styles.empty}>Пока ничего не выбрано — отметьте направления ниже.</p>
       ) : (
         <ul className={styles.chips} aria-label="Выбранные направления">
@@ -233,15 +303,16 @@ export function ProfileDirectionsPicker({
         </div>
       ) : null}
 
-      {filtered ? (
+      {fullTaxonomy && filtered ? (
         <>
+          {!specialistMode ? (
           <fieldset className={styles.group} disabled={disabled}>
             <legend>Товары</legend>
             <div className={styles.optionGrid}>
               {filtered.products.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Товары».</p>
               ) : (
-                filtered.products.map((item) => (
+                orderedVisibleItems(fullTaxonomy.products, productCategoryIds, filter.trim()).map((item) => (
                   <label key={item.id} className={styles.checkRow}>
                     <input
                       type="checkbox"
@@ -258,71 +329,120 @@ export function ProfileDirectionsPicker({
               )}
             </div>
           </fieldset>
+          ) : null}
 
-          <fieldset className={styles.group} disabled={disabled}>
+          <fieldset
+            className={tileLayout ? styles.tileFieldset : styles.group}
+            disabled={disabled}
+          >
             <legend>Работы и услуги</legend>
-            <div className={styles.optionGrid}>
-              {filtered.services.length === 0 ? (
+            <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
+              {orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim())
+                .length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
               ) : (
-                filtered.services.map((item) => (
-                  <label key={item.id} className={styles.checkRow}>
-                    <input
-                      type="checkbox"
-                      checked={serviceSpecializationIds.includes(item.id)}
-                      onChange={() => {
-                        const next = toggleId(serviceSpecializationIds, item.id);
-                        onChangeServices(next);
-                        removePrimaryIfNeeded(productCategoryIds, next);
-                      }}
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                ))
+                orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim()).map((item) => {
+                  const checked = serviceSpecializationIds.includes(item.id);
+                  const rowClass = tileLayout
+                    ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
+                    : styles.checkRow;
+                  return (
+                    <label key={item.id} className={rowClass}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const next = toggleId(serviceSpecializationIds, item.id);
+                          onChangeServices(next);
+                          removePrimaryIfNeeded(productCategoryIds, next);
+                        }}
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  );
+                })
               )}
             </div>
           </fieldset>
         </>
       ) : null}
 
-      {!catalogMode && primaryOptions.length > 0 ? (
-        <label className={styles.primary}>
-          <span>Основное направление</span>
-          <select
+      {(() => {
+        const stageBlock = !catalogMode || specialistMode ? (
+          <fieldset
+            className={tileLayout ? styles.tileFieldset : styles.group}
             disabled={disabled}
-            value={primaryValue}
-            onChange={(e) => handlePrimaryChange(e.target.value)}
           >
-            <option value="">Без основного</option>
-            {primaryOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+            <legend>На каких этапах вы полезны</legend>
+            <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
+            <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
+              {orderedVisibleItems(
+                fullTaxonomy?.stages ?? [],
+                navigatorStageIds,
+                filter.trim(),
+              ).map((item) => {
+                const checked = navigatorStageIds.includes(item.id);
+                const rowClass = tileLayout
+                  ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
+                  : styles.checkRow;
+                return (
+                  <label key={item.id} className={rowClass}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onChangeStages(toggleId(navigatorStageIds, item.id))}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null;
 
-      {!catalogMode ? (
-        <fieldset className={styles.group} disabled={disabled}>
-          <legend>На каких этапах вы полезны</legend>
-          <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
-          <div className={styles.optionGrid}>
-            {(fullTaxonomy?.stages ?? [])
-              .filter((item) => matchesFilter(item, filter.trim()))
-              .map((item) => (
-                <label key={item.id} className={styles.checkRow}>
-                  <input
-                    type="checkbox"
-                    checked={navigatorStageIds.includes(item.id)}
-                    onChange={() => onChangeStages(toggleId(navigatorStageIds, item.id))}
-                  />
-                  <span>{item.label}</span>
-                </label>
-              ))}
-          </div>
-        </fieldset>
-      ) : null}
+        const primaryBlock =
+          !catalogMode && primaryOptions.length > 0 ? (
+            <label className={styles.primary}>
+              <span>Основное направление</span>
+              <select
+                disabled={disabled}
+                value={primaryValue}
+                onChange={(e) => handlePrimaryChange(e.target.value)}
+              >
+                <option value="">Без основного</option>
+                {primaryOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null;
+
+        if (!stageBlock && !primaryBlock) return null;
+
+        if (collapseAdvancedDirections) {
+          return (
+            <details
+              className={styles.advancedCollapse}
+              data-testid="direction-advanced-collapse"
+            >
+              <summary>Этапы ремонта и основное направление</summary>
+              <div className={styles.advancedInner}>
+                {stageBlock}
+                {primaryBlock}
+              </div>
+            </details>
+          );
+        }
+
+        return (
+          <>
+            {primaryBlock}
+            {stageBlock}
+          </>
+        );
+      })()}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   fetchAgentProfileGateServer,
   isPureAgentCompactProfile,
 } from "@/lib/agent-profile/serverGate";
+import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import {
   deriveProfileCabinetAccess,
@@ -64,6 +65,7 @@ export default async function ProfilePage(props: {
   }
 
   const initialAgentR02Gate = await fetchAgentProfileGateServer(cookieHeader);
+  const initialSpecialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
   const pureAgentCompact = isPureAgentCompactProfile(
     profileResult.data.user.partnerActivities,
     initialAgentR02Gate,
@@ -108,6 +110,7 @@ export default async function ProfilePage(props: {
         focusField={focusField}
         returnTo={safeReturnTo}
         initialAgentR02Gate={initialAgentR02Gate}
+        initialSpecialistR06Gate={initialSpecialistR06Gate}
         initialPureAgentCompact={pureAgentCompact}
       />
     </>

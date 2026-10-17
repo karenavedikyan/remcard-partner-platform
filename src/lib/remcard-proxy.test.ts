@@ -348,9 +348,16 @@ describe("remcard proxy transport checks", () => {
   });
 
   it("rejects missing or foreign origins for mutating requests", () => {
+    const prev = process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN;
+    delete process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN;
     assert.equal(isAllowedMutatingOrigin(null), false);
     assert.equal(isAllowedMutatingOrigin("http://evil.example"), false);
     assert.equal(isAllowedMutatingOrigin("http://localhost:3000"), true);
+    assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048"), false);
+    process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN = "1";
+    assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048"), false);
+    if (prev === undefined) delete process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN;
+    else process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN = prev;
   });
 
   it("detects statuses that must not include a body", () => {

@@ -257,6 +257,22 @@
   margin-top: var(--pw-4);
 }
 
+.reviewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--pw-3);
+  font-size: var(--pw-sm);
+}
+
+.reviewList li {
+  padding: var(--pw-3);
+  border: 1px solid var(--pw-line);
+  border-radius: 8px;
+  background: var(--pw-soft);
+}
+
 .actions {
   display: flex;
   justify-content: space-between;
@@ -531,6 +547,27 @@
   gap: var(--pw-5);
 }
 
+.summaryFactsCompact {
+  margin: var(--pw-4) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--pw-4);
+}
+
+.summaryMore {
+  margin-top: var(--pw-4);
+  font-size: var(--pw-sm);
+}
+
+.summaryMore summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--pw-muted);
+  font-weight: 600;
+}
+
 .summaryFacts dt {
   color: var(--pw-muted);
   font-size: var(--pw-xs);
@@ -553,6 +590,47 @@
   padding-top: var(--pw-5);
   border-top: 1px solid var(--pw-line);
   flex-wrap: wrap;
+}
+
+.summaryPicked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pw-2);
+  margin: var(--pw-5) 0 0;
+}
+
+.summaryChip {
+  border: 1px solid var(--pw-line);
+  background: var(--pw-soft);
+  border-radius: 999px;
+  padding: var(--pw-1) var(--pw-3);
+  font-size: var(--pw-xs);
+  font-weight: 600;
+}
+
+.summaryAfter {
+  margin-top: var(--pw-5);
+  padding: var(--pw-5);
+  border: 1px solid var(--pw-line);
+  border-radius: 8px;
+  background: var(--pw-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pw-4);
+}
+
+.summaryAfter h3 {
+  margin: 0 0 var(--pw-2);
+  font-size: var(--pw-base);
+}
+
+.summaryAfter p {
+  margin: 0;
+  font-size: var(--pw-sm);
+  color: var(--pw-muted);
+  max-width: 36rem;
 }
 
 .summaryId {
@@ -580,6 +658,14 @@
   background: var(--pw-soft);
   padding: var(--pw-2) var(--pw-3);
   border-radius: 6px;
+}
+
+.conflictPanel {
+  margin: var(--pw-4) 0;
+  padding: var(--pw-4);
+  border: 1px solid var(--pw-line);
+  border-radius: 10px;
+  background: var(--pw-soft);
 }
 
 .bannerError,

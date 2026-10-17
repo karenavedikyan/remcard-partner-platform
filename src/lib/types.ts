@@ -54,6 +54,7 @@ export type ProProfileUser = {
   publicPhone: string | null;
   showFullName: boolean;
   catalogDraftPending?: boolean;
+  catalogDraft?: unknown;
   telegramLinked?: boolean;
   maxLinked?: boolean;
   notificationSettings?: unknown;

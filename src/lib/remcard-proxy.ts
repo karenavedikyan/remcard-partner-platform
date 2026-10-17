@@ -71,6 +71,13 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r03\/status$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r04\/status$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r05\/status$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r06\/status$/ },
+    {
+      methods: new Set(["GET", "PATCH", "DELETE"]),
+      pattern: /^\/api\/pro\/specialist-profile\/draft$/,
+    },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/specialist-profile\/finish$/ },
     {
       methods: new Set(["GET", "PATCH"]),
       pattern: /^\/api\/pro\/partnership-list-preferences\/[\w-]+$/,
@@ -360,11 +367,32 @@ export function filterAllowedSetCookies(setCookies: readonly string[]): string[]
   });
 }
 
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+
+/** Mutating BFF requests must match configured app origin (production-safe). */
 export function isAllowedMutatingOrigin(origin: string | null): boolean {
   if (!origin) {
     return false;
   }
-  return origin === appConfig.appUrl;
+  if (origin === appConfig.appUrl) {
+    return true;
+  }
+  if (process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN !== "1") {
+    return false;
+  }
+  try {
+    const parsed = new URL(origin);
+    const app = new URL(appConfig.appUrl);
+    if (!LOOPBACK_HOSTS.has(parsed.hostname) || !LOOPBACK_HOSTS.has(app.hostname)) {
+      return false;
+    }
+    if (parsed.protocol !== app.protocol) {
+      return false;
+    }
+    return parsed.host === app.host;
+  } catch {
+    return false;
+  }
 }
 
 export function responseMustNotIncludeBody(status: number, method: string): boolean {
