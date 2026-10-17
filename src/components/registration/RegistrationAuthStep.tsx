@@ -94,7 +94,11 @@ export function RegistrationAuthStep({
 
   if (phase === "providers") {
     return (
-      <section className={entryStyles.entrySingle} aria-labelledby="reg-auth-title">
+      <section
+        className={entryStyles.entrySingle}
+        aria-labelledby="reg-auth-title"
+        data-testid="registration-entry-auth-providers"
+      >
         <span className={entryStyles.eyebrow}>Регистрация · {roleLabel}</span>
         <h1 id="reg-auth-title" className={entryStyles.entryTitle}>
           Осталось подтвердить вход
@@ -150,7 +154,11 @@ export function RegistrationAuthStep({
   }
 
   return (
-    <section className={entryStyles.entrySingle} aria-labelledby="reg-code-title">
+    <section
+      className={entryStyles.entrySingle}
+      aria-labelledby="reg-code-title"
+      data-testid="registration-entry-auth-code"
+    >
       <span className={entryStyles.eyebrow}>Подтверждение входа · {provider ?? "…"}</span>
       <h1 id="reg-code-title" className={entryStyles.entryTitle}>
         Введите одноразовый код

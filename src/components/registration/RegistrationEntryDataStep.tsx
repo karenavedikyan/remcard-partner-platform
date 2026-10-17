@@ -63,7 +63,7 @@ export function RegistrationEntryDataStep({
   const isLast = stepIndex >= stepTotal - 1;
 
   return (
-    <>
+    <div data-testid="registration-entry-data" data-entry-field={field}>
       <div className={entryStyles.entryRoleContext}>
         <span className={entryStyles.rolePill}>{roleLabel}</span>
         <span className={entryStyles.roleContextNote}>Регистрация партнёра</span>
@@ -134,6 +134,6 @@ export function RegistrationEntryDataStep({
           </p>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

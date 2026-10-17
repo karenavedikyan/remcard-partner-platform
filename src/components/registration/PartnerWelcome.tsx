@@ -64,7 +64,7 @@ export function PartnerWelcome({ inviteToken, returnTo }: Props) {
 
   return (
     <RegistrationPublicShell loginHref="/login">
-      <div className={styles.page}>
+      <div className={styles.page} data-testid="registration-welcome">
         <section className={styles.hero} aria-labelledby="welcome-title">
           <div className={styles.copy}>
             <p className={styles.kicker}>Для тех, кто помогает с ремонтом</p>

@@ -119,6 +119,17 @@ async function main() {
     name: "reload_restores_auth_step",
     pass: stepAfterReload?.includes('"step":"auth"') ?? false,
   });
+  await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 15_000 });
+  results.push({
+    name: "auth_shows_provider_step",
+    pass: (await page.locator("#reg-auth-title").count()) > 0,
+  });
+  await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
+  await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 10_000 });
+  results.push({
+    name: "auth_provider_to_code_step",
+    pass: (await page.locator("#reg-code-title").count()) > 0,
+  });
 
   authUser = "user-B";
   finishBlocked = true;

@@ -1,7 +1,8 @@
 .page {
   --welcome-display: clamp(2.25rem, 3.7vw, 3.25rem);
   --welcome-gap: clamp(1.5rem, 4.5vw, 4rem);
-  padding-top: var(--space-6);
+  max-width: 1240px;
+  padding-top: var(--space-10);
 }
 
 .hero {
@@ -19,7 +20,7 @@
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--muted);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
 }
 
 .copy h1 {

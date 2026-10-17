@@ -2,6 +2,10 @@
 /**
  * REGISTRATION-01 visual pairs: frozen prototype ref + platform impl.
  * Run AFTER committing capture code (records exact git SHA).
+ *
+ * Welcome on `/` is SSR-gated: start platform dev with
+ *   REGISTRATION_SSR_WELCOME=1
+ * (see capabilities-server.ts). Playwright route mocks do not affect SSR.
  */
 import { execSync, spawn } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -489,11 +493,20 @@ async function main() {
     await hideDevChrome(page);
     await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
     await page.getByRole("button", { name: /Продолжить/ }).click();
-    await page.getByLabel("Имя").fill("QA Visual");
+    await page.getByLabel(/Ваше имя/i).fill("QA Visual");
     captures.push(
-      await captureRecord(page, "impl-data-375-dark.png", 375, "dark", "data", "implementation", async (p) => {
-        const h1 = await p.locator("h1").first().innerText();
-        if (!/Ваши данные/i.test(h1)) throw new Error(`data step h1=${h1}`);
+      await captureRecord(page, "impl-data-name-375-dark.png", 375, "dark", "data-name", "implementation", async (p) => {
+        await p.waitForSelector('[data-testid="registration-entry-data"]', { timeout: 15_000 });
+        const h1 = await p.locator('[data-testid="registration-entry-data"] h1').innerText();
+        if (!/обращаться/i.test(h1)) throw new Error(`data name h1=${h1}`);
+      }, null),
+    );
+    await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
+    await page.getByLabel(/Город/i).fill("Москва");
+    captures.push(
+      await captureRecord(page, "impl-data-city-375-dark.png", 375, "dark", "data-city", "implementation", async (p) => {
+        const h1 = await p.locator('[data-testid="registration-entry-data"] h1').innerText();
+        if (!/город/i.test(h1)) throw new Error(`data city h1=${h1}`);
       }, null),
     );
     await context.close();
@@ -525,15 +538,99 @@ async function main() {
     await page.reload({ waitUntil: "networkidle" });
     await applyTheme(page, "dark");
     await hideDevChrome(page);
-    await page.waitForSelector("#embedded-auth-title", { timeout: 30_000 });
+    await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 30_000 });
     captures.push(
-      await captureRecord(page, "impl-auth-375-dark.png", 375, "dark", "auth", "implementation", async (p) => {
-        if ((await p.locator("#embedded-auth-title").count()) === 0) {
-          throw new Error("auth step missing embedded title");
-        }
-      }, null),
+      await captureRecord(
+        page,
+        "impl-auth-providers-375-dark.png",
+        375,
+        "dark",
+        "auth-providers",
+        "implementation",
+        async (p) => {
+          const title = await p.locator("#reg-auth-title").innerText();
+          if (!/подтвердить вход/i.test(title)) throw new Error(`auth providers title=${title}`);
+        },
+        null,
+      ),
+    );
+    await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
+    await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 15_000 });
+    captures.push(
+      await captureRecord(
+        page,
+        "impl-auth-code-375-dark.png",
+        375,
+        "dark",
+        "auth-code",
+        "implementation",
+        async (p) => {
+          const title = await p.locator("#reg-code-title").innerText();
+          if (!/одноразовый код/i.test(title)) throw new Error(`auth code title=${title}`);
+        },
+        null,
+      ),
     );
     await context.close();
+  }
+
+  for (const { theme, width, suffix } of [
+    { theme: "light", width: 1440, suffix: "1440-light" },
+    { theme: "light", width: 375, suffix: "375-light" },
+    { theme: "dark", width: 375, suffix: "375-dark" },
+    { theme: "dark", width: 320, suffix: "320-dark" },
+  ]) {
+    {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
+      await page.goto(`${PROTO_BASE}/roles.html`, { waitUntil: "networkidle" });
+      await applyPrototypeTheme(page, theme);
+      await hidePrototypeDemoChrome(page);
+      captures.push(
+        await captureRecord(
+          page,
+          `ref-welcome-${suffix}.png`,
+          width,
+          theme,
+          "welcome",
+          "reference",
+          async (p) => {
+            const h1 = await p.locator(".welcome-copy h1, h1").first().innerText();
+            if (!/клиентами/i.test(h1)) throw new Error(`welcome ref h1=${h1}`);
+          },
+          null,
+        ),
+      );
+      await context.close();
+    }
+    {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await mockAuthGuest(page);
+      await mockRegistrationCapabilities(page);
+      await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
+      await page.goto(`${IMPL_BASE}/`, { waitUntil: "networkidle" });
+      await applyTheme(page, theme);
+      await hideDevChrome(page);
+      await page.waitForSelector('[data-testid="registration-welcome"]', { timeout: 30_000 });
+      captures.push(
+        await captureRecord(
+          page,
+          `impl-welcome-${suffix}.png`,
+          width,
+          theme,
+          "welcome",
+          "implementation",
+          async (p) => {
+            await p.waitForSelector('[data-testid="registration-welcome"]');
+          },
+          null,
+        ),
+      );
+      pairs.push({ pair: `welcome-${suffix}`, ref: `ref-welcome-${suffix}.png`, impl: `impl-welcome-${suffix}.png` });
+      await context.close();
+    }
   }
 
   await browser.close();
@@ -557,8 +654,11 @@ async function main() {
     remainingVisualGaps: [
       "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
       "Welcome link retained on types step (not in frozen prototype footer).",
-      "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals).",
+      "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals — do not change for R06 parallel work).",
+      "Search styling on specialization N/A here; registration scoped CSS only.",
     ],
+    parallelAgentNote:
+      "R06-SPECIALIST-TAIL-01 (bc-6cb74748) owns specialist/taxonomy — avoid shared auth.module.css / global token edits.",
     assertions: [
       "step_verify",
       "viewport_verify",
