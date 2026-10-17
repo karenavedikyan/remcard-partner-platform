@@ -15,4 +15,9 @@
 | `.pw-after` catalog CTA outside summary | `[data-testid="specialist-catalog-cta"]` (sibling, not inside `.summary`) |
 | Agent promo panel | `[data-testid="specialist-agent-activity-compact"]` (not full Panel) |
 
-Taxonomy auto-add / alias pipeline: **out of scope** (no new button; existing flows unchanged).
+| `.stage-proposal` checkbox + form | `[data-testid="taxonomy-proposal-service|stage"]` + `[data-testid="taxonomy-proposal-toggle-*"]` |
+| `label.pw-search-label` + `#pw-search` | `ProfileDirectionsPicker` tileLayout: `.searchLabel` + `[data-testid="pw-search"]` |
+| `.pw-after` CTA secondary | `[data-testid="specialist-catalog-cta"]` Link uses `.btn` (not `.btnPrimary`) |
+| `.cw .catalog-footer` mobile column | `[data-testid="catalog-footer-bar"]` `@media (max-width: 650px)` stretch |
+
+Taxonomy **proposals** (R06 tail): submit to `POST /api/pro/taxonomy-proposals` — not auto-add to canonical lists.

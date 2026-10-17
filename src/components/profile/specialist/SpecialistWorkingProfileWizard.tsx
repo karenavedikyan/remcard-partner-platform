@@ -354,7 +354,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               меняет рабочий профиль.
             </p>
           </div>
-          <Link href="/profile?section=catalog" className={`${styles.btn} ${styles.btnPrimary}`}>
+          <Link href="/profile?section=catalog" className={styles.btn}>
             Перейти к каталогу
           </Link>
         </section>
@@ -508,6 +508,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   compactSpecialistGrid={false}
                   tileLayout
                   collapseAdvancedDirections
+                  taxonomyProposalScope="profile-specialist"
                   productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
                   navigatorStageIds={draft.navigatorStageIds ?? []}

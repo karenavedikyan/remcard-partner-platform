@@ -300,6 +300,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 catalogMode
                 specialistMode
                 collapseAdvancedDirections
+                taxonomyProposalScope="catalog-specialist"
                 productCategoryIds={[]}
                 serviceSpecializationIds={specializations}
                 navigatorStageIds={catalogStageIds}

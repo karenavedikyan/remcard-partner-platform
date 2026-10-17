@@ -69,10 +69,27 @@
   margin-bottom: 0.35rem;
 }
 
+.searchLabel {
+  display: block;
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin-bottom: 0.35rem;
+}
+
 .search input {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.searchTile input {
+  min-height: 48px;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
 }
 
 .group {

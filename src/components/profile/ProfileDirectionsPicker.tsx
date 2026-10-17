@@ -5,6 +5,7 @@ import { RemcardApiError } from "@/lib/api-client";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import type { PartnerTaxonomyItem, WorkingPrimaryDirection } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { TaxonomyProposalSection } from "./TaxonomyProposalSection";
 import styles from "./ProfileDirectionsPicker.module.css";
 
 type ProfileDirectionsPickerProps = {
@@ -23,6 +24,8 @@ type ProfileDirectionsPickerProps = {
   tileLayout?: boolean;
   /** Stages (+ primary when not catalog) in a collapsible block. */
   collapseAdvancedDirections?: boolean;
+  /** R06: shared taxonomy proposal checkboxes (specialist profile + catalog). */
+  taxonomyProposalScope?: string;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -71,6 +74,7 @@ export function ProfileDirectionsPicker({
   compactSpecialistGrid = true,
   tileLayout = false,
   collapseAdvancedDirections = false,
+  taxonomyProposalScope,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -280,14 +284,19 @@ export function ProfileDirectionsPicker({
         </ul>
       )}
 
-      <label className={styles.search}>
-        <span>Поиск по справочнику</span>
+      <label className={tileLayout ? styles.searchTile : styles.search}>
+        <span className={tileLayout ? styles.searchLabel : undefined}>
+          {tileLayout ? "Найти направление" : "Поиск по справочнику"}
+        </span>
         <input
           type="search"
+          data-testid={tileLayout ? "pw-search" : undefined}
           value={filter}
           disabled={disabled}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Например: двери, плитка, электрика"
+          placeholder={
+            tileLayout ? "Например, двери или плитка" : "Например: двери, плитка, электрика"
+          }
         />
       </label>
 
@@ -443,6 +452,21 @@ export function ProfileDirectionsPicker({
           </>
         );
       })()}
+
+      {specialistMode && taxonomyProposalScope ? (
+        <>
+          <TaxonomyProposalSection
+            kind="SERVICE"
+            scopeKey={`${taxonomyProposalScope}-category`}
+            disabled={disabled}
+          />
+          <TaxonomyProposalSection
+            kind="STAGE"
+            scopeKey={`${taxonomyProposalScope}-stage`}
+            disabled={disabled}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

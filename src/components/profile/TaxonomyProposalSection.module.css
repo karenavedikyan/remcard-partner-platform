@@ -1,0 +1,101 @@
+.wrap {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  min-width: 0;
+}
+
+.wrap + .wrap {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  flex: 0 0 18px;
+  accent-color: var(--primary);
+}
+
+.toggle small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.form {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.form[hidden] {
+  display: none !important;
+}
+
+.form h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.field label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin-bottom: 0.35rem;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status:empty {
+  display: none;
+}
+
+.status {
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.statusError {
+  color: var(--primary);
+}
+
+.statusOk {
+  color: var(--ink);
+}
