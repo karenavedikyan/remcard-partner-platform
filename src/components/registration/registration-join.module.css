@@ -1,0 +1,138 @@
+.joinPage {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: var(--space-6);
+}
+
+.joinPage h1 {
+  font-size: 1.75rem;
+  margin: 0 0 var(--space-3);
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0 0 var(--space-5);
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--primary);
+  margin: 0 0 var(--space-4);
+}
+
+.typeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.typeCard,
+.typeCardActive {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: var(--surface);
+}
+
+.typeCardActive {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.typeCard input,
+.typeCardActive input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.typeTitle {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.typeDesc {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.legacyTag,
+.newTag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.newTag {
+  color: var(--primary);
+}
+
+.legacyTag {
+  color: var(--muted);
+}
+
+.footerActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.footerActions a {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  color: var(--primary);
+  font-size: 0.875rem;
+  margin-top: var(--space-3);
+}
+
+.status {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--muted);
+}
+
+.fallback {
+  max-width: 520px;
+  margin: var(--space-8) auto;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding-inline: var(--space-5);
+  background: var(--primary);
+  color: var(--primary-fg);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.secondaryLink {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.authWrap,
+.finishWrap {
+  max-width: 720px;
+  margin: var(--space-6) auto;
+  display: grid;
+  gap: var(--space-4);
+}

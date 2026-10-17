@@ -36,6 +36,8 @@ type AuthFlowProps = {
   reason?: string;
   /** Legacy hint only; session is always checked on mount. */
   initialStep?: AuthFlowStep;
+  /** Agent registration via /join uses finish step instead of legacy onboarding. */
+  registrationAgentJoin?: boolean;
 };
 
 type RetryKind = "network" | "server" | "session_lost";
@@ -46,7 +48,7 @@ const REASON_MESSAGES: Record<string, string> = {
   role: "Для доступа нужен профиль партнёра.",
 };
 
-export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
+export function AuthFlow({ returnTo, reason, registrationAgentJoin }: AuthFlowProps) {
   const router = useRouter();
   const submitLock = useRef(false);
   const codeConsumedRef = useRef(false);
@@ -66,7 +68,9 @@ export function AuthFlow({ returnTo, reason }: AuthFlowProps) {
   const finishFlow = useCallback(
     (r: CabinetReadiness) => {
       if (!flowActiveRef.current) return;
-      const destination = resolveDestinationAfterAuth(r, returnTo ?? null);
+      const destination = resolveDestinationAfterAuth(r, returnTo ?? null, {
+        registrationAgentJoin,
+      });
       if (destination.startsWith("/onboarding")) {
         router.replace(destination);
       } else {

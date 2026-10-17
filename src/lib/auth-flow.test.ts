@@ -51,6 +51,11 @@ describe("sanitizeReturnTo", () => {
     assert.equal(sanitizeReturnTo("//evil.test"), null);
     assert.equal(sanitizeReturnTo("/login"), null);
     assert.equal(sanitizeReturnTo("/onboarding"), null);
+    assert.equal(sanitizeReturnTo("/join/foo"), null);
+  });
+
+  it("allows /join as return target", () => {
+    assert.equal(sanitizeReturnTo("/join"), "/join");
   });
 });
 
@@ -175,6 +180,19 @@ describe("resolveDestinationAfterAuth", () => {
       missingConsents: [],
     };
     assert.equal(resolveDestinationAfterAuth(profile, "/scanner"), "/onboarding?returnTo=%2Fscanner");
+  });
+
+  it("routes agent registration join to finish step instead of onboarding", () => {
+    const profile: CabinetReadiness = {
+      ...needsConsents,
+      nextStep: "profile",
+      needsProfileOnboarding: true,
+      missingConsents: [],
+    };
+    assert.equal(
+      resolveDestinationAfterAuth(profile, "/join", { registrationAgentJoin: true }),
+      "/join?phase=finish",
+    );
   });
 
   it("routes unsupported context to role notice instead of login loop", () => {

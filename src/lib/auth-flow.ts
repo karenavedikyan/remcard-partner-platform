@@ -12,6 +12,7 @@ const SAFE_RETURN_PREFIXES = [
   "/recommendations",
   "/invite",
   "/admin",
+  "/join",
 ] as const;
 
 /** Allow only same-origin relative paths without protocol tricks. */
@@ -24,7 +25,12 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
     return null;
   }
   const path = trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
-  if (path === "/login" || path.startsWith("/login/") || path === "/onboarding") {
+  if (
+    path === "/login" ||
+    path.startsWith("/login/") ||
+    path === "/onboarding" ||
+    path.startsWith("/join/")
+  ) {
     return null;
   }
   const allowed = SAFE_RETURN_PREFIXES.some(
@@ -79,9 +85,15 @@ export function mapAccessDeniedMessage(readiness: CabinetReadiness): string {
   return "Доступ в кабинет пока недоступен. Проверьте профиль и соглашения или обратитесь в поддержку.";
 }
 
+export type ResolveDestinationOptions = {
+  /** Agent registration join defers legacy onboarding to /join finish step. */
+  registrationAgentJoin?: boolean;
+};
+
 export function resolveDestinationAfterAuth(
   readiness: CabinetReadiness,
   returnTo: string | null,
+  options?: ResolveDestinationOptions,
 ): string {
   if (hasPendingLoginConsents(readiness)) {
     const params = new URLSearchParams({ step: "consents" });
@@ -91,6 +103,12 @@ export function resolveDestinationAfterAuth(
   }
   if (readiness.needsProfileOnboarding) {
     const target = sanitizeReturnTo(returnTo);
+    if (
+      options?.registrationAgentJoin &&
+      (target === "/join" || target?.startsWith("/join?"))
+    ) {
+      return "/join?phase=finish";
+    }
     return target
       ? `/onboarding?returnTo=${encodeURIComponent(target)}`
       : "/onboarding";

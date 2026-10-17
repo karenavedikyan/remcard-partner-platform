@@ -91,6 +91,8 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["PATCH"]),
       pattern: /^\/api\/certificate\/[\w-]+\/alias$/,
     },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/registration\/capabilities$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/registration\/agent\/finish$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/agent-profile\/status$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-profile\/enable-activity$/ },
     { methods: new Set(["GET", "PATCH", "DELETE"]), pattern: /^\/api\/pro\/agent-profile\/draft$/ },
