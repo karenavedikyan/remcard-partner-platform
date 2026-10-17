@@ -1,11 +1,11 @@
 {
   "implBase": "http://127.0.0.1:3022",
   "protoBase": "http://127.0.0.1:3099",
-  "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+  "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
   "treeDirty": true,
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceShaImmutable": "771cc658a415a5d05b964f29f675d32db449198b",
-  "capturedAt": "2026-10-17T10:29:45.573Z",
+  "capturedAt": "2026-10-17T10:34:38.308Z",
   "captureCount": 12,
   "pairs": [
     {
@@ -41,7 +41,7 @@
       "step": "types",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 944,
@@ -68,6 +68,17 @@
           "display": "flex",
           "flexDirection": "column",
           "minHeight": "210px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            126,
+            126,
+            126,
+            126
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -78,11 +89,11 @@
       "step": "types",
       "theme": "light",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 1027,
-      "fullPageHeight": 1027,
+      "pngHeight": 930,
+      "fullPageHeight": 930,
       "layout": {
         "grid": {
           "x": 182,
@@ -96,8 +107,8 @@
           "gridTemplateColumns": "348px 348px 348px"
         },
         "h1": {
-          "fontSizePx": 34,
-          "lineHeight": "42.5px"
+          "fontSizePx": 32,
+          "lineHeight": "40px"
         },
         "card": {
           "backgroundColor": "rgb(255, 255, 255)",
@@ -105,6 +116,17 @@
           "display": "flex",
           "flexDirection": "column",
           "minHeight": "210px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            116,
+            116,
+            116,
+            116
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -115,11 +137,11 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 1153,
-      "fullPageHeight": 1153,
+      "pngHeight": 944,
+      "fullPageHeight": 944,
       "layout": {
         "grid": {
           "x": 182,
@@ -142,6 +164,17 @@
           "display": "flex",
           "flexDirection": "column",
           "minHeight": "210px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            126,
+            126,
+            126,
+            126
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -152,11 +185,11 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 1027,
-      "fullPageHeight": 1027,
+      "pngHeight": 930,
+      "fullPageHeight": 930,
       "layout": {
         "grid": {
           "x": 182,
@@ -170,8 +203,8 @@
           "gridTemplateColumns": "348px 348px 348px"
         },
         "h1": {
-          "fontSizePx": 34,
-          "lineHeight": "42.5px"
+          "fontSizePx": 32,
+          "lineHeight": "40px"
         },
         "card": {
           "backgroundColor": "rgb(32, 37, 32)",
@@ -179,6 +212,17 @@
           "display": "flex",
           "flexDirection": "column",
           "minHeight": "210px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            116,
+            116,
+            116,
+            116
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -189,7 +233,7 @@
       "step": "types",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1471,
@@ -214,6 +258,17 @@
           "display": "grid",
           "flexDirection": "column",
           "minHeight": "0px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            92.984,
+            92.984,
+            92.984,
+            92.984
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -224,24 +279,24 @@
       "step": "types",
       "theme": "light",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1785,
-      "fullPageHeight": 1785,
+      "pngHeight": 1655,
+      "fullPageHeight": 1655,
       "layout": {
         "grid": {
-          "x": 32,
-          "width": 311,
+          "x": 16,
+          "width": 343,
           "columnCount": 1,
           "columnWidthsPx": [
-            311
+            343
           ],
-          "gridTemplateColumns": "311px"
+          "gridTemplateColumns": "343px"
         },
         "h1": {
-          "fontSizePx": 26,
-          "lineHeight": "32.5px"
+          "fontSizePx": 24,
+          "lineHeight": "30px"
         },
         "card": {
           "backgroundColor": "rgb(255, 255, 255)",
@@ -249,6 +304,17 @@
           "display": "grid",
           "flexDirection": "column",
           "minHeight": "0px"
+        },
+        "progress": {
+          "display": "grid",
+          "gridTemplateColumns": "76.75px 76.75px 76.75px 76.75px",
+          "stageTops": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -259,11 +325,11 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1710,
-      "fullPageHeight": 1710,
+      "pngHeight": 1471,
+      "fullPageHeight": 1471,
       "layout": {
         "grid": {
           "x": 16,
@@ -284,6 +350,17 @@
           "display": "grid",
           "flexDirection": "column",
           "minHeight": "0px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            92.984,
+            92.984,
+            92.984,
+            92.984
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -294,24 +371,24 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1785,
-      "fullPageHeight": 1785,
+      "pngHeight": 1655,
+      "fullPageHeight": 1655,
       "layout": {
         "grid": {
-          "x": 32,
-          "width": 311,
+          "x": 16,
+          "width": 343,
           "columnCount": 1,
           "columnWidthsPx": [
-            311
+            343
           ],
-          "gridTemplateColumns": "311px"
+          "gridTemplateColumns": "343px"
         },
         "h1": {
-          "fontSizePx": 26,
-          "lineHeight": "32.5px"
+          "fontSizePx": 24,
+          "lineHeight": "30px"
         },
         "card": {
           "backgroundColor": "rgb(32, 37, 32)",
@@ -319,6 +396,17 @@
           "display": "grid",
           "flexDirection": "column",
           "minHeight": "0px"
+        },
+        "progress": {
+          "display": "grid",
+          "gridTemplateColumns": "76.75px 76.75px 76.75px 76.75px",
+          "stageTops": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -329,11 +417,11 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 1819,
-      "fullPageHeight": 1819,
+      "pngHeight": 1580,
+      "fullPageHeight": 1580,
       "layout": {
         "grid": {
           "x": 16,
@@ -354,6 +442,17 @@
           "display": "grid",
           "flexDirection": "column",
           "minHeight": "0px"
+        },
+        "progress": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            92.984,
+            92.984,
+            92.984,
+            92.984
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -364,24 +463,24 @@
       "step": "types",
       "theme": "dark",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 1939,
-      "fullPageHeight": 1939,
+      "pngHeight": 1736,
+      "fullPageHeight": 1736,
       "layout": {
         "grid": {
-          "x": 32,
-          "width": 256,
+          "x": 16,
+          "width": 288,
           "columnCount": 1,
           "columnWidthsPx": [
-            256
+            288
           ],
-          "gridTemplateColumns": "256px"
+          "gridTemplateColumns": "288px"
         },
         "h1": {
-          "fontSizePx": 26,
-          "lineHeight": "32.5px"
+          "fontSizePx": 24,
+          "lineHeight": "30px"
         },
         "card": {
           "backgroundColor": "rgb(32, 37, 32)",
@@ -389,6 +488,17 @@
           "display": "grid",
           "flexDirection": "column",
           "minHeight": "0px"
+        },
+        "progress": {
+          "display": "grid",
+          "gridTemplateColumns": "63px 63px 63px 63px",
+          "stageTops": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "stageTopSpread": 0
         }
       },
       "verify": "passed"
@@ -399,7 +509,7 @@
       "step": "data",
       "theme": "dark",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
@@ -413,7 +523,7 @@
       "step": "auth",
       "theme": "dark",
       "url": "http://127.0.0.1:3022/join",
-      "codeSha": "680fd051142fc3ed101e8377bf0eef0b7ba37e1e",
+      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1061,
@@ -422,14 +532,11 @@
       "verify": "passed"
     }
   ],
-  "layoutParityFailures1440": [],
-  "captureStatus": "geometry-1440-within-tolerance",
+  "layoutParityFailures": [],
+  "captureStatus": "geometry-within-tolerance",
   "invalidSupersededRefs": [],
   "remainingVisualGaps": [
     "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
-    "1440 h1: impl ~34px vs ref 32px (platform --text-xl clamp).",
-    "375 types: grid x/width differs (shell padding vs ref registration padding).",
-    "Types page height: impl taller (eyebrow + welcome link + progress spacing).",
     "Welcome link retained on types step (not in frozen prototype footer).",
     "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals)."
   ],
@@ -440,6 +547,8 @@
     "no_horizontal_overflow",
     "dev_overlay_hidden_post_navigation",
     "dark_card_computed_settled",
-    "layout_json_embedded"
+    "layout_json_embedded",
+    "mobile_grid_parity_375_320",
+    "progress_stage_top_alignment"
   ]
 }

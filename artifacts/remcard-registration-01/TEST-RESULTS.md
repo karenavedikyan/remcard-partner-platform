@@ -1,25 +1,36 @@
-# REGISTRATION-01.3 visual finish — test results
+# REGISTRATION-01.3 — test results
 
 Date: 2026-10-17
 
-## Executed (this revision)
+## Runtime SHA
 
-| Command | Exit | Result |
-|---------|------|--------|
-| `pnpm exec tsx --test src/lib/auth-flow.test.ts src/lib/registration/routing.test.ts src/lib/registration/draft.test.ts` | 0 | **33 PASS** |
-| `pnpm run build` | 0 | **PASS** |
-| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-visual.mjs` | 0 | **12 captures** (5 ref+impl type pairs incl. 320 smoke + data/auth impl) |
-| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-browser-flow.mjs` | 0 | **4/4 PASS** (ready invite carry-forward) |
+**`813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3`** (capture recorded in `visual-capture.json`)
 
-## SHAs
+## Executed this revision
 
-- **Code (capture):** `65cf8b1` (UI) + metadata `b33b918` — see branch tip after push
-- **Frozen reference:** `771cc658a415a5d05b964f29f675d32db449198b` (`implementation/remcard-reference-20261014`)
+| Check | Result |
+|-------|--------|
+| `pnpm run build` | PASS |
+| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3022 node scripts/local/registration-01-visual.mjs` | PASS — `captureStatus=geometry-within-tolerance`; mobile grid + progress-top asserts |
 
-## Carry-over (not re-run)
+## Carry-over (not re-run this revision)
 
-- Navigator PG integration **7 PASS** @ `9fa871f3`
+| Check | Last known |
+|-------|------------|
+| `pnpm exec tsx --test` auth-flow + registration routing/draft (33) | PASS @ `680fd05` |
+| `registration-01-browser-flow.mjs` (4/4 ready invite) | PASS @ `680fd05` |
+| Navigator PG integration (7) | PASS @ `9fa871f3` |
+
+## Measured (impl, browser)
+
+| Viewport | Grid x / width | Progress stage tops |
+|----------|----------------|---------------------|
+| 1440 | 182 / 1076 (3×348) | inline row |
+| 375 | 16 / 343 | 100, 100, 100, 100 |
+| 320 | 16 / 288 | 100, 100, 100, 100 |
+
+**Reference SHA:** `771cc658a415a5d05b964f29f675d32db449198b`
 
 ## NOT_RUN
 
-- Live MAX/Telegram, production deploy, full cabinet audit
+Live MAX/Telegram, production deploy, backend/PG re-audit
