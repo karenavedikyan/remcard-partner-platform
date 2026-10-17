@@ -10,7 +10,10 @@ import {
 } from "@/lib/agent-profile/api";
 import type { AgentProfileDraftPayload } from "@/lib/agent-profile/types";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
-import { AgentPhoneField } from "@/components/profile/agent/AgentPhoneField";
+import {
+  AgentPhoneField,
+  type AgentPhoneFieldHandle,
+} from "@/components/profile/agent/AgentPhoneField";
 import styles from "./AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Аудитория", "Контакты", "Проверка"] as const;
@@ -305,20 +308,32 @@ export function AgentProfileWizard({
     }
   }, [editing, profileSaved, savedProfile]);
 
+  const phoneFieldRef = useRef<AgentPhoneFieldHandle>(null);
+
+  const draftWithCommittedPhone = useCallback(
+    (base: AgentProfileDraftPayload) => {
+      const committed = phoneFieldRef.current?.commitPending();
+      if (committed === undefined) return base;
+      return { ...base, contactPhone: committed };
+    },
+    [],
+  );
+
   const onSubmitStep = async (event: FormEvent) => {
     event.preventDefault();
     if (disabled || saving) return;
+    const payload = draftWithCommittedPhone(draft);
     const last = STEPS.length - 1;
     if (step < last) {
       if (step === 0) {
-        const localErrors = validateRequiredIdentity(draft);
+        const localErrors = validateRequiredIdentity(payload);
         if (Object.keys(localErrors).length) {
           setFieldErrors(localErrors);
           return;
         }
       }
       try {
-        await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+        await persistDraft(payload, step, versionRef.current, draftEpochRef.current, {
           mode: "advance",
           nextUiStep: step + 1,
         });
@@ -329,7 +344,7 @@ export function AgentProfileWizard({
       return;
     }
     try {
-      const saved = await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+      const saved = await persistDraft(payload, step, versionRef.current, draftEpochRef.current, {
         mode: "advance",
         nextUiStep: step,
         releaseBusy: false,
@@ -366,7 +381,8 @@ export function AgentProfileWizard({
   const saveDraftOnly = async () => {
     if (disabled || saving) return;
     try {
-      await persistDraft(draft, step, versionRef.current, draftEpochRef.current, {
+      const payload = draftWithCommittedPhone(draft);
+      await persistDraft(payload, step, versionRef.current, draftEpochRef.current, {
         mode: "save",
         nextUiStep: step,
       });
@@ -636,6 +652,7 @@ export function AgentProfileWizard({
                     className={`${styles.field} ${fieldErrors.contactPhone ? styles.fieldError : ""}`}
                   >
                     <AgentPhoneField
+                      ref={phoneFieldRef}
                       value={draft.contactPhone ?? ""}
                       disabled={disabled || saving}
                       error={fieldErrors.contactPhone}

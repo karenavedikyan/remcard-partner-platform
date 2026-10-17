@@ -6,6 +6,10 @@ function digitsOnly(raw: string): string {
   return raw.replace(/\D/g, "");
 }
 
+function compactPlusPrefix(text: string): string {
+  return text.replace(/\s/g, "");
+}
+
 /** Normalize user text to canonical +7XXXXXXXXXX or empty if invalid. */
 export function canonicalizeRuContactPhone(raw: string): string {
   const text = String(raw ?? "")
@@ -14,9 +18,13 @@ export function canonicalizeRuContactPhone(raw: string): string {
     .replace(/[\s\u00a0]+/g, " ");
   if (!text) return "";
   if (!PHONE_CHARS.test(text)) return "";
+  const compact = compactPlusPrefix(text);
+  if (compact.startsWith("+") && !compact.startsWith("+7")) {
+    return "";
+  }
   let digits = digitsOnly(text);
   if (digits.length === 11 && digits.startsWith("8")) digits = `7${digits.slice(1)}`;
-  if (digits.length === 10) digits = `7${digits}`;
+  if (digits.length === 10 && !compact.startsWith("+")) digits = `7${digits}`;
   if (digits.length === 11 && digits.startsWith("7")) return `+${digits}`;
   return "";
 }
@@ -32,9 +40,9 @@ export function formatPhoneForDisplay(stored: string | undefined | null): string
   return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
 }
 
-/** Light sanitization while typing — does not force full mask on every keystroke. */
+/** Light typing normalization — keeps invalid letters, no forced mask per keystroke. */
 export function sanitizePhoneTyping(raw: string): string {
-  return raw.replace(/[^\d+()\s-]/g, "").replace(/[\u2010-\u2015\u2212]/g, "-");
+  return raw.replace(/[\u2010-\u2015\u2212]/g, "-");
 }
 
 /** @deprecated Prefer sanitizePhoneTyping + blur canonicalize. Kept for non-agent consumers. */
@@ -45,7 +53,8 @@ export function formatPhoneInput(raw: string): string {
 }
 
 export function isCompleteRuPhone(raw: string): boolean {
-  return canonicalizeRuContactPhone(raw) !== "" && /^\+7\d{10}$/.test(canonicalizeRuContactPhone(raw));
+  const canonical = canonicalizeRuContactPhone(raw);
+  return canonical !== "" && /^\+7\d{10}$/.test(canonical);
 }
 
 export const CONTACT_PHONE_ERROR =

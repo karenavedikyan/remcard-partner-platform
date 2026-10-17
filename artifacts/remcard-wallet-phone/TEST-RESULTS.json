@@ -1,32 +1,53 @@
 {
-  "task": "WALLET-PHONE-01",
+  "task": "WALLET-PHONE-01.1",
   "status": "READY_FOR_REVIEW",
-  "backendHead": "e2926a9d",
-  "frontendHead": "263c381",
-  "accountExitRc": {
-    "backendPr": "https://github.com/karenavedikyan/remcard-navigator/pull/687",
-    "backendHead": "0a7e971e",
-    "frontendPr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/24",
-    "frontendHead": "30bc988",
-    "note": "Separate RC; not merged into this branch"
+  "backendHead": "pending-push",
+  "frontendHead": "pending-push",
+  "backendPr": "https://github.com/karenavedikyan/remcard-navigator/pull/688",
+  "frontendPr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/25",
+  "blocks": {
+    "phone": "PASS",
+    "excelExport": "PASS",
+    "visualCaptures": "CAPTURED",
+    "prototypePatch": "PASS"
+  },
+  "visualCaptures": {
+    "status": "CAPTURED",
+    "pixelPass": false,
+    "dir": "artifacts/remcard-wallet-phone/visual",
+    "count": 19,
+    "note": "Same seeded R05 stack as r05-browser-acceptance; measured columns/IDs stable across view modes on run 2026-10-17"
+  },
+  "prototypePatch": {
+    "path": "artifacts/remcard-wallet-phone/prototype-fixes.patch",
+    "baselineSha256": "artifacts/remcard-wallet-phone/prototype-baseline.sha256",
+    "gitApplyCheck": "PASS",
+    "phoneFixClaimed": false
   },
   "commands": [
     {
-      "cmd": "cd remcard-navigator && npm test -- src/lib/__tests__/agentReceivablesExportXlsx.test.ts",
-      "exitCode": 0
-    },
-    {
-      "cmd": "cd remcard-partner-platform && npx vitest run src/lib/contact-phone-display.test.ts",
+      "cmd": "cd remcard-partner-platform && npx vitest run src/lib/contact-phone-display.test.ts src/components/profile/agent/AgentPhoneField.test.tsx",
       "exitCode": 0
     },
     {
       "cmd": "cd remcard-partner-platform && npm run build",
       "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-navigator && pnpm exec vitest run src/lib/__tests__/agentReceivablesExportXlsx.test.ts test/api/agent-receivables-export.test.ts",
+      "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-navigator && DATABASE_URL=remcard_admin_test_012 pnpm exec vitest run src/lib/__tests__/agentReceivablesExportRoute.integration.test.ts",
+      "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-navigator && pnpm run build",
+      "exitCode": 0
+    },
+    {
+      "cmd": "cd remcard-partner-platform && ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/r05-browser-acceptance.mjs",
+      "exitCode": 0
     }
-  ],
-  "visualCaptures": {
-    "status": "NOT_CAPTURED",
-    "reason": "Requires disposable stack with seeded R05 partner/order data; CSS/export/phone covered by unit tests"
-  },
-  "prototypePatch": "artifacts/remcard-wallet-phone/prototype-fixes.patch"
+  ]
 }
