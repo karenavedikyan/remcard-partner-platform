@@ -10,12 +10,15 @@ type Props = {
   loginHref?: string;
   /** Prototype welcome: «Войти» before theme toggle */
   loginBeforeTheme?: boolean;
+  /** Join/data/auth: outer `.registration` padding lives on the flow container, not `.main`. */
+  entryPageLayout?: boolean;
 };
 
 export function RegistrationPublicShell({
   children,
   loginHref = "/login",
   loginBeforeTheme = false,
+  entryPageLayout = false,
 }: Props) {
   const loginLink = (
     <Link href={loginHref} className={styles.loginLink}>
@@ -44,7 +47,7 @@ export function RegistrationPublicShell({
           )}
         </div>
       </header>
-      <main className={styles.main}>{children}</main>
+      <main className={entryPageLayout ? styles.mainEntry : styles.main}>{children}</main>
     </div>
   );
 }

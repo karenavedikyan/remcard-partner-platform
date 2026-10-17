@@ -292,7 +292,7 @@ export function RegistrationJoinFlow() {
 
   if (!capsLoaded) {
     return (
-      <RegistrationPublicShell loginHref={loginRecovery}>
+      <RegistrationPublicShell loginHref={loginRecovery} entryPageLayout>
         <p className={styles.status}>Загружаем…</p>
       </RegistrationPublicShell>
     );
@@ -315,7 +315,7 @@ export function RegistrationJoinFlow() {
   if (step === "auth" && isAgentNewPath) {
     const roleLabel = kind ? REGISTRATION_KIND_LABELS[kind].title : "Агент";
     return (
-      <RegistrationPublicShell loginHref={loginRecovery}>
+      <RegistrationPublicShell loginHref={loginRecovery} entryPageLayout>
         <div className={`${styles.entryFlowPage} ${entryStyles.registrationEntryScope}`}>
           <JoinProgress current="auth" layout="dataRegistration" />
           {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
@@ -343,7 +343,7 @@ export function RegistrationJoinFlow() {
 
   if (step === "finish" && isAgentNewPath) {
     return (
-      <RegistrationPublicShell loginHref={loginRecovery}>
+      <RegistrationPublicShell loginHref={loginRecovery} entryPageLayout>
         <div className={styles.finishWrap}>
           <JoinProgress current="done" />
           <h1>Завершение регистрации</h1>
@@ -388,7 +388,7 @@ export function RegistrationJoinFlow() {
   }
 
   return (
-    <RegistrationPublicShell loginHref={loginRecovery}>
+    <RegistrationPublicShell loginHref={loginRecovery} entryPageLayout>
       {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
       {step === "types" ? (
         <div className={styles.typesRegistration}>

@@ -60,6 +60,12 @@
   padding: 0 var(--space-5) var(--space-8);
 }
 
+.mainEntry {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 @media (max-width: 760px) {
   .header {
     padding-inline: var(--space-4);

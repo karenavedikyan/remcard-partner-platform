@@ -13,9 +13,11 @@
 
 /* Matches frozen `.registration.entry-page` shell (auth / narrow entry flow). */
 .entryFlowPage {
+  width: 100%;
   max-width: 1140px;
   margin: 0 auto;
   padding: var(--space-10) var(--space-8) 4rem;
+  box-sizing: border-box;
 }
 
 /* Types step only — matches frozen prototype .registration / .role-grid (not wizard width). */
