@@ -166,7 +166,10 @@ export async function assertImplCatalogPreviewReady(page, fixture = R06_PREVIEW_
   if (!/Можно отправить заявку/i.test(text)) throw new Error('impl_preview_not_ready_to_submit');
   if (/Заполните:/i.test(text)) throw new Error('impl_preview_missing_fields');
   const preview = await page.locator('[data-testid="catalog-public-preview"]').innerText();
-  const chips = await page.locator('[data-testid="catalog-public-preview"] .chip').allTextContents();
+  const chips = await page
+    .locator('[data-testid="catalog-public-preview"] span')
+    .filter({ hasText: /^(Услуга|Этап):/ })
+    .allTextContents();
   if (!preview.includes(fixture.publicName)) throw new Error('impl_preview_publicName_mismatch');
   if (!preview.includes(fixture.city)) throw new Error('impl_preview_city_mismatch');
   if (!chips.some((t) => new RegExp(`^Услуга:\\s*${fixture.serviceLabels[0]}`).test(t.trim()))) {

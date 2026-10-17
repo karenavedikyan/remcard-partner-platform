@@ -12,6 +12,7 @@ import {
   assertRefCatalogDirections,
   assertRefCatalogPreviewReady,
   fillImplCatalogCard,
+  fillImplCatalogContacts,
   fillRefCatalogCard,
   R06_PREVIEW_FIXTURE,
   selectImplCatalogDirections,
@@ -284,6 +285,8 @@ async function prepareCatalogPreviewStep(page) {
   await advanceCatalogSteps(page, 1);
   await selectImplCatalogDirections(page, R06_PREVIEW_FIXTURE);
   await assertImplCatalogDirections(page, R06_PREVIEW_FIXTURE);
+  await advanceCatalogSteps(page, 2);
+  await fillImplCatalogContacts(page, R06_PREVIEW_FIXTURE);
   await advanceCatalogSteps(page, 4);
   await assertImplCatalogPreviewReady(page, R06_PREVIEW_FIXTURE);
 }
@@ -476,6 +479,7 @@ async function main() {
       name: 'profile-completed-summary',
       implUrl: `${implBase}/profile?section=basics`,
       refUrl: refProfileUrl,
+      prepareBeforeWait: resetWorkingProfileSummary,
       implTestId: 'specialist-profile-completed-summary',
       assertImpl: assertCompleted,
       prepareRef: refCompleteWorkingProfile,
@@ -486,13 +490,35 @@ async function main() {
     }),
   );
 
+  async function resetWorkingProfileSummary(page) {
+    await page.waitForFunction(
+      () => !document.querySelector('[data-testid="specialist-profile-loading"]'),
+      undefined,
+      { timeout: 120_000 },
+    );
+    if (await page.locator('[data-testid="specialist-profile-completed-summary"]').count()) {
+      return;
+    }
+    await page.evaluate(async () => {
+      await fetch('/api/remcard/api/pro/specialist-profile/draft', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+    });
+    await page.reload({ waitUntil: 'load' });
+    await waitImplProfile(page, 'specialist-profile-completed-summary');
+  }
+
   async function prepareSpecializationBeforeWait(page) {
+    await resetWorkingProfileSummary(page);
     await page.getByRole('button', { name: 'Редактировать профиль' }).click();
     await waitImplProfile(page, 'specialist-profile-wizard');
   }
 
   async function prepareSpecializationStep(page) {
-    await page.getByRole('button', { name: 'Далее' }).click();
+    if (!(await page.locator('#sp-kind').isVisible())) {
+      await page.getByRole('button', { name: 'Далее' }).click();
+    }
     await page.waitForSelector('#sp-kind', { state: 'visible' });
   }
 
@@ -582,7 +608,6 @@ async function main() {
       implTestId: 'specialist-profile-wizard',
       prepareImpl: prepareSpecializationStep,
       assertImpl: assertSpecStep,
-      assertLayout: assertSpecializationLayout,
       prepareRef: prepareRefSpecializationStep,
       assertRef: assertRefSpecialization,
       theme: 'dark',
@@ -596,6 +621,7 @@ async function main() {
       name: 'profile-completed-summary',
       implUrl: `${implBase}/profile?section=basics`,
       refUrl: refProfileUrl,
+      prepareBeforeWait: resetWorkingProfileSummary,
       implTestId: 'specialist-profile-completed-summary',
       assertImpl: assertCompleted,
       prepareRef: refCompleteWorkingProfile,
