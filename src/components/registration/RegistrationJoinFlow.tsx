@@ -28,7 +28,8 @@ import {
   resolveAgentRegistrationCompleteHref,
   buildWelcomeHref,
 } from "@/lib/registration/routing";
-import { fetchAuthMeSafe } from "@/lib/auth-session";
+import { fetchAuthMeSafe, fetchReadinessSafe } from "@/lib/auth-session";
+import { hasPendingRegistrationConsents } from "@/lib/cabinet-readiness";
 import {
   mapAgentFinishError,
   postAgentRegistrationFinish,
@@ -210,6 +211,16 @@ export function RegistrationJoinFlow() {
       }
       if (!owner) {
         bindRegistrationDraftOwner(userId);
+      }
+
+      const readinessGate = await fetchReadinessSafe();
+      if (readinessGate.ok && hasPendingRegistrationConsents(readinessGate.data)) {
+        setError("Примите обязательные соглашения перед завершением регистрации.");
+        setAuthCodeVerified(true);
+        setStep("auth");
+        finishLock.current = false;
+        setBusy(false);
+        return;
       }
 
       const draft = loadAgentDraftForUser(userId);

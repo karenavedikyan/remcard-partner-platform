@@ -23,6 +23,7 @@ const PROTO_PORT = Number(process.env.REGISTRATION_PROTO_PORT ?? "3099");
 const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
 const REFERENCE_SHA_IMMUTABLE =
   process.env.REGISTRATION_REF_SHA ?? "771cc658a415a5d05b964f29f675d32db449198b";
+const VISUAL_01_5 = process.env.REGISTRATION_VISUAL_01_5 === "1";
 
 const CODE_SHA = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
 const RUNNER_SHA = CODE_SHA;
@@ -448,7 +449,7 @@ async function openImplTypes(page, theme, width) {
     localStorage.clear();
     sessionStorage.clear();
   });
-  await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+  await page.goto(`${IMPL_BASE}/join`, { waitUntil: "domcontentloaded" });
   await applyTheme(page, theme);
   await hideDevChrome(page);
   await page.waitForSelector('[data-testid="registration-types-grid"] label', {
@@ -497,7 +498,7 @@ async function main() {
     { theme: "dark", width: 320, suffix: "320-dark" },
   ];
 
-  for (const { theme, width, suffix } of typeMatrix) {
+  if (!VISUAL_01_5) for (const { theme, width, suffix } of typeMatrix) {
     let refMeasure = null;
     {
       const context = await browser.newContext();
@@ -550,13 +551,15 @@ async function main() {
   const entryStepMatrix = [
     { step: "data-name", suffix: "1440-light", theme: "light", width: 1440 },
     { step: "data-name", suffix: "375-dark", theme: "dark", width: 375 },
-    { step: "data-name", suffix: "320-dark", theme: "dark", width: 320 },
     { step: "data-city", suffix: "1440-light", theme: "light", width: 1440 },
     { step: "data-city", suffix: "375-dark", theme: "dark", width: 375 },
     { step: "auth-providers", suffix: "1440-light", theme: "light", width: 1440 },
     { step: "auth-providers", suffix: "375-dark", theme: "dark", width: 375 },
     { step: "auth-code", suffix: "375-dark", theme: "dark", width: 375 },
     { step: "auth-code", suffix: "320-dark", theme: "dark", width: 320 },
+    ...(VISUAL_01_5
+      ? [{ step: "auth-providers", suffix: "320-progress-dark", theme: "dark", width: 320 }]
+      : [{ step: "data-name", suffix: "320-dark", theme: "dark", width: 320 }]),
   ];
 
   for (const { step, suffix, theme, width } of entryStepMatrix) {
@@ -588,7 +591,7 @@ async function main() {
         localStorage.clear();
         sessionStorage.clear();
       });
-      await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+      await page.goto(`${IMPL_BASE}/join`, { waitUntil: "domcontentloaded" });
       await applyTheme(page, theme);
       await hideDevChrome(page);
       await page.waitForSelector('[data-testid="registration-types-grid"] label', { timeout: 30_000 });

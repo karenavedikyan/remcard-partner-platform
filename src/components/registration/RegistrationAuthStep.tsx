@@ -10,6 +10,7 @@ import {
 import { fetchAuthMeSafe, fetchReadinessSafe } from "@/lib/auth-session";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "@/components/auth/OtpInput";
+import { bindRegistrationDraftOwner } from "@/lib/registration/draft";
 import entryStyles from "./registration-entry.module.css";
 
 type Phase = "providers" | "code";
@@ -73,7 +74,10 @@ export function RegistrationAuthStep({
         setError(sessionRetryMessage(meResult.kind === "network" ? "network" : "server"));
         return;
       }
-      if (meResult.data.user?.id) onAuthenticated(meResult.data.user.id);
+      if (meResult.data.user?.id) {
+        bindRegistrationDraftOwner(meResult.data.user.id);
+        onAuthenticated(meResult.data.user.id);
+      }
       const readinessResult = await fetchReadinessSafe();
       if (!readinessResult.ok) {
         setError(sessionRetryMessage(readinessResult.kind === "network" ? "network" : "server"));
