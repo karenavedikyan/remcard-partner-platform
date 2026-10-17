@@ -203,11 +203,39 @@ async function prepareRefSpecializationStep(page) {
 async function prepareRefCatalogPreview(page) {
   await openRefCatalogProfile(page);
   await page.waitForSelector('[data-catalog-form]');
-  await advanceRefCatalogSteps(page, 4);
+  await page.locator('[name="publicName"]').fill('R06 Visual Catalog');
+  await page.locator('[name="city"]').fill('Krasnodar');
+  const reviewTab = page.locator('[data-cw-step="review"]');
+  if (await reviewTab.count()) {
+    await reviewTab.click();
+  } else {
+    await advanceRefCatalogSteps(page, 4);
+  }
+  await page.waitForFunction(() => {
+    const panel = document.querySelector('[data-catalog-panel="review"]');
+    return panel && !panel.hidden;
+  });
 }
 
 async function prepareRefCatalogPending(page) {
-  await prepareRefCatalogPreview(page);
+  await openRefCatalogProfile(page);
+  await page.waitForSelector('[data-catalog-form]');
+  await page.locator('[name="publicName"]').fill('R06 Visual Catalog');
+  await page.locator('[name="city"]').fill('Krasnodar');
+  await page.locator('[data-cw-move="next"]').click();
+  await page.waitForSelector('[data-catalog-panel="directions"]:not([hidden])');
+  const kind = page.locator('[data-catalog-panel="directions"] [data-specialist-kind]');
+  if (await kind.count()) await kind.selectOption('designer');
+  const opts = page.locator('[data-catalog-panel="directions"] .direction-option input[type="checkbox"]');
+  const optCount = await opts.count();
+  if (optCount >= 1) await opts.nth(0).check({ force: true });
+  if (optCount >= 2) await opts.nth(1).check({ force: true });
+  await page.locator('[data-cw-move="next"]').click();
+  await page.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])');
+  await page.locator('[name="publicPhone"]').fill('+79001112233');
+  await page.locator('[data-cw-move="next"]').click();
+  await page.locator('[data-cw-move="next"]').click();
+  await page.waitForSelector('[data-catalog-panel="review"]:not([hidden])');
   await page.locator('[data-catalog-action="send"]').click();
   await page.waitForSelector('#catalog-pending-title', { timeout: 30_000 });
 }
@@ -321,8 +349,10 @@ async function main() {
     );
   };
   const assertCatalogPending = async (p) => {
-    await p.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]');
-    await p.waitForSelector('text=Заявка на проверке');
+    await p.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]', {
+      timeout: 60_000,
+    });
+    await p.getByText(/На проверке/i).first().waitFor({ timeout: 30_000 });
   };
   const assertRefCompleted = async (p) => {
     await p.waitForSelector('[data-testid="pw-summary"]');
@@ -348,8 +378,8 @@ async function main() {
     await p.getByText('Предпросмотр карточки').waitFor({ timeout: 30_000 });
   };
   const assertRefCatalogPending = async (p) => {
-    await p.waitForSelector('#catalog-pending-title');
-    await p.getByText('Заявка отправлена').waitFor({ timeout: 30_000 });
+    await p.waitForSelector('#catalog-pending-title', { timeout: 30_000 });
+    await p.locator('#catalog-pending-title').getByText(/отправлен/i).waitFor({ timeout: 30_000 });
   };
 
   const refProfileUrl = `${PROTO_BASE}/roles.html`;
@@ -461,7 +491,9 @@ async function main() {
   await waitImplProfile(pendingPrep, 'specialist-catalog-wizard');
   await prepareCatalogPreviewStep(pendingPrep);
   await pendingPrep.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i }).click();
-  await pendingPrep.waitForSelector('text=Заявка на проверке', { timeout: 60_000 });
+  await pendingPrep.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]', {
+    timeout: 60_000,
+  });
   await pendingPrep.close();
 
   captures.push(

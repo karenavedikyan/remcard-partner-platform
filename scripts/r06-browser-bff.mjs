@@ -7,7 +7,11 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { advanceCatalogSteps } from './lib/r06-playwright-catalog.mjs';
+import {
+  advanceCatalogSteps,
+  ensureCatalogStep,
+  fillCatalogStepRequirements,
+} from './lib/r06-playwright-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
@@ -144,10 +148,12 @@ async function main() {
   await page.goto(`${base}/profile?section=catalog`, { waitUntil: 'load' });
   await page.waitForSelector('[data-testid="specialist-catalog-wizard"]', { timeout: 120_000 });
   await fillCatalogBasics(page);
+  await fillCatalogStepRequirements(page, 0);
   await page.getByRole('button', { name: 'Далее' }).click();
   await page.waitForFunction(
     () => document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '1',
   );
+  await fillCatalogStepRequirements(page, 1);
   await page.getByRole('button', { name: 'Далее' }).click();
   await page.waitForFunction(
     () => document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '2',
@@ -159,10 +165,9 @@ async function main() {
   await page.locator('#sc-tg').fill('');
   await page.getByRole('button', { name: 'Сохранить черновик' }).click();
   await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
-  await page.reload({ waitUntil: 'load' });
-  await page.waitForSelector('[data-testid="specialist-catalog-wizard"]');
-  await page.getByRole('button', { name: 'Далее' }).click();
-  await page.getByRole('button', { name: 'Далее' }).click();
+  await page.goto(`${base}/profile?section=catalog`, { waitUntil: 'load' });
+  await page.waitForSelector('[data-testid="specialist-catalog-wizard"]', { timeout: 120_000 });
+  await ensureCatalogStep(page, 2);
   const tgAfterReload = await page.locator('#sc-tg').inputValue();
   report.steps.catalogClearOptionalReload = { ok: tgAfterReload === '', telegram: tgAfterReload };
 
