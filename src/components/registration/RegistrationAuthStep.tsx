@@ -10,7 +10,6 @@ import {
 import { fetchAuthMeSafe, fetchReadinessSafe } from "@/lib/auth-session";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "@/components/auth/OtpInput";
-import { bindRegistrationDraftOwner } from "@/lib/registration/draft";
 import entryStyles from "./registration-entry.module.css";
 
 type Phase = "providers" | "code";
@@ -20,7 +19,8 @@ type Props = {
   displayName: string;
   city: string;
   onBackToData: () => void;
-  onAuthenticated: (userId: string) => void;
+  /** Return false when login must not continue (draft owner mismatch). */
+  onAuthenticated: (userId: string) => boolean;
   onCodeVerified: () => void;
 };
 
@@ -38,6 +38,7 @@ export function RegistrationAuthStep({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const submitLock = useRef(false);
+  const submitGeneration = useRef(0);
 
   const maxBotUrl = getMaxBotLoginUrl();
   const telegramBotUrl = getTelegramBotLoginUrl();
@@ -52,7 +53,9 @@ export function RegistrationAuthStep({
   useEffect(() => {
     if (phase !== "code") return;
     void fetchAuthMeSafe().then((me) => {
-      if (me.ok && me.data.user?.id) onAuthenticated(me.data.user.id);
+      if (me.ok && me.data.user?.id) {
+        onAuthenticated(me.data.user.id);
+      }
     });
   }, [phase, onAuthenticated]);
 
@@ -64,21 +67,32 @@ export function RegistrationAuthStep({
       return;
     }
     submitLock.current = true;
+    const generation = ++submitGeneration.current;
     setLoading(true);
     setError("");
     try {
       await remcardFetch("/api/auth/verify-code", { method: "POST", body: { code } });
+      if (generation !== submitGeneration.current) return;
       setCode("");
       const meResult = await fetchAuthMeSafe();
+      if (generation !== submitGeneration.current) return;
       if (!meResult.ok) {
         setError(sessionRetryMessage(meResult.kind === "network" ? "network" : "server"));
         return;
       }
-      if (meResult.data.user?.id) {
-        bindRegistrationDraftOwner(meResult.data.user.id);
-        onAuthenticated(meResult.data.user.id);
+      const userId = meResult.data.user?.id;
+      if (!userId) {
+        setError("Сессия не подтверждена. Повторите вход.");
+        return;
+      }
+      const mayContinue = onAuthenticated(userId);
+      if (generation !== submitGeneration.current) return;
+      if (!mayContinue) {
+        setError("Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.");
+        return;
       }
       const readinessResult = await fetchReadinessSafe();
+      if (generation !== submitGeneration.current) return;
       if (!readinessResult.ok) {
         setError(sessionRetryMessage(readinessResult.kind === "network" ? "network" : "server"));
         return;

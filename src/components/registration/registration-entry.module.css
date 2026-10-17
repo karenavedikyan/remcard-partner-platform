@@ -7,9 +7,9 @@
 }
 
 :global([data-theme="dark"]) .registrationEntryScope {
-  --reg-entry-primary: #e8a89f;
-  --reg-entry-primary-fg: #1c1514;
-  --reg-entry-primary-hover: #f0b8b0;
+  --reg-entry-primary: #f49391;
+  --reg-entry-primary-fg: #271b1a;
+  --reg-entry-primary-hover: #e88583;
 }
 
 .registrationEntryScope {
@@ -47,9 +47,31 @@
 
 .formLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: var(--space-10);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.46fr);
+  gap: var(--space-8);
   align-items: start;
+}
+
+.registrationDataScope .panel {
+  padding: var(--space-5) var(--space-6);
+  gap: var(--space-3);
+}
+
+.registrationDataScope .panelHeaderRow {
+  flex-wrap: wrap;
+  align-items: baseline;
+  row-gap: var(--space-1);
+}
+
+.registrationDataScope .panelHeaderRow .eyebrow {
+  flex: 1 1 auto;
+  min-width: 12rem;
+}
+
+.registrationDataScope .panelHeaderRow .stepHint {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.8125rem;
 }
 
 .panel {
@@ -267,6 +289,26 @@
     gap: var(--space-6);
   }
 
+  .registrationDataScope .entryRoleContext {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+  }
+
+  .registrationDataScope .roleContextNote {
+    display: none;
+  }
+
+  .registrationDataScope .changeTypeBtn {
+    margin-left: auto;
+    width: auto;
+    flex-shrink: 0;
+    min-height: 40px;
+    padding-inline: var(--space-3);
+    font-size: 0.8125rem;
+  }
+
   .changeTypeBtn {
     margin-left: 0;
     width: 100%;
@@ -275,6 +317,16 @@
   .roleContextNote {
     width: 100%;
     order: 3;
+  }
+
+  .registrationDataScope .entryTitle {
+    font-size: clamp(1.2rem, 5vw, 1.45rem);
+    line-height: 1.25;
+  }
+
+  .registrationDataScope .entrySingle {
+    padding: var(--space-5);
+    gap: var(--space-3);
   }
 
   .formFooter {

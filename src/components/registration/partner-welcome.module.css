@@ -326,30 +326,49 @@
 
 @media (max-width: 760px) {
   .page {
-    --welcome-display: clamp(2.125rem, 8vw, 2.5rem);
-    padding-top: var(--space-6);
+    --welcome-display: clamp(2rem, 7.5vw, 2.375rem);
+    padding-top: var(--space-5);
   }
   .hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-8);
+    gap: var(--space-6);
+  }
+  .kicker {
+    margin-bottom: var(--space-4);
+    font-size: 0.8125rem;
+  }
+  .copy h1 {
+    line-height: 1.06;
   }
   .headingRest {
-    font-size: 1.125rem;
-    margin-top: var(--space-3);
+    font-size: 1.0625rem;
+    margin-top: var(--space-2);
+    line-height: 1.4;
   }
   .description {
-    margin-top: var(--space-4);
+    margin-top: var(--space-3);
     font-size: 0.875rem;
     line-height: 1.55;
   }
   .target {
-    margin-top: var(--space-3);
+    margin-top: var(--space-2);
+    font-size: 0.8125rem;
+  }
+  .target svg {
+    width: 16px;
+    height: 16px;
   }
   .action {
-    gap: var(--space-3);
-    margin-top: var(--space-4);
+    gap: var(--space-4);
+    margin-top: var(--space-5);
     align-items: center;
     flex-direction: row;
+    flex-wrap: nowrap;
+  }
+  .action span {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    max-width: 11rem;
   }
   .action span br {
     display: none;

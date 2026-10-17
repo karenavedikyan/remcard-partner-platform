@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import {
+  bindRegistrationDraftOwner,
   clearAllRegistrationDrafts,
+  getRegistrationDraftOwner,
+  loadAgentDraftForUser,
   loadRegistrationDraft,
   mergeRegistrationDraftFields,
   REGISTRATION_DRAFT_TTL_MS,
@@ -53,5 +56,13 @@ describe("registration draft", () => {
     saveRegistrationDraft("agent", { displayName: "A" }, "user-1");
     assert.equal(loadRegistrationDraft("agent", "user-2"), null);
     assert.equal(loadRegistrationDraft("agent", "user-1")?.fields.displayName, "A");
+  });
+
+  it("does not rebind owner from A to B without clearing draft", () => {
+    saveRegistrationDraft("agent", { displayName: "Draft-A", city: "City-A" }, "user-A");
+    bindRegistrationDraftOwner("user-B");
+    assert.equal(getRegistrationDraftOwner(), "user-A");
+    assert.equal(loadAgentDraftForUser("user-B"), null);
+    assert.equal(loadAgentDraftForUser("user-A")?.fields.displayName, "Draft-A");
   });
 });

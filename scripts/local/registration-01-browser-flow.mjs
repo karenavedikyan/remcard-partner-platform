@@ -85,7 +85,9 @@ async function main() {
   });
 
   let finishBlocked = false;
+  let finishPostCount = 0;
   await page.route("**/api/remcard/api/pro/registration/agent/finish**", async (route) => {
+    finishPostCount += 1;
     if (finishBlocked) {
       await route.fulfill({ status: 403, body: JSON.stringify({ code: "DRAFT_OWNER_MISMATCH" }) });
       return;
@@ -263,6 +265,58 @@ async function main() {
   results.push({
     name: "auth_consents_fresh_readiness_routes_to_finish",
     pass: page.url().includes("phase=finish"),
+  });
+
+  authUser = null;
+  verifyCodeStatus = 200;
+  readyReadiness.nextStep = "ready";
+  readyReadiness.missingConsents = [];
+  readyReadiness.canAccessCabinet = true;
+  finishPostCount = 0;
+  await page.goto(`${BASE}/join`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    sessionStorage.setItem("remcard.registration.owner.v1", "user-A");
+    sessionStorage.setItem(
+      "remcard.registration.draft.v1:agent",
+      JSON.stringify({
+        kind: "agent",
+        fields: { displayName: "Draft-A", city: "City-A" },
+        updatedAt: Date.now(),
+      }),
+    );
+    sessionStorage.setItem(
+      "remcard.registration.wizard.v1",
+      JSON.stringify({ step: "auth", kind: "agent", updatedAt: Date.now() }),
+    );
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 15_000 });
+  await page.getByRole("button", { name: /Продолжить с MAX/i }).click();
+  await page.waitForSelector('[data-testid="registration-entry-auth-code"]', { timeout: 10_000 });
+  await page.locator('input[inputmode="numeric"]').first().fill("444444");
+  await page.locator('[data-testid="registration-entry-auth-code"] button[type="submit"]').click();
+  await page.waitForTimeout(800);
+  const mismatchBody = await page.locator("body").innerText();
+  const ownerAfterOtp = await page.evaluate(() =>
+    sessionStorage.getItem("remcard.registration.owner.v1"),
+  );
+  const draftAfterMismatch = await page.evaluate(() =>
+    sessionStorage.getItem("remcard.registration.draft.v1:agent"),
+  );
+  results.push({
+    name: "auth_otp_owner_mismatch_clears_draft",
+    pass:
+      /другим аккаунтом/i.test(mismatchBody) &&
+      ownerAfterOtp === null &&
+      (draftAfterMismatch === null || !draftAfterMismatch.includes("Draft-A")),
+  });
+  results.push({
+    name: "auth_otp_owner_mismatch_no_finish_post",
+    pass: finishPostCount === 0,
+  });
+  results.push({
+    name: "auth_otp_owner_mismatch_no_consents",
+    pass: (await page.locator('[data-testid="registration-auth-consents"]').count()) === 0,
   });
 
   authUser = "user-otp";

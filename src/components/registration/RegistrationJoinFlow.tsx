@@ -262,21 +262,20 @@ export function RegistrationJoinFlow() {
     void runAgentFinish();
   }, [step, isAgentNewPath, capsLoaded, agentPathActive, runAgentFinish]);
 
-  const handleAuthenticated = useCallback(
-    (userId: string) => {
-      const owner = getRegistrationDraftOwner();
-      if (owner && owner !== userId) {
-        clearAllRegistrationDrafts();
-        setError("Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.");
-        setStep("name");
-        return;
-      }
-      if (!owner) {
-        bindRegistrationDraftOwner(userId);
-      }
-    },
-    [],
-  );
+  const handleAuthenticated = useCallback((userId: string): boolean => {
+    const owner = getRegistrationDraftOwner();
+    if (owner && owner !== userId) {
+      clearAllRegistrationDrafts();
+      setAuthCodeVerified(false);
+      setError("Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.");
+      setStep("name");
+      return false;
+    }
+    if (!owner) {
+      bindRegistrationDraftOwner(userId);
+    }
+    return true;
+  }, []);
 
   const typeHint = useMemo(() => {
     if (!roleLanding || !kind) return null;
@@ -461,13 +460,13 @@ export function RegistrationJoinFlow() {
       <div
         className={
           step === "name" || step === "city"
-            ? `${styles.dataRegistration} ${entryStyles.registrationEntryScope}`
+            ? `${styles.dataRegistration} ${entryStyles.registrationEntryScope} ${entryStyles.registrationDataScope}`
             : `${styles.joinPage} ${entryStyles.registrationEntryScope}`
         }
       >
         {step === "name" && isAgentNewPath && kind ? (
           <>
-            <JoinProgress current="data" />
+            <JoinProgress current="data" layout="dataRegistration" />
             <RegistrationEntryDataStep
               kind={kind}
               field="name"
@@ -485,7 +484,7 @@ export function RegistrationJoinFlow() {
 
         {step === "city" && isAgentNewPath && kind ? (
           <>
-            <JoinProgress current="data" />
+            <JoinProgress current="data" layout="dataRegistration" />
             <RegistrationEntryDataStep
               kind={kind}
               field="city"
