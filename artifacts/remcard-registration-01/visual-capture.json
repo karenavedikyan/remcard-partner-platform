@@ -1,13 +1,13 @@
 {
   "implBase": "http://127.0.0.1:3000",
   "protoBase": "http://127.0.0.1:3099",
-  "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
-  "runnerSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+  "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
+  "runnerSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
   "buildId": null,
-  "treeDirty": false,
+  "treeDirty": true,
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceShaImmutable": "771cc658a415a5d05b964f29f675d32db449198b",
-  "capturedAt": "2026-10-17T20:25:15.505Z",
+  "capturedAt": "2026-10-17T20:33:45.843Z",
   "pngFileCount": 26,
   "pairCount": 13,
   "captureCount": 26,
@@ -85,7 +85,7 @@
       "step": "data-name",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -99,12 +99,33 @@
       "step": "data-name",
       "theme": "light",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
       "fullPageHeight": 900,
-      "layout": null,
+      "layout": {
+        "providerBtn": null,
+        "formGrid": {
+          "gridTemplateColumns": "576.188px 523.812px",
+          "gap": "40px"
+        },
+        "panelHeader": {
+          "hintLeft": 585,
+          "rowLeft": 175,
+          "hintBelowEyebrow": false,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": null,
+        "cityField": null,
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -113,7 +134,7 @@
       "step": "data-name",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1120,
@@ -127,12 +148,40 @@
       "step": "data-name",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1015,
-      "fullPageHeight": 1015,
-      "layout": null,
+      "pngHeight": 1020,
+      "fullPageHeight": 1020,
+      "layout": {
+        "providerBtn": null,
+        "formGrid": null,
+        "panelHeader": {
+          "hintLeft": 41,
+          "rowLeft": 41,
+          "hintBelowEyebrow": true,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            -108,
+            -108,
+            -108,
+            -108
+          ],
+          "stageTopSpread": 0
+        },
+        "cityField": null,
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -141,7 +190,7 @@
       "step": "data-city",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -155,12 +204,34 @@
       "step": "data-city",
       "theme": "light",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
       "fullPageHeight": 900,
-      "layout": null,
+      "layout": {
+        "providerBtn": null,
+        "formGrid": null,
+        "panelHeader": {
+          "hintLeft": 585,
+          "rowLeft": 175,
+          "hintBelowEyebrow": false,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": null,
+        "cityField": {
+          "value": "",
+          "hasFocusRing": false,
+          "activeIsInput": false
+        },
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -169,7 +240,7 @@
       "step": "data-city",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1172,
@@ -183,12 +254,44 @@
       "step": "data-city",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1065,
-      "fullPageHeight": 1065,
-      "layout": null,
+      "pngHeight": 1070,
+      "fullPageHeight": 1070,
+      "layout": {
+        "providerBtn": null,
+        "formGrid": null,
+        "panelHeader": {
+          "hintLeft": 41,
+          "rowLeft": 41,
+          "hintBelowEyebrow": true,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            -108,
+            -108,
+            -108,
+            -108
+          ],
+          "stageTopSpread": 0
+        },
+        "cityField": {
+          "value": "",
+          "hasFocusRing": false,
+          "activeIsInput": false
+        },
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -197,7 +300,7 @@
       "step": "auth-providers",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -211,12 +314,24 @@
       "step": "auth-providers",
       "theme": "light",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
       "fullPageHeight": 900,
-      "layout": null,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(187, 48, 53)",
+          "fg": "rgb(255, 255, 255)",
+          "hoverBg": "rgb(166, 40, 45)"
+        },
+        "formGrid": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "cityField": null,
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -225,7 +340,7 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 905,
@@ -239,12 +354,24 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
       "fullPageHeight": 812,
-      "layout": null,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(244, 147, 145)",
+          "fg": "rgb(39, 27, 26)",
+          "hoverBg": "rgb(232, 133, 131)"
+        },
+        "formGrid": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "cityField": null,
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -253,7 +380,7 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 873,
@@ -267,12 +394,20 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
       "fullPageHeight": 812,
-      "layout": null,
+      "layout": {
+        "providerBtn": null,
+        "formGrid": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "cityField": null,
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -281,7 +416,7 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 1004,
@@ -295,12 +430,20 @@
       "step": "auth-code",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 772,
-      "fullPageHeight": 772,
-      "layout": null,
+      "pngHeight": 744,
+      "fullPageHeight": 744,
+      "layout": {
+        "providerBtn": null,
+        "formGrid": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "cityField": null,
+        "authTitleLines": null
+      },
       "verify": "passed"
     },
     {
@@ -309,7 +452,7 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 943,
@@ -323,12 +466,24 @@
       "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/join",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 830,
-      "fullPageHeight": 830,
-      "layout": null,
+      "pngHeight": 765,
+      "fullPageHeight": 765,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(244, 147, 145)",
+          "fg": "rgb(39, 27, 26)",
+          "hoverBg": "rgb(232, 133, 131)"
+        },
+        "formGrid": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "cityField": null,
+        "authTitleLines": 2
+      },
       "verify": "passed"
     },
     {
@@ -337,7 +492,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 965,
@@ -360,7 +515,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3000/",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 1440,
       "pngWidth": 1440,
       "pngHeight": 900,
@@ -383,7 +538,7 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1369,
@@ -406,20 +561,20 @@
       "step": "welcome",
       "theme": "light",
       "url": "http://127.0.0.1:3000/",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1223,
-      "fullPageHeight": 1223,
+      "pngHeight": 1263,
+      "fullPageHeight": 1263,
       "layout": {
         "actionDisplay": "row",
         "actionAlign": "center",
-        "actionGap": "16px",
+        "actionGap": "12px",
         "btnBg": "rgb(187, 48, 53)",
         "btnColor": "rgb(255, 255, 255)",
-        "h1FontSizePx": 32,
-        "h1LineHeight": "33.92px",
-        "actionTopPx": 360
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
       },
       "verify": "passed"
     },
@@ -429,7 +584,7 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 1369,
@@ -452,20 +607,20 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1223,
-      "fullPageHeight": 1223,
+      "pngHeight": 1263,
+      "fullPageHeight": 1263,
       "layout": {
         "actionDisplay": "row",
         "actionAlign": "center",
-        "actionGap": "16px",
+        "actionGap": "12px",
         "btnBg": "rgb(244, 147, 145)",
         "btnColor": "rgb(39, 27, 26)",
-        "h1FontSizePx": 32,
-        "h1LineHeight": "33.92px",
-        "actionTopPx": 360
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
       },
       "verify": "passed"
     },
@@ -475,7 +630,7 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 320,
       "pngWidth": 320,
       "pngHeight": 1423,
@@ -498,20 +653,20 @@
       "step": "welcome",
       "theme": "dark",
       "url": "http://127.0.0.1:3000/",
-      "codeSha": "5581967bccab86753bddeacb165d3e4ed1f6aa39",
+      "codeSha": "8663dbd0969e07feb4e6c0db7e9a6ef04168006c",
       "viewportWidth": 320,
       "pngWidth": 320,
-      "pngHeight": 1331,
-      "fullPageHeight": 1331,
+      "pngHeight": 1369,
+      "fullPageHeight": 1369,
       "layout": {
         "actionDisplay": "column",
         "actionAlign": "flex-start",
-        "actionGap": "16px",
+        "actionGap": "12px",
         "btnBg": "rgb(244, 147, 145)",
         "btnColor": "rgb(39, 27, 26)",
-        "h1FontSizePx": 32,
-        "h1LineHeight": "33.92px",
-        "actionTopPx": 382
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 415
       },
       "verify": "passed"
     }
@@ -538,6 +693,7 @@
     "dark_card_computed_settled",
     "layout_json_embedded",
     "mobile_grid_parity_375_320",
-    "progress_stage_top_alignment"
+    "progress_stage_top_alignment",
+    "registration_css_gates"
   ]
 }

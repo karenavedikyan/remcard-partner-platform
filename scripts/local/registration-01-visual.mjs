@@ -368,8 +368,14 @@ function assertRegistrationCssGates({ step, theme, width, kind, metrics }) {
 
   if (step === "data-name" && width === 1440 && metrics.formGrid) {
     const cols = metrics.formGrid.gridTemplateColumns ?? "";
-    if (!/1\.1fr/.test(cols) || !/1fr/.test(cols)) {
+    const parts = cols.split(/\s+/).map((c) => parseFloat(c)).filter((n) => Number.isFinite(n) && n > 0);
+    if (parts.length !== 2) {
       failures.push(`1440:formGrid columns: ${cols}`);
+    } else {
+      const ratio = parts[0] / parts[1];
+      if (ratio < 1.08 || ratio > 1.12) {
+        failures.push(`1440:formGrid ratio: ${ratio.toFixed(3)} (expected ~1.1)`);
+      }
     }
   }
 
