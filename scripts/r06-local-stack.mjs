@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
 import { execSync, spawn } from 'node:child_process';
 import path from 'node:path';
@@ -14,6 +13,7 @@ const GATE = process.env.PROF_R06_SPECIALIST_PROFILE_ENABLED !== '0';
 const DB_URL = 'postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/remcard_r01_test';
 const NAV_DIST = process.env.R06_NAV_DIST_DIR || '.next-r06-local-nav';
 const PLAT_DIST = process.env.R06_PLAT_DIST_DIR || '.next-r06-local-plat';
+const STABLE_R06_JWT = 'prof-r06-local-stack-jwt-secret-32c!';
 
 function assertLoopback(url) {
   const u = new URL(url);
@@ -36,10 +36,14 @@ async function wait(url, ms = 180000) {
   return false;
 }
 
-function spawnStart(cwd, port, extra) {
+function spawnStart(cwd, port, extra, envPath) {
+  const distDir = extra.R06_NEXT_DIST_DIR ? `export R06_NEXT_DIST_DIR=${JSON.stringify(extra.R06_NEXT_DIST_DIR)}; ` : '';
   const child = spawn(
     'bash',
-    ['-lc', `exec pnpm exec next start -p ${port}`],
+    [
+      '-lc',
+      `set -a && . ${JSON.stringify(envPath)} && set +a && ${distDir}export PORT=${port} NODE_ENV=production && exec pnpm exec next start -p ${port}`,
+    ],
     {
       cwd,
       env: { ...process.env, ...extra, PORT: String(port), NODE_ENV: 'production' },
@@ -52,7 +56,22 @@ function spawnStart(cwd, port, extra) {
 
 function killPort(port) {
   try {
+    execSync(`pkill -f "next start -p ${port}" 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+  try {
+    execSync(`lsof -ti:${port} | xargs -r kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+  try {
     execSync(`fuser -k ${port}/tcp 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+  try {
+    execSync(`lsof -ti:${port} | xargs -r kill -9 2>/dev/null || true`, { stdio: 'ignore' });
   } catch {
     /* ignore */
   }
@@ -63,7 +82,7 @@ async function main() {
   killPort(NAV_PORT);
   killPort(PLATFORM_PORT);
   mkdirSync(RUN_DIR, { recursive: true });
-  const jwtSecret = randomBytes(32).toString('base64url');
+  const jwtSecret = process.env.R06_STACK_JWT_SECRET?.trim() || STABLE_R06_JWT;
   const envPath = path.join(RUN_DIR, 'runtime.env');
   const navEnvLocal = path.join(NAV_ROOT, '.env.local');
   const platEnvLocal = path.join(ROOT, '.env.local');
@@ -124,18 +143,28 @@ async function main() {
     stdio: 'inherit',
   });
 
-  spawnStart(NAV_ROOT, NAV_PORT, {
-    JWT_SECRET: jwtSecret,
-    DATABASE_URL: DB_URL,
-    DIRECT_URL: DB_URL,
-    PROF_R06_SPECIALIST_PROFILE_ENABLED: GATE ? 'true' : 'false',
-    R06_NEXT_DIST_DIR: NAV_DIST,
-  });
-  spawnStart(ROOT, PLATFORM_PORT, {
-    REMCARD_API_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
-    NEXT_PUBLIC_APP_URL: platformPublicUrl,
-    R06_NEXT_DIST_DIR: PLAT_DIST,
-  });
+  spawnStart(
+    NAV_ROOT,
+    NAV_PORT,
+    {
+      JWT_SECRET: jwtSecret,
+      DATABASE_URL: DB_URL,
+      DIRECT_URL: DB_URL,
+      PROF_R06_SPECIALIST_PROFILE_ENABLED: GATE ? 'true' : 'false',
+      R06_NEXT_DIST_DIR: NAV_DIST,
+    },
+    envPath,
+  );
+  spawnStart(
+    ROOT,
+    PLATFORM_PORT,
+    {
+      REMCARD_API_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
+      NEXT_PUBLIC_APP_URL: platformPublicUrl,
+      R06_NEXT_DIST_DIR: PLAT_DIST,
+    },
+    envPath,
+  );
 
   const navOk = await wait(`http://127.0.0.1:${NAV_PORT}/api/health`);
   const platOk = await wait(`http://127.0.0.1:${PLATFORM_PORT}/login`);
