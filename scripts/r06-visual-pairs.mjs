@@ -19,6 +19,12 @@ const PROTO_PORT = Number(process.env.R06_PROTO_PORT ?? '3199');
 const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
 const CODE_SHA = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
 
+const PREVIEW_FIXTURE = {
+  publicName: 'R06 Visual Catalog',
+  city: 'Krasnodar',
+  phone: '+79001112233',
+};
+
 const DEV_HIDE = `
   nextjs-portal, [data-nextjs-toast], [data-nextjs-dialog] { display: none !important; }
 `;
@@ -97,6 +103,52 @@ function themeStabilizeMs(page) {
   return 350;
 }
 
+async function assertCatalogChrome(page) {
+  const root = page.locator('[data-testid="specialist-catalog-wizard"]');
+  await root.waitFor({ state: 'visible', timeout: 30_000 });
+  const input = root.locator('#sc-public-name');
+  await input.waitFor({ state: 'visible' });
+  const inputStyle = await input.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return { borderTopWidth: cs.borderTopWidth, paddingLeft: cs.paddingLeft, minHeight: cs.minHeight };
+  });
+  if (parseFloat(inputStyle.borderTopWidth) < 1) throw new Error('catalog_input_border_missing');
+  if (parseFloat(inputStyle.paddingLeft) < 4) throw new Error('catalog_input_padding_missing');
+  if (parseFloat(inputStyle.minHeight) < 40) throw new Error('catalog_input_min_height');
+  const nextBtn = root.getByRole('button', { name: /Далее|Предпросмотр/i }).first();
+  const btnStyle = await nextBtn.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return {
+      backgroundColor: cs.backgroundColor,
+      minHeight: cs.minHeight,
+      visibility: cs.visibility,
+      display: cs.display,
+    };
+  });
+  if (btnStyle.visibility === 'hidden' || btnStyle.display === 'none') {
+    throw new Error('catalog_primary_hidden');
+  }
+  if (parseFloat(btnStyle.minHeight) < 40) throw new Error('catalog_primary_min_height');
+  if (btnStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || btnStyle.backgroundColor === 'transparent') {
+    throw new Error('catalog_primary_background_missing');
+  }
+}
+
+async function assertSpecializationLayout(page) {
+  const geom = await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="specialist-profile-wizard"]');
+    const card = root?.querySelector('section');
+    const layout = root?.querySelector('aside')?.parentElement;
+    if (!card || !layout) return null;
+    const cr = card.getBoundingClientRect();
+    const lr = layout.getBoundingClientRect();
+    return { cardWidth: cr.width, layoutWidth: lr.width, gap: cr.x - lr.x };
+  });
+  if (!geom || geom.cardWidth < 520) {
+    throw new Error(`specialization_card_narrow:${geom?.cardWidth ?? 0}`);
+  }
+}
+
 async function shotPair(ctx, spec) {
   const {
     name,
@@ -129,6 +181,8 @@ async function shotPair(ctx, spec) {
   if (implTestId) await waitImplProfile(page, implTestId);
   if (prepareImpl) await prepareImpl(page);
   if (spec.assertImpl) await spec.assertImpl(page);
+  if (implTestId === 'specialist-catalog-wizard') await assertCatalogChrome(page);
+  if (spec.assertLayout) await spec.assertLayout(page);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(200);
   const implPath = path.join(OUT, `${name}-impl-${width}-${theme}.png`);
@@ -171,12 +225,10 @@ async function openRefCatalogProfile(page) {
 }
 
 async function prepareCatalogPreviewStep(page) {
-  await page.locator('#sc-public-name').fill('R06 Visual Catalog');
-  await page.locator('#sc-city').fill('Krasnodar');
-  const phone = page.locator('[data-testid="agent-profile-input-phone"]').first();
-  if (await phone.count()) await phone.fill('+79001112233');
+  await page.locator('#sc-public-name').fill(PREVIEW_FIXTURE.publicName);
+  await page.locator('#sc-city').fill(PREVIEW_FIXTURE.city);
   await advanceCatalogSteps(page, 4);
-  await page.getByText('Можно отправить заявку', { exact: false }).waitFor({ timeout: 30_000 });
+  await page.getByText(/Можно отправить заявку/i).waitFor({ timeout: 30_000 });
 }
 
 async function refCompleteWorkingProfile(page) {
@@ -203,14 +255,9 @@ async function prepareRefSpecializationStep(page) {
 async function prepareRefCatalogPreview(page) {
   await openRefCatalogProfile(page);
   await page.waitForSelector('[data-catalog-form]');
-  await page.locator('[name="publicName"]').fill('R06 Visual Catalog');
-  await page.locator('[name="city"]').fill('Krasnodar');
-  const reviewTab = page.locator('[data-cw-step="review"]');
-  if (await reviewTab.count()) {
-    await reviewTab.click();
-  } else {
-    await advanceRefCatalogSteps(page, 4);
-  }
+  await page.locator('[name="publicName"]').fill(PREVIEW_FIXTURE.publicName);
+  await page.locator('[name="city"]').fill(PREVIEW_FIXTURE.city);
+  await advanceRefCatalogSteps(page, 4);
   await page.waitForFunction(() => {
     const panel = document.querySelector('[data-catalog-panel="review"]');
     return panel && !panel.hidden;
@@ -343,16 +390,18 @@ async function main() {
     );
   };
   const assertCatalogPreview = async (p) => {
-    await p.waitForSelector('text=Можно отправить заявку');
     await p.waitForFunction(
       () => document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '4',
     );
+    await p.getByText(/Можно отправить заявку/i).waitFor({ timeout: 30_000 });
+    const readiness = await p.locator('[data-testid="specialist-catalog-wizard"]').innerText();
+    if (/Заполните:/i.test(readiness)) throw new Error('impl_preview_missing_fields');
+    if (!readiness.includes(PREVIEW_FIXTURE.publicName)) throw new Error('impl_preview_name_mismatch');
   };
   const assertCatalogPending = async (p) => {
-    await p.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]', {
-      timeout: 60_000,
-    });
-    await p.getByText(/На проверке/i).first().waitFor({ timeout: 30_000 });
+    await p.waitForSelector('[data-testid="specialist-catalog-pending"]', { timeout: 60_000 });
+    await p.locator('#catalog-pending-title').waitFor({ timeout: 30_000 });
+    await p.getByText(/ещё не опубликована/i).waitFor({ timeout: 30_000 });
   };
   const assertRefCompleted = async (p) => {
     await p.waitForSelector('[data-testid="pw-summary"]');
@@ -376,10 +425,15 @@ async function main() {
       return panel && !panel.hidden;
     });
     await p.getByText('Предпросмотр карточки').waitFor({ timeout: 30_000 });
+    const readiness = await p.locator('[data-catalog-readiness]').innerText().catch(() => '');
+    if (/Заполните|обязательн/i.test(readiness)) throw new Error('ref_preview_missing_fields');
+    const cardText = await p.locator('[data-catalog-panel="review"]').innerText();
+    if (!cardText.includes(PREVIEW_FIXTURE.publicName)) throw new Error('ref_preview_name_mismatch');
   };
   const assertRefCatalogPending = async (p) => {
     await p.waitForSelector('#catalog-pending-title', { timeout: 30_000 });
     await p.locator('#catalog-pending-title').getByText(/отправлен/i).waitFor({ timeout: 30_000 });
+    await p.getByText(/ещё не опубликована/i).waitFor({ timeout: 30_000 });
   };
 
   const refProfileUrl = `${PROTO_BASE}/roles.html`;
@@ -419,6 +473,7 @@ async function main() {
       implTestId: 'specialist-profile-wizard',
       prepareImpl: prepareSpecializationStep,
       assertImpl: assertSpecStep,
+      assertLayout: assertSpecializationLayout,
       prepareRef: prepareRefSpecializationStep,
       assertRef: assertRefSpecialization,
       theme: 'light',
@@ -491,9 +546,7 @@ async function main() {
   await waitImplProfile(pendingPrep, 'specialist-catalog-wizard');
   await prepareCatalogPreviewStep(pendingPrep);
   await pendingPrep.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i }).click();
-  await pendingPrep.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]', {
-    timeout: 60_000,
-  });
+  await pendingPrep.waitForSelector('[data-testid="specialist-catalog-pending"]', { timeout: 60_000 });
   await pendingPrep.close();
 
   captures.push(
@@ -501,7 +554,7 @@ async function main() {
       name: 'profile-catalog-pending',
       implUrl: `${implBase}/profile?section=catalog`,
       refUrl: refProfileUrl,
-      implTestId: 'specialist-catalog-wizard',
+      implTestId: 'specialist-catalog-pending',
       assertImpl: assertCatalogPending,
       prepareRef: prepareRefCatalogPending,
       assertRef: assertRefCatalogPending,
@@ -527,6 +580,8 @@ async function main() {
   protoProc.kill();
 
   const CAPTURE_SHA = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+  const matchedPairs = captures.filter((c) => c.refPath);
+  const implOnlySmoke = captures.filter((c) => !c.refPath);
   const manifest = {
     referenceSha: REF_SHA,
     referenceGitSha: REF_GIT_SHA,
@@ -535,11 +590,20 @@ async function main() {
     navigatorSha: meta.navigatorSha,
     platformSha: meta.platformSha,
     runDir: RUN_DIR,
+    matchedPairCount: matchedPairs.length,
+    implOnlySmokeCount: implOnlySmoke.length,
     pairs: captures,
-    note: 'ref captures use frozen prototype cabinet+specialist; pixel parity not auto-scored',
+    note: '7 matched impl/ref pairs + 1 impl-only smoke; pixel parity not auto-scored (CAPTURED ≠ PASS)',
   };
   writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
-  console.log(JSON.stringify({ ok: true, count: captures.length, out: OUT }));
+  console.log(
+    JSON.stringify({
+      ok: true,
+      matchedPairCount: matchedPairs.length,
+      implOnlySmokeCount: implOnlySmoke.length,
+      out: OUT,
+    }),
+  );
 }
 
 main().catch((e) => {

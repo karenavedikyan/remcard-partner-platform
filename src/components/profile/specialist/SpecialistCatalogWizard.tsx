@@ -27,7 +27,6 @@ import { AgentPhoneField, type AgentPhoneFieldHandle } from "../agent/AgentPhone
 import type { CatalogPrefillField, CatalogTouchedMap } from "@/lib/specialist-r06/catalog-prefill";
 import { markCatalogFieldTouched } from "@/lib/specialist-r06/catalog-prefill";
 import editorStyles from "../ProfileEditor.module.css";
-import btnStyles from "../agent/AgentProfileWizard.module.css";
 import catalogStyles from "./SpecialistCatalogWizard.module.css";
 
 const STEPS = ["Карточка", "Направления", "Контакты", "Оформление", "Предпросмотр"] as const;
@@ -236,12 +235,12 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           Шаг {step + 1} из {STEPS.length}
         </span>
         <h2 className={catalogStyles.title}>{STEPS[step]}</h2>
-        {error ? <p className={btnStyles.bannerError}>{error}</p> : null}
-        {success ? <p className={btnStyles.bannerSuccess}>{success}</p> : null}
+        {error ? <p className={catalogStyles.bannerError}>{error}</p> : null}
+        {success ? <p className={catalogStyles.bannerSuccess}>{success}</p> : null}
 
           {step === 0 ? (
-            <div className={btnStyles.fields}>
-              <div className={btnStyles.field}>
+            <div className={catalogStyles.fields}>
+              <div className={catalogStyles.field}>
                 <label htmlFor="sc-public-name">Публичное имя</label>
                 <input
                   id="sc-public-name"
@@ -253,7 +252,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <div className={btnStyles.field}>
+              <div className={catalogStyles.field}>
                 <label htmlFor="sc-city">Город в каталоге</label>
                 <input
                   id="sc-city"
@@ -265,7 +264,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <label className={editorStyles.checkRow}>
+              <label className={catalogStyles.checkRow}>
                 <input
                   type="checkbox"
                   checked={showFullName}
@@ -284,13 +283,13 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
           {step === 1 ? (
             <div id="catalog-products">
-              <p className={btnStyles.intro}>
+              <p className={catalogStyles.intro}>
                 Специалист публикует услуги и этапы ремонта, не товары.
               </p>
               {(workingServiceIds.length > 0 || workingStageIds.length > 0) && (
                 <button
                   type="button"
-                  className={btnStyles.btn}
+                  className={catalogStyles.btn}
                   disabled={!catalogEditable}
                   onClick={() => {
                     onPullWorkingDirections();
@@ -325,7 +324,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           ) : null}
 
           {step === 2 ? (
-            <div id="catalog-contacts" className={btnStyles.fields}>
+            <div id="catalog-contacts" className={catalogStyles.fields}>
               <AgentPhoneField
                 ref={publicPhoneRef}
                 value={publicPhone}
@@ -335,7 +334,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   onPublicPhoneChange(v);
                 }}
               />
-              <div className={btnStyles.field}>
+              <div className={catalogStyles.field}>
                 <label htmlFor="sc-email">Email для клиентов</label>
                 <input
                   id="sc-email"
@@ -347,7 +346,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <div className={btnStyles.field}>
+              <div className={catalogStyles.field}>
                 <label htmlFor="sc-tg">Telegram</label>
                 <input
                   id="sc-tg"
@@ -359,7 +358,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <div className={btnStyles.field}>
+              <div className={catalogStyles.field}>
                 <label htmlFor="sc-web">Сайт</label>
                 <input
                   id="sc-web"
@@ -375,8 +374,8 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           ) : null}
 
           {step === 3 ? (
-            <div className={btnStyles.fields}>
-              <p className={btnStyles.intro}>Фото и описание необязательны.</p>
+            <div className={catalogStyles.fields}>
+              <p className={catalogStyles.intro}>Фото и описание необязательны.</p>
               <input
                 ref={fileRef}
                 type="file"
@@ -395,13 +394,13 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
               />
               <button
                 type="button"
-                className={btnStyles.btn}
+                className={catalogStyles.btn}
                 disabled={!catalogEditable || uploading}
                 onClick={() => fileRef.current?.click()}
               >
                 {uploading ? "Загрузка…" : catalogImageUrl ? "Заменить фото" : "Добавить фото"}
               </button>
-              {uploadError ? <p className={btnStyles.bannerError}>{uploadError}</p> : null}
+              {uploadError ? <p className={catalogStyles.bannerError}>{uploadError}</p> : null}
               <TextAreaField
                 label="Описание"
                 value={description}
@@ -418,17 +417,14 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             <div>
               <CatalogPublicationPreview profile={profile} draft={draft} />
               {missing.length > 0 ? (
-                <ul className={btnStyles.reviewList}>
+                <ul className={catalogStyles.reviewList}>
                   {missing.map((m) => (
                     <li key={m.id}>{m.label}</li>
                   ))}
                 </ul>
               ) : (
-                <p className={btnStyles.intro}>Можно отправить заявку на модерацию.</p>
+                <p className={catalogStyles.intro}>Можно отправить заявку на модерацию.</p>
               )}
-              {catalogStatus === "PENDING" ? (
-                <p className={btnStyles.bannerSuccess}>Заявка на проверке — карточка ещё не опубликована.</p>
-              ) : null}
             </div>
           ) : null}
 
@@ -436,7 +432,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             {step > 0 ? (
               <button
                 type="button"
-                className={btnStyles.btn}
+                className={catalogStyles.btn}
                 disabled={saving || submitting}
                 onClick={() => setStep((s) => Math.max(0, s - 1))}
               >
@@ -446,7 +442,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             {step < 4 ? (
               <button
                 type="button"
-                className={btnStyles.btnPrimary}
+                className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
                 disabled={saving}
                 onClick={() => {
                   const miss = stepMissing(step);
@@ -463,7 +459,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             ) : null}
             <button
               type="button"
-              className={btnStyles.btn}
+              className={catalogStyles.btn}
               disabled={saving || submitting || !catalogPublicationEditable(profile)}
               onClick={() => void saveDraft()}
             >
@@ -472,7 +468,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             {step === 4 && canSubmit && missing.length === 0 ? (
               <button
                 type="button"
-                className={btnStyles.btnPrimary}
+                className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
                 disabled={submitting || saving}
                 onClick={() => void submitPublication()}
               >

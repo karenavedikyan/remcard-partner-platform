@@ -193,9 +193,7 @@ async function main() {
   await loginContext(reentry, env);
   const page2 = await reentry.newPage();
   await page2.goto(`${base}/profile?section=catalog`, { waitUntil: 'load' });
-  await page2.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]', {
-    timeout: 60_000,
-  });
+  await page2.waitForSelector('[data-testid="specialist-catalog-pending"]', { timeout: 60_000 });
   report.steps.reentryPending = { ok: true };
   await page2.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i }).click().catch(() => {});
   await page2.waitForTimeout(500);

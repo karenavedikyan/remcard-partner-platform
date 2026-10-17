@@ -640,7 +640,8 @@ function ProfileEditorInner({
   const showAside =
     activeSection !== "overview" &&
     activeSection !== "team" &&
-    !(pureAgentCompactUi && activeSection === "basics");
+    !(pureAgentCompactUi && activeSection === "basics") &&
+    !(specialistR06Ui && (activeSection === "basics" || activeSection === "catalog"));
 
   return (
     <div

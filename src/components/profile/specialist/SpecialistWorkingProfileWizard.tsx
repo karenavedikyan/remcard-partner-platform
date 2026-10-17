@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { RemcardApiError } from "@/lib/api-client";
 import { refreshProfile } from "@/lib/profile-save";
 import {
@@ -21,6 +23,11 @@ import type { ProProfileResponse } from "@/lib/types";
 import styles from "../agent/AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Специализация", "Связь и работа", "Проверка"] as const;
+
+function displayOrEmpty(value: string | undefined | null): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : "Не указано";
+}
 
 const WORK_MODES = [
   { value: "", label: "Не указано" },
@@ -243,23 +250,67 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
           ) : null}
           <dl className={styles.summaryFacts}>
             <div>
+              <dt>Телефон</dt>
+              <dd>
+                {savedProfile.partnershipContactPhone?.trim()
+                  ? formatPhoneForDisplay(savedProfile.partnershipContactPhone)
+                  : "Не указано"}
+              </dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{displayOrEmpty(savedProfile.partnershipContactEmail)}</dd>
+            </div>
+            <div>
               <dt>Специализация</dt>
               <dd>
                 {specialistKindDisplayLabel(
                   savedProfile.specialistKind,
                   savedProfile.specialistTitle,
-                )}
+                ) || "Не указано"}
               </dd>
             </div>
             <div>
+              <dt>Формат работы</dt>
+              <dd>
+                {WORK_MODES.find((m) => m.value === (savedProfile.partnerWorkMode ?? ""))?.label ??
+                  "Не указано"}
+              </dd>
+            </div>
+            <div>
+              <dt>Сайт</dt>
+              <dd>{displayOrEmpty(savedProfile.publicSite)}</dd>
+            </div>
+            <div>
+              <dt>Telegram</dt>
+              <dd>{displayOrEmpty(savedProfile.publicTelegram)}</dd>
+            </div>
+            <div>
+              <dt>Территория</dt>
+              <dd>{displayOrEmpty(savedProfile.areas)}</dd>
+            </div>
+            <div>
               <dt>Услуги</dt>
-              <dd>{specialistIdListDisplay(savedProfile.serviceSpecializationIds)}</dd>
+              <dd>{specialistIdListDisplay(savedProfile.serviceSpecializationIds) || "Не указано"}</dd>
             </div>
             <div>
               <dt>Этапы</dt>
-              <dd>{specialistIdListDisplay(savedProfile.navigatorStageIds)}</dd>
+              <dd>{specialistIdListDisplay(savedProfile.navigatorStageIds) || "Не указано"}</dd>
             </div>
           </dl>
+          {(savedProfile.serviceSpecializationIds?.length ||
+            savedProfile.navigatorStageIds?.length) ? (
+            <div className={styles.summaryPicked} aria-label="Выбранные направления">
+              {[
+                ...(savedProfile.serviceSpecializationIds ?? []),
+                ...(savedProfile.navigatorStageIds ?? []),
+              ].map((id) => (
+                <span key={id} className={styles.summaryChip}>
+                  {specialistIdListDisplay([id])}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className={styles.summaryActions}>
             <button
               type="button"
@@ -287,6 +338,18 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               Редактировать профиль
             </button>
           </div>
+          <section className={styles.summaryAfter} aria-label="Каталог RemCard">
+            <div>
+              <h3>Хотите появиться в каталоге?</h3>
+              <p>
+                Публикация добровольна. Публичную карточку можно подготовить отдельно — это не
+                меняет рабочий профиль.
+              </p>
+            </div>
+            <Link href="/profile?section=catalog" className={`${styles.btn} ${styles.btnPrimary}`}>
+              Перейти к каталогу
+            </Link>
+          </section>
         </section>
       </div>
     );
@@ -435,6 +498,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 ) : null}
                 <ProfileDirectionsPicker
                   specialistMode
+                  compactSpecialistGrid={false}
                   productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
                   navigatorStageIds={draft.navigatorStageIds ?? []}

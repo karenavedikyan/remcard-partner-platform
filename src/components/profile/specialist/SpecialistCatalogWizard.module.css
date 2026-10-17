@@ -6,6 +6,19 @@
   --cw-soft: #f6f7f8;
   --cw-line: #dce0e3;
   --cw-tint: #fff1f1;
+  --cw-xs: 0.75rem;
+  --cw-sm: 0.875rem;
+  --cw-base: 1rem;
+  --cw-lg: 1.25rem;
+  --cw-1: 0.25rem;
+  --cw-2: 0.5rem;
+  --cw-3: 0.75rem;
+  --cw-4: 1rem;
+  --cw-5: 1.25rem;
+  --cw-6: 1.5rem;
+  font-family: inherit;
+  font-size: var(--cw-base);
+  color: var(--cw-text);
   max-width: 1160px;
   margin: 0 auto;
   min-width: 0;
@@ -168,4 +181,116 @@
     min-width: 6.5rem;
     font-size: 0.8rem;
   }
+}
+
+.fields {
+  display: grid;
+  gap: var(--cw-5);
+  min-width: 0;
+}
+
+.field label {
+  font-weight: 700;
+  font-size: var(--cw-sm);
+  display: block;
+  margin-bottom: var(--cw-2);
+  color: var(--cw-text);
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--cw-3);
+  border: 1px solid var(--cw-line);
+  border-radius: 8px;
+  background: var(--cw-bg);
+  color: var(--cw-text);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.intro {
+  margin: 0 0 var(--cw-4);
+  font-size: var(--cw-sm);
+  line-height: 1.45;
+  color: var(--cw-muted);
+}
+
+.bannerError {
+  margin: 0 0 var(--cw-4);
+  padding: var(--cw-3);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--cw-accent) 35%, var(--cw-line));
+  background: var(--cw-tint);
+  color: var(--cw-text);
+  font-size: var(--cw-sm);
+}
+
+.bannerSuccess {
+  margin: 0 0 var(--cw-4);
+  padding: var(--cw-3);
+  border-radius: 8px;
+  border: 1px solid var(--cw-line);
+  background: var(--cw-soft);
+  color: var(--cw-text);
+  font-size: var(--cw-sm);
+}
+
+.reviewList {
+  list-style: none;
+  margin: var(--cw-4) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cw-3);
+  font-size: var(--cw-sm);
+}
+
+.reviewList li {
+  padding: var(--cw-3);
+  border: 1px solid var(--cw-line);
+  border-radius: 8px;
+  background: var(--cw-soft);
+}
+
+.btn {
+  min-height: 44px;
+  padding: var(--cw-3) var(--cw-5);
+  border-radius: 8px;
+  border: 1px solid var(--cw-line);
+  background: var(--cw-bg);
+  color: var(--cw-text);
+  font-weight: 700;
+  font-size: var(--cw-sm);
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: var(--cw-accent);
+  border-color: var(--cw-accent);
+  color: #fff;
+}
+
+:global([data-theme="dark"]) .root .btnPrimary {
+  color: #202329;
+}
+
+.checkRow {
+  display: flex;
+  gap: var(--cw-2);
+  align-items: flex-start;
+  font-size: var(--cw-sm);
+  color: var(--cw-text);
 }

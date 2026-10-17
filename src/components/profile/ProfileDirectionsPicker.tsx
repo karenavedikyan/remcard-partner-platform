@@ -17,6 +17,8 @@ type ProfileDirectionsPickerProps = {
   catalogMode?: boolean;
   /** R06 specialist: services + stages only, no products. */
   specialistMode?: boolean;
+  /** Tighter scrollable grids (catalog). Profile wizard uses full-width grids. */
+  compactSpecialistGrid?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -47,6 +49,7 @@ export function ProfileDirectionsPicker({
   disabled,
   catalogMode,
   specialistMode,
+  compactSpecialistGrid = true,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -187,7 +190,13 @@ export function ProfileDirectionsPicker({
   }
 
   return (
-    <div className={specialistMode ? `${styles.wrap} ${styles.specialistCompact}` : styles.wrap}>
+    <div
+      className={
+        specialistMode && compactSpecialistGrid
+          ? `${styles.wrap} ${styles.specialistCompact}`
+          : styles.wrap
+      }
+    >
       <p className={styles.lead}>
         {specialistMode
           ? "Выберите услуги и этапы ремонта, где вы можете помочь."
