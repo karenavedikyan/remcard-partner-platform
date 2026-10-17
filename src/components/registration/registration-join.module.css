@@ -287,7 +287,7 @@
   flex-wrap: nowrap;
   gap: var(--space-6);
   max-width: 42rem;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-10);
   grid-template-columns: unset;
 }
 
@@ -457,7 +457,9 @@
 
 @media (max-width: 760px) {
   .entryProgress.entryProgressDataRegistration {
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-content: unset;
     gap: var(--space-3);
     max-width: none;
     margin-bottom: var(--space-6);
@@ -465,14 +467,14 @@
   }
 
   .entryProgress.entryProgressDataRegistration li {
-    flex: 0 1 auto;
+    flex: unset;
     min-width: 0;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: var(--space-1);
     white-space: nowrap;
-    line-height: 1.2;
+    line-height: 1.15;
     font-size: var(--text-xs);
   }
 

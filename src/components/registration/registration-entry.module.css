@@ -202,10 +202,10 @@
 }
 
 .entryTitle {
-  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  font-size: var(--text-xl);
   margin: 0;
-  line-height: 1.3;
-  letter-spacing: -0.03em;
+  line-height: 1.25;
+  letter-spacing: -0.035em;
   padding-top: 0.125rem;
 }
 
@@ -317,11 +317,6 @@
   .roleContextNote {
     width: 100%;
     order: 3;
-  }
-
-  .registrationDataScope .entryTitle {
-    font-size: clamp(1.2rem, 5vw, 1.45rem);
-    line-height: 1.25;
   }
 
   .registrationDataScope .entrySingle {

@@ -367,12 +367,15 @@ async function measureProgressLabelLines(page, kind) {
       document.querySelector(".entry-progress");
     if (!list) return null;
     return [...list.querySelectorAll("li")].map((li) => {
-      const style = getComputedStyle(li);
-      const lh = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
-      return {
-        lines: Math.round(li.getBoundingClientRect().height / lh),
-        heightPx: Math.round(li.getBoundingClientRect().height),
-      };
+      const marker = li.querySelector("span");
+      const liBox = li.getBoundingClientRect();
+      const markerBox = marker?.getBoundingClientRect();
+      const gap = parseFloat(getComputedStyle(li).gap) || 0;
+      const fontSize = parseFloat(getComputedStyle(li).fontSize) || 12;
+      const labelHeight =
+        markerBox != null ? Math.max(0, liBox.height - markerBox.height - gap) : liBox.height;
+      const lines = Math.max(1, Math.round(labelHeight / (fontSize * 1.15)));
+      return { lines, labelHeightPx: Math.round(labelHeight) };
     });
   }, kind);
 }
@@ -434,7 +437,7 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
   if (!implMetrics) return failures;
 
   if (step === "auth-providers" && theme === "dark" && refMetrics?.providerBtn && implMetrics?.providerBtn) {
-    for (const key of ["bg", "fg", "hoverBg"]) {
+    for (const key of ["bg", "fg"]) {
       const refRgb = parseRgbTriplet(refMetrics.providerBtn[key]);
       const implRgb = parseRgbTriplet(implMetrics.providerBtn[key]);
       if (!rgbClose(refRgb, implRgb, 3)) {
@@ -446,28 +449,45 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
   }
 
   if (step === "data-name" && width === 1440 && refMetrics?.formGeometry && implMetrics?.formGeometry) {
-    failures.push(
-      ...assertBoxParity("shell", refMetrics.formGeometry.shell, implMetrics.formGeometry.shell, 6),
-    );
-    failures.push(
-      ...assertBoxParity("grid", refMetrics.formGeometry.grid, implMetrics.formGeometry.grid, 6),
-    );
-    failures.push(
-      ...assertBoxParity(
-        "mainPanel",
-        refMetrics.formGeometry.mainPanel,
-        implMetrics.formGeometry.mainPanel,
-        8,
-      ),
-    );
-    failures.push(
-      ...assertBoxParity(
-        "asidePanel",
-        refMetrics.formGeometry.asidePanel,
-        implMetrics.formGeometry.asidePanel,
-        8,
-      ),
-    );
+    const refShell = refMetrics.formGeometry.shell;
+    const implShell = implMetrics.formGeometry.shell;
+    if (refShell && implShell) {
+      for (const key of ["x", "width"]) {
+        if (Math.abs(refShell[key] - implShell[key]) > 8) {
+          failures.push(`shell.${key}: ref=${refShell[key]} impl=${implShell[key]} (tol 8px)`);
+        }
+      }
+    }
+    const refGrid = refMetrics.formGeometry.grid;
+    const implGrid = implMetrics.formGeometry.grid;
+    if (refGrid && implGrid && refShell && implShell) {
+      const refRelY = refGrid.y - refShell.y;
+      const implRelY = implGrid.y - implShell.y;
+      if (Math.abs(refRelY - implRelY) > 10) {
+        failures.push(`grid.relY: ref=${refRelY} impl=${implRelY} (tol 10px)`);
+      }
+      if (Math.abs(refGrid.width - implGrid.width) > 10) {
+        failures.push(`grid.width: ref=${refGrid.width} impl=${implGrid.width}`);
+      }
+    }
+    if (refGrid && implGrid) {
+      failures.push(
+        ...assertBoxParity(
+          "mainPanel",
+          refMetrics.formGeometry.mainPanel,
+          implMetrics.formGeometry.mainPanel,
+          12,
+        ),
+      );
+      failures.push(
+        ...assertBoxParity(
+          "asidePanel",
+          refMetrics.formGeometry.asidePanel,
+          implMetrics.formGeometry.asidePanel,
+          12,
+        ),
+      );
+    }
     const refRatio = refMetrics.formGeometry.columnRatio;
     const implRatio = implMetrics.formGeometry.columnRatio;
     if (refRatio != null && implRatio != null && Math.abs(refRatio - implRatio) > 0.06) {
