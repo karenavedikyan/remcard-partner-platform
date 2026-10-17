@@ -5,7 +5,18 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { advanceCatalogSteps, advanceRefCatalogSteps } from './lib/r06-playwright-catalog.mjs';
+import { advanceCatalogSteps } from './lib/r06-playwright-catalog.mjs';
+import {
+  assertImplCatalogDirections,
+  assertImplCatalogPreviewReady,
+  assertRefCatalogDirections,
+  assertRefCatalogPreviewReady,
+  fillImplCatalogCard,
+  fillRefCatalogCard,
+  R06_PREVIEW_FIXTURE,
+  selectImplCatalogDirections,
+  selectRefCatalogDirections,
+} from './lib/r06-preview-fixture.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
@@ -18,12 +29,6 @@ const PROTO_DIR = process.env.R06_PROTO_DIR ?? '/tmp/r06-prototype-ref';
 const PROTO_PORT = Number(process.env.R06_PROTO_PORT ?? '3199');
 const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
 const CODE_SHA = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
-
-const PREVIEW_FIXTURE = {
-  publicName: 'R06 Visual Catalog',
-  city: 'Krasnodar',
-  phone: '+79001112233',
-};
 
 const DEV_HIDE = `
   nextjs-portal, [data-nextjs-toast], [data-nextjs-dialog] { display: none !important; }
@@ -103,7 +108,30 @@ function themeStabilizeMs(page) {
   return 350;
 }
 
-async function assertCatalogChrome(page) {
+async function assertWizardButtonVisibleStyled(page, button, { primary = false } = {}) {
+  await button.waitFor({ state: 'visible', timeout: 30_000 });
+  const btnStyle = await button.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return {
+      backgroundColor: cs.backgroundColor,
+      minHeight: cs.minHeight,
+      visibility: cs.visibility,
+      display: cs.display,
+      color: cs.color,
+    };
+  });
+  if (btnStyle.visibility === 'hidden' || btnStyle.display === 'none') {
+    throw new Error('catalog_action_hidden');
+  }
+  if (parseFloat(btnStyle.minHeight) < 40) throw new Error('catalog_action_min_height');
+  if (primary) {
+    if (btnStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || btnStyle.backgroundColor === 'transparent') {
+      throw new Error('catalog_primary_background_missing');
+    }
+  }
+}
+
+async function assertCatalogStep0Chrome(page) {
   const root = page.locator('[data-testid="specialist-catalog-wizard"]');
   await root.waitFor({ state: 'visible', timeout: 30_000 });
   const input = root.locator('#sc-public-name');
@@ -115,23 +143,48 @@ async function assertCatalogChrome(page) {
   if (parseFloat(inputStyle.borderTopWidth) < 1) throw new Error('catalog_input_border_missing');
   if (parseFloat(inputStyle.paddingLeft) < 4) throw new Error('catalog_input_padding_missing');
   if (parseFloat(inputStyle.minHeight) < 40) throw new Error('catalog_input_min_height');
-  const nextBtn = root.getByRole('button', { name: /Далее|Предпросмотр/i }).first();
-  const btnStyle = await nextBtn.evaluate((el) => {
-    const cs = getComputedStyle(el);
-    return {
-      backgroundColor: cs.backgroundColor,
-      minHeight: cs.minHeight,
-      visibility: cs.visibility,
-      display: cs.display,
-    };
-  });
-  if (btnStyle.visibility === 'hidden' || btnStyle.display === 'none') {
-    throw new Error('catalog_primary_hidden');
+  await assertWizardButtonVisibleStyled(
+    page,
+    root.getByRole('button', { name: /Далее|Предпросмотр/i }).first(),
+    { primary: true },
+  );
+  await assertWizardButtonVisibleStyled(
+    page,
+    root.getByRole('button', { name: /Сохранить черновик/i }).first(),
+  );
+}
+
+async function assertCatalogWizardActionsForStep(page) {
+  const root = page.locator('[data-testid="specialist-catalog-wizard"]');
+  await root.waitFor({ state: 'visible', timeout: 30_000 });
+  const step = await root.getAttribute('data-catalog-step');
+  if (step === '0') {
+    await assertCatalogStep0Chrome(page);
+    return;
   }
-  if (parseFloat(btnStyle.minHeight) < 40) throw new Error('catalog_primary_min_height');
-  if (btnStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || btnStyle.backgroundColor === 'transparent') {
-    throw new Error('catalog_primary_background_missing');
+  if (step === '4') {
+    await assertWizardButtonVisibleStyled(page, root.getByRole('button', { name: 'Назад' }).first());
+    await assertWizardButtonVisibleStyled(
+      page,
+      root.getByRole('button', { name: /Сохранить черновик/i }).first(),
+    );
+    await assertWizardButtonVisibleStyled(
+      page,
+      root.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i }).first(),
+      { primary: true },
+    );
+    return;
   }
+  await assertWizardButtonVisibleStyled(page, root.getByRole('button', { name: 'Назад' }).first());
+  await assertWizardButtonVisibleStyled(
+    page,
+    root.getByRole('button', { name: /Далее|Предпросмотр/i }).first(),
+    { primary: true },
+  );
+  await assertWizardButtonVisibleStyled(
+    page,
+    root.getByRole('button', { name: /Сохранить черновик/i }).first(),
+  );
 }
 
 async function assertSpecializationLayout(page) {
@@ -182,10 +235,7 @@ async function shotPair(ctx, spec) {
   if (prepareImpl) await prepareImpl(page);
   if (spec.assertImpl) await spec.assertImpl(page);
   if (implTestId === 'specialist-catalog-wizard') {
-    const step = await page
-      .locator('[data-testid="specialist-catalog-wizard"]')
-      .getAttribute('data-catalog-step');
-    if (step === '0') await assertCatalogChrome(page);
+    await assertCatalogWizardActionsForStep(page);
   }
   if (spec.assertLayout) await spec.assertLayout(page);
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -230,10 +280,12 @@ async function openRefCatalogProfile(page) {
 }
 
 async function prepareCatalogPreviewStep(page) {
-  await page.locator('#sc-public-name').fill(PREVIEW_FIXTURE.publicName);
-  await page.locator('#sc-city').fill(PREVIEW_FIXTURE.city);
+  await fillImplCatalogCard(page, R06_PREVIEW_FIXTURE);
+  await advanceCatalogSteps(page, 1);
+  await selectImplCatalogDirections(page, R06_PREVIEW_FIXTURE);
+  await assertImplCatalogDirections(page, R06_PREVIEW_FIXTURE);
   await advanceCatalogSteps(page, 4);
-  await page.getByText(/Можно отправить заявку/i).waitFor({ timeout: 30_000 });
+  await assertImplCatalogPreviewReady(page, R06_PREVIEW_FIXTURE);
 }
 
 async function refCompleteWorkingProfile(page) {
@@ -257,53 +309,25 @@ async function prepareRefSpecializationStep(page) {
   await page.waitForSelector('[data-specialist-kind]', { state: 'visible' });
 }
 
-async function refFillCatalogDirections(page) {
-  const kind = page.locator('[data-catalog-panel="directions"] [data-specialist-kind]');
-  if (await kind.count()) await kind.selectOption('designer');
-  const opts = page.locator('[data-catalog-panel="directions"] .direction-option input[type="checkbox"]');
-  const n = await opts.count();
-  let picked = 0;
-  for (let i = 0; i < n && picked < 4; i += 1) {
-    try {
-      const box = opts.nth(i);
-      if (!(await box.isChecked())) await box.check({ force: true, timeout: 5000 });
-      picked += 1;
-    } catch {
-      /* prototype checkbox groups differ by index */
-    }
-  }
-}
-
 async function prepareRefCatalogPreview(page) {
   await openRefCatalogProfile(page);
   await page.waitForSelector('[data-catalog-form]');
-  await page.locator('[name="publicName"]').fill(PREVIEW_FIXTURE.publicName);
-  await page.locator('[name="city"]').fill(PREVIEW_FIXTURE.city);
+  await fillRefCatalogCard(page, R06_PREVIEW_FIXTURE);
   await page.locator('[data-cw-move="next"]').click();
   await page.waitForSelector('[data-catalog-panel="directions"]:not([hidden])');
-  await refFillCatalogDirections(page);
+  await selectRefCatalogDirections(page, R06_PREVIEW_FIXTURE);
+  await assertRefCatalogDirections(page, R06_PREVIEW_FIXTURE);
   await page.locator('[data-cw-move="next"]').click();
   await page.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])');
-  await page.locator('[name="publicPhone"]').fill(PREVIEW_FIXTURE.phone);
+  await page.locator('[name="publicPhone"]').fill(R06_PREVIEW_FIXTURE.phone);
   await page.locator('[data-cw-move="next"]').click();
   await page.locator('[data-cw-move="next"]').click();
   await page.waitForSelector('[data-catalog-panel="review"]:not([hidden])');
+  await assertRefCatalogPreviewReady(page, R06_PREVIEW_FIXTURE);
 }
 
 async function prepareRefCatalogPending(page) {
-  await openRefCatalogProfile(page);
-  await page.waitForSelector('[data-catalog-form]');
-  await page.locator('[name="publicName"]').fill(PREVIEW_FIXTURE.publicName);
-  await page.locator('[name="city"]').fill(PREVIEW_FIXTURE.city);
-  await page.locator('[data-cw-move="next"]').click();
-  await page.waitForSelector('[data-catalog-panel="directions"]:not([hidden])');
-  await refFillCatalogDirections(page);
-  await page.locator('[data-cw-move="next"]').click();
-  await page.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])');
-  await page.locator('[name="publicPhone"]').fill('+79001112233');
-  await page.locator('[data-cw-move="next"]').click();
-  await page.locator('[data-cw-move="next"]').click();
-  await page.waitForSelector('[data-catalog-panel="review"]:not([hidden])');
+  await prepareRefCatalogPreview(page);
   await page.locator('[data-catalog-action="send"]').click();
   await page.waitForSelector('#catalog-pending-title', { timeout: 30_000 });
 }
@@ -411,15 +435,7 @@ async function main() {
     );
   };
   const assertCatalogPreview = async (p) => {
-    await p.waitForFunction(
-      () => document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '4',
-    );
-    await p.getByText(/Можно отправить заявку/i).waitFor({ timeout: 30_000 });
-    const readiness = await p.locator('[data-testid="specialist-catalog-wizard"]').innerText();
-    if (/Заполните:/i.test(readiness)) throw new Error('impl_preview_missing_fields');
-    const previewCard = await p.locator('[data-testid="catalog-public-preview"]').innerText().catch(() => '');
-    const blob = `${readiness}\n${previewCard}`;
-    if (!blob.includes(PREVIEW_FIXTURE.city)) throw new Error('impl_preview_city_mismatch');
+    await assertImplCatalogPreviewReady(p, R06_PREVIEW_FIXTURE);
   };
   const assertCatalogPending = async (p) => {
     await p.waitForSelector('[data-testid="specialist-catalog-pending"]', { timeout: 60_000 });
@@ -443,13 +459,8 @@ async function main() {
     });
   };
   const assertRefCatalogPreview = async (p) => {
-    await p.waitForFunction(() => {
-      const panel = document.querySelector('[data-catalog-panel="review"]');
-      return panel && !panel.hidden;
-    });
     await p.getByText('Предпросмотр карточки').waitFor({ timeout: 30_000 });
-    const cardText = await p.locator('[data-catalog-panel="review"]').innerText();
-    if (!cardText.includes(PREVIEW_FIXTURE.city)) throw new Error('ref_preview_city_mismatch');
+    await assertRefCatalogPreviewReady(p, R06_PREVIEW_FIXTURE);
   };
   const assertRefCatalogPending = async (p) => {
     await p.waitForSelector('#catalog-pending-title', { timeout: 30_000 });

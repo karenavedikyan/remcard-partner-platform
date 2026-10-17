@@ -1,5 +1,14 @@
 /** Shared catalog wizard step transitions for R06 Playwright runners. */
 
+import {
+  fillImplCatalogCard,
+  fillImplCatalogContacts,
+  fillRefCatalogCard,
+  R06_PREVIEW_FIXTURE,
+  selectImplCatalogDirections,
+  selectRefCatalogDirections,
+} from './r06-preview-fixture.mjs';
+
 function catalogWizard(page) {
   return page.locator('[data-testid="specialist-catalog-wizard"]');
 }
@@ -20,32 +29,28 @@ export async function fillCatalogStepRequirements(page, step) {
     const name = page.locator('#sc-public-name');
     if (await name.count()) {
       const val = await name.inputValue();
-      if (!val.trim()) await name.fill('R06 BFF Catalog');
-    }
-    const city = page.locator('#sc-city');
-    if (await city.count()) {
-      const val = await city.inputValue();
-      if (!val.trim()) await city.fill('Krasnodar');
+      if (!val.trim()) await fillImplCatalogCard(page, R06_PREVIEW_FIXTURE);
+      else {
+        const showFull = catalogWizard(page).getByRole('checkbox', {
+          name: /Показывать полное имя в каталоге/i,
+        });
+        if (await showFull.count() && !(await showFull.isChecked())) await showFull.check();
+      }
     }
   }
   if (step === 1) {
     const copyBtn = page.getByRole('button', { name: /Взять услуги и этапы из рабочего профиля/i });
     if (await copyBtn.count()) {
       await copyBtn.click();
-    } else {
-      const boxes = page.locator('[data-testid="specialist-catalog-wizard"] input[type="checkbox"]');
-      const n = await boxes.count();
-      for (let i = 0; i < Math.min(2, n); i += 1) {
-        if (!(await boxes.nth(i).isChecked())) await boxes.nth(i).check();
-      }
     }
+    await selectImplCatalogDirections(page, R06_PREVIEW_FIXTURE);
     await page.waitForTimeout(150);
   }
   if (step === 2) {
     const phone = page.locator('[data-testid="agent-profile-input-phone"]').first();
     if (await phone.count()) {
       const val = await phone.inputValue();
-      if (!val.trim()) await phone.fill('+79001112233');
+      if (!val.trim()) await fillImplCatalogContacts(page, R06_PREVIEW_FIXTURE);
     }
   }
 }
@@ -115,36 +120,17 @@ export async function advanceRefCatalogSteps(page, toIndex) {
       const name = page.locator('[name="publicName"]');
       if (await name.count()) {
         const val = await name.inputValue();
-        if (!val.trim()) await name.fill('R06 Visual Catalog');
-      }
-      const city = page.locator('[name="city"]');
-      if (await city.count()) {
-        const val = await city.inputValue();
-        if (!val.trim()) await city.fill('Krasnodar');
+        if (!val.trim()) await fillRefCatalogCard(page, R06_PREVIEW_FIXTURE);
       }
     }
     if (currentIndex === 1) {
-      const copyBtn = page.locator('[data-catalog-action="copy-directions"]');
-      if ((await copyBtn.count()) && (await copyBtn.isEnabled())) {
-        await copyBtn.click();
-      }
-      const boxes = page.locator(
-        '[data-catalog-panel="directions"] input[type="checkbox"], [data-catalog-form] .direction-option input[type="checkbox"]',
-      );
-      const n = await boxes.count();
-      let picked = 0;
-      for (let i = 0; i < n && picked < 2; i += 1) {
-        const box = boxes.nth(i);
-        if (!(await box.isVisible())) continue;
-        if (!(await box.isChecked())) await box.check();
-        picked += 1;
-      }
+      await selectRefCatalogDirections(page, R06_PREVIEW_FIXTURE);
     }
     if (currentIndex === 2) {
       const phone = page.locator('[name="publicPhone"]');
       if (await phone.count()) {
         const val = await phone.inputValue();
-        if (!val.trim()) await phone.fill('+79001112233');
+        if (!val.trim()) await phone.fill(R06_PREVIEW_FIXTURE.phone);
       }
     }
 
