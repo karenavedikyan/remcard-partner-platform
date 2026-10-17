@@ -1,57 +1,34 @@
-# REGISTRATION-01.2 — release report (draft RC)
+# REGISTRATION-01.3 — release report (draft RC)
 
 Date: 2026-10-17  
-Review reference: navigator `771cc65`, `docs/reference/registration-20261017/review-011/`  
-Implementation PRs: platform [#26](https://github.com/karenavedikyan/remcard-partner-platform/pull/26), navigator [#689](https://github.com/karenavedikyan/remcard-navigator/pull/689)
+PRs: platform [#26](https://github.com/karenavedikyan/remcard-partner-platform/pull/26), navigator [#689](https://github.com/karenavedikyan/remcard-navigator/pull/689)  
+Reference: navigator `implementation/remcard-reference-20261014`, `docs/reference/registration-20261017/`
 
-## Scope (01.2)
+## Changes (01.3 only)
 
-Same PR branches only. No merge, deploy, production flags, or production DB changes. Accepted cabinets not re-audited.
+1. **Ready user + invite:** `resolveReadyRegistrationAgentJoinDestination` / `resolveDestinationAfterAuth` preserve `/invite/{token}` (or safe nested `returnTo`) when auth completes from agent registration join; plain `/join` still falls back to `/partners`. No fresh finish for established accounts.
+2. **Join visual:** linear type icons, four-column progress labels («Тип партнёра», «Ваши данные», «Подтверждение», «Кабинет»). Visual runner: isolated contexts, viewport/theme/step verify before capture; `reg012-*` marked superseded in `visual-capture.json`.
 
-### Navigator
+## HEAD (after push)
 
-- `registrationFinishBlockedByConsents`: any `missingConsents` entry (including `no_active_document`) blocks finish.
-- First successful finish: `idempotentReplayed: false`; true replay via `already_ready` / completed state only.
-- Disposable PG integration on `postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/remcard_r01_test`.
+| Repo | SHA |
+|------|-----|
+| remcard-partner-platform | _(see branch tip)_ |
+| remcard-navigator | `9fa871f3` (unchanged) |
 
-### Platform
+## Evidence
 
-- Draft owner enforced after auth subject is known; no silent re-bind of another user’s draft.
-- Wizard restores saved step including `auth`; employee invite + legacy `partnerType` routing preserved.
-- Welcome passes `invite` / `returnTo` search params; reference-aligned join progress (4 stages, type icons, login hint).
-- Dark CTA uses theme foreground on accent (contrast asserted in visual runner).
+- `TEST-RESULTS.md` — commands and counts  
+- `visual-capture.json` — per-capture viewport, PNG size, step, theme, code SHA  
+- `screenshots/reg013-*` impl + `ref-types-375-*` from frozen reference  
+- `browser-flow-report.json` — 4 checks  
 
-## Tests and evidence (this agent run)
+## Remaining visual gaps (honest)
 
-| Command | Result |
-|---------|--------|
-| Platform `pnpm exec tsx --test src/lib/auth-flow.test.ts src/lib/registration/routing.test.ts src/lib/registration/draft.test.ts` | **30 PASS** |
-| Platform `pnpm run build` | **PASS** |
-| Navigator `vitest run registration-review.probe.test.ts registration-011-review.probe.test.ts` | **4 PASS** |
-| Navigator `vitest run profPartnerEntryNav.test.ts` | **2 PASS** |
-| Navigator `DATABASE_URL=…/remcard_r01_test vitest run profAgentRegistrationFinish.integration.test.ts` | **7 PASS** |
-| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-visual.mjs` | **PASS** (8 PNG + contrast/overflow assertions) |
-| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-browser-flow.mjs` | **3/3 PASS** |
+- No frozen 1440px type-picker PNG in reference repo (375 ref only).  
+- Icon stroke style aligned in code; not pixel-scored against prototype.  
+- Welcome hero still differs from reference export (accepted earlier).  
 
-Local stack for UI evidence: navigator `:3021` with `PROF_REGISTRATION_WELCOME_ENABLED` + `PROF_AGENT_REGISTRATION_PATH_ENABLED`; platform `:3020` with `REMCARD_API_BASE_URL=http://127.0.0.1:3021`.
+## Status
 
-Artifacts:
-
-- `artifacts/remcard-registration-01/screenshots/reg012-*.png`
-- `artifacts/remcard-registration-01/visual-capture.json`
-- `artifacts/remcard-registration-01/browser-flow-report.json`
-
-| Repo | Branch tip (01.2) |
-|------|-------------------|
-| remcard-partner-platform | `7153fb3` |
-| remcard-navigator | `9fa871f3` |
-
-## Still NOT_RUN (explicit)
-
-- Live MAX/Telegram OAuth on production/staging identity providers.
-- BFF finish against non-disposable shared staging DB.
-- remcard.ru partner-entry redirect with production flag ON.
-
-## Controlled rollout (unchanged)
-
-Gates remain **OFF** in production until operator acceptance after merge.
+**READY_FOR_REVIEW** for 01.3 scope after executed platform tests above. Production deploy / live IdP still out of scope.
