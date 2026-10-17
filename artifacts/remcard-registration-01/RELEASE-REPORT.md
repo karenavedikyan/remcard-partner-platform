@@ -1,59 +1,54 @@
-# REGISTRATION-01 / 01.1 — release report (draft RC)
+# REGISTRATION-01.2 — release report (draft RC)
 
 Date: 2026-10-17  
-Review reference: navigator `2cba890`, `docs/reference/registration-20261017/review-01/`  
+Review reference: navigator `771cc65`, `docs/reference/registration-20261017/review-011/`  
 Implementation PRs: platform [#26](https://github.com/karenavedikyan/remcard-partner-platform/pull/26), navigator [#689](https://github.com/karenavedikyan/remcard-navigator/pull/689)
 
-## Controlled rollout (no production changes in this RC)
+## Scope (01.2)
 
-1. Deploy **compatible** platform + navigator with gates **OFF** (`PROF_REGISTRATION_WELCOME_ENABLED`, `PROF_AGENT_REGISTRATION_PATH_ENABLED`, `NEXT_PUBLIC_PROF_PARTNER_ENTRY_REDIRECT`).
-2. Staging/local acceptance (browser + disposable PG).
-3. Enable gates on staging → smoke agent path + returning user + admin login.
-4. Production: gates ON → operator smoke → `NEXT_PUBLIC_PROF_PARTNER_ENTRY_REDIRECT` on remcard.ru (partner entry only).
+Same PR branches only. No merge, deploy, production flags, or production DB changes. Accepted cabinets not re-audited.
 
-## REGISTRATION-01.1 fixes (this revision)
+### Navigator
 
-### Server finish (navigator)
+- `registrationFinishBlockedByConsents`: any `missingConsents` entry (including `no_active_document`) blocks finish.
+- First successful finish: `idempotentReplayed: false`; true replay via `already_ready` / completed state only.
+- Disposable PG integration on `postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/remcard_r01_test`.
 
-- Block finish when **any** blocking consent missing (TERMS, PERSONAL_DATA, **PUBLIC_OFFER_PRO** during onboarding).
-- No overwrite of established accounts when `canAccessCabinet=false` (e.g. stale TERMS on existing AGENT).
-- Re-read user + readiness **inside** advisory lock; update via transaction client.
-- Owner/employment/mixed-wallet guards before promotion.
-- Strict JSON body parser (`profAgentRegistrationFinishBody.ts`); invalid JSON/null → 400, no mutation.
-- **Probes:** `registration-review.probe.test.ts` — **2 PASS** (mock DB).
+### Platform
 
-### Platform UX / flow
+- Draft owner enforced after auth subject is known; no silent re-bind of another user’s draft.
+- Wizard restores saved step including `auth`; employee invite + legacy `partnerType` routing preserved.
+- Welcome passes `invite` / `returnTo` search params; reference-aligned join progress (4 stages, type icons, login hint).
+- Dark CTA uses theme foreground on accent (contrast asserted in visual runner).
 
-- Welcome copy/layout aligned to frozen reference (`registration-welcome.js`): accent on «клиентами,», short example tabs, reciprocity text.
-- CTA contrast fix (primary button no longer overridden by global link color).
-- Header: **BrandMark only** (no duplicate wordmark).
-- Join: progress steps, no internal legacy labels; embedded **AuthFlow** (no double hero).
-- Registration consents in join auth (incl. PUBLIC_OFFER_PRO) via `registrationConsentRequirements`.
-- Returning ready user + `registrationAgentJoin` → **cabinet** (`/partners` or safe `returnTo`), not `/join` loop.
-- Login recovery links carry `registration=agent` + `returnTo=/join?phase=finish`.
-- Draft: safe sessionStorage + in-memory fallback; owner binding; wizard step persistence; legacy onboarding preserves `partnerType` query.
-
-## Tests (this agent run)
+## Tests and evidence (this agent run)
 
 | Command | Result |
 |---------|--------|
-| Platform `tsx --test src/lib/auth-flow.test.ts src/lib/registration/draft.test.ts` | **26 PASS** |
-| Navigator `vitest run registration-review.probe.test.ts profPartnerEntryNav.test.ts` | **4 PASS** |
-| Navigator `profAgentRegistrationFinish.integration.test.ts` | **SKIPPED** (DATABASE_URL not prof-r01 disposable test DB) |
+| Platform `pnpm exec tsx --test src/lib/auth-flow.test.ts src/lib/registration/routing.test.ts src/lib/registration/draft.test.ts` | **30 PASS** |
 | Platform `pnpm run build` | **PASS** |
-| `scripts/local/registration-01-visual.mjs` | **NOT_RUN** (requires local dev stack + mocked capabilities) |
+| Navigator `vitest run registration-review.probe.test.ts registration-011-review.probe.test.ts` | **4 PASS** |
+| Navigator `vitest run profPartnerEntryNav.test.ts` | **2 PASS** |
+| Navigator `DATABASE_URL=…/remcard_r01_test vitest run profAgentRegistrationFinish.integration.test.ts` | **7 PASS** |
+| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-visual.mjs` | **PASS** (8 PNG + contrast/overflow assertions) |
+| `REGISTRATION_VISUAL_BASE=http://127.0.0.1:3020 node scripts/local/registration-01-browser-flow.mjs` | **3/3 PASS** |
+
+Local stack for UI evidence: navigator `:3021` with `PROF_REGISTRATION_WELCOME_ENABLED` + `PROF_AGENT_REGISTRATION_PATH_ENABLED`; platform `:3020` with `REMCARD_API_BASE_URL=http://127.0.0.1:3021`.
+
+Artifacts:
+
+- `artifacts/remcard-registration-01/screenshots/reg012-*.png`
+- `artifacts/remcard-registration-01/visual-capture.json`
+- `artifacts/remcard-registration-01/browser-flow-report.json`
+
+Commit SHAs for this RC revision are recorded in the PR heads after push (see PR checks / branch tip).
 
 ## Still NOT_RUN (explicit)
 
-- Live MAX/Telegram auth smoke (isolated mock upstream ≠ live).
-- Full PG/BFF matrix on disposable loopback (blocked: test DB policy URL not configured in VM).
-- remcard.ru live click-through with redirect flag ON.
+- Live MAX/Telegram OAuth on production/staging identity providers.
+- BFF finish against non-disposable shared staging DB.
+- remcard.ru partner-entry redirect with production flag ON.
 
-## New vs legacy boundary (unchanged)
+## Controlled rollout (unchanged)
 
-| Kind | Path |
-|------|------|
-| Agent (gates ON) | Welcome → `/join` → name → city → auth/consents → finish API → `/partners` |
-| Specialist / store / company | Type picker → login → `/onboarding?partnerType=…` |
-| Employee | Invite-only screen → login; no org data without invite |
-| Returning user | Login → cabinet; finish API refuses overwrite |
+Gates remain **OFF** in production until operator acceptance after merge.
