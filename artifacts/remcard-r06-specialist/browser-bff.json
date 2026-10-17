@@ -4,34 +4,51 @@
     "finish": {
       "ok": true
     },
-    "reloadAfterFinish": {
+    "editSaveAfterFinishNoReload": {
       "ok": true
     },
-    "editSaveAfterFinish": {
-      "ok": true
-    },
-    "reloadAfterEditSave": {
-      "ok": true
-    },
-    "catalogWizard": {
-      "ok": true
-    },
-    "catalogSubmitPending": {
+    "workingProfileFreshGet": {
       "ok": true,
-      "patch": 200,
-      "submit": 200
+      "displayName": "R06 BFF Spec Edited"
+    },
+    "catalogClearOptionalReload": {
+      "ok": true,
+      "telegram": ""
+    },
+    "previewBeforeSubmit": {
+      "ok": true,
+      "catalogStatus": "DRAFT"
     },
     "pendingFreshGet": {
       "ok": true,
       "catalogStatus": "PENDING"
+    },
+    "reentryPending": {
+      "ok": true
+    },
+    "resubmitNoDuplicate": {
+      "ok": true
+    }
+  },
+  "originNegative": {
+    "status": 403,
+    "ok": true
+  },
+  "gateOff": {
+    "ok": true,
+    "exitCode": 0,
+    "testsPassed": 1,
+    "note": "gate OFF via navigator integration (featureEnabled:false)"
+  },
+  "negatives": {
+    "migration": {
+      "exitCode": 0,
+      "ok": true,
+      "stdout": "{\"ok\":true,\"results\":[{\"name\":\"invalid_host\",\"ok\":true,\"message\":\"refusing_non_loopback_host\"},{\"name\":\"wrong_database\",\"ok\":true,\"message\":\"refusing_non_allowlisted_database\"},{\"name\":\"ledger_checksum_mismatch\",\"ok\":true,\"message\":\"ledger_checksum_mismatch:20261017123000_prof_r06_specialist_profile\"},{\"name\":\"before_happy_or_applied\",\"ok\":true,\"message\":\"before passed\"}]}\n"
     }
   },
   "csrf": {
     "status": 403,
     "ok": true
-  },
-  "gateOff": {
-    "featureEnabled": true,
-    "eligible": true
   }
 }

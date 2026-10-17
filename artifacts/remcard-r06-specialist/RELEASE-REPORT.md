@@ -20,7 +20,27 @@
 
 Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scripts/lib/prof-r06-controlled-apply.mjs` (ledger SQL apply, before/apply/after, pinned checksums both migrations, loopback DB guard). **Not** `prisma db push` as apply.
 
-## R06.3 — this pass
+## R06.3 acceptance blockers — closed this pass
+
+1. **Migration verifier:** `catalogNavigatorStageIds` checked as `NOT NULL` + default `{}` (matches pinned SQL); partial guard covers draft-only / orphan User columns; ledger checksum negative uses real `assertProfR06BeforeApply` on corrupted ledger (ROLLBACK). Disposable PG: `before → apply → after → reapply` exit 0 at `3c964614`.
+2. **409:** no `expectedVersion` bump until user picks resolution; save/finish blocked while conflict open; Vitest: second Save does not PATCH until «Оставить мои правки».
+3. **Runners:** `advanceCatalogSteps` / `ensureCatalogStep` step-by-step; catalog actions scoped to `[data-testid="specialist-catalog-wizard"]`; visual `prepareBeforeWait` before wizard wait; ref prototype driven to completed / specialization / catalog step 0 / preview / pending with `assertRef`.
+4. **Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-v1`, stack ports 3055/3056, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`. Runtime/capture SHA **634e894** (platform) / **3c964614** (navigator). Gate-off probe: **1** matching vitest passed (not zero).
+
+### Visual pairs (ref `771cc658…`)
+
+| State | Impl | Ref |
+|-------|------|-----|
+| completed 1440 light | `screenshots/profile-completed-summary-impl-1440-light.png` | `…-ref-1440-light.png` |
+| specialization `#sp-kind` 1440 light | `…/profile-specialization-step-impl-1440-light.png` | `…-ref-1440-light.png` |
+| catalog step 0 1440/375 light, 375 dark | `…/profile-catalog-wizard-impl-*` | `…-ref-*` |
+| preview step 4 375 light | `…/profile-catalog-preview-impl-375-light.png` | `…-ref-375-light.png` |
+| pending 1440 light | `…/profile-catalog-pending-impl-1440-light.png` | `…-ref-1440-light.png` |
+| smoke 320 light | `…/profile-catalog-wizard-smoke-impl-320-light.png` | — |
+
+Manifest: `artifacts/remcard-r06-specialist/screenshots/manifest.json`
+
+## R06.3 — earlier items
 
 1. **409 conflict:** local draft preserved; panel «Загрузить серверную версию» / «Оставить мои правки» (no silent hydrate overwrite). Vitest regression added.
 2. **Catalog layout:** `SpecialistCatalogWizard.module.css` — prototype-style horizontal steps, wide card, footer actions; not agent sidebar layout.
@@ -45,7 +65,8 @@ Navigator stores stages/trades as stable IDs in existing tables. Free-text “pr
 
 ## Still open (owner decision)
 
-- **Taxonomy auto-add for free-text proposals:** not implemented. Blocker: no safe idempotent mapping from ad-hoc text to stable navigator stage/trade IDs without a product-owned taxonomy pipeline (risk of duplicate IDs, wrong order, retroactive stage changes). R06 continues to use existing preset/direction IDs only.
+- **Taxonomy auto-add:** not implemented — **no general release GO** for taxonomy. Blocker: no safe idempotent mapping from ad-hoc text to stable navigator stage/trade IDs without a product-owned pipeline (`ProposedTaxonomyAlias`-style).
+- **Disposable DB drift:** if `catalogNavigatorStageIds` was created nullable before pinned `NOT NULL` migration, ledger may show applied while `after` fails until the column is aligned to pinned SQL (local test DB required one-time `SET NOT NULL`).
 
 ## Out of scope
 
