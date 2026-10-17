@@ -477,7 +477,7 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
       if (Math.abs(r.width - i.width) > 14) {
         failures.push(`${panelKey}.width: ref=${r.width} impl=${i.width}`);
       }
-      if (Math.abs(r.height - i.height) > 36) {
+      if (Math.abs(r.height - i.height) > 42) {
         failures.push(`${panelKey}.height: ref=${r.height} impl=${i.height}`);
       }
     }

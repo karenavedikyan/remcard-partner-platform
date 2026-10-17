@@ -147,9 +147,10 @@
 }
 
 .companionTitle {
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
 }
 
 .companionIntro {
