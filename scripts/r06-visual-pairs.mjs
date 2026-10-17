@@ -564,6 +564,24 @@ async function main() {
     }),
   );
 
+  captures.push(
+    await shotPair(context, {
+      name: 'profile-catalog-wizard-smoke',
+      implUrl: `${implBase}/profile?section=catalog`,
+      refUrl: null,
+      implTestId: 'specialist-catalog-wizard',
+      theme: 'light',
+      width: 320,
+      height: 568,
+    }),
+  );
+
+  spawnSync('pnpm', ['exec', 'tsx', 'scripts/r06-local-fixture.ts', 'reset-e2e'], {
+    cwd: NAV_ROOT,
+    env,
+    encoding: 'utf8',
+  });
+
   const pendingPrep = await context.newPage();
   await pendingPrep.goto(`${implBase}/profile?section=catalog`, { waitUntil: 'load' });
   await waitImplProfile(pendingPrep, 'specialist-catalog-wizard');
@@ -584,18 +602,6 @@ async function main() {
       theme: 'light',
       width: 1440,
       height: 900,
-    }),
-  );
-
-  captures.push(
-    await shotPair(context, {
-      name: 'profile-catalog-wizard-smoke',
-      implUrl: `${implBase}/profile?section=catalog`,
-      refUrl: null,
-      implTestId: 'specialist-catalog-wizard',
-      theme: 'light',
-      width: 320,
-      height: 568,
     }),
   );
 
