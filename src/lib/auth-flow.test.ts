@@ -182,6 +182,21 @@ describe("resolveDestinationAfterAuth", () => {
     assert.equal(resolveDestinationAfterAuth(profile, "/scanner"), "/onboarding?returnTo=%2Fscanner");
   });
 
+  it("routes returning ready user to cabinet when registrationAgentJoin is set", () => {
+    assert.equal(
+      resolveDestinationAfterAuth(ready, "/join", { registrationAgentJoin: true }),
+      "/partners",
+    );
+    assert.equal(
+      resolveDestinationAfterAuth(ready, "/join?phase=finish", { registrationAgentJoin: true }),
+      "/partners",
+    );
+    assert.equal(
+      resolveDestinationAfterAuth(ready, "/scanner", { registrationAgentJoin: true }),
+      "/scanner",
+    );
+  });
+
   it("routes agent registration join to finish step instead of onboarding", () => {
     const profile: CabinetReadiness = {
       ...needsConsents,

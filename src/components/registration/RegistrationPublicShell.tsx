@@ -16,10 +16,6 @@ export function RegistrationPublicShell({ children, loginHref = "/login" }: Prop
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>
           <BrandMark />
-          <span className={styles.brandText}>
-            <strong>RemCard</strong>
-            <span>Для партнёров</span>
-          </span>
         </Link>
         <div className={styles.headerActions}>
           <ThemeToggle />

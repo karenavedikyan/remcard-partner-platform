@@ -37,6 +37,7 @@
 
 .headingAccent {
   color: var(--primary);
+  display: inline;
 }
 
 .headingRest {
@@ -57,10 +58,19 @@
 }
 
 .target {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 0.875rem;
   font-weight: 700;
   margin-top: var(--space-4);
   color: var(--primary);
+}
+
+.target svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .action {
@@ -74,6 +84,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
   min-height: 56px;
   padding-inline: var(--space-6);
   font-size: 1rem;
@@ -82,6 +93,17 @@
   background: var(--primary);
   color: var(--primary-fg);
   text-decoration: none;
+}
+
+.primaryBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.primaryBtn:hover,
+.primaryBtn:focus-visible {
+  background: var(--primary-hover);
+  color: var(--primary-fg);
 }
 
 .primaryBtn:hover {
@@ -94,7 +116,7 @@
   color: var(--muted);
 }
 
-.action a {
+.action span a {
   color: var(--primary);
   font-weight: 700;
 }
@@ -174,7 +196,7 @@
   cursor: pointer;
 }
 
-.exampleTab[aria-pressed="true"] {
+.exampleTab[aria-selected="true"] {
   color: var(--primary);
   border-bottom-color: var(--primary);
 }

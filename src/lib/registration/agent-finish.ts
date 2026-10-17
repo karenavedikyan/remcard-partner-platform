@@ -49,6 +49,9 @@ export function mapAgentFinishError(error: unknown): string {
     if (code === "EXISTING_USER_NO_AUTO_AGENT" || code === "EXISTING_USER_NO_OVERWRITE") {
       return "Аккаунт уже настроен. Продолжите в кабинете или добавьте деятельность в профиле.";
     }
+    if (code === "CONSENTS_REQUIRED") {
+      return "Примите актуальные соглашения и повторите завершение регистрации.";
+    }
     if (code === "REGISTRATION_PATH_DISABLED") {
       return "Регистрация агента временно недоступна.";
     }

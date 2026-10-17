@@ -25,12 +25,16 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
     return null;
   }
   const path = trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
-  if (
-    path === "/login" ||
-    path.startsWith("/login/") ||
-    path === "/onboarding" ||
-    path.startsWith("/join/")
-  ) {
+  if (path === "/login" || path.startsWith("/login/") || path.startsWith("/join/")) {
+    return null;
+  }
+  if (path === "/onboarding") {
+    if (!trimmed.includes("partnerType=")) {
+      return null;
+    }
+    return trimmed;
+  }
+  if (path.startsWith("/onboarding/")) {
     return null;
   }
   const allowed = SAFE_RETURN_PREFIXES.some(
@@ -114,7 +118,14 @@ export function resolveDestinationAfterAuth(
       : "/onboarding";
   }
   if (readiness.canAccessCabinet) {
-    return sanitizeReturnTo(returnTo) ?? "/";
+    const safe = sanitizeReturnTo(returnTo);
+    if (options?.registrationAgentJoin) {
+      if (!safe || safe === "/join" || safe.startsWith("/join?")) {
+        return "/partners";
+      }
+      return safe;
+    }
+    return safe ?? "/";
   }
   return "/?reason=role";
 }

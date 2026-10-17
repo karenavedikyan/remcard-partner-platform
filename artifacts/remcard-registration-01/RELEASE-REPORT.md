@@ -1,80 +1,59 @@
-# REGISTRATION-01 — release report (draft RC)
+# REGISTRATION-01 / 01.1 — release report (draft RC)
 
 Date: 2026-10-17  
-Branch: `cursor/registration-01-b3e3`
+Review reference: navigator `2cba890`, `docs/reference/registration-20261017/review-01/`  
+Implementation PRs: platform [#26](https://github.com/karenavedikyan/remcard-partner-platform/pull/26), navigator [#689](https://github.com/karenavedikyan/remcard-navigator/pull/689)
 
-## Release HEAD (implementation)
+## Controlled rollout (no production changes in this RC)
 
-| Repo | Base branch | Branch HEAD |
-|------|-------------|-------------|
-| remcard-partner-platform | `release/prof-v1-20261007` | `655e77e` (`72c7e50` base) |
-| remcard-navigator | `release/prof-backend-v1-20261007` | `33b4c8e1` (`29069dc8` base) |
+1. Deploy **compatible** platform + navigator with gates **OFF** (`PROF_REGISTRATION_WELCOME_ENABLED`, `PROF_AGENT_REGISTRATION_PATH_ENABLED`, `NEXT_PUBLIC_PROF_PARTNER_ENTRY_REDIRECT`).
+2. Staging/local acceptance (browser + disposable PG).
+3. Enable gates on staging → smoke agent path + returning user + admin login.
+4. Production: gates ON → operator smoke → `NEXT_PUBLIC_PROF_PARTNER_ENTRY_REDIRECT` on remcard.ru (partner entry only).
 
-## Frozen reference
+## REGISTRATION-01.1 fixes (this revision)
 
-| Item | Value |
-|------|--------|
-| Branch | `implementation/remcard-reference-20261014` |
-| Commit | `c8bcab21` (prototype note `5503e01`) |
-| Path | `docs/reference/registration-20261017/` |
+### Server finish (navigator)
 
-### SHA256 (reference files touched for welcome/join)
+- Block finish when **any** blocking consent missing (TERMS, PERSONAL_DATA, **PUBLIC_OFFER_PRO** during onboarding).
+- No overwrite of established accounts when `canAccessCabinet=false` (e.g. stale TERMS on existing AGENT).
+- Re-read user + readiness **inside** advisory lock; update via transaction client.
+- Owner/employment/mixed-wallet guards before promotion.
+- Strict JSON body parser (`profAgentRegistrationFinishBody.ts`); invalid JSON/null → 400, no mutation.
+- **Probes:** `registration-review.probe.test.ts` — **2 PASS** (mock DB).
 
-| File | SHA256 |
-|------|--------|
-| `REGISTRATION-PROTOTYPE.md` | `10e8aa1d2cba4c428d5f55a1933021d78dd97b6b5f1e9cb169dceaeb1ce433e2` |
-| `index.html` | `2449740779c5d9466431050082abc4fcdf1e1df735e628ac091df3722f6ac367` |
-| `registration-welcome.css` | `08e33bc71d8ef32cc03f22f9d67055b50030862bdcbd1f6243922741c7501ae3` |
-| `registration-entry.css` | `3e861309a9fbf6fc2afc30f2c16af7ee3649c5656de5dc9215c96869c9d8b63e` |
-| `assets/partner-home.webp` | `b88016ee2c9395a9547107cfc2c4a3f08c0c2f854f8982e9c8ed02f7f411dc0d` |
+### Platform UX / flow
 
-Runtime asset copy (platform): `public/assets/registration/partner-home.webp` (same image bytes as reference).
+- Welcome copy/layout aligned to frozen reference (`registration-welcome.js`): accent on «клиентами,», short example tabs, reciprocity text.
+- CTA contrast fix (primary button no longer overridden by global link color).
+- Header: **BrandMark only** (no duplicate wordmark).
+- Join: progress steps, no internal legacy labels; embedded **AuthFlow** (no double hero).
+- Registration consents in join auth (incl. PUBLIC_OFFER_PRO) via `registrationConsentRequirements`.
+- Returning ready user + `registrationAgentJoin` → **cabinet** (`/partners` or safe `returnTo`), not `/join` loop.
+- Login recovery links carry `registration=agent` + `returnTo=/join?phase=finish`.
+- Draft: safe sessionStorage + in-memory fallback; owner binding; wizard step persistence; legacy onboarding preserves `partnerType` query.
 
-## New vs legacy boundary
+## Tests (this agent run)
 
-| Partner kind | Path when gates ON |
-|--------------|-------------------|
-| **Agent** | **New:** `/` welcome → `/join` → name → city → MAX/Telegram (`AuthFlow`) → consents → `POST /api/pro/registration/agent/finish` → fresh readiness → `/partners` |
-| Specialist (MASTER) | **Legacy:** `/join` type picker → `/login?returnTo=/onboarding` → existing `OnboardingForm` |
-| Store / Company | **Legacy:** same as specialist |
-| Employee (membership) | **Legacy:** invite-only screen → `/login`; no org data without accepted invite |
-| Returning user | **Legacy:** `/login` → cabinet; finish API refuses overwrite (`EXISTING_USER_*`) |
-
-Gates (default **OFF**, fail-closed):
-
-- Navigator: `PROF_REGISTRATION_WELCOME_ENABLED`, `PROF_AGENT_REGISTRATION_PATH_ENABLED`
-- Welcome UI requires **both** (capabilities `welcomeEnabled = welcome && agent path`)
-- remcard.ru partner entry: `NEXT_PUBLIC_PROF_PARTNER_ENTRY_REDIRECT` → `https://prof.remcard.ru/` (Header desktop + mobile partner login only; client login unchanged)
-
-Rollout order: enable prof gates → deploy platform + navigator → set `NEXT_PUBLIC_PROF_PARTNER_ENTRY_REDIRECT` on remcard.ru.
-
-## Reference → implementation mapping
-
-| Reference | Implementation |
-|-----------|----------------|
-| Welcome copy + hero + 3 examples | `PartnerWelcome.tsx` + `partner-welcome.module.css` |
-| Five-type picker | `RegistrationJoinFlow.tsx` (`/join`) |
-| Agent name/city steps | same wizard + `registration/draft.ts` (sessionStorage, 7d TTL, per kind) |
-| Auth boundary | existing `AuthFlow` + `registrationAgentJoin` → `/join?phase=finish` |
-| Consents | existing `ConsentStep` / server legal docs |
-| Agent cabinet entry | `/partners` after finish + readiness poll |
-| Demo toolbar / demo codes | **Not ported** |
-
-## Acceptance status
-
-| Check | Status |
-|-------|--------|
+| Command | Result |
+|---------|--------|
+| Platform `tsx --test src/lib/auth-flow.test.ts src/lib/registration/draft.test.ts` | **26 PASS** |
+| Navigator `vitest run registration-review.probe.test.ts profPartnerEntryNav.test.ts` | **4 PASS** |
+| Navigator `profAgentRegistrationFinish.integration.test.ts` | **SKIPPED** (DATABASE_URL not prof-r01 disposable test DB) |
 | Platform `pnpm run build` | **PASS** |
-| Navigator `pnpm run build` | **PASS** |
-| Platform unit: `auth-flow.test.ts`, `draft.test.ts` | **PASS** |
-| Navigator unit: `profPartnerEntryNav.test.ts` | **PASS** |
-| Navigator integration: `profAgentRegistrationFinish.integration.test.ts` (disposable PG) | **NOT_RUN** (no `DATABASE_URL` test DB in agent VM) |
-| Browser E2E join→agent→cabinet | **NOT_RUN** (requires gates ON + live/test auth stack) |
-| Visual impl/ref 1440/375 light/dark | **NOT_RUN** (captures not taken this turn) |
-| remcard.ru link redirect | **CODE READY**; **NOT_RUN** live until redirect env enabled |
+| `scripts/local/registration-01-visual.mjs` | **NOT_RUN** (requires local dev stack + mocked capabilities) |
 
-## Operator notes
+## Still NOT_RUN (explicit)
 
-- No production DB / merge / deploy performed in this RC.
-- Admin login remains separate tab in `LoginExperience`; partner flow not mounted for admin mode.
-- Pre-auth PII stays in sessionStorage only (not URL/logs/server draft).
+- Live MAX/Telegram auth smoke (isolated mock upstream ≠ live).
+- Full PG/BFF matrix on disposable loopback (blocked: test DB policy URL not configured in VM).
+- remcard.ru live click-through with redirect flag ON.
+
+## New vs legacy boundary (unchanged)
+
+| Kind | Path |
+|------|------|
+| Agent (gates ON) | Welcome → `/join` → name → city → auth/consents → finish API → `/partners` |
+| Specialist / store / company | Type picker → login → `/onboarding?partnerType=…` |
+| Employee | Invite-only screen → login; no org data without invite |
+| Returning user | Login → cabinet; finish API refuses overwrite |

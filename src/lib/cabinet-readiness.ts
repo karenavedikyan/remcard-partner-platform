@@ -31,3 +31,20 @@ export function loginConsentRequirements(readiness: CabinetReadiness): ConsentRe
 export function hasPendingLoginConsents(readiness: CabinetReadiness): boolean {
   return loginConsentRequirements(readiness).length > 0;
 }
+
+const BLOCKING_CONSENT_STATUSES = new Set<ConsentRequirementStatus>([
+  "missing",
+  "stale",
+  "withdrawn",
+]);
+
+/** Registration finish requires all outstanding legal requirements (incl. PUBLIC_OFFER_PRO). */
+export function registrationConsentRequirements(
+  readiness: CabinetReadiness,
+): ConsentRequirement[] {
+  return readiness.missingConsents.filter((c) => BLOCKING_CONSENT_STATUSES.has(c.status));
+}
+
+export function hasPendingRegistrationConsents(readiness: CabinetReadiness): boolean {
+  return registrationConsentRequirements(readiness).length > 0;
+}
