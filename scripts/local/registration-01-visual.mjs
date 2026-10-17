@@ -32,6 +32,20 @@ const DEV_OVERLAY_HIDE = `
   #webpack-dev-server-client-overlay, .nextjs-toast-errors-parent { display: none !important; }
 `;
 
+const PROTO_DEMO_HIDE = `
+  .demo-top, .mobile-demo-settings, .review-toolbar, .entry-disclaimer,
+  details.review-details, #review, .review-details {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+`;
+
 async function preparePrototypeTree() {
   await mkdir(PROTO_DIR, { recursive: true });
   execSync(
@@ -167,6 +181,29 @@ async function waitForCaptureStabilization(page, theme, kind, step) {
   );
 }
 
+async function measureProgressRow(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const list =
+      document.querySelector('ol[aria-label="Этапы регистрации"]') ??
+      document.querySelector(".entry-progress");
+    if (!list) return null;
+    const items = [...list.querySelectorAll("li")];
+    const stageTops = items.map((li) => {
+      const marker = li.querySelector("span");
+      const box = (marker ?? li).getBoundingClientRect();
+      return Math.round(box.top * 1000) / 1000;
+    });
+    const listStyle = getComputedStyle(list);
+    return {
+      display: listStyle.display,
+      gridTemplateColumns: listStyle.gridTemplateColumns,
+      stageTops,
+      stageTopSpread:
+        stageTops.length > 0 ? Math.max(...stageTops) - Math.min(...stageTops) : null,
+    };
+  }, kind);
+}
+
 async function measureTypesLayout(page, kind) {
   return page.evaluate((sourceKind) => {
     const grid =
@@ -210,6 +247,41 @@ async function measureTypesLayout(page, kind) {
         : null,
     };
   }, kind);
+}
+
+function assertMobileGridParity(refMeasure, implMeasure, width) {
+  if (![375, 320].includes(width) || !refMeasure?.grid || !implMeasure?.grid) return [];
+  const failures = [];
+  const tol = 1;
+  for (const [label, refVal, implVal] of [
+    ["grid.x", refMeasure.grid.x, implMeasure.grid.x],
+    ["grid.width", refMeasure.grid.width, implMeasure.grid.width],
+  ]) {
+    if (Math.abs(refVal - implVal) > tol) {
+      failures.push(`${width}:${label}: ref=${refVal} impl=${implVal} (tol ${tol}px)`);
+    }
+  }
+  return failures;
+}
+
+function assertProgressRowParity(refProgress, implProgress, width) {
+  if (![375, 320].includes(width) || !refProgress?.stageTops || !implProgress?.stageTops) {
+    return [];
+  }
+  const failures = [];
+  if (refProgress.stageTops.length !== 4 || implProgress.stageTops.length !== 4) {
+    failures.push(`${width}:progress: expected 4 stages`);
+    return failures;
+  }
+  const implSpread = implProgress.stageTopSpread ?? 0;
+  if (implSpread > 1) {
+    failures.push(`${width}:progress: stageTopSpread=${implSpread} (4th column wrapped)`);
+  }
+  const refSpread = refProgress.stageTopSpread ?? 0;
+  if (refSpread > 1) {
+    failures.push(`${width}:progress: ref stageTopSpread=${refSpread}`);
+  }
+  return failures;
 }
 
 function assertGridParity(refMeasure, implMeasure, width) {
@@ -260,6 +332,9 @@ async function captureRecord(page, fileName, expectedWidth, theme, step, kind, v
     throw new Error(`Theme expected ${theme}, got ${dataTheme}`);
   }
   await waitForCaptureStabilization(page, theme, kind, step);
+  if (kind === "reference") {
+    await hidePrototypeDemoChrome(page);
+  }
   await hideDevChrome(page);
   await assertDevChromeHidden(page);
   await verifyFn(page);
@@ -290,15 +365,8 @@ async function captureRecord(page, fileName, expectedWidth, theme, step, kind, v
   };
 }
 
-async function stripPrototypeDemoChrome(page) {
-  await page.evaluate(() => {
-    document.querySelector(".demo-top")?.remove();
-    document.querySelector(".mobile-demo-settings")?.remove();
-    document.querySelector(".review-toolbar")?.remove();
-    document.querySelector(".entry-disclaimer")?.remove();
-    document.querySelector("details.review-details")?.remove();
-    document.querySelector("#review")?.remove();
-  });
+async function hidePrototypeDemoChrome(page) {
+  await page.addStyleTag({ content: PROTO_DEMO_HIDE });
 }
 
 async function openImplTypes(page, theme, width) {
@@ -330,8 +398,8 @@ async function openPrototypeTypes(page, theme, width) {
     await page.locator('[data-action="register"]').first().click();
   }
   await page.waitForSelector("h1", { timeout: 30_000 });
-  await stripPrototypeDemoChrome(page);
   await applyPrototypeTheme(page, theme);
+  await hidePrototypeDemoChrome(page);
   const h1 = await page.locator(".intro h1, h1").first().innerText();
   if (!/Какой тип партнёрства/i.test(h1)) {
     throw new Error(`Prototype choose screen not ready: "${h1}"`);
@@ -364,6 +432,8 @@ async function main() {
       const page = await context.newPage();
       await openPrototypeTypes(page, theme, width);
       refMeasure = await measureTypesLayout(page, "reference");
+      const refProgress = await measureProgressRow(page, "reference");
+      if (refMeasure) refMeasure.progress = refProgress;
       captures.push(
         await captureRecord(
           page,
@@ -383,7 +453,11 @@ async function main() {
       const page = await context.newPage();
       await openImplTypes(page, theme, width);
       const implMeasure = await measureTypesLayout(page, "implementation");
+      const implProgress = await measureProgressRow(page, "implementation");
+      if (implMeasure) implMeasure.progress = implProgress;
       parityFailures.push(...assertGridParity(refMeasure, implMeasure, width));
+      parityFailures.push(...assertMobileGridParity(refMeasure, implMeasure, width));
+      parityFailures.push(...assertProgressRowParity(refMeasure?.progress, implProgress, width));
       captures.push(
         await captureRecord(
           page,
@@ -476,14 +550,12 @@ async function main() {
     captureCount: captures.length,
     pairs,
     captures,
-    layoutParityFailures1440: parityFailures,
-    captureStatus: parityFailures.length === 0 ? "geometry-1440-within-tolerance" : "NO-GO-layout-parity",
+    layoutParityFailures: parityFailures,
+    captureStatus:
+      parityFailures.length === 0 ? "geometry-within-tolerance" : "NO-GO-layout-parity",
     invalidSupersededRefs: [],
     remainingVisualGaps: [
       "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
-      "1440 h1: impl ~34px vs ref 32px (platform --text-xl clamp).",
-      "375 types: grid x/width differs (shell padding vs ref registration padding).",
-      "Types page height: impl taller (eyebrow + welcome link + progress spacing).",
       "Welcome link retained on types step (not in frozen prototype footer).",
       "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals).",
     ],
@@ -495,6 +567,8 @@ async function main() {
       "dev_overlay_hidden_post_navigation",
       "dark_card_computed_settled",
       "layout_json_embedded",
+      "mobile_grid_parity_375_320",
+      "progress_stage_top_alignment",
     ],
   };
   await writeFile(
@@ -503,7 +577,7 @@ async function main() {
   );
   console.log(JSON.stringify(report, null, 2));
   if (parityFailures.length) {
-    console.error("1440 layout parity failures:", parityFailures);
+    console.error("Layout parity failures:", parityFailures);
     process.exit(1);
   }
 }

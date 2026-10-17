@@ -25,20 +25,28 @@
 }
 
 .typesRegistration h1 {
-  font-size: var(--text-xl);
-  line-height: 1.25;
+  font-size: 32px;
+  line-height: 40px;
   letter-spacing: -0.035em;
   font-weight: 800;
   margin: 0 0 var(--space-3);
 }
 
 .typesRegistration .workspaceNote {
-  max-width: 44ch;
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: none;
 }
 
 .typesRegistration .typeList {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
+  align-items: stretch;
+}
+
+.typesRegistration .typeList > li {
+  display: flex;
+  min-height: 0;
 }
 
 .typesRegistration .typeCard,
@@ -48,7 +56,11 @@
   align-items: flex-start;
   gap: var(--space-3);
   min-height: 210px;
+  height: 100%;
+  width: 100%;
+  flex: 1;
   padding: var(--space-6);
+  box-sizing: border-box;
 }
 
 .typesRegistration .typeCardActive {
@@ -64,12 +76,14 @@
 .typesRegistration .typeTitle {
   grid-column: auto;
   padding-right: var(--space-6);
-  font-size: var(--text-lg);
+  font-size: 1.125rem;
+  line-height: 1.35;
 }
 
 .typesRegistration .typeDesc {
   grid-column: auto;
-  font-size: var(--text-sm);
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .typeChoiceFooter {
@@ -100,9 +114,10 @@
 
 .typesRegistration .typeTeamNote {
   margin: 0;
-  max-width: 36ch;
+  max-width: none;
   text-align: left;
   flex: 1 1 16rem;
+  font-size: 0.8125rem;
 }
 
 @media (max-width: 1000px) {
@@ -112,9 +127,21 @@
 }
 
 
+@media (max-width: 760px) {
+  .typesRegistration {
+    padding-inline: 0;
+  }
+}
+
 @media (max-width: 680px) {
   .typesRegistration {
-    padding: var(--space-6) var(--space-4) var(--space-8);
+    padding-block: var(--space-6) var(--space-8);
+    padding-inline: 0;
+  }
+
+  .typesRegistration h1 {
+    font-size: 24px;
+    line-height: 30px;
   }
 
   .typesIntro {
@@ -390,9 +417,13 @@
 
 @media (max-width: 760px) {
   .entryProgress.entryProgressTypesRegistration {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex-wrap: nowrap;
     gap: var(--space-3);
-    justify-content: space-between;
+    justify-content: unset;
     margin-bottom: var(--space-6);
+    font-size: var(--text-xs);
   }
 
   .entryProgress.entryProgressTypesRegistration li {
@@ -400,18 +431,23 @@
     align-items: center;
     text-align: center;
     gap: var(--space-1);
-    font-size: var(--text-xs);
+    min-width: 0;
+  }
+
+  .entryProgress.entryProgressTypesRegistration li > span {
+    width: 28px;
+    height: 28px;
   }
 }
 
 @media (max-width: 680px) {
-  .entryProgress {
+  .entryProgress:not(.entryProgressTypesRegistration) {
     gap: var(--space-2);
     margin-bottom: var(--space-6);
     font-size: 0.625rem;
   }
 
-  .entryProgress li > span {
+  .entryProgress:not(.entryProgressTypesRegistration) li > span {
     width: 24px;
     height: 24px;
   }
