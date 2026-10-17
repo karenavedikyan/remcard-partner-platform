@@ -20,12 +20,22 @@
 
 Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scripts/lib/prof-r06-controlled-apply.mjs` (ledger SQL apply, before/apply/after, pinned checksums both migrations, loopback DB guard). **Not** `prisma db push` as apply.
 
-## R06.3 acceptance blockers — closed this pass
+## R06.3 visual acceptance tail — closed this pass
 
-1. **Migration verifier:** `catalogNavigatorStageIds` checked as `NOT NULL` + default `{}` (matches pinned SQL); partial guard covers draft-only / orphan User columns; ledger checksum negative uses real `assertProfR06BeforeApply` on corrupted ledger (ROLLBACK). Disposable PG: `before → apply → after → reapply` exit 0 at `3c964614`.
-2. **409:** no `expectedVersion` bump until user picks resolution; save/finish blocked while conflict open; Vitest: second Save does not PATCH until «Оставить мои правки».
-3. **Runners:** `advanceCatalogSteps` / `ensureCatalogStep` step-by-step; catalog actions scoped to `[data-testid="specialist-catalog-wizard"]`; visual `prepareBeforeWait` before wizard wait; ref prototype driven to completed / specialization / catalog step 0 / preview / pending with `assertRef`.
-4. **Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-v1`, stack ports 3055/3056, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`. Runtime/capture SHA **634e894** (platform) / **3c964614** (navigator). Gate-off probe: **1** matching vitest passed (not zero).
+1. **Catalog CSS:** scoped `--cw-*` fields/buttons in `SpecialistCatalogWizard.module.css`; primary uses `btn` + `btnPrimary`; Playwright asserts input border/padding/min-height and primary visibility/background on step 0 (no masks).
+2. **Specialization desktop:** full-width profile/catalog columns (hide aside for specialist basics/catalog); working wizard uses non-compact direction grids; layout width assert ≥520px card.
+3. **Completed summary:** contacts with empty fallbacks, directions chips, «Хотите появиться в каталоге?» + «Перейти к каталогу».
+4. **Pending:** dedicated `SpecialistCatalogPendingView` from real `PENDING` status (no wizard step 0 / duplicate badges).
+5. **Preview evidence:** matched synthetic `Krasnodar` + UI advance on impl/ref; manifest **7 matched pairs + 1 impl-only smoke** (320px).
+6. **Migration negatives:** strict expected codes; ledger probe fails on missing fixture or guard bypass; unit regression in `prof-r06-migration-negative-runner.test.mjs`.
+
+**Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-v2`, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`. Runtime/capture SHA **7d24c6b** (platform) / **04613f09** (navigator). Ref **771cc658a415a5d05b964f29f675d32db449198b**.
+
+## R06.3 acceptance blockers — prior pass
+
+1. **Migration verifier:** `catalogNavigatorStageIds` `NOT NULL` + default `{}`; partial guard; ledger checksum negative with ROLLBACK.
+2. **409:** conflict resolution gating + Vitest regression.
+3. **Runners:** step-by-step catalog advance; scoped selectors; ref prototype state asserts.
 
 ### Visual pairs (ref `771cc658…`)
 
