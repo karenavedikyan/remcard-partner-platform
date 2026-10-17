@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "skipped": true,
+  "reason": "R06_RUN_DIR not set — start local prof stack first (see r02-local-stack pattern)"
+}
