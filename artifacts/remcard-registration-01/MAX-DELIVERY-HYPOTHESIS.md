@@ -1,6 +1,6 @@
 # MAX delivery — hypothesis (REGISTRATION-01.4)
 
-**Status:** NOT_VERIFIED in production (webhook URL, secret, token — operator-only; values not logged here).
+**Status:** Production operator test **FAIL** on backend `8bfdb193` (2026-10-17 ~22:31–22:33 MSK). Details: navigator `artifacts/registration-01/PROD-MAX-OPERATOR-20261017.md`. Timeweb: four `[max webhook] handleBotCommand failed` (no timestamps in UI). **Dedup is not sole/root cause** for this silence; catch indicates **throw** (often before `sendMaxMessage`). PR #691 adds `stage=` / `prisma=` safe logs — not deployed at test time.
 
 ## What code fixes address
 
