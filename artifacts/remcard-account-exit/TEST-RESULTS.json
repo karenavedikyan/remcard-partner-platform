@@ -1,8 +1,8 @@
 {
   "task": "ACCOUNT-EXIT-01.1",
   "status": "READY_FOR_REVIEW",
-  "backendHead": "pending-commit",
-  "frontendHead": "pending-commit",
+  "backendHead": "c124a58e",
+  "frontendHead": "c789d7c",
   "commands": [
     {
       "cmd": "cd remcard-navigator && npm test -- src/lib/__tests__/authSessionLogout.test.ts src/lib/__tests__/accountExitSecurityAcceptance.test.ts src/app/api/auth/logout-all-sessions/__tests__/route.test.ts",
