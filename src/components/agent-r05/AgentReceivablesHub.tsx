@@ -17,37 +17,15 @@ import {
 } from "@/lib/agent-r05/api";
 import { formatKopecks } from "@/lib/agent-r05/money";
 import { Button } from "@/components/ui/Button";
+import {
+  defaultReceivablesPrefs,
+  loadReceivablesPrefsFromStorage,
+  saveReceivablesPrefs,
+  type LedgerView,
+} from "@/lib/agent-r05/receivables-prefs";
 import styles from "./agent-receivables.module.css";
 
 type Screen = "overview" | "partners" | "orders" | "order";
-
-type LedgerView = "list" | "small" | "medium" | "large";
-
-const PREFS_KEY = "agent-r05-receivables-prefs";
-const LEDGER_VIEWS = new Set<LedgerView>(["list", "small", "medium", "large"]);
-
-function loadPrefs(): { view: LedgerView; pageSize: number } {
-  if (typeof window === "undefined") return { view: "list", pageSize: 25 };
-  try {
-    const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return { view: "list", pageSize: 25 };
-    const parsed = JSON.parse(raw) as { view?: LedgerView; pageSize?: number };
-    const pageSize = [25, 50, 100].includes(parsed.pageSize ?? 25) ? parsed.pageSize! : 25;
-    const view =
-      parsed.view && LEDGER_VIEWS.has(parsed.view) ? parsed.view : ("list" as LedgerView);
-    return { view, pageSize };
-  } catch {
-    return { view: "list", pageSize: 25 };
-  }
-}
-
-function savePrefs(view: LedgerView, pageSize: number) {
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({ view, pageSize }));
-  } catch {
-    /* ignore */
-  }
-}
 
 function formatWhen(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -107,7 +85,11 @@ export function AgentReceivablesHub() {
   const [toDate, setToDate] = useState("");
   const [sort, setSort] = useState("debt-desc");
   const [page, setPage] = useState(1);
-  const [prefs, setPrefs] = useState(loadPrefs);
+  const [prefs, setPrefs] = useState(defaultReceivablesPrefs);
+
+  useEffect(() => {
+    setPrefs(loadReceivablesPrefsFromStorage());
+  }, []);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -220,7 +202,7 @@ export function AgentReceivablesHub() {
   function onViewChange(view: LedgerView) {
     const next = { ...prefs, view };
     setPrefs(next);
-    savePrefs(next.view, next.pageSize);
+    saveReceivablesPrefs(next.view, next.pageSize);
   }
 
   const runExport = useCallback(async () => {
@@ -265,7 +247,7 @@ export function AgentReceivablesHub() {
   function onPageSizeChange(size: number) {
     const next = { ...prefs, pageSize: size };
     setPrefs(next);
-    savePrefs(next.view, next.pageSize);
+    saveReceivablesPrefs(next.view, next.pageSize);
     setPage(1);
   }
 

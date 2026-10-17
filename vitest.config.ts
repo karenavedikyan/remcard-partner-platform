@@ -60,6 +60,7 @@ export default defineConfig({
       "src/lib/agent-r03/certificatePurchaseStatus.test.ts",
       "src/components/agent-r03/RecordRowActions.test.tsx",
       "src/components/agent-r03/clientContactShare.test.ts",
+      "src/lib/agent-r05/receivables-prefs.test.ts",
       "src/lib/agent-profile/api.client.test.ts",
       "src/lib/agent-profile/format-requisites-copy.test.ts",
       "src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx",

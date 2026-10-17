@@ -1,31 +1,22 @@
-# WALLET-PHONE-01
+# WALLET-PHONE-01.2 — hydration + smoke closure
 
-Separate from ACCOUNT-EXIT-01 (draft PRs [#687](https://github.com/karenavedikyan/remcard-navigator/pull/687) / [#24](https://github.com/karenavedikyan/remcard-partner-platform/pull/24)).
+Same PRs: [platform #25](https://github.com/karenavedikyan/remcard-partner-platform/pull/25), [navigator #688](https://github.com/karenavedikyan/remcard-navigator/pull/688) (backend unchanged in 01.2 unless smoke finds a defect). ACCOUNT-EXIT-01 remains separate.
 
-## 1. Wallet view modes (R05)
+## Block status (01.2)
 
-- CSS cascade fixes in `agent-receivables.module.css`: `minmax(0,1fr)`, `min-width:0` on grid children, list/medium/large density, sums with `tabular-nums` + `overflow-wrap` (no silent clip).
-- Unknown `localStorage` view falls back to `list`.
-- View/filter/page state unchanged when switching density.
+| Block | Status | Evidence |
+| --- | --- | --- |
+| **Hydration / ledger view** | **PASS** | SSR + first paint use `defaultReceivablesPrefs()`; stored prefs applied in `useEffect`. Regression: `AgentReceivablesHub.hydration.test.tsx` (incl. SSR list → stored large). Smoke: `SMOKE-01-2.json` → `hydration.pass`, mobile PNGs `visual-01-2/impl-partners-{375,320}-{list,large}.png` |
+| **BFF Excel download** | **PASS** | Smoke: real `ledger-export-xlsx` → downloaded `smoke-export-01-2.xlsx`, 30 order rows, matches BFF `orders` meta `totalRecords` (see `SMOKE-01-2.json`) |
+| **Phone Enter → save → GET** | **PASS** | Smoke: keyboard Enter + «Сохранить черновик» → reload → BFF GET draft `+79186360099` |
+| **Carry-over (01.1)** | **PASS** | Phone helpers, XLSX backend, prototype patch — not re-audited here |
 
-## 2. Excel (.xlsx)
+## Visual / runtime honesty
 
-- Backend `POST /api/pro/wallet/agent-receivables/export?exportKind=overview|partners|orders&…filters`.
-- Full filtered dataset (not UI page); max 8000 rows → HTTP 413.
-- Sheets: Описание, Партнёры, Заказы, Категории, История (real payment rows only when present).
-- BFF allowlist + prof-test allowlist entry.
-- Frontend button «Excel (.xlsx)» on overview/partners/orders.
+- New captures only for **01.2 scope**: `artifacts/remcard-wallet-phone/visual-01-2/` (4 mobile partners shots). Prior 19 desktop PNGs from 01.1 remain; not re-shot.
+- Smoke tied to disposable stack: `runtimeSha256` + git SHAs in `SMOKE-01-2.json`. **Not** production; prototype patch still **not** applied to author app.
+- **CAPTURED ≠ pixel parity** (unchanged from 01.1).
 
-## 3. Profile phone
+## Code heads
 
-- `contact-phone-display.ts`: canonical `+7XXXXXXXXXX`, typing via `sanitizePhoneTyping`, display on blur.
-- `AgentPhoneField` in agent profile wizard (no double format on every keystroke).
-
-## Prototype
-
-- `artifacts/remcard-wallet-phone/prototype-fixes.patch` — layout grid min-width, list row typography, phone overflow guard (author Perplexity app; not frozen ZIP).
-
-## NOT_VERIFIED here
-
-- Live 1440/375/320 PNG matrix on disposable stack with seeded R05 data.
-- Dual-session / production smoke.
+See `TEST-RESULTS.json`.

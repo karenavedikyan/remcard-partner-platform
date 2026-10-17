@@ -1,32 +1,19 @@
 {
-  "task": "WALLET-PHONE-01.1",
+  "task": "WALLET-PHONE-01.2",
   "status": "READY_FOR_REVIEW",
   "backendHead": "e1b12dfd",
-  "frontendHead": "234899e",
+  "frontendHead": "pending-push",
   "backendPr": "https://github.com/karenavedikyan/remcard-navigator/pull/688",
   "frontendPr": "https://github.com/karenavedikyan/remcard-partner-platform/pull/25",
   "blocks": {
-    "phone": "PASS",
-    "excelExport": "PASS",
-    "visualCaptures": "CAPTURED",
-    "prototypePatch": "PASS"
-  },
-  "visualCaptures": {
-    "status": "CAPTURED",
-    "pixelPass": false,
-    "dir": "artifacts/remcard-wallet-phone/visual",
-    "count": 19,
-    "note": "Same seeded R05 stack as r05-browser-acceptance; measured columns/IDs stable across view modes on run 2026-10-17"
-  },
-  "prototypePatch": {
-    "path": "artifacts/remcard-wallet-phone/prototype-fixes.patch",
-    "baselineSha256": "artifacts/remcard-wallet-phone/prototype-baseline.sha256",
-    "gitApplyCheck": "PASS",
-    "phoneFixClaimed": false
+    "hydrationLedgerView": "PASS",
+    "bffExcelDownload": "PASS",
+    "phonePersistenceUiBff": "PASS",
+    "carryOverPhoneXlsxPrototype": "PASS"
   },
   "commands": [
     {
-      "cmd": "cd remcard-partner-platform && npx vitest run src/lib/contact-phone-display.test.ts src/components/profile/agent/AgentPhoneField.test.tsx",
+      "cmd": "cd remcard-partner-platform && npx vitest run src/components/agent-r05/AgentReceivablesHub.hydration.test.tsx src/lib/agent-r05/receivables-prefs.test.ts",
       "exitCode": 0
     },
     {
@@ -34,20 +21,15 @@
       "exitCode": 0
     },
     {
-      "cmd": "cd remcard-navigator && pnpm exec vitest run src/lib/__tests__/agentReceivablesExportXlsx.test.ts test/api/agent-receivables-export.test.ts",
-      "exitCode": 0
-    },
-    {
-      "cmd": "cd remcard-navigator && DATABASE_URL=remcard_admin_test_012 pnpm exec vitest run src/lib/__tests__/agentReceivablesExportRoute.integration.test.ts",
-      "exitCode": 0
-    },
-    {
-      "cmd": "cd remcard-navigator && pnpm run build",
-      "exitCode": 0
-    },
-    {
-      "cmd": "cd remcard-partner-platform && ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/r05-browser-acceptance.mjs",
-      "exitCode": 0
+      "cmd": "cd remcard-partner-platform && ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/wallet-phone-01-2-smoke.mjs",
+      "exitCode": 0,
+      "note": "Requires npm run build + admin-test-local-stack restart; see SMOKE-01-2.json"
     }
-  ]
+  ],
+  "smokeArtifact": "artifacts/remcard-wallet-phone/SMOKE-01-2.json",
+  "visualCaptures01_2": {
+    "status": "CAPTURED",
+    "dir": "artifacts/remcard-wallet-phone/visual-01-2",
+    "count": 4
+  }
 }
