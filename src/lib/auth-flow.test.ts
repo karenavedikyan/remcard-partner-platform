@@ -7,6 +7,7 @@ import {
   mapVerifyCodeError,
   resolveAuthFlowFromReadiness,
   resolveDestinationAfterAuth,
+  resolveReadyRegistrationAgentJoinDestination,
   resolveStepFromReadiness,
   sanitizeReturnTo,
   sessionRetryMessage,
@@ -186,7 +187,7 @@ describe("resolveDestinationAfterAuth", () => {
     assert.equal(resolveDestinationAfterAuth(profile, "/scanner"), "/onboarding?returnTo=%2Fscanner");
   });
 
-  it("routes returning ready user to cabinet when registrationAgentJoin is set", () => {
+  it("routes returning ready user to cabinet when registrationAgentJoin has plain join", () => {
     assert.equal(
       resolveDestinationAfterAuth(ready, "/join", { registrationAgentJoin: true }),
       "/partners",
@@ -198,6 +199,43 @@ describe("resolveDestinationAfterAuth", () => {
     assert.equal(
       resolveDestinationAfterAuth(ready, "/scanner", { registrationAgentJoin: true }),
       "/scanner",
+    );
+  });
+
+  it("preserves invite for ready user in agent registration auth return", () => {
+    const joinReturn =
+      "/join?phase=finish&invite=INVITE-QA&returnTo=%2Finvite%2FINVITE-QA";
+    assert.equal(
+      resolveDestinationAfterAuth(ready, joinReturn, { registrationAgentJoin: true }),
+      "/invite/INVITE-QA",
+    );
+    assert.equal(resolveReadyRegistrationAgentJoinDestination(joinReturn), "/invite/INVITE-QA");
+  });
+
+  it("routes new registration profile user with invite to join finish", () => {
+    const profile: CabinetReadiness = {
+      ...needsConsents,
+      nextStep: "profile",
+      needsProfileOnboarding: true,
+      missingConsents: [],
+    };
+    const joinReturn =
+      "/join?phase=finish&invite=INVITE-QA&returnTo=%2Finvite%2FINVITE-QA";
+    assert.equal(
+      resolveDestinationAfterAuth(profile, joinReturn, { registrationAgentJoin: true }),
+      joinReturn,
+    );
+  });
+
+  it("rejects unsafe nested returnTo for ready agent join", () => {
+    const joinReturn = "/join?phase=finish&invite=INVITE-QA&returnTo=https%3A%2F%2Fevil.test";
+    assert.equal(
+      resolveDestinationAfterAuth(ready, joinReturn, { registrationAgentJoin: true }),
+      "/invite/INVITE-QA",
+    );
+    assert.equal(
+      resolveReadyRegistrationAgentJoinDestination("/join?returnTo=%2F%2Fevil.test"),
+      "/partners",
     );
   });
 

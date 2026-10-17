@@ -94,6 +94,25 @@ export type ResolveDestinationOptions = {
   registrationAgentJoin?: boolean;
 };
 
+/** Ready account in agent join: preserve invite/nested returnTo; plain join → cabinet. */
+export function resolveReadyRegistrationAgentJoinDestination(returnTo: string | null): string {
+  const safe = sanitizeReturnTo(returnTo);
+  if (!safe || safe === "/join") return "/partners";
+  if (safe.startsWith("/join?")) {
+    const query = safe.includes("?") ? safe.slice(safe.indexOf("?") + 1) : "";
+    const params = new URLSearchParams(query);
+    const inviteRaw = params.get("invite")?.trim();
+    if (inviteRaw && /^[\w-]+$/.test(inviteRaw)) {
+      const invitePath = `/invite/${inviteRaw}`;
+      if (sanitizeReturnTo(invitePath)) return invitePath;
+    }
+    const nested = sanitizeReturnTo(params.get("returnTo"));
+    if (nested && !nested.startsWith("/join")) return nested;
+    return "/partners";
+  }
+  return safe;
+}
+
 export function resolveDestinationAfterAuth(
   readiness: CabinetReadiness,
   returnTo: string | null,
@@ -124,7 +143,7 @@ export function resolveDestinationAfterAuth(
     const safe = sanitizeReturnTo(returnTo);
     if (options?.registrationAgentJoin) {
       if (!safe || safe === "/join" || safe.startsWith("/join?")) {
-        return "/partners";
+        return resolveReadyRegistrationAgentJoinDestination(safe);
       }
       return safe;
     }

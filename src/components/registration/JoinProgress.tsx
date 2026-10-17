@@ -1,10 +1,10 @@
 import styles from "./registration-join.module.css";
 
 const STAGES = [
-  { id: "types", label: "Тип" },
+  { id: "types", label: "Тип партнёра" },
   { id: "data", label: "Ваши данные" },
-  { id: "auth", label: "Вход" },
-  { id: "done", label: "Готово" },
+  { id: "auth", label: "Подтверждение" },
+  { id: "done", label: "Кабинет" },
 ] as const;
 
 export type JoinProgressStage = (typeof STAGES)[number]["id"];

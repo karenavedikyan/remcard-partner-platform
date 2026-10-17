@@ -16,6 +16,14 @@ async function main() {
   const page = await browser.newPage();
   const results = [];
 
+  await page.route("**/api/remcard/api/pro/admin/auth/capabilities**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ adminPasswordLogin: false, adminTestUsers: false }),
+    });
+  });
+
   await page.route("**/api/remcard/api/pro/registration/capabilities**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -30,6 +38,15 @@ async function main() {
   });
 
   let authUser = "user-A";
+  const readyReadiness = {
+    nextStep: "ready",
+    missingConsents: [],
+    needsProfileOnboarding: false,
+    canAccessCabinet: true,
+    isEmployee: false,
+    isAdmin: false,
+  };
+
   await page.route("**/api/remcard/api/auth/me**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -38,10 +55,18 @@ async function main() {
         user: {
           id: authUser,
           displayName: "Test",
-          role: "CLIENT",
+          role: authUser === "ready-pro" ? "PRO" : "CLIENT",
           isBlocked: false,
         },
       }),
+    });
+  });
+
+  await page.route("**/api/remcard/api/account/cabinet-readiness**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(readyReadiness),
     });
   });
 
@@ -54,6 +79,22 @@ async function main() {
     await route.fulfill({ status: 200, body: JSON.stringify({ ok: true, code: "completed" }) });
   });
 
+  const joinReturn = `/join?phase=finish&invite=INVITE-QA&returnTo=${encodeURIComponent("/invite/INVITE-QA")}`;
+  authUser = "ready-pro";
+  await page.goto(
+    `${BASE}/login?registration=agent&returnTo=${encodeURIComponent(joinReturn)}`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await page.waitForFunction(
+    () => window.location.pathname === "/invite/INVITE-QA",
+    { timeout: 20_000 },
+  );
+  results.push({
+    name: "ready_user_invite_after_auth",
+    pass: page.url().includes("/invite/INVITE-QA"),
+  });
+
+  authUser = "user-A";
   await page.goto(`${BASE}/join`, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
     sessionStorage.setItem(

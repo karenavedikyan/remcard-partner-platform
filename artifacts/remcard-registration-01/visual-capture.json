@@ -1,7 +1,9 @@
 {
   "base": "http://127.0.0.1:3020",
-  "capturedAt": "2026-10-17T09:29:12.687Z",
-  "files": [
+  "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+  "refSha": "origin/implementation/remcard-reference-20261014",
+  "capturedAt": "2026-10-17T09:45:25.621Z",
+  "superseded": [
     "reg012-welcome-1440-light.png",
     "reg012-welcome-375-light.png",
     "reg012-welcome-375-dark.png",
@@ -11,9 +13,153 @@
     "reg012-data-375-dark.png",
     "reg012-auth-375-dark.png"
   ],
+  "captures": [
+    {
+      "file": "reg013-welcome-1440-light.png",
+      "step": "welcome",
+      "theme": "light",
+      "url": "http://127.0.0.1:3020/",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-welcome-375-light.png",
+      "step": "welcome",
+      "theme": "light",
+      "url": "http://127.0.0.1:3020/",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1321,
+      "fullPageHeight": 1321,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-welcome-375-dark.png",
+      "step": "welcome",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1321,
+      "fullPageHeight": 1321,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-welcome-320-dark.png",
+      "step": "welcome",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 1339,
+      "fullPageHeight": 1339,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-types-1440-light.png",
+      "step": "types",
+      "theme": "light",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 995,
+      "fullPageHeight": 995,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-types-1440-dark.png",
+      "step": "types",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 995,
+      "fullPageHeight": 995,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-types-375-light.png",
+      "step": "types",
+      "theme": "light",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1127,
+      "fullPageHeight": 1127,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-types-375-dark.png",
+      "step": "types",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1127,
+      "fullPageHeight": 1127,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-data-375-dark.png",
+      "step": "data",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 812,
+      "fullPageHeight": 812,
+      "verify": "passed"
+    },
+    {
+      "file": "reg013-auth-375-dark.png",
+      "step": "auth",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3020/join",
+      "codeSha": "e80cb86b069ee2fd1122c9f743e022d04a62076c",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1065,
+      "fullPageHeight": 1065,
+      "verify": "passed"
+    }
+  ],
+  "refs": [
+    {
+      "file": "ref-types-375-light.png",
+      "refSha": "origin/implementation/remcard-reference-20261014",
+      "refPath": "docs/reference/registration-20261017/review-01/registration-review-ref-types-375.png",
+      "pngWidth": 375,
+      "pngHeight": 1710
+    },
+    {
+      "file": "ref-types-375-dark.png",
+      "refSha": "origin/implementation/remcard-reference-20261014",
+      "refPath": "docs/reference/registration-20261017/review-011/reg011-types-375-dark.png",
+      "pngWidth": 375,
+      "pngHeight": 964
+    }
+  ],
+  "remainingVisualGaps": [
+    "Frozen reference ships type picker PNG only at 375px (light ref + dark review-011); no 1440 type/ref pair in repo.",
+    "Progress step pixel parity not scored; labels/layout aligned in code only.",
+    "Welcome hero illustration differs from static reference export (accepted in 01.1)."
+  ],
   "assertions": [
     "cta_contrast_light",
     "cta_contrast_dark",
-    "no_320_overflow"
+    "no_320_overflow",
+    "step_verify_before_capture"
   ]
 }

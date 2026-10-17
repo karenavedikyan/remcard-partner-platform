@@ -43,7 +43,7 @@ Artifacts:
 
 | Repo | Branch tip (01.2) |
 |------|-------------------|
-| remcard-partner-platform | `5808fa4` |
+| remcard-partner-platform | `7153fb3` |
 | remcard-navigator | `9fa871f3` |
 
 ## Still NOT_RUN (explicit)

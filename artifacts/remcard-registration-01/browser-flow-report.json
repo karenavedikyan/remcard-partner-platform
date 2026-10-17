@@ -1,6 +1,10 @@
 {
-  "capturedAt": "2026-10-17T09:26:40.618Z",
+  "capturedAt": "2026-10-17T09:43:33.633Z",
   "results": [
+    {
+      "name": "ready_user_invite_after_auth",
+      "pass": true
+    },
     {
       "name": "reload_restores_auth_step",
       "pass": true

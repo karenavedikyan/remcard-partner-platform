@@ -90,7 +90,7 @@ export function AuthFlow({
       }
       router.refresh();
     },
-    [returnTo, router],
+    [registrationAgentJoin, returnTo, router],
   );
 
   const applyReadiness = useCallback(

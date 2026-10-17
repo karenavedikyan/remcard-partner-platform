@@ -38,6 +38,7 @@ import {
 import type { RegistrationCapabilities, RegistrationKind } from "@/lib/registration/types";
 import { REGISTRATION_KIND_LABELS } from "@/lib/registration/types";
 import { JoinProgress } from "./JoinProgress";
+import { RegistrationKindIcon } from "./RegistrationKindIcons";
 import { RegistrationPublicShell } from "./RegistrationPublicShell";
 import styles from "./registration-join.module.css";
 
@@ -48,14 +49,6 @@ const ALL_KINDS: RegistrationKind[] = [
   "company",
   "employee",
 ];
-
-const KIND_ICONS: Record<RegistrationKind, string> = {
-  agent: "AG",
-  specialist: "SP",
-  store: "ST",
-  company: "CO",
-  employee: "EM",
-};
 
 type WizardStep = "types" | "name" | "city" | "auth" | "finish";
 
@@ -402,7 +395,9 @@ export function RegistrationJoinFlow() {
                       }}
                     />
                     <span className={styles.typeCardHeader}>
-                      <span className={styles.typeCardIcon}>{KIND_ICONS[k]}</span>
+                      <span className={styles.typeCardIcon}>
+                        <RegistrationKindIcon kind={k} />
+                      </span>
                       <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
                     </span>
                     <span className={styles.typeDesc}>{REGISTRATION_KIND_LABELS[k].description}</span>
