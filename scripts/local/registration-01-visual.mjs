@@ -360,6 +360,108 @@ async function measureAuthProvidersTitle(page, kind) {
   }, kind);
 }
 
+async function measureMobileEntryCard(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const panel =
+      sourceKind === "reference"
+        ? document.querySelector(".form-layout > section, .entry-single")
+        : document.querySelector(
+            '[data-testid="registration-entry-data"] section, [data-testid="registration-entry-auth-providers"]',
+          );
+    if (!panel) return null;
+    const r = panel.getBoundingClientRect();
+    return {
+      x: Math.round(r.x * 100) / 100,
+      width: Math.round(r.width * 100) / 100,
+      viewportWidth: window.innerWidth,
+    };
+  }, kind);
+}
+
+async function measureProgressTextLayout(page, kind) {
+  return page.evaluate(() => {
+    const list =
+      document.querySelector('ol[aria-label="Этапы регистрации"]') ??
+      document.querySelector(".entry-progress");
+    if (!list) return null;
+    const vw = window.innerWidth;
+    const items = [...list.querySelectorAll("li")].map((li, index) => {
+      const span = li.querySelector("span");
+      const style = getComputedStyle(li);
+      let labelBox = null;
+      if (span) {
+        const range = document.createRange();
+        range.selectNodeContents(li);
+        range.setStartAfter(span);
+        const rect = range.getBoundingClientRect();
+        labelBox = {
+          x: Math.round(rect.x * 100) / 100,
+          y: Math.round(rect.y * 100) / 100,
+          width: Math.round(rect.width * 100) / 100,
+          height: Math.round(rect.height * 100) / 100,
+          right: Math.round(rect.right * 100) / 100,
+          bottom: Math.round(rect.bottom * 100) / 100,
+        };
+      }
+      const lh = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
+      return {
+        index,
+        fontSizePx: Math.round(parseFloat(style.fontSize) * 100) / 100,
+        lineHeightPx: Math.round(lh * 100) / 100,
+        labelBox,
+      };
+    });
+    const overlaps = [];
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i].labelBox;
+        const b = items[j].labelBox;
+        if (!a || !b) continue;
+        const separated =
+          a.right <= b.x + 0.5 ||
+          b.right <= a.x + 0.5 ||
+          a.bottom <= b.y + 0.5 ||
+          b.bottom <= a.y + 0.5;
+        if (!separated) overlaps.push([i, j]);
+      }
+    }
+    const outOfViewport = items
+      .filter((it) => it.labelBox && (it.labelBox.x < -0.5 || it.labelBox.right > vw + 0.5))
+      .map((it) => it.index);
+    return { items, overlaps, outOfViewport };
+  }, kind);
+}
+
+async function measureFormFooterRow(page) {
+  return page.evaluate(() => {
+    const footer = document.querySelector('[class*="formFooter"]');
+    if (!footer) return null;
+    const buttons = [...footer.querySelectorAll("button")];
+    const tops = buttons.map((b) => Math.round(b.getBoundingClientRect().top));
+    return {
+      tops,
+      singleRow:
+        tops.length <= 1 || Math.max(...tops) - Math.min(...tops) <= 1,
+    };
+  });
+}
+
+async function measureQuestionTitleTypography(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const h1 =
+      sourceKind === "reference"
+        ? document.querySelector(".form-layout h1")
+        : document.querySelector('[data-testid="registration-entry-data"] h1');
+    if (!h1) return null;
+    const style = getComputedStyle(h1);
+    return {
+      fontSizePx: Math.round(parseFloat(style.fontSize) * 100) / 100,
+      lineHeight: style.lineHeight,
+      fontWeight: style.fontWeight,
+    };
+  }, kind);
+}
+
 async function measureProgressLabelLines(page, kind) {
   return page.evaluate(() => {
     const list =
@@ -477,8 +579,17 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
       if (Math.abs(r.width - i.width) > 14) {
         failures.push(`${panelKey}.width: ref=${r.width} impl=${i.width}`);
       }
-      if (Math.abs(r.height - i.height) > 42) {
+      if (Math.abs(r.height - i.height) > 24) {
         failures.push(`${panelKey}.height: ref=${r.height} impl=${i.height}`);
+      }
+    }
+    if (refMetrics.questionTitle && implMetrics.questionTitle) {
+      if (
+        Math.abs(refMetrics.questionTitle.fontSizePx - implMetrics.questionTitle.fontSizePx) > 1.5
+      ) {
+        failures.push(
+          `1440:questionTitle-font: ref=${refMetrics.questionTitle.fontSizePx}px impl=${implMetrics.questionTitle.fontSizePx}px`,
+        );
       }
     }
     const refRatio = refMetrics.formGeometry.columnRatio;
@@ -506,20 +617,60 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
     }
   }
 
-  if (step.startsWith("data") && [375, 320].includes(width) && implMetrics.progressLabels) {
-    for (let i = 0; i < implMetrics.progressLabels.length; i++) {
-      if (implMetrics.progressLabels[i].lines > 1) {
-        failures.push(`${width}:${step}:progress label[${i}] lines=${implMetrics.progressLabels[i].lines}`);
+  if (refMetrics?.progressLabels && implMetrics?.progressLabels) {
+    for (let i = 0; i < refMetrics.progressLabels.length; i++) {
+      const refL = refMetrics.progressLabels[i]?.lines ?? 1;
+      const implL = implMetrics.progressLabels[i]?.lines ?? 1;
+      if (refL !== implL) {
+        failures.push(`${width}:${step}:progress label[${i}] lines ref=${refL} impl=${implL}`);
       }
     }
-    if (refMetrics?.progressLabels) {
-      for (let i = 0; i < refMetrics.progressLabels.length; i++) {
-        const refL = refMetrics.progressLabels[i]?.lines ?? 1;
-        const implL = implMetrics.progressLabels[i]?.lines ?? 1;
-        if (refL !== implL) {
-          failures.push(`${width}:${step}:progress label[${i}] lines ref=${refL} impl=${implL}`);
-        }
+  }
+
+  const progressLayout = implMetrics?.progressTextLayout;
+  const refProgressLayout = refMetrics?.progressTextLayout;
+  if ([375, 320].includes(width) && progressLayout) {
+    if (progressLayout.overlaps?.length) {
+      failures.push(`${width}:${step}:progress label overlaps ${JSON.stringify(progressLayout.overlaps)}`);
+    }
+    if (progressLayout.outOfViewport?.length) {
+      failures.push(`${width}:${step}:progress label outOfViewport ${progressLayout.outOfViewport.join(",")}`);
+    }
+  }
+  if ([375, 320].includes(width) && refProgressLayout && progressLayout) {
+    for (let i = 0; i < refProgressLayout.items.length; i++) {
+      const rf = refProgressLayout.items[i]?.fontSizePx;
+      const im = progressLayout.items[i]?.fontSizePx;
+      if (rf != null && im != null && Math.abs(rf - im) > 0.75) {
+        failures.push(`${width}:${step}:progress[${i}] font ref=${rf} impl=${im}`);
       }
+    }
+  }
+
+  if (step.startsWith("data") && [375, 320].includes(width) && implMetrics.mobileCard) {
+    const card = implMetrics.mobileCard;
+    const expectedX = 16;
+    const expectedW = width - 32;
+    if (Math.abs(card.x - expectedX) > 2) {
+      failures.push(`${width}:${step}:card.x=${card.x} expected=${expectedX}`);
+    }
+    if (Math.abs(card.width - expectedW) > 4) {
+      failures.push(`${width}:${step}:card.width=${card.width} expected=${expectedW}`);
+    }
+  }
+
+  if (step === "auth-providers" && width === 320 && implMetrics.mobileCard) {
+    const card = implMetrics.mobileCard;
+    if (Math.abs(card.x - 16) > 2) failures.push(`320:auth-card.x=${card.x}`);
+    if (Math.abs(card.width - 288) > 4) failures.push(`320:auth-card.width=${card.width}`);
+  }
+
+  if (step.startsWith("data") && width === 375 && implMetrics.formFooterRow) {
+    if (!implMetrics.formFooterRow.singleRow) {
+      failures.push("375:data:formFooter not single row");
+    }
+    if (refMetrics?.formFooterRow && refMetrics.formFooterRow.singleRow !== implMetrics.formFooterRow.singleRow) {
+      failures.push("375:data:formFooter row ref vs impl mismatch");
     }
   }
 
@@ -553,7 +704,7 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
         `320:auth-title-font: ref=${refMetrics.authTitle.fontSizePx}px impl=${implMetrics.authTitle.fontSizePx}px`,
       );
     }
-    if (Math.abs(refMetrics.authTitle.widthPx - implMetrics.authTitle.widthPx) > 36) {
+    if (Math.abs(refMetrics.authTitle.widthPx - implMetrics.authTitle.widthPx) > 4) {
       failures.push(
         `320:auth-title-width: ref=${refMetrics.authTitle.widthPx} impl=${implMetrics.authTitle.widthPx}`,
       );
@@ -566,16 +717,22 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
 async function collectEntryStepMetrics(page, step, width, kind) {
   const isData = step.startsWith("data");
   const isAuthProviders = step === "auth-providers";
+  const isMobileEntry = [375, 320].includes(width);
+  const needsProgressMetrics = (isData || isAuthProviders) && isMobileEntry;
   return {
     providerBtn: isAuthProviders ? await measurePrimaryProviderButton(page, kind) : null,
     formGeometry:
       step === "data-name" && width === 1440 ? await measureDataFormGeometry(page, kind) : null,
+    questionTitle:
+      step === "data-name" && width === 1440 ? await measureQuestionTitleTypography(page, kind) : null,
     panelHeader: isData ? await measureDataPanelHeader(page) : null,
     progressMarkers: isData ? await measureProgressMarkers(page) : null,
-    progressRow:
-      isData && [375, 320].includes(width) ? await measureProgressRow(page, kind) : null,
-    progressLabels:
-      isData && [375, 320].includes(width) ? await measureProgressLabelLines(page, kind) : null,
+    progressRow: needsProgressMetrics ? await measureProgressRow(page, kind) : null,
+    progressLabels: needsProgressMetrics ? await measureProgressLabelLines(page, kind) : null,
+    progressTextLayout: needsProgressMetrics ? await measureProgressTextLayout(page, kind) : null,
+    mobileCard:
+      (isData || isAuthProviders) && isMobileEntry ? await measureMobileEntryCard(page, kind) : null,
+    formFooterRow: isData && width === 375 ? await measureFormFooterRow(page) : null,
     cityField: step === "data-city" ? await measureCityFieldFocus(page) : null,
     authTitle:
       isAuthProviders && width === 320 ? await measureAuthProvidersTitle(page, kind) : null,
@@ -802,6 +959,7 @@ async function main() {
   const captures = [];
   const pairs = [];
   const parityFailures = [];
+  const documentedExceptions = [];
 
   const typeMatrix = [
     { theme: "light", width: 1440, suffix: "1440-light" },
@@ -879,6 +1037,7 @@ async function main() {
     const refFile = `ref-${step}-${suffix}.png`;
     const implFile = `impl-${step}-${suffix}.png`;
     let refEntryMetrics = null;
+    let implEntryMetrics = null;
     {
       const context = await browser.newContext();
       const page = await context.newPage();
@@ -911,16 +1070,35 @@ async function main() {
       await hideDevChrome(page);
       await page.waitForSelector('[data-testid="registration-types-grid"] label', { timeout: 30_000 });
       await openImplAgentStep(page, step);
-      const implCssMetrics = await collectEntryStepMetrics(page, step, width, "implementation");
+      implEntryMetrics = await collectEntryStepMetrics(page, step, width, "implementation");
       parityFailures.push(
         ...assertRegistrationCssGates({
           step,
           theme,
           width,
           refMetrics: refEntryMetrics,
-          implMetrics: implCssMetrics,
+          implMetrics: implEntryMetrics,
         }),
       );
+      if (
+        step === "data-name" &&
+        width === 1440 &&
+        refEntryMetrics?.formGeometry?.shell &&
+        implEntryMetrics?.formGeometry?.shell
+      ) {
+        const dy = Math.abs(
+          refEntryMetrics.formGeometry.shell.y - implEntryMetrics.formGeometry.shell.y,
+        );
+        if (dy > 6) {
+          documentedExceptions.push({
+            kind: "shellTopOffsetVsPrototypeHeader",
+            refY: refEntryMetrics.formGeometry.shell.y,
+            implY: implEntryMetrics.formGeometry.shell.y,
+            deltaPx: dy,
+            note: "Absolute shell Y includes app header vs prototype topbar; grid.relY still gated ref vs impl.",
+          });
+        }
+      }
       captures.push(
         await captureRecord(page, implFile, width, theme, step, "implementation", async (p) => {
           if (step.startsWith("data")) {
@@ -930,7 +1108,7 @@ async function main() {
           } else {
             await p.waitForSelector('[data-testid="registration-entry-auth-code"]');
           }
-        }, implCssMetrics),
+        }, implEntryMetrics),
       );
       pairs.push({ pair: `${step}-${suffix}`, ref: refFile, impl: implFile });
       await context.close();
@@ -1050,6 +1228,7 @@ async function main() {
     pairs,
     captures,
     layoutParityFailures: parityFailures,
+    documentedExceptions,
     typesGridGeometryStatus:
       parityFailures.filter((f) => f.includes("grid") || f.includes("progress")).length === 0
         ? "within-tolerance"

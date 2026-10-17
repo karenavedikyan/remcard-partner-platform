@@ -20,6 +20,13 @@
   box-sizing: border-box;
 }
 
+@media (max-width: 760px) {
+  .dataRegistration,
+  .entryFlowPage {
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
+}
+
 /* Types step only — matches frozen prototype .registration / .role-grid (not wizard width). */
 .typesRegistration {
   max-width: 1140px;
@@ -459,24 +466,25 @@
 
 @media (max-width: 760px) {
   .entryProgress.entryProgressDataRegistration {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    justify-content: unset;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
     gap: var(--space-3);
     max-width: none;
     margin-bottom: var(--space-6);
     font-size: var(--text-xs);
+    width: 100%;
   }
 
   .entryProgress.entryProgressDataRegistration li {
-    flex: unset;
+    flex: 0 1 auto;
     min-width: 0;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: var(--space-1);
-    white-space: nowrap;
-    line-height: 1.15;
+    white-space: normal;
+    line-height: 1.2;
     font-size: var(--text-xs);
   }
 

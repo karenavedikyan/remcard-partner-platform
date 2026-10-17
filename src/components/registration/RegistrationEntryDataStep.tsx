@@ -105,11 +105,9 @@ export function RegistrationEntryDataStep({
             <p id="entry-data-help" className={entryStyles.fieldHelp}>
               {copy.help}
             </p>
-            {error ? (
-              <p id="entry-data-error" className={entryStyles.fieldHelp} role="alert" style={{ color: "var(--danger)" }}>
-                {error}
-              </p>
-            ) : null}
+            <p id="entry-data-error" className={entryStyles.fieldError} role="alert">
+              {error ?? ""}
+            </p>
             <div className={entryStyles.formFooter}>
               <Button type="button" variant="secondary" onClick={onBack}>
                 Назад
