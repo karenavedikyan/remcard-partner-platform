@@ -478,13 +478,13 @@
 
   .entryProgress.entryProgressDataRegistration li {
     flex: 0 1 auto;
-    min-width: 0;
+    min-width: auto;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: var(--space-1);
     white-space: normal;
-    line-height: 1.2;
+    line-height: 1.6;
     font-size: var(--text-xs);
   }
 
@@ -515,6 +515,17 @@
   .entryProgress.entryProgressTypesRegistration li > span {
     width: 28px;
     height: 28px;
+  }
+}
+
+@media (max-width: 360px) {
+  .entryProgress.entryProgressDataRegistration {
+    justify-content: flex-start;
+  }
+
+  /* Ref @320: 12px label gaps with wider space before «Подтверждение» (space-5). */
+  .entryProgress.entryProgressDataRegistration li:nth-child(3) {
+    margin-inline-start: calc(var(--space-5) - var(--space-3));
   }
 }
 
