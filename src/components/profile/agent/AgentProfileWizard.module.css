@@ -547,6 +547,27 @@
   gap: var(--pw-5);
 }
 
+.summaryFactsCompact {
+  margin: var(--pw-4) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--pw-4);
+}
+
+.summaryMore {
+  margin-top: var(--pw-4);
+  font-size: var(--pw-sm);
+}
+
+.summaryMore summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--pw-muted);
+  font-weight: 600;
+}
+
 .summaryFacts dt {
   color: var(--pw-muted);
   font-size: var(--pw-xs);
@@ -588,10 +609,10 @@
 }
 
 .summaryAfter {
-  margin-top: var(--pw-6);
+  margin-top: var(--pw-5);
   padding: var(--pw-5);
   border: 1px solid var(--pw-line);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--pw-soft);
   display: flex;
   flex-wrap: wrap;

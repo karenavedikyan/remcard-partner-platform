@@ -19,6 +19,15 @@ function catalogRoot(page) {
   return page.locator('[data-testid="specialist-catalog-wizard"]');
 }
 
+/** R06.3 B: stages live in a collapsed `<details>` on catalog + working profile steps. */
+async function openImplAdvancedDirections(root) {
+  const details = root.locator('[data-testid="direction-advanced-collapse"]');
+  if ((await details.count()) === 0) return;
+  const open = await details.evaluate((el) => el.open);
+  if (!open) await details.locator('summary').click();
+  await details.locator('fieldset').first().waitFor({ state: 'visible', timeout: 15_000 });
+}
+
 export async function fillImplCatalogCard(page, fixture = R06_PREVIEW_FIXTURE) {
   const root = catalogRoot(page);
   await root.locator('#sc-public-name').fill(fixture.publicName);
@@ -51,6 +60,7 @@ export async function selectImplCatalogDirections(page, fixture = R06_PREVIEW_FI
     if (!(await cb.isChecked())) await cb.check();
     if (!(await cb.isChecked())) throw new Error(`impl_service_not_checked:${label}`);
   }
+  await openImplAdvancedDirections(root);
   const stagesGroup = root.getByRole('group', { name: /На каких этапах/i });
   await stagesGroup.waitFor({ state: 'visible', timeout: 30_000 });
   for (const label of fixture.stageImplLabels) {

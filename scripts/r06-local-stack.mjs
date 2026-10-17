@@ -56,6 +56,11 @@ function spawnStart(cwd, port, extra, envPath) {
 
 function killPort(port) {
   try {
+    execSync(`pkill -f "next dev -p ${port}" 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+  try {
     execSync(`pkill -f "next start -p ${port}" 2>/dev/null || true`, { stdio: 'ignore' });
   } catch {
     /* ignore */

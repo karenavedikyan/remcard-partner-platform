@@ -37,6 +37,24 @@
   --cw-tint: #3c272b;
 }
 
+.introCard {
+  border: 1px solid var(--cw-line);
+  border-radius: 12px;
+  background: var(--cw-bg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 24px #00000008;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.introLead {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--cw-muted);
+  max-width: 52rem;
+}
+
 .heading {
   display: flex;
   flex-wrap: wrap;
@@ -141,30 +159,28 @@
   color: var(--cw-muted);
 }
 
-.footer {
+.stepActions {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.25rem 0;
+}
+
+.stepActionsLabel {
+  margin-right: auto;
+  font-size: 0.875rem;
+  color: var(--cw-muted);
+}
+
+.catalogFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 0 0;
   border-top: 1px solid var(--cw-line);
-}
-
-.footerDraft {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  align-items: center;
-}
-
-.footerNav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  align-items: center;
-  margin-left: auto;
 }
 
 .btnGhost {

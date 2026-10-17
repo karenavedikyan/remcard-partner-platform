@@ -1,11 +1,11 @@
 {
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceGitSha": "771cc658a415a5d05b964f29f675d32db449198b",
-  "codeSha": "c89cea48766c0c8149122075da4251be7eeb4969",
-  "captureSha": "c89cea48766c0c8149122075da4251be7eeb4969",
-  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
-  "platformSha": "c89cea48766c0c8149122075da4251be7eeb4969",
-  "runDir": "/tmp/r06-r063-final",
+  "codeSha": "afea396c2d68817301756eaa521b9c8ea832c605",
+  "captureSha": "afea396c2d68817301756eaa521b9c8ea832c605",
+  "navigatorSha": "98749816d0fa4f1722aac0c53e1e10b68ca3bdac",
+  "platformSha": "f898f2727e0333701d8ae314d42208f018792dae",
+  "runDir": "/tmp/r06-local-stack",
   "matchedPairCount": 13,
   "implOnlySmokeCount": 1,
   "pairs": [

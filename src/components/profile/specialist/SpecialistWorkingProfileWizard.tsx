@@ -231,6 +231,34 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
 
   if (!editing && profileComplete) {
     const name = savedProfile.displayName?.trim() || "—";
+    const factRows: { label: string; value: string }[] = [
+      {
+        label: "Телефон",
+        value: savedProfile.partnershipContactPhone?.trim()
+          ? formatPhoneForDisplay(savedProfile.partnershipContactPhone)
+          : "",
+      },
+      { label: "Email", value: savedProfile.partnershipContactEmail?.trim() ?? "" },
+      {
+        label: "Специализация",
+        value:
+          specialistKindDisplayLabel(
+            savedProfile.specialistKind,
+            savedProfile.specialistTitle,
+          ) || "",
+      },
+      {
+        label: "Формат работы",
+        value:
+          WORK_MODES.find((m) => m.value === (savedProfile.partnerWorkMode ?? ""))?.label ?? "",
+      },
+      { label: "Сайт", value: savedProfile.publicSite?.trim() ?? "" },
+      { label: "Telegram", value: savedProfile.publicTelegram?.trim() ?? "" },
+      { label: "Территория", value: savedProfile.areas?.trim() ?? "" },
+    ];
+    const filledFacts = factRows.filter((row) => row.value.trim());
+    const emptyFacts = factRows.filter((row) => !row.value.trim());
+
     return (
       <div className={styles.pw} data-testid="specialist-profile-completed-summary">
         <section className={styles.summary}>
@@ -248,56 +276,16 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               {banner.text}
             </p>
           ) : null}
-          <dl className={styles.summaryFacts}>
-            <div>
-              <dt>Телефон</dt>
-              <dd>
-                {savedProfile.partnershipContactPhone?.trim()
-                  ? formatPhoneForDisplay(savedProfile.partnershipContactPhone)
-                  : "Не указано"}
-              </dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{displayOrEmpty(savedProfile.partnershipContactEmail)}</dd>
-            </div>
-            <div>
-              <dt>Специализация</dt>
-              <dd>
-                {specialistKindDisplayLabel(
-                  savedProfile.specialistKind,
-                  savedProfile.specialistTitle,
-                ) || "Не указано"}
-              </dd>
-            </div>
-            <div>
-              <dt>Формат работы</dt>
-              <dd>
-                {WORK_MODES.find((m) => m.value === (savedProfile.partnerWorkMode ?? ""))?.label ??
-                  "Не указано"}
-              </dd>
-            </div>
-            <div>
-              <dt>Сайт</dt>
-              <dd>{displayOrEmpty(savedProfile.publicSite)}</dd>
-            </div>
-            <div>
-              <dt>Telegram</dt>
-              <dd>{displayOrEmpty(savedProfile.publicTelegram)}</dd>
-            </div>
-            <div>
-              <dt>Территория</dt>
-              <dd>{displayOrEmpty(savedProfile.areas)}</dd>
-            </div>
-            <div>
-              <dt>Услуги</dt>
-              <dd>{specialistIdListDisplay(savedProfile.serviceSpecializationIds) || "Не указано"}</dd>
-            </div>
-            <div>
-              <dt>Этапы</dt>
-              <dd>{specialistIdListDisplay(savedProfile.navigatorStageIds) || "Не указано"}</dd>
-            </div>
-          </dl>
+          {filledFacts.length > 0 ? (
+            <dl className={styles.summaryFactsCompact}>
+              {filledFacts.map((row) => (
+                <div key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
           {(savedProfile.serviceSpecializationIds?.length ||
             savedProfile.navigatorStageIds?.length) ? (
             <div className={styles.summaryPicked} aria-label="Выбранные направления">
@@ -312,6 +300,19 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 </span>
               ))}
             </div>
+          ) : null}
+          {emptyFacts.length > 0 ? (
+            <details className={styles.summaryMore}>
+              <summary>Дополнительные сведения ({emptyFacts.length} не заполнено)</summary>
+              <dl className={styles.summaryFactsCompact}>
+                {emptyFacts.map((row) => (
+                  <div key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>Не указано</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
           ) : null}
           <div className={styles.summaryActions}>
             <button
@@ -340,18 +341,22 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               Редактировать профиль
             </button>
           </div>
-          <section className={styles.summaryAfter} aria-label="Каталог RemCard">
-            <div>
-              <h3>Хотите появиться в каталоге?</h3>
-              <p>
-                Публикация добровольна. Публичную карточку можно подготовить отдельно — это не
-                меняет рабочий профиль.
-              </p>
-            </div>
-            <Link href="/profile?section=catalog" className={`${styles.btn} ${styles.btnPrimary}`}>
-              Перейти к каталогу
-            </Link>
-          </section>
+        </section>
+        <section
+          className={styles.summaryAfter}
+          aria-label="Каталог RemCard"
+          data-testid="specialist-catalog-cta"
+        >
+          <div>
+            <h3>Хотите появиться в каталоге?</h3>
+            <p>
+              Публикация добровольна. Публичную карточку можно подготовить отдельно — это не
+              меняет рабочий профиль.
+            </p>
+          </div>
+          <Link href="/profile?section=catalog" className={`${styles.btn} ${styles.btnPrimary}`}>
+            Перейти к каталогу
+          </Link>
         </section>
       </div>
     );
@@ -502,6 +507,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   specialistMode
                   compactSpecialistGrid={false}
                   tileLayout
+                  collapseAdvancedDirections
                   productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
                   navigatorStageIds={draft.navigatorStageIds ?? []}

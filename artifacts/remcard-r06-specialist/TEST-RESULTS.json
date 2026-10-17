@@ -1,8 +1,8 @@
 {
   "ok": true,
   "gate": "on",
-  "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
-  "platformSha": "c89cea48766c0c8149122075da4251be7eeb4969",
+  "navigatorSha": "98749816d0fa4f1722aac0c53e1e10b68ca3bdac",
+  "platformSha": "f898f2727e0333701d8ae314d42208f018792dae",
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "steps": {
     "migrationControlled": {

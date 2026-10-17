@@ -135,6 +135,32 @@ async function assertWizardButtonVisibleStyled(page, button, { primary = false }
 async function assertCatalogStep0Chrome(page) {
   const root = page.locator('[data-testid="specialist-catalog-wizard"]');
   await root.waitFor({ state: 'visible', timeout: 30_000 });
+  await root.locator('[data-testid="catalog-intro-card"]').waitFor({ state: 'visible' });
+  await root.locator('[data-testid="catalog-step-actions"]').waitFor({ state: 'visible' });
+  await root.locator('[data-testid="catalog-footer-bar"]').waitFor({ state: 'visible' });
+  const zones = await page.evaluate(() => {
+    const intro = document.querySelector('[data-testid="catalog-intro-card"]');
+    const card = document.querySelector('[data-testid="catalog-step-card"]');
+    const actions = document.querySelector('[data-testid="catalog-step-actions"]');
+    const footer = document.querySelector('[data-testid="catalog-footer-bar"]');
+    if (!intro || !card || !actions || !footer) return null;
+    const ir = intro.getBoundingClientRect();
+    const cr = card.getBoundingClientRect();
+    const ar = actions.getBoundingClientRect();
+    const fr = footer.getBoundingClientRect();
+    return {
+      introPadding: parseFloat(getComputedStyle(intro).paddingLeft),
+      gapIntroCard: cr.top - ir.bottom,
+      gapCardActions: ar.top - cr.bottom,
+      gapActionsFooter: fr.top - ar.bottom,
+      footerInsideCard: card.contains(footer),
+    };
+  });
+  if (!zones || zones.footerInsideCard) throw new Error('catalog_footer_inside_step_card');
+  if (zones.introPadding < 12) throw new Error(`catalog_intro_padding:${zones.introPadding}`);
+  if (zones.gapIntroCard < 8 || zones.gapCardActions < 8) {
+    throw new Error(`catalog_zone_gaps:${JSON.stringify(zones)}`);
+  }
   const input = root.locator('#sc-public-name');
   await input.waitFor({ state: 'visible' });
   const inputStyle = await input.evaluate((el) => {

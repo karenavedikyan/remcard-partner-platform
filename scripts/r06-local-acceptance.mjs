@@ -65,7 +65,7 @@ async function main() {
       'src/components/profile/specialist/SpecialistCatalogSection.test.tsx',
     ],
     ROOT,
-    env,
+    { ...env, NODE_ENV: 'test' },
   );
   const browserBff = run(['node', 'scripts/r06-browser-bff.mjs'], ROOT, {
     ...env,
@@ -76,11 +76,15 @@ async function main() {
     R06_RUN_DIR: runDir,
   });
 
+  const navigatorSha = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: NAV_ROOT, encoding: 'utf8' })
+    .stdout?.trim();
+  const platformSha = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout?.trim();
+
   const report = {
     ok: false,
     gate: meta.gateEnabled !== false ? 'on' : 'off',
-    navigatorSha: meta.navigatorSha,
-    platformSha: meta.platformSha,
+    navigatorSha: navigatorSha || meta.navigatorSha,
+    platformSha: platformSha || meta.platformSha,
     referenceSha: '771cc658a415a5d05b964f29f675d32db449198b',
     steps: {
       migrationControlled: { exitCode: migration.exitCode, stdout: migration.stdout.slice(0, 500) },

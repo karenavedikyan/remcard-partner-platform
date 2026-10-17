@@ -21,6 +21,8 @@ type ProfileDirectionsPickerProps = {
   compactSpecialistGrid?: boolean;
   /** Ref-like direction tiles (working profile specialization). */
   tileLayout?: boolean;
+  /** Stages (+ primary when not catalog) in a collapsible block. */
+  collapseAdvancedDirections?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -43,6 +45,21 @@ function matchesFilter(item: PartnerTaxonomyItem, q: string): boolean {
   return item.label.toLowerCase().includes(needle) || item.id.toLowerCase().includes(needle);
 }
 
+function orderedVisibleItems(
+  all: PartnerTaxonomyItem[],
+  selectedIds: string[],
+  q: string,
+): PartnerTaxonomyItem[] {
+  const selected = selectedIds
+    .map((id) => all.find((item) => item.id === id))
+    .filter((item): item is PartnerTaxonomyItem => Boolean(item));
+  const selectedSet = new Set(selectedIds);
+  const rest = all.filter(
+    (item) => !selectedSet.has(item.id) && matchesFilter(item, q),
+  );
+  return [...selected, ...rest];
+}
+
 export function ProfileDirectionsPicker({
   productCategoryIds,
   serviceSpecializationIds,
@@ -53,6 +70,7 @@ export function ProfileDirectionsPicker({
   specialistMode,
   compactSpecialistGrid = true,
   tileLayout = false,
+  collapseAdvancedDirections = false,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -285,7 +303,7 @@ export function ProfileDirectionsPicker({
         </div>
       ) : null}
 
-      {filtered ? (
+      {fullTaxonomy && filtered ? (
         <>
           {!specialistMode ? (
           <fieldset className={styles.group} disabled={disabled}>
@@ -294,7 +312,7 @@ export function ProfileDirectionsPicker({
               {filtered.products.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Товары».</p>
               ) : (
-                filtered.products.map((item) => (
+                orderedVisibleItems(fullTaxonomy.products, productCategoryIds, filter.trim()).map((item) => (
                   <label key={item.id} className={styles.checkRow}>
                     <input
                       type="checkbox"
@@ -319,10 +337,11 @@ export function ProfileDirectionsPicker({
           >
             <legend>Работы и услуги</legend>
             <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
-              {filtered.services.length === 0 ? (
+              {orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim())
+                .length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
               ) : (
-                filtered.services.map((item) => {
+                orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim()).map((item) => {
                   const checked = serviceSpecializationIds.includes(item.id);
                   const rowClass = tileLayout
                     ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
@@ -348,35 +367,20 @@ export function ProfileDirectionsPicker({
         </>
       ) : null}
 
-      {!catalogMode && primaryOptions.length > 0 ? (
-        <label className={styles.primary}>
-          <span>Основное направление</span>
-          <select
+      {(() => {
+        const stageBlock = !catalogMode || specialistMode ? (
+          <fieldset
+            className={tileLayout ? styles.tileFieldset : styles.group}
             disabled={disabled}
-            value={primaryValue}
-            onChange={(e) => handlePrimaryChange(e.target.value)}
           >
-            <option value="">Без основного</option>
-            {primaryOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-
-      {!catalogMode || specialistMode ? (
-        <fieldset
-          className={tileLayout ? styles.tileFieldset : styles.group}
-          disabled={disabled}
-        >
-          <legend>На каких этапах вы полезны</legend>
-          <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
-          <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
-            {(fullTaxonomy?.stages ?? [])
-              .filter((item) => matchesFilter(item, filter.trim()))
-              .map((item) => {
+            <legend>На каких этапах вы полезны</legend>
+            <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
+            <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
+              {orderedVisibleItems(
+                fullTaxonomy?.stages ?? [],
+                navigatorStageIds,
+                filter.trim(),
+              ).map((item) => {
                 const checked = navigatorStageIds.includes(item.id);
                 const rowClass = tileLayout
                   ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
@@ -392,9 +396,53 @@ export function ProfileDirectionsPicker({
                   </label>
                 );
               })}
-          </div>
-        </fieldset>
-      ) : null}
+            </div>
+          </fieldset>
+        ) : null;
+
+        const primaryBlock =
+          !catalogMode && primaryOptions.length > 0 ? (
+            <label className={styles.primary}>
+              <span>Основное направление</span>
+              <select
+                disabled={disabled}
+                value={primaryValue}
+                onChange={(e) => handlePrimaryChange(e.target.value)}
+              >
+                <option value="">Без основного</option>
+                {primaryOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null;
+
+        if (!stageBlock && !primaryBlock) return null;
+
+        if (collapseAdvancedDirections) {
+          return (
+            <details
+              className={styles.advancedCollapse}
+              data-testid="direction-advanced-collapse"
+            >
+              <summary>Этапы ремонта и основное направление</summary>
+              <div className={styles.advancedInner}>
+                {stageBlock}
+                {primaryBlock}
+              </div>
+            </details>
+          );
+        }
+
+        return (
+          <>
+            {primaryBlock}
+            {stageBlock}
+          </>
+        );
+      })()}
     </div>
   );
 }

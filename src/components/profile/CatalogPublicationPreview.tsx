@@ -74,6 +74,7 @@ function SpecialistCatalogPublicationPreview({
       <span className={styles.pill}>Предпросмотр · не опубликовано</span>
       <div className={styles.header}>
         <CatalogCategoryAvatar
+          size="compact"
           imageUrl={model.imageUrl}
           categories={model.categoriesForAvatar}
           partnerType={model.partnerType}

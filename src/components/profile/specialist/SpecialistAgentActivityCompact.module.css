@@ -1,0 +1,48 @@
+.root {
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line, #dce0e3);
+  border-radius: 10px;
+  background: var(--offset, #f6f7f8);
+  font-size: 0.875rem;
+}
+
+.root summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.root summary::-webkit-details-marker {
+  display: none;
+}
+
+.hint {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--muted, #656970);
+  line-height: 1.45;
+}
+
+.error {
+  margin: 0 0 0.5rem;
+  color: var(--danger, #b52a2e);
+}
+
+.btn {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--line, #dce0e3);
+  background: var(--surface, #fff);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

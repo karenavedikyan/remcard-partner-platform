@@ -55,6 +55,7 @@ import { AgentProfileSection } from "./agent/AgentProfileSection";
 import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
+import { SpecialistAgentActivityCompact } from "./specialist/SpecialistAgentActivityCompact";
 import {
   mergeCatalogPrefill,
   parseCatalogTouched,
@@ -745,6 +746,26 @@ function ProfileEditorInner({
 
         {activeSection === "basics" && !agentNavPending ? (
         <>
+        {specialistR06Ui ? (
+          <>
+            <SpecialistProfileSection onWorkingProfileSaved={applyProfile} />
+            {partnerActivities.includes("AGENT") ? (
+              <AgentProfileSection
+                userId={profile.user.id}
+                partnerActivities={partnerActivities}
+                basicsEditable={basicsEditable}
+                onActivitiesChange={setPartnerActivities}
+                layout="default"
+              />
+            ) : (
+              <SpecialistAgentActivityCompact
+                basicsEditable={basicsEditable}
+                onActivitiesChange={setPartnerActivities}
+              />
+            )}
+          </>
+        ) : (
+          <>
         <AgentProfileSection
           userId={profile.user.id}
           partnerActivities={partnerActivities}
@@ -755,10 +776,7 @@ function ProfileEditorInner({
             pureAgentCompactUi ? () => navigateSection("overview") : undefined
           }
         />
-        {specialistR06Ui ? (
-          <SpecialistProfileSection onWorkingProfileSaved={applyProfile} />
-        ) : null}
-        {!pureAgentCompactUi && !specialistR06Ui ? (
+        {!pureAgentCompactUi ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
           <div className={styles.statusRow}>
@@ -965,6 +983,8 @@ function ProfileEditorInner({
           </div>
         </form>
         ) : null}
+        </>
+        )}
         </>
         ) : null}
 

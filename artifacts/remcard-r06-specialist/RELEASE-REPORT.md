@@ -20,30 +20,40 @@
 
 Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scripts/lib/prof-r06-controlled-apply.mjs` (ledger SQL apply, before/apply/after, pinned checksums both migrations, loopback DB guard). **Not** `prisma db push` as apply.
 
-## R06.3 FINAL VISUAL — evidence refresh (not publication GO)
+## R06.3 — THREE VISUAL GROUPS A/B/C (post-`afea396`, not publication GO)
 
-Specialist UI parity vs ref `771cc658…` at **`41a1306`** (tiles/chips/footer, catalog step 0, preview, pending amber, completed summary). Harness/stack **`3a67e14`**. **Legacy preview regression fix **`c89cea4`**: `CatalogPublicationPreview` default restores Товары/legacy tags; `variant="specialist"` only from specialist wizard/pending + scoped CSS.
+Owner scope after accepted **`afea396`** / runtime **`c89cea4`**: composition-only pass vs frozen ref **`771cc658…`**. Mapping: `artifacts/remcard-r06-specialist/R06-ABC-VISUAL-MAPPING.md`. **Legacy default preview + pending/409/draft unchanged.** **Taxonomy auto-add:** still out of scope (no new button).
 
-**Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-final`, ports 3055/3056, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`.
+| Group | Done |
+|-------|------|
+| **A** Catalog + preview | Intro card (`catalog-intro-card`); step card vs step actions vs footer bar; specialist preview compact avatar; legacy preview CSS untouched |
+| **B** Specialization | Selected services/stages first; `direction-advanced-collapse`; runner opens collapse for stage picks |
+| **C** Completed | No agent promo banner; `specialist-agent-activity-compact`; compact summary + `summaryMore`; catalog CTA outside summary card |
 
-| SHA role | Value |
-|----------|--------|
-| runtime / runner / full acceptance / capture | `c89cea4` |
-| specialist UI (incl. preview variant) | `41a1306` + `c89cea4` |
-| docs-only tip (prior artifacts) | `a47c9bf` |
-| navigator (unchanged) | `04613f09` |
+**Commands (2026-10-17, `R06_RUN_DIR=/tmp/r06-local-stack`, ports 3033/3034 prod stack):**
 
-**Visual manifest:** **13 matched impl/ref pairs + 1 impl-only smoke (320px)** — `artifacts/remcard-r06-specialist/screenshots/manifest.json`. **CAPTURED ≠ visual PASS.**
+| Command | Exit |
+|---------|------|
+| `npm run build` | 0 |
+| `NODE_ENV=test npm run test:component -- --run ProfileDirectionsPicker CatalogPublicationPreview SpecialistCatalog SpecialistWorking` | 0 (11 tests) |
+| `NODE_ENV=test node scripts/r06-local-acceptance.mjs` | 0 |
 
-1. **Specialization:** tile grid + selected box (Услуга/Этап), `btn`+`btnPrimary` on Далее/Завершить; draft reset in runner between captures.
-2. **Catalog step 0:** intro card, single publication badge, revert local edits, avatar only on styling step.
-3. **Preview:** separate Услуга/Этап chips, formatted phone; strict fixture asserts (not city-only).
-4. **Pending:** horizontal progress desktop, amber wait, soft next-steps block, secondary back; real PENDING submit in runner.
-5. **Completed:** prefixed chips, catalog CTA block; no demo banner.
+**SHA roles (do not conflate with prior full acceptance at `afea396`):**
 
-**Migration negatives:** unchanged on navigator **`04613f09`** (not re-run scope unless backend edits).
+| Role | SHA |
+|------|-----|
+| Prior docs/full acceptance tip | `afea396` |
+| Legacy preview isolation (unchanged this pass) | `c89cea4` |
+| Navigator pinned | `04613f09` |
+| A/B/C platform runtime + capture | see `screenshots/manifest.json` `codeSha` / `captureSha` |
 
-Prior tail (e23b2f5 / 7-pair set) superseded by this capture set at **`3a67e14`**.
+**Visual set:** 13 matched impl/ref + 320 smoke — `artifacts/remcard-r06-specialist/screenshots/`. Recaptured for A/B/C: `profile-catalog-wizard*`, `profile-catalog-preview*`, `profile-specialization-step*`, `profile-completed-summary*`, smoke. Pending triple **smoke only** (composition unchanged). **CAPTURED ≠ visual PASS** (no % score).
+
+## R06.3 FINAL VISUAL — prior evidence (`afea396` / `c89cea4`)
+
+Specialist UI parity vs ref at **`41a1306`**. Harness/stack **`3a67e14`**. Legacy preview fix **`c89cea4`**.
+
+**Migration negatives:** unchanged on navigator **`04613f09`** (not re-run unless backend edits).
 
 ## R06.3 acceptance blockers — prior pass
 
