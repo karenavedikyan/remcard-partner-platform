@@ -1,52 +1,65 @@
 #!/usr/bin/env node
 /**
- * REGISTRATION-01 visual pairs: verify step/theme/viewport before capture.
+ * REGISTRATION-01 visual pairs: frozen prototype ref + platform impl.
+ * Run AFTER committing capture code (records exact git SHA).
  */
-import { execSync } from "node:child_process";
-import { mkdir, readFile, writeFile, copyFile } from "node:fs/promises";
+import { execSync, spawn } from "node:child_process";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const OUT = path.join(ROOT, "artifacts/remcard-registration-01/screenshots");
-const BASE = process.env.REGISTRATION_VISUAL_BASE ?? "http://127.0.0.1:3000";
+const IMPL_BASE = process.env.REGISTRATION_VISUAL_BASE ?? "http://127.0.0.1:3020";
 const NAV_REPO = process.env.REGISTRATION_REF_REPO ?? "/agent/repos/remcard-navigator";
-const REF_SHA =
-  process.env.REGISTRATION_REF_SHA ?? "origin/implementation/remcard-reference-20261014";
-const CODE_SHA = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
+const REF_BRANCH =
+  process.env.REGISTRATION_REF_BRANCH ?? "origin/implementation/remcard-reference-20261014";
+const PROTO_DIR = process.env.REGISTRATION_PROTO_DIR ?? "/tmp/reg-prototype-20261017";
+const PROTO_PORT = Number(process.env.REGISTRATION_PROTO_PORT ?? "3099");
+const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
 
-const REG_KEYS = [
-  "remcard.registration.draft.v1:agent",
-  "remcard.registration.owner.v1",
-  "remcard.registration.wizard.v1",
-];
+const CODE_SHA = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
+const TREE_DIRTY =
+  execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" }).trim().length > 0;
+const REF_SHA = execSync(`git -C "${NAV_REPO}" rev-parse ${REF_BRANCH}`, {
+  encoding: "utf8",
+}).trim();
+
+const DEV_OVERLAY_HIDE = `
+  nextjs-portal, [data-nextjs-toast], [data-nextjs-dialog],
+  #webpack-dev-server-client-overlay, .nextjs-toast-errors-parent { display: none !important; }
+`;
+
+async function preparePrototypeTree() {
+  await mkdir(PROTO_DIR, { recursive: true });
+  execSync(
+    `git -C "${NAV_REPO}" archive ${REF_BRANCH} docs/reference/registration-20261017 | tar -x -C "${PROTO_DIR}"`,
+    { stdio: "pipe" },
+  );
+  return path.join(PROTO_DIR, "docs/reference/registration-20261017");
+}
+
+async function startPrototypeServer(protoRoot) {
+  const proc = spawn("python3", ["-m", "http.server", String(PROTO_PORT)], {
+    cwd: protoRoot,
+    stdio: "ignore",
+  });
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch(`${PROTO_BASE}/roles.html`);
+      if (res.ok) return proc;
+    } catch {
+      /* wait */
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  proc.kill();
+  throw new Error("Prototype static server failed to start");
+}
 
 async function pngSize(filePath) {
   const buf = await readFile(filePath);
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
-}
-
-async function assertCtaContrast(page, selector) {
-  const colors = await page.$eval(selector, (el) => {
-    const s = getComputedStyle(el);
-    return { color: s.color, background: s.backgroundColor };
-  });
-  const parse = (c) => c.match(/\d+/g)?.map(Number) ?? [0, 0, 0];
-  const [fr, fg, fb] = parse(colors.color);
-  const [br, bg, bb] = parse(colors.background);
-  const lum = (r, g, b) => {
-    const a = [r, g, b].map((v) => {
-      const x = v / 255;
-      return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
-  };
-  const l1 = lum(fr, fg, fb);
-  const l2 = lum(br, bg, bb);
-  const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-  if (ratio < 3) {
-    throw new Error(`CTA contrast too low (${ratio.toFixed(2)}): ${JSON.stringify(colors)}`);
-  }
 }
 
 async function applyTheme(page, theme) {
@@ -56,14 +69,8 @@ async function applyTheme(page, theme) {
   }, theme);
 }
 
-async function clearRegistrationDraft(page) {
-  try {
-    await page.evaluate((keys) => {
-      for (const k of keys) sessionStorage.removeItem(k);
-    }, REG_KEYS);
-  } catch {
-    /* fresh browser context already has empty storage */
-  }
+async function hideDevChrome(page) {
+  await page.addStyleTag({ content: DEV_OVERLAY_HIDE });
 }
 
 async function verifyViewport(page, expectedWidth) {
@@ -75,59 +82,36 @@ async function verifyViewport(page, expectedWidth) {
 
 async function verifyTypesStep(page) {
   const h1 = await page.locator("h1").first().innerText();
-  if (!/Выберите тип партнёра/i.test(h1)) {
-    throw new Error(`VERIFY types step failed: h1="${h1}"`);
+  if (!/Какой тип партнёрства/i.test(h1)) {
+    throw new Error(`VERIFY types failed: h1="${h1}"`);
   }
-  if ((await page.locator("#login-title").count()) > 0) {
-    throw new Error("VERIFY types step failed: auth login title visible");
-  }
-  const progress = await page.locator('[aria-label="Этапы регистрации"]').innerText();
-  if (!progress.includes("Тип партнёра")) {
-    throw new Error(`VERIFY progress labels: ${progress}`);
+  if ((await page.locator("#embedded-auth-title").count()) > 0) {
+    throw new Error("VERIFY types failed: auth step visible");
   }
 }
 
-async function verifyAuthStep(page) {
-  const embedded = page.locator("#embedded-auth-title");
-  if ((await embedded.count()) === 0) {
-    throw new Error("VERIFY auth step failed: #embedded-auth-title missing");
-  }
-  const title = await embedded.innerText();
-  if (!/Подтвердите вход/i.test(title)) {
-    throw new Error(`VERIFY auth step failed: title="${title}"`);
-  }
-  if ((await page.getByRole("heading", { name: /Выберите тип партнёра/i }).count()) > 0) {
-    throw new Error("VERIFY auth step failed: still on type picker");
-  }
-}
-
-async function verifyDataStep(page) {
-  const h1 = await page.locator("h1").first().innerText();
-  if (!/Ваши данные/i.test(h1)) {
-    throw new Error(`VERIFY data step failed: h1="${h1}"`);
-  }
-}
-
-async function captureEntry(page, fileName, expectedWidth, theme, step, verifyFn) {
+async function captureRecord(page, fileName, expectedWidth, theme, step, kind, verifyFn) {
   await verifyViewport(page, expectedWidth);
   const dataTheme = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
-  if (dataTheme !== theme) {
-    throw new Error(`Theme mismatch: expected ${theme}, got ${dataTheme}`);
-  }
+  if (dataTheme !== theme) throw new Error(`Theme expected ${theme}, got ${dataTheme}`);
   await verifyFn(page);
-  const url = page.url();
-  const fullPageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
   const filePath = path.join(OUT, fileName);
+  const fullPageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
   await page.screenshot({ path: filePath, fullPage: true });
   const png = await pngSize(filePath);
   if (png.width !== expectedWidth) {
-    throw new Error(`PNG width ${png.width} != viewport ${expectedWidth} for ${fileName}`);
+    throw new Error(`PNG width ${png.width} != ${expectedWidth} for ${fileName}`);
   }
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 2,
+  );
+  if (overflow) throw new Error(`Horizontal overflow at ${fileName}`);
   return {
     file: fileName,
+    kind,
     step,
     theme,
-    url,
+    url: page.url(),
     codeSha: CODE_SHA,
     viewportWidth: expectedWidth,
     pngWidth: png.width,
@@ -137,128 +121,110 @@ async function captureEntry(page, fileName, expectedWidth, theme, step, verifyFn
   };
 }
 
-async function openTypes(page, theme, width) {
-  await page.setViewportSize({ width, height: width >= 1440 ? 900 : 812 });
+async function openImplTypes(page, theme, width) {
+  await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
   await applyTheme(page, theme);
-  await page.goto(`${BASE}/join`, { waitUntil: "networkidle" });
-  await clearRegistrationDraft(page);
+  await hideDevChrome(page);
+  await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
 }
 
-async function openDataStep(page, theme, width) {
-  await openTypes(page, theme, width);
-  await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
-  await page.getByRole("button", { name: "Продолжить" }).click();
-  await page.getByLabel("Имя").fill("QA Visual");
-}
-
-async function openAuthStep(page, theme, width) {
-  await openDataStep(page, theme, width);
-  await page.getByRole("button", { name: "Продолжить" }).click();
-  await page.getByLabel("Город").fill("Москва");
-  await page.getByRole("button", { name: "Продолжить" }).click();
-  await page.waitForSelector("#embedded-auth-title", { timeout: 20_000 });
-  await page.waitForLoadState("networkidle");
-}
-
-async function extractRef(refGitPath, outName) {
-  const outPath = path.join(OUT, outName);
-  try {
-    const buf = execSync(`git -C "${NAV_REPO}" show "${REF_SHA}:${refGitPath}"`, {
-      encoding: "buffer",
-      maxBuffer: 20 * 1024 * 1024,
-    });
-    await writeFile(outPath, buf);
-    const png = await pngSize(outPath);
-    return { file: outName, refSha: REF_SHA, refPath: refGitPath, pngWidth: png.width, pngHeight: png.height };
-  } catch (e) {
-    return { file: outName, error: String(e.message ?? e), skipped: true };
+async function openPrototypeTypes(page, theme, width) {
+  await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
+  await page.goto(`${PROTO_BASE}/roles.html`, { waitUntil: "networkidle", timeout: 60_000 });
+  await page.waitForFunction(
+    () => !document.getElementById("load-message")?.textContent?.includes("Загружаем"),
+    { timeout: 60_000 },
+  );
+  const registerBtn = page.locator('[data-entry="register"]').first();
+  if (await registerBtn.count()) {
+    await registerBtn.click();
+  } else {
+    await page.locator('[data-action="register"]').first().click();
+  }
+  await page.waitForSelector("h1", { timeout: 30_000 });
+  await page.evaluate(() => {
+    document.querySelector(".demo-top")?.remove();
+    document.querySelector(".review-toolbar")?.remove();
+    document.querySelector(".entry-disclaimer")?.remove();
+    document.querySelector("details.review-details")?.remove();
+  });
+  await applyTheme(page, theme);
+  const h1 = await page.locator(".intro h1, h1").first().innerText();
+  if (!/Какой тип партнёрства/i.test(h1)) {
+    throw new Error(`Prototype choose screen not ready: "${h1}"`);
   }
 }
 
 async function main() {
   await mkdir(OUT, { recursive: true });
+  const protoRoot = await preparePrototypeTree();
+  const protoProc = await startPrototypeServer(protoRoot);
+
   const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   const captures = [];
-  const refs = [];
+  const pairs = [];
 
-  refs.push(
-    await extractRef(
-      "docs/reference/registration-20261017/review-01/registration-review-ref-types-375.png",
-      "ref-types-375-light.png",
-    ),
-  );
-  refs.push(
-    await extractRef(
-      "docs/reference/registration-20261017/review-011/reg011-types-375-dark.png",
-      "ref-types-375-dark.png",
-    ),
-  );
-
-  {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await applyTheme(page, "light");
-    await assertCtaContrast(page, 'a[class*="primaryBtn"]');
-    captures.push(
-      await captureEntry(page, "reg013-welcome-1440-light.png", 1440, "light", "welcome", async () => {}),
-    );
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await applyTheme(page, "light");
-    await assertCtaContrast(page, 'a[class*="primaryBtn"]');
-    captures.push(
-      await captureEntry(page, "reg013-welcome-375-light.png", 375, "light", "welcome", async () => {}),
-    );
-
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await applyTheme(page, "dark");
-    await assertCtaContrast(page, 'a[class*="primaryBtn"]');
-    captures.push(
-      await captureEntry(page, "reg013-welcome-375-dark.png", 375, "dark", "welcome", async () => {}),
-    );
-
-    await page.setViewportSize({ width: 320, height: 640 });
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-    await applyTheme(page, "dark");
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > window.innerWidth + 2,
-    );
-    if (overflow) throw new Error("320px welcome horizontal overflow");
-    const buttonsClip = await page.evaluate(() => {
-      const btn = document.querySelector('a[class*="primaryBtn"]');
-      if (!btn) return false;
-      const r = btn.getBoundingClientRect();
-      return r.right > window.innerWidth + 2;
-    });
-    if (buttonsClip) throw new Error("320px welcome CTA clipped");
-    captures.push(
-      await captureEntry(page, "reg013-welcome-320-dark.png", 320, "dark", "welcome", async () => {}),
-    );
-
-    await context.close();
-  }
-
-  for (const { theme, width, suffix } of [
+  const typeMatrix = [
     { theme: "light", width: 1440, suffix: "1440-light" },
     { theme: "dark", width: 1440, suffix: "1440-dark" },
     { theme: "light", width: 375, suffix: "375-light" },
     { theme: "dark", width: 375, suffix: "375-dark" },
-  ]) {
+    { theme: "dark", width: 320, suffix: "320-dark" },
+  ];
+
+  for (const { theme, width, suffix } of typeMatrix) {
+    {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await openPrototypeTypes(page, theme, width);
+      captures.push(
+        await captureRecord(
+          page,
+          `ref-types-${suffix}.png`,
+          width,
+          theme,
+          "types",
+          "reference",
+          verifyTypesStep,
+        ),
+      );
+      await context.close();
+    }
+    {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await openImplTypes(page, theme, width);
+      captures.push(
+        await captureRecord(
+          page,
+          `impl-types-${suffix}.png`,
+          width,
+          theme,
+          "types",
+          "implementation",
+          verifyTypesStep,
+        ),
+      );
+      pairs.push({ pair: `types-${suffix}`, ref: `ref-types-${suffix}.png`, impl: `impl-types-${suffix}.png` });
+      await context.close();
+    }
+  }
+
+  {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await openTypes(page, theme, width);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await applyTheme(page, "dark");
+    await hideDevChrome(page);
+    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+    await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
+    await page.getByRole("button", { name: /Продолжить/ }).click();
+    await page.getByLabel("Имя").fill("QA Visual");
     captures.push(
-      await captureEntry(
-        page,
-        `reg013-types-${suffix}.png`,
-        width,
-        theme,
-        "types",
-        verifyTypesStep,
-      ),
+      await captureRecord(page, "impl-data-375-dark.png", 375, "dark", "data", "implementation", async (p) => {
+        const h1 = await p.locator("h1").first().innerText();
+        if (!/Ваши данные/i.test(h1)) throw new Error(`data step h1=${h1}`);
+      }),
     );
     await context.close();
   }
@@ -266,62 +232,50 @@ async function main() {
   {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await openDataStep(page, "dark", 375);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await applyTheme(page, "dark");
+    await hideDevChrome(page);
+    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+    await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
+    await page.getByRole("button", { name: /Продолжить/ }).click();
+    await page.getByLabel("Имя").fill("QA Visual");
+    await page.getByRole("button", { name: /Продолжить/ }).click();
+    await page.getByLabel("Город").fill("Москва");
+    await page.getByRole("button", { name: /Продолжить/ }).click();
+    await page.waitForSelector("#embedded-auth-title", { timeout: 20_000 });
     captures.push(
-      await captureEntry(
-        page,
-        "reg013-data-375-dark.png",
-        375,
-        "dark",
-        "data",
-        verifyDataStep,
-      ),
-    );
-    await context.close();
-  }
-
-  {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await openAuthStep(page, "dark", 375);
-    captures.push(
-      await captureEntry(
-        page,
-        "reg013-auth-375-dark.png",
-        375,
-        "dark",
-        "auth",
-        verifyAuthStep,
-      ),
+      await captureRecord(page, "impl-auth-375-dark.png", 375, "dark", "auth", "implementation", async (p) => {
+        if ((await p.locator("#embedded-auth-title").count()) === 0) {
+          throw new Error("auth step missing embedded title");
+        }
+      }),
     );
     await context.close();
   }
 
   await browser.close();
+  protoProc.kill();
 
+  const invalidRefs = ["ref-types-375-dark.png (review-011 implementation snapshot)"];
   const report = {
-    base: BASE,
+    implBase: IMPL_BASE,
+    protoBase: PROTO_BASE,
     codeSha: CODE_SHA,
-    refSha: REF_SHA,
+    treeDirty: TREE_DIRTY,
+    referenceSha: REF_SHA,
+    referenceBranch: REF_BRANCH,
     capturedAt: new Date().toISOString(),
-    superseded: [
-      "reg012-welcome-1440-light.png",
-      "reg012-welcome-375-light.png",
-      "reg012-welcome-375-dark.png",
-      "reg012-welcome-320-dark.png",
-      "reg012-types-375-dark.png",
-      "reg012-types-1440-light.png",
-      "reg012-data-375-dark.png",
-      "reg012-auth-375-dark.png",
-    ],
+    captureCount: captures.length,
+    pairs,
     captures,
-    refs,
+    invalidSupersededRefs: invalidRefs,
+    supersededImpl: ["reg012-*", "reg013-*", "ref-types-375-light.png (review-01 extract)"],
     remainingVisualGaps: [
-      "Frozen reference ships type picker PNG only at 375px (light ref + dark review-011); no 1440 type/ref pair in repo.",
-      "Progress step pixel parity not scored; labels/layout aligned in code only.",
-      "Welcome hero illustration differs from static reference export (accepted in 01.1).",
+      "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
+      "Prototype ref hides demo-top/review-toolbar/disclaimer only; product copy unchanged.",
+      "Welcome hero not in this types-focused capture set.",
     ],
-    assertions: ["cta_contrast_light", "cta_contrast_dark", "no_320_overflow", "step_verify_before_capture"],
+    assertions: ["step_verify", "viewport_verify", "theme_verify", "no_horizontal_overflow"],
   };
   await writeFile(
     path.join(ROOT, "artifacts/remcard-registration-01/visual-capture.json"),

@@ -26,29 +26,35 @@ export type RegistrationDraft = {
   updatedAt: number;
 };
 
+/** Copy aligned to frozen prototype `roles.js` role cards (ee). */
 export const REGISTRATION_KIND_LABELS: Record<
   RegistrationKind,
-  { title: string; description: string }
+  { title: string; lead: string; detail: string }
 > = {
   agent: {
     title: "Агент",
-    description: "Рекомендуете клиентов партнёрам RemCard и получаете вознаграждение.",
+    lead: "Делюсь сертификатами и получаю бонусы.",
+    detail: "Рекомендую друзьям, клиентам и подписчикам.",
   },
   specialist: {
     title: "Специалист",
-    description: "Оказываете услуги по ремонту и работаете с партнёрами RemCard.",
+    lead: "Выполняю работы сам или с бригадой.",
+    detail: "Мастер, дизайнер, прораб, монтажник.",
   },
   store: {
     title: "Магазин",
-    description: "Продаёте материалы и товары для ремонта клиентам RemCard.",
+    lead: "Продаём товары в одной торговой точке.",
+    detail: "Материалы, оборудование, мебель.",
   },
   company: {
     title: "Компания",
-    description: "Объединяете несколько направлений: услуги, магазин или филиалы.",
+    lead: "Управляю компанией, сетью или несколькими направлениями.",
+    detail: "Офис, филиалы, товары и услуги.",
   },
   employee: {
     title: "Сотрудник",
-    description: "Работаете в команде партнёра по приглашению организации.",
+    lead: "Работаю в команде магазина или компании.",
+    detail: "Вхожу по приглашению. Доступы определяет организация.",
   },
 };
 

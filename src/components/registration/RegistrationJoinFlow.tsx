@@ -374,10 +374,10 @@ export function RegistrationJoinFlow() {
         {step === "types" ? (
           <>
             <JoinProgress current="types" />
-            <h1>Выберите тип партнёра</h1>
+            <h1>Какой тип партнёрства вам подходит?</h1>
             <p className={styles.workspaceNote}>
-              У каждого типа своё рабочее пространство в RemCard. Сравните описания и выберите
-              подходящий вариант до продолжения.
+              Сравните варианты и выберите, как планируете работать. Затем начнём заполнять данные
+              по шагам.
             </p>
             {typeHint ? <p className={styles.hint}>{typeHint}</p> : null}
             <ul className={styles.typeList}>
@@ -394,27 +394,41 @@ export function RegistrationJoinFlow() {
                         setError("");
                       }}
                     />
-                    <span className={styles.typeCardHeader}>
-                      <span className={styles.typeCardIcon}>
-                        <RegistrationKindIcon kind={k} />
-                      </span>
-                      <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
+                    <span className={styles.typeCardIcon}>
+                      <RegistrationKindIcon kind={k} />
                     </span>
-                    <span className={styles.typeDesc}>{REGISTRATION_KIND_LABELS[k].description}</span>
+                    <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
+                    <span className={styles.typeDesc}>
+                      {REGISTRATION_KIND_LABELS[k].lead}
+                      <br />
+                      {REGISTRATION_KIND_LABELS[k].detail}
+                    </span>
                   </label>
                 </li>
               ))}
             </ul>
             {error ? <p className={styles.error}>{error}</p> : null}
-            <div className={styles.footerActions}>
-              <Link href={buildWelcomeHref(joinContext)}>Назад</Link>
-              <Button type="button" disabled={!kind} onClick={onContinueFromTypes}>
-                Продолжить
+            <div className={styles.typeChoiceFooter}>
+              <Button
+                type="button"
+                className={styles.fullWidthBtn}
+                disabled={!kind}
+                onClick={onContinueFromTypes}
+              >
+                Продолжить →
               </Button>
+              <Link href={loginRecovery} className={styles.typeLoginSecondary}>
+                Уже есть аккаунт? Войти
+              </Link>
+              <p className={styles.typeTeamNote}>
+                Один аккаунт может совмещать личную деятельность и работу в команде.
+                <br />
+                Рабочие пространства и данные при этом разделены.
+              </p>
+              <Link href={buildWelcomeHref(joinContext)} className={styles.backToWelcome}>
+                К приветствию
+              </Link>
             </div>
-            <p className={styles.loginHint}>
-              Уже есть аккаунт? <Link href={loginRecovery}>Войти</Link>
-            </p>
           </>
         ) : null}
 

@@ -7,11 +7,11 @@
 .entryProgress {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: var(--space-3);
   list-style: none;
   padding: 0;
-  margin: 0 0 var(--space-6);
-  font-size: 0.625rem;
+  margin: 0 0 var(--space-10);
+  font-size: 0.75rem;
   line-height: 1.2;
   color: var(--muted);
 }
@@ -49,37 +49,70 @@
 }
 
 .typeCardIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: var(--offset);
-  color: var(--primary);
+  color: var(--ink);
   flex-shrink: 0;
+  grid-row: 1 / span 2;
 }
 
 .typeCardIcon svg {
   display: block;
 }
 
-.typeCardHeader {
+.typeChoiceFooter {
+  margin-top: var(--space-6);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-3);
 }
 
-.loginHint {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--line);
-  font-size: 0.875rem;
-  color: var(--muted);
+.fullWidthBtn {
+  width: 100%;
+  min-height: 52px;
 }
 
-.loginHint a {
-  color: var(--primary);
+.typeLoginSecondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.875rem;
   font-weight: 700;
+  text-decoration: none;
+}
+
+.typeLoginSecondary:hover {
+  background: var(--offset);
+}
+
+.typeTeamNote {
+  margin: var(--space-2) 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.backToWelcome {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: center;
+  text-decoration: none;
+}
+
+.backToWelcome:hover {
+  color: var(--ink);
 }
 
 .workspaceNote {
@@ -128,17 +161,30 @@
 .typeCard,
 .typeCardActive {
   display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  grid-template-columns: 44px 1fr;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+  padding: var(--space-5);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   cursor: pointer;
   background: var(--surface);
+  position: relative;
 }
 
 .typeCardActive {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
+  border: 2px solid var(--primary);
+  padding: calc(var(--space-5) - 1px);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.typeTitle {
+  grid-column: 2;
+  padding-right: var(--space-6);
+}
+
+.typeDesc {
+  grid-column: 2;
 }
 
 .typeCard input,
@@ -150,12 +196,26 @@
 
 .typeTitle {
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 .typeDesc {
   font-size: 0.875rem;
+  line-height: 1.45;
   color: var(--muted);
+}
+
+@media (max-width: 680px) {
+  .entryProgress {
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+    font-size: 0.625rem;
+  }
+
+  .entryProgress li > span {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 .legacyTag,
