@@ -182,7 +182,7 @@ async function main() {
   };
 
   await page.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i }).click();
-  await page.waitForSelector('text=Заявка на проверке', { timeout: 60_000 });
+  await page.waitForSelector('[data-testid="specialist-catalog-pending"]', { timeout: 60_000 });
   const pendingGet = await getProfileSnapshot(page);
   report.steps.pendingFreshGet = {
     ok: pendingGet.user?.catalogStatus === 'PENDING',
