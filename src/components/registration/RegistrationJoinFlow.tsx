@@ -300,7 +300,7 @@ export function RegistrationJoinFlow() {
 
   if (!welcomeActive && !agentPathActive) {
     return (
-      <RegistrationPublicShell>
+      <RegistrationPublicShell entryPageLayout>
         <div className={styles.fallback}>
           <h1>Регистрация партнёров</h1>
           <p>Новый сценарий регистрации пока недоступен. Используйте существующий вход.</p>
@@ -366,7 +366,7 @@ export function RegistrationJoinFlow() {
 
   if (searchParams.get("legacy") === "1" && (kind === "employee" || roleLanding === "employee")) {
     return (
-      <RegistrationPublicShell loginHref={buildEmployeeLoginHref(joinContext)}>
+      <RegistrationPublicShell loginHref={buildEmployeeLoginHref(joinContext)} entryPageLayout>
         <div className={styles.fallback}>
           <h1>Сотрудник организации</h1>
           <p className={styles.workspaceNote}>

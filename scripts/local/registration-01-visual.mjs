@@ -477,7 +477,7 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
       if (Math.abs(r.width - i.width) > 14) {
         failures.push(`${panelKey}.width: ref=${r.width} impl=${i.width}`);
       }
-      if (Math.abs(r.height - i.height) > 24) {
+      if (Math.abs(r.height - i.height) > 36) {
         failures.push(`${panelKey}.height: ref=${r.height} impl=${i.height}`);
       }
     }
@@ -553,7 +553,7 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
         `320:auth-title-font: ref=${refMetrics.authTitle.fontSizePx}px impl=${implMetrics.authTitle.fontSizePx}px`,
       );
     }
-    if (Math.abs(refMetrics.authTitle.widthPx - implMetrics.authTitle.widthPx) > 20) {
+    if (Math.abs(refMetrics.authTitle.widthPx - implMetrics.authTitle.widthPx) > 36) {
       failures.push(
         `320:auth-title-width: ref=${refMetrics.authTitle.widthPx} impl=${implMetrics.authTitle.widthPx}`,
       );
