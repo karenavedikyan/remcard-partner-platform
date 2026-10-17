@@ -270,6 +270,162 @@ function assertMobileGridParity(refMeasure, implMeasure, width) {
   return failures;
 }
 
+function parseRgbTriplet(cssColor) {
+  const m = cssColor?.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+function rgbClose(a, b, tol = 2) {
+  if (!a || !b) return false;
+  return a.every((v, i) => Math.abs(v - b[i]) <= tol);
+}
+
+async function measurePrimaryProviderButton(page) {
+  const scope = page.locator('[data-testid="registration-entry-auth-providers"]');
+  const btn = scope.getByRole("button").first();
+  if ((await btn.count()) === 0) return null;
+  const normal = await btn.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { bg: s.backgroundColor, fg: s.color };
+  });
+  await btn.hover();
+  await page.waitForTimeout(120);
+  const hoverBg = await btn.evaluate((el) => getComputedStyle(el).backgroundColor);
+  return { ...normal, hoverBg };
+}
+
+async function measureFormLayoutGrid(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="registration-entry-data"]');
+    const grid = root?.children[1] ?? null;
+    if (!grid) return null;
+    const style = getComputedStyle(grid);
+    return {
+      gridTemplateColumns: style.gridTemplateColumns,
+      gap: style.gap,
+    };
+  });
+}
+
+async function measureDataPanelHeader(page) {
+  return page.evaluate(() => {
+    const hint = document.querySelector('[class*="stepHint"]');
+    const row = hint?.closest('[class*="panelHeaderRow"]');
+    if (!hint || !row) return null;
+    const hintBox = hint.getBoundingClientRect();
+    const rowBox = row.getBoundingClientRect();
+    const eyebrow = row.querySelector('[class*="eyebrow"]');
+    const eyebrowBox = eyebrow?.getBoundingClientRect();
+    return {
+      hintLeft: Math.round(hintBox.left),
+      rowLeft: Math.round(rowBox.left),
+      hintBelowEyebrow: eyebrowBox ? hintBox.top > eyebrowBox.bottom - 1 : null,
+      hintMarginLeftAuto: hint ? getComputedStyle(hint).marginLeft === "auto" : null,
+    };
+  });
+}
+
+async function measureProgressMarkers(page) {
+  return page.evaluate(() => {
+    const list =
+      document.querySelector('ol[aria-label="Этапы регистрации"]') ??
+      document.querySelector(".entry-progress");
+    if (!list) return null;
+    return [...list.querySelectorAll("li > span")].map((el) => el.textContent?.trim() ?? "");
+  });
+}
+
+async function measureCityFieldFocus(page) {
+  return page.evaluate(() => {
+    const input =
+      document.querySelector('[data-testid="registration-entry-data"] input') ??
+      document.querySelector("#entry-data-input");
+    if (!input) return null;
+    const style = getComputedStyle(input);
+    const value = input.value ?? "";
+    const shadow = style.boxShadow;
+    const hasFocusRing = document.activeElement === input && shadow && shadow !== "none";
+    return { value, hasFocusRing, activeIsInput: document.activeElement === input };
+  });
+}
+
+function assertRegistrationCssGates({ step, theme, width, kind, metrics }) {
+  const failures = [];
+  if (kind !== "implementation" || !metrics) return failures;
+
+  if (step === "auth-providers" && theme === "dark" && metrics.providerBtn) {
+    const targetBg = [244, 147, 145];
+    const targetFg = [39, 27, 26];
+    const targetHover = [232, 133, 131];
+    const bg = parseRgbTriplet(metrics.providerBtn.bg);
+    const fg = parseRgbTriplet(metrics.providerBtn.fg);
+    const hoverBg = parseRgbTriplet(metrics.providerBtn.hoverBg);
+    if (!rgbClose(bg, targetBg)) failures.push(`${width}:provider-btn-bg: ${metrics.providerBtn.bg}`);
+    if (!rgbClose(fg, targetFg)) failures.push(`${width}:provider-btn-fg: ${metrics.providerBtn.fg}`);
+    if (!rgbClose(hoverBg, targetHover)) failures.push(`${width}:provider-btn-hover: ${metrics.providerBtn.hoverBg}`);
+  }
+
+  if (step === "data-name" && width === 1440 && metrics.formGrid) {
+    const cols = metrics.formGrid.gridTemplateColumns ?? "";
+    if (!/1\.1fr/.test(cols) || !/1fr/.test(cols)) {
+      failures.push(`1440:formGrid columns: ${cols}`);
+    }
+  }
+
+  if (step.startsWith("data") && [375, 320].includes(width) && metrics.progressMarkers) {
+    if (!metrics.progressMarkers.some((t) => t === "✓")) {
+      failures.push(`${width}:${step}:progress missing completed checkmark`);
+    }
+  }
+
+  if (step.startsWith("data") && [375, 320].includes(width) && metrics.progressRow) {
+    const spread = metrics.progressRow.stageTopSpread ?? 0;
+    if (spread > 1) {
+      failures.push(`${width}:${step}:progress stageTopSpread=${spread}`);
+    }
+  }
+
+  if (step.startsWith("data") && [375, 320].includes(width) && metrics.panelHeader) {
+    const h = metrics.panelHeader;
+    if (h.hintMarginLeftAuto) {
+      failures.push(`${width}:${step}:stepHint still margin-left:auto on mobile`);
+    }
+    if (h.hintBelowEyebrow === false) {
+      failures.push(`${width}:${step}:stepHint not on line below eyebrow`);
+    }
+    if (Math.abs(h.hintLeft - h.rowLeft) > 2) {
+      failures.push(`${width}:${step}:stepHint left=${h.hintLeft} row=${h.rowLeft}`);
+    }
+  }
+
+  if (step === "data-city" && metrics.cityField) {
+    if (metrics.cityField.value) failures.push(`${width}:data-city: input value must be empty`);
+    if (metrics.cityField.hasFocusRing) failures.push(`${width}:data-city: focus ring must be absent`);
+    if (metrics.cityField.activeIsInput) failures.push(`${width}:data-city: input must not be focused`);
+  }
+
+  if (step === "auth-providers" && width === 320 && metrics.authTitleLines != null) {
+    if (metrics.authTitleLines > 2) {
+      failures.push(`320:auth-providers:titleLines=${metrics.authTitleLines} (ref 2)`);
+    }
+  }
+
+  return failures;
+}
+
+async function measureAuthTitleLines(page) {
+  return page.evaluate(() => {
+    const h1 =
+      document.querySelector("#reg-auth-title, #entry-auth-title, .entry-single h1, h1");
+    if (!h1) return null;
+    const style = getComputedStyle(h1);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
+    const lines = Math.round(h1.getBoundingClientRect().height / lineHeight);
+    return lines;
+  });
+}
+
 function assertProgressRowParity(refProgress, implProgress, width) {
   if (![375, 320].includes(width) || !refProgress?.stageTops || !implProgress?.stageTops) {
     return [];
@@ -433,8 +589,9 @@ async function openImplAgentStep(page, stopStep) {
   if (stopStep === "data-name") return;
   await page.getByLabel(/Ваше имя/i).fill("QA Visual");
   await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
-  await page.getByLabel(/Город/i).fill("Москва");
+  await page.waitForSelector('[data-testid="registration-entry-data"]', { timeout: 15_000 });
   if (stopStep === "data-city") return;
+  await page.getByLabel(/Город/i).fill("Москва");
   await page.getByRole("button", { name: /Продолжить|К подтверждению/i }).click();
   await page.waitForSelector('[data-testid="registration-entry-auth-providers"]', { timeout: 15_000 });
   if (stopStep === "auth-providers") return;
@@ -596,6 +753,29 @@ async function main() {
       await hideDevChrome(page);
       await page.waitForSelector('[data-testid="registration-types-grid"] label', { timeout: 30_000 });
       await openImplAgentStep(page, step);
+      const implCssMetrics = {
+        providerBtn:
+          step === "auth-providers" ? await measurePrimaryProviderButton(page) : null,
+        formGrid: step === "data-name" && width === 1440 ? await measureFormLayoutGrid(page) : null,
+        panelHeader: step.startsWith("data") ? await measureDataPanelHeader(page) : null,
+        progressMarkers: step.startsWith("data") ? await measureProgressMarkers(page) : null,
+        progressRow:
+          step.startsWith("data") && [375, 320].includes(width)
+            ? await measureProgressRow(page, "implementation")
+            : null,
+        cityField: step === "data-city" ? await measureCityFieldFocus(page) : null,
+        authTitleLines:
+          step === "auth-providers" && width === 320 ? await measureAuthTitleLines(page) : null,
+      };
+      parityFailures.push(
+        ...assertRegistrationCssGates({
+          step,
+          theme,
+          width,
+          kind: "implementation",
+          metrics: implCssMetrics,
+        }),
+      );
       captures.push(
         await captureRecord(page, implFile, width, theme, step, "implementation", async (p) => {
           if (step.startsWith("data")) {
@@ -605,7 +785,7 @@ async function main() {
           } else {
             await p.waitForSelector('[data-testid="registration-entry-auth-code"]');
           }
-        }, null),
+        }, implCssMetrics),
       );
       pairs.push({ pair: `${step}-${suffix}`, ref: refFile, impl: implFile });
       await context.close();
@@ -656,9 +836,26 @@ async function main() {
       await page.waitForSelector('[data-testid="registration-welcome"]', { timeout: 30_000 });
       const implWelcomeLayout = await measureWelcomeLayout(page, "implementation");
       const refWelcomeLayout = welcomeRefLayouts[suffix];
-      if (width === 375 && theme === "dark" && refWelcomeLayout && implWelcomeLayout) {
+      if (width === 375 && refWelcomeLayout && implWelcomeLayout) {
         if (implWelcomeLayout.actionDisplay === "column" && refWelcomeLayout.actionDisplay === "row") {
-          parityFailures.push("welcome-375-dark:action flex-direction column vs ref row");
+          parityFailures.push("welcome-375:action flex-direction column vs ref row");
+        }
+        const tol = 28;
+        if (
+          refWelcomeLayout.actionTopPx != null &&
+          implWelcomeLayout.actionTopPx != null &&
+          Math.abs(implWelcomeLayout.actionTopPx - refWelcomeLayout.actionTopPx) > tol
+        ) {
+          parityFailures.push(
+            `welcome-${suffix}:actionTop ref=${refWelcomeLayout.actionTopPx} impl=${implWelcomeLayout.actionTopPx} (tol ${tol}px)`,
+          );
+        }
+        if (theme === "dark" && implWelcomeLayout.btnBg) {
+          const targetBg = [244, 147, 145];
+          const bg = parseRgbTriplet(implWelcomeLayout.btnBg);
+          if (!rgbClose(bg, targetBg)) {
+            parityFailures.push(`welcome-375-dark:cta-bg ${implWelcomeLayout.btnBg}`);
+          }
         }
       }
       captures.push(
@@ -736,6 +933,7 @@ async function main() {
       "layout_json_embedded",
       "mobile_grid_parity_375_320",
       "progress_stage_top_alignment",
+      "registration_css_gates",
     ],
   };
   await writeFile(

@@ -15,6 +15,9 @@
 .registrationEntryScope {
   --primary: var(--reg-entry-primary);
   --primary-fg: var(--reg-entry-primary-fg);
+  /* Button.module.css .primary consumes accent-fill, not --primary alone. */
+  --accent-fill: var(--reg-entry-primary);
+  --accent-fill-hover: var(--reg-entry-primary-hover);
 }
 
 .entryRoleContext {
@@ -47,8 +50,8 @@
 
 .formLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.46fr);
-  gap: var(--space-8);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: var(--space-10);
   align-items: start;
 }
 
@@ -329,6 +332,23 @@
     gap: var(--space-3);
   }
 
+  .registrationDataScope .panelHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .registrationDataScope .panelHeaderRow .eyebrow {
+    min-width: 0;
+    flex: none;
+  }
+
+  .registrationDataScope .panelHeaderRow .stepHint {
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+  }
+
   .formFooter {
     align-items: stretch;
   }
@@ -339,5 +359,18 @@
 
   .codeActionsRow > * {
     flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .registrationEntryScope .entrySingle .entryTitle {
+    font-size: clamp(1.15rem, 5.2vw, 1.35rem);
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    max-width: 16ch;
+  }
+
+  .registrationEntryScope .entrySingle {
+    padding-inline: var(--space-4);
   }
 }

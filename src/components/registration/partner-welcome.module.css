@@ -326,49 +326,49 @@
 
 @media (max-width: 760px) {
   .page {
-    --welcome-display: clamp(2rem, 7.5vw, 2.375rem);
-    padding-top: var(--space-5);
+    --welcome-display: clamp(2.125rem, 8vw, 2.5rem);
+    padding-top: var(--space-6);
   }
   .hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-6);
+    gap: var(--space-8);
   }
   .kicker {
     margin-bottom: var(--space-4);
-    font-size: 0.8125rem;
+    font-size: var(--text-xs);
   }
   .copy h1 {
-    line-height: 1.06;
+    line-height: 1.08;
   }
   .headingRest {
-    font-size: 1.0625rem;
-    margin-top: var(--space-2);
-    line-height: 1.4;
+    font-size: var(--text-lg);
+    margin-top: var(--space-3);
+    line-height: 1.35;
   }
   .description {
-    margin-top: var(--space-3);
-    font-size: 0.875rem;
-    line-height: 1.55;
+    margin-top: var(--space-5);
+    font-size: var(--text-sm);
+    line-height: 1.7;
   }
   .target {
-    margin-top: var(--space-2);
-    font-size: 0.8125rem;
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
   }
   .target svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
   .action {
-    gap: var(--space-4);
+    gap: var(--space-3);
     margin-top: var(--space-5);
     align-items: center;
     flex-direction: row;
     flex-wrap: nowrap;
   }
   .action span {
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    max-width: 11rem;
+    font-size: var(--text-xs);
+    line-height: 1.6;
+    max-width: 22ch;
   }
   .action span br {
     display: none;
@@ -376,7 +376,8 @@
   .primaryBtn {
     min-height: 52px;
     padding-inline: var(--space-5);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
+    flex-shrink: 0;
   }
   .copy {
     padding-block: 0;

@@ -28,7 +28,7 @@ export function JoinProgress({
     <ol className={listClass} aria-label="Этапы регистрации">
       {STAGES.map((stage, index) => (
         <li key={stage.id} aria-current={index === currentIndex ? "step" : undefined}>
-          <span>{index + 1}</span>
+          <span>{index < currentIndex ? "✓" : index + 1}</span>
           {stage.label}
         </li>
       ))}
