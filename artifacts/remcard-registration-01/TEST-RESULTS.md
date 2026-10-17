@@ -13,7 +13,7 @@ Date: 2026-10-17
 
 ## SHAs
 
-- **Code (capture):** see `visual-capture.json` → `codeSha` (must match branch tip after evidence commit)
+- **Code (capture):** `65cf8b1` (UI) + metadata `b33b918` — see branch tip after push
 - **Frozen reference:** `771cc658a415a5d05b964f29f675d32db449198b` (`implementation/remcard-reference-20261014`)
 
 ## Carry-over (not re-run)

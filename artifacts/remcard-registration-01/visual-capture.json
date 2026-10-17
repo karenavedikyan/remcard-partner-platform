@@ -2,7 +2,7 @@
   "implBase": "http://127.0.0.1:3020",
   "protoBase": "http://127.0.0.1:3099",
   "codeSha": "65cf8b15e2f1946a4b285a6fd1e7d58e318ab537",
-  "treeDirty": true,
+  "treeDirty": false,
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceBranch": "origin/implementation/remcard-reference-20261014",
   "capturedAt": "2026-10-17T09:59:06.254Z",
