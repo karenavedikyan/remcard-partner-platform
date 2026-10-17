@@ -143,7 +143,7 @@
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-  margin-top: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .companionTitle {
@@ -161,8 +161,8 @@
 
 .roadmap {
   display: grid;
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
   padding: 0;
   list-style: none;
   counter-reset: entry-step;
@@ -190,6 +190,7 @@
 }
 
 .entrySingle {
+  width: 100%;
   max-width: 584px;
   margin: 0 auto;
   border: 1px solid var(--line);
@@ -199,6 +200,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  box-sizing: border-box;
+}
+
+.entrySingle .entryTitle {
+  width: 100%;
+  max-width: none;
 }
 
 .entryTitle {
@@ -357,5 +364,10 @@
 @media (max-width: 760px) {
   .registrationEntryScope .entrySingle {
     padding: var(--space-5);
+  }
+
+  .registrationEntryScope .entrySingle .entryTitle {
+    font-size: 1.5rem;
+    line-height: 1.25;
   }
 }

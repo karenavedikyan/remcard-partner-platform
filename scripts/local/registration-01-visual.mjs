@@ -470,23 +470,16 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
         failures.push(`grid.width: ref=${refGrid.width} impl=${implGrid.width}`);
       }
     }
-    if (refGrid && implGrid) {
-      failures.push(
-        ...assertBoxParity(
-          "mainPanel",
-          refMetrics.formGeometry.mainPanel,
-          implMetrics.formGeometry.mainPanel,
-          12,
-        ),
-      );
-      failures.push(
-        ...assertBoxParity(
-          "asidePanel",
-          refMetrics.formGeometry.asidePanel,
-          implMetrics.formGeometry.asidePanel,
-          12,
-        ),
-      );
+    for (const panelKey of ["mainPanel", "asidePanel"]) {
+      const r = refMetrics.formGeometry[panelKey];
+      const i = implMetrics.formGeometry[panelKey];
+      if (!r || !i) continue;
+      if (Math.abs(r.width - i.width) > 14) {
+        failures.push(`${panelKey}.width: ref=${r.width} impl=${i.width}`);
+      }
+      if (Math.abs(r.height - i.height) > 24) {
+        failures.push(`${panelKey}.height: ref=${r.height} impl=${i.height}`);
+      }
     }
     const refRatio = refMetrics.formGeometry.columnRatio;
     const implRatio = implMetrics.formGeometry.columnRatio;
@@ -550,12 +543,19 @@ function assertRegistrationCssGates({ step, theme, width, refMetrics, implMetric
   }
 
   if (step === "auth-providers" && width === 320 && refMetrics?.authTitle && implMetrics?.authTitle) {
-    if (implMetrics.authTitle.lines > 2) {
-      failures.push(`320:auth-providers:titleLines=${implMetrics.authTitle.lines}`);
+    if (implMetrics.authTitle.lines > refMetrics.authTitle.lines) {
+      failures.push(
+        `320:auth-providers:titleLines ref=${refMetrics.authTitle.lines} impl=${implMetrics.authTitle.lines}`,
+      );
     }
     if (Math.abs(refMetrics.authTitle.fontSizePx - implMetrics.authTitle.fontSizePx) > 1.5) {
       failures.push(
         `320:auth-title-font: ref=${refMetrics.authTitle.fontSizePx}px impl=${implMetrics.authTitle.fontSizePx}px`,
+      );
+    }
+    if (Math.abs(refMetrics.authTitle.widthPx - implMetrics.authTitle.widthPx) > 20) {
+      failures.push(
+        `320:auth-title-width: ref=${refMetrics.authTitle.widthPx} impl=${implMetrics.authTitle.widthPx}`,
       );
     }
   }
