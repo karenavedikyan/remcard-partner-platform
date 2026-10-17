@@ -17,7 +17,7 @@ import {
   type ProfileDraft,
 } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
-import { CATALOG_STATUS_LABELS, catalogStatusTone } from "@/lib/partnership-labels";
+import { catalogStatusTone } from "@/lib/partnership-labels";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import { CatalogCategoryAvatar } from "../CatalogCategoryAvatar";
@@ -63,6 +63,7 @@ export type SpecialistCatalogWizardProps = {
   onPullWorkingDirections: () => void;
   workingServiceIds: string[];
   workingStageIds: string[];
+  onRevertLocalEdits?: () => void;
 };
 
 function touchField(
@@ -117,7 +118,6 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   const publicPhoneRef = useRef<AgentPhoneFieldHandle>(null);
 
   const catalogStatus = effectiveCatalogStatus(profile);
-  const statusLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
   const publicationLabel = catalogPublicationStatusLabel(profile);
   const canSubmit = canSubmitProfileForModeration(profile);
   const missing = useMemo(() => specialistCatalogMissingForSubmit(profile, draft), [profile, draft]);
@@ -205,15 +205,8 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
         <div>
           <span className={catalogStyles.kicker}>Публичная страница</span>
           <h2 className={catalogStyles.title}>Подключение к каталогу</h2>
-          <p className={catalogStyles.intro}>
-            Уже сохранённые данные подставляем из рабочего профиля — проверьте и при необходимости
-            измените. Черновик не публикуется; отправка на проверку только в конце.
-          </p>
         </div>
-        <div className={editorStyles.statusRow}>
-          <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
-          <StatusBadge label={statusLabel} tone={catalogStatusTone(catalogStatus)} />
-        </div>
+        <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
       </header>
       <nav className={catalogStyles.steps} aria-label="Этапы каталога">
         {STEPS.map((label, i) => (
@@ -240,6 +233,10 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
           {step === 0 ? (
             <div className={catalogStyles.fields}>
+              <p className={catalogStyles.stepIntro}>
+                Помогите клиенту узнать вас: укажите, как вас показывать в каталоге и в каком городе
+                вы работаете. Черновик не публикует карточку.
+              </p>
               <div className={catalogStyles.field}>
                 <label htmlFor="sc-public-name">Публичное имя</label>
                 <input
@@ -273,11 +270,6 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 />
                 <span>Показывать полное имя в каталоге</span>
               </label>
-              <CatalogCategoryAvatar
-                imageUrl={catalogImageUrl}
-                categories={specializations}
-                partnerType="MASTER"
-              />
             </div>
           ) : null}
 
@@ -429,52 +421,69 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           ) : null}
 
           <div className={catalogStyles.footer}>
-            {step > 0 ? (
+            <div className={catalogStyles.footerDraft}>
               <button
                 type="button"
                 className={catalogStyles.btn}
-                disabled={saving || submitting}
-                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                disabled={saving || submitting || !catalogPublicationEditable(profile)}
+                onClick={() => void saveDraft()}
               >
-                Назад
+                {saving ? "Сохранение…" : "Сохранить черновик"}
               </button>
-            ) : null}
-            {step < 4 ? (
               <button
                 type="button"
-                className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
-                disabled={saving}
+                className={`${catalogStyles.btn} ${catalogStyles.btnGhost}`}
+                disabled={saving || submitting || !props.onRevertLocalEdits}
                 onClick={() => {
-                  const miss = stepMissing(step);
-                  if (miss) {
-                    setError(`Заполните: ${miss}. Незавершённую карточку можно сохранить как черновик.`);
-                    return;
-                  }
+                  props.onRevertLocalEdits?.();
                   setError("");
-                  setStep((s) => Math.min(4, s + 1));
+                  setSuccess("");
+                  setStep(0);
                 }}
               >
-                {step === 3 ? "Предпросмотр" : "Далее"}
+                Отменить изменения
               </button>
-            ) : null}
-            <button
-              type="button"
-              className={catalogStyles.btn}
-              disabled={saving || submitting || !catalogPublicationEditable(profile)}
-              onClick={() => void saveDraft()}
-            >
-              {saving ? "Сохранение…" : "Сохранить черновик"}
-            </button>
-            {step === 4 && canSubmit && missing.length === 0 ? (
-              <button
-                type="button"
-                className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
-                disabled={submitting || saving}
-                onClick={() => void submitPublication()}
-              >
-                {submitting ? "Отправка…" : submitLabel}
-              </button>
-            ) : null}
+            </div>
+            <div className={catalogStyles.footerNav}>
+              {step > 0 ? (
+                <button
+                  type="button"
+                  className={catalogStyles.btn}
+                  disabled={saving || submitting}
+                  onClick={() => setStep((s) => Math.max(0, s - 1))}
+                >
+                  Назад
+                </button>
+              ) : null}
+              {step < 4 ? (
+                <button
+                  type="button"
+                  className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
+                  disabled={saving}
+                  onClick={() => {
+                    const miss = stepMissing(step);
+                    if (miss) {
+                      setError(`Заполните: ${miss}. Незавершённую карточку можно сохранить как черновик.`);
+                      return;
+                    }
+                    setError("");
+                    setStep((s) => Math.min(4, s + 1));
+                  }}
+                >
+                  {step === 3 ? "Предпросмотр" : "Далее"}
+                </button>
+              ) : null}
+              {step === 4 && canSubmit && missing.length === 0 ? (
+                <button
+                  type="button"
+                  className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
+                  disabled={submitting || saving}
+                  onClick={() => void submitPublication()}
+                >
+                  {submitting ? "Отправка…" : submitLabel}
+                </button>
+              ) : null}
+            </div>
           </div>
         </section>
     </div>

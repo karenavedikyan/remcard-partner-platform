@@ -413,6 +413,22 @@ function ProfileEditorInner({
   const syncedUserIdRef = useRef(initial.user.id);
   const draftRef = useRef<ProfileDraft | null>(null);
 
+  const revertCatalogLocalEdits = useCallback(() => {
+    const snap = savedCatalogSnapshotRef.current;
+    setDescription(snap.description);
+    setSpecializations(snap.specializations);
+    setWebsite(snap.website);
+    setTelegram(snap.telegram);
+    setPublicEmail(snap.publicEmail);
+    setPublicPhone(snap.publicPhone);
+    setCatalogPublicName(snap.catalogPublicName);
+    setCatalogCity(snap.catalogCity);
+    setShowFullName(snap.showFullName);
+    setCatalogImageUrl(snap.catalogImageUrl);
+    setCatalogNavigatorStageIds(snap.navigatorStageIds ?? []);
+    setCatalogTouched({});
+  }, []);
+
   const applyProfile = useCallback((next: ProProfileResponse) => {
     setProfile(next);
     savedSnapshotRef.current = profileDraftFromProfile(next);
@@ -984,6 +1000,7 @@ function ProfileEditorInner({
             onPublicPhoneChange={setPublicPhone}
             workingServiceIds={serviceSpecializationIds}
             workingStageIds={navigatorStageIds}
+            onRevertLocalEdits={revertCatalogLocalEdits}
             onPullWorkingDirections={() => {
               setSpecializations([...serviceSpecializationIds]);
               setCatalogNavigatorStageIds([...navigatorStageIds]);

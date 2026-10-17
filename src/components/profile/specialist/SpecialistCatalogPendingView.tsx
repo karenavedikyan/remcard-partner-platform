@@ -36,6 +36,7 @@ export function SpecialistCatalogPendingView({ profile, draft }: Props) {
         </div>
       </section>
 
+      <section className={styles.progressPanel} aria-label="Ход заявки">
       <ol className={styles.progress} aria-label="Статус публикации">
         <li data-state="done">
           <span>1</span>
@@ -59,6 +60,7 @@ export function SpecialistCatalogPendingView({ profile, draft }: Props) {
           </div>
         </li>
       </ol>
+      </section>
 
       <details className={styles.submitted}>
         <summary>Посмотреть отправленную карточку</summary>
@@ -66,7 +68,7 @@ export function SpecialistCatalogPendingView({ profile, draft }: Props) {
       </details>
 
       <div className={styles.actions}>
-        <Link href="/profile?section=basics" className={`${styles.btn} ${styles.btnPrimary}`}>
+        <Link href="/profile?section=basics" className={styles.btn}>
           Вернуться к профилю
         </Link>
       </div>

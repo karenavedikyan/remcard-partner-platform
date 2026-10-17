@@ -301,12 +301,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
           {(savedProfile.serviceSpecializationIds?.length ||
             savedProfile.navigatorStageIds?.length) ? (
             <div className={styles.summaryPicked} aria-label="Выбранные направления">
-              {[
-                ...(savedProfile.serviceSpecializationIds ?? []),
-                ...(savedProfile.navigatorStageIds ?? []),
-              ].map((id) => (
-                <span key={id} className={styles.summaryChip}>
-                  {specialistIdListDisplay([id])}
+              {(savedProfile.serviceSpecializationIds ?? []).map((id) => (
+                <span key={`s-${id}`} className={styles.summaryChip}>
+                  Услуга: {specialistIdListDisplay([id])}
+                </span>
+              ))}
+              {(savedProfile.navigatorStageIds ?? []).map((id) => (
+                <span key={`st-${id}`} className={styles.summaryChip}>
+                  Этап: {specialistIdListDisplay([id])}
                 </span>
               ))}
             </div>
@@ -424,7 +426,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 </button>
                 <button
                   type="button"
-                  className={styles.btnPrimary}
+                  className={`${styles.btn} ${styles.btnPrimary}`}
                   disabled={saving}
                   onClick={() => {
                     setDraft(versionConflict.localDraft);
@@ -499,6 +501,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 <ProfileDirectionsPicker
                   specialistMode
                   compactSpecialistGrid={false}
+                  tileLayout
                   productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
                   navigatorStageIds={draft.navigatorStageIds ?? []}
@@ -635,7 +638,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               >
                 Сбросить черновик
               </button>
-              <button type="submit" className={styles.btnPrimary} disabled={saving}>
+              <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
                 {step === 3 ? "Завершить профиль" : "Далее"}
               </button>
             </div>

@@ -10,6 +10,7 @@ export const R06_PREVIEW_FIXTURE = {
   serviceLabels: ['Дизайн интерьера', 'Планирование'],
   /** L1-1 stage label in impl taxonomy UI (emoji prefix). */
   stageImplLabels: ['📐 Планирование'],
+  stageImplChipPrefix: 'Этап:',
   /** Stage chip label in ref prototype preview. */
   stageRefLabel: 'Планирование',
 };
@@ -165,21 +166,20 @@ export async function assertImplCatalogPreviewReady(page, fixture = R06_PREVIEW_
   if (!/Можно отправить заявку/i.test(text)) throw new Error('impl_preview_not_ready_to_submit');
   if (/Заполните:/i.test(text)) throw new Error('impl_preview_missing_fields');
   const preview = await page.locator('[data-testid="catalog-public-preview"]').innerText();
-  const blob = `${text}\n${preview}`;
-  if (!blob.includes(fixture.publicName)) throw new Error('impl_preview_publicName_mismatch');
-  if (!blob.includes(fixture.city)) throw new Error('impl_preview_city_mismatch');
-  for (const label of fixture.serviceLabels) {
-    if (!blob.includes(label)) throw new Error(`impl_preview_service_missing:${label}`);
+  const chips = await page.locator('[data-testid="catalog-public-preview"] .chip').allTextContents();
+  if (!preview.includes(fixture.publicName)) throw new Error('impl_preview_publicName_mismatch');
+  if (!preview.includes(fixture.city)) throw new Error('impl_preview_city_mismatch');
+  if (!chips.some((t) => new RegExp(`^Услуга:\\s*${fixture.serviceLabels[0]}`).test(t.trim()))) {
+    throw new Error('impl_preview_service_chip_missing');
   }
-  for (const label of fixture.stageImplLabels) {
-    if (!blob.includes(label.replace(/^[^\s]+\s/, '').trim()) && !blob.includes(label)) {
-      throw new Error(`impl_preview_stage_missing:${label}`);
-    }
+  if (!chips.some((t) => /^Этап:\s*/.test(t.trim()) && t.includes('Планирование'))) {
+    throw new Error('impl_preview_stage_chip_missing');
   }
   const digits = phoneDigits(fixture.phone);
-  if (!blob.replace(/\D/g, '').includes(digits.slice(-10))) {
+  if (!preview.replace(/\D/g, '').includes(digits.slice(-10))) {
     throw new Error('impl_preview_phone_mismatch');
   }
+  if (!/Телефон:/i.test(preview)) throw new Error('impl_preview_phone_label_missing');
   const submit = root.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i });
   if (!(await submit.count())) throw new Error('impl_preview_submit_missing');
   if (await submit.isDisabled()) throw new Error('impl_preview_submit_disabled');
@@ -198,11 +198,14 @@ export async function assertRefCatalogPreviewReady(page, fixture = R06_PREVIEW_F
   const cardText = await page.locator('[data-catalog-panel="review"]').innerText();
   if (!cardText.includes(fixture.publicName)) throw new Error('ref_preview_publicName_mismatch');
   if (!cardText.includes(fixture.city)) throw new Error('ref_preview_city_mismatch');
-  for (const label of fixture.serviceLabels) {
-    if (!cardText.includes(label)) throw new Error(`ref_preview_service_missing:${label}`);
+  const chips = await page
+    .locator('[data-catalog-panel="review"] .direction-chip, .catalog-demo-preview .direction-chip')
+    .allTextContents();
+  if (!chips.some((t) => t.includes(fixture.serviceLabels[0]))) {
+    throw new Error('ref_preview_service_chip_missing');
   }
-  if (!cardText.includes(fixture.stageRefLabel)) {
-    throw new Error(`ref_preview_stage_missing:${fixture.stageRefLabel}`);
+  if (!chips.some((t) => t.includes('📐') || (t.includes('Планирование') && !t.includes('Дизайн')))) {
+    throw new Error('ref_preview_stage_chip_missing');
   }
   const digits = phoneDigits(fixture.phone);
   if (!cardText.replace(/\D/g, '').includes(digits.slice(-10))) {

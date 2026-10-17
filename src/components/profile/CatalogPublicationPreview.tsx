@@ -16,6 +16,7 @@ export function CatalogPublicationPreview({ profile, draft }: CatalogPublication
 
   return (
     <div className={styles.card} data-testid="catalog-public-preview">
+      <span className={styles.pill}>Предпросмотр · не опубликовано</span>
       <div className={styles.header}>
         <CatalogCategoryAvatar
           imageUrl={model.imageUrl}
@@ -28,21 +29,31 @@ export function CatalogPublicationPreview({ profile, draft }: CatalogPublication
         </div>
       </div>
       {model.description ? <p className={styles.desc}>{model.description}</p> : null}
-      {model.productLabels.length ? (
-        <p className={styles.tags}>Товары: {model.productLabels.join(", ")}</p>
-      ) : null}
-      {model.serviceLabels.length ? (
-        <p className={styles.tags}>Услуги: {model.serviceLabels.join(", ")}</p>
-      ) : null}
+      {(model.serviceLabels.length > 0 || model.stageLabels.length > 0) && (
+        <div className={styles.chipRow}>
+          {model.serviceLabels.map((label) => (
+            <span key={`svc-${label}`} className={styles.chip}>
+              Услуга: {label}
+            </span>
+          ))}
+          {model.stageLabels.map((label) => (
+            <span key={`stg-${label}`} className={styles.chip}>
+              Этап: {label}
+            </span>
+          ))}
+        </div>
+      )}
       {(model.publicPhone || model.publicEmail || model.telegram || model.website) && (
         <ul className={styles.contacts}>
-          {model.publicPhone ? <li>Тел: {model.publicPhone}</li> : null}
+          {model.publicPhone ? <li>Телефон: {model.publicPhone}</li> : null}
           {model.publicEmail ? <li>Email: {model.publicEmail}</li> : null}
           {model.telegram ? <li>Telegram: {model.telegram}</li> : null}
           {model.website ? <li>Сайт: {model.website}</li> : null}
         </ul>
       )}
-      <p className={styles.note}>Предпросмотр карточки для remcard.ru (без публичной ссылки).</p>
+      <p className={styles.note}>
+        Такой состав данных будет виден клиентам после одобрения модерации.
+      </p>
     </div>
   );
 }

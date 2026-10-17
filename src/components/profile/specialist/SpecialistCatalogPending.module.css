@@ -54,14 +54,17 @@
   width: fit-content;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  background: var(--cw-tint);
-  color: #9b2027;
+  background: #fff6dd;
+  border: 1px solid #f0d48a;
+  color: #8a6a00;
   font-size: 0.875rem;
   font-weight: 700;
 }
 
 :global([data-theme="dark"]) .waitPill {
-  color: var(--cw-accent);
+  background: #3a3218;
+  border-color: #6b5a24;
+  color: #ffd96a;
 }
 
 .waitPill span:first-child {
@@ -78,8 +81,11 @@
 }
 
 .nextStep {
-  border-left: 3px solid var(--cw-accent);
-  padding-left: 0.75rem;
+  margin-top: 0.25rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--cw-line);
+  border-radius: 12px;
+  background: var(--cw-soft);
 }
 
 .nextStep p {
@@ -88,12 +94,33 @@
   font-size: 0.9375rem;
 }
 
+.progressPanel {
+  border: 1px solid var(--cw-line);
+  border-radius: 12px;
+  background: var(--cw-bg);
+  padding: 1rem 1.25rem;
+  min-width: 0;
+}
+
 .progress {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .progress {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .progress li {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
 }
 
 .progress li {
@@ -127,8 +154,14 @@
 }
 
 .progress li[data-state="current"] span:first-child {
-  border-color: var(--cw-accent);
-  color: var(--cw-accent);
+  border-color: #d4a017;
+  background: #fff6dd;
+  color: #8a6a00;
+}
+
+:global([data-theme="dark"]) .progress li[data-state="current"] span:first-child {
+  background: #3a3218;
+  color: #ffd96a;
 }
 
 .submitted {

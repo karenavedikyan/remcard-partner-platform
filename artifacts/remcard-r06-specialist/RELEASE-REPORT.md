@@ -26,10 +26,10 @@ Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scr
 2. **Specialization desktop:** full-width profile/catalog columns (hide aside for specialist basics/catalog); working wizard uses non-compact direction grids; layout width assert ≥520px card.
 3. **Completed summary:** contacts with empty fallbacks, directions chips, «Хотите появиться в каталоге?» + «Перейти к каталогу».
 4. **Pending:** dedicated `SpecialistCatalogPendingView` from real `PENDING` status (no wizard step 0 / duplicate badges).
-5. **Preview evidence:** matched synthetic `Krasnodar` + UI advance on impl/ref; manifest **7 matched pairs + 1 impl-only smoke** (320px).
+5. **Preview evidence:** shared fixture (`R06 Visual Catalog`, Krasnodar, `design`/`planning`, `L1-1`, phone) with strict impl/ref readiness (publicName, city, directions, contact, submit enabled); manifest **7 matched pairs + 1 impl-only smoke** (320px).
 6. **Migration negatives:** strict expected codes; ledger probe fails on missing fixture or guard bypass; unit regression in `prof-r06-migration-negative-runner.test.mjs`.
 
-**Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-v2`, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`. Runtime/capture SHA **7d24c6b** (platform) / **04613f09** (navigator). Ref **771cc658a415a5d05b964f29f675d32db449198b**.
+**Local acceptance (2026-10-17):** `R06_RUN_DIR=/tmp/r06-r063-v2`, `node scripts/r06-local-acceptance.mjs` → `{"ok":true}`. Runtime/capture SHA **e23b2f5** (platform) / **04613f09** (navigator). Ref **771cc658a415a5d05b964f29f675d32db449198b**.
 
 ## R06.3 acceptance blockers — prior pass
 

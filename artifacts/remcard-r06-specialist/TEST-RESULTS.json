@@ -2,7 +2,9 @@
   "ok": true,
   "gate": "on",
   "navigatorSha": "04613f09400b54c894fa192a81b09834c8797fd5",
-  "platformSha": "dfecedcfdd807eb83bd83f4225ff579d08c84fd7",
+  "platformSha": "e23b2f58416547170794b3a0f93f10b639578924",
+  "captureSha": "e23b2f58416547170794b3a0f93f10b639578924",
+  "runDir": "/tmp/r06-r063-v2",
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "steps": {
     "migrationControlled": {
