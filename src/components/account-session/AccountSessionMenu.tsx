@@ -37,6 +37,7 @@ export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMen
     openConfirmAll,
     closeConfirmAll,
     confirmExitAll,
+    clearError,
   } = useAccountSessionExit();
 
   const closeMenu = useCallback(
@@ -74,6 +75,17 @@ export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMen
   return (
     <>
       <div className={styles.accountRoot} data-session-account>
+        {error ? (
+          <div className={styles.menuError} role="alert" data-testid="account-menu-error">
+            <span>{error}</span>
+            <button type="button" className={styles.menuErrorRetry} onClick={() => void exitCurrent()}>
+              Повторить
+            </button>
+            <button type="button" className={styles.menuErrorDismiss} onClick={clearError}>
+              Закрыть
+            </button>
+          </div>
+        ) : null}
         <button
           type="button"
           ref={triggerRef}
@@ -113,7 +125,7 @@ export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMen
               data-testid="account-logout"
               disabled={Boolean(pending)}
               onClick={() => {
-                closeMenu();
+                closeMenu(true);
                 void exitCurrent();
               }}
             >

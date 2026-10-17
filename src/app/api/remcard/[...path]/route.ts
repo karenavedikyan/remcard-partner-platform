@@ -30,6 +30,7 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     contentType: request.headers.get("content-type"),
     cookieHeader: request.headers.get("cookie"),
     origin: request.headers.get("origin"),
+    csrfHeader: request.headers.get("X-CSRF-Token"),
     bodyText,
     idempotencyKeyHeader:
       request.method === "POST" &&

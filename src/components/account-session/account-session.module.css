@@ -272,6 +272,34 @@
   }
 }
 
+.menuError {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(22rem, 92vw);
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--danger-border, #e8b4b4);
+  background: var(--danger-bg, #fff5f5);
+  color: var(--danger-text, #8a1f1f);
+  font-size: 0.875rem;
+}
+
+.menuErrorRetry,
+.menuErrorDismiss {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+}
+
 @media (max-width: 680px) {
   .trigger {
     padding: var(--space-1, 0.25rem);

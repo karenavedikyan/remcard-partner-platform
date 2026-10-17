@@ -12,6 +12,7 @@ import {
   inviteByIdPath,
   proEmployeeByIdPath,
 } from "./remcard-proxy-ids";
+import { CSRF_COOKIE, CSRF_HEADER } from "@/lib/csrf-constants";
 
 export const UPSTREAM_TIMEOUT_MS = 15_000;
 
@@ -22,6 +23,7 @@ const ALLOWED_COOKIE_NAMES = new Set([
   SESSION_COOKIE,
   PRO_BRANCH_CONTEXT_COOKIE,
   ADMIN_RETURN_COOKIE,
+  CSRF_COOKIE,
 ]);
 const UNSAFE_LOCATION_CHARS = /[\u0000-\u001F\u007F\\]/;
 const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
@@ -218,6 +220,7 @@ export type ProxyRequestInput = {
   contentType: string | null;
   cookieHeader: string | null;
   origin: string | null;
+  csrfHeader: string | null;
   bodyText?: string;
   /** Raw Idempotency-Key from client — validated and forwarded only for POST /api/store/order. */
   idempotencyKeyHeader?: string | null;
@@ -565,6 +568,9 @@ export async function proxyRemcardRequest(
 
   if (idempotency.key) {
     headers.set("Idempotency-Key", idempotency.key);
+  }
+  if (input.csrfHeader) {
+    headers.set(CSRF_HEADER, input.csrfHeader);
   }
 
   const init: RequestInit = {

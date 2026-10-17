@@ -7,6 +7,22 @@ export const ACCOUNT_LOGOUT_ALL_PATH = "/api/auth/logout-all-sessions";
 
 export type AccountExitScope = "current" | "all";
 
+let pendingExitScope: AccountExitScope | null = null;
+
+export function getAccountExitPending(): AccountExitScope | null {
+  return pendingExitScope;
+}
+
+export function tryBeginAccountExit(scope: AccountExitScope): boolean {
+  if (pendingExitScope) return false;
+  pendingExitScope = scope;
+  return true;
+}
+
+export function endAccountExit(): void {
+  pendingExitScope = null;
+}
+
 export async function postLogoutCurrentDevice(): Promise<void> {
   await remcardFetch<{ ok: true; scope: AccountExitScope }>(ACCOUNT_LOGOUT_CURRENT_PATH, {
     method: "POST",

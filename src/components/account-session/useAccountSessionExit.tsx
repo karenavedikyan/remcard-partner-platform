@@ -6,9 +6,11 @@ import { RemcardApiError } from "@/lib/api-client";
 import {
   ACCOUNT_SESSION_BROADCAST,
   clearLocalSessionArtifacts,
+  endAccountExit,
   notifyAccountSessionExit,
   postLogoutAllDevices,
   postLogoutCurrentDevice,
+  tryBeginAccountExit,
   type AccountExitScope,
 } from "@/lib/account-session-exit";
 
@@ -20,7 +22,8 @@ export function useAccountSessionExit() {
   const confirmSourceRef = useRef<HTMLElement | null>(null);
 
   const finishSuccess = useCallback(
-    (scope: AccountExitScope) => {
+    async (scope: AccountExitScope) => {
+      await clearLocalSessionArtifacts();
       notifyAccountSessionExit(scope);
       router.push(`/account/signed-out?scope=${scope}`);
       router.refresh();
@@ -29,21 +32,21 @@ export function useAccountSessionExit() {
   );
 
   const exitCurrent = useCallback(async () => {
-    if (pending) return;
+    if (!tryBeginAccountExit("current")) return;
     setError("");
     setPending("current");
     try {
-      await clearLocalSessionArtifacts();
       await postLogoutCurrentDevice();
-      finishSuccess("current");
+      await finishSuccess("current");
     } catch (caught) {
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось выйти из аккаунта",
       );
     } finally {
       setPending(null);
+      endAccountExit();
     }
-  }, [finishSuccess, pending]);
+  }, [finishSuccess]);
 
   const openConfirmAll = useCallback((source?: HTMLElement | null) => {
     confirmSourceRef.current = source ?? null;
@@ -59,14 +62,13 @@ export function useAccountSessionExit() {
   }, []);
 
   const confirmExitAll = useCallback(async () => {
-    if (pending) return;
+    if (!tryBeginAccountExit("all")) return;
     setError("");
     setPending("all");
     try {
-      await clearLocalSessionArtifacts();
       await postLogoutAllDevices();
       setConfirmAllOpen(false);
-      finishSuccess("all");
+      await finishSuccess("all");
     } catch (caught) {
       setError(
         caught instanceof RemcardApiError
@@ -75,8 +77,9 @@ export function useAccountSessionExit() {
       );
     } finally {
       setPending(null);
+      endAccountExit();
     }
-  }, [finishSuccess, pending]);
+  }, [finishSuccess]);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
@@ -95,6 +98,8 @@ export function useAccountSessionExit() {
     return () => window.removeEventListener("storage", onStorage);
   }, [router]);
 
+  const clearError = useCallback(() => setError(""), []);
+
   return {
     pending,
     error,
@@ -103,5 +108,6 @@ export function useAccountSessionExit() {
     openConfirmAll,
     closeConfirmAll,
     confirmExitAll,
+    clearError,
   };
 }

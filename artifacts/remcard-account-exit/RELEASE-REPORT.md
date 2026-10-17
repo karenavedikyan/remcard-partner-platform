@@ -1,39 +1,23 @@
-# ACCOUNT-EXIT-01 — release report
+# ACCOUNT-EXIT-01.1 — corrective RC
 
-## Scope
+PRs: [navigator #687](https://github.com/karenavedikyan/remcard-navigator/pull/687), [platform #24](https://github.com/karenavedikyan/remcard-partner-platform/pull/24). Branch `cursor/account-exit-01-b3e3`. No merge/deploy/production.
 
-Account menu (prototype-aligned), profile session block, confirm dialog for global logout, signed-out screen, backend `POST /api/auth/logout-all-sessions`, prof-test-safe exit without admin session revoke.
+## Defect fixes
 
-## Backend (remcard-navigator)
+| # | Issue | Fix |
+| --- | --- | --- |
+| 1 | Current logout only cleared cookie; JWT replay worked | `AuthSessionRevocation` + JWT `sid`; `logoutCurrentDevice` revokes session server-side; checked in `getAuthenticatedUser`, `auth/me`, `getServerUser` |
+| 2 | Delegated current/all both bumped test `tokenVersion` | `exitProfTestSessionCurrentOnly` vs `exitAllProfTestSessionsForSubject` |
+| 3 | `logout-all-sessions` callable without CSRF | `requireLogoutMutationGuard` on both logout routes; platform BFF forwards `X-CSRF-Token` + `remcard-csrf` cookie |
+| 4 | Menu hid errors; drafts cleared before server OK | Alert + retry on trigger; `clearLocalSessionArtifacts` after success; `tryBeginAccountExit` cross-hook pending |
 
-- `src/lib/authSessionLogout.ts` — current vs all devices; prof test uses `exitProfTestSessionWithoutReturn`.
-- `src/lib/profTestExitSession.ts` — revoke delegation, consume return slots, bump **test user** `tokenVersion` only.
-- `POST /api/auth/logout` — authenticated current-device exit + cookie clear.
-- `POST /api/auth/logout-all-sessions` — `tokenVersion` bump (or prof-test exit) + cookie clear.
-- Allowlist: `profTestRoutePolicy` + BFF proxy.
+## Evidence
 
-## Frontend (remcard-partner-platform)
+- Targeted tests: see `TEST-RESULTS.json`
+- Functional A/B: `scripts/account-exit-functional-smoke.mjs` (disposable stack, not fixture-only)
+- Visual: `scripts/account-exit-browser-acceptance.mjs` (honestly separate from A/B)
+- Dev fixture gated: `src/app/dev-fixtures/layout.tsx` → `notFound()` in production
 
-- `AccountSessionMenu`, `ProfileSessionActions`, `LogoutAllConfirmDialog`, `/account/signed-out`.
-- Topbar account control in `AppShell` / `AgentAppShell`; removed duplicate sidebar/mobile logout buttons.
+## Schema
 
-## Auth contexts
-
-| Context | Current device | All devices |
-|--------|----------------|-------------|
-| PRO / Telegram / MAX | Clear cookies; no `tokenVersion` bump | Increment subject `tokenVersion`; clear cookies |
-| Prof test delegation | Revoke delegation + slots; bump test user | Same (test subject only) |
-| Admin password (non-test) | Same as PRO | Same as PRO |
-
-Admin password sessions on other devices are **not** revoked when exiting a delegated test LK.
-
-## Operator rollout
-
-1. Merge backend PR → deploy navigator.
-2. Merge frontend PR → deploy partner platform.
-3. Smoke: dual-browser session A/B on disposable test user; verify `/api/auth/me` body after each step.
-
-## Limits (NOT_VERIFIED without live stack)
-
-- Live MAX/Telegram provider login on production.
-- Full dual-session A/B on shared disposable DB in this agent run (requires running stack + test user).
+Additive migration `20261017120000_auth_session_revocation` on disposable PG only until rollout.
