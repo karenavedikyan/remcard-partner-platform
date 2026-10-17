@@ -9,10 +9,21 @@ const STAGES = [
 
 export type JoinProgressStage = (typeof STAGES)[number]["id"];
 
-export function JoinProgress({ current }: { current: JoinProgressStage }) {
+export function JoinProgress({
+  current,
+  layout = "wizard",
+}: {
+  current: JoinProgressStage;
+  /** Types registration page matches frozen prototype progress layout. */
+  layout?: "wizard" | "typesRegistration";
+}) {
   const currentIndex = STAGES.findIndex((s) => s.id === current);
+  const listClass =
+    layout === "typesRegistration"
+      ? `${styles.entryProgress} ${styles.entryProgressTypesRegistration}`
+      : styles.entryProgress;
   return (
-    <ol className={styles.entryProgress} aria-label="Этапы регистрации">
+    <ol className={listClass} aria-label="Этапы регистрации">
       {STAGES.map((stage, index) => (
         <li key={stage.id} aria-current={index === currentIndex ? "step" : undefined}>
           <span>{index + 1}</span>

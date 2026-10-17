@@ -17,6 +17,8 @@ const REF_BRANCH =
 const PROTO_DIR = process.env.REGISTRATION_PROTO_DIR ?? "/tmp/reg-prototype-20261017";
 const PROTO_PORT = Number(process.env.REGISTRATION_PROTO_PORT ?? "3099");
 const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
+const REFERENCE_SHA_IMMUTABLE =
+  process.env.REGISTRATION_REF_SHA ?? "771cc658a415a5d05b964f29f675d32db449198b";
 
 const CODE_SHA = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
 const TREE_DIRTY =
@@ -66,11 +68,172 @@ async function applyTheme(page, theme) {
   await page.emulateMedia({ colorScheme: theme });
   await page.evaluate((t) => {
     document.documentElement.setAttribute("data-theme", t);
+    document.documentElement.dataset.theme = t;
   }, theme);
+}
+
+async function applyPrototypeTheme(page, theme) {
+  await page.emulateMedia({ colorScheme: theme });
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const current = await page.evaluate(
+      () => document.documentElement.getAttribute("data-theme") || "light",
+    );
+    if (current === theme) break;
+    const toggle = page.locator('[data-action="theme"]');
+    if (await toggle.count()) {
+      await toggle.click();
+      await page.waitForTimeout(theme === "dark" ? 350 : 150);
+    } else break;
+  }
+  await page.evaluate((t) => {
+    document.documentElement.setAttribute("data-theme", t);
+    document.documentElement.dataset.theme = t;
+  }, theme);
+}
+
+async function mockAuthGuest(page) {
+  await page.route("**/api/remcard/api/auth/me**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ user: null }),
+    });
+  });
+}
+
+async function mockRegistrationCapabilities(page) {
+  await page.route("**/api/remcard/api/pro/registration/capabilities**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        contractVersion: "2026-10-17.registration-01",
+        welcomeEnabled: true,
+        agentRegistrationPathEnabled: true,
+        legacyLoginPathEnabled: true,
+      }),
+    });
+  });
 }
 
 async function hideDevChrome(page) {
   await page.addStyleTag({ content: DEV_OVERLAY_HIDE });
+  await page.evaluate(() => {
+    const hideHost = (host) => {
+      if (!host?.shadowRoot) return;
+      const style = document.createElement("style");
+      style.textContent =
+        "nextjs-portal, [data-nextjs-toast], [data-nextjs-dialog] { display: none !important; }";
+      host.shadowRoot.appendChild(style);
+    };
+    hideHost(document.querySelector("nextjs-portal"));
+    document.querySelectorAll("nextjs-portal").forEach(hideHost);
+  });
+}
+
+async function assertDevChromeHidden(page) {
+  const visible = await page.evaluate(() => {
+    const portal = document.querySelector("nextjs-portal");
+    if (!portal) return false;
+    const rect = portal.getBoundingClientRect();
+    const style = getComputedStyle(portal);
+    return rect.width > 0 && rect.height > 0 && style.display !== "none";
+  });
+  if (visible) throw new Error("Next dev overlay still visible before capture");
+}
+
+async function waitForCaptureStabilization(page, theme, kind, step) {
+  await page.evaluate(() => document.fonts?.ready);
+  await page.waitForTimeout(theme === "dark" ? 450 : 200);
+  if (step !== "types") return;
+  const cardSelector =
+    kind === "reference" ? ".role-card" : '[data-testid="registration-types-grid"] label';
+  await page.waitForSelector(cardSelector, { timeout: 30_000 });
+  await page.waitForFunction(
+    ({ sel, isDark }) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      const bg = getComputedStyle(el).backgroundColor;
+      const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!m) return !isDark;
+      const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
+      if (!isDark) return true;
+      // Reject transient unreadable pale cards; accept settled dark surfaces.
+      if (r > 190 && g > 190 && b > 190) return false;
+      return r <= 80 && g <= 80 && b <= 80;
+    },
+    { sel: cardSelector, isDark: theme === "dark" },
+    { timeout: 20_000 },
+  );
+}
+
+async function measureTypesLayout(page, kind) {
+  return page.evaluate((sourceKind) => {
+    const grid =
+      sourceKind === "reference"
+        ? document.querySelector(".role-grid")
+        : document.querySelector('[data-testid="registration-types-grid"]');
+    const h1 = document.querySelector(".intro h1, .typesIntro h1, h1");
+    const card =
+      sourceKind === "reference"
+        ? document.querySelector(".role-card")
+        : document.querySelector('[data-testid="registration-types-grid"] label');
+    const gridBox = grid?.getBoundingClientRect();
+    const h1Style = h1 ? getComputedStyle(h1) : null;
+    const gridStyle = grid ? getComputedStyle(grid) : null;
+    const cardStyle = card ? getComputedStyle(card) : null;
+    const cols = gridStyle?.gridTemplateColumns?.split(/\s+/).filter(Boolean) ?? [];
+    return {
+      grid: gridBox
+        ? {
+            x: Math.round(gridBox.x * 100) / 100,
+            width: Math.round(gridBox.width * 100) / 100,
+            columnCount: cols.length,
+            columnWidthsPx: cols.map((c) => Math.round(parseFloat(c) || 0)),
+            gridTemplateColumns: gridStyle?.gridTemplateColumns ?? null,
+          }
+        : null,
+      h1: h1Style
+        ? {
+            fontSizePx: Math.round(parseFloat(h1Style.fontSize) * 100) / 100,
+            lineHeight: h1Style.lineHeight,
+          }
+        : null,
+      card: cardStyle
+        ? {
+            backgroundColor: cardStyle.backgroundColor,
+            color: cardStyle.color,
+            display: cardStyle.display,
+            flexDirection: cardStyle.flexDirection,
+            minHeight: cardStyle.minHeight,
+          }
+        : null,
+    };
+  }, kind);
+}
+
+function assertGridParity(refMeasure, implMeasure, width) {
+  if (width !== 1440 || !refMeasure?.grid || !implMeasure?.grid) return [];
+  const failures = [];
+  const tol = 2;
+  for (const [label, refVal, implVal] of [
+    ["grid.x", refMeasure.grid.x, implMeasure.grid.x],
+    ["grid.width", refMeasure.grid.width, implMeasure.grid.width],
+    ["grid.columnCount", refMeasure.grid.columnCount, implMeasure.grid.columnCount],
+  ]) {
+    if (Math.abs(refVal - implVal) > tol) {
+      failures.push(`${label}: ref=${refVal} impl=${implVal} (tol ${tol}px)`);
+    }
+  }
+  if (refMeasure.grid.columnCount === 3 && implMeasure.grid.columnCount === 3) {
+    for (let i = 0; i < 3; i++) {
+      const d = Math.abs(refMeasure.grid.columnWidthsPx[i] - implMeasure.grid.columnWidthsPx[i]);
+      if (d > tol) {
+        failures.push(`grid.col${i + 1}: ref=${refMeasure.grid.columnWidthsPx[i]} impl=${implMeasure.grid.columnWidthsPx[i]}`);
+      }
+    }
+  }
+  return failures;
 }
 
 async function verifyViewport(page, expectedWidth) {
@@ -90,13 +253,15 @@ async function verifyTypesStep(page) {
   }
 }
 
-async function captureRecord(page, fileName, expectedWidth, theme, step, kind, verifyFn) {
-  await applyTheme(page, theme);
+async function captureRecord(page, fileName, expectedWidth, theme, step, kind, verifyFn, layoutMeasure) {
   await verifyViewport(page, expectedWidth);
   const dataTheme = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
-  if (kind === "reference" && dataTheme !== theme) {
+  if (dataTheme !== theme) {
     throw new Error(`Theme expected ${theme}, got ${dataTheme}`);
   }
+  await waitForCaptureStabilization(page, theme, kind, step);
+  await hideDevChrome(page);
+  await assertDevChromeHidden(page);
   await verifyFn(page);
   const filePath = path.join(OUT, fileName);
   const fullPageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -120,15 +285,35 @@ async function captureRecord(page, fileName, expectedWidth, theme, step, kind, v
     pngWidth: png.width,
     pngHeight: png.height,
     fullPageHeight,
+    layout: layoutMeasure,
     verify: "passed",
   };
 }
 
+async function stripPrototypeDemoChrome(page) {
+  await page.evaluate(() => {
+    document.querySelector(".demo-top")?.remove();
+    document.querySelector(".mobile-demo-settings")?.remove();
+    document.querySelector(".review-toolbar")?.remove();
+    document.querySelector(".entry-disclaimer")?.remove();
+    document.querySelector("details.review-details")?.remove();
+    document.querySelector("#review")?.remove();
+  });
+}
+
 async function openImplTypes(page, theme, width) {
+  await mockRegistrationCapabilities(page);
   await page.setViewportSize({ width, height: width >= 1440 ? 900 : width <= 320 ? 640 : 812 });
+  await page.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
   await applyTheme(page, theme);
   await hideDevChrome(page);
-  await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+  await page.waitForSelector('[data-testid="registration-types-grid"] label', {
+    timeout: 30_000,
+  });
 }
 
 async function openPrototypeTypes(page, theme, width) {
@@ -145,17 +330,13 @@ async function openPrototypeTypes(page, theme, width) {
     await page.locator('[data-action="register"]').first().click();
   }
   await page.waitForSelector("h1", { timeout: 30_000 });
-  await page.evaluate(() => {
-    document.querySelector(".demo-top")?.remove();
-    document.querySelector(".review-toolbar")?.remove();
-    document.querySelector(".entry-disclaimer")?.remove();
-    document.querySelector("details.review-details")?.remove();
-  });
-  await applyTheme(page, theme);
+  await stripPrototypeDemoChrome(page);
+  await applyPrototypeTheme(page, theme);
   const h1 = await page.locator(".intro h1, h1").first().innerText();
   if (!/Какой тип партнёрства/i.test(h1)) {
     throw new Error(`Prototype choose screen not ready: "${h1}"`);
   }
+  await page.waitForSelector(".role-grid .role-card", { timeout: 30_000 });
 }
 
 async function main() {
@@ -166,6 +347,7 @@ async function main() {
   const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   const captures = [];
   const pairs = [];
+  const parityFailures = [];
 
   const typeMatrix = [
     { theme: "light", width: 1440, suffix: "1440-light" },
@@ -176,10 +358,12 @@ async function main() {
   ];
 
   for (const { theme, width, suffix } of typeMatrix) {
+    let refMeasure = null;
     {
       const context = await browser.newContext();
       const page = await context.newPage();
       await openPrototypeTypes(page, theme, width);
+      refMeasure = await measureTypesLayout(page, "reference");
       captures.push(
         await captureRecord(
           page,
@@ -189,6 +373,7 @@ async function main() {
           "types",
           "reference",
           verifyTypesStep,
+          refMeasure,
         ),
       );
       await context.close();
@@ -197,6 +382,8 @@ async function main() {
       const context = await browser.newContext();
       const page = await context.newPage();
       await openImplTypes(page, theme, width);
+      const implMeasure = await measureTypesLayout(page, "implementation");
+      parityFailures.push(...assertGridParity(refMeasure, implMeasure, width));
       captures.push(
         await captureRecord(
           page,
@@ -206,6 +393,7 @@ async function main() {
           "types",
           "implementation",
           verifyTypesStep,
+          implMeasure,
         ),
       );
       pairs.push({ pair: `types-${suffix}`, ref: `ref-types-${suffix}.png`, impl: `impl-types-${suffix}.png` });
@@ -216,10 +404,15 @@ async function main() {
   {
     const context = await browser.newContext();
     const page = await context.newPage();
+    await mockRegistrationCapabilities(page);
     await page.setViewportSize({ width: 375, height: 812 });
+    await page.addInitScript(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
     await applyTheme(page, "dark");
     await hideDevChrome(page);
-    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
     await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
     await page.getByRole("button", { name: /Продолжить/ }).click();
     await page.getByLabel("Имя").fill("QA Visual");
@@ -227,7 +420,7 @@ async function main() {
       await captureRecord(page, "impl-data-375-dark.png", 375, "dark", "data", "implementation", async (p) => {
         const h1 = await p.locator("h1").first().innerText();
         if (!/Ваши данные/i.test(h1)) throw new Error(`data step h1=${h1}`);
-      }),
+      }, null),
     );
     await context.close();
   }
@@ -235,23 +428,36 @@ async function main() {
   {
     const context = await browser.newContext();
     const page = await context.newPage();
+    await mockRegistrationCapabilities(page);
+    await mockAuthGuest(page);
     await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      sessionStorage.setItem(
+        "remcard.registration.wizard.v1",
+        JSON.stringify({ step: "auth", kind: "agent", updatedAt: Date.now() }),
+      );
+      sessionStorage.setItem(
+        "remcard.registration.draft.v1:agent",
+        JSON.stringify({
+          kind: "agent",
+          fields: { displayName: "QA Visual", city: "Москва" },
+          updatedAt: Date.now(),
+        }),
+      );
+    });
+    await page.reload({ waitUntil: "networkidle" });
     await applyTheme(page, "dark");
     await hideDevChrome(page);
-    await page.goto(`${IMPL_BASE}/join`, { waitUntil: "networkidle" });
-    await page.locator('label:has(input[value="agent"])').click({ position: { x: 8, y: 8 } });
-    await page.getByRole("button", { name: /Продолжить/ }).click();
-    await page.getByLabel("Имя").fill("QA Visual");
-    await page.getByRole("button", { name: /Продолжить/ }).click();
-    await page.getByLabel("Город").fill("Москва");
-    await page.getByRole("button", { name: /Продолжить/ }).click();
-    await page.waitForSelector("#embedded-auth-title", { timeout: 20_000 });
+    await page.waitForSelector("#embedded-auth-title", { timeout: 30_000 });
     captures.push(
       await captureRecord(page, "impl-auth-375-dark.png", 375, "dark", "auth", "implementation", async (p) => {
         if ((await p.locator("#embedded-auth-title").count()) === 0) {
           throw new Error("auth step missing embedded title");
         }
-      }),
+      }, null),
     );
     await context.close();
   }
@@ -259,32 +465,47 @@ async function main() {
   await browser.close();
   protoProc.kill();
 
-  const invalidRefs = ["ref-types-375-dark.png (review-011 implementation snapshot)"];
   const report = {
     implBase: IMPL_BASE,
     protoBase: PROTO_BASE,
     codeSha: CODE_SHA,
     treeDirty: TREE_DIRTY,
     referenceSha: REF_SHA,
-    referenceBranch: REF_BRANCH,
+    referenceShaImmutable: REFERENCE_SHA_IMMUTABLE,
     capturedAt: new Date().toISOString(),
     captureCount: captures.length,
     pairs,
     captures,
-    invalidSupersededRefs: invalidRefs,
-    supersededImpl: ["reg012-*", "reg013-*", "ref-types-375-light.png (review-01 extract)"],
+    layoutParityFailures1440: parityFailures,
+    captureStatus: parityFailures.length === 0 ? "geometry-1440-within-tolerance" : "NO-GO-layout-parity",
+    invalidSupersededRefs: [],
     remainingVisualGaps: [
       "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
-      "Prototype ref hides demo-top/review-toolbar/disclaimer only; product copy unchanged.",
-      "Welcome hero not in this types-focused capture set.",
+      "1440 h1: impl ~34px vs ref 32px (platform --text-xl clamp).",
+      "375 types: grid x/width differs (shell padding vs ref registration padding).",
+      "Types page height: impl taller (eyebrow + welcome link + progress spacing).",
+      "Welcome link retained on types step (not in frozen prototype footer).",
+      "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals).",
     ],
-    assertions: ["step_verify", "viewport_verify", "theme_verify", "no_horizontal_overflow"],
+    assertions: [
+      "step_verify",
+      "viewport_verify",
+      "theme_verify",
+      "no_horizontal_overflow",
+      "dev_overlay_hidden_post_navigation",
+      "dark_card_computed_settled",
+      "layout_json_embedded",
+    ],
   };
   await writeFile(
     path.join(ROOT, "artifacts/remcard-registration-01/visual-capture.json"),
     JSON.stringify(report, null, 2),
   );
   console.log(JSON.stringify(report, null, 2));
+  if (parityFailures.length) {
+    console.error("1440 layout parity failures:", parityFailures);
+    process.exit(1);
+  }
 }
 
 main().catch((e) => {

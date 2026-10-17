@@ -369,49 +369,57 @@ export function RegistrationJoinFlow() {
 
   return (
     <RegistrationPublicShell loginHref={loginRecovery}>
-      <div className={styles.joinPage}>
-        {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
-        {step === "types" ? (
-          <>
-            <JoinProgress current="types" />
+      {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
+      {step === "types" ? (
+        <div className={styles.typesRegistration}>
+          <JoinProgress current="types" layout="typesRegistration" />
+          <div className={styles.typesIntro}>
+            <p className={styles.typesEyebrow}>Регистрация · шаг 1 из 4</p>
             <h1>Какой тип партнёрства вам подходит?</h1>
             <p className={styles.workspaceNote}>
               Сравните варианты и выберите, как планируете работать. Затем начнём заполнять данные
               по шагам.
             </p>
             {typeHint ? <p className={styles.hint}>{typeHint}</p> : null}
-            <ul className={styles.typeList}>
-              {ALL_KINDS.map((k) => (
-                <li key={k}>
-                  <label className={kind === k ? styles.typeCardActive : styles.typeCard}>
-                    <input
-                      type="radio"
-                      name="registrationKind"
-                      value={k}
-                      checked={kind === k}
-                      onChange={() => {
-                        setKind(k);
-                        setError("");
-                      }}
-                    />
-                    <span className={styles.typeCardIcon}>
-                      <RegistrationKindIcon kind={k} />
-                    </span>
-                    <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
-                    <span className={styles.typeDesc}>
-                      {REGISTRATION_KIND_LABELS[k].lead}
-                      <br />
-                      {REGISTRATION_KIND_LABELS[k].detail}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-            {error ? <p className={styles.error}>{error}</p> : null}
-            <div className={styles.typeChoiceFooter}>
+          </div>
+          <ul className={styles.typeList} data-testid="registration-types-grid">
+            {ALL_KINDS.map((k) => (
+              <li key={k}>
+                <label className={kind === k ? styles.typeCardActive : styles.typeCard}>
+                  <input
+                    type="radio"
+                    name="registrationKind"
+                    value={k}
+                    checked={kind === k}
+                    onChange={() => {
+                      setKind(k);
+                      setError("");
+                    }}
+                  />
+                  <span className={styles.typeCardIcon}>
+                    <RegistrationKindIcon kind={k} />
+                  </span>
+                  <span className={styles.typeTitle}>{REGISTRATION_KIND_LABELS[k].title}</span>
+                  <span className={styles.typeDesc}>
+                    {REGISTRATION_KIND_LABELS[k].lead}
+                    <br />
+                    {REGISTRATION_KIND_LABELS[k].detail}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          {error ? <p className={styles.error}>{error}</p> : null}
+          <div className={styles.typeChoiceFooter}>
+            <p className={styles.typeTeamNote}>
+              Один аккаунт может совмещать личную деятельность и работу в команде.
+              <br />
+              Рабочие пространства и данные при этом разделены.
+            </p>
+            <div className={styles.typeFooterActions}>
               <Button
                 type="button"
-                className={styles.fullWidthBtn}
+                className={styles.typeContinueBtn}
                 disabled={!kind}
                 onClick={onContinueFromTypes}
               >
@@ -420,18 +428,16 @@ export function RegistrationJoinFlow() {
               <Link href={loginRecovery} className={styles.typeLoginSecondary}>
                 Уже есть аккаунт? Войти
               </Link>
-              <p className={styles.typeTeamNote}>
-                Один аккаунт может совмещать личную деятельность и работу в команде.
-                <br />
-                Рабочие пространства и данные при этом разделены.
-              </p>
               <Link href={buildWelcomeHref(joinContext)} className={styles.backToWelcome}>
                 К приветствию
               </Link>
             </div>
-          </>
-        ) : null}
+          </div>
+        </div>
+      ) : null}
 
+      {step !== "types" ? (
+      <div className={styles.joinPage}>
         {step === "name" && isAgentNewPath ? (
           <>
             <JoinProgress current="data" />
@@ -480,6 +486,7 @@ export function RegistrationJoinFlow() {
           </>
         ) : null}
       </div>
+      ) : null}
     </RegistrationPublicShell>
   );
 }
