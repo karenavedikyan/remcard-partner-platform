@@ -575,6 +575,71 @@ async function main() {
 
   captures.push(
     await shotPair(context, {
+      name: 'profile-specialization-step',
+      implUrl: `${implBase}/profile?section=basics`,
+      refUrl: refProfileUrl,
+      prepareBeforeWait: prepareSpecializationBeforeWait,
+      implTestId: 'specialist-profile-wizard',
+      prepareImpl: prepareSpecializationStep,
+      assertImpl: assertSpecStep,
+      assertLayout: assertSpecializationLayout,
+      prepareRef: prepareRefSpecializationStep,
+      assertRef: assertRefSpecialization,
+      theme: 'dark',
+      width: 375,
+      height: 812,
+    }),
+  );
+
+  captures.push(
+    await shotPair(context, {
+      name: 'profile-completed-summary',
+      implUrl: `${implBase}/profile?section=basics`,
+      refUrl: refProfileUrl,
+      implTestId: 'specialist-profile-completed-summary',
+      assertImpl: assertCompleted,
+      prepareRef: refCompleteWorkingProfile,
+      assertRef: assertRefCompleted,
+      theme: 'light',
+      width: 375,
+      height: 812,
+    }),
+  );
+
+  captures.push(
+    await shotPair(context, {
+      name: 'profile-catalog-preview',
+      implUrl: `${implBase}/profile?section=catalog`,
+      refUrl: refProfileUrl,
+      implTestId: 'specialist-catalog-wizard',
+      prepareImpl: prepareCatalogPreviewStep,
+      assertImpl: assertCatalogPreview,
+      prepareRef: prepareRefCatalogPreview,
+      assertRef: assertRefCatalogPreview,
+      theme: 'light',
+      width: 1440,
+      height: 900,
+    }),
+  );
+
+  captures.push(
+    await shotPair(context, {
+      name: 'profile-catalog-preview',
+      implUrl: `${implBase}/profile?section=catalog`,
+      refUrl: refProfileUrl,
+      implTestId: 'specialist-catalog-wizard',
+      prepareImpl: prepareCatalogPreviewStep,
+      assertImpl: assertCatalogPreview,
+      prepareRef: prepareRefCatalogPreview,
+      assertRef: assertRefCatalogPreview,
+      theme: 'dark',
+      width: 375,
+      height: 812,
+    }),
+  );
+
+  captures.push(
+    await shotPair(context, {
       name: 'profile-catalog-wizard-smoke',
       implUrl: `${implBase}/profile?section=catalog`,
       refUrl: null,
@@ -608,6 +673,36 @@ async function main() {
     }),
   );
 
+  captures.push(
+    await shotPair(context, {
+      name: 'profile-catalog-pending',
+      implUrl: `${implBase}/profile?section=catalog`,
+      refUrl: refProfileUrl,
+      implTestId: 'specialist-catalog-pending',
+      assertImpl: assertCatalogPending,
+      prepareRef: prepareRefCatalogPending,
+      assertRef: assertRefCatalogPending,
+      theme: 'light',
+      width: 375,
+      height: 812,
+    }),
+  );
+
+  captures.push(
+    await shotPair(context, {
+      name: 'profile-catalog-pending',
+      implUrl: `${implBase}/profile?section=catalog`,
+      refUrl: refProfileUrl,
+      implTestId: 'specialist-catalog-pending',
+      assertImpl: assertCatalogPending,
+      prepareRef: prepareRefCatalogPending,
+      assertRef: assertRefCatalogPending,
+      theme: 'dark',
+      width: 375,
+      height: 812,
+    }),
+  );
+
   await browser.close();
   protoProc.kill();
 
@@ -625,7 +720,9 @@ async function main() {
     matchedPairCount: matchedPairs.length,
     implOnlySmokeCount: implOnlySmoke.length,
     pairs: captures,
-    note: '7 matched impl/ref pairs + 1 impl-only smoke; pixel parity not auto-scored (CAPTURED ≠ PASS)',
+    carryOverFromCaptureSha: process.env.R06_CARRY_OVER_SHA || null,
+    note:
+      'Matched impl/ref pairs + 1 impl-only smoke for final R06.3 visual set; CAPTURED ≠ visual PASS',
   };
   writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
   console.log(
