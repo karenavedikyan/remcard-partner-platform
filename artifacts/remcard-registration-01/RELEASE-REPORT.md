@@ -41,7 +41,10 @@ Artifacts:
 - `artifacts/remcard-registration-01/visual-capture.json`
 - `artifacts/remcard-registration-01/browser-flow-report.json`
 
-Commit SHAs for this RC revision are recorded in the PR heads after push (see PR checks / branch tip).
+| Repo | Branch tip (01.2) |
+|------|-------------------|
+| remcard-partner-platform | `5808fa4` |
+| remcard-navigator | `9fa871f3` |
 
 ## Still NOT_RUN (explicit)
 
