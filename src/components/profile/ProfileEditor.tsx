@@ -53,6 +53,7 @@ import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
 import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
+import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
 import {
   mergeCatalogPrefill,
@@ -115,6 +116,12 @@ type ProfileEditorProps = {
     eligible: boolean;
     profileComplete: boolean;
   } | null;
+  initialSpecialistR06Gate?: {
+    featureEnabled: boolean;
+    eligible: boolean;
+    profileComplete?: boolean;
+    ineligibleReason?: string | null;
+  } | null;
   initialPureAgentCompact?: boolean;
 };
 
@@ -140,6 +147,7 @@ function ProfileEditorInner({
   focusBranchId,
   focusField,
   initialAgentR02Gate = null,
+  initialSpecialistR06Gate = null,
   initialPureAgentCompact = false,
 }: ProfileEditorProps) {
   const cabinetAccess = useProfileCabinetAccess();
@@ -203,7 +211,22 @@ function ProfileEditorInner({
   const [partnerActivities, setPartnerActivities] = useState<string[]>(
     user.partnerActivities ?? [],
   );
-  const [specialistR06Ui, setSpecialistR06Ui] = useState(false);
+  const [specialistR06Gate, setSpecialistR06Gate] = useState<{
+    featureEnabled: boolean;
+    eligible: boolean;
+  } | null>(
+    initialSpecialistR06Gate
+      ? {
+          featureEnabled: initialSpecialistR06Gate.featureEnabled,
+          eligible: initialSpecialistR06Gate.eligible,
+        }
+      : null,
+  );
+  const specialistR06Ui = Boolean(
+    specialistR06Gate?.featureEnabled &&
+      specialistR06Gate?.eligible &&
+      profile.user.partnerType === "MASTER",
+  );
   const catalogDraftRaw = initial.user.catalogDraft as Record<string, unknown> | null | undefined;
   const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() => {
     const raw = catalogDraftRaw?.navigatorStageIds;
@@ -253,6 +276,26 @@ function ProfileEditorInner({
         }
       : null,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSpecialistR06Status()
+      .then((status) => {
+        if (cancelled) return;
+        setSpecialistR06Gate({
+          featureEnabled: status.featureEnabled,
+          eligible: status.eligible,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSpecialistR06Gate({ featureEnabled: false, eligible: false });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.user.partnerType]);
 
   useEffect(() => {
     let cancelled = false;
@@ -359,6 +402,7 @@ function ProfileEditorInner({
   const buildCatalogDraft = useCallback((): ProfileDraft => {
     return {
       ...buildDraft(),
+      catalogNavigatorStageIds,
       navigatorStageIds: catalogNavigatorStageIds,
       catalogTouched,
     };
@@ -694,11 +738,9 @@ function ProfileEditorInner({
             pureAgentCompactUi ? () => navigateSection("overview") : undefined
           }
         />
-        <SpecialistProfileSection
-          partnerType={profile.user.partnerType}
-          onR06ActiveChange={setSpecialistR06Ui}
-          onWorkingProfileSaved={() => window.location.reload()}
-        />
+        {specialistR06Ui ? (
+          <SpecialistProfileSection onWorkingProfileSaved={applyProfile} />
+        ) : null}
         {!pureAgentCompactUi && !specialistR06Ui ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
@@ -911,7 +953,6 @@ function ProfileEditorInner({
 
         {activeSection === "catalog" && !pureAgentCompactUi && specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg ? (
           <SpecialistCatalogSection
-            partnerType={partnerType}
             profile={profile}
             draft={buildCatalogDraft()}
             catalogEditable={catalogEditable}

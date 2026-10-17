@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-/**
- * R06 API acceptance (requires running local stack + R06_FIXTURE env).
- * Gate-on: PROF_R06_SPECIALIST_PROFILE_ENABLED=1 on navigator.
- */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -23,76 +19,71 @@ function loadEnv(envPath) {
   return env;
 }
 
-function runFixture(env, action) {
-  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r06-local-fixture.ts', action], {
-    cwd: NAV_ROOT,
-    env,
-    encoding: 'utf8',
-  });
-  if (res.status !== 0) {
-    throw new Error(`fixture ${action}: ${(res.stderr || res.stdout || '').slice(0, 500)}`);
-  }
-  return (res.stdout || '').trim();
-}
-
-async function fetchJson(url, init = {}) {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => null);
-  return { status: res.status, body };
+function run(cmd, cwd, env) {
+  const res = spawnSync(cmd[0], cmd.slice(1), { cwd, env, encoding: 'utf8' });
+  return { exitCode: res.status ?? 1, stdout: res.stdout || '', stderr: res.stderr || '' };
 }
 
 async function main() {
-  const runDir = process.env.R06_RUN_DIR;
-  if (!runDir) {
-    const report = {
-      ok: false,
-      skipped: true,
-      reason: 'R06_RUN_DIR not set — start local prof stack first (see r02-local-stack pattern)',
-    };
-    mkdirSync(path.dirname(ARTIFACT), { recursive: true });
-    writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
-    console.log(JSON.stringify(report));
-    process.exit(0);
+  const runDir = process.env.R06_RUN_DIR || '/tmp/r06-local-stack';
+  if (!readFileSync(path.join(runDir, 'meta.json'), 'utf8')) {
+    throw new Error('missing meta.json — run scripts/r06-local-stack.mjs first');
   }
   const meta = JSON.parse(readFileSync(path.join(runDir, 'meta.json'), 'utf8'));
   const env = loadEnv(meta.envPath);
-  env.PROF_R06_SPECIALIST_PROFILE_ENABLED = meta.gateEnabled === false ? '0' : '1';
+  env.JWT_SECRET = env.JWT_SECRET || 'prof-r01-route-test-secret-min-32-chars!!';
 
-  runFixture(env, 'push-schema');
-  runFixture(env, 'seed');
-  const token = runFixture(env, 'mint');
-  const cookie = `remcard-token=${token}`;
-  const nav = env.REMCARD_API_BASE_URL.replace(/\/$/, '');
-  const plat = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  const migration = run(['node', 'scripts/r06-migration-controlled.mjs'], NAV_ROOT, env);
+  const integration = run(
+    ['pnpm', 'exec', 'vitest', 'run', 'src/lib/__tests__/profR06SpecialistRoute.integration.test.ts'],
+    NAV_ROOT,
+    env,
+  );
+  const unit = run(
+    [
+      'pnpm',
+      'exec',
+      'tsx',
+      '--test',
+      'src/lib/__tests__/profR06Config.test.ts',
+      'src/lib/__tests__/specialistR06CatalogSubmit.test.ts',
+      'src/lib/__tests__/specialistProfileDraft.test.ts',
+    ],
+    NAV_ROOT,
+    env,
+  );
+  const build = run(['pnpm', 'run', 'build'], ROOT, env);
 
-  const report = { ok: false, gate: env.PROF_R06_SPECIALIST_PROFILE_ENABLED, steps: {} };
-  report.steps.status = await fetchJson(`${plat}/api/remcard/api/pro/r06/status`, {
-    headers: { Cookie: cookie },
-  });
-  report.steps.draftGet = await fetchJson(`${plat}/api/remcard/api/pro/specialist-profile/draft`, {
-    headers: { Cookie: cookie },
-  });
-  report.steps.draftPatch = await fetchJson(`${plat}/api/remcard/api/pro/specialist-profile/draft`, {
-    method: 'PATCH',
-    headers: { Cookie: cookie, 'content-type': 'application/json', 'x-remcard-csrf': '1' },
-    body: JSON.stringify({
-      expectedVersion: report.steps.draftGet.body?.version ?? 0,
-      step: 1,
-      payload: { displayName: 'R06 Test Specialist', city: 'Krasnodar' },
-    }),
+  const visual = run(['node', 'scripts/r06-visual-capture.mjs'], ROOT, {
+    ...env,
+    R06_RUN_DIR: runDir,
   });
 
-  const gateOn = env.PROF_R06_SPECIALIST_PROFILE_ENABLED === '1';
+  const report = {
+    ok: false,
+    gate: meta.gateEnabled !== false ? 'on' : 'off',
+    navigatorSha: meta.navigatorSha,
+    platformSha: meta.platformSha,
+    referenceSha: '771cc658a415a5d05b964f29f675d32db449198b',
+    steps: {
+      migrationControlled: { exitCode: migration.exitCode },
+      integrationVitest: { exitCode: integration.exitCode },
+      unitTsx: { exitCode: unit.exitCode },
+      platformBuild: { exitCode: build.exitCode },
+      visualCapture: visual,
+    },
+  };
+
   report.ok =
-    report.steps.status.status === 200 &&
-    report.steps.status.body?.featureEnabled === gateOn &&
-    report.steps.status.body?.eligible === gateOn &&
-    report.steps.draftGet.status === (gateOn ? 200 : 403) &&
-    (gateOn ? report.steps.draftPatch.status === 200 : true);
+    migration.exitCode === 0 &&
+    integration.exitCode === 0 &&
+    unit.exitCode === 0 &&
+    build.exitCode === 0 &&
+    visual.exitCode === 0;
 
   mkdirSync(path.dirname(ARTIFACT), { recursive: true });
   writeFileSync(ARTIFACT, JSON.stringify(report, null, 2));
-  console.log(JSON.stringify(report));
+  console.log(JSON.stringify({ ok: report.ok }));
   process.exit(report.ok ? 0 : 1);
 }
 

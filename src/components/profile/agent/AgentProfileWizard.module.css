@@ -257,6 +257,22 @@
   margin-top: var(--pw-4);
 }
 
+.reviewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--pw-3);
+  font-size: var(--pw-sm);
+}
+
+.reviewList li {
+  padding: var(--pw-3);
+  border: 1px solid var(--pw-line);
+  border-radius: 8px;
+  background: var(--pw-soft);
+}
+
 .actions {
   display: flex;
   justify-content: space-between;

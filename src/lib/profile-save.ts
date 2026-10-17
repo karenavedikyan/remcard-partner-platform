@@ -36,6 +36,8 @@ export type ProfileDraft = {
   partnerActivities: string[];
   /** R06: per-field touched flags stored in catalogDraft JSON on server. */
   catalogTouched?: Record<string, boolean>;
+  /** Public catalog stages (PATCH alias → catalog draft JSON). */
+  catalogNavigatorStageIds?: string[];
 };
 
 export function validateProfileDraft(
@@ -207,7 +209,7 @@ export async function persistCatalogDraftOnly(
         publicPhone: draft.publicPhone.trim() || null,
         showFullName: draft.showFullName,
         photoUrl: draft.catalogImageUrl.trim() || null,
-        navigatorStageIds: draft.navigatorStageIds,
+        catalogNavigatorStageIds: draft.catalogNavigatorStageIds ?? draft.navigatorStageIds,
         catalogTouched: draft.catalogTouched ?? undefined,
       },
     });

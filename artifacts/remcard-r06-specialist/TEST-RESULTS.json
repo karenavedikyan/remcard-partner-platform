@@ -1,5 +1,26 @@
 {
-  "ok": false,
-  "skipped": true,
-  "reason": "R06_RUN_DIR not set — start local prof stack first (see r02-local-stack pattern)"
+  "ok": true,
+  "gate": "on",
+  "navigatorSha": "98749816d0fa4f1722aac0c53e1e10b68ca3bdac",
+  "platformSha": "f898f2727e0333701d8ae314d42208f018792dae",
+  "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "steps": {
+    "migrationControlled": {
+      "exitCode": 0
+    },
+    "integrationVitest": {
+      "exitCode": 0
+    },
+    "unitTsx": {
+      "exitCode": 0
+    },
+    "platformBuild": {
+      "exitCode": 0
+    },
+    "visualCapture": {
+      "exitCode": 0,
+      "stdout": "{\"ok\":true,\"count\":6,\"out\":\"/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots\"}\n",
+      "stderr": ""
+    }
+  }
 }

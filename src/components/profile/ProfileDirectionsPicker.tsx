@@ -15,6 +15,8 @@ type ProfileDirectionsPickerProps = {
   disabled?: boolean;
   /** Catalog publication: no working-profile stage/primary editors. */
   catalogMode?: boolean;
+  /** R06 specialist: services + stages only, no products. */
+  specialistMode?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -44,6 +46,7 @@ export function ProfileDirectionsPicker({
   primaryDirection,
   disabled,
   catalogMode,
+  specialistMode,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -186,8 +189,9 @@ export function ProfileDirectionsPicker({
   return (
     <div className={styles.wrap}>
       <p className={styles.lead}>
-        Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать
-        одно направление или оба.
+        {specialistMode
+          ? "Выберите услуги и этапы ремонта, где вы можете помочь."
+          : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
       </p>
 
       {selectedChips.length === 0 ? (
@@ -235,6 +239,7 @@ export function ProfileDirectionsPicker({
 
       {filtered ? (
         <>
+          {!specialistMode ? (
           <fieldset className={styles.group} disabled={disabled}>
             <legend>Товары</legend>
             <div className={styles.optionGrid}>
@@ -258,6 +263,7 @@ export function ProfileDirectionsPicker({
               )}
             </div>
           </fieldset>
+          ) : null}
 
           <fieldset className={styles.group} disabled={disabled}>
             <legend>Работы и услуги</legend>
@@ -303,7 +309,7 @@ export function ProfileDirectionsPicker({
         </label>
       ) : null}
 
-      {!catalogMode ? (
+      {!catalogMode || specialistMode ? (
         <fieldset className={styles.group} disabled={disabled}>
           <legend>На каких этапах вы полезны</legend>
           <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>

@@ -12,6 +12,7 @@ export function fetchSpecialistProfileDraft() {
 export function patchSpecialistProfileDraft(body: {
   expectedVersion: number;
   step?: number;
+  mode?: "save" | "advance";
   payload: Partial<SpecialistDraftResponse["payload"]>;
 }) {
   return remcardFetch<SpecialistDraftResponse>("/api/pro/specialist-profile/draft", {

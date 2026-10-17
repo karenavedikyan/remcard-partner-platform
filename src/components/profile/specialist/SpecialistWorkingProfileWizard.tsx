@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
+import { refreshProfile } from "@/lib/profile-save";
 import {
   discardSpecialistProfileDraft,
   fetchSpecialistProfileDraft,
@@ -12,12 +13,21 @@ import type { SpecialistProfileDraftPayload } from "@/lib/specialist-r06/types";
 import { SPECIALIST_PRESETS, applySpecialistPreset } from "@/lib/specialist-r06/presets";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profile/agent/AgentPhoneField";
+import type { ProProfileResponse } from "@/lib/types";
 import styles from "../agent/AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Специализация", "Связь и работа", "Проверка"] as const;
 
+const WORK_MODES = [
+  { value: "", label: "Не указано" },
+  { value: "ON_SITE", label: "По адресу" },
+  { value: "MOBILE", label: "На выезде" },
+  { value: "BOTH", label: "По адресу и на выезде" },
+  { value: "ONLINE", label: "Онлайн" },
+] as const;
+
 type Props = {
-  onWorkingProfileSaved?: () => void;
+  onWorkingProfileSaved?: (next: ProProfileResponse) => void;
 };
 
 export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props) {
@@ -25,16 +35,23 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
   const [step, setStep] = useState(0);
   const [version, setVersion] = useState(0);
   const [draft, setDraft] = useState<SpecialistProfileDraftPayload>({});
+  const [savedProfile, setSavedProfile] = useState<SpecialistProfileDraftPayload>({});
+  const [profileComplete, setProfileComplete] = useState(false);
+  const [editing, setEditing] = useState(true);
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
 
   const hydrate = useCallback(async () => {
     setLoading(true);
+    setBanner(null);
     try {
       const data = await fetchSpecialistProfileDraft();
       setDraft(data.payload ?? {});
+      setSavedProfile(data.savedProfile ?? data.payload ?? {});
       setVersion(data.version ?? 0);
+      setProfileComplete(Boolean(data.profileComplete));
+      setEditing(!data.profileComplete || Boolean(data.hasDraft));
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
     } catch {
       setBanner({ kind: "error", text: "Не удалось загрузить черновик профиля." });
@@ -47,30 +64,50 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
     void hydrate();
   }, [hydrate]);
 
-  const persist = async (nextStep: number, patch: SpecialistProfileDraftPayload) => {
-    const merged = { ...draft, ...patch };
+  const persist = async (
+    nextStep: number,
+    patch: SpecialistProfileDraftPayload,
+    mode: "save" | "advance" = "advance",
+  ) => {
     setSaving(true);
     setBanner(null);
     try {
       const res = await patchSpecialistProfileDraft({
         expectedVersion: version,
         step: nextStep + 1,
-        payload: merged,
+        mode,
+        payload: patch,
       });
       setDraft(res.payload);
       setVersion(res.version);
-      setStep(nextStep);
+      if (mode === "advance") setStep(nextStep);
       return true;
     } catch (e) {
       if (e instanceof RemcardApiError && e.status === 409) {
         setBanner({ kind: "error", text: "Конфликт версии. Обновите страницу." });
       } else {
-        setBanner({ kind: "error", text: "Не удалось сохранить черновик." });
+        setBanner({
+          kind: "error",
+          text: e instanceof RemcardApiError ? e.message : "Не удалось сохранить черновик.",
+        });
       }
       return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveDraftOnly = async () => {
+    const committed = phoneRef.current?.commitPending();
+    const patch =
+      committed !== undefined ? { ...draft, partnershipContactPhone: committed } : draft;
+    if (committed !== undefined) setDraft(patch);
+    const ok = await persist(step, patch, "save");
+    if (ok) setBanner({ kind: "success", text: "Черновик сохранён." });
+  };
+
+  const skipStep = async () => {
+    await persist(Math.min(3, step + 1), draft, "advance");
   };
 
   const onSubmitStep = async (e: FormEvent) => {
@@ -96,12 +133,34 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
       return;
     }
     setSaving(true);
+    setBanner(null);
     try {
       await finishSpecialistProfile({ expectedVersion: version });
+      const refreshed = await refreshProfile();
+      setProfileComplete(true);
+      setEditing(false);
+      setSavedProfile(draft);
       setBanner({ kind: "success", text: "Рабочий профиль сохранён." });
-      onWorkingProfileSaved?.();
+      onWorkingProfileSaved?.(refreshed);
+    } catch (e) {
+      setBanner({
+        kind: "error",
+        text: e instanceof RemcardApiError ? e.message : "Не удалось завершить профиль.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetDraft = async () => {
+    setSaving(true);
+    setBanner(null);
+    try {
+      await discardSpecialistProfileDraft();
+      await hydrate();
+      setBanner({ kind: "success", text: "Черновик сброшен." });
     } catch {
-      setBanner({ kind: "error", text: "Не удалось завершить профиль." });
+      setBanner({ kind: "error", text: "Не удалось сбросить черновик." });
     } finally {
       setSaving(false);
     }
@@ -112,6 +171,58 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
       <p className={styles.intro} data-testid="specialist-profile-loading">
         Загружаем профиль специалиста…
       </p>
+    );
+  }
+
+  if (!editing && profileComplete) {
+    const name = savedProfile.displayName?.trim() || "—";
+    return (
+      <div className={styles.pw} data-testid="specialist-profile-completed-summary">
+        <section className={styles.summary}>
+          <div className={styles.summaryHeader}>
+            <div className={styles.avatar}>{name.slice(0, 2).toUpperCase()}</div>
+            <div className={styles.summaryIdentity}>
+              <span className={styles.kicker}>Специалист</span>
+              <h2 className={styles.summaryTitle}>{name}</h2>
+              <p className={styles.cityMuted}>{savedProfile.city?.trim() || "Город не указан"}</p>
+            </div>
+            <span className={styles.summaryStatus}>Заполнено</span>
+          </div>
+          {banner ? (
+            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+              {banner.text}
+            </p>
+          ) : null}
+          <dl className={styles.summaryFacts}>
+            <div>
+              <dt>Специализация</dt>
+              <dd>{savedProfile.specialistKind || savedProfile.specialistTitle || "—"}</dd>
+            </div>
+            <div>
+              <dt>Услуги</dt>
+              <dd>{(savedProfile.serviceSpecializationIds ?? []).join(", ") || "—"}</dd>
+            </div>
+            <div>
+              <dt>Этапы</dt>
+              <dd>{(savedProfile.navigatorStageIds ?? []).join(", ") || "—"}</dd>
+            </div>
+          </dl>
+          <div className={styles.summaryActions}>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              disabled={saving}
+              onClick={() => {
+                setEditing(true);
+                setStep(0);
+                setBanner(null);
+              }}
+            >
+              Редактировать профиль
+            </button>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -132,15 +243,24 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   i === step ? styles.stepCurrent : i < step ? styles.stepDone : undefined
                 }
               >
-                <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
-                <span>{label}</span>
+                <button
+                  type="button"
+                  className={styles.stepBtn}
+                  aria-current={i === step ? "step" : undefined}
+                  disabled={saving || i > step}
+                  onClick={() => setStep(i)}
+                >
+                  <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
+                  <span>{label}</span>
+                  {i === 1 || i === 2 ? <small>необязательно</small> : null}
+                </button>
               </li>
             ))}
           </ol>
         </aside>
         <section className={styles.card}>
           <span className={styles.kicker}>
-            Регистрация · шаг {step + 1} из {STEPS.length}
+            Шаг {step + 1} из {STEPS.length}
           </span>
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
@@ -178,7 +298,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     value={draft.specialistKind ?? ""}
                     onChange={(e) => {
                       const kind = e.target.value as SpecialistProfileDraftPayload["specialistKind"];
-                      const next = { ...draft, specialistKind: kind };
+                      const next = { ...draft, specialistKind: kind, productCategoryIds: [] };
                       if (kind) applySpecialistPreset(next, kind, false);
                       setDraft(next);
                     }}
@@ -202,13 +322,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   </div>
                 ) : null}
                 <ProfileDirectionsPicker
-                  productCategoryIds={draft.productCategoryIds ?? []}
+                  specialistMode
+                  productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
                   navigatorStageIds={draft.navigatorStageIds ?? []}
                   primaryDirection={null}
-                  onChangeProducts={(ids) => setDraft((d) => ({ ...d, productCategoryIds: ids }))}
+                  onChangeProducts={() => {}}
                   onChangeServices={(ids) =>
-                    setDraft((d) => ({ ...d, serviceSpecializationIds: ids }))
+                    setDraft((d) => ({ ...d, serviceSpecializationIds: ids, productCategoryIds: [] }))
                   }
                   onChangeStages={(ids) => setDraft((d) => ({ ...d, navigatorStageIds: ids }))}
                   onChangePrimary={() => {}}
@@ -218,7 +339,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   className={styles.btn}
                   disabled={!draft.specialistKind || draft.specialistKind === "other"}
                   onClick={() => {
-                    const next = { ...draft };
+                    const next = { ...draft, productCategoryIds: [] };
                     if (draft.specialistKind) applySpecialistPreset(next, draft.specialistKind, true);
                     setDraft(next);
                   }}
@@ -229,6 +350,22 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
             ) : null}
             {step === 2 ? (
               <div className={styles.fields}>
+                <div className={styles.field}>
+                  <label htmlFor="sp-workmode">Формат работы</label>
+                  <select
+                    id="sp-workmode"
+                    value={draft.partnerWorkMode ?? ""}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, partnerWorkMode: e.target.value }))
+                    }
+                  >
+                    {WORK_MODES.map((m) => (
+                      <option key={m.value || "empty"} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <AgentPhoneField
                   ref={phoneRef}
                   value={draft.partnershipContactPhone ?? ""}
@@ -242,6 +379,22 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, partnershipContactEmail: e.target.value }))
                     }
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="sp-site">Сайт (необязательно)</label>
+                  <input
+                    id="sp-site"
+                    value={draft.publicSite ?? ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, publicSite: e.target.value }))}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="sp-tg">Telegram (необязательно)</label>
+                  <input
+                    id="sp-tg"
+                    value={draft.publicTelegram ?? ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, publicTelegram: e.target.value }))}
                   />
                 </div>
                 <div className={styles.field}>
@@ -263,6 +416,9 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   <strong>Город:</strong> {draft.city}
                 </li>
                 <li>
+                  <strong>Специализация:</strong> {draft.specialistKind || draft.specialistTitle || "—"}
+                </li>
+                <li>
                   <strong>Услуги:</strong> {(draft.serviceSpecializationIds ?? []).join(", ") || "—"}
                 </li>
                 <li>
@@ -281,7 +437,25 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   Назад
                 </button>
               ) : null}
-              <button type="button" className={styles.btn} disabled={saving} onClick={() => void discardSpecialistProfileDraft().then(() => hydrate())}>
+              {(step === 1 || step === 2) && (
+                <button type="button" className={styles.btn} disabled={saving} onClick={() => void skipStep()}>
+                  Пропустить
+                </button>
+              )}
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnDraft}`}
+                disabled={saving}
+                onClick={() => void saveDraftOnly()}
+              >
+                {saving ? "Сохранение…" : "Сохранить черновик"}
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={saving}
+                onClick={() => void resetDraft()}
+              >
                 Сбросить черновик
               </button>
               <button type="submit" className={styles.btnPrimary} disabled={saving}>

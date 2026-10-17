@@ -3,6 +3,7 @@ export type SpecialistR06Status = {
   featureEnabled: boolean;
   hasSpecialistActivity: boolean;
   eligible: boolean;
+  profileComplete?: boolean;
   userId: string;
   ineligibleReason: string | null;
 };
@@ -41,4 +42,5 @@ export type SpecialistDraftResponse = {
   payload: SpecialistProfileDraftPayload;
   savedProfile: SpecialistProfileDraftPayload;
   hasDraft: boolean;
+  profileComplete?: boolean;
 };

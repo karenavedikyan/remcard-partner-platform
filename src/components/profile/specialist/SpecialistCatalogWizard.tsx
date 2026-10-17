@@ -216,8 +216,10 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   i === step ? styles.stepCurrent : i < step ? styles.stepDone : undefined
                 }
               >
-                <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
-                <span>{label}</span>
+                <button type="button" className={styles.stepBtn} disabled={i > step}>
+                  <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
+                  <span>{label}</span>
+                </button>
               </li>
             ))}
           </ol>
@@ -295,6 +297,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
               <ProfileDirectionsPicker
                 disabled={!catalogEditable}
                 catalogMode
+                specialistMode
                 productCategoryIds={[]}
                 serviceSpecializationIds={specializations}
                 navigatorStageIds={catalogStageIds}
