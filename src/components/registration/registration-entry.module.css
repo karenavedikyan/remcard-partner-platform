@@ -170,9 +170,9 @@
 }
 
 .companionIntro {
-  font-size: 0.9375rem;
+  font-size: var(--text-sm);
   color: var(--muted);
-  margin: 0;
+  margin: var(--space-2) 0 0;
   line-height: 1.6;
 }
 
@@ -369,6 +369,14 @@
     text-align: left;
   }
 
+  .formFooter {
+    align-items: stretch;
+  }
+
+  .formFooter > * {
+    flex: 1 1 auto;
+  }
+
   .registrationDataScope .formFooter {
     flex-wrap: nowrap;
     align-items: center;
@@ -378,14 +386,6 @@
   .registrationDataScope .formFooter > * {
     flex: 0 1 auto;
     min-width: 0;
-  }
-
-  .formFooter {
-    align-items: stretch;
-  }
-
-  .formFooter > * {
-    flex: 1 1 auto;
   }
 
   .codeActionsRow > * {
