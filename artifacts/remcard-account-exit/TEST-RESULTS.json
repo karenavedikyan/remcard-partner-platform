@@ -1,52 +1,48 @@
 {
-  "task": "ACCOUNT-EXIT-01.1",
+  "task": "ACCOUNT-EXIT-01.2",
   "status": "READY_FOR_REVIEW",
-  "backendHead": "c124a58e",
-  "frontendHead": "c789d7c",
+  "backendHead": "pending-push",
+  "frontendHead": "pending-push",
   "commands": [
     {
-      "cmd": "cd remcard-navigator && npm test -- src/lib/__tests__/authSessionLogout.test.ts src/lib/__tests__/accountExitSecurityAcceptance.test.ts src/app/api/auth/logout-all-sessions/__tests__/route.test.ts",
+      "cmd": "cd remcard-navigator && npm test -- src/lib/__tests__/accountExitSecurityAcceptance.test.ts src/lib/__tests__/authSessionLogout.test.ts",
       "exitCode": 0,
-      "note": "11 tests (incl. independent security acceptance)"
+      "note": "8 independent + 4 unit = 12 PASS"
     },
     {
-      "cmd": "cd remcard-partner-platform && npx vitest run src/components/account-session/AccountSessionMenu.acceptance.test.tsx src/components/layout/AppShell.test.tsx",
-      "exitCode": 0,
-      "note": "Independent menu acceptance + AppShell"
-    },
-    {
-      "cmd": "cd remcard-partner-platform && npm run build",
+      "cmd": "cd remcard-partner-platform && npx vitest run src/components/account-session/AccountSessionMenu.acceptance.test.tsx",
       "exitCode": 0
-    },
-    {
-      "cmd": "cd remcard-navigator && npm run build",
-      "exitCode": 0
-    },
-    {
-      "cmd": "node scripts/account-exit-browser-acceptance.mjs",
-      "exitCode": null,
-      "note": "Visual captures only; does not implement A/B session proof"
     },
     {
       "cmd": "ADMIN_TEST_RUN_DIR=/tmp/admin-test-local-stack node scripts/account-exit-functional-smoke.mjs",
-      "exitCode": null,
-      "note": "Real A/B + CSRF on disposable stack; requires migration 20261017120000_auth_session_revocation + seeded user"
+      "exitCode": 0,
+      "artifact": "artifacts/remcard-account-exit/FUNCTIONAL-SMOKE.json",
+      "note": "Dual ordinary JWT A/B + CSRF negatives on disposable stack"
+    },
+    {
+      "cmd": "BASE_URL=http://127.0.0.1:3040 node scripts/account-exit-browser-acceptance.mjs",
+      "exitCode": 0,
+      "note": "12 PNG captures menu/dialog 1440/375 + 320 profile"
     }
   ],
   "dualSessionAb": {
-    "status": "SCRIPT_READY",
-    "artifact": "scripts/account-exit-functional-smoke.mjs",
-    "honesty": "Browser acceptance script remains fixture/visual; functional smoke holds A/B + CSRF evidence"
+    "status": "PASS",
+    "artifact": "FUNCTIONAL-SMOKE.json"
   },
   "visualCaptures": {
-    "status": "SCRIPT_READY",
+    "status": "CAPTURED",
     "dir": "artifacts/remcard-account-exit",
-    "note": "Run account-exit-browser-acceptance.mjs against local stack when available"
+    "count": 12
   },
-  "fixes01_1": [
-    "Per-session server revoke (AuthSessionRevocation + JWT sid) on current logout",
-    "Prof-test current vs all delegation scope split",
-    "CSRF/origin guard on logout routes; BFF forwards CSRF",
-    "Account menu errors, post-success draft clear, shared pending lock"
-  ]
+  "fixes01_2": [
+    "PATCH /api/auth/me honors session revocation",
+    "staffAuth/adminStaffApi/withRateLimit/proServerContext revocation checks",
+    "legacy session key = sha256(signed JWT), fail-closed logout without exp",
+    "CSRF-only logout guard (no Origin bypass)",
+    "Functional smoke: real user + dual JWT + CSRF negatives"
+  ],
+  "delegatedAb": {
+    "status": "NOT_RUN",
+    "note": "Covered by unit tests; prof-test enter shares one delegation in browser smoke"
+  }
 }

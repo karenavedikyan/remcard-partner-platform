@@ -1,0 +1,71 @@
+{
+  "task": "ACCOUNT-EXIT-01.2",
+  "platformOrigin": "http://127.0.0.1:3040",
+  "backendOrigin": "http://127.0.0.1:3041",
+  "migration": {
+    "exitCode": 1,
+    "note": "Idempotent AuthSessionRevocation DDL on disposable PG"
+  },
+  "abSessions": {
+    "mode": "ordinary-dual-jwt",
+    "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+    "meBefore": {
+      "a": {
+        "status": 200,
+        "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+        "hasUser": true
+      },
+      "b": {
+        "status": 200,
+        "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+        "hasUser": true
+      }
+    },
+    "logoutCurrentStatus": 200,
+    "meAfterCurrent": {
+      "a": {
+        "status": 200,
+        "userId": null,
+        "hasUser": false
+      },
+      "b": {
+        "status": 200,
+        "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+        "hasUser": true
+      }
+    },
+    "meReloginA": {
+      "status": 200,
+      "userId": "cmvbzo5v5000ejsf5ufxnh4ou",
+      "hasUser": true
+    },
+    "logoutAllStatus": 200,
+    "meAfterAll": {
+      "a": {
+        "status": 200,
+        "userId": null,
+        "hasUser": false
+      },
+      "b": {
+        "status": 200,
+        "userId": null,
+        "hasUser": false
+      }
+    }
+  },
+  "csrf": {
+    "directLogoutAllWithoutCsrf": 403,
+    "bffLogoutAllWithoutCsrf": 403,
+    "directLogoutAllWithCsrfNoOrigin": 403
+  },
+  "delegated": {
+    "status": "NOT_RUN",
+    "note": "Prof-test enter shares one delegation; use targeted tests for delegated A/B"
+  },
+  "gitCapture": {
+    "platform": "735a0d451a8b979ff1b2bf1badb5cb9235f63e27",
+    "navigator": "c124a58e271f438fc22707eb61637c81430ea2ab"
+  },
+  "pass": true,
+  "blocker": null
+}

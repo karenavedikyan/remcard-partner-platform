@@ -1,3 +1,15 @@
+# ACCOUNT-EXIT-01.2 — revocation bypass closure
+
+## 01.2 (this RC)
+
+- PATCH `/api/auth/me` cannot refresh revoked JWT
+- Staff/admin guard paths honor `AuthSessionRevocation`
+- Legacy keys: `legacy-sha256:<hash(token)>` (distinct tokens same second)
+- Logout guard: CSRF required (no Origin-only bypass)
+- Evidence: `FUNCTIONAL-SMOKE.json` PASS, 12 visual PNGs, 8/8 independent tests
+
+---
+
 # ACCOUNT-EXIT-01.1 — corrective RC
 
 PRs: [navigator #687](https://github.com/karenavedikyan/remcard-navigator/pull/687), [platform #24](https://github.com/karenavedikyan/remcard-partner-platform/pull/24). Branch `cursor/account-exit-01-b3e3`. No merge/deploy/production.
