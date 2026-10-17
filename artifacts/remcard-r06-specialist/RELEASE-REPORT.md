@@ -1,4 +1,4 @@
-# R06-SPECIALIST-01 / R06.2 — RELEASE-REPORT
+# R06-SPECIALIST-01 / R06.3 — RELEASE-REPORT
 
 ## PRs
 
@@ -20,7 +20,21 @@
 
 Controlled path: `remcard-navigator/scripts/r06-migration-controlled.mjs` + `scripts/lib/prof-r06-controlled-apply.mjs` (ledger SQL apply, before/apply/after, pinned checksums both migrations, loopback DB guard). **Not** `prisma db push` as apply.
 
-## R06.2 — addressed in this pass
+## R06.3 — this pass
+
+1. **409 conflict:** local draft preserved; panel «Загрузить серверную версию» / «Оставить мои правки» (no silent hydrate overwrite). Vitest regression added.
+2. **Catalog layout:** `SpecialistCatalogWizard.module.css` — prototype-style horizontal steps, wide card, footer actions; not agent sidebar layout.
+3. **Specialization picker:** compact scrollable grids in `ProfileDirectionsPicker` specialist mode.
+4. **Origin policy:** strict `appConfig.appUrl`; optional `REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN=1` for loopback-only dev stacks (same host+scheme).
+5. **Browser BFF:** UI catalog fill/save/clear/preview/submit; finish→edit without reload; origin 403 negative; migration negatives script.
+6. **Visual runner:** immutable ref archive SHA `771cc658…`, state assertions, fail-closed ref capture, scroll-top before shot.
+7. **Migration:** typed `after` probes, untracked partial schema guard, CLI modes `before|apply|after|full`, `r06-migration-negatives.mjs`.
+
+## Taxonomy auto-add (still open)
+
+Navigator stores stages/trades as stable IDs in existing tables. Free-text “propose option” has **no** safe mapping today: ad-hoc alias rows would need `(tenant, normalized_text) → id` with dedup, ordering policy, and moderation — absent that, auto-add would create duplicate labels or wrong stage order on legacy repairs. **Minimal safe path:** product-owned `ProposedTaxonomyAlias` (independent UUID, normalized key, status pending/approved, optional approved_target_id) — not implemented in R06.3.
+
+## R06.2 — addressed earlier
 
 1. **409 after finish → edit:** `SpecialistWorkingProfileWizard` re-fetches draft on finish (version reset) and before «Редактировать профиль»; 409 triggers hydrate + user message. Regression: `SpecialistWorkingProfileWizard.version.test.tsx`.
 2. **Summary/review labels:** `display-labels.ts` maps preset kinds and direction IDs; `other` shows custom `specialistTitle`.

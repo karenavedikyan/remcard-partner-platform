@@ -598,6 +598,14 @@
   border-radius: 6px;
 }
 
+.conflictPanel {
+  margin: var(--pw-4) 0;
+  padding: var(--pw-4);
+  border: 1px solid var(--pw-line);
+  border-radius: 10px;
+  background: var(--pw-soft);
+}
+
 .bannerError,
 .bannerSuccess {
   padding: var(--pw-3) var(--pw-4);

@@ -105,4 +105,56 @@ describe("SpecialistWorkingProfileWizard version sync", () => {
       );
     });
   });
+
+  it("preserves local input on 409 until user chooses resolution", async () => {
+    const user = userEvent.setup();
+    const { RemcardApiError } = await import("@/lib/api-client");
+    let draftCalls = 0;
+    fetchDraft.mockImplementation(async () => {
+      draftCalls += 1;
+      return {
+        version: draftCalls >= 2 ? 5 : 2,
+        step: 1,
+        profileComplete: false,
+        hasDraft: true,
+        payload: { displayName: "Имя с сервера", city: "Krasnodar" },
+        savedProfile: {},
+      };
+    });
+    patchDraft
+      .mockRejectedValueOnce(new RemcardApiError(409, "conflict", {}))
+      .mockResolvedValueOnce({
+        version: 6,
+        payload: { displayName: "Моя несохранённая правка", city: "Krasnodar" },
+      });
+
+    render(<SpecialistWorkingProfileWizard />);
+    await waitFor(() =>
+      expect(screen.getByTestId("specialist-profile-wizard")).toBeInTheDocument(),
+    );
+
+    const nameInput = screen.getByLabelText(/Как к вам обращаться/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, "Моя несохранённая правка");
+    await user.click(screen.getByRole("button", { name: "Сохранить черновик" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("specialist-profile-version-conflict")).toBeInTheDocument(),
+    );
+    expect(nameInput).toHaveValue("Моя несохранённая правка");
+
+    await user.click(screen.getByRole("button", { name: "Оставить мои правки" }));
+    expect(nameInput).toHaveValue("Моя несохранённая правка");
+
+    patchDraft.mockResolvedValueOnce({ version: 6, payload: { displayName: "Моя несохранённая правка" } });
+    await user.click(screen.getByRole("button", { name: "Сохранить черновик" }));
+    await waitFor(() =>
+      expect(patchDraft).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          expectedVersion: 5,
+          payload: expect.objectContaining({ displayName: "Моя несохранённая правка" }),
+        }),
+      ),
+    );
+  });
 });

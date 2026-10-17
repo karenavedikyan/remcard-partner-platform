@@ -43,6 +43,12 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
   const [profileComplete, setProfileComplete] = useState(false);
   const [editing, setEditing] = useState(true);
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [versionConflict, setVersionConflict] = useState<{
+    localDraft: SpecialistProfileDraftPayload;
+    localStep: number;
+    serverVersion: number;
+    serverPayload: SpecialistProfileDraftPayload;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
 
@@ -88,11 +94,29 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
       return true;
     } catch (e) {
       if (e instanceof RemcardApiError && e.status === 409) {
-        await hydrate();
-        setBanner({
-          kind: "error",
-          text: "Конфликт версии. Черновик обновлён — повторите сохранение.",
-        });
+        const localDraft = { ...patch };
+        const localStep = step;
+        try {
+          const server = await fetchSpecialistProfileDraft();
+          setVersion(server.version ?? 0);
+          setVersionConflict({
+            localDraft,
+            localStep,
+            serverVersion: server.version ?? 0,
+            serverPayload: server.payload ?? {},
+          });
+          setBanner({
+            kind: "error",
+            text: "Конфликт версии. Выберите, какие данные оставить, затем сохраните снова.",
+          });
+        } catch {
+          setDraft(localDraft);
+          setStep(localStep);
+          setBanner({
+            kind: "error",
+            text: "Конфликт версии. Не удалось загрузить серверный черновик — ваши правки сохранены локально.",
+          });
+        }
       } else {
         setBanner({
           kind: "error",
@@ -295,6 +319,52 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
               {banner.text}
             </p>
+          ) : null}
+          {versionConflict ? (
+            <div
+              className={styles.conflictPanel}
+              data-testid="specialist-profile-version-conflict"
+              role="alert"
+            >
+              <p className={styles.intro}>
+                На сервере уже есть другая версия черновика. Ваши несохранённые правки не потеряны.
+              </p>
+              <div className={styles.actionsRight}>
+                <button
+                  type="button"
+                  className={styles.btn}
+                  disabled={saving}
+                  onClick={() => {
+                    setDraft(versionConflict.serverPayload);
+                    setVersion(versionConflict.serverVersion);
+                    setVersionConflict(null);
+                    setBanner({
+                      kind: "success",
+                      text: "Загружена серверная версия черновика.",
+                    });
+                  }}
+                >
+                  Загрузить серверную версию
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  disabled={saving}
+                  onClick={() => {
+                    setDraft(versionConflict.localDraft);
+                    setStep(versionConflict.localStep);
+                    setVersion(versionConflict.serverVersion);
+                    setVersionConflict(null);
+                    setBanner({
+                      kind: "success",
+                      text: "Оставлены ваши правки. Сохраните снова с актуальной версией.",
+                    });
+                  }}
+                >
+                  Оставить мои правки
+                </button>
+              </div>
+            </div>
           ) : null}
           <h2 className={styles.title}>{STEPS[step]}</h2>
           <form onSubmit={(ev) => void onSubmitStep(ev)}>

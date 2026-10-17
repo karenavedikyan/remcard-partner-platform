@@ -27,7 +27,8 @@ import { AgentPhoneField, type AgentPhoneFieldHandle } from "../agent/AgentPhone
 import type { CatalogPrefillField, CatalogTouchedMap } from "@/lib/specialist-r06/catalog-prefill";
 import { markCatalogFieldTouched } from "@/lib/specialist-r06/catalog-prefill";
 import editorStyles from "../ProfileEditor.module.css";
-import styles from "../agent/AgentProfileWizard.module.css";
+import btnStyles from "../agent/AgentProfileWizard.module.css";
+import catalogStyles from "./SpecialistCatalogWizard.module.css";
 
 const STEPS = ["Карточка", "Направления", "Контакты", "Оформление", "Предпросмотр"] as const;
 
@@ -195,46 +196,52 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   };
 
   return (
-    <div className={styles.pw} data-testid="specialist-catalog-wizard">
-      <div className={styles.layout}>
-        <aside className={styles.journey} aria-label="Этапы каталога">
-          <span className={styles.kicker}>Публичная страница</span>
-          <h2 className={styles.title}>Подключение к каталогу</h2>
-          <p className={styles.intro}>
+    <div
+      className={catalogStyles.root}
+      data-testid="specialist-catalog-wizard"
+      data-catalog-step={step}
+      data-catalog-status={catalogStatus}
+    >
+      <header className={catalogStyles.heading}>
+        <div>
+          <span className={catalogStyles.kicker}>Публичная страница</span>
+          <h2 className={catalogStyles.title}>Подключение к каталогу</h2>
+          <p className={catalogStyles.intro}>
             Уже сохранённые данные подставляем из рабочего профиля — проверьте и при необходимости
             измените. Черновик не публикуется; отправка на проверку только в конце.
           </p>
-          <div className={editorStyles.statusRow}>
-            <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
-            <StatusBadge label={statusLabel} tone={catalogStatusTone(catalogStatus)} />
-          </div>
-          <ol className={styles.steps}>
-            {STEPS.map((label, i) => (
-              <li
-                key={label}
-                className={
-                  i === step ? styles.stepCurrent : i < step ? styles.stepDone : undefined
-                }
-              >
-                <button type="button" className={styles.stepBtn} disabled={i > step}>
-                  <span className={styles.stepNumber}>{i < step ? "✓" : i + 1}</span>
-                  <span>{label}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </aside>
-        <section className={styles.card}>
-          <span className={styles.kicker}>
-            Шаг {step + 1} из {STEPS.length}
-          </span>
-          <h2 className={styles.title}>{STEPS[step]}</h2>
-          {error ? <p className={styles.bannerError}>{error}</p> : null}
-          {success ? <p className={styles.bannerSuccess}>{success}</p> : null}
+        </div>
+        <div className={editorStyles.statusRow}>
+          <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
+          <StatusBadge label={statusLabel} tone={catalogStatusTone(catalogStatus)} />
+        </div>
+      </header>
+      <nav className={catalogStyles.steps} aria-label="Этапы каталога">
+        {STEPS.map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            className={`${catalogStyles.stepBtn} ${i < step ? catalogStyles.stepDone : ""}`}
+            aria-current={i === step ? "step" : undefined}
+            disabled={i > step}
+            onClick={() => i <= step && setStep(i)}
+          >
+            <span className={catalogStyles.stepNumber}>{i < step ? "✓" : i + 1}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+      <section className={catalogStyles.card}>
+        <span className={catalogStyles.kicker}>
+          Шаг {step + 1} из {STEPS.length}
+        </span>
+        <h2 className={catalogStyles.title}>{STEPS[step]}</h2>
+        {error ? <p className={btnStyles.bannerError}>{error}</p> : null}
+        {success ? <p className={btnStyles.bannerSuccess}>{success}</p> : null}
 
           {step === 0 ? (
-            <div className={styles.fields}>
-              <div className={styles.field}>
+            <div className={btnStyles.fields}>
+              <div className={btnStyles.field}>
                 <label htmlFor="sc-public-name">Публичное имя</label>
                 <input
                   id="sc-public-name"
@@ -246,7 +253,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <div className={styles.field}>
+              <div className={btnStyles.field}>
                 <label htmlFor="sc-city">Город в каталоге</label>
                 <input
                   id="sc-city"
@@ -277,13 +284,13 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
           {step === 1 ? (
             <div id="catalog-products">
-              <p className={styles.intro}>
+              <p className={btnStyles.intro}>
                 Специалист публикует услуги и этапы ремонта, не товары.
               </p>
               {(workingServiceIds.length > 0 || workingStageIds.length > 0) && (
                 <button
                   type="button"
-                  className={styles.btn}
+                  className={btnStyles.btn}
                   disabled={!catalogEditable}
                   onClick={() => {
                     onPullWorkingDirections();
@@ -318,7 +325,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           ) : null}
 
           {step === 2 ? (
-            <div id="catalog-contacts" className={styles.fields}>
+            <div id="catalog-contacts" className={btnStyles.fields}>
               <AgentPhoneField
                 ref={publicPhoneRef}
                 value={publicPhone}
@@ -328,7 +335,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   onPublicPhoneChange(v);
                 }}
               />
-              <div className={styles.field}>
+              <div className={btnStyles.field}>
                 <label htmlFor="sc-email">Email для клиентов</label>
                 <input
                   id="sc-email"
@@ -340,7 +347,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <div className={styles.field}>
+              <div className={btnStyles.field}>
                 <label htmlFor="sc-tg">Telegram</label>
                 <input
                   id="sc-tg"
@@ -352,7 +359,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   }}
                 />
               </div>
-              <div className={styles.field}>
+              <div className={btnStyles.field}>
                 <label htmlFor="sc-web">Сайт</label>
                 <input
                   id="sc-web"
@@ -368,8 +375,8 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           ) : null}
 
           {step === 3 ? (
-            <div className={styles.fields}>
-              <p className={styles.intro}>Фото и описание необязательны.</p>
+            <div className={btnStyles.fields}>
+              <p className={btnStyles.intro}>Фото и описание необязательны.</p>
               <input
                 ref={fileRef}
                 type="file"
@@ -388,13 +395,13 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
               />
               <button
                 type="button"
-                className={styles.btn}
+                className={btnStyles.btn}
                 disabled={!catalogEditable || uploading}
                 onClick={() => fileRef.current?.click()}
               >
                 {uploading ? "Загрузка…" : catalogImageUrl ? "Заменить фото" : "Добавить фото"}
               </button>
-              {uploadError ? <p className={styles.bannerError}>{uploadError}</p> : null}
+              {uploadError ? <p className={btnStyles.bannerError}>{uploadError}</p> : null}
               <TextAreaField
                 label="Описание"
                 value={description}
@@ -411,25 +418,25 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             <div>
               <CatalogPublicationPreview profile={profile} draft={draft} />
               {missing.length > 0 ? (
-                <ul className={styles.reviewList}>
+                <ul className={btnStyles.reviewList}>
                   {missing.map((m) => (
                     <li key={m.id}>{m.label}</li>
                   ))}
                 </ul>
               ) : (
-                <p className={styles.intro}>Можно отправить заявку на модерацию.</p>
+                <p className={btnStyles.intro}>Можно отправить заявку на модерацию.</p>
               )}
               {catalogStatus === "PENDING" ? (
-                <p className={styles.bannerSuccess}>Заявка на проверке — карточка ещё не опубликована.</p>
+                <p className={btnStyles.bannerSuccess}>Заявка на проверке — карточка ещё не опубликована.</p>
               ) : null}
             </div>
           ) : null}
 
-          <div className={styles.actionsRight}>
+          <div className={catalogStyles.footer}>
             {step > 0 ? (
               <button
                 type="button"
-                className={styles.btn}
+                className={btnStyles.btn}
                 disabled={saving || submitting}
                 onClick={() => setStep((s) => Math.max(0, s - 1))}
               >
@@ -439,7 +446,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             {step < 4 ? (
               <button
                 type="button"
-                className={styles.btnPrimary}
+                className={btnStyles.btnPrimary}
                 disabled={saving}
                 onClick={() => {
                   const miss = stepMissing(step);
@@ -456,7 +463,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             ) : null}
             <button
               type="button"
-              className={styles.btn}
+              className={btnStyles.btn}
               disabled={saving || submitting || !catalogPublicationEditable(profile)}
               onClick={() => void saveDraft()}
             >
@@ -465,7 +472,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             {step === 4 && canSubmit && missing.length === 0 ? (
               <button
                 type="button"
-                className={styles.btnPrimary}
+                className={btnStyles.btnPrimary}
                 disabled={submitting || saving}
                 onClick={() => void submitPublication()}
               >
@@ -474,7 +481,6 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             ) : null}
           </div>
         </section>
-      </div>
     </div>
   );
 }

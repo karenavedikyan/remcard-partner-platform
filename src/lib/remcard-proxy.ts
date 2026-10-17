@@ -233,7 +233,6 @@ export type ProxyRequestInput = {
   contentType: string | null;
   cookieHeader: string | null;
   origin: string | null;
-  requestHost?: string | null;
   csrfHeader: string | null;
   bodyText?: string;
   /** Raw Idempotency-Key from client — validated and forwarded only for POST /api/store/order. */
@@ -368,24 +367,29 @@ export function filterAllowedSetCookies(setCookies: readonly string[]): string[]
   });
 }
 
-export function isAllowedMutatingOrigin(
-  origin: string | null,
-  requestHost: string | null = null,
-): boolean {
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+
+/** Mutating BFF requests must match configured app origin (production-safe). */
+export function isAllowedMutatingOrigin(origin: string | null): boolean {
   if (!origin) {
     return false;
   }
   if (origin === appConfig.appUrl) {
     return true;
   }
-  if (!requestHost) {
+  if (process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN !== "1") {
     return false;
   }
   try {
     const parsed = new URL(origin);
-    const host = requestHost.split(",")[0]?.trim();
-    if (!host) return false;
-    return parsed.host === host;
+    const app = new URL(appConfig.appUrl);
+    if (!LOOPBACK_HOSTS.has(parsed.hostname) || !LOOPBACK_HOSTS.has(app.hostname)) {
+      return false;
+    }
+    if (parsed.protocol !== app.protocol) {
+      return false;
+    }
+    return parsed.host === app.host;
   } catch {
     return false;
   }
@@ -544,7 +548,7 @@ export async function proxyRemcardRequest(
   if (
     upperMethod !== "GET" &&
     upperMethod !== "HEAD" &&
-    !isAllowedMutatingOrigin(input.origin, input.requestHost)
+    !isAllowedMutatingOrigin(input.origin)
   ) {
     return { ok: false, status: 403, body: JSON.stringify({ error: "Origin not allowed" }) };
   }

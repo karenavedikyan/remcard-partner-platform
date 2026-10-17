@@ -11,8 +11,8 @@ const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
 const RUN_DIR = process.env.R06_RUN_DIR || '/tmp/r06-local-stack';
 const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist/screenshots');
 const REF_SHA = process.env.R06_REFERENCE_SHA ?? '771cc658a415a5d05b964f29f675d32db449198b';
-const REF_BRANCH =
-  process.env.R06_REF_BRANCH ?? 'origin/implementation/remcard-reference-20261014';
+const REF_GIT_SHA =
+  process.env.R06_REFERENCE_GIT_SHA ?? '771cc658a415a5d05b964f29f675d32db449198b';
 const PROTO_DIR = process.env.R06_PROTO_DIR ?? '/tmp/r06-prototype-ref';
 const PROTO_PORT = Number(process.env.R06_PROTO_PORT ?? '3199');
 const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
@@ -46,7 +46,7 @@ function mint(env) {
 async function preparePrototype() {
   mkdirSync(PROTO_DIR, { recursive: true });
   execSync(
-    `git -C "${NAV_ROOT}" archive ${REF_BRANCH} docs/reference/registration-20261017 | tar -x -C "${PROTO_DIR}"`,
+    `git -C "${NAV_ROOT}" archive ${REF_GIT_SHA} docs/reference/registration-20261017 | tar -x -C "${PROTO_DIR}"`,
     { stdio: 'pipe' },
   );
   return path.join(PROTO_DIR, 'docs/reference/registration-20261017');
@@ -125,36 +125,36 @@ async function shotPair(ctx, spec) {
   await applyAppTheme(page, theme);
   if (implTestId) await waitImplProfile(page, implTestId);
   if (prepareImpl) await prepareImpl(page);
+  if (spec.assertImpl) await spec.assertImpl(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(200);
   const implPath = path.join(OUT, `${name}-impl-${width}-${theme}.png`);
   await page.screenshot({ path: implPath, fullPage: true });
 
   let refPath = null;
-  let refError = null;
   if (refUrl) {
-    try {
-      const refCtx = await ctx.browser().newContext({ viewport: { width, height } });
-      const refPage = await refCtx.newPage();
-      await refPage.addInitScript((t) => {
-        document.documentElement.setAttribute('data-theme', t);
-      }, theme);
-      await openRefSpecialistProfile(refPage);
-      await applyAppTheme(refPage, theme);
-      if (prepareRef) await prepareRef(refPage);
-      else if (refReadySelector) {
-        await refPage.waitForSelector(refReadySelector, { timeout: 60_000 }).catch(() => {});
-      }
-      await refPage.evaluate(() => document.fonts?.ready);
-      await refPage.waitForTimeout(400);
-      refPath = path.join(OUT, `${name}-ref-${width}-${theme}.png`);
-      await refPage.screenshot({ path: refPath, fullPage: true });
-      await refCtx.close();
-    } catch (e) {
-      refError = e instanceof Error ? e.message : String(e);
+    const refCtx = await ctx.browser().newContext({ viewport: { width, height } });
+    const refPage = await refCtx.newPage();
+    await refPage.addInitScript((t) => {
+      document.documentElement.setAttribute('data-theme', t);
+    }, theme);
+    await openRefSpecialistProfile(refPage);
+    await applyAppTheme(refPage, theme);
+    if (prepareRef) await prepareRef(refPage);
+    else if (refReadySelector) {
+      await refPage.waitForSelector(refReadySelector, { timeout: 60_000 });
     }
+    if (spec.assertRef) await spec.assertRef(refPage);
+    await refPage.evaluate(() => document.fonts?.ready);
+    await refPage.waitForTimeout(400);
+    await refPage.evaluate(() => window.scrollTo(0, 0));
+    refPath = path.join(OUT, `${name}-ref-${width}-${theme}.png`);
+    await refPage.screenshot({ path: refPath, fullPage: true });
+    await refCtx.close();
   }
 
   await page.close();
-  return { name, implPath, refPath, refError, theme, width };
+  return { name, implPath, refPath, theme, width };
 }
 
 async function openRefCatalogProfile(page) {
@@ -267,6 +267,33 @@ async function main() {
   await prep.waitForSelector('[data-testid="specialist-profile-completed-summary"]');
   await prep.close();
 
+  const assertCompleted = async (p) => {
+    await p.waitForSelector('[data-testid="specialist-profile-completed-summary"]');
+    const txt = await p.locator('[data-testid="specialist-profile-completed-summary"]').innerText();
+    if (!txt.includes('Заполнено')) throw new Error('expected completed summary');
+  };
+  const assertSpecStep = async (p) => {
+    await p.waitForSelector('#sp-kind');
+  };
+  const assertCatalogStep = (n) => async (p) => {
+    await p.waitForFunction(
+      (target) =>
+        document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep ===
+        String(target),
+      n,
+    );
+  };
+  const assertCatalogPreview = async (p) => {
+    await p.waitForSelector('text=Можно отправить заявку');
+    await p.waitForFunction(
+      () => document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '4',
+    );
+  };
+  const assertCatalogPending = async (p) => {
+    await p.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]');
+    await p.waitForSelector('text=Заявка на проверке');
+  };
+
   const refProfileUrl = `${PROTO_BASE}/roles.html`;
   const captures = [];
 
@@ -276,6 +303,7 @@ async function main() {
       implUrl: `${implBase}/profile?section=basics`,
       refUrl: refProfileUrl,
       implTestId: 'specialist-profile-completed-summary',
+      assertImpl: assertCompleted,
       prepareRef: openRefSpecialistProfile,
       theme: 'light',
       width: 1440,
@@ -295,8 +323,9 @@ async function main() {
       name: 'profile-specialization-step',
       implUrl: `${implBase}/profile?section=basics`,
       refUrl: refProfileUrl,
-      implTestId: 'specialist-profile-completed-summary',
+      implTestId: 'specialist-profile-wizard',
       prepareImpl: prepareSpecializationStep,
+      assertImpl: assertSpecStep,
       prepareRef: openRefBasicsTab,
       theme: 'light',
       width: 1440,
@@ -310,6 +339,7 @@ async function main() {
       implUrl: `${implBase}/profile?section=catalog`,
       refUrl: refProfileUrl,
       implTestId: 'specialist-catalog-wizard',
+      assertImpl: assertCatalogStep(0),
       prepareRef: openRefCatalogProfile,
       refReadySelector: '[data-profile-step="catalog"]',
       theme: 'light',
@@ -353,6 +383,7 @@ async function main() {
       refUrl: refProfileUrl,
       implTestId: 'specialist-catalog-wizard',
       prepareImpl: prepareCatalogPreviewStep,
+      assertImpl: assertCatalogPreview,
       prepareRef: async (refPage) => {
         await openRefCatalogProfile(refPage);
       },
@@ -366,14 +397,8 @@ async function main() {
   await pendingPrep.goto(`${implBase}/profile?section=catalog`, { waitUntil: 'load' });
   await waitImplProfile(pendingPrep, 'specialist-catalog-wizard');
   await prepareCatalogPreviewStep(pendingPrep);
-  await pendingPrep.evaluate(async () => {
-    await fetch('/api/remcard/api/pro/profile', {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'submitForModeration' }),
-    });
-  });
+  await pendingPrep.getByRole('button', { name: /Отправить на публикацию|Отправить повторно/i }).click();
+  await pendingPrep.waitForSelector('text=Заявка на проверке', { timeout: 60_000 });
   await pendingPrep.close();
 
   captures.push(
@@ -382,7 +407,7 @@ async function main() {
       implUrl: `${implBase}/profile?section=catalog`,
       refUrl: refProfileUrl,
       implTestId: 'specialist-catalog-wizard',
-      prepareImpl: prepareCatalogPreviewStep,
+      assertImpl: assertCatalogPending,
       prepareRef: openRefCatalogProfile,
       theme: 'light',
       width: 1440,
@@ -408,6 +433,7 @@ async function main() {
   const CAPTURE_SHA = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
   const manifest = {
     referenceSha: REF_SHA,
+    referenceGitSha: REF_GIT_SHA,
     codeSha: CODE_SHA,
     captureSha: CAPTURE_SHA,
     navigatorSha: meta.navigatorSha,

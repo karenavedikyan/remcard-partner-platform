@@ -94,6 +94,19 @@
   min-width: 0;
 }
 
+.specialistCompact .optionGrid {
+  max-height: min(220px, 40vh);
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.specialistCompact .search input {
+  max-width: 28rem;
+}
+
 .checkRow {
   display: flex;
   gap: 0.5rem;

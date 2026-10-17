@@ -187,7 +187,7 @@ export function ProfileDirectionsPicker({
   }
 
   return (
-    <div className={styles.wrap}>
+    <div className={specialistMode ? `${styles.wrap} ${styles.specialistCompact}` : styles.wrap}>
       <p className={styles.lead}>
         {specialistMode
           ? "Выберите услуги и этапы ремонта, где вы можете помочь."

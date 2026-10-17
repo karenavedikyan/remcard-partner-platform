@@ -34,6 +34,7 @@ async function main() {
   env.JWT_SECRET = env.JWT_SECRET || 'prof-r01-route-test-secret-min-32-chars!!';
 
   const migration = run(['node', 'scripts/r06-migration-controlled.mjs'], NAV_ROOT, env);
+  const migrationNegatives = run(['node', 'scripts/r06-migration-negatives.mjs'], NAV_ROOT, env);
   const integration = run(
     ['pnpm', 'exec', 'vitest', 'run', 'src/lib/__tests__/profR06SpecialistRoute.integration.test.ts'],
     NAV_ROOT,
@@ -81,6 +82,7 @@ async function main() {
     referenceSha: '771cc658a415a5d05b964f29f675d32db449198b',
     steps: {
       migrationControlled: { exitCode: migration.exitCode, stdout: migration.stdout.slice(0, 500) },
+      migrationNegatives: { exitCode: migrationNegatives.exitCode },
       integrationVitest: { exitCode: integration.exitCode },
       unitTsx: { exitCode: unit.exitCode },
       platformVitest: { exitCode: platformUnit.exitCode },
@@ -91,6 +93,7 @@ async function main() {
 
   report.ok =
     migration.exitCode === 0 &&
+    migrationNegatives.exitCode === 0 &&
     integration.exitCode === 0 &&
     unit.exitCode === 0 &&
     platformUnit.exitCode === 0 &&
