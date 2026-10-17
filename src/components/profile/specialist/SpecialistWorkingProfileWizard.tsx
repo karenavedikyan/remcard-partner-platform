@@ -79,6 +79,13 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
     patch: SpecialistProfileDraftPayload,
     mode: "save" | "advance" = "advance",
   ) => {
+    if (versionConflict) {
+      setBanner({
+        kind: "error",
+        text: "Сначала выберите, как поступить с конфликтом версии.",
+      });
+      return false;
+    }
     setSaving(true);
     setBanner(null);
     try {
@@ -98,7 +105,6 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
         const localStep = step;
         try {
           const server = await fetchSpecialistProfileDraft();
-          setVersion(server.version ?? 0);
           setVersionConflict({
             localDraft,
             localStep,
@@ -162,6 +168,13 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
         committed !== undefined ? { ...draft, partnershipContactPhone: committed } : draft;
       if (committed !== undefined) setDraft(patch);
       await persist(3, patch);
+      return;
+    }
+    if (versionConflict) {
+      setBanner({
+        kind: "error",
+        text: "Сначала выберите, как поступить с конфликтом версии.",
+      });
       return;
     }
     setSaving(true);

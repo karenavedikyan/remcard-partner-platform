@@ -136,12 +136,17 @@ describe("SpecialistWorkingProfileWizard version sync", () => {
     const nameInput = screen.getByLabelText(/Как к вам обращаться/i);
     await user.clear(nameInput);
     await user.type(nameInput, "Моя несохранённая правка");
+    const callsBeforeConflict = patchDraft.mock.calls.length;
     await user.click(screen.getByRole("button", { name: "Сохранить черновик" }));
 
     await waitFor(() =>
       expect(screen.getByTestId("specialist-profile-version-conflict")).toBeInTheDocument(),
     );
     expect(nameInput).toHaveValue("Моя несохранённая правка");
+    expect(patchDraft.mock.calls.length).toBe(callsBeforeConflict + 1);
+
+    await user.click(screen.getByRole("button", { name: "Сохранить черновик" }));
+    expect(patchDraft.mock.calls.length).toBe(callsBeforeConflict + 1);
 
     await user.click(screen.getByRole("button", { name: "Оставить мои правки" }));
     expect(nameInput).toHaveValue("Моя несохранённая правка");

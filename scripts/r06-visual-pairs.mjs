@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { advanceCatalogSteps, advanceRefCatalogSteps } from './lib/r06-playwright-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
@@ -106,6 +107,7 @@ async function shotPair(ctx, spec) {
     height,
     implTestId,
     refReadySelector,
+    prepareBeforeWait,
     prepareImpl,
     prepareRef,
   } = spec;
@@ -123,6 +125,7 @@ async function shotPair(ctx, spec) {
 
   await page.goto(implUrl, { waitUntil: 'load', timeout: 120_000 });
   await applyAppTheme(page, theme);
+  if (prepareBeforeWait) await prepareBeforeWait(page);
   if (implTestId) await waitImplProfile(page, implTestId);
   if (prepareImpl) await prepareImpl(page);
   if (spec.assertImpl) await spec.assertImpl(page);
@@ -164,7 +167,7 @@ async function openRefCatalogProfile(page) {
     .filter({ hasText: /Каталог/i })
     .first();
   if (await catalogTab.count()) await catalogTab.click();
-  await page.waitForSelector('[data-profile-step="catalog"]', { timeout: 60_000 }).catch(() => {});
+  await page.waitForSelector('[data-profile-step="catalog"]', { timeout: 60_000 });
 }
 
 async function prepareCatalogPreviewStep(page) {
@@ -172,13 +175,41 @@ async function prepareCatalogPreviewStep(page) {
   await page.locator('#sc-city').fill('Krasnodar');
   const phone = page.locator('[data-testid="agent-profile-input-phone"]').first();
   if (await phone.count()) await phone.fill('+79001112233');
-  for (let i = 0; i < 4; i++) {
-    const next = page.getByRole('button', { name: /Далее|Предпросмотр/i }).first();
-    if (await next.isDisabled()) break;
-    await next.click();
-    await page.waitForTimeout(200);
-  }
-  await page.getByText('Можно отправить заявку', { exact: false }).waitFor({ timeout: 30_000 }).catch(() => {});
+  await advanceCatalogSteps(page, 4);
+  await page.getByText('Можно отправить заявку', { exact: false }).waitFor({ timeout: 30_000 });
+}
+
+async function refCompleteWorkingProfile(page) {
+  await bootRefCabinetSpecialist(page);
+  if (await page.locator('[data-testid="pw-summary"]').count()) return;
+  await page.locator('[name="name"]').fill('R06 Visual Spec');
+  await page.locator('[name="city"]').fill('Krasnodar');
+  await page.getByTestId('pw-next').click();
+  await page.locator('[data-specialist-kind]').selectOption('designer');
+  await page.getByTestId('pw-next').click();
+  await page.getByRole('button', { name: 'Пропустить' }).click();
+  await page.getByTestId('pw-next').click();
+  await page.waitForSelector('[data-testid="pw-summary"]');
+}
+
+async function prepareRefSpecializationStep(page) {
+  await refCompleteWorkingProfile(page);
+  await page.locator('[data-pw-action="edit"]').click();
+  await page.waitForSelector('.pw-steps');
+  await page.locator('[data-testid="pw-step-1"]').click();
+  await page.waitForSelector('[data-specialist-kind]', { state: 'visible' });
+}
+
+async function prepareRefCatalogPreview(page) {
+  await openRefCatalogProfile(page);
+  await page.waitForSelector('[data-catalog-form]');
+  await advanceRefCatalogSteps(page, 4);
+}
+
+async function prepareRefCatalogPending(page) {
+  await prepareRefCatalogPreview(page);
+  await page.locator('[data-catalog-action="send"]').click();
+  await page.waitForSelector('#catalog-pending-title', { timeout: 30_000 });
 }
 
 async function bootRefCabinetSpecialist(page) {
@@ -293,6 +324,33 @@ async function main() {
     await p.waitForSelector('[data-testid="specialist-catalog-wizard"][data-catalog-status="PENDING"]');
     await p.waitForSelector('text=Заявка на проверке');
   };
+  const assertRefCompleted = async (p) => {
+    await p.waitForSelector('[data-testid="pw-summary"]');
+    const txt = await p.locator('[data-testid="pw-summary"] .pw-status').innerText();
+    if (!txt.includes('Заполнено')) throw new Error('ref expected completed summary');
+  };
+  const assertRefSpecialization = async (p) => {
+    await p.waitForSelector('[data-specialist-kind]', { state: 'visible' });
+    await p.waitForSelector('[data-testid="pw-step-1"][aria-current="step"]');
+  };
+  const assertRefCatalogStep0 = async (p) => {
+    await p.waitForSelector('[data-catalog-form]');
+    await p.waitForFunction(() => {
+      const panel = document.querySelector('[data-catalog-panel="card"]');
+      return panel && !panel.hidden;
+    });
+  };
+  const assertRefCatalogPreview = async (p) => {
+    await p.waitForFunction(() => {
+      const panel = document.querySelector('[data-catalog-panel="review"]');
+      return panel && !panel.hidden;
+    });
+    await p.getByText('Предпросмотр карточки').waitFor({ timeout: 30_000 });
+  };
+  const assertRefCatalogPending = async (p) => {
+    await p.waitForSelector('#catalog-pending-title');
+    await p.getByText('Заявка отправлена').waitFor({ timeout: 30_000 });
+  };
 
   const refProfileUrl = `${PROTO_BASE}/roles.html`;
   const captures = [];
@@ -304,16 +362,20 @@ async function main() {
       refUrl: refProfileUrl,
       implTestId: 'specialist-profile-completed-summary',
       assertImpl: assertCompleted,
-      prepareRef: openRefSpecialistProfile,
+      prepareRef: refCompleteWorkingProfile,
+      assertRef: assertRefCompleted,
       theme: 'light',
       width: 1440,
       height: 900,
     }),
   );
 
-  async function prepareSpecializationStep(page) {
+  async function prepareSpecializationBeforeWait(page) {
     await page.getByRole('button', { name: 'Редактировать профиль' }).click();
     await waitImplProfile(page, 'specialist-profile-wizard');
+  }
+
+  async function prepareSpecializationStep(page) {
     await page.getByRole('button', { name: 'Далее' }).click();
     await page.waitForSelector('#sp-kind', { state: 'visible' });
   }
@@ -323,10 +385,12 @@ async function main() {
       name: 'profile-specialization-step',
       implUrl: `${implBase}/profile?section=basics`,
       refUrl: refProfileUrl,
+      prepareBeforeWait: prepareSpecializationBeforeWait,
       implTestId: 'specialist-profile-wizard',
       prepareImpl: prepareSpecializationStep,
       assertImpl: assertSpecStep,
-      prepareRef: openRefBasicsTab,
+      prepareRef: prepareRefSpecializationStep,
+      assertRef: assertRefSpecialization,
       theme: 'light',
       width: 1440,
       height: 900,
@@ -341,7 +405,7 @@ async function main() {
       implTestId: 'specialist-catalog-wizard',
       assertImpl: assertCatalogStep(0),
       prepareRef: openRefCatalogProfile,
-      refReadySelector: '[data-profile-step="catalog"]',
+      assertRef: assertRefCatalogStep0,
       theme: 'light',
       width: 1440,
       height: 900,
@@ -384,9 +448,8 @@ async function main() {
       implTestId: 'specialist-catalog-wizard',
       prepareImpl: prepareCatalogPreviewStep,
       assertImpl: assertCatalogPreview,
-      prepareRef: async (refPage) => {
-        await openRefCatalogProfile(refPage);
-      },
+      prepareRef: prepareRefCatalogPreview,
+      assertRef: assertRefCatalogPreview,
       theme: 'light',
       width: 375,
       height: 812,
@@ -408,7 +471,8 @@ async function main() {
       refUrl: refProfileUrl,
       implTestId: 'specialist-catalog-wizard',
       assertImpl: assertCatalogPending,
-      prepareRef: openRefCatalogProfile,
+      prepareRef: prepareRefCatalogPending,
+      assertRef: assertRefCatalogPending,
       theme: 'light',
       width: 1440,
       height: 900,

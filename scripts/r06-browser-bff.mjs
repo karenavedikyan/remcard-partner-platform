@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { advanceCatalogSteps } from './lib/r06-playwright-catalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = path.resolve(ROOT, '../remcard-navigator');
@@ -87,21 +88,6 @@ async function getWorkingDraft(page) {
     const body = await r.json();
     return { status: r.status, payload: body?.payload, version: body?.version };
   });
-}
-
-async function advanceCatalogSteps(page, toStep) {
-  for (let i = 0; i < toStep; i++) {
-    const miss = await page.locator('[data-testid="specialist-catalog-wizard"]').getAttribute('data-catalog-step');
-    if (Number(miss) >= toStep) break;
-    await page.getByRole('button', { name: /Далее|Предпросмотр/i }).click();
-    await page.waitForFunction(
-      (target) =>
-        Number(document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep) >=
-        target,
-      toStep,
-      { timeout: 30_000 },
-    );
-  }
 }
 
 async function fillCatalogBasics(page) {
@@ -239,14 +225,16 @@ async function main() {
       'run',
       'src/lib/__tests__/profR06SpecialistRoute.integration.test.ts',
       '-t',
-      'gate',
+      'gate off blocks',
     ],
     { cwd: NAV_ROOT, env, encoding: 'utf8' },
   );
+  const gateTestsPassed = Number((gateOffProbe.stdout.match(/Tests\s+(\d+) passed/) || [])[1] || 0);
   report.gateOff = {
-    ok: gateOffProbe.status === 0,
+    ok: gateOffProbe.status === 0 && gateTestsPassed >= 1,
     exitCode: gateOffProbe.status,
-    note: 'gate OFF covered by navigator integration test (featureEnabled:false)',
+    testsPassed: gateTestsPassed,
+    note: 'gate OFF via navigator integration (featureEnabled:false)',
   };
 
   const migNeg = spawnSync('node', ['scripts/r06-migration-negatives.mjs'], {
