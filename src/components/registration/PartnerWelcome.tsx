@@ -63,14 +63,15 @@ export function PartnerWelcome({ inviteToken, returnTo }: Props) {
   const joinHref = buildJoinHref({ invite: inviteToken, returnTo });
 
   return (
-    <RegistrationPublicShell loginHref="/login">
-      <div className={styles.page}>
+    <RegistrationPublicShell loginHref="/login" loginBeforeTheme>
+      <div className={styles.page} data-testid="registration-welcome">
         <section className={styles.hero} aria-labelledby="welcome-title">
           <div className={styles.copy}>
             <p className={styles.kicker}>Для тех, кто помогает с ремонтом</p>
             <h1 id="welcome-title">
               <span className={styles.headingMain}>
-                Обмениваемся<span className={styles.headingAccent}> клиентами,</span>
+                Обмениваемся
+                <span className={styles.headingAccent}>клиентами,</span>
               </span>
               <span className={styles.headingRest}>
                 которым нужен ремонт
@@ -79,9 +80,10 @@ export function PartnerWelcome({ inviteToken, returnTo }: Props) {
               </span>
             </h1>
             <p className={styles.description}>
-              Знакомим наших клиентов с партнёрами RemCard.
-              <br />
-              Помогаем каждому найти своё.
+              <span className={styles.descriptionLine}>
+                Знакомим наших клиентов с партнёрами RemCard.
+              </span>
+              <span className={styles.descriptionLine}>Помогаем каждому найти своё.</span>
             </p>
             <p className={styles.target}>
               <svg viewBox="0 0 24 24" aria-hidden="true">

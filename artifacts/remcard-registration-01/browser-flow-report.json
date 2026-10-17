@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-17T10:29:54.359Z",
+  "capturedAt": "2026-10-17T21:09:01.973Z",
   "results": [
     {
       "name": "ready_user_invite_after_auth",
@@ -7,6 +7,62 @@
     },
     {
       "name": "reload_restores_auth_step",
+      "pass": true
+    },
+    {
+      "name": "auth_shows_provider_step",
+      "pass": true
+    },
+    {
+      "name": "auth_provider_to_code_step",
+      "pass": true
+    },
+    {
+      "name": "auth_otp_invalid_code_shows_error",
+      "pass": true
+    },
+    {
+      "name": "auth_otp_server_fail_shows_error",
+      "pass": true
+    },
+    {
+      "name": "auth_code_back_to_providers",
+      "pass": true
+    },
+    {
+      "name": "auth_otp_success_verify_fixture",
+      "pass": true
+    },
+    {
+      "name": "auth_flow_shows_consents_after_verify",
+      "pass": true
+    },
+    {
+      "name": "auth_consents_negative_submit_without_checks",
+      "pass": true
+    },
+    {
+      "name": "auth_consents_individual_checkboxes_and_submit",
+      "pass": true
+    },
+    {
+      "name": "auth_consents_fresh_readiness_routes_to_finish",
+      "pass": true
+    },
+    {
+      "name": "auth_otp_owner_mismatch_clears_draft",
+      "pass": true
+    },
+    {
+      "name": "auth_otp_owner_mismatch_no_finish_post",
+      "pass": true
+    },
+    {
+      "name": "auth_otp_owner_mismatch_no_consents",
+      "pass": true
+    },
+    {
+      "name": "auth_negative_finish_before_consents",
       "pass": true
     },
     {

@@ -108,6 +108,9 @@ export function resolveReadyRegistrationAgentJoinDestination(returnTo: string | 
     }
     const nested = sanitizeReturnTo(params.get("returnTo"));
     if (nested && !nested.startsWith("/join")) return nested;
+    if (params.get("phase") === "finish") {
+      return safe;
+    }
     return "/partners";
   }
   return safe;

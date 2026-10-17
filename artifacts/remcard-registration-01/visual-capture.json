@@ -1,265 +1,240 @@
 {
-  "implBase": "http://127.0.0.1:3022",
+  "implBase": "http://127.0.0.1:3035",
   "protoBase": "http://127.0.0.1:3099",
-  "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-  "treeDirty": true,
+  "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+  "runnerSha": "faf869a74482163758b176c5d4a5f934744cc374",
+  "buildId": null,
+  "treeDirty": false,
   "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
   "referenceShaImmutable": "771cc658a415a5d05b964f29f675d32db449198b",
-  "capturedAt": "2026-10-17T10:34:38.308Z",
-  "captureCount": 12,
+  "capturedAt": "2026-10-17T21:35:18.014Z",
+  "pngFileCount": 26,
+  "pairCount": 13,
+  "captureCount": 26,
   "pairs": [
     {
-      "pair": "types-1440-light",
-      "ref": "ref-types-1440-light.png",
-      "impl": "impl-types-1440-light.png"
+      "pair": "data-name-1440-light",
+      "ref": "ref-data-name-1440-light.png",
+      "impl": "impl-data-name-1440-light.png"
     },
     {
-      "pair": "types-1440-dark",
-      "ref": "ref-types-1440-dark.png",
-      "impl": "impl-types-1440-dark.png"
+      "pair": "data-name-375-dark",
+      "ref": "ref-data-name-375-dark.png",
+      "impl": "impl-data-name-375-dark.png"
     },
     {
-      "pair": "types-375-light",
-      "ref": "ref-types-375-light.png",
-      "impl": "impl-types-375-light.png"
+      "pair": "data-city-1440-light",
+      "ref": "ref-data-city-1440-light.png",
+      "impl": "impl-data-city-1440-light.png"
     },
     {
-      "pair": "types-375-dark",
-      "ref": "ref-types-375-dark.png",
-      "impl": "impl-types-375-dark.png"
+      "pair": "data-city-375-dark",
+      "ref": "ref-data-city-375-dark.png",
+      "impl": "impl-data-city-375-dark.png"
     },
     {
-      "pair": "types-320-dark",
-      "ref": "ref-types-320-dark.png",
-      "impl": "impl-types-320-dark.png"
+      "pair": "auth-providers-1440-light",
+      "ref": "ref-auth-providers-1440-light.png",
+      "impl": "impl-auth-providers-1440-light.png"
+    },
+    {
+      "pair": "auth-providers-375-dark",
+      "ref": "ref-auth-providers-375-dark.png",
+      "impl": "impl-auth-providers-375-dark.png"
+    },
+    {
+      "pair": "auth-code-375-dark",
+      "ref": "ref-auth-code-375-dark.png",
+      "impl": "impl-auth-code-375-dark.png"
+    },
+    {
+      "pair": "auth-code-320-dark",
+      "ref": "ref-auth-code-320-dark.png",
+      "impl": "impl-auth-code-320-dark.png"
+    },
+    {
+      "pair": "auth-providers-320-progress-dark",
+      "ref": "ref-auth-providers-320-progress-dark.png",
+      "impl": "impl-auth-providers-320-progress-dark.png"
+    },
+    {
+      "pair": "welcome-1440-light",
+      "ref": "ref-welcome-1440-light.png",
+      "impl": "impl-welcome-1440-light.png"
+    },
+    {
+      "pair": "welcome-375-light",
+      "ref": "ref-welcome-375-light.png",
+      "impl": "impl-welcome-375-light.png"
+    },
+    {
+      "pair": "welcome-375-dark",
+      "ref": "ref-welcome-375-dark.png",
+      "impl": "impl-welcome-375-dark.png"
+    },
+    {
+      "pair": "welcome-320-dark",
+      "ref": "ref-welcome-320-dark.png",
+      "impl": "impl-welcome-320-dark.png"
     }
   ],
   "captures": [
     {
-      "file": "ref-types-1440-light.png",
+      "file": "ref-data-name-1440-light.png",
       "kind": "reference",
-      "step": "types",
+      "step": "data-name",
       "theme": "light",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 944,
-      "fullPageHeight": 944,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
       "layout": {
-        "grid": {
-          "x": 182,
-          "width": 1076,
-          "columnCount": 3,
-          "columnWidthsPx": [
-            348,
-            348,
-            348
-          ],
-          "gridTemplateColumns": "348px 348px 348px"
+        "providerBtn": null,
+        "formGeometry": {
+          "shell": {
+            "x": 150,
+            "y": 86,
+            "width": 1140,
+            "height": 645.91
+          },
+          "grid": {
+            "x": 182,
+            "y": 266.39,
+            "width": 1076,
+            "height": 401.52
+          },
+          "mainPanel": {
+            "x": 182,
+            "y": 266.39,
+            "width": 646.28,
+            "height": 389.16
+          },
+          "asidePanel": {
+            "x": 860.28,
+            "y": 266.39,
+            "width": 397.72,
+            "height": 401.52
+          },
+          "gridGapPx": 32,
+          "columnRatio": 1.62497,
+          "gridTemplateColumns": "646.281px 397.719px"
         },
-        "h1": {
+        "questionTitle": {
           "fontSizePx": 32,
-          "lineHeight": "40px"
+          "lineHeight": "40px",
+          "fontWeight": "800"
         },
-        "card": {
-          "backgroundColor": "rgb(255, 255, 255)",
-          "color": "rgb(36, 38, 35)",
-          "display": "flex",
-          "flexDirection": "column",
-          "minHeight": "210px"
-        },
-        "progress": {
-          "display": "flex",
-          "gridTemplateColumns": "none",
-          "stageTops": [
-            126,
-            126,
-            126,
-            126
-          ],
-          "stageTopSpread": 0
-        }
+        "panelHeader": null,
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
       },
       "verify": "passed"
     },
     {
-      "file": "impl-types-1440-light.png",
+      "file": "impl-data-name-1440-light.png",
       "kind": "implementation",
-      "step": "types",
+      "step": "data-name",
       "theme": "light",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
       "viewportWidth": 1440,
       "pngWidth": 1440,
-      "pngHeight": 930,
-      "fullPageHeight": 930,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
       "layout": {
-        "grid": {
-          "x": 182,
-          "width": 1076,
-          "columnCount": 3,
-          "columnWidthsPx": [
-            348,
-            348,
-            348
-          ],
-          "gridTemplateColumns": "348px 348px 348px"
+        "providerBtn": null,
+        "formGeometry": {
+          "shell": {
+            "x": 150,
+            "y": 76,
+            "width": 1140,
+            "height": 646.11
+          },
+          "grid": {
+            "x": 182,
+            "y": 254.19,
+            "width": 1076,
+            "height": 403.92
+          },
+          "mainPanel": {
+            "x": 182,
+            "y": 254.19,
+            "width": 646.28,
+            "height": 403.92
+          },
+          "asidePanel": {
+            "x": 860.28,
+            "y": 254.19,
+            "width": 397.72,
+            "height": 374.03
+          },
+          "gridGapPx": 32,
+          "columnRatio": 1.62497,
+          "gridTemplateColumns": "646.281px 397.719px"
         },
-        "h1": {
+        "questionTitle": {
           "fontSizePx": 32,
-          "lineHeight": "40px"
+          "lineHeight": "40px",
+          "fontWeight": "800"
         },
-        "card": {
-          "backgroundColor": "rgb(255, 255, 255)",
-          "color": "rgb(37, 41, 35)",
-          "display": "flex",
-          "flexDirection": "column",
-          "minHeight": "210px"
+        "panelHeader": {
+          "hintLeft": 687,
+          "rowLeft": 207,
+          "hintBelowEyebrow": false,
+          "hintMarginLeftAuto": false
         },
-        "progress": {
-          "display": "flex",
-          "gridTemplateColumns": "none",
-          "stageTops": [
-            116,
-            116,
-            116,
-            116
-          ],
-          "stageTopSpread": 0
-        }
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
       },
       "verify": "passed"
     },
     {
-      "file": "ref-types-1440-dark.png",
+      "file": "ref-data-name-375-dark.png",
       "kind": "reference",
-      "step": "types",
+      "step": "data-name",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-      "viewportWidth": 1440,
-      "pngWidth": 1440,
-      "pngHeight": 944,
-      "fullPageHeight": 944,
-      "layout": {
-        "grid": {
-          "x": 182,
-          "width": 1076,
-          "columnCount": 3,
-          "columnWidthsPx": [
-            348,
-            348,
-            348
-          ],
-          "gridTemplateColumns": "348px 348px 348px"
-        },
-        "h1": {
-          "fontSizePx": 32,
-          "lineHeight": "40px"
-        },
-        "card": {
-          "backgroundColor": "rgb(34, 37, 35)",
-          "color": "rgb(241, 240, 235)",
-          "display": "flex",
-          "flexDirection": "column",
-          "minHeight": "210px"
-        },
-        "progress": {
-          "display": "flex",
-          "gridTemplateColumns": "none",
-          "stageTops": [
-            126,
-            126,
-            126,
-            126
-          ],
-          "stageTopSpread": 0
-        }
-      },
-      "verify": "passed"
-    },
-    {
-      "file": "impl-types-1440-dark.png",
-      "kind": "implementation",
-      "step": "types",
-      "theme": "dark",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-      "viewportWidth": 1440,
-      "pngWidth": 1440,
-      "pngHeight": 930,
-      "fullPageHeight": 930,
-      "layout": {
-        "grid": {
-          "x": 182,
-          "width": 1076,
-          "columnCount": 3,
-          "columnWidthsPx": [
-            348,
-            348,
-            348
-          ],
-          "gridTemplateColumns": "348px 348px 348px"
-        },
-        "h1": {
-          "fontSizePx": 32,
-          "lineHeight": "40px"
-        },
-        "card": {
-          "backgroundColor": "rgb(32, 37, 32)",
-          "color": "rgb(240, 241, 236)",
-          "display": "flex",
-          "flexDirection": "column",
-          "minHeight": "210px"
-        },
-        "progress": {
-          "display": "flex",
-          "gridTemplateColumns": "none",
-          "stageTops": [
-            116,
-            116,
-            116,
-            116
-          ],
-          "stageTopSpread": 0
-        }
-      },
-      "verify": "passed"
-    },
-    {
-      "file": "ref-types-375-light.png",
-      "kind": "reference",
-      "step": "types",
-      "theme": "light",
-      "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1471,
-      "fullPageHeight": 1471,
+      "pngHeight": 1120,
+      "fullPageHeight": 1120,
       "layout": {
-        "grid": {
-          "x": 16,
-          "width": 343,
-          "columnCount": 1,
-          "columnWidthsPx": [
-            343
-          ],
-          "gridTemplateColumns": "343px"
-        },
-        "h1": {
-          "fontSizePx": 24,
-          "lineHeight": "30px"
-        },
-        "card": {
-          "backgroundColor": "rgb(255, 255, 255)",
-          "color": "rgb(36, 38, 35)",
-          "display": "grid",
-          "flexDirection": "column",
-          "minHeight": "0px"
-        },
-        "progress": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": {
           "display": "flex",
           "gridTemplateColumns": "none",
           "stageTops": [
@@ -269,89 +244,343 @@
             92.984
           ],
           "stageTopSpread": 0
-        }
+        },
+        "progressLabels": [
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 16,
+                "y": 125.98,
+                "width": 77.78,
+                "height": 17,
+                "right": 93.78,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 108.7,
+                "y": 125.98,
+                "width": 80.48,
+                "height": 17,
+                "right": 189.19,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 204.13,
+                "y": 125.98,
+                "width": 92.23,
+                "height": 17,
+                "right": 296.36,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 311.28,
+                "y": 125.98,
+                "width": 47.72,
+                "height": 17,
+                "right": 359,
+                "bottom": 142.98
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 359,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            14.92,
+            14.94,
+            14.92
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
+          "x": 16,
+          "width": 343,
+          "viewportWidth": 375
+        },
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
       },
       "verify": "passed"
     },
     {
-      "file": "impl-types-375-light.png",
+      "file": "impl-data-name-375-dark.png",
       "kind": "implementation",
-      "step": "types",
+      "step": "data-name",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1116,
+      "fullPageHeight": 1116,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": {
+          "hintLeft": 37,
+          "rowLeft": 37,
+          "hintBelowEyebrow": true,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            -204,
+            -204,
+            -204,
+            -204
+          ],
+          "stageTopSpread": 0
+        },
+        "progressLabels": [
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 16,
+                "y": -171,
+                "width": 78.08,
+                "height": 17,
+                "right": 94.08,
+                "bottom": -154
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 108.63,
+                "y": -171,
+                "width": 80.8,
+                "height": 17,
+                "right": 189.42,
+                "bottom": -154
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 203.95,
+                "y": -171,
+                "width": 92.59,
+                "height": 17,
+                "right": 296.55,
+                "bottom": -154
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 311.09,
+                "y": -171,
+                "width": 47.91,
+                "height": 17,
+                "right": 359,
+                "bottom": -154
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 359,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            14.55,
+            14.53,
+            14.54
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
+          "x": 16,
+          "width": 343,
+          "viewportWidth": 375
+        },
+        "formFooterRow": {
+          "tops": [
+            313,
+            313
+          ],
+          "singleRow": true
+        },
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-data-city-1440-light.png",
+      "kind": "reference",
+      "step": "data-city",
       "theme": "light",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-      "viewportWidth": 375,
-      "pngWidth": 375,
-      "pngHeight": 1655,
-      "fullPageHeight": 1655,
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
       "layout": {
-        "grid": {
-          "x": 16,
-          "width": 343,
-          "columnCount": 1,
-          "columnWidthsPx": [
-            343
-          ],
-          "gridTemplateColumns": "343px"
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": {
+          "value": "",
+          "hasFocusRing": false,
+          "activeIsInput": false
         },
-        "h1": {
-          "fontSizePx": 24,
-          "lineHeight": "30px"
-        },
-        "card": {
-          "backgroundColor": "rgb(255, 255, 255)",
-          "color": "rgb(37, 41, 35)",
-          "display": "grid",
-          "flexDirection": "column",
-          "minHeight": "0px"
-        },
-        "progress": {
-          "display": "grid",
-          "gridTemplateColumns": "76.75px 76.75px 76.75px 76.75px",
-          "stageTops": [
-            100,
-            100,
-            100,
-            100
-          ],
-          "stageTopSpread": 0
-        }
+        "authTitle": null
       },
       "verify": "passed"
     },
     {
-      "file": "ref-types-375-dark.png",
+      "file": "impl-data-city-1440-light.png",
+      "kind": "implementation",
+      "step": "data-city",
+      "theme": "light",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": {
+          "hintLeft": 687,
+          "rowLeft": 207,
+          "hintBelowEyebrow": false,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": {
+          "value": "",
+          "hasFocusRing": false,
+          "activeIsInput": false
+        },
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-data-city-375-dark.png",
       "kind": "reference",
-      "step": "types",
+      "step": "data-city",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1471,
-      "fullPageHeight": 1471,
+      "pngHeight": 1172,
+      "fullPageHeight": 1172,
       "layout": {
-        "grid": {
-          "x": 16,
-          "width": 343,
-          "columnCount": 1,
-          "columnWidthsPx": [
-            343
-          ],
-          "gridTemplateColumns": "343px"
-        },
-        "h1": {
-          "fontSizePx": 24,
-          "lineHeight": "30px"
-        },
-        "card": {
-          "backgroundColor": "rgb(34, 37, 35)",
-          "color": "rgb(241, 240, 235)",
-          "display": "grid",
-          "flexDirection": "column",
-          "minHeight": "0px"
-        },
-        "progress": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": {
           "display": "flex",
           "gridTemplateColumns": "none",
           "stageTops": [
@@ -361,89 +590,335 @@
             92.984
           ],
           "stageTopSpread": 0
-        }
-      },
-      "verify": "passed"
-    },
-    {
-      "file": "impl-types-375-dark.png",
-      "kind": "implementation",
-      "step": "types",
-      "theme": "dark",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-      "viewportWidth": 375,
-      "pngWidth": 375,
-      "pngHeight": 1655,
-      "fullPageHeight": 1655,
-      "layout": {
-        "grid": {
+        },
+        "progressLabels": [
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 16,
+                "y": 125.98,
+                "width": 77.78,
+                "height": 17,
+                "right": 93.78,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 108.7,
+                "y": 125.98,
+                "width": 80.48,
+                "height": 17,
+                "right": 189.19,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 204.13,
+                "y": 125.98,
+                "width": 92.23,
+                "height": 17,
+                "right": 296.36,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 311.28,
+                "y": 125.98,
+                "width": 47.72,
+                "height": 17,
+                "right": 359,
+                "bottom": 142.98
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 359,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            14.92,
+            14.94,
+            14.92
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
           "x": 16,
           "width": 343,
-          "columnCount": 1,
-          "columnWidthsPx": [
-            343
-          ],
-          "gridTemplateColumns": "343px"
+          "viewportWidth": 375
         },
-        "h1": {
-          "fontSizePx": 24,
-          "lineHeight": "30px"
+        "formFooterRow": null,
+        "cityField": {
+          "value": "",
+          "hasFocusRing": false,
+          "activeIsInput": false
         },
-        "card": {
-          "backgroundColor": "rgb(32, 37, 32)",
-          "color": "rgb(240, 241, 236)",
-          "display": "grid",
-          "flexDirection": "column",
-          "minHeight": "0px"
-        },
-        "progress": {
-          "display": "grid",
-          "gridTemplateColumns": "76.75px 76.75px 76.75px 76.75px",
-          "stageTops": [
-            100,
-            100,
-            100,
-            100
-          ],
-          "stageTopSpread": 0
-        }
+        "authTitle": null
       },
       "verify": "passed"
     },
     {
-      "file": "ref-types-320-dark.png",
+      "file": "impl-data-city-375-dark.png",
+      "kind": "implementation",
+      "step": "data-city",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1168,
+      "fullPageHeight": 1168,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": {
+          "hintLeft": 37,
+          "rowLeft": 37,
+          "hintBelowEyebrow": true,
+          "hintMarginLeftAuto": false
+        },
+        "progressMarkers": [
+          "✓",
+          "2",
+          "3",
+          "4"
+        ],
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            -204,
+            -204,
+            -204,
+            -204
+          ],
+          "stageTopSpread": 0
+        },
+        "progressLabels": [
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 16,
+                "y": -171,
+                "width": 78.08,
+                "height": 17,
+                "right": 94.08,
+                "bottom": -154
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 108.63,
+                "y": -171,
+                "width": 80.8,
+                "height": 17,
+                "right": 189.42,
+                "bottom": -154
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 203.95,
+                "y": -171,
+                "width": 92.59,
+                "height": 17,
+                "right": 296.55,
+                "bottom": -154
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 311.09,
+                "y": -171,
+                "width": 47.91,
+                "height": 17,
+                "right": 359,
+                "bottom": -154
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 359,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            14.55,
+            14.53,
+            14.54
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
+          "x": 16,
+          "width": 343,
+          "viewportWidth": 375
+        },
+        "formFooterRow": {
+          "tops": [
+            365,
+            365
+          ],
+          "singleRow": true
+        },
+        "cityField": {
+          "value": "",
+          "hasFocusRing": false,
+          "activeIsInput": false
+        },
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-auth-providers-1440-light.png",
       "kind": "reference",
-      "step": "types",
+      "step": "auth-providers",
+      "theme": "light",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(187, 48, 53)",
+          "fg": "rgb(255, 255, 255)",
+          "hoverBg": "rgb(187, 48, 53)"
+        },
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-auth-providers-1440-light.png",
+      "kind": "implementation",
+      "step": "auth-providers",
+      "theme": "light",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(187, 48, 53)",
+          "fg": "rgb(255, 255, 255)",
+          "hoverBg": "rgb(168, 41, 46)"
+        },
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-auth-providers-375-dark.png",
+      "kind": "reference",
+      "step": "auth-providers",
       "theme": "dark",
       "url": "http://127.0.0.1:3099/roles.html",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-      "viewportWidth": 320,
-      "pngWidth": 320,
-      "pngHeight": 1580,
-      "fullPageHeight": 1580,
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 905,
+      "fullPageHeight": 905,
       "layout": {
-        "grid": {
-          "x": 16,
-          "width": 288,
-          "columnCount": 1,
-          "columnWidthsPx": [
-            288
-          ],
-          "gridTemplateColumns": "288px"
+        "providerBtn": {
+          "bg": "rgb(244, 147, 145)",
+          "fg": "rgb(39, 27, 26)",
+          "hoverBg": "rgb(244, 147, 145)"
         },
-        "h1": {
-          "fontSizePx": 24,
-          "lineHeight": "30px"
-        },
-        "card": {
-          "backgroundColor": "rgb(34, 37, 35)",
-          "color": "rgb(241, 240, 235)",
-          "display": "grid",
-          "flexDirection": "column",
-          "minHeight": "0px"
-        },
-        "progress": {
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": {
           "display": "flex",
           "gridTemplateColumns": "none",
           "stageTops": [
@@ -453,93 +928,818 @@
             92.984
           ],
           "stageTopSpread": 0
-        }
-      },
-      "verify": "passed"
-    },
-    {
-      "file": "impl-types-320-dark.png",
-      "kind": "implementation",
-      "step": "types",
-      "theme": "dark",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
-      "viewportWidth": 320,
-      "pngWidth": 320,
-      "pngHeight": 1736,
-      "fullPageHeight": 1736,
-      "layout": {
-        "grid": {
+        },
+        "progressLabels": [
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 16,
+                "y": 125.98,
+                "width": 77.78,
+                "height": 17,
+                "right": 93.78,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 108.3,
+                "y": 125.98,
+                "width": 75.45,
+                "height": 17,
+                "right": 183.75,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 198.27,
+                "y": 125.98,
+                "width": 98.5,
+                "height": 17,
+                "right": 296.77,
+                "bottom": 142.98
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 311.28,
+                "y": 125.98,
+                "width": 47.72,
+                "height": 17,
+                "right": 359,
+                "bottom": 142.98
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 359,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            14.52,
+            14.52,
+            14.51
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
           "x": 16,
-          "width": 288,
-          "columnCount": 1,
-          "columnWidthsPx": [
-            288
-          ],
-          "gridTemplateColumns": "288px"
+          "width": 343,
+          "viewportWidth": 375
         },
-        "h1": {
-          "fontSizePx": 24,
-          "lineHeight": "30px"
-        },
-        "card": {
-          "backgroundColor": "rgb(32, 37, 32)",
-          "color": "rgb(240, 241, 236)",
-          "display": "grid",
-          "flexDirection": "column",
-          "minHeight": "0px"
-        },
-        "progress": {
-          "display": "grid",
-          "gridTemplateColumns": "63px 63px 63px 63px",
-          "stageTops": [
-            100,
-            100,
-            100,
-            100
-          ],
-          "stageTopSpread": 0
-        }
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
       },
       "verify": "passed"
     },
     {
-      "file": "impl-data-375-dark.png",
+      "file": "impl-auth-providers-375-dark.png",
       "kind": "implementation",
-      "step": "data",
+      "step": "auth-providers",
       "theme": "dark",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
       "viewportWidth": 375,
       "pngWidth": 375,
       "pngHeight": 812,
       "fullPageHeight": 812,
-      "layout": null,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(244, 147, 145)",
+          "fg": "rgb(39, 27, 26)",
+          "hoverBg": "rgb(232, 133, 131)"
+        },
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "stageTopSpread": 0
+        },
+        "progressLabels": [
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 16,
+                "y": 133,
+                "width": 78.08,
+                "height": 17,
+                "right": 94.08,
+                "bottom": 150
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 108.2,
+                "y": 133,
+                "width": 75.73,
+                "height": 17,
+                "right": 183.94,
+                "bottom": 150
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 198.08,
+                "y": 133,
+                "width": 98.89,
+                "height": 17,
+                "right": 296.97,
+                "bottom": 150
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12.06,
+              "lineHeightPx": 19.29,
+              "labelBox": {
+                "x": 311.09,
+                "y": 133,
+                "width": 47.91,
+                "height": 17,
+                "right": 359,
+                "bottom": 150
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 359,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            14.12,
+            14.14,
+            14.12
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
+          "x": 16,
+          "width": 343,
+          "viewportWidth": 375
+        },
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
       "verify": "passed"
     },
     {
-      "file": "impl-auth-375-dark.png",
-      "kind": "implementation",
-      "step": "auth",
+      "file": "ref-auth-code-375-dark.png",
+      "kind": "reference",
+      "step": "auth-code",
       "theme": "dark",
-      "url": "http://127.0.0.1:3022/join",
-      "codeSha": "813bdc5d5b832123d432cc62b6c65cf8e8e1e3f3",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
       "viewportWidth": 375,
       "pngWidth": 375,
-      "pngHeight": 1061,
-      "fullPageHeight": 1061,
-      "layout": null,
+      "pngHeight": 873,
+      "fullPageHeight": 873,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-auth-code-375-dark.png",
+      "kind": "implementation",
+      "step": "auth-code",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 812,
+      "fullPageHeight": 812,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-auth-code-320-dark.png",
+      "kind": "reference",
+      "step": "auth-code",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 1004,
+      "fullPageHeight": 1004,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-auth-code-320-dark.png",
+      "kind": "implementation",
+      "step": "auth-code",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 772,
+      "fullPageHeight": 772,
+      "layout": {
+        "providerBtn": null,
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": null,
+        "progressLabels": null,
+        "progressTextLayout": null,
+        "mobileCard": null,
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": null
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-auth-providers-320-progress-dark.png",
+      "kind": "reference",
+      "step": "auth-providers",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 943,
+      "fullPageHeight": 943,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(244, 147, 145)",
+          "fg": "rgb(39, 27, 26)",
+          "hoverBg": "rgb(244, 147, 145)"
+        },
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            47.984,
+            47.984,
+            47.984,
+            47.984
+          ],
+          "stageTopSpread": 0
+        },
+        "progressLabels": [
+          {
+            "lines": 2,
+            "labelHeightPx": 36
+          },
+          {
+            "lines": 2,
+            "labelHeightPx": 36
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 16,
+                "y": 80.98,
+                "width": 54.56,
+                "height": 36.19,
+                "right": 70.56,
+                "bottom": 117.17
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 82.56,
+                "y": 80.98,
+                "width": 43.09,
+                "height": 36.19,
+                "right": 125.66,
+                "bottom": 117.17
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 145.78,
+                "y": 80.98,
+                "width": 98.5,
+                "height": 17,
+                "right": 244.28,
+                "bottom": 97.98
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 256.28,
+                "y": 80.98,
+                "width": 47.72,
+                "height": 17,
+                "right": 304,
+                "bottom": 97.98
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 304,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            12,
+            20.12,
+            12
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
+          "x": 16,
+          "width": 288,
+          "viewportWidth": 320
+        },
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": {
+          "fontSizePx": 24,
+          "lineHeightPx": 30,
+          "lines": 2,
+          "widthPx": 246
+        }
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-auth-providers-320-progress-dark.png",
+      "kind": "implementation",
+      "step": "auth-providers",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/join",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 793,
+      "fullPageHeight": 793,
+      "layout": {
+        "providerBtn": {
+          "bg": "rgb(244, 147, 145)",
+          "fg": "rgb(39, 27, 26)",
+          "hoverBg": "rgb(232, 133, 131)"
+        },
+        "formGeometry": null,
+        "questionTitle": null,
+        "panelHeader": null,
+        "progressMarkers": null,
+        "progressRow": {
+          "display": "flex",
+          "gridTemplateColumns": "none",
+          "stageTops": [
+            -53,
+            -53,
+            -53,
+            -53
+          ],
+          "stageTopSpread": 0
+        },
+        "progressLabels": [
+          {
+            "lines": 2,
+            "labelHeightPx": 36
+          },
+          {
+            "lines": 2,
+            "labelHeightPx": 36
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          },
+          {
+            "lines": 1,
+            "labelHeightPx": 17
+          }
+        ],
+        "progressTextLayout": {
+          "items": [
+            {
+              "index": 0,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 16,
+                "y": -20,
+                "width": 54.56,
+                "height": 36.19,
+                "right": 70.56,
+                "bottom": 16.19
+              }
+            },
+            {
+              "index": 1,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 82.63,
+                "y": -20,
+                "width": 43.09,
+                "height": 36.19,
+                "right": 125.72,
+                "bottom": 16.19
+              }
+            },
+            {
+              "index": 2,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 145.78,
+                "y": -20,
+                "width": 98.5,
+                "height": 17,
+                "right": 244.28,
+                "bottom": -3
+              }
+            },
+            {
+              "index": 3,
+              "fontSizePx": 12,
+              "lineHeightPx": 19.2,
+              "labelBox": {
+                "x": 256.28,
+                "y": -20,
+                "width": 47.72,
+                "height": 17,
+                "right": 304,
+                "bottom": -3
+              }
+            }
+          ],
+          "overlaps": [],
+          "outOfViewport": [],
+          "containerRight": 304,
+          "containerLeft": 16,
+          "horizontalGaps": [
+            12.07,
+            20.06,
+            12
+          ],
+          "lastLabelOverflowPx": 0,
+          "firstLabelUnderflowPx": 0
+        },
+        "mobileCard": {
+          "x": 16,
+          "width": 288,
+          "viewportWidth": 320
+        },
+        "formFooterRow": null,
+        "cityField": null,
+        "authTitle": {
+          "fontSizePx": 24,
+          "lineHeightPx": 30,
+          "lines": 2,
+          "widthPx": 246
+        }
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-welcome-1440-light.png",
+      "kind": "reference",
+      "step": "welcome",
+      "theme": "light",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 965,
+      "fullPageHeight": 965,
+      "layout": {
+        "actionDisplay": "row",
+        "actionAlign": "center",
+        "actionGap": "20px",
+        "btnBg": "rgb(187, 48, 53)",
+        "btnColor": "rgb(255, 255, 255)",
+        "h1FontSizePx": 52,
+        "h1LineHeight": "56.16px",
+        "actionTopPx": 581
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-welcome-1440-light.png",
+      "kind": "implementation",
+      "step": "welcome",
+      "theme": "light",
+      "url": "http://127.0.0.1:3035/",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 900,
+      "fullPageHeight": 900,
+      "layout": {
+        "actionDisplay": "row",
+        "actionAlign": "center",
+        "actionGap": "20px",
+        "btnBg": "rgb(187, 48, 53)",
+        "btnColor": "rgb(255, 255, 255)",
+        "h1FontSizePx": 52,
+        "h1LineHeight": "56.16px",
+        "actionTopPx": 575
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-welcome-375-light.png",
+      "kind": "reference",
+      "step": "welcome",
+      "theme": "light",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1369,
+      "fullPageHeight": 1369,
+      "layout": {
+        "actionDisplay": "row",
+        "actionAlign": "center",
+        "actionGap": "12px",
+        "btnBg": "rgb(187, 48, 53)",
+        "btnColor": "rgb(255, 255, 255)",
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-welcome-375-light.png",
+      "kind": "implementation",
+      "step": "welcome",
+      "theme": "light",
+      "url": "http://127.0.0.1:3035/",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1263,
+      "fullPageHeight": 1263,
+      "layout": {
+        "actionDisplay": "row",
+        "actionAlign": "center",
+        "actionGap": "12px",
+        "btnBg": "rgb(187, 48, 53)",
+        "btnColor": "rgb(255, 255, 255)",
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-welcome-375-dark.png",
+      "kind": "reference",
+      "step": "welcome",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1369,
+      "fullPageHeight": 1369,
+      "layout": {
+        "actionDisplay": "row",
+        "actionAlign": "center",
+        "actionGap": "12px",
+        "btnBg": "rgb(244, 147, 145)",
+        "btnColor": "rgb(39, 27, 26)",
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-welcome-375-dark.png",
+      "kind": "implementation",
+      "step": "welcome",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 375,
+      "pngWidth": 375,
+      "pngHeight": 1263,
+      "fullPageHeight": 1263,
+      "layout": {
+        "actionDisplay": "row",
+        "actionAlign": "center",
+        "actionGap": "12px",
+        "btnBg": "rgb(244, 147, 145)",
+        "btnColor": "rgb(39, 27, 26)",
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "ref-welcome-320-dark.png",
+      "kind": "reference",
+      "step": "welcome",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3099/roles.html",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 1423,
+      "fullPageHeight": 1423,
+      "layout": {
+        "actionDisplay": "column",
+        "actionAlign": "flex-start",
+        "actionGap": "12px",
+        "btnBg": "rgb(244, 147, 145)",
+        "btnColor": "rgb(39, 27, 26)",
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 391
+      },
+      "verify": "passed"
+    },
+    {
+      "file": "impl-welcome-320-dark.png",
+      "kind": "implementation",
+      "step": "welcome",
+      "theme": "dark",
+      "url": "http://127.0.0.1:3035/",
+      "codeSha": "faf869a74482163758b176c5d4a5f934744cc374",
+      "viewportWidth": 320,
+      "pngWidth": 320,
+      "pngHeight": 1369,
+      "fullPageHeight": 1369,
+      "layout": {
+        "actionDisplay": "column",
+        "actionAlign": "flex-start",
+        "actionGap": "12px",
+        "btnBg": "rgb(244, 147, 145)",
+        "btnColor": "rgb(39, 27, 26)",
+        "h1FontSizePx": 34,
+        "h1LineHeight": "36.72px",
+        "actionTopPx": 415
+      },
       "verify": "passed"
     }
   ],
   "layoutParityFailures": [],
+  "documentedExceptions": [
+    {
+      "kind": "shellTopOffsetVsPrototypeHeader",
+      "refY": 86,
+      "implY": 76,
+      "deltaPx": 10,
+      "note": "Absolute shell Y includes app header vs prototype topbar; grid.relY still gated ref vs impl."
+    },
+    {
+      "kind": "desktopAsidePanelHeightVsPrototype",
+      "refHeight": 401.52,
+      "implHeight": 374.03,
+      "note": "Not pixel PASS for desktop shell/aside; excluded from REGISTRATION_VISUAL_01_5 gates."
+    }
+  ],
+  "typesGridGeometryStatus": "within-tolerance",
+  "pairedCaptureStatus": "pairs-captured-with-layout-metrics",
   "captureStatus": "geometry-within-tolerance",
   "invalidSupersededRefs": [],
   "remainingVisualGaps": [
     "CAPTURED ≠ pixel PASS; pairs are for human/review diff only.",
     "Welcome link retained on types step (not in frozen prototype footer).",
-    "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals)."
+    "Dark card tokens: impl surface rgb(32,37,32) vs ref rgb(34,37,35) (platform globals — do not change for R06 parallel work).",
+    "auth-code: ref prototype demo field vs impl live OTP copy — not production OTP delivery.",
+    "Equal PNG widths ≠ visual PASS; review welcome CTA color/row layout via layout.* metrics."
   ],
+  "parallelAgentNote": "R06-SPECIALIST-TAIL-01 (bc-6cb74748) owns specialist/taxonomy — avoid shared auth.module.css / global token edits.",
   "assertions": [
     "step_verify",
     "viewport_verify",
@@ -549,6 +1749,7 @@
     "dark_card_computed_settled",
     "layout_json_embedded",
     "mobile_grid_parity_375_320",
-    "progress_stage_top_alignment"
+    "progress_stage_top_alignment",
+    "registration_css_gates"
   ]
 }

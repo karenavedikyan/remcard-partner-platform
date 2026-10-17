@@ -1,0 +1,405 @@
+/* Scoped subset aligned to prototype registration-entry.css (20261017). */
+
+.registrationEntryScope {
+  --reg-entry-primary: #bb3035;
+  --reg-entry-primary-fg: #ffffff;
+  --reg-entry-primary-hover: #a6282d;
+}
+
+:global([data-theme="dark"]) .registrationEntryScope {
+  --reg-entry-primary: #f49391;
+  --reg-entry-primary-fg: #271b1a;
+  --reg-entry-primary-hover: #e88583;
+}
+
+.registrationEntryScope {
+  --primary: var(--reg-entry-primary);
+  --primary-fg: var(--reg-entry-primary-fg);
+  /* Button.module.css .primary consumes accent-fill, not --primary alone. */
+  --accent-fill: var(--reg-entry-primary);
+  --accent-fill-hover: var(--reg-entry-primary-hover);
+}
+
+.entryRoleContext {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+
+.rolePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--surface);
+}
+
+.roleContextNote {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.changeTypeBtn {
+  margin-left: auto;
+}
+
+.formLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.registrationDataScope .panelHeaderRow {
+  flex-wrap: wrap;
+  align-items: baseline;
+  row-gap: var(--space-1);
+}
+
+.registrationDataScope .panelHeaderRow .eyebrow {
+  flex: 1 1 auto;
+  min-width: 12rem;
+}
+
+.registrationDataScope .panelHeaderRow .stepHint {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.8125rem;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panelHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: nowrap;
+}
+
+.panelHeaderRow .stepHint {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stepHint {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.dataTrack {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dataTrack span {
+  height: 4px;
+  background: var(--line);
+  border-radius: 4px;
+  flex: 1;
+}
+
+.dataTrack span.done {
+  background: var(--primary);
+}
+
+.questionTitle {
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.registrationDataScope .questionTitle {
+  font-size: clamp(1.5rem, 1.25rem + 0.9vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+}
+
+.fieldHelp {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.fieldError {
+  min-height: 1.375rem;
+  font-size: var(--text-sm);
+  line-height: 1.375rem;
+  margin: 0;
+  color: var(--primary);
+}
+
+.formFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+
+.companionTitle {
+  font-size: var(--text-lg);
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.companionIntro {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin: var(--space-2) 0 0;
+  line-height: 1.6;
+}
+
+.roadmap {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: entry-step;
+}
+
+.roadmap li {
+  counter-increment: entry-step;
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-size: 0.875rem;
+}
+
+.roadmap li::before {
+  content: "0" counter(entry-step);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.companionLater {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.entrySingle {
+  width: 100%;
+  max-width: 584px;
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-sizing: border-box;
+}
+
+.entrySingle .entryTitle {
+  width: 100%;
+  max-width: none;
+}
+
+.entryTitle {
+  font-size: var(--text-xl);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  padding-top: 0.125rem;
+}
+
+.entryLead {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.dataSummary {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--offset, var(--surface-muted));
+  border-radius: 10px;
+}
+
+.dataSummary div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  font-size: 0.875rem;
+}
+
+.dataSummary dt {
+  color: var(--muted);
+  margin: 0;
+}
+
+.dataSummary dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.providerList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.providerBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  justify-content: flex-start;
+  width: 100%;
+  text-decoration: none;
+}
+
+.providerMark {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.providerArrow {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+.codeActionsRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .registrationEntryScope .panel {
+    padding: var(--space-5);
+  }
+
+  .formLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .registrationDataScope .entryRoleContext {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+
+  .registrationDataScope .roleContextNote {
+    width: 100%;
+    order: 3;
+    font-size: var(--text-sm);
+  }
+
+  .registrationDataScope .changeTypeBtn {
+    margin-left: auto;
+    width: auto;
+    flex-shrink: 0;
+    min-height: 40px;
+    padding-inline: var(--space-3);
+    font-size: 0.8125rem;
+  }
+
+  .changeTypeBtn {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .roleContextNote {
+    width: 100%;
+    order: 3;
+  }
+
+  .registrationDataScope .entrySingle {
+    padding: var(--space-5);
+    gap: var(--space-3);
+  }
+
+  .registrationDataScope .panelHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .registrationDataScope .panelHeaderRow .eyebrow {
+    min-width: 0;
+    flex: none;
+  }
+
+  .registrationDataScope .panelHeaderRow .stepHint {
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+  }
+
+  .formFooter {
+    align-items: stretch;
+  }
+
+  .formFooter > * {
+    flex: 1 1 auto;
+  }
+
+  .registrationDataScope .formFooter {
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .registrationDataScope .formFooter > * {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .codeActionsRow > * {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .registrationEntryScope .entrySingle {
+    padding: var(--space-5);
+  }
+
+  .registrationEntryScope .entrySingle .entryTitle {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+}

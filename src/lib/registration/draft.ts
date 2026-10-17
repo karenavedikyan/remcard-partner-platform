@@ -91,9 +91,14 @@ function safeRemoveItem(key: string): void {
   }
 }
 
+/** Bind draft owner only when unset; never overwrite an existing different owner. */
 export function bindRegistrationDraftOwner(userId: string | null): void {
   if (!userId) {
     safeRemoveItem(OWNER_PREFIX);
+    return;
+  }
+  const existing = getRegistrationDraftOwner();
+  if (existing && existing !== userId) {
     return;
   }
   safeSetItem(OWNER_PREFIX, userId);
