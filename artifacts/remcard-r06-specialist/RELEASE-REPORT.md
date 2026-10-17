@@ -45,7 +45,7 @@ Owner scope after accepted **`afea396`** / runtime **`c89cea4`**: composition-on
 | Prior docs/full acceptance tip | `afea396` |
 | Legacy preview isolation (unchanged this pass) | `c89cea4` |
 | Navigator pinned | `04613f09` |
-| A/B/C platform runtime + capture | see `screenshots/manifest.json` `codeSha` / `captureSha` |
+| A/B/C platform runtime + capture | `e18487a` |
 
 **Visual set:** 13 matched impl/ref + 320 smoke — `artifacts/remcard-r06-specialist/screenshots/`. Recaptured for A/B/C: `profile-catalog-wizard*`, `profile-catalog-preview*`, `profile-specialization-step*`, `profile-completed-summary*`, smoke. Pending triple **smoke only** (composition unchanged). **CAPTURED ≠ visual PASS** (no % score).
 
