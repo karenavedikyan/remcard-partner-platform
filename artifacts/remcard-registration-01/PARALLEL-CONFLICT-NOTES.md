@@ -9,3 +9,11 @@
 | **Globals** | No intentional `--primary` / surface token changes | R06 may adjust platform tokens — registration welcome dark card gap documented in visual report |
 
 Registration UI prefers **scoped** `registration-entry.module.css` + `partner-welcome.module.css` over global design tokens.
+
+## Local welcome capture (SSR)
+
+Playwright mocks do not affect `/` SSR. For `registration-01-visual.mjs` welcome pairs, start platform dev with:
+
+`REGISTRATION_SSR_WELCOME=1 pnpm exec next dev -p 3020 -H 127.0.0.1`
+
+(`capabilities-server.ts` — dev-only; not for production deploy.)
