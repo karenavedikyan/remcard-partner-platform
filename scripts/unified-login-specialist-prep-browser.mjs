@@ -412,7 +412,6 @@ export async function runUnifiedPrepBrowserSmoke() {
     login,
     specialist,
   };
-  cleanupHarnessSideEffects();
   return result;
   } finally {
     cleanupHarnessSideEffects();
