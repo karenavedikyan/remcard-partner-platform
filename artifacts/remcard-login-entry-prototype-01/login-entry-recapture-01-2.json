@@ -1,0 +1,154 @@
+{
+  "pairCount": 7,
+  "pairs": [
+    {
+      "state": "provider",
+      "viewport": "375",
+      "theme": "dark",
+      "ref": "ref-provider-375-dark.png",
+      "impl": "impl-provider-375-dark.png"
+    },
+    {
+      "state": "provider",
+      "viewport": "320",
+      "theme": "dark",
+      "ref": "ref-provider-320-dark.png",
+      "impl": "impl-provider-320-dark.png"
+    },
+    {
+      "state": "provider",
+      "viewport": "375",
+      "theme": "light",
+      "ref": "ref-provider-375-light.png",
+      "impl": "impl-provider-375-light.png"
+    },
+    {
+      "state": "provider",
+      "viewport": "320",
+      "theme": "light",
+      "ref": "ref-provider-320-light.png",
+      "impl": "impl-provider-320-light.png"
+    },
+    {
+      "state": "admin-modal",
+      "viewport": "320",
+      "theme": "dark",
+      "ref": "ref-admin-modal-320-dark.png",
+      "impl": "impl-admin-modal-320-dark.png",
+      "refException": null
+    },
+    {
+      "state": "admin-modal",
+      "viewport": "320",
+      "theme": "light",
+      "ref": "ref-admin-modal-320-light.png",
+      "impl": "impl-admin-modal-320-light.png",
+      "refException": null
+    },
+    {
+      "state": "admin-modal",
+      "viewport": "375",
+      "theme": "light",
+      "ref": "ref-admin-modal-375-light.png",
+      "impl": "impl-admin-modal-375-light.png",
+      "refException": null
+    }
+  ],
+  "visualMetrics": [
+    {
+      "provider": "max",
+      "theme": "dark",
+      "contrast": 7.5,
+      "styles": {
+        "color": "rgb(39, 27, 26)",
+        "backgroundColor": "rgb(244, 147, 145)",
+        "borderColor": "rgb(244, 147, 145)"
+      }
+    },
+    {
+      "provider": "telegram",
+      "theme": "dark",
+      "contrast": 13.73,
+      "styles": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgb(32, 37, 32)",
+        "borderColor": "rgb(57, 64, 56)"
+      }
+    },
+    {
+      "provider": "max",
+      "theme": "dark",
+      "contrast": 7.5,
+      "styles": {
+        "color": "rgb(39, 27, 26)",
+        "backgroundColor": "rgb(244, 147, 145)",
+        "borderColor": "rgb(244, 147, 145)"
+      }
+    },
+    {
+      "provider": "telegram",
+      "theme": "dark",
+      "contrast": 13.73,
+      "styles": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgb(32, 37, 32)",
+        "borderColor": "rgb(57, 64, 56)"
+      }
+    },
+    {
+      "provider": "max",
+      "theme": "light",
+      "contrast": 5.75,
+      "styles": {
+        "color": "rgb(255, 255, 255)",
+        "backgroundColor": "rgb(193, 43, 47)",
+        "borderColor": "rgb(193, 43, 47)"
+      }
+    },
+    {
+      "provider": "telegram",
+      "theme": "light",
+      "contrast": 14.79,
+      "styles": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderColor": "rgb(229, 229, 223)"
+      }
+    },
+    {
+      "provider": "max",
+      "theme": "light",
+      "contrast": 5.75,
+      "styles": {
+        "color": "rgb(255, 255, 255)",
+        "backgroundColor": "rgb(193, 43, 47)",
+        "borderColor": "rgb(193, 43, 47)"
+      }
+    },
+    {
+      "provider": "telegram",
+      "theme": "light",
+      "contrast": 14.79,
+      "styles": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderColor": "rgb(229, 229, 223)"
+      }
+    },
+    {
+      "viewport": 320,
+      "passwordRight": 295
+    },
+    {
+      "viewport": 320,
+      "passwordRight": 295
+    },
+    {
+      "viewport": 375,
+      "passwordRight": 247
+    }
+  ],
+  "note": "CAPTURED != visual PASS; impl shots gated on computed contrast/layout metrics.",
+  "targetSpec": "provider:375:dark,provider:320:dark,provider:375:light,provider:320:light,admin-modal:320:dark,admin-modal:320:light,admin-modal:375:light",
+  "implOrigin": "http://127.0.0.1:43455"
+}

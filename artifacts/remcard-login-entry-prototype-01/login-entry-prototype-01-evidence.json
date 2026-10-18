@@ -1,30 +1,35 @@
 {
-  "status": "READY_FOR_REVIEW",
-  "task": "LOGIN-ENTRY-PROTOTYPE-01.1",
+  "status": "NOT_VERIFIED",
+  "task": "LOGIN-ENTRY-PROTOTYPE-01.2",
   "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
-  "codeSha": "98f052665ac68221990aa08af1b093b63f445967",
-  "runnerSha": "98f052665ac68221990aa08af1b093b63f445967",
-  "artifactTipSha": "98f052665ac68221990aa08af1b093b63f445967",
+  "codeSha": "9633e53d4ed8b04987f57b97b3b2cfdb3afe78f8",
+  "runnerSha": "9633e53d4ed8b04987f57b97b3b2cfdb3afe78f8",
+  "artifactTipSha": "9633e53d4ed8b04987f57b97b3b2cfdb3afe78f8",
   "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
   "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
   "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
   "productionBuild": {
-    "skipped": true,
-    "imported": true,
-    "reason": "LOGIN_ENTRY_SKIP_BUILD=1; imported existing .next/BUILD_ID (build not executed in this invocation)",
-    "command": "import .next/BUILD_ID (no npm run build in this runner invocation)",
-    "sourceSha": "98f052665ac68221990aa08af1b093b63f445967",
-    "BUILD_ID": "ZzQP7zNm_AM1mE0RajSgn",
-    "exitCode": null,
+    "command": "env -u R06_NEXT_DIST_DIR npm run build",
+    "sourceSha": "9633e53d4ed8b04987f57b97b3b2cfdb3afe78f8",
+    "BUILD_ID": "3BIYD8fIBQ3UCLiYsJujJ",
+    "exitCode": 0,
     "signal": null,
-    "spawnError": null
+    "spawnError": null,
+    "stdoutBytes": 5251,
+    "stderrBytes": 0,
+    "recordedAt": "2026-10-18T21:00:47.668Z",
+    "acceptanceOnly": true,
+    "logFile": "artifacts/remcard-login-entry-prototype-01/login-entry-build.log",
+    "verified": true,
+    "verifyReason": null
   },
   "runtimePin": {
-    "mode": "running-server",
-    "origin": "http://127.0.0.1:3040",
-    "codeSha": "98f0526cc5e7ca6b10fdc8035362a1d40f0fa91e",
-    "BUILD_ID": "ZzQP7zNm_AM1mE0RajSgn",
-    "verified": true
+    "verified": true,
+    "mode": "spawned-next-start",
+    "origin": "http://127.0.0.1:3046",
+    "codeSha": "9633e53d4ed8b04987f57b97b3b2cfdb3afe78f8",
+    "BUILD_ID": "3BIYD8fIBQ3UCLiYsJujJ",
+    "probedBuildId": "3BIYD8fIBQ3UCLiYsJujJ"
   },
   "tests": {
     "authComponents": {
@@ -32,7 +37,7 @@
       "exitCode": 0,
       "signal": null,
       "spawnError": null,
-      "stdoutBytes": 428,
+      "stdoutBytes": 0,
       "stderrBytes": 0
     },
     "harnessUnit": {
@@ -40,19 +45,21 @@
       "exitCode": 0,
       "signal": null,
       "spawnError": null,
-      "stdoutBytes": 848,
+      "stdoutBytes": 2059,
       "stderrBytes": 0
     },
     "disposableLogin": {
+      "status": "NOT_VERIFIED",
+      "reason": "skipped (LOGIN_ENTRY_SKIP_DISPOSABLE=1); full chain not re-run in this invocation"
+    },
+    "partialSeedCleanup": {
       "status": "PASS",
-      "tag": "login-entry-1792354388024",
-      "maxId": "881312952659",
-      "verifyCodeStatus": 200,
-      "reloginVerifyStatus": 200,
+      "tag": "login-entry-partial-1792357423704",
+      "maxId": "881820376977",
       "cleanup": {
         "mock": true,
-        "tag": "login-entry-1792354388024",
-        "publicId": "pub-login-entry-1792354388024",
+        "tag": "login-entry-partial-1792357423704",
+        "publicId": "pub-login-entry-partial-1792357423704",
         "deleted": {
           "users": 1,
           "authAccounts": 1,
@@ -65,56 +72,28 @@
           "consents": 0,
           "botLoginCodes": 0
         }
-      }
+      },
+      "partialSeedRegression": true,
+      "simulatedPrimaryError": "partial-seed inject: refuse valid JSON (simulated malformed stdout handling)"
     },
     "smokeError": null
   },
   "screenshots": {
-    "pairCount": 18,
+    "pairCount": 7,
     "pairs": [
       {
         "state": "provider",
-        "viewport": "1440",
-        "theme": "light",
-        "ref": "ref-provider-1440-light.png",
-        "impl": "impl-provider-1440-light.png"
-      },
-      {
-        "state": "otp",
-        "viewport": "1440",
-        "theme": "light",
-        "ref": "ref-otp-1440-light.png",
-        "impl": "impl-otp-1440-light.png"
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "1440",
-        "theme": "light",
-        "ref": "ref-admin-modal-1440-light.png",
-        "impl": "impl-admin-modal-1440-light.png",
-        "refException": null
+        "viewport": "375",
+        "theme": "dark",
+        "ref": "ref-provider-375-dark.png",
+        "impl": "impl-provider-375-dark.png"
       },
       {
         "state": "provider",
-        "viewport": "1440",
+        "viewport": "320",
         "theme": "dark",
-        "ref": "ref-provider-1440-dark.png",
-        "impl": "impl-provider-1440-dark.png"
-      },
-      {
-        "state": "otp",
-        "viewport": "1440",
-        "theme": "dark",
-        "ref": "ref-otp-1440-dark.png",
-        "impl": "impl-otp-1440-dark.png"
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "1440",
-        "theme": "dark",
-        "ref": "ref-admin-modal-1440-dark.png",
-        "impl": "impl-admin-modal-1440-dark.png",
-        "refException": null
+        "ref": "ref-provider-320-dark.png",
+        "impl": "impl-provider-320-dark.png"
       },
       {
         "state": "provider",
@@ -124,43 +103,6 @@
         "impl": "impl-provider-375-light.png"
       },
       {
-        "state": "otp",
-        "viewport": "375",
-        "theme": "light",
-        "ref": "ref-otp-375-light.png",
-        "impl": "impl-otp-375-light.png"
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "375",
-        "theme": "light",
-        "ref": "ref-admin-modal-375-light.png",
-        "impl": "impl-admin-modal-375-light.png",
-        "refException": null
-      },
-      {
-        "state": "provider",
-        "viewport": "375",
-        "theme": "dark",
-        "ref": "ref-provider-375-dark.png",
-        "impl": "impl-provider-375-dark.png"
-      },
-      {
-        "state": "otp",
-        "viewport": "375",
-        "theme": "dark",
-        "ref": "ref-otp-375-dark.png",
-        "impl": "impl-otp-375-dark.png"
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "375",
-        "theme": "dark",
-        "ref": "ref-admin-modal-375-dark.png",
-        "impl": "impl-admin-modal-375-dark.png",
-        "refException": null
-      },
-      {
         "state": "provider",
         "viewport": "320",
         "theme": "light",
@@ -168,11 +110,12 @@
         "impl": "impl-provider-320-light.png"
       },
       {
-        "state": "otp",
+        "state": "admin-modal",
         "viewport": "320",
-        "theme": "light",
-        "ref": "ref-otp-320-light.png",
-        "impl": "impl-otp-320-light.png"
+        "theme": "dark",
+        "ref": "ref-admin-modal-320-dark.png",
+        "impl": "impl-admin-modal-320-dark.png",
+        "refException": null
       },
       {
         "state": "admin-modal",
@@ -183,31 +126,110 @@
         "refException": null
       },
       {
-        "state": "provider",
-        "viewport": "320",
-        "theme": "dark",
-        "ref": "ref-provider-320-dark.png",
-        "impl": "impl-provider-320-dark.png"
-      },
-      {
-        "state": "otp",
-        "viewport": "320",
-        "theme": "dark",
-        "ref": "ref-otp-320-dark.png",
-        "impl": "impl-otp-320-dark.png"
-      },
-      {
         "state": "admin-modal",
-        "viewport": "320",
-        "theme": "dark",
-        "ref": "ref-admin-modal-320-dark.png",
-        "impl": "impl-admin-modal-320-dark.png",
+        "viewport": "375",
+        "theme": "light",
+        "ref": "ref-admin-modal-375-light.png",
+        "impl": "impl-admin-modal-375-light.png",
         "refException": null
       }
     ],
-    "fileCount": 36,
-    "refAdminNote": "When static roles.html omits hydrated admin footer, ref admin-modal uses #role-dialog markup from registration-entry.js (same copy as prototype).",
-    "note": "CAPTURED != visual PASS; themes asserted via html[data-theme] before each screenshot."
+    "visualMetrics": [
+      {
+        "provider": "max",
+        "theme": "dark",
+        "contrast": 7.5,
+        "styles": {
+          "color": "rgb(39, 27, 26)",
+          "backgroundColor": "rgb(244, 147, 145)",
+          "borderColor": "rgb(244, 147, 145)"
+        }
+      },
+      {
+        "provider": "telegram",
+        "theme": "dark",
+        "contrast": 13.73,
+        "styles": {
+          "color": "rgb(240, 241, 236)",
+          "backgroundColor": "rgb(32, 37, 32)",
+          "borderColor": "rgb(57, 64, 56)"
+        }
+      },
+      {
+        "provider": "max",
+        "theme": "dark",
+        "contrast": 7.5,
+        "styles": {
+          "color": "rgb(39, 27, 26)",
+          "backgroundColor": "rgb(244, 147, 145)",
+          "borderColor": "rgb(244, 147, 145)"
+        }
+      },
+      {
+        "provider": "telegram",
+        "theme": "dark",
+        "contrast": 13.73,
+        "styles": {
+          "color": "rgb(240, 241, 236)",
+          "backgroundColor": "rgb(32, 37, 32)",
+          "borderColor": "rgb(57, 64, 56)"
+        }
+      },
+      {
+        "provider": "max",
+        "theme": "light",
+        "contrast": 5.75,
+        "styles": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(193, 43, 47)",
+          "borderColor": "rgb(193, 43, 47)"
+        }
+      },
+      {
+        "provider": "telegram",
+        "theme": "light",
+        "contrast": 14.79,
+        "styles": {
+          "color": "rgb(37, 41, 35)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "borderColor": "rgb(229, 229, 223)"
+        }
+      },
+      {
+        "provider": "max",
+        "theme": "light",
+        "contrast": 5.75,
+        "styles": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(193, 43, 47)",
+          "borderColor": "rgb(193, 43, 47)"
+        }
+      },
+      {
+        "provider": "telegram",
+        "theme": "light",
+        "contrast": 14.79,
+        "styles": {
+          "color": "rgb(37, 41, 35)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "borderColor": "rgb(229, 229, 223)"
+        }
+      },
+      {
+        "viewport": 320,
+        "passwordRight": 295
+      },
+      {
+        "viewport": 320,
+        "passwordRight": 295
+      },
+      {
+        "viewport": 375,
+        "passwordRight": 247
+      }
+    ],
+    "note": "CAPTURED != visual PASS; impl shots gated on computed contrast/layout metrics.",
+    "targetSpec": "provider:375:dark,provider:320:dark,provider:375:light,provider:320:light,admin-modal:320:dark,admin-modal:320:light,admin-modal:375:light"
   },
   "notPublished": true,
   "notMerged": true

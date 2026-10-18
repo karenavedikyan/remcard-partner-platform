@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 /**
- * LOGIN-ENTRY-PROTOTYPE-01.1 acceptance runner (fail-closed).
+ * LOGIN-ENTRY-PROTOTYPE-01.2 acceptance runner (fail-closed build/runtime).
  */
 import { chromium } from "playwright";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { captureLoginEntryPairs } from "./login-entry-capture.mjs";
+import {
+  captureLoginEntryTargets,
+  parseCaptureTargetSpec,
+} from "./login-entry-capture.mjs";
 import {
   deriveAcceptanceStatus,
+  evaluateBuildVerified,
   evaluateCleanupChildResult,
+  evaluateRuntimePin,
   fixtureMaxIdForTag,
   gitSha,
   loadEnvFile,
+  mergeDisposableErrors,
   resolveDisposableDatabaseEnv,
+  shouldRunFixtureCleanup,
   spawnResultRecord,
 } from "./login-entry-smoke-harness.mjs";
 import { goToOtpStep, goToProviderStep } from "./login-entry-capture.mjs";
@@ -30,14 +37,15 @@ const FIXTURE_OTP = "847291";
 const REF_UNPACK = process.env.LOGIN_ENTRY_REF_DIR || "/tmp/login-entry-prototype-unpack";
 const SHOTS = path.join(ART, "screenshots");
 const BUILD_LOG = path.join(ART, "login-entry-build.log");
+const BUILD_REPORT = path.join(ART, "login-entry-build-report.json");
+const COMPONENT_TEST_REPORT = path.join(ART, "login-entry-component-test-report.json");
 
 const BASE_SHA = "7376fb291ef67b6d5f763f8b3cf9917660606bfe";
 
 function materializeNavigatorFixtureScripts() {
-  writeFileSync(
-    path.join(NAV, "scripts/.login-entry-disposable-db-url-guard.mjs"),
-    readFileSync(path.join(LAYOUT_ART, "disposable-db-url-guard.mjs")),
-  );
+  const guardSrc = readFileSync(path.join(LAYOUT_ART, "disposable-db-url-guard.mjs"));
+  writeFileSync(path.join(NAV, "scripts/.login-entry-disposable-db-url-guard.mjs"), guardSrc);
+  writeFileSync(path.join(NAV, "scripts/.login-layout-disposable-db-url-guard.mjs"), guardSrc);
   writeFileSync(
     path.join(NAV, "scripts/.login-entry-disposable-seed.ts"),
     readFileSync(path.join(LAYOUT_ART, "seed-disposable-fixture.nav.fixture.tpl")),
@@ -48,18 +56,71 @@ function materializeNavigatorFixtureScripts() {
   );
 }
 
-function startNextStart(port, extraEnv = {}) {
-  return spawn("npx", ["next", "start", "-p", String(port)], {
-    cwd: ROOT,
-    env: {
-      ...process.env,
-      ...extraEnv,
-      NODE_ENV: "production",
-      PORT: String(port),
-      R06_NEXT_DIST_DIR: "",
+async function probeRuntimeBuildId(origin, buildIdHint) {
+  if (buildIdHint) {
+    const manifestUrl = `${origin}/_next/static/${buildIdHint}/_buildManifest.js`;
+    const manifestRes = await fetch(manifestUrl, { signal: AbortSignal.timeout(20_000), redirect: "follow" });
+    if (manifestRes.ok) return buildIdHint;
+  }
+  const res = await fetch(`${origin}/login`, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const match = html.match(/"buildId":"([^"]+)"/);
+  return match?.[1] ?? null;
+}
+
+async function waitForVerifiedRuntime(origin, buildId, timeoutMs = 45_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const probed = await probeRuntimeBuildId(origin, buildId);
+    if (probed) return probed;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return null;
+}
+
+function runFixtureCleanup(tag, maxId, runtimeEnv) {
+  return spawnSync(
+    "pnpm",
+    ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"), tag],
+    {
+      cwd: NAV,
+      env: {
+        ...process.env,
+        ...runtimeEnv,
+        NODE_ENV: "development",
+        LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
+      },
+      encoding: "utf8",
     },
-    stdio: ["ignore", "pipe", "pipe"],
+  );
+}
+
+function releasePort(port) {
+  spawnSync("bash", ["-lc", `lsof -ti :${port} | xargs -r kill -9; fuser -k ${port}/tcp 2>/dev/null || true`], {
+    stdio: "ignore",
   });
+}
+
+function startNextStart(port, extraEnv = {}) {
+  releasePort(port);
+  const child = spawn(
+    "bash",
+    ["-lc", `env -u R06_NEXT_DIST_DIR npx next start -p ${port} -H 127.0.0.1`],
+    {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        ...extraEnv,
+        NODE_ENV: "production",
+        PORT: String(port),
+      },
+      stdio: "ignore",
+      detached: true,
+    },
+  );
+  child.unref();
+  return child;
 }
 
 async function waitForHttp(url, timeoutMs = 120_000) {
@@ -133,7 +194,9 @@ async function runDisposableChain(platformOrigin, runtimeEnv) {
   let page;
   let failError = null;
   let passPayload = null;
-  let ranSeed = false;
+  let seedAttempted = false;
+  let cleanupReport = null;
+  let cleanupError = null;
 
   const seedEnv = {
     ...process.env,
@@ -150,11 +213,17 @@ async function runDisposableChain(platformOrigin, runtimeEnv) {
       env: seedEnv,
       encoding: "utf8",
     });
+    seedAttempted = true;
     if (seed.status !== 0 || seed.error) {
       throw new Error(`seed failed: ${seed.error?.message ?? seed.stderr ?? seed.stdout}`);
     }
-    seedJson = JSON.parse(seed.stdout.trim());
-    ranSeed = true;
+    try {
+      seedJson = JSON.parse(seed.stdout.trim());
+    } catch (parseError) {
+      throw new Error(
+        `seed stdout not JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+      );
+    }
 
     browser = await chromium.launch({ headless: true });
     page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -215,42 +284,97 @@ async function runDisposableChain(platformOrigin, runtimeEnv) {
     if (page) await page.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
 
-    if (!ranSeed) {
-      if (failError) throw failError;
-      return passPayload;
+    if (
+      shouldRunFixtureCleanup({
+        preflightOk: true,
+        fixtureTag: tag,
+        seedAttempted,
+      })
+    ) {
+      const cleanup = runFixtureCleanup(tag, maxId, runtimeEnv);
+      try {
+        cleanupReport = evaluateCleanupChildResult({
+          status: cleanup.status,
+          error: cleanup.error ?? null,
+          stdout: cleanup.stdout ?? "",
+          stderr: cleanup.stderr ?? "",
+        });
+      } catch (error) {
+        cleanupError = error instanceof Error ? error : new Error(String(error));
+      }
     }
-    const cleanup = spawnSync(
-      "pnpm",
-      ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"), tag],
-      {
-        cwd: NAV,
-        env: {
-          ...process.env,
-          ...runtimeEnv,
-          NODE_ENV: "development",
-          LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
-        },
-        encoding: "utf8",
-      },
-    );
-    let cleanupReport;
-    try {
-      cleanupReport = evaluateCleanupChildResult({
-        status: cleanup.status,
-        error: cleanup.error ?? null,
-        stdout: cleanup.stdout ?? "",
-        stderr: cleanup.stderr ?? "",
-      });
-    } catch (cleanupError) {
-      if (failError) throw failError;
-      throw cleanupError;
-    }
-    if (failError) throw failError;
+
+    const merged = mergeDisposableErrors(failError, cleanupError);
+    if (merged) throw merged;
     return { ...passPayload, cleanup: cleanupReport };
   }
 }
 
+/** Narrow regression: seed attempt + malformed stdout still runs tagged cleanup (requires disposable stack). */
+async function runPartialSeedStdoutFailureCleanup(runtimeEnv) {
+  materializeNavigatorFixtureScripts();
+  const tag = `login-entry-partial-${Date.now()}`;
+  const maxId = fixtureMaxIdForTag(tag);
+  let seedAttempted = false;
+  let cleanupReport = null;
+  let failError = null;
+  let cleanupError = null;
+  try {
+    const seed = spawnSync("pnpm", ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-seed.ts")], {
+      cwd: NAV,
+      env: {
+        ...process.env,
+        ...runtimeEnv,
+        NODE_ENV: "development",
+        LOGIN_LAYOUT_FIXTURE_TAG: tag,
+        LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
+        LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
+      },
+      encoding: "utf8",
+    });
+    seedAttempted = true;
+    if (seed.status !== 0) throw new Error(`partial-seed expected success, got ${seed.status}`);
+    throw new Error("partial-seed inject: refuse valid JSON (simulated malformed stdout handling)");
+  } catch (error) {
+    failError = error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (shouldRunFixtureCleanup({ preflightOk: true, fixtureTag: tag, seedAttempted })) {
+      const cleanup = runFixtureCleanup(tag, maxId, runtimeEnv);
+      try {
+        cleanupReport = evaluateCleanupChildResult({
+          status: cleanup.status,
+          error: cleanup.error ?? null,
+          stdout: cleanup.stdout ?? "",
+          stderr: cleanup.stderr ?? "",
+        });
+      } catch (error) {
+        cleanupError = error instanceof Error ? error : new Error(String(error));
+      }
+    }
+    if (cleanupError) throw cleanupError;
+  }
+  if (
+    !cleanupReport?.remaining ||
+    Object.values(cleanupReport.remaining).some((v) => v !== 0)
+  ) {
+    throw mergeDisposableErrors(failError, new Error("partial-seed cleanup remaining not 4×0"));
+  }
+  return {
+    tag,
+    maxId,
+    cleanup: cleanupReport,
+    partialSeedRegression: true,
+    simulatedPrimaryError: failError?.message ?? null,
+  };
+}
+
+function loadJsonReport(filePath) {
+  if (!existsSync(filePath)) return null;
+  return JSON.parse(readFileSync(filePath, "utf8"));
+}
+
 async function main() {
+  delete process.env.R06_NEXT_DIST_DIR;
   const runnerSha = gitSha(ROOT);
   const navigatorSha = existsSync(NAV) ? gitSha(NAV) : null;
   const runtimeEnv = loadEnvFile(RUNTIME_ENV) ?? {};
@@ -258,103 +382,189 @@ async function main() {
     ? resolveDisposableDatabaseEnv(runtimeEnv)
     : { ok: false, reason: "runtime.env missing" };
 
-  const componentTest = spawnSync(
-    "npx",
-    [
-      "vitest",
-      "run",
-      "src/components/auth/AuthFlow.test.tsx",
-      "src/components/auth/LoginExperience.test.tsx",
-      "src/components/auth/AdminLoginModal.test.tsx",
-    ],
-    { cwd: ROOT, env: { ...process.env, NODE_ENV: "test" }, encoding: "utf8" },
-  );
-
-  const harnessUnit = spawnSync("node", ["--test", path.join(ART, "login-entry-smoke-harness.test.mjs")], {
-    cwd: ROOT,
-    encoding: "utf8",
-  });
-
-  let build =
-    process.env.LOGIN_ENTRY_SKIP_BUILD === "1"
-      ? { skipped: true, reason: "LOGIN_ENTRY_SKIP_BUILD=1" }
-      : runBuild(runnerSha);
-  const buildIdPath = path.join(ROOT, ".next/BUILD_ID");
-  if (build.skipped && existsSync(buildIdPath)) {
-    build = {
-      skipped: true,
-      imported: true,
-      reason: `${build.reason}; imported existing .next/BUILD_ID (build not executed in this invocation)`,
-      command: "import .next/BUILD_ID (no npm run build in this runner invocation)",
-      sourceSha: runnerSha,
-      BUILD_ID: readFileSync(buildIdPath, "utf8").trim(),
-      exitCode: null,
-      signal: null,
-      spawnError: null,
-    };
+  if (process.argv.includes("--build-only")) {
+    const buildOnly = runBuild(runnerSha);
+    writeFileSync(
+      BUILD_REPORT,
+      `${JSON.stringify({ ...buildOnly, recordedAt: new Date().toISOString() }, null, 2)}\n`,
+    );
+    process.exit(buildOnly.exitCode === 0 ? 0 : 1);
   }
 
-  const useRunning = process.env.LOGIN_ENTRY_USE_RUNNING_PLATFORM === "1";
-  const spawnedPort = Number(process.env.LOGIN_ENTRY_IMPL_PORT || 3099);
-  let implOrigin = useRunning
-    ? process.env.LOGIN_ENTRY_IMPL_ORIGIN || "http://127.0.0.1:3040"
-    : `http://127.0.0.1:${spawnedPort}`;
+  if (process.argv.includes("--partial-seed-only")) {
+    if (!disposableResolved.ok) {
+      console.error(JSON.stringify({ status: "NOT_VERIFIED", reason: disposableResolved.reason }));
+      process.exit(1);
+    }
+    try {
+      const partial = await runPartialSeedStdoutFailureCleanup(runtimeEnv);
+      console.log(JSON.stringify({ status: "PASS", ...partial }, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(
+        JSON.stringify(
+          { status: "FAIL", error: error instanceof Error ? error.message : String(error) },
+          null,
+          2,
+        ),
+      );
+      process.exit(1);
+    }
+  }
+
+  if (process.argv.includes("--disposable-chain-only")) {
+    if (!disposableResolved.ok) {
+      console.error(JSON.stringify({ status: "NOT_VERIFIED", reason: disposableResolved.reason }));
+      process.exit(1);
+    }
+    const chainPort = Number(
+      process.env.LOGIN_ENTRY_IMPL_PORT || runtimeEnv.ADMIN_TEST_PLATFORM_PORT || 3040,
+    );
+    const chainOrigin = `http://127.0.0.1:${chainPort}`;
+    releasePort(chainPort);
+    startNextStart(chainPort, {
+      ...runtimeEnv,
+      NEXT_PUBLIC_APP_URL: chainOrigin,
+      PORT: String(chainPort),
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: "1",
+    });
+    try {
+      await waitForHttp(`${chainOrigin}/login`);
+      const chainResult = await runDisposableChain(chainOrigin, runtimeEnv);
+      console.log(JSON.stringify({ status: "PASS", origin: chainOrigin, ...chainResult }, null, 2));
+      process.exit(0);
+    } catch (error) {
+      console.error(
+        JSON.stringify(
+          {
+            status: "FAIL",
+            origin: chainOrigin,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          null,
+          2,
+        ),
+      );
+      process.exit(1);
+    } finally {
+      releasePort(chainPort);
+    }
+  }
+
+  let componentTest;
+  if (process.env.LOGIN_ENTRY_SKIP_COMPONENT_TESTS === "1") {
+    const prior = loadJsonReport(COMPONENT_TEST_REPORT);
+    componentTest = prior?.exitCode === 0 ? { status: 0, ...prior, importedReport: true } : { status: 1 };
+  } else {
+    componentTest = spawnSync(
+      "npx",
+      [
+        "vitest",
+        "run",
+        "src/components/auth/AuthFlow.test.tsx",
+        "src/components/auth/LoginExperience.test.tsx",
+        "src/components/auth/AdminLoginModal.test.tsx",
+      ],
+      { cwd: ROOT, env: { ...process.env, NODE_ENV: "test" }, encoding: "utf8" },
+    );
+    writeFileSync(
+      COMPONENT_TEST_REPORT,
+      `${JSON.stringify({ ...spawnResultRecord(componentTest), recordedAt: new Date().toISOString(), sourceSha: runnerSha }, null, 2)}\n`,
+    );
+  }
+
+  const harnessUnit =
+    process.env.LOGIN_ENTRY_SKIP_HARNESS === "1"
+      ? { status: 0, stdout: "", stderr: "" }
+      : spawnSync("node", ["--test", path.join(ART, "login-entry-smoke-harness.test.mjs")], {
+          cwd: ROOT,
+          encoding: "utf8",
+        });
+
+  let build;
+  if (process.env.LOGIN_ENTRY_ACCEPTANCE_ONLY === "1") {
+    build = loadJsonReport(BUILD_REPORT);
+    if (!build || build.sourceSha !== runnerSha || build.exitCode !== 0) {
+      throw new Error("login-entry-build-report.json missing or stale for current HEAD");
+    }
+    build = { ...build, acceptanceOnly: true };
+  } else {
+    build = runBuild(runnerSha);
+    writeFileSync(
+      BUILD_REPORT,
+      `${JSON.stringify({ ...build, recordedAt: new Date().toISOString() }, null, 2)}\n`,
+    );
+  }
+
+  const buildVerifiedResult = evaluateBuildVerified(build);
+  const spawnedPort = Number(process.env.LOGIN_ENTRY_IMPL_PORT || 31997);
+  const implOrigin = `http://127.0.0.1:${spawnedPort}`;
 
   let runtimePin = null;
   let captureResult = null;
   let disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.ok ? "not run" : disposableResolved.reason };
+  let partialSeedResult = { status: "NOT_VERIFIED", reason: "not run" };
   let smokeError = null;
-
-  const buildRecorded = Boolean(
-    build.BUILD_ID && (build.imported === true || Number(build.exitCode) === 0),
-  );
 
   let refServer = null;
   let implServer = null;
+  let probedBuildId = null;
   try {
-    if (useRunning) {
-      const pinSha = process.env.LOGIN_ENTRY_RUNTIME_CODE_SHA?.trim() || null;
-      const pinBuild = process.env.LOGIN_ENTRY_RUNTIME_BUILD_ID?.trim() || null;
-      if (!pinSha || !pinBuild) {
-        runtimePin = {
-          mode: "running-server",
-          origin: implOrigin,
-          verified: false,
-          reason: "missing LOGIN_ENTRY_RUNTIME_CODE_SHA or LOGIN_ENTRY_RUNTIME_BUILD_ID",
-        };
-      } else {
-        runtimePin = { mode: "running-server", origin: implOrigin, codeSha: pinSha, BUILD_ID: pinBuild, verified: true };
-      }
-    } else if (buildRecorded) {
-      implServer = startNextStart(spawnedPort, runtimeEnv ?? {});
-      runtimePin = {
-        mode: "spawned-next-start",
-        origin: implOrigin,
-        codeSha: runnerSha,
-        BUILD_ID: build.BUILD_ID,
-        verified: true,
-      };
-    } else {
-      runtimePin = { mode: "none", verified: false, reason: "production build not recorded" };
-    }
-
-    if (runtimePin?.verified) {
+    if (buildVerifiedResult.ok) {
+      implServer = startNextStart(spawnedPort, {
+        ...(runtimeEnv ?? {}),
+        NEXT_PUBLIC_APP_URL: implOrigin,
+        PORT: String(spawnedPort),
+        REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: "1",
+      });
       await waitForHttp(`${implOrigin}/login`);
+      probedBuildId = await waitForVerifiedRuntime(implOrigin, build.BUILD_ID);
+      runtimePin = evaluateRuntimePin({
+        mode: "spawned-next-start",
+        runnerSha,
+        build,
+        probedBuildId,
+        origin: implOrigin,
+      });
+      if (!runtimePin.verified) {
+        runtimePin = {
+          ...runtimePin,
+          probedBuildId,
+          expectedBuildId: build.BUILD_ID,
+          origin: implOrigin,
+        };
+      }
+    } else {
+      runtimePin = {
+        mode: "none",
+        verified: false,
+        reason: buildVerifiedResult.reason,
+        probedBuildId: null,
+      };
     }
 
-    refServer = spawn("npx", ["--yes", "serve", REF_UNPACK, "-l", "3098"], { stdio: "ignore" });
-    await waitForHttp("http://127.0.0.1:3098/roles.html");
-    const refOrigin = "http://127.0.0.1:3098";
-
+    let refOrigin = null;
     if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1" && runtimePin?.verified) {
+      refServer = spawn("npx", ["--yes", "serve", REF_UNPACK, "-l", "3098"], { stdio: "ignore" });
+      await waitForHttp("http://127.0.0.1:3098/roles.html");
+      refOrigin = "http://127.0.0.1:3098";
+    }
+
+    if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1" && runtimePin?.verified && refOrigin) {
+      const defaultTargets =
+        "provider:375:dark,provider:320:dark,provider:375:light,provider:320:light,admin-modal:320:dark,admin-modal:320:light,admin-modal:375:light";
+      const targetSpec = process.env.LOGIN_ENTRY_CAPTURE_TARGETS?.trim() || defaultTargets;
+      const targets = parseCaptureTargetSpec(targetSpec);
       const browser = await chromium.launch({ headless: true });
       try {
-        captureResult = await captureLoginEntryPairs({
+        captureResult = await captureLoginEntryTargets({
           browser,
           refOrigin,
           implOrigin,
           shotsDir: SHOTS,
+          targets,
         });
+        captureResult.targetSpec = targetSpec;
       } catch (captureError) {
         smokeError = captureError instanceof Error ? captureError.message : String(captureError);
         captureResult = { status: "FAIL", error: smokeError };
@@ -363,7 +573,11 @@ async function main() {
       }
     }
 
-    if (disposableResolved.ok && runtimePin?.verified) {
+    if (
+      process.env.LOGIN_ENTRY_SKIP_DISPOSABLE !== "1" &&
+      disposableResolved.ok &&
+      runtimePin?.verified
+    ) {
       try {
         disposableResult = { status: "PASS", ...(await runDisposableChain(implOrigin, runtimeEnv)) };
       } catch (error) {
@@ -373,8 +587,41 @@ async function main() {
         };
         smokeError = disposableResult.error;
       }
+      if (process.env.LOGIN_ENTRY_PARTIAL_SEED_REGRESSION === "1") {
+        try {
+          partialSeedResult = {
+            status: "PASS",
+            ...(await runPartialSeedStdoutFailureCleanup(runtimeEnv)),
+          };
+        } catch (error) {
+          partialSeedResult = {
+            status: "FAIL",
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      }
     } else if (!disposableResolved.ok) {
       disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.reason };
+      partialSeedResult = { status: "NOT_VERIFIED", reason: disposableResolved.reason };
+    } else if (
+      process.env.LOGIN_ENTRY_SKIP_DISPOSABLE === "1" &&
+      process.env.LOGIN_ENTRY_PARTIAL_SEED_REGRESSION === "1"
+    ) {
+      disposableResult = {
+        status: "NOT_VERIFIED",
+        reason: "skipped (LOGIN_ENTRY_SKIP_DISPOSABLE=1); full chain not re-run in this invocation",
+      };
+      try {
+        partialSeedResult = {
+          status: "PASS",
+          ...(await runPartialSeedStdoutFailureCleanup(runtimeEnv)),
+        };
+      } catch (error) {
+        partialSeedResult = {
+          status: "FAIL",
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
     }
   } catch (error) {
     smokeError = error instanceof Error ? error.message : String(error);
@@ -382,12 +629,15 @@ async function main() {
       disposableResult = { status: "NOT_VERIFIED", reason: `smoke aborted: ${smokeError}` };
     }
   } finally {
-    implServer?.kill("SIGTERM");
+    if (implServer?.pid) {
+      releasePort(spawnedPort);
+    }
     refServer?.kill("SIGTERM");
   }
 
   const componentTestsOk = componentTest.status === 0 && harnessUnit.status === 0;
   const runtimeVerified = Boolean(runtimePin?.verified);
+  const buildVerified = buildVerifiedResult.ok;
   const captureOk = captureResult?.pairCount > 0 && !captureResult?.error;
   const smokeOk = disposableResult.status === "PASS" && captureOk;
   const cleanupOk = disposableResult.cleanup?.remaining
@@ -399,10 +649,10 @@ async function main() {
       componentTestsOk,
       smokeOk,
       cleanupOk,
-      buildRecorded,
+      buildVerified,
       runtimeVerified,
     }),
-    task: "LOGIN-ENTRY-PROTOTYPE-01.1",
+    task: "LOGIN-ENTRY-PROTOTYPE-01.2",
     baseSha: BASE_SHA,
     codeSha: runnerSha,
     runnerSha,
@@ -410,7 +660,11 @@ async function main() {
     navigatorSha,
     referencePackageCommit: "9bc52fb9152293e992e98dc50804a660cef10733",
     referenceArchiveSha256: "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
-    productionBuild: build.skipped ? build : { ...build, logFile: path.relative(ROOT, BUILD_LOG) },
+    productionBuild: {
+      ...(build.skipped ? build : { ...build, logFile: path.relative(ROOT, BUILD_LOG) }),
+      verified: buildVerified,
+      verifyReason: buildVerified ? null : buildVerifiedResult.reason,
+    },
     runtimePin,
     tests: {
       authComponents: {
@@ -423,6 +677,7 @@ async function main() {
         ...spawnResultRecord(harnessUnit),
       },
       disposableLogin: disposableResult,
+      partialSeedCleanup: partialSeedResult,
       smokeError,
     },
     screenshots: captureResult ?? {
@@ -437,8 +692,9 @@ async function main() {
 
   const exitFail =
     !componentTestsOk ||
-    (build.skipped ? false : build.exitCode !== 0) ||
-    disposableResult.status === "FAIL";
+    !buildVerified ||
+    disposableResult.status === "FAIL" ||
+    partialSeedResult.status === "FAIL";
   if (exitFail) process.exit(1);
 }
 

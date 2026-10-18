@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   deriveAcceptanceStatus,
+  evaluateBuildVerified,
+  evaluateRuntimePin,
   fixtureMaxIdForTag,
+  isFullGitSha,
+  mergeDisposableErrors,
   resolveDisposableDatabaseEnv,
+  shouldRunFixtureCleanup,
 } from "./login-entry-smoke-harness.mjs";
 import { evaluateCleanupChildResult } from "../remcard-login-layout-01/login-layout-cleanup-orchestration.mjs";
 
@@ -20,13 +25,39 @@ describe("login-entry smoke harness", () => {
     assert.equal(r.ok, false);
   });
 
-  it("does not mark READY when smoke or cleanup fails", () => {
+  it("requires full git SHA for runtime/build verification", () => {
+    assert.equal(isFullGitSha("98f0526"), false);
+    assert.equal(isFullGitSha("98f052665ac68221990aa08af1b093b63f445967"), true);
+  });
+
+  it("rejects imported BUILD_ID as buildVerified", () => {
+    const r = evaluateBuildVerified({
+      imported: true,
+      skipped: true,
+      BUILD_ID: "stale",
+      exitCode: null,
+      sourceSha: "98f052665ac68221990aa08af1b093b63f445967",
+    });
+    assert.equal(r.ok, false);
+  });
+
+  it("rejects failed build for buildVerified", () => {
+    const r = evaluateBuildVerified({
+      command: "npm run build",
+      BUILD_ID: "abc",
+      exitCode: 1,
+      sourceSha: "98f052665ac68221990aa08af1b093b63f445967",
+    });
+    assert.equal(r.ok, false);
+  });
+
+  it("does not mark READY without verified build/runtime", () => {
     assert.equal(
       deriveAcceptanceStatus({
         componentTestsOk: true,
-        smokeOk: false,
+        smokeOk: true,
         cleanupOk: true,
-        buildRecorded: true,
+        buildVerified: false,
         runtimeVerified: true,
       }),
       "NOT_VERIFIED",
@@ -35,12 +66,63 @@ describe("login-entry smoke harness", () => {
       deriveAcceptanceStatus({
         componentTestsOk: true,
         smokeOk: true,
-        cleanupOk: false,
-        buildRecorded: true,
-        runtimeVerified: true,
+        cleanupOk: true,
+        buildVerified: true,
+        runtimeVerified: false,
       }),
       "NOT_VERIFIED",
     );
+  });
+
+  it("rejects runtime pin when probed BUILD_ID mismatches", () => {
+    const build = {
+      command: "npm run build",
+      BUILD_ID: "fresh-id",
+      exitCode: 0,
+      sourceSha: "98f052665ac68221990aa08af1b093b63f445967",
+    };
+    const pin = evaluateRuntimePin({
+      mode: "spawned-next-start",
+      runnerSha: "98f052665ac68221990aa08af1b093b63f445967",
+      build,
+      probedBuildId: "stale-id",
+      origin: "http://127.0.0.1:3099",
+    });
+    assert.equal(pin.verified, false);
+  });
+
+  it("accepts runtime pin when BUILD_ID matches probed value", () => {
+    const build = {
+      command: "npm run build",
+      BUILD_ID: "fresh-id",
+      exitCode: 0,
+      sourceSha: "98f052665ac68221990aa08af1b093b63f445967",
+    };
+    const pin = evaluateRuntimePin({
+      mode: "spawned-next-start",
+      runnerSha: "98f052665ac68221990aa08af1b093b63f445967",
+      build,
+      probedBuildId: "fresh-id",
+      origin: "http://127.0.0.1:3099",
+    });
+    assert.equal(pin.verified, true);
+  });
+
+  it("runs fixture cleanup after seed attempt even before UI chain", () => {
+    assert.equal(
+      shouldRunFixtureCleanup({ preflightOk: true, fixtureTag: "t1", seedAttempted: true }),
+      true,
+    );
+    assert.equal(
+      shouldRunFixtureCleanup({ preflightOk: true, fixtureTag: "t1", seedAttempted: false }),
+      false,
+    );
+  });
+
+  it("merges primary and cleanup failures", () => {
+    const merged = mergeDisposableErrors(new Error("seed stdout not JSON"), new Error("cleanup exit 2"));
+    assert.match(merged.message, /seed stdout not JSON/);
+    assert.match(merged.message, /cleanup:/);
   });
 
   it("rejects cleanup remaining object coercion", () => {

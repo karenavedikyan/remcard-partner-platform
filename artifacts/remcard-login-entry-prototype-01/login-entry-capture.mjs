@@ -1,5 +1,29 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import {
+  assertAdminModalWithinViewport,
+  assertProviderButtonVisual,
+} from "./login-entry-visual-metrics.mjs";
+
+const VIEWPORT_SPECS = {
+  1440: { width: 1440, height: 900 },
+  375: { width: 375, height: 812 },
+  320: { width: 320, height: 640 },
+};
+
+export function parseCaptureTargetSpec(spec) {
+  return spec
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const [state, viewport, theme] = part.split(":");
+      if (!state || !viewport || !theme) {
+        throw new Error(`invalid capture target "${part}" (expected state:viewport:theme)`);
+      }
+      return { state, viewport, theme };
+    });
+}
 
 export async function readResolvedTheme(page) {
   return page.evaluate(
@@ -23,12 +47,12 @@ export async function setImplTheme(page, theme) {
     document.documentElement.setAttribute("data-theme", t);
   }, theme);
   const toggle = page.getByTestId("theme-toggle");
-  for (let i = 0; i < 3; i += 1) {
+  for (let i = 0; i < 4; i += 1) {
     const current = await readResolvedTheme(page);
     if (current === theme) break;
     if (await toggle.isVisible().catch(() => false)) {
       await toggle.click();
-      await page.waitForTimeout(120);
+      await page.waitForTimeout(150);
     }
   }
   await assertTheme(page, theme);
@@ -215,5 +239,102 @@ export async function captureLoginEntryPairs({ browser, refOrigin, implOrigin, s
     refAdminNote:
       "When static roles.html omits hydrated admin footer, ref admin-modal uses #role-dialog markup from registration-entry.js (same copy as prototype).",
     note: "CAPTURED != visual PASS; themes asserted via html[data-theme] before each screenshot.",
+  };
+}
+
+/**
+ * Targeted recapture (01.2): asserts computed contrast/layout on impl before PNG write.
+ */
+export async function captureLoginEntryTargets({
+  browser,
+  refOrigin,
+  implOrigin,
+  shotsDir,
+  targets,
+}) {
+  mkdirSync(shotsDir, { recursive: true });
+  const pairs = [];
+  const visualMetrics = [];
+
+  for (const target of targets) {
+    const vp = VIEWPORT_SPECS[target.viewport];
+    if (!vp) throw new Error(`unknown viewport ${target.viewport}`);
+    const { state, theme } = target;
+
+    if (state === "provider") {
+      const refPage = await browser.newPage({ viewport: vp });
+      await openReferenceReturningLogin(refPage, refOrigin);
+      await setRefTheme(refPage, theme);
+      await setRefTheme(refPage, theme);
+      await assertTheme(refPage, theme);
+      const refPath = path.join(shotsDir, `ref-provider-${target.viewport}-${theme}.png`);
+      await refPage.screenshot({ path: refPath, fullPage: true });
+
+      const implPage = await browser.newPage({ viewport: vp });
+      await goToProviderStep(implPage, `${implOrigin}/login`);
+      await setImplTheme(implPage, theme);
+      await assertTheme(implPage, theme);
+      visualMetrics.push(await assertProviderButtonVisual(implPage, { theme, provider: "max" }));
+      visualMetrics.push(await assertProviderButtonVisual(implPage, { theme, provider: "telegram" }));
+      const implPath = path.join(shotsDir, `impl-provider-${target.viewport}-${theme}.png`);
+      await implPage.screenshot({ path: implPath, fullPage: true });
+      pairs.push({
+        state,
+        viewport: target.viewport,
+        theme,
+        ref: path.basename(refPath),
+        impl: path.basename(implPath),
+      });
+      await refPage.close();
+      await implPage.close();
+      continue;
+    }
+
+    if (state === "admin-modal") {
+      const refPage = await browser.newPage({ viewport: vp });
+      let refName = null;
+      let refException = null;
+      try {
+        await openReferenceReturningLogin(refPage, refOrigin);
+        await setRefTheme(refPage, theme);
+        await openReferenceAdminModal(refPage);
+        await setRefTheme(refPage, theme);
+        await assertTheme(refPage, theme);
+        const refPath = path.join(shotsDir, `ref-admin-modal-${target.viewport}-${theme}.png`);
+        await refPage.screenshot({ path: refPath, fullPage: true });
+        refName = path.basename(refPath);
+      } catch (error) {
+        refException = error instanceof Error ? error.message : String(error);
+      }
+
+      const implPage = await browser.newPage({ viewport: vp });
+      await goToProviderStep(implPage, `${implOrigin}/login?mode=admin`);
+      await setImplTheme(implPage, theme);
+      await implPage.getByTestId("admin-login-modal").waitFor({ state: "visible", timeout: 30_000 });
+      await assertTheme(implPage, theme);
+      visualMetrics.push(await assertAdminModalWithinViewport(implPage));
+      const implPath = path.join(shotsDir, `impl-admin-modal-${target.viewport}-${theme}.png`);
+      await implPage.screenshot({ path: implPath, fullPage: true });
+      pairs.push({
+        state,
+        viewport: target.viewport,
+        theme,
+        ref: refName,
+        impl: path.basename(implPath),
+        refException,
+      });
+      await refPage.close();
+      await implPage.close();
+      continue;
+    }
+
+    throw new Error(`unsupported capture state ${state}`);
+  }
+
+  return {
+    pairCount: pairs.length,
+    pairs,
+    visualMetrics,
+    note: "CAPTURED != visual PASS; impl shots gated on computed contrast/layout metrics.",
   };
 }
