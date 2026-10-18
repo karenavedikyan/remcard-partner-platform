@@ -1,96 +1,49 @@
 {
-  "task": "UNIFIED-LOGIN-SPECIALIST-PREP-01",
+  "task": "UNIFIED-LOGIN-SPECIALIST-PREP-01.1",
   "status": "READY_FOR_REVIEW",
-  "publish": "FORBIDDEN — prep only; no Timeweb deploy, no prod DB, no gate enable, no release ref updates",
-  "scope": {
-    "includes": [
-      "Login layout (PR #29 merged on release/prof-v1-20261007)",
-      "Build fix from PR #30 branch cursor/login-layout-build-01-b3e3 (NOT merged as separate PR)",
-      "Full R06 specialist profile/catalog/taxonomy prep from cursor/r06-release-prep-01",
-      "Backend operator migration CLI on release/prof-backend-v1-20261007 + d9edf2b8"
-    ],
-    "excludes": [
-      "REGISTRATION #28",
-      "Separate LOGIN-LAYOUT production release",
-      "Unrelated welcome / in-flight tasks"
-    ]
-  },
+  "publish": "FORBIDDEN — prep only",
   "pinChain": {
-    "frontendRelease": "e6ba4681f2099d3c8b3d98ecbf3c54a68dcff10b",
-    "loginBuildFixCode": "6b3e24785efa539e1cf48c64e2b55f1f5f80d2d5",
-    "loginBuildFixBranchTip": "31956ac23805c65abd5bab63b1c6f4e4d96f614a",
-    "backendRelease": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
-    "layoutProductCodeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
-    "specialistApplicationCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
-    "visualRefSha": "771cc658a415a5d05b964f29f675d32db449198b"
+    "historicalIntegration": "ebbaf2988b6caa0dc54949285ba7e511d55bb21c",
+    "priorEvidenceTip": "5048dedfd7686a4dd8b9a9ced4dec54efdcec8ee",
+    "unifiedCodePlatform": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+    "unifiedCodeNavigator": "8284909cf7a22a9781760825dbd62fe8a4cb641a",
+    "specialistUiPin": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+    "loginLayoutProductPin": "27d339b47b62164d0796bc853ce0a0966e1f0e2e"
   },
-  "unifiedCandidate": {
-    "platformBranch": "cursor/unified-login-specialist-prep-01",
-    "platformIntegrationSha": "ebbaf2988b6caa0dc54949285ba7e511d55bb21c",
-    "navigatorBranch": "cursor/unified-login-specialist-prep-01",
-    "navigatorSha": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c"
-  },
-  "productionBuild": {
+  "productionBuildAtCodeSha": {
     "platform": {
       "command": "npm ci --include=dev && npm run build",
-      "sourceSha": "ebbaf2988b6caa0dc54949285ba7e511d55bb21c",
-      "BUILD_ID": "x72CuOuh-jMeivnsNbyiV",
-      "treeDirtyAtCapture": false,
-      "evidenceFile": "artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-EVIDENCE.json"
+      "BUILD_ID": "KM5_VFMWWOmnxsjaYJyIV",
+      "buildLogSha256": "0552e2a5250a8a94a432436e76687651b90e84d8ea182fb921559bb79ae6c2d2"
     },
     "navigator": {
       "command": "pnpm run build",
-      "sourceSha": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c",
-      "BUILD_ID": "yOPa_zHJccdLAOsMwpSqb",
-      "treeDirtyAtCapture": false
+      "BUILD_ID": "aCzQNU7ELJSwijIRnfSul",
+      "buildLogSha256": "fcf2f1739cf60525ee8e26bd874e55be6a74ff8afd4ec206617520fa35540c26"
     }
   },
-  "evidenceTip": {
-    "platformGitHead": "7a20310ee3fd72385ddab2d59fa381d34fcb9494",
-    "unifiedPrep01EvidenceSha256": "c3941f4b8d7103856376d8dba7ccd9c0328f9ba05573c4682a3b526ccd619cb1",
-    "note": "builtCodeSha captured at ebbaf29 before evidence-only commit; evidence bytes unchanged in 7a20310"
+  "disposableRuntimeBuildIds": {
+    "note": "r06-local-stack .next-r06-local-* at browser smoke",
+    "platform": "Fms7e25R7Iu25XEphyobM",
+    "navigator": "XSbmz367GRdr-EbERh8T1",
+    "stackRunDir": "/tmp/unified-login-specialist-prep-stack"
   },
-  "migrations": {
-    "gate": "PROF_R06_SPECIALIST_PROFILE_ENABLED default OFF (global for eligible specialists)",
-    "pinnedSqlChecksums": {
-      "20261017123000_prof_r06_specialist_profile": "66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc",
-      "20261017140000_prof_r06_1_specialist_fields": "1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589",
-      "20261017180000_prof_r06_taxonomy_proposal": "726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a"
-    },
-    "disposableRehearsal": "PASS via scripts/r06-release-prep-evidence.mjs (navigator d9edf2b8); production target NOT_RUN"
+  "evidence": {
+    "file": "artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-EVIDENCE.json",
+    "sha256AtCodeHead": "2cdfa7ae4603430be2b5acb7457451cdafb92283abf8473e53864349f03dfc49",
+    "evidenceOnlyCommitFollows": true
   },
-  "regressionSummary": {
-    "loginAuthComponents": "16/16 PASS",
-    "loginGuardUnit": "26 PASS / 0 fail / 1 SKIP (inject-fail PG without runtime.env)",
-    "platformR06Unit": "3/3 PASS",
-    "navigatorOperatorUnit": "15/15 PASS",
-    "authReregistration": "6/6 PASS",
-    "maxEntry": "2/2 PASS",
-    "disposableLoginBrowser": "NOT_RUN — unified-runtime Playwright login→logout→relogin not executed on this prep head",
-    "specialistBrowserE2E": "NOT_RUN — no wide visual audit; narrow unified smoke deferred with browser NOT_RUN"
-  },
-  "pr30": {
-    "merged": false,
-    "includedInUnifiedPlatformBranch": true,
-    "note": "Do not merge PR #30 separately for this release path"
+  "regression01_1": {
+    "browserSmoke": "PASS — login/logout/relogin/returnTo/auth/me/scanner block; viewports 1440/375/320 innerWidth asserts; specialist finish/edit/409 UI choice/catalog pending/re-entry",
+    "loginCleanupRemaining": "users/authAccounts/consents/botLoginCodes all 0",
+    "pgRehearsal": "PASS — targetNegativeValidation includes parsed_port_mismatch, operator_expectations_incomplete, unknown_mode, readonly apply blocks",
+    "unitGuard": "27 tests (26 pass + 1 SKIP inject-fail without runtime.env in guard suite only — browser smoke PASS)"
   },
   "pullRequests": {
     "status": "BLOCKED_BY_PERMISSIONS",
-    "detail": "GitHub integration cannot createPullRequest; compare links only until permissions change",
-    "notUnified": ["platform core #27", "navigator #690"],
     "compare": {
       "platform": "https://github.com/karenavedikyan/remcard-partner-platform/compare/release/prof-v1-20261007...cursor/unified-login-specialist-prep-01",
       "navigator": "https://github.com/karenavedikyan/remcard-navigator/compare/release/prof-backend-v1-20261007...cursor/unified-login-specialist-prep-01"
     }
-  },
-  "operatorReleaseOrder": [
-    "Verified backup + restore point (NOT_VERIFIED)",
-    "Operator readonly preflight on production DB (NOT_RUN)",
-    "Apply 3 R06 migrations (operator apply CLI)",
-    "Deploy backend with PROF_R06_SPECIALIST_PROFILE_ENABLED OFF",
-    "Deploy frontend unified candidate with gate OFF",
-    "Separate coordinated global gate enable + limited smoke",
-    "Addressed cleanup of rehearsal fixtures only",
-    "Rollback app refs only after operator verification (NOT_VERIFIED)"
-  ]
+  }
 }

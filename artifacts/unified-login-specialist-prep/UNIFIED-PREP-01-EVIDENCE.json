@@ -1,12 +1,12 @@
 {
-  "task": "UNIFIED-LOGIN-SPECIALIST-PREP-01",
-  "capturedAt": "2026-10-18T14:29:14.451Z",
+  "task": "UNIFIED-LOGIN-SPECIALIST-PREP-01.1",
+  "capturedAt": "2026-10-18T15:21:38.311Z",
   "provenance": {
     "builtCodeSha": {
-      "platform": "ebbaf2988b6caa0dc54949285ba7e511d55bb21c",
-      "navigator": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c"
+      "platform": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+      "navigator": "8284909cf7a22a9781760825dbd62fe8a4cb641a"
     },
-    "evidenceRunnerGitHead": "ebbaf2988b6caa0dc54949285ba7e511d55bb21c",
+    "evidenceRunnerGitHead": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
     "treeAtEvidenceStart": {
       "platform": {
         "dirty": false,
@@ -17,23 +17,34 @@
         "files": []
       }
     },
-    "note": "builtCodeSha is committed unified branch HEAD at runner start; evidenceRunnerGitHead may differ if only artifact commit follows"
+    "note": "builtCodeSha must match EXPECT_PLATFORM_HEAD/EXPECT_NAV_HEAD; evidenceRunnerGitHead is platform HEAD after run (evidence-only commit follows separately)"
   },
   "productionBuild": {
     "platform": {
       "command": "npm ci --include=dev && npm run build",
       "npmCiExitCode": 0,
       "buildExitCode": 0,
-      "BUILD_ID": "x72CuOuh-jMeivnsNbyiV",
-      "sourceSha": "ebbaf2988b6caa0dc54949285ba7e511d55bb21c",
-      "logTail": "@0.1.0 build\n> next build\n\n   ▲ Next.js 15.5.27\n   - Environments: .env.local\n   - Experiments (use with caution):\n     · cpus: 1\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 10.9s\n   Linting and checking validity of types ...\n\n./src/components/agent-r03/AgentCertificatesList.tsx\n98:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps\n\n./src/components/agent-r03/AgentClientsList.tsx\n93:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps\n\n./src/components/auth/AuthFlow.tsx\n189:6  Warning: React Hook useCallback has a missing dependency: 'onAuthenticated'. Either include it or remove the dependency array. If 'onAuthenticated' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps\n282:5  Warning: React Hook useCallback has a missing dependency: 'onAuthenticated'. Either include it or remove the dependency array. If 'onAuthenticated' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps\n357:5  Warning: React Hook useCallback has a missing dependency: 'registrationAgentJoin'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\n\n./src/components/layout/agent/useAgentThemeSync.ts\n89:6  Warning: React Hook useEffect has a missing dependency: 'queuePersist'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\n\n./src/components/notifications/ProfNotificationCenter.tsx\n15:6  Warning: React Hook useEffect has a missing dependency: 'notifications'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps\n\n./src/components/profile/ProfileEditor.tsx\n320:7  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps\n\n./src/components/profile/ProfileTeamMemberEditor.tsx\n38:5  Warning: React Hook useMemo has missing dependencies: 'member' and 'overview'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps\n41:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps\n42:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps\n\n./src/components/profile/agent/AgentProfileSection.tsx\n60:19  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps\n\ninfo  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules\n   Collecting page data ...\n   Generating static pages (0/10) ...\n   Generating static pages (2/10) \r\n   Generating static pages (4/10) \r\n   Generating static pages (7/10) \r\n ✓ Generating static pages (10/10)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ƒ /                                    9.64 kB         144 kB\n├ ○ /_not-found                             1 kB         104 kB\n├ ƒ /account/signed-out                    703 B         107 kB\n├ ƒ /admin/password                      2.36 kB         105 kB\n├ ƒ /admin/test-users                    3.85 kB         107 kB\n├ ƒ /api/csrf                              151 B         103 kB\n├ ƒ /api/remcard/[...path]                 151 B         103 kB\n├ ƒ /certificates                        7.71 kB         148 kB\n├ ƒ /certificates/[id]                   2.02 kB         155 kB\n├ ƒ /certificates/new                    2.63 kB         156 kB\n├ ƒ /clients                             6.42 kB         146 kB\n├ ƒ /clients/[id]                        2.43 kB         142 kB\n├ ○ /dev-fixtures/account-session        2.72 kB         110 kB\n├ ○ /dev/r01-agent-shell                 2.13 kB         120 kB\n├ ƒ /dev/r02-agent-profile               1.43 kB         115 kB\n├ ƒ /history                             3.72 kB         142 kB\n├ ƒ /history/accruals/[id]               4.17 kB         143 kB\n├ ƒ /history/purchases/[id]              3.04 kB         142 kB\n├ ƒ /invite/[token]                      6.53 kB         116 kB\n├ ƒ /invite/accept                       3.33 kB         113 kB\n├ ○ /invite/opengraph-image                151 B         103 kB\n├ ƒ /join                                9.15 kB         125 kB\n├ ƒ /login                               1.95 kB         118 kB\n├ ƒ /notifications                         322 B         135 kB\n├ ƒ /onboarding                          7.22 kB         117 kB\n├ ○ /opengraph-image                       151 B         103 kB\n├ ƒ /partners                             2.2 kB         163 kB\n├ ○ /partners/dev-fixture                1.65 kB         134 kB\n├ ƒ /profile                               287 B         223 kB\n├ ○ /profile/dev-fixture                   152 B         200 kB\n├ ƒ /profile/staff-access-scope-fixture    152 B         200 kB\n├ ƒ /recommendations                      2.9 kB         137 kB\n├ ƒ /recommendations/[id]                  914 B         149 kB\n├ ƒ /recommendations/new                   223 B         154 kB\n├ ƒ /scanner                             9.24 kB         144 kB\n└ ƒ /settlements                         10.8 kB         151 kB\n+ First Load JS shared by all             103 kB\n  ├ chunks/1255-5cd2fe06309409a0.js      46.5 kB\n  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB\n  └ other shared chunks (total)          2.12 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand"
+      "BUILD_ID": "KM5_VFMWWOmnxsjaYJyIV",
+      "sourceSha": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+      "npmCiLog": "/agent/repos/remcard-partner-platform/artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-plat-npm-ci.log",
+      "buildLog": {
+        "path": "/agent/repos/remcard-partner-platform/artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-plat-build.log",
+        "sha256": "0552e2a5250a8a94a432436e76687651b90e84d8ea182fb921559bb79ae6c2d2",
+        "bytes": 6161
+      },
+      "legalEnvNote": "placeholder legal ids for disposable local production build only — not prod readiness"
     },
     "navigator": {
       "command": "pnpm run build",
       "exitCode": 0,
-      "BUILD_ID": "yOPa_zHJccdLAOsMwpSqb",
-      "sourceSha": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c",
-      "logTail": "                            3.22 kB        92.5 kB\n├ ƒ /pro/profile                                                    34.5 kB         193 kB\n├ ƒ /pro/programs                                                   3.55 kB         102 kB\n├ ƒ /pro/programs/[code]/connect                                    2.19 kB         100 kB\n├ ƒ /pro/programs/certificates                                      244 B          89.5 kB\n├ ƒ /pro/programs/certificates/limits                               244 B          89.5 kB\n├ ƒ /pro/programs/cross-requests                                    4.15 kB         102 kB\n├ ƒ /pro/programs/pro-clients                                       243 B          89.5 kB\n├ ƒ /pro/projects                                                   3.96 kB         102 kB\n├ ƒ /pro/requests                                                   244 B          89.5 kB\n├ ƒ /pro/setup                                                      4.74 kB         144 kB\n├ ƒ /pro/stats                                                      4.77 kB         211 kB\n├ ƒ /pro/wallet                                                     5.66 kB         100 kB\n├ ƒ /ref/[code]                                                     1.96 kB        91.2 kB\n├ ○ /referral                                                       4.31 kB         144 kB\n├ ○ /request                                                        9.46 kB         149 kB\n├ ○ /robots.txt                                                     0 B                0 B\n├ ƒ /shared/[code]                                                  7.63 kB         240 kB\n├ ƒ /shared/[code]/opengraph-image                                  0 B                0 B\n├ ○ /sitemap.xml                                                    0 B                0 B\n├ ○ /store                                                          1.69 kB          91 kB\n├ ○ /store/partners                                                 3.31 kB         166 kB\n├ ○ /store/partners/find                                            2.81 kB         159 kB\n├ ○ /store/scan                                                     10.1 kB         130 kB\n├ ƒ /task/[code]                                                    4.81 kB        94.1 kB\n├ ○ /team                                                           6.73 kB         105 kB\n└ ƒ /terms                                                          2.18 kB         142 kB\n+ First Load JS shared by all                                       89.3 kB\n  ├ chunks/54980837-52f65c77b2ead5cc.js                             53.6 kB\n  ├ chunks/8178-baea4255d2156f38.js                                 33.3 kB\n  └ other shared chunks (total)                                     2.38 kB\n\n\nƒ Middleware                                                        25.5 kB\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n\n$ node scripts/build-app.mjs\n[legal] (dev) PLATFORM_INN/PLATFORM_OGRN not set — using placeholder zeros. Production build will fail without them. Legacy OPERATOR_INN/OPERATOR_OGRN also accepted.\nBrowserslist: browsers data (caniuse-lite) is 6 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\n ⚠ Compiled with warnings\n\n./node_modules/.pnpm/framer-motion@11.18.2_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/framer-motion/dist/cjs/index.js\nModule not found: Can't resolve '@emotion/is-prop-valid' in '/agent/repos/remcard-navigator/node_modules/.pnpm/framer-motion@11.18.2_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/framer-motion/dist/cjs'\n\nImport trace for requested module:\n./node_modules/.pnpm/framer-motion@11.18.2_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/framer-motion/dist/cjs/index.js\n./src/components/motion/LazyMotionDiv.tsx\n./src/app/page.tsx\n\n[oauth] start called while not configured { provider: 'yandex' }\n[oauth] start called while not configured { provider: 'vk' }"
+      "BUILD_ID": "aCzQNU7ELJSwijIRnfSul",
+      "sourceSha": "8284909cf7a22a9781760825dbd62fe8a4cb641a",
+      "buildLog": {
+        "path": "/agent/repos/remcard-partner-platform/artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-nav-build.log",
+        "sha256": "fcf2f1739cf60525ee8e26bd874e55be6a74ff8afd4ec206617520fa35540c26",
+        "bytes": 50107
+      },
+      "legalEnvNote": "placeholder legal ids for disposable local production build only — not prod readiness"
     }
   },
   "tests": {
@@ -44,49 +55,240 @@
       "skipped": 0
     },
     "loginGuardUnit": {
-      "command": "node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs artifacts/remcard-login-layout-01/login-layout-cleanup-orchestration.test.mjs",
+      "command": "/exec-daemon/node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs artifacts/remcard-login-layout-01/login-layout-cleanup-orchestration.test.mjs",
+      "status": 0,
+      "signal": null,
+      "spawnError": null,
       "exitCode": 0,
-      "stdout": "TAP version 13\n# Subtest: disposable-db-url-guard\n    # Subtest: accepts loopback postgres with exact database pathname\n    ok 1 - accepts loopback postgres with exact database pathname\n      ---\n      duration_ms: 1.578274\n      ...\n    # Subtest: accepts postgres scheme and [::1] host\n    ok 2 - accepts postgres scheme and [::1] host\n      ---\n      duration_ms: 0.407781\n      ...\n    # Subtest: accepts allowlisted sslmode on loopback URL\n    ok 3 - accepts allowlisted sslmode on loopback URL\n      ---\n      duration_ms: 0.59584\n      ...\n    # Subtest: rejects wrong database in pathname (password contains allowed name)\n    ok 4 - rejects wrong database in pathname (password contains allowed name)\n      ---\n      duration_ms: 0.300231\n      ...\n    # Subtest: rejects remote host even with correct database name\n    ok 5 - rejects remote host even with correct database name\n      ---\n      duration_ms: 0.109784\n      ...\n    # Subtest: rejects pg query host override with loopback authority\n    ok 6 - rejects pg query host override with loopback authority\n      ---\n      duration_ms: 0.324448\n      ...\n    # Subtest: rejects percent-encoded host query override\n    ok 7 - rejects percent-encoded host query override\n      ---\n      duration_ms: 0.160693\n      ...\n    # Subtest: rejects duplicate query override alongside allowlisted param\n    ok 8 - rejects duplicate query override alongside allowlisted param\n      ---\n      duration_ms: 0.186609\n      ...\n    # Subtest: rejects database override via query dbname\n    ok 9 - rejects database override via query dbname\n      ---\n      duration_ms: 0.197173\n      ...\n    # Subtest: rejects malformed URL\n    ok 10 - rejects malformed URL\n      ---\n      duration_ms: 0.309588\n      ...\n    # Subtest: rejects mysql scheme\n    ok 11 - rejects mysql scheme\n      ---\n      duration_ms: 0.1157\n      ...\n    # Subtest: rejects database name as username bypass\n    ok 12 - rejects database name as username bypass\n      ---\n      duration_ms: 0.132601\n      ...\n    # Subtest: assertDisposableDatabaseUrl matches parse\n    ok 13 - assertDisposableDatabaseUrl matches parse\n      ---\n      duration_ms: 0.198992\n      ...\n    1..13\nok 1 - disposable-db-url-guard\n  ---\n  duration_ms: 6.374369\n  type: 'suite'\n  ...\n# Subtest: login-layout cleanup inject-fail (disposable PG)\n    # Subtest: real inject-fail exits non-zero with harness marker\n    ok 1 - real inject-fail exits non-zero with harness marker # SKIP no disposable runtime.env\n      ---\n      duration_ms: 0.065941\n      ...\n    1..1\nok 2 - login-layout cleanup inject-fail (disposable PG)\n  ---\n  duration_ms: 0.144006\n  type: 'suite'\n  ...\n# Subtest: login-layout cleanup orchestration (no DB)\n    # Subtest: rejects non-zero child exit\n    ok 1 - rejects non-zero child exit\n      ---\n      duration_ms: 2.95514\n      ...\n    # Subtest: rejects spawn error\n    ok 2 - rejects spawn error\n      ---\n      duration_ms: 0.312149\n      ...\n    # Subtest: rejects empty stdout\n    ok 3 - rejects empty stdout\n      ---\n      duration_ms: 0.179954\n      ...\n    # Subtest: rejects malformed JSON stdout\n    ok 4 - rejects malformed JSON stdout\n      ---\n      duration_ms: 0.19604\n      ...\n    # Subtest: rejects empty JSON object without remaining\n    ok 5 - rejects empty JSON object without remaining\n      ---\n      duration_ms: 0.298868\n      ...\n    # Subtest: rejects empty remaining object (missing required fields)\n    ok 6 - rejects empty remaining object (missing required fields)\n      ---\n      duration_ms: 0.206192\n      ...\n    # Subtest: rejects null remaining\n    ok 7 - rejects null remaining\n      ---\n      duration_ms: 0.120663\n      ...\n    # Subtest: rejects string counter values\n    ok 8 - rejects string counter values\n      ---\n      duration_ms: 0.195866\n      ...\n    # Subtest: rejects negative counters\n    ok 9 - rejects negative counters\n      ---\n      duration_ms: 0.280938\n      ...\n    # Subtest: rejects fractional counters\n    ok 10 - rejects fractional counters\n      ---\n      duration_ms: 0.419019\n      ...\n    # Subtest: rejects nonzero counters\n    ok 11 - rejects nonzero counters\n      ---\n      duration_ms: 0.235116\n      ...\n    # Subtest: rejects mutual compensation -1/+1 (each field checked, not summed)\n    ok 12 - rejects mutual compensation -1/+1 (each field checked, not summed)\n      ---\n      duration_ms: 0.155142\n      ...\n    # Subtest: accepts valid zero-remaining report with all four fields\n    ok 13 - accepts valid zero-remaining report with all four fields\n      ---\n      duration_ms: 0.760185\n      ...\n    1..13\nok 3 - login-layout cleanup orchestration (no DB)\n  ---\n  duration_ms: 7.956907\n  type: 'suite'\n  ...\n1..3\n# tests 27\n# suites 3\n# pass 26\n# fail 0\n# cancelled 0\n# skipped 1\n# todo 0\n# duration_ms 84.019393\n",
+      "stdout": "TAP version 13\n# Subtest: disposable-db-url-guard\n    # Subtest: accepts loopback postgres with exact database pathname\n    ok 1 - accepts loopback postgres with exact database pathname\n      ---\n      duration_ms: 2.091081\n      ...\n    # Subtest: accepts postgres scheme and [::1] host\n    ok 2 - accepts postgres scheme and [::1] host\n      ---\n      duration_ms: 0.337932\n      ...\n    # Subtest: accepts allowlisted sslmode on loopback URL\n    ok 3 - accepts allowlisted sslmode on loopback URL\n      ---\n      duration_ms: 0.475871\n      ...\n    # Subtest: rejects wrong database in pathname (password contains allowed name)\n    ok 4 - rejects wrong database in pathname (password contains allowed name)\n      ---\n      duration_ms: 0.276132\n      ...\n    # Subtest: accepts unified prep loopback remcard_r01_test\n    ok 5 - accepts unified prep loopback remcard_r01_test\n      ---\n      duration_ms: 0.28749\n      ...\n    # Subtest: rejects remote host even with correct database name\n    ok 6 - rejects remote host even with correct database name\n      ---\n      duration_ms: 0.099365\n      ...\n    # Subtest: rejects pg query host override with loopback authority\n    ok 7 - rejects pg query host override with loopback authority\n      ---\n      duration_ms: 0.298179\n      ...\n    # Subtest: rejects percent-encoded host query override\n    ok 8 - rejects percent-encoded host query override\n      ---\n      duration_ms: 0.179018\n      ...\n    # Subtest: rejects duplicate query override alongside allowlisted param\n    ok 9 - rejects duplicate query override alongside allowlisted param\n      ---\n      duration_ms: 0.193466\n      ...\n    # Subtest: rejects database override via query dbname\n    ok 10 - rejects database override via query dbname\n      ---\n      duration_ms: 0.288517\n      ...\n    # Subtest: rejects malformed URL\n    ok 11 - rejects malformed URL\n      ---\n      duration_ms: 0.111889\n      ...\n    # Subtest: rejects mysql scheme\n    ok 12 - rejects mysql scheme\n      ---\n      duration_ms: 0.083905\n      ...\n    # Subtest: rejects database name as username bypass\n    ok 13 - rejects database name as username bypass\n      ---\n      duration_ms: 0.118723\n      ...\n    # Subtest: assertDisposableDatabaseUrl matches parse\n    ok 14 - assertDisposableDatabaseUrl matches parse\n      ---\n      duration_ms: 0.220331\n      ...\n    1..14\nok 1 - disposable-db-url-guard\n  ---\n  duration_ms: 5.912364\n  type: 'suite'\n  ...\n# Subtest: login-layout cleanup inject-fail (disposable PG)\n    # Subtest: real inject-fail exits non-zero with harness marker\n    ok 1 - real inject-fail exits non-zero with harness marker # SKIP no disposable runtime.env\n      ---\n      duration_ms: 0.041238\n      ...\n    1..1\nok 2 - login-layout cleanup inject-fail (disposable PG)\n  ---\n  duration_ms: 0.121776\n  type: 'suite'\n  ...\n# Subtest: login-layout cleanup orchestration (no DB)\n    # Subtest: rejects non-zero child exit\n    ok 1 - rejects non-zero child exit\n      ---\n      duration_ms: 1.827668\n      ...\n    # Subtest: rejects spawn error\n    ok 2 - rejects spawn error\n      ---\n      duration_ms: 0.19308\n      ...\n    # Subtest: rejects empty stdout\n    ok 3 - rejects empty stdout\n      ---\n      duration_ms: 0.098029\n      ...\n    # Subtest: rejects malformed JSON stdout\n    ok 4 - rejects malformed JSON stdout\n      ---\n      duration_ms: 0.113155\n      ...\n    # Subtest: rejects empty JSON object without remaining\n    ok 5 - rejects empty JSON object without remaining\n      ---\n      duration_ms: 0.181171\n      ...\n    # Subtest: rejects empty remaining object (missing required fields)\n    ok 6 - rejects empty remaining object (missing required fields)\n      ---\n      duration_ms: 0.139169\n      ...\n    # Subtest: rejects null remaining\n    ok 7 - rejects null remaining\n      ---\n      duration_ms: 0.114398\n      ...\n    # Subtest: rejects string counter values\n    ok 8 - rejects string counter values\n      ---\n      duration_ms: 0.161377\n      ...\n    # Subtest: rejects negative counters\n    ok 9 - rejects negative counters\n      ---\n      duration_ms: 0.195313\n      ...\n    # Subtest: rejects fractional counters\n    ok 10 - rejects fractional counters\n      ---\n      duration_ms: 0.2707\n      ...\n    # Subtest: rejects nonzero counters\n    ok 11 - rejects nonzero counters\n      ---\n      duration_ms: 0.115066\n      ...\n    # Subtest: rejects mutual compensation -1/+1 (each field checked, not summed)\n    ok 12 - rejects mutual compensation -1/+1 (each field checked, not summed)\n      ---\n      duration_ms: 0.111502\n      ...\n    # Subtest: accepts valid zero-remaining report with all four fields\n    ok 13 - accepts valid zero-remaining report with all four fields\n      ---\n      duration_ms: 0.472685\n      ...\n    1..13\nok 3 - login-layout cleanup orchestration (no DB)\n  ---\n  duration_ms: 5.066324\n  type: 'suite'\n  ...\n1..3\n# tests 28\n# suites 3\n# pass 27\n# fail 0\n# cancelled 0\n# skipped 1\n# todo 0\n# duration_ms 65.859215\n",
       "stderr": "",
       "counts": {
-        "pass": 26,
+        "pass": 27,
         "fail": 0,
         "skip": null
       }
     },
     "platformR06Unit": {
       "command": "pnpm exec vitest run src/lib/taxonomy-proposal-api.wire.test.ts src/lib/remcard-proxy-r06-tail.test.ts",
+      "status": 0,
+      "signal": null,
+      "spawnError": null,
       "exitCode": 0,
-      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/remcard-proxy-r06-tail.test.ts (2 tests) 4ms\n ✓ src/lib/taxonomy-proposal-api.wire.test.ts (1 test) 6ms\n\n Test Files  2 passed (2)\n      Tests  3 passed (3)\n   Start at  14:27:19\n   Duration  635ms (transform 115ms, setup 244ms, collect 136ms, tests 9ms, environment 527ms, prepare 110ms)\n\n",
+      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/taxonomy-proposal-api.wire.test.ts (1 test) 5ms\n ✓ src/lib/remcard-proxy-r06-tail.test.ts (2 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  3 passed (3)\n   Start at  15:18:27\n   Duration  583ms (transform 101ms, setup 243ms, collect 112ms, tests 9ms, environment 493ms, prepare 99ms)\n\n",
       "stderr": ""
     },
     "navigatorR06Unit": {
-      "command": "node --test scripts/lib/__tests__/prof-r06-release-operator-target.test.mjs scripts/lib/__tests__/prof-r06-schema-prefix-preflight.test.mjs scripts/lib/__tests__/prof-r06-partial-schema.test.mjs",
+      "command": "/exec-daemon/node --test scripts/lib/__tests__/prof-r06-release-operator-target.test.mjs scripts/lib/__tests__/prof-r06-schema-prefix-preflight.test.mjs scripts/lib/__tests__/prof-r06-partial-schema.test.mjs scripts/lib/__tests__/spawn-run-record.test.mjs",
+      "status": 0,
+      "signal": null,
+      "spawnError": null,
       "exitCode": 0,
-      "stdout": "TAP version 13\n# Subtest: allows tracked upgrade 2->3 when m1+m2 ledger and schema without taxonomy table\nok 1 - allows tracked upgrade 2->3 when m1+m2 ledger and schema without taxonomy table\n  ---\n  duration_ms: 1.126132\n  ...\n# Subtest: rejects orphan taxonomy table without m3 ledger\nok 2 - rejects orphan taxonomy table without m3 ledger\n  ---\n  duration_ms: 0.428083\n  ...\n# Subtest: rejects user cols without m1+m2 ledger\nok 3 - rejects user cols without m1+m2 ledger\n  ---\n  duration_ms: 0.224046\n  ...\n# Subtest: prof-r06 release operator target\n    # Subtest: rejects unknown mode\n    ok 1 - rejects unknown mode\n      ---\n      duration_ms: 0.576327\n      ...\n    # Subtest: rejects query params including host override attempts\n    ok 2 - rejects query params including host override attempts\n      ---\n      duration_ms: 0.181834\n      ...\n    # Subtest: rejects URL fragments\n    ok 3 - rejects URL fragments\n      ---\n      duration_ms: 0.080305\n      ...\n    # Subtest: requires complete operator expectations without port default\n    ok 4 - requires complete operator expectations without port default\n      ---\n      duration_ms: 0.138183\n      ...\n    # Subtest: blocks parsed URL host/port mismatch vs operator expectations\n    ok 5 - blocks parsed URL host/port mismatch vs operator expectations\n      ---\n      duration_ms: 0.13108\n      ...\n    # Subtest: blocks operator-readonly when URL port differs from expected port\n    ok 6 - blocks operator-readonly when URL port differs from expected port\n      ---\n      duration_ms: 0.227225\n      ...\n    # Subtest: blocks non-loopback hostname without PROF_R06_EXPECTED_SERVER_ADDR\n    ok 7 - blocks non-loopback hostname without PROF_R06_EXPECTED_SERVER_ADDR\n      ---\n      duration_ms: 0.178261\n      ...\n    # Subtest: blocks operator-apply without explicit opt-in\n    ok 8 - blocks operator-apply without explicit opt-in\n      ---\n      duration_ms: 0.164223\n      ...\n    # Subtest: accepts local-test disposable target\n    ok 9 - accepts local-test disposable target\n      ---\n      duration_ms: 0.268431\n      ...\n    # Subtest: assertEffectivePgTarget rejects database/port drift\n    ok 10 - assertEffectivePgTarget rejects database/port drift\n      ---\n      duration_ms: 0.660172\n      ...\n    1..10\nok 4 - prof-r06 release operator target\n  ---\n  duration_ms: 3.492531\n  type: 'suite'\n  ...\n# Subtest: verifyProfR06UserColumns rejects nullable/default drift while names match\nok 5 - verifyProfR06UserColumns rejects nullable/default drift while names match\n  ---\n  duration_ms: 0.939428\n  ...\n# Subtest: assertProfR06BeforeApply blocks READY_TO_APPLY when m1+m2 ledger ok but column schema drifts\nok 6 - assertProfR06BeforeApply blocks READY_TO_APPLY when m1+m2 ledger ok but column schema drifts\n  ---\n  duration_ms: 1.262244\n  ...\n1..6\n# tests 15\n# suites 1\n# pass 15\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 88.207082\n",
+      "stdout": "TAP version 13\n# Subtest: allows tracked upgrade 2->3 when m1+m2 ledger and schema without taxonomy table\nok 1 - allows tracked upgrade 2->3 when m1+m2 ledger and schema without taxonomy table\n  ---\n  duration_ms: 1.035005\n  ...\n# Subtest: rejects orphan taxonomy table without m3 ledger\nok 2 - rejects orphan taxonomy table without m3 ledger\n  ---\n  duration_ms: 0.371021\n  ...\n# Subtest: rejects user cols without m1+m2 ledger\nok 3 - rejects user cols without m1+m2 ledger\n  ---\n  duration_ms: 0.210988\n  ...\n# Subtest: prof-r06 release operator target\n    # Subtest: rejects unknown mode\n    ok 1 - rejects unknown mode\n      ---\n      duration_ms: 0.546377\n      ...\n    # Subtest: rejects query params including host override attempts\n    ok 2 - rejects query params including host override attempts\n      ---\n      duration_ms: 0.171182\n      ...\n    # Subtest: rejects URL fragments\n    ok 3 - rejects URL fragments\n      ---\n      duration_ms: 0.077876\n      ...\n    # Subtest: requires complete operator expectations without port default\n    ok 4 - requires complete operator expectations without port default\n      ---\n      duration_ms: 0.136988\n      ...\n    # Subtest: blocks parsed URL host/port mismatch vs operator expectations\n    ok 5 - blocks parsed URL host/port mismatch vs operator expectations\n      ---\n      duration_ms: 0.127862\n      ...\n    # Subtest: blocks operator-readonly when URL port differs from expected port\n    ok 6 - blocks operator-readonly when URL port differs from expected port\n      ---\n      duration_ms: 0.220114\n      ...\n    # Subtest: blocks non-loopback hostname without PROF_R06_EXPECTED_SERVER_ADDR\n    ok 7 - blocks non-loopback hostname without PROF_R06_EXPECTED_SERVER_ADDR\n      ---\n      duration_ms: 0.175829\n      ...\n    # Subtest: blocks operator-apply without explicit opt-in\n    ok 8 - blocks operator-apply without explicit opt-in\n      ---\n      duration_ms: 0.152362\n      ...\n    # Subtest: accepts local-test disposable target\n    ok 9 - accepts local-test disposable target\n      ---\n      duration_ms: 0.250864\n      ...\n    # Subtest: assertEffectivePgTarget rejects database/port drift\n    ok 10 - assertEffectivePgTarget rejects database/port drift\n      ---\n      duration_ms: 0.569881\n      ...\n    1..10\nok 4 - prof-r06 release operator target\n  ---\n  duration_ms: 3.25344\n  type: 'suite'\n  ...\n# Subtest: verifyProfR06UserColumns rejects nullable/default drift while names match\nok 5 - verifyProfR06UserColumns rejects nullable/default drift while names match\n  ---\n  duration_ms: 1.038563\n  ...\n# Subtest: assertProfR06BeforeApply blocks READY_TO_APPLY when m1+m2 ledger ok but column schema drifts\nok 6 - assertProfR06BeforeApply blocks READY_TO_APPLY when m1+m2 ledger ok but column schema drifts\n  ---\n  duration_ms: 1.055604\n  ...\n# Subtest: spawn-run-record\n    # Subtest: records spawn ENOENT without faking exit 1\n    ok 1 - records spawn ENOENT without faking exit 1\n      ---\n      duration_ms: 3.012825\n      ...\n    # Subtest: parseCliJsonReport rejects empty output\n    ok 2 - parseCliJsonReport rejects empty output\n      ---\n      duration_ms: 0.139243\n      ...\n    # Subtest: parseCliJsonReport rejects malformed JSON\n    ok 3 - parseCliJsonReport rejects malformed JSON\n      ---\n      duration_ms: 0.155853\n      ...\n    # Subtest: validateExpectedNegative rejects unexpected ok:true\n    ok 4 - validateExpectedNegative rejects unexpected ok:true\n      ---\n      duration_ms: 0.180716\n      ...\n    # Subtest: validateExpectedNegative requires exact blocker token\n    ok 5 - validateExpectedNegative requires exact blocker token\n      ---\n      duration_ms: 0.117298\n      ...\n    # Subtest: port mismatch preflight returns parsed_port_mismatch with full PATH env\n    ok 6 - port mismatch preflight returns parsed_port_mismatch with full PATH env\n      ---\n      duration_ms: 41.903423\n      ...\n    # Subtest: validateExpectedNegative rejects guard unexpectedly allowed (ok exit 0)\n    ok 7 - validateExpectedNegative rejects guard unexpectedly allowed (ok exit 0)\n      ---\n      duration_ms: 0.135034\n      ...\n    1..7\nok 7 - spawn-run-record\n  ---\n  duration_ms: 46.412263\n  type: 'suite'\n  ...\n1..7\n# tests 22\n# suites 2\n# pass 22\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 131.472811\n",
       "stderr": ""
     },
     "authReregistration": {
       "command": "pnpm exec vitest run src/lib/__tests__/messengerAuthIdentity.test.ts",
+      "status": 0,
+      "signal": null,
+      "spawnError": null,
       "exitCode": 0,
-      "stdout": "\n RUN  v4.1.5 /agent/repos/remcard-navigator\n\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  14:29:12\n   Duration  838ms (transform 63ms, setup 141ms, import 72ms, tests 5ms, environment 512ms)\n\n",
+      "stdout": "\n RUN  v4.1.5 /agent/repos/remcard-navigator\n\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  15:19:59\n   Duration  763ms (transform 63ms, setup 134ms, import 61ms, tests 5ms, environment 464ms)\n\n",
       "stderr": ""
     },
     "maxEntry": {
       "command": "pnpm exec vitest run src/lib/__tests__/maxProfLoginSiteUrl.test.ts",
+      "status": 0,
+      "signal": null,
+      "spawnError": null,
       "exitCode": 0,
-      "stdout": "\n RUN  v4.1.5 /agent/repos/remcard-navigator\n\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  14:29:13\n   Duration  776ms (transform 39ms, setup 139ms, import 22ms, tests 3ms, environment 500ms)\n\n",
+      "stdout": "\n RUN  v4.1.5 /agent/repos/remcard-navigator\n\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  15:20:01\n   Duration  709ms (transform 35ms, setup 126ms, import 19ms, tests 2ms, environment 458ms)\n\n",
       "stderr": ""
     },
     "disposableLoginBrowser": {
-      "status": "NOT_RUN",
-      "reason": "Full login→logout→relogin browser stack requires disposable runtime.env bootstrap; unit+guard cover login/auth path"
+      "status": "PASS",
+      "capturedAt": "2026-10-18T15:21:38.289Z",
+      "pins": {
+        "platformBuiltHead": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+        "platformStackPin": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+        "specialistUiPin": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+        "navigator": "8284909cf7a22a9781760825dbd62fe8a4cb641a"
+      },
+      "runtime": {
+        "runDir": "/tmp/unified-login-specialist-prep-stack",
+        "meta": {
+          "runId": "unified-login-specialist-prep-stack",
+          "createdAt": "2026-10-18T15:21:30.151Z",
+          "envPath": "/tmp/unified-login-specialist-prep-stack/runtime.env",
+          "gateEnabled": true,
+          "navPort": 3033,
+          "platformPort": 3034,
+          "navDist": ".next-r06-local-nav",
+          "platDist": ".next-r06-local-plat",
+          "expectedPins": {
+            "navigator": "8284909cf7a22a9781760825dbd62fe8a4cb641a",
+            "platformApplicationCode": "6bfefc6c560f6e9984be237807f986d3aacc1c42"
+          },
+          "runtime": {
+            "navigator": {
+              "gitHead": "8284909cf7a22a9781760825dbd62fe8a4cb641a",
+              "gitBranch": "cursor/unified-login-specialist-prep-01",
+              "gitDirty": true,
+              "gitDirtyFiles": [
+                "M tsconfig.json"
+              ],
+              "nextBuildId": "XSbmz367GRdr-EbERh8T1"
+            },
+            "platform": {
+              "gitHead": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+              "gitBranch": "cursor/unified-login-specialist-prep-01",
+              "gitDirty": true,
+              "gitDirtyFiles": [
+                "M artifacts/remcard-r06-specialist/RELEASE-PREP-01-EVIDENCE.json",
+                " M artifacts/remcard-r06-specialist/RELEASE-PREP-01-EVIDENCE.sha256",
+                " M artifacts/remcard-r06-specialist/TAIL-01.4-PG-ORPHAN-PROBE-RAW.json",
+                " M next-env.d.ts",
+                "?? artifacts/remcard-r06-specialist/RELEASE-PREP-01-nav-build.log",
+                "?? artifacts/remcard-r06-specialist/RELEASE-PREP-01-plat-build.log",
+                "?? artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-nav-build.log",
+                "?? artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-plat-build.log",
+                "?? artifacts/unified-login-specialist-prep/UNIFIED-PREP-01-plat-npm-ci.log"
+              ],
+              "nextBuildId": "Fms7e25R7Iu25XEphyobM",
+              "applicationCodeSha": "6bfefc6c560f6e9984be237807f986d3aacc1c42"
+            }
+          },
+          "navigatorSha": "8284909cf7a22a9781760825dbd62fe8a4cb641a",
+          "platformSha": "6bfefc6c560f6e9984be237807f986d3aacc1c42"
+        },
+        "probeReport": {
+          "ok": true,
+          "runDir": "/tmp/unified-login-specialist-prep-stack",
+          "ports": {
+            "nav": 3033,
+            "platform": 3034
+          },
+          "runtime": {
+            "navigatorGitHead": "8284909cf7a22a9781760825dbd62fe8a4cb641a",
+            "platformBuiltGitHead": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+            "platformApplicationCodeSha": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+            "navigatorBuildId": "XSbmz367GRdr-EbERh8T1",
+            "platformBuildId": "Fms7e25R7Iu25XEphyobM"
+          },
+          "runner": {
+            "platformGitHead": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+            "docsOnlyDeltaFromCodeSha": []
+          },
+          "http": {
+            "navHealthStatus": 200,
+            "platLoginStatus": 200
+          },
+          "mismatches": [],
+          "probedAt": "2026-10-18T15:21:30.224Z"
+        },
+        "platformOrigin": "http://127.0.0.1:3034",
+        "navigatorBuildId": "XSbmz367GRdr-EbERh8T1",
+        "platformBuildId": "Fms7e25R7Iu25XEphyobM",
+        "platformBuiltHead": "6bfefc6c560f6e9984be237807f986d3aacc1c42",
+        "navigatorHead": "8284909cf7a22a9781760825dbd62fe8a4cb641a"
+      },
+      "login": {
+        "ok": true,
+        "fixtureTag": "unified-prep-1792336890225",
+        "fixtureMaxId": "88136890225",
+        "seedUserId": "cmvdz3vtp0000js5rojpv6ru5",
+        "viewports": {
+          "desktop1440": {
+            "ok": true,
+            "metrics": {
+              "innerWidth": 1440,
+              "horizontalOverflow": false,
+              "entryLayoutWidth": 1280,
+              "entryStoryWidth": 593.78125,
+              "entryFormWidth": 416
+            }
+          },
+          "mobile375": {
+            "ok": true,
+            "metrics": {
+              "innerWidth": 375,
+              "horizontalOverflow": false,
+              "entryLayoutWidth": 375,
+              "entryStoryWidth": 335,
+              "entryFormWidth": 335
+            }
+          },
+          "mobile320": {
+            "ok": true,
+            "metrics": {
+              "innerWidth": 320,
+              "horizontalOverflow": false,
+              "entryLayoutWidth": 320,
+              "entryStoryWidth": 280,
+              "entryFormWidth": 280
+            }
+          }
+        },
+        "logout": {
+          "authMeAfterLogout": {
+            "status": 200,
+            "hasUser": false,
+            "userId": null
+          },
+          "scannerBlocked": true,
+          "returnToLogin": "http://127.0.0.1:3034/login"
+        },
+        "cleanup": {
+          "mock": true,
+          "tag": "unified-prep-1792336890225",
+          "publicId": "pub-unified-prep-1792336890225",
+          "deleted": {
+            "users": 1,
+            "authAccounts": 1,
+            "consents": 2,
+            "botLoginCodes": 0
+          },
+          "remaining": {
+            "users": 0,
+            "authAccounts": 0,
+            "consents": 0,
+            "botLoginCodes": 0
+          }
+        },
+        "authMeAfterLogin": {
+          "status": 200,
+          "hasUser": true,
+          "userId": "cmvdz3vtp0000js5rojpv6ru5"
+        },
+        "relogin": {
+          "ok": true,
+          "url": "http://127.0.0.1:3034/scanner"
+        }
+      },
+      "specialist": {
+        "ok": true,
+        "steps": {
+          "finish": {
+            "ok": true
+          },
+          "editSaveNoReload": {
+            "ok": true
+          },
+          "conflict409ExplicitChoice": {
+            "ok": true
+          },
+          "catalogSubmitPending": {
+            "ok": true
+          },
+          "catalogReentryPending": {
+            "ok": true
+          }
+        }
+      }
     }
   },
   "pg": {
-    "command": "node scripts/r06-release-prep-evidence.mjs",
     "exitCode": 0,
-    "stdout": "{\"ok\":true,\"outPath\":\"/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/RELEASE-PREP-01-EVIDENCE.json\",\"sha256\":\"82de951e19315f60d9540f49d15774a63e1cd0a08d353ef4ea200023d6dbd165\",\"bytes\":35502,\"sourceCliSha\":{\"navigator\":\"d9edf2b846745db1f04836dffa8d1b6f7e80ae7c\",\"platform\":\"ebbaf2988b6caa0dc54949285ba7e511d55bb21c\"},\"evidenceRunnerGitHead\":\"d9edf2b846745db1f04836dffa8d1b6f7e80ae7c\"}\n",
+    "stdout": "{\"ok\":\"24Lp5qSBppMdjleZjQuzK\",\"outPath\":\"/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/RELEASE-PREP-01-EVIDENCE.json\",\"sha256\":\"e017c77d403e924f2f2a4167228ae73f0177c8f67cd123b058e51bbdc5528b2d\",\"bytes\":90592,\"sourceCliSha\":{\"navigator\":\"8284909cf7a22a9781760825dbd62fe8a4cb641a\",\"platform\":\"6bfefc6c560f6e9984be237807f986d3aacc1c42\"},\"evidenceRunnerGitHead\":\"8284909cf7a22a9781760825dbd62fe8a4cb641a\",\"targetNegativeValidation\":{\"missingPortExpectation\":{\"name\":\"missingPortExpectation\",\"command\":\"/exec-daemon/node scripts/prof-r06-release-migrate-preflight.mjs --mode=operator-readonly\",\"ok\":true,\"json\":{\"ok\":false,\"phase\":\"BLOCKED\",\"mode\":\"operator-readonly\",\"blockers\":[\"operator_expectations_incomplete\"]}},\"portMismatch\":{\"name\":\"portMismatch\",\"command\":\"/exec-daemon/node scripts/prof-r06-release-migrate-preflight.mjs --mode=operator-readonly\",\"ok\":true,\"json\":{\"ok\":false,\"phase\":\"BLOCKED\",\"mode\":\"operator-readonly\",\"blockers\":[\"parsed_port_mismatch\",\"URL port 6543 != expected 5432\"]}},\"preflightRejectsApplyFlag\":{\"name\":\"preflightRejectsApplyFlag\",\"command\":\"/exec-daemon/node scripts/prof-r06-release-migrate-preflight.mjs --mode=local-test --apply\",\"ok\":true,\"json\":{\"ok\":false,\"phase\":\"BLOCKED\",\"blockers\":[\"preflight_rejects_apply_flag_read_only_only\"]}},\"readonlyModeCannotApply\":{\"name\":\"readonlyModeCannotApply\",\"command\":\"/exec-daemon/node scripts/prof-r06-release-migrate-apply.mjs --mode=operator-readonly --apply\",\"ok\":true,\"json\":{\"ok\":false,\"code\":\"readonly_mode_cannot_apply\",\"detail\":\"operator-readonly never writes; use --mode=operator-apply or local-test\"}},\"unknownMode\":{\"name\":\"unknownMode\",\"command\":\"/exec-daemon/node scripts/prof-r06-release-migrate-preflight.mjs --mode=production-write\",\"ok\":true,\"json\":{\"ok\":false,\"phase\":\"BLOCKED\",\"blockers\":[\"unknown_mode\",\"production-write\"]}}}}",
     "stderr": ""
   },
   "gate": "PROF_R06_SPECIALIST_PROFILE_ENABLED defaults OFF (global)"
