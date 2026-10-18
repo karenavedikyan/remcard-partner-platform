@@ -8,15 +8,14 @@
     "platform": {
       "branch": "cursor/r06-release-prep-01",
       "baseRelease": "release/prof-v1-20261007@0fe7da52bb02f2a515d238757c8be16ef2d83948",
-      "candidateCodeSha": "074f889",
-      "candidateCodeShaFull": "074f889",
+      "candidateCodeSha": "8c7254178d07cb1e2a48ca521b13539aa9892097",
       "applicationCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
-      "integrationRange": "0fe7da52..2680eb2 (34 commits fast-forward R06+tail onto release tip)"
+      "integrationRange": "0fe7da52..2680eb2 (34 commits fast-forward R06+tail onto release tip) + prep docs commit"
     },
     "navigator": {
       "branch": "cursor/r06-release-prep-01",
       "baseRelease": "release/prof-backend-v1-20261007@c9cdef42338e1695a4e863086e5d3e283cc0df36",
-      "candidateCodeSha": "385ddf72c4141cb62b75a24c536f5d6d86f79537",
+      "candidateCodeSha": "0989d3fa39b8330584ec9a3a2ed99b20c21c5e93",
       "tailPinMerged": "08c3e3f57c273d1a856695fd28621ed88f20adfb",
       "integrationRange": "merge release tip + full R06 specialist line (12 commits from merge-base 8bfdb193)"
     }
