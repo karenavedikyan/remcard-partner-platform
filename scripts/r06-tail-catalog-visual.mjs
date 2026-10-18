@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-/** Catalog wizard only — 375 light/dark + 320 light impl/ref for TAIL-01.2 */
+/** Catalog wizard — 375 light/dark + 320 light impl/ref (TAIL-01.3 provenance-safe). */
+import { createHash } from 'node:crypto';
 import { execSync, spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -15,12 +16,19 @@ const REF_SHA = process.env.R06_REFERENCE_SHA ?? '771cc658a415a5d05b964f29f675d3
 const PROTO_DIR = process.env.R06_PROTO_DIR ?? '/tmp/r06-prototype-ref';
 const PROTO_PORT = Number(process.env.R06_PROTO_PORT ?? '3199');
 const PROTO_BASE = `http://127.0.0.1:${PROTO_PORT}`;
+const LAYOUT_CODE_SHA =
+  process.env.R06_LAYOUT_CODE_SHA ?? '11f512e44406d243261f7bfdd7c1d5d90f6494d9';
 
 const SPECS = [
   { width: 375, height: 812, theme: 'light' },
   { width: 375, height: 812, theme: 'dark' },
   { width: 320, height: 568, theme: 'light' },
 ];
+
+function sha256File(filePath) {
+  const buf = readFileSync(filePath);
+  return createHash('sha256').update(buf).digest('hex');
+}
 
 function loadEnv(envPath) {
   const env = { ...process.env };
@@ -69,6 +77,55 @@ async function startProto(root) {
   throw new Error('prototype_server_timeout');
 }
 
+async function applyAppTheme(page, theme) {
+  await page.emulateMedia({ colorScheme: theme });
+  await page.evaluate((t) => {
+    document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.dataset.theme = t;
+    try {
+      localStorage.setItem('remcard-theme', t);
+    } catch {
+      /* ignore */
+    }
+  }, theme);
+}
+
+function parseRgbLuminance(rgb) {
+  const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return null;
+  const [r, g, b] = [m[1], m[2], m[3]].map(Number);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+async function assertCatalogTheme(page, theme) {
+  await page.waitForFunction(
+    (expected) => document.documentElement.getAttribute('data-theme') === expected,
+    theme,
+    { timeout: 15_000 },
+  );
+  const metrics = await page.evaluate(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const bcs = getComputedStyle(body);
+    const wizard = document.querySelector('[data-testid="specialist-catalog-wizard"]');
+    const wcs = wizard ? getComputedStyle(wizard) : bcs;
+    return {
+      datasetTheme: root.getAttribute('data-theme'),
+      bodyBackground: bcs.backgroundColor,
+      bodyColor: bcs.color,
+      wizardBackground: wcs.backgroundColor,
+    };
+  });
+  const lum = parseRgbLuminance(metrics.bodyBackground);
+  if (theme === 'dark' && lum !== null && lum > 0.45) {
+    throw new Error(`theme_assert_dark_failed:luminance=${lum}:${metrics.bodyBackground}`);
+  }
+  if (theme === 'light' && lum !== null && lum < 0.55) {
+    throw new Error(`theme_assert_light_failed:luminance=${lum}:${metrics.bodyBackground}`);
+  }
+  return metrics;
+}
+
 async function bootRefCabinetSpecialist(page) {
   await page.goto(`${PROTO_BASE}/roles.html`, { waitUntil: 'load' });
   await page.waitForFunction(
@@ -109,10 +166,22 @@ async function openRefCatalogProfile(page) {
   await page.waitForSelector('[data-profile-step="catalog"]', { timeout: 60_000 });
 }
 
-async function shotPair(ctx, { width, height, theme, implBase }) {
-  const name = 'profile-catalog-wizard';
-  const page = await ctx.newPage();
-  await page.setViewportSize({ width, height });
+async function shotImpl(browser, { width, height, theme, implBase, token }) {
+  const context = await browser.newContext({
+    viewport: { width, height },
+    colorScheme: theme,
+  });
+  await context.addCookies([
+    {
+      name: 'remcard-token',
+      value: token,
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  const page = await context.newPage();
   await page.addInitScript((t) => {
     document.documentElement.setAttribute('data-theme', t);
     try {
@@ -123,32 +192,58 @@ async function shotPair(ctx, { width, height, theme, implBase }) {
   }, theme);
   await page.goto(`${implBase}/profile?section=catalog`, { waitUntil: 'load', timeout: 120_000 });
   await page.waitForSelector('[data-testid="specialist-catalog-wizard"]', { timeout: 120_000 });
+  await applyAppTheme(page, theme);
+  await page.waitForTimeout(400);
+  const themeMetrics = await assertCatalogTheme(page, theme);
+  const viewport = page.viewportSize();
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(150);
+  const name = 'profile-catalog-wizard';
   const implPath = path.join(OUT, `${name}-impl-${width}-${theme}.png`);
   await page.screenshot({ path: implPath, fullPage: true });
+  await context.close();
+  return { implPath, themeMetrics, viewport };
+}
 
-  const refCtx = await ctx.browser().newContext({ viewport: { width, height } });
-  const refPage = await refCtx.newPage();
-  await refPage.addInitScript((t) => {
+async function shotRef(browser, { width, height, theme }) {
+  const context = await browser.newContext({
+    viewport: { width, height },
+    colorScheme: theme,
+  });
+  const page = await context.newPage();
+  await page.addInitScript((t) => {
     document.documentElement.setAttribute('data-theme', t);
+    try {
+      localStorage.setItem('remcard-theme', t);
+    } catch {
+      /* ignore */
+    }
   }, theme);
-  await openRefCatalogProfile(refPage);
-  await refPage.waitForTimeout(300);
-  await refPage.evaluate(() => window.scrollTo(0, 0));
+  await applyAppTheme(page, theme);
+  await openRefCatalogProfile(page);
+  await applyAppTheme(page, theme);
+  await page.waitForTimeout(400);
+  const refThemeMetrics = await assertCatalogTheme(page, theme).catch(async (e) => {
+    const soft = await page.evaluate(() => ({
+      datasetTheme: document.documentElement.getAttribute('data-theme'),
+      bodyBackground: getComputedStyle(document.body).backgroundColor,
+    }));
+    if (soft.datasetTheme !== theme) throw e;
+    return soft;
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const name = 'profile-catalog-wizard';
   const refPath = path.join(OUT, `${name}-ref-${width}-${theme}.png`);
-  await refPage.screenshot({ path: refPath, fullPage: true });
-  await refCtx.close();
-  await page.close();
-  return { name, width, theme, implPath, refPath };
+  await page.screenshot({ path: refPath, fullPage: true });
+  await context.close();
+  return { refPath, themeMetrics: refThemeMetrics };
 }
 
 async function main() {
   const expectNavigatorSha =
     process.env.R06_EXPECT_NAV_SHA || gitRevParse(NAV_ROOT);
-  const expectPlatformCodeSha =
-    process.env.R06_EXPECT_PLATFORM_CODE_SHA || gitRevParse(ROOT);
-  await probeRunStack({
+  const expectPlatformCodeSha = process.env.R06_EXPECT_PLATFORM_CODE_SHA || LAYOUT_CODE_SHA;
+  const { report: probeReport } = await probeRunStack({
     runDir: RUN_DIR,
     navRoot: NAV_ROOT,
     platRoot: ROOT,
@@ -170,36 +265,51 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
 
   const browser = await chromium.launch();
-  const context = await browser.newContext();
-  await context.addCookies([
-    {
-      name: 'remcard-token',
-      value: mint(env),
-      domain: '127.0.0.1',
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Lax',
-    },
-  ]);
-
+  const token = mint(env);
   const captures = [];
   for (const spec of SPECS) {
-    captures.push(await shotPair(context, { ...spec, implBase }));
+    const impl = await shotImpl(browser, { ...spec, implBase, token });
+    const ref = await shotRef(browser, spec);
+    const implStat = statSync(impl.implPath);
+    const refStat = statSync(ref.refPath);
+    captures.push({
+      name: 'profile-catalog-wizard',
+      width: spec.width,
+      height: spec.height,
+      theme: spec.theme,
+      implPath: impl.implPath,
+      refPath: ref.refPath,
+      implSha256: sha256File(impl.implPath),
+      refSha256: sha256File(ref.refPath),
+      implBytes: implStat.size,
+      refBytes: refStat.size,
+      themeMetrics: impl.themeMetrics,
+      viewport: impl.viewport,
+    });
   }
   await browser.close();
   protoProc.kill('SIGTERM');
 
-  const manifestPath = path.join(OUT, 'manifest-tail-01.2-catalog.json');
+  const runnerHead = gitRevParse(ROOT);
+  const manifestPath = path.join(OUT, 'manifest-tail-01.3-catalog.json');
   writeJson(manifestPath, {
+    task: 'R06-SPECIALIST-TAIL-01.3',
     referenceSha: REF_SHA,
-    platformCodeSha: meta.runtime.platform.applicationCodeSha,
-    platformBuiltGitHead: meta.runtime.platform.gitHead,
-    navigatorGitHead: meta.runtime.navigator.gitHead,
-    runDir: RUN_DIR,
-    captures,
     capturedAt: new Date().toISOString(),
+    runDir: RUN_DIR,
+    probeReportPath: path.join(RUN_DIR, 'probe-report.json'),
+    provenance: {
+      platformApplicationCodeSha: probeReport.runtime.platformApplicationCodeSha,
+      platformBuiltGitHead: probeReport.runtime.platformBuiltGitHead,
+      navigatorGitHead: probeReport.runtime.navigatorGitHead,
+      platformBuildId: probeReport.runtime.platformBuildId,
+      navigatorBuildId: probeReport.runtime.navigatorBuildId,
+      runnerEvidenceGitHead: runnerHead,
+      layoutCodeShaExpected: LAYOUT_CODE_SHA,
+    },
+    captures,
   });
-  console.log(JSON.stringify({ ok: true, manifestPath, count: captures.length }));
+  console.log(JSON.stringify({ ok: true, manifestPath, count: captures.length, captures: captures.map((c) => ({ theme: c.theme, width: c.width, implSha256: c.implSha256 })) }));
 }
 
 main().catch((e) => {

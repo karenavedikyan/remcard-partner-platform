@@ -1,0 +1,32 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01.3",
+  "status": "READY_FOR_REVIEW",
+  "capturedAt": "2026-10-18T12:42:00.000Z",
+  "scope": "evidence/tests/harness only — no src UI/CSS changes",
+  "pins": {
+    "platformBuiltHead": "ce47ff48c98f4a9daf58df4451923041ec2176b5",
+    "platformApplicationCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+    "navigatorHead": "b52f98825f94972ec64962d26cc0df3ee43b59ca"
+  },
+  "stack": {
+    "runDir": "/tmp/r06-tail-013-stack",
+    "probeReport": "/tmp/r06-tail-013-stack/probe-report.json",
+    "meta": "/tmp/r06-tail-013-stack/meta.json"
+  },
+  "screenshots": {
+    "manifest": "artifacts/remcard-r06-specialist/screenshots/manifest-tail-01.3-catalog.json",
+    "impl375LightDarkDistinct": true,
+    "impl375LightSha256": "e173d0e99ed7689934f2a4530307b1157b325a81c222cb3a7581cb412e373d22",
+    "impl375DarkSha256": "7e358e1cf64fcc3cebbaadd4ba10edc3c898947a3b2b1d3be57d7109c45ea6f2",
+    "darkBodyBackground": "rgb(23, 26, 23)"
+  },
+  "vitest": {
+    "file": "src/lib/__tests__/taxonomyProposalRoute.integration.test.ts",
+    "database": "remcard_r01_test@127.0.0.1",
+    "testsPassed": 7,
+    "testsSkipped": 0
+  },
+  "pgMigrationRaw": "artifacts/remcard-r06-specialist/TAIL-01.3-PG-MIGRATION-RAW.json",
+  "evidenceSummary": "artifacts/remcard-r06-specialist/TAIL-01.3-EVIDENCE-SUMMARY.json",
+  "historicalNote": "RUNTIME-META with e18487a/04613f09 and prior probe on /tmp/r06-tail-012b-* are carry-over only, not this run."
+}

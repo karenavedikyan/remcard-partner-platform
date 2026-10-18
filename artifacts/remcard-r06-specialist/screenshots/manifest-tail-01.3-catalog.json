@@ -1,0 +1,84 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01.3",
+  "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "capturedAt": "2026-10-18T12:42:25.772Z",
+  "runDir": "/tmp/r06-tail-013-stack",
+  "probeReportPath": "/tmp/r06-tail-013-stack/probe-report.json",
+  "provenance": {
+    "platformApplicationCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+    "platformBuiltGitHead": "ce47ff48c98f4a9daf58df4451923041ec2176b5",
+    "navigatorGitHead": "b52f98825f94972ec64962d26cc0df3ee43b59ca",
+    "platformBuildId": "IGndM6yPZaWVlUlWJ2-Qz",
+    "navigatorBuildId": "9JKiCxv_4NQkN3LD5ELED",
+    "runnerEvidenceGitHead": "ce47ff48c98f4a9daf58df4451923041ec2176b5",
+    "layoutCodeShaExpected": "11f512e44406d243261f7bfdd7c1d5d90f6494d9"
+  },
+  "captures": [
+    {
+      "name": "profile-catalog-wizard",
+      "width": 375,
+      "height": 812,
+      "theme": "light",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-375-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-375-light.png",
+      "implSha256": "e173d0e99ed7689934f2a4530307b1157b325a81c222cb3a7581cb412e373d22",
+      "refSha256": "017087f049ae0687b6dc8143c611ebdecff3c7009f7af633598d2f26587beab8",
+      "implBytes": 82590,
+      "refBytes": 109326,
+      "themeMetrics": {
+        "datasetTheme": "light",
+        "bodyBackground": "rgb(246, 245, 243)",
+        "bodyColor": "rgb(37, 41, 35)",
+        "wizardBackground": "rgba(0, 0, 0, 0)"
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "width": 375,
+      "height": 812,
+      "theme": "dark",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-375-dark.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-375-dark.png",
+      "implSha256": "7e358e1cf64fcc3cebbaadd4ba10edc3c898947a3b2b1d3be57d7109c45ea6f2",
+      "refSha256": "eea9bf2333c74d3833ca380558d4fd89047c7a3fd90bacf33a8c8aeab141ebc7",
+      "implBytes": 83399,
+      "refBytes": 111873,
+      "themeMetrics": {
+        "datasetTheme": "dark",
+        "bodyBackground": "rgb(23, 26, 23)",
+        "bodyColor": "rgb(240, 241, 236)",
+        "wizardBackground": "rgba(0, 0, 0, 0)"
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "width": 320,
+      "height": 568,
+      "theme": "light",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-320-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-320-light.png",
+      "implSha256": "7e4479079848a817b44cd629191a647d6cd6e6aea47ba2a5117c2d02db0e0a17",
+      "refSha256": "88268ef1aea592808a30cbf98ddfd6a852ae546320ae39ca71ea4054b7769a8f",
+      "implBytes": 81484,
+      "refBytes": 107958,
+      "themeMetrics": {
+        "datasetTheme": "light",
+        "bodyBackground": "rgb(246, 245, 243)",
+        "bodyColor": "rgb(37, 41, 35)",
+        "wizardBackground": "rgba(0, 0, 0, 0)"
+      },
+      "viewport": {
+        "width": 320,
+        "height": 568
+      }
+    }
+  ]
+}

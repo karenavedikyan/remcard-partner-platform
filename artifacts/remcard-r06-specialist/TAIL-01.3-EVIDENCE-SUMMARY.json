@@ -1,0 +1,45 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01.3",
+  "capturedAt": "2026-10-18T12:42:26.188Z",
+  "git": {
+    "platformHead": "ce47ff48c98f4a9daf58df4451923041ec2176b5",
+    "navigatorHead": "b52f98825f94972ec64962d26cc0df3ee43b59ca",
+    "layoutCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+    "navigatorPin": "b52f98825f94972ec64962d26cc0df3ee43b59ca",
+    "platformBuiltHead": "ce47ff48c98f4a9daf58df4451923041ec2176b5"
+  },
+  "vitest": {
+    "exitCode": 0,
+    "passed": 7,
+    "logTail": "RUN  v4.1.5 /agent/repos/remcard-navigator\n\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  12:42:13\n   Duration  4.44s (transform 206ms, setup 157ms, import 270ms, tests 3.84s, environment 0ms)"
+  },
+  "catalogCapture": {
+    "exitCode": 0,
+    "stdout": "{\"ok\":true,\"manifestPath\":\"/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/manifest-tail-01.3-catalog.json\",\"count\":3,\"captures\":[{\"theme\":\"light\",\"width\":375,\"implSha256\":\"e173d0e99ed7689934f2a4530307b1157b325a81c222cb3a7581cb412e373d22\"},{\"theme\":\"dark\",\"width\":375,\"implSha256\":\"7e358e1cf64fcc3cebbaadd4ba10edc3c898947a3b2b1d3be57d7109c45ea6f2\"},{\"theme\":\"light\",\"width\":320,\"implSha256\":\"7e4479079848a817b44cd629191a647d6cd6e6aea47ba2a5117c2d02db0e0a17\"}]}",
+    "stderr": ""
+  },
+  "pgMigration": {
+    "exitCode": 0,
+    "stdout": "{\"ok\":true,\"outPath\":\"/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/TAIL-01.3-PG-MIGRATION-RAW.json\"}"
+  },
+  "manifestCaptures": [
+    {
+      "width": 375,
+      "theme": "light",
+      "implSha256": "e173d0e99ed7689934f2a4530307b1157b325a81c222cb3a7581cb412e373d22",
+      "refSha256": "017087f049ae0687b6dc8143c611ebdecff3c7009f7af633598d2f26587beab8"
+    },
+    {
+      "width": 375,
+      "theme": "dark",
+      "implSha256": "7e358e1cf64fcc3cebbaadd4ba10edc3c898947a3b2b1d3be57d7109c45ea6f2",
+      "refSha256": "eea9bf2333c74d3833ca380558d4fd89047c7a3fd90bacf33a8c8aeab141ebc7"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "implSha256": "7e4479079848a817b44cd629191a647d6cd6e6aea47ba2a5117c2d02db0e0a17",
+      "refSha256": "88268ef1aea592808a30cbf98ddfd6a852ae546320ae39ca71ea4054b7769a8f"
+    }
+  ]
+}
