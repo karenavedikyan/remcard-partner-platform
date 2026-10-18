@@ -1,22 +1,24 @@
 {
-  "status": "FAILED",
+  "status": "READY_FOR_REVIEW",
   "task": "LOGIN-LAYOUT-01",
   "baseSha": "0fe7da52bb02f2a515d238757c8be16ef2d83948",
-  "evidenceTipSha": "9afad2970aa2a87a21a3e7af17bd249ff65f0086",
+  "evidenceTipSha": "4de11a56dc865769f0462671950c16106e4f608b",
   "unitTests": {
     "command": "NODE_ENV=test npm test -- --run src/components/auth/LoginExperience.test.tsx src/components/auth/AuthFlow.test.tsx",
-    "exitCode": null,
-    "testsPassed": 0,
+    "exitCode": 0,
+    "testsPassed": 16,
     "logFile": "artifacts/remcard-login-layout-01/test-run.log"
   },
   "build": {
     "command": "npm run build",
-    "exitCode": null,
+    "exitCode": 0,
     "logFile": "artifacts/remcard-login-layout-01/build.log"
   },
   "browser": {
     "manifest": "artifacts/remcard-login-layout-01/manifest.json",
     "logoutReentry": "NOT_VERIFIED"
   },
-  "note": "Local visual capture only; production not deployed"
+  "note": "Local visual capture only; production not deployed",
+  "codeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+  "runnerSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e"
 }

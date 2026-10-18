@@ -11,1683 +11,1683 @@ TAP version 13
     # Subtest: uses BFF-safe POST endpoints
     ok 1 - uses BFF-safe POST endpoints
       ---
-      duration_ms: 0.47036
+      duration_ms: 0.480973
       ...
     1..1
 ok 1 - account-session-exit paths
   ---
-  duration_ms: 0.959113
+  duration_ms: 1.050298
   type: 'suite'
   ...
 # Subtest: parseAccrualType
     # Subtest: accepts bonus and agentBonus only
     ok 1 - accepts bonus and agentBonus only
       ---
-      duration_ms: 0.393786
+      duration_ms: 0.380613
       ...
     1..1
 ok 2 - parseAccrualType
   ---
-  duration_ms: 0.934849
+  duration_ms: 0.943838
   type: 'suite'
   ...
 # Subtest: accrualDetailHref
     # Subtest: includes type query for settlement links
     ok 1 - includes type query for settlement links
       ---
-      duration_ms: 0.153581
+      duration_ms: 0.108768
       ...
     1..1
 ok 3 - accrualDetailHref
   ---
-  duration_ms: 0.223175
+  duration_ms: 0.173086
   type: 'suite'
   ...
 # Subtest: mobile-nav-editor
     # Subtest: enters replacement mode when panel is full
     ok 1 - enters replacement mode when panel is full
       ---
-      duration_ms: 0.461423
+      duration_ms: 0.494395
       ...
     # Subtest: applies replacement and clears pending state
     ok 2 - applies replacement and clears pending state
       ---
-      duration_ms: 0.53353
+      duration_ms: 0.491629
       ...
     # Subtest: blocks save while replacement pending
     ok 3 - blocks save while replacement pending
       ---
-      duration_ms: 0.093327
+      duration_ms: 0.076255
       ...
     1..3
 ok 4 - mobile-nav-editor
   ---
-  duration_ms: 1.744665
+  duration_ms: 1.65227
   type: 'suite'
   ...
 # Subtest: theme-sync-policy
     # Subtest: skips persist before hydration and when theme unchanged
     ok 1 - skips persist before hydration and when theme unchanged
       ---
-      duration_ms: 0.418185
+      duration_ms: 0.439513
       ...
     1..1
 ok 5 - theme-sync-policy
   ---
-  duration_ms: 0.997063
+  duration_ms: 0.941629
   type: 'suite'
   ...
 # Subtest: auth-consent
     # Subtest: maps document version mismatch
     ok 1 - maps document version mismatch
       ---
-      duration_ms: 0.628055
+      duration_ms: 0.471873
       ...
     # Subtest: maps missing active document
     ok 2 - maps missing active document
       ---
-      duration_ms: 0.150406
+      duration_ms: 0.112876
       ...
     # Subtest: labels known consent kinds
     ok 3 - labels known consent kinds
       ---
-      duration_ms: 0.139952
+      duration_ms: 0.13556
       ...
     1..3
 ok 6 - auth-consent
   ---
-  duration_ms: 1.533221
+  duration_ms: 1.306266
   type: 'suite'
   ...
 # Subtest: sanitizeReturnTo
     # Subtest: allows safe internal paths
     ok 1 - allows safe internal paths
       ---
-      duration_ms: 0.492976
+      duration_ms: 0.49347
       ...
     # Subtest: rejects external, login loops and onboarding loops
     ok 2 - rejects external, login loops and onboarding loops
       ---
-      duration_ms: 0.183049
+      duration_ms: 0.148503
       ...
     # Subtest: allows /join as return target
     ok 3 - allows /join as return target
       ---
-      duration_ms: 0.073144
+      duration_ms: 0.071775
       ...
     1..3
 ok 7 - sanitizeReturnTo
   ---
-  duration_ms: 1.305056
+  duration_ms: 1.264619
   type: 'suite'
   ...
 # Subtest: resolveStepFromReadiness
     # Subtest: routes session with pending consents to consents step
     ok 1 - routes session with pending consents to consents step
       ---
-      duration_ms: 0.147086
+      duration_ms: 0.156905
       ...
     # Subtest: routes employee without cabinet access to access_denied
     ok 2 - routes employee without cabinet access to access_denied
       ---
-      duration_ms: 0.108392
+      duration_ms: 0.111661
       ...
     1..2
 ok 8 - resolveStepFromReadiness
   ---
-  duration_ms: 0.351844
+  duration_ms: 0.368989
   type: 'suite'
   ...
 # Subtest: isAuthFlowComplete
     # Subtest: detects ready cabinet access
     ok 1 - detects ready cabinet access
       ---
-      duration_ms: 0.117546
+      duration_ms: 0.112033
       ...
     1..1
 ok 9 - isAuthFlowComplete
   ---
-  duration_ms: 0.298376
+  duration_ms: 0.319524
   type: 'suite'
   ...
 # Subtest: resolveAuthFlowFromReadiness
     # Subtest: shows login consents before profile onboarding for new CLIENT
     ok 1 - shows login consents before profile onboarding for new CLIENT
       ---
-      duration_ms: 0.128402
+      duration_ms: 0.135057
       ...
     # Subtest: routes OWNER+PRO with cabinet access to complete
     ok 2 - routes OWNER+PRO with cabinet access to complete
       ---
-      duration_ms: 0.058792
+      duration_ms: 0.060354
       ...
     # Subtest: routes empty consents with denied access to access_denied
     ok 3 - routes empty consents with denied access to access_denied
       ---
-      duration_ms: 0.430412
+      duration_ms: 0.174253
       ...
     # Subtest: routes to onboarding only after login consents are satisfied
     ok 4 - routes to onboarding only after login consents are satisfied
       ---
-      duration_ms: 1.125186
+      duration_ms: 2.479028
       ...
     1..4
 ok 10 - resolveAuthFlowFromReadiness
   ---
-  duration_ms: 1.910793
+  duration_ms: 3.033307
   type: 'suite'
   ...
 # Subtest: resolveDestinationAfterAuth
     # Subtest: routes ready PRO to returnTo
     ok 1 - routes ready PRO to returnTo
       ---
-      duration_ms: 0.204633
+      duration_ms: 0.222244
       ...
     # Subtest: routes OWNER+PRO with cabinet access to returnTo despite isAdmin
     ok 2 - routes OWNER+PRO with cabinet access to returnTo despite isAdmin
       ---
-      duration_ms: 0.05786
+      duration_ms: 0.06195
       ...
     # Subtest: routes CLIENT profile need to onboarding
     ok 3 - routes CLIENT profile need to onboarding
       ---
-      duration_ms: 0.049997
+      duration_ms: 0.053585
       ...
     # Subtest: routes returning ready user to cabinet when registrationAgentJoin has plain join
     ok 4 - routes returning ready user to cabinet when registrationAgentJoin has plain join
       ---
-      duration_ms: 0.150843
+      duration_ms: 0.153797
       ...
     # Subtest: preserves invite for ready user in agent registration auth return
     ok 5 - preserves invite for ready user in agent registration auth return
       ---
-      duration_ms: 0.139245
+      duration_ms: 0.152214
       ...
     # Subtest: routes new registration profile user with invite to join finish
     ok 6 - routes new registration profile user with invite to join finish
       ---
-      duration_ms: 0.054944
+      duration_ms: 0.057867
       ...
     # Subtest: rejects unsafe nested returnTo for ready agent join
     ok 7 - rejects unsafe nested returnTo for ready agent join
       ---
-      duration_ms: 0.100181
+      duration_ms: 0.106403
       ...
     # Subtest: routes legacy onboarding partnerType directly without returnTo loop
     ok 8 - routes legacy onboarding partnerType directly without returnTo loop
       ---
-      duration_ms: 0.046639
+      duration_ms: 0.046754
       ...
     # Subtest: routes agent registration join to finish step instead of onboarding
     ok 9 - routes agent registration join to finish step instead of onboarding
       ---
-      duration_ms: 0.038961
+      duration_ms: 0.041411
       ...
     # Subtest: routes unsupported context to role notice instead of login loop
     ok 10 - routes unsupported context to role notice instead of login loop
       ---
-      duration_ms: 0.034171
+      duration_ms: 0.035039
       ...
     # Subtest: denies employee when backend has not granted cabinet access
     ok 11 - denies employee when backend has not granted cabinet access
       ---
-      duration_ms: 0.038121
+      duration_ms: 0.037869
       ...
     # Subtest: blocks cabinet access for CLIENT without completed profile onboarding
     ok 12 - blocks cabinet access for CLIENT without completed profile onboarding
       ---
-      duration_ms: 0.039198
+      duration_ms: 0.040681
       ...
     # Subtest: allows employee when backend grants cabinet access
     ok 13 - allows employee when backend grants cabinet access
       ---
-      duration_ms: 0.03622
+      duration_ms: 0.038732
       ...
     1..13
 ok 11 - resolveDestinationAfterAuth
   ---
-  duration_ms: 1.181566
+  duration_ms: 1.266387
   type: 'suite'
   ...
 # Subtest: mapVerifyCodeError
     # Subtest: maps auth failures to user-facing messages
     ok 1 - maps auth failures to user-facing messages
       ---
-      duration_ms: 0.140975
+      duration_ms: 0.144417
       ...
     1..1
 ok 12 - mapVerifyCodeError
   ---
-  duration_ms: 0.175698
+  duration_ms: 0.180859
   type: 'suite'
   ...
 # Subtest: buildSessionRecoveryLoginHref
     # Subtest: passes safe final destination without onboarding wrapper
     ok 1 - passes safe final destination without onboarding wrapper
       ---
-      duration_ms: 0.110155
+      duration_ms: 0.11659
       ...
     # Subtest: rejects external and loop-prone returnTo values
     ok 2 - rejects external and loop-prone returnTo values
       ---
-      duration_ms: 0.062319
+      duration_ms: 0.055639
       ...
     1..2
 ok 13 - buildSessionRecoveryLoginHref
   ---
-  duration_ms: 0.213736
+  duration_ms: 0.21277
   type: 'suite'
   ...
 # Subtest: sessionRetryMessage
     # Subtest: does not mention invalid code after session established
     ok 1 - does not mention invalid code after session established
       ---
-      duration_ms: 0.117131
+      duration_ms: 0.147872
       ...
     1..1
 ok 14 - sessionRetryMessage
   ---
-  duration_ms: 0.146776
+  duration_ms: 0.182715
   type: 'suite'
   ...
 # Subtest: consentRequirementKey
     # Subtest: binds checkbox to kind and legalDocumentId
     ok 1 - binds checkbox to kind and legalDocumentId
       ---
-      duration_ms: 0.440015
+      duration_ms: 0.411534
       ...
     1..1
 ok 15 - consentRequirementKey
   ---
-  duration_ms: 0.918162
+  duration_ms: 0.890527
   type: 'suite'
   ...
 # Subtest: category display resolver
     # Subtest: maps store chips to Russian labels
     ok 1 - maps store chips to Russian labels
       ---
-      duration_ms: 0.628094
+      duration_ms: 0.80588
       ...
     # Subtest: covers every STORE_CATEGORY_CHIP_KEYS entry
     ok 2 - covers every STORE_CATEGORY_CHIP_KEYS entry
       ---
-      duration_ms: 0.307171
+      duration_ms: 0.334143
       ...
     # Subtest: keeps general partnership label
     ok 3 - keeps general partnership label
       ---
-      duration_ms: 0.119215
+      duration_ms: 0.167788
       ...
     # Subtest: prefers canonical Russian when API label equals raw key
     ok 4 - prefers canonical Russian when API label equals raw key
       ---
-      duration_ms: 0.064332
+      duration_ms: 0.07034
       ...
     # Subtest: preserves substantive saved Russian labels
     ok 5 - preserves substantive saved Russian labels
       ---
-      duration_ms: 0.056459
+      duration_ms: 0.063445
       ...
     # Subtest: displayCategoryLabelFromStored keeps normal Russian names
     ok 6 - displayCategoryLabelFromStored keeps normal Russian names
       ---
-      duration_ms: 0.114321
+      duration_ms: 0.123048
       ...
     # Subtest: displayCategoryLabelFromStored translates raw English codes
     ok 7 - displayCategoryLabelFromStored translates raw English codes
       ---
-      duration_ms: 0.062196
+      duration_ms: 0.058846
       ...
     # Subtest: uses canonical from category id when stored English label mismatches
     ok 8 - uses canonical from category id when stored English label mismatches
       ---
-      duration_ms: 0.104584
+      duration_ms: 0.092687
       ...
     # Subtest: does not expose unknown tech codes
     ok 9 - does not expose unknown tech codes
       ---
-      duration_ms: 0.124877
+      duration_ms: 0.122801
       ...
     # Subtest: resolves legacy all alias to general label
     ok 10 - resolves legacy all alias to general label
       ---
-      duration_ms: 0.224412
+      duration_ms: 0.194267
       ...
     1..10
 ok 16 - category display resolver
   ---
-  duration_ms: 2.595405
+  duration_ms: 2.818923
   type: 'suite'
   ...
 # Subtest: parseCertificateCode
     # Subtest: returns promo code as-is
     ok 1 - returns promo code as-is
       ---
-      duration_ms: 1.08555
+      duration_ms: 1.005478
       ...
     # Subtest: extracts from production certificate URL
     ok 2 - extracts from production certificate URL
       ---
-      duration_ms: 0.16137
+      duration_ms: 0.171403
       ...
     # Subtest: extracts from test localhost URL
     ok 3 - extracts from test localhost URL
       ---
-      duration_ms: 0.125364
+      duration_ms: 0.128593
       ...
     # Subtest: extracts from add-page URL
     ok 4 - extracts from add-page URL
       ---
-      duration_ms: 0.068523
+      duration_ms: 0.091304
       ...
     # Subtest: rejects malformed percent-encoding in certificate URL
     ok 5 - rejects malformed percent-encoding in certificate URL
       ---
-      duration_ms: 0.223672
+      duration_ms: 0.218113
       ...
     # Subtest: rejects empty input
     ok 6 - rejects empty input
       ---
-      duration_ms: 0.071316
+      duration_ms: 0.072869
       ...
     1..6
 ok 17 - parseCertificateCode
   ---
-  duration_ms: 2.343324
+  duration_ms: 2.305015
   type: 'suite'
   ...
 # Subtest: extractCertificateCode
     # Subtest: returns promo code as-is
     ok 1 - returns promo code as-is
       ---
-      duration_ms: 0.15836
+      duration_ms: 0.162462
       ...
     # Subtest: returns empty for malformed URL
     ok 2 - returns empty for malformed URL
       ---
-      duration_ms: 0.169702
+      duration_ms: 0.168947
       ...
     1..2
 ok 18 - extractCertificateCode
   ---
-  duration_ms: 0.496404
+  duration_ms: 0.49613
   type: 'suite'
   ...
 # Subtest: certificate percent calculation
     # Subtest: rounds like navigator toPercent helper
     ok 1 - rounds like navigator toPercent helper
       ---
-      duration_ms: 0.575517
+      duration_ms: 0.599624
       ...
     # Subtest: partner pool 15%: client 5% → PROF 10%
     ok 2 - partner pool 15%: client 5% → PROF 10%
       ---
-      duration_ms: 0.195015
+      duration_ms: 0.205294
       ...
     # Subtest: partner pool 15%: client 15% → PROF 0%
     ok 3 - partner pool 15%: client 15% → PROF 0%
       ---
-      duration_ms: 0.07745
+      duration_ms: 0.081984
       ...
     # Subtest: partner pool 15%: client 0% → PROF 15%
     ok 4 - partner pool 15%: client 0% → PROF 15%
       ---
-      duration_ms: 0.072706
+      duration_ms: 0.072134
       ...
     # Subtest: partner pool 15%: client 20% → error, no silent clamp
     ok 5 - partner pool 15%: client 20% → error, no silent clamp
       ---
-      duration_ms: 0.113107
+      duration_ms: 0.086305
       ...
     # Subtest: rejects negative discount
     ok 6 - rejects negative discount
       ---
-      duration_ms: 0.129409
+      duration_ms: 0.064149
       ...
     # Subtest: self-scan: client 5% → PROF 0%
     ok 7 - self-scan: client 5% → PROF 0%
       ---
-      duration_ms: 0.09738
+      duration_ms: 0.070818
       ...
     # Subtest: self-scan: rejects over 100% without clamping
     ok 8 - self-scan: rejects over 100% without clamping
       ---
-      duration_ms: 0.122597
+      duration_ms: 0.096377
       ...
     # Subtest: rejects empty discount draft
     ok 9 - rejects empty discount draft
       ---
-      duration_ms: 0.119618
+      duration_ms: 0.123987
       ...
     # Subtest: rejects missing pool for partner category
     ok 10 - rejects missing pool for partner category
       ---
-      duration_ms: 0.202043
+      duration_ms: 0.202649
       ...
     # Subtest: previewIssuerPercent returns null for over-limit input
     ok 11 - previewIssuerPercent returns null for over-limit input
       ---
-      duration_ms: 0.089409
+      duration_ms: 0.088093
       ...
     # Subtest: pool 20% after term change: client 7% → PROF 13%
     ok 12 - pool 20% after term change: client 7% → PROF 13%
       ---
-      duration_ms: 0.063079
+      duration_ms: 0.05987
       ...
     1..12
 ok 19 - certificate percent calculation
   ---
-  duration_ms: 2.779552
+  duration_ms: 2.586914
   type: 'suite'
   ...
 # Subtest: buildCreateCertificatePayload
     # Subtest: builds partner payload with recalculated issuerPercent
     ok 1 - builds partner payload with recalculated issuerPercent
       ---
-      duration_ms: 0.215562
+      duration_ms: 0.214742
       ...
     # Subtest: does not build payload when discount exceeds agreed pool
     ok 2 - does not build payload when discount exceeds agreed pool
       ---
-      duration_ms: 0.130617
+      duration_ms: 0.134476
       ...
     # Subtest: keeps self-scan issuerPercent at 0
     ok 3 - keeps self-scan issuerPercent at 0
       ---
-      duration_ms: 0.072481
+      duration_ms: 0.076091
       ...
     # Subtest: returns field errors instead of throwing for invalid values
     ok 4 - returns field errors instead of throwing for invalid values
       ---
-      duration_ms: 0.140628
+      duration_ms: 0.110173
       ...
     # Subtest: uses API default when draft absent and rejects cleared whitespace
     ok 5 - uses API default when draft absent and rejects cleared whitespace
       ---
-      duration_ms: 0.139843
+      duration_ms: 0.127081
       ...
     1..5
 ok 20 - buildCreateCertificatePayload
   ---
-  duration_ms: 0.813972
+  duration_ms: 0.76952
   type: 'suite'
   ...
 # Subtest: certificate url helpers
     # Subtest: prefers server certificateUrl
     ok 1 - prefers server certificateUrl
       ---
-      duration_ms: 0.45663
+      duration_ms: 0.503091
       ...
     # Subtest: uses promo code for pdf path
     ok 2 - uses promo code for pdf path
       ---
-      duration_ms: 0.196793
+      duration_ms: 0.140216
       ...
     # Subtest: detects test-only public urls
     ok 3 - detects test-only public urls
       ---
-      duration_ms: 0.116614
+      duration_ms: 0.12859
       ...
     # Subtest: builds client-visible discount summary without issuer percents
     ok 4 - builds client-visible discount summary without issuer percents
       ---
-      duration_ms: 0.175045
+      duration_ms: 0.186912
       ...
     1..4
 ok 21 - certificate url helpers
   ---
-  duration_ms: 1.776324
+  duration_ms: 1.773104
   type: 'suite'
   ...
 # Subtest: employees-overview contract
     # Subtest: parses navigator ORG_OWNER fixture without top-level pendingInvites array
     ok 1 - parses navigator ORG_OWNER fixture without top-level pendingInvites array
       ---
-      duration_ms: 0.51897
+      duration_ms: 0.504333
       ...
     # Subtest: detects manage rights for owner
     ok 2 - detects manage rights for owner
       ---
-      duration_ms: 0.126224
+      duration_ms: 0.110696
       ...
     1..2
 ok 22 - employees-overview contract
   ---
-  duration_ms: 1.31174
+  duration_ms: 1.158057
   type: 'suite'
   ...
 # Subtest: filterPurchases
     # Subtest: filters by search on promo code and order id
     ok 1 - filters by search on promo code and order id
       ---
-      duration_ms: 0.502633
+      duration_ms: 0.484864
       ...
     # Subtest: filters by direction and status
     ok 2 - filters by direction and status
       ---
-      duration_ms: 0.123901
+      duration_ms: 0.142243
       ...
     1..2
 ok 23 - filterPurchases
   ---
-  duration_ms: 1.227858
+  duration_ms: 1.1948
   type: 'suite'
   ...
 # Subtest: filterAccruals
     # Subtest: filters accruals by status and search
     ok 1 - filters accruals by status and search
       ---
-      duration_ms: 0.118849
+      duration_ms: 0.122815
       ...
     1..1
 ok 24 - filterAccruals
   ---
-  duration_ms: 0.185468
+  duration_ms: 0.19112
   type: 'suite'
   ...
 # Subtest: formatMoneyRub
     # Subtest: keeps whole rubles without decimals
     ok 1 - keeps whole rubles without decimals
       ---
-      duration_ms: 18.021033
+      duration_ms: 10.330945
       ...
     # Subtest: shows kopecks when amount is fractional
     ok 2 - shows kopecks when amount is fractional
       ---
-      duration_ms: 0.270285
+      duration_ms: 0.245116
       ...
     1..2
 ok 25 - formatMoneyRub
   ---
-  duration_ms: 18.896252
+  duration_ms: 11.131408
   type: 'suite'
   ...
 # Subtest: purchaseRowDateLabel
     # Subtest: labels issued-order date as purchase date
     ok 1 - labels issued-order date as purchase date
       ---
-      duration_ms: 0.420241
+      duration_ms: 0.426592
       ...
     # Subtest: labels accepted-bonus date as accrual date
     ok 2 - labels accepted-bonus date as accrual date
       ---
-      duration_ms: 0.098607
+      duration_ms: 0.092935
       ...
     1..2
 ok 26 - purchaseRowDateLabel
   ---
-  duration_ms: 1.066196
+  duration_ms: 2.564247
   type: 'suite'
   ...
 # Subtest: history-links typed accrual refs
     # Subtest: does not match purchases by promoCode alone
     ok 1 - does not match purchases by promoCode alone
       ---
-      duration_ms: 0.55895
+      duration_ms: 0.676266
       ...
     # Subtest: links all typed accruals for a purchase
     ok 2 - links all typed accruals for a purchase
       ---
-      duration_ms: 0.527864
+      duration_ms: 0.542795
       ...
     # Subtest: does not link accrual when only id matches but type differs
     ok 3 - does not link accrual when only id matches but type differs
       ---
-      duration_ms: 0.105473
+      duration_ms: 0.109439
       ...
     # Subtest: returns no links for self-scan purchase
     ok 4 - returns no links for self-scan purchase
       ---
-      duration_ms: 1.28603
+      duration_ms: 0.074716
       ...
     # Subtest: finds purchase for accrual by typed ref in loaded list
     ok 5 - finds purchase for accrual by typed ref in loaded list
       ---
-      duration_ms: 0.217869
+      duration_ms: 0.106473
       ...
     # Subtest: does not link two purchases with same promoCode only
     ok 6 - does not link two purchases with same promoCode only
       ---
-      duration_ms: 0.108743
+      duration_ms: 0.078031
       ...
     1..6
 ok 27 - history-links typed accrual refs
   ---
-  duration_ms: 3.735189
+  duration_ms: 2.259341
   type: 'suite'
   ...
 # Subtest: mergeAccrualRowsById type-safe keys
     # Subtest: does not overwrite bonus with agentBonus when ids collide
     ok 1 - does not overwrite bonus with agentBonus when ids collide
       ---
-      duration_ms: 0.477549
+      duration_ms: 0.489873
       ...
     1..1
 ok 28 - mergeAccrualRowsById type-safe keys
   ---
-  duration_ms: 0.991689
+  duration_ms: 1.142954
   type: 'suite'
   ...
 # Subtest: resolveAccrualLookup
     # Subtest: returns row found in merged sources
     ok 1 - returns row found in merged sources
       ---
-      duration_ms: 0.385277
+      duration_ms: 0.282774
       ...
     # Subtest: throws when wallet ok without row and settlements failed
     ok 2 - throws when wallet ok without row and settlements failed
       ---
-      duration_ms: 0.352938
+      duration_ms: 0.302475
       ...
     # Subtest: allows not-found when both sources succeeded
     ok 3 - allows not-found when both sources succeeded
       ---
-      duration_ms: 0.078397
+      duration_ms: 0.08304
       ...
     # Subtest: allows not-found when wallet unavailable and settlements succeeded
     ok 4 - allows not-found when wallet unavailable and settlements succeeded
       ---
-      duration_ms: 0.064603
+      duration_ms: 0.064094
       ...
     # Subtest: finds settlement-only row when wallet unavailable
     ok 5 - finds settlement-only row when wallet unavailable
       ---
-      duration_ms: 0.058692
+      duration_ms: 0.058451
       ...
     # Subtest: throws when wallet failed and settlements ok but row missing
     ok 6 - throws when wallet failed and settlements ok but row missing
       ---
-      duration_ms: 0.146465
+      duration_ms: 0.136517
       ...
     # Subtest: returns null for ambiguous id without type when both types share id
     ok 7 - returns null for ambiguous id without type when both types share id
       ---
-      duration_ms: 0.183449
+      duration_ms: 0.179031
       ...
     # Subtest: disambiguates shared id when accrualType is provided
     ok 8 - disambiguates shared id when accrualType is provided
       ---
-      duration_ms: 0.118379
+      duration_ms: 0.957336
       ...
     1..8
 ok 29 - resolveAccrualLookup
   ---
-  duration_ms: 1.829202
+  duration_ms: 2.48977
   type: 'suite'
   ...
 # Subtest: history mappers
     # Subtest: maps store orders with typed bonus links
     ok 1 - maps store orders with typed bonus links
       ---
-      duration_ms: 0.619064
+      duration_ms: 0.56691
       ...
     # Subtest: maps pro order detail preserving agentBonus links
     ok 2 - maps pro order detail preserving agentBonus links
       ---
-      duration_ms: 0.16921
+      duration_ms: 0.165299
       ...
     # Subtest: maps wallet transactions with orderId and accrualType
     ok 3 - maps wallet transactions with orderId and accrualType
       ---
-      duration_ms: 0.140408
+      duration_ms: 0.138892
       ...
     # Subtest: maps store bonus list preserving optional orderId
     ok 4 - maps store bonus list preserving optional orderId
       ---
-      duration_ms: 0.300532
+      duration_ms: 0.30795
       ...
     # Subtest: maps wallet scope from server role
     ok 5 - maps wallet scope from server role
       ---
-      duration_ms: 0.082338
+      duration_ms: 0.077021
       ...
     1..5
 ok 30 - history mappers
   ---
-  duration_ms: 2.035404
+  duration_ms: 2.022603
   type: 'suite'
   ...
 # Subtest: history source warnings
     # Subtest: does not show legacy limitation once accepted-order API is used
     ok 1 - does not show legacy limitation once accepted-order API is used
       ---
-      duration_ms: 0.427725
+      duration_ms: 0.451946
       ...
     # Subtest: shows empty note when accepted source available but no accepted rows
     ok 2 - shows empty note when accepted source available but no accepted rows
       ---
-      duration_ms: 0.112697
+      duration_ms: 0.115689
       ...
     # Subtest: shows access denied note without treating store 403 as empty accepted history
     ok 3 - shows access denied note without treating store 403 as empty accepted history
       ---
-      duration_ms: 0.07741
+      duration_ms: 0.081837
       ...
     1..3
 ok 31 - history source warnings
   ---
-  duration_ms: 1.189638
+  duration_ms: 1.247443
   type: 'suite'
   ...
 # Subtest: invite form state
     # Subtest: preserves edits across parent re-renders with the same reset key
     ok 1 - preserves edits across parent re-renders with the same reset key
       ---
-      duration_ms: 0.584096
+      duration_ms: 0.737587
       ...
     # Subtest: reinitializes when opening invite for another partner
     ok 2 - reinitializes when opening invite for another partner
       ---
-      duration_ms: 0.134292
+      duration_ms: 0.141749
       ...
     # Subtest: keeps user input after API error
     ok 3 - keeps user input after API error
       ---
-      duration_ms: 0.150441
+      duration_ms: 0.179703
       ...
     # Subtest: uses general fallback rows only when categories are empty
     ok 4 - uses general fallback rows only when categories are empty
       ---
-      duration_ms: 0.09644
+      duration_ms: 0.096893
       ...
     # Subtest: requires explicit general confirmation state
     ok 5 - requires explicit general confirmation state
       ---
-      duration_ms: 0.074916
+      duration_ms: 0.076163
       ...
     1..5
 ok 32 - invite form state
   ---
-  duration_ms: 1.83105
+  duration_ms: 1.937098
   type: 'suite'
   ...
 # Subtest: invite opengraph image
     # Subtest: uses standard OG dimensions and png
     ok 1 - uses standard OG dimensions and png
       ---
-      duration_ms: 0.353631
+      duration_ms: 0.348375
       ...
     1..1
 ok 33 - invite opengraph image
   ---
-  duration_ms: 0.87213
+  duration_ms: 0.900144
   type: 'suite'
   ...
 # Subtest: site opengraph image
     # Subtest: uses standard OG dimensions and png
     ok 1 - uses standard OG dimensions and png
       ---
-      duration_ms: 0.12718
+      duration_ms: 0.128585
       ...
     1..1
 ok 34 - site opengraph image
   ---
-  duration_ms: 0.186979
+  duration_ms: 0.18936
   type: 'suite'
   ...
 # Subtest: invite presentation
     # Subtest: resolves store inviter audience as master-facing copy
     ok 1 - resolves store inviter audience as master-facing copy
       ---
-      duration_ms: 0.65422
+      duration_ms: 0.819341
       ...
     # Subtest: uses store-invitee copy when master invites a store
     ok 2 - uses store-invitee copy when master invites a store
       ---
-      duration_ms: 0.136068
+      duration_ms: 0.151463
       ...
     # Subtest: builds active metadata with inviter in title
     ok 3 - builds active metadata with inviter in title
       ---
-      duration_ms: 0.22336
+      duration_ms: 0.223281
       ...
     # Subtest: uses neutral metadata for expired invites
     ok 4 - uses neutral metadata for expired invites
       ---
-      duration_ms: 0.183729
+      duration_ms: 0.176491
       ...
     # Subtest: builds share message with inviter name and optional benefit line
     ok 5 - builds share message with inviter name and optional benefit line
       ---
-      duration_ms: 0.149702
+      duration_ms: 0.151736
       ...
     # Subtest: falls back inviter display name
     ok 6 - falls back inviter display name
       ---
-      duration_ms: 0.098412
+      duration_ms: 0.099928
       ...
     1..6
 ok 35 - invite presentation
   ---
-  duration_ms: 2.070903
+  duration_ms: 2.284446
   type: 'suite'
   ...
 # Subtest: fetchPublicLinkInvitePreview
     # Subtest: returns NOT_FOUND shape for empty token without calling upstream
     ok 1 - returns NOT_FOUND shape for empty token without calling upstream
       ---
-      duration_ms: 1.041931
+      duration_ms: 1.193694
       ...
     # Subtest: returns null when upstream fetch rejects (network)
     ok 2 - returns null when upstream fetch rejects (network)
       ---
-      duration_ms: 0.351543
+      duration_ms: 0.278936
       ...
     # Subtest: returns null on abort/timeout and passes bounded signal
     ok 3 - returns null on abort/timeout and passes bounded signal
       ---
-      duration_ms: 0.368379
+      duration_ms: 0.248499
       ...
     # Subtest: returns null when upstream throws on invalid JSON parse
     ok 4 - returns null when upstream throws on invalid JSON parse
       ---
-      duration_ms: 0.208425
+      duration_ms: 0.198925
       ...
     # Subtest: returns null when upstream responds with error envelope
     ok 5 - returns null when upstream responds with error envelope
       ---
-      duration_ms: 0.288443
+      duration_ms: 0.279064
       ...
     # Subtest: maps null preview to neutral metadata for generateMetadata
     ok 6 - maps null preview to neutral metadata for generateMetadata
       ---
-      duration_ms: 0.414272
+      duration_ms: 0.406709
       ...
     1..6
 ok 36 - fetchPublicLinkInvitePreview
   ---
-  duration_ms: 3.375961
+  duration_ms: 3.281664
   type: 'suite'
   ...
 # Subtest: fetchPublicLinkInvitePreview integration
     # Subtest: returns null for unreachable upstream without throwing
     ok 1 - returns null for unreachable upstream without throwing
       ---
-      duration_ms: 14.909389
+      duration_ms: 12.474583
       ...
     1..1
 ok 37 - fetchPublicLinkInvitePreview integration
   ---
-  duration_ms: 15.09674
+  duration_ms: 12.687407
   type: 'suite'
   ...
 # Subtest: notification-settings-ui
     # Subtest: turning off both channels sets explicit empty list
     ok 1 - turning off both channels sets explicit empty list
       ---
-      duration_ms: 0.831543
+      duration_ms: 0.851726
       ...
     # Subtest: legacy default treats empty as all messengers enabled
     ok 2 - legacy default treats empty as all messengers enabled
       ---
-      duration_ms: 0.101306
+      duration_ms: 0.10331
       ...
     1..2
 ok 38 - notification-settings-ui
   ---
-  duration_ms: 1.502858
+  duration_ms: 3.691417
   type: 'suite'
   ...
 # Subtest: onboarding-save
     # Subtest: buildProfilePatchBody omits displayName for STORE
     ok 1 - buildProfilePatchBody omits displayName for STORE
       ---
-      duration_ms: 0.491505
+      duration_ms: 0.484558
       ...
     # Subtest: buildOrganizationUpsertBody keeps org name separate from profile PATCH
     ok 2 - buildOrganizationUpsertBody keeps org name separate from profile PATCH
       ---
-      duration_ms: 0.453943
+      duration_ms: 0.456799
       ...
     # Subtest: buildProfilePatchBody sends only working minimum for MASTER
     ok 3 - buildProfilePatchBody sends only working minimum for MASTER
       ---
-      duration_ms: 0.083897
+      duration_ms: 0.087379
       ...
     # Subtest: displayNameMatchesSaved compares trimmed values
     ok 4 - displayNameMatchesSaved compares trimmed values
       ---
-      duration_ms: 0.090322
+      duration_ms: 0.076061
       ...
     # Subtest: organizationNameMatchesSaved compares trimmed values
     ok 5 - organizationNameMatchesSaved compares trimmed values
       ---
-      duration_ms: 0.067133
+      duration_ms: 0.077212
       ...
     1..5
 ok 39 - onboarding-save
   ---
-  duration_ms: 1.939127
+  duration_ms: 1.904168
   type: 'suite'
   ...
 # Subtest: order totals
     # Subtest: computes discount and issuer bonus from gross amount
     ok 1 - computes discount and issuer bonus from gross amount
       ---
-      duration_ms: 0.554723
+      duration_ms: 0.494436
       ...
     # Subtest: builds order items for positive amounts only
     ok 2 - builds order items for positive amounts only
       ---
-      duration_ms: 0.138928
+      duration_ms: 0.136458
       ...
     # Subtest: rejects invalid amount draft
     ok 3 - rejects invalid amount draft
       ---
-      duration_ms: 0.113512
+      duration_ms: 0.117895
       ...
     # Subtest: rejects empty purchase
     ok 4 - rejects empty purchase
       ---
-      duration_ms: 0.06771
+      duration_ms: 0.06809
       ...
     1..4
 ok 40 - order totals
   ---
-  duration_ms: 1.543683
+  duration_ms: 1.422706
   type: 'suite'
   ...
 # Subtest: partnership invite rules
     # Subtest: uses inviter categories for store inviting master
     ok 1 - uses inviter categories for store inviting master
       ---
-      duration_ms: 1.096083
+      duration_ms: 0.974977
       ...
     # Subtest: does not slice categories and keeps all trade-side values
     ok 2 - does not slice categories and keeps all trade-side values
       ---
-      duration_ms: 0.241978
+      duration_ms: 0.209279
       ...
     # Subtest: inviteRowsToTerms sets Russian categoryLabel for all store keys
     ok 3 - inviteRowsToTerms sets Russian categoryLabel for all store keys
       ---
-      duration_ms: 0.121791
+      duration_ms: 0.112926
       ...
     # Subtest: uses target store categories when master invites store
     ok 4 - uses target store categories when master invites store
       ---
-      duration_ms: 0.070876
+      duration_ms: 0.077061
       ...
     # Subtest: uses inviter categories when master invites master
     ok 5 - uses inviter categories when master invites master
       ---
-      duration_ms: 0.078845
+      duration_ms: 0.081852
       ...
     # Subtest: requires explicit general row when no categories
     ok 6 - requires explicit general row when no categories
       ---
-      duration_ms: 0.161947
+      duration_ms: 0.163735
       ...
     # Subtest: rejects invite rows without active categories
     ok 7 - rejects invite rows without active categories
       ---
-      duration_ms: 0.972051
+      duration_ms: 0.113602
       ...
     # Subtest: uses inviter categories for COMPANY with non-STORE organization (not org name heuristic)
     ok 8 - uses inviter categories for COMPANY with non-STORE organization (not org name heuristic)
       ---
-      duration_ms: 0.238837
+      duration_ms: 0.185621
       ...
     # Subtest: uses target categories for STORE partnerType
     ok 9 - uses target categories for STORE partnerType
       ---
-      duration_ms: 0.15326
+      duration_ms: 0.140059
       ...
     # Subtest: uses target categories for confirmed STORE organization owner
     ok 10 - uses target categories for confirmed STORE organization owner
       ---
-      duration_ms: 0.221383
+      duration_ms: 0.891957
       ...
     # Subtest: uses inviter categories for MASTER without organization
     ok 11 - uses inviter categories for MASTER without organization
       ---
-      duration_ms: 0.089681
+      duration_ms: 0.134535
       ...
     # Subtest: blocks invite when organization type is unknown and may change trade side
     ok 12 - blocks invite when organization type is unknown and may change trade side
       ---
-      duration_ms: 0.093457
+      duration_ms: 0.102682
       ...
     # Subtest: allows store inviter even when target organization type is unknown
     ok 13 - allows store inviter even when target organization type is unknown
       ---
-      duration_ms: 0.079606
+      duration_ms: 0.060709
       ...
     # Subtest: allows peer invite when target has no organization name
     ok 14 - allows peer invite when target has no organization name
       ---
-      duration_ms: 0.054172
+      duration_ms: 0.051687
       ...
     1..14
 ok 41 - partnership invite rules
   ---
-  duration_ms: 4.553199
+  duration_ms: 4.111138
   type: 'suite'
   ...
 # Subtest: partnership search semantics
     # Subtest: defaults store owners to role=store search
     ok 1 - defaults store owners to role=store search
       ---
-      duration_ms: 0.059382
+      duration_ms: 0.060587
       ...
     1..1
 ok 42 - partnership search semantics
   ---
-  duration_ms: 0.101777
+  duration_ms: 0.105537
   type: 'suite'
   ...
 # Subtest: partnership action rules
     # Subtest: shows accept/reject to invite receiver
     ok 1 - shows accept/reject to invite receiver
       ---
-      duration_ms: 0.202732
+      duration_ms: 0.197588
       ...
     # Subtest: shows cancel to invite author
     ok 2 - shows cancel to invite author
       ---
-      duration_ms: 0.065316
+      duration_ms: 0.062954
       ...
     # Subtest: allows accept_pending only for non-author in PENDING
     ok 3 - allows accept_pending only for non-author in PENDING
       ---
-      duration_ms: 0.110678
+      duration_ms: 0.105484
       ...
     # Subtest: blocks accept_pending for pending author
     ok 4 - blocks accept_pending for pending author
       ---
-      duration_ms: 0.075613
+      duration_ms: 0.072327
       ...
     # Subtest: counts attention using pendingProposedBy not initiatedBy
     ok 5 - counts attention using pendingProposedBy not initiatedBy
       ---
-      duration_ms: 0.074886
+      duration_ms: 0.06673
       ...
     1..5
 ok 43 - partnership action rules
   ---
-  duration_ms: 0.606907
+  duration_ms: 0.576471
   type: 'suite'
   ...
 # Subtest: payout-record copy
     # Subtest: uses external-fact wording for cash and transfer
     ok 1 - uses external-fact wording for cash and transfer
       ---
-      duration_ms: 0.573674
+      duration_ms: 0.555639
       ...
     1..1
 ok 44 - payout-record copy
   ---
-  duration_ms: 1.136834
+  duration_ms: 1.041234
   type: 'suite'
   ...
 # Subtest: prof-admin-api request bodies
     # Subtest: adminPasswordLogin sends a single JSON object (not double-stringified)
     ok 1 - adminPasswordLogin sends a single JSON object (not double-stringified)
       ---
-      duration_ms: 25.668113
+      duration_ms: 25.595895
       ...
     # Subtest: createProfTestUser preserves kind/name/city object fields
     ok 2 - createProfTestUser preserves kind/name/city object fields
       ---
-      duration_ms: 1.789587
+      duration_ms: 2.10464
       ...
     1..2
 ok 45 - prof-admin-api request bodies
   ---
-  duration_ms: 28.146017
+  duration_ms: 28.384863
   type: 'suite'
   ...
 # Subtest: prof-i-permissions (client)
     # Subtest: enables ledger when cash is toggled on
     ok 1 - enables ledger when cash is toggled on
       ---
-      duration_ms: 0.543046
+      duration_ms: 0.567013
       ...
     # Subtest: clears payout flags when ledger is toggled off
     ok 2 - clears payout flags when ledger is toggled off
       ---
-      duration_ms: 0.162224
+      duration_ms: 0.183763
       ...
     # Subtest: round-trips action ids
     ok 3 - round-trips action ids
       ---
-      duration_ms: 0.434078
+      duration_ms: 0.439254
       ...
     1..3
 ok 46 - prof-i-permissions (client)
   ---
-  duration_ms: 1.72017
+  duration_ms: 1.924935
   type: 'suite'
   ...
 # Subtest: profile-catalog-state
     # Subtest: uses organization catalog status when org exists
     ok 1 - uses organization catalog status when org exists
       ---
-      duration_ms: 0.539458
+      duration_ms: 0.516789
       ...
     # Subtest: allows submit for APPROVED when catalog draft pending
     ok 2 - allows submit for APPROVED when catalog draft pending
       ---
-      duration_ms: 0.113134
+      duration_ms: 0.119303
       ...
     # Subtest: allows submit for solo user in NEEDS_REVISION
     ok 3 - allows submit for solo user in NEEDS_REVISION
       ---
-      duration_ms: 0.078354
+      duration_ms: 0.095871
       ...
     1..3
 ok 47 - profile-catalog-state
   ---
-  duration_ms: 1.304331
+  duration_ms: 1.304797
   type: 'suite'
   ...
 # Subtest: validateProfileDraft
     # Subtest: rejects invalid representative name
     ok 1 - rejects invalid representative name
       ---
-      duration_ms: 0.548296
+      duration_ms: 0.547243
       ...
     # Subtest: requires branch address for store without org
     ok 2 - requires branch address for store without org
       ---
-      duration_ms: 0.140288
+      duration_ms: 0.14909
       ...
     1..2
 ok 48 - validateProfileDraft
   ---
-  duration_ms: 1.273799
+  duration_ms: 1.266336
   type: 'suite'
   ...
 # Subtest: processQrDecode
     # Subtest: emits once for a valid QR from an active scanner generation
     ok 1 - emits once for a valid QR from an active scanner generation
       ---
-      duration_ms: 0.542811
+      duration_ms: 0.55426
       ...
     # Subtest: ignores duplicate decode within dedup window
     ok 2 - ignores duplicate decode within dedup window
       ---
-      duration_ms: 0.172266
+      duration_ms: 0.165917
       ...
     # Subtest: ignores decode after scanner generation was closed
     ok 3 - ignores decode after scanner generation was closed
       ---
-      duration_ms: 0.074072
+      duration_ms: 0.073387
       ...
     1..3
 ok 49 - processQrDecode
   ---
-  duration_ms: 1.416891
+  duration_ms: 1.406537
   type: 'suite'
   ...
 # Subtest: QrScanner handler contract
     # Subtest: calls onCode exactly once before bumping generation on valid QR
     ok 1 - calls onCode exactly once before bumping generation on valid QR
       ---
-      duration_ms: 0.145319
+      duration_ms: 0.143733
       ...
     # Subtest: does not call onCode after scanner close
     ok 2 - does not call onCode after scanner close
       ---
-      duration_ms: 0.114616
+      duration_ms: 0.090887
       ...
     1..2
 ok 50 - QrScanner handler contract
   ---
-  duration_ms: 0.556216
+  duration_ms: 0.36965
   type: 'suite'
   ...
 # Subtest: remcard proxy transport checks
     # Subtest: requires a document ID for cabinet consents without weakening Origin
     ok 1 - requires a document ID for cabinet consents without weakening Origin
       ---
-      duration_ms: 1.194287
+      duration_ms: 1.200488
       ...
     # Subtest: preserves document binding and forwards a version mismatch without retry
     ok 2 - preserves document binding and forwards a version mismatch without retry
       ---
-      duration_ms: 33.723813
+      duration_ms: 32.566459
       ...
     # Subtest: normalizes paths and rejects traversal
     ok 3 - normalizes paths and rejects traversal
       ---
-      duration_ms: 0.22833
+      duration_ms: 0.228404
       ...
     # Subtest: allows only verified route/method pairs
     ok 4 - allows only verified route/method pairs
       ---
-      duration_ms: 2.175206
+      duration_ms: 1.708875
       ...
     # Subtest: forwards only allowlisted cookies
     ok 5 - forwards only allowlisted cookies
       ---
-      duration_ms: 0.1457
+      duration_ms: 0.134967
       ...
     # Subtest: rejects missing or foreign origins for mutating requests
     ok 6 - rejects missing or foreign origins for mutating requests
       ---
-      duration_ms: 0.090771
+      duration_ms: 0.080312
       ...
     # Subtest: detects statuses that must not include a body
     ok 7 - detects statuses that must not include a body
       ---
-      duration_ms: 0.110649
+      duration_ms: 0.107888
       ...
     # Subtest: allows only trusted redirect locations
     ok 8 - allows only trusted redirect locations
       ---
-      duration_ms: 0.394507
+      duration_ms: 0.395085
       ...
     # Subtest: rejects Location bypasses via backslash, protocol-relative, control chars, and userinfo
     ok 9 - rejects Location bypasses via backslash, protocol-relative, control chars, and userinfo
       ---
-      duration_ms: 0.287563
+      duration_ms: 0.326019
       ...
     # Subtest: rejects dot-segment Location normalization to protocol-relative paths
     ok 10 - rejects dot-segment Location normalization to protocol-relative paths
       ---
-      duration_ms: 0.311776
+      duration_ms: 0.358302
       ...
     # Subtest: filters upstream Set-Cookie names on responses
     ok 11 - filters upstream Set-Cookie names on responses
       ---
-      duration_ms: 0.134611
+      duration_ms: 0.138287
       ...
     # Subtest: buildProxyNextResponse never forwards disallowed Set-Cookie headers
     ok 12 - buildProxyNextResponse never forwards disallowed Set-Cookie headers
       ---
-      duration_ms: 0.234371
+      duration_ms: 0.259639
       ...
     # Subtest: proxies PDF bytes without text corruption
     ok 13 - proxies PDF bytes without text corruption
       ---
-      duration_ms: 9.607956
+      duration_ms: 11.962814
       ...
     # Subtest: preserves query strings on upstream requests
     ok 14 - preserves query strings on upstream requests
       ---
-      duration_ms: 2.422552
+      duration_ms: 2.091617
       ...
     # Subtest: forwards trusted redirect Location headers
     ok 15 - forwards trusted redirect Location headers
       ---
-      duration_ms: 2.125345
+      duration_ms: 1.923032
       ...
     # Subtest: drops external redirect Location headers
     ok 16 - drops external redirect Location headers
       ---
-      duration_ms: 1.981999
+      duration_ms: 2.989505
       ...
     # Subtest: builds no-body responses for 204 and 304
     ok 17 - builds no-body responses for 204 and 304
       ---
-      duration_ms: 2.49779
+      duration_ms: 2.608661
       ...
     # Subtest: forwards only allowlisted Set-Cookie headers from upstream
     ok 18 - forwards only allowlisted Set-Cookie headers from upstream
       ---
-      duration_ms: 2.932408
+      duration_ms: 4.451858
       ...
     # Subtest: forwards multiple Set-Cookie headers on logout
     ok 19 - forwards multiple Set-Cookie headers on logout
       ---
-      duration_ms: 2.707308
+      duration_ms: 43.83508
       ...
     # Subtest: blocks disallowed paths and foreign origins
     ok 20 - blocks disallowed paths and foreign origins
       ---
-      duration_ms: 0.199108
+      duration_ms: 0.239325
       ...
     # Subtest: rejects backend URLs with embedded credentials
     ok 21 - rejects backend URLs with embedded credentials
       ---
-      duration_ms: 0.123944
+      duration_ms: 0.141113
       ...
     # Subtest: requires both upstream Basic Auth env vars when one is set
     ok 22 - requires both upstream Basic Auth env vars when one is set
       ---
-      duration_ms: 0.116466
+      duration_ms: 0.134789
       ...
     # Subtest: sends upstream Basic Auth only from server env
     ok 23 - sends upstream Basic Auth only from server env
       ---
-      duration_ms: 2.870113
+      duration_ms: 2.270551
       ...
     # Subtest: proxies verify-code login with origin check and session cookie
     ok 24 - proxies verify-code login with origin check and session cookie
       ---
-      duration_ms: 3.586333
+      duration_ms: 8.117175
       ...
     # Subtest: requires Idempotency-Key for POST /api/store/order and forwards valid keys
     ok 25 - requires Idempotency-Key for POST /api/store/order and forwards valid keys
       ---
-      duration_ms: 3.15441
+      duration_ms: 3.234908
       ...
     # Subtest: times out hung upstream requests
     ok 26 - times out hung upstream requests
       ---
-      duration_ms: 15002.188867
+      duration_ms: 15001.306716
       ...
     1..26
 ok 51 - remcard proxy transport checks
   ---
-  duration_ms: 15080.949833
+  duration_ms: 15131.551796
   type: 'suite'
   ...
 # Subtest: shouldApplyPreviewResponse
     # Subtest: accepts the latest request id
     ok 1 - accepts the latest request id
       ---
-      duration_ms: 0.38783
+      duration_ms: 0.388493
       ...
     # Subtest: rejects stale responses
     ok 2 - rejects stale responses
       ---
-      duration_ms: 0.104221
+      duration_ms: 0.090428
       ...
     # Subtest: rejects aborted responses
     ok 3 - rejects aborted responses
       ---
-      duration_ms: 0.100209
+      duration_ms: 0.084758
       ...
     1..3
 ok 52 - shouldApplyPreviewResponse
   ---
-  duration_ms: 1.87636
+  duration_ms: 1.155248
   type: 'suite'
   ...
 # Subtest: isPreviewSessionAllowed
     # Subtest: accepts allowed preview sessions
     ok 1 - accepts allowed preview sessions
       ---
-      duration_ms: 0.155456
+      duration_ms: 0.111754
       ...
     # Subtest: rejects denied preview sessions
     ok 2 - rejects denied preview sessions
       ---
-      duration_ms: 0.074804
+      duration_ms: 0.066599
       ...
     1..2
 ok 53 - isPreviewSessionAllowed
   ---
-  duration_ms: 0.436164
+  duration_ms: 0.309108
   type: 'suite'
   ...
 # Subtest: validateOrderCreateResponse
     # Subtest: accepts a well-formed 201 payload
     ok 1 - accepts a well-formed 201 payload
       ---
-      duration_ms: 2.205807
+      duration_ms: 0.46072
       ...
     # Subtest: rejects empty body
     ok 2 - rejects empty body
       ---
-      duration_ms: 0.210756
+      duration_ms: 0.204083
       ...
     # Subtest: rejects malformed structure
     ok 3 - rejects malformed structure
       ---
-      duration_ms: 0.161663
+      duration_ms: 2.672653
       ...
     1..3
 ok 54 - validateOrderCreateResponse
   ---
-  duration_ms: 4.298002
+  duration_ms: 3.990348
   type: 'suite'
   ...
 # Subtest: reduceOrderSubmitState
     # Subtest: marks malformed 201 JSON payload as uncertain and blocks retry
     ok 1 - marks malformed 201 JSON payload as uncertain and blocks retry
       ---
-      duration_ms: 0.302638
+      duration_ms: 0.354805
       ...
     # Subtest: marks empty 201 body as uncertain
     ok 2 - marks empty 201 body as uncertain
       ---
-      duration_ms: 0.084107
+      duration_ms: 0.091447
       ...
     # Subtest: accepts valid 201 and shows success
     ok 3 - accepts valid 201 and shows success
       ---
-      duration_ms: 0.071983
+      duration_ms: 0.072875
       ...
     # Subtest: keeps form editable on validation 400 without marking uncertain
     ok 4 - keeps form editable on validation 400 without marking uncertain
       ---
-      duration_ms: 0.174034
+      duration_ms: 0.176574
       ...
     # Subtest: marks 504 as uncertain without second POST
     ok 5 - marks 504 as uncertain without second POST
       ---
-      duration_ms: 0.184434
+      duration_ms: 0.189175
       ...
     # Subtest: 409 sets conflict state without clearing key semantics
     ok 6 - 409 sets conflict state without clearing key semantics
       ---
-      duration_ms: 0.186203
+      duration_ms: 0.234218
       ...
     # Subtest: 409 after reload: conflict persists, no normal confirm
     ok 7 - 409 after reload: conflict persists, no normal confirm
       ---
-      duration_ms: 0.131237
+      duration_ms: 0.14683
       ...
     # Subtest: retry 400 keeps uncertain (unknown_persist)
     ok 8 - retry 400 keeps uncertain (unknown_persist)
       ---
-      duration_ms: 0.089273
+      duration_ms: 0.091443
       ...
     # Subtest: allows retry check when uncertain
     ok 9 - allows retry check when uncertain
       ---
-      duration_ms: 0.057483
+      duration_ms: 0.050858
       ...
     # Subtest: treats 201 with invalid JSON error as uncertain
     ok 10 - treats 201 with invalid JSON error as uncertain
       ---
-      duration_ms: 0.07264
+      duration_ms: 0.070031
       ...
     # Subtest: status 0 on first POST marks uncertain without clearing key semantics
     ok 11 - status 0 on first POST marks uncertain without clearing key semantics
       ---
-      duration_ms: 0.05219
+      duration_ms: 0.0546
       ...
     # Subtest: 401 on retry preserves uncertain state
     ok 12 - 401 on retry preserves uncertain state
       ---
-      duration_ms: 0.049444
+      duration_ms: 0.050284
       ...
     1..12
 ok 55 - reduceOrderSubmitState
   ---
-  duration_ms: 1.792354
+  duration_ms: 1.953504
   type: 'suite'
   ...
 # Subtest: settlementAccrualHref
     # Subtest: includes accrualType in detail URL
     ok 1 - includes accrualType in detail URL
       ---
-      duration_ms: 0.533698
+      duration_ms: 0.457826
       ...
     1..1
 ok 56 - settlementAccrualHref
   ---
-  duration_ms: 2.318054
+  duration_ms: 1.006392
   type: 'suite'
   ...
 # Subtest: groupObligationsByCounterparty
     # Subtest: groups by counterpartyId and sums amounts
     ok 1 - groups by counterpartyId and sums amounts
       ---
-      duration_ms: 5.716058
+      duration_ms: 5.948741
       ...
     # Subtest: keeps partners separate even when names match
     ok 2 - keeps partners separate even when names match
       ---
-      duration_ms: 0.15504
+      duration_ms: 0.163588
       ...
     1..2
 ok 57 - groupObligationsByCounterparty
   ---
-  duration_ms: 6.46137
+  duration_ms: 6.707102
   type: 'suite'
   ...
 # Subtest: mapSettlementsToAccrualRows
     # Subtest: maps both directions for accrual detail merge
     ok 1 - maps both directions for accrual detail merge
       ---
-      duration_ms: 0.254525
+      duration_ms: 0.241664
       ...
     1..1
 ok 58 - mapSettlementsToAccrualRows
   ---
-  duration_ms: 0.332159
+  duration_ms: 0.316187
   type: 'suite'
   ...
 # Subtest: mergeAccrualRowsById
     # Subtest: adds settlement-only accruals without duplicating wallet rows
     ok 1 - adds settlement-only accruals without duplicating wallet rows
       ---
-      duration_ms: 0.24145
+      duration_ms: 0.196618
       ...
     1..1
 ok 59 - mergeAccrualRowsById
   ---
-  duration_ms: 0.315224
+  duration_ms: 0.264799
   type: 'suite'
   ...
 # Subtest: site opengraph
     # Subtest: builds home metadata with absolute image URL and twitter card
     ok 1 - builds home metadata with absolute image URL and twitter card
       ---
-      duration_ms: 0.66901
+      duration_ms: 0.668447
       ...
     # Subtest: builds login metadata with login page url
     ok 2 - builds login metadata with login page url
       ---
-      duration_ms: 0.141043
+      duration_ms: 0.132481
       ...
     # Subtest: site image url differs from invite personal preview image
     ok 3 - site image url differs from invite personal preview image
       ---
-      duration_ms: 0.091532
+      duration_ms: 0.090107
       ...
     # Subtest: invite metadata still uses invite image and personal title
     ok 4 - invite metadata still uses invite image and personal title
       ---
-      duration_ms: 0.291024
+      duration_ms: 0.271048
       ...
     1..4
 ok 60 - site opengraph
   ---
-  duration_ms: 1.860874
+  duration_ms: 1.774293
   type: 'suite'
   ...
 # Subtest: store-order-attempt
     # Subtest: createStoreOrderAttempt persists before POST
     ok 1 - createStoreOrderAttempt persists before POST
       ---
-      duration_ms: 1.183634
+      duration_ms: 1.969661
       ...
     # Subtest: prepareStoreOrderRetry reuses stored key+body
     ok 2 - prepareStoreOrderRetry reuses stored key+body
       ---
-      duration_ms: 0.279624
+      duration_ms: 0.312986
       ...
     # Subtest: does not overwrite attempt when form amount changes 1000 → 2000
     ok 3 - does not overwrite attempt when form amount changes 1000 → 2000
       ---
-      duration_ms: 0.313978
+      duration_ms: 0.346417
       ...
     # Subtest: persists conflict after 409 and blocks retry
     ok 4 - persists conflict after 409 and blocks retry
       ---
-      duration_ms: 0.639076
+      duration_ms: 0.656167
       ...
     # Subtest: does not expose foreign-user attempts
     ok 5 - does not expose foreign-user attempts
       ---
-      duration_ms: 0.21166
+      duration_ms: 0.215194
       ...
     # Subtest: treats in_flight after reload as unknown
     ok 6 - treats in_flight after reload as unknown
       ---
-      duration_ms: 0.134134
+      duration_ms: 0.137035
       ...
     # Subtest: releaseStoreOrderAttemptForEdit clears after validation failure
     ok 7 - releaseStoreOrderAttemptForEdit clears after validation failure
       ---
-      duration_ms: 0.186006
+      duration_ms: 0.187884
       ...
     # Subtest: status 0 is uncertain on first POST and unknown_persist on retry
     ok 8 - status 0 is uncertain on first POST and unknown_persist on retry
       ---
-      duration_ms: 0.16468
+      duration_ms: 0.168779
       ...
     # Subtest: classifyStoreOrderPostResponse distinguishes first 400 vs retry 400
     ok 9 - classifyStoreOrderPostResponse distinguishes first 400 vs retry 400
       ---
-      duration_ms: 0.186187
+      duration_ms: 0.905509
       ...
     # Subtest: clears attempt on new purchase
     ok 10 - clears attempt on new purchase
       ---
-      duration_ms: 0.745816
+      duration_ms: 0.236786
       ...
     1..10
 ok 61 - store-order-attempt
   ---
-  duration_ms: 4.875058
+  duration_ms: 6.015924
   type: 'suite'
   ...
 # Subtest: parseStoreOrderIdempotencyKey
     # Subtest: accepts UUID keys
     ok 1 - accepts UUID keys
       ---
-      duration_ms: 0.480209
+      duration_ms: 0.463665
       ...
     # Subtest: rejects empty and invalid keys
     ok 2 - rejects empty and invalid keys
       ---
-      duration_ms: 0.127728
+      duration_ms: 0.129729
       ...
     1..2
 ok 62 - parseStoreOrderIdempotencyKey
   ---
-  duration_ms: 1.197567
+  duration_ms: 1.160167
   type: 'suite'
   ...
 # Subtest: resolveStoreOrderIdempotencyKey
     # Subtest: requires key only for POST /api/store/order
     ok 1 - requires key only for POST /api/store/order
       ---
-      duration_ms: 0.54276
+      duration_ms: 0.542522
       ...
     # Subtest: forwards optional key for bonus payout POST
     ok 2 - forwards optional key for bonus payout POST
       ---
-      duration_ms: 0.148153
+      duration_ms: 0.116931
       ...
     1..2
 ok 63 - resolveStoreOrderIdempotencyKey
   ---
-  duration_ms: 0.813641
+  duration_ms: 0.769248
   type: 'suite'
   ...
 # Subtest: term change labels
     # Subtest: shows proposer waiting copy for initiator
     ok 1 - shows proposer waiting copy for initiator
       ---
-      duration_ms: 0.560377
+      duration_ms: 0.567055
       ...
     # Subtest: shows counterparty proposal for responder
     ok 2 - shows counterparty proposal for responder
       ---
-      duration_ms: 0.107731
+      duration_ms: 0.131035
       ...
     1..2
 ok 64 - term change labels
   ---
-  duration_ms: 1.225447
+  duration_ms: 1.333833
   type: 'suite'
   ...
 1..64
@@ -1698,7 +1698,7 @@ ok 64 - term change labels
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 17105.566906
+# duration_ms 17229.877322
 
 > remcard-partner-platform@0.1.0 test:component
 > vitest run src/components/auth/LoginExperience.test.tsx src/components/auth/AuthFlow.test.tsx
@@ -1706,11 +1706,11 @@ ok 64 - term change labels
 
  RUN  v3.2.7 /agent/repos/remcard-partner-platform
 
- ✓ src/components/auth/LoginExperience.test.tsx (5 tests) 98ms
- ✓ src/components/auth/AuthFlow.test.tsx (11 tests) 459ms
+ ✓ src/components/auth/LoginExperience.test.tsx (5 tests) 97ms
+ ✓ src/components/auth/AuthFlow.test.tsx (11 tests) 469ms
 
  Test Files  2 passed (2)
       Tests  16 passed (16)
-   Start at  11:29:51
-   Duration  1.21s (transform 188ms, setup 274ms, collect 279ms, tests 557ms, environment 566ms, prepare 107ms)
+   Start at  11:30:41
+   Duration  1.22s (transform 192ms, setup 277ms, collect 295ms, tests 567ms, environment 531ms, prepare 111ms)
 
