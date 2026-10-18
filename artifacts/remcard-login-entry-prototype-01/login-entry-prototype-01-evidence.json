@@ -2,9 +2,9 @@
   "status": "NOT_VERIFIED",
   "task": "LOGIN-ENTRY-PROTOTYPE-01.2",
   "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
-  "codeSha": "",
-  "runnerSha": "",
-  "artifactTipSha": "",
+  "codeSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
+  "runnerSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
+  "artifactTipSha": "6e6e48b47c948181723a726e570a89f3b000abe0",
   "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
   "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
   "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
@@ -25,10 +25,10 @@
   "runtimePin": {
     "verified": true,
     "mode": "spawned-next-start",
-    "origin": "http://127.0.0.1:3046",
-    "codeSha": "",
-    "BUILD_ID": "3BIYD8fIBQ3UCLiYsJujJ",
-    "probedBuildId": "3BIYD8fIBQ3UCLiYsJujJ"
+    "origin": "http://127.0.0.1:3047",
+    "codeSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
+    "BUILD_ID": "3s5GChbiF3dko8oGKSYlA",
+    "probedBuildId": "3s5GChbiF3dko8oGKSYlA"
   },
   "tests": {
     "authComponents": {
