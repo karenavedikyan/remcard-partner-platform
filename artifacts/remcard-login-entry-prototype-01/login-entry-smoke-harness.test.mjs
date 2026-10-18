@@ -3,9 +3,13 @@ import { describe, it } from "node:test";
 import {
   deriveAcceptanceStatus,
   evaluateBuildVerified,
+  evaluateHarnessUnitRecord,
+  evaluateMandatoryUnitGates,
+  evaluatePinnedBuildForSmoke,
   evaluateRuntimePin,
   fixtureMaxIdForTag,
   isFullGitSha,
+  LOGIN_ENTRY_PRODUCT_PIN_SHA,
   mergeDisposableErrors,
   resolveDisposableDatabaseEnv,
   shouldRunFixtureCleanup,
@@ -123,6 +127,41 @@ describe("login-entry smoke harness", () => {
     const merged = mergeDisposableErrors(new Error("seed stdout not JSON"), new Error("cleanup exit 2"));
     assert.match(merged.message, /seed stdout not JSON/);
     assert.match(merged.message, /cleanup:/);
+  });
+
+  it("treats skipped harness as NOT_RUN and blocks READY", () => {
+    const harness = evaluateHarnessUnitRecord({ skipped: true, reason: "LOGIN_ENTRY_SKIP_HARNESS=1" });
+    assert.equal(harness.status, "NOT_RUN");
+    assert.equal(harness.ok, false);
+    const gates = evaluateMandatoryUnitGates({
+      authComponents: { status: 0 },
+      harnessUnit: { skipped: true, reason: "LOGIN_ENTRY_SKIP_HARNESS=1" },
+    });
+    assert.equal(gates.componentTestsOk, false);
+    assert.equal(
+      deriveAcceptanceStatus({
+        componentTestsOk: gates.componentTestsOk,
+        smokeOk: true,
+        cleanupOk: true,
+        buildVerified: true,
+        runtimeVerified: true,
+      }),
+      "NOT_VERIFIED",
+    );
+  });
+
+  it("accepts pinned build report for product SHA with runner-only artifact delta", () => {
+    const build = {
+      command: "env -u R06_NEXT_DIST_DIR npm run build",
+      sourceSha: LOGIN_ENTRY_PRODUCT_PIN_SHA,
+      BUILD_ID: "3s5GChbiF3dko8oGKSYlA",
+      exitCode: 0,
+    };
+    const r = evaluatePinnedBuildForSmoke(build, {
+      productPinSha: LOGIN_ENTRY_PRODUCT_PIN_SHA,
+      runnerSha: LOGIN_ENTRY_PRODUCT_PIN_SHA,
+    });
+    assert.equal(r.ok, true);
   });
 
   it("rejects cleanup remaining object coercion", () => {

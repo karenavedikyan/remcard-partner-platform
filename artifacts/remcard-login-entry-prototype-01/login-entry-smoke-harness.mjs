@@ -11,6 +11,9 @@ import { evaluateCleanupChildResult } from "../remcard-login-layout-01/login-lay
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
 
+/** Product UI/build pin for LOGIN-ENTRY-PROTOTYPE-01.3 acceptance. */
+export const LOGIN_ENTRY_PRODUCT_PIN_SHA = "5cb765bb03b1030568b9f4be8f8290b974a2089b";
+
 export { assertDisposableDatabaseUrl, evaluateCleanupChildResult };
 
 export function gitSha(cwd = ROOT) {
@@ -81,6 +84,98 @@ export function evaluateBuildVerified(build) {
   return { ok: true };
 }
 
+export function productTreeDeltaPaths(productPinSha, runnerSha, cwd = ROOT) {
+  if (productPinSha === runnerSha) return [];
+  const r = spawnSync("git", ["diff", "--name-only", productPinSha, runnerSha], {
+    cwd,
+    encoding: "utf8",
+  });
+  return (r.stdout ?? "")
+    .trim()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/** Runner-only followup: diffs limited to login-entry artifact dir. */
+export function isRunnerOnlyFollowup(productPinSha, runnerSha, cwd = ROOT) {
+  const delta = productTreeDeltaPaths(productPinSha, runnerSha, cwd);
+  return delta.every((p) => p.startsWith("artifacts/remcard-login-entry-prototype-01/"));
+}
+
+export function evaluatePinnedBuildForSmoke(build, { productPinSha, runnerSha, cwd = ROOT }) {
+  if (!build) return { ok: false, reason: "no build record" };
+  if (build.exitCode !== 0) return { ok: false, reason: `build exitCode ${build.exitCode}` };
+  if (!build.BUILD_ID) return { ok: false, reason: "missing BUILD_ID in build report" };
+  if (!isFullGitSha(build.sourceSha) || build.sourceSha !== productPinSha) {
+    return { ok: false, reason: "build report sourceSha !== product pin SHA" };
+  }
+  if (runnerSha !== productPinSha && !isRunnerOnlyFollowup(productPinSha, runnerSha, cwd)) {
+    return { ok: false, reason: "runner tip changes product tree beyond login-entry artifacts" };
+  }
+  return { ok: true, mode: "pinned-build-report", productPinSha, runnerSha };
+}
+
+export function evaluateHarnessUnitRecord(record) {
+  if (record?.skipped) {
+    return {
+      ok: false,
+      skipped: true,
+      status: "NOT_RUN",
+      reason: record.reason ?? "harness skipped",
+    };
+  }
+  const exitCode = record?.status ?? record?.exitCode ?? null;
+  return {
+    ok: exitCode === 0,
+    skipped: false,
+    status: exitCode === 0 ? "PASS" : "FAIL",
+    exitCode,
+  };
+}
+
+export function evaluateAuthComponentRecord(record) {
+  if (record?.skipped) {
+    return { ok: false, skipped: true, status: "NOT_RUN", reason: record.reason ?? "skipped" };
+  }
+  if (record?.imported) {
+    if (!record.importValid) {
+      return {
+        ok: false,
+        imported: true,
+        status: "NOT_VERIFIED",
+        reason: record.importReason ?? "imported component report invalid",
+      };
+    }
+    return { ok: true, imported: true, status: "PASS_IMPORTED", exitCode: 0 };
+  }
+  const exitCode = record?.status ?? record?.exitCode ?? null;
+  return { ok: exitCode === 0, skipped: false, status: exitCode === 0 ? "PASS" : "FAIL", exitCode };
+}
+
+export function validateImportedComponentReport(report, productPinSha, runnerSha, cwd = ROOT) {
+  if (!report || report.exitCode !== 0) {
+    return { ok: false, reason: "component report missing or exitCode !== 0" };
+  }
+  if (!isFullGitSha(report.sourceSha) || report.sourceSha !== productPinSha) {
+    return { ok: false, reason: "component report sourceSha !== product pin SHA" };
+  }
+  if (runnerSha !== productPinSha && !isRunnerOnlyFollowup(productPinSha, runnerSha, cwd)) {
+    return { ok: false, reason: "product tree changed since component report" };
+  }
+  return { ok: true };
+}
+
+export function evaluateMandatoryUnitGates({ authComponents, harnessUnit }) {
+  const auth = evaluateAuthComponentRecord(authComponents);
+  const harness = evaluateHarnessUnitRecord(harnessUnit);
+  return {
+    auth,
+    harness,
+    componentTestsOk: auth.ok && harness.ok,
+  };
+}
+
 export function evaluateRuntimePin({
   mode,
   runnerSha,
@@ -88,18 +183,20 @@ export function evaluateRuntimePin({
   probedBuildId,
   origin,
 }) {
-  if (mode !== "spawned-next-start") {
-    return { verified: false, reason: "runtime must be spawned-next-start from this runner build" };
+  if (mode !== "spawned-next-start" && mode !== "existing-canonical-listener") {
+    return { verified: false, reason: "runtime must be spawned or reused canonical listener" };
   }
   if (!isFullGitSha(runnerSha)) {
     return { verified: false, reason: "runnerSha is not a full 40-char git SHA" };
   }
-  const buildCheck = evaluateBuildVerified(build);
-  if (!buildCheck.ok) {
-    return { verified: false, reason: buildCheck.reason };
+  if (build.exitCode !== 0) {
+    return { verified: false, reason: `build exitCode ${build.exitCode}` };
   }
-  if (build.sourceSha !== runnerSha) {
-    return { verified: false, reason: "build.sourceSha !== runnerSha" };
+  if (!build.BUILD_ID) {
+    return { verified: false, reason: "missing BUILD_ID in build record" };
+  }
+  if (!isFullGitSha(runnerSha) || build.sourceSha !== runnerSha) {
+    return { verified: false, reason: "build.sourceSha !== runnerSha (product pin)" };
   }
   if (!probedBuildId) {
     return { verified: false, reason: "could not probe BUILD_ID from runtime HTTP" };
@@ -139,10 +236,11 @@ export function deriveAcceptanceStatus({
   cleanupOk,
   buildVerified,
   runtimeVerified,
+  disposableRequired = true,
 }) {
   if (!componentTestsOk) return "NOT_VERIFIED";
   if (!buildVerified) return "NOT_VERIFIED";
   if (!runtimeVerified) return "NOT_VERIFIED";
-  if (!smokeOk || !cleanupOk) return "NOT_VERIFIED";
+  if (disposableRequired && (!smokeOk || !cleanupOk)) return "NOT_VERIFIED";
   return "READY_FOR_REVIEW";
 }

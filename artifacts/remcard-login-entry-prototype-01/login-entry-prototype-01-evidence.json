@@ -1,10 +1,11 @@
 {
   "status": "NOT_VERIFIED",
-  "task": "LOGIN-ENTRY-PROTOTYPE-01.2",
+  "task": "LOGIN-ENTRY-PROTOTYPE-01.3",
   "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
   "codeSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
-  "runnerSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
-  "artifactTipSha": "6e6e48b47c948181723a726e570a89f3b000abe0",
+  "runnerSha": "60195732565ea693aac6cca4c31d499b9778f354",
+  "artifactTipSha": "60195732565ea693aac6cca4c31d499b9778f354",
+  "productPinSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
   "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
   "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
   "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
@@ -18,17 +19,21 @@
     "stdoutBytes": 5251,
     "stderrBytes": 0,
     "recordedAt": "2026-10-18T21:04:26.625Z",
+    "acceptanceOnly": true,
+    "imported": true,
+    "logFile": "artifacts/remcard-login-entry-prototype-01/login-entry-build.log",
     "verified": true,
     "verifyReason": null,
-    "logFile": "artifacts/remcard-login-entry-prototype-01/login-entry-build.log"
+    "pinMode": "pinned-build-report"
   },
   "runtimePin": {
-    "verified": true,
+    "verified": false,
     "mode": "spawned-next-start",
-    "origin": "http://127.0.0.1:3047",
-    "codeSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
-    "BUILD_ID": "3s5GChbiF3dko8oGKSYlA",
-    "probedBuildId": "3s5GChbiF3dko8oGKSYlA"
+    "reason": "loopback port 3040 already in use (foreign listener left intact)",
+    "stage": "bind",
+    "probedBuildId": null,
+    "expectedBuildId": "3s5GChbiF3dko8oGKSYlA",
+    "origin": null
   },
   "tests": {
     "authComponents": {
@@ -36,199 +41,42 @@
       "exitCode": 0,
       "signal": null,
       "spawnError": null,
-      "stdoutBytes": 0,
-      "stderrBytes": 0
+      "stdoutBytes": 428,
+      "stderrBytes": 0,
+      "evaluation": {
+        "ok": true,
+        "skipped": false,
+        "status": "PASS",
+        "exitCode": 0
+      }
     },
     "harnessUnit": {
       "command": "node --test artifacts/remcard-login-entry-prototype-01/login-entry-smoke-harness.test.mjs",
       "exitCode": 0,
       "signal": null,
       "spawnError": null,
-      "stdoutBytes": 2059,
-      "stderrBytes": 0
+      "stdoutBytes": 3341,
+      "stderrBytes": 0,
+      "evaluation": {
+        "ok": true,
+        "skipped": false,
+        "status": "PASS",
+        "exitCode": 0
+      }
     },
     "disposableLogin": {
       "status": "NOT_VERIFIED",
-      "reason": "skipped (LOGIN_ENTRY_SKIP_DISPOSABLE=1); full chain not re-run in this invocation"
+      "reason": "not run",
+      "stage": "not_started"
     },
     "partialSeedCleanup": {
-      "status": "PASS",
-      "tag": "login-entry-partial-1792357423704",
-      "maxId": "881820376977",
-      "cleanup": {
-        "mock": true,
-        "tag": "login-entry-partial-1792357423704",
-        "publicId": "pub-login-entry-partial-1792357423704",
-        "deleted": {
-          "users": 1,
-          "authAccounts": 1,
-          "consents": 2,
-          "botLoginCodes": 1
-        },
-        "remaining": {
-          "users": 0,
-          "authAccounts": 0,
-          "consents": 0,
-          "botLoginCodes": 0
-        }
-      },
-      "partialSeedRegression": true,
-      "simulatedPrimaryError": "partial-seed inject: refuse valid JSON (simulated malformed stdout handling)"
+      "status": "NOT_VERIFIED",
+      "reason": "not run"
     },
-    "smokeError": null
+    "smokeError": "loopback port 3040 already in use (foreign listener left intact)"
   },
   "screenshots": {
-    "pairCount": 7,
-    "pairs": [
-      {
-        "state": "provider",
-        "viewport": "375",
-        "theme": "dark",
-        "ref": "ref-provider-375-dark.png",
-        "impl": "impl-provider-375-dark.png"
-      },
-      {
-        "state": "provider",
-        "viewport": "320",
-        "theme": "dark",
-        "ref": "ref-provider-320-dark.png",
-        "impl": "impl-provider-320-dark.png"
-      },
-      {
-        "state": "provider",
-        "viewport": "375",
-        "theme": "light",
-        "ref": "ref-provider-375-light.png",
-        "impl": "impl-provider-375-light.png"
-      },
-      {
-        "state": "provider",
-        "viewport": "320",
-        "theme": "light",
-        "ref": "ref-provider-320-light.png",
-        "impl": "impl-provider-320-light.png"
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "320",
-        "theme": "dark",
-        "ref": "ref-admin-modal-320-dark.png",
-        "impl": "impl-admin-modal-320-dark.png",
-        "refException": null
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "320",
-        "theme": "light",
-        "ref": "ref-admin-modal-320-light.png",
-        "impl": "impl-admin-modal-320-light.png",
-        "refException": null
-      },
-      {
-        "state": "admin-modal",
-        "viewport": "375",
-        "theme": "light",
-        "ref": "ref-admin-modal-375-light.png",
-        "impl": "impl-admin-modal-375-light.png",
-        "refException": null
-      }
-    ],
-    "visualMetrics": [
-      {
-        "provider": "max",
-        "theme": "dark",
-        "contrast": 7.5,
-        "styles": {
-          "color": "rgb(39, 27, 26)",
-          "backgroundColor": "rgb(244, 147, 145)",
-          "borderColor": "rgb(244, 147, 145)"
-        }
-      },
-      {
-        "provider": "telegram",
-        "theme": "dark",
-        "contrast": 13.73,
-        "styles": {
-          "color": "rgb(240, 241, 236)",
-          "backgroundColor": "rgb(32, 37, 32)",
-          "borderColor": "rgb(57, 64, 56)"
-        }
-      },
-      {
-        "provider": "max",
-        "theme": "dark",
-        "contrast": 7.5,
-        "styles": {
-          "color": "rgb(39, 27, 26)",
-          "backgroundColor": "rgb(244, 147, 145)",
-          "borderColor": "rgb(244, 147, 145)"
-        }
-      },
-      {
-        "provider": "telegram",
-        "theme": "dark",
-        "contrast": 13.73,
-        "styles": {
-          "color": "rgb(240, 241, 236)",
-          "backgroundColor": "rgb(32, 37, 32)",
-          "borderColor": "rgb(57, 64, 56)"
-        }
-      },
-      {
-        "provider": "max",
-        "theme": "light",
-        "contrast": 5.75,
-        "styles": {
-          "color": "rgb(255, 255, 255)",
-          "backgroundColor": "rgb(193, 43, 47)",
-          "borderColor": "rgb(193, 43, 47)"
-        }
-      },
-      {
-        "provider": "telegram",
-        "theme": "light",
-        "contrast": 14.79,
-        "styles": {
-          "color": "rgb(37, 41, 35)",
-          "backgroundColor": "rgb(255, 255, 255)",
-          "borderColor": "rgb(229, 229, 223)"
-        }
-      },
-      {
-        "provider": "max",
-        "theme": "light",
-        "contrast": 5.75,
-        "styles": {
-          "color": "rgb(255, 255, 255)",
-          "backgroundColor": "rgb(193, 43, 47)",
-          "borderColor": "rgb(193, 43, 47)"
-        }
-      },
-      {
-        "provider": "telegram",
-        "theme": "light",
-        "contrast": 14.79,
-        "styles": {
-          "color": "rgb(37, 41, 35)",
-          "backgroundColor": "rgb(255, 255, 255)",
-          "borderColor": "rgb(229, 229, 223)"
-        }
-      },
-      {
-        "viewport": 320,
-        "passwordRight": 295
-      },
-      {
-        "viewport": 320,
-        "passwordRight": 295
-      },
-      {
-        "viewport": 375,
-        "passwordRight": 247
-      }
-    ],
-    "note": "CAPTURED != visual PASS; impl shots gated on computed contrast/layout metrics.",
-    "targetSpec": "provider:375:dark,provider:320:dark,provider:375:light,provider:320:light,admin-modal:320:dark,admin-modal:320:light,admin-modal:375:light"
+    "status": "skipped"
   },
   "notPublished": true,
   "notMerged": true

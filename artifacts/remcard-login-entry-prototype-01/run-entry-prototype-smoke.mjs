@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LOGIN-ENTRY-PROTOTYPE-01.2 acceptance runner (fail-closed build/runtime).
+ * LOGIN-ENTRY-PROTOTYPE acceptance runner (fail-closed build/runtime, safe lifecycle).
  */
 import { chromium } from "playwright";
 import { spawn, spawnSync } from "node:child_process";
@@ -15,15 +15,26 @@ import {
   deriveAcceptanceStatus,
   evaluateBuildVerified,
   evaluateCleanupChildResult,
+  evaluateMandatoryUnitGates,
+  evaluatePinnedBuildForSmoke,
   evaluateRuntimePin,
   fixtureMaxIdForTag,
   gitSha,
+  LOGIN_ENTRY_PRODUCT_PIN_SHA,
   loadEnvFile,
   mergeDisposableErrors,
   resolveDisposableDatabaseEnv,
   shouldRunFixtureCleanup,
   spawnResultRecord,
+  validateImportedComponentReport,
 } from "./login-entry-smoke-harness.mjs";
+import {
+  isLoopbackPortOpen,
+  parseLoopbackPortFromUrl,
+  resolveLoopbackListenPort,
+  spawnOwnedNextStart,
+  stopOwnedServer,
+} from "./login-entry-process-lifecycle.mjs";
 import { goToOtpStep, goToProviderStep } from "./login-entry-capture.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -96,31 +107,71 @@ function runFixtureCleanup(tag, maxId, runtimeEnv) {
   );
 }
 
-function releasePort(port) {
-  spawnSync("bash", ["-lc", `lsof -ti :${port} | xargs -r kill -9; fuser -k ${port}/tcp 2>/dev/null || true`], {
-    stdio: "ignore",
-  });
+async function bindCanonicalPlatformPort(runtimeEnv, { requireExactPort = true } = {}) {
+  const appUrl = runtimeEnv?.NEXT_PUBLIC_APP_URL?.trim();
+  if (!appUrl) {
+    return { ok: false, reason: "runtime.env missing NEXT_PUBLIC_APP_URL" };
+  }
+  const preferredPort = parseLoopbackPortFromUrl(appUrl);
+  if (preferredPort == null) {
+    return { ok: false, reason: `NEXT_PUBLIC_APP_URL is not loopback: ${appUrl}` };
+  }
+  const resolved = await resolveLoopbackListenPort({ preferredPort, requireExactPort });
+  if (!resolved.ok) return resolved;
+  if (resolved.substituted && requireExactPort) {
+    return {
+      ok: false,
+      reason: `canonical port ${preferredPort} busy; origin ${appUrl} cannot be substituted`,
+    };
+  }
+  return {
+    ok: true,
+    port: resolved.port,
+    appUrl,
+    substituted: Boolean(resolved.substituted),
+  };
 }
 
-function startNextStart(port, extraEnv = {}) {
-  releasePort(port);
-  const child = spawn(
-    "bash",
-    ["-lc", `env -u R06_NEXT_DIST_DIR npx next start -p ${port} -H 127.0.0.1`],
-    {
-      cwd: ROOT,
-      env: {
-        ...process.env,
-        ...extraEnv,
-        NODE_ENV: "production",
-        PORT: String(port),
-      },
-      stdio: "ignore",
-      detached: true,
-    },
-  );
-  child.unref();
-  return child;
+async function startOwnedNextOnCanonicalPort(runtimeEnv, { expectedBuildId = null } = {}) {
+  const appUrl = runtimeEnv?.NEXT_PUBLIC_APP_URL?.trim();
+  const preferredPort = appUrl ? parseLoopbackPortFromUrl(appUrl) : null;
+  if (preferredPort != null && (await isLoopbackPortOpen(preferredPort))) {
+    if (expectedBuildId) {
+      const probed = await probeRuntimeBuildId(appUrl, expectedBuildId);
+      if (probed === expectedBuildId) {
+        return {
+          ok: true,
+          handle: null,
+          origin: appUrl,
+          port: preferredPort,
+          reusedExistingListener: true,
+        };
+      }
+    }
+    return {
+      ok: false,
+      reason: `loopback port ${preferredPort} already in use (foreign listener left intact)`,
+      handle: null,
+      origin: null,
+      stage: "bind",
+    };
+  }
+
+  const binding = await bindCanonicalPlatformPort(runtimeEnv, { requireExactPort: true });
+  if (!binding.ok) {
+    return { ok: false, reason: binding.reason, handle: null, origin: null, stage: "bind" };
+  }
+  const spawnEnv = {
+    ...process.env,
+    ...runtimeEnv,
+    NEXT_PUBLIC_APP_URL: binding.appUrl,
+    PORT: String(binding.port),
+  };
+  const handle = spawnOwnedNextStart({ port: binding.port, cwd: ROOT, env: spawnEnv });
+  if (handle.child?.spawnError) {
+    return { ok: false, reason: handle.child.spawnError.message, handle: null, origin: null };
+  }
+  return { ok: true, handle, origin: binding.appUrl, port: binding.port };
 }
 
 async function waitForHttp(url, timeoutMs = 120_000) {
@@ -375,6 +426,15 @@ function loadJsonReport(filePath) {
 
 async function main() {
   delete process.env.R06_NEXT_DIST_DIR;
+  const finalSmoke = process.argv.includes("--final-smoke-01-3");
+  if (finalSmoke) {
+    process.env.LOGIN_ENTRY_SKIP_CAPTURE = "1";
+    process.env.LOGIN_ENTRY_SKIP_DISPOSABLE = "0";
+    process.env.LOGIN_ENTRY_SKIP_HARNESS = "0";
+    delete process.env.LOGIN_ENTRY_SKIP_COMPONENT_TESTS;
+    process.env.LOGIN_ENTRY_ACCEPTANCE_ONLY = "1";
+  }
+
   const runnerSha = gitSha(ROOT);
   const navigatorSha = existsSync(NAV) ? gitSha(NAV) : null;
   const runtimeEnv = loadEnvFile(RUNTIME_ENV) ?? {};
@@ -417,22 +477,22 @@ async function main() {
       console.error(JSON.stringify({ status: "NOT_VERIFIED", reason: disposableResolved.reason }));
       process.exit(1);
     }
-    const chainPort = Number(
-      process.env.LOGIN_ENTRY_IMPL_PORT || runtimeEnv.ADMIN_TEST_PLATFORM_PORT || 3040,
-    );
-    const chainOrigin = `http://127.0.0.1:${chainPort}`;
-    releasePort(chainPort);
-    startNextStart(chainPort, {
-      ...runtimeEnv,
-      NEXT_PUBLIC_APP_URL: chainOrigin,
-      PORT: String(chainPort),
-      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: "1",
-    });
+    let exitCode = 1;
+    let owned = null;
+    let chainOrigin = null;
     try {
-      await waitForHttp(`${chainOrigin}/login`);
-      const chainResult = await runDisposableChain(chainOrigin, runtimeEnv);
-      console.log(JSON.stringify({ status: "PASS", origin: chainOrigin, ...chainResult }, null, 2));
-      process.exit(0);
+      const started = await startOwnedNextOnCanonicalPort(runtimeEnv);
+      if (!started.ok) {
+        console.error(JSON.stringify({ status: "NOT_VERIFIED", stage: "bind", reason: started.reason }));
+        exitCode = 1;
+      } else {
+        owned = started.handle;
+        chainOrigin = started.origin;
+        await waitForHttp(`${chainOrigin}/login`);
+        const chainResult = await runDisposableChain(chainOrigin, runtimeEnv);
+        console.log(JSON.stringify({ status: "PASS", origin: chainOrigin, ...chainResult }, null, 2));
+        exitCode = 0;
+      }
     } catch (error) {
       console.error(
         JSON.stringify(
@@ -445,16 +505,30 @@ async function main() {
           2,
         ),
       );
-      process.exit(1);
+      exitCode = 1;
     } finally {
-      releasePort(chainPort);
+      if (owned) await stopOwnedServer(owned);
+      process.exit(exitCode);
     }
   }
+
+  const productPinSha = LOGIN_ENTRY_PRODUCT_PIN_SHA;
+  const acceptancePinned =
+    process.env.LOGIN_ENTRY_ACCEPTANCE_ONLY === "1" || process.argv.includes("--final-smoke-01-3");
 
   let componentTest;
   if (process.env.LOGIN_ENTRY_SKIP_COMPONENT_TESTS === "1") {
     const prior = loadJsonReport(COMPONENT_TEST_REPORT);
-    componentTest = prior?.exitCode === 0 ? { status: 0, ...prior, importedReport: true } : { status: 1 };
+    const importCheck = validateImportedComponentReport(prior, productPinSha, runnerSha, ROOT);
+    componentTest = importCheck.ok
+      ? { status: 0, ...prior, imported: true, importValid: true }
+      : {
+          status: 1,
+          imported: true,
+          importValid: false,
+          importReason: importCheck.reason,
+          exitCode: prior?.exitCode ?? null,
+        };
   } else {
     componentTest = spawnSync(
       "npx",
@@ -475,19 +549,30 @@ async function main() {
 
   const harnessUnit =
     process.env.LOGIN_ENTRY_SKIP_HARNESS === "1"
-      ? { status: 0, stdout: "", stderr: "" }
-      : spawnSync("node", ["--test", path.join(ART, "login-entry-smoke-harness.test.mjs")], {
-          cwd: ROOT,
-          encoding: "utf8",
-        });
+      ? {
+          status: null,
+          skipped: true,
+          reason: "LOGIN_ENTRY_SKIP_HARNESS=1",
+          stdout: "",
+          stderr: "",
+        }
+      : spawnSync(
+          "node",
+          [
+            "--test",
+            path.join(ART, "login-entry-smoke-harness.test.mjs"),
+            path.join(ART, "login-entry-process-lifecycle.test.mjs"),
+          ],
+          { cwd: ROOT, encoding: "utf8" },
+        );
 
   let build;
-  if (process.env.LOGIN_ENTRY_ACCEPTANCE_ONLY === "1") {
+  if (acceptancePinned) {
     build = loadJsonReport(BUILD_REPORT);
-    if (!build || build.sourceSha !== runnerSha || build.exitCode !== 0) {
-      throw new Error("login-entry-build-report.json missing or stale for current HEAD");
+    if (!build) {
+      throw new Error("login-entry-build-report.json missing for pinned acceptance");
     }
-    build = { ...build, acceptanceOnly: true };
+    build = { ...build, acceptanceOnly: true, imported: true };
   } else {
     build = runBuild(runnerSha);
     writeFileSync(
@@ -496,36 +581,49 @@ async function main() {
     );
   }
 
-  const buildVerifiedResult = evaluateBuildVerified(build);
-  const spawnedPort = Number(process.env.LOGIN_ENTRY_IMPL_PORT || 31997);
-  const implOrigin = `http://127.0.0.1:${spawnedPort}`;
+  const buildVerifiedResult = acceptancePinned
+    ? evaluatePinnedBuildForSmoke(build, { productPinSha, runnerSha, cwd: ROOT })
+    : evaluateBuildVerified(build);
+
+  let implOrigin = null;
+  let ownedImpl = null;
 
   let runtimePin = null;
   let captureResult = null;
   let disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.ok ? "not run" : disposableResolved.reason };
   let partialSeedResult = { status: "NOT_VERIFIED", reason: "not run" };
   let smokeError = null;
+  let disposableStage = "not_started";
 
   let refServer = null;
-  let implServer = null;
   let probedBuildId = null;
   try {
     if (buildVerifiedResult.ok) {
-      implServer = startNextStart(spawnedPort, {
-        ...(runtimeEnv ?? {}),
-        NEXT_PUBLIC_APP_URL: implOrigin,
-        PORT: String(spawnedPort),
-        REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: "1",
-      });
-      await waitForHttp(`${implOrigin}/login`);
-      probedBuildId = await waitForVerifiedRuntime(implOrigin, build.BUILD_ID);
-      runtimePin = evaluateRuntimePin({
-        mode: "spawned-next-start",
-        runnerSha,
-        build,
-        probedBuildId,
-        origin: implOrigin,
-      });
+      const started = await startOwnedNextOnCanonicalPort(runtimeEnv, { expectedBuildId: build.BUILD_ID });
+      if (!started.ok) {
+        runtimePin = {
+          verified: false,
+          mode: "spawned-next-start",
+          reason: started.reason,
+          stage: started.stage ?? "bind",
+        };
+        smokeError = started.reason;
+      } else {
+        ownedImpl = started.handle;
+        implOrigin = started.origin;
+        await waitForHttp(`${implOrigin}/login`);
+        probedBuildId = await waitForVerifiedRuntime(implOrigin, build.BUILD_ID);
+        runtimePin = evaluateRuntimePin({
+          mode: started.reusedExistingListener ? "existing-canonical-listener" : "spawned-next-start",
+          runnerSha: productPinSha,
+          build,
+          probedBuildId,
+          origin: implOrigin,
+        });
+        if (started.reusedExistingListener) {
+          runtimePin.reusedExistingListener = true;
+        }
+      }
       if (!runtimePin.verified) {
         runtimePin = {
           ...runtimePin,
@@ -579,10 +677,12 @@ async function main() {
       runtimePin?.verified
     ) {
       try {
+        disposableStage = "disposable_chain";
         disposableResult = { status: "PASS", ...(await runDisposableChain(implOrigin, runtimeEnv)) };
       } catch (error) {
         disposableResult = {
           status: "FAIL",
+          stage: disposableStage,
           error: error instanceof Error ? error.message : String(error),
         };
         smokeError = disposableResult.error;
@@ -629,20 +729,25 @@ async function main() {
       disposableResult = { status: "NOT_VERIFIED", reason: `smoke aborted: ${smokeError}` };
     }
   } finally {
-    if (implServer?.pid) {
-      releasePort(spawnedPort);
-    }
+    if (ownedImpl) await stopOwnedServer(ownedImpl);
     refServer?.kill("SIGTERM");
   }
 
-  const componentTestsOk = componentTest.status === 0 && harnessUnit.status === 0;
+  const unitGates = evaluateMandatoryUnitGates({
+    authComponents: componentTest,
+    harnessUnit,
+  });
+  const componentTestsOk = unitGates.componentTestsOk;
   const runtimeVerified = Boolean(runtimePin?.verified);
   const buildVerified = buildVerifiedResult.ok;
-  const captureOk = captureResult?.pairCount > 0 && !captureResult?.error;
-  const smokeOk = disposableResult.status === "PASS" && captureOk;
+  const captureOk =
+    process.env.LOGIN_ENTRY_SKIP_CAPTURE === "1" ||
+    (captureResult?.pairCount > 0 && !captureResult?.error);
+  const disposableOk = disposableResult.status === "PASS";
+  const smokeOk = finalSmoke ? disposableOk : disposableOk && captureOk;
   const cleanupOk = disposableResult.cleanup?.remaining
     ? Object.values(disposableResult.cleanup.remaining).every((v) => v === 0)
-    : smokeOk;
+    : disposableOk;
 
   const evidence = {
     status: deriveAcceptanceStatus({
@@ -651,12 +756,14 @@ async function main() {
       cleanupOk,
       buildVerified,
       runtimeVerified,
+      disposableRequired: true,
     }),
-    task: "LOGIN-ENTRY-PROTOTYPE-01.2",
+    task: finalSmoke ? "LOGIN-ENTRY-PROTOTYPE-01.3" : "LOGIN-ENTRY-PROTOTYPE-01.2",
     baseSha: BASE_SHA,
-    codeSha: runnerSha,
+    codeSha: productPinSha,
     runnerSha,
     artifactTipSha: runnerSha,
+    productPinSha,
     navigatorSha,
     referencePackageCommit: "9bc52fb9152293e992e98dc50804a660cef10733",
     referenceArchiveSha256: "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
@@ -664,6 +771,7 @@ async function main() {
       ...(build.skipped ? build : { ...build, logFile: path.relative(ROOT, BUILD_LOG) }),
       verified: buildVerified,
       verifyReason: buildVerified ? null : buildVerifiedResult.reason,
+      pinMode: buildVerifiedResult.mode ?? null,
     },
     runtimePin,
     tests: {
@@ -671,12 +779,14 @@ async function main() {
         command:
           "NODE_ENV=test npx vitest run src/components/auth/AuthFlow.test.tsx src/components/auth/LoginExperience.test.tsx src/components/auth/AdminLoginModal.test.tsx",
         ...spawnResultRecord(componentTest),
+        evaluation: unitGates.auth,
       },
       harnessUnit: {
         command: `node --test ${path.relative(ROOT, path.join(ART, "login-entry-smoke-harness.test.mjs"))}`,
         ...spawnResultRecord(harnessUnit),
+        evaluation: unitGates.harness,
       },
-      disposableLogin: disposableResult,
+      disposableLogin: { ...disposableResult, stage: disposableResult.stage ?? disposableStage },
       partialSeedCleanup: partialSeedResult,
       smokeError,
     },
@@ -693,7 +803,9 @@ async function main() {
   const exitFail =
     !componentTestsOk ||
     !buildVerified ||
+    !runtimeVerified ||
     disposableResult.status === "FAIL" ||
+    (finalSmoke && disposableResult.status !== "PASS") ||
     partialSeedResult.status === "FAIL";
   if (exitFail) process.exit(1);
 }
