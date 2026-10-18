@@ -68,7 +68,7 @@ describe("resolveStepFromReadiness", () => {
   it("routes session with pending consents to consents step", () => {
     assert.equal(resolveStepFromReadiness(needsConsents, true), "consents");
     assert.equal(resolveStepFromReadiness(ready, true), "loading_readiness");
-    assert.equal(resolveStepFromReadiness(null, false), "code");
+    assert.equal(resolveStepFromReadiness(null, false), "provider");
     assert.equal(resolveStepFromReadiness(null, true), "session_retry");
   });
 

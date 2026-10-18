@@ -1,0 +1,33 @@
+{
+  "status": "READY_FOR_REVIEW",
+  "task": "LOGIN-ENTRY-PROTOTYPE-01",
+  "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
+  "codeSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
+  "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
+  "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "productionBuild": {
+    "command": "npm ci --include=dev && npm run build",
+    "exitCode": 0,
+    "BUILD_ID": "JblgeQPQTyr3hje_XLoIl",
+    "sourceSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe"
+  },
+  "tests": {
+    "authComponents": {
+      "command": "NODE_ENV=test npx vitest run src/components/auth/AuthFlow.test.tsx src/components/auth/LoginExperience.test.tsx",
+      "exitCode": 0,
+      "pass": 16,
+      "fail": 0
+    },
+    "disposableLogin": {
+      "status": "SKIP",
+      "reason": "page.getByPlaceholderText is not a function"
+    }
+  },
+  "screenshots": {
+    "directory": "artifacts/remcard-login-entry-prototype-01/screenshots",
+    "note": "PNG pairs captured under artifacts/remcard-login-entry-prototype-01/screenshots; visual parity not auto-certified."
+  },
+  "notPublished": true,
+  "notMerged": true
+}

@@ -43,8 +43,11 @@ export function sanitizeReturnTo(raw: string | null | undefined): string | null 
   return allowed ? trimmed : null;
 }
 
+export type AuthLoginProvider = "MAX" | "TELEGRAM";
+
 export type AuthFlowStep =
   | "checking_session"
+  | "provider"
   | "code"
   | "loading_readiness"
   | "consents"
@@ -56,7 +59,7 @@ export function resolveStepFromReadiness(
   readiness: CabinetReadiness | null,
   hasSession: boolean,
 ): AuthFlowStep {
-  if (!hasSession) return "code";
+  if (!hasSession) return "provider";
   if (!readiness) return "session_retry";
   if (hasPendingLoginConsents(readiness)) return "consents";
   if (readiness.needsProfileOnboarding) return "loading_readiness";
@@ -205,4 +208,12 @@ export function sessionRetryMessage(kind: "network" | "server" | "session_lost")
     return "Сессия завершилась. Войдите снова.";
   }
   return "Временная ошибка сервера. Повторите проверку.";
+}
+
+export function messengerLoginUrl(
+  provider: AuthLoginProvider,
+  maxBotUrl: string,
+  telegramBotUrl: string,
+): string {
+  return provider === "MAX" ? maxBotUrl : telegramBotUrl;
 }

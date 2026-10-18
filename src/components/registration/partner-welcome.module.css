@@ -351,3 +351,7 @@
     width: 100%;
   }
 }
+
+.adminAccess {
+  margin-top: var(--space-8);
+}

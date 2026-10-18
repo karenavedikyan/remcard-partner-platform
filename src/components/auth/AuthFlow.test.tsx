@@ -10,6 +10,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh }),
 }));
 
+vi.mock("@/components/layout/ThemeToggle", () => ({
+  ThemeToggle: () => null,
+}));
+
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: vi.fn(),
   getAuthMe: vi.fn(),
@@ -38,6 +42,7 @@ const readyReadiness = {
 describe("AuthFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("open", vi.fn());
     vi.mocked(getAuthMe).mockResolvedValue({
       user: { id: "store-1", role: "PRO" },
     });
@@ -63,11 +68,12 @@ describe("AuthFlow", () => {
     });
   });
 
-  it("shows code form when no session exists", async () => {
+  it("shows provider step when no session exists", async () => {
     vi.mocked(getAuthMe).mockResolvedValue({ user: null });
     render(<AuthFlow returnTo="/scanner" />);
 
-    expect(await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /с возвращением/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /продолжить с max/i })).toBeInTheDocument();
   });
 
   it("does not redirect after unmount during delayed readiness", async () => {
@@ -111,9 +117,11 @@ describe("AuthFlow", () => {
     const ui = userEvent.setup();
     render(<AuthFlow returnTo="/scanner" />);
 
-    await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i });
+    await screen.findByRole("heading", { name: /с возвращением/i });
+    await ui.click(screen.getByRole("button", { name: /продолжить с max/i }));
+    await screen.findByRole("heading", { name: /введите одноразовый код/i });
     await ui.type(screen.getByPlaceholderText("000000"), "123456");
-    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
 
     await waitFor(() => {
       expect(remcardFetch).toHaveBeenCalledWith("/api/auth/verify-code", {
@@ -145,9 +153,11 @@ describe("AuthFlow", () => {
 
     const ui = userEvent.setup();
     render(<AuthFlow returnTo="/scanner" />);
-    await screen.findByRole("heading", { name: /присоединяйтесь к remcard prof/i });
+    await screen.findByRole("heading", { name: /с возвращением/i });
+    await ui.click(screen.getByRole("button", { name: /продолжить с max/i }));
+    await screen.findByRole("heading", { name: /введите одноразовый код/i });
     await ui.type(screen.getByPlaceholderText("000000"), "123456");
-    await ui.click(screen.getByRole("button", { name: /продолжить/i }));
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
 
     expect(await screen.findByRole("button", { name: /повторить проверку/i })).toBeInTheDocument();
     expect(screen.queryByText(/неверный/i)).not.toBeInTheDocument();
@@ -272,15 +282,32 @@ describe("AuthFlow", () => {
     expect(replace).not.toHaveBeenCalledWith(expect.stringContaining("/onboarding"));
   });
 
-  it("shows Telegram and MAX bot links on code step", async () => {
+  it("opens messenger once when choosing provider and supports switch without second open", async () => {
     vi.mocked(getAuthMe).mockResolvedValue({ user: null });
+    const openSpy = vi.mocked(window.open);
+    const ui = userEvent.setup();
     render(<AuthFlow returnTo="/scanner" />);
 
-    expect(await screen.findByRole("link", { name: /получить код в telegram/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /получить код в max/i })).toBeInTheDocument();
-    expect(screen.getByText(/шаг 1\. получите код/i)).toBeInTheDocument();
-    expect(screen.getByText(/шаг 2\. введите код/i)).toBeInTheDocument();
-    expect(screen.queryByText(/^или$/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/нет кода\? отправьте боту команду \/login/i)).toBeInTheDocument();
+    await screen.findByRole("heading", { name: /с возвращением/i });
+    await ui.click(screen.getByRole("button", { name: /продолжить с max/i }));
+    expect(openSpy).toHaveBeenCalledTimes(1);
+
+    await ui.click(screen.getByRole("button", { name: /другой способ входа/i }));
+    await screen.findByRole("button", { name: /продолжить с telegram/i });
+    expect(openSpy).toHaveBeenCalledTimes(1);
+
+    await ui.click(screen.getByRole("button", { name: /продолжить с telegram/i }));
+    expect(openSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("resend opens messenger again", async () => {
+    vi.mocked(getAuthMe).mockResolvedValue({ user: null });
+    const openSpy = vi.mocked(window.open);
+    const ui = userEvent.setup();
+    render(<AuthFlow returnTo="/scanner" />);
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с max/i }));
+    await ui.click(screen.getByRole("button", { name: /получить код повторно/i }));
+    expect(openSpy).toHaveBeenCalledTimes(2);
   });
 });

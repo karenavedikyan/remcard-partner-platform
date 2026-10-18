@@ -9,9 +9,11 @@ import styles from "./auth.module.css";
 
 type Props = {
   returnTo?: string | null;
+  variant?: "default" | "modal";
+  onSuccess?: () => void;
 };
 
-export function AdminPasswordLoginForm({ returnTo }: Props) {
+export function AdminPasswordLoginForm({ returnTo, variant = "default", onSuccess }: Props) {
   const router = useRouter();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -26,6 +28,7 @@ export function AdminPasswordLoginForm({ returnTo }: Props) {
     setError("");
     try {
       await adminPasswordLogin(login, password);
+      onSuccess?.();
       router.replace(returnTo?.startsWith("/admin") ? returnTo : "/admin/test-users");
       router.refresh();
     } catch (caught) {
@@ -39,16 +42,19 @@ export function AdminPasswordLoginForm({ returnTo }: Props) {
     }
   };
 
+  const loginLabel = variant === "modal" ? "Логин" : "Логин администратора";
+
   return (
-    <form className={styles.form} onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit} data-testid="admin-login-form">
       <label className={styles.label}>
-        Логин администратора
+        {loginLabel}
         <input
           className={styles.input}
           autoComplete="username"
           value={login}
           onChange={(e) => setLogin(e.target.value)}
           required
+          data-testid="admin-login-input"
         />
       </label>
       <label className={styles.label}>
@@ -62,6 +68,7 @@ export function AdminPasswordLoginForm({ returnTo }: Props) {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
+            data-testid="admin-password-input"
           />
           <button
             type="button"

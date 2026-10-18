@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { buildJoinHref } from "@/lib/registration/draft";
+import { AdminLoginAccessory } from "@/components/auth/AdminLoginAccessory";
 import { RegistrationPublicShell } from "./RegistrationPublicShell";
 import styles from "./partner-welcome.module.css";
 
@@ -193,6 +194,7 @@ export function PartnerWelcome({ inviteToken, returnTo }: Props) {
             </svg>
           </Link>
         </section>
+        <AdminLoginAccessory className={styles.adminAccess} />
       </div>
     </RegistrationPublicShell>
   );

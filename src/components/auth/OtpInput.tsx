@@ -7,6 +7,7 @@ type OtpInputProps = {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  fieldLabel?: string;
   "aria-label"?: string;
 };
 
@@ -16,7 +17,13 @@ function normalizeDigits(raw: string): string {
   return raw.replace(/\D/g, "").slice(0, DIGITS);
 }
 
-export function OtpInput({ value, onChange, disabled, "aria-label": ariaLabel }: OtpInputProps) {
+export function OtpInput({
+  value,
+  onChange,
+  disabled,
+  fieldLabel = "Код из сообщения",
+  "aria-label": ariaLabel,
+}: OtpInputProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +49,7 @@ export function OtpInput({ value, onChange, disabled, "aria-label": ariaLabel }:
   return (
     <div className={styles.otpWrap}>
       <label className={styles.fieldLabel} htmlFor={inputId}>
-        Код из сообщения
+        {fieldLabel}
       </label>
       <input
         ref={inputRef}

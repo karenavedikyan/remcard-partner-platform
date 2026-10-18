@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
 import type { CabinetReadiness } from "@/lib/cabinet-readiness";
@@ -22,14 +23,17 @@ import {
   mapAccessDeniedMessage,
   mapPostLoginBlocked,
   mapVerifyCodeError,
+  messengerLoginUrl,
   resolveAuthFlowFromReadiness,
   resolveDestinationAfterAuth,
   sanitizeReturnTo,
   sessionRetryMessage,
   type AuthFlowStep,
+  type AuthLoginProvider,
 } from "@/lib/auth-flow";
 import { getMaxBotLoginUrl, getTelegramBotLoginUrl } from "@/lib/auth-config";
 import { BrandMark } from "@/components/layout/BrandMark";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "./OtpInput";
 import { ConsentStep } from "./ConsentStep";
@@ -54,6 +58,10 @@ const REASON_MESSAGES: Record<string, string> = {
   role: "Для доступа нужен профиль партнёра.",
 };
 
+function openMessengerForLogin(url: string) {
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export function AuthFlow({
   returnTo,
   reason,
@@ -66,6 +74,7 @@ export function AuthFlow({
   const codeConsumedRef = useRef(false);
   const flowActiveRef = useRef(true);
   const [step, setStep] = useState<AuthFlowStep>("checking_session");
+  const [provider, setProvider] = useState<AuthLoginProvider>("MAX");
   const [code, setCode] = useState("");
   const [readiness, setReadiness] = useState<CabinetReadiness | null>(null);
   const [error, setError] = useState("");
@@ -73,6 +82,7 @@ export function AuthFlow({
   const [loading, setLoading] = useState(false);
   const [retryKind, setRetryKind] = useState<RetryKind>("network");
   const [consentResetToken, setConsentResetToken] = useState(0);
+  const [resendStatus, setResendStatus] = useState("");
 
   const telegramBotUrl = getTelegramBotLoginUrl();
   const maxBotUrl = getMaxBotLoginUrl();
@@ -83,11 +93,7 @@ export function AuthFlow({
       const destination = resolveDestinationAfterAuth(r, returnTo ?? null, {
         registrationAgentJoin,
       });
-      if (destination.startsWith("/onboarding")) {
-        router.replace(destination);
-      } else {
-        router.replace(destination);
-      }
+      router.replace(destination);
       router.refresh();
     },
     [registrationAgentJoin, returnTo, router],
@@ -134,7 +140,7 @@ export function AuthFlow({
           setStep("session_retry");
           return;
         }
-        setStep("code");
+        setStep("provider");
         return;
       }
       if (kind === "blocked") {
@@ -186,7 +192,7 @@ export function AuthFlow({
     }
     applyReadiness(readinessResult.data);
     setBooting(false);
-  }, [applyReadiness, handleSessionFailure]);
+  }, [applyReadiness, handleSessionFailure, onAuthenticated]);
 
   const runSessionCheckRef = useRef(runSessionCheck);
   runSessionCheckRef.current = runSessionCheck;
@@ -224,6 +230,23 @@ export function AuthFlow({
     setReadiness(result.data);
     return result.data;
   }, [handleSessionFailure]);
+
+  const chooseProvider = useCallback(
+    (next: AuthLoginProvider) => {
+      setProvider(next);
+      setError("");
+      setResendStatus("");
+      setStep("code");
+      openMessengerForLogin(messengerLoginUrl(next, maxBotUrl, telegramBotUrl));
+    },
+    [maxBotUrl, telegramBotUrl],
+  );
+
+  const resendCode = useCallback(() => {
+    setError("");
+    openMessengerForLogin(messengerLoginUrl(provider, maxBotUrl, telegramBotUrl));
+    setResendStatus("Откройте бота и запросите новый код командой /login, если сообщение не пришло.");
+  }, [maxBotUrl, provider, telegramBotUrl]);
 
   const submitCode = useCallback(
     async (event: React.FormEvent) => {
@@ -279,7 +302,7 @@ export function AuthFlow({
         submitLock.current = false;
       }
     },
-    [applyReadiness, code, handleSessionFailure, loading],
+    [applyReadiness, code, handleSessionFailure, loading, onAuthenticated],
   );
 
   const submitConsents = useCallback(
@@ -354,7 +377,7 @@ export function AuthFlow({
         submitLock.current = false;
       }
     },
-    [applyReadiness, loading, readiness, reloadReadiness],
+    [applyReadiness, loading, readiness, registrationAgentJoin, reloadReadiness],
   );
 
   const reasonMessage = reason ? REASON_MESSAGES[reason] : null;
@@ -396,7 +419,7 @@ export function AuthFlow({
             {error}
           </p>
           {retryKind === "session_lost" ? (
-            <Button type="button" onClick={() => setStep("code")} disabled={loading}>
+            <Button type="button" onClick={() => setStep("provider")} disabled={loading}>
               Войти снова
             </Button>
           ) : (
@@ -430,14 +453,17 @@ export function AuthFlow({
           <span className={styles.eyebrow}>RemCard PROF</span>
           <h1 className={styles.title}>Доступ ограничен</h1>
           <p className={styles.error} role="alert">
-            {error || mapAccessDeniedMessage(readiness ?? {
-              nextStep: "ready",
-              missingConsents: [],
-              needsProfileOnboarding: false,
-              canAccessCabinet: false,
-              isEmployee: false,
-              isAdmin: false,
-            })}
+            {error ||
+              mapAccessDeniedMessage(
+                readiness ?? {
+                  nextStep: "ready",
+                  missingConsents: [],
+                  needsProfileOnboarding: false,
+                  canAccessCabinet: false,
+                  isEmployee: false,
+                  isAdmin: false,
+                },
+              )}
           </p>
           <div className={styles.actions}>
             <Button type="button" onClick={() => void retrySessionCheck()} disabled={loading}>
@@ -455,7 +481,7 @@ export function AuthFlow({
                 codeConsumedRef.current = false;
                 setReadiness(null);
                 setError("");
-                setStep("code");
+                setStep("provider");
               }}
               disabled={loading}
             >
@@ -467,7 +493,56 @@ export function AuthFlow({
     );
   }
 
-  const codeForm = (
+  const providerStep = (
+    <>
+      {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
+      <span className={styles.eyebrow}>Вход в кабинет</span>
+      <h1 className={styles.title}>
+        {registrationAgentJoin ? "Осталось подтвердить вход" : "С возвращением"}
+      </h1>
+      <p className={styles.lead}>
+        {registrationAgentJoin
+          ? "Подтвердите вход через MAX или Telegram, затем примите условия."
+          : "Выберите способ, уже привязанный к вашему аккаунту. Повторно проходить регистрацию не нужно."}
+      </p>
+      <div className={styles.entryProviders}>
+        <Button
+          type="button"
+          className={styles.providerButton}
+          onClick={() => chooseProvider("MAX")}
+        >
+          <span className={styles.providerMark} aria-hidden="true">
+            M
+          </span>
+          Продолжить с MAX
+          <span className={styles.providerArrow} aria-hidden="true">
+            ↗
+          </span>
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          className={styles.providerButton}
+          onClick={() => chooseProvider("TELEGRAM")}
+        >
+          <span className={styles.providerMark} aria-hidden="true">
+            T
+          </span>
+          Продолжить с Telegram
+          <span className={styles.providerArrow} aria-hidden="true">
+            ↗
+          </span>
+        </Button>
+      </div>
+      {!registrationAgentJoin ? (
+        <p className={styles.entryFootnote}>
+          <Link href="/join">Нет аккаунта? Регистрация</Link>
+        </p>
+      ) : null}
+    </>
+  );
+
+  const codeStep = (
     <>
       {reasonMessage ? <p className={styles.error}>{reasonMessage}</p> : null}
       {error ? (
@@ -475,109 +550,75 @@ export function AuthFlow({
           {error}
         </p>
       ) : null}
-
-      <span className={styles.codeStepLabel}>Шаг 1. Получите код</span>
-      <div className={styles.botLinks}>
-        <a
-          className={`${styles.botLink} ${styles.botLinkPrimary}`}
-          href={telegramBotUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+      <span className={styles.eyebrow}>
+        {registrationAgentJoin ? "Подтверждение входа" : "Повторный вход"} · {provider}
+      </span>
+      <h1 className={styles.title}>Введите одноразовый код</h1>
+      <p className={styles.lead}>
+        Код приходит от бота {provider === "MAX" ? "MAX" : "Telegram"}. Откройте мессенджер, если
+        ещё не запросили код командой /login.
+      </p>
+      <form onSubmit={(event) => void submitCode(event)}>
+        <OtpInput
+          value={code}
+          onChange={setCode}
+          disabled={loading}
+          fieldLabel="Код из 6 цифр"
+          aria-label="Код из сообщения"
+        />
+        <Button type="submit" disabled={loading || code.length !== 6}>
+          {loading ? "Проверяем…" : "Подтвердить и продолжить"}
+        </Button>
+      </form>
+      <div className={styles.codeActions}>
+        <Button
+          type="button"
+          variant="text"
+          onClick={() => {
+            setError("");
+            setResendStatus("");
+            setStep("provider");
+          }}
+          disabled={loading}
         >
-          Получить код в Telegram
-        </a>
-        <a className={styles.botLink} href={maxBotUrl} target="_blank" rel="noopener noreferrer">
-          Получить код в MAX
-        </a>
+          Другой способ входа
+        </Button>
+        <Button type="button" variant="text" onClick={resendCode} disabled={loading}>
+          Получить код повторно
+        </Button>
       </div>
-      <p className={styles.botStepHint}>Откроется бот. Получите код и вернитесь на эту страницу.</p>
-
-      <div className={styles.codeStep}>
-        <span className={styles.codeStepLabel}>Шаг 2. Введите код</span>
-        <form onSubmit={(event) => void submitCode(event)}>
-          <OtpInput
-            value={code}
-            onChange={setCode}
-            disabled={loading}
-            aria-label="Код из сообщения"
-          />
-          <Button type="submit" disabled={loading || code.length !== 6}>
-            {loading ? "Проверяем…" : "Продолжить"}
-          </Button>
-        </form>
-      </div>
-
-      <p className={styles.notice}>Нет кода? Отправьте боту команду /login.</p>
+      <p className={styles.codeHint} role="status">
+        {resendStatus ||
+          "Код подтверждает вход, а не создаёт новый аккаунт при каждом посещении."}
+      </p>
     </>
   );
+
+  const stepBody = step === "provider" ? providerStep : codeStep;
 
   if (layout === "embedded") {
     return (
       <section className={styles.embeddedAuth} aria-labelledby="embedded-auth-title">
         <h2 id="embedded-auth-title" className={styles.embeddedAuthTitle}>
-          Подтвердите вход
+          {step === "provider" ? "Подтвердите вход" : "Введите одноразовый код"}
         </h2>
-        <p className={styles.lead}>MAX или Telegram — как при обычном входе в кабинет.</p>
-        {codeForm}
+        {stepBody}
       </section>
     );
   }
 
   return (
-    <main className={styles.page}>
+    <main className={styles.entryFlowPage}>
       <header className={styles.entryHeader}>
         <BrandMark />
+        <ThemeToggle />
       </header>
-
-      <div className={styles.entryLayout}>
-        <section className={styles.mobileIntro} aria-labelledby="mobile-intro-title">
-          <h1 id="mobile-intro-title" className={styles.mobileIntroTitle}>
-            Ваши рекомендации могут приносить доход
-          </h1>
-          <p className={styles.mobileIntroLead}>
-            Рекомендуйте партнёров, получайте вознаграждение за покупки и привлекайте клиентов по
-            рекомендациям.
-          </p>
-        </section>
-
-        <section className={styles.entryStory} aria-labelledby="story-title">
-          <span className={styles.eyebrow}>Партнёрская программа RemCard PROF</span>
-          <h1 id="story-title" className={styles.storyTitle}>
-            Ваши рекомендации могут приносить доход
-          </h1>
-          <p className={styles.storyLead}>
-            Рекомендуйте клиентам партнёров и получайте вознаграждение за покупки на согласованных
-            условиях. Принимайте рекомендации других участников и привлекайте клиентов в свой бизнес.
-          </p>
-          <ul className={styles.benefitList}>
-            <li className={styles.benefitItem}>
-              <strong>Договаривайтесь напрямую</strong>
-              <p>Выбирайте партнёров и согласовывайте условия сотрудничества.</p>
-            </li>
-            <li className={styles.benefitItem}>
-              <strong>Давайте клиентам больше пользы</strong>
-              <p>Оформляйте рекомендации со скидкой по условиям партнёрства.</p>
-            </li>
-            <li className={styles.benefitItem}>
-              <strong>Держите расчёты под контролем</strong>
-              <p>Смотрите покупки, начисления и кто кому должен.</p>
-            </li>
-          </ul>
-          <p className={styles.storyClosing}>
-            Начните с профиля. Затем выберите партнёра и согласуйте условия.
-          </p>
-        </section>
-
-        <section className={styles.entryForm} aria-labelledby="login-title">
-          <h1 id="login-title" className={styles.title}>
-            Присоединяйтесь к RemCard PROF
-          </h1>
-          <p className={styles.lead}>
-            Впервые здесь? Начните регистрацию. Уже есть аккаунт? Войдите тем же способом, которым
-            пользовались раньше.
-          </p>
-
-          {codeForm}
+      <div className={styles.entryFlowBody}>
+        <section className={styles.entrySingleCard} aria-labelledby="login-entry-title">
+          <div id="login-entry-title" className={styles.srOnly}>
+            {step === "provider" ? "Выбор способа входа" : "Ввод кода"}
+          </div>
+          {stepBody}
         </section>
       </div>
     </main>
