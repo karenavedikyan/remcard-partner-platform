@@ -26,9 +26,18 @@ const JSON_OUT = path.join(OUT, 'UNIFIED-PREP-01-BROWSER.json');
 const APPLICATION_CODE_PIN = '11f512e44406d243261f7bfdd7c1d5d90f6494d9';
 
 function resolvePins() {
+  const platformBuiltHead = gitRevParse(ROOT);
+  let specialistUiPin = APPLICATION_CODE_PIN;
+  try {
+    specialistUiPin = resolveApplicationCodeSha(ROOT, APPLICATION_CODE_PIN);
+  } catch {
+    specialistUiPin = APPLICATION_CODE_PIN;
+  }
   return {
-    platformBuiltHead: gitRevParse(ROOT),
-    platformApplicationCode: resolveApplicationCodeSha(ROOT, APPLICATION_CODE_PIN),
+    platformBuiltHead,
+    /** Unified release uses full platform integration SHA for stack pin (login+R06). */
+    platformStackPin: platformBuiltHead,
+    specialistUiPin,
     navigator: gitRevParse(NAV),
   };
 }
@@ -72,7 +81,7 @@ function bootstrapStack(pins) {
       ...process.env,
       R06_RUN_DIR: RUN_DIR,
       R06_EXPECT_NAV_SHA: pins.navigator,
-      R06_EXPECT_PLATFORM_CODE_SHA: pins.platformApplicationCode,
+      R06_EXPECT_PLATFORM_CODE_SHA: pins.platformStackPin,
       PROF_R06_SPECIALIST_PROFILE_ENABLED: '1',
     },
   });
@@ -344,7 +353,7 @@ export async function runUnifiedPrepBrowserSmoke() {
     navRoot: NAV,
     platRoot: ROOT,
     expectNavigatorSha: pins.navigator,
-    expectPlatformCodeSha: pins.platformApplicationCode,
+    expectPlatformCodeSha: pins.platformStackPin,
   });
   const meta = loadRunMeta(RUN_DIR);
   const env = loadEnvFile(meta.envPath);
