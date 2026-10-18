@@ -1,11 +1,9 @@
 {
   "task": "R06-SPECIALIST-TAIL-01.4",
-  "runId": "tail014-1792327872117",
+  "runId": "tail014-1792333641693",
   "database": "postgresql://remcard_r01:***@127.0.0.1:5432/remcard_r01_test",
   "repair": {
-    "repaired": true,
-    "reason": "missing_m3_ledger",
-    "postControlled": true
+    "repaired": false
   },
   "prep": {
     "exitCode": 0,
@@ -19,16 +17,16 @@
   "orphanProbe": {
     "transactional": true,
     "commitUsed": false,
-    "beforeSnapshotSha256": "2f071c663c8c7b9cdeb746236d2540fadd4a514e488433005c71e505a601858d",
-    "afterRollbackSnapshotSha256": "2f071c663c8c7b9cdeb746236d2540fadd4a514e488433005c71e505a601858d",
+    "beforeSnapshotSha256": "c57808f693a6cfd4114b7ab5d7c1348cf339700b0df45a0ec9495e7e2c237728",
+    "afterRollbackSnapshotSha256": "c57808f693a6cfd4114b7ab5d7c1348cf339700b0df45a0ec9495e7e2c237728",
     "snapshotRestored": true,
     "beforeSnapshot": {
       "m3Ledger": [
         {
-          "id": "ebf1acee-13d9-434b-b8a9-bc88b355b7d3",
+          "id": "8ff7fbdf-c4d9-499a-a5fb-eab9dcf5e18f",
           "migration_name": "20261017180000_prof_r06_taxonomy_proposal",
           "checksum": "726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a",
-          "finished_at": "2026-10-18T12:51:12.317Z",
+          "finished_at": "2026-10-18T14:27:21.863Z",
           "rolled_back_at": null
         }
       ],
@@ -56,10 +54,10 @@
     "afterProbeSnapshot": {
       "m3Ledger": [
         {
-          "id": "ebf1acee-13d9-434b-b8a9-bc88b355b7d3",
+          "id": "8ff7fbdf-c4d9-499a-a5fb-eab9dcf5e18f",
           "migration_name": "20261017180000_prof_r06_taxonomy_proposal",
           "checksum": "726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a",
-          "finished_at": "2026-10-18T12:51:12.317Z",
+          "finished_at": "2026-10-18T14:27:21.863Z",
           "rolled_back_at": null
         }
       ],
@@ -103,15 +101,15 @@
       "injectFailureThrown": true,
       "unexpectedError": null
     },
-    "afterRollbackSnapshotSha256": "2f071c663c8c7b9cdeb746236d2540fadd4a514e488433005c71e505a601858d",
+    "afterRollbackSnapshotSha256": "c57808f693a6cfd4114b7ab5d7c1348cf339700b0df45a0ec9495e7e2c237728",
     "snapshotMatchesPreProbe": true,
     "afterInjectSnapshot": {
       "m3Ledger": [
         {
-          "id": "ebf1acee-13d9-434b-b8a9-bc88b355b7d3",
+          "id": "8ff7fbdf-c4d9-499a-a5fb-eab9dcf5e18f",
           "migration_name": "20261017180000_prof_r06_taxonomy_proposal",
           "checksum": "726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a",
-          "finished_at": "2026-10-18T12:51:12.317Z",
+          "finished_at": "2026-10-18T14:27:21.863Z",
           "rolled_back_at": null
         }
       ],
@@ -145,5 +143,5 @@
     "exitCode": 0,
     "stdout": "{\"ok\":true,\"checksums\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\",\"20261017180000_prof_r06_taxonomy_proposal\":\"726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a\"},\"pinned\":{\"20261017123000_prof_r06_specialist_profile\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\",\"20261017140000_prof_r06_1_specialist_fields\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\",\"20261017180000_prof_r06_taxonomy_proposal\":\"726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a\"},\"before\":{\"target\":\"127.0.0.1/remcard_r01_test\",\"phase\":\"ALREADY_APPLIED\",\"migrations\":[{\"migration\":\"20261017123000_prof_r06_specialist_profile\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\"},{\"migration\":\"20261017140000_prof_r06_1_specialist_fields\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},{\"migration\":\"20261017180000_prof_r06_taxonomy_proposal\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a\"}]},\"apply\":{\"ok\":true,\"code\":\"already_applied\",\"before\":{\"target\":\"127.0.0.1/remcard_r01_test\",\"phase\":\"ALREADY_APPLIED\",\"migrations\":[{\"migration\":\"20261017123000_prof_r06_specialist_profile\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\"},{\"migration\":\"20261017140000_prof_r06_1_specialist_fields\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},{\"migration\":\"20261017180000_prof_r06_taxonomy_proposal\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a\"}]}},\"after\":{\"ok\":true,\"phase\":\"ALREADY_APPLIED\"},\"reapply\":{\"ok\":true,\"code\":\"already_applied\",\"before\":{\"target\":\"127.0.0.1/remcard_r01_test\",\"phase\":\"ALREADY_APPLIED\",\"migrations\":[{\"migration\":\"20261017123000_prof_r06_specialist_profile\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"66ab4be91d68130812f721dd2c60e0f191e529fdb32473a5bf28d4fddaf1cfdc\"},{\"migration\":\"20261017140000_prof_r06_1_specialist_fields\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"1edc45e087aabb9c397a69672ef2e5669bb6654ba3ad50fbb5ad281cf77d0589\"},{\"migration\":\"20261017180000_prof_r06_taxonomy_proposal\",\"phase\":\"ALREADY_APPLIED\",\"checksum\":\"726f239523a35db4e1d008b4a57ba4c6736faa96007194e93f7f7761911a802a\"}]}}}"
   },
-  "capturedAt": "2026-10-18T12:51:12.651Z"
+  "capturedAt": "2026-10-18T14:27:22.153Z"
 }
