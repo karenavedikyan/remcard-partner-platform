@@ -24,8 +24,8 @@ const REQUIRED_DB = ALLOWED_DISPOSABLE_DATABASE;
 const GUARD_MODULE = path.join(ART, "disposable-db-url-guard.mjs");
 const NAV_GUARD_SCRIPT = path.join(NAV, "scripts/.login-layout-disposable-db-url-guard.mjs");
 const FIXTURE_OTP = "847291";
-const SEED_TEMPLATE = path.join(ART, "seed-disposable-fixture.nav.ts");
-const CLEANUP_TEMPLATE = path.join(ART, "cleanup-disposable-fixture.nav.ts");
+const SEED_TEMPLATE = path.join(ART, "seed-disposable-fixture.nav.fixture.tpl");
+const CLEANUP_TEMPLATE = path.join(ART, "cleanup-disposable-fixture.nav.fixture.tpl");
 const NAV_SEED_SCRIPT = path.join(NAV, "scripts/.login-layout-01-disposable-seed.ts");
 const NAV_CLEANUP_SCRIPT = path.join(NAV, "scripts/.login-layout-01-disposable-cleanup.ts");
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-/** MOCK disposable DB seed — materialized under remcard-navigator/scripts for LOGIN-LAYOUT harness. */
+/** MOCK disposable DB seed template (.fixture.tpl — not frontend TS). Materialized to remcard-navigator/scripts/*.ts */
 import { UserRole } from "@prisma/client";
 import { prisma } from "../src/lib/prisma";
 import { recordConsentIfMissing } from "../src/lib/consent";

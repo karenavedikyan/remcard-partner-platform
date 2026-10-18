@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-/** MOCK cleanup — materialized under remcard-navigator/scripts for LOGIN-LAYOUT harness. */
+/** MOCK cleanup template (.fixture.tpl — not frontend TS). Materialized to remcard-navigator/scripts/*.ts */
 import { prisma } from "../src/lib/prisma";
 import { assertDisposableDatabaseUrl } from "./.login-layout-disposable-db-url-guard.mjs";
 
