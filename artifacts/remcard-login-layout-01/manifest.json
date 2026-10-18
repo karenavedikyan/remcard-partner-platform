@@ -665,5 +665,78 @@
       "reason": "TimeoutError: page.waitForURL: Timeout 120000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
     },
     "mockBackend": false
+  },
+  "loginLayout012": {
+    "task": "LOGIN-LAYOUT-01.2",
+    "recordedAt": "2026-10-18T12:42:08.337Z",
+    "codeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+    "runtimeSha": "4c1cb24c6f32817514472208a27824a28c49de5c",
+    "evidenceTipSha": "4c1cb24c6f32817514472208a27824a28c49de5c",
+    "platformOrigin": "http://127.0.0.1:3040",
+    "stackMeta": {
+      "platformOrigin": "http://127.0.0.1:3040",
+      "navOrigin": "http://127.0.0.1:3041",
+      "database": "remcard_admin_test_012"
+    },
+    "disposableDb": "remcard_admin_test_012",
+    "mockAuth": true,
+    "loginLogoutRelogin": {
+      "status": "VERIFIED_MOCK_DISPOSABLE",
+      "mock": true,
+      "fixtureTag": "ll01-1792327323434",
+      "userId": "cmvdteu2l0000js13ek0je5h3",
+      "counts": {
+        "verifyCode": 2,
+        "logout": 1,
+        "authMe": 6
+      },
+      "statuses": {
+        "verifyCode": [
+          200,
+          200
+        ],
+        "logout": [
+          200
+        ],
+        "authMeAfterLogout": {
+          "status": 200,
+          "hasUser": false,
+          "userId": null
+        }
+      },
+      "urls": {
+        "initialLogin": "http://127.0.0.1:3040/login?returnTo=/scanner",
+        "afterFirstLogin": "http://127.0.0.1:3040/scanner",
+        "afterLogout": "http://127.0.0.1:3040/account/signed-out?scope=current",
+        "scannerAfterLogout": "http://127.0.0.1:3040/scanner",
+        "scannerBlockedAfterLogout": {
+          "url": "http://127.0.0.1:3040/scanner",
+          "scannerHeadingVisible": false,
+          "loginFormVisible": false,
+          "authMeHasUser": false
+        },
+        "returnedToLogin": "http://127.0.0.1:3040/login",
+        "loginBeforeSecondOtp": "http://127.0.0.1:3040/login?returnTo=/scanner",
+        "afterSecondLogin": "http://127.0.0.1:3040/scanner"
+      },
+      "desktopLayoutAfterRelogin": {
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "entryLayoutWidth": 1280,
+        "entryStoryWidth": 593.78125,
+        "entryFormWidth": 416,
+        "gridTemplateColumns": "593.781px 539.828px"
+      },
+      "desktopLayoutGate": {
+        "entryLayoutMin": 1000,
+        "storyMin": 450,
+        "formMin": 350
+      }
+    },
+    "desktopLayoutGate": {
+      "entryLayoutMin": 1000,
+      "storyMin": 450,
+      "formMin": 350
+    }
   }
 }

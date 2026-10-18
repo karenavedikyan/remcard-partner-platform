@@ -1,0 +1,38 @@
+{
+  "status": "READY_FOR_REVIEW",
+  "task": "LOGIN-LAYOUT-01.2",
+  "baseSha": "0fe7da52bb02f2a515d238757c8be16ef2d83948",
+  "codeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+  "evidenceTipSha": "4c1cb24c6f32817514472208a27824a28c49de5c",
+  "command": "NODE_ENV=development node artifacts/remcard-login-layout-01/run-01.1-evidence.mjs",
+  "exitCode": 0,
+  "loginLogoutRelogin": "VERIFIED_MOCK_DISPOSABLE",
+  "counts": {
+    "verifyCode": 2,
+    "logout": 1,
+    "authMe": 6
+  },
+  "urls": {
+    "initialLogin": "http://127.0.0.1:3040/login?returnTo=/scanner",
+    "afterFirstLogin": "http://127.0.0.1:3040/scanner",
+    "afterLogout": "http://127.0.0.1:3040/account/signed-out?scope=current",
+    "scannerAfterLogout": "http://127.0.0.1:3040/scanner",
+    "scannerBlockedAfterLogout": {
+      "url": "http://127.0.0.1:3040/scanner",
+      "scannerHeadingVisible": false,
+      "loginFormVisible": false,
+      "authMeHasUser": false
+    },
+    "returnedToLogin": "http://127.0.0.1:3040/login",
+    "loginBeforeSecondOtp": "http://127.0.0.1:3040/login?returnTo=/scanner",
+    "afterSecondLogin": "http://127.0.0.1:3040/scanner"
+  },
+  "desktopLayout": {
+    "innerWidth": 1440,
+    "horizontalOverflow": false,
+    "entryLayoutWidth": 1280,
+    "entryStoryWidth": 593.78125,
+    "entryFormWidth": 416,
+    "gridTemplateColumns": "593.781px 539.828px"
+  }
+}
