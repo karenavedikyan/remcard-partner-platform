@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import {
   ALLOWED_DISPOSABLE_DATABASE,
+  ALLOWED_R06_DISPOSABLE_DATABASE,
   assertDisposableDatabaseUrl,
   parseDisposableDatabaseUrl,
   resolvePgConnectionParameters,
@@ -46,8 +47,14 @@ describe("disposable-db-url-guard", () => {
         parseDisposableDatabaseUrl(
           `postgresql://review:${ALLOWED_DISPOSABLE_DATABASE}@127.0.0.1/not_the_allowed_database`,
         ),
-      /database must be remcard_admin_test_012/,
+      /database must be one of/,
     );
+  });
+
+  it("accepts unified prep loopback remcard_r01_test", () => {
+    const url = `postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/${ALLOWED_R06_DISPOSABLE_DATABASE}`;
+    const p = parseDisposableDatabaseUrl(url);
+    assert.equal(p.database, ALLOWED_R06_DISPOSABLE_DATABASE);
   });
 
   it("rejects remote host even with correct database name", () => {
