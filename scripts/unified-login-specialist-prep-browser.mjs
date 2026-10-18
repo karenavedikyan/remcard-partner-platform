@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * UNIFIED-LOGIN-SPECIALIST-PREP-01.1 narrow browser smoke on disposable r06-local-stack runtime.
- * No prod, no MAX/Telegram send — mock OTP + mint cookie specialist paths only.
+ * UNIFIED-LOGIN-SPECIALIST-PREP-01.2 narrow browser smoke on disposable r06-local-stack runtime.
+ * MOCK/local allowlist only — no real OTP/Telegram send.
  */
 import { chromium } from 'playwright';
 import { execSync, spawnSync } from 'node:child_process';
@@ -35,7 +35,6 @@ function resolvePins() {
   }
   return {
     platformBuiltHead,
-    /** Unified release uses full platform integration SHA for stack pin (login+R06). */
     platformStackPin: platformBuiltHead,
     specialistUiPin,
     navigator: gitRevParse(NAV),
@@ -80,16 +79,6 @@ function cleanupHarnessSideEffects() {
       /* ignore */
     }
   }
-  try {
-    execSync('git restore tsconfig.json', { cwd: NAV, stdio: 'ignore' });
-  } catch {
-    /* ignore */
-  }
-  try {
-    execSync('git restore next-env.d.ts', { cwd: ROOT, stdio: 'ignore' });
-  } catch {
-    /* ignore */
-  }
 }
 
 function bootstrapStack(pins) {
@@ -112,6 +101,8 @@ function bootstrapStack(pins) {
 function runSeed(env, tag, reseed = false) {
   materializeLoginFixtures();
   assertDisposableDatabaseUrl(env.DATABASE_URL ?? '', { label: 'DATABASE_URL' });
+  const maxId = env.LOGIN_LAYOUT_FIXTURE_MAX_ID;
+  if (!maxId) throw new Error('seed: LOGIN_LAYOUT_FIXTURE_MAX_ID required');
   const r = spawnSync('pnpm', ['exec', 'tsx', NAV_SEED], {
     cwd: NAV,
     env: withDevNodeEnv({
@@ -124,18 +115,24 @@ function runSeed(env, tag, reseed = false) {
     encoding: 'utf8',
   });
   if (r.status !== 0) throw new Error(`seed failed: ${r.stderr || r.stdout}`);
-  return JSON.parse(r.stdout.trim());
+  const seed = JSON.parse(r.stdout.trim());
+  if (String(seed.maxId) !== String(maxId)) {
+    throw new Error(`seed maxId mismatch: seed ${seed.maxId} env ${maxId}`);
+  }
+  return seed;
 }
 
-function runLoginCleanup(env, tag) {
+function runLoginCleanup(env, tag, maxId, { injectFail = false } = {}) {
   materializeLoginFixtures();
+  if (!maxId) throw new Error('cleanup: maxId required');
   const r = spawnSync('pnpm', ['exec', 'tsx', NAV_CLEANUP, tag], {
     cwd: NAV,
     env: withDevNodeEnv({
       ...process.env,
       ...env,
-      LOGIN_LAYOUT_FIXTURE_MAX_ID: '881001847291',
+      LOGIN_LAYOUT_FIXTURE_MAX_ID: String(maxId),
       LOGIN_LAYOUT_FIXTURE_OTP: env.LOGIN_LAYOUT_FIXTURE_OTP ?? DEFAULT_FIXTURE_OTP,
+      LOGIN_LAYOUT_CLEANUP_INJECT_FAIL: injectFail ? '1' : '0',
     }),
     encoding: 'utf8',
   });
@@ -147,6 +144,28 @@ function runLoginCleanup(env, tag) {
   });
 }
 
+function assertCleanupZero(report, label) {
+  const r = report.remaining ?? report;
+  for (const key of ['users', 'authAccounts', 'consents', 'botLoginCodes']) {
+    const v = r[key];
+    if (typeof v !== 'number' || !Number.isInteger(v) || v !== 0) {
+      throw new Error(`${label}: cleanup.remaining.${key}=${v} (expected 0)`);
+    }
+  }
+}
+
+function runSpecialistShared(cmd, env, stdinPayload = null) {
+  const args = ['exec', 'tsx', 'scripts/unified-prep-specialist-shared-restore.ts', cmd];
+  const r = spawnSync('pnpm', args, {
+    cwd: NAV,
+    env: withDevNodeEnv({ ...process.env, ...env }),
+    encoding: 'utf8',
+    input: stdinPayload ?? undefined,
+  });
+  if (r.status !== 0) throw new Error(`specialist ${cmd} failed: ${r.stderr || r.stdout}`);
+  return r.stdout.trim();
+}
+
 function runFixture(env, action) {
   const r = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r06-local-fixture.ts', action], {
     cwd: NAV,
@@ -155,6 +174,55 @@ function runFixture(env, action) {
   });
   if (r.status !== 0) throw new Error(`${action} failed: ${r.stderr || r.stdout}`);
   return r.stdout.trim();
+}
+
+function runCleanupInjectProbes(env) {
+  const controlTag = `unified-prep-control-${Date.now()}`;
+  const controlMaxId = `881${String(Date.now()).slice(-8)}1`;
+  const controlOtp = String(100000 + ((Date.now() + 1) % 900000)).padStart(6, '0');
+  const controlEnv = {
+    ...env,
+    LOGIN_LAYOUT_FIXTURE_MAX_ID: controlMaxId,
+    LOGIN_LAYOUT_FIXTURE_OTP: controlOtp,
+  };
+  runSeed(controlEnv, controlTag);
+
+  const probeTag = `unified-prep-inject-${Date.now()}`;
+  const probeMaxId = `881${String(Date.now()).slice(-8)}2`;
+  const probeOtp = String(100000 + ((Date.now() + 2) % 900000)).padStart(6, '0');
+  const probeEnv = {
+    ...env,
+    LOGIN_LAYOUT_FIXTURE_MAX_ID: probeMaxId,
+    LOGIN_LAYOUT_FIXTURE_OTP: probeOtp,
+  };
+  runSeed(probeEnv, probeTag);
+
+  let injectRejected = false;
+  try {
+    runLoginCleanup(probeEnv, probeTag, probeMaxId, { injectFail: true });
+  } catch {
+    injectRejected = true;
+  }
+  if (!injectRejected) {
+    throw new Error('inject-fail cleanup must not pass evaluateCleanupChildResult');
+  }
+
+  const probeAfterInject = runLoginCleanup(probeEnv, probeTag, probeMaxId);
+  assertCleanupZero(probeAfterInject, 'injectProbeTag');
+
+  const controlCleanup = runLoginCleanup(controlEnv, controlTag, controlMaxId);
+  assertCleanupZero(controlCleanup, 'controlTag');
+
+  return {
+    ok: true,
+    injectRejected,
+    probeTag,
+    probeMaxId,
+    controlTag,
+    controlMaxId,
+    probeCleanup: probeAfterInject,
+    controlCleanup,
+  };
 }
 
 async function fetchAuthMe(platformOrigin, cookieHeader) {
@@ -206,10 +274,18 @@ async function runLoginSmoke(platformOrigin, env, fixtureTag) {
     LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
     LOGIN_LAYOUT_FIXTURE_OTP: fixtureOtp,
   };
-  const seed = runSeed(seedEnv, fixtureTag);
-  const browser = await chromium.launch({ headless: true });
-  const results = { viewports: {}, logout: {}, cleanup: null };
+
+  let seed;
+  let browser;
+  let primaryError = null;
+  let cleanupReport = null;
+  let cleanupError = null;
+  const results = { viewports: {}, logout: {} };
+
   try {
+    seed = runSeed(seedEnv, fixtureTag);
+    browser = await chromium.launch({ headless: true });
+
     for (const vp of [
       { w: 1440, h: 900, key: 'desktop1440', assertDesktop: true },
       { w: 375, h: 812, key: 'mobile375', assertDesktop: false },
@@ -249,10 +325,8 @@ async function runLoginSmoke(platformOrigin, env, fixtureTag) {
       await waitForLoginOtpStep(page);
       const metrics = await measureLoginLayout(page);
       assertWidth(vp.w, metrics);
-      if (vp.assertDesktop) {
-        if ((metrics.entryLayoutWidth ?? 0) < DESKTOP_LAYOUT_GATE.entryLayoutMin) {
-          throw new Error(`desktop entryLayout too narrow: ${metrics.entryLayoutWidth}`);
-        }
+      if (vp.assertDesktop && (metrics.entryLayoutWidth ?? 0) < DESKTOP_LAYOUT_GATE.entryLayoutMin) {
+        throw new Error(`desktop entryLayout too narrow: ${metrics.entryLayoutWidth}`);
       }
       results.viewports[vp.key] = { ok: true, metrics };
       await ctx.close();
@@ -264,11 +338,33 @@ async function runLoginSmoke(platformOrigin, env, fixtureTag) {
     await loginFlow(page2, platformOrigin, seed);
     results.relogin = { ok: true, url: page2.url() };
     await ctx2.close();
+  } catch (e) {
+    primaryError = e;
   } finally {
-    await browser.close();
+    if (browser) await browser.close().catch(() => {});
+    try {
+      cleanupReport = runLoginCleanup(seedEnv, fixtureTag, maxId);
+      assertCleanupZero(cleanupReport, 'loginSmoke');
+    } catch (e) {
+      cleanupError = e;
+    }
   }
-  results.cleanup = runLoginCleanup(seedEnv, fixtureTag);
-  return { ok: true, fixtureTag, fixtureMaxId: maxId, seedUserId: seed.userId, ...results };
+
+  if (cleanupError) {
+    const msg = `${String(primaryError?.message ?? primaryError ?? 'ok')} | cleanup: ${String(cleanupError.message ?? cleanupError)}`;
+    throw new Error(primaryError ? msg : `cleanup failed: ${cleanupError.message ?? cleanupError}`);
+  }
+  if (primaryError) throw primaryError;
+
+  return {
+    ok: true,
+    fixtureTag,
+    fixtureMaxId: maxId,
+    seedMaxId: seed.maxId,
+    seedUserId: seed.userId,
+    cleanup: cleanupReport,
+    ...results,
+  };
 }
 
 async function mintCookie(context, env) {
@@ -286,6 +382,7 @@ async function mintCookie(context, env) {
 }
 
 async function runSpecialistSmoke(base, env) {
+  const snapshotJson = runSpecialistShared('capture', env);
   runFixture(env, 'reset-e2e');
   const browser = await chromium.launch({ headless: true });
   const steps = {};
@@ -368,10 +465,16 @@ async function runSpecialistSmoke(base, env) {
     await ctxRe.close();
     await browser.close();
 
-    runFixture(env, 'reset-e2e');
-    return { ok: true, steps };
+    const restoreOut = runSpecialistShared('restore', env, snapshotJson);
+    const verifyOut = runSpecialistShared('verify', env, snapshotJson);
+    return { ok: true, steps, sharedFixtureRestore: JSON.parse(restoreOut), sharedFixtureVerify: JSON.parse(verifyOut) };
   } catch (e) {
     await browser.close().catch(() => {});
+    try {
+      runSpecialistShared('restore', env, snapshotJson);
+    } catch {
+      /* best effort */
+    }
     throw e;
   }
 }
@@ -379,40 +482,43 @@ async function runSpecialistSmoke(base, env) {
 export async function runUnifiedPrepBrowserSmoke() {
   const pins = resolvePins();
   try {
-  bootstrapStack(pins);
-  const { report: probeReport } = await probeRunStack({
-    runDir: RUN_DIR,
-    navRoot: NAV,
-    platRoot: ROOT,
-    expectNavigatorSha: pins.navigator,
-    expectPlatformCodeSha: pins.platformStackPin,
-  });
-  const meta = loadRunMeta(RUN_DIR);
-  const env = loadEnvFile(meta.envPath);
-  const platformOrigin = `http://127.0.0.1:${meta.platformPort}`;
-
-  const fixtureTag = `unified-prep-${Date.now()}`;
-  const login = await runLoginSmoke(platformOrigin, env, fixtureTag);
-  const specialist = await runSpecialistSmoke(env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ''), env);
-
-  const result = {
-    status: 'PASS',
-    capturedAt: new Date().toISOString(),
-    pins,
-    runtime: {
+    bootstrapStack(pins);
+    const { report: probeReport } = await probeRunStack({
       runDir: RUN_DIR,
-      meta,
-      probeReport,
-      platformOrigin,
-      navigatorBuildId: meta.runtime.navigator.nextBuildId,
-      platformBuildId: meta.runtime.platform.nextBuildId,
-      platformBuiltHead: meta.runtime.platform.gitHead,
-      navigatorHead: meta.runtime.navigator.gitHead,
-    },
-    login,
-    specialist,
-  };
-  return result;
+      navRoot: NAV,
+      platRoot: ROOT,
+      expectNavigatorSha: pins.navigator,
+      expectPlatformCodeSha: pins.platformStackPin,
+    });
+    const meta = loadRunMeta(RUN_DIR);
+    const env = loadEnvFile(meta.envPath);
+    const platformOrigin = `http://127.0.0.1:${meta.platformPort}`;
+
+    const fixtureTag = `unified-prep-${Date.now()}`;
+    const cleanupProbes = runCleanupInjectProbes(env);
+    const login = await runLoginSmoke(platformOrigin, env, fixtureTag);
+    const specialist = await runSpecialistSmoke(env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ''), env);
+
+    return {
+      status: 'PASS',
+      capturedAt: new Date().toISOString(),
+      runtimeNote:
+        'Disposable stack uses production dist + NODE_ENV=development for MOCK auth only; not production auth verification',
+      pins,
+      runtime: {
+        runDir: RUN_DIR,
+        meta,
+        probeReport,
+        platformOrigin,
+        navigatorBuildId: meta.runtime.navigator.nextBuildId,
+        platformBuildId: meta.runtime.platform.nextBuildId,
+        platformBuiltHead: meta.runtime.platform.gitHead,
+        navigatorHead: meta.runtime.navigator.gitHead,
+      },
+      cleanupProbes,
+      login,
+      specialist,
+    };
   } finally {
     cleanupHarnessSideEffects();
   }

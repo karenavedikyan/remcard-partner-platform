@@ -1,35 +1,38 @@
 #!/usr/bin/env node
-/** UNIFIED-LOGIN-SPECIALIST-PREP-01.1 disposable evidence (no prod). */
+/** UNIFIED-LOGIN-SPECIALIST-PREP-01.2 disposable evidence (no prod). */
 import { createHash } from 'node:crypto';
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runUnifiedPrepBrowserSmoke } from './unified-login-specialist-prep-browser.mjs';
+import {
+  NAV_EVIDENCE_DIST,
+  PLAT_EVIDENCE_DIST,
+  assertSourceDigestUnchanged,
+  gitDirty,
+  gitHead,
+  readBuildIdFresh,
+  removeDistForCleanBuild,
+  trackedSourceDigest,
+} from './lib/unified-prep-source-gates.mjs';
 
 const PLAT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV = path.resolve(PLAT, '../remcard-navigator');
 const OUT = path.join(PLAT, 'artifacts/unified-login-specialist-prep');
+const SCRATCH_JSON = path.join('/tmp', 'UNIFIED-PREP-01-EVIDENCE.scratch.json');
 const JSON_OUT = path.join(OUT, 'UNIFIED-PREP-01-EVIDENCE.json');
 const SHA_OUT = path.join(OUT, 'UNIFIED-PREP-01-EVIDENCE.sha256');
 const PLAT_BUILD_LOG = path.join(OUT, 'UNIFIED-PREP-01-plat-build.log');
 const PLAT_NPM_CI_LOG = path.join(OUT, 'UNIFIED-PREP-01-plat-npm-ci.log');
 const NAV_BUILD_LOG = path.join(OUT, 'UNIFIED-PREP-01-nav-build.log');
+const SOURCE_DELTA_MANIFEST = path.join(OUT, 'UNIFIED-PREP-01-SOURCE-DELTA.json');
 
 const LOCAL_BUILD_LEGAL = {
   PLATFORM_INN: process.env.PLATFORM_INN || '0000000000',
   PLATFORM_OGRN: process.env.PLATFORM_OGRN || '0000000000000',
   note: 'placeholder legal ids for disposable local production build only — not prod readiness',
 };
-
-function gitHead(cwd) {
-  return execSync('git rev-parse HEAD', { cwd, encoding: 'utf8' }).trim();
-}
-
-function gitDirty(cwd) {
-  const out = execSync('git status --porcelain', { cwd, encoding: 'utf8' }).trim();
-  return { dirty: Boolean(out), files: out ? out.split('\n') : [] };
-}
 
 function sha256Bytes(buf) {
   return createHash('sha256').update(buf).digest('hex');
@@ -66,20 +69,6 @@ function assertCleanCommittedHeads() {
   return { platform: gitHead(PLAT), navigator: gitHead(NAV) };
 }
 
-function assertHeadUnchanged(builtCodeSha) {
-  const now = { platform: gitHead(PLAT), navigator: gitHead(NAV) };
-  if (now.platform !== builtCodeSha.platform || now.navigator !== builtCodeSha.navigator) {
-    throw new Error(`code HEAD changed during evidence run: start ${JSON.stringify(builtCodeSha)} now ${JSON.stringify(now)}`);
-  }
-}
-
-function readBuildId(cwd, distDir = '.next') {
-  const p = path.join(cwd, distDir, 'BUILD_ID');
-  if (!existsSync(p)) return null;
-  const id = readFileSync(p, 'utf8').trim();
-  return id || null;
-}
-
 function countNodeTest(out) {
   const pass = out.match(/# pass (\d+)/)?.[1];
   const fail = out.match(/# fail (\d+)/)?.[1];
@@ -92,9 +81,11 @@ function countNodeTest(out) {
 }
 
 function writeEvidence(payload) {
-  writeFileSync(JSON_OUT, JSON.stringify(payload, null, 2) + '\n');
-  const bytes = readFileSync(JSON_OUT);
+  writeFileSync(SCRATCH_JSON, JSON.stringify(payload, null, 2) + '\n');
+  const bytes = readFileSync(SCRATCH_JSON);
   const digest = sha256Bytes(bytes);
+  mkdirSync(OUT, { recursive: true });
+  copyFileSync(SCRATCH_JSON, JSON_OUT);
   writeFileSync(SHA_OUT, `${digest}  UNIFIED-PREP-01-EVIDENCE.json\n`);
   return { digest, byteLength: bytes.length };
 }
@@ -102,63 +93,59 @@ function writeEvidence(payload) {
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const builtCodeSha = assertCleanCommittedHeads();
+  const sourceAtStart = {
+    platform: trackedSourceDigest(PLAT),
+    navigator: trackedSourceDigest(NAV),
+  };
   const treeAtStart = { platform: gitDirty(PLAT), navigator: gitDirty(NAV) };
 
-  if (existsSync(path.join(PLAT, '.next'))) {
-    rmSync(path.join(PLAT, '.next'), { recursive: true, force: true });
-  }
-
+  removeDistForCleanBuild(PLAT, PLAT_EVIDENCE_DIST);
   const npmCi = runRecorded('npm', ['ci', '--include=dev'], PLAT);
   writeLog(PLAT_NPM_CI_LOG, `${npmCi.stdout}\n${npmCi.stderr}`);
-  if (npmCi.exitCode !== 0) {
-    throw new Error(`npm ci failed exit ${npmCi.exitCode}`);
-  }
+  if (npmCi.exitCode !== 0) throw new Error(`npm ci failed exit ${npmCi.exitCode}`);
 
+  const platBuildStarted = Date.now();
   const platBuild = runRecorded('npm', ['run', 'build'], PLAT, {
     ...process.env,
     ...LOCAL_BUILD_LEGAL,
+    R06_NEXT_DIST_DIR: PLAT_EVIDENCE_DIST,
   });
-  const platBuildLog = writeLog(
-    PLAT_BUILD_LOG,
-    `${platBuild.stdout}\n${platBuild.stderr}`,
-  );
-  if (platBuild.exitCode !== 0) {
-    throw new Error(`platform build failed exit ${platBuild.exitCode}`);
-  }
-  try {
-    execSync('git restore next-env.d.ts', { cwd: PLAT, stdio: 'ignore' });
-  } catch {
-    /* optional */
-  }
-  const platBuildId = readBuildId(PLAT);
-  if (!platBuildId) {
-    throw new Error('platform BUILD_ID missing or empty after build');
-  }
+  const platBuildLog = writeLog(PLAT_BUILD_LOG, `${platBuild.stdout}\n${platBuild.stderr}`);
+  if (platBuild.exitCode !== 0) throw new Error(`platform build failed exit ${platBuild.exitCode}`);
+  const platBuildId = readBuildIdFresh(PLAT, PLAT_EVIDENCE_DIST, platBuildStarted);
 
+  removeDistForCleanBuild(NAV, NAV_EVIDENCE_DIST);
+  const navBuildStarted = Date.now();
   const navBuild = runRecorded('pnpm', ['run', 'build'], NAV, {
     ...process.env,
     ...LOCAL_BUILD_LEGAL,
+    R06_NEXT_DIST_DIR: NAV_EVIDENCE_DIST,
   });
   const navBuildLog = writeLog(NAV_BUILD_LOG, `${navBuild.stdout}\n${navBuild.stderr}`);
-  if (navBuild.exitCode !== 0) {
-    throw new Error(`navigator build failed exit ${navBuild.exitCode}`);
-  }
-  const navBuildId = readBuildId(NAV);
-  if (!navBuildId) {
-    throw new Error('navigator BUILD_ID missing or empty after build');
-  }
+  if (navBuild.exitCode !== 0) throw new Error(`navigator build failed exit ${navBuild.exitCode}`);
+  const navBuildId = readBuildIdFresh(NAV, NAV_EVIDENCE_DIST, navBuildStarted);
 
-  assertHeadUnchanged(builtCodeSha);
+  const sourceAfterBuild = {
+    platform: trackedSourceDigest(PLAT),
+    navigator: trackedSourceDigest(NAV),
+  };
+  const sourceDeltaAfterBuild = {
+    platform: assertSourceDigestUnchanged(PLAT, 'platform', sourceAtStart.platform, sourceAfterBuild.platform),
+    navigator: assertSourceDigestUnchanged(NAV, 'navigator', sourceAtStart.navigator, sourceAfterBuild.navigator),
+  };
+
+  const gateUnit = runRecorded(
+    process.execPath,
+    [
+      '--test',
+      'scripts/lib/__tests__/unified-prep-evidence-gates.test.mjs',
+    ],
+    PLAT,
+  );
 
   const loginComponents = runRecorded(
     'npm',
-    [
-      'run',
-      'test:component',
-      '--',
-      'src/components/auth/LoginExperience.test.tsx',
-      'src/components/auth/AuthFlow.test.tsx',
-    ],
+    ['run', 'test:component', '--', 'src/components/auth/LoginExperience.test.tsx', 'src/components/auth/AuthFlow.test.tsx'],
     PLAT,
     { ...process.env, NODE_ENV: 'test' },
   );
@@ -178,13 +165,7 @@ async function main() {
 
   const platformR06Unit = runRecorded(
     'pnpm',
-    [
-      'exec',
-      'vitest',
-      'run',
-      'src/lib/taxonomy-proposal-api.wire.test.ts',
-      'src/lib/remcard-proxy-r06-tail.test.ts',
-    ],
+    ['exec', 'vitest', 'run', 'src/lib/taxonomy-proposal-api.wire.test.ts', 'src/lib/remcard-proxy-r06-tail.test.ts'],
     PLAT,
   );
 
@@ -225,24 +206,46 @@ async function main() {
     browserPayload = { status: 'FAIL', error: String(e?.message ?? e) };
   }
 
-  assertHeadUnchanged(builtCodeSha);
-  const evidenceRunnerHead = gitHead(PLAT);
+  const sourceAfterAll = {
+    platform: trackedSourceDigest(PLAT),
+    navigator: trackedSourceDigest(NAV),
+  };
+  const sourceDeltaFinal = {
+    platform: assertSourceDigestUnchanged(PLAT, 'platform', sourceAtStart.platform, sourceAfterAll.platform, [
+      'scripts/\\.login-layout-.*',
+    ]),
+    navigator: assertSourceDigestUnchanged(NAV, 'navigator', sourceAtStart.navigator, sourceAfterAll.navigator, [
+      'scripts/\\.login-layout-.*',
+    ]),
+  };
+  writeFileSync(
+    SOURCE_DELTA_MANIFEST,
+    `${JSON.stringify({ sourceAtStart, sourceAfterBuild, sourceAfterAll, sourceDeltaAfterBuild, sourceDeltaFinal }, null, 2)}\n`,
+  );
+
+  if (builtCodeSha.platform !== gitHead(PLAT) || builtCodeSha.navigator !== gitHead(NAV)) {
+    throw new Error('code HEAD changed during evidence run');
+  }
 
   const payload = {
-    task: 'UNIFIED-LOGIN-SPECIALIST-PREP-01.1',
+    task: 'UNIFIED-LOGIN-SPECIALIST-PREP-01.2',
     capturedAt: new Date().toISOString(),
     provenance: {
       builtCodeSha,
-      evidenceRunnerGitHead: evidenceRunnerHead,
+      evidenceRunnerGitHead: gitHead(PLAT),
       treeAtEvidenceStart: treeAtStart,
-      note: 'builtCodeSha must match EXPECT_PLATFORM_HEAD/EXPECT_NAV_HEAD; evidenceRunnerGitHead is platform HEAD after run (evidence-only commit follows separately)',
+      sourceAtStart,
+      sourceDeltaManifest: SOURCE_DELTA_MANIFEST,
+      note: 'Production build uses isolated dist dirs; browser uses separate MOCK development runtime stack',
     },
     productionBuild: {
       platform: {
         command: 'npm ci --include=dev && npm run build',
+        distDir: PLAT_EVIDENCE_DIST,
         npmCiExitCode: npmCi.exitCode,
         buildExitCode: platBuild.exitCode,
-        BUILD_ID: platBuildId,
+        BUILD_ID: platBuildId.id,
+        buildIdMtimeMs: platBuildId.mtimeMs,
         sourceSha: builtCodeSha.platform,
         npmCiLog: PLAT_NPM_CI_LOG,
         buildLog: platBuildLog,
@@ -250,14 +253,17 @@ async function main() {
       },
       navigator: {
         command: 'pnpm run build',
+        distDir: NAV_EVIDENCE_DIST,
         exitCode: navBuild.exitCode,
-        BUILD_ID: navBuildId,
+        BUILD_ID: navBuildId.id,
+        buildIdMtimeMs: navBuildId.mtimeMs,
         sourceSha: builtCodeSha.navigator,
         buildLog: navBuildLog,
         legalEnvNote: LOCAL_BUILD_LEGAL.note,
       },
     },
     tests: {
+      gateUnit,
       loginAuthComponents: {
         command: loginComponents.command,
         exitCode: loginComponents.exitCode,
@@ -273,7 +279,7 @@ async function main() {
     },
     pg: {
       exitCode: pgEvidence.exitCode,
-      stdout: pgEvidence.stdout.trim().slice(0, 4000),
+      stdout: pgEvidence.stdout.trim().slice(0, 8000),
       stderr: pgEvidence.stderr.trim().slice(0, 2000),
     },
     gate: 'PROF_R06_SPECIALIST_PROFILE_ENABLED defaults OFF (global)',
@@ -282,20 +288,22 @@ async function main() {
   const checksum = writeEvidence(payload);
 
   const browserOk = browserPayload.status === 'PASS';
-  const ok =
+  const ok = Boolean(
     npmCi.exitCode === 0 &&
-    platBuild.exitCode === 0 &&
-    navBuild.exitCode === 0 &&
-    platBuildId &&
-    navBuildId &&
-    loginComponents.exitCode === 0 &&
-    guardUnit.exitCode === 0 &&
-    platformR06Unit.exitCode === 0 &&
-    navUnit.exitCode === 0 &&
-    pgEvidence.exitCode === 0 &&
-    authRereg.exitCode === 0 &&
-    maxEntry.exitCode === 0 &&
-    browserOk;
+      platBuild.exitCode === 0 &&
+      navBuild.exitCode === 0 &&
+      platBuildId.id &&
+      navBuildId.id &&
+      gateUnit.exitCode === 0 &&
+      loginComponents.exitCode === 0 &&
+      guardUnit.exitCode === 0 &&
+      platformR06Unit.exitCode === 0 &&
+      navUnit.exitCode === 0 &&
+      pgEvidence.exitCode === 0 &&
+      authRereg.exitCode === 0 &&
+      maxEntry.exitCode === 0 &&
+      browserOk,
+  );
 
   console.log(
     JSON.stringify({

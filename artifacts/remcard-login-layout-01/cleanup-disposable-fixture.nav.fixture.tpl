@@ -9,7 +9,11 @@ if (!tag) {
   process.exit(2);
 }
 
-const FIXTURE_MAX_ID = process.env.LOGIN_LAYOUT_FIXTURE_MAX_ID ?? "881001847291";
+const FIXTURE_MAX_ID = process.env.LOGIN_LAYOUT_FIXTURE_MAX_ID?.trim();
+if (!FIXTURE_MAX_ID) {
+  console.error("cleanup: LOGIN_LAYOUT_FIXTURE_MAX_ID required");
+  process.exit(2);
+}
 const publicId = `pub-${tag}`;
 
 async function main() {
@@ -36,16 +40,14 @@ async function main() {
     deleted.botLoginCodes = delCodes.count;
   }
 
+  const maxIdentifier = `max:${FIXTURE_MAX_ID}`;
   const remaining = {
     users: await prisma.user.count({ where: { publicId } }),
     authAccounts: user
       ? await prisma.authAccount.count({ where: { userId: user.id } })
       : 0,
     consents: user ? await prisma.consent.count({ where: { userId: user.id } }) : 0,
-    botLoginCodes:
-      deleted.users > 0
-        ? await prisma.botLoginCode.count({ where: { identifier: `max:${FIXTURE_MAX_ID}` } })
-        : 0,
+    botLoginCodes: await prisma.botLoginCode.count({ where: { identifier: maxIdentifier } }),
   };
 
   const report = { mock: true, tag, publicId, deleted, remaining };
