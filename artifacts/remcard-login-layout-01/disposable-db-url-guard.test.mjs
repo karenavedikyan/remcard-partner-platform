@@ -8,15 +8,19 @@ import {
   ALLOWED_DISPOSABLE_DATABASE,
   assertDisposableDatabaseUrl,
   parseDisposableDatabaseUrl,
+  resolvePgConnectionParameters,
 } from "./disposable-db-url-guard.mjs";
 
 const OK = `postgresql://remcard_r01:secret@127.0.0.1:5432/${ALLOWED_DISPOSABLE_DATABASE}`;
+const RUNTIME_ENV = "/tmp/admin-test-local-stack/runtime.env";
+const INJECT_FAIL_MARKER = "cleanup: injected failure (LOGIN_LAYOUT_CLEANUP_INJECT_FAIL)";
 
 describe("disposable-db-url-guard", () => {
   it("accepts loopback postgres with exact database pathname", () => {
     const p = parseDisposableDatabaseUrl(OK);
     assert.equal(p.database, ALLOWED_DISPOSABLE_DATABASE);
     assert.equal(p.host, "127.0.0.1");
+    assert.equal(p.pgHost, "127.0.0.1");
     assert.match(p.safeSummary, /^postgresql:\/\/127\.0\.0\.1\//);
     assert.doesNotMatch(p.safeSummary, /secret/);
   });
@@ -26,6 +30,14 @@ describe("disposable-db-url-guard", () => {
       `postgres://u:p@[::1]:5432/${ALLOWED_DISPOSABLE_DATABASE}`,
     );
     assert.equal(p.host, "::1");
+    assert.equal(p.pgHost, "::1");
+  });
+
+  it("accepts allowlisted sslmode on loopback URL", () => {
+    const url = `${OK}?sslmode=disable`;
+    assert.doesNotThrow(() => parseDisposableDatabaseUrl(url));
+    const pg = resolvePgConnectionParameters(url);
+    assert.equal(normalizePgHost(pg.host), "127.0.0.1");
   });
 
   it("rejects wrong database in pathname (password contains allowed name)", () => {
@@ -45,6 +57,28 @@ describe("disposable-db-url-guard", () => {
     );
   });
 
+  it("rejects pg query host override with loopback authority", () => {
+    const bypass = `postgresql://review:placeholder@127.0.0.1/${ALLOWED_DISPOSABLE_DATABASE}?host=203.0.113.9`;
+    assert.throws(() => parseDisposableDatabaseUrl(bypass), /disallowed query parameter/);
+    const pg = resolvePgConnectionParameters(bypass);
+    assert.equal(pg.host, "203.0.113.9");
+  });
+
+  it("rejects percent-encoded host query override", () => {
+    const bypass = `postgresql://u:p@127.0.0.1/${ALLOWED_DISPOSABLE_DATABASE}?${encodeURIComponent("host")}=203.0.113.9`;
+    assert.throws(() => parseDisposableDatabaseUrl(bypass), /disallowed query parameter/);
+  });
+
+  it("rejects duplicate query override alongside allowlisted param", () => {
+    const bypass = `postgresql://u:p@127.0.0.1/${ALLOWED_DISPOSABLE_DATABASE}?sslmode=disable&host=203.0.113.9`;
+    assert.throws(() => parseDisposableDatabaseUrl(bypass), /disallowed query parameter/);
+  });
+
+  it("rejects database override via query dbname", () => {
+    const bypass = `postgresql://u:p@127.0.0.1/${ALLOWED_DISPOSABLE_DATABASE}?dbname=other_db`;
+    assert.throws(() => parseDisposableDatabaseUrl(bypass), /disallowed query parameter/);
+  });
+
   it("rejects malformed URL", () => {
     assert.throws(() => parseDisposableDatabaseUrl("not-a-url"), /malformed URL/);
   });
@@ -53,13 +87,6 @@ describe("disposable-db-url-guard", () => {
     assert.throws(
       () => parseDisposableDatabaseUrl(`mysql://127.0.0.1/${ALLOWED_DISPOSABLE_DATABASE}`),
       /unsupported scheme/,
-    );
-  });
-
-  it("rejects database name only in password without pathname match", () => {
-    assert.throws(
-      () => parseDisposableDatabaseUrl(`postgresql://u:${ALLOWED_DISPOSABLE_DATABASE}@127.0.0.1/wrong_db`),
-      /database must be/,
     );
   });
 
@@ -78,8 +105,15 @@ describe("disposable-db-url-guard", () => {
   });
 });
 
-describe("login-layout cleanup inject-fail probe", () => {
-  it("intentional cleanup inject-fail exits non-zero", () => {
+function normalizePgHost(host) {
+  if (!host) return "";
+  let h = String(host).toLowerCase();
+  if (h.startsWith("[") && h.endsWith("]")) h = h.slice(1, -1);
+  return h;
+}
+
+describe("login-layout cleanup inject-fail (disposable PG)", () => {
+  it("real inject-fail exits non-zero with harness marker", { skip: !existsSync(RUNTIME_ENV) && "no disposable runtime.env" }, () => {
     const dir = path.dirname(fileURLToPath(import.meta.url));
     const nav = path.resolve(dir, "../../../remcard-navigator");
     const template = path.join(dir, "cleanup-disposable-fixture.nav.ts");
@@ -88,12 +122,8 @@ describe("login-layout cleanup inject-fail probe", () => {
     const guardDest = path.join(nav, "scripts/.login-layout-disposable-db-url-guard.mjs");
     writeFileSync(dest, readFileSync(template));
     writeFileSync(guardDest, readFileSync(guardSrc));
-    const runtimeEnv = "/tmp/admin-test-local-stack/runtime.env";
-    if (!existsSync(runtimeEnv)) {
-      return;
-    }
     const env = { ...process.env, NODE_ENV: "development", LOGIN_LAYOUT_CLEANUP_INJECT_FAIL: "1" };
-    for (const line of readFileSync(runtimeEnv, "utf8").split("\n")) {
+    for (const line of readFileSync(RUNTIME_ENV, "utf8").split("\n")) {
       if (!line || line.startsWith("#")) continue;
       const idx = line.indexOf("=");
       if (idx > 0) env[line.slice(0, idx)] = line.slice(idx + 1);
@@ -104,5 +134,7 @@ describe("login-layout cleanup inject-fail probe", () => {
       encoding: "utf8",
     });
     assert.notEqual(r.status, 0, `expected inject-fail cleanup exit != 0, got ${r.status}`);
+    const errOut = `${r.stderr || ""}${r.stdout || ""}`;
+    assert.match(errOut, new RegExp(INJECT_FAIL_MARKER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   });
 });

@@ -1,0 +1,6 @@
+{
+  "regression": "VERIFIED_MOCK_DISPOSABLE",
+  "exitCode": 0,
+  "unitGuard": true,
+  "cleanup": true
+}

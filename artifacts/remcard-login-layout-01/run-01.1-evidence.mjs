@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LOGIN-LAYOUT-01.3: disposable MOCK OTP regression (URL guard + fail-closed cleanup).
+ * LOGIN-LAYOUT-01.4: disposable MOCK OTP regression (URL guard + fail-closed cleanup).
  */
 import { chromium } from "playwright";
 import { spawnSync } from "node:child_process";
@@ -12,6 +12,7 @@ import {
   ALLOWED_DISPOSABLE_DATABASE,
   assertDisposableDatabaseUrl,
 } from "./disposable-db-url-guard.mjs";
+import { evaluateCleanupChildResult } from "./login-layout-cleanup-orchestration.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -155,27 +156,12 @@ function runCleanup(env, tag) {
     }),
     encoding: "utf8",
   });
-  const stderr = (r.stderr || "").trim();
-  const stdout = (r.stdout || "").trim();
-  if (r.error) {
-    throw new Error(`cleanup spawn error: ${r.error.message}`);
-  }
-  if (r.status !== 0) {
-    throw new Error(`cleanup exit ${r.status}: ${stderr || stdout || "unknown"}`);
-  }
-  let report;
-  try {
-    report = JSON.parse(stdout.split("\n").filter(Boolean).pop() ?? "{}");
-  } catch {
-    throw new Error("cleanup did not emit JSON report on stdout");
-  }
-  const rem = report.remaining ?? {};
-  const leftover =
-    (rem.users ?? 0) + (rem.authAccounts ?? 0) + (rem.consents ?? 0) + (rem.botLoginCodes ?? 0);
-  if (leftover > 0) {
-    throw new Error(`cleanup remaining fixture rows: ${JSON.stringify(rem)}`);
-  }
-  return report;
+  return evaluateCleanupChildResult({
+    status: r.status,
+    error: r.error ?? null,
+    stdout: r.stdout ?? "",
+    stderr: r.stderr ?? "",
+  });
 }
 
 function reseedOtp(env, tag) {
@@ -424,13 +410,18 @@ async function main() {
   await assertStackAuthHealthy(stackMeta.platformOrigin, stackMeta.navOrigin);
   const platformOrigin = stackMeta.platformOrigin;
 
-  const unitTests = spawnSync(
-    process.execPath,
-    ["--test", path.join(ART, "disposable-db-url-guard.test.mjs")],
-    { cwd: ROOT, encoding: "utf8", env: withDevNodeEnv(process.env) },
-  );
+  const unitTestFiles = [
+    path.join(ART, "disposable-db-url-guard.test.mjs"),
+    path.join(ART, "login-layout-cleanup-orchestration.test.mjs"),
+  ];
+  const unitTests = spawnSync(process.execPath, ["--test", ...unitTestFiles], {
+    cwd: ROOT,
+    encoding: "utf8",
+    env: withDevNodeEnv(process.env),
+  });
   const unitGuard = {
-    command: "node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs",
+    command:
+      "node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs artifacts/remcard-login-layout-01/login-layout-cleanup-orchestration.test.mjs",
     exitCode: unitTests.status ?? 1,
     passed: unitTests.status === 0,
   };
@@ -457,6 +448,17 @@ async function main() {
   const evidenceTipSha = gitSha(ROOT);
   const manifestPath = path.join(ART, "manifest.json");
   let manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")) : {};
+  manifest.loginLayout014 = {
+    task: "LOGIN-LAYOUT-01.4",
+    recordedAt: new Date().toISOString(),
+    codeSha,
+    runtimeSha,
+    evidenceTipSha,
+    disposableDbGuard: env.disposableDbGuard,
+    unitGuard,
+    loginLogoutRelogin: regression,
+    cleanup: regression.cleanup ?? null,
+  };
   manifest.loginLayout013 = {
     task: "LOGIN-LAYOUT-01.3",
     recordedAt: new Date().toISOString(),
@@ -485,8 +487,8 @@ async function main() {
 
   const testRun = {
     status: regression.status === "VERIFIED_MOCK_DISPOSABLE" ? "READY_FOR_REVIEW" : "FAIL",
-    task: "LOGIN-LAYOUT-01.3",
-    baseSha: "96e4f958702222366414c8f917fb7dee4297074f",
+    task: "LOGIN-LAYOUT-01.4",
+    baseSha: "7a778e8087c4e6fda93a5351a4edd8e23eb1f370",
     codeSha,
     evidenceTipSha,
     command:
@@ -500,7 +502,7 @@ async function main() {
     desktopLayout: regression.desktopLayoutAfterRelogin ?? null,
     cleanup: regression.cleanup ?? null,
   };
-  writeFileSync(path.join(ART, "test-run-01.3.json"), `${JSON.stringify(testRun, null, 2)}\n`);
+  writeFileSync(path.join(ART, "test-run-01.4.json"), `${JSON.stringify(testRun, null, 2)}\n`);
 
   console.log(
     JSON.stringify(
