@@ -28,8 +28,9 @@ export function porcelainPaths(porcelain) {
   if (!porcelain) return [];
   return porcelain.split('\n').filter(Boolean).map((line) => {
     if (line.startsWith('??')) return line.slice(3).trim();
-    const m = line.match(/^.. (.+)$/);
-    return (m ? m[1] : line.slice(3)).trim();
+    if (line.length >= 3 && line[2] === ' ') return line.slice(3).trim();
+    if (line.length >= 2 && line[1] === ' ') return line.slice(2).trim();
+    return line.trim();
   });
 }
 
