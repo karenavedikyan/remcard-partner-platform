@@ -17,6 +17,7 @@ import {
   assertDisposableDatabaseUrl,
 } from '../artifacts/remcard-login-layout-01/disposable-db-url-guard.mjs';
 import { evaluateCleanupChildResult } from '../artifacts/remcard-login-layout-01/login-layout-cleanup-orchestration.mjs';
+import { withRequiredCleanup } from './lib/unified-prep-cleanup.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV = path.resolve(ROOT, '../remcard-navigator');
@@ -181,7 +182,7 @@ function runFixture(env, action) {
   return r.stdout.trim();
 }
 
-function runCleanupInjectProbes(env) {
+async function runCleanupInjectProbes(env) {
   const controlTag = `unified-prep-control-${Date.now()}`;
   const controlMaxId = `881${String(Date.now()).slice(-8)}1`;
   const controlOtp = String(100000 + ((Date.now() + 1) % 900000)).padStart(6, '0');
@@ -190,8 +191,6 @@ function runCleanupInjectProbes(env) {
     LOGIN_LAYOUT_FIXTURE_MAX_ID: controlMaxId,
     LOGIN_LAYOUT_FIXTURE_OTP: controlOtp,
   };
-  runSeed(controlEnv, controlTag);
-
   const probeTag = `unified-prep-inject-${Date.now()}`;
   const probeMaxId = `881${String(Date.now()).slice(-8)}2`;
   const probeOtp = String(100000 + ((Date.now() + 2) % 900000)).padStart(6, '0');
@@ -200,8 +199,9 @@ function runCleanupInjectProbes(env) {
     LOGIN_LAYOUT_FIXTURE_MAX_ID: probeMaxId,
     LOGIN_LAYOUT_FIXTURE_OTP: probeOtp,
   };
+  return withRequiredCleanup(async () => {
+  runSeed(controlEnv, controlTag);
   runSeed(probeEnv, probeTag);
-
   let injectRejected = false;
   try {
     runLoginCleanup(probeEnv, probeTag, probeMaxId, { injectFail: true });
@@ -217,6 +217,9 @@ function runCleanupInjectProbes(env) {
 
   const controlCleanup = runLoginCleanup(controlEnv, controlTag, controlMaxId);
   assertCleanupZero(controlCleanup, 'controlTag');
+  for (const [key, count] of Object.entries({ users: 1, authAccounts: 1, consents: 2, botLoginCodes: 1 })) {
+    if (controlCleanup.deleted[key] !== count) throw new Error(`control fixture changed:${key}`);
+  }
 
   return {
     ok: true,
@@ -228,6 +231,14 @@ function runCleanupInjectProbes(env) {
     probeCleanup: probeAfterInject,
     controlCleanup,
   };
+  }, async () => {
+    const errors = [];
+    for (const [fixtureEnv, tag, maxId] of [[probeEnv, probeTag, probeMaxId], [controlEnv, controlTag, controlMaxId]]) {
+      try { assertCleanupZero(runLoginCleanup(fixtureEnv, tag, maxId), tag); }
+      catch (error) { errors.push(error); }
+    }
+    if (errors.length) throw new AggregateError(errors, 'cleanup probe finalization failed');
+  });
 }
 
 async function fetchAuthMe(platformOrigin, cookieHeader) {
@@ -388,10 +399,12 @@ async function mintCookie(context, env) {
 
 async function runSpecialistSmoke(base, env) {
   const snapshotJson = runSpecialistShared('capture', env);
-  runFixture(env, 'reset-e2e');
-  const browser = await chromium.launch({ headless: true });
+  let browser;
   const steps = {};
-  try {
+  let sharedFixtureRestore, sharedFixtureVerify;
+  const result = await withRequiredCleanup(async () => {
+    runFixture(env, 'reset-e2e');
+    browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     await mintCookie(context, env);
     const page = await context.newPage();
@@ -470,18 +483,16 @@ async function runSpecialistSmoke(base, env) {
     await ctxRe.close();
     await browser.close();
 
-    const restoreOut = runSpecialistShared('restore', env, snapshotJson);
-    const verifyOut = runSpecialistShared('verify', env, snapshotJson);
-    return { ok: true, steps, sharedFixtureRestore: JSON.parse(restoreOut), sharedFixtureVerify: JSON.parse(verifyOut) };
-  } catch (e) {
-    await browser.close().catch(() => {});
-    try {
-      runSpecialistShared('restore', env, snapshotJson);
-    } catch {
-      /* best effort */
+    return { ok: true, steps };
+  }, async () => {
+    if (browser) await browser.close().catch(() => {});
+    sharedFixtureRestore = JSON.parse(runSpecialistShared('restore', env, snapshotJson));
+    sharedFixtureVerify = JSON.parse(runSpecialistShared('verify', env, snapshotJson));
+    if (sharedFixtureRestore.ok !== true || sharedFixtureVerify.ok !== true) {
+      throw new Error('specialist snapshot restore/verify failed');
     }
-    throw e;
-  }
+  });
+  return { ...result, sharedFixtureRestore, sharedFixtureVerify };
 }
 
 export async function runUnifiedPrepBrowserSmoke() {
@@ -500,7 +511,7 @@ export async function runUnifiedPrepBrowserSmoke() {
     const platformOrigin = `http://127.0.0.1:${meta.platformPort}`;
 
     const fixtureTag = `unified-prep-${Date.now()}`;
-    const cleanupProbes = runCleanupInjectProbes(env);
+    const cleanupProbes = await runCleanupInjectProbes(env);
     const login = await runLoginSmoke(platformOrigin, env, fixtureTag);
     const specialist = await runSpecialistSmoke(env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ''), env);
 

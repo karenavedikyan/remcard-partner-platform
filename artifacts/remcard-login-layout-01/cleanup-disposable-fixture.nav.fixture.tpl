@@ -26,6 +26,13 @@ async function main() {
 
   const user = await prisma.user.findUnique({ where: { publicId } });
   const deleted = { users: 0, authAccounts: 0, consents: 0, botLoginCodes: 0 };
+  if (user && String(user.maxId) !== FIXTURE_MAX_ID) {
+    throw new Error('cleanup: fixture maxId does not match tagged user');
+  }
+  const holder = await prisma.user.findUnique({ where: { maxId: BigInt(FIXTURE_MAX_ID) } });
+  if (holder && holder.publicId !== publicId) {
+    throw new Error('cleanup: maxId belongs to another fixture');
+  }
 
   if (user) {
     const delConsents = await prisma.consent.deleteMany({ where: { userId: user.id } });
@@ -34,11 +41,11 @@ async function main() {
     deleted.authAccounts = delAccounts.count;
     await prisma.user.delete({ where: { id: user.id } });
     deleted.users = 1;
-    const delCodes = await prisma.botLoginCode.deleteMany({
-      where: { identifier: `max:${FIXTURE_MAX_ID}` },
-    });
-    deleted.botLoginCodes = delCodes.count;
   }
+  const delCodes = await prisma.botLoginCode.deleteMany({
+    where: { identifier: `max:${FIXTURE_MAX_ID}` },
+  });
+  deleted.botLoginCodes = delCodes.count;
 
   const maxIdentifier = `max:${FIXTURE_MAX_ID}`;
   const remaining = {

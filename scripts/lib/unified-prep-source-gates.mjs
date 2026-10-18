@@ -3,13 +3,13 @@ import { createHash } from 'node:crypto';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 export const PLAT_EVIDENCE_DIST = '.next-unified-prep-evidence';
 export const NAV_EVIDENCE_DIST = '.next-unified-prep-evidence';
 
 /** Paths that may change during harness without failing source gate (recorded, not restored blindly). */
 export const GENERATED_PATH_ALLOWLIST = [
-  /^next-env\.d\.ts$/,
   /^tsconfig\.tsbuildinfo$/,
   /^\.next-unified-prep-evidence\//,
   /^\.next-r06-local-/,
@@ -21,7 +21,7 @@ export function gitHead(cwd) {
 }
 
 export function gitPorcelain(cwd) {
-  return execSync('git status --porcelain', { cwd, encoding: 'utf8' }).trim();
+  return execSync('git status --porcelain', { cwd, encoding: 'utf8' }).trimEnd();
 }
 
 export function porcelainPaths(porcelain) {
@@ -39,12 +39,24 @@ export function gitDirty(cwd) {
   return { dirty: Boolean(out), files: out ? out.split('\n') : [] };
 }
 
+export function assertCleanCommittedTree(cwd) {
+  if (gitDirty(cwd).dirty) throw new Error('refusing evidence: dirty source tree');
+  return gitHead(cwd);
+}
+
+export function assertSuccessfulCommand(result, label) {
+  if (result.spawnError || result.signal || result.exitCode !== 0) {
+    throw new Error(`${label} failed: ${result.spawnError || result.signal || result.exitCode}`);
+  }
+}
+
 /** Digest of tracked source paths (excludes artifacts/ evidence outputs). */
 export function trackedSourceDigest(cwd, { excludeArtifacts = true } = {}) {
   const list = execSync('git ls-files -z', { cwd, encoding: 'buffer' });
   const files = list.toString('utf8').split('\0').filter(Boolean);
   const h = createHash('sha256');
   const included = [];
+  const hashes = {};
   for (const rel of files.sort()) {
     if (excludeArtifacts && rel.startsWith('artifacts/')) continue;
     if (rel.startsWith('node_modules/')) continue;
@@ -55,8 +67,9 @@ export function trackedSourceDigest(cwd, { excludeArtifacts = true } = {}) {
     h.update(readFileSync(abs));
     h.update('\0');
     included.push(rel);
+    hashes[rel] = createHash('sha256').update(readFileSync(abs)).digest('hex');
   }
-  return { digest: h.digest('hex'), fileCount: included.length, head: gitHead(cwd) };
+  return { digest: h.digest('hex'), fileCount: included.length, head: gitHead(cwd), hashes };
 }
 
 /** Next.js may append isolated-dist types glob to tsconfig include during builds. Allow only that delta vs HEAD. */
@@ -70,22 +83,24 @@ export function tsconfigIncludeDistDriftOk(cwd, distDir) {
   } catch {
     return { ok: false, reason: 'no committed tsconfig.json' };
   }
-  const current = JSON.parse(readFileSync(abs, 'utf8'));
+  let current;
+  try { current = JSON.parse(readFileSync(abs, 'utf8')); }
+  catch { return { ok: false, reason: 'invalid tsconfig JSON' }; }
   const distInclude = `${distDir}/types/**/*.ts`;
-  const stripNextTypeIncludes = (arr) =>
-    (arr ?? []).filter(
-      (x) => !(typeof x === 'string' && /^\.next[^/]*\/types\/\*\*\/\*\.ts$/.test(x)),
-    );
-  const baseCommitted = stripNextTypeIncludes(committed.include).slice().sort();
-  const baseCurrent = stripNextTypeIncludes(current.include).slice().sort();
-  if (JSON.stringify(baseCommitted) !== JSON.stringify(baseCurrent)) {
-    return { ok: false, reason: 'tsconfig include changed beyond next dist types', baseCommitted, baseCurrent };
+  if (!Array.isArray(current.include) || !Array.isArray(committed.include)) {
+    return { ok: false, reason: 'tsconfig include must be an array' };
   }
-  const typeIncludes = (current.include ?? []).filter(
-    (x) => typeof x === 'string' && /^\.next[^/]*\/types\/\*\*\/\*\.ts$/.test(x),
-  );
-  if (!typeIncludes.includes(distInclude)) {
-    return { ok: false, reason: `tsconfig missing allowlisted include ${distInclude}`, typeIncludes };
+  const allowedAdditions = new Set([
+    distInclude,
+    '.next-r06-local-nav/types/**/*.ts',
+    '.next-r06-local-plat/types/**/*.ts',
+  ]);
+  const normalized = {
+    ...current,
+    include: current.include.filter(x => !allowedAdditions.has(x) || committed.include.includes(x)),
+  };
+  if (!isDeepStrictEqual(normalized, committed)) {
+    return { ok: false, reason: 'tsconfig changed beyond explicit generated dist additions' };
   }
   const body = readFileSync(abs);
   return {
@@ -94,22 +109,43 @@ export function tsconfigIncludeDistDriftOk(cwd, distDir) {
     allowReason: 'next_isolated_dist_types_include',
     distInclude,
     sha256: createHash('sha256').update(body).digest('hex'),
+    addedIncludes: current.include.filter(x => !committed.include.includes(x)),
   };
+}
+
+function generatedNextEnvOk(cwd) {
+  const text = readFileSync(path.join(cwd, 'next-env.d.ts'), 'utf8');
+  const allowed = line => !line.trim() || line.trim().startsWith('// ') ||
+    /^\/\/\/ <reference types="next(?:\/image-types\/global)?" \/>$/.test(line) ||
+    /^\/\/\/ <reference path="\.\/\.next(?:-unified-prep-evidence|-r06-local-(?:nav|plat))?\/types\/routes\.d\.ts" \/>$/.test(line) ||
+    /^import "\.\/\.next(?:-unified-prep-evidence|-r06-local-(?:nav|plat))?\/types\/routes\.d\.ts";?$/.test(line);
+  return { ok: text.split(/\r?\n/).every(allowed), path: 'next-env.d.ts',
+    sha256: createHash('sha256').update(text).digest('hex') };
 }
 
 export function assertSourceDigestUnchanged(cwd, label, before, after, extraAllowDirty = [], fileCheck = null) {
   if (before.head !== after.head) {
     throw new Error(`${label}: HEAD changed ${before.head.slice(0, 12)} -> ${after.head.slice(0, 12)}`);
   }
-  if (before.digest === after.digest) return { ok: true, deltaFiles: [] };
+  if (!before.hashes && before.digest === after.digest) return { ok: true, deltaFiles: [] };
 
   const porcelain = gitPorcelain(cwd);
-  const deltaFiles = porcelainPaths(porcelain);
+  const sourceChanges = before.hashes && after.hashes
+    ? [...new Set([...Object.keys(before.hashes), ...Object.keys(after.hashes)])]
+        .filter(f => before.hashes[f] !== after.hashes[f])
+    : porcelainPaths(porcelain);
+  const untracked = porcelain.split('\n').filter(l => l.startsWith('?? '))
+    .map(l => l.slice(3).trim()).filter(f => !f.startsWith('artifacts/'));
+  const deltaFiles = [...new Set([...sourceChanges, ...untracked])];
   const allowed = [...GENERATED_PATH_ALLOWLIST, ...extraAllowDirty.map((p) => new RegExp(`^${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`))];
   const allowlistedFileChecks = [];
   const disallowed = deltaFiles.filter((f) => {
     const t = f.trim();
     if (allowed.some((re) => re.test(t))) return false;
+    if (t === 'next-env.d.ts' && existsSync(path.join(cwd, t))) {
+      const verdict = generatedNextEnvOk(cwd);
+      if (verdict.ok) { allowlistedFileChecks.push(verdict); return false; }
+    }
     if (fileCheck) {
       const verdict = fileCheck(t);
       if (verdict?.ok) {
@@ -123,6 +159,9 @@ export function assertSourceDigestUnchanged(cwd, label, before, after, extraAllo
     throw new Error(
       `${label}: uncommitted source drift after gate: ${disallowed.join(', ')} (digest ${before.digest.slice(0, 12)} != ${after.digest.slice(0, 12)})`,
     );
+  }
+  if (before.digest !== after.digest && deltaFiles.length === 0) {
+    throw new Error(`${label}: source digest changed without explained file delta`);
   }
   return { ok: true, deltaFiles, allowlistedGenerated: true, allowlistedFileChecks };
 }

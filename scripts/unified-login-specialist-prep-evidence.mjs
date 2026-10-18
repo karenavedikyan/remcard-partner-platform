@@ -16,6 +16,8 @@ import {
   removeDistForCleanBuild,
   trackedSourceDigest,
   tsconfigIncludeDistDriftOk,
+  assertCleanCommittedTree,
+  assertSuccessfulCommand,
 } from './lib/unified-prep-source-gates.mjs';
 
 const PLAT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -65,14 +67,7 @@ function writeLog(filePath, text) {
 }
 
 function assertCleanCommittedHeads() {
-  const platDirty = gitDirty(PLAT);
-  const navDirty = gitDirty(NAV);
-  if (platDirty.dirty || navDirty.dirty) {
-    throw new Error(
-      `refusing evidence: dirty tree platform=${platDirty.dirty} navigator=${navDirty.dirty}`,
-    );
-  }
-  return { platform: gitHead(PLAT), navigator: gitHead(NAV) };
+  return { platform: assertCleanCommittedTree(PLAT), navigator: assertCleanCommittedTree(NAV) };
 }
 
 function countNodeTest(out) {
@@ -119,7 +114,7 @@ async function main() {
   removeDistForCleanBuild(PLAT, PLAT_EVIDENCE_DIST);
   const npmCi = runRecorded('npm', ['ci', '--include=dev'], PLAT);
   writeLog(SCRATCH_PLAT_NPM_CI_LOG, `${npmCi.stdout}\n${npmCi.stderr}`);
-  if (npmCi.exitCode !== 0) throw new Error(`npm ci failed exit ${npmCi.exitCode}`);
+  assertSuccessfulCommand(npmCi, 'npm ci');
 
   const platBuildStarted = Date.now();
   const platBuild = runRecorded('npm', ['run', 'build'], PLAT, {
@@ -128,7 +123,7 @@ async function main() {
     R06_NEXT_DIST_DIR: PLAT_EVIDENCE_DIST,
   });
   const platBuildLog = writeLog(SCRATCH_PLAT_BUILD_LOG, `${platBuild.stdout}\n${platBuild.stderr}`);
-  if (platBuild.exitCode !== 0) throw new Error(`platform build failed exit ${platBuild.exitCode}`);
+  assertSuccessfulCommand(platBuild, 'platform build');
   const platBuildId = readBuildIdFresh(PLAT, PLAT_EVIDENCE_DIST, platBuildStarted);
 
   removeDistForCleanBuild(NAV, NAV_EVIDENCE_DIST);
@@ -139,7 +134,7 @@ async function main() {
     R06_NEXT_DIST_DIR: NAV_EVIDENCE_DIST,
   });
   const navBuildLog = writeLog(SCRATCH_NAV_BUILD_LOG, `${navBuild.stdout}\n${navBuild.stderr}`);
-  if (navBuild.exitCode !== 0) throw new Error(`navigator build failed exit ${navBuild.exitCode}`);
+  assertSuccessfulCommand(navBuild, 'navigator build');
   const navBuildId = readBuildIdFresh(NAV, NAV_EVIDENCE_DIST, navBuildStarted);
 
   const sourceAfterBuild = {
@@ -170,6 +165,8 @@ async function main() {
     [
       '--test',
       'scripts/lib/__tests__/unified-prep-evidence-gates.test.mjs',
+      'scripts/lib/__tests__/unified-prep-cleanup.test.mjs',
+      'scripts/lib/__tests__/unified-prep-cleanup-template.test.mjs',
     ],
     PLAT,
   );
@@ -216,6 +213,7 @@ async function main() {
       'scripts/lib/__tests__/prof-r06-schema-prefix-preflight.test.mjs',
       'scripts/lib/__tests__/prof-r06-partial-schema.test.mjs',
       'scripts/lib/__tests__/spawn-run-record.test.mjs',
+      'scripts/lib/__tests__/unified-prep-specialist-state.test.mjs',
     ],
     NAV,
   );
