@@ -1,0 +1,49 @@
+{
+  "status": "READY_FOR_REVIEW",
+  "task": "LOGIN-LAYOUT-BUILD-01",
+  "baseSha": "e6ba4681f2099d3c8b3d98ecbf3c54a68dcff10b",
+  "codeSha": "6b3e24785efa539e1cf48c64e2b55f1f5f80d2d5",
+  "evidenceTipSha": "81b113f2610c859caf626fa81cc6cca8e0903aa",
+  "layoutProductCodeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+  "timewebFailureRef": {
+    "appId": 266285,
+    "deploymentId": "24f8a72a-e20e-446b-ab90-3c9e1f91050f",
+    "attemptSha": "e6ba4681f2099d3c8b3d98ecbf3c54a68dcff10b",
+    "failedAt": "2026-10-18T13:51:14Z",
+    "errorClass": "artifact *.nav.ts typechecked as frontend; prisma import missing"
+  },
+  "productionBuild": {
+    "command": "npm ci --include=dev && npm run build",
+    "exitCode": 0,
+    "BUILD_ID": "EFK_z9DJwoMIsUT6kvtuo",
+    "sourceSha": "6b3e24785efa539e1cf48c64e2b55f1f5f80d2d5",
+    "treeDirty": false,
+    "logFile": "artifacts/remcard-login-layout-01/login-layout-build-01.log"
+  },
+  "tests": {
+    "authComponents": {
+      "command": "NODE_ENV=test npm run test:component -- src/components/auth/LoginExperience.test.tsx src/components/auth/AuthFlow.test.tsx",
+      "exitCode": 0,
+      "pass": 16,
+      "fail": 0,
+      "skip": 0
+    },
+    "unitGuard": {
+      "command": "node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs artifacts/remcard-login-layout-01/login-layout-cleanup-orchestration.test.mjs",
+      "exitCode": 0,
+      "pass": 27,
+      "fail": 0,
+      "skip": 0
+    },
+    "templateMaterialization": {
+      "prismaImportPath": "../src/lib/prisma",
+      "verified": true
+    },
+    "disposableRegression": {
+      "status": "SKIP",
+      "reason": "disposable runtime.env present; stack auth/me health probe timed out (not counted as PG PASS)"
+    }
+  },
+  "notPublished": true,
+  "note": "No Timeweb redeploy; public login page unchanged until owner approves separate release."
+}

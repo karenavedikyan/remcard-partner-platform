@@ -1,0 +1,97 @@
+
+> remcard-partner-platform@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.27
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · cpus: 1
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 10.1s
+   Linting and checking validity of types ...
+
+./src/components/agent-r03/AgentCertificatesList.tsx
+98:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/agent-r03/AgentClientsList.tsx
+93:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/auth/AuthFlow.tsx
+189:6  Warning: React Hook useCallback has a missing dependency: 'onAuthenticated'. Either include it or remove the dependency array. If 'onAuthenticated' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+282:5  Warning: React Hook useCallback has a missing dependency: 'onAuthenticated'. Either include it or remove the dependency array. If 'onAuthenticated' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+357:5  Warning: React Hook useCallback has a missing dependency: 'registrationAgentJoin'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/layout/agent/useAgentThemeSync.ts
+89:6  Warning: React Hook useEffect has a missing dependency: 'queuePersist'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/notifications/ProfNotificationCenter.tsx
+15:6  Warning: React Hook useEffect has a missing dependency: 'notifications'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/profile/ProfileEditor.tsx
+258:7  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./src/components/profile/ProfileTeamMemberEditor.tsx
+38:5  Warning: React Hook useMemo has missing dependencies: 'member' and 'overview'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+41:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+42:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./src/components/profile/agent/AgentProfileSection.tsx
+60:19  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/10) ...
+   Generating static pages (2/10) 
+   Generating static pages (4/10) 
+   Generating static pages (7/10) 
+ ✓ Generating static pages (10/10)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ƒ /                                    9.64 kB         144 kB
+├ ○ /_not-found                             1 kB         104 kB
+├ ƒ /account/signed-out                    700 B         107 kB
+├ ƒ /admin/password                      2.36 kB         105 kB
+├ ƒ /admin/test-users                    3.85 kB         107 kB
+├ ƒ /api/csrf                              151 B         103 kB
+├ ƒ /api/remcard/[...path]                 151 B         103 kB
+├ ƒ /certificates                        7.71 kB         148 kB
+├ ƒ /certificates/[id]                   2.02 kB         155 kB
+├ ƒ /certificates/new                    2.63 kB         156 kB
+├ ƒ /clients                             6.42 kB         146 kB
+├ ƒ /clients/[id]                        2.43 kB         142 kB
+├ ○ /dev-fixtures/account-session        2.72 kB         110 kB
+├ ○ /dev/r01-agent-shell                 2.13 kB         120 kB
+├ ƒ /dev/r02-agent-profile               1.43 kB         115 kB
+├ ƒ /history                             3.72 kB         142 kB
+├ ƒ /history/accruals/[id]               4.17 kB         143 kB
+├ ƒ /history/purchases/[id]              3.04 kB         142 kB
+├ ƒ /invite/[token]                      6.53 kB         116 kB
+├ ƒ /invite/accept                       3.33 kB         113 kB
+├ ○ /invite/opengraph-image                151 B         103 kB
+├ ƒ /join                                9.16 kB         125 kB
+├ ƒ /login                               1.95 kB         118 kB
+├ ƒ /notifications                         322 B         135 kB
+├ ƒ /onboarding                          7.22 kB         117 kB
+├ ○ /opengraph-image                       151 B         103 kB
+├ ƒ /partners                             2.2 kB         163 kB
+├ ○ /partners/dev-fixture                1.64 kB         134 kB
+├ ƒ /profile                               285 B         211 kB
+├ ○ /profile/dev-fixture                   151 B         188 kB
+├ ƒ /profile/staff-access-scope-fixture    151 B         188 kB
+├ ƒ /recommendations                      2.9 kB         137 kB
+├ ƒ /recommendations/[id]                  912 B         149 kB
+├ ƒ /recommendations/new                   221 B         154 kB
+├ ƒ /scanner                             9.24 kB         144 kB
+└ ƒ /settlements                         10.8 kB         151 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/1255-5cd2fe06309409a0.js      46.5 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+  └ other shared chunks (total)          2.12 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
