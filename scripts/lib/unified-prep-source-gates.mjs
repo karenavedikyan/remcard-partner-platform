@@ -49,7 +49,48 @@ export function trackedSourceDigest(cwd, { excludeArtifacts = true } = {}) {
   return { digest: h.digest('hex'), fileCount: included.length, head: gitHead(cwd) };
 }
 
-export function assertSourceDigestUnchanged(cwd, label, before, after, extraAllowDirty = []) {
+/**
+ * Next.js may append `${distDir}/types/**/*.ts` to tsconfig include during isolated builds.
+ * Allow only that delta vs committed HEAD (record hash for manifest).
+ */
+export function tsconfigIncludeDistDriftOk(cwd, distDir) {
+  const rel = 'tsconfig.json';
+  const abs = path.join(cwd, rel);
+  if (!existsSync(abs)) return { ok: false, reason: 'tsconfig missing' };
+  let committed;
+  try {
+    committed = JSON.parse(execSync('git show HEAD:tsconfig.json', { cwd, encoding: 'utf8' }));
+  } catch {
+    return { ok: false, reason: 'no committed tsconfig.json' };
+  }
+  const current = JSON.parse(readFileSync(abs, 'utf8'));
+  const distInclude = `${distDir}/types/**/*.ts`;
+  const stripNextTypeIncludes = (arr) =>
+    (arr ?? []).filter(
+      (x) => !(typeof x === 'string' && /^\.next[^/]*\/types\/\*\*\/\*\.ts$/.test(x)),
+    );
+  const baseCommitted = stripNextTypeIncludes(committed.include).slice().sort();
+  const baseCurrent = stripNextTypeIncludes(current.include).slice().sort();
+  if (JSON.stringify(baseCommitted) !== JSON.stringify(baseCurrent)) {
+    return { ok: false, reason: 'tsconfig include changed beyond next dist types', baseCommitted, baseCurrent };
+  }
+  const typeIncludes = (current.include ?? []).filter(
+    (x) => typeof x === 'string' && /^\.next[^/]*\/types\/\*\*\/\*\.ts$/.test(x),
+  );
+  if (!typeIncludes.includes(distInclude)) {
+    return { ok: false, reason: `tsconfig missing allowlisted include ${distInclude}`, typeIncludes };
+  }
+  const body = readFileSync(abs);
+  return {
+    ok: true,
+    path: rel,
+    allowReason: 'next_isolated_dist_types_include',
+    distInclude,
+    sha256: createHash('sha256').update(body).digest('hex'),
+  };
+}
+
+export function assertSourceDigestUnchanged(cwd, label, before, after, extraAllowDirty = [], fileCheck = null) {
   if (before.head !== after.head) {
     throw new Error(`${label}: HEAD changed ${before.head.slice(0, 12)} -> ${after.head.slice(0, 12)}`);
   }
@@ -58,13 +99,25 @@ export function assertSourceDigestUnchanged(cwd, label, before, after, extraAllo
   const porcelain = gitPorcelain(cwd);
   const deltaFiles = porcelain ? porcelain.split('\n').map((l) => l.slice(3)) : [];
   const allowed = [...GENERATED_PATH_ALLOWLIST, ...extraAllowDirty.map((p) => new RegExp(`^${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`))];
-  const disallowed = deltaFiles.filter((f) => !allowed.some((re) => re.test(f.trim())));
+  const allowlistedFileChecks = [];
+  const disallowed = deltaFiles.filter((f) => {
+    const t = f.trim();
+    if (allowed.some((re) => re.test(t))) return false;
+    if (fileCheck) {
+      const verdict = fileCheck(t);
+      if (verdict?.ok) {
+        allowlistedFileChecks.push(verdict);
+        return false;
+      }
+    }
+    return true;
+  });
   if (disallowed.length) {
     throw new Error(
       `${label}: uncommitted source drift after gate: ${disallowed.join(', ')} (digest ${before.digest.slice(0, 12)} != ${after.digest.slice(0, 12)})`,
     );
   }
-  return { ok: true, deltaFiles, allowlistedGenerated: true };
+  return { ok: true, deltaFiles, allowlistedGenerated: true, allowlistedFileChecks };
 }
 
 export function removeDistForCleanBuild(cwd, distDir) {

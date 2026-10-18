@@ -15,6 +15,7 @@ import {
   readBuildIdFresh,
   removeDistForCleanBuild,
   trackedSourceDigest,
+  tsconfigIncludeDistDriftOk,
 } from './lib/unified-prep-source-gates.mjs';
 
 const PLAT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,6 +27,9 @@ const SHA_OUT = path.join(OUT, 'UNIFIED-PREP-01-EVIDENCE.sha256');
 const PLAT_BUILD_LOG = path.join(OUT, 'UNIFIED-PREP-01-plat-build.log');
 const PLAT_NPM_CI_LOG = path.join(OUT, 'UNIFIED-PREP-01-plat-npm-ci.log');
 const NAV_BUILD_LOG = path.join(OUT, 'UNIFIED-PREP-01-nav-build.log');
+const SCRATCH_PLAT_BUILD_LOG = path.join('/tmp', 'UNIFIED-PREP-01-plat-build.log');
+const SCRATCH_PLAT_NPM_CI_LOG = path.join('/tmp', 'UNIFIED-PREP-01-plat-npm-ci.log');
+const SCRATCH_NAV_BUILD_LOG = path.join('/tmp', 'UNIFIED-PREP-01-nav-build.log');
 const SOURCE_DELTA_MANIFEST = path.join(OUT, 'UNIFIED-PREP-01-SOURCE-DELTA.json');
 
 const LOCAL_BUILD_LEGAL = {
@@ -101,7 +105,7 @@ async function main() {
 
   removeDistForCleanBuild(PLAT, PLAT_EVIDENCE_DIST);
   const npmCi = runRecorded('npm', ['ci', '--include=dev'], PLAT);
-  writeLog(PLAT_NPM_CI_LOG, `${npmCi.stdout}\n${npmCi.stderr}`);
+  writeLog(SCRATCH_PLAT_NPM_CI_LOG, `${npmCi.stdout}\n${npmCi.stderr}`);
   if (npmCi.exitCode !== 0) throw new Error(`npm ci failed exit ${npmCi.exitCode}`);
 
   const platBuildStarted = Date.now();
@@ -110,7 +114,7 @@ async function main() {
     ...LOCAL_BUILD_LEGAL,
     R06_NEXT_DIST_DIR: PLAT_EVIDENCE_DIST,
   });
-  const platBuildLog = writeLog(PLAT_BUILD_LOG, `${platBuild.stdout}\n${platBuild.stderr}`);
+  const platBuildLog = writeLog(SCRATCH_PLAT_BUILD_LOG, `${platBuild.stdout}\n${platBuild.stderr}`);
   if (platBuild.exitCode !== 0) throw new Error(`platform build failed exit ${platBuild.exitCode}`);
   const platBuildId = readBuildIdFresh(PLAT, PLAT_EVIDENCE_DIST, platBuildStarted);
 
@@ -121,7 +125,7 @@ async function main() {
     ...LOCAL_BUILD_LEGAL,
     R06_NEXT_DIST_DIR: NAV_EVIDENCE_DIST,
   });
-  const navBuildLog = writeLog(NAV_BUILD_LOG, `${navBuild.stdout}\n${navBuild.stderr}`);
+  const navBuildLog = writeLog(SCRATCH_NAV_BUILD_LOG, `${navBuild.stdout}\n${navBuild.stderr}`);
   if (navBuild.exitCode !== 0) throw new Error(`navigator build failed exit ${navBuild.exitCode}`);
   const navBuildId = readBuildIdFresh(NAV, NAV_EVIDENCE_DIST, navBuildStarted);
 
@@ -130,8 +134,22 @@ async function main() {
     navigator: trackedSourceDigest(NAV),
   };
   const sourceDeltaAfterBuild = {
-    platform: assertSourceDigestUnchanged(PLAT, 'platform', sourceAtStart.platform, sourceAfterBuild.platform),
-    navigator: assertSourceDigestUnchanged(NAV, 'navigator', sourceAtStart.navigator, sourceAfterBuild.navigator),
+    platform: assertSourceDigestUnchanged(
+      PLAT,
+      'platform',
+      sourceAtStart.platform,
+      sourceAfterBuild.platform,
+      [],
+      (f) => (f === 'tsconfig.json' ? tsconfigIncludeDistDriftOk(PLAT, PLAT_EVIDENCE_DIST) : { ok: false }),
+    ),
+    navigator: assertSourceDigestUnchanged(
+      NAV,
+      'navigator',
+      sourceAtStart.navigator,
+      sourceAfterBuild.navigator,
+      [],
+      (f) => (f === 'tsconfig.json' ? tsconfigIncludeDistDriftOk(NAV, NAV_EVIDENCE_DIST) : { ok: false }),
+    ),
   };
 
   const gateUnit = runRecorded(
@@ -211,12 +229,22 @@ async function main() {
     navigator: trackedSourceDigest(NAV),
   };
   const sourceDeltaFinal = {
-    platform: assertSourceDigestUnchanged(PLAT, 'platform', sourceAtStart.platform, sourceAfterAll.platform, [
-      'scripts/\\.login-layout-.*',
-    ]),
-    navigator: assertSourceDigestUnchanged(NAV, 'navigator', sourceAtStart.navigator, sourceAfterAll.navigator, [
-      'scripts/\\.login-layout-.*',
-    ]),
+    platform: assertSourceDigestUnchanged(
+      PLAT,
+      'platform',
+      sourceAtStart.platform,
+      sourceAfterAll.platform,
+      ['scripts/\\.login-layout-.*'],
+      (f) => (f === 'tsconfig.json' ? tsconfigIncludeDistDriftOk(PLAT, PLAT_EVIDENCE_DIST) : { ok: false }),
+    ),
+    navigator: assertSourceDigestUnchanged(
+      NAV,
+      'navigator',
+      sourceAtStart.navigator,
+      sourceAfterAll.navigator,
+      ['scripts/\\.login-layout-.*'],
+      (f) => (f === 'tsconfig.json' ? tsconfigIncludeDistDriftOk(NAV, NAV_EVIDENCE_DIST) : { ok: false }),
+    ),
   };
   writeFileSync(
     SOURCE_DELTA_MANIFEST,
@@ -284,6 +312,13 @@ async function main() {
     },
     gate: 'PROF_R06_SPECIALIST_PROFILE_ENABLED defaults OFF (global)',
   };
+
+  const finalizedLogs = {
+    platNpmCi: writeLog(PLAT_NPM_CI_LOG, readFileSync(SCRATCH_PLAT_NPM_CI_LOG, 'utf8')),
+    platBuild: writeLog(PLAT_BUILD_LOG, readFileSync(SCRATCH_PLAT_BUILD_LOG, 'utf8')),
+    navBuild: writeLog(NAV_BUILD_LOG, readFileSync(SCRATCH_NAV_BUILD_LOG, 'utf8')),
+  };
+  payload.provenance.buildLogFinalization = finalizedLogs;
 
   const checksum = writeEvidence(payload);
 
