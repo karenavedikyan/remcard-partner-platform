@@ -1,7 +1,7 @@
 {
   "task": "R06-SPECIALIST-TAIL-01.2",
   "heads": {
-    "platform": "pending_commit",
+    "platform": "11f512e",
     "navigator": "4a592efea44d95f4d7d8449cde281785802e64b4"
   },
   "visualFixes": [
