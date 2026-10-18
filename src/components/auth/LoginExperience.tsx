@@ -48,35 +48,41 @@ export function LoginExperience({
   const showAdminPending = mode === "admin" && adminCaps === "pending";
   const showAdminBlocked = mode === "admin" && (adminCaps === "disabled" || adminCaps === "error");
 
-  return (
-    <div className={styles.shell}>
-      <div className={styles.modeTabs} role="tablist">
+  const modeTabs = (
+    <div className={styles.modeTabs} role="tablist">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "partner"}
+        className={mode === "partner" ? styles.modeTabActive : styles.modeTab}
+        onClick={() => setMode("partner")}
+      >
+        MAX / Telegram
+      </button>
+      {adminTabVisible ? (
         <button
           type="button"
           role="tab"
-          aria-selected={mode === "partner"}
-          className={mode === "partner" ? styles.modeTabActive : styles.modeTab}
-          onClick={() => setMode("partner")}
+          aria-selected={mode === "admin"}
+          className={mode === "admin" ? styles.modeTabActive : styles.modeTab}
+          onClick={() => {
+            if (adminCaps === "enabled") setMode("admin");
+          }}
+          disabled={adminCaps === "pending"}
+          aria-disabled={adminCaps === "pending"}
         >
-          MAX / Telegram
+          Вход администратора
         </button>
-        {adminTabVisible ? (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "admin"}
-            className={mode === "admin" ? styles.modeTabActive : styles.modeTab}
-            onClick={() => {
-              if (adminCaps === "enabled") setMode("admin");
-            }}
-            disabled={adminCaps === "pending"}
-            aria-disabled={adminCaps === "pending"}
-          >
-            Вход администратора
-          </button>
-        ) : null}
-      </div>
-      {showPartnerFlow ? (
+      ) : null}
+    </div>
+  );
+
+  if (showPartnerFlow) {
+    return (
+      <>
+        <div className={styles.loginModeBar} data-testid="login-mode-bar-partner">
+          {modeTabs}
+        </div>
         <AuthFlow
           returnTo={returnTo}
           reason={reason}
@@ -84,7 +90,13 @@ export function LoginExperience({
           registrationAgentJoin={registrationAgentJoin}
           layout="full"
         />
-      ) : null}
+      </>
+    );
+  }
+
+  return (
+    <div className={styles.shell} data-testid="login-shell-admin">
+      {modeTabs}
       {showAdminPending ? (
         <p className={styles.adminStatus} role="status" data-testid="admin-login-pending">
           Проверяем доступ к входу администратора…

@@ -70,6 +70,7 @@ describe("LoginExperience admin login race", () => {
     render(<LoginExperience initialMode="admin" returnTo="/admin/test-users" />);
 
     expect(await screen.findByTestId("admin-login-unavailable")).toBeInTheDocument();
+    expect(screen.getByTestId("login-shell-admin")).toBeInTheDocument();
     expect(screen.queryByTestId("auth-flow-mounted")).not.toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
@@ -92,6 +93,8 @@ describe("LoginExperience admin login race", () => {
     render(<LoginExperience initialMode="partner" returnTo="/scanner" />);
 
     expect(await screen.findByTestId("auth-flow-mounted")).toBeInTheDocument();
+    expect(screen.getByTestId("login-mode-bar-partner")).toBeInTheDocument();
+    expect(screen.queryByTestId("login-shell-admin")).not.toBeInTheDocument();
   });
 
   it("unmounts AuthFlow when switching partner to admin after capabilities load", async () => {

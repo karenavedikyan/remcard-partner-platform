@@ -39,6 +39,7 @@
 }
 
 .entryStory {
+  min-width: 0;
   padding: var(--space-8);
   background: #eeeae3;
   border-radius: var(--radius-lg);
@@ -120,6 +121,7 @@
 }
 
 .entryForm {
+  min-width: 0;
   max-width: 26rem;
   width: 100%;
   padding-top: var(--space-2);
@@ -385,6 +387,27 @@
   max-width: 28rem;
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
+}
+
+/** Mode tabs above full-width partner AuthFlow (must not inherit .shell 28rem). */
+.loginModeBar {
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-12) 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .loginModeBar {
+    padding-inline: var(--space-8);
+  }
+}
+
+@media (max-width: 700px) {
+  .loginModeBar {
+    padding: var(--space-6) var(--space-5) 0;
+  }
 }
 
 .modeTabs {
