@@ -1,8 +1,8 @@
 {
   "task": "R06-SPECIALIST-TAIL-01.1",
   "heads": {
-    "platform": "PENDING_COMMIT",
-    "navigator": "PENDING_COMMIT"
+    "platform": "670824c",
+    "navigator": "4a592efe"
   },
   "blockersFixed": [
     "remcard-proxy POST/GET /api/pro/taxonomy-proposals allowlist",
