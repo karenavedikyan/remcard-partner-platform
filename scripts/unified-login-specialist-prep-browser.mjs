@@ -378,6 +378,7 @@ async function runSpecialistSmoke(base, env) {
 
 export async function runUnifiedPrepBrowserSmoke() {
   const pins = resolvePins();
+  try {
   bootstrapStack(pins);
   const { report: probeReport } = await probeRunStack({
     runDir: RUN_DIR,
@@ -413,6 +414,9 @@ export async function runUnifiedPrepBrowserSmoke() {
   };
   cleanupHarnessSideEffects();
   return result;
+  } finally {
+    cleanupHarnessSideEffects();
+  }
 }
 
 async function main() {
