@@ -125,6 +125,11 @@ async function main() {
   if (platBuild.exitCode !== 0) {
     throw new Error(`platform build failed exit ${platBuild.exitCode}`);
   }
+  try {
+    execSync('git restore next-env.d.ts', { cwd: PLAT, stdio: 'ignore' });
+  } catch {
+    /* optional */
+  }
   const platBuildId = readBuildId(PLAT);
   if (!platBuildId) {
     throw new Error('platform BUILD_ID missing or empty after build');

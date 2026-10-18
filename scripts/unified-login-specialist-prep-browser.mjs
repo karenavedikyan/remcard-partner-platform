@@ -395,7 +395,7 @@ async function main() {
       capturedAt: new Date().toISOString(),
     };
     writeFileSync(JSON_OUT, `${JSON.stringify(fail, null, 2)}\n`);
-    console.error(fail);
+    console.error(JSON.stringify(fail));
     process.exit(1);
   }
 }

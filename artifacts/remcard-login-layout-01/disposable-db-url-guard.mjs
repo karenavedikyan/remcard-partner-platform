@@ -8,6 +8,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const ALLOWED_DISPOSABLE_DATABASE = "remcard_admin_test_012";
+/** R06 / unified prep disposable stack (loopback-only, same guard rules). */
+export const ALLOWED_R06_DISPOSABLE_DATABASE = "remcard_r01_test";
+
+const ALLOWED_DATABASE_NAMES = new Set([
+  ALLOWED_DISPOSABLE_DATABASE,
+  ALLOWED_R06_DISPOSABLE_DATABASE,
+]);
 
 const ALLOWED_SCHEMES = new Set(["postgresql", "postgres"]);
 
@@ -111,18 +118,18 @@ export function parseDisposableDatabaseUrl(raw, opts = {}) {
   const pathSegment = parsed.pathname.replace(/^\/+/, "");
   const database = decodeURIComponent(pathSegment.split("/").filter(Boolean)[0] ?? "");
   if (!database || pathSegment.includes("/")) {
-    throw new Error(`${label}: database pathname must be exactly ${ALLOWED_DISPOSABLE_DATABASE}`);
+    throw new Error(`${label}: database pathname must be a single allowlisted name`);
   }
-  if (database !== ALLOWED_DISPOSABLE_DATABASE) {
-    throw new Error(`${label}: database must be ${ALLOWED_DISPOSABLE_DATABASE}`);
+  if (!ALLOWED_DATABASE_NAMES.has(database)) {
+    throw new Error(`${label}: database must be one of ${[...ALLOWED_DATABASE_NAMES].join(", ")}`);
   }
 
   assertQueryParamsAllowlisted(parsed, label);
 
-  if (parsed.username && decodeURIComponent(parsed.username) === ALLOWED_DISPOSABLE_DATABASE) {
+  if (parsed.username && ALLOWED_DATABASE_NAMES.has(decodeURIComponent(parsed.username))) {
     throw new Error(`${label}: database name must not appear as username`);
   }
-  if (parsed.password && decodeURIComponent(parsed.password) === ALLOWED_DISPOSABLE_DATABASE) {
+  if (parsed.password && ALLOWED_DATABASE_NAMES.has(decodeURIComponent(parsed.password))) {
     throw new Error(`${label}: database name must not appear as password`);
   }
 
@@ -135,8 +142,8 @@ export function parseDisposableDatabaseUrl(raw, opts = {}) {
   if (!isLoopbackHost(pgParams.host)) {
     throw new Error(`${label}: pg effective host is non-loopback`);
   }
-  if (pgParams.database !== ALLOWED_DISPOSABLE_DATABASE) {
-    throw new Error(`${label}: pg effective database must be ${ALLOWED_DISPOSABLE_DATABASE}`);
+  if (!ALLOWED_DATABASE_NAMES.has(pgParams.database)) {
+    throw new Error(`${label}: pg effective database must be allowlisted`);
   }
 
   return {
