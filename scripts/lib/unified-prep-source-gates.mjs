@@ -24,6 +24,15 @@ export function gitPorcelain(cwd) {
   return execSync('git status --porcelain', { cwd, encoding: 'utf8' }).trim();
 }
 
+export function porcelainPaths(porcelain) {
+  if (!porcelain) return [];
+  return porcelain.split('\n').filter(Boolean).map((line) => {
+    if (line.startsWith('??')) return line.slice(3).trim();
+    const m = line.match(/^.. (.+)$/);
+    return (m ? m[1] : line.slice(3)).trim();
+  });
+}
+
 export function gitDirty(cwd) {
   const out = gitPorcelain(cwd);
   return { dirty: Boolean(out), files: out ? out.split('\n') : [] };
@@ -94,7 +103,7 @@ export function assertSourceDigestUnchanged(cwd, label, before, after, extraAllo
   if (before.digest === after.digest) return { ok: true, deltaFiles: [] };
 
   const porcelain = gitPorcelain(cwd);
-  const deltaFiles = porcelain ? porcelain.split('\n').map((l) => l.slice(3)) : [];
+  const deltaFiles = porcelainPaths(porcelain);
   const allowed = [...GENERATED_PATH_ALLOWLIST, ...extraAllowDirty.map((p) => new RegExp(`^${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`))];
   const allowlistedFileChecks = [];
   const disallowed = deltaFiles.filter((f) => {
