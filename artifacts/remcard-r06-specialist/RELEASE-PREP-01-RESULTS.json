@@ -1,0 +1,39 @@
+{
+  "task": "R06-RELEASE-PREP-01",
+  "status": "READY_FOR_REVIEW",
+  "productionReady": false,
+  "operatorPreflightOnProduction": "NOT_RUN",
+  "capturedAt": "2026-10-18T13:22:00.000Z",
+  "prepBranches": {
+    "platform": {
+      "branch": "cursor/r06-release-prep-01",
+      "baseRelease": "release/prof-v1-20261007@0fe7da52bb02f2a515d238757c8be16ef2d83948",
+      "candidateCodeSha": "074f889",
+      "candidateCodeShaFull": "074f889",
+      "applicationCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+      "integrationRange": "0fe7da52..2680eb2 (34 commits fast-forward R06+tail onto release tip)"
+    },
+    "navigator": {
+      "branch": "cursor/r06-release-prep-01",
+      "baseRelease": "release/prof-backend-v1-20261007@c9cdef42338e1695a4e863086e5d3e283cc0df36",
+      "candidateCodeSha": "385ddf72c4141cb62b75a24c536f5d6d86f79537",
+      "tailPinMerged": "08c3e3f57c273d1a856695fd28621ed88f20adfb",
+      "integrationRange": "merge release tip + full R06 specialist line (12 commits from merge-base 8bfdb193)"
+    }
+  },
+  "historicalCaptureShaNote": "Visual/runtime capture SHAs (e18487a, 91b1e8e, etc.) are evidence history — NOT equal to release-prep candidate SHAs above.",
+  "builds": {
+    "navigator": { "status": "VERIFIED", "buildId": "CPdcgvocc6-sLSA-vWnEQ" },
+    "platform": { "status": "VERIFIED", "buildId": "RESMGlvrM9aZFPNkvUMvI" }
+  },
+  "disposableEvidence": "RELEASE-PREP-01-EVIDENCE.json",
+  "runbook": "R06-RELEASE-PREP-01-RUNBOOK.md",
+  "gateDefault": "PROF_R06_SPECIALIST_PROFILE_ENABLED defaults OFF (global, not canary)",
+  "remaining": [
+    "Independent human acceptance of draft PRs",
+    "Real operator read-only preflight on production target (NOT_RUN)",
+    "Verified backup/restore point and maintenance window (NOT_VERIFIED in runbook)",
+    "Production SHA/BUILD_ID at cutover (NOT_VERIFIED)",
+    "No merge/deploy/Timeweb/flag enable performed in this task"
+  ]
+}
