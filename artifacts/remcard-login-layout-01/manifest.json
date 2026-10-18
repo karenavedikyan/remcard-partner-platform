@@ -1,0 +1,614 @@
+{
+  "capturedAt": "2026-10-18T11:28:49.757Z",
+  "afterBase": "http://127.0.0.1:3456",
+  "prodBase": "https://prof.remcard.ru",
+  "before": [
+    {
+      "label": "before-prod",
+      "viewport": "desktop-1440",
+      "theme": "light",
+      "screenshot": "before-prod-desktop-1440-light.png",
+      "metrics": {
+        "shell": {
+          "width": 448,
+          "height": 1886.625,
+          "left": 496,
+          "right": 944
+        },
+        "modeBar": null,
+        "main": {
+          "width": 416,
+          "height": 1738.625,
+          "left": 512,
+          "right": 928
+        },
+        "entryLayout": {
+          "width": 416,
+          "height": 1641.890625,
+          "left": 512,
+          "right": 928
+        },
+        "gridTemplateColumns": "141.219px 128.391px",
+        "entryStory": {
+          "width": 141.21875,
+          "height": 1641.890625,
+          "left": 560,
+          "right": 701.21875
+        },
+        "entryForm": {
+          "width": 128.390625,
+          "height": 1111.03125,
+          "left": 751.609375,
+          "right": 880
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        }
+      }
+    },
+    {
+      "label": "before-prod",
+      "viewport": "desktop-1440",
+      "theme": "dark",
+      "screenshot": "before-prod-desktop-1440-dark.png",
+      "metrics": {
+        "shell": {
+          "width": 448,
+          "height": 1886.625,
+          "left": 496,
+          "right": 944
+        },
+        "modeBar": null,
+        "main": {
+          "width": 416,
+          "height": 1738.625,
+          "left": 512,
+          "right": 928
+        },
+        "entryLayout": {
+          "width": 416,
+          "height": 1641.890625,
+          "left": 512,
+          "right": 928
+        },
+        "gridTemplateColumns": "141.219px 128.391px",
+        "entryStory": {
+          "width": 141.21875,
+          "height": 1641.890625,
+          "left": 560,
+          "right": 701.21875
+        },
+        "entryForm": {
+          "width": 128.390625,
+          "height": 1111.03125,
+          "left": 751.609375,
+          "right": 880
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        }
+      }
+    },
+    {
+      "label": "before-prod",
+      "viewport": "mobile-375",
+      "theme": "light",
+      "screenshot": "before-prod-mobile-375-light.png",
+      "metrics": {
+        "shell": {
+          "width": 390,
+          "height": 1531.265625,
+          "left": 0,
+          "right": 390
+        },
+        "modeBar": null,
+        "main": {
+          "width": 358,
+          "height": 1383.265625,
+          "left": 16,
+          "right": 374
+        },
+        "entryLayout": {
+          "width": 358,
+          "height": 1301.484375,
+          "left": 16,
+          "right": 374
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 318,
+          "height": 417.96875,
+          "left": 36,
+          "right": 354
+        },
+        "entryForm": {
+          "width": 318,
+          "height": 696.078125,
+          "left": 36,
+          "right": 354
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 390,
+          "h": 664
+        }
+      }
+    },
+    {
+      "label": "before-prod",
+      "viewport": "mobile-375",
+      "theme": "dark",
+      "screenshot": "before-prod-mobile-375-dark.png",
+      "metrics": {
+        "shell": {
+          "width": 390,
+          "height": 1531.265625,
+          "left": 0,
+          "right": 390
+        },
+        "modeBar": null,
+        "main": {
+          "width": 358,
+          "height": 1383.265625,
+          "left": 16,
+          "right": 374
+        },
+        "entryLayout": {
+          "width": 358,
+          "height": 1301.484375,
+          "left": 16,
+          "right": 374
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 318,
+          "height": 417.96875,
+          "left": 36,
+          "right": 354
+        },
+        "entryForm": {
+          "width": 318,
+          "height": 696.078125,
+          "left": 36,
+          "right": 354
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 390,
+          "h": 664
+        }
+      }
+    },
+    {
+      "label": "before-prod",
+      "viewport": "mobile-320",
+      "theme": "light",
+      "screenshot": "before-prod-mobile-320-light.png",
+      "metrics": {
+        "shell": {
+          "width": 320,
+          "height": 1832.34375,
+          "left": 0,
+          "right": 320
+        },
+        "modeBar": null,
+        "main": {
+          "width": 288,
+          "height": 1632.34375,
+          "left": 16,
+          "right": 304
+        },
+        "entryLayout": {
+          "width": 288,
+          "height": 1550.5625,
+          "left": 16,
+          "right": 304
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 248,
+          "height": 541.8125,
+          "left": 36,
+          "right": 284
+        },
+        "entryForm": {
+          "width": 248,
+          "height": 737.25,
+          "left": 36,
+          "right": 284
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 320,
+          "h": 640
+        }
+      }
+    },
+    {
+      "label": "before-prod",
+      "viewport": "mobile-320",
+      "theme": "dark",
+      "screenshot": "before-prod-mobile-320-dark.png",
+      "metrics": {
+        "shell": {
+          "width": 320,
+          "height": 1832.34375,
+          "left": 0,
+          "right": 320
+        },
+        "modeBar": null,
+        "main": {
+          "width": 288,
+          "height": 1632.34375,
+          "left": 16,
+          "right": 304
+        },
+        "entryLayout": {
+          "width": 288,
+          "height": 1550.5625,
+          "left": 16,
+          "right": 304
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 248,
+          "height": 541.8125,
+          "left": 36,
+          "right": 284
+        },
+        "entryForm": {
+          "width": 248,
+          "height": 737.25,
+          "left": 36,
+          "right": 284
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 320,
+          "h": 640
+        }
+      }
+    }
+  ],
+  "after": [
+    {
+      "label": "after-local",
+      "viewport": "desktop-1440",
+      "theme": "light",
+      "screenshot": "after-local-desktop-1440-light.png",
+      "metrics": {
+        "shell": null,
+        "modeBar": {
+          "width": 1280,
+          "height": 68,
+          "left": 80,
+          "right": 1360
+        },
+        "main": {
+          "width": 1440,
+          "height": 900,
+          "left": 0,
+          "right": 1440
+        },
+        "entryLayout": {
+          "width": 1280,
+          "height": 692.296875,
+          "left": 80,
+          "right": 1360
+        },
+        "gridTemplateColumns": "593.781px 539.828px",
+        "entryStory": {
+          "width": 593.78125,
+          "height": 546.21875,
+          "left": 128,
+          "right": 721.78125
+        },
+        "entryForm": {
+          "width": 416,
+          "height": 692.296875,
+          "left": 772.171875,
+          "right": 1188.171875
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        }
+      }
+    },
+    {
+      "label": "after-local",
+      "viewport": "desktop-1440",
+      "theme": "dark",
+      "screenshot": "after-local-desktop-1440-dark.png",
+      "metrics": {
+        "shell": null,
+        "modeBar": {
+          "width": 1280,
+          "height": 68,
+          "left": 80,
+          "right": 1360
+        },
+        "main": {
+          "width": 1440,
+          "height": 900,
+          "left": 0,
+          "right": 1440
+        },
+        "entryLayout": {
+          "width": 1280,
+          "height": 692.296875,
+          "left": 80,
+          "right": 1360
+        },
+        "gridTemplateColumns": "593.781px 539.828px",
+        "entryStory": {
+          "width": 593.78125,
+          "height": 546.21875,
+          "left": 128,
+          "right": 721.78125
+        },
+        "entryForm": {
+          "width": 416,
+          "height": 692.296875,
+          "left": 772.171875,
+          "right": 1188.171875
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        }
+      }
+    },
+    {
+      "label": "after-local",
+      "viewport": "mobile-375",
+      "theme": "light",
+      "screenshot": "after-local-mobile-375-light.png",
+      "metrics": {
+        "shell": null,
+        "modeBar": {
+          "width": 390,
+          "height": 68,
+          "left": 0,
+          "right": 390
+        },
+        "main": {
+          "width": 390,
+          "height": 1342.890625,
+          "left": 0,
+          "right": 390
+        },
+        "entryLayout": {
+          "width": 390,
+          "height": 1261.109375,
+          "left": 0,
+          "right": 390
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 350,
+          "height": 396.28125,
+          "left": 20,
+          "right": 370
+        },
+        "entryForm": {
+          "width": 350,
+          "height": 677.390625,
+          "left": 20,
+          "right": 370
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 390,
+          "h": 664
+        }
+      }
+    },
+    {
+      "label": "after-local",
+      "viewport": "mobile-375",
+      "theme": "dark",
+      "screenshot": "after-local-mobile-375-dark.png",
+      "metrics": {
+        "shell": null,
+        "modeBar": {
+          "width": 390,
+          "height": 68,
+          "left": 0,
+          "right": 390
+        },
+        "main": {
+          "width": 390,
+          "height": 1342.890625,
+          "left": 0,
+          "right": 390
+        },
+        "entryLayout": {
+          "width": 390,
+          "height": 1261.109375,
+          "left": 0,
+          "right": 390
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 350,
+          "height": 396.28125,
+          "left": 20,
+          "right": 370
+        },
+        "entryForm": {
+          "width": 350,
+          "height": 677.390625,
+          "left": 20,
+          "right": 370
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 390,
+          "h": 664
+        }
+      }
+    },
+    {
+      "label": "after-local",
+      "viewport": "mobile-320",
+      "theme": "light",
+      "screenshot": "after-local-mobile-320-light.png",
+      "metrics": {
+        "shell": null,
+        "modeBar": {
+          "width": 320,
+          "height": 120,
+          "left": 0,
+          "right": 320
+        },
+        "main": {
+          "width": 320,
+          "height": 1540.6875,
+          "left": 0,
+          "right": 320
+        },
+        "entryLayout": {
+          "width": 320,
+          "height": 1458.90625,
+          "left": 0,
+          "right": 320
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 280,
+          "height": 500.53125,
+          "left": 20,
+          "right": 300
+        },
+        "entryForm": {
+          "width": 280,
+          "height": 718.0625,
+          "left": 20,
+          "right": 300
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 320,
+          "h": 640
+        }
+      }
+    },
+    {
+      "label": "after-local",
+      "viewport": "mobile-320",
+      "theme": "dark",
+      "screenshot": "after-local-mobile-320-dark.png",
+      "metrics": {
+        "shell": null,
+        "modeBar": {
+          "width": 320,
+          "height": 120,
+          "left": 0,
+          "right": 320
+        },
+        "main": {
+          "width": 320,
+          "height": 1540.6875,
+          "left": 0,
+          "right": 320
+        },
+        "entryLayout": {
+          "width": 320,
+          "height": 1458.90625,
+          "left": 0,
+          "right": 320
+        },
+        "gridTemplateColumns": "minmax(0px, 1.1fr) minmax(0px, 1fr)",
+        "entryStory": {
+          "width": 280,
+          "height": 500.53125,
+          "left": 20,
+          "right": 300
+        },
+        "entryForm": {
+          "width": 280,
+          "height": 718.0625,
+          "left": 20,
+          "right": 300
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 320,
+          "h": 640
+        }
+      }
+    }
+  ],
+  "flows": {
+    "homeToLogin": {
+      "flow": "home-to-login",
+      "metrics": {
+        "shell": null,
+        "modeBar": null,
+        "main": {
+          "width": 1440,
+          "height": 900,
+          "left": 0,
+          "right": 1440
+        },
+        "entryLayout": {
+          "width": 1280,
+          "height": 692.296875,
+          "left": 80,
+          "right": 1360
+        },
+        "gridTemplateColumns": "593.781px 539.828px",
+        "entryStory": {
+          "width": 593.78125,
+          "height": 546.21875,
+          "left": 128,
+          "right": 721.78125
+        },
+        "entryForm": {
+          "width": 416,
+          "height": 692.296875,
+          "left": 772.171875,
+          "right": 1188.171875
+        },
+        "horizontalOverflow": false,
+        "storyFormOverlap": false,
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        }
+      }
+    },
+    "adminTab": {
+      "adminShellVisible": true,
+      "adminShellWidthPx": 448
+    }
+  },
+  "summary": {
+    "partnerDesktopLayoutWidth": 1280,
+    "partnerDesktopStoryWidth": 593.78125,
+    "partnerDesktopFormWidth": 416,
+    "partnerDesktopGridColumns": "593.781px 539.828px",
+    "partnerDesktopHorizontalOverflow": false,
+    "partnerDesktopStoryFormOverlap": false,
+    "logoutReentryFlow": "NOT_VERIFIED — no isolated mock session contour in this run"
+  }
+}
