@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   assertSourceDigestUnchanged,
+  porcelainPaths,
   readBuildIdFresh,
   removeDistForCleanBuild,
   trackedSourceDigest,
@@ -44,6 +45,11 @@ describe('unified-prep evidence gates', () => {
     removeDistForCleanBuild(dir, '.next-unified-prep-evidence');
     assert.throws(() => readBuildIdFresh(dir, '.next-unified-prep-evidence', Date.now()), /BUILD_ID missing/);
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('porcelainPaths parses single-column M path lines', () => {
+    const paths = porcelainPaths('M next-env.d.ts\n M tsconfig.json\n?? .next-unified-prep-evidence/');
+    assert.deepEqual(paths, ['next-env.d.ts', 'tsconfig.json', '.next-unified-prep-evidence/']);
   });
 
   it('readBuildIdFresh rejects missing BUILD_ID', () => {
