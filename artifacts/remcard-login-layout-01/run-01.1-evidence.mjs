@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LOGIN-LAYOUT-01.2: disposable MOCK OTP regression + optional 375 capture (skip by default).
+ * LOGIN-LAYOUT-01.3: disposable MOCK OTP regression (URL guard + fail-closed cleanup).
  */
 import { chromium } from "playwright";
 import { spawnSync } from "node:child_process";
@@ -8,6 +8,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ensureStack, loadRuntimeEnv } from "../../scripts/lib/r03-stack-bootstrap.mjs";
+import {
+  ALLOWED_DISPOSABLE_DATABASE,
+  assertDisposableDatabaseUrl,
+} from "./disposable-db-url-guard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -15,7 +19,9 @@ const NAV = path.resolve(ROOT, "../remcard-navigator");
 const ART = __dirname;
 const RUN_DIR = process.env.ADMIN_TEST_RUN_DIR || "/tmp/admin-test-local-stack";
 const RUNTIME_ENV = path.join(RUN_DIR, "runtime.env");
-const REQUIRED_DB = "remcard_admin_test_012";
+const REQUIRED_DB = ALLOWED_DISPOSABLE_DATABASE;
+const GUARD_MODULE = path.join(ART, "disposable-db-url-guard.mjs");
+const NAV_GUARD_SCRIPT = path.join(NAV, "scripts/.login-layout-disposable-db-url-guard.mjs");
 const FIXTURE_OTP = "847291";
 const SEED_TEMPLATE = path.join(ART, "seed-disposable-fixture.nav.ts");
 const CLEANUP_TEMPLATE = path.join(ART, "cleanup-disposable-fixture.nav.ts");
@@ -23,6 +29,7 @@ const NAV_SEED_SCRIPT = path.join(NAV, "scripts/.login-layout-01-disposable-seed
 const NAV_CLEANUP_SCRIPT = path.join(NAV, "scripts/.login-layout-01-disposable-cleanup.ts");
 
 function materializeNavigatorFixtureScripts() {
+  writeFileSync(NAV_GUARD_SCRIPT, readFileSync(GUARD_MODULE));
   writeFileSync(NAV_SEED_SCRIPT, readFileSync(SEED_TEMPLATE));
   writeFileSync(NAV_CLEANUP_SCRIPT, readFileSync(CLEANUP_TEMPLATE));
 }
@@ -42,14 +49,11 @@ function requireDisposableEnv() {
     throw new Error(`Missing disposable runtime env: ${RUNTIME_ENV}`);
   }
   const env = loadRuntimeEnv(RUNTIME_ENV);
-  const url = env.DATABASE_URL ?? "";
-  if (!url.includes(REQUIRED_DB)) {
-    throw new Error(`Refusing: DATABASE_URL must include ${REQUIRED_DB}`);
-  }
+  const guard = assertDisposableDatabaseUrl(env.DATABASE_URL ?? "", { label: "DATABASE_URL" });
   if (!env.JWT_SECRET?.trim()) {
     throw new Error("Refusing: JWT_SECRET missing in disposable runtime.env");
   }
-  return env;
+  return { ...env, disposableDbGuard: guard.safeSummary };
 }
 
 function withDevNodeEnv(env) {
@@ -113,6 +117,7 @@ async function waitForLoginOtpStep(page) {
 }
 
 function runSeedScript(env, tag, reseed = false) {
+  assertDisposableDatabaseUrl(env.DATABASE_URL ?? "", { label: "DATABASE_URL" });
   materializeNavigatorFixtureScripts();
   const r = spawnSync(
     "pnpm",
@@ -138,12 +143,39 @@ function runSeed(env, tag) {
 }
 
 function runCleanup(env, tag) {
+  assertDisposableDatabaseUrl(env.DATABASE_URL ?? "", { label: "DATABASE_URL" });
   materializeNavigatorFixtureScripts();
-  spawnSync("pnpm", ["exec", "tsx", NAV_CLEANUP_SCRIPT, tag], {
+  const r = spawnSync("pnpm", ["exec", "tsx", NAV_CLEANUP_SCRIPT, tag], {
     cwd: NAV,
-    env: withDevNodeEnv({ ...process.env, ...env, LOGIN_LAYOUT_FIXTURE_MAX_ID: "881001847291" }),
+    env: withDevNodeEnv({
+      ...process.env,
+      ...env,
+      LOGIN_LAYOUT_FIXTURE_MAX_ID: "881001847291",
+      LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
+    }),
     encoding: "utf8",
   });
+  const stderr = (r.stderr || "").trim();
+  const stdout = (r.stdout || "").trim();
+  if (r.error) {
+    throw new Error(`cleanup spawn error: ${r.error.message}`);
+  }
+  if (r.status !== 0) {
+    throw new Error(`cleanup exit ${r.status}: ${stderr || stdout || "unknown"}`);
+  }
+  let report;
+  try {
+    report = JSON.parse(stdout.split("\n").filter(Boolean).pop() ?? "{}");
+  } catch {
+    throw new Error("cleanup did not emit JSON report on stdout");
+  }
+  const rem = report.remaining ?? {};
+  const leftover =
+    (rem.users ?? 0) + (rem.authAccounts ?? 0) + (rem.consents ?? 0) + (rem.botLoginCodes ?? 0);
+  if (leftover > 0) {
+    throw new Error(`cleanup remaining fixture rows: ${JSON.stringify(rem)}`);
+  }
+  return report;
 }
 
 function reseedOtp(env, tag) {
@@ -217,14 +249,19 @@ async function waitForCabinetScanner(page, platformOrigin) {
 }
 
 async function loginLogoutRelogin(platformOrigin, env, fixtureTag) {
-  const seed = runSeed(env, fixtureTag);
+  let seed = null;
   let browser;
   let ctx;
   const counts = { verifyCode: 0, logout: 0, authMe: 0 };
   const statuses = { verifyCode: [], logout: [], authMeAfterLogout: null };
   const urls = {};
+  let primaryError = null;
+  let regressionPayload = null;
+  let cleanupReport = null;
+  let cleanupError = null;
 
   try {
+    seed = runSeed(env, fixtureTag);
     browser = await chromium.launch({ headless: true });
     ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
@@ -340,22 +377,41 @@ async function loginLogoutRelogin(platformOrigin, env, fixtureTag) {
     if (counts.verifyCode !== 2) throw new Error(`verifyCode count ${counts.verifyCode} !== 2`);
     if (counts.logout !== 1) throw new Error(`logout count ${counts.logout} !== 1`);
 
-    return {
+    regressionPayload = {
       status: "VERIFIED_MOCK_DISPOSABLE",
       mock: true,
       fixtureTag,
       userId: seed.userId,
+      publicId: seed.publicId,
       counts,
       statuses,
       urls,
       desktopLayoutAfterRelogin: layoutMetrics,
       desktopLayoutGate: DESKTOP_LAYOUT_GATE,
     };
+  } catch (e) {
+    primaryError = e;
   } finally {
     if (ctx) await ctx.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
-    runCleanup(env, fixtureTag);
+    try {
+      cleanupReport = runCleanup(env, fixtureTag);
+    } catch (e) {
+      cleanupError = e;
+    }
   }
+
+  if (cleanupError) {
+    const cleanupReason = String(cleanupError?.message ?? cleanupError);
+    if (primaryError) {
+      throw new Error(`${String(primaryError?.message ?? primaryError)} | cleanup: ${cleanupReason}`);
+    }
+    throw new Error(`cleanup failed: ${cleanupReason}`);
+  }
+
+  if (primaryError) throw primaryError;
+
+  return { ...regressionPayload, cleanup: cleanupReport };
 }
 
 async function main() {
@@ -367,6 +423,21 @@ async function main() {
   const stackMeta = await resolveStackPlatform(env);
   await assertStackAuthHealthy(stackMeta.platformOrigin, stackMeta.navOrigin);
   const platformOrigin = stackMeta.platformOrigin;
+
+  const unitTests = spawnSync(
+    process.execPath,
+    ["--test", path.join(ART, "disposable-db-url-guard.test.mjs")],
+    { cwd: ROOT, encoding: "utf8", env: withDevNodeEnv(process.env) },
+  );
+  const unitGuard = {
+    command: "node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs",
+    exitCode: unitTests.status ?? 1,
+    passed: unitTests.status === 0,
+  };
+  if (unitTests.status !== 0) {
+    console.error((unitTests.stderr || unitTests.stdout || "").slice(0, 2000));
+    process.exit(unitTests.status === null ? 1 : unitTests.status);
+  }
 
   const fixtureTag = `ll01-${Date.now()}`;
   let regression;
@@ -386,6 +457,17 @@ async function main() {
   const evidenceTipSha = gitSha(ROOT);
   const manifestPath = path.join(ART, "manifest.json");
   let manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")) : {};
+  manifest.loginLayout013 = {
+    task: "LOGIN-LAYOUT-01.3",
+    recordedAt: new Date().toISOString(),
+    codeSha,
+    runtimeSha,
+    evidenceTipSha,
+    disposableDbGuard: env.disposableDbGuard,
+    unitGuard,
+    loginLogoutRelogin: regression,
+    cleanup: regression.cleanup ?? null,
+  };
   manifest.loginLayout012 = {
     task: "LOGIN-LAYOUT-01.2",
     recordedAt: new Date().toISOString(),
@@ -403,20 +485,30 @@ async function main() {
 
   const testRun = {
     status: regression.status === "VERIFIED_MOCK_DISPOSABLE" ? "READY_FOR_REVIEW" : "FAIL",
-    task: "LOGIN-LAYOUT-01.2",
-    baseSha: "0fe7da52bb02f2a515d238757c8be16ef2d83948",
+    task: "LOGIN-LAYOUT-01.3",
+    baseSha: "96e4f958702222366414c8f917fb7dee4297074f",
     codeSha,
     evidenceTipSha,
-    command: "NODE_ENV=development node artifacts/remcard-login-layout-01/run-01.1-evidence.mjs",
+    command:
+      "NODE_ENV=development node artifacts/remcard-login-layout-01/run-01.1-evidence.mjs",
+    unitGuard,
+    disposableDbGuard: env.disposableDbGuard,
     exitCode,
     loginLogoutRelogin: regression.status,
     counts: regression.counts ?? null,
     urls: regression.urls ?? null,
     desktopLayout: regression.desktopLayoutAfterRelogin ?? null,
+    cleanup: regression.cleanup ?? null,
   };
-  writeFileSync(path.join(ART, "test-run-01.2.json"), `${JSON.stringify(testRun, null, 2)}\n`);
+  writeFileSync(path.join(ART, "test-run-01.3.json"), `${JSON.stringify(testRun, null, 2)}\n`);
 
-  console.log(JSON.stringify({ regression: regression.status, exitCode }, null, 2));
+  console.log(
+    JSON.stringify(
+      { regression: regression.status, exitCode, unitGuard: unitGuard.passed, cleanup: Boolean(regression.cleanup) },
+      null,
+      2,
+    ),
+  );
   process.exitCode = exitCode;
   process.exit(exitCode);
 }
