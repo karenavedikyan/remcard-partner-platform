@@ -1,0 +1,66 @@
+{
+  "status": "READY_FOR_REVIEW",
+  "task": "LOGIN-LAYOUT-01.5",
+  "baseSha": "b536c747ccdcae972563d058247028cc2a5b7bf9",
+  "codeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+  "evidenceTipSha": "56225bdf518bfb52906ea46b71bad744ef3025cb",
+  "command": "NODE_ENV=development node artifacts/remcard-login-layout-01/run-01.1-evidence.mjs",
+  "unitGuard": {
+    "command": "node --test artifacts/remcard-login-layout-01/disposable-db-url-guard.test.mjs artifacts/remcard-login-layout-01/login-layout-cleanup-orchestration.test.mjs",
+    "exitCode": 0,
+    "passed": true,
+    "counts": {
+      "pass": 27,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "disposableDbGuard": "postgresql://127.0.0.1/remcard_admin_test_012",
+  "exitCode": 0,
+  "loginLogoutRelogin": "VERIFIED_MOCK_DISPOSABLE",
+  "counts": {
+    "verifyCode": 2,
+    "logout": 1,
+    "authMe": 6
+  },
+  "urls": {
+    "initialLogin": "http://127.0.0.1:3040/login?returnTo=/scanner",
+    "afterFirstLogin": "http://127.0.0.1:3040/scanner",
+    "afterLogout": "http://127.0.0.1:3040/account/signed-out?scope=current",
+    "scannerAfterLogout": "http://127.0.0.1:3040/scanner",
+    "scannerBlockedAfterLogout": {
+      "url": "http://127.0.0.1:3040/scanner",
+      "scannerHeadingVisible": false,
+      "loginFormVisible": false,
+      "authMeHasUser": false
+    },
+    "returnedToLogin": "http://127.0.0.1:3040/login",
+    "loginBeforeSecondOtp": "http://127.0.0.1:3040/login?returnTo=/scanner",
+    "afterSecondLogin": "http://127.0.0.1:3040/scanner"
+  },
+  "desktopLayout": {
+    "innerWidth": 1440,
+    "horizontalOverflow": false,
+    "entryLayoutWidth": 1280,
+    "entryStoryWidth": 593.78125,
+    "entryFormWidth": 416,
+    "gridTemplateColumns": "593.781px 539.828px"
+  },
+  "cleanup": {
+    "mock": true,
+    "tag": "ll01-1792328400178",
+    "publicId": "pub-ll01-1792328400178",
+    "deleted": {
+      "users": 1,
+      "authAccounts": 1,
+      "consents": 2,
+      "botLoginCodes": 1
+    },
+    "remaining": {
+      "users": 0,
+      "authAccounts": 0,
+      "consents": 0,
+      "botLoginCodes": 0
+    }
+  }
+}
