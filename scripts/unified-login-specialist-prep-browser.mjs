@@ -83,6 +83,8 @@ function bootstrapStack(pins) {
       R06_EXPECT_NAV_SHA: pins.navigator,
       R06_EXPECT_PLATFORM_CODE_SHA: pins.platformStackPin,
       PROF_R06_SPECIALIST_PROFILE_ENABLED: '1',
+      R06_NAV_NODE_ENV: 'development',
+      R06_PLAT_NODE_ENV: 'development',
     },
   });
 }
@@ -385,26 +387,26 @@ export async function runUnifiedPrepBrowserSmoke() {
 }
 
 async function main() {
-  try {
-    const payload = await runUnifiedPrepBrowserSmoke();
-    writeFileSync(JSON_OUT, `${JSON.stringify(payload, null, 2)}\n`);
-    console.log(JSON.stringify({ ok: true, out: JSON_OUT, status: payload.status }));
-    process.exit(0);
-  } catch (e) {
-    const fail = {
-      status: 'FAIL',
-      error: String(e?.message ?? e),
-      capturedAt: new Date().toISOString(),
-    };
-    writeFileSync(JSON_OUT, `${JSON.stringify(fail, null, 2)}\n`);
-    console.error(JSON.stringify(fail));
-    process.exit(1);
-  }
+  const payload = await runUnifiedPrepBrowserSmoke();
+  writeFileSync(JSON_OUT, `${JSON.stringify(payload, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, out: JSON_OUT, status: payload.status }));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
+  main()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      const fail = {
+        status: 'FAIL',
+        error: String(e?.message ?? e),
+        capturedAt: new Date().toISOString(),
+      };
+      try {
+        writeFileSync(JSON_OUT, `${JSON.stringify(fail, null, 2)}\n`);
+      } catch {
+        /* ignore */
+      }
+      console.error(JSON.stringify(fail));
+      process.exit(1);
+    });
 }

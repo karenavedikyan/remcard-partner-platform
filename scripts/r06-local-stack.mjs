@@ -43,11 +43,13 @@ async function wait(url, ms = 180000) {
 
 function spawnStart(cwd, port, extra, envPath) {
   const distDir = extra.R06_NEXT_DIST_DIR ? `export R06_NEXT_DIST_DIR=${JSON.stringify(extra.R06_NEXT_DIST_DIR)}; ` : '';
+  const nodeEnv =
+    extra.R06_STACK_NODE_ENV || (cwd === NAV_ROOT ? process.env.R06_NAV_NODE_ENV : process.env.R06_PLAT_NODE_ENV) || 'production';
   const child = spawn(
     'bash',
     [
       '-lc',
-      `set -a && . ${JSON.stringify(envPath)} && set +a && ${distDir}export PORT=${port} NODE_ENV=production && exec pnpm exec next start -p ${port}`,
+      `set -a && . ${JSON.stringify(envPath)} && set +a && ${distDir}export PORT=${port} NODE_ENV=${nodeEnv} && exec pnpm exec next start -p ${port}`,
     ],
     {
       cwd,
@@ -153,6 +155,8 @@ async function main() {
     stdio: 'inherit',
   });
 
+  const navNodeEnv = process.env.R06_NAV_NODE_ENV || 'production';
+  const platNodeEnv = process.env.R06_PLAT_NODE_ENV || 'production';
   spawnStart(
     NAV_ROOT,
     NAV_PORT,
@@ -162,6 +166,7 @@ async function main() {
       DIRECT_URL: DB_URL,
       PROF_R06_SPECIALIST_PROFILE_ENABLED: GATE ? 'true' : 'false',
       R06_NEXT_DIST_DIR: NAV_DIST,
+      R06_STACK_NODE_ENV: navNodeEnv,
     },
     envPath,
   );
@@ -172,6 +177,7 @@ async function main() {
       REMCARD_API_BASE_URL: `http://127.0.0.1:${NAV_PORT}`,
       NEXT_PUBLIC_APP_URL: platformPublicUrl,
       R06_NEXT_DIST_DIR: PLAT_DIST,
+      R06_STACK_NODE_ENV: platNodeEnv,
     },
     envPath,
   );
