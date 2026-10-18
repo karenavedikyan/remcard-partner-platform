@@ -1,0 +1,11 @@
+{
+  "incident": "R06.3 A/B/C manifest runtime SHA mismatch (c0996e1 review)",
+  "cause": "PNG capture used manually restarted next start with e18487a dist while /tmp/r06-local-stack/meta.json still held an older stack (platform f898f272, navigator 98749816). r06-visual-pairs.mjs originally wrote navigatorSha/platformSha from that stale meta; c0996e1 patched JSON by hand — not acceptable provenance.",
+  "staleMetaEvidencePath": "/tmp/r06-local-stack/meta.json",
+  "staleValues": {
+    "platformSha": "f898f2727e0333701d8ae314d42208f018792dae",
+    "navigatorSha": "98749816d0fa4f1722aac0c53e1e10b68ca3bdac"
+  },
+  "remediation": "New R06_RUN_DIR + stack meta.runtime + probe before BFF/visual; manifest from meta only",
+  "remediatedAt": "2026-10-17T18:32:00.692Z"
+}

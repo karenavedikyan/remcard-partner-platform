@@ -1,0 +1,41 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01",
+  "parentPins": {
+    "platform": "4a7a8e3aa1258c4800f86158268bef957327e0e6",
+    "navigator": "04613f09400b54c894fa192a81b09834c8797fd5"
+  },
+  "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "stackedOnPrs": {
+    "platform": "https://github.com/karenavedikyan/remcard-partner-platform/pull/27",
+    "navigator": "https://github.com/karenavedikyan/remcard-navigator/pull/690"
+  },
+  "visualTails": [
+    "specialization search: tileLayout label «Найти направление», pw-search testid, 48px input",
+    "catalog footer: column stretch ≤650px",
+    "catalog CTA: secondary .btn on completed summary"
+  ],
+  "proposalControls": {
+    "ui": "TaxonomyProposalSection ×2 on ProfileDirectionsPicker (profile + catalog)",
+    "api": "POST/GET /api/pro/taxonomy-proposals",
+    "note": "Moderation / canonical publish remains manual; proposals do not alter selected IDs or drafts"
+  },
+  "tests": {
+    "platformBuild": { "exitCode": 0 },
+    "navigatorBuild": { "exitCode": 0 },
+    "platformVitest": {
+      "TaxonomyProposalSection.test.tsx": { "passed": 3, "exitCode": 0 },
+      "taxonomy-proposal-normalize.test.ts": { "note": "included in vitest.config include list" }
+    },
+    "navigatorVitest": {
+      "taxonomyProposalSubmit.test.ts": { "passed": 4, "exitCode": 0 },
+      "taxonomyProposalRoute.integration.test.ts": { "skipped": "no remcard_r01_test DATABASE_URL in agent VM" }
+    },
+    "browserBffVisual": {
+      "skipped": "disposable PG + R06_RUN_DIR stack not started on this VM"
+    }
+  },
+  "capture": {
+    "status": "pending_stack",
+    "runner": "scripts/r06-abc-evidence-rerun.mjs with fresh R06_RUN_DIR and updated R06_EXPECT_PLATFORM_CODE_SHA"
+  }
+}

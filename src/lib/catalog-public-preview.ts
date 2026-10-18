@@ -1,5 +1,7 @@
 import { displayCategoryLabel } from "@/lib/category-display";
+import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { masterDirectionLabel } from "@/lib/master-direction-label";
+import { ONBOARDING_STAGES } from "@/lib/onboarding-stages";
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { catalogEntityForProfile } from "@/lib/profile-catalog-state";
@@ -13,6 +15,7 @@ export type CatalogPreviewModel = {
   description: string;
   productLabels: string[];
   serviceLabels: string[];
+  stageLabels: string[];
   imageUrl: string | null;
   categoriesForAvatar: string[];
   partnerType: string;
@@ -54,8 +57,14 @@ export function buildCatalogPreviewModel(
   const partnerType = draft.partnerType || profile.user.partnerType || "MASTER";
   const productLabels = draft.storeCategories.map((id) => displayCategoryLabel(id));
   const serviceLabels = draft.specializations.map((id) => masterDirectionLabel(id));
+  const stageLabels = draft.navigatorStageIds.map((id) => {
+    const stage = ONBOARDING_STAGES.find((s) => s.id === id);
+    return stage ? `${stage.icon} ${stage.title}` : masterDirectionLabel(id);
+  });
   const categoriesForAvatar =
     draft.storeCategories.length > 0 ? draft.storeCategories : draft.specializations;
+  const rawPhone = draft.publicPhone.trim();
+  const displayPhone = rawPhone ? formatPhoneForDisplay(rawPhone) : "";
 
   return {
     publicName: catalogPublicTitle(draft, profile),
@@ -63,13 +72,14 @@ export function buildCatalogPreviewModel(
     description: draft.description.trim(),
     productLabels,
     serviceLabels,
+    stageLabels,
     imageUrl: draft.catalogImageUrl.trim() || null,
     categoriesForAvatar,
     partnerType,
     website: draft.website.trim(),
     telegram: draft.telegram.trim(),
     publicEmail: draft.publicEmail.trim(),
-    publicPhone: draft.publicPhone.trim(),
+    publicPhone: displayPhone,
     showFullName: draft.showFullName,
   };
 }

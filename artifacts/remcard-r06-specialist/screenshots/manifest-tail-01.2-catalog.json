@@ -1,0 +1,31 @@
+{
+  "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+  "platformCodeSha": "91b1e8e3794d3eff85d75801125e65ca653f28c4",
+  "platformBuiltGitHead": "91b1e8e3794d3eff85d75801125e65ca653f28c4",
+  "navigatorGitHead": "4a592efea44d95f4d7d8449cde281785802e64b4",
+  "runDir": "/tmp/r06-tail-012b-1792326422",
+  "captures": [
+    {
+      "name": "profile-catalog-wizard",
+      "width": 375,
+      "theme": "light",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-375-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-375-light.png"
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "width": 375,
+      "theme": "dark",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-375-dark.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-375-dark.png"
+    },
+    {
+      "name": "profile-catalog-wizard",
+      "width": 320,
+      "theme": "light",
+      "implPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-impl-320-light.png",
+      "refPath": "/agent/repos/remcard-partner-platform/artifacts/remcard-r06-specialist/screenshots/profile-catalog-wizard-ref-320-light.png"
+    }
+  ],
+  "capturedAt": "2026-10-18T12:29:43.542Z"
+}

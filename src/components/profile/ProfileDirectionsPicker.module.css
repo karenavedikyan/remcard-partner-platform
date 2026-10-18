@@ -69,10 +69,38 @@
   margin-bottom: 0.35rem;
 }
 
+.searchLabel {
+  display: block;
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin-bottom: 0.35rem;
+}
+
 .search input {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.searchTile {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.searchTile input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
 }
 
 .group {
@@ -92,6 +120,19 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
   gap: 0.35rem 0.75rem;
   min-width: 0;
+}
+
+.specialistCompact .optionGrid {
+  max-height: min(220px, 40vh);
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.specialistCompact .search input {
+  max-width: 28rem;
 }
 
 .checkRow {
@@ -122,4 +163,116 @@
 .primary select {
   width: 100%;
   max-width: 100%;
+}
+
+.selectionSummary {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--offset);
+  min-width: 0;
+}
+
+.selectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.selectionHeading small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
+  max-height: min(290px, 42vh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.15rem;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .tileGrid {
+    grid-template-columns: 1fr;
+    max-height: min(260px, 40vh);
+  }
+}
+
+.tileOption {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 42px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.tileOption input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.tileOptionSelected {
+  border-color: var(--primary);
+  background: var(--offset);
+}
+
+.tileFieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem 1rem 1rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.tileFieldset legend {
+  padding: 0 0.25rem;
+}
+
+.advancedCollapse {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.5rem 1rem 1rem;
+  background: var(--surface);
+}
+
+.advancedCollapse summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.875rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.advancedCollapse summary::-webkit-details-marker {
+  display: none;
+}
+
+.advancedInner {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }

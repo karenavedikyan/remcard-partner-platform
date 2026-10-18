@@ -1,0 +1,29 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01.1",
+  "heads": {
+    "platform": "670824c",
+    "navigator": "4a592efe"
+  },
+  "blockersFixed": [
+    "remcard-proxy POST/GET /api/pro/taxonomy-proposals allowlist",
+    "taxonomy-proposal-api body object (no double JSON.stringify)",
+    "detectUntrackedPartialR06Schema tracked upgrade m1+m2 -> pending m3"
+  ],
+  "visualTails": [
+    "ProfileDirectionsPicker .searchTile full width (100%)",
+    "Catalog footer save draft primary except step 4 ghost; stepActions mobile ref layout"
+  ],
+  "tests": {
+    "platform": {
+      "remcard-proxy-r06-tail.test.ts": { "passed": 2, "exitCode": 0 },
+      "taxonomy-proposal-api.wire.test.ts": { "passed": 1, "exitCode": 0 }
+    },
+    "navigator": {
+      "prof-r06-partial-schema.test.mjs": { "passed": 3, "exitCode": 0 }
+    },
+    "build": { "platform": { "exitCode": 0 }, "navigator": { "exitCode": 0 } },
+    "pgControlledMigration": { "status": "NOT_VERIFIED", "reason": "no loopback PostgreSQL/docker on agent VM" },
+    "browserBffTaxonomy": { "status": "NOT_VERIFIED", "reason": "requires R06_RUN_DIR stack + disposable PG" },
+    "visualPng": { "status": "NOT_VERIFIED", "reason": "requires r06-local-stack + r06-visual-pairs rerun" }
+  }
+}

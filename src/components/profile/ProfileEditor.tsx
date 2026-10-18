@@ -52,6 +52,16 @@ import {
 import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
+import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
+import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
+import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
+import { SpecialistAgentActivityCompact } from "./specialist/SpecialistAgentActivityCompact";
+import {
+  mergeCatalogPrefill,
+  parseCatalogTouched,
+  workingProfileCatalogSeed,
+  type CatalogTouchedMap,
+} from "@/lib/specialist-r06/catalog-prefill";
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import { fetchAgentProfileStatus } from "@/lib/agent-profile/api";
 import type { WorkingPrimaryDirection } from "@/lib/types";
@@ -107,6 +117,12 @@ type ProfileEditorProps = {
     eligible: boolean;
     profileComplete: boolean;
   } | null;
+  initialSpecialistR06Gate?: {
+    featureEnabled: boolean;
+    eligible: boolean;
+    profileComplete?: boolean;
+    ineligibleReason?: string | null;
+  } | null;
   initialPureAgentCompact?: boolean;
 };
 
@@ -132,6 +148,7 @@ function ProfileEditorInner({
   focusBranchId,
   focusField,
   initialAgentR02Gate = null,
+  initialSpecialistR06Gate = null,
   initialPureAgentCompact = false,
 }: ProfileEditorProps) {
   const cabinetAccess = useProfileCabinetAccess();
@@ -195,6 +212,31 @@ function ProfileEditorInner({
   const [partnerActivities, setPartnerActivities] = useState<string[]>(
     user.partnerActivities ?? [],
   );
+  const [specialistR06Gate, setSpecialistR06Gate] = useState<{
+    featureEnabled: boolean;
+    eligible: boolean;
+  } | null>(
+    initialSpecialistR06Gate
+      ? {
+          featureEnabled: initialSpecialistR06Gate.featureEnabled,
+          eligible: initialSpecialistR06Gate.eligible,
+        }
+      : null,
+  );
+  const specialistR06Ui = Boolean(
+    specialistR06Gate?.featureEnabled &&
+      specialistR06Gate?.eligible &&
+      profile.user.partnerType === "MASTER",
+  );
+  const catalogDraftRaw = initial.user.catalogDraft as Record<string, unknown> | null | undefined;
+  const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() => {
+    const raw = catalogDraftRaw?.navigatorStageIds;
+    return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+  });
+  const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
+    parseCatalogTouched(catalogDraftRaw?.catalogTouched),
+  );
+  const specialistPrefillRef = useRef(false);
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
@@ -235,6 +277,26 @@ function ProfileEditorInner({
         }
       : null,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSpecialistR06Status()
+      .then((status) => {
+        if (cancelled) return;
+        setSpecialistR06Gate({
+          featureEnabled: status.featureEnabled,
+          eligible: status.eligible,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSpecialistR06Gate({ featureEnabled: false, eligible: false });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.user.partnerType]);
 
   useEffect(() => {
     let cancelled = false;
@@ -338,10 +400,35 @@ function ProfileEditorInner({
     website,
   ]);
 
+  const buildCatalogDraft = useCallback((): ProfileDraft => {
+    return {
+      ...buildDraft(),
+      catalogNavigatorStageIds,
+      navigatorStageIds: catalogNavigatorStageIds,
+      catalogTouched,
+    };
+  }, [buildDraft, catalogNavigatorStageIds, catalogTouched]);
+
   const savedSnapshotRef = useRef(profileDraftFromProfile(initial));
   const savedCatalogSnapshotRef = useRef(catalogDraftFromProfile(initial));
   const syncedUserIdRef = useRef(initial.user.id);
   const draftRef = useRef<ProfileDraft | null>(null);
+
+  const revertCatalogLocalEdits = useCallback(() => {
+    const snap = savedCatalogSnapshotRef.current;
+    setDescription(snap.description);
+    setSpecializations(snap.specializations);
+    setWebsite(snap.website);
+    setTelegram(snap.telegram);
+    setPublicEmail(snap.publicEmail);
+    setPublicPhone(snap.publicPhone);
+    setCatalogPublicName(snap.catalogPublicName);
+    setCatalogCity(snap.catalogCity);
+    setShowFullName(snap.showFullName);
+    setCatalogImageUrl(snap.catalogImageUrl);
+    setCatalogNavigatorStageIds(snap.navigatorStageIds ?? []);
+    setCatalogTouched({});
+  }, []);
 
   const applyProfile = useCallback((next: ProProfileResponse) => {
     setProfile(next);
@@ -378,6 +465,12 @@ function ProfileEditorInner({
     setPartnershipContactPhone(w?.partnershipContactPhone ?? "");
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
     setPartnerActivities(u.partnerActivities ?? catalogForm.partnerActivities ?? []);
+    const rawDraft = u.catalogDraft as Record<string, unknown> | null | undefined;
+    const stages = rawDraft?.navigatorStageIds;
+    setCatalogNavigatorStageIds(
+      Array.isArray(stages) ? stages.filter((x): x is string => typeof x === "string") : [],
+    );
+    setCatalogTouched(parseCatalogTouched(rawDraft?.catalogTouched));
   }, []);
 
   const loadNotes = useCallback(async () => {
@@ -404,6 +497,34 @@ function ProfileEditorInner({
     }
     void loadNotes();
   }, [cabinetAccess.canFetchModerationNotes, loadNotes]);
+
+  useEffect(() => {
+    if (!specialistR06Ui || specialistPrefillRef.current) return;
+    specialistPrefillRef.current = true;
+    const seed = workingProfileCatalogSeed(profile);
+    const merged = mergeCatalogPrefill(buildCatalogDraft(), seed, catalogTouched);
+    if (merged.catalogPublicName && !catalogPublicName.trim()) {
+      setCatalogPublicName(merged.catalogPublicName);
+    }
+    if (merged.catalogCity && !catalogCity.trim()) {
+      setCatalogCity(merged.catalogCity);
+    }
+    if (merged.specializations.length && specializations.length === 0) {
+      setSpecializations(merged.specializations);
+    }
+    if (merged.navigatorStageIds.length && catalogNavigatorStageIds.length === 0) {
+      setCatalogNavigatorStageIds(merged.navigatorStageIds);
+    }
+  }, [
+    specialistR06Ui,
+    profile,
+    buildCatalogDraft,
+    catalogTouched,
+    catalogPublicName,
+    catalogCity,
+    specializations.length,
+    catalogNavigatorStageIds.length,
+  ]);
 
   useEffect(() => {
     if (initial.user.id !== syncedUserIdRef.current) {
@@ -536,7 +657,8 @@ function ProfileEditorInner({
   const showAside =
     activeSection !== "overview" &&
     activeSection !== "team" &&
-    !(pureAgentCompactUi && activeSection === "basics");
+    !(pureAgentCompactUi && activeSection === "basics") &&
+    !(specialistR06Ui && (activeSection === "basics" || activeSection === "catalog"));
 
   return (
     <div
@@ -624,6 +746,26 @@ function ProfileEditorInner({
 
         {activeSection === "basics" && !agentNavPending ? (
         <>
+        {specialistR06Ui ? (
+          <>
+            <SpecialistProfileSection onWorkingProfileSaved={applyProfile} />
+            {partnerActivities.includes("AGENT") ? (
+              <AgentProfileSection
+                userId={profile.user.id}
+                partnerActivities={partnerActivities}
+                basicsEditable={basicsEditable}
+                onActivitiesChange={setPartnerActivities}
+                layout="default"
+              />
+            ) : (
+              <SpecialistAgentActivityCompact
+                basicsEditable={basicsEditable}
+                onActivitiesChange={setPartnerActivities}
+              />
+            )}
+          </>
+        ) : (
+          <>
         <AgentProfileSection
           userId={profile.user.id}
           partnerActivities={partnerActivities}
@@ -842,9 +984,56 @@ function ProfileEditorInner({
         </form>
         ) : null}
         </>
+        )}
+        </>
         ) : null}
 
-        {activeSection === "catalog" && !pureAgentCompactUi ? (
+        {activeSection === "catalog" && !pureAgentCompactUi && specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg ? (
+          <SpecialistCatalogSection
+            profile={profile}
+            draft={buildCatalogDraft()}
+            catalogEditable={catalogEditable}
+            catalogTouched={catalogTouched}
+            onCatalogTouchedChange={setCatalogTouched}
+            onProfileUpdated={applyProfile}
+            catalogPublicName={catalogPublicName}
+            onCatalogPublicNameChange={setCatalogPublicName}
+            catalogCity={catalogCity}
+            onCatalogCityChange={setCatalogCity}
+            showFullName={showFullName}
+            onShowFullNameChange={setShowFullName}
+            catalogImageUrl={catalogImageUrl}
+            onCatalogImageUrlChange={setCatalogImageUrl}
+            description={description}
+            onDescriptionChange={setDescription}
+            specializations={specializations}
+            onSpecializationsChange={setSpecializations}
+            catalogStageIds={catalogNavigatorStageIds}
+            onCatalogStageIdsChange={setCatalogNavigatorStageIds}
+            website={website}
+            onWebsiteChange={setWebsite}
+            telegram={telegram}
+            onTelegramChange={setTelegram}
+            publicEmail={publicEmail}
+            onPublicEmailChange={setPublicEmail}
+            publicPhone={publicPhone}
+            onPublicPhoneChange={setPublicPhone}
+            workingServiceIds={serviceSpecializationIds}
+            workingStageIds={navigatorStageIds}
+            onRevertLocalEdits={revertCatalogLocalEdits}
+            onPullWorkingDirections={() => {
+              setSpecializations([...serviceSpecializationIds]);
+              setCatalogNavigatorStageIds([...navigatorStageIds]);
+              setCatalogTouched((t) => ({
+                ...t,
+                specializations: true,
+                navigatorStageIds: true,
+              }));
+            }}
+          />
+        ) : null}
+
+        {activeSection === "catalog" && !pureAgentCompactUi && !(specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg) ? (
           <ProfileCatalogSection
             profile={profile}
             draft={buildDraft()}

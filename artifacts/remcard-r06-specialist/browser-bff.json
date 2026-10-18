@@ -1,0 +1,59 @@
+{
+  "ok": true,
+  "steps": {
+    "finish": {
+      "ok": true
+    },
+    "editSaveAfterFinishNoReload": {
+      "ok": true
+    },
+    "workingProfileFreshGet": {
+      "ok": true,
+      "displayName": "R06 BFF Spec Edited"
+    },
+    "taxonomyProposalBff": {
+      "ok": true,
+      "createStatus": 200,
+      "duplicateStatus": 409
+    },
+    "catalogClearOptionalReload": {
+      "ok": true,
+      "telegram": ""
+    },
+    "previewBeforeSubmit": {
+      "ok": true,
+      "catalogStatus": "DRAFT"
+    },
+    "pendingFreshGet": {
+      "ok": true,
+      "catalogStatus": "PENDING"
+    },
+    "reentryPending": {
+      "ok": true
+    },
+    "resubmitNoDuplicate": {
+      "ok": true
+    }
+  },
+  "originNegative": {
+    "status": 403,
+    "ok": true
+  },
+  "gateOff": {
+    "ok": true,
+    "exitCode": 0,
+    "testsPassed": 1,
+    "note": "gate OFF via navigator integration (featureEnabled:false)"
+  },
+  "negatives": {
+    "migration": {
+      "exitCode": 0,
+      "ok": true,
+      "stdout": "{\"ok\":true,\"results\":[{\"name\":\"invalid_host\",\"ok\":true,\"message\":\"refusing_non_loopback_host\"},{\"name\":\"wrong_database\",\"ok\":true,\"message\":\"refusing_non_allowlisted_database\"},{\"name\":\"ledger_checksum_mismatch\",\"ok\":true,\"message\":\"ledger_checksum_mismatch:20261017123000_prof_r06_specialist_profile\"},{\"name\":\"ledger_checksum_guard_regression\",\"ok\":true,\"message\":\"guard rejected corrupted ledger\"}"
+    }
+  },
+  "csrf": {
+    "status": 403,
+    "ok": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "task": "R06-RELEASE-PREP-01.1",
+  "status": "READY_FOR_REVIEW",
+  "productionReady": false,
+  "capturedAt": "2026-10-18T13:50:00.000Z",
+  "candidateSha": {
+    "navigator": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c",
+    "platform": "ea6dc3c5744280d100196ee62df5c3f853c32057"
+  },
+  "evidence": {
+    "file": "RELEASE-PREP-01-EVIDENCE.json",
+    "sha256": "aa4343a593e046c682b1ad86557fe717b4b84dda2e7532f8c506a9f69a6b19ab",
+    "bytes": 35503,
+    "evidenceCommitPlatform": "684e436",
+    "navigatorCliShaAtRun": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c"
+  },
+  "draftPrBlocker": "GitHub token lacks createPullRequest (gh: Resource not accessible by integration); branches pushed — create draft PRs manually from cursor/r06-release-prep-01",
+  "fixes": ["target-safety", "schema-prefix-preflight", "clean-evidence-provenance", "draft-prs"],
+  "operatorProductionPreflight": "NOT_RUN",
+  "backupWindowProdRuntime": "NOT_VERIFIED"
+}

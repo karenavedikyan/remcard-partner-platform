@@ -1,0 +1,11 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01.4",
+  "status": "READY_FOR_REVIEW",
+  "scope": "transactional orphan-probe rollback only",
+  "orphanProbeRaw": "TAIL-01.4-PG-ORPHAN-PROBE-RAW.json",
+  "transactionalRollback": true,
+  "snapshotRestored": true,
+  "beforeAfterSnapshotSha256": "2f071c663c8c7b9cdeb746236d2540fadd4a514e488433005c71e505a601858d",
+  "injectFailureRollbackVerified": true,
+  "controlledAfterRepeatExit0": true
+}
