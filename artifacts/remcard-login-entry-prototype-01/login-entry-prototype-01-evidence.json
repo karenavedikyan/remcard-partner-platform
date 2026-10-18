@@ -2,15 +2,15 @@
   "status": "READY_FOR_REVIEW",
   "task": "LOGIN-ENTRY-PROTOTYPE-01",
   "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
-  "codeSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
+  "codeSha": "f800b29e136a5693be4531d037cfc0c1e4f877e7",
   "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
   "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
   "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
   "productionBuild": {
     "command": "npm ci --include=dev && npm run build",
     "exitCode": 0,
-    "BUILD_ID": "JblgeQPQTyr3hje_XLoIl",
-    "sourceSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe"
+    "BUILD_ID": "l2rH_4RZGf-cCm9UErLiE",
+    "sourceSha": "f800b29e136a5693be4531d037cfc0c1e4f877e7"
   },
   "tests": {
     "authComponents": {
@@ -21,7 +21,7 @@
     },
     "disposableLogin": {
       "status": "SKIP",
-      "reason": "page.getByPlaceholderText is not a function"
+      "reason": "maxId already used by fixture pub-login-entry-1792350341947; cleanup that tag first (no shared maxId purge)\n"
     }
   },
   "screenshots": {

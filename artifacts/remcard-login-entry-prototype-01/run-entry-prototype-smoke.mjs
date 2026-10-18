@@ -194,7 +194,9 @@ async function main() {
       else await page.emulateMedia({ colorScheme: "dark" });
     };
 
-    await captureMatrix(browser, refOrigin, implOrigin, themeToggleImpl);
+    if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1") {
+      await captureMatrix(browser, refOrigin, implOrigin, themeToggleImpl);
+    }
 
     if (disposable) {
       try {
