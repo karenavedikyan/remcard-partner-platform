@@ -1,0 +1,37 @@
+{
+  "task": "UNIFIED-LOGIN-SPECIALIST-PREP-01",
+  "recordedAt": "2026-10-18T14:15:00.000Z",
+  "inputPins": {
+    "frontendRelease": "e6ba4681f2099d3c8b3d98ecbf3c54a68dcff10b",
+    "loginPr29MergedOnRelease": true,
+    "loginBuildFixCode": "6b3e24785efa539e1cf48c64e2b55f1f5f80d2d5",
+    "loginBuildFixEvidenceTip": "31956ac23805c65abd5bab63b1c6f4e4d96f614a",
+    "r06PrepPlatformHeadBeforeMerge": "843c2d2dad2d5e63f91c129631599a2b50a0315c",
+    "backendRelease": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
+    "r06PrepNavigator": "d9edf2b846745db1f04836dffa8d1b6f7e80ae7c",
+    "layoutProductCodeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+    "specialistApplicationCodeSha": "11f512e44406d243261f7bfdd7c1d5d90f6494d9",
+    "visualRefSha": "771cc658a415a5d05b964f29f675d32db449198b"
+  },
+  "branches": {
+    "platform": "cursor/unified-login-specialist-prep-01",
+    "navigator": "cursor/unified-login-specialist-prep-01"
+  },
+  "integrationSteps": {
+    "platform": [
+      "branch from origin/release/prof-v1-20261007 (includes merged PR #29 login layout @ e6ba468)",
+      "fast-forward merge origin/cursor/login-layout-build-01-b3e3 (PR #30 build fix, NOT merged separately)",
+      "merge origin/cursor/r06-release-prep-01 (full R06 specialist + prep evidence/runbook)"
+    ],
+    "navigator": [
+      "branch cursor/unified-login-specialist-prep-01 at origin/cursor/r06-release-prep-01 (d9edf2b on release c9cdef42)"
+    ]
+  },
+  "conflictResolution": {
+    "tsconfig.json": "Auto-merged: kept R06 .next-r06-local-plat types include AND login-build exclude artifacts/**/*.nav.fixture.tpl",
+    "auth.module.css": "No conflict — login layout from release; R06 did not alter login CSS",
+    "remcard-proxy.ts": "Taken from R06 prep (taxonomy allowlist); login proxy paths unchanged from release",
+    "srcUiCss": "No manual edits in this integration — merge only"
+  },
+  "excluded": ["REGISTRATION #28", "unrelated welcome changes", "Timeweb deploy", "release ref updates"]
+}
