@@ -5,7 +5,7 @@
  */
 import { chromium } from 'playwright';
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { probeRunStack, loadRunMeta, gitRevParse, resolveApplicationCodeSha } from './lib/r06-provenance.mjs';
@@ -70,6 +70,26 @@ function loadEnvFile(envPath) {
 
 function withDevNodeEnv(env) {
   return { ...env, NODE_ENV: 'development' };
+}
+
+function cleanupHarnessSideEffects() {
+  for (const p of [NAV_SEED, NAV_CLEANUP, NAV_GUARD]) {
+    try {
+      if (existsSync(p)) rmSync(p);
+    } catch {
+      /* ignore */
+    }
+  }
+  try {
+    execSync('git restore tsconfig.json', { cwd: NAV, stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
+  try {
+    execSync('git restore next-env.d.ts', { cwd: ROOT, stdio: 'ignore' });
+  } catch {
+    /* ignore */
+  }
 }
 
 function bootstrapStack(pins) {
@@ -374,7 +394,7 @@ export async function runUnifiedPrepBrowserSmoke() {
   const login = await runLoginSmoke(platformOrigin, env, fixtureTag);
   const specialist = await runSpecialistSmoke(env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ''), env);
 
-  return {
+  const result = {
     status: 'PASS',
     capturedAt: new Date().toISOString(),
     pins,
@@ -391,6 +411,8 @@ export async function runUnifiedPrepBrowserSmoke() {
     login,
     specialist,
   };
+  cleanupHarnessSideEffects();
+  return result;
 }
 
 async function main() {
