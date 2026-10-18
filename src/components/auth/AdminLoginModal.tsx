@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 import { AdminPasswordLoginForm } from "@/components/auth/AdminPasswordLoginForm";
 import type { AdminCapabilitiesState } from "@/components/auth/LoginExperience";
 import styles from "./auth.module.css";
@@ -14,34 +14,81 @@ type Props = {
 
 export function AdminLoginModal({ open, onClose, returnTo, adminCaps }: Props) {
   const titleId = useId();
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
 
+  const handleClose = useCallback(() => {
+    const dialog = dialogRef.current;
+    if (dialog?.open) {
+      dialog.close();
+    }
+    restoreFocusRef.current?.focus({ preventScroll: true });
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
-    if (!open) return;
-    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const timer = window.setTimeout(() => {
-      if (adminCaps === "enabled") {
-        document.querySelector<HTMLInputElement>('[data-testid="admin-login-input"]')?.focus({
-          preventScroll: true,
-        });
-      } else {
-        closeRef.current?.focus({ preventScroll: true });
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open) {
+      restoreFocusRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      if (!dialog.open) {
+        dialog.showModal();
       }
-    }, 0);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener("keydown", onKey);
-      restoreFocusRef.current?.focus({ preventScroll: true });
-    };
-  }, [adminCaps, onClose, open]);
+      const timer = window.setTimeout(() => {
+        if (adminCaps === "enabled") {
+          dialog.querySelector<HTMLInputElement>('[data-testid="admin-login-input"]')?.focus({
+            preventScroll: true,
+          });
+        } else {
+          dialog.querySelector<HTMLButtonElement>('[data-testid="admin-login-close"]')?.focus({
+            preventScroll: true,
+          });
+        }
+      }, 0);
+      const getFocusables = () =>
+        Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => !el.hasAttribute("disabled"));
+
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          handleClose();
+          return;
+        }
+        if (event.key !== "Tab") return;
+        const focusables = getFocusables();
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", onKey);
+      return () => {
+        window.clearTimeout(timer);
+        document.body.style.overflow = previousOverflow;
+        document.removeEventListener("keydown", onKey);
+      };
+    }
+
+    if (dialog.open) {
+      dialog.close();
+    }
+    return undefined;
+  }, [adminCaps, handleClose, open]);
 
   if (!open) return null;
 
@@ -50,31 +97,31 @@ export function AdminLoginModal({ open, onClose, returnTo, adminCaps }: Props) {
   const showBlocked = adminCaps === "disabled" || adminCaps === "error";
 
   return (
-    <div
-      className={styles.adminModalBackdrop}
-      role="presentation"
+    <dialog
+      ref={dialogRef}
+      className={styles.adminModalDialog}
+      aria-labelledby={titleId}
       data-testid="admin-login-modal"
+      onClose={() => onClose()}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === dialogRef.current) handleClose();
       }}
     >
-      <div
-        className={styles.adminModalPanel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
+      <div className={styles.adminModalPanelInner}>
         <div className={styles.adminModalHeader}>
           <h2 id={titleId} className={styles.adminModalTitle}>
             Вход администратора
           </h2>
           <button
-            ref={closeRef}
             type="button"
             className={styles.adminModalClose}
             aria-label="Закрыть"
             data-testid="admin-login-close"
-            onClick={onClose}
+            onClick={handleClose}
           >
             ×
           </button>
@@ -85,7 +132,7 @@ export function AdminLoginModal({ open, onClose, returnTo, adminCaps }: Props) {
           </p>
         ) : null}
         {showForm ? (
-          <AdminPasswordLoginForm returnTo={returnTo} variant="modal" onSuccess={onClose} />
+          <AdminPasswordLoginForm returnTo={returnTo} variant="modal" onSuccess={handleClose} />
         ) : null}
         {showBlocked ? (
           <div className={styles.adminBlocked} data-testid="admin-login-unavailable">
@@ -97,6 +144,6 @@ export function AdminLoginModal({ open, onClose, returnTo, adminCaps }: Props) {
           </div>
         ) : null}
       </div>
-    </div>
+    </dialog>
   );
 }

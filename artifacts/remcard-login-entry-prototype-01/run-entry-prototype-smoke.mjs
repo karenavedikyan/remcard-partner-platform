@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 /**
- * LOGIN-ENTRY-PROTOTYPE-01: narrow UI/auth smoke (disposable fixtures when stack healthy).
+ * LOGIN-ENTRY-PROTOTYPE-01.1 acceptance runner (fail-closed).
  */
 import { chromium } from "playwright";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { pathToFileURL } from "node:url";
+import { captureLoginEntryPairs } from "./login-entry-capture.mjs";
+import {
+  deriveAcceptanceStatus,
+  evaluateCleanupChildResult,
+  fixtureMaxIdForTag,
+  gitSha,
+  loadEnvFile,
+  resolveDisposableDatabaseEnv,
+  spawnResultRecord,
+} from "./login-entry-smoke-harness.mjs";
+import { goToOtpStep, goToProviderStep } from "./login-entry-capture.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -19,34 +28,38 @@ const RUN_DIR = process.env.ADMIN_TEST_RUN_DIR || "/tmp/admin-test-local-stack";
 const RUNTIME_ENV = path.join(RUN_DIR, "runtime.env");
 const FIXTURE_OTP = "847291";
 const REF_UNPACK = process.env.LOGIN_ENTRY_REF_DIR || "/tmp/login-entry-prototype-unpack";
-const IMPL_PORT = Number(process.env.LOGIN_ENTRY_IMPL_PORT || 3099);
-const REF_PORT = Number(process.env.LOGIN_ENTRY_REF_PORT || 3098);
 const SHOTS = path.join(ART, "screenshots");
+const BUILD_LOG = path.join(ART, "login-entry-build.log");
 
-function gitSha(cwd) {
-  return spawnSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf8" }).stdout?.trim() ?? null;
-}
-
-function loadEnvFile(filePath) {
-  if (!existsSync(filePath)) return {};
-  const out = {};
-  for (const line of readFileSync(filePath, "utf8").split("\n")) {
-    const t = line.trim();
-    if (!t || t.startsWith("#")) continue;
-    const i = t.indexOf("=");
-    if (i <= 0) continue;
-    out[t.slice(0, i)] = t.slice(i + 1);
-  }
-  return out;
-}
+const BASE_SHA = "7376fb291ef67b6d5f763f8b3cf9917660606bfe";
 
 function materializeNavigatorFixtureScripts() {
-  const guard = path.join(LAYOUT_ART, "disposable-db-url-guard.mjs");
-  const seedTpl = path.join(LAYOUT_ART, "seed-disposable-fixture.nav.fixture.tpl");
-  const cleanupTpl = path.join(LAYOUT_ART, "cleanup-disposable-fixture.nav.fixture.tpl");
-  writeFileSync(path.join(NAV, "scripts/.login-entry-disposable-db-url-guard.mjs"), readFileSync(guard));
-  writeFileSync(path.join(NAV, "scripts/.login-entry-disposable-seed.ts"), readFileSync(seedTpl));
-  writeFileSync(path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"), readFileSync(cleanupTpl));
+  writeFileSync(
+    path.join(NAV, "scripts/.login-entry-disposable-db-url-guard.mjs"),
+    readFileSync(path.join(LAYOUT_ART, "disposable-db-url-guard.mjs")),
+  );
+  writeFileSync(
+    path.join(NAV, "scripts/.login-entry-disposable-seed.ts"),
+    readFileSync(path.join(LAYOUT_ART, "seed-disposable-fixture.nav.fixture.tpl")),
+  );
+  writeFileSync(
+    path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"),
+    readFileSync(path.join(LAYOUT_ART, "cleanup-disposable-fixture.nav.fixture.tpl")),
+  );
+}
+
+function startNextStart(port, extraEnv = {}) {
+  return spawn("npx", ["next", "start", "-p", String(port)], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      ...extraEnv,
+      NODE_ENV: "production",
+      PORT: String(port),
+      R06_NEXT_DIST_DIR: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 }
 
 async function waitForHttp(url, timeoutMs = 120_000) {
@@ -63,219 +76,331 @@ async function waitForHttp(url, timeoutMs = 120_000) {
   throw new Error(`Timeout waiting for ${url}`);
 }
 
-function startNextStart(port, extraEnv = {}) {
-  const child = spawn("npx", ["next", "start", "-p", String(port)], {
+function runBuild(codeSha) {
+  const cmd = "env -u R06_NEXT_DIST_DIR npm run build";
+  const r = spawnSync("bash", ["-lc", cmd], {
     cwd: ROOT,
+    env: { ...process.env, NODE_ENV: "production" },
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024,
+  });
+  writeFileSync(BUILD_LOG, `${r.stdout ?? ""}\n${r.stderr ?? ""}`);
+  const buildIdPath = path.join(ROOT, ".next/BUILD_ID");
+  const buildId = existsSync(buildIdPath) ? readFileSync(buildIdPath, "utf8").trim() : null;
+  return {
+    command: cmd,
+    sourceSha: codeSha,
+    BUILD_ID: buildId,
+    ...spawnResultRecord(r),
+  };
+}
+
+async function fetchAuthMe(platformOrigin, cookieHeader) {
+  const res = await fetch(`${platformOrigin}/api/remcard/api/auth/me`, {
+    headers: { cookie: cookieHeader, Origin: platformOrigin },
+    signal: AbortSignal.timeout(15_000),
+  });
+  const body = await res.json().catch(() => null);
+  return { status: res.status, hasUser: Boolean(body?.user?.id) };
+}
+
+function reseedFixture(tag, runtimeEnv, maxId) {
+  const seed = spawnSync("pnpm", ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-seed.ts")], {
+    cwd: NAV,
     env: {
       ...process.env,
-      ...extraEnv,
-      NODE_ENV: "production",
-      PORT: String(port),
-      R06_NEXT_DIST_DIR: "",
+      ...runtimeEnv,
+      NODE_ENV: "development",
+      LOGIN_LAYOUT_FIXTURE_TAG: tag,
+      LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
+      LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
+      LOGIN_LAYOUT_RESEED: "1",
     },
-    stdio: ["ignore", "pipe", "pipe"],
+    encoding: "utf8",
   });
-  return child;
-}
-
-function startStaticServer(rootDir, port) {
-  const child = spawn("npx", ["--yes", "serve", rootDir, "-l", String(port)], {
-    cwd: rootDir,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return child;
-}
-
-async function goToProviderStep(page, loginUrl) {
-  await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
-  const deadline = Date.now() + 90_000;
-  while (Date.now() < deadline) {
-    if (await page.getByRole("heading", { name: /с возвращением/i }).isVisible().catch(() => false)) {
-      return;
-    }
-    const retry = page.getByRole("button", { name: /повторить проверку/i });
-    if (await retry.isVisible().catch(() => false)) {
-      await retry.click();
-      await page.waitForTimeout(800);
-      continue;
-    }
-    await page.waitForTimeout(400);
+  if (seed.status !== 0 || seed.error) {
+    throw new Error(`reseed failed: ${seed.error?.message ?? seed.stderr ?? seed.stdout}`);
   }
-  await page.getByRole("heading", { name: /с возвращением/i }).waitFor({ state: "visible", timeout: 5_000 });
+  return JSON.parse(seed.stdout.trim());
 }
 
-async function goToOtpStep(page) {
-  await page.getByRole("button", { name: /продолжить с max/i }).click();
-  await page.getByRole("heading", { name: /введите одноразовый код/i }).waitFor({ state: "visible", timeout: 30_000 });
-}
+async function runDisposableChain(platformOrigin, runtimeEnv) {
+  materializeNavigatorFixtureScripts();
+  const tag = `login-entry-${Date.now()}`;
+  const maxId = fixtureMaxIdForTag(tag);
+  let seedJson = null;
+  let browser;
+  let page;
+  let failError = null;
+  let passPayload = null;
+  let ranSeed = false;
 
-async function openReferenceReturningLogin(page, refOrigin) {
-  await page.goto(`${refOrigin}/roles.html`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await page.getByRole("button", { name: /^Войти$/ }).click();
-  await page.getByRole("heading", { name: /с возвращением/i }).waitFor({ state: "visible", timeout: 30_000 });
-}
+  const seedEnv = {
+    ...process.env,
+    ...runtimeEnv,
+    NODE_ENV: "development",
+    LOGIN_LAYOUT_FIXTURE_TAG: tag,
+    LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
+    LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
+  };
 
-async function captureMatrix(browser, refOrigin, implOrigin, themeToggleImpl) {
-  mkdirSync(SHOTS, { recursive: true });
-  const viewports = [
-    { name: "1440", width: 1440, height: 900 },
-    { name: "375", width: 375, height: 812 },
-    { name: "320", width: 320, height: 640 },
-  ];
-  const themes = ["light", "dark"];
-  for (const vp of viewports) {
-    for (const theme of themes) {
-      const refPage = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
-      await openReferenceReturningLogin(refPage, refOrigin);
-      if (theme === "dark") {
-        await refPage.evaluate(() => document.documentElement.dataset.theme = "dark");
-      }
-      await refPage.screenshot({ path: path.join(SHOTS, `ref-provider-${vp.name}-${theme}.png`), fullPage: true });
-
-      const implPage = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
-      await goToProviderStep(implPage, `${implOrigin}/login`);
-      if (theme === "dark") await themeToggleImpl(implPage);
-      await implPage.screenshot({ path: path.join(SHOTS, `impl-provider-${vp.name}-${theme}.png`), fullPage: true });
-
-      await goToOtpStep(implPage);
-      await implPage.screenshot({ path: path.join(SHOTS, `impl-otp-${vp.name}-${theme}.png`), fullPage: true });
-      await refPage.getByRole("button", { name: /продолжить с max/i }).click();
-      await refPage.getByRole("heading", { name: /введите одноразовый код/i }).waitFor({ state: "visible" });
-      await refPage.screenshot({ path: path.join(SHOTS, `ref-otp-${vp.name}-${theme}.png`), fullPage: true });
-
-      await goToProviderStep(implPage, `${implOrigin}/login`);
-      if (theme === "dark") await themeToggleImpl(implPage);
-      await implPage.getByTestId("admin-login-open").click();
-      await implPage.getByTestId("admin-login-modal").waitFor({ state: "visible" });
-      await implPage.screenshot({ path: path.join(SHOTS, `impl-admin-modal-${vp.name}-${theme}.png`), fullPage: true });
-
-      await refPage.close();
-      await implPage.close();
+  try {
+    const seed = spawnSync("pnpm", ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-seed.ts")], {
+      cwd: NAV,
+      env: seedEnv,
+      encoding: "utf8",
+    });
+    if (seed.status !== 0 || seed.error) {
+      throw new Error(`seed failed: ${seed.error?.message ?? seed.stderr ?? seed.stdout}`);
     }
+    seedJson = JSON.parse(seed.stdout.trim());
+    ranSeed = true;
+
+    browser = await chromium.launch({ headless: true });
+    page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+
+    await goToProviderStep(page, `${platformOrigin}/login?returnTo=/scanner`);
+    await goToOtpStep(page);
+    await page.locator('input[placeholder="000000"]').fill(seedJson.otp || FIXTURE_OTP);
+    const verifyWait = page.waitForResponse(
+      (r) => r.url().includes("/api/remcard/api/auth/verify-code") && r.request().method() === "POST",
+      { timeout: 90_000 },
+    );
+    await page.getByRole("button", { name: /подтвердить и продолжить/i }).click();
+    const verifyRes = await verifyWait;
+    if (verifyRes.status() !== 200) throw new Error(`verify-code HTTP ${verifyRes.status()}`);
+
+    await page.waitForURL((url) => url.pathname === "/scanner", { timeout: 120_000 });
+    await page.getByRole("heading", { name: /^Сканер$/ }).waitFor({ state: "visible", timeout: 60_000 });
+
+    await page.getByTestId("account-menu-trigger").click();
+    await page.getByTestId("account-logout").click();
+    await page.waitForURL(/\/account\/signed-out/, { timeout: 60_000 });
+    const cookiesAfterLogout = await page.context().cookies();
+    const jarOut = cookiesAfterLogout.map((c) => `${c.name}=${c.value}`).join("; ");
+    const meOut = await fetchAuthMe(platformOrigin, jarOut);
+    if (meOut.hasUser) throw new Error("auth/me still has user after logout");
+
+    await page.goto(`${platformOrigin}/scanner`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    const meScanner = await fetchAuthMe(
+      platformOrigin,
+      (await page.context().cookies()).map((c) => `${c.name}=${c.value}`).join("; "),
+    );
+    if (meScanner.hasUser) throw new Error("auth/me has user on /scanner after logout");
+    if (await page.getByRole("heading", { name: /^Сканер$/ }).isVisible().catch(() => false)) {
+      throw new Error("scanner still accessible after logout");
+    }
+
+    await page.goto(`${platformOrigin}/account/signed-out?scope=current`, { waitUntil: "domcontentloaded" });
+    await page.getByTestId("signed-out").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("account-sign-in").click();
+    await page.waitForURL((url) => url.pathname === "/login", { timeout: 30_000 });
+    seedJson = reseedFixture(tag, runtimeEnv, maxId);
+    await goToProviderStep(page, page.url());
+    await goToOtpStep(page);
+    await page.locator('input[placeholder="000000"]').fill(seedJson.otp || FIXTURE_OTP);
+    const verify2 = page.waitForResponse(
+      (r) => r.url().includes("/api/remcard/api/auth/verify-code") && r.request().method() === "POST",
+      { timeout: 90_000 },
+    );
+    await page.getByRole("button", { name: /подтвердить и продолжить/i }).click();
+    const v2 = await verify2;
+    if (v2.status() !== 200) throw new Error(`relogin verify-code HTTP ${v2.status()}`);
+    await page.waitForURL((url) => url.pathname === "/scanner", { timeout: 120_000 });
+
+    passPayload = { tag, maxId, verifyCodeStatus: verifyRes.status(), reloginVerifyStatus: v2.status() };
+  } catch (error) {
+    failError = error instanceof Error ? error : new Error(String(error));
+  } finally {
+    if (page) await page.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+
+    if (!ranSeed) {
+      if (failError) throw failError;
+      return passPayload;
+    }
+    const cleanup = spawnSync(
+      "pnpm",
+      ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"), tag],
+      { cwd: NAV, env: { ...process.env, ...runtimeEnv, NODE_ENV: "development" }, encoding: "utf8" },
+    );
+    let cleanupReport;
+    try {
+      cleanupReport = evaluateCleanupChildResult({
+        status: cleanup.status,
+        error: cleanup.error ?? null,
+        stdout: cleanup.stdout ?? "",
+        stderr: cleanup.stderr ?? "",
+      });
+    } catch (cleanupError) {
+      if (failError) throw failError;
+      throw cleanupError;
+    }
+    if (failError) throw failError;
+    return { ...passPayload, cleanup: cleanupReport };
   }
 }
 
 async function main() {
-  const baseSha = "7376fb291ef67b6d5f763f8b3cf9917660606bfe";
-  const codeSha = gitSha(ROOT);
-  const navSha = existsSync(NAV) ? gitSha(NAV) : null;
-  const runtimeEnv = loadEnvFile(RUNTIME_ENV);
-  const disposable = Boolean(runtimeEnv.DATABASE_URL?.includes("remcard_admin_test"));
+  const runnerSha = gitSha(ROOT);
+  const navigatorSha = existsSync(NAV) ? gitSha(NAV) : null;
+  const runtimeEnv = loadEnvFile(RUNTIME_ENV) ?? {};
+  const disposableResolved = existsSync(RUNTIME_ENV)
+    ? resolveDisposableDatabaseEnv(runtimeEnv)
+    : { ok: false, reason: "runtime.env missing" };
 
   const componentTest = spawnSync(
     "npx",
-    ["vitest", "run", "src/components/auth/AuthFlow.test.tsx", "src/components/auth/LoginExperience.test.tsx"],
+    [
+      "vitest",
+      "run",
+      "src/components/auth/AuthFlow.test.tsx",
+      "src/components/auth/LoginExperience.test.tsx",
+      "src/components/auth/AdminLoginModal.test.tsx",
+    ],
     { cwd: ROOT, env: { ...process.env, NODE_ENV: "test" }, encoding: "utf8" },
   );
 
-  const buildId = existsSync(path.join(ROOT, ".next/BUILD_ID"))
-    ? readFileSync(path.join(ROOT, ".next/BUILD_ID"), "utf8").trim()
-    : null;
+  const harnessUnit = spawnSync("node", ["--test", path.join(ART, "login-entry-smoke-harness.test.mjs")], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
 
-  const useRunningPlatform = process.env.LOGIN_ENTRY_USE_RUNNING_PLATFORM === "1";
-  const implOrigin = useRunningPlatform
-    ? process.env.LOGIN_ENTRY_IMPL_ORIGIN || "http://127.0.0.1:3040"
-    : `http://127.0.0.1:${IMPL_PORT}`;
-  const implServer = useRunningPlatform ? null : startNextStart(IMPL_PORT, runtimeEnv);
-  const refServer = startStaticServer(REF_UNPACK, REF_PORT);
-  let disposableResult = { status: "SKIP", reason: "no disposable runtime.env" };
-  let screenshotNote =
-    "PNG pairs captured under artifacts/remcard-login-entry-prototype-01/screenshots; visual parity not auto-certified.";
-
-  try {
-    await waitForHttp(`${implOrigin}/login`);
-    await waitForHttp(`http://127.0.0.1:${REF_PORT}/roles.html`);
-    const refOrigin = `http://127.0.0.1:${REF_PORT}`;
-
-    const browser = await chromium.launch({ headless: true });
-    const themeToggleImpl = async (page) => {
-      const btn = page.getByRole("button", { name: /тема|theme|светл|тёмн/i }).first();
-      if (await btn.isVisible().catch(() => false)) await btn.click();
-      else await page.emulateMedia({ colorScheme: "dark" });
+  let build =
+    process.env.LOGIN_ENTRY_SKIP_BUILD === "1"
+      ? { skipped: true, reason: "LOGIN_ENTRY_SKIP_BUILD=1" }
+      : runBuild(runnerSha);
+  const buildIdPath = path.join(ROOT, ".next/BUILD_ID");
+  if (build.skipped && existsSync(buildIdPath)) {
+    build = {
+      skipped: true,
+      imported: true,
+      reason: `${build.reason}; imported existing .next`,
+      command: "import .next/BUILD_ID (no npm run build in this runner invocation)",
+      sourceSha: runnerSha,
+      BUILD_ID: readFileSync(buildIdPath, "utf8").trim(),
+      exitCode: 0,
+      signal: null,
+      spawnError: null,
     };
-
-    if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1") {
-      await captureMatrix(browser, refOrigin, implOrigin, themeToggleImpl);
-    }
-
-    if (disposable) {
-      try {
-        materializeNavigatorFixtureScripts();
-        const tag = `login-entry-${Date.now()}`;
-        const seed = spawnSync("pnpm", ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-seed.ts")], {
-          cwd: NAV,
-          env: {
-            ...process.env,
-            ...runtimeEnv,
-            NODE_ENV: "development",
-            LOGIN_LAYOUT_FIXTURE_TAG: tag,
-            LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
-          },
-          encoding: "utf8",
-        });
-        if (seed.status !== 0) throw new Error(seed.stderr || seed.stdout);
-        const seedJson = JSON.parse(seed.stdout.trim());
-        const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-        await goToProviderStep(page, `${implOrigin}/login?returnTo=/scanner`);
-        await goToOtpStep(page);
-        await page.locator('input[placeholder="000000"]').fill(seedJson.otp || FIXTURE_OTP);
-        const verifyWait = page.waitForResponse(
-          (r) => r.url().includes("/api/remcard/api/auth/verify-code") && r.request().method() === "POST",
-          { timeout: 90_000 },
-        );
-        await page.getByRole("button", { name: /подтвердить и продолжить/i }).click();
-        const verifyRes = await verifyWait;
-        if (verifyRes.status() !== 200) throw new Error(`verify-code HTTP ${verifyRes.status()}`);
-        await page.waitForURL((url) => url.pathname === "/scanner", { timeout: 120_000 });
-        disposableResult = { status: "PASS", tag, verifyCodeStatus: verifyRes.status() };
-        const cleanup = spawnSync(
-          "pnpm",
-          ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"), tag],
-          { cwd: NAV, env: { ...process.env, ...runtimeEnv, NODE_ENV: "development" }, encoding: "utf8" },
-        );
-        if (cleanup.status !== 0) throw new Error(`cleanup failed: ${cleanup.stderr || cleanup.stdout}`);
-        const remaining = Number(JSON.parse(cleanup.stdout.trim()).remaining ?? -1);
-        if (remaining !== 0) throw new Error(`cleanup remaining=${remaining}`);
-        disposableResult.cleanupRemaining = remaining;
-        await page.close();
-      } catch (error) {
-        disposableResult = { status: "SKIP", reason: String(error?.message || error) };
-      }
-    }
-
-    await browser.close();
-  } finally {
-    implServer?.kill("SIGTERM");
-    refServer.kill("SIGTERM");
   }
 
+  const useRunning = process.env.LOGIN_ENTRY_USE_RUNNING_PLATFORM === "1";
+  const spawnedPort = Number(process.env.LOGIN_ENTRY_IMPL_PORT || 3099);
+  let implOrigin = useRunning
+    ? process.env.LOGIN_ENTRY_IMPL_ORIGIN || "http://127.0.0.1:3040"
+    : `http://127.0.0.1:${spawnedPort}`;
+
+  let runtimePin = null;
+  let captureResult = null;
+  let disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.ok ? "not run" : disposableResolved.reason };
+  let smokeError = null;
+
+  const buildRecorded = Boolean(build.BUILD_ID && Number(build.exitCode) === 0);
+
+  let refServer = null;
+  let implServer = null;
+  try {
+    if (useRunning) {
+      const pinSha = process.env.LOGIN_ENTRY_RUNTIME_CODE_SHA?.trim() || null;
+      const pinBuild = process.env.LOGIN_ENTRY_RUNTIME_BUILD_ID?.trim() || null;
+      if (!pinSha || !pinBuild) {
+        runtimePin = {
+          mode: "running-server",
+          origin: implOrigin,
+          verified: false,
+          reason: "missing LOGIN_ENTRY_RUNTIME_CODE_SHA or LOGIN_ENTRY_RUNTIME_BUILD_ID",
+        };
+      } else {
+        runtimePin = { mode: "running-server", origin: implOrigin, codeSha: pinSha, BUILD_ID: pinBuild, verified: true };
+      }
+    } else if (buildRecorded) {
+      implServer = startNextStart(spawnedPort, runtimeEnv ?? {});
+      runtimePin = {
+        mode: "spawned-next-start",
+        origin: implOrigin,
+        codeSha: runnerSha,
+        BUILD_ID: build.BUILD_ID,
+        verified: true,
+      };
+    } else {
+      runtimePin = { mode: "none", verified: false, reason: "production build not recorded" };
+    }
+
+    if (runtimePin?.verified) {
+      await waitForHttp(`${implOrigin}/login`);
+    }
+
+    refServer = spawn("npx", ["--yes", "serve", REF_UNPACK, "-l", "3098"], { stdio: "ignore" });
+    await waitForHttp("http://127.0.0.1:3098/roles.html");
+    const refOrigin = "http://127.0.0.1:3098";
+
+    if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1" && runtimePin?.verified !== false) {
+      const browser = await chromium.launch({ headless: true });
+      captureResult = await captureLoginEntryPairs({
+        browser,
+        refOrigin,
+        implOrigin,
+        shotsDir: SHOTS,
+      });
+      await browser.close();
+    }
+
+    if (disposableResolved.ok && runtimePin?.verified !== false) {
+      disposableResult = { status: "PASS", ...(await runDisposableChain(implOrigin, runtimeEnv)) };
+    } else if (!disposableResolved.ok) {
+      disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.reason };
+    }
+  } catch (error) {
+    smokeError = error instanceof Error ? error.message : String(error);
+    if (disposableResolved.ok) {
+      disposableResult = { status: "FAIL", error: smokeError };
+    }
+  } finally {
+    implServer?.kill("SIGTERM");
+    refServer?.kill("SIGTERM");
+  }
+
+  const componentTestsOk = componentTest.status === 0 && harnessUnit.status === 0;
+  const runtimeVerified = Boolean(runtimePin?.verified);
+  const smokeOk = !smokeError && disposableResult.status === "PASS";
+  const cleanupOk = disposableResult.cleanup?.remaining
+    ? Object.values(disposableResult.cleanup.remaining).every((v) => v === 0)
+    : smokeOk;
+
   const evidence = {
-    status: "READY_FOR_REVIEW",
-    task: "LOGIN-ENTRY-PROTOTYPE-01",
-    baseSha,
-    codeSha,
-    navigatorSha: navSha,
+    status: deriveAcceptanceStatus({
+      componentTestsOk,
+      smokeOk,
+      cleanupOk,
+      buildRecorded,
+      runtimeVerified,
+    }),
+    task: "LOGIN-ENTRY-PROTOTYPE-01.1",
+    baseSha: BASE_SHA,
+    codeSha: runnerSha,
+    runnerSha,
+    artifactTipSha: runnerSha,
+    navigatorSha,
     referencePackageCommit: "9bc52fb9152293e992e98dc50804a660cef10733",
     referenceArchiveSha256: "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
-    productionBuild: {
-      command: "npm ci --include=dev && npm run build",
-      exitCode: 0,
-      BUILD_ID: buildId,
-      sourceSha: codeSha,
-    },
+    productionBuild: build.skipped ? build : { ...build, logFile: path.relative(ROOT, BUILD_LOG) },
+    runtimePin,
     tests: {
       authComponents: {
         command:
-          "NODE_ENV=test npx vitest run src/components/auth/AuthFlow.test.tsx src/components/auth/LoginExperience.test.tsx",
-        exitCode: componentTest.status ?? 1,
-        pass: componentTest.status === 0 ? 16 : 0,
-        fail: componentTest.status === 0 ? 0 : 1,
+          "NODE_ENV=test npx vitest run src/components/auth/AuthFlow.test.tsx src/components/auth/LoginExperience.test.tsx src/components/auth/AdminLoginModal.test.tsx",
+        ...spawnResultRecord(componentTest),
+      },
+      harnessUnit: {
+        command: `node --test ${path.relative(ROOT, path.join(ART, "login-entry-smoke-harness.test.mjs"))}`,
+        ...spawnResultRecord(harnessUnit),
       },
       disposableLogin: disposableResult,
+      smokeError,
     },
-    screenshots: {
-      directory: "artifacts/remcard-login-entry-prototype-01/screenshots",
-      note: screenshotNote,
+    screenshots: captureResult ?? {
+      status: process.env.LOGIN_ENTRY_SKIP_CAPTURE === "1" ? "skipped" : "not captured",
     },
     notPublished: true,
     notMerged: true,
@@ -283,7 +408,12 @@ async function main() {
 
   writeFileSync(path.join(ART, "login-entry-prototype-01-evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`);
   console.log(JSON.stringify(evidence, null, 2));
-  if (componentTest.status !== 0) process.exit(1);
+
+  const exitFail =
+    !componentTestsOk ||
+    (build.skipped ? false : build.exitCode !== 0) ||
+    disposableResult.status === "FAIL";
+  if (exitFail) process.exit(1);
 }
 
 main().catch((error) => {

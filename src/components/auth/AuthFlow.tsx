@@ -505,10 +505,15 @@ export function AuthFlow({
           ? "Подтвердите вход через MAX или Telegram, затем примите условия."
           : "Выберите способ, уже привязанный к вашему аккаунту. Повторно проходить регистрацию не нужно."}
       </p>
+      <div className={styles.entryNav}>
+        <Link href="/" className={styles.entryBackButton}>
+          Назад
+        </Link>
+      </div>
       <div className={styles.entryProviders}>
         <Button
           type="button"
-          className={styles.providerButton}
+          className={`${styles.providerButton} ${styles.providerButtonMax}`}
           onClick={() => chooseProvider("MAX")}
         >
           <span className={styles.providerMark} aria-hidden="true">
@@ -522,7 +527,7 @@ export function AuthFlow({
         <Button
           type="button"
           variant="secondary"
-          className={styles.providerButton}
+          className={`${styles.providerButton} ${styles.providerButtonTelegram}`}
           onClick={() => chooseProvider("TELEGRAM")}
         >
           <span className={styles.providerMark} aria-hidden="true">
@@ -535,9 +540,9 @@ export function AuthFlow({
         </Button>
       </div>
       {!registrationAgentJoin ? (
-        <p className={styles.entryFootnote}>
-          <Link href="/join">Нет аккаунта? Регистрация</Link>
-        </p>
+        <Link href="/join" className={styles.entryRegistrationCta}>
+          Нет аккаунта? Регистрация
+        </Link>
       ) : null}
     </>
   );

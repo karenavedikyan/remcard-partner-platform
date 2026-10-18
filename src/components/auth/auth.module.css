@@ -21,9 +21,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   max-width: 80rem;
   margin: 0 auto;
   padding: var(--space-8) var(--space-12) var(--space-6);
+  box-sizing: border-box;
 }
 
 .entryLayout {
@@ -547,10 +549,95 @@
   gap: var(--space-3);
 }
 
+.entryNav {
+  margin-top: var(--space-1);
+}
+
+.entryBackButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.entryBackButton:hover {
+  background: var(--offset);
+}
+
+.entryRegistrationCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+}
+
+.entryRegistrationCta:hover {
+  background: var(--offset);
+}
+
 .providerButton {
   width: 100%;
   justify-content: flex-start;
   min-height: 3.25rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.35;
+}
+
+.providerButtonMax {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-on-fill);
+}
+
+.providerButtonMax:hover:not(:disabled) {
+  background: var(--accent-fill-hover);
+  border-color: var(--accent-fill-hover);
+}
+
+.providerButtonTelegram {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.providerButtonTelegram:hover:not(:disabled) {
+  background: var(--offset);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .providerButtonTelegram {
+  background: var(--offset);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .entryBackButton,
+[data-theme="dark"] .entryRegistrationCta {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .providerMark {
@@ -567,21 +654,6 @@
 .providerArrow {
   margin-left: auto;
   font-size: var(--text-sm);
-}
-
-.entryFootnote {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-sm);
-}
-
-.entryFootnote a {
-  color: var(--primary);
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.entryFootnote a:hover {
-  text-decoration: underline;
 }
 
 .codeActions {
@@ -628,18 +700,22 @@
   border-radius: 4px;
 }
 
-.adminModalBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: var(--space-4);
+.adminModalDialog {
+  width: min(100%, 28rem);
+  max-height: min(90dvh, 640px);
+  margin: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
+}
+
+.adminModalDialog::backdrop {
   background: rgb(0 0 0 / 0.45);
 }
 
-.adminModalPanel {
-  width: min(100%, 28rem);
+.adminModalPanelInner {
+  width: 100%;
   max-height: min(90dvh, 640px);
   overflow: auto;
   background: var(--surface);
@@ -709,5 +785,14 @@
 @media (max-width: 320px) {
   .entryFlowBody {
     padding-inline: var(--space-3);
+  }
+
+  .providerButton {
+    min-height: 3.375rem;
+    padding-block: var(--space-3);
+  }
+
+  .providerArrow {
+    flex-shrink: 0;
   }
 }
