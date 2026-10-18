@@ -43,7 +43,7 @@ function resolvePins() {
 }
 
 const RUN_DIR = process.env.UNIFIED_PREP_RUN_DIR || '/tmp/unified-login-specialist-prep-stack';
-const FIXTURE_OTP = '847291';
+const DEFAULT_FIXTURE_OTP = '847291';
 const LOGIN_ART = path.join(ROOT, 'artifacts/remcard-login-layout-01');
 const NAV_SEED = path.join(NAV, 'scripts/.login-layout-01-disposable-seed.ts');
 const NAV_CLEANUP = path.join(NAV, 'scripts/.login-layout-01-disposable-cleanup.ts');
@@ -98,7 +98,7 @@ function runSeed(env, tag, reseed = false) {
       ...process.env,
       ...env,
       LOGIN_LAYOUT_FIXTURE_TAG: tag,
-      LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
+      LOGIN_LAYOUT_FIXTURE_OTP: env.LOGIN_LAYOUT_FIXTURE_OTP ?? DEFAULT_FIXTURE_OTP,
       LOGIN_LAYOUT_RESEED: reseed ? '1' : '0',
     }),
     encoding: 'utf8',
@@ -115,7 +115,7 @@ function runLoginCleanup(env, tag) {
       ...process.env,
       ...env,
       LOGIN_LAYOUT_FIXTURE_MAX_ID: '881001847291',
-      LOGIN_LAYOUT_FIXTURE_OTP: FIXTURE_OTP,
+      LOGIN_LAYOUT_FIXTURE_OTP: env.LOGIN_LAYOUT_FIXTURE_OTP ?? DEFAULT_FIXTURE_OTP,
     }),
     encoding: 'utf8',
   });
@@ -178,7 +178,14 @@ async function loginFlow(page, platformOrigin, seed) {
 
 async function runLoginSmoke(platformOrigin, env, fixtureTag) {
   const maxId = process.env.LOGIN_LAYOUT_FIXTURE_MAX_ID || `881${String(Date.now()).slice(-8)}`;
-  const seedEnv = { ...env, LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId };
+  const fixtureOtp =
+    process.env.LOGIN_LAYOUT_FIXTURE_OTP ||
+    String(100000 + (Date.now() % 900000)).padStart(6, '0');
+  const seedEnv = {
+    ...env,
+    LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
+    LOGIN_LAYOUT_FIXTURE_OTP: fixtureOtp,
+  };
   const seed = runSeed(seedEnv, fixtureTag);
   const browser = await chromium.launch({ headless: true });
   const results = { viewports: {}, logout: {}, cleanup: null };
