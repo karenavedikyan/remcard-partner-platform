@@ -1,0 +1,39 @@
+{
+  "status": "PARTIAL_NOT_VERIFIED",
+  "task": "LOGIN-LAYOUT-01.1",
+  "baseSha": "0fe7da52bb02f2a515d238757c8be16ef2d83948",
+  "codeSha": "27d339b47b62164d0796bc853ce0a0966e1f0e2e",
+  "evidenceTipSha": "af21504aca7b761df093325994cb1aaea789cb0e",
+  "viewport375": {
+    "assertInnerWidth": 375,
+    "deviceScaleFactor": 1,
+    "screenshots": [
+      "after-local-mobile-375-w375-light.png",
+      "after-local-mobile-375-w375-dark.png"
+    ],
+    "supersededOld390": [
+      "after-local-mobile-375-old390-light.png",
+      "after-local-mobile-375-old390-dark.png",
+      "before-prod-mobile-375-old390-light.png",
+      "before-prod-mobile-375-old390-dark.png"
+    ],
+    "captureBase": "http://127.0.0.1:3456",
+    "horizontalOverflow": false
+  },
+  "loginLogoutRelogin": {
+    "status": "NOT_VERIFIED",
+    "reason": "MOCK stack: admin password login on dev (3456→3033) did not reach /admin/test-users within 120s; disposable admin-test stack (3040) returns 500 on admin login. Full OTP→cabinet→logout→re-login browser chain not completed in this run.",
+    "attemptedOrigins": [
+      "http://127.0.0.1:3456",
+      "http://127.0.0.1:3040"
+    ],
+    "harness": "artifacts/remcard-login-layout-01/run-01.1-evidence.mjs"
+  },
+  "commands": [
+    {
+      "cmd": "node artifacts/remcard-login-layout-01/run-01.1-evidence.mjs (375 capture on :3456)",
+      "exitCode": 0
+    }
+  ],
+  "note": "Layout code unchanged in 01.1; evidence-only commit. Production not deployed."
+}

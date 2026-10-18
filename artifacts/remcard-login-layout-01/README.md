@@ -14,3 +14,9 @@ Partner MAX/Telegram login used `AuthFlow` `layout="full"` inside `.shell` (`max
 - **Not claimed:** production deploy, pixel-perfect PASS, or full auth chain.
 
 See `manifest.json` for measured widths, overflow flags, and screenshot index.
+
+## LOGIN-LAYOUT-01.1 addendum
+
+- **True 375px:** `after-local-mobile-375-w375-{light,dark}.png` with pre-capture assert `innerWidth===375`, `deviceScaleFactor=1`.
+- **Superseded iPhone-13 (390px):** `*-old390-*.png` — historical only, do not overwrite metadata.
+- **Login→logout→re-login:** `NOT_VERIFIED` in this run (see `test-run-01.1.json`); harness `run-01.1-evidence.mjs` for retry when admin-test stack is healthy.

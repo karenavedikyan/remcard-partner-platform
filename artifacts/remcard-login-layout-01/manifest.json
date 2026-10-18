@@ -610,5 +610,60 @@
     "partnerDesktopHorizontalOverflow": false,
     "partnerDesktopStoryFormOverlap": false,
     "logoutReentryFlow": "NOT_VERIFIED — no isolated mock session contour in this run"
+  },
+  "loginLayout011": {
+    "task": "LOGIN-LAYOUT-01.1",
+    "recordedAt": "2026-10-18T12:17:07.423Z",
+    "codeSha": "cc7462d21f1647fcce6abb33cef9b152c7c9eae6",
+    "runtimeSha": "cc7462d21f1647fcce6abb33cef9b152c7c9eae6",
+    "captureSha": "cc7462d21f1647fcce6abb33cef9b152c7c9eae6",
+    "platformOrigin": "http://127.0.0.1:3040",
+    "stackMeta": {
+      "navOrigin": "http://127.0.0.1:3041",
+      "platformOrigin": "http://127.0.0.1:3040",
+      "envPath": "/tmp/admin-test-local-stack/runtime.env",
+      "navPid": 500141,
+      "platPid": 500142,
+      "database": "remcard_admin_test_012"
+    },
+    "viewport375": [
+      {
+        "screenshot": "after-local-mobile-375-w375-light.png",
+        "theme": "light",
+        "requestedViewportWidth": 375,
+        "deviceScaleFactor": 1,
+        "measured": {
+          "innerWidth": 375,
+          "dpr": 1,
+          "horizontalOverflow": false
+        },
+        "codeSha": "cc7462d21f1647fcce6abb33cef9b152c7c9eae6",
+        "captureBase": "http://127.0.0.1:3456"
+      },
+      {
+        "screenshot": "after-local-mobile-375-w375-dark.png",
+        "theme": "dark",
+        "requestedViewportWidth": 375,
+        "deviceScaleFactor": 1,
+        "measured": {
+          "innerWidth": 375,
+          "dpr": 1,
+          "horizontalOverflow": false
+        },
+        "codeSha": "cc7462d21f1647fcce6abb33cef9b152c7c9eae6",
+        "captureBase": "http://127.0.0.1:3456"
+      }
+    ],
+    "supersededViewport390": [
+      "after-local-mobile-375-old390-light.png",
+      "after-local-mobile-375-old390-dark.png",
+      "before-prod-mobile-375-old390-light.png",
+      "before-prod-mobile-375-old390-dark.png"
+    ],
+    "loginLogoutRelogin": {
+      "status": "NOT_VERIFIED",
+      "reason": "TimeoutError: page.waitForURL: Timeout 120000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    },
+    "mockBackend": false
   }
 }
