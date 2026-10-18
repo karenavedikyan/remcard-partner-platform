@@ -95,6 +95,29 @@ async function getWorkingDraft(page) {
   });
 }
 
+async function postTaxonomyProposal(page, payload) {
+  return page.evaluate(async (body) => {
+    const csrf = document.cookie.match(/(?:^|;\s*)remcard-csrf=([^;]+)/)?.[1];
+    const r = await fetch('/api/remcard/api/pro/taxonomy-proposals', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'content-type': 'application/json',
+        ...(csrf ? { 'X-CSRF-Token': decodeURIComponent(csrf) } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await r.text();
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      /* non-json */
+    }
+    return { status: r.status, json, text };
+  }, payload);
+}
+
 async function fillCatalogBasics(page) {
   await page.locator('#sc-public-name').fill('R06 BFF Catalog');
   await page.locator('#sc-city').fill('Krasnodar');
@@ -155,6 +178,27 @@ async function main() {
       workingAfterEdit.status === 200 &&
       workingAfterEdit.payload?.displayName === 'R06 BFF Spec Edited',
     displayName: workingAfterEdit.payload?.displayName,
+  };
+
+  const draftBeforeProposal = await getWorkingDraft(page);
+  const proposalName = `R06 tail ${Date.now()}`;
+  const proposalOk = await postTaxonomyProposal(page, {
+    kind: 'SERVICE',
+    name: proposalName,
+    description: 'BFF disposable acceptance',
+  });
+  const proposalDup = await postTaxonomyProposal(page, { kind: 'SERVICE', name: 'Двери' });
+  const draftAfterProposal = await getWorkingDraft(page);
+  report.steps.taxonomyProposalBff = {
+    ok:
+      proposalOk.status === 200 &&
+      proposalOk.json?.ok === true &&
+      proposalDup.status === 409 &&
+      proposalDup.json?.code === 'CANONICAL_DUPLICATE' &&
+      JSON.stringify(draftBeforeProposal.payload?.serviceSpecializationIds ?? []) ===
+        JSON.stringify(draftAfterProposal.payload?.serviceSpecializationIds ?? []),
+    createStatus: proposalOk.status,
+    duplicateStatus: proposalDup.status,
   };
 
   await page.goto(`${base}/profile?section=catalog`, { waitUntil: 'load' });
@@ -267,6 +311,7 @@ async function main() {
     report.steps.finish?.ok &&
     report.steps.editSaveAfterFinishNoReload?.ok &&
     report.steps.workingProfileFreshGet?.ok &&
+    report.steps.taxonomyProposalBff?.ok &&
     report.steps.catalogClearOptionalReload?.ok &&
     report.steps.pendingFreshGet?.ok &&
     report.steps.reentryPending?.ok &&

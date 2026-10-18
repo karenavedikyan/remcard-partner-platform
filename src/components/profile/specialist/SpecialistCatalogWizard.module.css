@@ -231,12 +231,18 @@
   }
 
   .stepActions {
-    width: 100%;
-    justify-content: stretch;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.65rem;
   }
 
-  .stepActions .btnPrimary {
-    flex: 1 1 auto;
+  .stepActionsLabel {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
+
+  .stepActions .btn {
+    flex: 0 0 auto;
     min-width: 0;
   }
 }

@@ -464,7 +464,11 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
       <footer className={catalogStyles.catalogFooter} data-testid="catalog-footer-bar">
         <button
           type="button"
-          className={catalogStyles.btn}
+          className={
+            step === 4
+              ? `${catalogStyles.btn} ${catalogStyles.btnGhost}`
+              : `${catalogStyles.btn} ${catalogStyles.btnPrimary}`
+          }
           disabled={saving || submitting || !catalogPublicationEditable(profile)}
           onClick={() => void saveDraft()}
         >

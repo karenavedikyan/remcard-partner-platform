@@ -78,6 +78,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/specialist-profile\/draft$/,
     },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/specialist-profile\/finish$/ },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/taxonomy-proposals$/ },
     {
       methods: new Set(["GET", "PATCH"]),
       pattern: /^\/api\/pro\/partnership-list-preferences\/[\w-]+$/,

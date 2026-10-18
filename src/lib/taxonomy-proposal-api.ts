@@ -28,6 +28,6 @@ export async function submitTaxonomyProposal(body: {
 }): Promise<SubmitTaxonomyProposalResponse> {
   return remcardFetch<SubmitTaxonomyProposalResponse>("/api/pro/taxonomy-proposals", {
     method: "POST",
-    body: JSON.stringify(body),
+    body,
   });
 }
