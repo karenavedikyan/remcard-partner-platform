@@ -49,10 +49,7 @@ export function trackedSourceDigest(cwd, { excludeArtifacts = true } = {}) {
   return { digest: h.digest('hex'), fileCount: included.length, head: gitHead(cwd) };
 }
 
-/**
- * Next.js may append `${distDir}/types/**/*.ts` to tsconfig include during isolated builds.
- * Allow only that delta vs committed HEAD (record hash for manifest).
- */
+/** Next.js may append isolated-dist types glob to tsconfig include during builds. Allow only that delta vs HEAD. */
 export function tsconfigIncludeDistDriftOk(cwd, distDir) {
   const rel = 'tsconfig.json';
   const abs = path.join(cwd, rel);
