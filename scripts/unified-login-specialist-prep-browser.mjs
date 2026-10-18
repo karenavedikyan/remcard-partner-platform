@@ -175,7 +175,9 @@ async function loginFlow(page, platformOrigin, seed) {
 }
 
 async function runLoginSmoke(platformOrigin, env, fixtureTag) {
-  const seed = runSeed(env, fixtureTag);
+  const maxId = process.env.LOGIN_LAYOUT_FIXTURE_MAX_ID || `881${String(Date.now()).slice(-8)}`;
+  const seedEnv = { ...env, LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId };
+  const seed = runSeed(seedEnv, fixtureTag);
   const browser = await chromium.launch({ headless: true });
   const results = { viewports: {}, logout: {}, cleanup: null };
   try {
@@ -227,7 +229,7 @@ async function runLoginSmoke(platformOrigin, env, fixtureTag) {
       await ctx.close();
     }
 
-    runSeed(env, fixtureTag, true);
+    runSeed(seedEnv, fixtureTag, true);
     const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page2 = await ctx2.newPage();
     await loginFlow(page2, platformOrigin, seed);
@@ -236,8 +238,8 @@ async function runLoginSmoke(platformOrigin, env, fixtureTag) {
   } finally {
     await browser.close();
   }
-  results.cleanup = runLoginCleanup(env, fixtureTag);
-  return { ok: true, fixtureTag, seedUserId: seed.userId, ...results };
+  results.cleanup = runLoginCleanup(seedEnv, fixtureTag);
+  return { ok: true, fixtureTag, fixtureMaxId: maxId, seedUserId: seed.userId, ...results };
 }
 
 async function mintCookie(context, env) {
@@ -401,5 +403,8 @@ async function main() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main();
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 }
