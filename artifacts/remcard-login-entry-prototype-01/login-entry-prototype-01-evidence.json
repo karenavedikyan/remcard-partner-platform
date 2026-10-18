@@ -1,29 +1,29 @@
 {
-  "status": "NOT_VERIFIED",
+  "status": "READY_FOR_REVIEW",
   "task": "LOGIN-ENTRY-PROTOTYPE-01.1",
   "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
-  "codeSha": "6f94bd659a734c9df58fe6dd66ce4a3df80f821c",
-  "runnerSha": "6f94bd659a734c9df58fe6dd66ce4a3df80f821c",
-  "artifactTipSha": "6f94bd659a734c9df58fe6dd66ce4a3df80f821c",
+  "codeSha": "e5c96e7cc5e7ca6b10fdc8035362a1d40f0fa91e",
+  "runnerSha": "e5c96e7cc5e7ca6b10fdc8035362a1d40f0fa91e",
+  "artifactTipSha": "e5c96e7cc5e7ca6b10fdc8035362a1d40f0fa91e",
   "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
   "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
   "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
   "productionBuild": {
     "skipped": true,
     "imported": true,
-    "reason": "LOGIN_ENTRY_SKIP_BUILD=1; imported existing .next",
+    "reason": "LOGIN_ENTRY_SKIP_BUILD=1; imported existing .next/BUILD_ID (build not executed in this invocation)",
     "command": "import .next/BUILD_ID (no npm run build in this runner invocation)",
-    "sourceSha": "6f94bd659a734c9df58fe6dd66ce4a3df80f821c",
-    "BUILD_ID": "eRTmpZ3RZRpysXaqcf1FF",
-    "exitCode": 0,
+    "sourceSha": "e5c96e7cc5e7ca6b10fdc8035362a1d40f0fa91e",
+    "BUILD_ID": "ZzQP7zNm_AM1mE0RajSgn",
+    "exitCode": null,
     "signal": null,
     "spawnError": null
   },
   "runtimePin": {
-    "mode": "spawned-next-start",
-    "origin": "http://127.0.0.1:3099",
-    "codeSha": "6f94bd659a734c9df58fe6dd66ce4a3df80f821c",
-    "BUILD_ID": "eRTmpZ3RZRpysXaqcf1FF",
+    "mode": "running-server",
+    "origin": "http://127.0.0.1:3040",
+    "codeSha": "e5c96e7cc5e7ca6b10fdc8035362a1d40f0fa91e",
+    "BUILD_ID": "ZzQP7zNm_AM1mE0RajSgn",
     "verified": true
   },
   "tests": {
@@ -40,17 +40,174 @@
       "exitCode": 0,
       "signal": null,
       "spawnError": null,
-      "stdoutBytes": 851,
+      "stdoutBytes": 848,
       "stderrBytes": 0
     },
     "disposableLogin": {
-      "status": "FAIL",
-      "error": "provider step not reached"
+      "status": "PASS",
+      "tag": "login-entry-1792354355158",
+      "maxId": "881310093781",
+      "verifyCodeStatus": 200,
+      "reloginVerifyStatus": 200,
+      "cleanup": {
+        "mock": true,
+        "tag": "login-entry-1792354355158",
+        "publicId": "pub-login-entry-1792354355158",
+        "deleted": {
+          "users": 1,
+          "authAccounts": 1,
+          "consents": 2,
+          "botLoginCodes": 1
+        },
+        "remaining": {
+          "users": 0,
+          "authAccounts": 0,
+          "consents": 0,
+          "botLoginCodes": 0
+        }
+      }
     },
-    "smokeError": "provider step not reached"
+    "smokeError": null
   },
   "screenshots": {
-    "status": "not captured"
+    "pairCount": 18,
+    "pairs": [
+      {
+        "state": "provider",
+        "viewport": "1440",
+        "theme": "light",
+        "ref": "ref-provider-1440-light.png",
+        "impl": "impl-provider-1440-light.png"
+      },
+      {
+        "state": "otp",
+        "viewport": "1440",
+        "theme": "light",
+        "ref": "ref-otp-1440-light.png",
+        "impl": "impl-otp-1440-light.png"
+      },
+      {
+        "state": "admin-modal",
+        "viewport": "1440",
+        "theme": "light",
+        "ref": "ref-admin-modal-1440-light.png",
+        "impl": "impl-admin-modal-1440-light.png",
+        "refException": null
+      },
+      {
+        "state": "provider",
+        "viewport": "1440",
+        "theme": "dark",
+        "ref": "ref-provider-1440-dark.png",
+        "impl": "impl-provider-1440-dark.png"
+      },
+      {
+        "state": "otp",
+        "viewport": "1440",
+        "theme": "dark",
+        "ref": "ref-otp-1440-dark.png",
+        "impl": "impl-otp-1440-dark.png"
+      },
+      {
+        "state": "admin-modal",
+        "viewport": "1440",
+        "theme": "dark",
+        "ref": "ref-admin-modal-1440-dark.png",
+        "impl": "impl-admin-modal-1440-dark.png",
+        "refException": null
+      },
+      {
+        "state": "provider",
+        "viewport": "375",
+        "theme": "light",
+        "ref": "ref-provider-375-light.png",
+        "impl": "impl-provider-375-light.png"
+      },
+      {
+        "state": "otp",
+        "viewport": "375",
+        "theme": "light",
+        "ref": "ref-otp-375-light.png",
+        "impl": "impl-otp-375-light.png"
+      },
+      {
+        "state": "admin-modal",
+        "viewport": "375",
+        "theme": "light",
+        "ref": "ref-admin-modal-375-light.png",
+        "impl": "impl-admin-modal-375-light.png",
+        "refException": null
+      },
+      {
+        "state": "provider",
+        "viewport": "375",
+        "theme": "dark",
+        "ref": "ref-provider-375-dark.png",
+        "impl": "impl-provider-375-dark.png"
+      },
+      {
+        "state": "otp",
+        "viewport": "375",
+        "theme": "dark",
+        "ref": "ref-otp-375-dark.png",
+        "impl": "impl-otp-375-dark.png"
+      },
+      {
+        "state": "admin-modal",
+        "viewport": "375",
+        "theme": "dark",
+        "ref": "ref-admin-modal-375-dark.png",
+        "impl": "impl-admin-modal-375-dark.png",
+        "refException": null
+      },
+      {
+        "state": "provider",
+        "viewport": "320",
+        "theme": "light",
+        "ref": "ref-provider-320-light.png",
+        "impl": "impl-provider-320-light.png"
+      },
+      {
+        "state": "otp",
+        "viewport": "320",
+        "theme": "light",
+        "ref": "ref-otp-320-light.png",
+        "impl": "impl-otp-320-light.png"
+      },
+      {
+        "state": "admin-modal",
+        "viewport": "320",
+        "theme": "light",
+        "ref": "ref-admin-modal-320-light.png",
+        "impl": "impl-admin-modal-320-light.png",
+        "refException": null
+      },
+      {
+        "state": "provider",
+        "viewport": "320",
+        "theme": "dark",
+        "ref": "ref-provider-320-dark.png",
+        "impl": "impl-provider-320-dark.png"
+      },
+      {
+        "state": "otp",
+        "viewport": "320",
+        "theme": "dark",
+        "ref": "ref-otp-320-dark.png",
+        "impl": "impl-otp-320-dark.png"
+      },
+      {
+        "state": "admin-modal",
+        "viewport": "320",
+        "theme": "dark",
+        "ref": "ref-admin-modal-320-dark.png",
+        "impl": "impl-admin-modal-320-dark.png",
+        "refException": null
+      }
+    ],
+    "fileCount": 36,
+    "refAdminNote": "When static roles.html omits hydrated admin footer, ref admin-modal uses #role-dialog markup from registration-entry.js (same copy as prototype).",
+    "note": "CAPTURED != visual PASS; themes asserted via html[data-theme] before each screenshot."
   },
   "notPublished": true,
   "notMerged": true

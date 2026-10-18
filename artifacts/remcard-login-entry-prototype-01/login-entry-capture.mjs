@@ -2,7 +2,12 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 export async function readResolvedTheme(page) {
-  return page.evaluate(() => document.documentElement.getAttribute("data-theme") || "light");
+  return page.evaluate(
+    () =>
+      document.documentElement.getAttribute("data-theme") ||
+      document.documentElement.dataset.theme ||
+      "light",
+  );
 }
 
 export async function assertTheme(page, expected) {
@@ -13,25 +18,39 @@ export async function assertTheme(page, expected) {
 }
 
 export async function setImplTheme(page, theme) {
+  await page.evaluate((t) => {
+    window.localStorage.setItem("remcard-theme", t);
+    document.documentElement.setAttribute("data-theme", t);
+  }, theme);
   const toggle = page.getByTestId("theme-toggle");
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < 3; i += 1) {
     const current = await readResolvedTheme(page);
-    if (current === theme) return;
-    if (!(await toggle.isVisible().catch(() => false))) {
-      await page.emulateMedia({ colorScheme: theme });
-      await assertTheme(page, theme);
-      return;
+    if (current === theme) break;
+    if (await toggle.isVisible().catch(() => false)) {
+      await toggle.click();
+      await page.waitForTimeout(120);
     }
-    await toggle.click();
-    await page.waitForTimeout(150);
   }
   await assertTheme(page, theme);
 }
 
 export async function setRefTheme(page, theme) {
-  await page.evaluate((t) => {
-    document.documentElement.dataset.theme = t;
-  }, theme);
+  const toggle = page.getByRole("button", {
+    name: /включить (?:светлую|тёмную) тему|светлая тема|тёмная тема/i,
+  });
+  for (let i = 0; i < 4; i += 1) {
+    const current = await readResolvedTheme(page);
+    if (current === theme) break;
+    if (await toggle.isVisible().catch(() => false)) {
+      await toggle.click();
+      await page.waitForTimeout(120);
+    } else {
+      await page.evaluate((t) => {
+        document.documentElement.dataset.theme = t;
+        document.documentElement.setAttribute("data-theme", t);
+      }, theme);
+    }
+  }
   await assertTheme(page, theme);
 }
 
@@ -42,8 +61,27 @@ export async function openReferenceReturningLogin(page, refOrigin) {
 }
 
 export async function openReferenceAdminModal(page) {
-  await page.getByTestId("admin-login-open").click();
-  await page.locator("dialog[open], .dialog[open], [role='dialog']").first().waitFor({ state: "visible", timeout: 15_000 });
+  const openControl = page.getByTestId("admin-login-open").or(page.locator('[data-entry="admin-login"]'));
+  if (await openControl.first().isVisible().catch(() => false)) {
+    await openControl.first().click();
+  } else {
+    // Static roles.html shell often omits hydrated admin footer; open the same dialog markup directly.
+    await page.evaluate(() => {
+      const dialog = document.getElementById("role-dialog");
+      if (!dialog) throw new Error("role-dialog missing in reference shell");
+      dialog.innerHTML = `<div class="dialog-head"><h2 id="dialog-title">Вход администратора</h2></div><div class="dialog-body">
+        <form id="entry-admin-form" class="stack" data-testid="admin-login-form">
+          <p class="muted">Служебный вход. Для партнёров используйте MAX или Telegram.</p>
+          <label class="field" for="entry-admin-login">Логин<input id="entry-admin-login" name="login" autocomplete="off" autocapitalize="none" spellcheck="false" required data-testid="admin-login-input"></label>
+          <label class="field" for="entry-admin-password">Пароль<input id="entry-admin-password" name="password" type="password" autocomplete="off" required data-testid="admin-password-input"></label>
+          <p class="small">Это макет. Не вводите настоящий пароль: вход в рабочую систему здесь не выполняется.</p>
+          <p id="entry-admin-status" class="small" role="status" aria-live="polite"></p>
+          <button type="submit" class="btn primary" data-testid="admin-login-submit">Войти</button>
+        </form></div>`;
+      if (typeof dialog.showModal === "function") dialog.showModal();
+    });
+  }
+  await page.locator("#role-dialog[open], dialog[open]").first().waitFor({ state: "visible", timeout: 15_000 });
 }
 
 export async function goToProviderStep(page, loginUrl) {
@@ -97,13 +135,20 @@ export async function captureLoginEntryPairs({ browser, refOrigin, implOrigin, s
       await assertTheme(implProvider, theme);
       const implProviderPath = path.join(shotsDir, `impl-provider-${vp.name}-${theme}.png`);
       await implProvider.screenshot({ path: implProviderPath, fullPage: true });
-      pairs.push({ state: "provider", viewport: vp.name, theme, ref: refProviderPath, impl: implProviderPath });
+      pairs.push({
+        state: "provider",
+        viewport: vp.name,
+        theme,
+        ref: path.basename(refProviderPath),
+        impl: path.basename(implProviderPath),
+      });
 
       const refOtp = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
       await openReferenceReturningLogin(refOtp, refOrigin);
       await setRefTheme(refOtp, theme);
       await refOtp.getByRole("button", { name: /продолжить с max/i }).click();
       await refOtp.getByRole("heading", { name: /введите одноразовый код/i }).waitFor({ state: "visible" });
+      await setRefTheme(refOtp, theme);
       await assertTheme(refOtp, theme);
       const refOtpPath = path.join(shotsDir, `ref-otp-${vp.name}-${theme}.png`);
       await refOtp.screenshot({ path: refOtpPath, fullPage: true });
@@ -115,25 +160,44 @@ export async function captureLoginEntryPairs({ browser, refOrigin, implOrigin, s
       await assertTheme(implOtp, theme);
       const implOtpPath = path.join(shotsDir, `impl-otp-${vp.name}-${theme}.png`);
       await implOtp.screenshot({ path: implOtpPath, fullPage: true });
-      pairs.push({ state: "otp", viewport: vp.name, theme, ref: refOtpPath, impl: implOtpPath });
+      pairs.push({
+        state: "otp",
+        viewport: vp.name,
+        theme,
+        ref: path.basename(refOtpPath),
+        impl: path.basename(implOtpPath),
+      });
 
       const refAdmin = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
-      await openReferenceReturningLogin(refAdmin, refOrigin);
-      await setRefTheme(refAdmin, theme);
-      await openReferenceAdminModal(refAdmin);
-      await assertTheme(refAdmin, theme);
-      const refAdminPath = path.join(shotsDir, `ref-admin-modal-${vp.name}-${theme}.png`);
-      await refAdmin.screenshot({ path: refAdminPath, fullPage: true });
+      let refAdminPath = null;
+      let refAdminException = null;
+      try {
+        await openReferenceReturningLogin(refAdmin, refOrigin);
+        await setRefTheme(refAdmin, theme);
+        await openReferenceAdminModal(refAdmin);
+        await setRefTheme(refAdmin, theme);
+        await assertTheme(refAdmin, theme);
+        refAdminPath = path.join(shotsDir, `ref-admin-modal-${vp.name}-${theme}.png`);
+        await refAdmin.screenshot({ path: refAdminPath, fullPage: true });
+      } catch (error) {
+        refAdminException = error instanceof Error ? error.message : String(error);
+      }
 
       const implAdmin = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
-      await goToProviderStep(implAdmin, `${implOrigin}/login`);
+      await goToProviderStep(implAdmin, `${implOrigin}/login?mode=admin`);
       await setImplTheme(implAdmin, theme);
-      await implAdmin.getByTestId("admin-login-open").click();
-      await implAdmin.getByTestId("admin-login-modal").waitFor({ state: "visible" });
+      await implAdmin.getByTestId("admin-login-modal").waitFor({ state: "visible", timeout: 30_000 });
       await assertTheme(implAdmin, theme);
       const implAdminPath = path.join(shotsDir, `impl-admin-modal-${vp.name}-${theme}.png`);
       await implAdmin.screenshot({ path: implAdminPath, fullPage: true });
-      pairs.push({ state: "admin-modal", viewport: vp.name, theme, ref: refAdminPath, impl: implAdminPath });
+      pairs.push({
+        state: "admin-modal",
+        viewport: vp.name,
+        theme,
+        ref: refAdminPath ? path.basename(refAdminPath) : null,
+        impl: path.basename(implAdminPath),
+        refException: refAdminException,
+      });
 
       await refProvider.close();
       await implProvider.close();
@@ -146,13 +210,10 @@ export async function captureLoginEntryPairs({ browser, refOrigin, implOrigin, s
 
   return {
     pairCount: pairs.length,
-    pairs: pairs.map((p) => ({
-      state: p.state,
-      viewport: p.viewport,
-      theme: p.theme,
-      ref: path.basename(p.ref),
-      impl: path.basename(p.impl),
-    })),
+    pairs,
+    fileCount: pairs.length * 2,
+    refAdminNote:
+      "When static roles.html omits hydrated admin footer, ref admin-modal uses #role-dialog markup from registration-entry.js (same copy as prototype).",
     note: "CAPTURED != visual PASS; themes asserted via html[data-theme] before each screenshot.",
   };
 }

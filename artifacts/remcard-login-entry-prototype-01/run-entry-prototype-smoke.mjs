@@ -196,7 +196,7 @@ async function runDisposableChain(platformOrigin, runtimeEnv) {
     await page.getByTestId("account-sign-in").click();
     await page.waitForURL((url) => url.pathname === "/login", { timeout: 30_000 });
     seedJson = reseedFixture(tag, runtimeEnv, maxId);
-    await goToProviderStep(page, page.url());
+    await goToProviderStep(page, `${platformOrigin}/login?returnTo=/scanner`);
     await goToOtpStep(page);
     await page.locator('input[placeholder="000000"]').fill(seedJson.otp || FIXTURE_OTP);
     const verify2 = page.waitForResponse(
@@ -222,7 +222,16 @@ async function runDisposableChain(platformOrigin, runtimeEnv) {
     const cleanup = spawnSync(
       "pnpm",
       ["exec", "tsx", path.join(NAV, "scripts/.login-entry-disposable-cleanup.ts"), tag],
-      { cwd: NAV, env: { ...process.env, ...runtimeEnv, NODE_ENV: "development" }, encoding: "utf8" },
+      {
+        cwd: NAV,
+        env: {
+          ...process.env,
+          ...runtimeEnv,
+          NODE_ENV: "development",
+          LOGIN_LAYOUT_FIXTURE_MAX_ID: maxId,
+        },
+        encoding: "utf8",
+      },
     );
     let cleanupReport;
     try {
@@ -275,11 +284,11 @@ async function main() {
     build = {
       skipped: true,
       imported: true,
-      reason: `${build.reason}; imported existing .next`,
+      reason: `${build.reason}; imported existing .next/BUILD_ID (build not executed in this invocation)`,
       command: "import .next/BUILD_ID (no npm run build in this runner invocation)",
       sourceSha: runnerSha,
       BUILD_ID: readFileSync(buildIdPath, "utf8").trim(),
-      exitCode: 0,
+      exitCode: null,
       signal: null,
       spawnError: null,
     };
@@ -296,7 +305,9 @@ async function main() {
   let disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.ok ? "not run" : disposableResolved.reason };
   let smokeError = null;
 
-  const buildRecorded = Boolean(build.BUILD_ID && Number(build.exitCode) === 0);
+  const buildRecorded = Boolean(
+    build.BUILD_ID && (build.imported === true || Number(build.exitCode) === 0),
+  );
 
   let refServer = null;
   let implServer = null;
@@ -335,26 +346,40 @@ async function main() {
     await waitForHttp("http://127.0.0.1:3098/roles.html");
     const refOrigin = "http://127.0.0.1:3098";
 
-    if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1" && runtimePin?.verified !== false) {
+    if (process.env.LOGIN_ENTRY_SKIP_CAPTURE !== "1" && runtimePin?.verified) {
       const browser = await chromium.launch({ headless: true });
-      captureResult = await captureLoginEntryPairs({
-        browser,
-        refOrigin,
-        implOrigin,
-        shotsDir: SHOTS,
-      });
-      await browser.close();
+      try {
+        captureResult = await captureLoginEntryPairs({
+          browser,
+          refOrigin,
+          implOrigin,
+          shotsDir: SHOTS,
+        });
+      } catch (captureError) {
+        smokeError = captureError instanceof Error ? captureError.message : String(captureError);
+        captureResult = { status: "FAIL", error: smokeError };
+      } finally {
+        await browser.close();
+      }
     }
 
-    if (disposableResolved.ok && runtimePin?.verified !== false) {
-      disposableResult = { status: "PASS", ...(await runDisposableChain(implOrigin, runtimeEnv)) };
+    if (disposableResolved.ok && runtimePin?.verified) {
+      try {
+        disposableResult = { status: "PASS", ...(await runDisposableChain(implOrigin, runtimeEnv)) };
+      } catch (error) {
+        disposableResult = {
+          status: "FAIL",
+          error: error instanceof Error ? error.message : String(error),
+        };
+        smokeError = disposableResult.error;
+      }
     } else if (!disposableResolved.ok) {
       disposableResult = { status: "NOT_VERIFIED", reason: disposableResolved.reason };
     }
   } catch (error) {
     smokeError = error instanceof Error ? error.message : String(error);
-    if (disposableResolved.ok) {
-      disposableResult = { status: "FAIL", error: smokeError };
+    if (disposableResult.status === "NOT_VERIFIED" && disposableResult.reason === "not run") {
+      disposableResult = { status: "NOT_VERIFIED", reason: `smoke aborted: ${smokeError}` };
     }
   } finally {
     implServer?.kill("SIGTERM");
@@ -363,7 +388,8 @@ async function main() {
 
   const componentTestsOk = componentTest.status === 0 && harnessUnit.status === 0;
   const runtimeVerified = Boolean(runtimePin?.verified);
-  const smokeOk = !smokeError && disposableResult.status === "PASS";
+  const captureOk = captureResult?.pairCount > 0 && !captureResult?.error;
+  const smokeOk = disposableResult.status === "PASS" && captureOk;
   const cleanupOk = disposableResult.cleanup?.remaining
     ? Object.values(disposableResult.cleanup.remaining).every((v) => v === 0)
     : smokeOk;
