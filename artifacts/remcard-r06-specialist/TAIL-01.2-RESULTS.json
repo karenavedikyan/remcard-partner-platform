@@ -1,0 +1,28 @@
+{
+  "task": "R06-SPECIALIST-TAIL-01.2",
+  "heads": {
+    "platform": "pending_commit",
+    "navigator": "4a592efea44d95f4d7d8449cde281785802e64b4"
+  },
+  "visualFixes": [
+    "stepActionsLabel stays inline with Далее on 375/320 (no flex-basis 100%)",
+    "catalog footer Отменить изменения true ghost (transparent border/background)"
+  ],
+  "pg": {
+    "database": "remcard_r01_test@127.0.0.1",
+    "controlledMigrationFull": { "exitCode": 0, "applied": ["20261017180000_prof_r06_taxonomy_proposal"], "reapply": "already_applied" },
+    "migrationNegatives": { "exitCode": 0, "tests": 5 },
+    "orphanProbeLive": { "ok": true, "error": "untracked_partial_r06_schema:taxonomy_proposal_without_ledger" }
+  },
+  "bff": {
+    "runDir": "/tmp/r06-tail-012b-1792326422",
+    "browserBff": { "exitCode": 0, "taxonomyProposalBff": { "ok": true, "createStatus": 200, "duplicateStatus": 409 } },
+    "reportPath": "artifacts/remcard-r06-specialist/browser-bff.json"
+  },
+  "visualCapture": {
+    "manifest": "artifacts/remcard-r06-specialist/screenshots/manifest-tail-01.2-catalog.json",
+    "referenceSha": "771cc658a415a5d05b964f29f675d32db449198b",
+    "viewports": ["375-light", "375-dark", "320-light"]
+  },
+  "cleanupNote": "Disposable DB remcard_r01_test; fixture user r06-local-specialist-v1; R06_RUN_DIR ephemeral under /tmp"
+}

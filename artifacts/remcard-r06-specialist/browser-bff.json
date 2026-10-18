@@ -11,6 +11,11 @@
       "ok": true,
       "displayName": "R06 BFF Spec Edited"
     },
+    "taxonomyProposalBff": {
+      "ok": true,
+      "createStatus": 200,
+      "duplicateStatus": 409
+    },
     "catalogClearOptionalReload": {
       "ok": true,
       "telegram": ""

@@ -184,10 +184,22 @@
 }
 
 .btnGhost {
-  border-color: transparent;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--cw-muted);
   font-weight: 600;
+  box-shadow: none;
+}
+
+.btnGhost:hover:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--cw-text);
+}
+
+.catalogFooter .btnGhost {
+  border: 1px solid transparent;
+  background: transparent;
 }
 
 @media (max-width: 900px) {
@@ -231,19 +243,25 @@
   }
 
   .stepActions {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     gap: 0.65rem;
   }
 
   .stepActionsLabel {
-    flex: 1 1 100%;
-    margin-right: 0;
+    margin-right: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .stepActions .btn {
     flex: 0 0 auto;
     min-width: 0;
+  }
+
+  .stepActions .btnPrimary {
+    flex: 0 0 auto;
   }
 }
 
