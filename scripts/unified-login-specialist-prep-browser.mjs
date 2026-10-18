@@ -21,7 +21,12 @@ import { evaluateCleanupChildResult } from '../artifacts/remcard-login-layout-01
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV = path.resolve(ROOT, '../remcard-navigator');
 const OUT = path.join(ROOT, 'artifacts/unified-login-specialist-prep');
-const JSON_OUT = path.join(OUT, 'UNIFIED-PREP-01-BROWSER.json');
+function resolveBrowserJsonOut() {
+  return (
+    process.env.UNIFIED_PREP_BROWSER_JSON?.trim() ||
+    path.join(OUT, 'UNIFIED-PREP-01-BROWSER.json')
+  );
+}
 
 const APPLICATION_CODE_PIN = '11f512e44406d243261f7bfdd7c1d5d90f6494d9';
 
@@ -526,8 +531,9 @@ export async function runUnifiedPrepBrowserSmoke() {
 
 async function main() {
   const payload = await runUnifiedPrepBrowserSmoke();
-  writeFileSync(JSON_OUT, `${JSON.stringify(payload, null, 2)}\n`);
-  console.log(JSON.stringify({ ok: true, out: JSON_OUT, status: payload.status }));
+  const jsonOut = resolveBrowserJsonOut();
+  writeFileSync(jsonOut, `${JSON.stringify(payload, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, out: jsonOut, status: payload.status }));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
@@ -540,7 +546,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         capturedAt: new Date().toISOString(),
       };
       try {
-        writeFileSync(JSON_OUT, `${JSON.stringify(fail, null, 2)}\n`);
+        writeFileSync(resolveBrowserJsonOut(), `${JSON.stringify(fail, null, 2)}\n`);
       } catch {
         /* ignore */
       }

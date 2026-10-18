@@ -2,7 +2,7 @@
 /** UNIFIED-LOGIN-SPECIALIST-PREP-01.2 disposable evidence (no prod). */
 import { createHash } from 'node:crypto';
 import { execSync, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runUnifiedPrepBrowserSmoke } from './unified-login-specialist-prep-browser.mjs';
@@ -30,6 +30,8 @@ const NAV_BUILD_LOG = path.join(OUT, 'UNIFIED-PREP-01-nav-build.log');
 const SCRATCH_PLAT_BUILD_LOG = path.join('/tmp', 'UNIFIED-PREP-01-plat-build.log');
 const SCRATCH_PLAT_NPM_CI_LOG = path.join('/tmp', 'UNIFIED-PREP-01-plat-npm-ci.log');
 const SCRATCH_NAV_BUILD_LOG = path.join('/tmp', 'UNIFIED-PREP-01-nav-build.log');
+const SCRATCH_PG_OUT = path.join('/tmp', 'unified-prep-r06-release-prep-out');
+const SCRATCH_BROWSER_JSON = path.join('/tmp', 'UNIFIED-PREP-01-BROWSER.json');
 const SOURCE_DELTA_MANIFEST = path.join(OUT, 'UNIFIED-PREP-01-SOURCE-DELTA.json');
 
 const LOCAL_BUILD_LEGAL = {
@@ -82,6 +84,17 @@ function countNodeTest(out) {
     fail: fail ? Number(fail) : null,
     skip: skip ? Number(skip) : null,
   };
+}
+
+function copyScratchDirToArtifacts(scratchDir, artifactDir) {
+  if (!existsSync(scratchDir)) return { copied: [] };
+  mkdirSync(artifactDir, { recursive: true });
+  const copied = [];
+  for (const name of readdirSync(scratchDir)) {
+    copyFileSync(path.join(scratchDir, name), path.join(artifactDir, name));
+    copied.push(name);
+  }
+  return { copied, artifactDir };
 }
 
 function writeEvidence(payload) {
@@ -190,7 +203,10 @@ async function main() {
   const dbUrl =
     process.env.DATABASE_URL || 'postgresql://remcard_r01:remcard_r01@127.0.0.1:5432/remcard_r01_test';
   const pgEnv = { ...process.env, DATABASE_URL: dbUrl, DIRECT_URL: dbUrl };
-  const pgEvidence = runRecorded(process.execPath, ['scripts/r06-release-prep-evidence.mjs'], NAV, pgEnv);
+  const pgEvidence = runRecorded(process.execPath, ['scripts/r06-release-prep-evidence.mjs'], NAV, {
+    ...pgEnv,
+    R06_RELEASE_PREP_OUT_DIR: SCRATCH_PG_OUT,
+  });
 
   const navUnit = runRecorded(
     process.execPath,
@@ -219,6 +235,7 @@ async function main() {
 
   let browserPayload = { status: 'NOT_RUN', error: 'not started' };
   try {
+    process.env.UNIFIED_PREP_BROWSER_JSON = SCRATCH_BROWSER_JSON;
     browserPayload = await runUnifiedPrepBrowserSmoke();
   } catch (e) {
     browserPayload = { status: 'FAIL', error: String(e?.message ?? e) };
@@ -319,6 +336,14 @@ async function main() {
     navBuild: writeLog(NAV_BUILD_LOG, readFileSync(SCRATCH_NAV_BUILD_LOG, 'utf8')),
   };
   payload.provenance.buildLogFinalization = finalizedLogs;
+
+  const pgArtifactDir = path.join(PLAT, 'artifacts/remcard-r06-specialist');
+  payload.provenance.pgArtifactFinalization = copyScratchDirToArtifacts(SCRATCH_PG_OUT, pgArtifactDir);
+  if (existsSync(SCRATCH_BROWSER_JSON)) {
+    mkdirSync(OUT, { recursive: true });
+    copyFileSync(SCRATCH_BROWSER_JSON, path.join(OUT, 'UNIFIED-PREP-01-BROWSER.json'));
+    payload.provenance.browserJsonFinalized = path.join(OUT, 'UNIFIED-PREP-01-BROWSER.json');
+  }
 
   const checksum = writeEvidence(payload);
 
