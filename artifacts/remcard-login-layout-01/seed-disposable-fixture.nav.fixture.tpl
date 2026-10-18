@@ -34,7 +34,15 @@ async function main() {
       },
     });
     process.stdout.write(
-      JSON.stringify({ mock: true, tag: TAG, userId: existing.id, publicId, otp: FIXTURE_OTP, reseed: true }),
+      JSON.stringify({
+        mock: true,
+        tag: TAG,
+        userId: existing.id,
+        publicId,
+        otp: FIXTURE_OTP,
+        maxId: String(FIXTURE_MAX_ID),
+        reseed: true,
+      }),
     );
     return;
   }
