@@ -23,7 +23,7 @@
 
 ```bash
 cp .env.example .env.local
-npm install
+npm ci --include=dev
 npm run dev
 ```
 
@@ -37,6 +37,20 @@ npm start
 ```
 
 Документация: [docs/SCOPE.md](docs/SCOPE.md), [docs/REUSE-MAP.md](docs/REUSE-MAP.md), [docs/STATUS.md](docs/STATUS.md).
+
+### Установка зависимостей frontend
+
+Для этого репозитория используется npm и единственный `package-lock.json`.
+Не добавляйте `pnpm-lock.yaml` или `yarn.lock`: шаблон Timeweb выбирает их раньше
+npm и выполняет установку ещё до команды сборки. Backend navigator сохраняет
+собственную политику pnpm; эта правка его не касается.
+
+Проверка политики без установки и сборки:
+
+```bash
+node scripts/check-frontend-install-policy.mjs
+node --test scripts/lib/__tests__/frontend-install-policy.test.mjs
+```
 
 ## Границы первого выпуска
 
