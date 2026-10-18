@@ -46,8 +46,9 @@
     }
   },
   "evidenceTip": {
+    "platformGitHead": "7a20310ee3fd72385ddab2d59fa381d34fcb9494",
     "unifiedPrep01EvidenceSha256": "c3941f4b8d7103856376d8dba7ccd9c0328f9ba05573c4682a3b526ccd619cb1",
-    "note": "SHA256 of committed UNIFIED-PREP-01-EVIDENCE.json bytes after this manifest commit; see sidecar .sha256"
+    "note": "builtCodeSha captured at ebbaf29 before evidence-only commit; evidence bytes unchanged in 7a20310"
   },
   "migrations": {
     "gate": "PROF_R06_SPECIALIST_PROFILE_ENABLED default OFF (global for eligible specialists)",
