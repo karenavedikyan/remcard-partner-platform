@@ -782,7 +782,7 @@ async function main() {
         evaluation: unitGates.auth,
       },
       harnessUnit: {
-        command: `node --test ${path.relative(ROOT, path.join(ART, "login-entry-smoke-harness.test.mjs"))}`,
+        command: `node --test ${path.relative(ROOT, path.join(ART, "login-entry-smoke-harness.test.mjs"))} ${path.relative(ROOT, path.join(ART, "login-entry-process-lifecycle.test.mjs"))}`,
         ...spawnResultRecord(harnessUnit),
         evaluation: unitGates.harness,
       },
