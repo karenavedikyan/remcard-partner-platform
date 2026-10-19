@@ -540,7 +540,10 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     />
                     <small className={stepStyles.basicsHelper}>Поможет подобрать партнёров рядом.</small>
                   </div>
-                  <p className={stepStyles.basicsFootnote}>
+                  <p
+                    className={stepStyles.basicsFootnote}
+                    data-testid="specialist-basics-footnote"
+                  >
                     Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
                   </p>
                 </div>
@@ -552,6 +555,9 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 data-testid="specialist-profile-specialization-panel"
               >
               <div className={styles.fields}>
+                <p className={stepStyles.specializationLead}>
+                  Выберите работы, которые выполняете. Можно несколько.
+                </p>
                 <div className={stepStyles.presetBundle}>
                   <SpecialistPresetSection
                     presentationVariant="workingProfile"
@@ -581,6 +587,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   tileLayout
                   collapseAdvancedDirections
                   presentationVariant="specialistWorkingProfile"
+                  omitLead
                   taxonomyProposalScope="profile-specialist"
                   productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
@@ -699,7 +706,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
             ) : null}
             {step === 3 ? (
               <div
-                className={stepStyles.stepPanel}
+                className={`${stepStyles.stepPanel} ${stepStyles.reviewPanel}`}
                 data-testid="specialist-profile-review-panel"
               >
                 <dl className={stepStyles.reviewFacts} data-testid="specialist-review-facts">

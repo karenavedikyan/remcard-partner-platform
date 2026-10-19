@@ -82,17 +82,31 @@
 .stepContextLabel {
   font-size: var(--pw-xs);
   color: var(--pw-muted);
+  text-align: right;
+  line-height: 1.35;
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 12rem;
+}
+
+@media (max-width: 480px) {
+  .stepCardTop {
+    align-items: flex-start;
+    gap: var(--pw-2);
+  }
+
+  .stepContextLabel {
+    max-width: 9.5rem;
+  }
 }
 
 .basicsFields {
   display: grid;
-  gap: 1.25rem;
+  gap: var(--pw-5);
   min-width: 0;
 }
 
 .basicsField {
-  display: grid;
-  gap: 0.35rem;
   min-width: 0;
   margin: 0;
 }
@@ -100,12 +114,13 @@
 .basicsField label {
   font-weight: 700;
   font-size: var(--pw-sm);
-  margin: 0;
+  display: block;
+  margin: 0 0 var(--pw-2);
 }
 
 .basicsHelper {
   display: block;
-  margin: 0;
+  margin: var(--pw-2) 0 0;
   font-size: var(--pw-xs);
   color: var(--pw-muted);
   line-height: 1.45;
@@ -126,8 +141,15 @@
 }
 
 .basicsFootnote {
-  margin: 1rem 0 0;
+  margin: var(--pw-4) 0 0;
   font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  line-height: 1.45;
+}
+
+.specializationLead {
+  margin: 0 0 var(--pw-4);
+  font-size: var(--pw-sm);
   color: var(--pw-muted);
   line-height: 1.45;
 }
@@ -226,10 +248,20 @@
 }
 
 .reviewFootnote {
-  margin: var(--pw-5) 0 0;
+  margin: var(--pw-4) 0 0;
   font-size: var(--pw-xs);
   color: var(--pw-muted);
   line-height: 1.45;
+}
+
+.reviewPanel {
+  display: grid;
+  gap: var(--pw-4);
+  min-width: 0;
+}
+
+.reviewPanel .reviewDirections {
+  margin-top: 0;
 }
 
 .reviewChipRow {

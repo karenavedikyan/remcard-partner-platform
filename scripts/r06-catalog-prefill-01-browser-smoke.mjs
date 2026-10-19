@@ -152,13 +152,22 @@ async function runProfilePatternBrowserSmoke(taskLabel = 'R06-PROFILE-PATTERN-TR
   const appOrigin = `http://127.0.0.1:${platformPort}`;
   const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
   const build = runIsolatedPlatformBuild(ROOT, DIST);
+  const expectedBuildId = process.env.R06_EXPECT_BUILD_ID?.trim();
+  if (expectedBuildId && build.buildId && build.buildId !== expectedBuildId) {
+    throw new Error(`build_id_mismatch:expected=${expectedBuildId}:got=${build.buildId}`);
+  }
   const report = {
     mode: 'MOCK_BFF',
     task: taskLabel,
     codeSha,
     sourceTreeDigest: provenance.sourceTreeDigest,
     treeDirty: false,
-    build: { status: build.status, buildId: build.buildId, distDir: DIST },
+    build: {
+      status: build.status,
+      buildId: build.buildId,
+      distDir: DIST,
+      reusedDist: build.status === 'skipped',
+    },
     steps: {},
     ok: false,
     notRun: ['finishProfile', 'catalog', 'moderation', 'postgresql', 'wideRegression'],
@@ -606,16 +615,19 @@ async function main() {
     process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01' ||
     process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01' ||
     process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01' ||
-    process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01'
+    process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01' ||
+    process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01.1'
   ) {
     const taskLabel =
       process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01'
         ? 'R06-PROFILE-VISUAL-REMAINDERS-01'
         : process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01'
           ? 'R06-PROFILE-LAYOUT-REGRESSION-01'
-          : process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01'
-            ? 'R06-PROFILE-PROTOTYPE-FINISH-01'
-            : 'R06-PROFILE-PATTERN-TRANSFER-01';
+          : process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01.1'
+            ? 'R06-PROFILE-PROTOTYPE-FINISH-01.1'
+            : process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01'
+              ? 'R06-PROFILE-PROTOTYPE-FINISH-01'
+              : 'R06-PROFILE-PATTERN-TRANSFER-01';
     return runProfilePatternBrowserSmoke(taskLabel);
   }
   if (

@@ -564,6 +564,82 @@ function boxMetrics(el) {
 }
 
 /** Geometry for ref/impl compare (actual input/card/chip boxes, not wrappers). */
+export async function measureBasicsVerticalRhythm(page, { impl = true } = {}) {
+  return page.evaluate(({ isImpl }) => {
+    const dist = (a, b) => {
+      if (!a || !b) return null;
+      return Math.round(b.getBoundingClientRect().top - a.getBoundingClientRect().bottom);
+    };
+    const nameLabel = document.querySelector(
+      isImpl ? 'label[for="sp-displayName"]' : 'label[for="name"], .pw-card label',
+    );
+    const nameInput = document.querySelector(
+      isImpl ? '#sp-displayName' : '[name="name"]',
+    );
+    const cityLabel = document.querySelector(
+      isImpl ? 'label[for="sp-city"]' : 'label[for="city"]',
+    );
+    const cityInput = document.querySelector(isImpl ? '#sp-city' : '[name="city"]');
+    const nameField = nameInput?.parentElement;
+    const cityField = cityInput?.parentElement;
+    const nameHelper = nameField?.querySelector('small');
+    const cityHelper = cityField?.querySelector('small');
+    const footnote = isImpl
+      ? document.querySelector('[data-testid="specialist-basics-footnote"]')
+      : document.querySelector('.pw-footnote, .pw-card .footnote, .pw-card p.small');
+    const actions = isImpl
+      ? document.querySelector('[data-testid="specialist-step-actions"]')
+      : document.querySelector('.pw-actions');
+    return {
+      labelToInputName: dist(nameLabel, nameInput),
+      inputToHelperName: dist(nameInput, nameHelper),
+      helperToCityLabel: dist(nameHelper, cityLabel),
+      labelToInputCity: dist(cityLabel, cityInput),
+      inputToHelperCity: dist(cityInput, cityHelper),
+      helperToFootnote: dist(cityHelper, footnote),
+      footnoteToActions: dist(footnote, actions),
+    };
+  }, { isImpl: impl });
+}
+
+export async function measureReviewStepRhythm(page, { impl = true } = {}) {
+  return page.evaluate(({ isImpl }) => {
+    const dist = (a, b) => {
+      if (!a || !b) return null;
+      return Math.round(b.getBoundingClientRect().top - a.getBoundingClientRect().bottom);
+    };
+    const contextLabel = isImpl
+      ? document.querySelector('[data-testid="specialist-profile-step-card"] .stepContextLabel, [class*="stepContextLabel"]')
+      : document.querySelector('[data-testid="pw-progress"] + span, .pw-card .pw-context, .pw-step-context');
+    const title = isImpl
+      ? document.querySelector('[data-testid="specialist-profile-step-card"] h2')
+      : document.querySelector('.pw-card h2, #pw-title');
+    const facts = isImpl
+      ? document.querySelector('[data-testid="specialist-review-facts"]')
+      : document.querySelector('.pw-facts');
+    const directions = isImpl
+      ? document.querySelector('[data-testid="specialist-profile-review-panel"] [class*="reviewDirections"]')
+      : document.querySelector('.pw-picked, .pw-directions');
+    const footnote = isImpl
+      ? document.querySelector('[data-testid="specialist-profile-review-panel"] [class*="reviewFootnote"]')
+      : document.querySelector('.pw-card .pw-footnote, .pw-card .footnote');
+    const actions = isImpl
+      ? document.querySelector('[data-testid="specialist-step-actions"]')
+      : document.querySelector('.pw-actions');
+    const ctxRect = contextLabel?.getBoundingClientRect();
+    return {
+      contextLabelLines: contextLabel
+        ? Math.round((ctxRect?.height ?? 0) / (parseFloat(getComputedStyle(contextLabel).lineHeight) || 16))
+        : null,
+      contextLabelWidth: ctxRect ? Math.round(ctxRect.width) : null,
+      titleToFacts: dist(title, facts),
+      factsToDirections: dist(facts, directions),
+      directionsToFootnote: dist(directions, footnote),
+      footnoteToActions: dist(footnote, actions),
+    };
+  }, { isImpl: impl });
+}
+
 export async function measureImplStepGeometry(page, stepKind) {
   return page.evaluate((kind) => {
     const pr = (sel) => {
@@ -590,7 +666,7 @@ export async function measureImplStepGeometry(page, stepKind) {
     }
     if (kind === 'specialization' || kind === 'specialization-open') {
       out.kindSelect = pr('[data-specialist-kind]');
-      out.chip = pr('[data-direction-picker-variant="specialistWorkingProfile"] .chip');
+      out.chip = pr('[data-testid="specialist-direction-selected-chip"]');
       out.tile = pr('[data-direction-picker-variant="specialistWorkingProfile"] .tileOption');
     }
     if (kind === 'review') {

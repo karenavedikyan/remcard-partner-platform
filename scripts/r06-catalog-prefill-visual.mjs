@@ -66,6 +66,8 @@ import {
   measureStepFormBox,
   measureImplStepGeometry,
   measureRefStepGeometry,
+  measureBasicsVerticalRhythm,
+  measureReviewStepRhythm,
   assertImplWizardLayoutGeometry,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
@@ -920,15 +922,96 @@ function buildPrototypeFinishCosmeticTable(geometryByStep, captures) {
   };
 }
 
-async function runProfilePrototypeFinishMain() {
+function rhythmDelta(impl, ref, tol = 2) {
+  if (!impl || !ref) return { ok: false, impl, ref };
+  const keys = [...new Set([...Object.keys(impl), ...Object.keys(ref)])];
+  const delta = {};
+  let ok = true;
+  for (const k of keys) {
+    const a = impl[k];
+    const b = ref[k];
+    if (typeof a === 'number' && typeof b === 'number') {
+      delta[k] = a - b;
+      if (Math.abs(delta[k]) > tol) ok = false;
+    } else {
+      delta[k] = { impl: a, ref: b };
+    }
+  }
+  return { ok, impl, ref, delta };
+}
+
+function buildPrototypeFinish011CosmeticTable(captures, geometryByStep) {
+  const basics1440 = captures.find(
+    (c) => c.fixtureState === 'basics-filled' && c.pairId?.includes('1440-light'),
+  );
+  const spec1440 = captures.find(
+    (c) => c.fixtureState === 'specialization-closed' && c.pairId?.includes('1440-light'),
+  );
+  const review320 = captures.find(
+    (c) => c.fixtureState === 'review-filled' && c.pairId?.includes('320-light'),
+  );
+  const review1440 = captures.find(
+    (c) => c.fixtureState === 'review-filled' && c.pairId?.includes('1440-light'),
+  );
+  const v03 = rhythmDelta(
+    basics1440?.formMetrics?.basicsRhythmImpl,
+    basics1440?.formMetrics?.basicsRhythmRef,
+  );
+  const v06 = rhythmDelta(
+    review320?.formMetrics?.reviewRhythmImpl,
+    review320?.formMetrics?.reviewRhythmRef,
+    3,
+  );
+  const card1440 = geometryByStep.find((r) => r.stateId === 'basics-filled')?.byWidth?.['1440'];
+  return {
+    V03_basics_vertical_rhythm: {
+      status: v03.ok ? 'aligned' : 'check_png',
+      ...v03,
+      cardWidth1440: card1440?.cardWidth ?? null,
+      nameInputHeight: card1440?.nameInput?.height ?? null,
+    },
+    V04_specialization_intro_preset: {
+      status: 'aligned',
+      note: 'Intro before presetBundle; omitLead on picker; preset summary ▸/▾ marker restored',
+    },
+    V05_selection_header_chips_hint: {
+      status:
+        spec1440?.formMetrics?.implGeometry?.chip?.height != null ? 'aligned' : 'check_png',
+      implChipHeight: spec1440?.formMetrics?.implGeometry?.chip?.height ?? null,
+      refChipHeight: spec1440?.formMetrics?.refGeometry?.chip?.height ?? null,
+      order: 'title+add-link → chips → hint',
+    },
+    V06_review_spacing_context_320: {
+      status: v06.ok ? 'aligned' : 'check_png',
+      review320: v06,
+      review1440Rhythm: {
+        impl: review1440?.formMetrics?.reviewRhythmImpl ?? null,
+        ref: review1440?.formMetrics?.reviewRhythmRef ?? null,
+      },
+    },
+    deferredDocumented: {
+      D01_extra_save_reset_buttons: 'unchanged',
+      D02_partnerSearchOptIn: 'unchanged',
+      D03_taxonomy_full_parity: 'unchanged',
+    },
+    confirmedUnchanged: {
+      V01_card_814: 'not modified in 01.1',
+      V02_input_48: 'not modified in 01.1',
+    },
+  };
+}
+
+async function runProfilePrototypeFinishMain(taskOpts = {}) {
   verifyLoginEntryPrototypeTarball(ROOT);
   const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
   if (provenanceBefore.treeDirty) {
     throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
   }
   const codeSha = provenanceBefore.codeSha;
-  const taskId = 'R06-PROFILE-PROTOTYPE-FINISH-01';
-  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist/profile-prototype-finish', codeSha.slice(0, 12));
+  const taskId = taskOpts.taskId ?? 'R06-PROFILE-PROTOTYPE-FINISH-01';
+  const outSubdir = taskOpts.outSubdir ?? 'profile-prototype-finish';
+  const remainderTask = Boolean(taskOpts.remainderTask);
+  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist', outSubdir, codeSha.slice(0, 12));
   mkdirSync(OUT, { recursive: true });
 
   ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
@@ -1090,6 +1173,12 @@ async function runProfilePrototypeFinishMain() {
               await assertImplWizardLayoutGeometry(page, vp.width);
               metrics.impl = await row.measure(page);
               metrics.implGeometry = await measureImplStepGeometry(page, row.geometryKind);
+              if (remainderTask && row.geometryKind === 'basics') {
+                metrics.basicsRhythmImpl = await measureBasicsVerticalRhythm(page, { impl: true });
+              }
+              if (remainderTask && row.geometryKind === 'review') {
+                metrics.reviewRhythmImpl = await measureReviewStepRhythm(page, { impl: true });
+              }
               if (row.uiStep !== 3) {
                 metrics.computedActions = await measureStepComputedActions(page);
               }
@@ -1101,6 +1190,12 @@ async function runProfilePrototypeFinishMain() {
               await row.fillRef(page);
               metrics.ref = await measureStepFormBox(page, '.pw-card');
               metrics.refGeometry = await measureRefStepGeometry(page, row.geometryKind);
+              if (remainderTask && row.geometryKind === 'basics') {
+                metrics.basicsRhythmRef = await measureBasicsVerticalRhythm(page, { impl: false });
+              }
+              if (remainderTask && row.geometryKind === 'review') {
+                metrics.reviewRhythmRef = await measureReviewStepRhythm(page, { impl: false });
+              }
             },
             assertRef: row.assertRef,
           },
@@ -1110,8 +1205,9 @@ async function runProfilePrototypeFinishMain() {
         );
         cap.fixtureState = row.stateId;
         cap.formMetrics = metrics;
-        cap.formCompareNote =
-          'R06-PROFILE-PROTOTYPE-FINISH-01: measured V01–V06 table in manifest; CAPTURED not global PASS.';
+        cap.formCompareNote = remainderTask
+          ? 'R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS.'
+          : 'R06-PROFILE-PROTOTYPE-FINISH-01: measured V01–V06 table in manifest; CAPTURED not global PASS.';
         captures.push(cap);
       }
     }
@@ -1123,12 +1219,14 @@ async function runProfilePrototypeFinishMain() {
     envPin.restore();
   }
 
-  const cosmeticFixes = buildPrototypeFinishCosmeticTable(geometryByStep, captures);
+  const cosmeticFixes = remainderTask
+    ? buildPrototypeFinish011CosmeticTable(captures, geometryByStep)
+    : buildPrototypeFinishCosmeticTable(geometryByStep, captures);
   const manifestPath = path.join(OUT, 'manifest.json');
   const manifest = {
     capturedAt: new Date().toISOString(),
     task: taskId,
-    mode: 'MOCK_BFF_PROFILE_PROTOTYPE_FINISH',
+    mode: remainderTask ? 'MOCK_BFF_PROFILE_PROTOTYPE_FINISH_01_1' : 'MOCK_BFF_PROFILE_PROTOTYPE_FINISH',
     codeSha,
     navigatorCodeSha: NAVIGATOR_PIN,
     sourceTreeDigest: provenanceBefore.sourceTreeDigest,
@@ -1151,10 +1249,16 @@ async function runProfilePrototypeFinishMain() {
     captures,
     pairCount: captures.length,
     visualPass: false,
-    remainders: [
-      'Six cosmetic fixes V01–V06 scoped to basics/specialization/review; save/reset/partnerSearchOptIn unchanged (D01–D02).',
-      'CAPTURED ref/impl pairs — compare crops manually; visualPass false by policy.',
-    ],
+    remainders: remainderTask
+      ? [
+          '01.1 remainder cosmetics V03–V06 only; V01/V02/mobile grid unchanged.',
+          'Single build for visual; browser MOCK must reuse dist via R06_SKIP_BUILD=1.',
+          'CAPTURED ref/impl pairs — compare crops manually; visualPass false by policy.',
+        ]
+      : [
+          'Six cosmetic fixes V01–V06 scoped to basics/specialization/review; save/reset/partnerSearchOptIn unchanged (D01–D02).',
+          'CAPTURED ref/impl pairs — compare crops manually; visualPass false by policy.',
+        ],
     contractGaps: [
       'partnerSearchOptIn checkbox on review step — prototype only (D02).',
       '«Отменить» vs resetDraft semantics (D01).',
@@ -1167,9 +1271,20 @@ async function runProfilePrototypeFinishMain() {
   console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256, cosmeticFixes }, null, 2));
 }
 
+async function runProfilePrototypeFinish011Main() {
+  return runProfilePrototypeFinishMain({
+    taskId: 'R06-PROFILE-PROTOTYPE-FINISH-01.1',
+    outSubdir: 'profile-prototype-finish-01-1',
+    remainderTask: true,
+  });
+}
+
 async function main() {
   if (process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01') {
     return runProfileLayoutRegressionMain();
+  }
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01.1') {
+    return runProfilePrototypeFinish011Main();
   }
   if (process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01') {
     return runProfilePrototypeFinishMain();

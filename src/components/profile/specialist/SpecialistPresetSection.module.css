@@ -121,6 +121,19 @@
   font-weight: 600;
   min-height: 44px;
   padding: 0;
+  gap: 0.35rem;
+  display: flex;
+  align-items: center;
+}
+
+.workingProfile .presetPreview > summary::before {
+  content: "▸";
+  color: var(--sp-muted, #656970);
+  flex-shrink: 0;
+}
+
+.workingProfile .presetPreview[open] > summary::before {
+  content: "▾";
 }
 
 .workingProfile .presetContent {

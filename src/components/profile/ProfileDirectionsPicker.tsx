@@ -32,6 +32,8 @@ type ProfileDirectionsPickerProps = {
   taxonomyProposalScope?: string;
   /** Specialist working profile only — prototype-aligned chips/tiles/details; default unchanged. */
   presentationVariant?: "default" | "specialistWorkingProfile";
+  /** Hide lead paragraph (wizard renders intro above preset block). */
+  omitLead?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -85,6 +87,7 @@ export function ProfileDirectionsPicker({
   onCopyFromWorkingProfile,
   taxonomyProposalScope,
   presentationVariant = "default",
+  omitLead = false,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -248,13 +251,15 @@ export function ProfileDirectionsPicker({
       data-direction-picker-layout={tileLayout ? "tiles" : "default"}
       data-direction-picker-variant={presentationVariant}
     >
-      <p className={styles.lead}>
-        {catalogGroupedDetails
-          ? "Выберите работы и услуги, которые выполняете. Можно отметить несколько специализаций."
-          : specialistMode
-            ? "Выберите работы, которые выполняете. Можно несколько."
-            : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
-      </p>
+      {!omitLead ? (
+        <p className={styles.lead}>
+          {catalogGroupedDetails
+            ? "Выберите работы и услуги, которые выполняете. Можно отметить несколько специализаций."
+            : specialistMode
+              ? "Выберите работы, которые выполняете. Можно несколько."
+              : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
+        </p>
+      ) : null}
 
       {tileLayout || catalogGroupedDetails ? (
         <section className={styles.selectionSummary} aria-label="Выбранные направления">
@@ -262,6 +267,16 @@ export function ProfileDirectionsPicker({
             <strong>Уже выбрано</strong>
             {!catalogGroupedDetails && presentationVariant !== "specialistWorkingProfile" ? (
               <small>Услуги и этапы сохраняются при смене вида</small>
+            ) : null}
+            {presentationVariant === "specialistWorkingProfile" ? (
+              <button
+                type="button"
+                className={styles.focusSearchLink}
+                disabled={disabled}
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                Добавить / изменить
+              </button>
             ) : null}
           </div>
           {catalogGroupedDetails ? (
@@ -290,6 +305,11 @@ export function ProfileDirectionsPicker({
                   <button
                     type="button"
                     className={styles.chip}
+                    data-testid={
+                      presentationVariant === "specialistWorkingProfile"
+                        ? "specialist-direction-selected-chip"
+                        : undefined
+                    }
                     disabled={disabled}
                     onClick={chip.remove}
                     aria-label={`Убрать ${chip.label}`}
@@ -301,20 +321,10 @@ export function ProfileDirectionsPicker({
             </ul>
           )}
           {presentationVariant === "specialistWorkingProfile" ? (
-            <>
-              <small className={styles.hint}>
-                Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
-                добавьте другие ниже.
-              </small>
-              <button
-                type="button"
-                className={styles.focusSearchLink}
-                disabled={disabled}
-                onClick={() => searchInputRef.current?.focus()}
-              >
-                Добавить / изменить
-              </button>
-            </>
+            <small className={styles.hint}>
+              Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
+              добавьте другие ниже.
+            </small>
           ) : null}
         </section>
       ) : selectedChips.length === 0 ? (
