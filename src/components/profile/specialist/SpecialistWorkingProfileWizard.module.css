@@ -1,4 +1,70 @@
-/* Scoped to specialist working profile — contacts step (R06-CONTACTS-CONTROL-01). */
+/* Scoped specialist working profile — pattern steps + contacts (R06). */
+
+.stepPanel {
+  display: grid;
+  gap: var(--pw-5);
+  min-width: 0;
+}
+
+.stepCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pw-3);
+  margin-bottom: var(--pw-4);
+  flex-wrap: wrap;
+}
+
+.stepCardTop .stepKicker {
+  margin: 0;
+  color: var(--pw-accent);
+  font-size: var(--pw-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stepContextLabel {
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+}
+
+.stepActions {
+  margin-top: var(--pw-8);
+  padding-top: var(--pw-5);
+  border-top: 1px solid var(--pw-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pw-3);
+  flex-wrap: nowrap;
+}
+
+.stepActionsLeft,
+.stepActionsRight {
+  display: flex;
+  gap: var(--pw-2);
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.stepActionsRight {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .stepActions {
+    flex-wrap: wrap;
+  }
+
+  .stepActionsRight {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
 
 .contactsPanel {
   display: grid;

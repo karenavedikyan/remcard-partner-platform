@@ -84,6 +84,66 @@ export async function prepareRefReviewStep(page, protoBaseUrl) {
   await page.waitForSelector('[data-testid="pw-progress"]', { timeout: 30_000 });
 }
 
+/** Pattern-transfer visual: specialist wizard on step 0/1/3 with matched fixture. */
+export async function prepareRefSpecialistPatternStep(
+  page,
+  protoBaseUrl,
+  stepIndex,
+  fixture,
+  options = {},
+) {
+  const { advancedOpen = false } = options;
+  await bootRefCabinetSpecialist(page, protoBaseUrl);
+  if (await page.locator('[data-testid="pw-summary"]').count()) {
+    await page.locator('[data-pw-action="edit"]').click();
+    await page.waitForSelector('.pw-steps');
+  } else if (await page.locator('[data-profile-action="tab"][data-profile-id="basics"]').count()) {
+    await page.locator('[data-profile-action="tab"][data-profile-id="basics"]').click();
+  }
+  await page.locator('[name="name"]').fill(fixture.displayName);
+  await page.locator('[name="city"]').fill(fixture.city);
+  if (stepIndex === 0) {
+    await page.waitForSelector('#pw-title');
+    return;
+  }
+  await page.getByTestId('pw-next').click();
+  await page.waitForSelector('[data-specialist-kind]', { timeout: 30_000 });
+  if (stepIndex === 1) {
+    await page.locator('[data-specialist-kind]').selectOption(fixture.specialistKind);
+    await page.waitForSelector('[data-pw-choices]', { timeout: 30_000 });
+    for (const id of fixture.serviceSpecializationIds) {
+      const cb = page.locator(`[data-testid="pw-choice-services-${id}"]`);
+      if (await cb.count()) {
+        if (!(await cb.isChecked())) await cb.check();
+      }
+    }
+    const adv = page.locator('details.pw-optional').filter({ hasText: 'Этапы ремонта' });
+    if (await adv.count()) {
+      const open = await adv.evaluate((el) => el.open);
+      if (advancedOpen !== open) await adv.locator('summary').click();
+      if (advancedOpen) {
+        for (const id of fixture.navigatorStageIds) {
+          const stageCb = adv.locator(`input[data-pw-group="stages"][value="${id}"]`);
+          if ((await stageCb.count()) && !(await stageCb.isChecked())) await stageCb.check();
+        }
+      }
+    }
+    return;
+  }
+  if (stepIndex === 3) {
+    await page.locator('[data-specialist-kind]').selectOption(fixture.specialistKind);
+    await page.getByTestId('pw-next').click();
+    await page.waitForSelector('[name="contactPhone"], [data-testid="pw-input-contactPhone"]', {
+      timeout: 30_000,
+    });
+    const phone = page.locator('[name="contactPhone"], [data-testid="pw-input-contactPhone"]').first();
+    await phone.fill(fixture.phone);
+    await page.locator('[name="contactEmail"]').fill(fixture.email);
+    await page.getByTestId('pw-step-3').click();
+    await page.waitForSelector('#pw-title');
+  }
+}
+
 /** Contacts-only visual: wizard on step 3/4 without unrelated catalog state. */
 export async function prepareRefSpecialistContactsControl(page, protoBaseUrl, fixture) {
   await bootRefCabinetSpecialist(page, protoBaseUrl);

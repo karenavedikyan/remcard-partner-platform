@@ -25,6 +25,7 @@ import {
   prepareRefReviewStep,
   prepareRefSpecializationStep,
   prepareRefSpecialistContactsControl,
+  prepareRefSpecialistPatternStep,
   refCompleteWorkingProfile,
 } from './lib/r06-login-entry-prototype-nav.mjs';
 import {
@@ -42,14 +43,27 @@ import {
   fillImplCatalogContacts,
   fillRefCatalogCard,
   R06_CONTACTS_FIXTURE,
+  R06_PROFILE_PATTERN_FIXTURE,
   R06_PREVIEW_FIXTURE,
+  assertImplBasicsStepReady,
   assertImplContactsStepReady,
+  assertImplReviewStepReady,
+  assertImplSpecializationStepReady,
+  assertRefBasicsStepReady,
   assertRefContactsStepReady,
+  assertRefReviewStepReady,
+  assertRefSpecializationStepReady,
+  fillImplBasicsFixture,
   fillImplContactsFixture,
+  fillImplSpecializationFixture,
+  fillRefBasicsFixture,
   fillRefContactsFixture,
+  fillRefSpecializationFixture,
   auditContactsScrollUnderShell,
   measureContactsComputedActions,
   measureContactsFormBox,
+  measureStepComputedActions,
+  measureStepFormBox,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
 } from './lib/r06-preview-fixture.mjs';
@@ -174,6 +188,257 @@ function applyMockContactsControl(state, openDetails) {
     payload,
     savedProfile: { ...payload },
   };
+}
+
+function applyMockProfilePatternStep(state, uiStepIndex, fixture, options = {}) {
+  const payload = {
+    displayName: fixture.displayName,
+    city: fixture.city,
+    specialistKind: uiStepIndex >= 1 ? fixture.specialistKind : '',
+    specialistTitle: '',
+    serviceSpecializationIds:
+      uiStepIndex >= 1 ? [...fixture.serviceSpecializationIds] : [],
+    navigatorStageIds: uiStepIndex >= 1 ? [...fixture.navigatorStageIds] : [],
+    partnershipContactPhone: uiStepIndex >= 3 ? fixture.phone : '',
+    partnershipContactEmail: uiStepIndex >= 3 ? fixture.email : '',
+    productCategoryIds: [],
+  };
+  state.profileFinished = false;
+  state.workingDisplayName = fixture.displayName;
+  state.workingCity = fixture.city;
+  if (uiStepIndex >= 3) {
+    state.partnershipContactPhone = fixture.phone;
+    state.partnershipContactEmail = fixture.email;
+  }
+  state.specialistDraft = {
+    contractVersion: 'r06-smoke',
+    featureEnabled: true,
+    step: uiStepIndex + 1,
+    version: 2,
+    hasDraft: true,
+    profileComplete: false,
+    payload,
+    savedProfile: { ...payload },
+  };
+  state._patternAdvancedOpen = options.advancedOpen ?? false;
+}
+
+async function runProfilePatternTransferMain() {
+  verifyLoginEntryPrototypeTarball(ROOT);
+  const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
+  if (provenanceBefore.treeDirty) {
+    throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
+  }
+  const codeSha = provenanceBefore.codeSha;
+  const OUT = path.join(
+    ROOT,
+    'artifacts/remcard-r06-specialist/profile-pattern-visual',
+    codeSha.slice(0, 12),
+  );
+  mkdirSync(OUT, { recursive: true });
+
+  ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
+  const mock = await startCatalogPrefillMockBff(createMockBffState());
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  if (!platformPort) throw new Error('no free platform port');
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'failed') throw new Error(`build_failed:exit=${build.exitCode}`);
+
+  const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  const implBase = appOrigin;
+  const protoBase = refStatic.baseUrl;
+  const meta = { codeSha, buildId: build.buildId };
+  const fixture = R06_PROFILE_PATTERN_FIXTURE;
+  const captures = [];
+  const viewports = [
+    { width: 1440, height: 900, theme: 'light' },
+    { width: 375, height: 812, theme: 'light' },
+    { width: 375, height: 812, theme: 'dark' },
+    { width: 320, height: 568, theme: 'light' },
+  ];
+
+  const matrix = [
+    {
+      stateId: 'basics-filled',
+      uiStep: 0,
+      prepareRefStep: 0,
+      advancedOpen: false,
+      assertImpl: assertImplBasicsStepReady,
+      assertRef: assertRefBasicsStepReady,
+      fillImpl: (page) => fillImplBasicsFixture(page, fixture),
+      fillRef: (page) => fillRefBasicsFixture(page, fixture),
+      measure: (page) => measureStepFormBox(page, '[data-testid="specialist-profile-step-card"]'),
+    },
+    {
+      stateId: 'specialization-closed',
+      uiStep: 1,
+      prepareRefStep: 1,
+      advancedOpen: false,
+      assertImpl: assertImplSpecializationStepReady,
+      assertRef: assertRefSpecializationStepReady,
+      fillImpl: (page) => fillImplSpecializationFixture(page, fixture, { advancedOpen: false }),
+      fillRef: (page) => fillRefSpecializationFixture(page, fixture, { advancedOpen: false }),
+      measure: (page) => measureStepComputedActions(page),
+    },
+    {
+      stateId: 'specialization-open',
+      uiStep: 1,
+      prepareRefStep: 1,
+      advancedOpen: true,
+      assertImpl: assertImplSpecializationStepReady,
+      assertRef: assertRefSpecializationStepReady,
+      fillImpl: (page) => fillImplSpecializationFixture(page, fixture, { advancedOpen: true }),
+      fillRef: (page) => fillRefSpecializationFixture(page, fixture, { advancedOpen: true }),
+      measure: (page) => measureStepComputedActions(page),
+    },
+    {
+      stateId: 'review-filled',
+      uiStep: 3,
+      prepareRefStep: 3,
+      advancedOpen: false,
+      assertImpl: assertImplReviewStepReady,
+      assertRef: assertRefReviewStepReady,
+      fillImpl: async () => {},
+      fillRef: async () => {},
+      measure: (page) => measureStepComputedActions(page),
+    },
+  ];
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
+    const runtimeBuildId = await probeRuntimeBuildId(appOrigin, build.buildId);
+    if (runtimeBuildId !== build.buildId) {
+      throw new Error(`runtime_build_id_mismatch:${runtimeBuildId}:${build.buildId}`);
+    }
+
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-pattern-visual-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+
+    for (const row of matrix) {
+      for (const vp of viewports) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, {
+          advancedOpen: row.advancedOpen,
+        });
+        const pairId = `${row.stateId}-${vp.width}-${vp.theme}`;
+        const metrics = {};
+        const cap = await captureRefImplPair(
+          context,
+          {
+            pairId,
+            theme: vp.theme,
+            width: vp.width,
+            height: vp.height,
+            implUrl: `${implBase}/profile?section=basics`,
+            implTestId: 'specialist-profile-wizard',
+            formCrop: {
+              impl: '[data-testid="specialist-profile-step-card"]',
+              ref: '.pw-card',
+            },
+            assertImpl: async (page) => {
+              await row.assertImpl(page);
+              await row.fillImpl(page);
+              metrics.impl = await row.measure(page);
+              if (row.uiStep !== 3) {
+                metrics.computedActions = await measureStepComputedActions(page);
+              }
+            },
+            prepareRef: async (page, base) => {
+              await prepareRefSpecialistPatternStep(page, base, row.prepareRefStep, fixture, {
+                advancedOpen: row.advancedOpen,
+              });
+              await row.fillRef(page);
+              metrics.ref = await measureStepFormBox(page, '.pw-card');
+            },
+            assertRef: row.assertRef,
+          },
+          OUT,
+          protoBase,
+          meta,
+        );
+        cap.fixtureState = row.stateId;
+        cap.formMetrics = metrics;
+        cap.formCompareNote =
+          'Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS.';
+        captures.push(cap);
+      }
+    }
+    await browser.close();
+  } finally {
+    await stopOwnedServer(child);
+    refStatic.server.close();
+    await mock.close();
+    envPin.restore();
+  }
+
+  const manifestPath = path.join(OUT, 'manifest.json');
+  const manifest = {
+    capturedAt: new Date().toISOString(),
+    task: 'R06-PROFILE-PATTERN-TRANSFER-01',
+    mode: 'MOCK_BFF_PROFILE_PATTERN_TRANSFER',
+    codeSha,
+    navigatorCodeSha: NAVIGATOR_PIN,
+    sourceTreeDigest: provenanceBefore.sourceTreeDigest,
+    treeDirty: false,
+    prototypePackageCommit: '9bc52fb9152293e992e98dc50804a660cef10733',
+    prototypeTarballSha256: '382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d',
+    fixture,
+    build: {
+      status: build.status,
+      exitCode: build.exitCode,
+      buildId: build.buildId,
+      distDir: DIST,
+    },
+    runtimeBuildIdVerified: build.buildId,
+    appOrigin,
+    mockBff: mock.baseUrl,
+    protoBase,
+    captures,
+    pairCount: captures.length,
+    visualPass: false,
+    remainders: [
+      'Prototype «Отменить» (in-tab discard) has no equivalent — impl «Сбросить черновик» calls discardSpecialistProfileDraft (BLOCKED cancel semantics).',
+      'Impl retains «Сохранить черновик» on all steps — prototype wizard row omits it (documented, not removed).',
+      'Prototype review «Показывать профиль партнёрам» (partnerSearchOptIn) has no supported API/state in impl (BLOCKED — not implemented).',
+      'Ref optional primary direction / impl tile grid spacing may differ from prototype — compare crops manually.',
+      'CAPTURED pairs only — visualPass false; contract gaps listed separately from cosmetic remainders.',
+    ],
+    contractGaps: [
+      'partnerSearchOptIn checkbox on review step — prototype only, no backend in scope.',
+      '«Отменить» vs resetDraft semantics on basics/specialization/review.',
+    ],
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  manifest.evidenceSha256 = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256 }, null, 2));
 }
 
 async function runContactsControlMain() {
@@ -370,6 +635,9 @@ async function runContactsControlMain() {
 }
 
 async function main() {
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01') {
+    return runProfilePatternTransferMain();
+  }
   if (
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1' ||

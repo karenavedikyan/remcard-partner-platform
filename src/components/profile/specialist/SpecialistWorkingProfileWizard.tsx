@@ -22,7 +22,7 @@ import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profil
 import { SpecialistPresetSection } from "@/components/profile/specialist/SpecialistPresetSection";
 import type { ProProfileResponse } from "@/lib/types";
 import styles from "../agent/AgentProfileWizard.module.css";
-import contactStyles from "./SpecialistWorkingProfileWizard.module.css";
+import stepStyles from "./SpecialistWorkingProfileWizard.module.css";
 
 const STEPS = ["О себе", "Специализация", "Связь и работа", "Проверка"] as const;
 
@@ -32,6 +32,12 @@ function stepPanelTitle(step: number): string {
   if (step === 2) return "Как с вами связаться?";
   if (step === 3) return "Всё верно?";
   return STEPS[step] ?? "";
+}
+
+function stepContextLabel(step: number): string {
+  if (step === 0) return "Обязательные данные";
+  if (step === 3) return "Перед сохранением";
+  return "Можно пропустить";
 }
 
 function specialistPresetNotice(
@@ -414,16 +420,19 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
         </aside>
         <section className={styles.card} data-testid="specialist-profile-step-card">
           {step === 2 ? (
-            <div className={contactStyles.contactsCardTop}>
-              <span className={contactStyles.contactsKicker} data-testid="specialist-profile-progress">
+            <div className={stepStyles.contactsCardTop}>
+              <span className={stepStyles.contactsKicker} data-testid="specialist-profile-progress">
                 Шаг {step + 1} из {STEPS.length}
               </span>
-              <span className={contactStyles.contactsStepLabel}>Можно пропустить</span>
+              <span className={stepStyles.contactsStepLabel}>Можно пропустить</span>
             </div>
           ) : (
-            <span className={styles.kicker}>
-              Шаг {step + 1} из {STEPS.length}
-            </span>
+            <div className={stepStyles.stepCardTop}>
+              <span className={stepStyles.stepKicker} data-testid="specialist-profile-progress">
+                Шаг {step + 1} из {STEPS.length}
+              </span>
+              <span className={stepStyles.stepContextLabel}>{stepContextLabel(step)}</span>
+            </div>
           )}
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
@@ -479,39 +488,48 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
           <h2 className={styles.title}>{stepPanelTitle(step)}</h2>
           <form onSubmit={(ev) => void onSubmitStep(ev)}>
             {step === 0 ? (
-              <div className={styles.fields}>
-                <div className={styles.field}>
-                  <label htmlFor="sp-displayName">
-                    Ваше имя <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="sp-displayName"
-                    name="name"
-                    autoComplete="name"
-                    placeholder="Например, Алексей Иванов"
-                    value={draft.displayName ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))}
-                  />
-                  <small>Так вас будут узнавать в RemCard.</small>
+              <div
+                className={stepStyles.stepPanel}
+                data-testid="specialist-profile-basics-panel"
+              >
+                <div className={styles.fields}>
+                  <div className={styles.field}>
+                    <label htmlFor="sp-displayName">
+                      Ваше имя <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      id="sp-displayName"
+                      name="name"
+                      autoComplete="name"
+                      placeholder="Например, Алексей Иванов"
+                      value={draft.displayName ?? ""}
+                      onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))}
+                    />
+                    <small>Так вас будут узнавать в RemCard.</small>
+                  </div>
+                  <div className={styles.field}>
+                    <label htmlFor="sp-city">
+                      Город работы <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      id="sp-city"
+                      placeholder="Например, Краснодар"
+                      value={draft.city ?? ""}
+                      onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
+                    />
+                    <small>Поможет подобрать партнёров рядом.</small>
+                  </div>
+                  <p className={styles.footnote}>
+                    Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
+                  </p>
                 </div>
-                <div className={styles.field}>
-                  <label htmlFor="sp-city">
-                    Город работы <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="sp-city"
-                    placeholder="Например, Краснодар"
-                    value={draft.city ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
-                  />
-                  <small>Поможет подобрать партнёров рядом.</small>
-                </div>
-                <p className={styles.footnote}>
-                  Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
-                </p>
               </div>
             ) : null}
             {step === 1 ? (
+              <div
+                className={stepStyles.stepPanel}
+                data-testid="specialist-profile-specialization-panel"
+              >
               <div className={styles.fields}>
                 <p className={styles.intro}>
                   Выберите работы, которые выполняете. Можно несколько.
@@ -554,16 +572,17 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   onChangePrimary={() => {}}
                 />
               </div>
+              </div>
             ) : null}
             {step === 2 ? (
               <div
-                className={contactStyles.contactsPanel}
+                className={stepStyles.contactsPanel}
                 data-testid="specialist-profile-contacts-panel"
               >
                 <p className={styles.intro}>
                   Укажите удобный способ связи. Необязательные поля можно оставить пустыми.
                 </p>
-                <div className={contactStyles.contactsTwoCol} data-testid="specialist-contacts-two-col">
+                <div className={stepStyles.contactsTwoCol} data-testid="specialist-contacts-two-col">
                   <AgentPhoneField
                     ref={phoneRef}
                     wrapperClassName={styles.phoneFieldWrap}
@@ -587,13 +606,13 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   </div>
                 </div>
                 <details
-                  className={contactStyles.contactsOptional}
+                  className={stepStyles.contactsOptional}
                   data-testid="sp-contacts-optional-site-tg"
                 >
                   <summary>
                     Сайт и Telegram <span>необязательно</span>
                   </summary>
-                  <div className={contactStyles.contactsOptionalInner}>
+                  <div className={stepStyles.contactsOptionalInner}>
                     <div className={styles.field}>
                       <label htmlFor="sp-site">Сайт</label>
                       <input
@@ -619,13 +638,13 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   </div>
                 </details>
                 <details
-                  className={contactStyles.contactsOptional}
+                  className={stepStyles.contactsOptional}
                   data-testid="sp-contacts-optional-work"
                 >
                   <summary>
                     Где и как вы работаете <span>необязательно</span>
                   </summary>
-                  <div className={contactStyles.contactsOptionalInner}>
+                  <div className={stepStyles.contactsOptionalInner}>
                     <div className={styles.field}>
                       <label htmlFor="sp-workmode">Формат работы</label>
                       <select
@@ -657,7 +676,10 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               </div>
             ) : null}
             {step === 3 ? (
-              <>
+              <div
+                className={stepStyles.stepPanel}
+                data-testid="specialist-profile-review-panel"
+              >
                 <dl className={styles.facts}>
                   <div>
                     <dt>Имя</dt>
@@ -715,13 +737,21 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 <p className={styles.footnote}>
                   Профиль и карточка в каталоге независимы. Сохранение не публикует вас для клиентов.
                 </p>
-              </>
+              </div>
             ) : null}
             <div
-              className={step === 2 ? contactStyles.contactsStepActions : styles.actions}
-              data-testid={step === 2 ? "specialist-contacts-actions" : undefined}
+              className={
+                step === 2 ? stepStyles.contactsStepActions : stepStyles.stepActions
+              }
+              data-testid={
+                step === 2 ? "specialist-contacts-actions" : "specialist-step-actions"
+              }
             >
-              <div className={step === 2 ? contactStyles.contactsActionsLeft : styles.actionsLeft}>
+              <div
+                className={
+                  step === 2 ? stepStyles.contactsActionsLeft : stepStyles.stepActionsLeft
+                }
+              >
                 {step > 0 ? (
                   <button
                     type="button"
@@ -743,7 +773,11 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   </button>
                 ) : null}
               </div>
-              <div className={step === 2 ? contactStyles.contactsActionsRight : styles.actionsRight}>
+              <div
+                className={
+                  step === 2 ? stepStyles.contactsActionsRight : stepStyles.stepActionsRight
+                }
+              >
                 {(step === 1 || step === 2) && (
                   <button
                     type="button"

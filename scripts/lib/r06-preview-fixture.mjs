@@ -1,6 +1,21 @@
 /** Matched impl/ref synthetic catalog preview data (designer preset). */
 
 /** Fixed fixture for R06-CONTACTS-CONTROL-01 (ref + impl must match). */
+/** Matched ref/impl for R06-PROFILE-PATTERN-TRANSFER-01 (basics + specialization + review). */
+export const R06_PROFILE_PATTERN_FIXTURE = {
+  displayName: 'Паттерн Тест Спец',
+  city: 'Krasnodar',
+  specialistKind: 'designer',
+  specialistTitle: '',
+  customSpecialistTitle: 'Реставратор фасадов',
+  serviceSpecializationIds: ['design', 'planning'],
+  navigatorStageIds: ['L1-1'],
+  serviceLabels: ['Дизайн интерьера', 'Планирование'],
+  stageImplLabels: ['📐 Планирование'],
+  phone: '+79001112233',
+  email: 'pattern.transfer@example.ru',
+};
+
 export const R06_CONTACTS_FIXTURE = {
   displayName: 'Контакт Тест Спец',
   city: 'Krasnodar',
@@ -349,6 +364,171 @@ export async function measureContactsComputedActions(page) {
     if (!root) return null;
     const left = root.querySelector('[class*="contactsActionsLeft"]');
     const right = root.querySelector('[class*="contactsActionsRight"]');
+    const cs = (node) => (node ? getComputedStyle(node) : null);
+    const leftStyle = cs(left);
+    const rightStyle = cs(right);
+    return {
+      actions: {
+        display: getComputedStyle(root).display,
+        flexWrap: getComputedStyle(root).flexWrap,
+      },
+      left: leftStyle
+        ? { display: leftStyle.display, flexWrap: leftStyle.flexWrap, gap: leftStyle.gap }
+        : null,
+      right: rightStyle
+        ? { display: rightStyle.display, flexWrap: rightStyle.flexWrap, gap: rightStyle.gap }
+        : null,
+    };
+  });
+}
+
+export async function assertImplBasicsStepReady(page) {
+  await page.getByRole('heading', { name: 'Расскажите о себе' }).waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[data-testid="specialist-profile-basics-panel"]', { timeout: 30_000 });
+}
+
+export async function assertRefBasicsStepReady(page) {
+  await page.locator('#pw-title').getByText('Расскажите о себе').waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[name="name"]', { timeout: 30_000 });
+}
+
+export async function fillImplBasicsFixture(page, fixture = R06_PROFILE_PATTERN_FIXTURE) {
+  await page.locator('#sp-displayName').fill(fixture.displayName);
+  await page.locator('#sp-city').fill(fixture.city);
+}
+
+export async function fillRefBasicsFixture(page, fixture = R06_PROFILE_PATTERN_FIXTURE) {
+  await page.locator('[name="name"]').fill(fixture.displayName);
+  await page.locator('[name="city"]').fill(fixture.city);
+}
+
+export async function assertImplSpecializationStepReady(page) {
+  await page.getByRole('heading', { name: 'Чем вы занимаетесь?' }).waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[data-testid="specialist-profile-specialization-panel"]', {
+    timeout: 30_000,
+  });
+}
+
+export async function assertRefSpecializationStepReady(page) {
+  await page.locator('#pw-title').getByText('Чем вы занимаетесь?').waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[data-specialist-kind]', { timeout: 30_000 });
+}
+
+async function setImplAdvancedDirectionsOpen(page, open) {
+  const details = page.getByTestId('direction-advanced-collapse');
+  if ((await details.count()) === 0) return;
+  const isOpen = await details.evaluate((el) => el.open);
+  if (open !== isOpen) await details.locator('summary').click();
+}
+
+async function setRefAdvancedDirectionsOpen(page, open) {
+  const adv = page.locator('details.pw-optional').filter({ hasText: 'Этапы ремонта' });
+  if ((await adv.count()) === 0) return;
+  const isOpen = await adv.evaluate((el) => el.open);
+  if (open !== isOpen) await adv.locator('summary').click();
+}
+
+export async function fillImplSpecializationFixture(
+  page,
+  fixture = R06_PROFILE_PATTERN_FIXTURE,
+  options = {},
+) {
+  const { advancedOpen = false } = options;
+  const root = page.locator('[data-testid="specialist-profile-specialization-panel"]');
+  await root.locator('[data-specialist-kind]').selectOption(fixture.specialistKind);
+  await page.waitForFunction(
+    () => {
+      const w = document.querySelector('[data-testid="specialist-profile-specialization-panel"]');
+      if (!w) return false;
+      const fieldsets = [...w.querySelectorAll('fieldset')];
+      const services = fieldsets.find((f) =>
+        (f.querySelector('legend')?.textContent || '').includes('Работы и услуги'),
+      );
+      return services && services.querySelectorAll('input[type="checkbox"]').length >= 2;
+    },
+    undefined,
+    { timeout: 60_000 },
+  );
+  const servicesGroup = root.getByRole('group', { name: 'Работы и услуги' });
+  for (const label of fixture.serviceLabels) {
+    const cb = servicesGroup.getByRole('checkbox', { name: label, exact: true });
+    if ((await cb.count()) === 0) throw new Error(`impl_pattern_service_missing:${label}`);
+    if (!(await cb.isChecked())) await cb.check();
+  }
+  await setImplAdvancedDirectionsOpen(page, advancedOpen);
+  if (advancedOpen) {
+    const stagesGroup = root.getByRole('group', { name: /На каких этапах/i });
+    await stagesGroup.waitFor({ state: 'visible', timeout: 30_000 });
+    for (const label of fixture.stageImplLabels) {
+      const cb = stagesGroup.getByRole('checkbox', { name: label, exact: true });
+      if ((await cb.count()) === 0) throw new Error(`impl_pattern_stage_missing:${label}`);
+      if (!(await cb.isChecked())) await cb.check();
+    }
+  }
+}
+
+export async function fillRefSpecializationFixture(
+  page,
+  fixture = R06_PROFILE_PATTERN_FIXTURE,
+  options = {},
+) {
+  const { advancedOpen = false } = options;
+  await page.locator('[data-specialist-kind]').selectOption(fixture.specialistKind);
+  await page.waitForSelector('[data-pw-choices]', { timeout: 30_000 });
+  for (const id of fixture.serviceSpecializationIds) {
+    const cb = page.locator(`[data-testid="pw-choice-services-${id}"]`);
+    if ((await cb.count()) === 0) throw new Error(`ref_pattern_service_missing:${id}`);
+    if (!(await cb.isChecked())) await cb.check();
+  }
+  await setRefAdvancedDirectionsOpen(page, advancedOpen);
+  if (advancedOpen) {
+    const adv = page.locator('details.pw-optional').filter({ hasText: 'Этапы ремонта' });
+    for (const id of fixture.navigatorStageIds) {
+      const stageCb = adv.locator(`input[data-pw-group="stages"][value="${id}"]`);
+      if ((await stageCb.count()) === 0) throw new Error(`ref_pattern_stage_missing:${id}`);
+      if (!(await stageCb.isChecked())) await stageCb.check();
+    }
+  }
+}
+
+export async function assertImplReviewStepReady(page) {
+  await page.getByRole('heading', { name: 'Всё верно?' }).waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[data-testid="specialist-profile-review-panel"]', { timeout: 30_000 });
+}
+
+export async function assertRefReviewStepReady(page) {
+  await page.locator('#pw-title').getByText('Всё верно?').waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[data-testid="pw-progress"]', { timeout: 30_000 });
+}
+
+export async function measureStepFormBox(page, selector) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const nameInput = el.querySelector('#sp-displayName, [name="name"]');
+    const cityInput = el.querySelector('#sp-city, [name="city"]');
+    const pr = (node) => {
+      if (!node) return null;
+      const b = node.getBoundingClientRect();
+      return { width: Math.round(b.width), height: Math.round(b.height) };
+    };
+    return {
+      form: { width: Math.round(r.width), height: Math.round(r.height) },
+      nameInput: pr(nameInput),
+      cityInput: pr(cityInput),
+    };
+  }, selector);
+}
+
+export async function measureStepComputedActions(page) {
+  return page.evaluate(() => {
+    const root =
+      document.querySelector('[data-testid="specialist-step-actions"]') ||
+      document.querySelector('[data-testid="specialist-contacts-actions"]');
+    if (!root) return null;
+    const left = root.querySelector('[class*="ActionsLeft"]');
+    const right = root.querySelector('[class*="ActionsRight"]');
     const cs = (node) => (node ? getComputedStyle(node) : null);
     const leftStyle = cs(left);
     const rightStyle = cs(right);

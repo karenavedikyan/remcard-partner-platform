@@ -14,7 +14,7 @@ import {
   stopOwnedServer,
 } from '../artifacts/remcard-login-entry-prototype-01/login-entry-process-lifecycle.mjs';
 import { createMockBffState, startCatalogPrefillMockBff } from './lib/r06-catalog-prefill-mock-bff.mjs';
-import { R06_CONTACTS_FIXTURE } from './lib/r06-preview-fixture.mjs';
+import { R06_CONTACTS_FIXTURE, R06_PROFILE_PATTERN_FIXTURE } from './lib/r06-preview-fixture.mjs';
 import { advanceCatalogSteps, ensureCatalogStep } from './lib/r06-playwright-catalog.mjs';
 import {
   collectPrefillProvenance,
@@ -100,6 +100,300 @@ function assertContactsPhoneNormalizeSelfCheck() {
   if (normalizeUiPhoneDisplayForCompare('+7 (999) 111-22-33') === EXPECT_CONTACT_PHONE) {
     throw new Error('phone_normalize_selfcheck_wrong_number');
   }
+}
+
+function seedProfilePatternSmokeMock(state) {
+  const f = R06_PROFILE_PATTERN_FIXTURE;
+  const payload = {
+    displayName: 'Старое Имя Черновик',
+    city: 'Старый Город',
+    specialistKind: '',
+    specialistTitle: '',
+    serviceSpecializationIds: [],
+    navigatorStageIds: [],
+    partnershipContactPhone: '',
+    partnershipContactEmail: '',
+    productCategoryIds: [],
+  };
+  state.profileFinished = false;
+  state.workingDisplayName = payload.displayName;
+  state.workingCity = payload.city;
+  state.specialistDraft = {
+    contractVersion: 'r06-smoke',
+    featureEnabled: true,
+    step: 1,
+    version: 1,
+    hasDraft: true,
+    profileComplete: false,
+    payload,
+    savedProfile: { ...payload },
+  };
+}
+
+function setsEqual(a, b) {
+  const sa = [...new Set(a ?? [])].sort();
+  const sb = [...new Set(b ?? [])].sort();
+  return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
+}
+
+async function runProfilePatternBrowserSmoke() {
+  const provenance = collectPrefillProvenance(ROOT, DIST);
+  if (provenance.treeDirty) throw new Error(`tree_dirty:${provenance.treeDirtyFiles.join(';')}`);
+  const codeSha = provenance.codeSha;
+  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist');
+  mkdirSync(OUT, { recursive: true });
+  const REPORT = path.join(OUT, `R06-PROFILE-PATTERN-TRANSFER-01-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`);
+  const f = R06_PROFILE_PATTERN_FIXTURE;
+
+  const mock = await startCatalogPrefillMockBff(seedProfilePatternSmokeMock(createMockBffState()));
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  const report = {
+    mode: 'MOCK_BFF',
+    task: 'R06-PROFILE-PATTERN-TRANSFER-01',
+    codeSha,
+    sourceTreeDigest: provenance.sourceTreeDigest,
+    treeDirty: false,
+    build: { status: build.status, buildId: build.buildId, distDir: DIST },
+    steps: {},
+    ok: false,
+    notRun: ['finishProfile', 'catalog', 'moderation', 'postgresql', 'wideRegression'],
+  };
+  if (build.status === 'failed' || !build.buildId) {
+    report.error = 'build_failed';
+    writeFileSync(REPORT, `${JSON.stringify(report, null, 2)}\n`);
+    envPin.restore();
+    await mock.close();
+    process.exit(1);
+  }
+
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/login`, 120_000))) throw new Error('app_not_ready');
+    report.steps.runtimeBuildId = {
+      ok: (await probeRuntimeBuildId(appOrigin, build.buildId)) === build.buildId,
+      buildId: build.buildId,
+    };
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-pattern-smoke-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+    const page = await context.newPage();
+    await page.goto(`${appOrigin}/profile?section=basics`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+    await page.waitForSelector('[data-testid="specialist-profile-basics-panel"]', { timeout: 60_000 });
+
+    await page.locator('#sp-displayName').fill(f.displayName);
+    await page.locator('#sp-city').fill(f.city);
+    const basicsPatchWait = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/pro/specialist-profile/draft') &&
+        res.request().method() === 'PATCH' &&
+        res.status() >= 200 &&
+        res.status() < 300,
+      { timeout: 30_000 },
+    );
+    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await basicsPatchWait;
+    const getBasics = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
+    const basicsBody = await getBasics.json();
+    report.steps.basicsSaveGet = {
+      ok:
+        basicsBody.payload?.displayName === f.displayName &&
+        basicsBody.payload?.city === f.city,
+      expected: { displayName: f.displayName, city: f.city },
+      actual: {
+        displayName: basicsBody.payload?.displayName ?? null,
+        city: basicsBody.payload?.city ?? null,
+      },
+    };
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-testid="specialist-profile-basics-panel"]', { timeout: 60_000 });
+    report.steps.basicsReloadUi = {
+      ok:
+        (await page.locator('#sp-displayName').inputValue()) === f.displayName &&
+        (await page.locator('#sp-city').inputValue()) === f.city,
+      expected: { displayName: f.displayName, city: f.city },
+      actual: {
+        displayName: await page.locator('#sp-displayName').inputValue(),
+        city: await page.locator('#sp-city').inputValue(),
+      },
+    };
+
+    const advanceSpecWait = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/pro/specialist-profile/draft') &&
+        res.request().method() === 'PATCH' &&
+        res.status() >= 200 &&
+        res.status() < 300,
+      { timeout: 30_000 },
+    );
+    await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((form) => form.requestSubmit());
+    await advanceSpecWait;
+    await page.waitForSelector('[data-testid="specialist-profile-specialization-panel"]', {
+      timeout: 60_000,
+    });
+    await page.locator('[data-specialist-kind]').selectOption(f.specialistKind);
+    await page.waitForFunction(
+      () => {
+        const w = document.querySelector('[data-testid="specialist-profile-specialization-panel"]');
+        if (!w) return false;
+        const fieldsets = [...w.querySelectorAll('fieldset')];
+        const services = fieldsets.find((fs) =>
+          (fs.querySelector('legend')?.textContent || '').includes('Работы и услуги'),
+        );
+        return services && services.querySelectorAll('input[type="checkbox"]').length >= 2;
+      },
+      undefined,
+      { timeout: 60_000 },
+    );
+    const servicesGroup = page
+      .locator('[data-testid="specialist-profile-specialization-panel"]')
+      .getByRole('group', { name: 'Работы и услуги' });
+    for (const label of f.serviceLabels) {
+      const cb = servicesGroup.getByRole('checkbox', { name: label, exact: true });
+      if (!(await cb.isChecked())) await cb.check();
+    }
+    const adv = page.getByTestId('direction-advanced-collapse');
+    if (await adv.count()) {
+      if (!(await adv.evaluate((el) => el.open))) await adv.locator('summary').click();
+    }
+    const stagesGroup = page
+      .locator('[data-testid="specialist-profile-specialization-panel"]')
+      .getByRole('group', { name: /На каких этапах/i });
+    for (const label of f.stageImplLabels) {
+      const cb = stagesGroup.getByRole('checkbox', { name: label, exact: true });
+      if (!(await cb.isChecked())) await cb.check();
+    }
+    report.steps.specializationDesignerUi = {
+      ok: (await page.locator('[data-specialist-kind]').inputValue()) === f.specialistKind,
+      expectedKind: f.specialistKind,
+      actualKind: await page.locator('[data-specialist-kind]').inputValue(),
+    };
+
+    await page.locator('[data-specialist-kind]').selectOption('other');
+    await page.locator('#sp-kind-title').fill(f.customSpecialistTitle);
+    const specSaveWait = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/pro/specialist-profile/draft') &&
+        res.request().method() === 'PATCH' &&
+        res.status() >= 200 &&
+        res.status() < 300,
+      { timeout: 30_000 },
+    );
+    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await specSaveWait;
+    const getSpec = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
+    const specBody = await getSpec.json();
+    report.steps.specializationCustomSaveGet = {
+      ok:
+        specBody.payload?.specialistKind === 'other' &&
+        specBody.payload?.specialistTitle === f.customSpecialistTitle &&
+        setsEqual(specBody.payload?.serviceSpecializationIds, f.serviceSpecializationIds) &&
+        setsEqual(specBody.payload?.navigatorStageIds, f.navigatorStageIds),
+      expected: {
+        kind: 'other',
+        title: f.customSpecialistTitle,
+        serviceSpecializationIds: f.serviceSpecializationIds,
+        navigatorStageIds: f.navigatorStageIds,
+      },
+      actual: {
+        kind: specBody.payload?.specialistKind ?? null,
+        title: specBody.payload?.specialistTitle ?? null,
+        serviceSpecializationIds: specBody.payload?.serviceSpecializationIds ?? [],
+        navigatorStageIds: specBody.payload?.navigatorStageIds ?? [],
+      },
+    };
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-testid="specialist-profile-specialization-panel"]', {
+      timeout: 60_000,
+    });
+    report.steps.specializationReloadUi = {
+      ok:
+        (await page.locator('[data-specialist-kind]').inputValue()) === 'other' &&
+        (await page.locator('#sp-kind-title').inputValue()) === f.customSpecialistTitle,
+      expected: { kind: 'other', title: f.customSpecialistTitle },
+      actual: {
+        kind: await page.locator('[data-specialist-kind]').inputValue(),
+        title: await page.locator('#sp-kind-title').inputValue(),
+      },
+    };
+
+    const advanceContactsWait = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/pro/specialist-profile/draft') &&
+        res.request().method() === 'PATCH' &&
+        res.status() >= 200 &&
+        res.status() < 300,
+      { timeout: 30_000 },
+    );
+    await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((form) => form.requestSubmit());
+    await advanceContactsWait;
+    await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
+    await page.getByRole('button', { name: 'Пропустить' }).click();
+    await page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/pro/specialist-profile/draft') &&
+        res.request().method() === 'PATCH' &&
+        res.status() >= 200 &&
+        res.status() < 300,
+      { timeout: 30_000 },
+    );
+    await page.waitForSelector('[data-testid="specialist-profile-review-panel"]', { timeout: 60_000 });
+    const reviewText = await page.locator('[data-testid="specialist-profile-review-panel"]').innerText();
+    report.steps.reviewSummary = {
+      ok:
+        reviewText.includes(f.displayName) &&
+        reviewText.includes(f.city) &&
+        reviewText.includes(f.customSpecialistTitle),
+      expectedFragments: [f.displayName, f.city, f.customSpecialistTitle],
+      actualSample: reviewText.slice(0, 500),
+    };
+    report.steps.finishClicked = { ok: true, skipped: true };
+
+    report.ok =
+      report.steps.runtimeBuildId.ok &&
+      report.steps.basicsSaveGet.ok &&
+      report.steps.basicsReloadUi.ok &&
+      report.steps.specializationDesignerUi.ok &&
+      report.steps.specializationCustomSaveGet.ok &&
+      report.steps.specializationReloadUi.ok &&
+      report.steps.reviewSummary.ok;
+    await browser.close();
+  } finally {
+    envPin.restore();
+    await stopOwnedServer(child);
+    await mock.close();
+  }
+  report.evidenceSha256 = createHash('sha256').update(JSON.stringify(report)).digest('hex');
+  writeFileSync(REPORT, `${JSON.stringify(report, null, 2)}\n`);
+  console.log(JSON.stringify({ report: REPORT, ok: report.ok, evidenceSha256: report.evidenceSha256 }, null, 2));
+  process.exit(report.ok ? 0 : 1);
 }
 
 async function runContactsControlBrowserSmoke() {
@@ -308,6 +602,9 @@ async function runContactsControlBrowserSmoke() {
 }
 
 async function main() {
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01') {
+    return runProfilePatternBrowserSmoke();
+  }
   if (
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1' ||

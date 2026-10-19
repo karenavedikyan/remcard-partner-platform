@@ -4,7 +4,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { SpecialistWorkingProfileWizard } from "./SpecialistWorkingProfileWizard";
-import contactStyles from "./SpecialistWorkingProfileWizard.module.css";
+import stepStyles from "./SpecialistWorkingProfileWizard.module.css";
 
 vi.mock("@/components/profile/agent/AgentPhoneField", () => ({
   AgentPhoneField: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
@@ -65,13 +65,13 @@ describe("SpecialistWorkingProfileWizard contacts step", () => {
       expect(screen.getByTestId("specialist-profile-contacts-panel")).toBeInTheDocument(),
     );
     const grid = screen.getByTestId("specialist-contacts-two-col");
-    expect(grid.className).toContain(contactStyles.contactsTwoCol);
+    expect(grid.className).toContain(stepStyles.contactsTwoCol);
     expect(screen.getByTestId("agent-profile-input-phone")).toBeInTheDocument();
     expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Сбросить черновик" })).toBeNull();
     const actions = screen.getByTestId("specialist-contacts-actions");
     expect(actions).toBeInTheDocument();
-    expect(actions.querySelector(`.${contactStyles.contactsActionsLeft}`)).toBeTruthy();
-    expect(actions.querySelector(`.${contactStyles.contactsActionsRight}`)).toBeTruthy();
+    expect(actions.querySelector(`.${stepStyles.contactsActionsLeft}`)).toBeTruthy();
+    expect(actions.querySelector(`.${stepStyles.contactsActionsRight}`)).toBeTruthy();
   });
 });
