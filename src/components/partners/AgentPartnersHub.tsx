@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import type { SearchRole } from "@/lib/partnership-rules";
 import { PartnersHub, type PartnersHubProps } from "./PartnersHub";
 import { AgentPartnerHubModal, type HubModalTab } from "./AgentPartnerHubModal";
 import styles from "./AgentPartnersHub.module.css";
@@ -9,7 +11,16 @@ import styles from "./AgentPartnersHub.module.css";
 type Segment = "active" | "invitations";
 type InvitationFlow = "incoming" | "outgoing";
 
-export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
+export type AgentPartnersHubProps = Omit<PartnersHubProps, "variant" | "defaultSearchRole"> & {
+  defaultSearchRole?: SearchRole;
+  presentationAudience?: PartnersHubAudience;
+};
+
+export function AgentPartnersHub({
+  defaultSearchRole,
+  presentationAudience,
+  ...props
+}: AgentPartnersHubProps) {
   const searchParams = useSearchParams();
   const [segment, setSegment] = useState<Segment>("active");
   const [invitationFlow, setInvitationFlow] = useState<InvitationFlow>("incoming");
@@ -34,8 +45,15 @@ export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
       ? "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас."
       : "Приглашения, которые ждут решения или отправлены вами.";
 
+  const hubSearchRoleProps =
+    defaultSearchRole !== undefined ? { defaultSearchRole } : {};
+
   return (
-    <div className={styles.shell} data-testid="agent-r04-partners">
+    <div
+      className={styles.shell}
+      data-testid="agent-r04-partners"
+      data-partners-audience={presentationAudience}
+    >
       <div className={styles.segmentRow} role="tablist" aria-label="Раздел партнёров">
         <button
           type="button"
@@ -96,7 +114,7 @@ export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
         agentSegment={segment}
         agentInvitationFlow={segment === "invitations" ? invitationFlow : undefined}
         forcedTab="list"
-        defaultSearchRole="agent"
+        {...hubSearchRoleProps}
       />
 
       <AgentPartnerHubModal
@@ -110,10 +128,15 @@ export function AgentPartnersHub(props: Omit<PartnersHubProps, "variant">) {
           variant="agent-r04"
           agentModalSurface={modalTab}
           forcedTab={modalTab}
-          defaultSearchRole="agent"
+          {...hubSearchRoleProps}
           onCloseAgentModal={() => setModalOpen(false)}
         />
       </AgentPartnerHubModal>
+
+      <p className={styles.footnote}>
+        Приглашения сотрудников находятся отдельно в разделе команды. Здесь только
+        партнёрство.
+      </p>
     </div>
   );
 }

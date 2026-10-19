@@ -12,6 +12,14 @@
   max-width: 72ch;
 }
 
+.footnote {
+  margin: 0;
+  font-size: var(--text-xs, 0.8125rem);
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 72ch;
+}
+
 .segmentRow,
 .inviteFlowRow {
   display: flex;

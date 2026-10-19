@@ -3,9 +3,10 @@
  */
 import { applyRefParityCaptureStyles } from './r03-prototype-ref.mjs';
 
-export async function driveRefAgentPartners(page, baseUrl, opts = {}) {
+export async function driveRefRolePartners(page, baseUrl, opts = {}) {
   const viewMode = opts.viewMode ?? 'list';
   const segment = opts.segment ?? 'active';
+  const role = opts.role ?? 'agent';
 
   await page.goto(`${baseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 90_000 });
   await page.waitForFunction(
@@ -20,7 +21,7 @@ export async function driveRefAgentPartners(page, baseUrl, opts = {}) {
   await page.evaluate(() => {
     const sel = document.querySelector('[data-testid="scenario-role"]');
     if (!(sel instanceof HTMLSelectElement)) throw new Error('ref_role_select_missing');
-    sel.value = 'agent';
+    sel.value = role;
     sel.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await page.waitForTimeout(600);
@@ -92,7 +93,12 @@ export async function driveRefAgentPartners(page, baseUrl, opts = {}) {
     }
   }
 
-  return { ok: true, viewMode, segment };
+  return { ok: true, viewMode, segment, role };
+}
+
+/** @deprecated use driveRefRolePartners */
+export async function driveRefAgentPartners(page, baseUrl, opts = {}) {
+  return driveRefRolePartners(page, baseUrl, { ...opts, role: 'agent' });
 }
 
 export async function setImplR04ViewMode(page, viewMode) {
