@@ -14,8 +14,10 @@ export function sha256File(filePath) {
 export async function applyAppTheme(page, theme) {
   await page.emulateMedia({ colorScheme: theme });
   await page.evaluate((t) => {
-    document.documentElement.setAttribute('data-theme', t);
-    document.documentElement.dataset.theme = t;
+    const root = document.documentElement;
+    if (!root) return;
+    root.setAttribute('data-theme', t);
+    root.dataset.theme = t;
     try {
       localStorage.setItem('remcard-theme', t);
     } catch {
@@ -87,12 +89,16 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
   await implPage.setViewportSize({ width, height });
   if (dpr !== 1) await implPage.setViewportSize({ width, height });
   await implPage.addInitScript((t) => {
-    document.documentElement.setAttribute('data-theme', t);
-    try {
-      localStorage.setItem('remcard-theme', t);
-    } catch {
-      /* ignore */
-    }
+    const apply = () => {
+      document.documentElement?.setAttribute('data-theme', t);
+      try {
+        localStorage.setItem('remcard-theme', t);
+      } catch {
+        /* ignore */
+      }
+    };
+    if (document.documentElement) apply();
+    else document.addEventListener('DOMContentLoaded', apply, { once: true });
   }, theme);
   await implPage.addStyleTag({ content: DEV_HIDE });
   const implDiag = { pageErrors: [], consoleErrors: [] };
@@ -117,7 +123,9 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     const refCtx = await ctx.browser().newContext({ viewport: { width, height }, deviceScaleFactor: dpr });
     const refPage = await refCtx.newPage();
     await refPage.addInitScript((t) => {
-      document.documentElement.setAttribute('data-theme', t);
+      const apply = () => document.documentElement?.setAttribute('data-theme', t);
+      if (document.documentElement) apply();
+      else document.addEventListener('DOMContentLoaded', apply, { once: true });
     }, theme);
     const refDiag = { pageErrors: [], consoleErrors: [] };
     attachFailClosedDiagnostics(refPage, refDiag);
