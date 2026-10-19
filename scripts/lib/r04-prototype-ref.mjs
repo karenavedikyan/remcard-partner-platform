@@ -18,12 +18,12 @@ export async function driveRefRolePartners(page, baseUrl, opts = {}) {
     { timeout: 90_000 },
   );
 
-  await page.evaluate(() => {
+  await page.evaluate((scenarioRole) => {
     const sel = document.querySelector('[data-testid="scenario-role"]');
     if (!(sel instanceof HTMLSelectElement)) throw new Error('ref_role_select_missing');
-    sel.value = role;
+    sel.value = scenarioRole;
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  }, role);
   await page.waitForTimeout(600);
 
   const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
