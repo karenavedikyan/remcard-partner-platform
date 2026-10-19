@@ -1,0 +1,2928 @@
+{
+  "capturedAt": "2026-10-19T16:33:30.362Z",
+  "task": "R06-PROFILE-PROTOTYPE-FINISH-01.1",
+  "mode": "MOCK_BFF_PROFILE_PROTOTYPE_FINISH_01_1",
+  "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "db6cd7b139a5ec367a80800debb915f6f92dc3dd",
+  "treeDirty": false,
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "fixture": {
+    "displayName": "Паттерн Тест Спец",
+    "city": "Krasnodar",
+    "specialistKind": "designer",
+    "specialistTitle": "",
+    "customSpecialistTitle": "Реставратор фасадов",
+    "serviceSpecializationIds": [
+      "design",
+      "planning"
+    ],
+    "navigatorStageIds": [
+      "L1-1"
+    ],
+    "serviceLabels": [
+      "Дизайн интерьера",
+      "Планирование"
+    ],
+    "stageImplLabels": [
+      "📐 Планирование"
+    ],
+    "phone": "+79001112233",
+    "email": "pattern.transfer@example.ru"
+  },
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "q6Ep6U54fDAchs_T7GHXO",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "q6Ep6U54fDAchs_T7GHXO",
+  "appOrigin": "http://127.0.0.1:30686",
+  "mockBff": "http://127.0.0.1:42129",
+  "protoBase": "http://127.0.0.1:34249",
+  "geometryChecks": [
+    {
+      "stateId": "basics-filled",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 48
+          }
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 48
+          }
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.208px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.288px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 666,
+            "height": 48
+          }
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.34px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.42px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 798,
+            "height": 48
+          }
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.341px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.421px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 296,
+            "height": 48
+          }
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 814,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.88px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.8px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48
+          }
+        }
+      }
+    },
+    {
+      "stateId": "specialization-closed",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 814,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        }
+      }
+    },
+    {
+      "stateId": "specialization-open",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 814,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        }
+      }
+    },
+    {
+      "stateId": "review-filled",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 814,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        }
+      }
+    }
+  ],
+  "cosmeticFixes": {
+    "V03_basics_vertical_rhythm": {
+      "status": "aligned",
+      "ok": true,
+      "impl": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 20,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": null,
+        "labelToInputCity": null,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "delta": {
+        "labelToInputName": 0,
+        "inputToHelperName": 0,
+        "helperToCityLabel": {
+          "impl": 20,
+          "ref": null
+        },
+        "labelToInputCity": {
+          "impl": 8,
+          "ref": null
+        },
+        "inputToHelperCity": 0,
+        "helperToFootnote": 0,
+        "footnoteToActions": 0
+      },
+      "cardWidth1440": 814,
+      "nameInputHeight": 48
+    },
+    "V04_specialization_intro_preset": {
+      "status": "aligned",
+      "note": "Intro before presetBundle; omitLead on picker; preset summary ▸/▾ marker restored"
+    },
+    "V05_selection_header_chips_hint": {
+      "status": "aligned",
+      "implChipHeight": 44,
+      "refChipHeight": 44,
+      "order": "title+add-link → chips → hint"
+    },
+    "V06_review_spacing_context_320": {
+      "status": "aligned",
+      "review320": {
+        "ok": false,
+        "impl": {
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "titleToFacts": 20,
+          "factsToDirections": 16,
+          "directionsToFootnote": 32,
+          "footnoteToActions": 32
+        },
+        "ref": {
+          "contextLabelLines": 2,
+          "contextLabelWidth": 111,
+          "titleToFacts": 24,
+          "factsToDirections": 79,
+          "directionsToFootnote": 185,
+          "footnoteToActions": 32
+        },
+        "delta": {
+          "contextLabelLines": 0,
+          "contextLabelWidth": -1,
+          "titleToFacts": -4,
+          "factsToDirections": -63,
+          "directionsToFootnote": -153,
+          "footnoteToActions": 0
+        }
+      },
+      "partnerBlockGapNote": "Ref directions→footnote gap includes partnerSearchOptIn (D02) — not compared for PASS.",
+      "review1440Rhythm": {
+        "impl": {
+          "contextLabelLines": 1,
+          "contextLabelWidth": 192,
+          "titleToFacts": 20,
+          "factsToDirections": 16,
+          "directionsToFootnote": 32,
+          "footnoteToActions": 32
+        },
+        "ref": {
+          "contextLabelLines": 1,
+          "contextLabelWidth": 125,
+          "titleToFacts": 24,
+          "factsToDirections": 81,
+          "directionsToFootnote": 122,
+          "footnoteToActions": 32
+        }
+      }
+    },
+    "deferredDocumented": {
+      "D01_extra_save_reset_buttons": "unchanged",
+      "D02_partnerSearchOptIn": "unchanged",
+      "D03_taxonomy_full_parity": "unchanged"
+    },
+    "confirmedUnchanged": {
+      "V01_card_814": "not modified in 01.1",
+      "V02_input_48": "not modified in 01.1"
+    }
+  },
+  "captures": [
+    {
+      "pairId": "basics-filled-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-1440-light-1440-light-impl.png",
+        "sha256": "c261cc3a22e473ecf9211403a898258582c1bb1a6ecacf112693a9290c185900"
+      },
+      "ref": {
+        "path": "basics-filled-1440-light-1440-light-ref.png",
+        "sha256": "7c62f394d7677e5716f34612153f1e3708d8961a9d1670870a1a71b8ee299052"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-1440-light-1440-light-form-impl.png",
+        "sha256": "e395082c60705ff66898bc566292aa14f8d4d4760c78d3b6375f53a17b8225fd"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-1440-light-1440-light-form-ref.png",
+        "sha256": "66f96a304a261295d7c24f027c82b8a8f9d097da4957bda02b2407ef31acc345"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 814,
+            "height": 541
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 748,
+            "height": 48
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 814,
+            "height": 541,
+            "paddingTop": "32px",
+            "paddingLeft": "32px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 748,
+            "height": 71,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 748,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmImpl": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 20,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 620
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 748,
+            "height": 48
+          }
+        },
+        "refGeometry": {
+          "card": {
+            "width": 814,
+            "height": 620,
+            "paddingTop": "32px",
+            "paddingLeft": "32px"
+          },
+          "actions": {
+            "width": 748,
+            "height": 67,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 748,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmRef": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": null,
+          "labelToInputCity": null,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "basics-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-375-light-375-light-impl.png",
+        "sha256": "bd44dbb479880b6e0e4aced0dd19513b5e4afa70bc7e96462e6f7254f70347ba"
+      },
+      "ref": {
+        "path": "basics-filled-375-light-375-light-ref.png",
+        "sha256": "9f28272736715cc8dc9e6ce584d244a47834b51e47bbed97a2556b5b9c76f8e1"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-impl.png",
+        "sha256": "c2c78b7b1f3842c67313917ae6c216a4277c3a6fbfdc48d459610df95cc2ea5e"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-ref.png",
+        "sha256": "126aa60290927cba1260e91065cdfc779193a6952b1462d9f1bcc82141193c78"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 642
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 48
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 642,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmImpl": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 20,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 626
+          },
+          "nameInput": {
+            "width": 301,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 301,
+            "height": 48
+          }
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 626,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 66,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 301,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 301,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmRef": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": null,
+          "labelToInputCity": null,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "basics-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "basics-filled-375-dark-375-dark-impl.png",
+        "sha256": "c91d4e076f8f932283b2a4f0c3dd6e1e30df10f601b6d41e30c96bc7b3a9cb46"
+      },
+      "ref": {
+        "path": "basics-filled-375-dark-375-dark-ref.png",
+        "sha256": "3f20042377f113eef1ef8dd565fed79f780488a557a907354975e73f5153fc98"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "e566bb872fee332c6d96b9a4f3d0240566835db090d380fac7f0b4dbdba4e3b9"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-ref.png",
+        "sha256": "963fb4f1bf1fb8e1958bcf058db46450b862d0db5cb09450d57e25b1827034e4"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 642
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 48
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 642,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmImpl": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 20,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 626
+          },
+          "nameInput": {
+            "width": 301,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 301,
+            "height": 48
+          }
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 626,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 66,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 301,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 301,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmRef": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": null,
+          "labelToInputCity": null,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "basics-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-320-light-320-light-impl.png",
+        "sha256": "31103736d5208c99c9fd1c20f6d87374809f041856f3de53419d162064ad8a84"
+      },
+      "ref": {
+        "path": "basics-filled-320-light-320-light-ref.png",
+        "sha256": "8f18eaddc3e278070b2c73c13bdf1b4a7dc770da280da76018401c757c90c90a"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-impl.png",
+        "sha256": "987427e22b706d25b22802f1d657f34c8fcc51c7bcc4cd4f32cfb2f44e7299dd"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-ref.png",
+        "sha256": "8e2df86f8500f3e3b329b0f00037b6242b9ba9b4b61ebce1bcbfd3a5143d0624"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 284,
+            "height": 642
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 242,
+            "height": 48
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 642,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 242,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmImpl": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 20,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 645
+          },
+          "nameInput": {
+            "width": 246,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 246,
+            "height": 48
+          }
+        },
+        "refGeometry": {
+          "card": {
+            "width": 288,
+            "height": 645,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 246,
+            "height": 66,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 246,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 246,
+            "height": 48,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        },
+        "basicsRhythmRef": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": null,
+          "labelToInputCity": null,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-1440-light-1440-light-impl.png",
+        "sha256": "122a344530a14fa416d34806dccf383f63fcb5272a3e4c4f4effeb721f9c3b28"
+      },
+      "ref": {
+        "path": "specialization-closed-1440-light-1440-light-ref.png",
+        "sha256": "e0848345c63bdd56794b9d226c0ae868c49554b4c6fe76ef08086a333ecd5933"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-1440-light-1440-light-form-impl.png",
+        "sha256": "e685e05cc608c5bb7998003575ca793e49226d8f163de52aa14bf5b95d463033"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-1440-light-1440-light-form-ref.png",
+        "sha256": "44954aab30e662923dd7a56ce23e211668c6c7fdfc23a05a1bf2762103e08a71"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 814,
+            "height": 1284,
+            "paddingTop": "32px",
+            "paddingLeft": "32px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 748,
+            "height": 95,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 714,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 1466
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 814,
+            "height": 1466,
+            "paddingTop": "32px",
+            "paddingLeft": "32px"
+          },
+          "actions": {
+            "width": 748,
+            "height": 67,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 714,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 213,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 359,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-375-light-375-light-impl.png",
+        "sha256": "ac12d1bac2955b20a43a5f7791aebfdcf0101524a28c85c981576260a2d7d437"
+      },
+      "ref": {
+        "path": "specialization-closed-375-light-375-light-ref.png",
+        "sha256": "ab1e87ac153f231d157c51f0296bbd87603aba2c01dbb87be60a3cf4224771a7"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-375-light-375-light-form-impl.png",
+        "sha256": "0c914406c39124c27cbc9379fe4288bde31a0561e28d14c517ba73a286e4d244"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-375-light-375-light-form-ref.png",
+        "sha256": "17a3e820adfd273466d26f6dc0de5d4a26ec16b8898d4ea742b924ece7a61670"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 1728,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 243,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 263,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1898
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 1898,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 123,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 267,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 198,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 278,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "specialization-closed-375-dark-375-dark-impl.png",
+        "sha256": "7fe28032ef5263c49701283ff4bf73d5675f75d464e861f93f3ad9c66c3b2b46"
+      },
+      "ref": {
+        "path": "specialization-closed-375-dark-375-dark-ref.png",
+        "sha256": "5622f24b003ffd6d7c595d5cb70279fd5be14205044ae117ec980803e0c9c585"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-375-dark-375-dark-form-impl.png",
+        "sha256": "1d64681a72738576005a9858fe6850638e77a63cef7c1cbd8ff30ca30ba53ce3"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-375-dark-375-dark-form-ref.png",
+        "sha256": "fb7c3ddd1700d5158ee27df268f98434f9c204f8942d271e1597bca461d40b50"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 1728,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 243,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 263,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1898
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 1898,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 123,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 267,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 198,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 278,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-320-light-320-light-impl.png",
+        "sha256": "e0621c1bfc95340d4c8492a9899e8259164ea4b35f04284af1b9384633127712"
+      },
+      "ref": {
+        "path": "specialization-closed-320-light-320-light-ref.png",
+        "sha256": "e2398df62802a7973bfce2aaa57efd21c297896177a87e9a5cbc44768b8c4d69"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-320-light-320-light-form-impl.png",
+        "sha256": "a1ba37a24114c5cbedaec5376b05f1c0c57acde0981807a8cf63ca7d279fe24d"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-320-light-320-light-form-ref.png",
+        "sha256": "36c061494a05585dcd8a4f66d173ca63447a6ff01d787efccaf12af8c032bd8c"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 1830,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 265,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 208,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 2040
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 288,
+            "height": 2040,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 246,
+            "height": 176,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 212,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 198,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 223,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-open-1440-light-1440-light-impl.png",
+        "sha256": "a19ff90a4c3e0451c83877a5f3785298e13d5828b14692a58773e7d5c149ec97"
+      },
+      "ref": {
+        "path": "specialization-open-1440-light-1440-light-ref.png",
+        "sha256": "985c046c6d1bd3e2c94fae80ba291094d93f851504dbeb2af22b8a067a560153"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-1440-light-1440-light-form-impl.png",
+        "sha256": "8fcb93d7cd8f71cac3d9a5b38186db2a17dc2b09de96c04ef2cef0565325be58"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-1440-light-1440-light-form-ref.png",
+        "sha256": "4c71fa4c9103f2f9f18207257243dfb608c31a2f0c6f1289ed470cd8290878e6"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 814,
+            "height": 1570,
+            "paddingTop": "32px",
+            "paddingLeft": "32px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 748,
+            "height": 95,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 714,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 2083
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 814,
+            "height": 2083,
+            "paddingTop": "32px",
+            "paddingLeft": "32px"
+          },
+          "actions": {
+            "width": 748,
+            "height": 67,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 714,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 213,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 359,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-open-375-light-375-light-impl.png",
+        "sha256": "c674b1e50de7a8f44f02e0ce2e4429e4369dcb1a6acffb6cf3a3a9b5741cbacb"
+      },
+      "ref": {
+        "path": "specialization-open-375-light-375-light-ref.png",
+        "sha256": "9bb4cc9527d8c80d97fae1abed5f940015540b7e013d970ddd44b0a49f031143"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-375-light-375-light-form-impl.png",
+        "sha256": "a9b0c9d7ca0e50a04c6254e8ecad2a3f63a5955c02f20df17206a134aff13db5"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-375-light-375-light-form-ref.png",
+        "sha256": "ddefbba1f660acd4eaf0c4bab34a75f610ee7f4d628dd2730793c5cfaaa637ca"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 2143,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 243,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 263,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 2903
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 2903,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 123,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 267,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 198,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 278,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "specialization-open-375-dark-375-dark-impl.png",
+        "sha256": "9785870b82e7814656e966f5d7a10f0cd5b7085aa5282a9da680e87e4991bb3a"
+      },
+      "ref": {
+        "path": "specialization-open-375-dark-375-dark-ref.png",
+        "sha256": "887d330211cd8b5188db40ac884e8ba32533acce774d5419b38c046bface3a8f"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-375-dark-375-dark-form-impl.png",
+        "sha256": "0822b414ce0977d376e022ba278bad2d03b711e692c06e1a94894a79e74e83c6"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-375-dark-375-dark-form-ref.png",
+        "sha256": "add594fa9a96ecb52439fb9385281a4ea7d58723e03daf404524c5153e23eab3"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 2143,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 243,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 263,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 2903
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 2903,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 123,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 267,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 198,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 278,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-open-320-light-320-light-impl.png",
+        "sha256": "bda109ad0cab0a76ab48f835cceafecce901f4259df9e34457600f239ffdbbba"
+      },
+      "ref": {
+        "path": "specialization-open-320-light-320-light-ref.png",
+        "sha256": "6578a1977e3ed8943891f6a124e67f56d193a13bb30a4fc622c7c0ee325fe4e7"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-320-light-320-light-form-impl.png",
+        "sha256": "bd63e7eba54d78c51d70efc5d531affdc1033c476c3a93741d1db40fd2a5da83"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-320-light-320-light-form-ref.png",
+        "sha256": "df7e0f8f9e406be7b748dcafde09407c6958c05fd79cafce038a79eabf95d127"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 2272,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 265,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 208,
+            "height": 48,
+            "paddingTop": "0px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 188,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          "tile": null
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 3091
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 288,
+            "height": 3091,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 246,
+            "height": 176,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 212,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": {
+            "width": 198,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          },
+          "tile": {
+            "width": 223,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "48px"
+          }
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-1440-light-1440-light-impl.png",
+        "sha256": "a11b44db08edb510b03fc1f3160a436c4eeefe2160a5d94af31b74f916db89c9"
+      },
+      "ref": {
+        "path": "review-filled-1440-light-1440-light-ref.png",
+        "sha256": "b829a9134f8f63df04f0a157b0843a0642392e2d846438213a829f5b3ae094cd"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-1440-light-1440-light-form-impl.png",
+        "sha256": "458fd81224f7cbb569edc5e51e95759127473a601f5abf7f521822d23d912371"
+      },
+      "refFormCrop": {
+        "path": "review-filled-1440-light-1440-light-form-ref.png",
+        "sha256": "6f7577cf3937729511c2c2c22eb652af93c328105bf1197e55f84a16314e7bf3"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 814,
+            "height": 589,
+            "paddingTop": "32px",
+            "paddingLeft": "32px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 748,
+            "height": 71,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 748,
+            "height": 177,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 748,
+            "height": 44,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        },
+        "reviewRhythmImpl": {
+          "contextLabelLines": 1,
+          "contextLabelWidth": 192,
+          "titleToFacts": 20,
+          "factsToDirections": 16,
+          "directionsToFootnote": 32,
+          "footnoteToActions": 32
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 763
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 814,
+            "height": 763,
+            "paddingTop": "32px",
+            "paddingLeft": "32px"
+          },
+          "actions": {
+            "width": 748,
+            "height": 67,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 748,
+            "height": 185,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "0px"
+          },
+          "reviewChip": {
+            "width": 195,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          }
+        },
+        "reviewRhythmRef": {
+          "contextLabelLines": 1,
+          "contextLabelWidth": 125,
+          "titleToFacts": 24,
+          "factsToDirections": 81,
+          "directionsToFootnote": 122,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-375-light-375-light-impl.png",
+        "sha256": "31581c75438223e338a972e3e6f5d7a636af44715195937d3d0aaa72bd3f49bb"
+      },
+      "ref": {
+        "path": "review-filled-375-light-375-light-ref.png",
+        "sha256": "6fae6dc47db960c4b284de73f284e067f5dd53d96bfb570769adb006a09080ff"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-light-375-light-form-impl.png",
+        "sha256": "482f76cb0ae2cf780dc2a35d4e36c70330d2c64c6512a4e1916072a246910e39"
+      },
+      "refFormCrop": {
+        "path": "review-filled-375-light-375-light-form-ref.png",
+        "sha256": "9fcfda67f858eb2c56cf50299a7e0b0205e22ab68a38c31517bef343267c5e47"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 927,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 297,
+            "height": 292,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 297,
+            "height": 148,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        },
+        "reviewRhythmImpl": {
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "titleToFacts": 20,
+          "factsToDirections": 16,
+          "directionsToFootnote": 32,
+          "footnoteToActions": 32
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1018
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 1018,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 66,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 301,
+            "height": 308,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "0px"
+          },
+          "reviewChip": {
+            "width": 180,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          }
+        },
+        "reviewRhythmRef": {
+          "contextLabelLines": 1,
+          "contextLabelWidth": 115,
+          "titleToFacts": 24,
+          "factsToDirections": 79,
+          "directionsToFootnote": 140,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "review-filled-375-dark-375-dark-impl.png",
+        "sha256": "3b48164ec3ab82f727eae0055b0fb09dfcf800c655ddbd158cb24f8fd2d56663"
+      },
+      "ref": {
+        "path": "review-filled-375-dark-375-dark-ref.png",
+        "sha256": "4d487df4d79e076395a2879a0a74cd8217525d784393fcd52ca5b6d4d1a79ca1"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "56acab45961627674fd249e085135f4e0dec8c58143c384008dfd382354e8312"
+      },
+      "refFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-ref.png",
+        "sha256": "322f00dc42da693373cec1ed36e2dc1ea5ccb3efc5ff38f48b0b85363d134283"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 927,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 297,
+            "height": 292,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 297,
+            "height": 148,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        },
+        "reviewRhythmImpl": {
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "titleToFacts": 20,
+          "factsToDirections": 16,
+          "directionsToFootnote": 32,
+          "footnoteToActions": 32
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1018
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 343,
+            "height": 1018,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 301,
+            "height": 66,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 301,
+            "height": 308,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "0px"
+          },
+          "reviewChip": {
+            "width": 180,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          }
+        },
+        "reviewRhythmRef": {
+          "contextLabelLines": 1,
+          "contextLabelWidth": 115,
+          "titleToFacts": 24,
+          "factsToDirections": 79,
+          "directionsToFootnote": 140,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-320-light-320-light-impl.png",
+        "sha256": "dbf632bbbaa418938496da78e772bbee7017ccbaff26a73d39ee52d2e5781dd2"
+      },
+      "ref": {
+        "path": "review-filled-320-light-320-light-ref.png",
+        "sha256": "4b6b23499d797613a8f43c17c25407811d7d4b433f447007f33b1dbdb44c491b"
+      },
+      "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+      "runtimeBuildId": "q6Ep6U54fDAchs_T7GHXO",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-320-light-320-light-form-impl.png",
+        "sha256": "fca37ada7422544f060fa262b6f08b5f90091850fcd078d573204598186995c0"
+      },
+      "refFormCrop": {
+        "path": "review-filled-320-light-320-light-form-ref.png",
+        "sha256": "d99763972dfdc668764dd4f0510cc5ebbc6e8bfa29d942ce7d91ea76329e8faa"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 966,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 209,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 242,
+            "height": 292,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 242,
+            "height": 148,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        },
+        "reviewRhythmImpl": {
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "titleToFacts": 20,
+          "factsToDirections": 16,
+          "directionsToFootnote": 32,
+          "footnoteToActions": 32
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 1158
+          },
+          "nameInput": null,
+          "cityInput": null
+        },
+        "refGeometry": {
+          "card": {
+            "width": 288,
+            "height": 1158,
+            "paddingTop": "20px",
+            "paddingLeft": "20px"
+          },
+          "actions": {
+            "width": 246,
+            "height": 123,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 246,
+            "height": 308,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "0px"
+          },
+          "reviewChip": {
+            "width": 180,
+            "height": 44,
+            "paddingTop": "8px",
+            "paddingLeft": "12px",
+            "gap": "12px",
+            "minHeight": "44px"
+          }
+        },
+        "reviewRhythmRef": {
+          "contextLabelLines": 2,
+          "contextLabelWidth": 111,
+          "titleToFacts": 24,
+          "factsToDirections": 79,
+          "directionsToFootnote": 185,
+          "footnoteToActions": 32
+        }
+      },
+      "formCompareNote": "R06-PROFILE-PROTOTYPE-FINISH-01.1: DOM rhythm metrics in formMetrics; CAPTURED not PASS."
+    }
+  ],
+  "pairCount": 16,
+  "visualPass": false,
+  "remainders": [
+    "01.1 remainder cosmetics V03–V06 only; V01/V02/mobile grid unchanged.",
+    "Single build for visual; browser MOCK must reuse dist via R06_SKIP_BUILD=1.",
+    "CAPTURED ref/impl pairs — compare crops manually; visualPass false by policy."
+  ],
+  "contractGaps": [
+    "partnerSearchOptIn checkbox on review step — prototype only (D02).",
+    "«Отменить» vs resetDraft semantics (D01).",
+    "Extra «Сохранить черновик» on all steps (D01)."
+  ],
+  "evidenceSha256": "7b5f30a5c27a3ecb6e30e2acfda9fb0ecb683ac4a2ce9d5c5573dabd61def031"
+}

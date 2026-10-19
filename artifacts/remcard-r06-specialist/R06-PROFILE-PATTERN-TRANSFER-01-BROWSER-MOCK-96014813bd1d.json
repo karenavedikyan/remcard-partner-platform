@@ -1,0 +1,104 @@
+{
+  "mode": "MOCK_BFF",
+  "task": "R06-PROFILE-PATTERN-TRANSFER-01",
+  "codeSha": "96014813bd1d1b35a47a78f9ee6eae67846cd104",
+  "sourceTreeDigest": "db6cd7b139a5ec367a80800debb915f6f92dc3dd",
+  "treeDirty": false,
+  "build": {
+    "status": "skipped",
+    "buildId": "q6Ep6U54fDAchs_T7GHXO",
+    "distDir": ".next-r06-catalog-prefill-smoke",
+    "reusedDist": true
+  },
+  "steps": {
+    "runtimeBuildId": {
+      "ok": true,
+      "buildId": "q6Ep6U54fDAchs_T7GHXO"
+    },
+    "basicsSaveGet": {
+      "ok": true,
+      "expected": {
+        "displayName": "Паттерн Тест Спец",
+        "city": "Krasnodar"
+      },
+      "actual": {
+        "displayName": "Паттерн Тест Спец",
+        "city": "Krasnodar"
+      }
+    },
+    "basicsReloadUi": {
+      "ok": true,
+      "expected": {
+        "displayName": "Паттерн Тест Спец",
+        "city": "Krasnodar"
+      },
+      "actual": {
+        "displayName": "Паттерн Тест Спец",
+        "city": "Krasnodar"
+      }
+    },
+    "specializationDesignerUi": {
+      "ok": true,
+      "expectedKind": "designer",
+      "actualKind": "designer"
+    },
+    "specializationCustomSaveGet": {
+      "ok": true,
+      "expected": {
+        "kind": "other",
+        "title": "Реставратор фасадов",
+        "serviceSpecializationIds": [
+          "design",
+          "planning"
+        ],
+        "navigatorStageIds": [
+          "L1-1"
+        ]
+      },
+      "actual": {
+        "kind": "other",
+        "title": "Реставратор фасадов",
+        "serviceSpecializationIds": [
+          "design",
+          "planning"
+        ],
+        "navigatorStageIds": [
+          "L1-1"
+        ]
+      }
+    },
+    "specializationReloadUi": {
+      "ok": true,
+      "expected": {
+        "kind": "other",
+        "title": "Реставратор фасадов"
+      },
+      "actual": {
+        "kind": "other",
+        "title": "Реставратор фасадов"
+      }
+    },
+    "reviewSummary": {
+      "ok": true,
+      "expectedFragments": [
+        "Паттерн Тест Спец",
+        "Krasnodar",
+        "Реставратор фасадов"
+      ],
+      "actualSample": "Имя\nПаттерн Тест Спец\nГород\nKrasnodar\nТелефон\nНе указано\nEmail\nНе указано\nРоль специалиста\nРеставратор фасадов\nНаправления\nУслуга: Дизайн интерьера\nУслуга: Планирование\nЭтап: Планирование\n\nПрофиль и карточка в каталоге независимы. Сохранение не публикует вас для клиентов."
+    },
+    "finishClicked": {
+      "ok": true,
+      "skipped": true
+    }
+  },
+  "ok": true,
+  "notRun": [
+    "finishProfile",
+    "catalog",
+    "moderation",
+    "postgresql",
+    "wideRegression"
+  ],
+  "evidenceSha256": "41a93c6075ca925bfeb967fa8048702c891545488fee4941f983e16d1c040e73"
+}
