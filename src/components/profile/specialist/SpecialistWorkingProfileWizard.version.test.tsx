@@ -133,7 +133,7 @@ describe("SpecialistWorkingProfileWizard version sync", () => {
       expect(screen.getByTestId("specialist-profile-wizard")).toBeInTheDocument(),
     );
 
-    const nameInput = screen.getByLabelText(/Как к вам обращаться/i);
+    const nameInput = screen.getByLabelText(/Ваше имя/i);
     await user.clear(nameInput);
     await user.type(nameInput, "Моя несохранённая правка");
     const callsBeforeConflict = patchDraft.mock.calls.length;
