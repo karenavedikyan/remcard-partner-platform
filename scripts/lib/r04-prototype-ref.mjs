@@ -81,6 +81,14 @@ export async function driveRefRolePartners(page, baseUrl, opts = {}) {
     }
   }
 
+  await page.keyboard.press('Escape').catch(() => null);
+  await page.evaluate(() => {
+    for (const dlg of document.querySelectorAll('dialog[open]')) {
+      if (dlg instanceof HTMLDialogElement) dlg.close();
+    }
+  });
+  await page.waitForTimeout(200);
+
   const hubTab = opts.hubTab ?? (opts.openFind ? 'find' : null);
   if (hubTab) {
     const findBtn = page.getByRole('button', { name: /Найти|пригласить/i }).first();

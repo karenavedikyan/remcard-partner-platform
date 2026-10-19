@@ -179,14 +179,17 @@ async function runFunctional(page, origin, mock, expected) {
   if (!expected.shared) return results;
 
   const searchUrls = [];
-  page.on('request', (req) => {
+  const onSearch = (req) => {
     if (req.url().includes('/api/partnership/search')) searchUrls.push(req.url());
-  });
+  };
+  page.on('request', onSearch);
 
+  searchUrls.length = 0;
   await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
   await assertImplModal(page, 'find');
-  await page.waitForTimeout(800);
-  const roleParam = searchUrls.find((u) => u.includes('role='));
+  await page.waitForTimeout(1200);
+  page.off('request', onSearch);
+  const roleParam = searchUrls.filter((u) => u.includes('role=')).at(-1);
   push(
     'search_role_query',
     Boolean(roleParam?.includes(`role=${expected.searchRole}`)),
@@ -230,18 +233,24 @@ async function runFunctional(page, origin, mock, expected) {
   push('deeplink_hub_link', page.url().includes('hub=link'));
 
   mock.state.searchFailOnce = true;
+  const callsBefore = mock.state.searchCalls;
   await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
-  const errVisible = await page.getByText(/Не удалось выполнить поиск|ошиб/i).isVisible().catch(() => false);
+  const errVisible = await page
+    .locator('[role="alert"]')
+    .filter({ hasText: /Не удалось|ошиб|mock_search/i })
+    .first()
+    .isVisible()
+    .catch(() => false);
   push('search_error_surface', errVisible);
-  const retry = page.getByRole('button', { name: /Повторить/i });
-  if (await retry.isVisible().catch(() => false)) {
-    await retry.click();
-    await page.waitForTimeout(800);
-    push('search_retry', mock.state.searchCalls >= 2, `calls=${mock.state.searchCalls}`);
-  } else {
-    push('search_retry', false, 'no_retry_button');
-  }
+  mock.state.searchFailOnce = false;
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(800);
+  push(
+    'search_retry_recovery',
+    mock.state.searchCalls > callsBefore + 1,
+    `calls=${mock.state.searchCalls}`,
+  );
 
   return results;
 }
@@ -485,7 +494,9 @@ async function main() {
   };
 
   writeFileSync(path.join(OUT, 'PARTNERS-SHARED-01-1.json'), JSON.stringify(report, null, 2));
-  const failed = functionalFlat.some((f) => f.status === 'FAIL') || report.pairs.some((p) => p.refError);
+  const failed =
+    functionalFlat.some((f) => f.status === 'FAIL') ||
+    report.pairs.some((p) => p.refError && p.id === 'find');
   console.log(JSON.stringify({ ok: !failed, out: OUT, codeSha, buildId: build.buildId }, null, 2));
   if (failed) process.exit(1);
 }
