@@ -8,12 +8,23 @@ export type HubModalTab = "find" | "link";
 type Props = {
   open: boolean;
   tab: HubModalTab;
+  titleFind: string;
+  titleLink: string;
   onTabChange: (tab: HubModalTab) => void;
   onClose: () => void;
   children: ReactNode;
 };
 
-export function AgentPartnerHubModal({ open, tab, onTabChange, onClose, children }: Props) {
+export function AgentPartnerHubModal({
+  open,
+  tab,
+  titleFind,
+  titleLink,
+  onTabChange,
+  onClose,
+  children,
+}: Props) {
+  const modalTitle = tab === "link" ? titleLink : titleFind;
   const sheetRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -76,7 +87,7 @@ export function AgentPartnerHubModal({ open, tab, onTabChange, onClose, children
       >
         <header className={styles.header}>
           <div>
-            <h2 id={titleId}>Найти или пригласить партнёра</h2>
+            <h2 id={titleId}>{modalTitle}</h2>
           </div>
           <button
             ref={closeRef}

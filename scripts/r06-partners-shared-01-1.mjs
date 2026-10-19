@@ -38,9 +38,15 @@ import {
 } from './lib/r06-partners-shared-mock-bff.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = process.env.LOGIN_ENTRY_NEXT_DIST_DIR || '.next-r06-partners-shared-01-1';
 const PROTO_DIR = process.env.R06_PROTO_DIR || '/tmp/r06-login-entry-prototype';
-const TASK = 'PARTNERS-SHARED-PROTOTYPE-01.1';
+const IMPLEMENT_01 = process.env.R06_IMPLEMENT_01 === '1';
+const TASK = IMPLEMENT_01 ? 'SPECIALIST-PARTNERS-IMPLEMENT-01' : 'PARTNERS-SHARED-PROTOTYPE-01.1';
+const ARTIFACT_ROOT = IMPLEMENT_01
+  ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01'
+  : 'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1';
+const DIST =
+  process.env.LOGIN_ENTRY_NEXT_DIST_DIR ||
+  (IMPLEMENT_01 ? '.next-r06-specialist-partners-implement-01' : '.next-r06-partners-shared-01-1');
 
 function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
@@ -250,23 +256,53 @@ async function runFunctional(page, origin, mock, expected) {
   await assertImplModal(page, 'link');
   push('deeplink_hub_link', page.url().includes('hub=link'));
 
-  mock.state.searchFailOnce = true;
-  const callsBefore = mock.state.searchCalls;
-  await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1200);
-  push(
-    'search_error_surface',
-    mock.state.searchCalls > callsBefore,
-    `calls=${mock.state.searchCalls}`,
-  );
-  mock.state.searchFailOnce = false;
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(800);
-  push(
-    'search_retry_recovery',
-    mock.state.searchCalls > callsBefore + 1,
-    `calls=${mock.state.searchCalls}`,
-  );
+  if (IMPLEMENT_01) {
+    mock.state.searchFailOnce = true;
+    await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
+    await assertImplModal(page, 'find');
+    const retryBtn = page.getByRole('button', { name: 'Повторить' });
+    await retryBtn.waitFor({ timeout: 15_000 });
+    push('search_error_surface', true, 'retry-visible');
+    mock.state.searchFailOnce = false;
+    await retryBtn.click();
+    await page.getByText('Партнёр из поиска').waitFor({ timeout: 15_000 });
+    push('search_retry_recovery', true, 'result-visible');
+
+    await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
+    const title = (await page.locator('[data-testid="agent-partner-hub-modal"] h2').innerText()).trim();
+    push('modal_title_find', title === 'Найти партнёра', title);
+
+    await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Переименовать для себя' }).first().click();
+    await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({ state: 'visible' });
+    await page.getByLabel('Название для себя').fill('Мой юг');
+    await page.getByRole('button', { name: 'Сохранить' }).click();
+    await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({ state: 'hidden', timeout: 15_000 });
+    await page.reload({ waitUntil: 'networkidle' });
+    const aliasOk = await page
+      .locator('[data-testid="agent-r04-partners-table-row"]')
+      .filter({ hasText: 'Мой юг' })
+      .count();
+    push('alias_persist_reload', aliasOk > 0, `rows=${aliasOk}`);
+  } else {
+    mock.state.searchFailOnce = true;
+    const callsBefore = mock.state.searchCalls;
+    await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1200);
+    push(
+      'search_error_surface',
+      mock.state.searchCalls > callsBefore,
+      `calls=${mock.state.searchCalls}`,
+    );
+    mock.state.searchFailOnce = false;
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(800);
+    push(
+      'search_retry_recovery',
+      mock.state.searchCalls > callsBefore + 1,
+      `calls=${mock.state.searchCalls}`,
+    );
+  }
 
   return results;
 }
@@ -388,6 +424,7 @@ function runUnitTests() {
       'vitest',
       'run',
       'src/lib/partners-hub-presentation.test.ts',
+      'src/lib/partners-shared-ui-copy.test.ts',
       'src/components/partners/PartnersHub.test.tsx',
       'src/lib/agent-r04/partner-filters.test.ts',
       'src/lib/agent-r04/partner-list-row.test.ts',
@@ -426,11 +463,7 @@ async function main() {
   if (build.status === 'failed') throw new Error(`build_failed:${build.exitCode}`);
 
   const codeSha = gitRevParse(ROOT);
-  const OUT = path.join(
-    ROOT,
-    'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1',
-    codeSha.slice(0, 12),
-  );
+  const OUT = path.join(ROOT, ARTIFACT_ROOT, codeSha.slice(0, 12));
   mkdirSync(OUT, { recursive: true });
 
   ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
@@ -516,7 +549,8 @@ async function main() {
     visualParityNote: 'Limited 01.1 recaptures; CAPTURED ≠ pixel PASS. Prior 01 dark/card shots remain historical.',
   };
 
-  writeFileSync(path.join(OUT, 'PARTNERS-SHARED-01-1.json'), JSON.stringify(report, null, 2));
+  const manifestName = IMPLEMENT_01 ? 'SPECIALIST-PARTNERS-IMPLEMENT-01.json' : 'PARTNERS-SHARED-01-1.json';
+  writeFileSync(path.join(OUT, manifestName), JSON.stringify(report, null, 2));
   const failed =
     functionalFlat.some((f) => f.status === 'FAIL') ||
     report.pairs.some((p) => p.refError && p.id === 'find');

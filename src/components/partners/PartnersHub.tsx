@@ -27,6 +27,8 @@ import {
   sortPartnershipsDeterministic,
   type AgentPartnerTypeFilter,
 } from "@/lib/agent-r04/partner-filters";
+import { patchPartnershipListPreference } from "@/lib/agent-r04/api";
+import { AgentPartnerBulkBar } from "@/components/partners/AgentPartnerBulkBar";
 import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
 import {
   AgentR04ListToolbar,
@@ -133,6 +135,8 @@ export function PartnersHub({
   const [listPage, setListPage] = useState(0);
   const [listPageSize, setListPageSize] = useState(25);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState("");
   const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [discoverySpecialization, setDiscoverySpecialization] = useState("");
   const [discoveryStageId, setDiscoveryStageId] = useState("");
@@ -337,6 +341,36 @@ export function PartnersHub({
       return next;
     });
   }, []);
+
+  const runBulkArchivePreference = useCallback(
+    async (archived: boolean) => {
+      const ids = [...selectedPartnerIds];
+      if (ids.length === 0) return;
+      setBulkBusy(true);
+      setBulkMessage("");
+      let ok = 0;
+      let failed = 0;
+      for (const id of ids) {
+        try {
+          await patchPartnershipListPreference(id, { archived });
+          ok += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      if (failed === 0) {
+        setBulkMessage(`Готово: ${ok} ${ok === 1 ? "запись" : ok < 5 ? "записи" : "записей"}.`);
+      } else {
+        setBulkMessage(
+          `Частично выполнено: ${ok} из ${ids.length}. Не удалось обновить ${failed} — попробуйте ещё раз для оставшихся.`,
+        );
+      }
+      setSelectedPartnerIds(new Set());
+      await loadList();
+      setBulkBusy(false);
+    },
+    [selectedPartnerIds, loadList],
+  );
 
   useEffect(() => {
     if (!isAgentR04) return;
@@ -555,9 +589,20 @@ export function PartnersHub({
   const agentFindResultsBlock = (
     <>
       {searchError ? (
-        <p className={styles.error} role="alert">
-          {searchError}
-        </p>
+        <div className={styles.error} role="alert">
+          <p>{searchError}</p>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={loadingSearch}
+            onClick={() => {
+              setSearchNextCursor(null);
+              void loadSearch("reset");
+            }}
+          >
+            Повторить
+          </Button>
+        </div>
       ) : null}
       <div
         className={styles.modalResults}
@@ -717,6 +762,20 @@ export function PartnersHub({
               }
             />
           ) : isAgentR04 ? (
+            <>
+            {agentSegment === "active" ? (
+              <AgentPartnerBulkBar
+                count={selectedPartnerIds.size}
+                busy={bulkBusy}
+                message={bulkMessage}
+                onArchive={() => void runBulkArchivePreference(true)}
+                onRestore={() => void runBulkArchivePreference(false)}
+                onClear={() => {
+                  setSelectedPartnerIds(new Set());
+                  setBulkMessage("");
+                }}
+              />
+            ) : null}
             <AgentPartnerCollection
               partnerships={pagedPartnerships}
               meId={meId}
@@ -739,6 +798,7 @@ export function PartnersHub({
                 setListPage(0);
               }}
             />
+            </>
           ) : (
             <div className={styles.list}>
             {visiblePartnerships.map((partnership) => {

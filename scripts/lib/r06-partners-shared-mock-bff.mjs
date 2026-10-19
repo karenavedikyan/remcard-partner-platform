@@ -240,6 +240,8 @@ export function createPartnersMockState(mode = 'specialist') {
     preferences: new Map(),
     searchFailOnce: false,
     searchCalls: 0,
+    linkInvites: [],
+    inviteCounter: 0,
   };
 }
 
@@ -333,7 +335,76 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           nextCursor: null,
         });
       }
-      if (path === '/api/partnership/link-invite') return send(200, { invites: [] });
+      if (path === '/api/partnership/link-invite' && req.method === 'GET') {
+        return send(200, { invites: state.linkInvites });
+      }
+      if (path === '/api/partnership/link-invite' && req.method === 'POST') {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        state.inviteCounter += 1;
+        const row = {
+          id: `link-mock-${state.inviteCounter}`,
+          token: `mock-token-${state.inviteCounter}`,
+          label: body.label ?? body.partnerName ?? 'Демо-приглашение',
+          note: body.note ?? body.category ?? null,
+          createdAt: new Date().toISOString(),
+          url: `https://remcard.local/invite/mock-token-${state.inviteCounter}`,
+        };
+        state.linkInvites.unshift(row);
+        return send(200, { invite: row });
+      }
+      if (path.startsWith('/api/partnership/link-invite/') && req.method === 'DELETE') {
+        const id = path.split('/').pop();
+        state.linkInvites = state.linkInvites.filter((i) => i.id !== id);
+        return send(200, { ok: true });
+      }
+      if (path.startsWith('/api/partnership/') && req.method === 'PATCH') {
+        const partnershipId = path.replace('/api/partnership/', '').split('/')[0];
+        const row = partnerships.find((p) => p.id === partnershipId);
+        if (!row) return send(404, { error: 'not_found' });
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        if (body.action === 'accept_pending' && row.status === 'PENDING') {
+          row.status = 'ACTIVE';
+          row.updatedAt = new Date().toISOString();
+        } else if (body.action === 'reject_pending') {
+          row.status = 'REJECTED';
+        } else if (body.action === 'cancel_pending') {
+          row.status = 'CANCELLED';
+        }
+        return send(200, { partnership: row });
+      }
+      if (path === '/api/partnership/invite' && req.method === 'POST') {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        state.inviteCounter += 1;
+        const created = {
+          id: `ps-mock-new-${state.inviteCounter}`,
+          status: 'PENDING',
+          initiatedBy: actor.id,
+          note: body.note ?? null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          storeUserId: body.targetUserId,
+          proUserId: actor.id,
+          terms: body.terms ?? [],
+          storeUser: {
+            id: body.targetUserId,
+            displayName: 'Партнёр из поиска',
+            city: 'Краснодар',
+            specializations: [],
+            storeCategories: [],
+            partnerType: 'STORE',
+          },
+          proUser: buildProfile(actor).user,
+          listPreference: null,
+        };
+        partnerships.push(created);
+        return send(200, { partnership: created });
+      }
       if (path.startsWith('/api/pro/partnership-list-preferences/') && req.method === 'GET') {
         const partnershipId = path.split('/').pop();
         const owned = partnerships.find(

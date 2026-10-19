@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import { partnersSharedUiCopy } from "@/lib/partners-shared-ui-copy";
 import type { SearchRole } from "@/lib/partnership-rules";
 import { PartnersHub, type PartnersHubProps } from "./PartnersHub";
 import { AgentPartnerHubModal, type HubModalTab } from "./AgentPartnerHubModal";
@@ -27,6 +28,8 @@ export function AgentPartnersHub({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<HubModalTab>("find");
 
+  const copy = partnersSharedUiCopy(presentationAudience);
+
   const openHub = searchParams.get("hub");
   useEffect(() => {
     if (openHub === "find" || openHub === "link") {
@@ -40,10 +43,7 @@ export function AgentPartnersHub({
     setModalOpen(true);
   }, []);
 
-  const lead =
-    segment === "active"
-      ? "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас."
-      : "Приглашения, которые ждут решения или отправлены вами.";
+  const lead = segment === "active" ? copy.activeLead : copy.invitationsLead;
 
   const hubSearchRoleProps =
     defaultSearchRole !== undefined ? { defaultSearchRole } : {};
@@ -120,6 +120,8 @@ export function AgentPartnersHub({
       <AgentPartnerHubModal
         open={modalOpen}
         tab={modalTab}
+        titleFind={copy.hubModalTitleFind}
+        titleLink={copy.hubModalTitleLink}
         onTabChange={setModalTab}
         onClose={() => setModalOpen(false)}
       >
@@ -133,10 +135,7 @@ export function AgentPartnersHub({
         />
       </AgentPartnerHubModal>
 
-      <p className={styles.footnote}>
-        Приглашения сотрудников находятся отдельно в разделе команды. Здесь только
-        партнёрство.
-      </p>
+      <p className={styles.footnote}>{copy.footnote}</p>
     </div>
   );
 }

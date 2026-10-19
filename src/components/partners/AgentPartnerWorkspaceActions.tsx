@@ -7,6 +7,7 @@ import { buildPartnerShareText } from "@/lib/agent-r04/partner-filters";
 import type { Partnership } from "@/lib/types";
 import { RecordRowActions, type RecordRowAction } from "@/components/agent-r03/RecordRowActions";
 import { Button } from "@/components/ui/Button";
+import { PartnerPersonalAliasDialog } from "@/components/partners/PartnerPersonalAliasDialog";
 import styles from "./AgentPartnerRecordActions.module.css";
 
 type Variant = "listRow" | "cardToolbar" | "mobileFooter";
@@ -28,6 +29,7 @@ export function usePartnerWorkspaceRowActions(
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState<(() => void) | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
   const archived = Boolean(partnership.listPreference?.archivedAt);
 
   async function run(action: () => Promise<void>, onRetry?: () => void) {
@@ -61,18 +63,7 @@ export function usePartnerWorkspaceRowActions(
       id: "rename",
       label: "Переименовать для себя",
       disabled: busy,
-      onClick: () => {
-        const doRename = async () => {
-          const current = partnership.listPreference?.personalAlias ?? "";
-          const next = window.prompt("Название для себя", current);
-          if (next == null) return;
-          const trimmed = next.trim();
-          await patchPartnershipListPreference(partnership.id, {
-            personalAlias: trimmed.length ? trimmed : null,
-          });
-        };
-        void run(doRename, () => void run(doRename));
-      },
+      onClick: () => setRenameOpen(true),
     },
     {
       id: archived ? "restore" : "archive",
@@ -102,7 +93,17 @@ export function usePartnerWorkspaceRowActions(
       </div>
     ) : null;
 
-  return { rowActions, errorBanner, busy };
+  const renameDialog = (
+    <PartnerPersonalAliasDialog
+      open={renameOpen}
+      partnershipId={partnership.id}
+      initialAlias={partnership.listPreference?.personalAlias ?? ""}
+      onClose={() => setRenameOpen(false)}
+      onSaved={onUpdated}
+    />
+  );
+
+  return { rowActions, errorBanner, busy, renameDialog };
 }
 
 export function AgentPartnerWorkspaceActions({
@@ -113,10 +114,15 @@ export function AgentPartnerWorkspaceActions({
   ariaLabel,
   trailingActions = [],
 }: Props) {
-  const { rowActions, errorBanner } = usePartnerWorkspaceRowActions(partnership, meId, onUpdated);
+  const { rowActions, errorBanner, renameDialog } = usePartnerWorkspaceRowActions(
+    partnership,
+    meId,
+    onUpdated,
+  );
   return (
     <div className={styles.wrap}>
       {errorBanner}
+      {renameDialog}
       <RecordRowActions
         variant={variant}
         ariaLabel={ariaLabel}
