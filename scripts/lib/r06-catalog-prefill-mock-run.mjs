@@ -17,8 +17,18 @@ export async function probeRuntimeBuildId(origin, buildIdHint) {
   return match[1];
 }
 
+export function gitDirtyTracked(cwd) {
+  const out = spawnSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+    cwd,
+    encoding: 'utf8',
+  });
+  const text = (out.stdout || '').trim();
+  if (!text) return { dirty: false, files: [] };
+  return { dirty: true, files: text.split('\n').filter(Boolean) };
+}
+
 export function assertCleanTree(repoRoot) {
-  const dirty = gitDirty(repoRoot);
+  const dirty = gitDirtyTracked(repoRoot);
   if (dirty.dirty) {
     throw new Error(`tree_dirty:${dirty.files.join(';')}`);
   }
@@ -100,7 +110,7 @@ export function runIsolatedPlatformBuild(repoRoot, distDir, { skipIfEnv = 'R06_S
 }
 
 export function collectPrefillProvenance(repoRoot, distDir) {
-  const dirty = gitDirty(repoRoot);
+  const dirty = gitDirtyTracked(repoRoot);
   return {
     codeSha: gitRevParse(repoRoot),
     sourceTreeDigest: sourceTreeDigest(repoRoot),
