@@ -188,7 +188,7 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Специализация' }).click();
+      await page.getByRole('button', { name: 'Далее' }).click();
       await page.waitForSelector('#sp-kind', { state: 'visible' });
     }
 
@@ -201,7 +201,9 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Связь и работа' }).click();
+      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.waitForSelector('#sp-kind', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Далее' }).click();
       await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
     }
 
@@ -209,8 +211,12 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Проверка' }).click();
-      await page.waitForSelector('text=Проверка', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.waitForSelector('#sp-kind', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.waitForSelector('text=Завершить профиль', { timeout: 60_000 });
     }
 
     async function prepareCatalogPreview(page) {
