@@ -26,6 +26,10 @@ import {
   isCatalogDraftDirty,
 } from "@/lib/profile-catalog-draft-sync";
 import {
+  catalogNavigatorStageIdsFromUser,
+  catalogTouchedFromUser,
+} from "@/lib/profile-catalog-stages-hydration";
+import {
   persistWorkingProfileDraft,
   validateWorkingProfileDraft,
   workingProfileCabinetReady,
@@ -228,13 +232,11 @@ function ProfileEditorInner({
       specialistR06Gate?.eligible &&
       profile.user.partnerType === "MASTER",
   );
-  const catalogDraftRaw = initial.user.catalogDraft as Record<string, unknown> | null | undefined;
-  const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() => {
-    const raw = catalogDraftRaw?.navigatorStageIds;
-    return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
-  });
+  const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() =>
+    catalogNavigatorStageIdsFromUser(initial.user),
+  );
   const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
-    parseCatalogTouched(catalogDraftRaw?.catalogTouched),
+    parseCatalogTouched(catalogTouchedFromUser(initial.user)),
   );
   const specialistPrefillRef = useRef(false);
 
@@ -465,12 +467,8 @@ function ProfileEditorInner({
     setPartnershipContactPhone(w?.partnershipContactPhone ?? "");
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
     setPartnerActivities(u.partnerActivities ?? catalogForm.partnerActivities ?? []);
-    const rawDraft = u.catalogDraft as Record<string, unknown> | null | undefined;
-    const stages = rawDraft?.navigatorStageIds;
-    setCatalogNavigatorStageIds(
-      Array.isArray(stages) ? stages.filter((x): x is string => typeof x === "string") : [],
-    );
-    setCatalogTouched(parseCatalogTouched(rawDraft?.catalogTouched));
+    setCatalogNavigatorStageIds(catalogNavigatorStageIdsFromUser(u));
+    setCatalogTouched(parseCatalogTouched(catalogTouchedFromUser(u)));
   }, []);
 
   const loadNotes = useCallback(async () => {
