@@ -46,6 +46,8 @@ type LinkInviteRow = {
 
 type PartnerLinkInvitePanelProps = {
   meProfile: ProProfileResponse;
+  /** When the hub modal already shows the title, omit the inner section heading. */
+  showSectionTitle?: boolean;
 };
 
 type IntendedType = "" | "MASTER" | "STORE" | "COMPANY";
@@ -93,7 +95,10 @@ function formatExpiry(iso: string) {
   });
 }
 
-export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProps) {
+export function PartnerLinkInvitePanel({
+  meProfile,
+  showSectionTitle = true,
+}: PartnerLinkInvitePanelProps) {
   const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const needsIntendedType =
     inviterSide.partnerType === "MASTER" || inviterSide.partnerType === "COMPANY";
@@ -253,7 +258,7 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
   return (
     <div className={styles.linkPanel}>
       <Panel
-        title="Пригласить партнёра"
+        title={showSectionTitle ? "Пригласить партнёра" : undefined}
         hint="Для знакомого, которого ещё нет на платформе. Он пройдёт обычную регистрацию и увидит ваше предложение сотрудничества."
       >
         <p className={styles.hint}>

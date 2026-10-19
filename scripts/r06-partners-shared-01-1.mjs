@@ -122,7 +122,10 @@ async function assertImplModal(page, panel) {
     throw new Error(`impl_modal_tab_not_selected:${panel}`);
   }
   if (panel === 'link') {
-    await page.getByRole('heading', { name: /Пригласить партнёра/i }).waitFor({ timeout: 10_000 });
+    await page
+      .locator('[data-testid="agent-partner-hub-modal"] h2')
+      .filter({ hasText: /Пригласить партнёра/i })
+      .waitFor({ timeout: 10_000 });
   }
 }
 

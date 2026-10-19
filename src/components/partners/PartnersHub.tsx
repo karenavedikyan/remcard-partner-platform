@@ -671,7 +671,7 @@ export function PartnersHub({
     return (
       <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
         {agentModalSurface === "link" ? (
-          <PartnerLinkInvitePanel meProfile={meProfile} />
+          <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
         ) : (
           <>
             {agentFindSearchControls}
