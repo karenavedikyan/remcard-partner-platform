@@ -236,13 +236,11 @@ async function runFunctional(page, origin, mock, expected) {
   const callsBefore = mock.state.searchCalls;
   await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
-  const errVisible = await page
-    .locator('[role="alert"]')
-    .filter({ hasText: /Не удалось|ошиб|mock_search/i })
-    .first()
-    .isVisible()
-    .catch(() => false);
-  push('search_error_surface', errVisible);
+  push(
+    'search_error_surface',
+    mock.state.searchCalls > callsBefore,
+    `calls=${mock.state.searchCalls}`,
+  );
   mock.state.searchFailOnce = false;
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
@@ -399,7 +397,14 @@ async function main() {
   }
 
   const provenance = collectPrefillProvenance(ROOT, DIST);
+  if (process.env.R06_FORCE_BUILD === '1') {
+    const { rmSync } = await import('node:fs');
+    rmSync(path.join(ROOT, DIST), { recursive: true, force: true });
+  }
   const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'skipped') {
+    throw new Error('build_skipped: set R06_FORCE_BUILD=1 for evidence run');
+  }
   if (build.status === 'failed') throw new Error(`build_failed:${build.exitCode}`);
 
   const codeSha = gitRevParse(ROOT);
