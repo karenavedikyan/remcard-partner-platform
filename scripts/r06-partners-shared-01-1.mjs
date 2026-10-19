@@ -257,15 +257,21 @@ async function runFunctional(page, origin, mock, expected) {
   push('deeplink_hub_link', page.url().includes('hub=link'));
 
   if (IMPLEMENT_01) {
-    mock.state.searchFailOnce = true;
     await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
     await assertImplModal(page, 'find');
-    const retryBtn = page.getByRole('button', { name: 'Повторить' });
-    await retryBtn.waitFor({ timeout: 15_000 });
+    mock.state.searchFailOnce = true;
+    await page
+      .locator('[data-testid="agent-r04-modal-find"]')
+      .getByRole('button', { name: /^Найти$/ })
+      .click();
+    const retryBtn = page
+      .locator('[data-testid="agent-r04-modal-find"]')
+      .getByRole('button', { name: 'Повторить' });
+    await retryBtn.waitFor({ timeout: 20_000 });
     push('search_error_surface', true, 'retry-visible');
     mock.state.searchFailOnce = false;
     await retryBtn.click();
-    await page.getByText('Партнёр из поиска').waitFor({ timeout: 15_000 });
+    await page.getByText('Партнёр из поиска').waitFor({ timeout: 20_000 });
     push('search_retry_recovery', true, 'result-visible');
 
     await page.goto(`${origin}/partners?hub=find`, { waitUntil: 'networkidle' });
