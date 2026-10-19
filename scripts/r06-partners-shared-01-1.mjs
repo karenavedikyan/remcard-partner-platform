@@ -194,7 +194,11 @@ async function runFunctional(page, origin, mock, expected) {
   );
 
   await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
-  await page.getByText('Магазин «Юг»').waitFor({ timeout: 15_000 });
+  await page
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: 'Магазин «Юг»' })
+    .first()
+    .waitFor({ timeout: 15_000 });
   push('active_partner_visible', true);
 
   await openImplR04Panel(page, 'invitations', origin);
