@@ -24,6 +24,7 @@ import {
   prepareRefContactsStep,
   prepareRefReviewStep,
   prepareRefSpecializationStep,
+  prepareRefSpecialistContactsControl,
   refCompleteWorkingProfile,
 } from './lib/r06-login-entry-prototype-nav.mjs';
 import {
@@ -40,7 +41,13 @@ import {
   fillImplCatalogCard,
   fillImplCatalogContacts,
   fillRefCatalogCard,
+  R06_CONTACTS_FIXTURE,
   R06_PREVIEW_FIXTURE,
+  assertImplContactsStepReady,
+  assertRefContactsStepReady,
+  fillImplContactsFixture,
+  fillRefContactsFixture,
+  measureContactsFormBox,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
 } from './lib/r06-preview-fixture.mjs';
@@ -133,7 +140,196 @@ function seedPendingMockState(base) {
   return state;
 }
 
+function applyMockContactsControl(state, openDetails) {
+  const f = R06_CONTACTS_FIXTURE;
+  const payload = {
+    displayName: f.displayName,
+    city: f.city,
+    specialistKind: 'designer',
+    specialistTitle: '',
+    serviceSpecializationIds: ['design'],
+    navigatorStageIds: ['L1-1'],
+    partnershipContactPhone: f.phone,
+    partnershipContactEmail: f.email,
+    publicSite: openDetails ? f.website : '',
+    publicTelegram: openDetails ? f.telegram : '',
+    partnerWorkMode: openDetails ? f.partnerWorkModeValue : '',
+    areas: openDetails ? f.areas : '',
+    productCategoryIds: [],
+  };
+  state.profileFinished = false;
+  state.workingDisplayName = f.displayName;
+  state.workingCity = f.city;
+  state.partnershipContactPhone = f.phone;
+  state.partnershipContactEmail = f.email;
+  state.specialistDraft = {
+    contractVersion: 'r06-smoke',
+    featureEnabled: true,
+    step: 3,
+    version: 2,
+    hasDraft: true,
+    profileComplete: false,
+    payload,
+    savedProfile: { ...payload },
+  };
+}
+
+async function runContactsControlMain() {
+  verifyLoginEntryPrototypeTarball(ROOT);
+  const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
+  if (provenanceBefore.treeDirty) {
+    throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
+  }
+  const codeSha = provenanceBefore.codeSha;
+  const OUT = path.join(
+    ROOT,
+    'artifacts/remcard-r06-specialist/contacts-control-visual',
+    codeSha.slice(0, 12),
+  );
+  mkdirSync(OUT, { recursive: true });
+
+  ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
+  const mock = await startCatalogPrefillMockBff(createMockBffState());
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  if (!platformPort) throw new Error('no free platform port');
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'failed') throw new Error(`build_failed:exit=${build.exitCode}`);
+
+  const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  const implBase = appOrigin;
+  const protoBase = refStatic.baseUrl;
+  const meta = { codeSha, buildId: build.buildId };
+  const captures = [];
+  const viewports = [
+    { width: 1440, height: 900, theme: 'light' },
+    { width: 375, height: 812, theme: 'light' },
+    { width: 375, height: 812, theme: 'dark' },
+    { width: 320, height: 568, theme: 'light' },
+  ];
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
+    const runtimeBuildId = await probeRuntimeBuildId(appOrigin);
+    if (runtimeBuildId !== build.buildId) {
+      throw new Error(`runtime_build_id_mismatch:${runtimeBuildId}:${build.buildId}`);
+    }
+
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+
+    for (const stateId of ['closed', 'open']) {
+      const openDetails = stateId === 'open';
+      for (const vp of viewports) {
+        applyMockContactsControl(mock.state, openDetails);
+        const pairId = `contacts-${stateId}-${vp.width}-${vp.theme}`;
+        const metrics = {};
+        const cap = await captureRefImplPair(
+          context,
+          {
+            pairId,
+            theme: vp.theme,
+            width: vp.width,
+            height: vp.height,
+            implUrl: `${implBase}/profile?section=basics`,
+            implTestId: 'specialist-profile-wizard',
+            formCrop: {
+              impl: '[data-testid="specialist-profile-wizard"] section.card',
+              ref: '.pw-card',
+            },
+            prepareImpl: async (page) => {
+              if (openDetails) await fillImplContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails: true });
+              else await fillImplContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails: false });
+              metrics.impl = await measureContactsFormBox(
+                page,
+                '[data-testid="specialist-profile-wizard"] section.card',
+              );
+            },
+            assertImpl: assertImplContactsStepReady,
+            prepareRef: async (page, base) => {
+              await prepareRefSpecialistContactsControl(page, base, R06_CONTACTS_FIXTURE);
+              await fillRefContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails });
+              metrics.ref = await measureContactsFormBox(page, '.pw-card');
+            },
+            assertRef: assertRefContactsStepReady,
+          },
+          OUT,
+          protoBase,
+          meta,
+        );
+        cap.fixtureState = stateId;
+        cap.formMetrics = metrics;
+        cap.formCompareNote =
+          'Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS.';
+        captures.push(cap);
+      }
+    }
+    await browser.close();
+  } finally {
+    await stopOwnedServer(child);
+    refStatic.server.close();
+    await mock.close();
+    envPin.restore();
+  }
+
+  const manifestPath = path.join(OUT, 'manifest.json');
+  const manifest = {
+    capturedAt: new Date().toISOString(),
+    task: 'R06-CONTACTS-CONTROL-01',
+    mode: 'MOCK_BFF_CONTACTS_CONTROL',
+    codeSha,
+    navigatorCodeSha: NAVIGATOR_PIN,
+    sourceTreeDigest: provenanceBefore.sourceTreeDigest,
+    treeDirty: false,
+    prototypePackageCommit: '9bc52fb9152293e992e98dc50804a660cef10733',
+    prototypeTarballSha256: '382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d',
+    fixture: R06_CONTACTS_FIXTURE,
+    build: {
+      status: build.status,
+      exitCode: build.exitCode,
+      buildId: build.buildId,
+      distDir: DIST,
+    },
+    runtimeBuildIdVerified: build.buildId,
+    appOrigin,
+    mockBff: mock.baseUrl,
+    protoBase,
+    captures,
+    visualPass: false,
+    remainders: [
+      'Prototype «Отменить» (discard in-tab edits) has no equivalent — impl uses «Сбросить черновик» only on non-contacts steps; contacts step omits reset (BLOCKED cancel semantics).',
+      'Impl retains «Сохранить черновик» on contacts — not in prototype row (documented, not removed).',
+      'Ref «Другое контактное лицо» field absent in specialist R06 draft payload (BLOCKED).',
+      'CAPTURED pairs only — compare form crops manually; shell/nav differences excluded.',
+    ],
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  manifest.evidenceSha256 = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256 }, null, 2));
+}
+
 async function main() {
+  if (process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01') {
+    return runContactsControlMain();
+  }
   verifyLoginEntryPrototypeTarball(ROOT);
   const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
   if (provenanceBefore.treeDirty) {

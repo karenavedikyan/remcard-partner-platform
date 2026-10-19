@@ -22,6 +22,7 @@ import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profil
 import { SpecialistPresetSection } from "@/components/profile/specialist/SpecialistPresetSection";
 import type { ProProfileResponse } from "@/lib/types";
 import styles from "../agent/AgentProfileWizard.module.css";
+import contactStyles from "./SpecialistWorkingProfileWizard.module.css";
 
 const STEPS = ["О себе", "Специализация", "Связь и работа", "Проверка"] as const;
 
@@ -412,9 +413,18 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
           </ol>
         </aside>
         <section className={styles.card}>
-          <span className={styles.kicker}>
-            Шаг {step + 1} из {STEPS.length}
-          </span>
+          <div className={styles.cardTop}>
+            <span className={styles.kicker} data-testid="specialist-profile-progress">
+              Шаг {step + 1} из {STEPS.length}
+            </span>
+            <span className={styles.label}>
+              {step === 0
+                ? "Обязательные данные"
+                : step === STEPS.length - 1
+                  ? "Перед сохранением"
+                  : "Можно пропустить"}
+            </span>
+          </div>
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
               {banner.text}
@@ -546,11 +556,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               </div>
             ) : null}
             {step === 2 ? (
-              <div className={styles.fields}>
+              <div
+                className={contactStyles.contactsPanel}
+                data-testid="specialist-profile-contacts-panel"
+              >
                 <p className={styles.intro}>
                   Укажите удобный способ связи. Необязательные поля можно оставить пустыми.
                 </p>
-                <div className={styles.fieldsTwo}>
+                <div className={contactStyles.contactsTwoCol} data-testid="specialist-contacts-two-col">
                   <AgentPhoneField
                     ref={phoneRef}
                     wrapperClassName={styles.phoneFieldWrap}
@@ -573,11 +586,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     <small>Для письменных предложений.</small>
                   </div>
                 </div>
-                <details className={styles.optional}>
+                <details
+                  className={contactStyles.contactsOptional}
+                  data-testid="sp-contacts-optional-site-tg"
+                >
                   <summary>
                     Сайт и Telegram <span>необязательно</span>
                   </summary>
-                  <div className={styles.fields}>
+                  <div className={contactStyles.contactsOptionalInner}>
                     <div className={styles.field}>
                       <label htmlFor="sp-site">Сайт</label>
                       <input
@@ -602,11 +618,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     </div>
                   </div>
                 </details>
-                <details className={styles.optional}>
+                <details
+                  className={contactStyles.contactsOptional}
+                  data-testid="sp-contacts-optional-work"
+                >
                   <summary>
                     Где и как вы работаете <span>необязательно</span>
                   </summary>
-                  <div className={styles.fields}>
+                  <div className={contactStyles.contactsOptionalInner}>
                     <div className={styles.field}>
                       <label htmlFor="sp-workmode">Формат работы</label>
                       <select
@@ -698,7 +717,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 </p>
               </>
             ) : null}
-            <div className={styles.actions}>
+            <div
+              className={
+                step === 2
+                  ? `${styles.actions} ${contactStyles.contactsStepActions}`
+                  : styles.actions
+              }
+              data-testid={step === 2 ? "specialist-contacts-actions" : undefined}
+            >
               <div className={styles.actionsLeft}>
                 {step > 0 ? (
                   <button
@@ -710,14 +736,16 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     Назад
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnQuiet}`}
-                  disabled={saving}
-                  onClick={() => void resetDraft()}
-                >
-                  Сбросить черновик
-                </button>
+                {step !== 2 ? (
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnQuiet}`}
+                    disabled={saving}
+                    onClick={() => void resetDraft()}
+                  >
+                    Сбросить черновик
+                  </button>
+                ) : null}
               </div>
               <div className={styles.actionsRight}>
                 {(step === 1 || step === 2) && (

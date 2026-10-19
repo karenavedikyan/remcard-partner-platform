@@ -202,7 +202,10 @@
 }
 
 .fieldsTwo {
+  display: grid;
+  gap: var(--pw-5);
   grid-template-columns: 1fr 1fr;
+  min-width: 0;
 }
 
 @media (max-width: 600px) {

@@ -1,5 +1,18 @@
 /** Matched impl/ref synthetic catalog preview data (designer preset). */
 
+/** Fixed fixture for R06-CONTACTS-CONTROL-01 (ref + impl must match). */
+export const R06_CONTACTS_FIXTURE = {
+  displayName: 'Контакт Тест Спец',
+  city: 'Krasnodar',
+  phone: '+79186360088',
+  email: 'contacts.control@example.ru',
+  website: 'example-contacts.ru',
+  telegram: '@contact_control',
+  partnerWorkModeLabel: 'По адресу',
+  partnerWorkModeValue: 'ON_SITE',
+  areas: 'Краснодар и ближайшие районы',
+};
+
 export const R06_PREVIEW_FIXTURE = {
   publicName: 'R06 Visual Catalog',
   city: 'Krasnodar',
@@ -233,4 +246,88 @@ export async function assertRefCatalogPreviewReady(page, fixture = R06_PREVIEW_F
   if (!cardText.replace(/\D/g, '').includes(digits.slice(-10))) {
     throw new Error('ref_preview_phone_mismatch');
   }
+}
+
+export async function assertImplContactsStepReady(page) {
+  await page.getByRole('heading', { name: 'Как с вами связаться?' }).waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 30_000 });
+}
+
+export async function assertRefContactsStepReady(page) {
+  await page.locator('#pw-title').getByText('Как с вами связаться?').waitFor({ timeout: 30_000 });
+  await page.waitForSelector('[name="contactPhone"], [data-testid="pw-input-contactPhone"]', {
+    timeout: 30_000,
+  });
+}
+
+export async function fillRefContactsFixture(page, fixture = R06_CONTACTS_FIXTURE, options = {}) {
+  const { openDetails = false } = options;
+  const phone = page.locator('[name="contactPhone"], [data-testid="pw-input-contactPhone"]').first();
+  await phone.fill(fixture.phone);
+  await page.locator('[name="contactEmail"]').fill(fixture.email);
+  if (openDetails) {
+    const siteBlock = page.locator('details.pw-optional').filter({ hasText: 'Сайт и Telegram' });
+    await siteBlock.locator('summary').click();
+    await page.locator('[name="website"]').fill(fixture.website);
+    await page.locator('[name="telegram"]').fill(fixture.telegram);
+    const workBlock = page.locator('details.pw-optional').filter({ hasText: 'Где и как вы работаете' });
+    await workBlock.locator('summary').click();
+    await page.locator('[name="partnerWorkMode"]').selectOption({ label: fixture.partnerWorkModeLabel });
+    await page.locator('[name="serviceArea"]').fill(fixture.areas);
+  } else {
+    for (const el of await page.locator('details.pw-optional').all()) {
+      await el.evaluate((node) => {
+        node.open = false;
+      });
+    }
+  }
+}
+
+export async function fillImplContactsFixture(page, fixture = R06_CONTACTS_FIXTURE, options = {}) {
+  const { openDetails = false } = options;
+  const phone = page.getByTestId('agent-profile-input-phone');
+  await phone.fill(fixture.phone);
+  await phone.blur();
+  await page.locator('#sp-email').fill(fixture.email);
+  if (openDetails) {
+    const siteBlock = page.getByTestId('sp-contacts-optional-site-tg');
+    await siteBlock.locator('summary').click();
+    await page.locator('#sp-site').fill(fixture.website);
+    await page.locator('#sp-tg').fill(fixture.telegram);
+    const workBlock = page.getByTestId('sp-contacts-optional-work');
+    await workBlock.locator('summary').click();
+    await page.locator('#sp-workmode').selectOption(fixture.partnerWorkModeValue);
+    await page.locator('#sp-areas').fill(fixture.areas);
+  } else {
+    for (const testId of ['sp-contacts-optional-site-tg', 'sp-contacts-optional-work']) {
+      const el = page.getByTestId(testId);
+      if (await el.count()) {
+        await el.evaluate((node) => {
+          node.open = false;
+        });
+      }
+    }
+  }
+}
+
+export async function measureContactsFormBox(page, selector) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const phone = el.querySelector('[name="contactPhone"], [data-testid="agent-profile-input-phone"]');
+    const email = el.querySelector('[name="contactEmail"], #sp-email');
+    const grid = el.querySelector('.pw-two, [data-testid="specialist-contacts-two-col"]');
+    const pr = (node) => {
+      if (!node) return null;
+      const b = node.getBoundingClientRect();
+      return { width: Math.round(b.width), height: Math.round(b.height) };
+    };
+    return {
+      form: { width: Math.round(r.width), height: Math.round(r.height) },
+      grid: pr(grid),
+      phoneField: pr(phone?.closest('.pw-field, .phoneFieldWrap, .field') ?? phone),
+      emailField: pr(email?.closest('.pw-field, .field') ?? email),
+    };
+  }, selector);
 }

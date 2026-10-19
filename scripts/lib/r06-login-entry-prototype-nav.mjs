@@ -83,3 +83,21 @@ export async function prepareRefReviewStep(page, protoBaseUrl) {
   await page.getByTestId('pw-step-3').click();
   await page.waitForSelector('[data-testid="pw-progress"]', { timeout: 30_000 });
 }
+
+/** Contacts-only visual: wizard on step 3/4 without unrelated catalog state. */
+export async function prepareRefSpecialistContactsControl(page, protoBaseUrl, fixture) {
+  await bootRefCabinetSpecialist(page, protoBaseUrl);
+  if (await page.locator('[data-testid="pw-summary"]').count()) {
+    await page.locator('[data-pw-action="edit"]').click();
+    await page.waitForSelector('.pw-steps');
+  } else if (await page.locator('[data-profile-action="tab"][data-profile-id="basics"]').count()) {
+    await page.locator('[data-profile-action="tab"][data-profile-id="basics"]').click();
+  }
+  await page.locator('[name="name"]').fill(fixture.displayName);
+  await page.locator('[name="city"]').fill(fixture.city);
+  await page.getByTestId('pw-next').click();
+  if (await page.locator('[data-specialist-kind]').count()) {
+    await page.locator('[data-specialist-kind]').selectOption('designer');
+  }
+  await page.getByTestId('pw-step-2').click();
+}

@@ -1,0 +1,83 @@
+/* Scoped to specialist working profile — contacts step (R06-CONTACTS-CONTROL-01). */
+
+.contactsPanel {
+  display: grid;
+  gap: var(--pw-5);
+}
+
+.contactsTwoCol {
+  display: grid;
+  gap: var(--pw-5);
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .contactsTwoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contactsOptional {
+  margin-top: var(--pw-5);
+  border-top: 1px solid var(--pw-line);
+  padding-top: var(--pw-3);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+}
+
+.contactsOptional summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--pw-sm);
+  list-style: none;
+}
+
+.contactsOptional summary::-webkit-details-marker {
+  display: none;
+}
+
+.contactsOptional summary span {
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  font-weight: 400;
+  margin-left: var(--pw-2);
+}
+
+.contactsOptional[open] summary {
+  margin-bottom: var(--pw-3);
+}
+
+.contactsOptionalInner {
+  display: grid;
+  gap: var(--pw-5);
+}
+
+.contactsStepActions {
+  margin-top: var(--pw-8);
+  padding-top: var(--pw-5);
+  border-top: 1px solid var(--pw-line);
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.contactsStepActions .actionsLeft,
+.contactsStepActions .actionsRight {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+@media (max-width: 480px) {
+  .contactsStepActions {
+    flex-wrap: wrap;
+  }
+
+  .contactsStepActions .actionsRight {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+}

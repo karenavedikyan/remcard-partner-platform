@@ -113,14 +113,26 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
   if (assertImpl) await assertImpl(implPage);
   await assertThemeApplied(implPage, theme);
   if (implDiag.pageErrors.length) throw new Error(`impl_page_errors:${implDiag.pageErrors.join('|')}`);
-  await implPage.evaluate(() => window.scrollTo(0, 0));
+  await implPage.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+    window.scrollTo(0, 0);
+  });
   await implPage.waitForTimeout(200);
   const implPath = path.join(outDir, implFile);
   await implPage.screenshot({ path: implPath, fullPage: true });
+  let implFormCrop = null;
+  if (spec.formCrop?.impl) {
+    const cropFile = `${fileBase}-form-impl.png`;
+    const cropPath = path.join(outDir, cropFile);
+    await implPage.locator(spec.formCrop.impl).screenshot({ path: cropPath });
+    implFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
+  }
   await implPage.close();
 
   let refPath = null;
   let refSha256 = null;
+  let refFormCrop = null;
   if (!spec.implOnly && (prepareRef || refOnlyPrepare || assertRef)) {
     const refCtx = await ctx.browser().newContext({ viewport: { width, height }, deviceScaleFactor: dpr });
     const refPage = await refCtx.newPage();
@@ -140,15 +152,25 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     if (refDiag.pageErrors.length) throw new Error(`ref_page_errors:${refDiag.pageErrors.join('|')}`);
     await refPage.evaluate(() => document.fonts?.ready);
     await refPage.waitForTimeout(400);
-    await refPage.evaluate(() => window.scrollTo(0, 0));
+    await refPage.evaluate(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+      window.scrollTo(0, 0);
+    });
     refPath = path.join(outDir, refFile);
     await refPage.screenshot({ path: refPath, fullPage: true });
     refSha256 = sha256File(refPath);
+    if (spec.formCrop?.ref) {
+      const cropFile = `${fileBase}-form-ref.png`;
+      const cropPath = path.join(outDir, cropFile);
+      await refPage.locator(spec.formCrop.ref).screenshot({ path: cropPath });
+      refFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
+    }
     await refCtx.close();
   }
 
   const implSha256 = sha256File(implPath);
-  return {
+  const capture = {
     pairId,
     viewport: { width, height, dpr },
     theme,
@@ -159,4 +181,8 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     readiness: 'ok',
     visualStatus: 'captured',
   };
+  if (implFormCrop) capture.implFormCrop = implFormCrop;
+  if (refFormCrop) capture.refFormCrop = refFormCrop;
+  if (spec.formMetrics) capture.formMetrics = spec.formMetrics;
+  return capture;
 }

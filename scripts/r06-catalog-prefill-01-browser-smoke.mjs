@@ -13,7 +13,8 @@ import {
   spawnOwnedNextStart,
   stopOwnedServer,
 } from '../artifacts/remcard-login-entry-prototype-01/login-entry-process-lifecycle.mjs';
-import { startCatalogPrefillMockBff } from './lib/r06-catalog-prefill-mock-bff.mjs';
+import { createMockBffState, startCatalogPrefillMockBff } from './lib/r06-catalog-prefill-mock-bff.mjs';
+import { R06_CONTACTS_FIXTURE } from './lib/r06-preview-fixture.mjs';
 import { advanceCatalogSteps, ensureCatalogStep } from './lib/r06-playwright-catalog.mjs';
 import {
   collectPrefillProvenance,
@@ -42,7 +43,131 @@ async function waitForHttp(url, timeoutMs = 120_000) {
   return false;
 }
 
+function seedContactsSmokeMock(state) {
+  const f = R06_CONTACTS_FIXTURE;
+  state.profileFinished = false;
+  state.specialistDraft = {
+    contractVersion: 'r06-smoke',
+    featureEnabled: true,
+    step: 3,
+    version: 1,
+    hasDraft: true,
+    profileComplete: false,
+    payload: {
+      displayName: f.displayName,
+      city: f.city,
+      specialistKind: 'designer',
+      partnershipContactPhone: '',
+      partnershipContactEmail: '',
+      productCategoryIds: [],
+      serviceSpecializationIds: [],
+      navigatorStageIds: [],
+    },
+    savedProfile: { displayName: f.displayName, city: f.city },
+  };
+}
+
+async function runContactsControlBrowserSmoke() {
+  const provenance = collectPrefillProvenance(ROOT, DIST);
+  if (provenance.treeDirty) throw new Error(`tree_dirty:${provenance.treeDirtyFiles.join(';')}`);
+  const codeSha = provenance.codeSha;
+  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist');
+  mkdirSync(OUT, { recursive: true });
+  const REPORT = path.join(OUT, `R06-CONTACTS-CONTROL-01-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`);
+
+  const mock = await startCatalogPrefillMockBff(seedContactsSmokeMock(createMockBffState()));
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  const report = {
+    mode: 'MOCK_BFF',
+    task: 'R06-CONTACTS-CONTROL-01',
+    codeSha,
+    sourceTreeDigest: provenance.sourceTreeDigest,
+    treeDirty: false,
+    build: { status: build.status, buildId: build.buildId, distDir: DIST },
+    steps: {},
+    ok: false,
+    notRun: ['finishProfile', 'catalog', 'moderation', 'postgresql'],
+  };
+  if (build.status === 'failed' || !build.buildId) {
+    report.error = 'build_failed';
+    writeFileSync(REPORT, `${JSON.stringify(report, null, 2)}\n`);
+    envPin.restore();
+    await mock.close();
+    process.exit(1);
+  }
+
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  let page;
+  try {
+    if (!(await waitForHttp(appOrigin, 120_000))) throw new Error('app_not_ready');
+    report.steps.runtimeBuildId = {
+      ok: (await probeRuntimeBuildId(appOrigin)) === build.buildId,
+      buildId: build.buildId,
+    };
+    const browser = await chromium.launch({ headless: true });
+    page = await browser.newPage();
+    await page.goto(`${appOrigin}/profile?section=basics`, { waitUntil: 'load' });
+    await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
+    const phone = page.getByTestId('agent-profile-input-phone');
+    await phone.fill(R06_CONTACTS_FIXTURE.phone);
+    await phone.blur();
+    await page.locator('#sp-email').fill(R06_CONTACTS_FIXTURE.email);
+    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await page.waitForTimeout(800);
+    const getRes = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
+    const body = await getRes.json();
+    report.steps.savePatch = {
+      ok: Boolean(body.payload?.partnershipContactPhone && body.payload?.partnershipContactEmail),
+      phone: body.payload?.partnershipContactPhone,
+      email: body.payload?.partnershipContactEmail,
+    };
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]');
+    report.steps.reloadUi = {
+      ok:
+        (await phone.inputValue()).includes('9186360088') ||
+        (await phone.inputValue()).includes('+7'),
+      email: await page.locator('#sp-email').inputValue(),
+    };
+    report.ok =
+      report.steps.runtimeBuildId.ok &&
+      report.steps.savePatch.ok &&
+      report.steps.reloadUi.ok &&
+      report.steps.reloadUi.email === R06_CONTACTS_FIXTURE.email;
+    await browser.close();
+  } finally {
+    envPin.restore();
+    await stopOwnedServer(child);
+    await mock.close();
+  }
+  report.evidenceSha256 = createHash('sha256').update(JSON.stringify(report)).digest('hex');
+  writeFileSync(REPORT, `${JSON.stringify(report, null, 2)}\n`);
+  console.log(JSON.stringify({ report: REPORT, ok: report.ok, evidenceSha256: report.evidenceSha256 }, null, 2));
+  process.exit(report.ok ? 0 : 1);
+}
+
 async function main() {
+  if (process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01') {
+    return runContactsControlBrowserSmoke();
+  }
   const provenance = collectPrefillProvenance(ROOT, DIST);
   if (provenance.treeDirty) {
     throw new Error(`tree_dirty:${provenance.treeDirtyFiles.join(';')}`);
