@@ -1,0 +1,843 @@
+{
+  "capturedAt": "2026-10-19T16:06:13.308Z",
+  "task": "R06-PROFILE-LAYOUT-REGRESSION-01",
+  "mode": "MOCK_BFF_LAYOUT_REGRESSION",
+  "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+  "sourceTreeDigest": "aefd3865e3ce586a4807cde3957ca2f1e2cb0fe5",
+  "treeDirty": false,
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "WpnKIV8xEbYbj8FsOl2YW",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "WpnKIV8xEbYbj8FsOl2YW",
+  "appOrigin": "http://127.0.0.1:30686",
+  "mockBff": "http://127.0.0.1:39653",
+  "geometryChecks": [
+    {
+      "stateId": "basics-filled",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "marginBottom": "0px"
+          },
+          "basicsHelper": {
+            "fontSize": "12px",
+            "marginTop": "0px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 52
+          }
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "marginBottom": "0px"
+          },
+          "basicsHelper": {
+            "fontSize": "12px",
+            "marginTop": "0px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 611,
+          "layoutWidth": 611,
+          "gridTemplateColumns": "611.188px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.208px",
+            "fontWeight": "700",
+            "marginBottom": "0px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.288px",
+            "marginTop": "0px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 545,
+            "height": 52
+          }
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 614,
+          "layoutWidth": 614,
+          "gridTemplateColumns": "614.328px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.34px",
+            "fontWeight": "700",
+            "marginBottom": "0px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.42px",
+            "marginTop": "0px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 548,
+            "height": 52
+          }
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.341px",
+            "fontWeight": "700",
+            "marginBottom": "0px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.421px",
+            "marginTop": "0px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 296,
+            "height": 52
+          }
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 620,
+          "layoutWidth": 902,
+          "gridTemplateColumns": "250px 619.875px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.88px",
+            "fontWeight": "700",
+            "marginBottom": "0px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.8px",
+            "marginTop": "0px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 554,
+            "height": 52
+          }
+        }
+      }
+    },
+    {
+      "stateId": "specialization-closed",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 818,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        }
+      }
+    },
+    {
+      "stateId": "review-filled",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 744,
+          "layoutWidth": 744,
+          "gridTemplateColumns": "744px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 753,
+          "layoutWidth": 1035,
+          "gridTemplateColumns": "250px 753px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        }
+      }
+    }
+  ],
+  "captures": [
+    {
+      "pairId": "basics-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-320-light-320-light-impl.png",
+        "sha256": "e72daa85111c358dc4e8ff3fb5272cfd54bad269fa6e14c5283a1e36104f0b2d"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-impl.png",
+        "sha256": "a4adebea662c7c85c3806165661020800e2ad0a5624ed774aebaddbd2f58a837"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 652,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 52,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 242,
+            "height": 52,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        }
+      }
+    },
+    {
+      "pairId": "basics-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-375-light-375-light-impl.png",
+        "sha256": "70cd099a28a4b18464ac05131b91417881b3cd5e5f7ffb1e8d7271fade1803f9"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-impl.png",
+        "sha256": "f2942ab8bd7d5ce98793704066af61bf89909a3119798c29542e8d46a2c6992c"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 652,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 52,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 52,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        }
+      }
+    },
+    {
+      "pairId": "basics-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "basics-filled-375-dark-375-dark-impl.png",
+        "sha256": "9ac6052835d015d1608ce6d37446bdd7ffce72deda69775737176c4c9d536bca"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "c469bf7ff00273bfc88494a4c66463c6cc34599535b162c630b558e17a2a9f0a"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 652,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 52,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 52,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          }
+        }
+      }
+    },
+    {
+      "pairId": "specialization-closed-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-320-light-320-light-impl.png",
+        "sha256": "e7fc6ed61f8cc6f9d0017516cd14d7dd4c738c7091b672f29bd593f1c2ff5c2b"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-320-light-320-light-form-impl.png",
+        "sha256": "cf3eca8bcde002b85cd28613bc2caf1c967d3eb50ea67266209b01cd41c38b70"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 1863,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 265,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 208,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": null,
+          "tile": null
+        }
+      }
+    },
+    {
+      "pairId": "specialization-closed-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-375-light-375-light-impl.png",
+        "sha256": "ae98811449b59aa65378c9424d7ffd27281fc6ac16acfef579d3d6e14803a68d"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-375-light-375-light-form-impl.png",
+        "sha256": "45a6b4426f3987ce40b1c718f88320f341dec5d643737275cd32415ea2421636"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 1741,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 243,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 263,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": null,
+          "tile": null
+        }
+      }
+    },
+    {
+      "pairId": "specialization-closed-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "specialization-closed-375-dark-375-dark-impl.png",
+        "sha256": "d86433810480defe357e290a4c647ee42e95218d566ca5484d8b0679679e2f03"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-375-dark-375-dark-form-impl.png",
+        "sha256": "5b1ff2f0250d94fbeb2515f2117c452cc686ae18e1f49296fd65d205bd43c18e"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 1741,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 243,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "kindSelect": {
+            "width": 263,
+            "height": 50,
+            "paddingTop": "12px",
+            "paddingLeft": "12px",
+            "gap": "normal",
+            "minHeight": "48px"
+          },
+          "chip": null,
+          "tile": null
+        }
+      }
+    },
+    {
+      "pairId": "review-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-320-light-320-light-impl.png",
+        "sha256": "df7b6f1395ca5136d422c0030ea8c7f98a3465e015b4546ec230166d9049038e"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-320-light-320-light-form-impl.png",
+        "sha256": "bd1bfc0b39f3458c3ab3b0680b459a98f76675d54f1abf1980bc84d3ecbb275f"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 284,
+            "height": 1011,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 242,
+            "height": 209,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 242,
+            "height": 308,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 242,
+            "height": 148,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        }
+      }
+    },
+    {
+      "pairId": "review-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-375-light-375-light-impl.png",
+        "sha256": "47d46c226455a8fb603455baa0a151fe509a02ded237b69dfc4f6b793a12a395"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-light-375-light-form-impl.png",
+        "sha256": "f69374f8450223756c30bdf4fba733376302e5f96344831bd1b959be4d4e94f7"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 969,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 297,
+            "height": 308,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 297,
+            "height": 148,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        }
+      }
+    },
+    {
+      "pairId": "review-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "review-filled-375-dark-375-dark-impl.png",
+        "sha256": "4b8e23befa224e91a2852704b24d72de43bdf3ee614e7dd739ec698bb8239587"
+      },
+      "ref": null,
+      "codeSha": "b51453816c1c5046ae91c050f549551e3f1b7ba1",
+      "runtimeBuildId": "WpnKIV8xEbYbj8FsOl2YW",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "dbb14510b0e786af07b8fc96a1be43d3777a879bacd44fb3c0904fcbc3c66ac3"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "implGeometry": {
+          "card": {
+            "width": 339,
+            "height": 969,
+            "paddingTop": "20px",
+            "paddingLeft": "20px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          "actions": {
+            "width": 297,
+            "height": 186,
+            "paddingTop": "20px",
+            "paddingLeft": "0px",
+            "gap": "12px",
+            "minHeight": "0px"
+          },
+          "factsGrid": {
+            "width": 297,
+            "height": 308,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "20px",
+            "minHeight": "auto"
+          },
+          "reviewChip": {
+            "width": 297,
+            "height": 148,
+            "paddingTop": "0px",
+            "paddingLeft": "0px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        }
+      }
+    }
+  ],
+  "captureCount": 9,
+  "visualPass": false,
+  "remainders": [
+    "Layout regression run — impl-only PNG (no ref). visualPass false; design/contract gaps unchanged.",
+    "Shell overflow (if any) noted in geometry documentOverflow — form card geometry must pass."
+  ],
+  "contractGaps": [
+    "partnerSearchOptIn",
+    "cancel_vs_reset",
+    "extra_save_draft_button"
+  ],
+  "evidenceSha256": "7caca243dc21d72a56fe96d553794187292c43bf29dbfcca19148e17fec34913"
+}
