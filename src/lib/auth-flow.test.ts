@@ -167,6 +167,12 @@ describe("resolveAuthFlowFromReadiness", () => {
 describe("resolveDestinationAfterAuth", () => {
   it("routes ready PRO to returnTo", () => {
     assert.equal(resolveDestinationAfterAuth(ready, "/scanner"), "/scanner");
+    assert.equal(resolveDestinationAfterAuth(ready, "/profile"), "/profile");
+    assert.equal(resolveDestinationAfterAuth(ready, "/partners"), "/partners");
+  });
+
+  it("defaults ready login without returnTo to root (agent /certificates handled on / page)", () => {
+    assert.equal(resolveDestinationAfterAuth(ready, null), "/");
   });
 
   it("routes OWNER+PRO with cabinet access to returnTo despite isAdmin", () => {

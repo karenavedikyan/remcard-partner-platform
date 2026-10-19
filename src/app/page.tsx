@@ -12,6 +12,8 @@ import type { CabinetReadiness } from "@/lib/cabinet-readiness";
 import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import { getSessionUser } from "@/lib/session";
 import type { PartnershipListResponse } from "@/lib/types";
+import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,18 @@ export default async function HomePage(
   }
   if (!readiness.canAccessCabinet) {
     return <SessionGate returnTo="/" />;
+  }
+
+  const prefsResult = await fetchRemcardUpstream<CabinetUiPreferencesResponse>(
+    "/api/pro/cabinet-ui-preferences",
+    { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
+  );
+  const agentRoot = resolveActiveAgentRootRedirect(
+    prefsResult.ok ? prefsResult.data : null,
+    { prefsLoadOk: prefsResult.ok },
+  );
+  if (agentRoot) {
+    redirect(agentRoot);
   }
 
   const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {

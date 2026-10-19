@@ -1,0 +1,15 @@
+{
+  "task": "AGENT-ENTRY-ROUTE-01",
+  "status": "CODE_READY_NOT_VERIFIED",
+  "screenshots": {
+    "375": "NOT_VERIFIED",
+    "1440": "NOT_VERIFIED",
+    "reason": "Isolated browser contour not run in this turn; root redirect covered by unit tests."
+  },
+  "commands": [
+    "tsx --test src/lib/agent-nav/root-destination.test.ts",
+    "tsx --test src/lib/auth-flow.test.ts"
+  ],
+  "notPublished": true,
+  "notMerged": true
+}
