@@ -1,89 +1,79 @@
 {
-  "status": "NOT_VERIFIED",
-  "task": "LOGIN-ENTRY-PROTOTYPE-01.3",
-  "baseSha": "7376fb291ef67b6d5f763f8b3cf9917660606bfe",
+  "status": "SMOKE_CHAIN_PASS_NOT_GO",
+  "task": "LOGIN-ENTRY-PROTOTYPE-01.4",
+  "runId": "login-entry-01-4-1792391479",
+  "runDir": "/tmp/login-entry-01-4-1792391479",
   "codeSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
-  "runnerSha": "acc5a0e318a5d41b75dae46ae9753a97f2f220d8",
-  "artifactTipSha": "acc5a0e318a5d41b75dae46ae9753a97f2f220d8",
   "productPinSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
+  "runnerSha": "4fddd7d1d745e1f5184dce346b458e9c1e2eeda9",
+  "builtCheckoutSha": "4fddd7d1d745e1f5184dce346b458e9c1e2eeda9",
+  "artifactTipSha": "4fddd7d1d745e1f5184dce346b458e9c1e2eeda9",
   "navigatorSha": "c9cdef42338e1695a4e863086e5d3e283cc0df36",
-  "referencePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
-  "referenceArchiveSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "protectedForeignPort3040": "still_in_use_untouched",
+  "preflight": {
+    "ok": true,
+    "notes": {
+      "foreignPort3040": "in_use_untouched",
+      "backendHealthStatus": 200,
+      "disposableDbSummary": "postgresql://127.0.0.1/remcard_admin_test_012"
+    }
+  },
   "productionBuild": {
-    "command": "env -u R06_NEXT_DIST_DIR npm run build",
+    "command": "env -u R06_NEXT_DIST_DIR LOGIN_ENTRY_NEXT_DIST_DIR=${LOGIN_ENTRY_NEXT_DIST_DIR} NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} REMCARD_API_BASE_URL=${REMCARD_API_BASE_URL} npm run build",
     "sourceSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
-    "BUILD_ID": "3s5GChbiF3dko8oGKSYlA",
+    "builtCheckoutSha": "4fddd7d1d745e1f5184dce346b458e9c1e2eeda9",
+    "BUILD_ID": "1AOoRFitj0ki1Ou5Uxhuw",
+    "distDir": ".next-login-entry-91479549",
+    "nextPublicAppUrl": "http://127.0.0.1:30550",
+    "remcardApiBaseUrl": "http://127.0.0.1:3041",
     "exitCode": 0,
     "signal": null,
     "spawnError": null,
-    "stdoutBytes": 5251,
+    "stdoutBytes": 5548,
     "stderrBytes": 0,
-    "recordedAt": "2026-10-18T21:04:26.625Z",
-    "acceptanceOnly": true,
-    "imported": true,
-    "logFile": "artifacts/remcard-login-entry-prototype-01/login-entry-build.log",
     "verified": true,
-    "verifyReason": null,
-    "pinMode": "pinned-build-report"
+    "logFile": "artifacts/remcard-login-entry-prototype-01/login-entry-build.log",
+    "pinMode": "isolated-01-4-single-build"
   },
   "runtimePin": {
-    "verified": false,
+    "verified": true,
     "mode": "spawned-next-start",
-    "reason": "loopback port 3040 already in use (foreign listener left intact)",
-    "stage": "bind",
-    "probedBuildId": null,
-    "expectedBuildId": "3s5GChbiF3dko8oGKSYlA",
-    "origin": null
+    "origin": "http://127.0.0.1:30550",
+    "codeSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
+    "BUILD_ID": "1AOoRFitj0ki1Ou5Uxhuw",
+    "probedBuildId": "1AOoRFitj0ki1Ou5Uxhuw"
   },
-  "tests": {
-    "authComponents": {
-      "command": "NODE_ENV=test npx vitest run src/components/auth/AuthFlow.test.tsx src/components/auth/LoginExperience.test.tsx src/components/auth/AdminLoginModal.test.tsx",
-      "exitCode": 0,
-      "signal": null,
-      "spawnError": null,
-      "stdoutBytes": 428,
-      "stderrBytes": 0,
-      "evaluation": {
-        "ok": true,
-        "skipped": false,
-        "status": "PASS",
-        "exitCode": 0
+  "disposableLogin": {
+    "status": "PASS",
+    "tag": "login-entry-1792391511439",
+    "maxId": "881377304658",
+    "verifyCodeStatus": 200,
+    "reloginVerifyStatus": 200,
+    "cleanup": {
+      "mock": true,
+      "tag": "login-entry-1792391511439",
+      "publicId": "pub-login-entry-1792391511439",
+      "deleted": {
+        "users": 1,
+        "authAccounts": 1,
+        "consents": 2,
+        "botLoginCodes": 1
+      },
+      "remaining": {
+        "users": 0,
+        "authAccounts": 0,
+        "consents": 0,
+        "botLoginCodes": 0
       }
     },
-    "harnessUnit": {
-      "command": "node --test artifacts/remcard-login-entry-prototype-01/login-entry-smoke-harness.test.mjs",
-      "exitCode": 0,
-      "signal": null,
-      "spawnError": null,
-      "stdoutBytes": 3341,
-      "stderrBytes": 0,
-      "evaluation": {
-        "ok": true,
-        "skipped": false,
-        "status": "PASS",
-        "exitCode": 0
-      }
-    },
-    "disposableLogin": {
-      "status": "NOT_VERIFIED",
-      "reason": "not run",
-      "stage": "not_started"
-    },
-    "partialSeedCleanup": {
-      "status": "NOT_VERIFIED",
-      "reason": "not run"
-    },
-    "smokeError": "loopback port 3040 already in use (foreign listener left intact)"
+    "browserAttemptCount": 1
   },
-  "screenshots": {
-    "status": "skipped"
+  "smokeError": null,
+  "attemptCount": {
+    "browser": 1,
+    "build": 1
   },
   "notPublished": true,
   "notMerged": true,
-  "finalSmokeBlocker": {
-    "stage": "bind",
-    "reason": "loopback port 3040 already in use (foreign listener left intact)",
-    "disposable": "not_started",
-    "cleanup": "not_run"
-  }
+  "noGoUntilIndependentReview": true
 }

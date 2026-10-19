@@ -65,9 +65,13 @@ export async function resolveLoopbackListenPort(opts) {
 }
 
 export function spawnOwnedNextStart({ port, cwd, env }) {
+  const distDir = env?.LOGIN_ENTRY_NEXT_DIST_DIR;
+  const distPrefix = distDir
+    ? `LOGIN_ENTRY_NEXT_DIST_DIR=${JSON.stringify(String(distDir))} `
+    : "";
   const child = spawn(
     "bash",
-    ["-lc", `env -u R06_NEXT_DIST_DIR npx next start -p ${port} -H ${LOOPBACK}`],
+    ["-lc", `env -u R06_NEXT_DIST_DIR ${distPrefix}npx next start -p ${port} -H ${LOOPBACK}`],
     {
       cwd,
       env: { ...env, NODE_ENV: "production", PORT: String(port) },

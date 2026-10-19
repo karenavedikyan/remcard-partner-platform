@@ -8,8 +8,14 @@
      · cpus: 1
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 2.9s
+ ✓ Compiled successfully in 11.0s
    Linting and checking validity of types ...
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+   	- include was updated to add '.next-login-entry-91479549/types/**/*.ts'
+
 
 ./src/components/agent-r03/AgentCertificatesList.tsx
 98:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps

@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   captureLoginEntryTargets,
   parseCaptureTargetSpec,
@@ -236,7 +236,7 @@ function reseedFixture(tag, runtimeEnv, maxId) {
   return JSON.parse(seed.stdout.trim());
 }
 
-async function runDisposableChain(platformOrigin, runtimeEnv) {
+export async function runDisposableChain(platformOrigin, runtimeEnv) {
   materializeNavigatorFixtureScripts();
   const tag = `login-entry-${Date.now()}`;
   const maxId = fixtureMaxIdForTag(tag);
@@ -426,6 +426,10 @@ function loadJsonReport(filePath) {
 
 async function main() {
   delete process.env.R06_NEXT_DIST_DIR;
+  if (process.argv.includes("--isolated-smoke-01-4")) {
+    const { runIsolatedSmoke014 } = await import("./login-entry-isolated-smoke-01-4.mjs");
+    process.exit(await runIsolatedSmoke014());
+  }
   const finalSmoke = process.argv.includes("--final-smoke-01-3");
   if (finalSmoke) {
     process.env.LOGIN_ENTRY_SKIP_CAPTURE = "1";
@@ -810,7 +814,14 @@ async function main() {
   if (exitFail) process.exit(1);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+const entryPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const isDirectRun =
+  entryPath &&
+  (import.meta.url === pathToFileURL(entryPath).href ||
+    import.meta.url.endsWith(path.basename(entryPath)));
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

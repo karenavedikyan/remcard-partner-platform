@@ -1,11 +1,15 @@
 {
-  "command": "env -u R06_NEXT_DIST_DIR npm run build",
+  "command": "env -u R06_NEXT_DIST_DIR LOGIN_ENTRY_NEXT_DIST_DIR=${LOGIN_ENTRY_NEXT_DIST_DIR} NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} REMCARD_API_BASE_URL=${REMCARD_API_BASE_URL} npm run build",
   "sourceSha": "5cb765bb03b1030568b9f4be8f8290b974a2089b",
-  "BUILD_ID": "3s5GChbiF3dko8oGKSYlA",
+  "builtCheckoutSha": "4fddd7d1d745e1f5184dce346b458e9c1e2eeda9",
+  "BUILD_ID": "1AOoRFitj0ki1Ou5Uxhuw",
+  "distDir": ".next-login-entry-91479549",
+  "nextPublicAppUrl": "http://127.0.0.1:30550",
+  "remcardApiBaseUrl": "http://127.0.0.1:3041",
   "exitCode": 0,
   "signal": null,
   "spawnError": null,
-  "stdoutBytes": 5251,
+  "stdoutBytes": 5548,
   "stderrBytes": 0,
-  "recordedAt": "2026-10-18T21:04:26.625Z"
+  "recordedAt": "2026-10-19T06:31:48.345Z"
 }
