@@ -86,7 +86,7 @@ export function PartnerPersonalAliasDialog({
           изменяются.
         </p>
         <TextField
-          label="Название для себя"
+          label="Подпись в вашем списке"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           maxLength={100}

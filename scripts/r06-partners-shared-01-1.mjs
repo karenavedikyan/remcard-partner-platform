@@ -281,8 +281,8 @@ async function runFunctional(page, origin, mock, expected) {
     await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Переименовать для себя' }).first().click();
     await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({ state: 'visible' });
-    await page.getByLabel('Название для себя').fill('Мой юг');
-    await page.getByRole('button', { name: 'Сохранить' }).click();
+    await page.locator('[data-testid="partner-personal-alias-dialog"] input').fill('Мой юг');
+    await page.locator('[data-testid="partner-personal-alias-dialog"]').getByRole('button', { name: 'Сохранить' }).click();
     await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({ state: 'hidden', timeout: 15_000 });
     await page.reload({ waitUntil: 'networkidle' });
     const aliasOk = await page
