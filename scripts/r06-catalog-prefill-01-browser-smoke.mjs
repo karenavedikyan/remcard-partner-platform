@@ -205,19 +205,14 @@ async function main() {
     await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
 
     await advanceCatalogSteps(page, 1);
-    const servicesGroup = page.getByRole('group', { name: 'Работы и услуги' });
-    const serviceChecks = servicesGroup.getByRole('checkbox');
-    for (let i = 0; i < (await serviceChecks.count()); i += 1) {
-      const cb = serviceChecks.nth(i);
-      if (await cb.isChecked()) await cb.uncheck();
+    const wizardRoot = page.locator('[data-testid="specialist-catalog-wizard"]');
+    const adv = wizardRoot.locator('[data-testid="direction-advanced-collapse"]');
+    if (await adv.count() && !(await adv.evaluate((el) => el.open))) {
+      await adv.locator('summary').click();
     }
-    const stagesGroup = page.getByRole('group', { name: /На каких этапах/i });
-    if (await stagesGroup.count()) {
-      const stageChecks = stagesGroup.getByRole('checkbox');
-      for (let i = 0; i < (await stageChecks.count()); i += 1) {
-        const cb = stageChecks.nth(i);
-        if (await cb.isChecked()) await cb.uncheck();
-      }
+    const checked = wizardRoot.locator('input[type="checkbox"]:checked');
+    for (let i = (await checked.count()) - 1; i >= 0; i -= 1) {
+      await checked.nth(i).uncheck();
     }
     await page.getByRole('button', { name: 'Сохранить черновик' }).click();
     await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
@@ -252,19 +247,25 @@ async function main() {
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('#sc-public-name', { timeout: 60_000 });
     const reloadedName = await page.locator('#sc-public-name').inputValue();
-    await advanceCatalogSteps(page, 2);
-    const reloadedTg = await page.locator('#sc-tg').inputValue();
-    await advanceCatalogSteps(page, 1);
-    const reloadedDirs = await readImplCatalogDirections(page);
-    await ensureCatalogStep(page, 0);
+    const afterReloadGet = await page.evaluate(async () => {
+      const r = await fetch('/api/remcard/api/pro/profile', { credentials: 'include' });
+      const b = await r.json();
+      return {
+        telegram: b.user?.telegram,
+        navigatorStageIds: b.user?.catalogDraft?.navigatorStageIds ?? [],
+        specializations: b.user?.specializations ?? [],
+        catalogDisplayNameSource: b.user?.catalogDisplayNameSource,
+      };
+    });
     report.steps.reloadUi = {
       ok:
         reloadedName === '' &&
-        reloadedTg === '@catalog_smoke' &&
-        (reloadedDirs?.stages ?? []).length === 0,
+        afterReloadGet.telegram === '@catalog_smoke' &&
+        (afterReloadGet.navigatorStageIds ?? []).length === 0 &&
+        (afterReloadGet.specializations ?? []).length === 0 &&
+        afterReloadGet.catalogDisplayNameSource === 'staged_draft',
       catalogPublicName: reloadedName,
-      telegram: reloadedTg,
-      stages: reloadedDirs?.stages ?? [],
+      ...afterReloadGet,
     };
 
     const gateKeys = [
