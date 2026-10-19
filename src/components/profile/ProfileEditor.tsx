@@ -61,6 +61,7 @@ import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
 import { SpecialistAgentActivityCompact } from "./specialist/SpecialistAgentActivityCompact";
 import {
+  catalogPrefillSourceKey,
   mergeCatalogPrefill,
   parseCatalogTouched,
   workingProfileCatalogSeed,
@@ -238,7 +239,7 @@ function ProfileEditorInner({
   const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
     parseCatalogTouched(catalogTouchedFromUser(initial.user)),
   );
-  const specialistPrefillRef = useRef(false);
+  const catalogPrefillAppliedKeyRef = useRef<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
@@ -497,20 +498,30 @@ function ProfileEditorInner({
   }, [cabinetAccess.canFetchModerationNotes, loadNotes]);
 
   useEffect(() => {
-    if (!specialistR06Ui || specialistPrefillRef.current) return;
-    specialistPrefillRef.current = true;
+    if (!specialistR06Ui) return;
+    const sourceKey = catalogPrefillSourceKey(profile);
+    if (catalogPrefillAppliedKeyRef.current === sourceKey) return;
+    catalogPrefillAppliedKeyRef.current = sourceKey;
     const seed = workingProfileCatalogSeed(profile);
     const merged = mergeCatalogPrefill(buildCatalogDraft(), seed, catalogTouched);
-    if (merged.catalogPublicName && !catalogPublicName.trim()) {
-      setCatalogPublicName(merged.catalogPublicName);
-    }
-    if (merged.catalogCity && !catalogCity.trim()) {
-      setCatalogCity(merged.catalogCity);
-    }
-    if (merged.specializations.length && specializations.length === 0) {
+    if (merged.catalogPublicName !== catalogPublicName) setCatalogPublicName(merged.catalogPublicName);
+    if (merged.catalogCity !== catalogCity) setCatalogCity(merged.catalogCity);
+    if (merged.description !== description) setDescription(merged.description);
+    if (merged.website !== website) setWebsite(merged.website);
+    if (merged.telegram !== telegram) setTelegram(merged.telegram);
+    if (merged.publicEmail !== publicEmail) setPublicEmail(merged.publicEmail);
+    if (merged.publicPhone !== publicPhone) setPublicPhone(merged.publicPhone);
+    if (merged.catalogImageUrl !== catalogImageUrl) setCatalogImageUrl(merged.catalogImageUrl);
+    if (
+      merged.specializations.length !== specializations.length ||
+      merged.specializations.some((id, i) => id !== specializations[i])
+    ) {
       setSpecializations(merged.specializations);
     }
-    if (merged.navigatorStageIds.length && catalogNavigatorStageIds.length === 0) {
+    if (
+      merged.navigatorStageIds.length !== catalogNavigatorStageIds.length ||
+      merged.navigatorStageIds.some((id, i) => id !== catalogNavigatorStageIds[i])
+    ) {
       setCatalogNavigatorStageIds(merged.navigatorStageIds);
     }
   }, [
@@ -520,8 +531,14 @@ function ProfileEditorInner({
     catalogTouched,
     catalogPublicName,
     catalogCity,
-    specializations.length,
-    catalogNavigatorStageIds.length,
+    description,
+    website,
+    telegram,
+    publicEmail,
+    publicPhone,
+    catalogImageUrl,
+    specializations,
+    catalogNavigatorStageIds,
   ]);
 
   useEffect(() => {

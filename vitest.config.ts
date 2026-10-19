@@ -17,6 +17,8 @@ export default defineConfig({
       "src/lib/profile-sections.test.ts",
       "src/lib/profile-draft-sync.test.ts",
       "src/lib/profile-catalog-stages-hydration.test.ts",
+      "src/lib/specialist-r06/catalog-prefill.test.ts",
+      "src/lib/specialist-r06/presets.test.ts",
       "src/lib/profile-working-areas.test.ts",
       "src/lib/partnership-search-ui.test.ts",
       "src/lib/partners-return-path.test.ts",

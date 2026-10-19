@@ -43,6 +43,7 @@ export const SPECIALIST_PRESETS: SpecialistPreset[] = [
   {
     id: "supervisor",
     label: "Специалист по приёмке и технадзору",
+    /** Prototype uses demo-role-supervision; production taxonomy has safety (display «Безопасность») — see R06-PROFILE-CATALOG-PREFILL-01 remainder. */
     serviceIds: ["safety"],
     stageIds: ["L1-0", "L1-11"],
   },
