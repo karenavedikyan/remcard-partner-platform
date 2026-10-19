@@ -389,7 +389,14 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
   const patternStep = step === 0 || step === 1 || step === 3;
 
   return (
-    <div className={styles.pw} data-testid="specialist-profile-wizard">
+    <div
+      className={
+        patternStep
+          ? `${styles.pw} ${stepStyles.patternWizardRoot}`
+          : styles.pw
+      }
+      data-testid="specialist-profile-wizard"
+    >
       <div
         className={
           patternStep ? `${styles.layout} ${stepStyles.patternWizardLayout}` : styles.layout
