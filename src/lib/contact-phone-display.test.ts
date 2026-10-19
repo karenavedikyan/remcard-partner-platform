@@ -43,4 +43,20 @@ describe("contact-phone-display", () => {
   it("formatPhoneInput returns display for complete numbers", () => {
     expect(formatPhoneInput("89186360088")).toBe("+7 (918) 636-00-88");
   });
+
+  describe("R06 contacts smoke reload UI compare", () => {
+    const expectCanonical = "+79186360088";
+
+    it("accepts formatted UI display for strict reload compare", () => {
+      expect(canonicalizeRuContactPhone("+7 (918) 636-00-88")).toBe(expectCanonical);
+    });
+
+    it("rejects empty UI display", () => {
+      expect(canonicalizeRuContactPhone("")).toBe("");
+    });
+
+    it("rejects a different +7 number", () => {
+      expect(canonicalizeRuContactPhone("+7 (999) 111-22-33")).not.toBe(expectCanonical);
+    });
+  });
 });
