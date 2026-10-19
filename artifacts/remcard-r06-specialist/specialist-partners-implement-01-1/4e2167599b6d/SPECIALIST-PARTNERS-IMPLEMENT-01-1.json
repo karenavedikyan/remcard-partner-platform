@@ -1,0 +1,376 @@
+{
+  "task": "SPECIALIST-PARTNERS-IMPLEMENT-01.1",
+  "generatedAt": "2026-10-19T20:02:45.524Z",
+  "codeSha": "4e2167599b6dd64548ddd76e7a2e5f7765e67c9e",
+  "sourceTreeDigest": "302284144e5ff46fbd53cd984302adbf5aa587e8",
+  "treeDirtyBeforeBuild": false,
+  "build": {
+    "status": "skipped",
+    "exitCode": null,
+    "buildId": "8VtmePfhFX9WiWt-geeXq",
+    "distDir": ".next-r06-specialist-partners-implement-01-1"
+  },
+  "runtimeVerified": {
+    "specialist": "8VtmePfhFX9WiWt-geeXq",
+    "agent": "8VtmePfhFX9WiWt-geeXq",
+    "ineligible": "8VtmePfhFX9WiWt-geeXq",
+    "expected": "8VtmePfhFX9WiWt-geeXq"
+  },
+  "refProtoSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "unit": {
+    "vitest": {
+      "exitCode": 0,
+      "stdout": "\n RUN  v3.2.7 /agent/repos/remcard-partner-platform\n\n ✓ src/lib/partners-hub-presentation.test.ts (7 tests) 3ms\n ✓ src/lib/agent-r04/partner-list-row.test.ts (3 tests) 2ms\n ✓ src/lib/agent-r04/partner-filters.test.ts (1 test) 2ms\n ✓ src/lib/agent-r04/partnership-action-icons.test.ts (1 test) 3ms\n ✓ src/components/partners/PartnersHub.test.tsx (6 tests) 464ms\n\n Test Files  5 passed (5)\n      Tests  18 passed (18)\n   Start at  20:01:24\n   Duration  1.52s (transform 419ms, setup 695ms, collect 601ms, tests 475ms, environment 1.38s, prepare 304ms)\n\n"
+    },
+    "partnershipRulesTsx": {
+      "exitCode": 0,
+      "stdout": "btest: shows accept/reject to invite receiver\n    ok 1 - shows accept/reject to invite receiver\n      ---\n      duration_ms: 0.203044\n      ...\n    # Subtest: shows cancel to invite author\n    ok 2 - shows cancel to invite author\n      ---\n      duration_ms: 0.071373\n      ...\n    # Subtest: allows accept_pending only for non-author in PENDING\n    ok 3 - allows accept_pending only for non-author in PENDING\n      ---\n      duration_ms: 0.179701\n      ...\n    # Subtest: blocks accept_pending for pending author\n    ok 4 - blocks accept_pending for pending author\n      ---\n      duration_ms: 0.10426\n      ...\n    # Subtest: counts attention using pendingProposedBy not initiatedBy\n    ok 5 - counts attention using pendingProposedBy not initiatedBy\n      ---\n      duration_ms: 0.092296\n      ...\n    1..5\nok 3 - partnership action rules\n  ---\n  duration_ms: 0.753088\n  type: 'suite'\n  ...\n1..3\n# tests 20\n# suites 3\n# pass 20\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 154.021403\n"
+    }
+  },
+  "functional": [
+    {
+      "id": "shell_legacy",
+      "status": "PASS",
+      "detail": "sharedCount=0",
+      "mode": "specialist_ineligible"
+    },
+    {
+      "id": "legacy_find_tab",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist_ineligible"
+    },
+    {
+      "id": "shell_shared",
+      "status": "PASS",
+      "detail": "count=1",
+      "mode": "specialist"
+    },
+    {
+      "id": "shell_audience",
+      "status": "PASS",
+      "detail": "specialist-r04",
+      "mode": "specialist"
+    },
+    {
+      "id": "search_role_query",
+      "status": "PASS",
+      "detail": "http://127.0.0.1:30720/api/remcard/api/partnership/search?role=pro&limit=20",
+      "mode": "specialist"
+    },
+    {
+      "id": "active_partner_visible",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist"
+    },
+    {
+      "id": "incoming_from_counterparty",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist"
+    },
+    {
+      "id": "outgoing_initiated_by_me",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist"
+    },
+    {
+      "id": "view_mode_cards",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist"
+    },
+    {
+      "id": "view_mode_list",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist"
+    },
+    {
+      "id": "deeplink_hub_link",
+      "status": "PASS",
+      "detail": "",
+      "mode": "specialist"
+    },
+    {
+      "id": "search_error_surface",
+      "status": "PASS",
+      "detail": "retry-visible",
+      "mode": "specialist"
+    },
+    {
+      "id": "search_retry_recovery",
+      "status": "PASS",
+      "detail": "result-visible",
+      "mode": "specialist"
+    },
+    {
+      "id": "modal_title_find",
+      "status": "PASS",
+      "detail": "Найти партнёра",
+      "mode": "specialist"
+    },
+    {
+      "id": "alias_persist_reload",
+      "status": "PASS",
+      "detail": "patch=200",
+      "mode": "specialist"
+    },
+    {
+      "id": "bulk_outcome_visible",
+      "status": "PASS",
+      "detail": "Не удалось обновить 1 запись. Попробуйте повторить.\n\nПовторить для неуспешных (1",
+      "mode": "specialist"
+    },
+    {
+      "id": "bulk_retry_success",
+      "status": "PASS",
+      "detail": "Готово: 1 запись перенесены в архив. Партнёрство и условия не изменились — скрыт",
+      "mode": "specialist"
+    },
+    {
+      "id": "link_invite_create",
+      "status": "PASS",
+      "detail": "http://127.0.0.1:30720/invite/link/mock-token-1",
+      "mode": "specialist"
+    },
+    {
+      "id": "shell_shared",
+      "status": "PASS",
+      "detail": "count=1",
+      "mode": "agent"
+    },
+    {
+      "id": "shell_audience",
+      "status": "PASS",
+      "detail": "agent-r04",
+      "mode": "agent"
+    },
+    {
+      "id": "search_role_query",
+      "status": "PASS",
+      "detail": "http://127.0.0.1:30720/api/remcard/api/partnership/search?role=agent&limit=20",
+      "mode": "agent"
+    },
+    {
+      "id": "active_partner_visible",
+      "status": "PASS",
+      "detail": "",
+      "mode": "agent"
+    },
+    {
+      "id": "incoming_from_counterparty",
+      "status": "PASS",
+      "detail": "",
+      "mode": "agent"
+    },
+    {
+      "id": "outgoing_initiated_by_me",
+      "status": "PASS",
+      "detail": "",
+      "mode": "agent"
+    },
+    {
+      "id": "view_mode_cards",
+      "status": "PASS",
+      "detail": "",
+      "mode": "agent"
+    },
+    {
+      "id": "view_mode_list",
+      "status": "PASS",
+      "detail": "",
+      "mode": "agent"
+    },
+    {
+      "id": "deeplink_hub_link",
+      "status": "PASS",
+      "detail": "",
+      "mode": "agent"
+    },
+    {
+      "id": "search_error_surface",
+      "status": "PASS",
+      "detail": "retry-visible",
+      "mode": "agent"
+    },
+    {
+      "id": "search_retry_recovery",
+      "status": "PASS",
+      "detail": "result-visible",
+      "mode": "agent"
+    },
+    {
+      "id": "modal_title_find",
+      "status": "PASS",
+      "detail": "Найти партнёра",
+      "mode": "agent"
+    },
+    {
+      "id": "alias_persist_reload",
+      "status": "PASS",
+      "detail": "patch=200",
+      "mode": "agent"
+    }
+  ],
+  "functionalSummary": {
+    "pass": 31,
+    "fail": 0
+  },
+  "preferencesContract": {
+    "note": "Navigator GET/PATCH /api/pro/partnership-list-preferences requires UserRole.PRO and partnership participation",
+    "mockFunctional": "NOT_RUN"
+  },
+  "geometry320": {
+    "overflowPage": false,
+    "diagnostics": []
+  },
+  "pairs": [
+    {
+      "id": "active-list",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-list-1440-light.png",
+        "sha256": "e3e69974b8370fe3fa0a13f71544bdb94a7a887526e9f8a71a53b2cb1883d662"
+      },
+      "ref": {
+        "file": "ref-specialist-active-list-1440-light.png",
+        "sha256": "04903d0ef6b6d5f0bdade76d5d0fbffa5e3f44baeabf96bc2203dd79dbe829fe"
+      },
+      "refError": null
+    },
+    {
+      "id": "inv-in",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-inv-in-1440-light.png",
+        "sha256": "a4f354df5d69245ebb02a8974b7f0656fe2b3c8d303e93103746946f212f110d"
+      },
+      "ref": {
+        "file": "ref-specialist-inv-in-1440-light.png",
+        "sha256": "9a45ee314410d9acdee1312239bf479e88955fc99e22f0cbaa3c81b4c007a594"
+      },
+      "refError": null
+    },
+    {
+      "id": "inv-out",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-inv-out-1440-light.png",
+        "sha256": "5c5ad516c21a32ce6b1869a9906206dea51a140c850fff46f84a6aa8658dcf26"
+      },
+      "ref": {
+        "file": "ref-specialist-inv-out-1440-light.png",
+        "sha256": "1ce80ad5022387c0ff14ac8c9c8506adc7419583159fdcb51eaa5455a7462c8e"
+      },
+      "refError": null
+    },
+    {
+      "id": "find",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-find-1440-light.png",
+        "sha256": "eda7df532da7dc25b7d8a9e77731f053b86c1cab2e163bef31d752a9b172181c"
+      },
+      "ref": {
+        "file": "ref-specialist-find-1440-light.png",
+        "sha256": "1924af49830d6bd2b699c243db51e462f73ea04f560b37691dc0ab3ac1354913"
+      },
+      "refError": null
+    },
+    {
+      "id": "link",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-link-1440-light.png",
+        "sha256": "113ae618d517eed3755afaa2efeffe79fcd4774df566e1706694a2f91c1b4a51"
+      },
+      "ref": {
+        "file": "ref-specialist-link-1440-light.png",
+        "sha256": "2b0de82aaed51d918af8e0cbeb60ca751582a44af5be9ec4606d5d5ad4007027"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-375",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-375-375-light.png",
+        "sha256": "d05e8f7c2c875ca1d0054a1fbb46ae5070b985a0790e9f68f092cdecfbf765d9"
+      },
+      "ref": {
+        "file": "ref-specialist-active-375-375-light.png",
+        "sha256": "08ea1ba5fbec187b5a7f02b5831ff02ec38b789bb76b06ea7e05eb2e17131c00"
+      },
+      "refError": null
+    },
+    {
+      "id": "find-375",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-find-375-375-light.png",
+        "sha256": "89bb3274b9d634687350f6f27d936beed234c048ff3e5cd50e1c83ff1134b8c6"
+      },
+      "ref": {
+        "file": "ref-specialist-find-375-375-light.png",
+        "sha256": "e6ed53fafb4a1b4acffea57c175b82eb1dfd006c0dd24901905b8332bb3ca8cd"
+      },
+      "refError": null
+    },
+    {
+      "id": "link-375",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-link-375-375-light.png",
+        "sha256": "5ce88bb566a29c7b37b3484db2777fbab72dc98a03fe1ac27ae926a85480a523"
+      },
+      "ref": {
+        "file": "ref-specialist-link-375-375-light.png",
+        "sha256": "9ca9011660880a5b432c4bb91f890a1b114ec24847dea3e7da30930b3b486402"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-375-dark",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-375-dark-375-dark.png",
+        "sha256": "a0d2a22950c6e3181314e572bc410dbf0677117f68fa2a5c4126ffe1bc25e596"
+      },
+      "ref": {
+        "file": "ref-specialist-active-375-dark-375-dark.png",
+        "sha256": "e33e39dd003e3ac218f14a313415400f35311e582100c1a2757e99c9e9d9255d"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-list",
+      "audience": "agent-r04",
+      "impl": {
+        "file": "impl-agent-active-list-1440-light.png",
+        "sha256": "973ea8c2184ccb317832168f1648ea0ba4764345ec8a478e681dc451dedc6545"
+      },
+      "ref": {
+        "file": "ref-agent-active-list-1440-light.png",
+        "sha256": "8f70164e30446e89244afec3a97c9f5c9f778405a2608e1aa714c3f7f8b49af8"
+      },
+      "refError": null
+    },
+    {
+      "id": "find",
+      "audience": "agent-r04",
+      "impl": {
+        "file": "impl-agent-find-1440-light.png",
+        "sha256": "be46ba4102cf50b67dcdd25425ee134e2d8095b2cbd70656b6373edf5513a4b8"
+      },
+      "ref": {
+        "file": "ref-agent-find-1440-light.png",
+        "sha256": "f56bd11b9072a9e7241a63a9cc1a55bc009f2a1ce08aa720ab02498b0d07e098"
+      },
+      "refError": null
+    }
+  ],
+  "visualParityNote": "Limited 01.1 recaptures; CAPTURED ≠ pixel PASS. Prior 01 dark/card shots remain historical."
+}
