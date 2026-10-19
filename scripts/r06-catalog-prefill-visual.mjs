@@ -227,7 +227,7 @@ async function runContactsControlMain() {
 
   try {
     if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
-    const runtimeBuildId = await probeRuntimeBuildId(appOrigin);
+    const runtimeBuildId = await probeRuntimeBuildId(appOrigin, build.buildId);
     if (runtimeBuildId !== build.buildId) {
       throw new Error(`runtime_build_id_mismatch:${runtimeBuildId}:${build.buildId}`);
     }
