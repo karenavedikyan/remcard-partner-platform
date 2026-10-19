@@ -188,7 +188,7 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('#sp-kind', { state: 'visible' });
     }
 
@@ -201,9 +201,9 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('#sp-kind', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
     }
 
@@ -211,11 +211,11 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('#sp-kind', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('text=Завершить профиль', { timeout: 60_000 });
     }
 
