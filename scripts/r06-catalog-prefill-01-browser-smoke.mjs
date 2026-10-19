@@ -119,7 +119,7 @@ async function runContactsControlBrowserSmoke() {
   try {
     if (!(await waitForHttp(appOrigin, 120_000))) throw new Error('app_not_ready');
     report.steps.runtimeBuildId = {
-      ok: (await probeRuntimeBuildId(appOrigin)) === build.buildId,
+      ok: (await probeRuntimeBuildId(appOrigin, build.buildId)) === build.buildId,
       buildId: build.buildId,
     };
     const browser = await chromium.launch({ headless: true });
