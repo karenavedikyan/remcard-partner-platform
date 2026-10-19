@@ -56,18 +56,52 @@
   gap: var(--pw-5);
 }
 
+.contactsCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pw-3);
+  margin-bottom: var(--pw-4);
+  flex-wrap: wrap;
+}
+
+.contactsCardTop .contactsKicker {
+  margin: 0;
+  color: var(--pw-accent);
+  font-size: var(--pw-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.contactsStepLabel {
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+}
+
 .contactsStepActions {
   margin-top: var(--pw-8);
   padding-top: var(--pw-5);
   border-top: 1px solid var(--pw-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pw-3);
+  flex-wrap: nowrap;
+}
+
+.contactsActionsLeft,
+.contactsActionsRight {
+  display: flex;
+  gap: var(--pw-2);
   flex-wrap: nowrap;
   align-items: center;
 }
 
-.contactsStepActions .actionsLeft,
-.contactsStepActions .actionsRight {
-  flex-wrap: nowrap;
-  align-items: center;
+.contactsActionsRight {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 @media (max-width: 480px) {
@@ -75,7 +109,7 @@
     flex-wrap: wrap;
   }
 
-  .contactsStepActions .actionsRight {
+  .contactsActionsRight {
     flex-wrap: wrap;
     justify-content: flex-start;
     width: 100%;

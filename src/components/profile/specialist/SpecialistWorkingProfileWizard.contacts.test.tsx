@@ -69,6 +69,9 @@ describe("SpecialistWorkingProfileWizard contacts step", () => {
     expect(screen.getByTestId("agent-profile-input-phone")).toBeInTheDocument();
     expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Сбросить черновик" })).toBeNull();
-    expect(screen.getByTestId("specialist-contacts-actions")).toBeInTheDocument();
+    const actions = screen.getByTestId("specialist-contacts-actions");
+    expect(actions).toBeInTheDocument();
+    expect(actions.querySelector(`.${contactStyles.contactsActionsLeft}`)).toBeTruthy();
+    expect(actions.querySelector(`.${contactStyles.contactsActionsRight}`)).toBeTruthy();
   });
 });

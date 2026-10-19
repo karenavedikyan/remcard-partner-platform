@@ -47,6 +47,8 @@ import {
   assertRefContactsStepReady,
   fillImplContactsFixture,
   fillRefContactsFixture,
+  auditContactsScrollUnderShell,
+  measureContactsComputedActions,
   measureContactsFormBox,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
@@ -218,6 +220,7 @@ async function runContactsControlMain() {
   const protoBase = refStatic.baseUrl;
   const meta = { codeSha, buildId: build.buildId };
   const captures = [];
+  let scrollAudit = null;
   const viewports = [
     { width: 1440, height: 900, theme: 'light' },
     { width: 375, height: 812, theme: 'light' },
@@ -234,6 +237,16 @@ async function runContactsControlMain() {
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-contacts-visual-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
 
     for (const stateId of ['closed', 'open']) {
       const openDetails = stateId === 'open';
@@ -261,6 +274,7 @@ async function runContactsControlMain() {
                 page,
                 '[data-testid="specialist-profile-step-card"]',
               );
+              metrics.computedActions = await measureContactsComputedActions(page);
             },
             prepareRef: async (page, base) => {
               await prepareRefSpecialistContactsControl(page, base, R06_CONTACTS_FIXTURE);
@@ -280,6 +294,15 @@ async function runContactsControlMain() {
         captures.push(cap);
       }
     }
+    const scrollPage = await context.newPage();
+    await scrollPage.setViewportSize({ width: 1440, height: 900 });
+    applyMockContactsControl(mock.state, true);
+    await scrollPage.goto(`${implBase}/profile?section=basics`, { waitUntil: 'load' });
+    await waitImplReady(scrollPage, 'specialist-profile-wizard');
+    await assertImplContactsStepReady(scrollPage);
+    await fillImplContactsFixture(scrollPage, R06_CONTACTS_FIXTURE, { openDetails: true });
+    scrollAudit = await auditContactsScrollUnderShell(scrollPage);
+    await scrollPage.close();
     await browser.close();
   } finally {
     await stopOwnedServer(child);
@@ -291,7 +314,7 @@ async function runContactsControlMain() {
   const manifestPath = path.join(OUT, 'manifest.json');
   const manifest = {
     capturedAt: new Date().toISOString(),
-    task: 'R06-CONTACTS-CONTROL-01',
+    task: 'R06-CONTACTS-CONTROL-01.1',
     mode: 'MOCK_BFF_CONTACTS_CONTROL',
     codeSha,
     navigatorCodeSha: NAVIGATOR_PIN,
@@ -311,11 +334,13 @@ async function runContactsControlMain() {
     mockBff: mock.baseUrl,
     protoBase,
     captures,
+    scrollAuditUnderShell: scrollAudit,
     visualPass: false,
     remainders: [
       'Prototype «Отменить» (discard in-tab edits) has no equivalent — impl uses «Сбросить черновик» only on non-contacts steps; contacts step omits reset (BLOCKED cancel semantics).',
       'Impl retains «Сохранить черновик» on contacts — not in prototype row (documented, not removed).',
       'Ref «Другое контактное лицо» field absent in specialist R06 draft payload (BLOCKED).',
+      'Form-crop PNGs hide overlapping fixed/sticky shell at capture time only (ref+impl); full-page keeps shell.',
       'CAPTURED pairs only — compare form crops manually; shell/nav differences excluded.',
     ],
   };
@@ -326,7 +351,10 @@ async function runContactsControlMain() {
 }
 
 async function main() {
-  if (process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01') {
+  if (
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1'
+  ) {
     return runContactsControlMain();
   }
   verifyLoginEntryPrototypeTarball(ROOT);

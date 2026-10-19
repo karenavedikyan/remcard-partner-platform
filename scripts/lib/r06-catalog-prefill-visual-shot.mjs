@@ -7,6 +7,50 @@ const DEV_HIDE = `
   nextjs-portal, [data-nextjs-toast], [data-nextjs-dialog] { display: none !important; }
 `;
 
+const CROP_OVERLAY_RESTORE = '__r06CropOverlayRestore';
+
+async function withOverlappingChromeHidden(page, selector, run) {
+  await page.evaluate(
+    ({ sel, storeKey }) => {
+      const target = document.querySelector(sel);
+      if (!target) {
+        window[storeKey] = [];
+        return;
+      }
+      const targetRect = target.getBoundingClientRect();
+      const hidden = [];
+      for (const el of document.querySelectorAll('body *')) {
+        if (!(el instanceof HTMLElement)) continue;
+        if (target.contains(el) || el.contains(target)) continue;
+        const st = getComputedStyle(el);
+        if (st.position !== 'fixed' && st.position !== 'sticky') continue;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) continue;
+        const overlaps =
+          r.bottom > targetRect.top &&
+          r.top < targetRect.bottom &&
+          r.right > targetRect.left &&
+          r.left < targetRect.right;
+        if (!overlaps) continue;
+        hidden.push({ el, visibility: el.style.visibility });
+        el.style.visibility = 'hidden';
+      }
+      window[storeKey] = hidden;
+    },
+    { sel: selector, storeKey: CROP_OVERLAY_RESTORE },
+  );
+  try {
+    await run();
+  } finally {
+    await page.evaluate((storeKey) => {
+      for (const entry of window[storeKey] || []) {
+        entry.el.style.visibility = entry.visibility;
+      }
+      delete window[storeKey];
+    }, CROP_OVERLAY_RESTORE);
+  }
+}
+
 export function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
 }
@@ -125,7 +169,9 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
   if (spec.formCrop?.impl) {
     const cropFile = `${fileBase}-form-impl.png`;
     const cropPath = path.join(outDir, cropFile);
-    await implPage.locator(spec.formCrop.impl).screenshot({ path: cropPath });
+    await withOverlappingChromeHidden(implPage, spec.formCrop.impl, async () => {
+      await implPage.locator(spec.formCrop.impl).screenshot({ path: cropPath });
+    });
     implFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
   }
   await implPage.close();
@@ -163,7 +209,9 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     if (spec.formCrop?.ref) {
       const cropFile = `${fileBase}-form-ref.png`;
       const cropPath = path.join(outDir, cropFile);
-      await refPage.locator(spec.formCrop.ref).screenshot({ path: cropPath });
+      await withOverlappingChromeHidden(refPage, spec.formCrop.ref, async () => {
+        await refPage.locator(spec.formCrop.ref).screenshot({ path: cropPath });
+      });
       refFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
     }
     await refCtx.close();

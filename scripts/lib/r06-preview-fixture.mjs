@@ -310,6 +310,12 @@ export async function fillImplContactsFixture(page, fixture = R06_CONTACTS_FIXTU
   }
 }
 
+function rectMetrics(node) {
+  if (!node) return null;
+  const b = node.getBoundingClientRect();
+  return { width: Math.round(b.width), height: Math.round(b.height) };
+}
+
 export async function measureContactsFormBox(page, selector) {
   return page.evaluate((sel) => {
     const el = document.querySelector(sel);
@@ -323,11 +329,76 @@ export async function measureContactsFormBox(page, selector) {
       const b = node.getBoundingClientRect();
       return { width: Math.round(b.width), height: Math.round(b.height) };
     };
+    const gridStyle = grid ? getComputedStyle(grid) : null;
     return {
       form: { width: Math.round(r.width), height: Math.round(r.height) },
-      grid: pr(grid),
-      phoneField: pr(phone?.closest('.pw-field, .phoneFieldWrap, .field') ?? phone),
-      emailField: pr(email?.closest('.pw-field, .field') ?? email),
+      grid: {
+        ...pr(grid),
+        gap: gridStyle?.gap ?? null,
+        gridTemplateColumns: gridStyle?.gridTemplateColumns ?? null,
+      },
+      phoneInput: pr(phone),
+      emailInput: pr(email),
     };
   }, selector);
+}
+
+export async function measureContactsComputedActions(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="specialist-contacts-actions"]');
+    if (!root) return null;
+    const left = root.querySelector('[class*="contactsActionsLeft"]');
+    const right = root.querySelector('[class*="contactsActionsRight"]');
+    const cs = (node) => (node ? getComputedStyle(node) : null);
+    const leftStyle = cs(left);
+    const rightStyle = cs(right);
+    return {
+      actions: {
+        display: getComputedStyle(root).display,
+        flexWrap: getComputedStyle(root).flexWrap,
+      },
+      left: leftStyle
+        ? { display: leftStyle.display, flexWrap: leftStyle.flexWrap, gap: leftStyle.gap }
+        : null,
+      right: rightStyle
+        ? { display: rightStyle.display, flexWrap: rightStyle.flexWrap, gap: rightStyle.gap }
+        : null,
+    };
+  });
+}
+
+export async function auditContactsScrollUnderShell(page) {
+  return page.evaluate(() => {
+    const results = [];
+    const card = document.querySelector('[data-testid="specialist-profile-step-card"]');
+    const title = card?.querySelector('h2');
+    const tg = document.querySelector('#sp-tg');
+    const submit = card?.querySelector('button[type="submit"]');
+    for (const [id, node] of [
+      ['title', title],
+      ['telegram', tg],
+      ['submit', submit],
+    ]) {
+      if (!node) {
+        results.push({ id, ok: false, reason: 'missing' });
+        continue;
+      }
+      node.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const rect = node.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const visible =
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= vh &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+      results.push({
+        id,
+        ok: visible,
+        top: Math.round(rect.top),
+        bottom: Math.round(rect.bottom),
+        viewportHeight: vh,
+      });
+    }
+    return results;
+  });
 }

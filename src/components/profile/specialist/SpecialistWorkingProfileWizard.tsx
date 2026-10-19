@@ -413,18 +413,18 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
           </ol>
         </aside>
         <section className={styles.card} data-testid="specialist-profile-step-card">
-          <div className={styles.cardTop}>
-            <span className={styles.kicker} data-testid="specialist-profile-progress">
+          {step === 2 ? (
+            <div className={contactStyles.contactsCardTop}>
+              <span className={contactStyles.contactsKicker} data-testid="specialist-profile-progress">
+                Шаг {step + 1} из {STEPS.length}
+              </span>
+              <span className={contactStyles.contactsStepLabel}>Можно пропустить</span>
+            </div>
+          ) : (
+            <span className={styles.kicker}>
               Шаг {step + 1} из {STEPS.length}
             </span>
-            <span className={styles.label}>
-              {step === 0
-                ? "Обязательные данные"
-                : step === STEPS.length - 1
-                  ? "Перед сохранением"
-                  : "Можно пропустить"}
-            </span>
-          </div>
+          )}
           {banner ? (
             <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
               {banner.text}
@@ -718,14 +718,10 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               </>
             ) : null}
             <div
-              className={
-                step === 2
-                  ? `${styles.actions} ${contactStyles.contactsStepActions}`
-                  : styles.actions
-              }
+              className={step === 2 ? contactStyles.contactsStepActions : styles.actions}
               data-testid={step === 2 ? "specialist-contacts-actions" : undefined}
             >
-              <div className={styles.actionsLeft}>
+              <div className={step === 2 ? contactStyles.contactsActionsLeft : styles.actionsLeft}>
                 {step > 0 ? (
                   <button
                     type="button"
@@ -747,7 +743,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   </button>
                 ) : null}
               </div>
-              <div className={styles.actionsRight}>
+              <div className={step === 2 ? contactStyles.contactsActionsRight : styles.actionsRight}>
                 {(step === 1 || step === 2) && (
                   <button
                     type="button"

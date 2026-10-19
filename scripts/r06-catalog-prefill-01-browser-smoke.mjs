@@ -67,9 +67,15 @@ function seedContactsSmokeMock(state) {
     hasDraft: true,
     profileComplete: false,
     payload,
-    savedProfile: { ...payload },
+    savedProfile: {
+      ...payload,
+      partnershipContactPhone: '',
+      partnershipContactEmail: '',
+    },
   };
 }
+
+const EXPECT_CONTACT_PHONE = '+79186360088';
 
 async function runContactsControlBrowserSmoke() {
   const provenance = collectPrefillProvenance(ROOT, DIST);
@@ -77,7 +83,10 @@ async function runContactsControlBrowserSmoke() {
   const codeSha = provenance.codeSha;
   const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist');
   mkdirSync(OUT, { recursive: true });
-  const REPORT = path.join(OUT, `R06-CONTACTS-CONTROL-01-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`);
+  const REPORT = path.join(
+    OUT,
+    `R06-CONTACTS-CONTROL-01.1-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`,
+  );
 
   const mock = await startCatalogPrefillMockBff(seedContactsSmokeMock(createMockBffState()));
   const platformPort =
@@ -88,7 +97,7 @@ async function runContactsControlBrowserSmoke() {
   const build = runIsolatedPlatformBuild(ROOT, DIST);
   const report = {
     mode: 'MOCK_BFF',
-    task: 'R06-CONTACTS-CONTROL-01',
+    task: 'R06-CONTACTS-CONTROL-01.1',
     codeSha,
     sourceTreeDigest: provenance.sourceTreeDigest,
     treeDirty: false,
@@ -156,31 +165,101 @@ async function runContactsControlBrowserSmoke() {
     }
     await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
     const phone = page.getByTestId('agent-profile-input-phone');
+    const emailInput = page.locator('#sp-email');
+    const initialGet = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
+    const initialBody = await initialGet.json();
+    report.steps.initialGet = {
+      ok:
+        initialBody.payload?.partnershipContactPhone === '' &&
+        initialBody.payload?.partnershipContactEmail === '',
+      expected: { phone: '', email: '' },
+      actual: {
+        phone: initialBody.payload?.partnershipContactPhone ?? null,
+        email: initialBody.payload?.partnershipContactEmail ?? null,
+      },
+    };
     await phone.fill(R06_CONTACTS_FIXTURE.phone);
     await phone.blur();
-    await page.locator('#sp-email').fill(R06_CONTACTS_FIXTURE.email);
+    await emailInput.fill(R06_CONTACTS_FIXTURE.email);
+    const patchWait = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/pro/specialist-profile/draft') &&
+        res.request().method() === 'PATCH' &&
+        res.status() >= 200 &&
+        res.status() < 300,
+      { timeout: 30_000 },
+    );
     await page.getByRole('button', { name: 'Сохранить черновик' }).click();
-    await page.waitForTimeout(800);
+    const patchRes = await patchWait;
+    let patchPayload = null;
+    try {
+      const raw = patchRes.request().postData();
+      patchPayload = raw ? JSON.parse(raw) : null;
+    } catch {
+      patchPayload = null;
+    }
+    report.steps.patchRequest = {
+      ok: Boolean(patchPayload?.payload),
+      expected: {
+        phone: EXPECT_CONTACT_PHONE,
+        email: R06_CONTACTS_FIXTURE.email,
+      },
+      actual: {
+        phone: patchPayload?.payload?.partnershipContactPhone ?? null,
+        email: patchPayload?.payload?.partnershipContactEmail ?? null,
+      },
+    };
+    report.steps.patchRequest.ok =
+      report.steps.patchRequest.actual.phone === EXPECT_CONTACT_PHONE &&
+      report.steps.patchRequest.actual.email === R06_CONTACTS_FIXTURE.email;
+
     const getRes = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
     const body = await getRes.json();
-    report.steps.savePatch = {
-      ok: Boolean(body.payload?.partnershipContactPhone && body.payload?.partnershipContactEmail),
-      phone: body.payload?.partnershipContactPhone,
-      email: body.payload?.partnershipContactEmail,
+    report.steps.getAfterPatch = {
+      ok:
+        body.payload?.partnershipContactPhone === EXPECT_CONTACT_PHONE &&
+        body.payload?.partnershipContactEmail === R06_CONTACTS_FIXTURE.email,
+      expected: {
+        phone: EXPECT_CONTACT_PHONE,
+        email: R06_CONTACTS_FIXTURE.email,
+      },
+      actual: {
+        phone: body.payload?.partnershipContactPhone ?? null,
+        email: body.payload?.partnershipContactEmail ?? null,
+      },
     };
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]');
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+    if (!(await page.locator('[data-testid="specialist-profile-contacts-panel"]').count())) {
+      await page.getByRole('button', { name: /Связь и работа/i }).click();
+    }
+    await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
+    const uiEmail = await emailInput.inputValue();
+    const uiPhoneRaw = await phone.inputValue();
+    const getAfterReload = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
+    const reloadBody = await getAfterReload.json();
     report.steps.reloadUi = {
       ok:
-        (await phone.inputValue()).includes('9186360088') ||
-        (await phone.inputValue()).includes('+7'),
-      email: await page.locator('#sp-email').inputValue(),
+        reloadBody.payload?.partnershipContactPhone === EXPECT_CONTACT_PHONE &&
+        reloadBody.payload?.partnershipContactEmail === R06_CONTACTS_FIXTURE.email &&
+        uiEmail === R06_CONTACTS_FIXTURE.email,
+      expected: {
+        phone: EXPECT_CONTACT_PHONE,
+        email: R06_CONTACTS_FIXTURE.email,
+      },
+      actual: {
+        getPhone: reloadBody.payload?.partnershipContactPhone ?? null,
+        getEmail: reloadBody.payload?.partnershipContactEmail ?? null,
+        uiEmail,
+        uiPhoneDisplay: uiPhoneRaw,
+      },
     };
     report.ok =
       report.steps.runtimeBuildId.ok &&
-      report.steps.savePatch.ok &&
-      report.steps.reloadUi.ok &&
-      report.steps.reloadUi.email === R06_CONTACTS_FIXTURE.email;
+      report.steps.initialGet.ok &&
+      report.steps.patchRequest.ok &&
+      report.steps.getAfterPatch.ok &&
+      report.steps.reloadUi.ok;
     await browser.close();
   } finally {
     envPin.restore();
@@ -194,7 +273,10 @@ async function runContactsControlBrowserSmoke() {
 }
 
 async function main() {
-  if (process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01') {
+  if (
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1'
+  ) {
     return runContactsControlBrowserSmoke();
   }
   const provenance = collectPrefillProvenance(ROOT, DIST);
