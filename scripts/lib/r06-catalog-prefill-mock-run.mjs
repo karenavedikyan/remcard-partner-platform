@@ -100,6 +100,7 @@ export function runIsolatedPlatformBuild(repoRoot, distDir, { skipIfEnv = 'R06_S
       stderr: build.stderr ?? '',
     };
   }
+  spawnSync('git', ['checkout', '--', 'tsconfig.json', 'next-env.d.ts'], { cwd: repoRoot, stdio: 'ignore' });
   return {
     status: 'ok',
     exitCode: 0,
