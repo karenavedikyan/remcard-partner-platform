@@ -26,6 +26,7 @@ import { R06_PREVIEW_FIXTURE, readImplCatalogDirections } from './lib/r06-previe
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = process.env.LOGIN_ENTRY_NEXT_DIST_DIR || '.next-r06-catalog-prefill-smoke';
 const NAVIGATOR_PIN = '9a5bced4513f15a95790be7c85813b185beadd10';
+process.env.R06_PLAYWRIGHT_CATALOG_AUTOFILL = '0';
 
 async function waitForHttp(url, timeoutMs = 120_000) {
   const deadline = Date.now() + timeoutMs;
@@ -205,12 +206,29 @@ async function main() {
 
     await ensureCatalogStep(page, 0);
     await page.locator('#sc-public-name').fill('');
-    await advanceCatalogSteps(page, 1);
+    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
+
+    await page
+      .locator('[data-testid="specialist-catalog-wizard"]')
+      .getByRole('button', { name: /^Далее$/ })
+      .click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '1',
+      undefined,
+      { timeout: 30_000 },
+    );
+    const servicesGroup = page.getByRole('group', { name: 'Работы и услуги' });
+    const serviceChecks = servicesGroup.getByRole('checkbox');
+    for (let i = 0; i < (await serviceChecks.count()); i += 1) {
+      const cb = serviceChecks.nth(i);
+      if (await cb.isChecked()) await cb.uncheck();
+    }
     const stagesGroup = page.getByRole('group', { name: /На каких этапах/i });
     if (await stagesGroup.count()) {
       const stageChecks = stagesGroup.getByRole('checkbox');
-      const n = await stageChecks.count();
-      for (let i = 0; i < n; i += 1) {
+      for (let i = 0; i < (await stageChecks.count()); i += 1) {
         const cb = stageChecks.nth(i);
         if (await cb.isChecked()) await cb.uncheck();
       }

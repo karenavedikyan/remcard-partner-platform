@@ -84,11 +84,15 @@ export function createMockBffState() {
 function buildProfileJson(state) {
   const workingName = (state.workingDisplayName || state.displayName || '').trim();
   const nameResolved = resolveCatalogDisplayName(state);
+  const stagedSpecializations =
+    state.catalogDraft?.specializations !== undefined
+      ? state.catalogDraft.specializations
+      : state.workingServices;
   const editFields = {
     catalogDisplayName: state.registrationDisplayName,
     catalogCity: state.city,
     description: null,
-    specializations: state.workingServices,
+    specializations: stagedSpecializations,
     storeCategories: [],
     website: null,
     telegram: state.catalogDraft?.telegram ?? null,
@@ -144,7 +148,7 @@ function buildProfileJson(state) {
       catalogDisplayName: nameResolved.catalogDisplayName,
       catalogDisplayNameSource: nameResolved.catalogDisplayNameSource,
       catalogCity: state.city,
-      specializations: state.workingServices,
+      specializations: stagedSpecializations,
       role: 'PRO',
       partnerType: 'MASTER',
       partnerActivities: [],
@@ -285,14 +289,25 @@ export function startCatalogPrefillMockBff(state = createMockBffState()) {
       if (path === '/api/pro/profile' && req.method === 'PATCH') {
         const body = await readJson(req);
         state.lastPatchCatalog = body;
-        if (body.catalogDisplayName !== undefined || body.catalogTouched || body.catalogNavigatorStageIds) {
+        if (
+          body.catalogDisplayName !== undefined ||
+          body.catalogTouched ||
+          body.catalogNavigatorStageIds ||
+          body.specializations !== undefined
+        ) {
           state.catalogDraft = {
             ...(state.catalogDraft ?? {}),
             ...(body.catalogDisplayName !== undefined
-              ? { catalogDisplayName: body.catalogDisplayName }
+              ? {
+                  catalogDisplayName:
+                    body.catalogDisplayName === '' ? null : body.catalogDisplayName,
+                }
               : {}),
             ...(body.catalogNavigatorStageIds !== undefined
               ? { navigatorStageIds: body.catalogNavigatorStageIds }
+              : {}),
+            ...(body.specializations !== undefined
+              ? { specializations: body.specializations }
               : {}),
             ...(body.catalogTouched ? { catalogTouched: body.catalogTouched } : {}),
             ...(body.telegram !== undefined ? { telegram: body.telegram } : {}),

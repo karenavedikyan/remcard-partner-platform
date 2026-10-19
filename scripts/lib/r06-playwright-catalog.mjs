@@ -29,7 +29,9 @@ export async function fillCatalogStepRequirements(page, step) {
     const name = page.locator('#sc-public-name');
     if (await name.count()) {
       const val = await name.inputValue();
-      if (!val.trim()) await fillImplCatalogCard(page, R06_PREVIEW_FIXTURE);
+      if (!val.trim() && process.env.R06_PLAYWRIGHT_CATALOG_AUTOFILL !== '0') {
+        await fillImplCatalogCard(page, R06_PREVIEW_FIXTURE);
+      }
       else {
         const showFull = catalogWizard(page).getByRole('checkbox', {
           name: /Показывать полное имя в каталоге/i,
