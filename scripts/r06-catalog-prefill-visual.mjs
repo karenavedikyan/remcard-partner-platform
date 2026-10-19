@@ -64,6 +64,8 @@ import {
   measureContactsFormBox,
   measureStepComputedActions,
   measureStepFormBox,
+  measureImplStepGeometry,
+  measureRefStepGeometry,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
 } from './lib/r06-preview-fixture.mjs';
@@ -223,18 +225,17 @@ function applyMockProfilePatternStep(state, uiStepIndex, fixture, options = {}) 
   state._patternAdvancedOpen = options.advancedOpen ?? false;
 }
 
-async function runProfilePatternTransferMain() {
+async function runProfilePatternVisualMain(taskOptions = {}) {
+  const taskId = taskOptions.taskId ?? 'R06-PROFILE-PATTERN-TRANSFER-01';
+  const outSubdir = taskOptions.outSubdir ?? 'profile-pattern-visual';
+  const extraRemainders = taskOptions.extraRemainders ?? [];
   verifyLoginEntryPrototypeTarball(ROOT);
   const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
   if (provenanceBefore.treeDirty) {
     throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
   }
   const codeSha = provenanceBefore.codeSha;
-  const OUT = path.join(
-    ROOT,
-    'artifacts/remcard-r06-specialist/profile-pattern-visual',
-    codeSha.slice(0, 12),
-  );
+  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist', outSubdir, codeSha.slice(0, 12));
   mkdirSync(OUT, { recursive: true });
 
   ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
@@ -278,6 +279,7 @@ async function runProfilePatternTransferMain() {
   const matrix = [
     {
       stateId: 'basics-filled',
+      geometryKind: 'basics',
       uiStep: 0,
       prepareRefStep: 0,
       advancedOpen: false,
@@ -289,6 +291,7 @@ async function runProfilePatternTransferMain() {
     },
     {
       stateId: 'specialization-closed',
+      geometryKind: 'specialization',
       uiStep: 1,
       prepareRefStep: 1,
       advancedOpen: false,
@@ -300,6 +303,7 @@ async function runProfilePatternTransferMain() {
     },
     {
       stateId: 'specialization-open',
+      geometryKind: 'specialization-open',
       uiStep: 1,
       prepareRefStep: 1,
       advancedOpen: true,
@@ -311,6 +315,7 @@ async function runProfilePatternTransferMain() {
     },
     {
       stateId: 'review-filled',
+      geometryKind: 'review',
       uiStep: 3,
       prepareRefStep: 3,
       advancedOpen: false,
@@ -366,6 +371,7 @@ async function runProfilePatternTransferMain() {
               await row.assertImpl(page);
               await row.fillImpl(page);
               metrics.impl = await row.measure(page);
+              metrics.implGeometry = await measureImplStepGeometry(page, row.geometryKind);
               if (row.uiStep !== 3) {
                 metrics.computedActions = await measureStepComputedActions(page);
               }
@@ -376,6 +382,7 @@ async function runProfilePatternTransferMain() {
               });
               await row.fillRef(page);
               metrics.ref = await measureStepFormBox(page, '.pw-card');
+              metrics.refGeometry = await measureRefStepGeometry(page, row.geometryKind);
             },
             assertRef: row.assertRef,
           },
@@ -401,8 +408,8 @@ async function runProfilePatternTransferMain() {
   const manifestPath = path.join(OUT, 'manifest.json');
   const manifest = {
     capturedAt: new Date().toISOString(),
-    task: 'R06-PROFILE-PATTERN-TRANSFER-01',
-    mode: 'MOCK_BFF_PROFILE_PATTERN_TRANSFER',
+    task: taskId,
+    mode: 'MOCK_BFF_PROFILE_PATTERN_VISUAL',
     codeSha,
     navigatorCodeSha: NAVIGATOR_PIN,
     sourceTreeDigest: provenanceBefore.sourceTreeDigest,
@@ -428,7 +435,9 @@ async function runProfilePatternTransferMain() {
       'Impl retains «Сохранить черновик» on all steps — prototype wizard row omits it (documented, not removed).',
       'Prototype review «Показывать профиль партнёрам» (partnerSearchOptIn) has no supported API/state in impl (BLOCKED — not implemented).',
       'Ref optional primary direction / impl tile grid spacing may differ from prototype — compare crops manually.',
+      'Taxonomy list length/content differs ref demo dictionary vs impl API — compare fixture-selected chips only.',
       'CAPTURED pairs only — visualPass false; contract gaps listed separately from cosmetic remainders.',
+      ...extraRemainders,
     ],
     contractGaps: [
       'partnerSearchOptIn checkbox on review step — prototype only, no backend in scope.',
@@ -634,7 +643,24 @@ async function runContactsControlMain() {
   console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256 }, null, 2));
 }
 
+async function runProfilePatternTransferMain() {
+  return runProfilePatternVisualMain();
+}
+
+async function runProfileVisualRemindersMain() {
+  return runProfilePatternVisualMain({
+    taskId: 'R06-PROFILE-VISUAL-REMAINDERS-01',
+    outSubdir: 'profile-visual-remainers',
+    extraRemainders: [
+      'R06-PROFILE-VISUAL-REMAINDERS-01: geometry metrics in capture formMetrics.implGeometry/refGeometry — manual ref/impl table.',
+    ],
+  });
+}
+
 async function main() {
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01') {
+    return runProfileVisualRemindersMain();
+  }
   if (process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01') {
     return runProfilePatternTransferMain();
   }

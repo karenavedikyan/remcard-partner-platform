@@ -527,6 +527,105 @@ export async function measureStepFormBox(page, selector) {
   }, selector);
 }
 
+function boxMetrics(el) {
+  if (!el) return null;
+  const b = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  return {
+    width: Math.round(b.width),
+    height: Math.round(b.height),
+    paddingTop: cs.paddingTop,
+    paddingRight: cs.paddingRight,
+    paddingBottom: cs.paddingBottom,
+    paddingLeft: cs.paddingLeft,
+    gap: cs.gap,
+    minHeight: cs.minHeight,
+  };
+}
+
+/** Geometry for ref/impl compare (actual input/card/chip boxes, not wrappers). */
+export async function measureImplStepGeometry(page, stepKind) {
+  return page.evaluate((kind) => {
+    const pr = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const b = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        width: Math.round(b.width),
+        height: Math.round(b.height),
+        paddingTop: cs.paddingTop,
+        paddingLeft: cs.paddingLeft,
+        gap: cs.gap,
+        minHeight: cs.minHeight,
+      };
+    };
+    const out = {
+      card: pr('[data-testid="specialist-profile-step-card"]'),
+      actions: pr('[data-testid="specialist-step-actions"]'),
+    };
+    if (kind === 'basics') {
+      out.nameInput = pr('#sp-displayName');
+      out.cityInput = pr('#sp-city');
+    }
+    if (kind === 'specialization' || kind === 'specialization-open') {
+      out.kindSelect = pr('[data-specialist-kind]');
+      out.chip = pr('[data-direction-picker-variant="specialistWorkingProfile"] .chip');
+      out.tile = pr('[data-direction-picker-variant="specialistWorkingProfile"] .tileOption');
+    }
+    if (kind === 'review') {
+      out.factsGrid = pr('[data-testid="specialist-review-facts"]');
+      out.reviewChip = pr('[data-testid="specialist-profile-review-panel"] [class*="reviewChip"]');
+    }
+    return out;
+  }, stepKind);
+}
+
+export async function measureRefStepGeometry(page, stepKind) {
+  return page.evaluate((kind) => {
+    const pr = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const b = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        width: Math.round(b.width),
+        height: Math.round(b.height),
+        paddingTop: cs.paddingTop,
+        paddingLeft: cs.paddingLeft,
+        gap: cs.gap,
+        minHeight: cs.minHeight,
+      };
+    };
+    const card = document.querySelector('.pw-card');
+    const out = {
+      card: card
+        ? {
+            width: Math.round(card.getBoundingClientRect().width),
+            height: Math.round(card.getBoundingClientRect().height),
+            paddingTop: getComputedStyle(card).paddingTop,
+            paddingLeft: getComputedStyle(card).paddingLeft,
+          }
+        : null,
+      actions: pr('.pw-actions'),
+    };
+    if (kind === 'basics') {
+      out.nameInput = pr('[name="name"]');
+      out.cityInput = pr('[name="city"]');
+    }
+    if (kind.startsWith('specialization')) {
+      out.kindSelect = pr('[data-specialist-kind]');
+      out.chip = pr('.direction-selection-summary .pw-chip, .direction-selection-summary .direction-chip');
+      out.tile = pr('.pw-choice');
+    }
+    if (kind === 'review') {
+      out.factsGrid = pr('.pw-facts');
+      out.reviewChip = pr('.pw-picked .pw-chip, .pw-picked .direction-chip');
+    }
+    return out;
+  }, stepKind);
+}
+
 export async function measureStepComputedActions(page) {
   return page.evaluate(() => {
     const root =

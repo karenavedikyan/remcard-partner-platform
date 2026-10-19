@@ -386,9 +386,15 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
     );
   }
 
+  const patternStep = step === 0 || step === 1 || step === 3;
+
   return (
     <div className={styles.pw} data-testid="specialist-profile-wizard">
-      <div className={styles.layout}>
+      <div
+        className={
+          patternStep ? `${styles.layout} ${stepStyles.patternWizardLayout}` : styles.layout
+        }
+      >
         <aside className={styles.journey} aria-label="Этапы профиля">
           <span className={styles.kicker}>Специалист</span>
           <h2 className={styles.title}>Профиль без лишнего</h2>
@@ -418,7 +424,12 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
             ))}
           </ol>
         </aside>
-        <section className={styles.card} data-testid="specialist-profile-step-card">
+        <section
+          className={
+            patternStep ? `${styles.card} ${stepStyles.patternStepCard}` : styles.card
+          }
+          data-testid="specialist-profile-step-card"
+        >
           {step === 2 ? (
             <div className={stepStyles.contactsCardTop}>
               <span className={stepStyles.contactsKicker} data-testid="specialist-profile-progress">
@@ -492,7 +503,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 className={stepStyles.stepPanel}
                 data-testid="specialist-profile-basics-panel"
               >
-                <div className={styles.fields}>
+                <div className={`${styles.fields} ${stepStyles.basicsFields}`}>
                   <div className={styles.field}>
                     <label htmlFor="sp-displayName">
                       Ваше имя <span className={styles.required}>*</span>
@@ -500,6 +511,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     <input
                       id="sp-displayName"
                       name="name"
+                      className={stepStyles.controlInput}
                       autoComplete="name"
                       placeholder="Например, Алексей Иванов"
                       value={draft.displayName ?? ""}
@@ -513,6 +525,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     </label>
                     <input
                       id="sp-city"
+                      className={stepStyles.controlInput}
                       placeholder="Например, Краснодар"
                       value={draft.city ?? ""}
                       onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
@@ -531,34 +544,34 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 data-testid="specialist-profile-specialization-panel"
               >
               <div className={styles.fields}>
-                <p className={styles.intro}>
-                  Выберите работы, которые выполняете. Можно несколько.
-                </p>
-                <SpecialistPresetSection
-                  specialistKind={draft.specialistKind}
-                  specialistTitle={draft.specialistTitle}
-                  notice={specialistNotice}
-                  onKindChange={(kind) => {
-                    const next = { ...draft, specialistKind: kind, productCategoryIds: [] };
-                    const applied = kind ? applySpecialistPreset(next, kind, false) : false;
-                    setDraft(next);
-                    setSpecialistNotice(specialistPresetNotice(kind, applied));
-                  }}
-                  onTitleChange={(title) => setDraft((d) => ({ ...d, specialistTitle: title }))}
-                  onApplyMerge={() => {
-                    const next = { ...draft, productCategoryIds: [] };
-                    if (draft.specialistKind) applySpecialistPreset(next, draft.specialistKind, true);
-                    setDraft(next);
-                    setSpecialistNotice(
-                      "Стартовый набор добавлен. Уже выбранные категории и этапы сохранены.",
-                    );
-                  }}
-                />
+                <div className={stepStyles.presetBundle}>
+                  <SpecialistPresetSection
+                    specialistKind={draft.specialistKind}
+                    specialistTitle={draft.specialistTitle}
+                    notice={specialistNotice}
+                    onKindChange={(kind) => {
+                      const next = { ...draft, specialistKind: kind, productCategoryIds: [] };
+                      const applied = kind ? applySpecialistPreset(next, kind, false) : false;
+                      setDraft(next);
+                      setSpecialistNotice(specialistPresetNotice(kind, applied));
+                    }}
+                    onTitleChange={(title) => setDraft((d) => ({ ...d, specialistTitle: title }))}
+                    onApplyMerge={() => {
+                      const next = { ...draft, productCategoryIds: [] };
+                      if (draft.specialistKind) applySpecialistPreset(next, draft.specialistKind, true);
+                      setDraft(next);
+                      setSpecialistNotice(
+                        "Стартовый набор добавлен. Уже выбранные категории и этапы сохранены.",
+                      );
+                    }}
+                  />
+                </div>
                 <ProfileDirectionsPicker
                   specialistMode
                   compactSpecialistGrid={false}
                   tileLayout
                   collapseAdvancedDirections
+                  presentationVariant="specialistWorkingProfile"
                   taxonomyProposalScope="profile-specialist"
                   productCategoryIds={[]}
                   serviceSpecializationIds={draft.serviceSpecializationIds ?? []}
@@ -680,7 +693,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 className={stepStyles.stepPanel}
                 data-testid="specialist-profile-review-panel"
               >
-                <dl className={styles.facts}>
+                <dl className={stepStyles.reviewFacts} data-testid="specialist-review-facts">
                   <div>
                     <dt>Имя</dt>
                     <dd>{displayOrEmpty(draft.displayName)}</dd>
@@ -704,7 +717,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     <dd>{displayOrEmpty(draft.partnershipContactEmail)}</dd>
                   </div>
                   {draft.specialistKind ? (
-                    <div>
+                    <div className={stepStyles.reviewFactsFullRow}>
                       <dt>Роль специалиста</dt>
                       <dd>
                         {specialistKindDisplayLabel(draft.specialistKind, draft.specialistTitle)}
@@ -712,19 +725,19 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     </div>
                   ) : null}
                 </dl>
-                <div className={styles.reviewDirections}>
+                <div className={stepStyles.reviewDirections}>
                   <strong>Направления</strong>
-                  <div className={styles.pickedChips}>
+                  <div className={stepStyles.reviewChipRow}>
                     {(draft.serviceSpecializationIds?.length ||
                       draft.navigatorStageIds?.length) ? (
                       <>
                         {(draft.serviceSpecializationIds ?? []).map((id) => (
-                          <span key={`s-${id}`} className={styles.chipStatic}>
+                          <span key={`s-${id}`} className={stepStyles.reviewChip}>
                             Услуга: {specialistIdListDisplay([id])}
                           </span>
                         ))}
                         {(draft.navigatorStageIds ?? []).map((id) => (
-                          <span key={`st-${id}`} className={styles.chipStatic}>
+                          <span key={`st-${id}`} className={stepStyles.reviewChip}>
                             Этап: {specialistIdListDisplay([id])}
                           </span>
                         ))}
@@ -796,7 +809,11 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 >
                   {saving ? "Сохранение…" : "Сохранить черновик"}
                 </button>
-                <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
+                <button
+                  type="submit"
+                  className={`${styles.btn} ${styles.btnPrimary} ${step !== 2 ? stepStyles.stepPrimaryBtn : ""}`}
+                  disabled={saving}
+                >
                   {step === 3 ? (
                     "Сохранить профиль"
                   ) : (

@@ -30,6 +30,8 @@ type ProfileDirectionsPickerProps = {
   onCopyFromWorkingProfile?: () => void;
   /** R06: shared taxonomy proposal checkboxes (specialist profile + catalog). */
   taxonomyProposalScope?: string;
+  /** Specialist working profile only — prototype-aligned chips/tiles/details; default unchanged. */
+  presentationVariant?: "default" | "specialistWorkingProfile";
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -82,6 +84,7 @@ export function ProfileDirectionsPicker({
   copyFromWorkingProfileAvailable = false,
   onCopyFromWorkingProfile,
   taxonomyProposalScope,
+  presentationVariant = "default",
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -230,14 +233,19 @@ export function ProfileDirectionsPicker({
     onChangePrimary(found?.direction ?? null);
   }
 
+  const wrapClassName = [
+    styles.wrap,
+    specialistMode && compactSpecialistGrid ? styles.specialistCompact : "",
+    presentationVariant === "specialistWorkingProfile" ? styles.specialistWorkingProfile : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
-      className={
-        specialistMode && compactSpecialistGrid
-          ? `${styles.wrap} ${styles.specialistCompact}`
-          : styles.wrap
-      }
+      className={wrapClassName}
       data-direction-picker-layout={tileLayout ? "tiles" : "default"}
+      data-direction-picker-variant={presentationVariant}
     >
       <p className={styles.lead}>
         {catalogGroupedDetails
@@ -251,10 +259,16 @@ export function ProfileDirectionsPicker({
         <section className={styles.selectionSummary} aria-label="Выбранные направления">
           <div className={styles.selectionHeading}>
             <strong>Уже выбрано</strong>
-            {!catalogGroupedDetails ? (
+            {!catalogGroupedDetails && presentationVariant !== "specialistWorkingProfile" ? (
               <small>Услуги и этапы сохраняются при смене вида</small>
             ) : null}
           </div>
+          {presentationVariant === "specialistWorkingProfile" ? (
+            <small className={styles.hint}>
+              Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
+              добавьте другие ниже.
+            </small>
+          ) : null}
           {catalogGroupedDetails ? (
             <>
               <small className={styles.hint}>
@@ -504,7 +518,12 @@ export function ProfileDirectionsPicker({
               className={styles.advancedCollapse}
               data-testid="direction-advanced-collapse"
             >
-              <summary>Этапы ремонта и основное направление</summary>
+              <summary>
+                Этапы ремонта и основное направление{" "}
+                {presentationVariant === "specialistWorkingProfile" ? (
+                  <span className={styles.optionalHint}>необязательно</span>
+                ) : null}
+              </summary>
               <div className={styles.advancedInner}>
                 {stageBlock}
                 {primaryBlock}

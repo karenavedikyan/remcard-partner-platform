@@ -44,6 +44,44 @@ describe("ProfileDirectionsPicker", () => {
     expect(screen.getByText(/Товар: Двери ×/)).toBeTruthy();
   });
 
+  it("defaults presentationVariant to default without specialistWorkingProfile class", async () => {
+    const { container } = render(
+      <ProfileDirectionsPicker
+        productCategoryIds={[]}
+        serviceSpecializationIds={[]}
+        navigatorStageIds={[]}
+        primaryDirection={null}
+        onChangeProducts={vi.fn()}
+        onChangeServices={vi.fn()}
+        onChangeStages={vi.fn()}
+        onChangePrimary={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(container.querySelector('[data-direction-picker-variant="default"]')).toBeTruthy());
+    expect(container.querySelector('[class*="specialistWorkingProfile"]')).toBeNull();
+  });
+
+  it("applies specialistWorkingProfile variant when requested", async () => {
+    const { container } = render(
+      <ProfileDirectionsPicker
+        productCategoryIds={[]}
+        serviceSpecializationIds={[]}
+        navigatorStageIds={[]}
+        primaryDirection={null}
+        specialistMode
+        tileLayout
+        presentationVariant="specialistWorkingProfile"
+        onChangeProducts={vi.fn()}
+        onChangeServices={vi.fn()}
+        onChangeStages={vi.fn()}
+        onChangePrimary={vi.fn()}
+      />,
+    );
+    await waitFor(() =>
+      expect(container.querySelector('[data-direction-picker-variant="specialistWorkingProfile"]')).toBeTruthy(),
+    );
+  });
+
   it("uses default checkbox layout unless tileLayout is enabled", async () => {
     const { container } = render(
       <ProfileDirectionsPicker

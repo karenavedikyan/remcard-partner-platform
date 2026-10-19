@@ -136,13 +136,13 @@ function setsEqual(a, b) {
   return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
 }
 
-async function runProfilePatternBrowserSmoke() {
+async function runProfilePatternBrowserSmoke(taskLabel = 'R06-PROFILE-PATTERN-TRANSFER-01') {
   const provenance = collectPrefillProvenance(ROOT, DIST);
   if (provenance.treeDirty) throw new Error(`tree_dirty:${provenance.treeDirtyFiles.join(';')}`);
   const codeSha = provenance.codeSha;
   const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist');
   mkdirSync(OUT, { recursive: true });
-  const REPORT = path.join(OUT, `R06-PROFILE-PATTERN-TRANSFER-01-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`);
+  const REPORT = path.join(OUT, `${taskLabel}-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`);
   const f = R06_PROFILE_PATTERN_FIXTURE;
 
   const mock = await startCatalogPrefillMockBff(seedProfilePatternSmokeMock(createMockBffState()));
@@ -154,7 +154,7 @@ async function runProfilePatternBrowserSmoke() {
   const build = runIsolatedPlatformBuild(ROOT, DIST);
   const report = {
     mode: 'MOCK_BFF',
-    task: 'R06-PROFILE-PATTERN-TRANSFER-01',
+    task: taskLabel,
     codeSha,
     sourceTreeDigest: provenance.sourceTreeDigest,
     treeDirty: false,
@@ -602,8 +602,15 @@ async function runContactsControlBrowserSmoke() {
 }
 
 async function main() {
-  if (process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01') {
-    return runProfilePatternBrowserSmoke();
+  if (
+    process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01' ||
+    process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01'
+  ) {
+    return runProfilePatternBrowserSmoke(
+      process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01'
+        ? 'R06-PROFILE-VISUAL-REMAINDERS-01'
+        : 'R06-PROFILE-PATTERN-TRANSFER-01',
+    );
   }
   if (
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
