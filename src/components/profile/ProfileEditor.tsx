@@ -512,17 +512,19 @@ function ProfileEditorInner({
     if (merged.publicEmail !== publicEmail) setPublicEmail(merged.publicEmail);
     if (merged.publicPhone !== publicPhone) setPublicPhone(merged.publicPhone);
     if (merged.catalogImageUrl !== catalogImageUrl) setCatalogImageUrl(merged.catalogImageUrl);
+    const mergedSpecs = merged.specializations ?? [];
+    const mergedStages = merged.navigatorStageIds ?? [];
     if (
-      merged.specializations.length !== specializations.length ||
-      merged.specializations.some((id, i) => id !== specializations[i])
+      mergedSpecs.length !== specializations.length ||
+      mergedSpecs.some((id, i) => id !== specializations[i])
     ) {
-      setSpecializations(merged.specializations);
+      setSpecializations(mergedSpecs);
     }
     if (
-      merged.navigatorStageIds.length !== catalogNavigatorStageIds.length ||
-      merged.navigatorStageIds.some((id, i) => id !== catalogNavigatorStageIds[i])
+      mergedStages.length !== catalogNavigatorStageIds.length ||
+      mergedStages.some((id, i) => id !== catalogNavigatorStageIds[i])
     ) {
-      setCatalogNavigatorStageIds(merged.navigatorStageIds);
+      setCatalogNavigatorStageIds(mergedStages);
     }
   }, [
     specialistR06Ui,

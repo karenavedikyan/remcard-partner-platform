@@ -1,0 +1,34 @@
+{
+  "capturedAt": "2026-10-19T11:54:43.328Z",
+  "mode": "MOCK_BFF_VISUAL",
+  "codeSha": "fd00893f97fffe98bd1f1181690fedfc0bdd2435",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "appOrigin": "http://127.0.0.1:30690",
+  "mockBff": "http://127.0.0.1:41115",
+  "distDir": ".next-r06-catalog-prefill-smoke",
+  "captures": [
+    {
+      "file": "impl-catalog-prefill-1440-light.png",
+      "sha256": "e34bebf023c33ea36dc694ca6931c7002d21b743d560abe5d0d8a4f2af052a5d"
+    },
+    {
+      "file": "impl-catalog-prefill-375-light.png",
+      "sha256": "6789ac9c8a0b4f8853b1ac8d3fc1e259845874364aa988b8e6d06cda47af0959"
+    },
+    {
+      "file": "impl-catalog-prefill-375-dark.png",
+      "sha256": "84708366dadb4823d18cd62907f697683468f81ea9726bd1a85cf465c96bd711"
+    },
+    {
+      "file": "ref-catalog-context-1440-light.png",
+      "sha256": "7772bd35e204d4e90071bc202c80619b4b7064515e812105d0e063114ac32880"
+    }
+  ],
+  "visualPass": false,
+  "remainders": [
+    "Ref navigation uses prototype roles.html shell; specialist catalog step parity reviewed manually against profile-wizard.js / catalog-wizard.js — not pixel-locked CAPTURED.",
+    "Supervisor preset: no prod service id for «Приёмка и технический надзор» (owner mapping pending)."
+  ]
+}

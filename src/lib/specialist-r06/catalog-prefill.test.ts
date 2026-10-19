@@ -4,6 +4,7 @@ import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import {
   catalogPrefillSourceKey,
   mergeCatalogPrefill,
+  parseCatalogTouched,
   workingProfileCatalogSeed,
 } from "@/lib/specialist-r06/catalog-prefill";
 
@@ -135,6 +136,36 @@ describe("catalog prefill from saved profile", () => {
       }),
     );
     expect(a).not.toBe(b);
+  });
+
+  it("does not prefill catalog public name over staged intentional empty", () => {
+    const current = profileDraftFromProfile(
+      profile({
+        user: {
+          displayName: "Актуальное рабочее имя",
+          catalogDisplayName: null,
+          catalogDisplayNameSource: "staged_draft",
+          catalogDraftPending: true,
+        },
+      }),
+    );
+    expect(current.catalogPublicName).toBe("");
+    const seed = workingProfileCatalogSeed(
+      profile({
+        user: {
+          displayName: "Новое рабочее имя",
+          catalogDisplayName: null,
+          catalogDisplayNameSource: "staged_draft",
+        },
+        workingProfile: {
+          ...profile().workingProfile!,
+          serviceSpecializationIds: ["finishing"],
+          effectiveServiceSpecializationIds: ["finishing"],
+        },
+      }),
+    );
+    const merged = mergeCatalogPrefill(current, seed, parseCatalogTouched({ catalogPublicName: true }));
+    expect(merged.catalogPublicName).toBe("");
   });
 
   it("profileDraftFromProfile aligns catalog public name with GET provenance", () => {

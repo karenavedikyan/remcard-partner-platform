@@ -1,0 +1,59 @@
+{
+  "mode": "MOCK_BFF",
+  "codeSha": "fd00893f97fffe98bd1f1181690fedfc0bdd2435",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "backendChanged": false,
+  "mockBff": "http://127.0.0.1:45677",
+  "appOrigin": "http://127.0.0.1:30680",
+  "distDir": ".next-r06-catalog-prefill-smoke",
+  "build": {
+    "ok": true,
+    "exitCode": 0,
+    "buildId": "O9dhPo1oohGXNQXIGJqCr"
+  },
+  "steps": {
+    "draftFetchProbe": {
+      "status": 200,
+      "text": "{\"contractVersion\":\"r06-smoke\",\"featureEnabled\":true,\"step\":1,\"version\":1,\"hasDraft\":true,\"profileComplete\":false,\"payload\":{\"displayName\":\"\",\"city\":\"\",\"specialistKind\":\"\",\"serviceSpecializationIds\":[],\"navigatorStageIds\":[],\"partnershipContactPhone\":\"\"},\"savedProfile\":{}}"
+    },
+    "r06StatusProbe": {
+      "status": 200,
+      "text": "{\"contractVersion\":\"r06-smoke\",\"featureEnabled\":true,\"hasSpecialistActivity\":true,\"eligible\":true,\"profileComplete\":false,\"userId\":\"mock-spec-1\",\"ineligibleReason\":null}"
+    },
+    "domProbe": {
+      "wizard": true,
+      "loading": false,
+      "completed": false,
+      "snippet": "remcard.\nдля партнёров\nСР\nСтарое регистрационное имя\nРабочее пространство\nГлавная\nПартнёры\nРекомендации\nСканер\nИстория\nВзаиморасчёты\nПрофиль\nRemCard PROF\nПартнёрство начинается с доверия\nКабинет партнёра\nПрофиль\nСР\nСтарое регистрационное имя\nВладелец профиля\nПРОФИЛЬ ПАРТНЁРА\nПрофиль\n\nРабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard.\n\nОбзор\nОсновные данные\nКаталог RemCard\nФилиалы\nСотрудники\nУведомления\nСпециалист\nРабочий профиль\n\nЗаполните профиль для работы с партнёрами. Это не публикует вас в каталоге RemCard.\n\n1\nО себе\n2\nСпециализация\nнеобязательн"
+    },
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "finishWorkingProfile": {
+      "ok": true
+    },
+    "workingProfilePreserved": {
+      "ok": true
+    },
+    "catalogPrefillName": {
+      "ok": true,
+      "value": "Актуальное рабочее имя"
+    },
+    "stagedClearGet": {
+      "ok": true,
+      "catalogDisplayName": null,
+      "catalogDisplayNameSource": "staged_draft",
+      "displayName": "Актуальное рабочее имя",
+      "telegram": "@catalog_smoke"
+    },
+    "reloadUi": {
+      "ok": true,
+      "catalogPublicName": "",
+      "telegram": "@catalog_smoke"
+    }
+  },
+  "ok": true
+}

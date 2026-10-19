@@ -645,6 +645,70 @@ describe("ProfileEditor", () => {
     });
   });
 
+  it("keeps cleared staged catalog public name after profile GET refresh", async () => {
+    mockSearchParams = new URLSearchParams("section=catalog");
+    const workingProfile = {
+      productCategoryIds: [] as string[],
+      serviceSpecializationIds: ["design"],
+      navigatorStageIds: ["L1-1"],
+      effectiveProductCategoryIds: [] as string[],
+      effectiveServiceSpecializationIds: ["design"],
+      effectiveNavigatorStageIds: ["L1-1"],
+      primaryDirection: null,
+      partnerSearchVisible: false,
+      partnerSearchOptIn: false,
+      partnerSearchOptInExplicit: false,
+      workingDirectionsTouched: false,
+      partnerWorkMode: "ON_SITE",
+      areas: [] as string[],
+      partnershipContactName: null,
+      partnershipContactPhone: null,
+      partnershipContactEmail: null,
+    };
+    const specialistUser = {
+      ...initial.user,
+      partnerType: "MASTER",
+      catalogStatus: "DRAFT",
+      displayName: "Актуальное рабочее имя",
+      catalogDisplayName: null,
+      catalogDisplayNameSource: "staged_draft" as const,
+      catalogDraftPending: true,
+      catalogDraft: { catalogDisplayName: null, catalogTouched: { catalogPublicName: true } },
+    };
+    const first: ProProfileResponse = {
+      ...initial,
+      user: specialistUser,
+      workingProfile,
+    };
+    const { rerender } = render(
+      <ProfileEditor
+        cabinetAccess={cabinetAccess}
+        initial={first}
+        section="catalog"
+        initialSpecialistR06Gate={{ featureEnabled: true, eligible: true, profileComplete: true }}
+      />,
+    );
+    expect(screen.getByTestId("catalog-public-name")).toHaveTextContent("");
+
+    rerender(
+      <ProfileEditor
+        cabinetAccess={cabinetAccess}
+        initial={{
+          ...first,
+          user: {
+            ...specialistUser,
+            displayName: "Другое рабочее имя после save",
+          },
+        }}
+        section="catalog"
+        initialSpecialistR06Gate={{ featureEnabled: true, eligible: true, profileComplete: true }}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("catalog-public-name")).toHaveTextContent("");
+    });
+  });
+
   it("opens catalog for moderation deep link section", async () => {
     mockSearchParams = new URLSearchParams("section=moderation");
     render(<ProfileEditor cabinetAccess={cabinetAccess} initial={initial} section="catalog" moderationSection />);
