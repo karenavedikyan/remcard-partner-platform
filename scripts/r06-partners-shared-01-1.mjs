@@ -281,15 +281,40 @@ async function runFunctional(page, origin, mock, expected) {
     await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Переименовать для себя' }).first().click();
     await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({ state: 'visible' });
-    await page.locator('[data-testid="partner-personal-alias-dialog"] input').fill('Мой юг');
-    await page.locator('[data-testid="partner-personal-alias-dialog"]').getByRole('button', { name: 'Сохранить' }).click();
-    await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({ state: 'hidden', timeout: 15_000 });
-    await page.reload({ waitUntil: 'networkidle' });
+    let aliasDetail = '';
+    try {
+      await page.locator('[data-testid="partner-personal-alias-dialog"] input').fill('Мой юг');
+      const patchWait = page.waitForResponse(
+        (r) =>
+          r.url().includes('partnership-list-preferences') &&
+          r.request().method() === 'PATCH' &&
+          r.status() < 500,
+        { timeout: 20_000 },
+      );
+      await page
+        .locator('[data-testid="partner-personal-alias-dialog"]')
+        .getByRole('button', { name: 'Сохранить' })
+        .click();
+      const patchRes = await patchWait;
+      aliasDetail = `patch=${patchRes.status()}`;
+      await page.locator('[data-testid="partner-personal-alias-dialog"]').waitFor({
+        state: 'hidden',
+        timeout: 10_000,
+      });
+    } catch (e) {
+      const errInDialog = await page
+        .locator('[data-testid="partner-personal-alias-dialog"] [role=alert]')
+        .textContent()
+        .catch(() => '');
+      aliasDetail = `${aliasDetail} ${errInDialog || String(e?.message || e)}`.trim();
+      await page.keyboard.press('Escape').catch(() => null);
+    }
+    await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
     const aliasOk = await page
       .locator('[data-testid="agent-r04-partners-table-row"]')
       .filter({ hasText: 'Мой юг' })
       .count();
-    push('alias_persist_reload', aliasOk > 0, `rows=${aliasOk}`);
+    push('alias_persist_reload', aliasOk > 0, aliasDetail || `rows=${aliasOk}`);
   } else {
     mock.state.searchFailOnce = true;
     const callsBefore = mock.state.searchCalls;

@@ -55,8 +55,8 @@ export function PartnerPersonalAliasDialog({
       await patchPartnershipListPreference(partnershipId!, {
         personalAlias: trimmed.length ? trimmed : null,
       });
-      onSaved();
       onClose();
+      onSaved();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить название");
     } finally {
