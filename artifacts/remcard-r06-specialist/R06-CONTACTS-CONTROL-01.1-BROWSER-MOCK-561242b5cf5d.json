@@ -1,0 +1,72 @@
+{
+  "mode": "MOCK_BFF",
+  "task": "R06-CONTACTS-CONTROL-01.1",
+  "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+  "sourceTreeDigest": "071de480e5b69d047802269df0d541d176f765b5",
+  "treeDirty": false,
+  "build": {
+    "status": "skipped",
+    "buildId": "OaHPPD1SDIzoFYM4DKap1",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "steps": {
+    "runtimeBuildId": {
+      "ok": true,
+      "buildId": "OaHPPD1SDIzoFYM4DKap1"
+    },
+    "initialGet": {
+      "ok": true,
+      "expected": {
+        "phone": "",
+        "email": ""
+      },
+      "actual": {
+        "phone": "",
+        "email": null
+      }
+    },
+    "patchRequest": {
+      "ok": true,
+      "expected": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      },
+      "actual": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      }
+    },
+    "getAfterPatch": {
+      "ok": true,
+      "expected": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      },
+      "actual": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      }
+    },
+    "reloadUi": {
+      "ok": true,
+      "expected": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      },
+      "actual": {
+        "getPhone": "+79186360088",
+        "getEmail": "contacts.control@example.ru",
+        "uiEmail": "contacts.control@example.ru",
+        "uiPhoneDisplay": "+7 (918) 636-00-88"
+      }
+    }
+  },
+  "ok": true,
+  "notRun": [
+    "finishProfile",
+    "catalog",
+    "moderation",
+    "postgresql"
+  ],
+  "evidenceSha256": "6a3629509d7ca497e23b1ed2f4f677eab0fb3d2ab4f5105c5f7e053eedf7f997"
+}

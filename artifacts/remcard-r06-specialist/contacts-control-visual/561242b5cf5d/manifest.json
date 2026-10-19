@@ -1,0 +1,778 @@
+{
+  "capturedAt": "2026-10-19T15:21:37.372Z",
+  "task": "R06-CONTACTS-CONTROL-01.1",
+  "mode": "MOCK_BFF_CONTACTS_CONTROL",
+  "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "071de480e5b69d047802269df0d541d176f765b5",
+  "treeDirty": false,
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "fixture": {
+    "displayName": "Контакт Тест Спец",
+    "city": "Krasnodar",
+    "phone": "+79186360088",
+    "email": "contacts.control@example.ru",
+    "website": "example-contacts.ru",
+    "telegram": "@contact_control",
+    "partnerWorkModeLabel": "По адресу",
+    "partnerWorkModeValue": "ON_SITE",
+    "areas": "Краснодар и ближайшие районы"
+  },
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "OaHPPD1SDIzoFYM4DKap1",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "OaHPPD1SDIzoFYM4DKap1",
+  "appOrigin": "http://127.0.0.1:30685",
+  "mockBff": "http://127.0.0.1:36511",
+  "protoBase": "http://127.0.0.1:34005",
+  "captures": [
+    {
+      "pairId": "contacts-closed-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-closed-1440-light-1440-light-impl.png",
+        "sha256": "c4c2616ff52fb6ee8e48841dca3790d7c72841f44692378be1eb5c7b1147a0a3"
+      },
+      "ref": {
+        "path": "contacts-closed-1440-light-1440-light-ref.png",
+        "sha256": "968b14f39a0b07558e1a4ef6a7aa7a6bb1daf6fc579809067c7d887f4fa0c011"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-1440-light-1440-light-form-impl.png",
+        "sha256": "3725d70cf4cae4ddb8db7f31da0458170c063095a09a5a6a26bb182bf7ace6c4"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-1440-light-1440-light-form-ref.png",
+        "sha256": "1054cc17720487783a9269df7dae8bbe121c7ae8545c1dd3f0e23776e580b729"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 818,
+            "height": 640
+          },
+          "grid": {
+            "width": 752,
+            "height": 128,
+            "gap": "20px",
+            "gridTemplateColumns": "366px 366px"
+          },
+          "phoneInput": {
+            "width": 366,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 366,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 654
+          },
+          "grid": {
+            "width": 748,
+            "height": 145,
+            "gap": "20px",
+            "gridTemplateColumns": "364px 364px"
+          },
+          "phoneInput": {
+            "width": 364,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 364,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-closed-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-closed-375-light-375-light-impl.png",
+        "sha256": "dc51ecc033ed5c42b5bd5c3be6197376aa1554f86c5228b1842c864d6f9f62d3"
+      },
+      "ref": {
+        "path": "contacts-closed-375-light-375-light-ref.png",
+        "sha256": "c983a8ba9e4352037f215191decd7a8a6df4f75294bf2e4872b0c3c9707017a2"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-375-light-375-light-form-impl.png",
+        "sha256": "21ab33047deb6a7cae06cb57aaef4b5228b50a78a9ba18b9c5ebc277f7f1cd9b"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-375-light-375-light-form-ref.png",
+        "sha256": "336ddd583f7ce7fdf268c556802f1d2d62e670aff78af447ea3eec819df26cce"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 955
+          },
+          "grid": {
+            "width": 297,
+            "height": 254,
+            "gap": "20px",
+            "gridTemplateColumns": "297px"
+          },
+          "phoneInput": {
+            "width": 297,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 885
+          },
+          "grid": {
+            "width": 301,
+            "height": 282,
+            "gap": "20px",
+            "gridTemplateColumns": "301px"
+          },
+          "phoneInput": {
+            "width": 301,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 301,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-closed-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "contacts-closed-375-dark-375-dark-impl.png",
+        "sha256": "30feb9c58d53a949ddd951082d5379d4798e8d6a1d38c034754328f06c9bf6db"
+      },
+      "ref": {
+        "path": "contacts-closed-375-dark-375-dark-ref.png",
+        "sha256": "31525177e7757e3392861e80c8b676389f37f92b38198ca7e496ad9b70ddf95a"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-375-dark-375-dark-form-impl.png",
+        "sha256": "9d6561b9c7ab290aef50fb68769e8dd55cd6f5918b892bd692264e8cc66bb481"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-375-dark-375-dark-form-ref.png",
+        "sha256": "39f85aafb2adddbe9a9dbceeabf29c1d5b13b096381e20de964beb6434d9c34d"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 955
+          },
+          "grid": {
+            "width": 297,
+            "height": 254,
+            "gap": "20px",
+            "gridTemplateColumns": "297px"
+          },
+          "phoneInput": {
+            "width": 297,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 885
+          },
+          "grid": {
+            "width": 301,
+            "height": 282,
+            "gap": "20px",
+            "gridTemplateColumns": "301px"
+          },
+          "phoneInput": {
+            "width": 301,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 301,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-closed-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-closed-320-light-320-light-impl.png",
+        "sha256": "526a2d9b157e3cb2a3e0e56705e85a520a3432ffe6c2dd9d3e82cea0e16e0cbf"
+      },
+      "ref": {
+        "path": "contacts-closed-320-light-320-light-ref.png",
+        "sha256": "4079b40256f8f63789526496c1f7ccd132ab2c2715008fb571c36114f589d496"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-320-light-320-light-form-impl.png",
+        "sha256": "be1699c75a9c5a1676d413c390fdb655b1ffcd64f6bf64a61e4e390623a73e44"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-320-light-320-light-form-ref.png",
+        "sha256": "dbc30ad06acb29ecdc3a4bfa86f97eed338c9849dd26f7b705b387c9d5a2c96e"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 284,
+            "height": 973
+          },
+          "grid": {
+            "width": 242,
+            "height": 271,
+            "gap": "20px",
+            "gridTemplateColumns": "242px"
+          },
+          "phoneInput": {
+            "width": 242,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 242,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 958
+          },
+          "grid": {
+            "width": 246,
+            "height": 302,
+            "gap": "20px",
+            "gridTemplateColumns": "246px"
+          },
+          "phoneInput": {
+            "width": 246,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 246,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-open-1440-light-1440-light-impl.png",
+        "sha256": "81289d364a7c07d2569542e787430f6e48e0ecce9b6a1610018d4a62940fd0d8"
+      },
+      "ref": {
+        "path": "contacts-open-1440-light-1440-light-ref.png",
+        "sha256": "ea5f4847622dc146dfdcaa2aa34c698d489525ebce166d2fd9b6620b143bee24"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-1440-light-1440-light-form-impl.png",
+        "sha256": "18440b6bc9896863c0f6154687a5501dc8d45f073006c59d2e4a09586484e286"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-1440-light-1440-light-form-ref.png",
+        "sha256": "4329b28981f2da6886a3a91cacbc5eee6015153db0a389fd902cf5e315f4e3c9"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 818,
+            "height": 1154
+          },
+          "grid": {
+            "width": 752,
+            "height": 128,
+            "gap": "20px",
+            "gridTemplateColumns": "366px 366px"
+          },
+          "phoneInput": {
+            "width": 366,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 366,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 1270
+          },
+          "grid": {
+            "width": 748,
+            "height": 145,
+            "gap": "20px",
+            "gridTemplateColumns": "364px 364px"
+          },
+          "phoneInput": {
+            "width": 364,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 364,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-open-375-light-375-light-impl.png",
+        "sha256": "9668e0794ab6fec50f0095d0f46560638330808c6a0f0b42dec7fbe5e1161bea"
+      },
+      "ref": {
+        "path": "contacts-open-375-light-375-light-ref.png",
+        "sha256": "db3cbc560c301566191f8903f73b212f8c11e3e8e883102f7450c6156ba88934"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-375-light-375-light-form-impl.png",
+        "sha256": "637b1ded43b81c316e6b5dc1abccab89d3492504de41339b41d04d3ab53cd3eb"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-375-light-375-light-form-ref.png",
+        "sha256": "079073220bc3925ab07d3e6420e42add0efd0a530282181d9b9258962a8adbd1"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 1498
+          },
+          "grid": {
+            "width": 297,
+            "height": 254,
+            "gap": "20px",
+            "gridTemplateColumns": "297px"
+          },
+          "phoneInput": {
+            "width": 297,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1528
+          },
+          "grid": {
+            "width": 301,
+            "height": 282,
+            "gap": "20px",
+            "gridTemplateColumns": "301px"
+          },
+          "phoneInput": {
+            "width": 301,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 301,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "contacts-open-375-dark-375-dark-impl.png",
+        "sha256": "1afdae5f9079cb1ba6d9d7314fcbf8be91b1bb0560d2c4b24026d7ef57ca3053"
+      },
+      "ref": {
+        "path": "contacts-open-375-dark-375-dark-ref.png",
+        "sha256": "5ca210884fb8233a53ed98e7cc4f0dd4c49d95eb17a7642c626204633970c1ef"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-375-dark-375-dark-form-impl.png",
+        "sha256": "71a9a01eec9c93308c544592d0d7e18605323799acfc111fc04bc2710f10561a"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-375-dark-375-dark-form-ref.png",
+        "sha256": "f16b5229b18e0887de5953c563d28e7ee8c390ed4f81d4596c30d5a85f7e6347"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 1498
+          },
+          "grid": {
+            "width": 297,
+            "height": 254,
+            "gap": "20px",
+            "gridTemplateColumns": "297px"
+          },
+          "phoneInput": {
+            "width": 297,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1528
+          },
+          "grid": {
+            "width": 301,
+            "height": 282,
+            "gap": "20px",
+            "gridTemplateColumns": "301px"
+          },
+          "phoneInput": {
+            "width": 301,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 301,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-open-320-light-320-light-impl.png",
+        "sha256": "425f4f42c6ed302d9de30e7f4698d5d9ed67b47d71fb0d7a035bb4a972268c41"
+      },
+      "ref": {
+        "path": "contacts-open-320-light-320-light-ref.png",
+        "sha256": "ed8ee7d660574ab13ceb1e0047bba8182de7c7ece8f8626257cb06d534a7de61"
+      },
+      "codeSha": "561242b5cf5d0c8db448e617678e541ac30f8715",
+      "runtimeBuildId": "OaHPPD1SDIzoFYM4DKap1",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-320-light-320-light-form-impl.png",
+        "sha256": "63f5fa0f35bd8ae5770ad256d14f10defcd05196dc1b71151522f544b4515913"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-320-light-320-light-form-ref.png",
+        "sha256": "da4e75fcf720f86d1c6a1f402525beccccc97511db9f6d2dee79ae2297e3e604"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 284,
+            "height": 1555
+          },
+          "grid": {
+            "width": 242,
+            "height": 271,
+            "gap": "20px",
+            "gridTemplateColumns": "242px"
+          },
+          "phoneInput": {
+            "width": 242,
+            "height": 52
+          },
+          "emailInput": {
+            "width": 242,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 1639
+          },
+          "grid": {
+            "width": 246,
+            "height": 302,
+            "gap": "20px",
+            "gridTemplateColumns": "246px"
+          },
+          "phoneInput": {
+            "width": 246,
+            "height": 48
+          },
+          "emailInput": {
+            "width": 246,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    }
+  ],
+  "scrollAuditUnderShell": [
+    {
+      "id": "title",
+      "ok": true,
+      "top": 422,
+      "bottom": 450,
+      "viewportHeight": 900
+    },
+    {
+      "id": "telegram",
+      "ok": true,
+      "top": 424,
+      "bottom": 476,
+      "viewportHeight": 900
+    },
+    {
+      "id": "submit",
+      "ok": true,
+      "top": 459,
+      "bottom": 509,
+      "viewportHeight": 900
+    }
+  ],
+  "visualPass": false,
+  "remainders": [
+    "Prototype «Отменить» (discard in-tab edits) has no equivalent — impl uses «Сбросить черновик» only on non-contacts steps; contacts step omits reset (BLOCKED cancel semantics).",
+    "Impl retains «Сохранить черновик» on contacts — not in prototype row (documented, not removed).",
+    "Ref «Другое контактное лицо» field absent in specialist R06 draft payload (BLOCKED).",
+    "Form-crop PNGs hide overlapping fixed/sticky shell at capture time only (ref+impl); full-page keeps shell.",
+    "CAPTURED pairs only — compare form crops manually; shell/nav differences excluded."
+  ],
+  "evidenceSha256": "44e66f9cd1311eae596429aa3d9678d919d77ea635e71fc668ba2a37bdc943ad"
+}
