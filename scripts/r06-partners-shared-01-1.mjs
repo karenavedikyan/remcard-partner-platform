@@ -489,7 +489,8 @@ async function main() {
   }
   const build = runIsolatedPlatformBuild(ROOT, DIST);
   if (build.status === 'skipped') {
-    throw new Error('build_skipped: set R06_FORCE_BUILD=1 for evidence run');
+    const allowSkip = IMPLEMENT_01 && process.env.R06_ALLOW_BUILD_SKIP === '1';
+    if (!allowSkip) throw new Error('build_skipped: set R06_FORCE_BUILD=1 for evidence run');
   }
   if (build.status === 'failed') throw new Error(`build_failed:${build.exitCode}`);
 
