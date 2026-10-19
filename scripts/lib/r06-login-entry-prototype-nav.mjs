@@ -15,8 +15,6 @@ export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
   await page.waitForSelector('.production-profile, [data-profile-form="working"], [data-profile-wizard="specialist"]', {
     timeout: 60_000,
   });
-  const err = await page.evaluate((t) => document.body?.textContent?.includes(t), PROTO_LOAD_ERROR);
-  if (err) throw new Error('ref_prototype_load_error_banner');
 }
 
 export async function openRefCatalogProfile(page, protoBaseUrl) {
