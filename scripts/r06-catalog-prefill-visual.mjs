@@ -64,20 +64,21 @@ async function waitForHttp(url, timeoutMs = 120_000) {
   return false;
 }
 
-function seedVisualMockState() {
-  const state = createMockBffState();
-  const payload = {
-    displayName: 'Актуальное рабочее имя',
-    city: 'Krasnodar',
-    specialistKind: 'designer',
-    specialistTitle: '',
-    serviceSpecializationIds: ['design', 'planning'],
-    navigatorStageIds: ['L1-1'],
-    partnershipContactPhone: '+79001112233',
-    partnershipContactEmail: '',
-    partnerWorkMode: 'ON_SITE',
-    productCategoryIds: [],
-  };
+const VISUAL_PROFILE_PAYLOAD = {
+  displayName: 'Актуальное рабочее имя',
+  city: 'Krasnodar',
+  specialistKind: 'designer',
+  specialistTitle: '',
+  serviceSpecializationIds: ['design', 'planning'],
+  navigatorStageIds: ['L1-1'],
+  partnershipContactPhone: '+79001112233',
+  partnershipContactEmail: '',
+  partnerWorkMode: 'ON_SITE',
+  productCategoryIds: [],
+};
+
+function applyMockCompletedProfile(state) {
+  const payload = { ...VISUAL_PROFILE_PAYLOAD };
   state.profileFinished = true;
   state.workingDisplayName = payload.displayName;
   state.workingCity = payload.city;
@@ -94,6 +95,30 @@ function seedVisualMockState() {
     payload,
     savedProfile: { ...payload },
   };
+}
+
+/** @param {number} uiStepIndex 0..3 (О себе … Проверка) */
+function applyMockProfileWizardStep(state, uiStepIndex) {
+  const payload = { ...VISUAL_PROFILE_PAYLOAD };
+  state.profileFinished = false;
+  state.workingDisplayName = null;
+  state.workingServices = [];
+  state.workingStages = [];
+  state.specialistDraft = {
+    contractVersion: 'r06-smoke',
+    featureEnabled: true,
+    step: uiStepIndex + 1,
+    version: 2,
+    hasDraft: true,
+    profileComplete: false,
+    payload,
+    savedProfile: { ...payload },
+  };
+}
+
+function seedVisualMockState() {
+  const state = createMockBffState();
+  applyMockCompletedProfile(state);
   return state;
 }
 
@@ -184,42 +209,6 @@ async function main() {
       );
     };
 
-    async function ensureImplProfileEditStep0(page) {
-      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Редактировать профиль' }).click();
-      await page.waitForSelector('#sp-displayName', { timeout: 60_000 });
-      await page.locator('#sp-displayName').fill('Актуальное рабочее имя');
-      await page.locator('#sp-city').fill('Krasnodar');
-    }
-
-    async function prepareImplSpecialization(page) {
-      await ensureImplProfileEditStep0(page);
-      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-      await page.waitForSelector('#sp-kind', { state: 'visible' });
-    }
-
-    async function prepareImplBasics(page) {
-      await ensureImplProfileEditStep0(page);
-    }
-
-    async function prepareImplContacts(page) {
-      await ensureImplProfileEditStep0(page);
-      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-      await page.waitForSelector('#sp-kind', { timeout: 60_000 });
-      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-      await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
-    }
-
-    async function prepareImplReview(page) {
-      await ensureImplProfileEditStep0(page);
-      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-      await page.waitForSelector('#sp-kind', { timeout: 60_000 });
-      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-      await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
-      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-      await page.waitForSelector('text=Завершить профиль', { timeout: 60_000 });
-    }
-
     async function prepareCatalogPreview(page) {
       await fillImplCatalogCard(page, R06_PREVIEW_FIXTURE);
       await advanceCatalogSteps(page, 1);
@@ -265,7 +254,7 @@ async function main() {
         height: 900,
         implUrl: `${implBase}/profile?section=basics`,
         implTestId: 'specialist-profile-wizard',
-        prepareImpl: prepareImplBasics,
+        mockProfileStep: 0,
         prepareRef: prepareRefBasicsStep,
         assertRef: async (p) => {
           await p.waitForSelector('[name="name"]');
@@ -278,7 +267,7 @@ async function main() {
         height: 900,
         implUrl: `${implBase}/profile?section=basics`,
         implTestId: 'specialist-profile-wizard',
-        prepareImpl: prepareImplSpecialization,
+        mockProfileStep: 1,
         prepareRef: prepareRefSpecializationStep,
         assertRef: async (p) => {
           await p.waitForSelector('[data-specialist-kind]');
@@ -291,7 +280,7 @@ async function main() {
         height: 900,
         implUrl: `${implBase}/profile?section=basics`,
         implTestId: 'specialist-profile-wizard',
-        prepareImpl: prepareImplContacts,
+        mockProfileStep: 2,
         prepareRef: prepareRefContactsStep,
       },
       {
@@ -301,7 +290,7 @@ async function main() {
         height: 900,
         implUrl: `${implBase}/profile?section=basics`,
         implTestId: 'specialist-profile-wizard',
-        prepareImpl: prepareImplReview,
+        mockProfileStep: 3,
         prepareRef: prepareRefReviewStep,
       },
       {
@@ -406,6 +395,11 @@ async function main() {
     ];
 
     for (const spec of matrix) {
+      if (spec.mockProfileStep != null) {
+        applyMockProfileWizardStep(mock.state, spec.mockProfileStep);
+      } else {
+        applyMockCompletedProfile(mock.state);
+      }
       captures.push(await captureRefImplPair(context, spec, OUT, protoBase, meta));
     }
 
