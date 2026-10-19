@@ -42,6 +42,20 @@ function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
 }
 
+async function waitForHttp(url, timeoutMs = 120_000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (res.ok || res.status < 500) return true;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return false;
+}
+
 async function ensureTheme(page, theme) {
   if (theme === 'dark') {
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -150,11 +164,11 @@ function audienceSpecs(audience) {
   ].map((s) => ({ ...s, audience, refRole, prefix }));
 }
 
-async function runWithMock(browser, refBase, { origin, outDir, mockMode, audience }) {
+async function runWithMock(browser, refBase, { origin, outDir, mockMode, audience, buildIdHint }) {
   const mock = await startPartnersSharedMockBff(createPartnersMockState(mockMode));
   const envPin = pinProductionEnvLocal(ROOT, origin, mock.baseUrl);
   const port = Number(new URL(origin).port);
-  const child = spawnOwnedNextStart({
+  const serverHandle = spawnOwnedNextStart({
     port,
     cwd: ROOT,
     env: {
@@ -167,7 +181,10 @@ async function runWithMock(browser, refBase, { origin, outDir, mockMode, audienc
       PORT: String(port),
     },
   });
-  await probeRuntimeBuildId(origin, null);
+  if (!(await waitForHttp(`${origin}/login`, 120_000))) {
+    throw new Error('impl_not_ready');
+  }
+  await probeRuntimeBuildId(origin, buildIdHint);
 
   const implPage = await browser.newPage();
   const refPage = await browser.newPage();
@@ -188,7 +205,7 @@ async function runWithMock(browser, refBase, { origin, outDir, mockMode, audienc
   }
   await implPage.close();
   await refPage.close();
-  await stopOwnedServer(child);
+  await stopOwnedServer(serverHandle);
   envPin.restore();
   await mock.close();
   return pairs;
@@ -220,12 +237,14 @@ async function main() {
     outDir: OUT,
     mockMode: 'specialist',
     audience: 'specialist-r04',
+    buildIdHint: build.buildId,
   });
   const agentPairs = await runWithMock(browser, refStatic.baseUrl, {
     origin: appOrigin,
     outDir: OUT,
     mockMode: 'agent',
     audience: 'agent-r04',
+    buildIdHint: build.buildId,
   });
   await browser.close();
   refStatic.server.close();
