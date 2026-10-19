@@ -2,7 +2,7 @@
 import { assertPrototypePageReady, PROTO_LOAD_ERROR } from './r06-login-entry-prototype-pack.mjs';
 
 export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
-  await page.goto(`${protoBaseUrl}/roles.html`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await page.goto(`${protoBaseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
   await assertPrototypePageReady(page);
   await page.getByTestId('view-cabinet').click();
   await page.waitForSelector('[data-testid="scenario-role"]', { timeout: 60_000 });

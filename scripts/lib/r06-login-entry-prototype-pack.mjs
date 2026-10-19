@@ -87,18 +87,10 @@ export function startLoginEntryPrototypeStatic(protoDir) {
 export const PROTO_LOAD_ERROR = 'Не удалось загрузить прототип';
 
 export async function assertPrototypePageReady(page) {
-  await page.waitForFunction(
-    (errText) => {
-      const body = document.body?.textContent ?? '';
-      if (body.includes(errText)) return false;
-      if (body.includes('Загружаем прототип')) return false;
-      return Boolean(
-        document.querySelector('[data-testid="view-cabinet"]') ||
-          document.querySelector('.production-profile') ||
-          document.querySelector('[data-profile-form="working"]'),
-      );
-    },
-    PROTO_LOAD_ERROR,
-    { timeout: 90_000 },
-  );
+  const err = page.locator('#load-message');
+  if (await err.count()) {
+    const text = await err.textContent();
+    if (text?.includes(PROTO_LOAD_ERROR)) throw new Error('ref_prototype_load_error_banner');
+  }
+  await page.getByTestId('view-cabinet').waitFor({ state: 'visible', timeout: 90_000 });
 }
