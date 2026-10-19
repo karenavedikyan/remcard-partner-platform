@@ -146,7 +146,7 @@
 }
 
 .basicsFootnote {
-  margin: var(--pw-4) 0 0;
+  margin: var(--pw-5) 0 0;
   font-size: var(--pw-xs);
   color: var(--pw-muted);
   line-height: 1.45;

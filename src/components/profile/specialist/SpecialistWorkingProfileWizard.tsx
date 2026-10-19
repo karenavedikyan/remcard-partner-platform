@@ -554,13 +554,13 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     />
                     <small className={stepStyles.basicsHelper}>Поможет подобрать партнёров рядом.</small>
                   </div>
-                  <p
-                    className={stepStyles.basicsFootnote}
-                    data-testid="specialist-basics-footnote"
-                  >
-                    Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
-                  </p>
                 </div>
+                <p
+                  className={stepStyles.basicsFootnote}
+                  data-testid="specialist-basics-footnote"
+                >
+                  Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
+                </p>
               </div>
             ) : null}
             {step === 1 ? (
