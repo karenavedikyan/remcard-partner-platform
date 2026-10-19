@@ -221,6 +221,8 @@ async function main() {
 
     async function prepareRefCatalogDirectionsPanel(page, base) {
       await openRefCatalogProfile(page, base);
+      await page.waitForSelector('[data-catalog-form]');
+      await fillRefCatalogCard(page, R06_PREVIEW_FIXTURE);
       await page.locator('[data-cw-move="next"]').click();
       await page.waitForSelector('[data-catalog-panel="directions"]:not([hidden])', { timeout: 60_000 });
     }
