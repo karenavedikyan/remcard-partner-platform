@@ -45,7 +45,20 @@ async function waitForHttp(url, timeoutMs = 120_000) {
 
 function seedContactsSmokeMock(state) {
   const f = R06_CONTACTS_FIXTURE;
+  const payload = {
+    displayName: f.displayName,
+    city: f.city,
+    specialistKind: 'designer',
+    specialistTitle: '',
+    serviceSpecializationIds: ['design'],
+    navigatorStageIds: ['L1-1'],
+    partnershipContactPhone: '',
+    partnershipContactEmail: '',
+    productCategoryIds: [],
+  };
   state.profileFinished = false;
+  state.workingDisplayName = f.displayName;
+  state.workingCity = f.city;
   state.specialistDraft = {
     contractVersion: 'r06-smoke',
     featureEnabled: true,
@@ -53,17 +66,8 @@ function seedContactsSmokeMock(state) {
     version: 1,
     hasDraft: true,
     profileComplete: false,
-    payload: {
-      displayName: f.displayName,
-      city: f.city,
-      specialistKind: 'designer',
-      partnershipContactPhone: '',
-      partnershipContactEmail: '',
-      productCategoryIds: [],
-      serviceSpecializationIds: [],
-      navigatorStageIds: [],
-    },
-    savedProfile: { displayName: f.displayName, city: f.city },
+    payload,
+    savedProfile: { ...payload },
   };
 }
 
@@ -125,6 +129,12 @@ async function runContactsControlBrowserSmoke() {
     const browser = await chromium.launch({ headless: true });
     page = await browser.newPage();
     await page.goto(`${appOrigin}/profile?section=basics`, { waitUntil: 'load' });
+    await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+    await page.waitForFunction(
+      () => !document.querySelector('[data-testid="specialist-profile-loading"]'),
+      undefined,
+      { timeout: 60_000 },
+    );
     await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
     const phone = page.getByTestId('agent-profile-input-phone');
     await phone.fill(R06_CONTACTS_FIXTURE.phone);
