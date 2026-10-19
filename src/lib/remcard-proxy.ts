@@ -390,8 +390,7 @@ export function isAllowedMutatingOrigin(origin: string | null): boolean {
     if (parsed.protocol !== app.protocol) {
       return false;
     }
-    // Local MOCK/evidence runs pick a free loopback port at runtime; host must still match.
-    return parsed.hostname === app.hostname;
+    return parsed.host === app.host;
   } catch {
     return false;
   }
