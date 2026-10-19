@@ -95,6 +95,7 @@ export function ProfileDirectionsPicker({
   const [loadState, setLoadState] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [loadError, setLoadError] = useState("");
   const [filter, setFilter] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const gen = ++loadGenerationRef.current;
@@ -263,12 +264,6 @@ export function ProfileDirectionsPicker({
               <small>Услуги и этапы сохраняются при смене вида</small>
             ) : null}
           </div>
-          {presentationVariant === "specialistWorkingProfile" ? (
-            <small className={styles.hint}>
-              Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
-              добавьте другие ниже.
-            </small>
-          ) : null}
           {catalogGroupedDetails ? (
             <>
               <small className={styles.hint}>
@@ -305,6 +300,22 @@ export function ProfileDirectionsPicker({
               ))}
             </ul>
           )}
+          {presentationVariant === "specialistWorkingProfile" ? (
+            <>
+              <small className={styles.hint}>
+                Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
+                добавьте другие ниже.
+              </small>
+              <button
+                type="button"
+                className={styles.focusSearchLink}
+                disabled={disabled}
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                Добавить / изменить
+              </button>
+            </>
+          ) : null}
         </section>
       ) : selectedChips.length === 0 ? (
         <p className={styles.empty}>Пока ничего не выбрано — отметьте направления ниже.</p>
@@ -331,6 +342,7 @@ export function ProfileDirectionsPicker({
           {tileLayout ? "Найти направление" : "Поиск по справочнику"}
         </span>
         <input
+          ref={searchInputRef}
           type="search"
           data-testid={tileLayout ? "pw-search" : undefined}
           value={filter}

@@ -9,6 +9,15 @@
 @media (min-width: 901px) {
   .patternWizardLayout {
     grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .patternStepCard {
+    width: 100%;
+    max-width: min(814px, 100%);
+    min-width: 0;
+    justify-self: start;
+    box-sizing: border-box;
   }
 }
 
@@ -30,6 +39,9 @@
 
 .patternStepCard {
   padding: var(--pw-8);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 480px) {
@@ -63,13 +75,13 @@
 
 .basicsFields {
   display: grid;
-  gap: var(--pw-5);
+  gap: 1.25rem;
   min-width: 0;
 }
 
 .basicsField {
   display: grid;
-  gap: var(--pw-2);
+  gap: 0.35rem;
   min-width: 0;
   margin: 0;
 }
@@ -90,14 +102,23 @@
 
 .controlInput {
   width: 100%;
+  height: 48px;
   min-height: 48px;
-  padding: var(--pw-3);
+  padding: 0 var(--pw-3);
+  line-height: 1.25;
   border: 1px solid var(--pw-line);
   border-radius: 7px;
   background: var(--pw-bg);
   color: var(--pw-text);
   font: inherit;
   box-sizing: border-box;
+}
+
+.basicsFootnote {
+  margin: 1rem 0 0;
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  line-height: 1.45;
 }
 
 .controlInput::placeholder {
@@ -133,8 +154,10 @@
 .presetBundle select,
 .presetBundle input {
   width: 100%;
+  height: 48px;
   min-height: 48px;
-  padding: var(--pw-3);
+  padding: 0 var(--pw-3);
+  line-height: 1.25;
   border: 1px solid var(--pw-line);
   border-radius: 7px;
   background: var(--pw-bg);
@@ -143,41 +166,10 @@
   box-sizing: border-box;
 }
 
-.presetBundle details {
-  border: 1px solid var(--pw-line);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-}
-
-.presetBundle details > summary {
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  min-height: 44px;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.presetBundle details > summary::before {
-  content: "▸";
-  color: var(--pw-muted);
-  flex-shrink: 0;
-}
-
-.presetBundle details[open] > summary::before {
-  content: "▾";
-}
-
-.presetBundle details > summary::-webkit-details-marker {
-  display: none;
-}
-
 .reviewFacts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--pw-5);
+  gap: var(--pw-4);
   margin: 0;
 }
 
@@ -211,15 +203,22 @@
 }
 
 .reviewDirections {
-  margin-top: var(--pw-5);
+  margin-top: var(--pw-4);
   border-top: 1px solid var(--pw-line);
-  padding-top: var(--pw-5);
+  padding-top: var(--pw-4);
   font-size: var(--pw-sm);
 }
 
 .reviewDirections strong {
   display: block;
-  margin-bottom: var(--pw-3);
+  margin-bottom: var(--pw-2);
+}
+
+.reviewFootnote {
+  margin: var(--pw-5) 0 0;
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  line-height: 1.45;
 }
 
 .reviewChipRow {

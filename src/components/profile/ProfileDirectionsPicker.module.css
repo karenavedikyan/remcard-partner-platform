@@ -359,6 +359,25 @@
   overflow-wrap: anywhere;
 }
 
+.specialistWorkingProfile .focusSearchLink {
+  justify-self: start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.specialistWorkingProfile .focusSearchLink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .specialistWorkingProfile .tileOption {
   min-height: 48px;
   padding: 0.75rem;

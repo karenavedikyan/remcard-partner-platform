@@ -84,8 +84,10 @@
 /* Working profile only (presentationVariant=workingProfile) — catalog keeps default above. */
 .workingProfile .field select,
 .workingProfile .field input {
+  height: 48px;
   min-height: 48px;
-  padding: 0.75rem;
+  padding: 0 0.75rem;
+  line-height: 1.25;
   border-radius: 7px;
 }
 
@@ -106,4 +108,21 @@
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   overflow-wrap: anywhere;
+}
+
+.workingProfile .presetPreview {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.workingProfile .presetPreview > summary {
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0;
+}
+
+.workingProfile .presetContent {
+  padding-top: 0.5rem;
 }

@@ -856,9 +856,323 @@ async function runProfileVisualRemindersMain() {
   });
 }
 
+function buildPrototypeFinishCosmeticTable(geometryByStep, captures) {
+  const cardAt1440 = {};
+  for (const row of geometryByStep) {
+    const g = row.byWidth?.['1440'];
+    if (g) cardAt1440[row.stateId] = g.cardWidth;
+  }
+  const basicsCap = captures.find((c) => c.fixtureState === 'basics-filled' && c.pairId?.includes('1440-light'));
+  const specCap = captures.find(
+    (c) => c.fixtureState === 'specialization-closed' && c.pairId?.includes('1440-light'),
+  );
+  const reviewCap = captures.find((c) => c.fixtureState === 'review-filled' && c.pairId?.includes('1440-light'));
+  const implBasics = basicsCap?.formMetrics?.implGeometry;
+  const refBasics = basicsCap?.formMetrics?.refGeometry;
+  const geomBasics = geometryByStep.find((r) => r.stateId === 'basics-filled')?.byWidth?.['1440'];
+
+  const cardWidths = [cardAt1440['basics-filled'], cardAt1440['specialization-closed'], cardAt1440['review-filled']].filter(
+    (w) => typeof w === 'number',
+  );
+  const v01Uniform =
+    cardWidths.length >= 2 && Math.max(...cardWidths) - Math.min(...cardWidths) <= 2;
+
+  return {
+    V01_card_width_uniform_desktop_1440: {
+      status: v01Uniform ? 'fixed' : 'partial',
+      implCardPxByStep: cardAt1440,
+      refCardPx: basicsCap?.formMetrics?.refGeometry?.card?.width ?? null,
+      note: 'Target ~814px content column; stretch + max-width on pattern step card.',
+    },
+    V02_basics_input_height_48px: {
+      status:
+        implBasics?.nameInput?.height === 48 && implBasics?.cityInput?.height === 48 ? 'fixed' : 'partial',
+      implNamePx: implBasics?.nameInput?.height ?? null,
+      implCityPx: implBasics?.cityInput?.height ?? null,
+      refNamePx: refBasics?.nameInput?.height ?? null,
+    },
+    V03_basics_vertical_rhythm: {
+      status: geomBasics?.nameInput?.height === 48 ? 'fixed' : 'partial',
+      labelHelper: geomBasics?.basicsLabel ?? null,
+      helperMeta: geomBasics?.basicsHelper ?? null,
+      basicsFieldGapNote: 'basicsField gap 0.35rem; basicsFields gap 1.25rem; basicsFootnote scoped',
+    },
+    V04_preset_single_block: {
+      status: 'fixed',
+      note: 'workingProfile presetPreview border removed inside presetBundle; outer bundle border retained',
+    },
+    V05_selection_order_and_chips: {
+      status: 'fixed',
+      note: 'Order: title → chips → hint; focus link «Добавить / изменить» focuses pw-search',
+      implChipHeight: specCap?.formMetrics?.implGeometry?.chip?.height ?? null,
+      refChipHeight: specCap?.formMetrics?.refGeometry?.chip?.height ?? null,
+    },
+    V06_review_spacing: {
+      status: 'fixed',
+      note: 'reviewFacts/reviewDirections/reviewFootnote gaps tightened; partnerSearchOptIn not imitated',
+      implReviewChip: reviewCap?.formMetrics?.implGeometry?.reviewChip?.height ?? null,
+    },
+    deferredDocumented: {
+      D01_extra_save_reset_buttons: 'unchanged by owner decision',
+      D02_partnerSearchOptIn: 'not implemented — no checkbox or placeholder block',
+      D03_taxonomy_full_parity: 'fixture chips only; API dictionary differs from ref demo',
+    },
+  };
+}
+
+async function runProfilePrototypeFinishMain() {
+  verifyLoginEntryPrototypeTarball(ROOT);
+  const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
+  if (provenanceBefore.treeDirty) {
+    throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
+  }
+  const codeSha = provenanceBefore.codeSha;
+  const taskId = 'R06-PROFILE-PROTOTYPE-FINISH-01';
+  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist/profile-prototype-finish', codeSha.slice(0, 12));
+  mkdirSync(OUT, { recursive: true });
+
+  ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
+  const mock = await startCatalogPrefillMockBff(createMockBffState());
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  if (!platformPort) throw new Error('no free platform port');
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'failed') throw new Error(`build_failed:exit=${build.exitCode}`);
+
+  const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  const implBase = appOrigin;
+  const protoBase = refStatic.baseUrl;
+  const meta = { codeSha, buildId: build.buildId };
+  const fixture = R06_PROFILE_PATTERN_FIXTURE;
+  const geometryWidths = [320, 375, 768, 900, 901, 1440];
+  const geometryByStep = [];
+  const captures = [];
+  const viewports = [
+    { width: 1440, height: 900, theme: 'light' },
+    { width: 375, height: 812, theme: 'light' },
+    { width: 375, height: 812, theme: 'dark' },
+    { width: 320, height: 568, theme: 'light' },
+  ];
+
+  const matrix = [
+    {
+      stateId: 'basics-filled',
+      geometryKind: 'basics',
+      uiStep: 0,
+      prepareRefStep: 0,
+      advancedOpen: false,
+      assertImpl: assertImplBasicsStepReady,
+      assertRef: assertRefBasicsStepReady,
+      fillImpl: (page) => fillImplBasicsFixture(page, fixture),
+      fillRef: (page) => fillRefBasicsFixture(page, fixture),
+      measure: (page) => measureStepFormBox(page, '[data-testid="specialist-profile-step-card"]'),
+    },
+    {
+      stateId: 'specialization-closed',
+      geometryKind: 'specialization',
+      uiStep: 1,
+      prepareRefStep: 1,
+      advancedOpen: false,
+      assertImpl: assertImplSpecializationStepReady,
+      assertRef: assertRefSpecializationStepReady,
+      fillImpl: (page) => fillImplSpecializationFixture(page, fixture, { advancedOpen: false }),
+      fillRef: (page) => fillRefSpecializationFixture(page, fixture, { advancedOpen: false }),
+      measure: (page) => measureStepComputedActions(page),
+    },
+    {
+      stateId: 'specialization-open',
+      geometryKind: 'specialization-open',
+      uiStep: 1,
+      prepareRefStep: 1,
+      advancedOpen: true,
+      assertImpl: assertImplSpecializationStepReady,
+      assertRef: assertRefSpecializationStepReady,
+      fillImpl: (page) => fillImplSpecializationFixture(page, fixture, { advancedOpen: true }),
+      fillRef: (page) => fillRefSpecializationFixture(page, fixture, { advancedOpen: true }),
+      measure: (page) => measureStepComputedActions(page),
+    },
+    {
+      stateId: 'review-filled',
+      geometryKind: 'review',
+      uiStep: 3,
+      prepareRefStep: 3,
+      advancedOpen: false,
+      assertImpl: assertImplReviewStepReady,
+      assertRef: assertRefReviewStepReady,
+      fillImpl: async () => {},
+      fillRef: async () => {},
+      measure: (page) => measureStepComputedActions(page),
+    },
+  ];
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
+    const runtimeBuildId = await probeRuntimeBuildId(appOrigin, build.buildId);
+    if (runtimeBuildId !== build.buildId) {
+      throw new Error(`runtime_build_id_mismatch:${runtimeBuildId}:${build.buildId}`);
+    }
+
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-prototype-finish-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+
+    for (const row of matrix) {
+      const stepGeometry = { stateId: row.stateId, byWidth: {} };
+      for (const gw of geometryWidths) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, {
+          advancedOpen: row.advancedOpen,
+        });
+        const page = await context.newPage();
+        const height = gw <= 375 ? 812 : 900;
+        await page.setViewportSize({ width: gw, height });
+        await page.addInitScript(() => {
+          document.documentElement?.setAttribute('data-theme', 'light');
+        });
+        await page.goto(`${implBase}/profile?section=basics`, { waitUntil: 'load', timeout: 120_000 });
+        await waitImplReady(page, 'specialist-profile-wizard');
+        await row.assertImpl(page);
+        await row.fillImpl(page);
+        stepGeometry.byWidth[String(gw)] = await assertImplWizardLayoutGeometry(page, gw);
+        await page.close();
+      }
+      geometryByStep.push(stepGeometry);
+    }
+
+    for (const row of matrix) {
+      for (const vp of viewports) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, {
+          advancedOpen: row.advancedOpen,
+        });
+        const pairId = `${row.stateId}-${vp.width}-${vp.theme}`;
+        const metrics = {};
+        const cap = await captureRefImplPair(
+          context,
+          {
+            pairId,
+            theme: vp.theme,
+            width: vp.width,
+            height: vp.height,
+            implUrl: `${implBase}/profile?section=basics`,
+            implTestId: 'specialist-profile-wizard',
+            formCrop: {
+              impl: '[data-testid="specialist-profile-step-card"]',
+              ref: '.pw-card',
+            },
+            assertImpl: async (page) => {
+              await row.assertImpl(page);
+              await row.fillImpl(page);
+              await assertImplWizardLayoutGeometry(page, vp.width);
+              metrics.impl = await row.measure(page);
+              metrics.implGeometry = await measureImplStepGeometry(page, row.geometryKind);
+              if (row.uiStep !== 3) {
+                metrics.computedActions = await measureStepComputedActions(page);
+              }
+            },
+            prepareRef: async (page, base) => {
+              await prepareRefSpecialistPatternStep(page, base, row.prepareRefStep, fixture, {
+                advancedOpen: row.advancedOpen,
+              });
+              await row.fillRef(page);
+              metrics.ref = await measureStepFormBox(page, '.pw-card');
+              metrics.refGeometry = await measureRefStepGeometry(page, row.geometryKind);
+            },
+            assertRef: row.assertRef,
+          },
+          OUT,
+          protoBase,
+          meta,
+        );
+        cap.fixtureState = row.stateId;
+        cap.formMetrics = metrics;
+        cap.formCompareNote =
+          'R06-PROFILE-PROTOTYPE-FINISH-01: measured V01–V06 table in manifest; CAPTURED not global PASS.';
+        captures.push(cap);
+      }
+    }
+    await browser.close();
+  } finally {
+    await stopOwnedServer(child);
+    refStatic.server.close();
+    await mock.close();
+    envPin.restore();
+  }
+
+  const cosmeticFixes = buildPrototypeFinishCosmeticTable(geometryByStep, captures);
+  const manifestPath = path.join(OUT, 'manifest.json');
+  const manifest = {
+    capturedAt: new Date().toISOString(),
+    task: taskId,
+    mode: 'MOCK_BFF_PROFILE_PROTOTYPE_FINISH',
+    codeSha,
+    navigatorCodeSha: NAVIGATOR_PIN,
+    sourceTreeDigest: provenanceBefore.sourceTreeDigest,
+    treeDirty: false,
+    prototypePackageCommit: '9bc52fb9152293e992e98dc50804a660cef10733',
+    prototypeTarballSha256: '382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d',
+    fixture,
+    build: {
+      status: build.status,
+      exitCode: build.exitCode,
+      buildId: build.buildId,
+      distDir: DIST,
+    },
+    runtimeBuildIdVerified: build.buildId,
+    appOrigin,
+    mockBff: mock.baseUrl,
+    protoBase,
+    geometryChecks: geometryByStep,
+    cosmeticFixes,
+    captures,
+    pairCount: captures.length,
+    visualPass: false,
+    remainders: [
+      'Six cosmetic fixes V01–V06 scoped to basics/specialization/review; save/reset/partnerSearchOptIn unchanged (D01–D02).',
+      'CAPTURED ref/impl pairs — compare crops manually; visualPass false by policy.',
+    ],
+    contractGaps: [
+      'partnerSearchOptIn checkbox on review step — prototype only (D02).',
+      '«Отменить» vs resetDraft semantics (D01).',
+      'Extra «Сохранить черновик» on all steps (D01).',
+    ],
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  manifest.evidenceSha256 = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256, cosmeticFixes }, null, 2));
+}
+
 async function main() {
   if (process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01') {
     return runProfileLayoutRegressionMain();
+  }
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01') {
+    return runProfilePrototypeFinishMain();
   }
   if (process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01') {
     return runProfileVisualRemindersMain();

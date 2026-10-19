@@ -605,14 +605,17 @@ async function main() {
   if (
     process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01' ||
     process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01' ||
-    process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01'
+    process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01' ||
+    process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01'
   ) {
     const taskLabel =
       process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01'
         ? 'R06-PROFILE-VISUAL-REMAINDERS-01'
         : process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01'
           ? 'R06-PROFILE-LAYOUT-REGRESSION-01'
-          : 'R06-PROFILE-PATTERN-TRANSFER-01';
+          : process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01'
+            ? 'R06-PROFILE-PROTOTYPE-FINISH-01'
+            : 'R06-PROFILE-PATTERN-TRANSFER-01';
     return runProfilePatternBrowserSmoke(taskLabel);
   }
   if (

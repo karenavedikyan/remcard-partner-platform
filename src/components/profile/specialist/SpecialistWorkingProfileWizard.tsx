@@ -533,7 +533,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     />
                     <small className={stepStyles.basicsHelper}>Поможет подобрать партнёров рядом.</small>
                   </div>
-                  <p className={styles.footnote}>
+                  <p className={stepStyles.basicsFootnote}>
                     Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
                   </p>
                 </div>
@@ -749,7 +749,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                     )}
                   </div>
                 </div>
-                <p className={styles.footnote}>
+                <p className={stepStyles.reviewFootnote}>
                   Профиль и карточка в каталоге независимы. Сохранение не публикует вас для клиентов.
                 </p>
               </div>
