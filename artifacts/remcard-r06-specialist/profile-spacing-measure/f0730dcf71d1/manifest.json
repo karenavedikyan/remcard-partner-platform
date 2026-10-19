@@ -1,0 +1,4345 @@
+{
+  "capturedAt": "2026-10-19T16:44:33.924Z",
+  "task": "R06-PROFILE-SPACING-MEASURE-01",
+  "mode": "MOCK_BFF_PROFILE_SPACING_MEASURE",
+  "tolerancePx": 2,
+  "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+  "sourceTreeDigest": "8d5e0d5378dffd7ff6b0fe5cf8c00c2acc650b41",
+  "treeDirty": false,
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "uDCnDK0gbpKE-NhP7XQ5B",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "uDCnDK0gbpKE-NhP7XQ5B",
+  "measurementA": {
+    "gapKeys": [
+      "labelToInputName",
+      "inputToHelperName",
+      "helperToCityLabel",
+      "labelToInputCity",
+      "inputToHelperCity",
+      "helperToFootnote",
+      "footnoteToActions"
+    ],
+    "refSelectors": "label[for=pw-name|pw-city], #pw-hint-*, p.pw-footnote"
+  },
+  "measurementB": {
+    "gapKeys": [
+      "titleToFacts",
+      "roleFactsEndToDirectionsHeading",
+      "directionsHeadingToChips"
+    ],
+    "boundaries": "roleFactsEnd(dd)→.pw-review-directions>strong→.pw-picked | impl reviewChipRow",
+    "notPassGate": [
+      "directionsToFootnote (ref crosses D02 partnerSearchOptIn)"
+    ]
+  },
+  "spacingByPair": [
+    {
+      "pairId": "basics-filled-1440-light",
+      "measureKind": "A_basics",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "labelToInputName": 0,
+        "inputToHelperName": 0,
+        "helperToCityLabel": 0,
+        "labelToInputCity": 0,
+        "inputToHelperCity": 0,
+        "helperToFootnote": 0,
+        "footnoteToActions": 0
+      },
+      "refGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"pw-name\"]",
+            "box": {
+              "top": 139,
+              "bottom": 163,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 24
+            }
+          },
+          "nameInput": {
+            "selector": "[name=\"name\"]",
+            "box": {
+              "top": 171,
+              "bottom": 219,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "#pw-hint-name",
+            "box": {
+              "top": 227,
+              "bottom": 247,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 20
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"pw-city\"]",
+            "box": {
+              "top": 283,
+              "bottom": 307,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 24
+            }
+          },
+          "cityInput": {
+            "selector": "[name=\"city\"]",
+            "box": {
+              "top": 315,
+              "bottom": 363,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "#pw-hint-city",
+            "box": {
+              "top": 371,
+              "bottom": 392,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 20
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote",
+            "box": {
+              "top": 428,
+              "bottom": 449,
+              "left": 608,
+              "right": 1168,
+              "width": 560,
+              "height": 21
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions",
+            "box": {
+              "top": 481,
+              "bottom": 548,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 67
+            }
+          }
+        }
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"sp-displayName\"]",
+            "box": {
+              "top": 126,
+              "bottom": 150,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 24
+            }
+          },
+          "nameInput": {
+            "selector": "#sp-displayName",
+            "box": {
+              "top": 158,
+              "bottom": 206,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "small (name field)",
+            "box": {
+              "top": 214,
+              "bottom": 233,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 19
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"sp-city\"]",
+            "box": {
+              "top": 269,
+              "bottom": 292,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 24
+            }
+          },
+          "cityInput": {
+            "selector": "#sp-city",
+            "box": {
+              "top": 300,
+              "bottom": 348,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "small (city field)",
+            "box": {
+              "top": 356,
+              "bottom": 375,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 19
+            }
+          },
+          "footnote": {
+            "selector": "[data-testid=\"specialist-basics-footnote\"]",
+            "box": {
+              "top": 411,
+              "bottom": 430,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 19
+            }
+          },
+          "actions": {
+            "selector": "[data-testid=\"specialist-step-actions\"]",
+            "box": {
+              "top": 462,
+              "bottom": 532,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 71
+            }
+          }
+        }
+      }
+    },
+    {
+      "pairId": "basics-filled-375-light",
+      "measureKind": "A_basics",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "labelToInputName": 0,
+        "inputToHelperName": 0,
+        "helperToCityLabel": 0,
+        "labelToInputCity": 0,
+        "inputToHelperCity": 0,
+        "helperToFootnote": 0,
+        "footnoteToActions": 0
+      },
+      "refGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"pw-name\"]",
+            "box": {
+              "top": 113,
+              "bottom": 135,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 22
+            }
+          },
+          "nameInput": {
+            "selector": "[name=\"name\"]",
+            "box": {
+              "top": 143,
+              "bottom": 191,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "#pw-hint-name",
+            "box": {
+              "top": 199,
+              "bottom": 218,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 19
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"pw-city\"]",
+            "box": {
+              "top": 254,
+              "bottom": 277,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 22
+            }
+          },
+          "cityInput": {
+            "selector": "[name=\"city\"]",
+            "box": {
+              "top": 285,
+              "bottom": 333,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "#pw-hint-city",
+            "box": {
+              "top": 341,
+              "bottom": 360,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 19
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote",
+            "box": {
+              "top": 396,
+              "bottom": 436,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 40
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions",
+            "box": {
+              "top": 468,
+              "bottom": 534,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 66
+            }
+          }
+        }
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"sp-displayName\"]",
+            "box": {
+              "top": 113,
+              "bottom": 135,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "nameInput": {
+            "selector": "#sp-displayName",
+            "box": {
+              "top": 143,
+              "bottom": 191,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "small (name field)",
+            "box": {
+              "top": 199,
+              "bottom": 217,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 17
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"sp-city\"]",
+            "box": {
+              "top": 253,
+              "bottom": 275,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "cityInput": {
+            "selector": "#sp-city",
+            "box": {
+              "top": 283,
+              "bottom": 331,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "small (city field)",
+            "box": {
+              "top": 339,
+              "bottom": 356,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 17
+            }
+          },
+          "footnote": {
+            "selector": "[data-testid=\"specialist-basics-footnote\"]",
+            "box": {
+              "top": 392,
+              "bottom": 427,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 35
+            }
+          },
+          "actions": {
+            "selector": "[data-testid=\"specialist-step-actions\"]",
+            "box": {
+              "top": 459,
+              "bottom": 645,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 186
+            }
+          }
+        }
+      }
+    },
+    {
+      "pairId": "basics-filled-375-dark",
+      "measureKind": "A_basics",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "labelToInputName": 0,
+        "inputToHelperName": 0,
+        "helperToCityLabel": 0,
+        "labelToInputCity": 0,
+        "inputToHelperCity": 0,
+        "helperToFootnote": 0,
+        "footnoteToActions": 0
+      },
+      "refGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"pw-name\"]",
+            "box": {
+              "top": 113,
+              "bottom": 135,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 22
+            }
+          },
+          "nameInput": {
+            "selector": "[name=\"name\"]",
+            "box": {
+              "top": 143,
+              "bottom": 191,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "#pw-hint-name",
+            "box": {
+              "top": 199,
+              "bottom": 218,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 19
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"pw-city\"]",
+            "box": {
+              "top": 254,
+              "bottom": 277,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 22
+            }
+          },
+          "cityInput": {
+            "selector": "[name=\"city\"]",
+            "box": {
+              "top": 285,
+              "bottom": 333,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "#pw-hint-city",
+            "box": {
+              "top": 341,
+              "bottom": 360,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 19
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote",
+            "box": {
+              "top": 396,
+              "bottom": 436,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 40
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions",
+            "box": {
+              "top": 468,
+              "bottom": 534,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 66
+            }
+          }
+        }
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"sp-displayName\"]",
+            "box": {
+              "top": 113,
+              "bottom": 135,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "nameInput": {
+            "selector": "#sp-displayName",
+            "box": {
+              "top": 143,
+              "bottom": 191,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "small (name field)",
+            "box": {
+              "top": 199,
+              "bottom": 217,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 17
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"sp-city\"]",
+            "box": {
+              "top": 253,
+              "bottom": 275,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "cityInput": {
+            "selector": "#sp-city",
+            "box": {
+              "top": 283,
+              "bottom": 331,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "small (city field)",
+            "box": {
+              "top": 339,
+              "bottom": 356,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 17
+            }
+          },
+          "footnote": {
+            "selector": "[data-testid=\"specialist-basics-footnote\"]",
+            "box": {
+              "top": 392,
+              "bottom": 427,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 35
+            }
+          },
+          "actions": {
+            "selector": "[data-testid=\"specialist-step-actions\"]",
+            "box": {
+              "top": 459,
+              "bottom": 645,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 186
+            }
+          }
+        }
+      }
+    },
+    {
+      "pairId": "basics-filled-320-light",
+      "measureKind": "A_basics",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "labelToInputName": 0,
+        "inputToHelperName": 0,
+        "helperToCityLabel": 0,
+        "labelToInputCity": 0,
+        "inputToHelperCity": 0,
+        "helperToFootnote": 0,
+        "footnoteToActions": 0
+      },
+      "refGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "labelToInputName": 8,
+        "inputToHelperName": 8,
+        "helperToCityLabel": 36,
+        "labelToInputCity": 8,
+        "inputToHelperCity": 8,
+        "helperToFootnote": 36,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"pw-name\"]",
+            "box": {
+              "top": 128,
+              "bottom": 151,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 22
+            }
+          },
+          "nameInput": {
+            "selector": "[name=\"name\"]",
+            "box": {
+              "top": 159,
+              "bottom": 207,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "#pw-hint-name",
+            "box": {
+              "top": 215,
+              "bottom": 234,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 19
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"pw-city\"]",
+            "box": {
+              "top": 270,
+              "bottom": 292,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 22
+            }
+          },
+          "cityInput": {
+            "selector": "[name=\"city\"]",
+            "box": {
+              "top": 300,
+              "bottom": 348,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "#pw-hint-city",
+            "box": {
+              "top": 356,
+              "bottom": 375,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 19
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote",
+            "box": {
+              "top": 411,
+              "bottom": 451,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 40
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions",
+            "box": {
+              "top": 483,
+              "bottom": 549,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 66
+            }
+          }
+        }
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "nameLabel": {
+            "selector": "label[for=\"sp-displayName\"]",
+            "box": {
+              "top": 109,
+              "bottom": 131,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 22
+            }
+          },
+          "nameInput": {
+            "selector": "#sp-displayName",
+            "box": {
+              "top": 139,
+              "bottom": 187,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 48
+            }
+          },
+          "nameHelper": {
+            "selector": "small (name field)",
+            "box": {
+              "top": 195,
+              "bottom": 213,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 17
+            }
+          },
+          "cityLabel": {
+            "selector": "label[for=\"sp-city\"]",
+            "box": {
+              "top": 249,
+              "bottom": 271,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 22
+            }
+          },
+          "cityInput": {
+            "selector": "#sp-city",
+            "box": {
+              "top": 279,
+              "bottom": 327,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 48
+            }
+          },
+          "cityHelper": {
+            "selector": "small (city field)",
+            "box": {
+              "top": 335,
+              "bottom": 352,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 17
+            }
+          },
+          "footnote": {
+            "selector": "[data-testid=\"specialist-basics-footnote\"]",
+            "box": {
+              "top": 388,
+              "bottom": 423,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 35
+            }
+          },
+          "actions": {
+            "selector": "[data-testid=\"specialist-step-actions\"]",
+            "box": {
+              "top": 455,
+              "bottom": 641,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 186
+            }
+          }
+        }
+      }
+    },
+    {
+      "pairId": "review-filled-1440-light",
+      "measureKind": "B_review",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "titleToFacts": 0,
+        "roleFactsEndToDirectionsHeading": -1,
+        "directionsHeadingToChips": 0
+      },
+      "refGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 42,
+        "directionsHeadingToChips": 19,
+        "directionsToFootnote": 122,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 41,
+        "directionsHeadingToChips": 19,
+        "directionsToFootnote": 16,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 122,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": ".pw-step-context",
+            "box": {
+              "top": 38,
+              "bottom": 58,
+              "left": 1231,
+              "right": 1356,
+              "width": 125,
+              "height": 20
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 74,
+              "bottom": 102,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": ".pw-facts",
+            "box": {
+              "top": 126,
+              "bottom": 311,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 185
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 287,
+              "bottom": 311,
+              "left": 608,
+              "right": 972,
+              "width": 364,
+              "height": 24
+            }
+          },
+          "directionsHeading": {
+            "selector": ".pw-review-directions > strong",
+            "box": {
+              "top": 353,
+              "bottom": 373,
+              "left": 608,
+              "right": 708,
+              "width": 100,
+              "height": 20
+            }
+          },
+          "chipArea": {
+            "selector": ".pw-review-directions .pw-picked",
+            "box": {
+              "top": 392,
+              "bottom": 436,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 44
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 558,
+              "bottom": 579,
+              "left": 608,
+              "right": 1168,
+              "width": 560,
+              "height": 21
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 611,
+              "bottom": 678,
+              "left": 608,
+              "right": 1356,
+              "width": 748,
+              "height": 67
+            }
+          }
+        },
+        "contextLabelLines": 1,
+        "contextLabelWidth": 125,
+        "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": "[class*=\"stepContextLabel\"]",
+            "box": {
+              "top": 39,
+              "bottom": 57,
+              "left": 1160,
+              "right": 1352,
+              "width": 192,
+              "height": 17
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 74,
+              "bottom": 102,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": "[data-testid=\"specialist-review-facts\"]",
+            "box": {
+              "top": 126,
+              "bottom": 303,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 177
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 279,
+              "bottom": 303,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 24
+            }
+          },
+          "directionsHeading": {
+            "selector": "review panel strong",
+            "box": {
+              "top": 344,
+              "bottom": 368,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 24
+            }
+          },
+          "chipArea": {
+            "selector": "[class*=\"reviewChipRow\"]",
+            "box": {
+              "top": 387,
+              "bottom": 431,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 44
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 447,
+              "bottom": 465,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 19
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 497,
+              "bottom": 568,
+              "left": 604,
+              "right": 1352,
+              "width": 748,
+              "height": 71
+            }
+          }
+        },
+        "contextLabelLines": 1,
+        "contextLabelWidth": 192,
+        "partnerBlockNote": null
+      }
+    },
+    {
+      "pairId": "review-filled-375-light",
+      "measureKind": "B_review",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "titleToFacts": 0,
+        "roleFactsEndToDirectionsHeading": -1,
+        "directionsHeadingToChips": 1
+      },
+      "refGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 42,
+        "directionsHeadingToChips": 18,
+        "directionsToFootnote": 140,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 41,
+        "directionsHeadingToChips": 19,
+        "directionsToFootnote": 16,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 18,
+          "directionsToFootnote": 140,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": ".pw-step-context",
+            "box": {
+              "top": 22,
+              "bottom": 41,
+              "left": 223,
+              "right": 338,
+              "width": 115,
+              "height": 19
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 57,
+              "bottom": 85,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": ".pw-facts",
+            "box": {
+              "top": 109,
+              "bottom": 417,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 308
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 394,
+              "bottom": 417,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 22
+            }
+          },
+          "directionsHeading": {
+            "selector": ".pw-review-directions > strong",
+            "box": {
+              "top": 459,
+              "bottom": 478,
+              "left": 37,
+              "right": 131,
+              "width": 94,
+              "height": 19
+            }
+          },
+          "chipArea": {
+            "selector": ".pw-review-directions .pw-picked",
+            "box": {
+              "top": 496,
+              "bottom": 644,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 148
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 784,
+              "bottom": 824,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 40
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 856,
+              "bottom": 922,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 66
+            }
+          }
+        },
+        "contextLabelLines": 1,
+        "contextLabelWidth": 115,
+        "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": "[class*=\"stepContextLabel\"]",
+            "box": {
+              "top": 22,
+              "bottom": 54,
+              "left": 226,
+              "right": 336,
+              "width": 110,
+              "height": 32
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 70,
+              "bottom": 98,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": "[data-testid=\"specialist-review-facts\"]",
+            "box": {
+              "top": 122,
+              "bottom": 414,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 292
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 392,
+              "bottom": 414,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "directionsHeading": {
+            "selector": "review panel strong",
+            "box": {
+              "top": 455,
+              "bottom": 477,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "chipArea": {
+            "selector": "[class*=\"reviewChipRow\"]",
+            "box": {
+              "top": 496,
+              "bottom": 644,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 148
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 660,
+              "bottom": 695,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 35
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 727,
+              "bottom": 913,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 186
+            }
+          }
+        },
+        "contextLabelLines": 2,
+        "contextLabelWidth": 110,
+        "partnerBlockNote": null
+      }
+    },
+    {
+      "pairId": "review-filled-375-dark",
+      "measureKind": "B_review",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "titleToFacts": 0,
+        "roleFactsEndToDirectionsHeading": -1,
+        "directionsHeadingToChips": 1
+      },
+      "refGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 42,
+        "directionsHeadingToChips": 18,
+        "directionsToFootnote": 140,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 41,
+        "directionsHeadingToChips": 19,
+        "directionsToFootnote": 16,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 18,
+          "directionsToFootnote": 140,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": ".pw-step-context",
+            "box": {
+              "top": 22,
+              "bottom": 41,
+              "left": 223,
+              "right": 338,
+              "width": 115,
+              "height": 19
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 57,
+              "bottom": 85,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": ".pw-facts",
+            "box": {
+              "top": 109,
+              "bottom": 417,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 308
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 394,
+              "bottom": 417,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 22
+            }
+          },
+          "directionsHeading": {
+            "selector": ".pw-review-directions > strong",
+            "box": {
+              "top": 459,
+              "bottom": 478,
+              "left": 37,
+              "right": 131,
+              "width": 94,
+              "height": 19
+            }
+          },
+          "chipArea": {
+            "selector": ".pw-review-directions .pw-picked",
+            "box": {
+              "top": 496,
+              "bottom": 644,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 148
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 784,
+              "bottom": 824,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 40
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 856,
+              "bottom": 922,
+              "left": 37,
+              "right": 338,
+              "width": 301,
+              "height": 66
+            }
+          }
+        },
+        "contextLabelLines": 1,
+        "contextLabelWidth": 115,
+        "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": "[class*=\"stepContextLabel\"]",
+            "box": {
+              "top": 22,
+              "bottom": 54,
+              "left": 226,
+              "right": 336,
+              "width": 110,
+              "height": 32
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 70,
+              "bottom": 98,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": "[data-testid=\"specialist-review-facts\"]",
+            "box": {
+              "top": 122,
+              "bottom": 414,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 292
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 392,
+              "bottom": 414,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "directionsHeading": {
+            "selector": "review panel strong",
+            "box": {
+              "top": 455,
+              "bottom": 477,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 22
+            }
+          },
+          "chipArea": {
+            "selector": "[class*=\"reviewChipRow\"]",
+            "box": {
+              "top": 496,
+              "bottom": 644,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 148
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 660,
+              "bottom": 695,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 35
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 727,
+              "bottom": 913,
+              "left": 39,
+              "right": 336,
+              "width": 297,
+              "height": 186
+            }
+          }
+        },
+        "contextLabelLines": 2,
+        "contextLabelWidth": 110,
+        "partnerBlockNote": null
+      }
+    },
+    {
+      "pairId": "review-filled-320-light",
+      "measureKind": "B_review",
+      "ok": true,
+      "failures": [],
+      "delta": {
+        "titleToFacts": 0,
+        "roleFactsEndToDirectionsHeading": -1,
+        "directionsHeadingToChips": 1
+      },
+      "refGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 42,
+        "directionsHeadingToChips": 18,
+        "directionsToFootnote": 185,
+        "footnoteToActions": 32
+      },
+      "implGaps": {
+        "titleToFacts": 24,
+        "roleFactsEndToDirectionsHeading": 41,
+        "directionsHeadingToChips": 19,
+        "directionsToFootnote": 16,
+        "footnoteToActions": 32
+      },
+      "ref": {
+        "ok": true,
+        "side": "ref",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 18,
+          "directionsToFootnote": 185,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": ".pw-step-context",
+            "box": {
+              "top": 22,
+              "bottom": 60,
+              "left": 172,
+              "right": 283,
+              "width": 111,
+              "height": 38
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 76,
+              "bottom": 104,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": ".pw-facts",
+            "box": {
+              "top": 128,
+              "bottom": 436,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 308
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 414,
+              "bottom": 436,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 22
+            }
+          },
+          "directionsHeading": {
+            "selector": ".pw-review-directions > strong",
+            "box": {
+              "top": 478,
+              "bottom": 497,
+              "left": 37,
+              "right": 131,
+              "width": 94,
+              "height": 19
+            }
+          },
+          "chipArea": {
+            "selector": ".pw-review-directions .pw-picked",
+            "box": {
+              "top": 516,
+              "bottom": 664,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 148
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 848,
+              "bottom": 908,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 59
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 940,
+              "bottom": 1063,
+              "left": 37,
+              "right": 283,
+              "width": 246,
+              "height": 123
+            }
+          }
+        },
+        "contextLabelLines": 2,
+        "contextLabelWidth": 111,
+        "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+      },
+      "impl": {
+        "ok": true,
+        "side": "impl",
+        "missing": [],
+        "nullGaps": [],
+        "gaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "nodes": {
+          "contextLabel": {
+            "selector": "[class*=\"stepContextLabel\"]",
+            "box": {
+              "top": 22,
+              "bottom": 54,
+              "left": 171,
+              "right": 281,
+              "width": 110,
+              "height": 32
+            }
+          },
+          "title": {
+            "selector": "h2",
+            "box": {
+              "top": 70,
+              "bottom": 98,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 28
+            }
+          },
+          "facts": {
+            "selector": "[data-testid=\"specialist-review-facts\"]",
+            "box": {
+              "top": 122,
+              "bottom": 414,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 292
+            }
+          },
+          "roleFactsEnd": {
+            "selector": "dt:Роль специалиста → dd",
+            "box": {
+              "top": 391,
+              "bottom": 414,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 22
+            }
+          },
+          "directionsHeading": {
+            "selector": "review panel strong",
+            "box": {
+              "top": 455,
+              "bottom": 477,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 22
+            }
+          },
+          "chipArea": {
+            "selector": "[class*=\"reviewChipRow\"]",
+            "box": {
+              "top": 496,
+              "bottom": 644,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 148
+            }
+          },
+          "footnote": {
+            "selector": "p.pw-footnote / reviewFootnote",
+            "box": {
+              "top": 660,
+              "bottom": 712,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 52
+            }
+          },
+          "actions": {
+            "selector": ".pw-actions / specialist-step-actions",
+            "box": {
+              "top": 744,
+              "bottom": 953,
+              "left": 39,
+              "right": 281,
+              "width": 242,
+              "height": 209
+            }
+          }
+        },
+        "contextLabelLines": 2,
+        "contextLabelWidth": 110,
+        "partnerBlockNote": null
+      }
+    }
+  ],
+  "geometryChecks": [
+    {
+      "stateId": "basics-filled",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 48
+          }
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 48
+          }
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.208px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.288px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 666,
+            "height": 48
+          }
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.34px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.42px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 798,
+            "height": 48
+          }
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.341px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.421px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 296,
+            "height": 48
+          }
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 814,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": {
+            "fontSize": "14.88px",
+            "fontWeight": "700",
+            "marginBottom": "8px"
+          },
+          "basicsHelper": {
+            "fontSize": "12.8px",
+            "marginTop": "8px",
+            "display": "block"
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48
+          }
+        }
+      }
+    },
+    {
+      "stateId": "review-filled",
+      "byWidth": {
+        "320": {
+          "ok": true,
+          "failures": [],
+          "viewport": 320,
+          "cardWidth": 284,
+          "layoutWidth": 284,
+          "gridTemplateColumns": "284px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "375": {
+          "ok": true,
+          "failures": [],
+          "viewport": 375,
+          "cardWidth": 339,
+          "layoutWidth": 339,
+          "gridTemplateColumns": "339px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "768": {
+          "ok": true,
+          "failures": [],
+          "viewport": 768,
+          "cardWidth": 732,
+          "layoutWidth": 732,
+          "gridTemplateColumns": "732px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "900": {
+          "ok": true,
+          "failures": [],
+          "viewport": 900,
+          "cardWidth": 864,
+          "layoutWidth": 864,
+          "gridTemplateColumns": "864px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "901": {
+          "ok": true,
+          "failures": [],
+          "viewport": 901,
+          "cardWidth": 362,
+          "layoutWidth": 644,
+          "gridTemplateColumns": "250px 362.203px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        },
+        "1440": {
+          "ok": true,
+          "failures": [],
+          "viewport": 1440,
+          "cardWidth": 814,
+          "layoutWidth": 1100,
+          "gridTemplateColumns": "250px 818px",
+          "documentOverflow": false,
+          "basicsLabel": null,
+          "basicsHelper": null,
+          "nameInput": null
+        }
+      }
+    }
+  ],
+  "captures": [
+    {
+      "pairId": "basics-filled-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-1440-light-1440-light-impl.png",
+        "sha256": "d608553b3829ed68128e4f3e2bf515a9104311032859feb1f34061d0dc09fc12"
+      },
+      "ref": {
+        "path": "basics-filled-1440-light-1440-light-ref.png",
+        "sha256": "7c62f394d7677e5716f34612153f1e3708d8961a9d1670870a1a71b8ee299052"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-1440-light-1440-light-form-impl.png",
+        "sha256": "b9421ed7fe4c427b42c92eacf57b92736abb2215f4368603136581d4f191a69d"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-1440-light-1440-light-form-ref.png",
+        "sha256": "66f96a304a261295d7c24f027c82b8a8f9d097da4957bda02b2407ef31acc345"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "labelToInputName": 0,
+          "inputToHelperName": 0,
+          "helperToCityLabel": 0,
+          "labelToInputCity": 0,
+          "inputToHelperCity": 0,
+          "helperToFootnote": 0,
+          "footnoteToActions": 0
+        },
+        "refGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "measureKind": "A_basics",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"pw-name\"]",
+              "box": {
+                "top": 139,
+                "bottom": 163,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 24
+              }
+            },
+            "nameInput": {
+              "selector": "[name=\"name\"]",
+              "box": {
+                "top": 171,
+                "bottom": 219,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "#pw-hint-name",
+              "box": {
+                "top": 227,
+                "bottom": 247,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 20
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"pw-city\"]",
+              "box": {
+                "top": 283,
+                "bottom": 307,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 24
+              }
+            },
+            "cityInput": {
+              "selector": "[name=\"city\"]",
+              "box": {
+                "top": 315,
+                "bottom": 363,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "#pw-hint-city",
+              "box": {
+                "top": 371,
+                "bottom": 392,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 20
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote",
+              "box": {
+                "top": 428,
+                "bottom": 449,
+                "left": 608,
+                "right": 1168,
+                "width": 560,
+                "height": 21
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions",
+              "box": {
+                "top": 481,
+                "bottom": 548,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 67
+              }
+            }
+          }
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"sp-displayName\"]",
+              "box": {
+                "top": 126,
+                "bottom": 150,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 24
+              }
+            },
+            "nameInput": {
+              "selector": "#sp-displayName",
+              "box": {
+                "top": 158,
+                "bottom": 206,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "small (name field)",
+              "box": {
+                "top": 214,
+                "bottom": 233,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 19
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"sp-city\"]",
+              "box": {
+                "top": 269,
+                "bottom": 292,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 24
+              }
+            },
+            "cityInput": {
+              "selector": "#sp-city",
+              "box": {
+                "top": 300,
+                "bottom": 348,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "small (city field)",
+              "box": {
+                "top": 356,
+                "bottom": 375,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 19
+              }
+            },
+            "footnote": {
+              "selector": "[data-testid=\"specialist-basics-footnote\"]",
+              "box": {
+                "top": 411,
+                "bottom": 430,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 19
+              }
+            },
+            "actions": {
+              "selector": "[data-testid=\"specialist-step-actions\"]",
+              "box": {
+                "top": 462,
+                "bottom": 532,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 71
+              }
+            }
+          }
+        }
+      },
+      "fixtureState": "basics-filled"
+    },
+    {
+      "pairId": "basics-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-375-light-375-light-impl.png",
+        "sha256": "3c7bdd2aeeddb8ac6fc685841623f0cc4b3359fb2dd7ab7e988dde683c65d319"
+      },
+      "ref": {
+        "path": "basics-filled-375-light-375-light-ref.png",
+        "sha256": "9f28272736715cc8dc9e6ce584d244a47834b51e47bbed97a2556b5b9c76f8e1"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-impl.png",
+        "sha256": "07e446d4bfd6e0c08d4ae487c305eabd07cd7003dc9451ac72bae6d2c7b88896"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-ref.png",
+        "sha256": "126aa60290927cba1260e91065cdfc779193a6952b1462d9f1bcc82141193c78"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "labelToInputName": 0,
+          "inputToHelperName": 0,
+          "helperToCityLabel": 0,
+          "labelToInputCity": 0,
+          "inputToHelperCity": 0,
+          "helperToFootnote": 0,
+          "footnoteToActions": 0
+        },
+        "refGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "measureKind": "A_basics",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"pw-name\"]",
+              "box": {
+                "top": 113,
+                "bottom": 135,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 22
+              }
+            },
+            "nameInput": {
+              "selector": "[name=\"name\"]",
+              "box": {
+                "top": 143,
+                "bottom": 191,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "#pw-hint-name",
+              "box": {
+                "top": 199,
+                "bottom": 218,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 19
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"pw-city\"]",
+              "box": {
+                "top": 254,
+                "bottom": 277,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 22
+              }
+            },
+            "cityInput": {
+              "selector": "[name=\"city\"]",
+              "box": {
+                "top": 285,
+                "bottom": 333,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "#pw-hint-city",
+              "box": {
+                "top": 341,
+                "bottom": 360,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 19
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote",
+              "box": {
+                "top": 396,
+                "bottom": 436,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 40
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions",
+              "box": {
+                "top": 468,
+                "bottom": 534,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 66
+              }
+            }
+          }
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"sp-displayName\"]",
+              "box": {
+                "top": 113,
+                "bottom": 135,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "nameInput": {
+              "selector": "#sp-displayName",
+              "box": {
+                "top": 143,
+                "bottom": 191,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "small (name field)",
+              "box": {
+                "top": 199,
+                "bottom": 217,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 17
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"sp-city\"]",
+              "box": {
+                "top": 253,
+                "bottom": 275,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "cityInput": {
+              "selector": "#sp-city",
+              "box": {
+                "top": 283,
+                "bottom": 331,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "small (city field)",
+              "box": {
+                "top": 339,
+                "bottom": 356,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 17
+              }
+            },
+            "footnote": {
+              "selector": "[data-testid=\"specialist-basics-footnote\"]",
+              "box": {
+                "top": 392,
+                "bottom": 427,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 35
+              }
+            },
+            "actions": {
+              "selector": "[data-testid=\"specialist-step-actions\"]",
+              "box": {
+                "top": 459,
+                "bottom": 645,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 186
+              }
+            }
+          }
+        }
+      },
+      "fixtureState": "basics-filled"
+    },
+    {
+      "pairId": "basics-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "basics-filled-375-dark-375-dark-impl.png",
+        "sha256": "714465ac47c59ad1cac611c041c182064f2a6b92c319704f065eab69fbde54b3"
+      },
+      "ref": {
+        "path": "basics-filled-375-dark-375-dark-ref.png",
+        "sha256": "3f20042377f113eef1ef8dd565fed79f780488a557a907354975e73f5153fc98"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "91d0b595e0b0dcbd5eaef347fb19e323c0bf067630ff407e55af2dac03cd2b7e"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-ref.png",
+        "sha256": "963fb4f1bf1fb8e1958bcf058db46450b862d0db5cb09450d57e25b1827034e4"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "labelToInputName": 0,
+          "inputToHelperName": 0,
+          "helperToCityLabel": 0,
+          "labelToInputCity": 0,
+          "inputToHelperCity": 0,
+          "helperToFootnote": 0,
+          "footnoteToActions": 0
+        },
+        "refGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "measureKind": "A_basics",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"pw-name\"]",
+              "box": {
+                "top": 113,
+                "bottom": 135,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 22
+              }
+            },
+            "nameInput": {
+              "selector": "[name=\"name\"]",
+              "box": {
+                "top": 143,
+                "bottom": 191,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "#pw-hint-name",
+              "box": {
+                "top": 199,
+                "bottom": 218,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 19
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"pw-city\"]",
+              "box": {
+                "top": 254,
+                "bottom": 277,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 22
+              }
+            },
+            "cityInput": {
+              "selector": "[name=\"city\"]",
+              "box": {
+                "top": 285,
+                "bottom": 333,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "#pw-hint-city",
+              "box": {
+                "top": 341,
+                "bottom": 360,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 19
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote",
+              "box": {
+                "top": 396,
+                "bottom": 436,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 40
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions",
+              "box": {
+                "top": 468,
+                "bottom": 534,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 66
+              }
+            }
+          }
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"sp-displayName\"]",
+              "box": {
+                "top": 113,
+                "bottom": 135,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "nameInput": {
+              "selector": "#sp-displayName",
+              "box": {
+                "top": 143,
+                "bottom": 191,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "small (name field)",
+              "box": {
+                "top": 199,
+                "bottom": 217,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 17
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"sp-city\"]",
+              "box": {
+                "top": 253,
+                "bottom": 275,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "cityInput": {
+              "selector": "#sp-city",
+              "box": {
+                "top": 283,
+                "bottom": 331,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "small (city field)",
+              "box": {
+                "top": 339,
+                "bottom": 356,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 17
+              }
+            },
+            "footnote": {
+              "selector": "[data-testid=\"specialist-basics-footnote\"]",
+              "box": {
+                "top": 392,
+                "bottom": 427,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 35
+              }
+            },
+            "actions": {
+              "selector": "[data-testid=\"specialist-step-actions\"]",
+              "box": {
+                "top": 459,
+                "bottom": 645,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 186
+              }
+            }
+          }
+        }
+      },
+      "fixtureState": "basics-filled"
+    },
+    {
+      "pairId": "basics-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-320-light-320-light-impl.png",
+        "sha256": "a16fd0ddca40018c4b60e57f2c1f47d587a6ea8dd9764bac07ed98182d109f89"
+      },
+      "ref": {
+        "path": "basics-filled-320-light-320-light-ref.png",
+        "sha256": "8f18eaddc3e278070b2c73c13bdf1b4a7dc770da280da76018401c757c90c90a"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-impl.png",
+        "sha256": "ce3594f6f4ecac60dbff23a7ebc259c5cec28ff0ac31acbd9d077530520c79c4"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-ref.png",
+        "sha256": "8e2df86f8500f3e3b329b0f00037b6242b9ba9b4b61ebce1bcbfd3a5143d0624"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "labelToInputName": 0,
+          "inputToHelperName": 0,
+          "helperToCityLabel": 0,
+          "labelToInputCity": 0,
+          "inputToHelperCity": 0,
+          "helperToFootnote": 0,
+          "footnoteToActions": 0
+        },
+        "refGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "labelToInputName": 8,
+          "inputToHelperName": 8,
+          "helperToCityLabel": 36,
+          "labelToInputCity": 8,
+          "inputToHelperCity": 8,
+          "helperToFootnote": 36,
+          "footnoteToActions": 32
+        },
+        "measureKind": "A_basics",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"pw-name\"]",
+              "box": {
+                "top": 128,
+                "bottom": 151,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 22
+              }
+            },
+            "nameInput": {
+              "selector": "[name=\"name\"]",
+              "box": {
+                "top": 159,
+                "bottom": 207,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "#pw-hint-name",
+              "box": {
+                "top": 215,
+                "bottom": 234,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 19
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"pw-city\"]",
+              "box": {
+                "top": 270,
+                "bottom": 292,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 22
+              }
+            },
+            "cityInput": {
+              "selector": "[name=\"city\"]",
+              "box": {
+                "top": 300,
+                "bottom": 348,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "#pw-hint-city",
+              "box": {
+                "top": 356,
+                "bottom": 375,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 19
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote",
+              "box": {
+                "top": 411,
+                "bottom": 451,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 40
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions",
+              "box": {
+                "top": 483,
+                "bottom": 549,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 66
+              }
+            }
+          }
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "labelToInputName": 8,
+            "inputToHelperName": 8,
+            "helperToCityLabel": 36,
+            "labelToInputCity": 8,
+            "inputToHelperCity": 8,
+            "helperToFootnote": 36,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "nameLabel": {
+              "selector": "label[for=\"sp-displayName\"]",
+              "box": {
+                "top": 109,
+                "bottom": 131,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 22
+              }
+            },
+            "nameInput": {
+              "selector": "#sp-displayName",
+              "box": {
+                "top": 139,
+                "bottom": 187,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 48
+              }
+            },
+            "nameHelper": {
+              "selector": "small (name field)",
+              "box": {
+                "top": 195,
+                "bottom": 213,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 17
+              }
+            },
+            "cityLabel": {
+              "selector": "label[for=\"sp-city\"]",
+              "box": {
+                "top": 249,
+                "bottom": 271,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 22
+              }
+            },
+            "cityInput": {
+              "selector": "#sp-city",
+              "box": {
+                "top": 279,
+                "bottom": 327,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 48
+              }
+            },
+            "cityHelper": {
+              "selector": "small (city field)",
+              "box": {
+                "top": 335,
+                "bottom": 352,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 17
+              }
+            },
+            "footnote": {
+              "selector": "[data-testid=\"specialist-basics-footnote\"]",
+              "box": {
+                "top": 388,
+                "bottom": 423,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 35
+              }
+            },
+            "actions": {
+              "selector": "[data-testid=\"specialist-step-actions\"]",
+              "box": {
+                "top": 455,
+                "bottom": 641,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 186
+              }
+            }
+          }
+        }
+      },
+      "fixtureState": "basics-filled"
+    },
+    {
+      "pairId": "review-filled-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-1440-light-1440-light-impl.png",
+        "sha256": "6e208d100ffb18490ec2c1fc842c6e254cbd936784803eeca9718807c760c2b6"
+      },
+      "ref": {
+        "path": "review-filled-1440-light-1440-light-ref.png",
+        "sha256": "b829a9134f8f63df04f0a157b0843a0642392e2d846438213a829f5b3ae094cd"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-1440-light-1440-light-form-impl.png",
+        "sha256": "9c64013b17bdbc5f7710b8cbdf449184e96d02a188a3ef322011cab24c7e9d93"
+      },
+      "refFormCrop": {
+        "path": "review-filled-1440-light-1440-light-form-ref.png",
+        "sha256": "6f7577cf3937729511c2c2c22eb652af93c328105bf1197e55f84a16314e7bf3"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "titleToFacts": 0,
+          "roleFactsEndToDirectionsHeading": -1,
+          "directionsHeadingToChips": 0
+        },
+        "refGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 122,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "measureKind": "B_review",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 42,
+            "directionsHeadingToChips": 19,
+            "directionsToFootnote": 122,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": ".pw-step-context",
+              "box": {
+                "top": 38,
+                "bottom": 58,
+                "left": 1231,
+                "right": 1356,
+                "width": 125,
+                "height": 20
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 74,
+                "bottom": 102,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": ".pw-facts",
+              "box": {
+                "top": 126,
+                "bottom": 311,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 185
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 287,
+                "bottom": 311,
+                "left": 608,
+                "right": 972,
+                "width": 364,
+                "height": 24
+              }
+            },
+            "directionsHeading": {
+              "selector": ".pw-review-directions > strong",
+              "box": {
+                "top": 353,
+                "bottom": 373,
+                "left": 608,
+                "right": 708,
+                "width": 100,
+                "height": 20
+              }
+            },
+            "chipArea": {
+              "selector": ".pw-review-directions .pw-picked",
+              "box": {
+                "top": 392,
+                "bottom": 436,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 44
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 558,
+                "bottom": 579,
+                "left": 608,
+                "right": 1168,
+                "width": 560,
+                "height": 21
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 611,
+                "bottom": 678,
+                "left": 608,
+                "right": 1356,
+                "width": 748,
+                "height": 67
+              }
+            }
+          },
+          "contextLabelLines": 1,
+          "contextLabelWidth": 125,
+          "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 41,
+            "directionsHeadingToChips": 19,
+            "directionsToFootnote": 16,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": "[class*=\"stepContextLabel\"]",
+              "box": {
+                "top": 39,
+                "bottom": 57,
+                "left": 1160,
+                "right": 1352,
+                "width": 192,
+                "height": 17
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 74,
+                "bottom": 102,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": "[data-testid=\"specialist-review-facts\"]",
+              "box": {
+                "top": 126,
+                "bottom": 303,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 177
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 279,
+                "bottom": 303,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 24
+              }
+            },
+            "directionsHeading": {
+              "selector": "review panel strong",
+              "box": {
+                "top": 344,
+                "bottom": 368,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 24
+              }
+            },
+            "chipArea": {
+              "selector": "[class*=\"reviewChipRow\"]",
+              "box": {
+                "top": 387,
+                "bottom": 431,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 44
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 447,
+                "bottom": 465,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 19
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 497,
+                "bottom": 568,
+                "left": 604,
+                "right": 1352,
+                "width": 748,
+                "height": 71
+              }
+            }
+          },
+          "contextLabelLines": 1,
+          "contextLabelWidth": 192,
+          "partnerBlockNote": null
+        }
+      },
+      "fixtureState": "review-filled"
+    },
+    {
+      "pairId": "review-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-375-light-375-light-impl.png",
+        "sha256": "f83aa0677d5f6805ed1ba1b2c3006644b409455e4a4c97035fe2a18266adae7c"
+      },
+      "ref": {
+        "path": "review-filled-375-light-375-light-ref.png",
+        "sha256": "a4846169cf153ed28787f716868576fd40593233252cbc49205ad614867c005e"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-light-375-light-form-impl.png",
+        "sha256": "c0cf973ce91563580d9ad8d60bd7e93dd615a20660f680c0d8738da8f315b015"
+      },
+      "refFormCrop": {
+        "path": "review-filled-375-light-375-light-form-ref.png",
+        "sha256": "9fcfda67f858eb2c56cf50299a7e0b0205e22ab68a38c31517bef343267c5e47"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "titleToFacts": 0,
+          "roleFactsEndToDirectionsHeading": -1,
+          "directionsHeadingToChips": 1
+        },
+        "refGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 18,
+          "directionsToFootnote": 140,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "measureKind": "B_review",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 42,
+            "directionsHeadingToChips": 18,
+            "directionsToFootnote": 140,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": ".pw-step-context",
+              "box": {
+                "top": 22,
+                "bottom": 41,
+                "left": 223,
+                "right": 338,
+                "width": 115,
+                "height": 19
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 57,
+                "bottom": 85,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": ".pw-facts",
+              "box": {
+                "top": 109,
+                "bottom": 417,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 308
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 394,
+                "bottom": 417,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 22
+              }
+            },
+            "directionsHeading": {
+              "selector": ".pw-review-directions > strong",
+              "box": {
+                "top": 459,
+                "bottom": 478,
+                "left": 37,
+                "right": 131,
+                "width": 94,
+                "height": 19
+              }
+            },
+            "chipArea": {
+              "selector": ".pw-review-directions .pw-picked",
+              "box": {
+                "top": 496,
+                "bottom": 644,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 148
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 784,
+                "bottom": 824,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 40
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 856,
+                "bottom": 922,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 66
+              }
+            }
+          },
+          "contextLabelLines": 1,
+          "contextLabelWidth": 115,
+          "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 41,
+            "directionsHeadingToChips": 19,
+            "directionsToFootnote": 16,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": "[class*=\"stepContextLabel\"]",
+              "box": {
+                "top": 22,
+                "bottom": 54,
+                "left": 226,
+                "right": 336,
+                "width": 110,
+                "height": 32
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 70,
+                "bottom": 98,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": "[data-testid=\"specialist-review-facts\"]",
+              "box": {
+                "top": 122,
+                "bottom": 414,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 292
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 392,
+                "bottom": 414,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "directionsHeading": {
+              "selector": "review panel strong",
+              "box": {
+                "top": 455,
+                "bottom": 477,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "chipArea": {
+              "selector": "[class*=\"reviewChipRow\"]",
+              "box": {
+                "top": 496,
+                "bottom": 644,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 148
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 660,
+                "bottom": 695,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 35
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 727,
+                "bottom": 913,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 186
+              }
+            }
+          },
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "partnerBlockNote": null
+        }
+      },
+      "fixtureState": "review-filled"
+    },
+    {
+      "pairId": "review-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "review-filled-375-dark-375-dark-impl.png",
+        "sha256": "6de86e6534a6d74b5dcaf725ac6c896c83614623f49afd2f30fc4f9a9cd08a7b"
+      },
+      "ref": {
+        "path": "review-filled-375-dark-375-dark-ref.png",
+        "sha256": "4d487df4d79e076395a2879a0a74cd8217525d784393fcd52ca5b6d4d1a79ca1"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "67f7ee23de3ddf6f97aebbd6f90727a6d31da8ddcde2ebe1d4ad62299f1144f7"
+      },
+      "refFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-ref.png",
+        "sha256": "322f00dc42da693373cec1ed36e2dc1ea5ccb3efc5ff38f48b0b85363d134283"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "titleToFacts": 0,
+          "roleFactsEndToDirectionsHeading": -1,
+          "directionsHeadingToChips": 1
+        },
+        "refGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 18,
+          "directionsToFootnote": 140,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "measureKind": "B_review",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 42,
+            "directionsHeadingToChips": 18,
+            "directionsToFootnote": 140,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": ".pw-step-context",
+              "box": {
+                "top": 22,
+                "bottom": 41,
+                "left": 223,
+                "right": 338,
+                "width": 115,
+                "height": 19
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 57,
+                "bottom": 85,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": ".pw-facts",
+              "box": {
+                "top": 109,
+                "bottom": 417,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 308
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 394,
+                "bottom": 417,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 22
+              }
+            },
+            "directionsHeading": {
+              "selector": ".pw-review-directions > strong",
+              "box": {
+                "top": 459,
+                "bottom": 478,
+                "left": 37,
+                "right": 131,
+                "width": 94,
+                "height": 19
+              }
+            },
+            "chipArea": {
+              "selector": ".pw-review-directions .pw-picked",
+              "box": {
+                "top": 496,
+                "bottom": 644,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 148
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 784,
+                "bottom": 824,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 40
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 856,
+                "bottom": 922,
+                "left": 37,
+                "right": 338,
+                "width": 301,
+                "height": 66
+              }
+            }
+          },
+          "contextLabelLines": 1,
+          "contextLabelWidth": 115,
+          "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 41,
+            "directionsHeadingToChips": 19,
+            "directionsToFootnote": 16,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": "[class*=\"stepContextLabel\"]",
+              "box": {
+                "top": 22,
+                "bottom": 54,
+                "left": 226,
+                "right": 336,
+                "width": 110,
+                "height": 32
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 70,
+                "bottom": 98,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": "[data-testid=\"specialist-review-facts\"]",
+              "box": {
+                "top": 122,
+                "bottom": 414,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 292
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 392,
+                "bottom": 414,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "directionsHeading": {
+              "selector": "review panel strong",
+              "box": {
+                "top": 455,
+                "bottom": 477,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 22
+              }
+            },
+            "chipArea": {
+              "selector": "[class*=\"reviewChipRow\"]",
+              "box": {
+                "top": 496,
+                "bottom": 644,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 148
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 660,
+                "bottom": 695,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 35
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 727,
+                "bottom": 913,
+                "left": 39,
+                "right": 336,
+                "width": 297,
+                "height": 186
+              }
+            }
+          },
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "partnerBlockNote": null
+        }
+      },
+      "fixtureState": "review-filled"
+    },
+    {
+      "pairId": "review-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-320-light-320-light-impl.png",
+        "sha256": "c770a1c7ff31a5f628d8bcdb983ebd183494fc11f3424fa480915f1fb39ebb76"
+      },
+      "ref": {
+        "path": "review-filled-320-light-320-light-ref.png",
+        "sha256": "4b6b23499d797613a8f43c17c25407811d7d4b433f447007f33b1dbdb44c491b"
+      },
+      "codeSha": "f0730dcf71d1dd45468198e60ec44e46739d8998",
+      "runtimeBuildId": "uDCnDK0gbpKE-NhP7XQ5B",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-320-light-320-light-form-impl.png",
+        "sha256": "7860a57126331d175efe0744e3693867b36f03208c7d425ddbc315af655c320c"
+      },
+      "refFormCrop": {
+        "path": "review-filled-320-light-320-light-form-ref.png",
+        "sha256": "d99763972dfdc668764dd4f0510cc5ebbc6e8bfa29d942ce7d91ea76329e8faa"
+      },
+      "spacingCompare": {
+        "ok": true,
+        "failures": [],
+        "delta": {
+          "titleToFacts": 0,
+          "roleFactsEndToDirectionsHeading": -1,
+          "directionsHeadingToChips": 1
+        },
+        "refGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 42,
+          "directionsHeadingToChips": 18,
+          "directionsToFootnote": 185,
+          "footnoteToActions": 32
+        },
+        "implGaps": {
+          "titleToFacts": 24,
+          "roleFactsEndToDirectionsHeading": 41,
+          "directionsHeadingToChips": 19,
+          "directionsToFootnote": 16,
+          "footnoteToActions": 32
+        },
+        "measureKind": "B_review",
+        "ref": {
+          "ok": true,
+          "side": "ref",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 42,
+            "directionsHeadingToChips": 18,
+            "directionsToFootnote": 185,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": ".pw-step-context",
+              "box": {
+                "top": 22,
+                "bottom": 60,
+                "left": 172,
+                "right": 283,
+                "width": 111,
+                "height": 38
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 76,
+                "bottom": 104,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": ".pw-facts",
+              "box": {
+                "top": 128,
+                "bottom": 436,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 308
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 414,
+                "bottom": 436,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 22
+              }
+            },
+            "directionsHeading": {
+              "selector": ".pw-review-directions > strong",
+              "box": {
+                "top": 478,
+                "bottom": 497,
+                "left": 37,
+                "right": 131,
+                "width": 94,
+                "height": 19
+              }
+            },
+            "chipArea": {
+              "selector": ".pw-review-directions .pw-picked",
+              "box": {
+                "top": 516,
+                "bottom": 664,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 148
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 848,
+                "bottom": 908,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 59
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 940,
+                "bottom": 1063,
+                "left": 37,
+                "right": 283,
+                "width": 246,
+                "height": 123
+              }
+            }
+          },
+          "contextLabelLines": 2,
+          "contextLabelWidth": 111,
+          "partnerBlockNote": "directionsToFootnote crosses .pw-visibility (D02) — not a pass gate"
+        },
+        "impl": {
+          "ok": true,
+          "side": "impl",
+          "missing": [],
+          "nullGaps": [],
+          "gaps": {
+            "titleToFacts": 24,
+            "roleFactsEndToDirectionsHeading": 41,
+            "directionsHeadingToChips": 19,
+            "directionsToFootnote": 16,
+            "footnoteToActions": 32
+          },
+          "nodes": {
+            "contextLabel": {
+              "selector": "[class*=\"stepContextLabel\"]",
+              "box": {
+                "top": 22,
+                "bottom": 54,
+                "left": 171,
+                "right": 281,
+                "width": 110,
+                "height": 32
+              }
+            },
+            "title": {
+              "selector": "h2",
+              "box": {
+                "top": 70,
+                "bottom": 98,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 28
+              }
+            },
+            "facts": {
+              "selector": "[data-testid=\"specialist-review-facts\"]",
+              "box": {
+                "top": 122,
+                "bottom": 414,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 292
+              }
+            },
+            "roleFactsEnd": {
+              "selector": "dt:Роль специалиста → dd",
+              "box": {
+                "top": 391,
+                "bottom": 414,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 22
+              }
+            },
+            "directionsHeading": {
+              "selector": "review panel strong",
+              "box": {
+                "top": 455,
+                "bottom": 477,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 22
+              }
+            },
+            "chipArea": {
+              "selector": "[class*=\"reviewChipRow\"]",
+              "box": {
+                "top": 496,
+                "bottom": 644,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 148
+              }
+            },
+            "footnote": {
+              "selector": "p.pw-footnote / reviewFootnote",
+              "box": {
+                "top": 660,
+                "bottom": 712,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 52
+              }
+            },
+            "actions": {
+              "selector": ".pw-actions / specialist-step-actions",
+              "box": {
+                "top": 744,
+                "bottom": 953,
+                "left": 39,
+                "right": 281,
+                "width": 242,
+                "height": 209
+              }
+            }
+          },
+          "contextLabelLines": 2,
+          "contextLabelWidth": 110,
+          "partnerBlockNote": null
+        }
+      },
+      "fixtureState": "review-filled"
+    }
+  ],
+  "pairCount": 8,
+  "visualPass": false,
+  "deferredDocumented": {
+    "D01": "unchanged",
+    "D02": "unchanged",
+    "D03": "unchanged"
+  },
+  "evidenceSha256": "7f0f3cc0dcdaf6986f290975a6287271a0afcd0a3b11115eaf593316aa700f26"
+}
