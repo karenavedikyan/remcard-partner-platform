@@ -1,0 +1,212 @@
+{
+  "task": "PARTNERS-SHARED-PROTOTYPE-01",
+  "generatedAt": "2026-10-19T18:13:32.781Z",
+  "codeSha": "e11cba2138eb3d0d1e4bdae1a98d5fe9187eecfd",
+  "sourceTreeDigest": "7d4f37bf9711339e21e6592978e2878c5747965c",
+  "treeDirty": true,
+  "buildId": "r6pbt3KujmAWnDkYEw5Za",
+  "distDir": ".next-r06-partners-shared",
+  "refProtoSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "pairs": [
+    {
+      "id": "active-list",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-list-1440-light.png",
+        "sha256": "4fdf0c6845585e449e28d76d359743c63c37a49b473e78a710d2fd30ef2956bc"
+      },
+      "ref": {
+        "file": "ref-specialist-active-list-1440-light.png",
+        "sha256": "449e5926ecfbc628a2c17e68ceec6545fa481a4ec7713b5d24d088f37f68d785"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-cards",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-cards-1440-light.png",
+        "sha256": "551e6382d41ac88dbf77d7fc731faaabcaa515baf3ccc867db1547a532a2b32c"
+      },
+      "ref": {
+        "file": "ref-specialist-active-cards-1440-light.png",
+        "sha256": "2c3c51fd07f459109b22c29441f2c12ccbc6e9e747ab79dcdcaf008ba40271e6"
+      },
+      "refError": null
+    },
+    {
+      "id": "inv-in",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-inv-in-1440-light.png",
+        "sha256": "518eff42ddd206588886b2c184cdba0a0a62f3c0ec13a5a3117d5d65dccb9a83"
+      },
+      "ref": {
+        "file": "ref-specialist-inv-in-1440-light.png",
+        "sha256": "9a45ee314410d9acdee1312239bf479e88955fc99e22f0cbaa3c81b4c007a594"
+      },
+      "refError": null
+    },
+    {
+      "id": "inv-out",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-inv-out-1440-light.png",
+        "sha256": "8770c7e7a6377bfcd00a37a6050a2e8fb4445bafebb607d85720677c1c3f7a71"
+      },
+      "ref": {
+        "file": "ref-specialist-inv-out-1440-light.png",
+        "sha256": "1ce80ad5022387c0ff14ac8c9c8506adc7419583159fdcb51eaa5455a7462c8e"
+      },
+      "refError": null
+    },
+    {
+      "id": "find",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-find-1440-light.png",
+        "sha256": "f61dd09d0f6a3c802848346f93782662e8cfcb3db75727e9c6399cbe6450f19d"
+      },
+      "ref": {
+        "file": "ref-specialist-find-1440-light.png",
+        "sha256": "4e9d798facafa7c1a4f1e4a052291702123ce8810619ba23ad5c2d956e04f8dc"
+      },
+      "refError": null
+    },
+    {
+      "id": "link",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-link-1440-light.png",
+        "sha256": "73cc4252f815481449bf6f37a8a32187bf86e1bc7d47ca881cb8765150313f6b"
+      },
+      "ref": {
+        "file": "ref-specialist-link-1440-light.png",
+        "sha256": "4e9d798facafa7c1a4f1e4a052291702123ce8810619ba23ad5c2d956e04f8dc"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-375-light",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-375-light-375-light.png",
+        "sha256": "d59e00bed362094b4116dea8eb06d6491108ec2d3a183872f7510f445dbd3de1"
+      },
+      "ref": {
+        "file": "ref-specialist-active-375-light-375-light.png",
+        "sha256": "6939e0c85a8733d8a6d231457c11d45eb5e9b00c9e949c3c80eda2c0a464a06e"
+      },
+      "refError": null
+    },
+    {
+      "id": "find-375-light",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-find-375-light-375-light.png",
+        "sha256": "b78be1910c215c1b45998f1a72516b28e933f8cb1f00dc9592cb6599144c83cd"
+      },
+      "ref": {
+        "file": "ref-specialist-find-375-light-375-light.png",
+        "sha256": "a8b78c047cb90764963aa87b2e6594043ddfad387736153caa2354dba9db1e63"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-375-dark",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-375-dark-375-dark.png",
+        "sha256": "98b84a766a7481867efb709da45765b06b758829fd25c432c17bf98547561525"
+      },
+      "ref": {
+        "file": "ref-specialist-active-375-dark-375-dark.png",
+        "sha256": "79492e519d0607ac204d8e7f3db86150b638a7225ef873a8a2281760dc6e619c"
+      },
+      "refError": null
+    },
+    {
+      "id": "find-375-dark",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-find-375-dark-375-dark.png",
+        "sha256": "aa171ee8b09fa764ad9eee3a7999e4be63797aadbf3d66bbeaae7f78001e348b"
+      },
+      "ref": {
+        "file": "ref-specialist-find-375-dark-375-dark.png",
+        "sha256": "e402f29e6626d79249f3a3bc4e0f37dfe1cf561857503e205d0e8567b684feee"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-320-smoke",
+      "audience": "specialist-r04",
+      "impl": {
+        "file": "impl-specialist-active-320-smoke-320-light.png",
+        "sha256": "ed200be0ad977b939e02f78a6f9a4d60b65ab677536865b2f19a17c7c3a9ef5d"
+      },
+      "ref": null,
+      "refError": null
+    },
+    {
+      "id": "active-list",
+      "audience": "agent-r04",
+      "impl": {
+        "file": "impl-agent-active-list-1440-light.png",
+        "sha256": "e3e7498e392ad99befb452b95f84b3f326bd6f5c3e61f0da9fddd650f815e930"
+      },
+      "ref": {
+        "file": "ref-agent-active-list-1440-light.png",
+        "sha256": "e3ad15fab5fa7042086ddb60a2ef44623ae56fc48cfe82f5305d23bd256fa3fa"
+      },
+      "refError": null
+    },
+    {
+      "id": "find-1440",
+      "audience": "agent-r04",
+      "impl": {
+        "file": "impl-agent-find-1440-1440-light.png",
+        "sha256": "14cab9df006c924a23f53d3d6b0bbc7ec63ccb8389200081ae12af6dfe582d41"
+      },
+      "ref": {
+        "file": "ref-agent-find-1440-1440-light.png",
+        "sha256": "7a08f039f3e8094205adfcdf085f2cdca52e77ff1a1defcf65af7e4c810306a3"
+      },
+      "refError": null
+    },
+    {
+      "id": "active-375",
+      "audience": "agent-r04",
+      "impl": {
+        "file": "impl-agent-active-375-375-light.png",
+        "sha256": "f817422f14a926a83029f6520ad41f2ba22a1c51a066f861bb69fee61c74e1c7"
+      },
+      "ref": {
+        "file": "ref-agent-active-375-375-light.png",
+        "sha256": "3df858da0a2ea691c5b24c6b2a7cf756e51e7b1ebe34542bdbeb978e8081e903"
+      },
+      "refError": null
+    },
+    {
+      "id": "find-375",
+      "audience": "agent-r04",
+      "impl": {
+        "file": "impl-agent-find-375-375-light.png",
+        "sha256": "77aacb1a97ebda08d2770376f40c81899de5ef8261c2312223605884f1df6658"
+      },
+      "ref": {
+        "file": "ref-agent-find-375-375-light.png",
+        "sha256": "cb2ae50b6f688c68d7f2e3cecb5f76fbf8de9c90d7027b9f52fc506ff5fd4f75"
+      },
+      "refError": null
+    }
+  ],
+  "functional": {
+    "specialistShell": "CAPTURED",
+    "agentRegression": "CAPTURED",
+    "loadingEmptyErrorStates": "NOT_RUN",
+    "storeCompanySharedShell": "BLOCKED",
+    "listPreferenceLiveContract": "NOT_RUN"
+  },
+  "visualParityNote": "CAPTURED only; not a pixel PASS claim. Specialist verified vs ref role=specialist; agent vs ref role=agent."
+}

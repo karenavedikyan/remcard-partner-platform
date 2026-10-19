@@ -26,9 +26,14 @@ export async function driveRefRolePartners(page, baseUrl, opts = {}) {
   }, role);
   await page.waitForTimeout(600);
 
-  const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
-  if ((await cabinetBtn.getAttribute('aria-pressed')) !== 'true') {
-    await cabinetBtn.click({ force: true });
+  const cabinetPressed = await page
+    .locator('[data-testid="view-cabinet"]')
+    .getAttribute('aria-pressed');
+  if (cabinetPressed !== 'true') {
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="view-cabinet"]');
+      if (btn instanceof HTMLElement) btn.click();
+    });
     await page.waitForTimeout(800);
   }
 
