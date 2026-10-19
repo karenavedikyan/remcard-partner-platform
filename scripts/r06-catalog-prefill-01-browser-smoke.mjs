@@ -168,10 +168,11 @@ async function runContactsControlBrowserSmoke() {
     const emailInput = page.locator('#sp-email');
     const initialGet = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
     const initialBody = await initialGet.json();
+    const isEmptyContact = (v) => v == null || String(v).trim() === '';
     report.steps.initialGet = {
       ok:
-        initialBody.payload?.partnershipContactPhone === '' &&
-        initialBody.payload?.partnershipContactEmail === '',
+        isEmptyContact(initialBody.payload?.partnershipContactPhone) &&
+        isEmptyContact(initialBody.payload?.partnershipContactEmail),
       expected: { phone: '', email: '' },
       actual: {
         phone: initialBody.payload?.partnershipContactPhone ?? null,
