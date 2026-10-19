@@ -203,10 +203,18 @@ async function runFunctional(page, origin, mock, expected) {
 
   await openImplR04Panel(page, 'invitations', origin);
   await page.locator('[data-testid="agent-invites-incoming"]').click();
-  await page.getByText('СтройДом').waitFor({ timeout: 15_000 });
+  await page
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: 'СтройДом' })
+    .first()
+    .waitFor({ timeout: 15_000 });
   push('incoming_from_counterparty', true);
   await page.locator('[data-testid="agent-invites-outgoing"]').click();
-  await page.getByText('ООО Ремонт+').waitFor({ timeout: 15_000 });
+  await page
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: 'ООО Ремонт+' })
+    .first()
+    .waitFor({ timeout: 15_000 });
   push('outgoing_initiated_by_me', true);
 
   await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
