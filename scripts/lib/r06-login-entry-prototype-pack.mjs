@@ -92,7 +92,11 @@ export async function assertPrototypePageReady(page) {
       const body = document.body?.textContent ?? '';
       if (body.includes(errText)) return false;
       if (body.includes('Загружаем прототип')) return false;
-      return Boolean(document.querySelector('#app [data-action], #app .pw, #app .production-profile'));
+      return Boolean(
+        document.querySelector('[data-testid="view-cabinet"]') ||
+          document.querySelector('.production-profile') ||
+          document.querySelector('[data-profile-form="working"]'),
+      );
     },
     PROTO_LOAD_ERROR,
     { timeout: 90_000 },
