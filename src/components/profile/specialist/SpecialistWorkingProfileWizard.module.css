@@ -6,6 +6,12 @@
   min-width: 0;
 }
 
+.patternWizardLayout {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 @media (min-width: 901px) {
   .patternWizardLayout {
     grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
@@ -16,7 +22,6 @@
     width: 100%;
     max-width: min(814px, 100%);
     min-width: 0;
-    justify-self: start;
     box-sizing: border-box;
   }
 }
