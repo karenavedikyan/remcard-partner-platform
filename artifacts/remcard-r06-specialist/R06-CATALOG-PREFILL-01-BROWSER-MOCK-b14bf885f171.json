@@ -1,0 +1,94 @@
+{
+  "mode": "MOCK_BFF",
+  "task": "R06-PROFILE-CATALOG-PREFILL-01.3",
+  "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "9f4f9463250c0e214b30ec3d524e9d8ef9fa3e84",
+  "treeDirty": false,
+  "backendChanged": false,
+  "mockBff": "http://127.0.0.1:35503",
+  "appOrigin": "http://127.0.0.1:30680",
+  "distDir": ".next-r06-catalog-prefill-smoke",
+  "build": {
+    "status": "skipped",
+    "ok": false,
+    "skipped": true,
+    "exitCode": null,
+    "buildId": "H3AODQ9c5UPXjWGoazkeA"
+  },
+  "steps": {
+    "runtimeBuildId": {
+      "ok": true,
+      "value": "H3AODQ9c5UPXjWGoazkeA",
+      "expected": "H3AODQ9c5UPXjWGoazkeA"
+    },
+    "finishWorkingProfile": {
+      "ok": true
+    },
+    "workingProfilePreserved": {
+      "ok": true,
+      "displayName": "Актуальное рабочее имя",
+      "services": [
+        "design",
+        "planning"
+      ],
+      "stages": [
+        "L1-1"
+      ]
+    },
+    "catalogUiTransition": {
+      "ok": true,
+      "method": "specialist_catalog_cta_link",
+      "note": "no page.goto to catalog; in-app Link from completed summary",
+      "urlAfter": "http://127.0.0.1:30680/profile?section=catalog"
+    },
+    "catalogPrefillName": {
+      "ok": true,
+      "value": "Актуальное рабочее имя"
+    },
+    "catalogPresetPrefill": {
+      "ok": true,
+      "services": [
+        "Дизайн интерьера",
+        "Планирование"
+      ],
+      "stages": [
+        "📐 Планирование"
+      ],
+      "expected": {
+        "serviceLabels": [
+          "Дизайн интерьера",
+          "Планирование"
+        ],
+        "stageLabels": [
+          "📐 Планирование"
+        ]
+      }
+    },
+    "stagedClearGet": {
+      "ok": true,
+      "catalogDisplayName": null,
+      "catalogDisplayNameSource": "staged_draft",
+      "displayName": "Актуальное рабочее имя",
+      "telegram": "@catalog_smoke",
+      "navigatorStageIds": [],
+      "specializations": []
+    },
+    "reloadUi": {
+      "ok": true,
+      "catalogPublicName": "",
+      "telegram": "@catalog_smoke",
+      "navigatorStageIds": [],
+      "specializations": [],
+      "catalogDisplayNameSource": "staged_draft"
+    }
+  },
+  "ok": true,
+  "notRun": [
+    "moderation_submit",
+    "production_db",
+    "pg_disposable",
+    "visual_pixel_diff"
+  ],
+  "evidenceSha256": "7542d1517d68c849eb6994ca328f74ec5dd63a8dfe9c20d79335cd5a4ede57e8"
+}

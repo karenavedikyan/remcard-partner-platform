@@ -1,0 +1,324 @@
+{
+  "capturedAt": "2026-10-19T14:24:06.512Z",
+  "task": "R06-PROFILE-CATALOG-PREFILL-01.3",
+  "mode": "MOCK_BFF_VISUAL",
+  "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "9f4f9463250c0e214b30ec3d524e9d8ef9fa3e84",
+  "treeDirty": false,
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "H3AODQ9c5UPXjWGoazkeA",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "H3AODQ9c5UPXjWGoazkeA",
+  "appOrigin": "http://127.0.0.1:30680",
+  "mockBff": "http://127.0.0.1:38965",
+  "protoBase": "http://127.0.0.1:37335",
+  "captures": [
+    {
+      "pairId": "profile-completed-summary",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-completed-summary-1440-light-impl.png",
+        "sha256": "4f400cac493d5c826952baec00e58620be0337a89cd47bd4fd62fc6b413b72c2"
+      },
+      "ref": {
+        "path": "profile-completed-summary-1440-light-ref.png",
+        "sha256": "2b5a89cba14ad4cbf441c2c19278a5738813729ccc4856b6b8796165b3aab261"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-basics-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-basics-step-1440-light-impl.png",
+        "sha256": "d58043785d264a2b402686ad1372d321e0cde7daf94f19d9dd3567dec4d760ed"
+      },
+      "ref": {
+        "path": "profile-basics-step-1440-light-ref.png",
+        "sha256": "85ba23432e7c07b1415a3134163342720a4f9efed4bbba1e64e110820b4af4f5"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-specialization-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-specialization-step-1440-light-impl.png",
+        "sha256": "1f7ce222b745f30394a4ae68e56c6eaa3cbde102cc598dd3a75383a528a0ac1a"
+      },
+      "ref": {
+        "path": "profile-specialization-step-1440-light-ref.png",
+        "sha256": "df1b449754499cd7726db299e50da7e81d39f8b963978c3a7eda6de1e943aa0e"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-contacts-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-contacts-step-1440-light-impl.png",
+        "sha256": "bf3ca794629cd296f49bac97dc3fd0f7a35f2fefffdd714d6a5c5421ec35fe4e"
+      },
+      "ref": {
+        "path": "profile-contacts-step-1440-light-ref.png",
+        "sha256": "d3398bdd45d87408b29f15f61375daedc871705a89f9b67236e204c5e0bfcf82"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-review-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-review-step-1440-light-impl.png",
+        "sha256": "fc94c91eabc476d1ee96b4d04f62d943eb8f44987f3663cb5ff886ebe6a73566"
+      },
+      "ref": {
+        "path": "profile-review-step-1440-light-ref.png",
+        "sha256": "49a2f891ffc3eaa7db20cd9072d6d8add0eefbcd2d2a0affa52b7c81aa76df07"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-catalog-cta",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-catalog-cta-1440-light-impl.png",
+        "sha256": "4f400cac493d5c826952baec00e58620be0337a89cd47bd4fd62fc6b413b72c2"
+      },
+      "ref": {
+        "path": "profile-catalog-cta-1440-light-ref.png",
+        "sha256": "8ce4b359b6b131bdaddcf6ad7acac2590ae7ec5c72f170acbc83b2481d770865"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-0-prefill",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-0-prefill-1440-light-impl.png",
+        "sha256": "c502696e6544b2b56b8a18600032edc0d8fc2caa1cbeabce1d11d3cec0da49da"
+      },
+      "ref": {
+        "path": "catalog-step-0-prefill-1440-light-ref.png",
+        "sha256": "1aabbd1335c58da0b7ccccfc47a128c2f9d8a8c99f66860d36dab4959457fa71"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-1-directions",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-1-directions-1440-light-impl.png",
+        "sha256": "bdb2fd0c4a955fc0647a9449a60aa2f16515fd8bd1053d07bbcd5e275ab98eee"
+      },
+      "ref": {
+        "path": "catalog-step-1-directions-1440-light-ref.png",
+        "sha256": "1ea8ee5a6aae2d7aa1ff3726254d9adac6622513a90e531d3c9d5ca0c81c1872"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-2-contacts",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-2-contacts-1440-light-impl.png",
+        "sha256": "27ba73e613065b89beb247e2c5bfaf0a9a087a4c5ff24b0bf577f62a62123e6d"
+      },
+      "ref": {
+        "path": "catalog-step-2-contacts-1440-light-ref.png",
+        "sha256": "66372f3ac796007e3ff58dd5760bf5afbfb6d4c4b6c6e4e2918a56a116fe232c"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-4-preview",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-4-preview-1440-light-impl.png",
+        "sha256": "e721008cfc43f3e2a87a279a80eaab0e2d6f7ae9573fdb435d7872ef4617e4fb"
+      },
+      "ref": {
+        "path": "catalog-step-4-preview-1440-light-ref.png",
+        "sha256": "3a3ba4de598655f117eb198a337921bb84f6616c43349f2b0d744680d1531307"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-0-prefill-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-0-prefill-375-light-375-light-impl.png",
+        "sha256": "3be8e467cc52906978c381ddec458ef4f5243f39aa43acdd51d3c4441d8ba5cf"
+      },
+      "ref": {
+        "path": "catalog-step-0-prefill-375-light-375-light-ref.png",
+        "sha256": "77b82230a555ff9b7b74f4464fed4b08043194c61f81f609fe6fe2a7fffd558f"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-0-prefill-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "catalog-step-0-prefill-375-dark-375-dark-impl.png",
+        "sha256": "902c5f099179c6171686542fe82350139383afceb2201c46673ff2d8546a083a"
+      },
+      "ref": {
+        "path": "catalog-step-0-prefill-375-dark-375-dark-ref.png",
+        "sha256": "31f42f08fd62521b0992566983cc3118ed9cc251a339e9e8ada0748f84839a8e"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-overflow-320",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-overflow-320-320-light-impl.png",
+        "sha256": "2e84610bb97c98d6054dd675ef15701d9745d25bc06ba4d15057de9d5f5fa591"
+      },
+      "ref": {
+        "path": "catalog-overflow-320-320-light-ref.png",
+        "sha256": "6ec8d06753b338a7cb3ba8613adc06eec9d253f67e8b6db58b9d011b2df93b91"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-pending-mock",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-pending-mock-1440-light-impl.png",
+        "sha256": "f018c826d3229523a611a90924f2ffa73a37a7fbf69f98b87ff9c9f6db40a716"
+      },
+      "ref": {
+        "path": "catalog-pending-mock-1440-light-ref.png",
+        "sha256": "1134eef128f2449a79385b4ea18d3d5da521e463b6ee7bed1909a2ba10a9a818"
+      },
+      "codeSha": "b14bf885f171fbd5050d5dd945f151aba89bf748",
+      "runtimeBuildId": "H3AODQ9c5UPXjWGoazkeA",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    }
+  ],
+  "visualPass": false,
+  "remainders": [
+    "CAPTURED pairs only — pixel diff not automated; review PNGs for structural DOM shell differences (production-profile ref vs Next profile impl).",
+    "Supervisor preset: serviceIds [] / stages L1-0+L1-11 until taxonomy owner maps «Приёмка и технический надзор».",
+    "Ref prototype uses production-profile shell; impl uses Next profile nav — structural parity, not identical DOM."
+  ],
+  "evidenceSha256": "08751ba976268697e36ef6fa8384e31fa25569e42bc10e966fcb3d1f6af3c3e7"
+}
