@@ -188,7 +188,7 @@ async function main() {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
       await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.getByRole('button', { name: 'Специализация' }).click();
       await page.waitForSelector('#sp-kind', { state: 'visible' });
     }
 
@@ -198,16 +198,18 @@ async function main() {
     }
 
     async function prepareImplContacts(page) {
-      await prepareImplSpecialization(page);
-      await page.locator('#sp-kind').selectOption('designer');
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Редактировать профиль' }).click();
+      await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Связь и работа' }).click();
       await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
     }
 
     async function prepareImplReview(page) {
-      await prepareImplContacts(page);
-      await page.locator('[data-testid="agent-profile-input-phone"]').fill('+79001112233');
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Редактировать профиль' }).click();
+      await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+      await page.getByRole('button', { name: 'Проверка' }).click();
       await page.waitForSelector('text=Проверка', { timeout: 60_000 });
     }
 
