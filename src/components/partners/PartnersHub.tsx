@@ -758,6 +758,20 @@ export function PartnersHub({
               />
             </div>
           ) : null}
+          {isAgentR04 && agentSegment === "active" ? (
+            <AgentPartnerBulkBar
+              selectedCount={selectedPartnerIds.size}
+              busy={bulkBusy}
+              outcome={bulkOutcome}
+              onArchive={() => void runBulkArchivePreference(true)}
+              onRestore={() => void runBulkArchivePreference(false)}
+              onClearSelection={() => setSelectedPartnerIds(new Set())}
+              onRetryFailed={() => {
+                if (bulkOutcome) void runBulkArchivePreference(bulkOutcome.archived, true);
+              }}
+              onDismissOutcome={() => setBulkOutcome(null)}
+            />
+          ) : null}
           {loadingList ? (
             <Panel>Загрузка партнёрств…</Panel>
           ) : visiblePartnerships.length === 0 ? (
@@ -787,20 +801,6 @@ export function PartnersHub({
             />
           ) : isAgentR04 ? (
             <>
-            {agentSegment === "active" ? (
-              <AgentPartnerBulkBar
-                selectedCount={selectedPartnerIds.size}
-                busy={bulkBusy}
-                outcome={bulkOutcome}
-                onArchive={() => void runBulkArchivePreference(true)}
-                onRestore={() => void runBulkArchivePreference(false)}
-                onClearSelection={() => setSelectedPartnerIds(new Set())}
-                onRetryFailed={() => {
-                  if (bulkOutcome) void runBulkArchivePreference(bulkOutcome.archived, true);
-                }}
-                onDismissOutcome={() => setBulkOutcome(null)}
-              />
-            ) : null}
             <AgentPartnerCollection
               partnerships={pagedPartnerships}
               meId={meId}
