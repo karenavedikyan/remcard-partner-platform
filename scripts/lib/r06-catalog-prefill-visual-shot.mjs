@@ -108,8 +108,8 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
 
   await implPage.goto(implUrl, { waitUntil: 'load', timeout: 120_000 });
   await applyAppTheme(implPage, theme);
-  if (prepareImpl) await prepareImpl(implPage);
   if (implTestId) await waitImplReady(implPage, implTestId);
+  if (prepareImpl) await prepareImpl(implPage);
   if (assertImpl) await assertImpl(implPage);
   await assertThemeApplied(implPage, theme);
   if (implDiag.pageErrors.length) throw new Error(`impl_page_errors:${implDiag.pageErrors.join('|')}`);

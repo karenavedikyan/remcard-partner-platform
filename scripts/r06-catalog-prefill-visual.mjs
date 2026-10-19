@@ -251,18 +251,17 @@ async function runContactsControlMain() {
             implUrl: `${implBase}/profile?section=basics`,
             implTestId: 'specialist-profile-wizard',
             formCrop: {
-              impl: '[data-testid="specialist-profile-wizard"] section.card',
+              impl: '[data-testid="specialist-profile-wizard"] .card',
               ref: '.pw-card',
             },
-            prepareImpl: async (page) => {
-              if (openDetails) await fillImplContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails: true });
-              else await fillImplContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails: false });
+            assertImpl: async (page) => {
+              await assertImplContactsStepReady(page);
+              await fillImplContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails });
               metrics.impl = await measureContactsFormBox(
                 page,
-                '[data-testid="specialist-profile-wizard"] section.card',
+                '[data-testid="specialist-profile-wizard"] .card',
               );
             },
-            assertImpl: assertImplContactsStepReady,
             prepareRef: async (page, base) => {
               await prepareRefSpecialistContactsControl(page, base, R06_CONTACTS_FIXTURE);
               await fillRefContactsFixture(page, R06_CONTACTS_FIXTURE, { openDetails });
