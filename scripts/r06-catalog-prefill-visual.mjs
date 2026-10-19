@@ -149,15 +149,17 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
 
   ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
+  const mock = await startCatalogPrefillMockBff(seedVisualMockState());
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  if (!platformPort) throw new Error('no free platform port');
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
   const build = runIsolatedPlatformBuild(ROOT, DIST);
   if (build.status === 'failed') {
     throw new Error(`build_failed:exit=${build.exitCode}`);
   }
-
-  const mock = await startCatalogPrefillMockBff(seedVisualMockState());
-  const platformPort = await findFreeLoopbackPort(30690);
-  const appOrigin = `http://127.0.0.1:${platformPort}`;
-  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
   const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
 
   const child = spawnOwnedNextStart({
