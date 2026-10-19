@@ -219,6 +219,18 @@ async function main() {
       await assertImplCatalogPreviewReady(page, R06_PREVIEW_FIXTURE);
     }
 
+    async function prepareRefCatalogDirectionsPanel(page, base) {
+      await openRefCatalogProfile(page, base);
+      await page.locator('[data-cw-move="next"]').click();
+      await page.waitForSelector('[data-catalog-panel="directions"]:not([hidden])', { timeout: 60_000 });
+    }
+
+    async function prepareRefCatalogContactsPanel(page, base) {
+      await prepareRefCatalogDirectionsPanel(page, base);
+      await page.locator('[data-cw-move="next"]').click();
+      await page.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])', { timeout: 60_000 });
+    }
+
     async function prepareRefCatalogPreview(page, base) {
       await openRefCatalogProfile(page, base);
       await page.waitForSelector('[data-catalog-form]');
@@ -329,11 +341,7 @@ async function main() {
           await advanceCatalogSteps(p, 1);
         },
         assertImpl: assertCatalogStep(1),
-        prepareRef: openRefCatalogProfile,
-        assertRef: async (p) => {
-          await p.locator('[data-cw-move="next"]').click();
-          await p.waitForSelector('[data-catalog-panel="directions"]:not([hidden])');
-        },
+        prepareRef: prepareRefCatalogDirectionsPanel,
       },
       {
         pairId: 'catalog-step-2-contacts',
@@ -346,12 +354,7 @@ async function main() {
           await advanceCatalogSteps(p, 2);
         },
         assertImpl: assertCatalogStep(2),
-        prepareRef: openRefCatalogProfile,
-        assertRef: async (p) => {
-          await p.locator('[data-cw-move="next"]').click();
-          await p.locator('[data-cw-move="next"]').click();
-          await p.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])');
-        },
+        prepareRef: prepareRefCatalogContactsPanel,
       },
       {
         pairId: 'catalog-step-4-preview',
