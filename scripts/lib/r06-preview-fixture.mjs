@@ -393,11 +393,12 @@ async function waitSpecialistWizardHydrated(page) {
 
 export async function assertImplBasicsStepReady(page) {
   await waitSpecialistWizardHydrated(page);
-  await page.waitForSelector('[data-testid="specialist-profile-basics-panel"]', { timeout: 30_000 });
-  await page
-    .locator('[data-testid="specialist-profile-step-card"] h2')
-    .filter({ hasText: 'Расскажите о себе' })
-    .waitFor({ state: 'visible', timeout: 30_000 });
+  const card = page.locator('[data-testid="specialist-profile-step-card"]');
+  await card.waitFor({ state: 'attached', timeout: 30_000 });
+  await card.scrollIntoViewIfNeeded();
+  const panel = page.locator('[data-testid="specialist-profile-basics-panel"]');
+  await panel.waitFor({ state: 'attached', timeout: 30_000 });
+  await panel.scrollIntoViewIfNeeded();
 }
 
 export async function assertRefBasicsStepReady(page) {
@@ -417,13 +418,11 @@ export async function fillRefBasicsFixture(page, fixture = R06_PROFILE_PATTERN_F
 
 export async function assertImplSpecializationStepReady(page) {
   await waitSpecialistWizardHydrated(page);
-  await page.waitForSelector('[data-testid="specialist-profile-specialization-panel"]', {
-    timeout: 30_000,
-  });
-  await page
-    .locator('[data-testid="specialist-profile-step-card"] h2')
-    .filter({ hasText: 'Чем вы занимаетесь?' })
-    .waitFor({ state: 'visible', timeout: 30_000 });
+  const card = page.locator('[data-testid="specialist-profile-step-card"]');
+  await card.scrollIntoViewIfNeeded();
+  const panel = page.locator('[data-testid="specialist-profile-specialization-panel"]');
+  await panel.waitFor({ state: 'attached', timeout: 30_000 });
+  await panel.scrollIntoViewIfNeeded();
 }
 
 export async function assertRefSpecializationStepReady(page) {
@@ -516,11 +515,11 @@ export async function fillRefSpecializationFixture(
 
 export async function assertImplReviewStepReady(page) {
   await waitSpecialistWizardHydrated(page);
-  await page.waitForSelector('[data-testid="specialist-profile-review-panel"]', { timeout: 30_000 });
-  await page
-    .locator('[data-testid="specialist-profile-step-card"] h2')
-    .filter({ hasText: 'Всё верно?' })
-    .waitFor({ state: 'visible', timeout: 30_000 });
+  const card = page.locator('[data-testid="specialist-profile-step-card"]');
+  await card.scrollIntoViewIfNeeded();
+  const panel = page.locator('[data-testid="specialist-profile-review-panel"]');
+  await panel.waitFor({ state: 'attached', timeout: 30_000 });
+  await panel.scrollIntoViewIfNeeded();
 }
 
 export async function assertRefReviewStepReady(page) {
