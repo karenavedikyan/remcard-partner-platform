@@ -121,7 +121,7 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
 
   let refPath = null;
   let refSha256 = null;
-  if (prepareRef || refOnlyPrepare || assertRef) {
+  if (!spec.implOnly && (prepareRef || refOnlyPrepare || assertRef)) {
     const refCtx = await ctx.browser().newContext({ viewport: { width, height }, deviceScaleFactor: dpr });
     const refPage = await refCtx.newPage();
     await refPage.addInitScript((t) => {

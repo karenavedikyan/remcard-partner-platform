@@ -371,22 +371,22 @@ async function main() {
         assertRef: async (p) => assertRefCatalogPreviewReady(p, R06_PREVIEW_FIXTURE),
       },
       {
-        pairId: 'catalog-step-0-prefill',
+        pairId: 'catalog-step-0-prefill-375-light',
         theme: 'light',
         width: 375,
         height: 812,
         implUrl: `${implBase}/profile?section=catalog`,
         implTestId: 'specialist-catalog-wizard',
-        prepareRef: openRefCatalogProfile,
+        implOnly: true,
       },
       {
-        pairId: 'catalog-step-0-prefill',
+        pairId: 'catalog-step-0-prefill-375-dark',
         theme: 'dark',
         width: 375,
         height: 812,
         implUrl: `${implBase}/profile?section=catalog`,
         implTestId: 'specialist-catalog-wizard',
-        prepareRef: openRefCatalogProfile,
+        implOnly: true,
       },
       {
         pairId: 'catalog-overflow-320',
@@ -472,7 +472,8 @@ async function main() {
     protoBase: refStatic.baseUrl,
     captures,
     visualPass: false,
-    remainders: [
+      remainders: [
+        '375 light/dark catalog step-0: impl-only captures (ref toolbar hidden in narrow viewport boot).',
       'CAPTURED pairs only — pixel diff not automated; review PNGs for button radius, dark-theme primary text, catalog footer spacing.',
       'Supervisor preset: serviceIds [] / stages L1-0+L1-11 until taxonomy owner maps «Приёмка и технический надзор».',
       'Ref prototype uses production-profile shell; impl uses Next profile nav — structural parity, not identical DOM.',
