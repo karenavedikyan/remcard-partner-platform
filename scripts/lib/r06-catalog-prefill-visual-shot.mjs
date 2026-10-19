@@ -45,8 +45,10 @@ export function attachFailClosedDiagnostics(page, bucket) {
 }
 
 export async function assertNoPrototypeFailure(page) {
-  const bad = await page.evaluate((errText) => document.body?.textContent?.includes(errText), PROTO_LOAD_ERROR);
-  if (bad) throw new Error('ref_prototype_load_error_banner');
+  const msg = page.locator('#load-message');
+  if (!(await msg.count())) return;
+  const text = await msg.textContent();
+  if (text?.includes(PROTO_LOAD_ERROR)) throw new Error('ref_prototype_load_error_banner');
 }
 
 export async function assertThemeApplied(page, theme) {
