@@ -146,6 +146,14 @@ async function runContactsControlBrowserSmoke() {
       undefined,
       { timeout: 60_000 },
     );
+    if (!(await page.locator('[data-testid="specialist-profile-contacts-panel"]').count())) {
+      await page.locator('#sp-displayName').fill(R06_CONTACTS_FIXTURE.displayName);
+      await page.locator('#sp-city').fill(R06_CONTACTS_FIXTURE.city);
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
+      await page.waitForSelector('[data-specialist-kind]', { timeout: 30_000 });
+      await page.locator('[data-specialist-kind]').selectOption('designer');
+      await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
+    }
     await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
     const phone = page.getByTestId('agent-profile-input-phone');
     await phone.fill(R06_CONTACTS_FIXTURE.phone);
