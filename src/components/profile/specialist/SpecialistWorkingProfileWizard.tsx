@@ -525,6 +525,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 className={stepStyles.stepPanel}
                 data-testid="specialist-profile-basics-panel"
               >
+                <div className={stepStyles.basicsBlock}>
                 <div className={stepStyles.basicsFields}>
                   <div className={stepStyles.basicsField}>
                     <label htmlFor="sp-displayName">
@@ -561,6 +562,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 >
                   Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
                 </p>
+                </div>
               </div>
             ) : null}
             {step === 1 ? (

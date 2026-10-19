@@ -105,6 +105,12 @@
   }
 }
 
+.basicsBlock {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
 .basicsFields {
   display: grid;
   gap: var(--pw-5);
