@@ -238,6 +238,7 @@ async function main() {
 
     async function prepareRefCatalogPresentationPanel(page, base) {
       await prepareRefCatalogContactsPanel(page, base);
+      await page.locator('[name="publicPhone"]').fill(R06_PREVIEW_FIXTURE.phone);
       await page.locator('[data-cw-move="next"]').click();
       await page.waitForSelector('[data-catalog-panel="presentation"]:not([hidden])', {
         timeout: 60_000,
