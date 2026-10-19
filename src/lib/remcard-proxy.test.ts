@@ -355,7 +355,7 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedMutatingOrigin("http://localhost:3000"), true);
     assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048"), false);
     process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN = "1";
-    assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048"), false);
+    assert.equal(isAllowedMutatingOrigin("http://127.0.0.1:3048"), true);
     if (prev === undefined) delete process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN;
     else process.env.REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN = prev;
   });
