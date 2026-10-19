@@ -204,21 +204,7 @@ async function main() {
     await page.getByRole('button', { name: 'Сохранить черновик' }).click();
     await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
 
-    await ensureCatalogStep(page, 0);
-    await page.locator('#sc-public-name').fill('');
-    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
-    await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
-
-    await page
-      .locator('[data-testid="specialist-catalog-wizard"]')
-      .getByRole('button', { name: /^Далее$/ })
-      .click();
-    await page.waitForFunction(
-      () =>
-        document.querySelector('[data-testid="specialist-catalog-wizard"]')?.dataset.catalogStep === '1',
-      undefined,
-      { timeout: 30_000 },
-    );
+    await advanceCatalogSteps(page, 1);
     const servicesGroup = page.getByRole('group', { name: 'Работы и услуги' });
     const serviceChecks = servicesGroup.getByRole('checkbox');
     for (let i = 0; i < (await serviceChecks.count()); i += 1) {
@@ -233,6 +219,11 @@ async function main() {
         if (await cb.isChecked()) await cb.uncheck();
       }
     }
+    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
+
+    await ensureCatalogStep(page, 0);
+    await page.locator('#sc-public-name').fill('');
     await page.getByRole('button', { name: 'Сохранить черновик' }).click();
     await page.waitForSelector('text=Черновик публикации сохранён', { timeout: 30_000 });
 
@@ -252,7 +243,8 @@ async function main() {
         afterClear.catalogDisplayName === null &&
         afterClear.catalogDisplayNameSource === 'staged_draft' &&
         afterClear.displayName === 'Актуальное рабочее имя' &&
-        (afterClear.navigatorStageIds ?? []).length === 0,
+        (afterClear.navigatorStageIds ?? []).length === 0 &&
+        (afterClear.specializations ?? []).length === 0,
       ...afterClear,
     };
 
