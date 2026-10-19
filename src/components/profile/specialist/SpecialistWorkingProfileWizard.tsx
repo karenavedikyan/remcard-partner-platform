@@ -412,7 +412,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
             ))}
           </ol>
         </aside>
-        <section className={styles.card}>
+        <section className={styles.card} data-testid="specialist-profile-step-card">
           <div className={styles.cardTop}>
             <span className={styles.kicker} data-testid="specialist-profile-progress">
               Шаг {step + 1} из {STEPS.length}
