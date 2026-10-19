@@ -236,6 +236,7 @@ async function main() {
         displayName: b.user?.displayName,
         telegram: b.user?.telegram,
         navigatorStageIds: b.user?.catalogDraft?.navigatorStageIds ?? b.user?.navigatorStageIds,
+        specializations: b.user?.specializations,
       };
     });
     report.steps.stagedClearGet = {
