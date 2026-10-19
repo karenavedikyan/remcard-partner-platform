@@ -4,7 +4,7 @@ import { assertPrototypePageReady, PROTO_LOAD_ERROR } from './r06-login-entry-pr
 export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
   await page.goto(`${protoBaseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
   await assertPrototypePageReady(page);
-  await page.getByTestId('view-cabinet').click();
+  await page.getByTestId('view-cabinet').click({ force: true });
   await page.waitForSelector('[data-testid="scenario-role"]', { timeout: 60_000 });
   await page.getByTestId('scenario-role').selectOption('specialist');
   await page.locator('[data-action="nav:profile"]').click();

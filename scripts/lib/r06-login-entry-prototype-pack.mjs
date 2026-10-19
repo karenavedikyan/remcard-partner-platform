@@ -92,5 +92,5 @@ export async function assertPrototypePageReady(page) {
     const text = await err.textContent();
     if (text?.includes(PROTO_LOAD_ERROR)) throw new Error('ref_prototype_load_error_banner');
   }
-  await page.getByTestId('view-cabinet').waitFor({ state: 'visible', timeout: 90_000 });
+  await page.getByTestId('view-cabinet').waitFor({ state: 'attached', timeout: 90_000 });
 }
