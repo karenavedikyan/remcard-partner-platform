@@ -1,12 +1,12 @@
 {
-  "capturedAt": "2026-10-19T11:54:43.328Z",
+  "capturedAt": "2026-10-19T11:57:04.326Z",
   "mode": "MOCK_BFF_VISUAL",
-  "codeSha": "fd00893f97fffe98bd1f1181690fedfc0bdd2435",
+  "codeSha": "ca53acf2be8c8d0901102383d5ed1f3a7c909fa8",
   "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
   "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
   "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
   "appOrigin": "http://127.0.0.1:30690",
-  "mockBff": "http://127.0.0.1:41115",
+  "mockBff": "http://127.0.0.1:35783",
   "distDir": ".next-r06-catalog-prefill-smoke",
   "captures": [
     {
@@ -19,7 +19,11 @@
     },
     {
       "file": "impl-catalog-prefill-375-dark.png",
-      "sha256": "84708366dadb4823d18cd62907f697683468f81ea9726bd1a85cf465c96bd711"
+      "sha256": "fda67e27e78b0ca27f459c8058a29be3c3ba599fd197cbb89627b80809d48ad2"
+    },
+    {
+      "file": "impl-catalog-prefill-320-light.png",
+      "sha256": "86274803c696faf9f0631b6d39022b9cf035c68e9292d533396fe3660882fdd6"
     },
     {
       "file": "ref-catalog-context-1440-light.png",
