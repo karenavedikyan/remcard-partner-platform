@@ -229,6 +229,7 @@ async function main() {
 
     async function prepareRefCatalogContactsPanel(page, base) {
       await prepareRefCatalogDirectionsPanel(page, base);
+      await selectRefCatalogDirections(page, R06_PREVIEW_FIXTURE);
       await page.locator('[data-cw-move="next"]').click();
       await page.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])', { timeout: 60_000 });
     }
