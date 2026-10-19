@@ -1,0 +1,594 @@
+{
+  "capturedAt": "2026-10-19T15:12:46.656Z",
+  "task": "R06-CONTACTS-CONTROL-01",
+  "mode": "MOCK_BFF_CONTACTS_CONTROL",
+  "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "03d8be25977ccbfdb82d1dbc3bea12ed97407fed",
+  "treeDirty": false,
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "fixture": {
+    "displayName": "Контакт Тест Спец",
+    "city": "Krasnodar",
+    "phone": "+79186360088",
+    "email": "contacts.control@example.ru",
+    "website": "example-contacts.ru",
+    "telegram": "@contact_control",
+    "partnerWorkModeLabel": "По адресу",
+    "partnerWorkModeValue": "ON_SITE",
+    "areas": "Краснодар и ближайшие районы"
+  },
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "TT2mPpCV6lY-OPm1qdTP5",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "TT2mPpCV6lY-OPm1qdTP5",
+  "appOrigin": "http://127.0.0.1:30683",
+  "mockBff": "http://127.0.0.1:42523",
+  "protoBase": "http://127.0.0.1:34687",
+  "captures": [
+    {
+      "pairId": "contacts-closed-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-closed-1440-light-1440-light-impl.png",
+        "sha256": "d1826efe9101d735c271f34a367688c6684708526928132367d7c9e83eccd352"
+      },
+      "ref": {
+        "path": "contacts-closed-1440-light-1440-light-ref.png",
+        "sha256": "968b14f39a0b07558e1a4ef6a7aa7a6bb1daf6fc579809067c7d887f4fa0c011"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-1440-light-1440-light-form-impl.png",
+        "sha256": "eb4828dade615a90ceb1adcdb404f5973233f9f3da4437f86b346164c551bb73"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-1440-light-1440-light-form-ref.png",
+        "sha256": "1054cc17720487783a9269df7dae8bbe121c7ae8545c1dd3f0e23776e580b729"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 818,
+            "height": 636
+          },
+          "grid": {
+            "width": 752,
+            "height": 128
+          },
+          "phoneField": {
+            "width": 366,
+            "height": 52
+          },
+          "emailField": {
+            "width": 366,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 654
+          },
+          "grid": {
+            "width": 748,
+            "height": 145
+          },
+          "phoneField": {
+            "width": 364,
+            "height": 129
+          },
+          "emailField": {
+            "width": 364,
+            "height": 129
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-closed-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-closed-375-light-375-light-impl.png",
+        "sha256": "af62d1ef198b90f67a6c4c0a2a2a49fca97ee254f8d787f49b2d5e21d05d4b2d"
+      },
+      "ref": {
+        "path": "contacts-closed-375-light-375-light-ref.png",
+        "sha256": "c983a8ba9e4352037f215191decd7a8a6df4f75294bf2e4872b0c3c9707017a2"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-375-light-375-light-form-impl.png",
+        "sha256": "eb8fc108e1416c2a86d5a340f399e7f638f3d28cadaece9ace96263fb9f3a04f"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-375-light-375-light-form-ref.png",
+        "sha256": "e3ff83dceb40c34400a8f2308de85655de5952569af43b10611102a2214586c2"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 942
+          },
+          "grid": {
+            "width": 297,
+            "height": 254
+          },
+          "phoneField": {
+            "width": 297,
+            "height": 52
+          },
+          "emailField": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 885
+          },
+          "grid": {
+            "width": 301,
+            "height": 282
+          },
+          "phoneField": {
+            "width": 301,
+            "height": 125
+          },
+          "emailField": {
+            "width": 301,
+            "height": 106
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-closed-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "contacts-closed-375-dark-375-dark-impl.png",
+        "sha256": "35ae947709e4d0a6da43c74efb86d00b8de7ce6e0db67289d53c42173be4ae06"
+      },
+      "ref": {
+        "path": "contacts-closed-375-dark-375-dark-ref.png",
+        "sha256": "31525177e7757e3392861e80c8b676389f37f92b38198ca7e496ad9b70ddf95a"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-375-dark-375-dark-form-impl.png",
+        "sha256": "8fd48a18dbf123f2def4bcb54eed1478382e07e2ddbe3e4da6206b6a15300569"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-375-dark-375-dark-form-ref.png",
+        "sha256": "288df7dc96cd8afa90696bbae20548e3394b481cc6b5bec5a9d30a603e94cd91"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 942
+          },
+          "grid": {
+            "width": 297,
+            "height": 254
+          },
+          "phoneField": {
+            "width": 297,
+            "height": 52
+          },
+          "emailField": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 885
+          },
+          "grid": {
+            "width": 301,
+            "height": 282
+          },
+          "phoneField": {
+            "width": 301,
+            "height": 125
+          },
+          "emailField": {
+            "width": 301,
+            "height": 106
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-closed-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-closed-320-light-320-light-impl.png",
+        "sha256": "4faf394eccd6e9b9d4c7891fc93c41835890fad715c0eae9bf65457825b5cdf0"
+      },
+      "ref": {
+        "path": "contacts-closed-320-light-320-light-ref.png",
+        "sha256": "4079b40256f8f63789526496c1f7ccd132ab2c2715008fb571c36114f589d496"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-closed-320-light-320-light-form-impl.png",
+        "sha256": "ff8a43429dc62079a9fa9aebadb9d9303d64d05542fe20e76aa0ca8993cc42ff"
+      },
+      "refFormCrop": {
+        "path": "contacts-closed-320-light-320-light-form-ref.png",
+        "sha256": "58b34e05223191bca2c6c5fba1ca38cf0c9a4e98d09a876fa62caf412747a452"
+      },
+      "fixtureState": "closed",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 284,
+            "height": 961
+          },
+          "grid": {
+            "width": 242,
+            "height": 271
+          },
+          "phoneField": {
+            "width": 242,
+            "height": 52
+          },
+          "emailField": {
+            "width": 242,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 958
+          },
+          "grid": {
+            "width": 246,
+            "height": 302
+          },
+          "phoneField": {
+            "width": 246,
+            "height": 144
+          },
+          "emailField": {
+            "width": 246,
+            "height": 106
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-open-1440-light-1440-light-impl.png",
+        "sha256": "ce049cffca5da7955c5d9cb3fef54850fa963f16ec7e18a88851e6c1b7c16dcf"
+      },
+      "ref": {
+        "path": "contacts-open-1440-light-1440-light-ref.png",
+        "sha256": "ea5f4847622dc146dfdcaa2aa34c698d489525ebce166d2fd9b6620b143bee24"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-1440-light-1440-light-form-impl.png",
+        "sha256": "a5fabc31792fa8ca5affec453a8b8b0925bad91b0137562d01592d7260093021"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-1440-light-1440-light-form-ref.png",
+        "sha256": "4329b28981f2da6886a3a91cacbc5eee6015153db0a389fd902cf5e315f4e3c9"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 818,
+            "height": 1150
+          },
+          "grid": {
+            "width": 752,
+            "height": 128
+          },
+          "phoneField": {
+            "width": 366,
+            "height": 52
+          },
+          "emailField": {
+            "width": 366,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 1270
+          },
+          "grid": {
+            "width": 748,
+            "height": 145
+          },
+          "phoneField": {
+            "width": 364,
+            "height": 129
+          },
+          "emailField": {
+            "width": 364,
+            "height": 129
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-open-375-light-375-light-impl.png",
+        "sha256": "e9a35d3bf68620932246585a79abfaae19654666fb9a073b0ec68d5f8f0216fa"
+      },
+      "ref": {
+        "path": "contacts-open-375-light-375-light-ref.png",
+        "sha256": "db3cbc560c301566191f8903f73b212f8c11e3e8e883102f7450c6156ba88934"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-375-light-375-light-form-impl.png",
+        "sha256": "6c52ef4460d2f74bd66a3c26cd392b61364835f3d76a7a21fdc1bf23321ed4b5"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-375-light-375-light-form-ref.png",
+        "sha256": "b7c4b2a51b600c522ee67c7bdfa170fe6b0ab3bf71d9cafb9b33171826ba664b"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 1486
+          },
+          "grid": {
+            "width": 297,
+            "height": 254
+          },
+          "phoneField": {
+            "width": 297,
+            "height": 52
+          },
+          "emailField": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1528
+          },
+          "grid": {
+            "width": 301,
+            "height": 282
+          },
+          "phoneField": {
+            "width": 301,
+            "height": 125
+          },
+          "emailField": {
+            "width": 301,
+            "height": 106
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "contacts-open-375-dark-375-dark-impl.png",
+        "sha256": "77721bc03b2ecd8b0bb105b06238d22eb8d86345520ab0477d5aa8699a9f7511"
+      },
+      "ref": {
+        "path": "contacts-open-375-dark-375-dark-ref.png",
+        "sha256": "5ca210884fb8233a53ed98e7cc4f0dd4c49d95eb17a7642c626204633970c1ef"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-375-dark-375-dark-form-impl.png",
+        "sha256": "5cf41d0635a0d5cad91f84059909e7974387fcb61bef3d44f2a29376549f1448"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-375-dark-375-dark-form-ref.png",
+        "sha256": "256a61d1f0a89d3e333a85fd2a7ac2204c0131477f3a100c52c3f2c8068d742d"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 1486
+          },
+          "grid": {
+            "width": 297,
+            "height": 254
+          },
+          "phoneField": {
+            "width": 297,
+            "height": 52
+          },
+          "emailField": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1528
+          },
+          "grid": {
+            "width": 301,
+            "height": 282
+          },
+          "phoneField": {
+            "width": 301,
+            "height": 125
+          },
+          "emailField": {
+            "width": 301,
+            "height": 106
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "contacts-open-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "contacts-open-320-light-320-light-impl.png",
+        "sha256": "36e761f19093e8f04f414a935bf88dea041a6af7c38c70cd59d29da6ddb5404a"
+      },
+      "ref": {
+        "path": "contacts-open-320-light-320-light-ref.png",
+        "sha256": "ed8ee7d660574ab13ceb1e0047bba8182de7c7ece8f8626257cb06d534a7de61"
+      },
+      "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+      "runtimeBuildId": "TT2mPpCV6lY-OPm1qdTP5",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "contacts-open-320-light-320-light-form-impl.png",
+        "sha256": "92761c3a44abf3c55a516f6af4bc391ef02471142a024244577221ceaedccc42"
+      },
+      "refFormCrop": {
+        "path": "contacts-open-320-light-320-light-form-ref.png",
+        "sha256": "bae56841056daa89d4eb964148538777a878b8648bf332d90e52475b936d8576"
+      },
+      "fixtureState": "open",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 284,
+            "height": 1542
+          },
+          "grid": {
+            "width": 242,
+            "height": 271
+          },
+          "phoneField": {
+            "width": 242,
+            "height": 52
+          },
+          "emailField": {
+            "width": 242,
+            "height": 52
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 1639
+          },
+          "grid": {
+            "width": 246,
+            "height": 302
+          },
+          "phoneField": {
+            "width": 246,
+            "height": 144
+          },
+          "emailField": {
+            "width": 246,
+            "height": 106
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    }
+  ],
+  "visualPass": false,
+  "remainders": [
+    "Prototype «Отменить» (discard in-tab edits) has no equivalent — impl uses «Сбросить черновик» only on non-contacts steps; contacts step omits reset (BLOCKED cancel semantics).",
+    "Impl retains «Сохранить черновик» on contacts — not in prototype row (documented, not removed).",
+    "Ref «Другое контактное лицо» field absent in specialist R06 draft payload (BLOCKED).",
+    "CAPTURED pairs only — compare form crops manually; shell/nav differences excluded."
+  ],
+  "evidenceSha256": "cdd951bad4de210929c49d70e744b350999437e95322b1421b7ccd7a899540c4"
+}

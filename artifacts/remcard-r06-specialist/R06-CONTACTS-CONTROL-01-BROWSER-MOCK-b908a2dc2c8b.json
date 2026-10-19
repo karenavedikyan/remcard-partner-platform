@@ -1,0 +1,35 @@
+{
+  "mode": "MOCK_BFF",
+  "task": "R06-CONTACTS-CONTROL-01",
+  "codeSha": "b908a2dc2c8ba2e164ddf6cd91dc2280d327d768",
+  "sourceTreeDigest": "03d8be25977ccbfdb82d1dbc3bea12ed97407fed",
+  "treeDirty": false,
+  "build": {
+    "status": "skipped",
+    "buildId": "TT2mPpCV6lY-OPm1qdTP5",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "steps": {
+    "runtimeBuildId": {
+      "ok": true,
+      "buildId": "TT2mPpCV6lY-OPm1qdTP5"
+    },
+    "savePatch": {
+      "ok": true,
+      "phone": "+79186360088",
+      "email": "contacts.control@example.ru"
+    },
+    "reloadUi": {
+      "ok": true,
+      "email": "contacts.control@example.ru"
+    }
+  },
+  "ok": true,
+  "notRun": [
+    "finishProfile",
+    "catalog",
+    "moderation",
+    "postgresql"
+  ],
+  "evidenceSha256": "8dfc92466f7090ccf851551e56e7571bad47832e299b989a24d7e05ed675c096"
+}
