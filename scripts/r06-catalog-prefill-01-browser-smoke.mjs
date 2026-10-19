@@ -167,12 +167,13 @@ async function main() {
       ...workingBeforeCatalog,
     };
 
-    await page.getByRole('tab', { name: /Каталог/i }).click();
+    await page.getByTestId('specialist-catalog-cta').getByRole('link', { name: 'Перейти к каталогу' }).click();
     await page.waitForSelector('[data-testid="specialist-catalog-wizard"]', { timeout: 60_000 });
     report.steps.catalogUiTransition = {
-      ok: true,
-      method: 'profile_section_tab',
-      note: 'no page.goto to catalog; client section switch only',
+      ok: page.url().includes('section=catalog'),
+      method: 'specialist_catalog_cta_link',
+      note: 'no page.goto to catalog; in-app Link from completed summary',
+      urlAfter: page.url(),
     };
 
     const prefilledName = await page.locator('#sc-public-name').inputValue();
