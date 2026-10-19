@@ -10,7 +10,13 @@ export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
     );
   });
   await page.waitForSelector('[data-testid="scenario-role"]', { timeout: 60_000 });
-  await page.getByTestId('scenario-role').selectOption('specialist');
+  await page.evaluate(() => {
+    const sel = document.querySelector('[data-testid="scenario-role"]');
+    if (sel instanceof HTMLSelectElement) {
+      sel.value = 'specialist';
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
   await page.getByTestId('nav-profile').first().click();
   await page.waitForSelector('.production-profile, [data-profile-form="working"], [data-profile-wizard="specialist"]', {
     timeout: 60_000,
