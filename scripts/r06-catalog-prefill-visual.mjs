@@ -184,23 +184,26 @@ async function main() {
       );
     };
 
-    async function prepareImplSpecialization(page) {
+    async function ensureImplProfileEditStep0(page) {
       await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
-      await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+      await page.waitForSelector('#sp-displayName', { timeout: 60_000 });
+      await page.locator('#sp-displayName').fill('Актуальное рабочее имя');
+      await page.locator('#sp-city').fill('Krasnodar');
+    }
+
+    async function prepareImplSpecialization(page) {
+      await ensureImplProfileEditStep0(page);
       await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('#sp-kind', { state: 'visible' });
     }
 
     async function prepareImplBasics(page) {
-      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Редактировать профиль' }).click();
+      await ensureImplProfileEditStep0(page);
     }
 
     async function prepareImplContacts(page) {
-      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Редактировать профиль' }).click();
-      await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+      await ensureImplProfileEditStep0(page);
       await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('#sp-kind', { timeout: 60_000 });
       await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
@@ -208,9 +211,7 @@ async function main() {
     }
 
     async function prepareImplReview(page) {
-      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
-      await page.getByRole('button', { name: 'Редактировать профиль' }).click();
-      await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+      await ensureImplProfileEditStep0(page);
       await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
       await page.waitForSelector('#sp-kind', { timeout: 60_000 });
       await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
