@@ -1,5 +1,6 @@
 /**
  * Loopback upstream for PARTNERS-SHARED visual/MOCK (no DB).
+ * Modes: specialist | agent | specialist_ineligible | store_legacy
  */
 import { createServer } from 'node:http';
 
@@ -9,16 +10,21 @@ const TAXONOMY = {
   stages: [{ kind: 'stage', id: 'L1-1', label: '📐 Планирование' }],
 };
 
-const DEMO_PARTNERSHIPS = [
+const SPEC_ID = 'mock-spec-1';
+const AGENT_ID = 'mock-agent-1';
+const STORE_OWNER_ID = 'mock-store-owner-1';
+
+/** Template partnerships for specialist actor (proUserId = SPEC_ID). */
+const SPEC_PARTNERSHIPS = [
   {
     id: 'ps-mock-active-1',
     status: 'ACTIVE',
-    initiatedBy: 'mock-spec-1',
+    initiatedBy: SPEC_ID,
     note: null,
     createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-15T12:00:00.000Z',
     storeUserId: 'mock-store-1',
-    proUserId: 'mock-spec-1',
+    proUserId: SPEC_ID,
     terms: [
       {
         id: 't1',
@@ -38,7 +44,7 @@ const DEMO_PARTNERSHIPS = [
       partnerType: 'STORE',
     },
     proUser: {
-      id: 'mock-spec-1',
+      id: SPEC_ID,
       displayName: 'Алексей Петров',
       city: 'Краснодар',
       specializations: ['design'],
@@ -56,7 +62,7 @@ const DEMO_PARTNERSHIPS = [
     createdAt: '2026-10-10T10:00:00.000Z',
     updatedAt: '2026-10-10T10:00:00.000Z',
     storeUserId: 'mock-store-2',
-    proUserId: 'mock-spec-1',
+    proUserId: SPEC_ID,
     terms: [],
     storeUser: {
       id: 'mock-store-2',
@@ -67,7 +73,7 @@ const DEMO_PARTNERSHIPS = [
       partnerType: 'STORE',
     },
     proUser: {
-      id: 'mock-spec-1',
+      id: SPEC_ID,
       displayName: 'Алексей Петров',
       city: 'Краснодар',
       specializations: ['design'],
@@ -79,12 +85,12 @@ const DEMO_PARTNERSHIPS = [
   {
     id: 'ps-mock-inv-out',
     status: 'PENDING',
-    initiatedBy: 'mock-spec-1',
+    initiatedBy: SPEC_ID,
     note: null,
     createdAt: '2026-10-11T10:00:00.000Z',
     updatedAt: '2026-10-11T10:00:00.000Z',
     storeUserId: 'mock-comp-1',
-    proUserId: 'mock-spec-1',
+    proUserId: SPEC_ID,
     terms: [],
     storeUser: {
       id: 'mock-comp-1',
@@ -95,7 +101,7 @@ const DEMO_PARTNERSHIPS = [
       partnerType: 'COMPANY',
     },
     proUser: {
-      id: 'mock-spec-1',
+      id: SPEC_ID,
       displayName: 'Алексей Петров',
       city: 'Краснодар',
       specializations: ['design'],
@@ -106,25 +112,68 @@ const DEMO_PARTNERSHIPS = [
   },
 ];
 
-function buildProfile() {
+function remapPartnershipsForProUser(rows, proUserId, displayName) {
+  return rows.map((row) => {
+    const next = structuredClone(row);
+    next.proUserId = proUserId;
+    next.proUser = { ...next.proUser, id: proUserId, displayName };
+    if (next.initiatedBy === SPEC_ID) next.initiatedBy = proUserId;
+    return next;
+  });
+}
+
+function actorForMode(mode) {
+  if (mode === 'agent') {
+    return {
+      id: AGENT_ID,
+      displayName: 'Агент Демо',
+      partnerType: 'MASTER',
+    };
+  }
+  if (mode === 'store_legacy') {
+    return {
+      id: STORE_OWNER_ID,
+      displayName: 'Владелец магазина',
+      partnerType: 'STORE',
+    };
+  }
   return {
-    organization: null,
+    id: SPEC_ID,
+    displayName: 'Алексей Петров',
+    partnerType: 'MASTER',
+  };
+}
+
+function buildProfile(actor) {
+  const isStore = actor.partnerType === 'STORE';
+  return {
+    organization: isStore
+      ? {
+          id: 'org-mock-store',
+          name: 'Магазин «Юг»',
+          catalogStatus: 'APPROVED',
+          partnerType: 'STORE',
+          branchCount: 1,
+          storeCategories: ['doors'],
+          specializations: [],
+        }
+      : null,
     programs: [],
     user: {
-      id: 'mock-spec-1',
-      publicId: 'RC-MOCK-SPEC',
-      displayName: 'Алексей Петров',
+      id: actor.id,
+      publicId: isStore ? 'RC-MOCK-STORE' : 'RC-MOCK-MASTER',
+      displayName: actor.displayName,
       city: 'Краснодар',
-      specializations: ['design'],
+      specializations: isStore ? [] : ['design'],
       role: 'PRO',
-      partnerType: 'MASTER',
+      partnerType: actor.partnerType,
       description: null,
-      catalogStatus: 'DRAFT',
-      isPublic: false,
+      catalogStatus: isStore ? 'APPROVED' : 'DRAFT',
+      isPublic: isStore,
       rejectionReason: null,
       badges: [],
       photoUrl: null,
-      storeCategories: [],
+      storeCategories: isStore ? ['doors'] : [],
       areas: [],
       website: null,
       telegram: null,
@@ -140,11 +189,69 @@ function buildProfile() {
   };
 }
 
+function r06Payload(mode, actorId) {
+  if (mode === 'agent') {
+    return {
+      contractVersion: 'r06-smoke',
+      featureEnabled: true,
+      hasSpecialistActivity: false,
+      eligible: false,
+      profileComplete: true,
+      userId: actorId,
+      ineligibleReason: 'not_specialist',
+    };
+  }
+  if (mode === 'specialist_ineligible') {
+    return {
+      contractVersion: 'r06-smoke',
+      featureEnabled: true,
+      hasSpecialistActivity: true,
+      eligible: false,
+      profileComplete: true,
+      userId: actorId,
+      ineligibleReason: 'employee',
+    };
+  }
+  if (mode === 'store_legacy') {
+    return {
+      contractVersion: 'r06-smoke',
+      featureEnabled: true,
+      hasSpecialistActivity: false,
+      eligible: false,
+      profileComplete: false,
+      userId: actorId,
+      ineligibleReason: 'not_specialist',
+    };
+  }
+  return {
+    contractVersion: 'r06-smoke',
+    featureEnabled: true,
+    hasSpecialistActivity: true,
+    eligible: true,
+    profileComplete: true,
+    userId: actorId,
+    ineligibleReason: null,
+  };
+}
+
 export function createPartnersMockState(mode = 'specialist') {
-  return { mode };
+  return {
+    mode,
+    preferences: new Map(),
+    searchFailOnce: false,
+    searchCalls: 0,
+  };
 }
 
 export function startPartnersSharedMockBff(state = createPartnersMockState()) {
+  const actor = actorForMode(state.mode);
+  const partnerships =
+    state.mode === 'agent'
+      ? remapPartnershipsForProUser(SPEC_PARTNERSHIPS, AGENT_ID, 'Агент Демо')
+      : state.mode === 'store_legacy'
+        ? []
+        : SPEC_PARTNERSHIPS;
+
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1');
     const path = url.pathname;
@@ -157,10 +264,10 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
       if (path === '/api/auth/me' && req.method === 'GET') {
         return send(200, {
           user: {
-            id: state.mode === 'agent' ? 'mock-agent-1' : 'mock-spec-1',
+            id: actor.id,
             role: 'PRO',
-            displayName: state.mode === 'agent' ? 'Агент Демо' : 'Алексей Петров',
-            partnerType: 'MASTER',
+            displayName: actor.displayName,
+            partnerType: actor.partnerType,
             isBlocked: false,
           },
         });
@@ -182,26 +289,30 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           featureEnabled: true,
           hasAgentActivity: agent,
           eligible: agent,
-          userId: agent ? 'mock-agent-1' : 'mock-spec-1',
+          userId: actor.id,
           ineligibleReason: agent ? null : 'not_agent',
         });
       }
       if (path === '/api/pro/r06/status') {
-        const agent = state.mode === 'agent';
-        return send(200, {
-          contractVersion: 'r06-smoke',
-          featureEnabled: true,
-          hasSpecialistActivity: !agent,
-          eligible: !agent,
-          profileComplete: true,
-          userId: agent ? 'mock-agent-1' : 'mock-spec-1',
-          ineligibleReason: agent ? 'not_specialist' : null,
-        });
+        return send(200, r06Payload(state.mode, actor.id));
       }
-      if (path === '/api/pro/profile') return send(200, buildProfile());
+      if (path === '/api/pro/profile') return send(200, buildProfile(actor));
       if (path === '/api/pro/partner-taxonomy') return send(200, TAXONOMY);
-      if (path === '/api/partnership/list') return send(200, { partnerships: DEMO_PARTNERSHIPS });
+      if (path === '/api/partnership/list') {
+        const withPrefs = partnerships.map((p) => {
+          const key = `${actor.id}:${p.id}`;
+          const pref = state.preferences.get(key);
+          if (!pref) return p;
+          return { ...p, listPreference: pref };
+        });
+        return send(200, { partnerships: withPrefs });
+      }
       if (path.startsWith('/api/partnership/search')) {
+        state.searchCalls += 1;
+        if (state.searchFailOnce) {
+          state.searchFailOnce = false;
+          return send(500, { error: 'mock_search_fail' });
+        }
         return send(200, {
           partners: [
             {
@@ -223,10 +334,45 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         });
       }
       if (path === '/api/partnership/link-invite') return send(200, { invites: [] });
-      if (path.startsWith('/api/pro/partnership-list-preferences/')) {
+      if (path.startsWith('/api/pro/partnership-list-preferences/') && req.method === 'GET') {
+        const partnershipId = path.split('/').pop();
+        const owned = partnerships.find(
+          (p) => p.proUserId === actor.id || p.storeUserId === actor.id,
+        );
+        if (!owned || owned.id !== partnershipId) {
+          return send(404, { error: 'Не найдено' });
+        }
+        const key = `${actor.id}:${partnershipId}`;
+        const pref = state.preferences.get(key) ?? null;
         return send(200, {
-          preference: { personalAlias: null, archivedAt: null },
+          preference: pref
+            ? { personalAlias: pref.personalAlias, archivedAt: pref.archivedAt }
+            : null,
         });
+      }
+      if (path.startsWith('/api/pro/partnership-list-preferences/') && req.method === 'PATCH') {
+        const partnershipId = path.split('/').pop();
+        const row = partnerships.find((p) => p.id === partnershipId);
+        if (!row || (row.proUserId !== actor.id && row.storeUserId !== actor.id)) {
+          return send(404, { error: 'Не найдено' });
+        }
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        const key = `${actor.id}:${partnershipId}`;
+        const prev = state.preferences.get(key) ?? { personalAlias: null, archivedAt: null };
+        const next = {
+          personalAlias:
+            body.personalAlias !== undefined ? body.personalAlias : prev.personalAlias,
+          archivedAt:
+            body.archived === true
+              ? new Date().toISOString()
+              : body.archived === false
+                ? null
+                : prev.archivedAt,
+        };
+        state.preferences.set(key, next);
+        return send(200, { preference: next });
       }
       return send(404, { error: 'not_mocked', path });
     } catch (e) {
@@ -240,6 +386,8 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
       resolve({
         server,
         baseUrl: `http://127.0.0.1:${port}`,
+        state,
+        actorId: actor.id,
         close: () =>
           new Promise((r) => {
             server.close(() => r());

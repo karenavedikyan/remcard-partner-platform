@@ -81,11 +81,33 @@ export async function driveRefRolePartners(page, baseUrl, opts = {}) {
     }
   }
 
-  if (opts.openFind) {
+  const hubTab = opts.hubTab ?? (opts.openFind ? 'find' : null);
+  if (hubTab) {
     const findBtn = page.getByRole('button', { name: /Найти|пригласить/i }).first();
-    if (await findBtn.isVisible().catch(() => false)) {
-      await findBtn.click();
-      await page.waitForTimeout(600);
+    await findBtn.waitFor({ state: 'visible', timeout: 20_000 });
+    await findBtn.click();
+    await page.waitForTimeout(600);
+    if (hubTab === 'link') {
+      const linkSeg = page.locator('[data-action="external-partner"]').first();
+      await linkSeg.waitFor({ state: 'visible', timeout: 15_000 });
+      await linkSeg.click();
+      const pressed = await linkSeg.getAttribute('aria-pressed');
+      if (pressed !== 'true') throw new Error('ref_link_segment_not_active');
+      await page
+        .getByText(/ещё нет на платформе|Знакомого ещё нет/i)
+        .first()
+        .waitFor({ timeout: 10_000 });
+    } else {
+      const findSeg = page.locator('[data-action="partner-hub"]').first();
+      await findSeg.waitFor({ state: 'visible', timeout: 10_000 });
+      const pressed = await findSeg.getAttribute('aria-pressed');
+      if (pressed !== 'true') {
+        await findSeg.click();
+        await page.waitForTimeout(400);
+      }
+      if ((await findSeg.getAttribute('aria-pressed')) !== 'true') {
+        throw new Error('ref_find_segment_not_active');
+      }
     }
   }
 

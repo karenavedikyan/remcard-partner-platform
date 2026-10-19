@@ -21,7 +21,7 @@ export type PartnersHubPresentation = {
 };
 
 type R04Gate = Pick<AgentR04Status, "featureEnabled" | "eligible">;
-type R06Gate = Pick<SpecialistR06Status, "featureEnabled" | "hasSpecialistActivity">;
+type R06Gate = Pick<SpecialistR06Status, "featureEnabled" | "eligible">;
 
 export function resolvePartnersHubPresentation(input: {
   r04: R04Gate | null;
@@ -42,9 +42,7 @@ export function resolvePartnersHubPresentation(input: {
     };
   }
 
-  const specialistShared = Boolean(
-    input.r06?.featureEnabled && input.r06?.hasSpecialistActivity,
-  );
+  const specialistShared = Boolean(input.r06?.featureEnabled && input.r06?.eligible);
 
   if (specialistShared) {
     return {

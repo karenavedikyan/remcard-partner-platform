@@ -2,7 +2,7 @@
 
 | Поверхность | Ref (роль) | Компонент | Общее | Различие роли | API / capability | Сейчас |
 | --- | --- | --- | --- | --- | --- | --- |
-| Заголовок страницы | specialist / agent | `PageHeading` + `resolvePartnersHubPresentation` | layout | eyebrow: Специалист vs АГЕНТ | `/api/pro/r06/status`, `/api/pro/r04/status` read | ✅ |
+| Заголовок страницы | specialist / agent | `PageHeading` + `resolvePartnersHubPresentation` | layout | eyebrow: Специалист vs АГЕНТ | r06: `featureEnabled && eligible`; r04 agent priority | ✅ 01.1 eligible gate |
 | Вкладки «Мои партнёры» / «Приглашения» | all shared roles | `AgentPartnersHub` | tabs + lead | — | list segment filters client-side | ✅ specialist + agent |
 | Входящие / отправленные | specialist / agent | `AgentPartnersHub` + `PartnersHub` | invitation flow | — | `/api/partnership/list` | ✅ MOCK |
 | Toolbar / поиск / фильтры списка | specialist / agent | `AgentR04ListToolbar`, discovery filters | UI | default search role: agent vs `defaultSearchRoleForUser` | `/api/partnership/search` role param | ✅ |
