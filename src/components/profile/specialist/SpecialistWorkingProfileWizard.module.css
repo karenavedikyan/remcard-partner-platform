@@ -98,6 +98,11 @@
   .stepContextLabel {
     max-width: 9.5rem;
   }
+
+  .stepContextLabelReview {
+    flex: 0 1 6.9rem;
+    max-width: 6.9rem;
+  }
 }
 
 .basicsFields {

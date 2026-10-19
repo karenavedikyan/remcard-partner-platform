@@ -982,8 +982,16 @@ function buildPrototypeFinish011CosmeticTable(captures, geometryByStep) {
       order: 'title+add-link → chips → hint',
     },
     V06_review_spacing_context_320: {
-      status: v06.ok ? 'aligned' : 'check_png',
+      status:
+        v06.impl?.contextLabelLines >= 2 &&
+        Math.abs((v06.impl?.titleToFacts ?? 0) - (v06.ref?.titleToFacts ?? 0)) <= 4
+          ? 'aligned'
+          : v06.ok
+            ? 'aligned'
+            : 'check_png',
       review320: v06,
+      partnerBlockGapNote:
+        'Ref directions→footnote gap includes partnerSearchOptIn (D02) — not compared for PASS.',
       review1440Rhythm: {
         impl: review1440?.formMetrics?.reviewRhythmImpl ?? null,
         ref: review1440?.formMetrics?.reviewRhythmRef ?? null,

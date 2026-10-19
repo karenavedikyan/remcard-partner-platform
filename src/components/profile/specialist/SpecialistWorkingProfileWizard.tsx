@@ -450,7 +450,15 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               <span className={stepStyles.stepKicker} data-testid="specialist-profile-progress">
                 Шаг {step + 1} из {STEPS.length}
               </span>
-              <span className={stepStyles.stepContextLabel}>{stepContextLabel(step)}</span>
+              <span
+                className={
+                  step === 3
+                    ? `${stepStyles.stepContextLabel} ${stepStyles.stepContextLabelReview}`
+                    : stepStyles.stepContextLabel
+                }
+              >
+                {stepContextLabel(step)}
+              </span>
             </div>
           )}
           {banner ? (
