@@ -47,6 +47,7 @@ describe("SpecialistWorkingProfileWizard pattern steps", () => {
       expect(screen.getByTestId("specialist-profile-basics-panel")).toBeInTheDocument(),
     );
     expect(screen.getByText("Обязательные данные")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Ваше имя/i).parentElement).toHaveClass(stepStyles.basicsField);
     expect(screen.getByTestId("specialist-profile-progress")).toBeInTheDocument();
     const actions = screen.getByTestId("specialist-step-actions");
     expect(actions.className).toContain(stepStyles.stepActions);

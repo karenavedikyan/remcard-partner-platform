@@ -18,6 +18,8 @@ type Props = {
   onApplyMerge: () => void;
   /** Working profile draft persists specialistTitle; catalog has no API field — UI-only preset. */
   persistCustomTitle?: boolean;
+  /** Default catalog/agent styling; workingProfile enables scoped visual variant. */
+  presentationVariant?: "default" | "workingProfile";
 };
 
 export function SpecialistPresetSection({
@@ -30,6 +32,7 @@ export function SpecialistPresetSection({
   onTitleChange,
   onApplyMerge,
   persistCustomTitle = true,
+  presentationVariant = "default",
 }: Props) {
   const preset = useMemo(
     () => SPECIALIST_PRESETS.find((p) => p.id === specialistKind),
@@ -37,7 +40,15 @@ export function SpecialistPresetSection({
   );
 
   return (
-    <section className={styles.section} data-testid="specialist-preset-section">
+    <section
+      className={
+        presentationVariant === "workingProfile"
+          ? `${styles.section} ${styles.workingProfile}`
+          : styles.section
+      }
+      data-testid="specialist-preset-section"
+      data-preset-variant={presentationVariant}
+    >
       <div className={styles.field}>
         <label htmlFor={selectId}>Кто вы как специалист?</label>
         <select

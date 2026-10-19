@@ -394,6 +394,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
         className={
           patternStep ? `${styles.layout} ${stepStyles.patternWizardLayout}` : styles.layout
         }
+        data-testid="specialist-profile-wizard-layout"
       >
         <aside className={styles.journey} aria-label="Этапы профиля">
           <span className={styles.kicker}>Специалист</span>
@@ -503,8 +504,8 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 className={stepStyles.stepPanel}
                 data-testid="specialist-profile-basics-panel"
               >
-                <div className={`${styles.fields} ${stepStyles.basicsFields}`}>
-                  <div className={styles.field}>
+                <div className={stepStyles.basicsFields}>
+                  <div className={stepStyles.basicsField}>
                     <label htmlFor="sp-displayName">
                       Ваше имя <span className={styles.required}>*</span>
                     </label>
@@ -517,9 +518,9 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                       value={draft.displayName ?? ""}
                       onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))}
                     />
-                    <small>Так вас будут узнавать в RemCard.</small>
+                    <small className={stepStyles.basicsHelper}>Так вас будут узнавать в RemCard.</small>
                   </div>
-                  <div className={styles.field}>
+                  <div className={stepStyles.basicsField}>
                     <label htmlFor="sp-city">
                       Город работы <span className={styles.required}>*</span>
                     </label>
@@ -530,7 +531,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                       value={draft.city ?? ""}
                       onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
                     />
-                    <small>Поможет подобрать партнёров рядом.</small>
+                    <small className={stepStyles.basicsHelper}>Поможет подобрать партнёров рядом.</small>
                   </div>
                   <p className={styles.footnote}>
                     Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
@@ -546,6 +547,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               <div className={styles.fields}>
                 <div className={stepStyles.presetBundle}>
                   <SpecialistPresetSection
+                    presentationVariant="workingProfile"
                     specialistKind={draft.specialistKind}
                     specialistTitle={draft.specialistTitle}
                     notice={specialistNotice}

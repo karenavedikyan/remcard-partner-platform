@@ -604,13 +604,16 @@ async function runContactsControlBrowserSmoke() {
 async function main() {
   if (
     process.env.R06_TASK_ID === 'R06-PROFILE-PATTERN-TRANSFER-01' ||
-    process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01'
+    process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01' ||
+    process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01'
   ) {
-    return runProfilePatternBrowserSmoke(
+    const taskLabel =
       process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01'
         ? 'R06-PROFILE-VISUAL-REMAINDERS-01'
-        : 'R06-PROFILE-PATTERN-TRANSFER-01',
-    );
+        : process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01'
+          ? 'R06-PROFILE-LAYOUT-REGRESSION-01'
+          : 'R06-PROFILE-PATTERN-TRANSFER-01';
+    return runProfilePatternBrowserSmoke(taskLabel);
   }
   if (
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||

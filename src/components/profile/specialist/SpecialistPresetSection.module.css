@@ -22,21 +22,14 @@
 .field select,
 .field input {
   width: 100%;
-  min-height: 48px;
-  padding: 0.75rem;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--sp-line, #dce0e3);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--sp-bg, #fff);
   color: var(--sp-text, #282b30);
   font: inherit;
   box-sizing: border-box;
-}
-
-:global([data-theme="dark"]) .field select,
-:global([data-theme="dark"]) .field input {
-  background: var(--sp-bg, #202329);
-  color: var(--sp-text, #f0f1f3);
-  border-color: var(--sp-line, #454b54);
 }
 
 .presetPreview {
@@ -71,17 +64,11 @@
 }
 
 .chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  max-width: 100%;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
   border: 1px solid var(--sp-line, #dce0e3);
   background: var(--sp-soft, #f6f7f8);
-  overflow-wrap: anywhere;
 }
 
 .applyBtn {
@@ -92,4 +79,31 @@
   margin: 0;
   font-size: var(--sp-sm, 0.875rem);
   color: var(--sp-muted, #656970);
+}
+
+/* Working profile only (presentationVariant=workingProfile) — catalog keeps default above. */
+.workingProfile .field select,
+.workingProfile .field input {
+  min-height: 48px;
+  padding: 0.75rem;
+  border-radius: 7px;
+}
+
+:global([data-theme="dark"]) .workingProfile .field select,
+:global([data-theme="dark"]) .workingProfile .field input {
+  background: var(--sp-bg, #202329);
+  color: var(--sp-text, #f0f1f3);
+  border-color: var(--sp-line, #454b54);
+}
+
+.workingProfile .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  max-width: 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
 }

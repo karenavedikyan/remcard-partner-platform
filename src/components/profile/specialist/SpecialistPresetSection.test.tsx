@@ -32,6 +32,33 @@ describe("SpecialistPresetSection", () => {
     expect(input).toHaveValue("X");
   });
 
+  it("keeps default preset variant without workingProfile styling hook", () => {
+    const { container } = render(
+      <SpecialistPresetSection
+        specialistKind="designer"
+        onKindChange={() => {}}
+        onApplyMerge={() => {}}
+      />,
+    );
+    expect(container.querySelector('[data-preset-variant="default"]')).toBeTruthy();
+    expect(container.querySelector('[data-preset-variant="workingProfile"]')).toBeNull();
+  });
+
+  it("applies workingProfile variant only when requested", () => {
+    render(
+      <SpecialistPresetSection
+        specialistKind="designer"
+        presentationVariant="workingProfile"
+        onKindChange={() => {}}
+        onApplyMerge={() => {}}
+      />,
+    );
+    expect(screen.getByTestId("specialist-preset-section")).toHaveAttribute(
+      "data-preset-variant",
+      "workingProfile",
+    );
+  });
+
   it("blocks custom title input in catalog preset (no fake persistence)", () => {
     render(
       <SpecialistPresetSection

@@ -66,6 +66,7 @@ import {
   measureStepFormBox,
   measureImplStepGeometry,
   measureRefStepGeometry,
+  assertImplWizardLayoutGeometry,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
 } from './lib/r06-preview-fixture.mjs';
@@ -643,6 +644,204 @@ async function runContactsControlMain() {
   console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256 }, null, 2));
 }
 
+async function runProfileLayoutRegressionMain() {
+  verifyLoginEntryPrototypeTarball(ROOT);
+  const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
+  if (provenanceBefore.treeDirty) {
+    throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
+  }
+  const codeSha = provenanceBefore.codeSha;
+  const OUT = path.join(
+    ROOT,
+    'artifacts/remcard-r06-specialist/profile-layout-regression',
+    codeSha.slice(0, 12),
+  );
+  mkdirSync(OUT, { recursive: true });
+
+  const mock = await startCatalogPrefillMockBff(createMockBffState());
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  if (!platformPort) throw new Error('no free platform port');
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'failed') throw new Error(`build_failed:exit=${build.exitCode}`);
+
+  const implBase = appOrigin;
+  const meta = { codeSha, buildId: build.buildId };
+  const fixture = R06_PROFILE_PATTERN_FIXTURE;
+  const geometryWidths = [320, 375, 768, 900, 901, 1440];
+  const geometryByStep = [];
+  const captures = [];
+
+  const stepRows = [
+    {
+      stateId: 'basics-filled',
+      geometryKind: 'basics',
+      uiStep: 0,
+      advancedOpen: false,
+      assertImpl: assertImplBasicsStepReady,
+      fillImpl: (page) => fillImplBasicsFixture(page, fixture),
+    },
+    {
+      stateId: 'specialization-closed',
+      geometryKind: 'specialization',
+      uiStep: 1,
+      advancedOpen: false,
+      assertImpl: assertImplSpecializationStepReady,
+      fillImpl: (page) => fillImplSpecializationFixture(page, fixture, { advancedOpen: false }),
+    },
+    {
+      stateId: 'review-filled',
+      geometryKind: 'review',
+      uiStep: 3,
+      advancedOpen: false,
+      assertImpl: assertImplReviewStepReady,
+      fillImpl: async () => {},
+    },
+  ];
+
+  const captureViewports = [
+    { width: 320, height: 568, theme: 'light' },
+    { width: 375, height: 812, theme: 'light' },
+    { width: 375, height: 812, theme: 'dark' },
+  ];
+
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
+    const runtimeBuildId = await probeRuntimeBuildId(appOrigin, build.buildId);
+    if (runtimeBuildId !== build.buildId) {
+      throw new Error(`runtime_build_id_mismatch:${runtimeBuildId}:${build.buildId}`);
+    }
+
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-layout-regression-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+
+    for (const row of stepRows) {
+      const stepGeometry = { stateId: row.stateId, byWidth: {} };
+      for (const gw of geometryWidths) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, {
+          advancedOpen: row.advancedOpen,
+        });
+        const page = await context.newPage();
+        const height = gw <= 375 ? 812 : 900;
+        await page.setViewportSize({ width: gw, height });
+        await page.addInitScript((t) => {
+          document.documentElement?.setAttribute('data-theme', t);
+        }, 'light');
+        await page.goto(`${implBase}/profile?section=basics`, { waitUntil: 'load', timeout: 120_000 });
+        await waitImplReady(page, 'specialist-profile-wizard');
+        await row.assertImpl(page);
+        await row.fillImpl(page);
+        stepGeometry.byWidth[String(gw)] = await assertImplWizardLayoutGeometry(page, gw);
+        await page.close();
+      }
+      geometryByStep.push(stepGeometry);
+    }
+
+    for (const row of stepRows) {
+      for (const vp of captureViewports) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, {
+          advancedOpen: row.advancedOpen,
+        });
+        const pairId = `${row.stateId}-${vp.width}-${vp.theme}`;
+        const metrics = {};
+        const cap = await captureRefImplPair(
+          context,
+          {
+            pairId,
+            theme: vp.theme,
+            width: vp.width,
+            height: vp.height,
+            implOnly: true,
+            implUrl: `${implBase}/profile?section=basics`,
+            implTestId: 'specialist-profile-wizard',
+            formCrop: {
+              impl: '[data-testid="specialist-profile-step-card"]',
+            },
+            assertImpl: async (page) => {
+              await row.assertImpl(page);
+              await row.fillImpl(page);
+              await assertImplWizardLayoutGeometry(page, vp.width);
+              metrics.implGeometry = await measureImplStepGeometry(page, row.geometryKind);
+            },
+          },
+          OUT,
+          null,
+          meta,
+        );
+        cap.fixtureState = row.stateId;
+        cap.formMetrics = metrics;
+        captures.push(cap);
+      }
+    }
+
+    await browser.close();
+  } finally {
+    await stopOwnedServer(child);
+    await mock.close();
+    envPin.restore();
+  }
+
+  const manifestPath = path.join(OUT, 'manifest.json');
+  const manifest = {
+    capturedAt: new Date().toISOString(),
+    task: 'R06-PROFILE-LAYOUT-REGRESSION-01',
+    mode: 'MOCK_BFF_LAYOUT_REGRESSION',
+    codeSha,
+    sourceTreeDigest: provenanceBefore.sourceTreeDigest,
+    treeDirty: false,
+    build: {
+      status: build.status,
+      exitCode: build.exitCode,
+      buildId: build.buildId,
+      distDir: DIST,
+    },
+    runtimeBuildIdVerified: build.buildId,
+    appOrigin,
+    mockBff: mock.baseUrl,
+    geometryChecks: geometryByStep,
+    captures,
+    captureCount: captures.length,
+    visualPass: false,
+    remainders: [
+      'Layout regression run — impl-only PNG (no ref). visualPass false; design/contract gaps unchanged.',
+      'Shell overflow (if any) noted in geometry documentOverflow — form card geometry must pass.',
+    ],
+    contractGaps: ['partnerSearchOptIn', 'cancel_vs_reset', 'extra_save_draft_button'],
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  manifest.evidenceSha256 = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256 }, null, 2));
+}
+
 async function runProfilePatternTransferMain() {
   return runProfilePatternVisualMain();
 }
@@ -658,6 +857,9 @@ async function runProfileVisualRemindersMain() {
 }
 
 async function main() {
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01') {
+    return runProfileLayoutRegressionMain();
+  }
   if (process.env.R06_TASK_ID === 'R06-PROFILE-VISUAL-REMAINDERS-01') {
     return runProfileVisualRemindersMain();
   }

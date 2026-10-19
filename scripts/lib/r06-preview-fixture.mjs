@@ -672,6 +672,109 @@ export async function measureStepComputedActions(page) {
   });
 }
 
+const LAYOUT_GEOMETRY_TOL_PX = 2;
+
+export async function assertImplWizardLayoutGeometry(page, viewportWidth) {
+  const report = await page.evaluate(
+    ({ vpWidth, tol }) => {
+      const failures = [];
+      const layout = document.querySelector('[data-testid="specialist-profile-wizard-layout"]');
+      const card = document.querySelector('[data-testid="specialist-profile-step-card"]');
+      if (!layout || !card) {
+        return { ok: false, failures: ['missing_layout_or_card'], viewport: vpWidth };
+      }
+      const layoutRect = layout.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const layoutStyle = getComputedStyle(layout);
+      const columns = layoutStyle.gridTemplateColumns || '';
+      const cardW = Math.round(cardRect.width);
+      const layoutW = Math.round(layoutRect.width);
+      const docOverflow =
+        document.documentElement.scrollWidth > document.documentElement.clientWidth + tol;
+
+      if (docOverflow) {
+        failures.push(
+          `document_horizontal_overflow:${document.documentElement.scrollWidth}>${document.documentElement.clientWidth}`,
+        );
+      }
+      if (cardW <= 80) failures.push(`card_blocking_regression_width:${cardW}px`);
+
+      if (vpWidth <= 900) {
+        if (cardW + tol < layoutW) {
+          failures.push(`card_narrower_than_layout:card=${cardW},layout=${layoutW}`);
+        }
+        const minExpected = Math.round(Math.min(vpWidth, layoutW) * 0.8);
+        if (cardW + tol < minExpected) {
+          failures.push(`card_below_available:card=${cardW},minExpected=${minExpected}`);
+        }
+      } else {
+        const tracks = columns.split(/\s+/).filter(Boolean);
+        if (tracks.length < 2) failures.push(`desktop_grid_not_two_column:cols=${columns}`);
+        if (cardW < 280) failures.push(`desktop_card_too_narrow:${cardW}`);
+      }
+
+      const cardStyle = getComputedStyle(card);
+      const padL = parseFloat(cardStyle.paddingLeft) || 0;
+      const padR = parseFloat(cardStyle.paddingRight) || 0;
+      const contentLeft = cardRect.left + padL;
+      const contentRight = cardRect.right - padR;
+
+      const inside = (el, id) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 && r.height <= 0) return;
+        if (r.left < contentLeft - tol || r.right > contentRight + tol) {
+          failures.push(
+            `${id}_outside_card_content:left=${Math.round(r.left)},right=${Math.round(r.right)},content=${Math.round(contentLeft)}..${Math.round(contentRight)}`,
+          );
+        }
+      };
+
+      inside(card.querySelector('#sp-displayName'), 'name_input');
+      inside(card.querySelector('[data-specialist-kind]'), 'kind_select');
+      inside(card.querySelector('[data-testid="specialist-step-actions"]'), 'step_actions');
+
+      const nameLabel = card.querySelector('label[for="sp-displayName"]');
+      const nameInput = card.querySelector('#sp-displayName');
+      const nameHelper = card.querySelector('#sp-displayName')?.parentElement?.querySelector('small');
+      const labelStyle = nameLabel ? getComputedStyle(nameLabel) : null;
+      const helperStyle = nameHelper ? getComputedStyle(nameHelper) : null;
+
+      return {
+        ok: failures.length === 0,
+        failures,
+        viewport: vpWidth,
+        cardWidth: cardW,
+        layoutWidth: layoutW,
+        gridTemplateColumns: columns,
+        documentOverflow: docOverflow,
+        basicsLabel: labelStyle
+          ? {
+              fontSize: labelStyle.fontSize,
+              fontWeight: labelStyle.fontWeight,
+              marginBottom: labelStyle.marginBottom,
+            }
+          : null,
+        basicsHelper: helperStyle
+          ? { fontSize: helperStyle.fontSize, marginTop: helperStyle.marginTop, display: helperStyle.display }
+          : null,
+        nameInput: nameInput
+          ? {
+              width: Math.round(nameInput.getBoundingClientRect().width),
+              height: Math.round(nameInput.getBoundingClientRect().height),
+            }
+          : null,
+      };
+    },
+    { vpWidth: viewportWidth, tol: LAYOUT_GEOMETRY_TOL_PX },
+  );
+
+  if (!report.ok) {
+    throw new Error(`layout_geometry_fail:${JSON.stringify(report)}`);
+  }
+  return report;
+}
+
 export async function auditContactsScrollUnderShell(page) {
   return page.evaluate(() => {
     const results = [];

@@ -6,8 +6,26 @@
   min-width: 0;
 }
 
-.patternWizardLayout {
-  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
+@media (min-width: 901px) {
+  .patternWizardLayout {
+    grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .patternWizardLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--pw-4);
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .patternStepCard {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .patternStepCard {
@@ -46,19 +64,28 @@
 .basicsFields {
   display: grid;
   gap: var(--pw-5);
+  min-width: 0;
 }
 
-.basicsFields .field {
-  margin-bottom: 0;
+.basicsField {
+  display: grid;
+  gap: var(--pw-2);
+  min-width: 0;
+  margin: 0;
 }
 
-.basicsFields .field label {
-  margin-bottom: var(--pw-2);
+.basicsField label {
+  font-weight: 700;
+  font-size: var(--pw-sm);
+  margin: 0;
 }
 
-.basicsFields .field small {
+.basicsHelper {
   display: block;
-  margin-top: var(--pw-2);
+  margin: 0;
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  line-height: 1.45;
 }
 
 .controlInput {
