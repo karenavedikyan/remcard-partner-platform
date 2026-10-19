@@ -121,14 +121,25 @@ async function runContactsControlBrowserSmoke() {
 
   let page;
   try {
-    if (!(await waitForHttp(appOrigin, 120_000))) throw new Error('app_not_ready');
+    if (!(await waitForHttp(`${appOrigin}/login`, 120_000))) throw new Error('app_not_ready');
     report.steps.runtimeBuildId = {
       ok: (await probeRuntimeBuildId(appOrigin, build.buildId)) === build.buildId,
       buildId: build.buildId,
     };
     const browser = await chromium.launch({ headless: true });
-    page = await browser.newPage();
-    await page.goto(`${appOrigin}/profile?section=basics`, { waitUntil: 'load' });
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-smoke-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+    page = await context.newPage();
+    await page.goto(`${appOrigin}/profile?section=basics`, { waitUntil: 'networkidle' });
     await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
     await page.waitForFunction(
       () => !document.querySelector('[data-testid="specialist-profile-loading"]'),
