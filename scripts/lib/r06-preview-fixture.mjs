@@ -22,17 +22,26 @@ function catalogRoot(page) {
 /** R06.3 B: stages live in a collapsed `<details>` on catalog + working profile steps. */
 async function openImplAdvancedDirections(root) {
   const details = root.locator('[data-testid="direction-advanced-collapse"]');
-  if ((await details.count()) === 0) return;
-  const open = await details.evaluate((el) => el.open);
-  if (!open) await details.locator('summary').click();
-  await details.locator('fieldset').first().waitFor({ state: 'visible', timeout: 15_000 });
+  if ((await details.count()) > 0) {
+    const open = await details.evaluate((el) => el.open);
+    if (!open) await details.locator('summary').click();
+    await details.locator('fieldset').first().waitFor({ state: 'visible', timeout: 15_000 });
+    return;
+  }
+  const stagesGroup = root.locator('[data-direction-group="stages"]');
+  if ((await stagesGroup.count()) === 0) return;
+  const open = await stagesGroup.evaluate((el) => el.open);
+  if (!open) await stagesGroup.locator('summary').click();
+  await stagesGroup.locator('fieldset').first().waitFor({ state: 'visible', timeout: 15_000 });
 }
 
 export async function fillImplCatalogCard(page, fixture = R06_PREVIEW_FIXTURE) {
   const root = catalogRoot(page);
   await root.locator('#sc-public-name').fill(fixture.publicName);
   await root.locator('#sc-city').fill(fixture.city);
-  const showFull = root.getByRole('checkbox', { name: /Показывать полное имя в каталоге/i });
+  const showFull = root.getByRole('checkbox', {
+    name: /Показывать полное имя представителя в каталоге/i,
+  });
   if (!(await showFull.isChecked())) await showFull.check();
 }
 

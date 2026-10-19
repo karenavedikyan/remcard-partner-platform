@@ -24,6 +24,10 @@ type ProfileDirectionsPickerProps = {
   tileLayout?: boolean;
   /** Stages (+ primary when not catalog) in a collapsible block. */
   collapseAdvancedDirections?: boolean;
+  /** Catalog specialist: «Уже выбрано» + collapsible «Работы и услуги» / «На каких этапах». */
+  catalogGroupedDetails?: boolean;
+  copyFromWorkingProfileAvailable?: boolean;
+  onCopyFromWorkingProfile?: () => void;
   /** R06: shared taxonomy proposal checkboxes (specialist profile + catalog). */
   taxonomyProposalScope?: string;
   onChangeProducts: (ids: string[]) => void;
@@ -74,6 +78,9 @@ export function ProfileDirectionsPicker({
   compactSpecialistGrid = true,
   tileLayout = false,
   collapseAdvancedDirections = false,
+  catalogGroupedDetails = false,
+  copyFromWorkingProfileAvailable = false,
+  onCopyFromWorkingProfile,
   taxonomyProposalScope,
   onChangeProducts,
   onChangeServices,
@@ -233,17 +240,38 @@ export function ProfileDirectionsPicker({
       data-direction-picker-layout={tileLayout ? "tiles" : "default"}
     >
       <p className={styles.lead}>
-        {specialistMode
-          ? "Выберите услуги и этапы ремонта, где вы можете помочь."
-          : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
+        {catalogGroupedDetails
+          ? "Выберите работы и услуги, которые выполняете. Можно отметить несколько специализаций."
+          : specialistMode
+            ? "Выберите работы, которые выполняете. Можно несколько."
+            : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
       </p>
 
-      {tileLayout ? (
+      {tileLayout || catalogGroupedDetails ? (
         <section className={styles.selectionSummary} aria-label="Выбранные направления">
           <div className={styles.selectionHeading}>
             <strong>Уже выбрано</strong>
-            <small>Услуги и этапы сохраняются при смене вида</small>
+            {!catalogGroupedDetails ? (
+              <small>Услуги и этапы сохраняются при смене вида</small>
+            ) : null}
           </div>
+          {catalogGroupedDetails ? (
+            <>
+              <small className={styles.hint}>
+                Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
+                добавьте другие ниже.
+              </small>
+              <button
+                type="button"
+                className={`${styles.chip} ${styles.copyFromProfile}`}
+                disabled={disabled || !copyFromWorkingProfileAvailable}
+                data-catalog-action="copy-directions"
+                onClick={() => onCopyFromWorkingProfile?.()}
+              >
+                Повторно взять из профиля
+              </button>
+            </>
+          ) : null}
           {selectedChips.length === 0 ? (
             <p className={styles.empty}>Пока ничего не выбрано — отметьте направления ниже.</p>
           ) : (
@@ -340,39 +368,63 @@ export function ProfileDirectionsPicker({
           </fieldset>
           ) : null}
 
-          <fieldset
-            className={tileLayout ? styles.tileFieldset : styles.group}
-            disabled={disabled}
-          >
-            <legend>Работы и услуги</legend>
-            <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
-              {orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim())
-                .length === 0 ? (
-                <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
-              ) : (
-                orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim()).map((item) => {
-                  const checked = serviceSpecializationIds.includes(item.id);
-                  const rowClass = tileLayout
-                    ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
-                    : styles.checkRow;
-                  return (
-                    <label key={item.id} className={rowClass}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          const next = toggleId(serviceSpecializationIds, item.id);
-                          onChangeServices(next);
-                          removePrimaryIfNeeded(productCategoryIds, next);
-                        }}
-                      />
-                      <span>{item.label}</span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </fieldset>
+          {(() => {
+            const servicesInner = (
+              <fieldset
+                className={tileLayout ? styles.tileFieldset : styles.group}
+                disabled={disabled}
+              >
+                <legend>Работы и услуги</legend>
+                <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
+                  {orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim())
+                    .length === 0 ? (
+                    <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
+                  ) : (
+                    orderedVisibleItems(
+                      fullTaxonomy.services,
+                      serviceSpecializationIds,
+                      filter.trim(),
+                    ).map((item) => {
+                      const checked = serviceSpecializationIds.includes(item.id);
+                      const rowClass = tileLayout
+                        ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
+                        : styles.checkRow;
+                      return (
+                        <label key={item.id} className={rowClass}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const next = toggleId(serviceSpecializationIds, item.id);
+                              onChangeServices(next);
+                              removePrimaryIfNeeded(productCategoryIds, next);
+                            }}
+                          />
+                          <span>{item.label}</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </fieldset>
+            );
+            if (!catalogGroupedDetails) return servicesInner;
+            return (
+              <details
+                className={styles.directionGroup}
+                data-direction-group="services"
+                open
+              >
+                <summary>
+                  Работы и услуги{" "}
+                  <span className={styles.directionCount}>
+                    {serviceSpecializationIds.length} выбрано
+                  </span>
+                </summary>
+                {servicesInner}
+              </details>
+            );
+          })()}
         </>
       ) : null}
 
@@ -383,7 +435,11 @@ export function ProfileDirectionsPicker({
             disabled={disabled}
           >
             <legend>На каких этапах вы полезны</legend>
-            <p className={styles.hint}>Необязательно — выберите этапы ремонта, где вы можете помочь.</p>
+            <p className={styles.hint}>
+              {catalogGroupedDetails
+                ? "Клиент выбирает партнёров на каждом этапе в навигаторе ремонта. Отметьте, на каких этапах вы выполняете работы. Для публикации обязателен хотя бы один этап; можно выбрать несколько."
+                : "Необязательно — выберите этапы ремонта, где вы можете помочь."}
+            </p>
             <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
               {orderedVisibleItems(
                 fullTaxonomy?.stages ?? [],
@@ -429,6 +485,18 @@ export function ProfileDirectionsPicker({
           ) : null;
 
         if (!stageBlock && !primaryBlock) return null;
+
+        if (catalogGroupedDetails && stageBlock) {
+          return (
+            <details className={styles.directionGroup} data-direction-group="stages" open>
+              <summary>
+                На каких этапах вы полезны{" "}
+                <span className={styles.directionCount}>{navigatorStageIds.length} выбрано</span>
+              </summary>
+              {stageBlock}
+            </details>
+          );
+        }
 
         if (collapseAdvancedDirections) {
           return (

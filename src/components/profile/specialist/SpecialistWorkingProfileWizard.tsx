@@ -12,17 +12,36 @@ import {
   patchSpecialistProfileDraft,
 } from "@/lib/specialist-r06/api";
 import type { SpecialistProfileDraftPayload } from "@/lib/specialist-r06/types";
-import { SPECIALIST_PRESETS, applySpecialistPreset } from "@/lib/specialist-r06/presets";
+import { applySpecialistPreset } from "@/lib/specialist-r06/presets";
 import {
   specialistIdListDisplay,
   specialistKindDisplayLabel,
 } from "@/lib/specialist-r06/display-labels";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profile/agent/AgentPhoneField";
+import { SpecialistPresetSection } from "@/components/profile/specialist/SpecialistPresetSection";
 import type { ProProfileResponse } from "@/lib/types";
 import styles from "../agent/AgentProfileWizard.module.css";
 
 const STEPS = ["О себе", "Специализация", "Связь и работа", "Проверка"] as const;
+
+function stepPanelTitle(step: number): string {
+  if (step === 0) return "Расскажите о себе";
+  if (step === 1) return "Чем вы занимаетесь?";
+  if (step === 2) return "Как с вами связаться?";
+  if (step === 3) return "Всё верно?";
+  return STEPS[step] ?? "";
+}
+
+function specialistPresetNotice(
+  kind: SpecialistProfileDraftPayload["specialistKind"],
+  applied: boolean,
+): string {
+  if (!kind) return "Категории и этапы можно выбрать вручную.";
+  if (kind === "other") return "Укажите свою специализацию и выберите категории/этапы вручную.";
+  if (applied) return "Стартовые категории и этапы подставлены. Проверьте и отредактируйте их.";
+  return "Текущий выбор сохранён. Чтобы добавить подсказки, откройте стартовый набор.";
+}
 
 function displayOrEmpty(value: string | undefined | null): string {
   const trimmed = value?.trim();
@@ -57,6 +76,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
     serverPayload: SpecialistProfileDraftPayload;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [specialistNotice, setSpecialistNotice] = useState("");
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
 
   const hydrate = useCallback(async () => {
@@ -349,10 +369,7 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
         >
           <div>
             <h3>Хотите появиться в каталоге?</h3>
-            <p>
-              Публикация добровольна. Публичную карточку можно подготовить отдельно — это не
-              меняет рабочий профиль.
-            </p>
+            <p>Публикация добровольна. Публичную карточку можно подготовить отдельно.</p>
           </div>
           <Link href="/profile?section=catalog" className={styles.btn}>
             Перейти к каталогу
@@ -367,9 +384,9 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
       <div className={styles.layout}>
         <aside className={styles.journey} aria-label="Этапы профиля">
           <span className={styles.kicker}>Специалист</span>
-          <h2 className={styles.title}>Рабочий профиль</h2>
+          <h2 className={styles.title}>Профиль без лишнего</h2>
           <p className={styles.intro}>
-            Заполните профиль для работы с партнёрами. Это не публикует вас в каталоге RemCard.
+            Имя и город для начала. Остальное можно заполнить позже.
           </p>
           <ol className={styles.steps}>
             {STEPS.map((label, i) => (
@@ -449,60 +466,66 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               </div>
             </div>
           ) : null}
-          <h2 className={styles.title}>{STEPS[step]}</h2>
+          <h2 className={styles.title}>{stepPanelTitle(step)}</h2>
           <form onSubmit={(ev) => void onSubmitStep(ev)}>
             {step === 0 ? (
               <div className={styles.fields}>
                 <div className={styles.field}>
-                  <label htmlFor="sp-displayName">Как к вам обращаться?</label>
+                  <label htmlFor="sp-displayName">
+                    Ваше имя <span className={styles.required}>*</span>
+                  </label>
                   <input
                     id="sp-displayName"
+                    name="name"
+                    autoComplete="name"
+                    placeholder="Например, Алексей Иванов"
                     value={draft.displayName ?? ""}
                     onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))}
                   />
+                  <small>Так вас будут узнавать в RemCard.</small>
                 </div>
                 <div className={styles.field}>
-                  <label htmlFor="sp-city">Город</label>
+                  <label htmlFor="sp-city">
+                    Город работы <span className={styles.required}>*</span>
+                  </label>
                   <input
                     id="sp-city"
+                    placeholder="Например, Краснодар"
                     value={draft.city ?? ""}
                     onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
                   />
+                  <small>Поможет подобрать партнёров рядом.</small>
                 </div>
+                <p className={styles.footnote}>
+                  Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.
+                </p>
               </div>
             ) : null}
             {step === 1 ? (
               <div className={styles.fields}>
-                <div className={styles.field}>
-                  <label htmlFor="sp-kind">Кто вы как специалист?</label>
-                  <select
-                    id="sp-kind"
-                    value={draft.specialistKind ?? ""}
-                    onChange={(e) => {
-                      const kind = e.target.value as SpecialistProfileDraftPayload["specialistKind"];
-                      const next = { ...draft, specialistKind: kind, productCategoryIds: [] };
-                      if (kind) applySpecialistPreset(next, kind, false);
-                      setDraft(next);
-                    }}
-                  >
-                    <option value="">Выберите роль или заполните вручную</option>
-                    {SPECIALIST_PRESETS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {draft.specialistKind === "other" ? (
-                  <div className={styles.field}>
-                    <label htmlFor="sp-title">Ваша специализация</label>
-                    <input
-                      id="sp-title"
-                      value={draft.specialistTitle ?? ""}
-                      onChange={(e) => setDraft((d) => ({ ...d, specialistTitle: e.target.value }))}
-                    />
-                  </div>
-                ) : null}
+                <p className={styles.intro}>
+                  Выберите работы, которые выполняете. Можно несколько.
+                </p>
+                <SpecialistPresetSection
+                  specialistKind={draft.specialistKind}
+                  specialistTitle={draft.specialistTitle}
+                  notice={specialistNotice}
+                  onKindChange={(kind) => {
+                    const next = { ...draft, specialistKind: kind, productCategoryIds: [] };
+                    const applied = kind ? applySpecialistPreset(next, kind, false) : false;
+                    setDraft(next);
+                    setSpecialistNotice(specialistPresetNotice(kind, applied));
+                  }}
+                  onTitleChange={(title) => setDraft((d) => ({ ...d, specialistTitle: title }))}
+                  onApplyMerge={() => {
+                    const next = { ...draft, productCategoryIds: [] };
+                    if (draft.specialistKind) applySpecialistPreset(next, draft.specialistKind, true);
+                    setDraft(next);
+                    setSpecialistNotice(
+                      "Стартовый набор добавлен. Уже выбранные категории и этапы сохранены.",
+                    );
+                  }}
+                />
                 <ProfileDirectionsPicker
                   specialistMode
                   compactSpecialistGrid={false}
@@ -520,98 +543,158 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                   onChangeStages={(ids) => setDraft((d) => ({ ...d, navigatorStageIds: ids }))}
                   onChangePrimary={() => {}}
                 />
-                <button
-                  type="button"
-                  className={styles.btn}
-                  disabled={!draft.specialistKind || draft.specialistKind === "other"}
-                  onClick={() => {
-                    const next = { ...draft, productCategoryIds: [] };
-                    if (draft.specialistKind) applySpecialistPreset(next, draft.specialistKind, true);
-                    setDraft(next);
-                  }}
-                >
-                  Добавить этот набор к выбранному
-                </button>
               </div>
             ) : null}
             {step === 2 ? (
               <div className={styles.fields}>
-                <div className={styles.field}>
-                  <label htmlFor="sp-workmode">Формат работы</label>
-                  <select
-                    id="sp-workmode"
-                    value={draft.partnerWorkMode ?? ""}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, partnerWorkMode: e.target.value }))
-                    }
-                  >
-                    {WORK_MODES.map((m) => (
-                      <option key={m.value || "empty"} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <AgentPhoneField
-                  ref={phoneRef}
-                  value={draft.partnershipContactPhone ?? ""}
-                  onChange={(v) => setDraft((d) => ({ ...d, partnershipContactPhone: v }))}
-                />
-                <div className={styles.field}>
-                  <label htmlFor="sp-email">Email</label>
-                  <input
-                    id="sp-email"
-                    value={draft.partnershipContactEmail ?? ""}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, partnershipContactEmail: e.target.value }))
-                    }
+                <p className={styles.intro}>
+                  Укажите удобный способ связи. Необязательные поля можно оставить пустыми.
+                </p>
+                <div className={styles.fieldsTwo}>
+                  <AgentPhoneField
+                    ref={phoneRef}
+                    value={draft.partnershipContactPhone ?? ""}
+                    onChange={(v) => setDraft((d) => ({ ...d, partnershipContactPhone: v }))}
                   />
+                  <div className={styles.field}>
+                    <label htmlFor="sp-email">Email</label>
+                    <input
+                      id="sp-email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@example.ru"
+                      value={draft.partnershipContactEmail ?? ""}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, partnershipContactEmail: e.target.value }))
+                      }
+                    />
+                    <small>Для письменных предложений.</small>
+                  </div>
                 </div>
-                <div className={styles.field}>
-                  <label htmlFor="sp-site">Сайт (необязательно)</label>
-                  <input
-                    id="sp-site"
-                    value={draft.publicSite ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, publicSite: e.target.value }))}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="sp-tg">Telegram (необязательно)</label>
-                  <input
-                    id="sp-tg"
-                    value={draft.publicTelegram ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, publicTelegram: e.target.value }))}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="sp-areas">Территория работы</label>
-                  <textarea
-                    id="sp-areas"
-                    value={draft.areas ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, areas: e.target.value }))}
-                  />
-                </div>
+                <details className={styles.optional}>
+                  <summary>
+                    Сайт и Telegram <span>необязательно</span>
+                  </summary>
+                  <div className={styles.fields}>
+                    <div className={styles.field}>
+                      <label htmlFor="sp-site">Сайт</label>
+                      <input
+                        id="sp-site"
+                        placeholder="example.ru"
+                        value={draft.publicSite ?? ""}
+                        onChange={(e) => setDraft((d) => ({ ...d, publicSite: e.target.value }))}
+                      />
+                      <small>
+                        Можно без https:// — добавим автоматически. Сайт подставится в каталог.
+                      </small>
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="sp-tg">Telegram</label>
+                      <input
+                        id="sp-tg"
+                        placeholder="@username или https://t.me/username"
+                        value={draft.publicTelegram ?? ""}
+                        onChange={(e) => setDraft((d) => ({ ...d, publicTelegram: e.target.value }))}
+                      />
+                      <small>Можно изменить или убрать при подготовке публичной карточки.</small>
+                    </div>
+                  </div>
+                </details>
+                <details className={styles.optional}>
+                  <summary>
+                    Где и как вы работаете <span>необязательно</span>
+                  </summary>
+                  <div className={styles.fields}>
+                    <div className={styles.field}>
+                      <label htmlFor="sp-workmode">Формат работы</label>
+                      <select
+                        id="sp-workmode"
+                        value={draft.partnerWorkMode ?? ""}
+                        onChange={(e) =>
+                          setDraft((d) => ({ ...d, partnerWorkMode: e.target.value }))
+                        }
+                      >
+                        {WORK_MODES.map((m) => (
+                          <option key={m.value || "empty"} value={m.value}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="sp-areas">Территория работы</label>
+                      <textarea
+                        id="sp-areas"
+                        placeholder="Например, Краснодар и ближайшие районы"
+                        value={draft.areas ?? ""}
+                        onChange={(e) => setDraft((d) => ({ ...d, areas: e.target.value }))}
+                      />
+                      <small>Если работаете за пределами основного города.</small>
+                    </div>
+                  </div>
+                </details>
               </div>
             ) : null}
             {step === 3 ? (
-              <ul className={styles.reviewList}>
-                <li>
-                  <strong>Имя:</strong> {draft.displayName}
-                </li>
-                <li>
-                  <strong>Город:</strong> {draft.city}
-                </li>
-                <li>
-                  <strong>Специализация:</strong>{" "}
-                  {specialistKindDisplayLabel(draft.specialistKind, draft.specialistTitle)}
-                </li>
-                <li>
-                  <strong>Услуги:</strong> {specialistIdListDisplay(draft.serviceSpecializationIds)}
-                </li>
-                <li>
-                  <strong>Этапы:</strong> {specialistIdListDisplay(draft.navigatorStageIds)}
-                </li>
-              </ul>
+              <>
+                <dl className={styles.facts}>
+                  <div>
+                    <dt>Имя</dt>
+                    <dd>{displayOrEmpty(draft.displayName)}</dd>
+                  </div>
+                  <div>
+                    <dt>Город</dt>
+                    <dd>{displayOrEmpty(draft.city)}</dd>
+                  </div>
+                  <div>
+                    <dt>Телефон</dt>
+                    <dd>
+                      {displayOrEmpty(
+                        draft.partnershipContactPhone
+                          ? formatPhoneForDisplay(draft.partnershipContactPhone)
+                          : "",
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Email</dt>
+                    <dd>{displayOrEmpty(draft.partnershipContactEmail)}</dd>
+                  </div>
+                  {draft.specialistKind ? (
+                    <div>
+                      <dt>Роль специалиста</dt>
+                      <dd>
+                        {specialistKindDisplayLabel(draft.specialistKind, draft.specialistTitle)}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+                <div className={styles.reviewDirections}>
+                  <strong>Направления</strong>
+                  <div className={styles.pickedChips}>
+                    {(draft.serviceSpecializationIds?.length ||
+                      draft.navigatorStageIds?.length) ? (
+                      <>
+                        {(draft.serviceSpecializationIds ?? []).map((id) => (
+                          <span key={`s-${id}`} className={styles.chipStatic}>
+                            Услуга: {specialistIdListDisplay([id])}
+                          </span>
+                        ))}
+                        {(draft.navigatorStageIds ?? []).map((id) => (
+                          <span key={`st-${id}`} className={styles.chipStatic}>
+                            Этап: {specialistIdListDisplay([id])}
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <span className={styles.intro}>Можно добавить позже</span>
+                    )}
+                  </div>
+                </div>
+                <p className={styles.footnote}>
+                  Профиль и карточка в каталоге независимы. Сохранение не публикует вас для клиентов.
+                </p>
+              </>
             ) : null}
             <div className={styles.actionsRight}>
               {step > 0 ? (

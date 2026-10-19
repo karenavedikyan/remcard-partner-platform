@@ -925,3 +925,47 @@
     justify-content: center;
   }
 }
+
+.optional {
+  border: 1px solid var(--pw-line);
+  border-radius: var(--pw-radius, 8px);
+  padding: var(--pw-3) var(--pw-4);
+}
+
+.optional summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 44px;
+  list-style: none;
+}
+
+.optional summary::-webkit-details-marker {
+  display: none;
+}
+
+.optional summary span {
+  font-weight: 400;
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  margin-left: var(--pw-2);
+}
+
+.reviewDirections {
+  display: grid;
+  gap: var(--pw-3);
+  margin-top: var(--pw-5);
+}
+
+.pickedChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pw-2);
+}
+
+.chipStatic {
+  font-size: var(--pw-xs);
+  padding: var(--pw-1) var(--pw-3);
+  border-radius: 999px;
+  border: 1px solid var(--pw-line);
+  background: var(--pw-soft);
+}

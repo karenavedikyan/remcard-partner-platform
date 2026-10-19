@@ -295,6 +295,35 @@
   color: var(--cw-text);
 }
 
+.required {
+  color: var(--cw-accent);
+}
+
+.fieldOptional {
+  font-size: var(--cw-xs);
+  font-weight: 600;
+  color: var(--cw-muted);
+  margin-left: 0.35rem;
+}
+
+.fieldHint {
+  display: block;
+  margin-top: var(--cw-2);
+  font-size: var(--cw-xs);
+  line-height: 1.45;
+  color: var(--cw-muted);
+}
+
+.notice {
+  margin: 0 0 var(--cw-4);
+  padding: var(--cw-3);
+  border-radius: 8px;
+  border: 1px solid var(--cw-line);
+  background: var(--cw-soft);
+  font-size: var(--cw-sm);
+  line-height: 1.45;
+}
+
 .field input,
 .field textarea,
 .field select {

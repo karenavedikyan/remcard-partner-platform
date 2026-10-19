@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
@@ -28,8 +28,36 @@ import type { CatalogPrefillField, CatalogTouchedMap } from "@/lib/specialist-r0
 import { markCatalogFieldTouched } from "@/lib/specialist-r06/catalog-prefill";
 import editorStyles from "../ProfileEditor.module.css";
 import catalogStyles from "./SpecialistCatalogWizard.module.css";
+import { SpecialistPresetSection } from "./SpecialistPresetSection";
+import { applySpecialistPreset } from "@/lib/specialist-r06/presets";
+import type { SpecialistKindId } from "@/lib/specialist-r06/types";
 
 const STEPS = ["Карточка", "Направления", "Контакты", "Оформление", "Предпросмотр"] as const;
+const STEP_PANEL_TITLES = [
+  "Карточка партнёра",
+  "Категории и этапы для каталога",
+  "Публичные контакты",
+  "Фото и описание",
+  "Предпросмотр карточки",
+] as const;
+
+function applyCatalogPresetFromKind(
+  kind: SpecialistKindId | "",
+  merge: boolean,
+  serviceIds: string[],
+  stageIds: string[],
+): { services: string[]; stages: string[] } {
+  const draft = {
+    specialistKind: kind,
+    serviceSpecializationIds: [...serviceIds],
+    navigatorStageIds: [...stageIds],
+  };
+  if (kind) applySpecialistPreset(draft, kind, merge);
+  return {
+    services: draft.serviceSpecializationIds ?? [],
+    stages: draft.navigatorStageIds ?? [],
+  };
+}
 
 export type SpecialistCatalogWizardProps = {
   profile: ProProfileResponse;
@@ -114,6 +142,8 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [catalogKind, setCatalogKind] = useState<SpecialistKindId | "">("");
+  const [catalogPresetNotice, setCatalogPresetNotice] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const publicPhoneRef = useRef<AgentPhoneFieldHandle>(null);
 
@@ -182,6 +212,22 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
     }
   }
 
+  const applyCatalogKind = useCallback(
+    (kind: SpecialistKindId | "", merge: boolean) => {
+      const next = applyCatalogPresetFromKind(
+        kind,
+        merge,
+        specializations,
+        catalogStageIds,
+      );
+      touchField(props, "specializations");
+      touchField(props, "navigatorStageIds");
+      onSpecializationsChange(next.services);
+      onCatalogStageIdsChange(next.stages);
+    },
+    [catalogStageIds, onCatalogStageIdsChange, onSpecializationsChange, props, specializations],
+  );
+
   const stepMissing = (idx: number): string | null => {
     if (idx === 0) {
       if (!catalogPublicName.trim()) return "Публичное имя";
@@ -230,20 +276,23 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
         ))}
       </nav>
       <section className={catalogStyles.card} data-testid="catalog-step-card">
-        <h2 className={catalogStyles.title}>{STEPS[step]}</h2>
+        <h2 className={catalogStyles.title}>{STEP_PANEL_TITLES[step]}</h2>
         {error ? <p className={catalogStyles.bannerError}>{error}</p> : null}
         {success ? <p className={catalogStyles.bannerSuccess}>{success}</p> : null}
 
           {step === 0 ? (
             <div className={catalogStyles.fields}>
               <p className={catalogStyles.stepIntro}>
-                Помогите клиенту узнать вас: укажите, как вас показывать в каталоге и в каком городе
-                вы работаете. Черновик не публикует карточку.
+                Помогите клиенту узнать вас и понять, с какой задачей к вам обратиться. Название и
+                описание представляют вас без дополнительных объяснений.
               </p>
               <div className={catalogStyles.field}>
-                <label htmlFor="sc-public-name">Публичное имя</label>
+                <label htmlFor="sc-public-name">
+                  Публичное имя <span className={catalogStyles.required}>*</span>
+                </label>
                 <input
                   id="sc-public-name"
+                  placeholder="Например: Сергей · электромонтаж"
                   value={catalogPublicName}
                   disabled={!catalogEditable}
                   onChange={(e) => {
@@ -251,9 +300,14 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                     onCatalogPublicNameChange(e.target.value);
                   }}
                 />
+                <small className={catalogStyles.fieldHint}>
+                  Обязательно для отправки на проверку.
+                </small>
               </div>
               <div className={catalogStyles.field}>
-                <label htmlFor="sc-city">Город в каталоге</label>
+                <label htmlFor="sc-city">
+                  Город <span className={catalogStyles.required}>*</span>
+                </label>
                 <input
                   id="sc-city"
                   value={catalogCity}
@@ -263,6 +317,9 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                     onCatalogCityChange(e.target.value);
                   }}
                 />
+                <small className={catalogStyles.fieldHint}>
+                  Город работы из основных данных; для карточки можно уточнить.
+                </small>
               </div>
               <label className={catalogStyles.checkRow}>
                 <input
@@ -271,35 +328,53 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   disabled={!catalogEditable}
                   onChange={(e) => onShowFullNameChange(e.target.checked)}
                 />
-                <span>Показывать полное имя в каталоге</span>
+                <span>Показывать полное имя представителя в каталоге</span>
               </label>
             </div>
           ) : null}
 
           {step === 1 ? (
             <div id="catalog-products">
-              <p className={catalogStyles.intro}>
-                Специалист публикует услуги и этапы ремонта, не товары.
+              <p className={catalogStyles.notice}>
+                Для публикации обязательны хотя бы одна категория работ или услуг и хотя бы один
+                этап ремонта. Незавершённую карточку можно сохранить как черновик.
               </p>
-              {(workingServiceIds.length > 0 || workingStageIds.length > 0) && (
-                <button
-                  type="button"
-                  className={catalogStyles.btn}
-                  disabled={!catalogEditable}
-                  onClick={() => {
-                    onPullWorkingDirections();
-                    touchField(props, "specializations");
-                    touchField(props, "navigatorStageIds");
-                  }}
-                >
-                  Взять услуги и этапы из рабочего профиля
-                </button>
-              )}
+              <SpecialistPresetSection
+                selectId="sc-specialist-kind"
+                specialistKind={catalogKind}
+                notice={catalogPresetNotice}
+                disabled={!catalogEditable}
+                onKindChange={(kind) => {
+                  setCatalogKind(kind);
+                  applyCatalogKind(kind, false);
+                  setCatalogPresetNotice(
+                    !kind
+                      ? "Категории и этапы можно выбрать вручную."
+                      : kind === "other"
+                        ? "Укажите свою специализацию и выберите категории/этапы вручную."
+                        : "Стартовые категории и этапы подставлены. Проверьте и отредактируйте их.",
+                  );
+                }}
+                onApplyMerge={() => {
+                  applyCatalogKind(catalogKind, true);
+                  setCatalogPresetNotice(
+                    "Стартовый набор добавлен. Уже выбранные категории и этапы сохранены.",
+                  );
+                }}
+              />
               <ProfileDirectionsPicker
                 disabled={!catalogEditable}
                 catalogMode
                 specialistMode
-                collapseAdvancedDirections
+                catalogGroupedDetails
+                copyFromWorkingProfileAvailable={
+                  workingServiceIds.length > 0 || workingStageIds.length > 0
+                }
+                onCopyFromWorkingProfile={() => {
+                  onPullWorkingDirections();
+                  touchField(props, "specializations");
+                  touchField(props, "navigatorStageIds");
+                }}
                 taxonomyProposalScope="catalog-specialist"
                 productCategoryIds={[]}
                 serviceSpecializationIds={specializations}
@@ -322,6 +397,15 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
           {step === 2 ? (
             <div id="catalog-contacts" className={catalogStyles.fields}>
+              <p className={catalogStyles.notice}>
+                <strong>Для публикации нужен хотя бы один способ связи.</strong> Проверьте
+                подставленные контакты или добавьте телефон, Telegram, Email либо сайт, по которым
+                клиент может с вами связаться.
+              </p>
+              <small className={catalogStyles.fieldHint}>
+                Сохранённые контакты подставляются из вашего профиля. Можно изменить или убрать их
+                только для каталога. После одобрения эти данные будут видны клиентам.
+              </small>
               <AgentPhoneField
                 ref={publicPhoneRef}
                 value={publicPhone}
@@ -331,6 +415,38 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   onPublicPhoneChange(v);
                 }}
               />
+              <div className={catalogStyles.field}>
+                <label htmlFor="sc-web">Сайт с контактами</label>
+                <input
+                  id="sc-web"
+                  placeholder="example.ru"
+                  value={website}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "website");
+                    onWebsiteChange(e.target.value);
+                  }}
+                />
+                <small className={catalogStyles.fieldHint}>
+                  Можно example.ru или https://example.ru — протокол добавим автоматически.
+                </small>
+              </div>
+              <div className={catalogStyles.field}>
+                <label htmlFor="sc-tg">Telegram (публичный)</label>
+                <input
+                  id="sc-tg"
+                  placeholder="@username"
+                  value={telegram}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "telegram");
+                    onTelegramChange(e.target.value);
+                  }}
+                />
+                <small className={catalogStyles.fieldHint}>
+                  Укажите @username или t.me/username, по которому клиент сможет написать.
+                </small>
+              </div>
               <div className={catalogStyles.field}>
                 <label htmlFor="sc-email">Email для клиентов</label>
                 <input
@@ -342,37 +458,16 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                     onPublicEmailChange(e.target.value);
                   }}
                 />
-              </div>
-              <div className={catalogStyles.field}>
-                <label htmlFor="sc-tg">Telegram</label>
-                <input
-                  id="sc-tg"
-                  value={telegram}
-                  disabled={!catalogEditable}
-                  onChange={(e) => {
-                    touchField(props, "telegram");
-                    onTelegramChange(e.target.value);
-                  }}
-                />
-              </div>
-              <div className={catalogStyles.field}>
-                <label htmlFor="sc-web">Сайт</label>
-                <input
-                  id="sc-web"
-                  value={website}
-                  disabled={!catalogEditable}
-                  onChange={(e) => {
-                    touchField(props, "website");
-                    onWebsiteChange(e.target.value);
-                  }}
-                />
+                <small className={catalogStyles.fieldHint}>Для запроса, сметы или документов.</small>
               </div>
             </div>
           ) : null}
 
           {step === 3 ? (
             <div className={catalogStyles.fields}>
-              <p className={catalogStyles.intro}>Фото и описание необязательны.</p>
+              <p className={catalogStyles.intro}>
+                Фото и описание необязательны. Можно перейти к предпросмотру без заполнения.
+              </p>
               <input
                 ref={fileRef}
                 type="file"
@@ -412,6 +507,10 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
           {step === 4 ? (
             <div>
+              <p className={catalogStyles.intro}>
+                Посмотрите карточку глазами клиента: всё ли понятно и нет ли данных, которые вы не
+                хотите показывать публично.
+              </p>
               <CatalogPublicationPreview profile={profile} draft={draft} variant="specialist" />
               {missing.length > 0 ? (
                 <ul className={catalogStyles.reviewList}>
