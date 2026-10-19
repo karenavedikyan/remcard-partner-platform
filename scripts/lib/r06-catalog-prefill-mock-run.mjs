@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { gitDirty, gitRevParse, readNextBuildId } from './r06-provenance.mjs';
+import { gitRevParse, readNextBuildId } from './r06-provenance.mjs';
 
 export async function probeRuntimeBuildId(origin, buildIdHint) {
   if (buildIdHint) {
