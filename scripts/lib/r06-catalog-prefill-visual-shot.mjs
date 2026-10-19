@@ -9,21 +9,30 @@ const DEV_HIDE = `
 
 const CROP_OVERLAY_RESTORE = '__r06CropOverlayRestore';
 
-async function withOverlappingChromeHidden(page, selector, run) {
-  await page.evaluate(
+/** Hide fixed/sticky (and capture-only shell hints) overlapping target after layout is stable. */
+async function hideOverlappingShellForCrop(page, selector) {
+  return page.evaluate(
     ({ sel, storeKey }) => {
       const target = document.querySelector(sel);
       if (!target) {
         window[storeKey] = [];
-        return;
+        return { hiddenCount: 0 };
       }
       const targetRect = target.getBoundingClientRect();
+      const shellHints = ['header', '[class*="topbar" i]', '[class*="Topbar"]', 'nav[aria-label]'];
       const hidden = [];
-      for (const el of document.querySelectorAll('body *')) {
-        if (!(el instanceof HTMLElement)) continue;
+      const seen = new Set();
+      const candidates = [...document.querySelectorAll('body *')];
+      for (const hint of shellHints) {
+        for (const el of document.querySelectorAll(hint)) candidates.push(el);
+      }
+      for (const el of candidates) {
+        if (!(el instanceof HTMLElement) || seen.has(el)) continue;
+        seen.add(el);
         if (target.contains(el) || el.contains(target)) continue;
         const st = getComputedStyle(el);
         if (st.position !== 'fixed' && st.position !== 'sticky') continue;
+        if (st.visibility === 'hidden' || st.display === 'none') continue;
         const r = el.getBoundingClientRect();
         if (r.width <= 0 || r.height <= 0) continue;
         const overlaps =
@@ -36,18 +45,77 @@ async function withOverlappingChromeHidden(page, selector, run) {
         el.style.visibility = 'hidden';
       }
       window[storeKey] = hidden;
+      return { hiddenCount: hidden.length };
     },
     { sel: selector, storeKey: CROP_OVERLAY_RESTORE },
   );
-  try {
-    await run();
-  } finally {
-    await page.evaluate((storeKey) => {
-      for (const entry of window[storeKey] || []) {
-        entry.el.style.visibility = entry.visibility;
+}
+
+async function restoreOverlappingShellForCrop(page) {
+  await page.evaluate((storeKey) => {
+    for (const entry of window[storeKey] || []) {
+      entry.el.style.visibility = entry.visibility;
+    }
+    delete window[storeKey];
+  }, CROP_OVERLAY_RESTORE);
+}
+
+async function stabilizeFormCropTarget(page, selector) {
+  const locator = page.locator(selector).first();
+  await locator.scrollIntoViewIfNeeded({ timeout: 30_000 });
+  await page.waitForTimeout(120);
+  await page.evaluate((sel) => {
+    const target = document.querySelector(sel);
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    window.scrollBy(0, rect.top - 4);
+  }, selector);
+  await page.waitForTimeout(120);
+}
+
+async function assertFormCropKickerClear(page, selector) {
+  return page.evaluate((sel) => {
+    const target = document.querySelector(sel);
+    if (!target) return { ok: false, reason: 'missing_target' };
+    const kicker =
+      target.querySelector('[data-testid="specialist-profile-progress"]') ||
+      target.querySelector('.pw-kicker');
+    if (!kicker) return { ok: false, reason: 'missing_kicker' };
+    const kr = kicker.getBoundingClientRect();
+    for (const el of document.querySelectorAll('body *')) {
+      if (!(el instanceof HTMLElement)) continue;
+      if (target.contains(el) || el.contains(target)) continue;
+      const st = getComputedStyle(el);
+      if (st.visibility === 'hidden' || st.display === 'none') continue;
+      if (st.position !== 'fixed' && st.position !== 'sticky') continue;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      const overlaps =
+        r.bottom > kr.top && r.top < kr.bottom && r.right > kr.left && r.left < kr.right;
+      if (overlaps) {
+        return { ok: false, reason: 'kicker_still_overlapped', tag: el.tagName, className: el.className };
       }
-      delete window[storeKey];
-    }, CROP_OVERLAY_RESTORE);
+    }
+    return { ok: true, kickerTop: Math.round(kr.top) };
+  }, selector);
+}
+
+/** Form crop: stabilize scroll, then hide overlapping shell, screenshot, restore (ref+impl). */
+export async function screenshotFormCropClean(page, selector, cropPath) {
+  await page.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+  });
+  try {
+    await stabilizeFormCropTarget(page, selector);
+    await hideOverlappingShellForCrop(page, selector);
+    const cropReady = await assertFormCropKickerClear(page, selector);
+    if (!cropReady.ok) {
+      throw new Error(`form_crop_not_clean:${selector}:${cropReady.reason}`);
+    }
+    await page.locator(selector).first().screenshot({ path: cropPath });
+  } finally {
+    await restoreOverlappingShellForCrop(page);
   }
 }
 
@@ -169,9 +237,7 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
   if (spec.formCrop?.impl) {
     const cropFile = `${fileBase}-form-impl.png`;
     const cropPath = path.join(outDir, cropFile);
-    await withOverlappingChromeHidden(implPage, spec.formCrop.impl, async () => {
-      await implPage.locator(spec.formCrop.impl).screenshot({ path: cropPath });
-    });
+    await screenshotFormCropClean(implPage, spec.formCrop.impl, cropPath);
     implFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
   }
   await implPage.close();
@@ -209,9 +275,7 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     if (spec.formCrop?.ref) {
       const cropFile = `${fileBase}-form-ref.png`;
       const cropPath = path.join(outDir, cropFile);
-      await withOverlappingChromeHidden(refPage, spec.formCrop.ref, async () => {
-        await refPage.locator(spec.formCrop.ref).screenshot({ path: cropPath });
-      });
+      await screenshotFormCropClean(refPage, spec.formCrop.ref, cropPath);
       refFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
     }
     await refCtx.close();

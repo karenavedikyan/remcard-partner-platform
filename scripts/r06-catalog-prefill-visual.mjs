@@ -221,12 +221,19 @@ async function runContactsControlMain() {
   const meta = { codeSha, buildId: build.buildId };
   const captures = [];
   let scrollAudit = null;
-  const viewports = [
-    { width: 1440, height: 900, theme: 'light' },
-    { width: 375, height: 812, theme: 'light' },
-    { width: 375, height: 812, theme: 'dark' },
-    { width: 320, height: 568, theme: 'light' },
-  ];
+  const mobileOnly = process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.2';
+  const viewports = mobileOnly
+    ? [
+        { width: 375, height: 812, theme: 'light' },
+        { width: 375, height: 812, theme: 'dark' },
+        { width: 320, height: 568, theme: 'light' },
+      ]
+    : [
+        { width: 1440, height: 900, theme: 'light' },
+        { width: 375, height: 812, theme: 'light' },
+        { width: 375, height: 812, theme: 'dark' },
+        { width: 320, height: 568, theme: 'light' },
+      ];
 
   try {
     if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
@@ -294,15 +301,17 @@ async function runContactsControlMain() {
         captures.push(cap);
       }
     }
-    const scrollPage = await context.newPage();
-    await scrollPage.setViewportSize({ width: 1440, height: 900 });
-    applyMockContactsControl(mock.state, true);
-    await scrollPage.goto(`${implBase}/profile?section=basics`, { waitUntil: 'load' });
-    await waitImplReady(scrollPage, 'specialist-profile-wizard');
-    await assertImplContactsStepReady(scrollPage);
-    await fillImplContactsFixture(scrollPage, R06_CONTACTS_FIXTURE, { openDetails: true });
-    scrollAudit = await auditContactsScrollUnderShell(scrollPage);
-    await scrollPage.close();
+    if (!mobileOnly) {
+      const scrollPage = await context.newPage();
+      await scrollPage.setViewportSize({ width: 1440, height: 900 });
+      applyMockContactsControl(mock.state, true);
+      await scrollPage.goto(`${implBase}/profile?section=basics`, { waitUntil: 'load' });
+      await waitImplReady(scrollPage, 'specialist-profile-wizard');
+      await assertImplContactsStepReady(scrollPage);
+      await fillImplContactsFixture(scrollPage, R06_CONTACTS_FIXTURE, { openDetails: true });
+      scrollAudit = await auditContactsScrollUnderShell(scrollPage);
+      await scrollPage.close();
+    }
     await browser.close();
   } finally {
     await stopOwnedServer(child);
@@ -314,8 +323,8 @@ async function runContactsControlMain() {
   const manifestPath = path.join(OUT, 'manifest.json');
   const manifest = {
     capturedAt: new Date().toISOString(),
-    task: 'R06-CONTACTS-CONTROL-01.1',
-    mode: 'MOCK_BFF_CONTACTS_CONTROL',
+    task: process.env.R06_TASK_ID || 'R06-CONTACTS-CONTROL-01.1',
+    mode: mobileOnly ? 'MOCK_BFF_CONTACTS_CONTROL_MOBILE_RECAPTURE' : 'MOCK_BFF_CONTACTS_CONTROL',
     codeSha,
     navigatorCodeSha: NAVIGATOR_PIN,
     sourceTreeDigest: provenanceBefore.sourceTreeDigest,
@@ -335,12 +344,22 @@ async function runContactsControlMain() {
     protoBase,
     captures,
     scrollAuditUnderShell: scrollAudit,
+    desktopEvidenceReuse: mobileOnly
+      ? {
+          notRerun: true,
+          priorTask: 'R06-CONTACTS-CONTROL-01.1',
+          priorCodeSha: '561242b5cf5d0c8db448e617678e541ac30f8715',
+          priorPath:
+            'artifacts/remcard-r06-specialist/contacts-control-visual/561242b5cf5d',
+          pairs: ['contacts-closed-1440-light', 'contacts-open-1440-light'],
+        }
+      : null,
     visualPass: false,
     remainders: [
       'Prototype «Отменить» (discard in-tab edits) has no equivalent — impl uses «Сбросить черновик» only on non-contacts steps; contacts step omits reset (BLOCKED cancel semantics).',
       'Impl retains «Сохранить черновик» on contacts — not in prototype row (documented, not removed).',
       'Ref «Другое контактное лицо» field absent in specialist R06 draft payload (BLOCKED).',
-      'Form-crop PNGs hide overlapping fixed/sticky shell at capture time only (ref+impl); full-page keeps shell.',
+      'Form-crop: stabilize scroll, hide overlapping fixed/sticky shell at capture only (ref+impl); full-page keeps shell.',
       'CAPTURED pairs only — compare form crops manually; shell/nav differences excluded.',
     ],
   };
@@ -353,7 +372,8 @@ async function runContactsControlMain() {
 async function main() {
   if (
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
-    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1'
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1' ||
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.2'
   ) {
     return runContactsControlMain();
   }

@@ -77,16 +77,43 @@ function seedContactsSmokeMock(state) {
 
 const EXPECT_CONTACT_PHONE = '+79186360088';
 
+/** Mirrors canonicalizeRuContactPhone for smoke UI display compare (no new dependency). */
+function normalizeUiPhoneDisplayForCompare(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return '';
+  const compact = text.replace(/\s/g, '');
+  if (compact.startsWith('+') && !compact.startsWith('+7')) return '';
+  let digits = text.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('8')) digits = `7${digits.slice(1)}`;
+  if (digits.length === 10 && !compact.startsWith('+')) digits = `7${digits}`;
+  if (digits.length === 11 && digits.startsWith('7')) return `+${digits}`;
+  return '';
+}
+
+function assertContactsPhoneNormalizeSelfCheck() {
+  if (normalizeUiPhoneDisplayForCompare('+7 (918) 636-00-88') !== EXPECT_CONTACT_PHONE) {
+    throw new Error('phone_normalize_selfcheck_formatted');
+  }
+  if (normalizeUiPhoneDisplayForCompare('') !== '') {
+    throw new Error('phone_normalize_selfcheck_empty');
+  }
+  if (normalizeUiPhoneDisplayForCompare('+7 (999) 111-22-33') === EXPECT_CONTACT_PHONE) {
+    throw new Error('phone_normalize_selfcheck_wrong_number');
+  }
+}
+
 async function runContactsControlBrowserSmoke() {
+  assertContactsPhoneNormalizeSelfCheck();
   const provenance = collectPrefillProvenance(ROOT, DIST);
   if (provenance.treeDirty) throw new Error(`tree_dirty:${provenance.treeDirtyFiles.join(';')}`);
   const codeSha = provenance.codeSha;
   const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist');
   mkdirSync(OUT, { recursive: true });
-  const REPORT = path.join(
-    OUT,
-    `R06-CONTACTS-CONTROL-01.1-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`,
-  );
+  const contactsTask =
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.2'
+      ? 'R06-CONTACTS-CONTROL-01.2'
+      : 'R06-CONTACTS-CONTROL-01.1';
+  const REPORT = path.join(OUT, `${contactsTask}-BROWSER-MOCK-${codeSha.slice(0, 12)}.json`);
 
   const mock = await startCatalogPrefillMockBff(seedContactsSmokeMock(createMockBffState()));
   const platformPort =
@@ -97,7 +124,7 @@ async function runContactsControlBrowserSmoke() {
   const build = runIsolatedPlatformBuild(ROOT, DIST);
   const report = {
     mode: 'MOCK_BFF',
-    task: 'R06-CONTACTS-CONTROL-01.1',
+    task: contactsTask,
     codeSha,
     sourceTreeDigest: provenance.sourceTreeDigest,
     treeDirty: false,
@@ -237,22 +264,29 @@ async function runContactsControlBrowserSmoke() {
     await page.waitForSelector('[data-testid="specialist-profile-contacts-panel"]', { timeout: 60_000 });
     const uiEmail = await emailInput.inputValue();
     const uiPhoneRaw = await phone.inputValue();
+    const uiPhoneNormalized = normalizeUiPhoneDisplayForCompare(uiPhoneRaw);
     const getAfterReload = await fetch(`${mock.baseUrl}/api/pro/specialist-profile/draft`);
     const reloadBody = await getAfterReload.json();
+    const uiPhoneExactOk = uiPhoneNormalized === EXPECT_CONTACT_PHONE;
+    report.steps.phoneNormalizeSelfCheck = { ok: true };
     report.steps.reloadUi = {
       ok:
         reloadBody.payload?.partnershipContactPhone === EXPECT_CONTACT_PHONE &&
         reloadBody.payload?.partnershipContactEmail === R06_CONTACTS_FIXTURE.email &&
-        uiEmail === R06_CONTACTS_FIXTURE.email,
+        uiEmail === R06_CONTACTS_FIXTURE.email &&
+        uiPhoneExactOk,
       expected: {
         phone: EXPECT_CONTACT_PHONE,
         email: R06_CONTACTS_FIXTURE.email,
+        uiPhoneNormalized: EXPECT_CONTACT_PHONE,
       },
       actual: {
         getPhone: reloadBody.payload?.partnershipContactPhone ?? null,
         getEmail: reloadBody.payload?.partnershipContactEmail ?? null,
         uiEmail,
-        uiPhoneDisplay: uiPhoneRaw,
+        uiPhoneRaw,
+        uiPhoneNormalized,
+        uiPhoneExactOk,
       },
     };
     report.ok =
@@ -276,7 +310,8 @@ async function runContactsControlBrowserSmoke() {
 async function main() {
   if (
     process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01' ||
-    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1'
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.1' ||
+    process.env.R06_TASK_ID === 'R06-CONTACTS-CONTROL-01.2'
   ) {
     return runContactsControlBrowserSmoke();
   }
