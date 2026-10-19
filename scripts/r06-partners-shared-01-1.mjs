@@ -359,7 +359,10 @@ async function runFunctional(page, origin, mock, expected) {
 
       await page.goto(`${origin}/partners?hub=link`, { waitUntil: 'networkidle' });
       await assertImplModal(page, 'link');
-      await page.locator('[data-testid="agent-r04-modal-link"] select').first().selectOption('STORE');
+      await page
+        .locator('[data-testid="agent-partner-hub-modal"] [data-testid="agent-r04-modal-link"] select')
+        .first()
+        .selectOption('STORE');
       const generalCb = page.getByRole('checkbox', { name: /Подтверждаю общие условия/i });
       if (await generalCb.isVisible().catch(() => false)) await generalCb.check();
       await page.getByRole('button', { name: 'Создать ссылку' }).click();

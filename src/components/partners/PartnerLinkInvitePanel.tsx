@@ -251,7 +251,7 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
   const previewTerms = activeInviteRows(form);
 
   return (
-    <div className={styles.linkPanel} data-testid="agent-r04-modal-link">
+    <div className={styles.linkPanel}>
       <Panel
         title="Пригласить партнёра"
         hint="Для знакомого, которого ещё нет на платформе. Он пройдёт обычную регистрацию и увидит ваше предложение сотрудничества."
