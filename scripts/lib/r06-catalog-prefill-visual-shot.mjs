@@ -306,3 +306,4 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
   if (spec.formMetrics) capture.formMetrics = spec.formMetrics;
   if (spec.spacingCompare) capture.spacingCompare = spec.spacingCompare;
   return capture;
+}
