@@ -9,7 +9,7 @@ export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
       new MouseEvent('click', { bubbles: true }),
     );
   });
-  await page.waitForSelector('[data-testid="scenario-role"]', { timeout: 60_000 });
+  await page.waitForSelector('[data-testid="scenario-role"]', { state: 'attached', timeout: 60_000 });
   await page.evaluate(() => {
     const sel = document.querySelector('[data-testid="scenario-role"]');
     if (sel instanceof HTMLSelectElement) {

@@ -23,7 +23,8 @@
   margin: 0 auto;
   min-width: 0;
   display: grid;
-  gap: 1.25rem;
+  gap: var(--cw-6);
+  line-height: 1.65;
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -67,6 +68,7 @@
   margin: 0.25rem 0 0;
   font-size: clamp(1.25rem, 1.1rem + 0.4vw, 1.5rem);
   font-weight: 800;
+  line-height: 1.4;
   color: var(--cw-text);
 }
 
@@ -119,7 +121,7 @@
 .stepBtn[aria-current="step"] {
   border-color: var(--cw-accent);
   background: var(--cw-tint);
-  color: #9b2027;
+  color: var(--cw-accent);
 }
 
 :global([data-theme="dark"]) .stepBtn[aria-current="step"] {
@@ -164,8 +166,10 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.65rem;
-  padding: 0.25rem 0;
+  gap: var(--cw-3);
+  margin-top: var(--cw-6);
+  padding-top: var(--cw-5);
+  border-top: 1px solid var(--cw-line);
 }
 
 .stepActionsLabel {
@@ -178,8 +182,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem;
-  padding: 1rem 0 0;
+  justify-content: space-between;
+  gap: var(--cw-3);
+  padding: var(--cw-4) 0 0;
   border-top: 1px solid var(--cw-line);
 }
 
@@ -355,14 +360,25 @@
 .btn {
   min-height: 44px;
   padding: var(--cw-3) var(--cw-5);
-  border-radius: 8px;
+  border-radius: 7px;
   border: 1px solid var(--cw-line);
   background: var(--cw-bg);
   color: var(--cw-text);
   font-weight: 700;
   font-size: var(--cw-sm);
+  line-height: 1.4;
   cursor: pointer;
   font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cw-2);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--cw-soft);
 }
 
 .btn:disabled {

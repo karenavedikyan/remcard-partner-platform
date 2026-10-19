@@ -377,7 +377,7 @@ async function main() {
         height: 812,
         implUrl: `${implBase}/profile?section=catalog`,
         implTestId: 'specialist-catalog-wizard',
-        implOnly: true,
+        prepareRef: openRefCatalogProfile,
       },
       {
         pairId: 'catalog-step-0-prefill-375-dark',
@@ -386,7 +386,7 @@ async function main() {
         height: 812,
         implUrl: `${implBase}/profile?section=catalog`,
         implTestId: 'specialist-catalog-wizard',
-        implOnly: true,
+        prepareRef: openRefCatalogProfile,
       },
       {
         pairId: 'catalog-overflow-320',
@@ -395,8 +395,7 @@ async function main() {
         height: 568,
         implUrl: `${implBase}/profile?section=catalog`,
         implTestId: 'specialist-catalog-wizard',
-        prepareRef: null,
-        refOnlyPrepare: null,
+        prepareRef: openRefCatalogProfile,
       },
     ];
 
@@ -473,8 +472,7 @@ async function main() {
     captures,
     visualPass: false,
       remainders: [
-        '375 light/dark catalog step-0: impl-only captures (ref toolbar hidden in narrow viewport boot).',
-      'CAPTURED pairs only — pixel diff not automated; review PNGs for button radius, dark-theme primary text, catalog footer spacing.',
+        'CAPTURED pairs only — pixel diff not automated; review PNGs for structural DOM shell differences (production-profile ref vs Next profile impl).',
       'Supervisor preset: serviceIds [] / stages L1-0+L1-11 until taxonomy owner maps «Приёмка и технический надзор».',
       'Ref prototype uses production-profile shell; impl uses Next profile nav — structural parity, not identical DOM.',
     ],
