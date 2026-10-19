@@ -193,6 +193,7 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     prepareRef,
     assertRef,
     refOnlyPrepare,
+    afterBoth,
   } = spec;
 
   const fileBase = `${pairId}-${width}-${theme}`;
@@ -240,14 +241,16 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
     await screenshotFormCropClean(implPage, spec.formCrop.impl, cropPath);
     implFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
   }
-  await implPage.close();
+  if (!afterBoth) await implPage.close();
 
   let refPath = null;
   let refSha256 = null;
   let refFormCrop = null;
+  let refPage = null;
+  let refCtx = null;
   if (!spec.implOnly && (prepareRef || refOnlyPrepare || assertRef)) {
-    const refCtx = await ctx.browser().newContext({ viewport: { width, height }, deviceScaleFactor: dpr });
-    const refPage = await refCtx.newPage();
+    refCtx = await ctx.browser().newContext({ viewport: { width, height }, deviceScaleFactor: dpr });
+    refPage = await refCtx.newPage();
     await refPage.addInitScript((t) => {
       const apply = () => document.documentElement?.setAttribute('data-theme', t);
       if (document.documentElement) apply();
@@ -278,8 +281,13 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
       await screenshotFormCropClean(refPage, spec.formCrop.ref, cropPath);
       refFormCrop = { path: cropFile, sha256: sha256File(cropPath) };
     }
-    await refCtx.close();
+    if (afterBoth && refPage) {
+      await afterBoth(implPage, refPage);
+    }
+    if (refCtx) await refCtx.close();
   }
+  if (afterBoth && implPage && !implPage.isClosed()) await implPage.close();
+  else if (!afterBoth && !implPage.isClosed()) await implPage.close();
 
   const implSha256 = sha256File(implPath);
   const capture = {
@@ -296,5 +304,5 @@ export async function captureRefImplPair(ctx, spec, outDir, protoBaseUrl, meta) 
   if (implFormCrop) capture.implFormCrop = implFormCrop;
   if (refFormCrop) capture.refFormCrop = refFormCrop;
   if (spec.formMetrics) capture.formMetrics = spec.formMetrics;
+  if (spec.spacingCompare) capture.spacingCompare = spec.spacingCompare;
   return capture;
-}

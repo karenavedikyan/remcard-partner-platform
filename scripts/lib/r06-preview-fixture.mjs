@@ -563,34 +563,66 @@ function boxMetrics(el) {
   };
 }
 
-/** Geometry for ref/impl compare (actual input/card/chip boxes, not wrappers). */
+/** A: basics vertical rhythm — all nodes required; null gap => ok:false. */
 export async function measureBasicsVerticalRhythm(page, { impl = true } = {}) {
   return page.evaluate(({ isImpl }) => {
+    const boxSummary = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        top: Math.round(r.top),
+        bottom: Math.round(r.bottom),
+        left: Math.round(r.left),
+        right: Math.round(r.right),
+        width: Math.round(r.width),
+        height: Math.round(r.height),
+      };
+    };
     const dist = (a, b) => {
       if (!a || !b) return null;
       return Math.round(b.getBoundingClientRect().top - a.getBoundingClientRect().bottom);
     };
-    const nameLabel = document.querySelector(
-      isImpl ? 'label[for="sp-displayName"]' : 'label[for="name"], .pw-card label',
-    );
-    const nameInput = document.querySelector(
-      isImpl ? '#sp-displayName' : '[name="name"]',
-    );
-    const cityLabel = document.querySelector(
-      isImpl ? 'label[for="sp-city"]' : 'label[for="city"]',
-    );
-    const cityInput = document.querySelector(isImpl ? '#sp-city' : '[name="city"]');
-    const nameField = nameInput?.parentElement;
-    const cityField = cityInput?.parentElement;
-    const nameHelper = nameField?.querySelector('small');
-    const cityHelper = cityField?.querySelector('small');
+    const card = document.querySelector(isImpl ? '[data-testid="specialist-profile-step-card"]' : '.pw-card');
+    const nameLabel = isImpl
+      ? card?.querySelector('label[for="sp-displayName"]')
+      : card?.querySelector('label[for="pw-name"]');
+    const nameInput = isImpl
+      ? card?.querySelector('#sp-displayName')
+      : card?.querySelector('[name="name"]');
+    const cityLabel = isImpl
+      ? card?.querySelector('label[for="sp-city"]')
+      : card?.querySelector('label[for="pw-city"]');
+    const cityInput = isImpl
+      ? card?.querySelector('#sp-city')
+      : card?.querySelector('[name="city"]');
+    const nameHelper = isImpl
+      ? nameInput?.parentElement?.querySelector('small')
+      : card?.querySelector('#pw-hint-name');
+    const cityHelper = isImpl
+      ? cityInput?.parentElement?.querySelector('small')
+      : card?.querySelector('#pw-hint-city');
     const footnote = isImpl
-      ? document.querySelector('[data-testid="specialist-basics-footnote"]')
-      : document.querySelector('.pw-footnote, .pw-card .footnote, .pw-card p.small');
+      ? card?.querySelector('[data-testid="specialist-basics-footnote"]')
+      : card?.querySelector('p.pw-footnote');
     const actions = isImpl
       ? document.querySelector('[data-testid="specialist-step-actions"]')
-      : document.querySelector('.pw-actions');
-    return {
+      : card?.querySelector('.pw-actions');
+
+    const nodes = {
+      nameLabel: { selector: isImpl ? 'label[for="sp-displayName"]' : 'label[for="pw-name"]', box: boxSummary(nameLabel) },
+      nameInput: { selector: isImpl ? '#sp-displayName' : '[name="name"]', box: boxSummary(nameInput) },
+      nameHelper: { selector: isImpl ? 'small (name field)' : '#pw-hint-name', box: boxSummary(nameHelper) },
+      cityLabel: { selector: isImpl ? 'label[for="sp-city"]' : 'label[for="pw-city"]', box: boxSummary(cityLabel) },
+      cityInput: { selector: isImpl ? '#sp-city' : '[name="city"]', box: boxSummary(cityInput) },
+      cityHelper: { selector: isImpl ? 'small (city field)' : '#pw-hint-city', box: boxSummary(cityHelper) },
+      footnote: { selector: isImpl ? '[data-testid="specialist-basics-footnote"]' : 'p.pw-footnote', box: boxSummary(footnote) },
+      actions: { selector: isImpl ? '[data-testid="specialist-step-actions"]' : '.pw-actions', box: boxSummary(actions) },
+    };
+    const missing = Object.entries(nodes)
+      .filter(([, v]) => !v.box || v.box.height <= 0)
+      .map(([k]) => k);
+
+    const gaps = {
       labelToInputName: dist(nameLabel, nameInput),
       inputToHelperName: dist(nameInput, nameHelper),
       helperToCityLabel: dist(nameHelper, cityLabel),
@@ -599,45 +631,137 @@ export async function measureBasicsVerticalRhythm(page, { impl = true } = {}) {
       helperToFootnote: dist(cityHelper, footnote),
       footnoteToActions: dist(footnote, actions),
     };
+    const nullGaps = Object.entries(gaps)
+      .filter(([, v]) => v == null || Number.isNaN(v))
+      .map(([k]) => k);
+    const ok = missing.length === 0 && nullGaps.length === 0;
+    return {
+      ok,
+      side: isImpl ? 'impl' : 'ref',
+      missing,
+      nullGaps,
+      gaps,
+      nodes,
+    };
   }, { isImpl: impl });
 }
 
+/** B: review spacing — comparable boundaries only (role facts end → heading → chips). */
 export async function measureReviewStepRhythm(page, { impl = true } = {}) {
   return page.evaluate(({ isImpl }) => {
+    const boxSummary = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        top: Math.round(r.top),
+        bottom: Math.round(r.bottom),
+        left: Math.round(r.left),
+        right: Math.round(r.right),
+        width: Math.round(r.width),
+        height: Math.round(r.height),
+      };
+    };
     const dist = (a, b) => {
       if (!a || !b) return null;
       return Math.round(b.getBoundingClientRect().top - a.getBoundingClientRect().bottom);
     };
+    const card = document.querySelector(isImpl ? '[data-testid="specialist-profile-step-card"]' : '.pw-card');
     const contextLabel = isImpl
-      ? document.querySelector('[data-testid="specialist-profile-step-card"] .stepContextLabel, [class*="stepContextLabel"]')
-      : document.querySelector('[data-testid="pw-progress"] + span, .pw-card .pw-context, .pw-step-context');
-    const title = isImpl
-      ? document.querySelector('[data-testid="specialist-profile-step-card"] h2')
-      : document.querySelector('.pw-card h2, #pw-title');
+      ? card?.querySelector('[class*="stepContextLabel"]')
+      : card?.querySelector('.pw-card-top .pw-label');
+    const title = card?.querySelector('h2');
     const facts = isImpl
-      ? document.querySelector('[data-testid="specialist-review-facts"]')
-      : document.querySelector('.pw-facts');
-    const directions = isImpl
-      ? document.querySelector('[data-testid="specialist-profile-review-panel"] [class*="reviewDirections"]')
-      : document.querySelector('.pw-picked, .pw-directions');
+      ? card?.querySelector('[data-testid="specialist-review-facts"]')
+      : card?.querySelector('.pw-facts');
+    let roleFactsEnd = null;
+    if (facts) {
+      for (const dt of facts.querySelectorAll('dt')) {
+        if (dt.textContent?.includes('Роль специалиста')) {
+          roleFactsEnd = dt.parentElement?.querySelector('dd') ?? dt.nextElementSibling;
+        }
+      }
+    }
+    const directionsHeading = isImpl
+      ? card?.querySelector('[data-testid="specialist-profile-review-panel"] strong')
+      : card?.querySelector('.pw-review-directions > strong');
+    const chipArea = isImpl
+      ? card?.querySelector('[data-testid="specialist-profile-review-panel"] [class*="reviewChipRow"]')
+      : card?.querySelector('.pw-review-directions .pw-picked');
     const footnote = isImpl
-      ? document.querySelector('[data-testid="specialist-profile-review-panel"] [class*="reviewFootnote"]')
-      : document.querySelector('.pw-card .pw-footnote, .pw-card .footnote');
+      ? card?.querySelector('[data-testid="specialist-profile-review-panel"] [class*="reviewFootnote"]')
+      : card?.querySelector('p.pw-footnote');
     const actions = isImpl
       ? document.querySelector('[data-testid="specialist-step-actions"]')
-      : document.querySelector('.pw-actions');
+      : card?.querySelector('.pw-actions');
+
+    const nodes = {
+      contextLabel: { selector: isImpl ? '[class*="stepContextLabel"]' : '.pw-step-context', box: boxSummary(contextLabel) },
+      title: { selector: 'h2', box: boxSummary(title) },
+      facts: { selector: isImpl ? '[data-testid="specialist-review-facts"]' : '.pw-facts', box: boxSummary(facts) },
+      roleFactsEnd: { selector: 'dt:Роль специалиста → dd', box: boxSummary(roleFactsEnd) },
+      directionsHeading: {
+        selector: isImpl ? 'review panel strong' : '.pw-review-directions > strong',
+        box: boxSummary(directionsHeading),
+      },
+      chipArea: {
+        selector: isImpl ? '[class*="reviewChipRow"]' : '.pw-review-directions .pw-picked',
+        box: boxSummary(chipArea),
+      },
+      footnote: { selector: 'p.pw-footnote / reviewFootnote', box: boxSummary(footnote) },
+      actions: { selector: '.pw-actions / specialist-step-actions', box: boxSummary(actions) },
+    };
+    const required = ['title', 'facts', 'roleFactsEnd', 'directionsHeading', 'chipArea'];
+    const missing = required.filter((k) => !nodes[k]?.box || nodes[k].box.height <= 0);
+
+    const gaps = {
+      titleToFacts: dist(title, facts),
+      roleFactsEndToDirectionsHeading: dist(roleFactsEnd, directionsHeading),
+      directionsHeadingToChips: dist(directionsHeading, chipArea),
+      directionsToFootnote: dist(chipArea, footnote),
+      footnoteToActions: dist(footnote, actions),
+    };
+    const mandatory = ['titleToFacts', 'roleFactsEndToDirectionsHeading', 'directionsHeadingToChips'];
+    const nullGaps = mandatory.filter((k) => gaps[k] == null || Number.isNaN(gaps[k]));
     const ctxRect = contextLabel?.getBoundingClientRect();
+    const ok = missing.length === 0 && nullGaps.length === 0;
     return {
+      ok,
+      side: isImpl ? 'impl' : 'ref',
+      missing,
+      nullGaps,
+      gaps,
+      nodes,
       contextLabelLines: contextLabel
         ? Math.round((ctxRect?.height ?? 0) / (parseFloat(getComputedStyle(contextLabel).lineHeight) || 16))
         : null,
       contextLabelWidth: ctxRect ? Math.round(ctxRect.width) : null,
-      titleToFacts: dist(title, facts),
-      factsToDirections: dist(facts, directions),
-      directionsToFootnote: dist(directions, footnote),
-      footnoteToActions: dist(footnote, actions),
+      partnerBlockNote: isImpl
+        ? null
+        : 'directionsToFootnote crosses .pw-visibility (D02) — not a pass gate',
     };
   }, { isImpl: impl });
+}
+
+export const SPACING_MEASURE_TOLERANCE_PX = 2;
+
+export function compareSpacingRhythm(refResult, implResult, gapKeys, { tolerancePx = SPACING_MEASURE_TOLERANCE_PX } = {}) {
+  const failures = [];
+  if (!refResult?.ok) failures.push(`ref_measure_fail:${JSON.stringify(refResult?.missing ?? refResult?.nullGaps)}`);
+  if (!implResult?.ok) failures.push(`impl_measure_fail:${JSON.stringify(implResult?.missing ?? implResult?.nullGaps)}`);
+  const delta = {};
+  for (const key of gapKeys) {
+    const r = refResult?.gaps?.[key];
+    const i = implResult?.gaps?.[key];
+    if (typeof r !== 'number' || typeof i !== 'number') {
+      failures.push(`gap_not_numeric:${key}:ref=${r}:impl=${i}`);
+      continue;
+    }
+    delta[key] = i - r;
+    if (Math.abs(delta[key]) > tolerancePx) {
+      failures.push(`gap_delta:${key}:ref=${r}:impl=${i}:delta=${delta[key]}`);
+    }
+  }
+  return { ok: failures.length === 0, failures, delta, refGaps: refResult?.gaps, implGaps: implResult?.gaps };
 }
 
 export async function measureImplStepGeometry(page, stepKind) {

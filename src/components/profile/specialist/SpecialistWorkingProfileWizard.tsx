@@ -512,7 +512,13 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
               </div>
             </div>
           ) : null}
-          <h2 className={styles.title}>{stepPanelTitle(step)}</h2>
+          <h2
+            className={
+              patternStep ? `${styles.title} ${stepStyles.patternStepTitle}` : styles.title
+            }
+          >
+            {stepPanelTitle(step)}
+          </h2>
           <form onSubmit={(ev) => void onSubmitStep(ev)}>
             {step === 0 ? (
               <div

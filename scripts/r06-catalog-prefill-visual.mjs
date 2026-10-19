@@ -68,6 +68,8 @@ import {
   measureRefStepGeometry,
   measureBasicsVerticalRhythm,
   measureReviewStepRhythm,
+  compareSpacingRhythm,
+  SPACING_MEASURE_TOLERANCE_PX,
   assertImplWizardLayoutGeometry,
   selectImplCatalogDirections,
   selectRefCatalogDirections,
@@ -1287,9 +1289,251 @@ async function runProfilePrototypeFinish011Main() {
   });
 }
 
+const BASICS_SPACING_GAP_KEYS = [
+  'labelToInputName',
+  'inputToHelperName',
+  'helperToCityLabel',
+  'labelToInputCity',
+  'inputToHelperCity',
+  'helperToFootnote',
+  'footnoteToActions',
+];
+
+const REVIEW_SPACING_GAP_KEYS = [
+  'titleToFacts',
+  'roleFactsEndToDirectionsHeading',
+  'directionsHeadingToChips',
+];
+
+async function runProfileSpacingMeasureMain() {
+  verifyLoginEntryPrototypeTarball(ROOT);
+  const provenanceBefore = collectPrefillProvenance(ROOT, DIST);
+  if (provenanceBefore.treeDirty) {
+    throw new Error(`tree_dirty_before_run:${provenanceBefore.treeDirtyFiles.join(';')}`);
+  }
+  const codeSha = provenanceBefore.codeSha;
+  const taskId = 'R06-PROFILE-SPACING-MEASURE-01';
+  const OUT = path.join(ROOT, 'artifacts/remcard-r06-specialist/profile-spacing-measure', codeSha.slice(0, 12));
+  mkdirSync(OUT, { recursive: true });
+
+  ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
+  const mock = await startCatalogPrefillMockBff(createMockBffState());
+  const platformPort =
+    Number(process.env.R06_CATALOG_PREFILL_PLATFORM_PORT) ||
+    (await findFreeLoopbackPort(30680, { maxScan: 40 }));
+  if (!platformPort) throw new Error('no free platform port');
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'failed') throw new Error(`build_failed:exit=${build.exitCode}`);
+
+  const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
+  const child = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  const implBase = appOrigin;
+  const protoBase = refStatic.baseUrl;
+  const meta = { codeSha, buildId: build.buildId };
+  const fixture = R06_PROFILE_PATTERN_FIXTURE;
+  const geometryWidths = [320, 375, 768, 900, 901, 1440];
+  const geometryByStep = [];
+  const captures = [];
+  const spacingByPair = [];
+  const viewports = [
+    { width: 1440, height: 900, theme: 'light' },
+    { width: 375, height: 812, theme: 'light' },
+    { width: 375, height: 812, theme: 'dark' },
+    { width: 320, height: 568, theme: 'light' },
+  ];
+
+  const matrix = [
+    {
+      stateId: 'basics-filled',
+      measureKind: 'A_basics',
+      uiStep: 0,
+      prepareRefStep: 0,
+      gapKeys: BASICS_SPACING_GAP_KEYS,
+      assertImpl: assertImplBasicsStepReady,
+      assertRef: assertRefBasicsStepReady,
+      fillImpl: (page) => fillImplBasicsFixture(page, fixture),
+      fillRef: (page) => fillRefBasicsFixture(page, fixture),
+    },
+    {
+      stateId: 'review-filled',
+      measureKind: 'B_review',
+      uiStep: 3,
+      prepareRefStep: 3,
+      gapKeys: REVIEW_SPACING_GAP_KEYS,
+      assertImpl: assertImplReviewStepReady,
+      assertRef: assertRefReviewStepReady,
+      fillImpl: async () => {},
+      fillRef: async () => {},
+    },
+  ];
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/api/health`, 120_000))) throw new Error('impl_not_ready');
+    const runtimeBuildId = await probeRuntimeBuildId(appOrigin, build.buildId);
+    if (runtimeBuildId !== build.buildId) {
+      throw new Error(`runtime_build_id_mismatch:${runtimeBuildId}:${build.buildId}`);
+    }
+
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'remcard-token',
+        value: 'mock-spacing-measure-token',
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+
+    for (const row of matrix) {
+      const stepGeometry = { stateId: row.stateId, byWidth: {} };
+      for (const gw of geometryWidths) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, { advancedOpen: false });
+        const page = await context.newPage();
+        const height = gw <= 375 ? 812 : 900;
+        await page.setViewportSize({ width: gw, height });
+        await page.addInitScript(() => {
+          document.documentElement?.setAttribute('data-theme', 'light');
+        });
+        await page.goto(`${implBase}/profile?section=basics`, { waitUntil: 'load', timeout: 120_000 });
+        await waitImplReady(page, 'specialist-profile-wizard');
+        await row.assertImpl(page);
+        await row.fillImpl(page);
+        stepGeometry.byWidth[String(gw)] = await assertImplWizardLayoutGeometry(page, gw);
+        await page.close();
+      }
+      geometryByStep.push(stepGeometry);
+    }
+
+    for (const row of matrix) {
+      for (const vp of viewports) {
+        applyMockProfilePatternStep(mock.state, row.uiStep, fixture, { advancedOpen: false });
+        const pairId = `${row.stateId}-${vp.width}-${vp.theme}`;
+        const pairSpec = {
+          pairId,
+          theme: vp.theme,
+          width: vp.width,
+          height: vp.height,
+          implUrl: `${implBase}/profile?section=basics`,
+          implTestId: 'specialist-profile-wizard',
+          formCrop: {
+            impl: '[data-testid="specialist-profile-step-card"]',
+            ref: '.pw-card',
+          },
+          assertImpl: async (page) => {
+            await row.assertImpl(page);
+            await row.fillImpl(page);
+            await assertImplWizardLayoutGeometry(page, vp.width);
+          },
+          prepareRef: async (page, base) => {
+            await prepareRefSpecialistPatternStep(page, base, row.prepareRefStep, fixture, {
+              advancedOpen: false,
+            });
+            await row.fillRef(page);
+          },
+          assertRef: row.assertRef,
+          spacingCompare: null,
+          afterBoth: async (implPage, refPage) => {
+            const implRhythm =
+              row.measureKind === 'A_basics'
+                ? await measureBasicsVerticalRhythm(implPage, { impl: true })
+                : await measureReviewStepRhythm(implPage, { impl: true });
+            const refRhythm =
+              row.measureKind === 'A_basics'
+                ? await measureBasicsVerticalRhythm(refPage, { impl: false })
+                : await measureReviewStepRhythm(refPage, { impl: false });
+            const spacingCompare = compareSpacingRhythm(refRhythm, implRhythm, row.gapKeys, {
+              tolerancePx: SPACING_MEASURE_TOLERANCE_PX,
+            });
+            spacingCompare.measureKind = row.measureKind;
+            spacingCompare.ref = refRhythm;
+            spacingCompare.impl = implRhythm;
+            if (!spacingCompare.ok) {
+              throw new Error(`spacing_measure_fail:${pairId}:${JSON.stringify(spacingCompare.failures)}`);
+            }
+            pairSpec.spacingCompare = spacingCompare;
+          },
+        };
+        const cap = await captureRefImplPair(context, pairSpec, OUT, protoBase, meta);
+        cap.fixtureState = row.stateId;
+        captures.push(cap);
+        spacingByPair.push({
+          pairId,
+          measureKind: row.measureKind,
+          ...cap.spacingCompare,
+        });
+      }
+    }
+    await browser.close();
+  } finally {
+    await stopOwnedServer(child);
+    refStatic.server.close();
+    await mock.close();
+    envPin.restore();
+  }
+
+  const manifestPath = path.join(OUT, 'manifest.json');
+  const manifest = {
+    capturedAt: new Date().toISOString(),
+    task: taskId,
+    mode: 'MOCK_BFF_PROFILE_SPACING_MEASURE',
+    tolerancePx: SPACING_MEASURE_TOLERANCE_PX,
+    codeSha,
+    sourceTreeDigest: provenanceBefore.sourceTreeDigest,
+    treeDirty: false,
+    build: {
+      status: build.status,
+      exitCode: build.exitCode,
+      buildId: build.buildId,
+      distDir: DIST,
+    },
+    runtimeBuildIdVerified: build.buildId,
+    measurementA: {
+      gapKeys: BASICS_SPACING_GAP_KEYS,
+      refSelectors: 'label[for=pw-name|pw-city], #pw-hint-*, p.pw-footnote',
+    },
+    measurementB: {
+      gapKeys: REVIEW_SPACING_GAP_KEYS,
+      boundaries:
+        'roleFactsEnd(dd)→.pw-review-directions>strong→.pw-picked | impl reviewChipRow',
+      notPassGate: ['directionsToFootnote (ref crosses D02 partnerSearchOptIn)'],
+    },
+    spacingByPair,
+    geometryChecks: geometryByStep,
+    captures,
+    pairCount: captures.length,
+    visualPass: false,
+    deferredDocumented: { D01: 'unchanged', D02: 'unchanged', D03: 'unchanged' },
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  manifest.evidenceSha256 = createHash('sha256').update(readFileSync(manifestPath)).digest('hex');
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(JSON.stringify({ ok: true, manifestPath, evidenceSha256: manifest.evidenceSha256, spacingByPair }, null, 2));
+}
+
 async function main() {
   if (process.env.R06_TASK_ID === 'R06-PROFILE-LAYOUT-REGRESSION-01') {
     return runProfileLayoutRegressionMain();
+  }
+  if (process.env.R06_TASK_ID === 'R06-PROFILE-SPACING-MEASURE-01') {
+    return runProfileSpacingMeasureMain();
   }
   if (process.env.R06_TASK_ID === 'R06-PROFILE-PROTOTYPE-FINISH-01.1') {
     return runProfilePrototypeFinish011Main();

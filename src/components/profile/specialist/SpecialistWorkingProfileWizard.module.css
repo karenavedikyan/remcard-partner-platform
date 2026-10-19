@@ -113,7 +113,7 @@
 
 .basicsField {
   min-width: 0;
-  margin: 0;
+  margin: 0 0 var(--pw-4);
 }
 
 .basicsField label {
@@ -259,14 +259,23 @@
   line-height: 1.45;
 }
 
+.patternStepTitle {
+  margin-bottom: var(--pw-6);
+}
+
 .reviewPanel {
   display: grid;
-  gap: var(--pw-4);
+  gap: 0;
   min-width: 0;
 }
 
 .reviewPanel .reviewDirections {
-  margin-top: 0;
+  margin-top: var(--pw-5);
+  padding-top: var(--pw-5);
+}
+
+.reviewPanel .reviewDirections strong {
+  margin-bottom: var(--pw-3);
 }
 
 .reviewChipRow {
