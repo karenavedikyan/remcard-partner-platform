@@ -421,11 +421,17 @@ async function setImplAdvancedDirectionsOpen(page, open) {
   if (open !== isOpen) await details.locator('summary').click();
 }
 
+function refAdvancedDirectionsDetails(page) {
+  return page
+    .locator('details.pw-optional')
+    .filter({ has: page.getByText('Этапы ремонта и основное направление', { exact: false }) });
+}
+
 async function setRefAdvancedDirectionsOpen(page, open) {
-  const adv = page.locator('details.pw-optional').filter({ hasText: 'Этапы ремонта' });
+  const adv = refAdvancedDirectionsDetails(page).first();
   if ((await adv.count()) === 0) return;
   const isOpen = await adv.evaluate((el) => el.open);
-  if (open !== isOpen) await adv.locator('summary').click();
+  if (open !== isOpen) await adv.locator('summary').first().click();
 }
 
 export async function fillImplSpecializationFixture(
@@ -482,7 +488,7 @@ export async function fillRefSpecializationFixture(
   }
   await setRefAdvancedDirectionsOpen(page, advancedOpen);
   if (advancedOpen) {
-    const adv = page.locator('details.pw-optional').filter({ hasText: 'Этапы ремонта' });
+    const adv = refAdvancedDirectionsDetails(page).first();
     for (const id of fixture.navigatorStageIds) {
       const stageCb = adv.locator(`input[data-pw-group="stages"][value="${id}"]`);
       if ((await stageCb.count()) === 0) throw new Error(`ref_pattern_stage_missing:${id}`);

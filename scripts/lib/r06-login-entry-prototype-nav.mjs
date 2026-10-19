@@ -117,10 +117,13 @@ export async function prepareRefSpecialistPatternStep(
         if (!(await cb.isChecked())) await cb.check();
       }
     }
-    const adv = page.locator('details.pw-optional').filter({ hasText: 'Этапы ремонта' });
+    const adv = page
+      .locator('details.pw-optional')
+      .filter({ has: page.getByText('Этапы ремонта и основное направление', { exact: false }) })
+      .first();
     if (await adv.count()) {
       const open = await adv.evaluate((el) => el.open);
-      if (advancedOpen !== open) await adv.locator('summary').click();
+      if (advancedOpen !== open) await adv.locator('summary').first().click();
       if (advancedOpen) {
         for (const id of fixture.navigatorStageIds) {
           const stageCb = adv.locator(`input[data-pw-group="stages"][value="${id}"]`);
