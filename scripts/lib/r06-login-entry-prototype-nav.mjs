@@ -1,5 +1,5 @@
 /** Specialist profile + catalog navigation in login-entry-20261018 prototype. */
-import { assertPrototypePageReady, PROTO_LOAD_ERROR } from './r06-login-entry-prototype-pack.mjs';
+import { assertPrototypePageReady } from './r06-login-entry-prototype-pack.mjs';
 
 export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
   await page.goto(`${protoBaseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 120_000 });
