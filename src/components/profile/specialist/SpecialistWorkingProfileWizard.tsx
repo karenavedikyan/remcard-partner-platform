@@ -553,6 +553,8 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 <div className={styles.fieldsTwo}>
                   <AgentPhoneField
                     ref={phoneRef}
+                    wrapperClassName={styles.phoneFieldWrap}
+                    helperText="Можно начать с 8, 7 или ввести 10 цифр. Сохраним через +7. Для связи, не для повторного входа."
                     value={draft.partnershipContactPhone ?? ""}
                     onChange={(v) => setDraft((d) => ({ ...d, partnershipContactPhone: v }))}
                   />
@@ -696,41 +698,56 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
                 </p>
               </>
             ) : null}
-            <div className={styles.actionsRight}>
-              {step > 0 ? (
+            <div className={styles.actions}>
+              <div className={styles.actionsLeft}>
+                {step > 0 ? (
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    disabled={saving}
+                    onClick={() => setStep((s) => Math.max(0, s - 1))}
+                  >
+                    Назад
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  className={styles.btn}
+                  className={`${styles.btn} ${styles.btnQuiet}`}
                   disabled={saving}
-                  onClick={() => setStep((s) => Math.max(0, s - 1))}
+                  onClick={() => void resetDraft()}
                 >
-                  Назад
+                  Сбросить черновик
                 </button>
-              ) : null}
-              {(step === 1 || step === 2) && (
-                <button type="button" className={styles.btn} disabled={saving} onClick={() => void skipStep()}>
-                  Пропустить
+              </div>
+              <div className={styles.actionsRight}>
+                {(step === 1 || step === 2) && (
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnQuiet}`}
+                    disabled={saving}
+                    onClick={() => void skipStep()}
+                  >
+                    Пропустить
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnDraft}`}
+                  disabled={saving}
+                  onClick={() => void saveDraftOnly()}
+                >
+                  {saving ? "Сохранение…" : "Сохранить черновик"}
                 </button>
-              )}
-              <button
-                type="button"
-                className={`${styles.btn} ${styles.btnDraft}`}
-                disabled={saving}
-                onClick={() => void saveDraftOnly()}
-              >
-                {saving ? "Сохранение…" : "Сохранить черновик"}
-              </button>
-              <button
-                type="button"
-                className={styles.btn}
-                disabled={saving}
-                onClick={() => void resetDraft()}
-              >
-                Сбросить черновик
-              </button>
-              <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
-                {step === 3 ? "Завершить профиль" : "Далее"}
-              </button>
+                <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
+                  {step === 3 ? (
+                    "Сохранить профиль"
+                  ) : (
+                    <>
+                      Продолжить <span aria-hidden="true">→</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </section>

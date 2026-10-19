@@ -83,7 +83,7 @@ describe("SpecialistWorkingProfileWizard version sync", () => {
       expect(screen.getByTestId("specialist-profile-wizard")).toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole("button", { name: "Завершить профиль" }));
+    await user.click(screen.getByRole("button", { name: "Сохранить профиль" }));
 
     await waitFor(() =>
       expect(screen.getByTestId("specialist-profile-completed-summary")).toBeInTheDocument(),

@@ -15,7 +15,7 @@ function catalogWizard(page) {
 
 function catalogNextButton(page) {
   return catalogWizard(page)
-    .getByRole('button', { name: /Далее|Предпросмотр/i })
+    .getByRole('button', { name: /Далее|Продолжить|Предпросмотр/i })
     .and(page.locator(':not([disabled])'))
     .first();
 }

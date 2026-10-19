@@ -25,6 +25,8 @@ type AgentPhoneFieldProps = {
   disabled?: boolean;
   error?: string;
   onChange: (next: string) => void;
+  wrapperClassName?: string;
+  helperText?: string;
 };
 
 function commitDraftValue(draft: string, value: string, focused: boolean): string {
@@ -36,7 +38,10 @@ function commitDraftValue(draft: string, value: string, focused: boolean): strin
 }
 
 export const AgentPhoneField = forwardRef<AgentPhoneFieldHandle, AgentPhoneFieldProps>(
-  function AgentPhoneField({ value, disabled, error, onChange }, ref) {
+  function AgentPhoneField(
+    { value, disabled, error, onChange, wrapperClassName, helperText },
+    ref,
+  ) {
     const inputId = useId();
     const helperId = `${inputId}-helper`;
     const [focused, setFocused] = useState(false);
@@ -63,8 +68,12 @@ export const AgentPhoneField = forwardRef<AgentPhoneFieldHandle, AgentPhoneField
       commitDraft();
     }, [commitDraft]);
 
+    const helper =
+      helperText ??
+      `${CONTACT_PHONE_ERROR} Можно оставить пустым.`;
+
     return (
-      <div>
+      <div className={wrapperClassName}>
         <label htmlFor={inputId}>Телефон</label>
         <input
           id={inputId}
@@ -89,7 +98,7 @@ export const AgentPhoneField = forwardRef<AgentPhoneFieldHandle, AgentPhoneField
             }
           }}
         />
-        <small id={helperId}>{error || `${CONTACT_PHONE_ERROR} Можно оставить пустым.`}</small>
+        <small id={helperId}>{error || helper}</small>
       </div>
     );
   },

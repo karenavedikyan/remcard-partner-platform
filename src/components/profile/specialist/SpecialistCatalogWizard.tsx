@@ -344,6 +344,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 specialistKind={catalogKind}
                 notice={catalogPresetNotice}
                 disabled={!catalogEditable}
+                persistCustomTitle={false}
                 onKindChange={(kind) => {
                   setCatalogKind(kind);
                   applyCatalogKind(kind, false);
@@ -351,7 +352,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                     !kind
                       ? "Категории и этапы можно выбрать вручную."
                       : kind === "other"
-                        ? "Укажите свою специализацию и выберите категории/этапы вручную."
+                        ? "Выберите категории и этапы вручную (название роли в каталоге не сохраняется)."
                         : "Стартовые категории и этапы подставлены. Проверьте и отредактируйте их.",
                   );
                 }}
@@ -406,15 +407,6 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 Сохранённые контакты подставляются из вашего профиля. Можно изменить или убрать их
                 только для каталога. После одобрения эти данные будут видны клиентам.
               </small>
-              <AgentPhoneField
-                ref={publicPhoneRef}
-                value={publicPhone}
-                disabled={!catalogEditable}
-                onChange={(v) => {
-                  touchField(props, "publicPhone");
-                  onPublicPhoneChange(v);
-                }}
-              />
               <div className={catalogStyles.field}>
                 <label htmlFor="sc-web">Сайт с контактами</label>
                 <input
@@ -460,6 +452,17 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 />
                 <small className={catalogStyles.fieldHint}>Для запроса, сметы или документов.</small>
               </div>
+              <AgentPhoneField
+                ref={publicPhoneRef}
+                wrapperClassName={catalogStyles.phoneFieldWrap}
+                helperText="Можно 89186360088, 9186360088 или +79186360088. Сохраним через +7, без пробелов. Можно оставить пустым, если есть другой контакт."
+                value={publicPhone}
+                disabled={!catalogEditable}
+                onChange={(v) => {
+                  touchField(props, "publicPhone");
+                  onPublicPhoneChange(v);
+                }}
+              />
             </div>
           ) : null}
 

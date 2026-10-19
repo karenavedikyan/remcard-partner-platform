@@ -343,6 +343,49 @@
   resize: vertical;
 }
 
+.phoneFieldWrap {
+  display: grid;
+  gap: var(--cw-2);
+  min-width: 0;
+}
+
+.phoneFieldWrap label {
+  font-weight: 700;
+  font-size: var(--cw-sm);
+  color: var(--cw-text);
+}
+
+.phoneFieldWrap input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--cw-3);
+  border: 1px solid var(--cw-line);
+  border-radius: 8px;
+  background: var(--cw-bg);
+  color: var(--cw-text);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.phoneFieldWrap small {
+  display: block;
+  font-size: var(--cw-xs);
+  line-height: 1.45;
+  color: var(--cw-muted);
+}
+
+.directionGroup fieldset legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .intro {
   margin: 0 0 var(--cw-4);
   font-size: var(--cw-sm);

@@ -243,6 +243,37 @@
   color: var(--pw-muted);
 }
 
+.phoneFieldWrap {
+  display: grid;
+  gap: var(--pw-2);
+  min-width: 0;
+}
+
+.phoneFieldWrap label {
+  font-weight: 700;
+  font-size: var(--pw-sm);
+  color: var(--pw-text);
+}
+
+.phoneFieldWrap input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--pw-3);
+  border: 1px solid var(--pw-line);
+  border-radius: 8px;
+  background: var(--pw-bg);
+  color: var(--pw-text);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.phoneFieldWrap small {
+  display: block;
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  line-height: 1.45;
+}
+
 .fieldError small {
   color: var(--pw-accent);
 }

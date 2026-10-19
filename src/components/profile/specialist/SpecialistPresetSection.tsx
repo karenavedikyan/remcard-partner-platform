@@ -16,6 +16,8 @@ type Props = {
   onKindChange: (kind: SpecialistKindId | "") => void;
   onTitleChange?: (title: string) => void;
   onApplyMerge: () => void;
+  /** Working profile draft persists specialistTitle; catalog has no API field — UI-only preset. */
+  persistCustomTitle?: boolean;
 };
 
 export function SpecialistPresetSection({
@@ -27,6 +29,7 @@ export function SpecialistPresetSection({
   onKindChange,
   onTitleChange,
   onApplyMerge,
+  persistCustomTitle = true,
 }: Props) {
   const preset = useMemo(
     () => SPECIALIST_PRESETS.find((p) => p.id === specialistKind),
@@ -57,20 +60,27 @@ export function SpecialistPresetSection({
         не ограничение: удалите лишнее, добавьте нужное или свой вариант.
       </p>
       {specialistKind === "other" ? (
-        <>
-          <div className={styles.field}>
-            <label htmlFor={`${selectId}-title`}>Ваша специализация</label>
-            <input
-              id={`${selectId}-title`}
-              maxLength={80}
-              disabled={disabled}
-              value={specialistTitle}
-              placeholder="Например, реставратор"
-              onChange={(e) => onTitleChange?.(e.target.value)}
-            />
-          </div>
-          <p className={styles.hint}>Для своего варианта выберите категории и этапы вручную.</p>
-        </>
+        persistCustomTitle ? (
+          <>
+            <div className={styles.field}>
+              <label htmlFor={`${selectId}-title`}>Ваша специализация</label>
+              <input
+                id={`${selectId}-title`}
+                maxLength={80}
+                disabled={disabled}
+                value={specialistTitle}
+                placeholder="Например, реставратор"
+                onChange={(e) => onTitleChange?.(e.target.value)}
+              />
+            </div>
+            <p className={styles.hint}>Для своего варианта выберите категории и этапы вручную.</p>
+          </>
+        ) : (
+          <p className={styles.hint} data-testid="specialist-preset-custom-title-blocked">
+            Свой вариант: выберите категории и этапы вручную ниже. Отдельное название роли в
+            черновике каталога не сохраняется (контракт BLOCKED).
+          </p>
+        )
       ) : null}
       {preset && preset.id !== "other" ? (
         <details className={styles.presetPreview}>

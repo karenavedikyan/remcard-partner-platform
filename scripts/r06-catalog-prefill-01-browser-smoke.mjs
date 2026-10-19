@@ -66,7 +66,7 @@ async function main() {
 
   const report = {
     mode: 'MOCK_BFF',
-    task: 'R06-PROFILE-CATALOG-PREFILL-01.3',
+    task: 'R06-SPECIALIST-VISUAL-01.1',
     codeSha,
     navigatorCodeSha: NAVIGATOR_PIN,
     sourceTreeDigest: provenance.sourceTreeDigest,
@@ -147,7 +147,7 @@ async function main() {
     await page.waitForSelector('[data-testid="agent-profile-input-phone"]', { timeout: 60_000 });
     await page.locator('[data-testid="agent-profile-input-phone"]').fill('+79001112233');
     await page.locator('[data-testid="specialist-profile-wizard"] form').evaluate((f) => f.requestSubmit());
-    await page.getByRole('button', { name: 'Завершить профиль' }).click();
+    await page.getByRole('button', { name: /Сохранить профиль|Завершить профиль/i }).click();
     await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
     report.steps.finishWorkingProfile = { ok: true };
 
@@ -184,6 +184,18 @@ async function main() {
     };
 
     await advanceCatalogSteps(page, 1);
+    const kindSelect = page.locator('#sc-specialist-kind');
+    if (await kindSelect.count()) {
+      await kindSelect.selectOption('other');
+      await page.waitForSelector('[data-testid="specialist-preset-custom-title-blocked"]', {
+        timeout: 15_000,
+      });
+      report.steps.catalogOtherTitleBlocked = {
+        ok: (await page.locator('#sc-specialist-kind-title').count()) === 0,
+      };
+    } else {
+      report.steps.catalogOtherTitleBlocked = { ok: false, error: 'missing_kind_select' };
+    }
     const dirs = await readImplCatalogDirections(page);
     report.steps.catalogPresetPrefill = {
       ok:
@@ -274,6 +286,7 @@ async function main() {
       'workingProfilePreserved',
       'catalogUiTransition',
       'catalogPrefillName',
+      'catalogOtherTitleBlocked',
       'catalogPresetPrefill',
       'stagedClearGet',
       'reloadUi',

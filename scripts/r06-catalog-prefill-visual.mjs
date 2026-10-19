@@ -236,6 +236,14 @@ async function main() {
       await page.waitForSelector('[data-catalog-panel="contacts"]:not([hidden])', { timeout: 60_000 });
     }
 
+    async function prepareRefCatalogPresentationPanel(page, base) {
+      await prepareRefCatalogContactsPanel(page, base);
+      await page.locator('[data-cw-move="next"]').click();
+      await page.waitForSelector('[data-catalog-panel="presentation"]:not([hidden])', {
+        timeout: 60_000,
+      });
+    }
+
     async function prepareRefCatalogPreview(page, base) {
       await openRefCatalogProfile(page, base);
       await page.waitForSelector('[data-catalog-form]');
@@ -362,6 +370,19 @@ async function main() {
         prepareRef: prepareRefCatalogContactsPanel,
       },
       {
+        pairId: 'catalog-step-3-presentation',
+        theme: 'light',
+        width: 1440,
+        height: 900,
+        implUrl: `${implBase}/profile?section=catalog`,
+        implTestId: 'specialist-catalog-wizard',
+        prepareImpl: async (p) => {
+          await advanceCatalogSteps(p, 3);
+        },
+        assertImpl: assertCatalogStep(3),
+        prepareRef: prepareRefCatalogPresentationPanel,
+      },
+      {
         pairId: 'catalog-step-4-preview',
         theme: 'light',
         width: 1440,
@@ -398,6 +419,29 @@ async function main() {
         implUrl: `${implBase}/profile?section=catalog`,
         implTestId: 'specialist-catalog-wizard',
         prepareRef: openRefCatalogProfile,
+      },
+      {
+        pairId: 'catalog-step-1-directions-320',
+        theme: 'light',
+        width: 320,
+        height: 568,
+        implUrl: `${implBase}/profile?section=catalog`,
+        implTestId: 'specialist-catalog-wizard',
+        prepareImpl: async (p) => {
+          await advanceCatalogSteps(p, 1);
+        },
+        assertImpl: assertCatalogStep(1),
+        prepareRef: prepareRefCatalogDirectionsPanel,
+      },
+      {
+        pairId: 'profile-contacts-step-320',
+        theme: 'light',
+        width: 320,
+        height: 568,
+        implUrl: `${implBase}/profile?section=basics`,
+        implTestId: 'specialist-profile-wizard',
+        mockProfileStep: 2,
+        prepareRef: prepareRefContactsStep,
       },
     ];
 
@@ -453,7 +497,7 @@ async function main() {
   const manifestPath = path.join(OUT, 'manifest.json');
   const manifest = {
     capturedAt: new Date().toISOString(),
-    task: 'R06-PROFILE-CATALOG-PREFILL-01.3',
+    task: 'R06-SPECIALIST-VISUAL-01.1',
     mode: 'MOCK_BFF_VISUAL',
     codeSha,
     navigatorCodeSha: NAVIGATOR_PIN,
@@ -473,10 +517,13 @@ async function main() {
     protoBase: refStatic.baseUrl,
     captures,
     visualPass: false,
-      remainders: [
-        'CAPTURED pairs only — pixel diff not automated; review PNGs for structural DOM shell differences (production-profile ref vs Next profile impl).',
+    remainders: [
+      'CAPTURED pairs only — pixel diff not automated; review PNGs for structural DOM shell differences (production-profile ref vs Next profile impl).',
       'Supervisor preset: serviceIds [] / stages L1-0+L1-11 until taxonomy owner maps «Приёмка и технический надзор».',
       'Ref prototype uses production-profile shell; impl uses Next profile nav — structural parity, not identical DOM.',
+      'Catalog specialistTitle for «Свой вариант»: BLOCKED (no catalog draft field); UI shows notice, not fake input.',
+      'Review-step «Показывать профиль партнёрам»: BLOCKED in specialist R06 draft payload (no partnerSearchOptIn).',
+      'Catalog «Нет сайта/Telegram/email/телефона» toggles: BLOCKED — only explicit empty string via clear/save.',
     ],
   };
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
