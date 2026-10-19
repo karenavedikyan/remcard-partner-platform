@@ -161,7 +161,7 @@ describe("PartnersHub search empty state", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("heading", { name: /Пригласить по ссылке/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Пригласить партнёра/i })).toBeInTheDocument();
 
     const postCalls = vi
       .mocked(remcardFetch)

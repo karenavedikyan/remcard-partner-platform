@@ -212,8 +212,12 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
   }
 
   async function copyUrl(url: string) {
-    await navigator.clipboard.writeText(url);
-    setShareHint("Ссылка скопирована");
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareHint("Ссылка скопирована");
+    } catch {
+      setShareHint("Скопируйте ссылку вручную из поля ниже");
+    }
   }
 
   async function copyInviteMessage(url: string) {
@@ -247,11 +251,15 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
   const previewTerms = activeInviteRows(form);
 
   return (
-    <div className={styles.linkPanel}>
+    <div className={styles.linkPanel} data-testid="agent-r04-modal-link">
       <Panel
-        title="Пригласить по ссылке"
-        hint="Ссылка действует 14 дней и рассчитана на одного будущего партнёра. Условия фиксируются при создании."
+        title="Пригласить партнёра"
+        hint="Для знакомого, которого ещё нет на платформе. Он пройдёт обычную регистрацию и увидит ваше предложение сотрудничества."
       >
+        <p className={styles.hint}>
+          Создание ссылки не подключает партнёрскую программу и не согласует условия автоматически — это
+          приглашение к обсуждению. Ссылка действует 14 дней; условия фиксируются при создании.
+        </p>
         {needsIntendedType ? (
           <label className={styles.roleField}>
             <span>Предполагаемый тип партнёра</span>
@@ -370,10 +378,15 @@ export function PartnerLinkInvitePanel({ meProfile }: PartnerLinkInvitePanelProp
         </div>
 
         {createdUrl ? (
-          <div className={styles.notice}>
+          <div className={styles.notice} data-testid="link-invite-created">
             <p><strong>Ссылка создана</strong></p>
             <p>Действует до {createdExpires ? formatExpiry(createdExpires) : "—"}</p>
-            <TextField label="Ссылка" value={createdUrl} readOnly />
+            <TextField
+              label="Ссылка"
+              value={createdUrl}
+              readOnly
+              data-testid="link-invite-created-url"
+            />
             <div className={styles.actions}>
               <Button variant="secondary" onClick={() => void copyUrl(createdUrl)}>
                 Скопировать ссылку

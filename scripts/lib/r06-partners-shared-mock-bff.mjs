@@ -242,6 +242,7 @@ export function createPartnersMockState(mode = 'specialist') {
     searchCalls: 0,
     linkInvites: [],
     inviteCounter: 0,
+    preferencePatchFailIds: new Set(),
   };
 }
 
@@ -342,17 +343,34 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        const terms = Array.isArray(body.terms) ? body.terms : [];
+        const activeTerms = terms.filter((t) => t && !t.isExcluded);
+        if (activeTerms.length === 0) {
+          return send(400, { error: 'Укажите хотя бы одну категорию или подтвердите общие условия' });
+        }
         state.inviteCounter += 1;
+        const token = `mock-token-${state.inviteCounter}`;
+        const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        const inviteId = `link-mock-${state.inviteCounter}`;
+        const previewPath = `/invite/link/${token}`;
         const row = {
-          id: `link-mock-${state.inviteCounter}`,
-          token: `mock-token-${state.inviteCounter}`,
-          label: body.label ?? body.partnerName ?? 'Демо-приглашение',
-          note: body.note ?? body.category ?? null,
+          id: inviteId,
+          status: 'PENDING',
+          expiresAt,
           createdAt: new Date().toISOString(),
-          url: `https://remcard.local/invite/mock-token-${state.inviteCounter}`,
+          acceptedAt: null,
+          intendedPartnerType: body.intendedPartnerType ?? null,
+          note: body.note ?? null,
+          partnershipId: null,
+          terms: activeTerms.map((t) => ({
+            category: t.category,
+            categoryLabel: t.categoryLabel ?? t.category,
+            storePercent: t.storePercent ?? 10,
+            isExcluded: false,
+          })),
         };
         state.linkInvites.unshift(row);
-        return send(200, { invite: row });
+        return send(200, { inviteId, token, expiresAt, previewPath });
       }
       if (path.startsWith('/api/partnership/link-invite/') && req.method === 'DELETE') {
         const id = path.split('/').pop();
@@ -430,6 +448,9 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        if (state.preferencePatchFailIds.has(partnershipId)) {
+          return send(500, { error: 'mock_preference_patch_fail' });
+        }
         const key = `${actor.id}:${partnershipId}`;
         const prev = state.preferences.get(key) ?? { personalAlias: null, archivedAt: null };
         const next = {

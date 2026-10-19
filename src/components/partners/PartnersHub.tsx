@@ -28,7 +28,10 @@ import {
   type AgentPartnerTypeFilter,
 } from "@/lib/agent-r04/partner-filters";
 import { patchPartnershipListPreference } from "@/lib/agent-r04/api";
-import { AgentPartnerBulkBar } from "@/components/partners/AgentPartnerBulkBar";
+import {
+  AgentPartnerBulkBar,
+  type BulkOutcome,
+} from "@/components/partners/AgentPartnerBulkBar";
 import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
 import {
   AgentR04ListToolbar,
@@ -136,7 +139,7 @@ export function PartnersHub({
   const [listPageSize, setListPageSize] = useState(25);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [bulkMessage, setBulkMessage] = useState("");
+  const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
   const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [discoverySpecialization, setDiscoverySpecialization] = useState("");
   const [discoveryStageId, setDiscoveryStageId] = useState("");
@@ -343,34 +346,55 @@ export function PartnersHub({
   }, []);
 
   const runBulkArchivePreference = useCallback(
-    async (archived: boolean) => {
-      const ids = [...selectedPartnerIds];
+    async (archived: boolean, retryFailedOnly = false) => {
+      if (bulkBusy) return;
+      const ids = retryFailedOnly
+        ? (bulkOutcome?.failedIds ?? [])
+        : [...selectedPartnerIds];
       if (ids.length === 0) return;
       setBulkBusy(true);
-      setBulkMessage("");
+      const failedIds: string[] = [];
       let ok = 0;
-      let failed = 0;
       for (const id of ids) {
         try {
           await patchPartnershipListPreference(id, { archived });
           ok += 1;
         } catch {
-          failed += 1;
+          failedIds.push(id);
         }
       }
-      if (failed === 0) {
-        setBulkMessage(`Готово: ${ok} ${ok === 1 ? "запись" : ok < 5 ? "записи" : "записей"}.`);
+      const actionLabel = archived ? "перенесены в архив" : "возвращены из архива";
+      let message: string;
+      if (failedIds.length === 0) {
+        message = `Готово: ${ok} ${ok === 1 ? "запись" : ok < 5 ? "записи" : "записей"} ${actionLabel}. Партнёрство и условия не изменились — скрытие только в вашем списке.`;
+      } else if (ok === 0) {
+        message = `Не удалось обновить ${failedIds.length} ${failedIds.length === 1 ? "запись" : "записи"}. Попробуйте повторить.`;
       } else {
-        setBulkMessage(
-          `Частично выполнено: ${ok} из ${ids.length}. Не удалось обновить ${failed} — попробуйте ещё раз для оставшихся.`,
-        );
+        message = `Частично выполнено: ${ok} из ${ids.length} ${actionLabel}. Не удалось: ${failedIds.length}.`;
       }
-      setSelectedPartnerIds(new Set());
+      setBulkOutcome({ message, failedIds, archived });
+      setSelectedPartnerIds(new Set(failedIds));
       await loadList();
       setBulkBusy(false);
     },
-    [selectedPartnerIds, loadList],
+    [bulkBusy, bulkOutcome?.failedIds, loadList, selectedPartnerIds],
   );
+
+  useEffect(() => {
+    if (!isAgentR04) return;
+    setSelectedPartnerIds(new Set());
+  }, [
+    agentInvitationFlow,
+    agentSegment,
+    isAgentR04,
+    listArchiveView,
+    listCity,
+    listPartnerType,
+    listSearch,
+    listSort,
+    listSpecialization,
+    listStage,
+  ]);
 
   useEffect(() => {
     if (!isAgentR04) return;
@@ -765,15 +789,16 @@ export function PartnersHub({
             <>
             {agentSegment === "active" ? (
               <AgentPartnerBulkBar
-                count={selectedPartnerIds.size}
+                selectedCount={selectedPartnerIds.size}
                 busy={bulkBusy}
-                message={bulkMessage}
+                outcome={bulkOutcome}
                 onArchive={() => void runBulkArchivePreference(true)}
                 onRestore={() => void runBulkArchivePreference(false)}
-                onClear={() => {
-                  setSelectedPartnerIds(new Set());
-                  setBulkMessage("");
+                onClearSelection={() => setSelectedPartnerIds(new Set())}
+                onRetryFailed={() => {
+                  if (bulkOutcome) void runBulkArchivePreference(bulkOutcome.archived, true);
                 }}
+                onDismissOutcome={() => setBulkOutcome(null)}
               />
             ) : null}
             <AgentPartnerCollection

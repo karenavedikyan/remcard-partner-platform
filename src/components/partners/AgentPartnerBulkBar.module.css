@@ -1,4 +1,10 @@
-.bar {
+.wrap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.bar,
+.outcome {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -6,14 +12,23 @@
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--offset, var(--surface-muted, #f3f4f6));
   font-size: var(--text-sm);
 }
 
-.message {
+.bar {
+  background: var(--offset, var(--surface-muted, #f3f4f6));
+}
+
+.outcome {
+  background: var(--surface);
+  border-color: var(--accent, var(--primary));
+}
+
+.outcomeText {
   flex: 1 1 12rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
+  line-height: 1.5;
 }
 
 .actions {

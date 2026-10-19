@@ -39,14 +39,25 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PROTO_DIR = process.env.R06_PROTO_DIR || '/tmp/r06-login-entry-prototype';
-const IMPLEMENT_01 = process.env.R06_IMPLEMENT_01 === '1';
-const TASK = IMPLEMENT_01 ? 'SPECIALIST-PARTNERS-IMPLEMENT-01' : 'PARTNERS-SHARED-PROTOTYPE-01.1';
-const ARTIFACT_ROOT = IMPLEMENT_01
-  ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01'
-  : 'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1';
+const IMPLEMENT_01_1 = process.env.R06_IMPLEMENT_01_1 === '1';
+const IMPLEMENT_01 = process.env.R06_IMPLEMENT_01 === '1' || IMPLEMENT_01_1;
+const TASK = IMPLEMENT_01_1
+  ? 'SPECIALIST-PARTNERS-IMPLEMENT-01.1'
+  : IMPLEMENT_01
+    ? 'SPECIALIST-PARTNERS-IMPLEMENT-01'
+    : 'PARTNERS-SHARED-PROTOTYPE-01.1';
+const ARTIFACT_ROOT = IMPLEMENT_01_1
+  ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01-1'
+  : IMPLEMENT_01
+    ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01'
+    : 'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1';
 const DIST =
   process.env.LOGIN_ENTRY_NEXT_DIST_DIR ||
-  (IMPLEMENT_01 ? '.next-r06-specialist-partners-implement-01' : '.next-r06-partners-shared-01-1');
+  (IMPLEMENT_01_1
+    ? '.next-r06-specialist-partners-implement-01-1'
+    : IMPLEMENT_01
+      ? '.next-r06-specialist-partners-implement-01'
+      : '.next-r06-partners-shared-01-1');
 
 function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
@@ -77,7 +88,7 @@ function limitedCaptureMatrix(audience) {
   const prefix = audience === 'agent-r04' ? 'agent' : 'specialist';
   const refRole = prefix === 'agent' ? 'agent' : 'specialist';
   if (audience === 'specialist-r04') {
-    return [
+    const shots = [
       { id: 'active-list', panel: 'list', width: 1440, height: 900, theme: 'light' },
       { id: 'inv-in', panel: 'inv-in', width: 1440, height: 900, theme: 'light' },
       { id: 'inv-out', panel: 'inv-out', width: 1440, height: 900, theme: 'light' },
@@ -85,7 +96,14 @@ function limitedCaptureMatrix(audience) {
       { id: 'link', panel: 'link', width: 1440, height: 900, theme: 'light' },
       { id: 'active-375', panel: 'list', width: 375, height: 812, theme: 'light' },
       { id: 'find-375', panel: 'find', width: 375, height: 812, theme: 'light' },
-    ].map((s) => ({ ...s, audience, refRole, prefix }));
+    ];
+    if (IMPLEMENT_01_1) {
+      shots.push(
+        { id: 'link-375', panel: 'link', width: 375, height: 812, theme: 'light' },
+        { id: 'active-375-dark', panel: 'list', width: 375, height: 812, theme: 'dark' },
+      );
+    }
+    return shots.map((s) => ({ ...s, audience, refRole, prefix }));
   }
   return [
     { id: 'active-list', panel: 'list', width: 1440, height: 900, theme: 'light' },
@@ -315,6 +333,40 @@ async function runFunctional(page, origin, mock, expected) {
       .filter({ hasText: 'Мой юг' })
       .count();
     push('alias_persist_reload', aliasOk > 0, aliasDetail || `rows=${aliasOk}`);
+
+    if (IMPLEMENT_01_1 && expected.searchRole === 'pro') {
+      mock.state.preferencePatchFailIds.add('ps-mock-active-1');
+      await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
+      const rowCb = page
+        .locator('[data-testid="agent-r04-partners-table-row"]')
+        .first()
+        .locator('input[type=checkbox]');
+      await rowCb.check();
+      await page.locator('[data-testid="agent-partner-bulk-bar"]').getByRole('button', { name: 'В архив' }).click();
+      await page.locator('[data-testid="agent-partner-bulk-outcome"]').waitFor({ timeout: 15_000 });
+      const outcomeText = await page.locator('[data-testid="agent-partner-bulk-outcome"]').innerText();
+      push('bulk_outcome_visible', /Не удалось|Частично|Готово/i.test(outcomeText), outcomeText.slice(0, 80));
+      mock.state.preferencePatchFailIds.delete('ps-mock-active-1');
+      const retryBtn = page.getByRole('button', { name: /Повторить для неуспешных/i });
+      if (await retryBtn.isVisible().catch(() => false)) {
+        await retryBtn.click();
+        await page.waitForTimeout(800);
+        const afterRetry = await page.locator('[data-testid="agent-partner-bulk-outcome"]').innerText();
+        push('bulk_retry_success', /Готово/i.test(afterRetry), afterRetry.slice(0, 80));
+      } else {
+        push('bulk_retry_success', false, 'no-retry-button');
+      }
+
+      await page.goto(`${origin}/partners?hub=link`, { waitUntil: 'networkidle' });
+      await assertImplModal(page, 'link');
+      await page.locator('[data-testid="agent-r04-modal-link"] select').first().selectOption('STORE');
+      const generalCb = page.getByRole('checkbox', { name: /Подтверждаю общие условия/i });
+      if (await generalCb.isVisible().catch(() => false)) await generalCb.check();
+      await page.getByRole('button', { name: 'Создать ссылку' }).click();
+      await page.locator('[data-testid="link-invite-created"]').waitFor({ timeout: 25_000 });
+      const linkVal = await page.locator('[data-testid="link-invite-created"] input').inputValue();
+      push('link_invite_create', linkVal.includes('/invite/link/'), linkVal.slice(0, 60));
+    }
   } else {
     mock.state.searchFailOnce = true;
     const callsBefore = mock.state.searchCalls;
@@ -489,7 +541,7 @@ async function main() {
   }
   const build = runIsolatedPlatformBuild(ROOT, DIST);
   if (build.status === 'skipped') {
-    const allowSkip = IMPLEMENT_01 && process.env.R06_ALLOW_BUILD_SKIP === '1';
+    const allowSkip = (IMPLEMENT_01 || IMPLEMENT_01_1) && process.env.R06_ALLOW_BUILD_SKIP === '1';
     if (!allowSkip) throw new Error('build_skipped: set R06_FORCE_BUILD=1 for evidence run');
   }
   if (build.status === 'failed') throw new Error(`build_failed:${build.exitCode}`);
@@ -581,7 +633,11 @@ async function main() {
     visualParityNote: 'Limited 01.1 recaptures; CAPTURED ≠ pixel PASS. Prior 01 dark/card shots remain historical.',
   };
 
-  const manifestName = IMPLEMENT_01 ? 'SPECIALIST-PARTNERS-IMPLEMENT-01.json' : 'PARTNERS-SHARED-01-1.json';
+  const manifestName = IMPLEMENT_01_1
+    ? 'SPECIALIST-PARTNERS-IMPLEMENT-01-1.json'
+    : IMPLEMENT_01
+      ? 'SPECIALIST-PARTNERS-IMPLEMENT-01.json'
+      : 'PARTNERS-SHARED-01-1.json';
   writeFileSync(path.join(OUT, manifestName), JSON.stringify(report, null, 2));
   const failed =
     functionalFlat.some((f) => f.status === 'FAIL') ||
