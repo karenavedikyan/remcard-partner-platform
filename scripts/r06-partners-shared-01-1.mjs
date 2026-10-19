@@ -540,6 +540,10 @@ async function main() {
     throw new Error('unit_tests_failed');
   }
 
+  const platformPort = await findFreeLoopbackPort(30720, { maxScan: 40 });
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  process.env.NEXT_PUBLIC_APP_URL = appOrigin;
+
   const provenance = collectPrefillProvenance(ROOT, DIST);
   if (process.env.R06_FORCE_BUILD === '1') {
     const { rmSync } = await import('node:fs');
@@ -558,8 +562,6 @@ async function main() {
 
   ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
   const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
-  const platformPort = await findFreeLoopbackPort(30720, { maxScan: 40 });
-  const appOrigin = `http://127.0.0.1:${platformPort}`;
 
   const browser = await chromium.launch({ headless: true });
 

@@ -83,7 +83,11 @@ export function runIsolatedPlatformBuild(repoRoot, distDir, { skipIfEnv = 'R06_S
     };
   }
   assertCleanTree(repoRoot);
-  const buildCmd = `npm ci --include=dev && env -u R06_NEXT_DIST_DIR LOGIN_ENTRY_NEXT_DIST_DIR=${JSON.stringify(distDir)} npm run build`;
+  const pinnedAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const appUrlPrefix = pinnedAppUrl
+    ? `NEXT_PUBLIC_APP_URL=${JSON.stringify(pinnedAppUrl)} `
+    : '';
+  const buildCmd = `npm ci --include=dev && env -u R06_NEXT_DIST_DIR ${appUrlPrefix}LOGIN_ENTRY_NEXT_DIST_DIR=${JSON.stringify(distDir)} npm run build`;
   const build = spawnSync('bash', ['-lc', buildCmd], {
     cwd: repoRoot,
     env: { ...process.env, NODE_ENV: 'production' },
