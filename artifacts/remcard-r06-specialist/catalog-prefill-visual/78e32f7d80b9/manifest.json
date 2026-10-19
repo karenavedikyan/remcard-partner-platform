@@ -1,0 +1,390 @@
+{
+  "capturedAt": "2026-10-19T14:43:00.131Z",
+  "task": "R06-SPECIALIST-VISUAL-01.1",
+  "mode": "MOCK_BFF_VISUAL",
+  "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "1e4989c30a1e38ad27e27646a1e27ff79c153842",
+  "treeDirty": false,
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "jXFSbdxcNqChE_W3KDda2",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "jXFSbdxcNqChE_W3KDda2",
+  "appOrigin": "http://127.0.0.1:30680",
+  "mockBff": "http://127.0.0.1:34625",
+  "protoBase": "http://127.0.0.1:46355",
+  "captures": [
+    {
+      "pairId": "profile-completed-summary",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-completed-summary-1440-light-impl.png",
+        "sha256": "4f400cac493d5c826952baec00e58620be0337a89cd47bd4fd62fc6b413b72c2"
+      },
+      "ref": {
+        "path": "profile-completed-summary-1440-light-ref.png",
+        "sha256": "8ce4b359b6b131bdaddcf6ad7acac2590ae7ec5c72f170acbc83b2481d770865"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-basics-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-basics-step-1440-light-impl.png",
+        "sha256": "a926f65501a4b10c5e5f353c511f6d40a2cd3d2beaa729e2873a42938b6bfc1e"
+      },
+      "ref": {
+        "path": "profile-basics-step-1440-light-ref.png",
+        "sha256": "85ba23432e7c07b1415a3134163342720a4f9efed4bbba1e64e110820b4af4f5"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-specialization-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-specialization-step-1440-light-impl.png",
+        "sha256": "2c28b64daa4484c5e01b4db05c7e4ad02ca57535f05081edd4b376682a07e77f"
+      },
+      "ref": {
+        "path": "profile-specialization-step-1440-light-ref.png",
+        "sha256": "df1b449754499cd7726db299e50da7e81d39f8b963978c3a7eda6de1e943aa0e"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-contacts-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-contacts-step-1440-light-impl.png",
+        "sha256": "27a30669dd711c79af51ead22ca5c4eb4126e598bb53685d8cfd326a3194b20f"
+      },
+      "ref": {
+        "path": "profile-contacts-step-1440-light-ref.png",
+        "sha256": "d3398bdd45d87408b29f15f61375daedc871705a89f9b67236e204c5e0bfcf82"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-review-step",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-review-step-1440-light-impl.png",
+        "sha256": "6f61f1648649d4f3fa939d33c0f644ce3ad22bde44afaec77e29eea37009f5ed"
+      },
+      "ref": {
+        "path": "profile-review-step-1440-light-ref.png",
+        "sha256": "5623009c7df6c99ed3f6954bc2b7730e27746eeb8642a59565ab337dfbab0b6c"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-catalog-cta",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-catalog-cta-1440-light-impl.png",
+        "sha256": "4f400cac493d5c826952baec00e58620be0337a89cd47bd4fd62fc6b413b72c2"
+      },
+      "ref": {
+        "path": "profile-catalog-cta-1440-light-ref.png",
+        "sha256": "8ce4b359b6b131bdaddcf6ad7acac2590ae7ec5c72f170acbc83b2481d770865"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-0-prefill",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-0-prefill-1440-light-impl.png",
+        "sha256": "c502696e6544b2b56b8a18600032edc0d8fc2caa1cbeabce1d11d3cec0da49da"
+      },
+      "ref": {
+        "path": "catalog-step-0-prefill-1440-light-ref.png",
+        "sha256": "1aabbd1335c58da0b7ccccfc47a128c2f9d8a8c99f66860d36dab4959457fa71"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-1-directions",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-1-directions-1440-light-impl.png",
+        "sha256": "72c37d0caa1ba39a9580fd91b128b289091e7f56c5f1e9a42f5ad5e33ae9daba"
+      },
+      "ref": {
+        "path": "catalog-step-1-directions-1440-light-ref.png",
+        "sha256": "bcaf503ff4e1db2fd0d7f3ca5f19fe945b996584ccb0595d63bca443256d2796"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-2-contacts",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-2-contacts-1440-light-impl.png",
+        "sha256": "6959aad5639c464a75f1dde8fdd6c9eea32da2526c6c2ba14879650df6b3fa3b"
+      },
+      "ref": {
+        "path": "catalog-step-2-contacts-1440-light-ref.png",
+        "sha256": "6c99297e2e13c3263200ec5fccf779eecb8a31d4f9dafba7f1b25a17f048a9bf"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-3-presentation",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-3-presentation-1440-light-impl.png",
+        "sha256": "1b3e8c99cf098ba7c140cb08fd6b4f6704a037c1f65fdefb6a56ce21e5a4a9f7"
+      },
+      "ref": {
+        "path": "catalog-step-3-presentation-1440-light-ref.png",
+        "sha256": "863044b0ecfc9a03089f7b2cbbccc34e6e2371993d78cc6ebaf7d1275b950e7c"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-4-preview",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-4-preview-1440-light-impl.png",
+        "sha256": "e721008cfc43f3e2a87a279a80eaab0e2d6f7ae9573fdb435d7872ef4617e4fb"
+      },
+      "ref": {
+        "path": "catalog-step-4-preview-1440-light-ref.png",
+        "sha256": "3a3ba4de598655f117eb198a337921bb84f6616c43349f2b0d744680d1531307"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-0-prefill-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-0-prefill-375-light-375-light-impl.png",
+        "sha256": "3be8e467cc52906978c381ddec458ef4f5243f39aa43acdd51d3c4441d8ba5cf"
+      },
+      "ref": {
+        "path": "catalog-step-0-prefill-375-light-375-light-ref.png",
+        "sha256": "77b82230a555ff9b7b74f4464fed4b08043194c61f81f609fe6fe2a7fffd558f"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-0-prefill-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "catalog-step-0-prefill-375-dark-375-dark-impl.png",
+        "sha256": "902c5f099179c6171686542fe82350139383afceb2201c46673ff2d8546a083a"
+      },
+      "ref": {
+        "path": "catalog-step-0-prefill-375-dark-375-dark-ref.png",
+        "sha256": "31f42f08fd62521b0992566983cc3118ed9cc251a339e9e8ada0748f84839a8e"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-overflow-320",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-overflow-320-320-light-impl.png",
+        "sha256": "2e84610bb97c98d6054dd675ef15701d9745d25bc06ba4d15057de9d5f5fa591"
+      },
+      "ref": {
+        "path": "catalog-overflow-320-320-light-ref.png",
+        "sha256": "6ec8d06753b338a7cb3ba8613adc06eec9d253f67e8b6db58b9d011b2df93b91"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-step-1-directions-320",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-step-1-directions-320-320-light-impl.png",
+        "sha256": "6fe7dd2265224aca822b461e985ee86a4cedd62406130ed62e2d555b35d54e47"
+      },
+      "ref": {
+        "path": "catalog-step-1-directions-320-320-light-ref.png",
+        "sha256": "5aac57a961ba1e4d2fe1dde9b64257b555d592e1fab776ec95fe59d38a31fcd9"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "profile-contacts-step-320",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "profile-contacts-step-320-320-light-impl.png",
+        "sha256": "ec8a18c7429bc5cfd191328979b563adf2e04622ec3dfa36dbb2920de00a1ae2"
+      },
+      "ref": {
+        "path": "profile-contacts-step-320-320-light-ref.png",
+        "sha256": "a162168a7a62544c088cecff077d571e6d9db0323f012f38197d7114168546c9"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    },
+    {
+      "pairId": "catalog-pending-mock",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "catalog-pending-mock-1440-light-impl.png",
+        "sha256": "62bdf20068fd3c8056e85bf5f1e16ec17f2b21b47f4d4e751338e53810782853"
+      },
+      "ref": {
+        "path": "catalog-pending-mock-1440-light-ref.png",
+        "sha256": "1134eef128f2449a79385b4ea18d3d5da521e463b6ee7bed1909a2ba10a9a818"
+      },
+      "codeSha": "78e32f7d80b98ce76c92ecc61254cfdb951ca0d8",
+      "runtimeBuildId": "jXFSbdxcNqChE_W3KDda2",
+      "readiness": "ok",
+      "visualStatus": "captured"
+    }
+  ],
+  "visualPass": false,
+  "remainders": [
+    "CAPTURED pairs only — pixel diff not automated; review PNGs for structural DOM shell differences (production-profile ref vs Next profile impl).",
+    "Supervisor preset: serviceIds [] / stages L1-0+L1-11 until taxonomy owner maps «Приёмка и технический надзор».",
+    "Ref prototype uses production-profile shell; impl uses Next profile nav — structural parity, not identical DOM.",
+    "Catalog specialistTitle for «Свой вариант»: BLOCKED (no catalog draft field); UI shows notice, not fake input.",
+    "Review-step «Показывать профиль партнёрам»: BLOCKED in specialist R06 draft payload (no partnerSearchOptIn).",
+    "Catalog «Нет сайта/Telegram/email/телефона» toggles: BLOCKED — only explicit empty string via clear/save."
+  ],
+  "evidenceSha256": "16da4618315aa8eab8a6bc1912d65bd8db0cd0a39f21114a3265b6c0763e459f"
+}
