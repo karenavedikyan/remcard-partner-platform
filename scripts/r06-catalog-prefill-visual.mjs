@@ -185,15 +185,16 @@ async function main() {
     };
 
     async function prepareImplSpecialization(page) {
+      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
-      await waitImplReady(page, 'specialist-profile-wizard');
+      await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Далее' }).click();
       await page.waitForSelector('#sp-kind', { state: 'visible' });
     }
 
     async function prepareImplBasics(page) {
+      await page.waitForSelector('[data-testid="specialist-profile-completed-summary"]', { timeout: 60_000 });
       await page.getByRole('button', { name: 'Редактировать профиль' }).click();
-      await waitImplReady(page, 'specialist-profile-wizard');
     }
 
     async function prepareImplContacts(page) {
