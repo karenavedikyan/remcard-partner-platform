@@ -149,6 +149,24 @@ async function captureRef(page, refBase, spec) {
     return sel instanceof HTMLSelectElement ? sel.value : null;
   });
   if (refRole !== spec.refRole) throw new Error(`ref_role_mismatch:expected=${spec.refRole} got=${refRole}`);
+  if (spec.panel === 'find') {
+    await page.locator('#role-dialog[open]').waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('[data-testid="directory-specialization"]').waitFor({ state: 'visible', timeout: 10_000 });
+    const linkPressed = await page
+      .locator('#role-dialog [data-action="external-partner"]')
+      .first()
+      .getAttribute('aria-pressed');
+    if (linkPressed === 'true') throw new Error('ref_find_polluted_by_link_tab');
+  }
+  if (spec.panel === 'link') {
+    await page.locator('#role-dialog[open]').waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByText(/ещё нет на платформе|Знакомого ещё нет/i).first().waitFor({ timeout: 10_000 });
+    const findPressed = await page
+      .locator('#role-dialog [data-action="partner-hub"]')
+      .first()
+      .getAttribute('aria-pressed');
+    if (findPressed === 'true') throw new Error('ref_link_polluted_by_find_tab');
+  }
   await applyRefParityCaptureStyles(page);
   const outPath = path.join(spec.outDir, spec.refName);
   const modal = spec.panel === 'find' || spec.panel === 'link';

@@ -102,27 +102,38 @@ export async function driveRefRolePartners(page, baseUrl, opts = {}) {
       btn.click();
     });
     await page.waitForTimeout(600);
+    await page.locator('#role-dialog[open]').waitFor({ state: 'visible', timeout: 15_000 });
     if (hubTab === 'link') {
-      const linkSeg = page.locator('[data-action="external-partner"]').first();
+      const linkSeg = page.locator('#role-dialog [data-action="external-partner"]').first();
       await linkSeg.waitFor({ state: 'visible', timeout: 15_000 });
-      await linkSeg.click();
-      const pressed = await linkSeg.getAttribute('aria-pressed');
-      if (pressed !== 'true') throw new Error('ref_link_segment_not_active');
+      const linkPressed = await linkSeg.getAttribute('aria-pressed');
+      if (linkPressed !== 'true') {
+        await linkSeg.evaluate((el) => {
+          if (el instanceof HTMLElement) el.click();
+        });
+        await page.waitForTimeout(400);
+      }
+      if ((await linkSeg.getAttribute('aria-pressed')) !== 'true') {
+        throw new Error('ref_link_segment_not_active');
+      }
       await page
         .getByText(/ещё нет на платформе|Знакомого ещё нет/i)
         .first()
         .waitFor({ timeout: 10_000 });
     } else {
-      const findSeg = page.locator('[data-action="partner-hub"]').first();
-      await findSeg.waitFor({ state: 'visible', timeout: 10_000 });
-      const pressed = await findSeg.getAttribute('aria-pressed');
-      if (pressed !== 'true') {
-        await findSeg.click();
+      const findSeg = page.locator('#role-dialog [data-action="partner-hub"]').first();
+      await findSeg.waitFor({ state: 'visible', timeout: 15_000 });
+      const findPressed = await findSeg.getAttribute('aria-pressed');
+      if (findPressed !== 'true') {
+        await findSeg.evaluate((el) => {
+          if (el instanceof HTMLElement) el.click();
+        });
         await page.waitForTimeout(400);
       }
       if ((await findSeg.getAttribute('aria-pressed')) !== 'true') {
         throw new Error('ref_find_segment_not_active');
       }
+      await page.locator('[data-testid="directory-specialization"]').waitFor({ state: 'visible', timeout: 15_000 });
     }
   }
 
