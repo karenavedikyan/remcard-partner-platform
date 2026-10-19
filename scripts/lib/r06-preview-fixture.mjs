@@ -382,9 +382,22 @@ export async function measureContactsComputedActions(page) {
   });
 }
 
+async function waitSpecialistWizardHydrated(page) {
+  await page.waitForSelector('[data-testid="specialist-profile-wizard"]', { timeout: 60_000 });
+  await page.waitForFunction(
+    () => !document.querySelector('[data-testid="specialist-profile-loading"]'),
+    undefined,
+    { timeout: 60_000 },
+  );
+}
+
 export async function assertImplBasicsStepReady(page) {
-  await page.getByRole('heading', { name: 'Расскажите о себе' }).waitFor({ timeout: 30_000 });
+  await waitSpecialistWizardHydrated(page);
   await page.waitForSelector('[data-testid="specialist-profile-basics-panel"]', { timeout: 30_000 });
+  await page
+    .locator('[data-testid="specialist-profile-step-card"] h2')
+    .filter({ hasText: 'Расскажите о себе' })
+    .waitFor({ state: 'visible', timeout: 30_000 });
 }
 
 export async function assertRefBasicsStepReady(page) {
@@ -403,10 +416,14 @@ export async function fillRefBasicsFixture(page, fixture = R06_PROFILE_PATTERN_F
 }
 
 export async function assertImplSpecializationStepReady(page) {
-  await page.getByRole('heading', { name: 'Чем вы занимаетесь?' }).waitFor({ timeout: 30_000 });
+  await waitSpecialistWizardHydrated(page);
   await page.waitForSelector('[data-testid="specialist-profile-specialization-panel"]', {
     timeout: 30_000,
   });
+  await page
+    .locator('[data-testid="specialist-profile-step-card"] h2')
+    .filter({ hasText: 'Чем вы занимаетесь?' })
+    .waitFor({ state: 'visible', timeout: 30_000 });
 }
 
 export async function assertRefSpecializationStepReady(page) {
@@ -498,8 +515,12 @@ export async function fillRefSpecializationFixture(
 }
 
 export async function assertImplReviewStepReady(page) {
-  await page.getByRole('heading', { name: 'Всё верно?' }).waitFor({ timeout: 30_000 });
+  await waitSpecialistWizardHydrated(page);
   await page.waitForSelector('[data-testid="specialist-profile-review-panel"]', { timeout: 30_000 });
+  await page
+    .locator('[data-testid="specialist-profile-step-card"] h2')
+    .filter({ hasText: 'Всё верно?' })
+    .waitFor({ state: 'visible', timeout: 30_000 });
 }
 
 export async function assertRefReviewStepReady(page) {
