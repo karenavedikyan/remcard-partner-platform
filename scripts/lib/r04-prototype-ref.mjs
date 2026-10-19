@@ -91,9 +91,16 @@ export async function driveRefRolePartners(page, baseUrl, opts = {}) {
 
   const hubTab = opts.hubTab ?? (opts.openFind ? 'find' : null);
   if (hubTab) {
-    const findBtn = page.getByRole('button', { name: /Найти|пригласить/i }).first();
-    await findBtn.waitFor({ state: 'visible', timeout: 20_000 });
-    await findBtn.click();
+    await page.evaluate(() => {
+      for (const dlg of document.querySelectorAll('dialog[open]')) {
+        if (dlg instanceof HTMLDialogElement) dlg.close();
+      }
+      const btn =
+        document.querySelector('[data-testid="partner-hub"]') ??
+        document.querySelector('[data-action="partner-hub"]');
+      if (!(btn instanceof HTMLElement)) throw new Error('ref_partner_hub_button_missing');
+      btn.click();
+    });
     await page.waitForTimeout(600);
     if (hubTab === 'link') {
       const linkSeg = page.locator('[data-action="external-partner"]').first();
