@@ -1,6 +1,7 @@
 import type { ProfileDraft } from "@/lib/profile-save";
 import { normalizeAreasList, resolveWorkingAreasForDraft } from "@/lib/profile-working-areas";
 import type { ProProfileResponse, WorkingProfileDto } from "@/lib/types";
+import { catalogPublicNameFromGetUser } from "@/lib/specialist-r06/catalog-display-name";
 
 /** Checkbox + dirty baseline: explicit opt-in, else server-computed legacy visibility. */
 export function partnerSearchCheckboxValue(w?: WorkingProfileDto | null): boolean {
@@ -38,9 +39,7 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
   const org = profile.organization;
   return {
     displayName: u.displayName ?? "",
-    catalogPublicName: catalogOnOrg
-      ? (org?.name ?? "")
-      : (u.catalogDisplayName ?? u.displayName ?? ""),
+    catalogPublicName: catalogOnOrg ? (org?.name ?? "") : catalogPublicNameFromGetUser(u),
     catalogCity: catalogOnOrg ? "" : (u.catalogCity ?? u.city ?? ""),
     showFullName: u.showFullName ?? false,
     catalogImageUrl: catalogOnOrg ? (org?.logoUrl ?? "") : (u.photoUrl ?? ""),

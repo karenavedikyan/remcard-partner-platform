@@ -28,6 +28,12 @@ describe("specialist presets", () => {
     expect(draft.serviceSpecializationIds).toEqual(["doors"]);
   });
 
+  it("supervisor preset documents prod taxonomy gap (no demo-role-supervision id)", () => {
+    const supervisor = SPECIALIST_PRESETS.find((p) => p.id === "supervisor");
+    expect(supervisor?.serviceIds).toEqual([]);
+    expect(supervisor?.stageIds).toEqual(["L1-0", "L1-11"]);
+  });
+
   it("merge adds preset ids without duplicates", () => {
     const draft: SpecialistProfileDraftPayload = {
       serviceSpecializationIds: ["design"],

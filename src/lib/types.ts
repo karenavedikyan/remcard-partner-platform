@@ -31,6 +31,7 @@ export type ProProfileUser = {
   city: string | null;
   partnerActivities?: string[];
   catalogDisplayName?: string | null;
+  catalogDisplayNameSource?: "staged_draft" | "live_public" | "working_profile";
   catalogCity?: string | null;
   specializations: string[];
   role: string;

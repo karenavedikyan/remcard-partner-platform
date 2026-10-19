@@ -43,8 +43,11 @@ export const SPECIALIST_PRESETS: SpecialistPreset[] = [
   {
     id: "supervisor",
     label: "Специалист по приёмке и технадзору",
-    /** Prototype uses demo-role-supervision; production taxonomy has safety (display «Безопасность») — see R06-PROFILE-CATALOG-PREFILL-01 remainder. */
-    serviceIds: ["safety"],
+    /**
+     * Mapping gap (owner): prototype `demo-role-supervision` («Приёмка и технический надзор») has no prod
+     * service id in navigator specializations; `safety` is «Безопасность» — not equivalent. Stages only until taxonomy id exists.
+     */
+    serviceIds: [],
     stageIds: ["L1-0", "L1-11"],
   },
   { id: "other", label: "Свой вариант", serviceIds: [], stageIds: [] },

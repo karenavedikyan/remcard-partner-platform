@@ -103,4 +103,50 @@ describe("catalog prefill from saved profile", () => {
     );
     expect(a).not.toBe(b);
   });
+
+  it("prefills working display name when GET provenance is working_profile", () => {
+    const seed = workingProfileCatalogSeed(
+      profile({
+        user: {
+          displayName: "Актуальное рабочее имя",
+          catalogDisplayName: "Старое регистрационное имя",
+          catalogDisplayNameSource: "working_profile",
+        },
+      }),
+    );
+    expect(seed.catalogPublicName).toBe("Актуальное рабочее имя");
+  });
+
+  it("source key differs when only catalogDisplayName changes under live_public", () => {
+    const a = catalogPrefillSourceKey(
+      profile({
+        user: {
+          catalogDisplayName: "Карточка A",
+          catalogDisplayNameSource: "live_public",
+        },
+      }),
+    );
+    const b = catalogPrefillSourceKey(
+      profile({
+        user: {
+          catalogDisplayName: "Карточка B",
+          catalogDisplayNameSource: "live_public",
+        },
+      }),
+    );
+    expect(a).not.toBe(b);
+  });
+
+  it("profileDraftFromProfile aligns catalog public name with GET provenance", () => {
+    const draft = profileDraftFromProfile(
+      profile({
+        user: {
+          displayName: "Актуальное рабочее имя",
+          catalogDisplayName: "Старое регистрационное имя",
+          catalogDisplayNameSource: "working_profile",
+        },
+      }),
+    );
+    expect(draft.catalogPublicName).toBe("Актуальное рабочее имя");
+  });
 });

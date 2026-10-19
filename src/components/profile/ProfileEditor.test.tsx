@@ -65,6 +65,25 @@ vi.mock("./ProfileTeamSection", () => ({
   ProfileTeamSection: () => <div data-testid="team-section" />,
 }));
 
+vi.mock("./specialist/SpecialistProfileSection", () => ({
+  SpecialistProfileSection: () => <div data-testid="specialist-profile-section" />,
+}));
+
+vi.mock("./specialist/SpecialistCatalogSection", () => ({
+  SpecialistCatalogSection: ({ catalogPublicName }: { catalogPublicName: string }) => (
+    <div data-testid="catalog-public-name">{catalogPublicName}</div>
+  ),
+}));
+
+vi.mock("@/lib/specialist-r06/api", () => ({
+  fetchSpecialistR06Status: () =>
+    Promise.resolve({
+      featureEnabled: false,
+      eligible: false,
+      profileComplete: false,
+    }),
+}));
+
 vi.mock("./ProfileDirectionsPicker", () => ({
   ProfileDirectionsPicker: ({
     serviceSpecializationIds,
@@ -555,6 +574,75 @@ describe("ProfileEditor", () => {
     expect(picker.getAttribute("data-services")).toBe("tiles");
     expect(picker.getAttribute("data-products")).toBe("doors");
     expect(picker.getAttribute("data-services")).not.toContain("electrician");
+  });
+
+  it("re-applies catalog prefill after saved profile refresh without full reload", async () => {
+    mockSearchParams = new URLSearchParams("section=catalog");
+    const workingProfile = {
+      productCategoryIds: [] as string[],
+      serviceSpecializationIds: ["design"],
+      navigatorStageIds: ["L1-1"],
+      effectiveProductCategoryIds: [] as string[],
+      effectiveServiceSpecializationIds: ["design"],
+      effectiveNavigatorStageIds: ["L1-1"],
+      primaryDirection: null,
+      partnerSearchVisible: false,
+      partnerSearchOptIn: false,
+      partnerSearchOptInExplicit: false,
+      workingDirectionsTouched: false,
+      partnerWorkMode: "ON_SITE",
+      areas: [] as string[],
+      partnershipContactName: null,
+      partnershipContactPhone: null,
+      partnershipContactEmail: null,
+    };
+    const specialistUser = {
+      ...initial.user,
+      partnerType: "MASTER",
+      catalogStatus: "DRAFT",
+      displayName: "Актуальное рабочее имя",
+      catalogDisplayName: "Старое регистрационное имя",
+      catalogDisplayNameSource: "working_profile" as const,
+      catalogDraft: { navigatorStageIds: [] },
+    };
+    const first: ProProfileResponse = {
+      ...initial,
+      user: specialistUser,
+      workingProfile,
+    };
+    const { rerender } = render(
+      <ProfileEditor
+        cabinetAccess={cabinetAccess}
+        initial={first}
+        section="catalog"
+        initialSpecialistR06Gate={{ featureEnabled: true, eligible: true, profileComplete: true }}
+      />,
+    );
+    expect(screen.getByTestId("catalog-public-name")).toHaveTextContent("Актуальное рабочее имя");
+
+    rerender(
+      <ProfileEditor
+        cabinetAccess={cabinetAccess}
+        initial={{
+          ...first,
+          user: {
+            ...specialistUser,
+            displayName: "Обновлённое рабочее имя",
+            catalogDisplayNameSource: "working_profile",
+          },
+          workingProfile: {
+            ...workingProfile,
+            serviceSpecializationIds: ["finishing"],
+            effectiveServiceSpecializationIds: ["finishing"],
+          },
+        }}
+        section="catalog"
+        initialSpecialistR06Gate={{ featureEnabled: true, eligible: true, profileComplete: true }}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("catalog-public-name")).toHaveTextContent("Обновлённое рабочее имя");
+    });
   });
 
   it("opens catalog for moderation deep link section", async () => {

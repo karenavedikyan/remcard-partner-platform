@@ -1,6 +1,8 @@
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { effectiveWorkingServiceIds, effectiveWorkingStageIds } from "@/lib/profile-draft-sync";
+import { catalogPublicNameFromGetUser } from "@/lib/specialist-r06/catalog-display-name";
+import { catalogTouchedFromUser } from "@/lib/profile-catalog-stages-hydration";
 
 export type CatalogPrefillField =
   | "catalogPublicName"
@@ -31,6 +33,10 @@ export function catalogPrefillSourceKey(profile: ProProfileResponse): string {
   const w = profile.workingProfile;
   const u = profile.user;
   return JSON.stringify({
+    catalogDisplayName: u.catalogDisplayName ?? "",
+    catalogDisplayNameSource: u.catalogDisplayNameSource ?? "live_public",
+    catalogDraftPending: u.catalogDraftPending ?? false,
+    catalogTouched: catalogTouchedFromUser(u),
     displayName: u.displayName ?? "",
     catalogCity: u.catalogCity ?? "",
     city: u.city ?? "",
@@ -54,7 +60,7 @@ export function catalogPrefillSourceKey(profile: ProProfileResponse): string {
 export function workingProfileCatalogSeed(profile: ProProfileResponse): Partial<ProfileDraft> {
   const w = profile.workingProfile;
   const u = profile.user;
-  const publicName = (u.catalogDisplayName ?? u.displayName ?? "").trim();
+  const publicName = catalogPublicNameFromGetUser(u);
   const city = (u.catalogCity ?? u.city ?? "").trim();
   const partnershipPhone = (w?.partnershipContactPhone ?? "").trim();
   const partnershipEmail = (w?.partnershipContactEmail ?? "").trim();
