@@ -1,0 +1,1180 @@
+{
+  "capturedAt": "2026-10-19T15:42:09.680Z",
+  "task": "R06-PROFILE-PATTERN-TRANSFER-01",
+  "mode": "MOCK_BFF_PROFILE_PATTERN_TRANSFER",
+  "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+  "navigatorCodeSha": "9a5bced4513f15a95790be7c85813b185beadd10",
+  "sourceTreeDigest": "b5de9c6c1b2e962bf1d0b27db009a6c6a2fad0f6",
+  "treeDirty": false,
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "fixture": {
+    "displayName": "Паттерн Тест Спец",
+    "city": "Krasnodar",
+    "specialistKind": "designer",
+    "specialistTitle": "",
+    "customSpecialistTitle": "Реставратор фасадов",
+    "serviceSpecializationIds": [
+      "design",
+      "planning"
+    ],
+    "navigatorStageIds": [
+      "L1-1"
+    ],
+    "serviceLabels": [
+      "Дизайн интерьера",
+      "Планирование"
+    ],
+    "stageImplLabels": [
+      "📐 Планирование"
+    ],
+    "phone": "+79001112233",
+    "email": "pattern.transfer@example.ru"
+  },
+  "build": {
+    "status": "ok",
+    "exitCode": 0,
+    "buildId": "bxq7ktcibkf7fxmyyVVTR",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "runtimeBuildIdVerified": "bxq7ktcibkf7fxmyyVVTR",
+  "appOrigin": "http://127.0.0.1:30686",
+  "mockBff": "http://127.0.0.1:43571",
+  "protoBase": "http://127.0.0.1:39673",
+  "captures": [
+    {
+      "pairId": "basics-filled-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-1440-light-1440-light-impl.png",
+        "sha256": "7e2fc2744e4e56a175c15b36e990d1270faed9bb4b05238edad24fe1803d4ad3"
+      },
+      "ref": {
+        "path": "basics-filled-1440-light-1440-light-ref.png",
+        "sha256": "7c62f394d7677e5716f34612153f1e3708d8961a9d1670870a1a71b8ee299052"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-1440-light-1440-light-form-impl.png",
+        "sha256": "5c7fe04aea6bae8e5487c998e0fcb4b0395d9cca5b5470193c816d1b8d68cd74"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-1440-light-1440-light-form-ref.png",
+        "sha256": "66f96a304a261295d7c24f027c82b8a8f9d097da4957bda02b2407ef31acc345"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 620,
+            "height": 553
+          },
+          "nameInput": {
+            "width": 554,
+            "height": 52
+          },
+          "cityInput": {
+            "width": 554,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 620
+          },
+          "nameInput": {
+            "width": 748,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 748,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "basics-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-375-light-375-light-impl.png",
+        "sha256": "64484382c48001addb07d91e2ea5874d1b8895ae6c194350ce203a514d086443"
+      },
+      "ref": {
+        "path": "basics-filled-375-light-375-light-ref.png",
+        "sha256": "9f28272736715cc8dc9e6ce584d244a47834b51e47bbed97a2556b5b9c76f8e1"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-impl.png",
+        "sha256": "a63ce07fe60ae960027cf9c2313c64bad002a80c6248f821ecd3a87d5d9036b2"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-375-light-375-light-form-ref.png",
+        "sha256": "126aa60290927cba1260e91065cdfc779193a6952b1462d9f1bcc82141193c78"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 656
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 52
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 626
+          },
+          "nameInput": {
+            "width": 301,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 301,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "basics-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "basics-filled-375-dark-375-dark-impl.png",
+        "sha256": "b1a601d2f8e14a16c82f61f06cbb545c94ef73541a5529f121fd76967c5b40c0"
+      },
+      "ref": {
+        "path": "basics-filled-375-dark-375-dark-ref.png",
+        "sha256": "3f20042377f113eef1ef8dd565fed79f780488a557a907354975e73f5153fc98"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "facdb50cf78c7a2d18591f8ddbe4a0987b16bbc04511959eba59decfa35b6d2a"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-375-dark-375-dark-form-ref.png",
+        "sha256": "963fb4f1bf1fb8e1958bcf058db46450b862d0db5cb09450d57e25b1827034e4"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 339,
+            "height": 656
+          },
+          "nameInput": {
+            "width": 297,
+            "height": 52
+          },
+          "cityInput": {
+            "width": 297,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 626
+          },
+          "nameInput": {
+            "width": 301,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 301,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "basics-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "basics-filled-320-light-320-light-impl.png",
+        "sha256": "22acb5f9ed1fd2dbbf3c3b409363f7b36d8895c1d8e3861ec43e66419698d917"
+      },
+      "ref": {
+        "path": "basics-filled-320-light-320-light-ref.png",
+        "sha256": "8f18eaddc3e278070b2c73c13bdf1b4a7dc770da280da76018401c757c90c90a"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-impl.png",
+        "sha256": "b6e96f3746dd2420fe67897eb8736f05e0408ad05f9a6fa94ed916dea30264c9"
+      },
+      "refFormCrop": {
+        "path": "basics-filled-320-light-320-light-form-ref.png",
+        "sha256": "8e2df86f8500f3e3b329b0f00037b6242b9ba9b4b61ebce1bcbfd3a5143d0624"
+      },
+      "fixtureState": "basics-filled",
+      "formMetrics": {
+        "impl": {
+          "form": {
+            "width": 284,
+            "height": 656
+          },
+          "nameInput": {
+            "width": 242,
+            "height": 52
+          },
+          "cityInput": {
+            "width": 242,
+            "height": 52
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 645
+          },
+          "nameInput": {
+            "width": 246,
+            "height": 48
+          },
+          "cityInput": {
+            "width": 246,
+            "height": 48
+          }
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-1440-light-1440-light-impl.png",
+        "sha256": "21759a21eb3c1fd42c1ec304a57a98737dd0fb3b86b87bc7cbea7a96d2207d8c"
+      },
+      "ref": {
+        "path": "specialization-closed-1440-light-1440-light-ref.png",
+        "sha256": "e0848345c63bdd56794b9d226c0ae868c49554b4c6fe76ef08086a333ecd5933"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-1440-light-1440-light-form-impl.png",
+        "sha256": "f2cb8cd6da8a7f32e58e0d66d8bea16d63b0c6793182542a7920050d4b44005e"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-1440-light-1440-light-form-ref.png",
+        "sha256": "44954aab30e662923dd7a56ce23e211668c6c7fdfc23a05a1bf2762103e08a71"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 1466
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-375-light-375-light-impl.png",
+        "sha256": "f31e31391f4b2e4696a105d9c336ddb51d727595a4cea8c63330bc44c5bf8f2f"
+      },
+      "ref": {
+        "path": "specialization-closed-375-light-375-light-ref.png",
+        "sha256": "ab1e87ac153f231d157c51f0296bbd87603aba2c01dbb87be60a3cf4224771a7"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-375-light-375-light-form-impl.png",
+        "sha256": "cd1d4a29e3abe23b335e1bdd90096b679a26d405d2921d3788a27920910d7c32"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-375-light-375-light-form-ref.png",
+        "sha256": "17a3e820adfd273466d26f6dc0de5d4a26ec16b8898d4ea742b924ece7a61670"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1898
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "specialization-closed-375-dark-375-dark-impl.png",
+        "sha256": "408f4171a781c0144ff5bda77fbf2f89575d12e748c4a65ffac93ee0f42e15a9"
+      },
+      "ref": {
+        "path": "specialization-closed-375-dark-375-dark-ref.png",
+        "sha256": "5622f24b003ffd6d7c595d5cb70279fd5be14205044ae117ec980803e0c9c585"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-375-dark-375-dark-form-impl.png",
+        "sha256": "3ca73a72752239ee6227d4207a741c8ff8e2b2cabe0c08d2afcda7bccd2a17ca"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-375-dark-375-dark-form-ref.png",
+        "sha256": "fb7c3ddd1700d5158ee27df268f98434f9c204f8942d271e1597bca461d40b50"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1898
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-closed-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-closed-320-light-320-light-impl.png",
+        "sha256": "da0ea2beb284b8d897e77ffe9b4c2a940712eba713961b59af0a38dbcb15dbb3"
+      },
+      "ref": {
+        "path": "specialization-closed-320-light-320-light-ref.png",
+        "sha256": "e2398df62802a7973bfce2aaa57efd21c297896177a87e9a5cbc44768b8c4d69"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-closed-320-light-320-light-form-impl.png",
+        "sha256": "f1e97803122b6632488ac9975a1d04057686628b94a08fe3ad1bb6f05f60665e"
+      },
+      "refFormCrop": {
+        "path": "specialization-closed-320-light-320-light-form-ref.png",
+        "sha256": "36c061494a05585dcd8a4f66d173ca63447a6ff01d787efccaf12af8c032bd8c"
+      },
+      "fixtureState": "specialization-closed",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 2040
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-open-1440-light-1440-light-impl.png",
+        "sha256": "203e02fcb0d0e6143f5dbea9ef5318939ba08a2625316b50889a697d533f5257"
+      },
+      "ref": {
+        "path": "specialization-open-1440-light-1440-light-ref.png",
+        "sha256": "985c046c6d1bd3e2c94fae80ba291094d93f851504dbeb2af22b8a067a560153"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-1440-light-1440-light-form-impl.png",
+        "sha256": "a632c5b0b741acea52b9a7bf6e604b993f745dccb1af7e161268dcd1b4898c16"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-1440-light-1440-light-form-ref.png",
+        "sha256": "4c71fa4c9103f2f9f18207257243dfb608c31a2f0c6f1289ed470cd8290878e6"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 2083
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-open-375-light-375-light-impl.png",
+        "sha256": "3e767cbe4ba9a946d5bf0b1243565d9e4f731449b7b0eb33dab1e22c24d03aec"
+      },
+      "ref": {
+        "path": "specialization-open-375-light-375-light-ref.png",
+        "sha256": "9bb4cc9527d8c80d97fae1abed5f940015540b7e013d970ddd44b0a49f031143"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-375-light-375-light-form-impl.png",
+        "sha256": "2df417f3342f53b38af24086b18778537d7e580d1e9b5c8fb33d7d58b80269b0"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-375-light-375-light-form-ref.png",
+        "sha256": "ddefbba1f660acd4eaf0c4bab34a75f610ee7f4d628dd2730793c5cfaaa637ca"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 2903
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "specialization-open-375-dark-375-dark-impl.png",
+        "sha256": "0c8833be9be55831db5d0d75bc96ec4bf5d7fe0b4382aaaf0576e27fec7ffb96"
+      },
+      "ref": {
+        "path": "specialization-open-375-dark-375-dark-ref.png",
+        "sha256": "887d330211cd8b5188db40ac884e8ba32533acce774d5419b38c046bface3a8f"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-375-dark-375-dark-form-impl.png",
+        "sha256": "8d47c520c7a55c50adfe32f7bea6aa8ce897fb174fee5c5668834aba071b0f38"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-375-dark-375-dark-form-ref.png",
+        "sha256": "add594fa9a96ecb52439fb9385281a4ea7d58723e03daf404524c5153e23eab3"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 2903
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "specialization-open-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "specialization-open-320-light-320-light-impl.png",
+        "sha256": "262b85b2827d5fa8ea5f3c2f025a5f5fa5a61880ce058c1cc362a667b324dbd2"
+      },
+      "ref": {
+        "path": "specialization-open-320-light-320-light-ref.png",
+        "sha256": "6578a1977e3ed8943891f6a124e67f56d193a13bb30a4fc622c7c0ee325fe4e7"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "specialization-open-320-light-320-light-form-impl.png",
+        "sha256": "7301d237110d163a5d99350fb671dd709a37ed875eb332bd990220f9a40afe01"
+      },
+      "refFormCrop": {
+        "path": "specialization-open-320-light-320-light-form-ref.png",
+        "sha256": "df7e0f8f9e406be7b748dcafde09407c6958c05fd79cafce038a79eabf95d127"
+      },
+      "fixtureState": "specialization-open",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "computedActions": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 3091
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-1440-light",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-1440-light-1440-light-impl.png",
+        "sha256": "d9b2a539b2fdc0dc26b2bb7cc3d3279c14cf874522ae0e9736114ba1d9cd56b8"
+      },
+      "ref": {
+        "path": "review-filled-1440-light-1440-light-ref.png",
+        "sha256": "b829a9134f8f63df04f0a157b0843a0642392e2d846438213a829f5b3ae094cd"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-1440-light-1440-light-form-impl.png",
+        "sha256": "df13ee6f7e261bbeb16677cba4cc89d853dc45c827c08a6937dfa3901df29137"
+      },
+      "refFormCrop": {
+        "path": "review-filled-1440-light-1440-light-form-ref.png",
+        "sha256": "6f7577cf3937729511c2c2c22eb652af93c328105bf1197e55f84a16314e7bf3"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "nowrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 814,
+            "height": 763
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-375-light",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-375-light-375-light-impl.png",
+        "sha256": "e73b48621806da7863334d10c0594119f253928636d0fcc26921b59faa2d42d1"
+      },
+      "ref": {
+        "path": "review-filled-375-light-375-light-ref.png",
+        "sha256": "6fae6dc47db960c4b284de73f284e067f5dd53d96bfb570769adb006a09080ff"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-light-375-light-form-impl.png",
+        "sha256": "4e6377ef6fbbbc74d764a2a153359ffb1aa106cc7947b6d754ab8dbbf05ceb23"
+      },
+      "refFormCrop": {
+        "path": "review-filled-375-light-375-light-form-ref.png",
+        "sha256": "9fcfda67f858eb2c56cf50299a7e0b0205e22ab68a38c31517bef343267c5e47"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1018
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-375-dark",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "dpr": 1
+      },
+      "theme": "dark",
+      "impl": {
+        "path": "review-filled-375-dark-375-dark-impl.png",
+        "sha256": "50dfe740734b1363385300284ac3049c22e4fba1b7f39a47834caec0cd21e218"
+      },
+      "ref": {
+        "path": "review-filled-375-dark-375-dark-ref.png",
+        "sha256": "4d487df4d79e076395a2879a0a74cd8217525d784393fcd52ca5b6d4d1a79ca1"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-impl.png",
+        "sha256": "d2e15702afc4c6aa9c9f6e9095adcc907c51fcce029ab03da7d1c93117de80e1"
+      },
+      "refFormCrop": {
+        "path": "review-filled-375-dark-375-dark-form-ref.png",
+        "sha256": "322f00dc42da693373cec1ed36e2dc1ea5ccb3efc5ff38f48b0b85363d134283"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 343,
+            "height": 1018
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    },
+    {
+      "pairId": "review-filled-320-light",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "dpr": 1
+      },
+      "theme": "light",
+      "impl": {
+        "path": "review-filled-320-light-320-light-impl.png",
+        "sha256": "aa9a9672670d1b67ae6cd7c9a9506a3221f433dd3336ef87969d490ae69d6a9c"
+      },
+      "ref": {
+        "path": "review-filled-320-light-320-light-ref.png",
+        "sha256": "4b6b23499d797613a8f43c17c25407811d7d4b433f447007f33b1dbdb44c491b"
+      },
+      "codeSha": "b73f49b99debc04ee4e3217d60577091517f6ffb",
+      "runtimeBuildId": "bxq7ktcibkf7fxmyyVVTR",
+      "readiness": "ok",
+      "visualStatus": "captured",
+      "implFormCrop": {
+        "path": "review-filled-320-light-320-light-form-impl.png",
+        "sha256": "964ad3e034ffbdb7ca06ef0fbcafd07e88e7656c97da719406411f707b5fb265"
+      },
+      "refFormCrop": {
+        "path": "review-filled-320-light-320-light-form-ref.png",
+        "sha256": "d99763972dfdc668764dd4f0510cc5ebbc6e8bfa29d942ce7d91ea76329e8faa"
+      },
+      "fixtureState": "review-filled",
+      "formMetrics": {
+        "impl": {
+          "actions": {
+            "display": "flex",
+            "flexWrap": "wrap"
+          },
+          "left": {
+            "display": "flex",
+            "flexWrap": "nowrap",
+            "gap": "8px"
+          },
+          "right": {
+            "display": "flex",
+            "flexWrap": "wrap",
+            "gap": "8px"
+          }
+        },
+        "ref": {
+          "form": {
+            "width": 288,
+            "height": 1158
+          },
+          "nameInput": null,
+          "cityInput": null
+        }
+      },
+      "formCompareNote": "Manual crop compare on section.card vs .pw-card — shell excluded; CAPTURED not PASS."
+    }
+  ],
+  "pairCount": 16,
+  "visualPass": false,
+  "remainders": [
+    "Prototype «Отменить» (in-tab discard) has no equivalent — impl «Сбросить черновик» calls discardSpecialistProfileDraft (BLOCKED cancel semantics).",
+    "Impl retains «Сохранить черновик» on all steps — prototype wizard row omits it (documented, not removed).",
+    "Prototype review «Показывать профиль партнёрам» (partnerSearchOptIn) has no supported API/state in impl (BLOCKED — not implemented).",
+    "Ref optional primary direction / impl tile grid spacing may differ from prototype — compare crops manually.",
+    "CAPTURED pairs only — visualPass false; contract gaps listed separately from cosmetic remainders."
+  ],
+  "contractGaps": [
+    "partnerSearchOptIn checkbox on review step — prototype only, no backend in scope.",
+    "«Отменить» vs resetDraft semantics on basics/specialization/review."
+  ],
+  "evidenceSha256": "43e6afc4b8e94f5ab43dbfcd2c20e89d9dfaf28c1b12e874f3b5b93bafc396d4"
+}
