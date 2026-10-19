@@ -1,0 +1,78 @@
+{
+  "mode": "MOCK_BFF",
+  "task": "R06-CONTACTS-CONTROL-01.2",
+  "codeSha": "01072137561cd2f80d05efb6ef810528d189d9bc",
+  "sourceTreeDigest": "9e71af546c9262f521e0b396b31c876ec64b8cc8",
+  "treeDirty": false,
+  "build": {
+    "status": "skipped",
+    "buildId": "UmTQknApz5JOOXQfp43_R",
+    "distDir": ".next-r06-catalog-prefill-smoke"
+  },
+  "steps": {
+    "runtimeBuildId": {
+      "ok": true,
+      "buildId": "UmTQknApz5JOOXQfp43_R"
+    },
+    "initialGet": {
+      "ok": true,
+      "expected": {
+        "phone": "",
+        "email": ""
+      },
+      "actual": {
+        "phone": "",
+        "email": null
+      }
+    },
+    "patchRequest": {
+      "ok": true,
+      "expected": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      },
+      "actual": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      }
+    },
+    "getAfterPatch": {
+      "ok": true,
+      "expected": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      },
+      "actual": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru"
+      }
+    },
+    "phoneNormalizeSelfCheck": {
+      "ok": true
+    },
+    "reloadUi": {
+      "ok": true,
+      "expected": {
+        "phone": "+79186360088",
+        "email": "contacts.control@example.ru",
+        "uiPhoneNormalized": "+79186360088"
+      },
+      "actual": {
+        "getPhone": "+79186360088",
+        "getEmail": "contacts.control@example.ru",
+        "uiEmail": "contacts.control@example.ru",
+        "uiPhoneRaw": "+7 (918) 636-00-88",
+        "uiPhoneNormalized": "+79186360088",
+        "uiPhoneExactOk": true
+      }
+    }
+  },
+  "ok": true,
+  "notRun": [
+    "finishProfile",
+    "catalog",
+    "moderation",
+    "postgresql"
+  ],
+  "evidenceSha256": "091874b8639892524100f4fc1b14be9d8a96c2852402a34a0774356d6edaf11e"
+}
