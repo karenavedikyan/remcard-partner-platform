@@ -7,9 +7,7 @@ export async function bootRefCabinetSpecialist(page, protoBaseUrl) {
   await page.getByTestId('view-cabinet').click();
   await page.waitForSelector('[data-testid="scenario-role"]', { timeout: 60_000 });
   await page.getByTestId('scenario-role').selectOption('specialist');
-  await page.getByRole('button', { name: 'Профиль' }).click().catch(async () => {
-    await page.locator('[data-profile-action="tab"][data-profile-id="basics"]').first().click();
-  });
+  await page.locator('[data-action="nav:profile"]').click();
   await page.waitForSelector('.production-profile, [data-profile-form="working"], [data-profile-wizard="specialist"]', {
     timeout: 60_000,
   });
