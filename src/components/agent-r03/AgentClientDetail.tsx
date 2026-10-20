@@ -170,7 +170,10 @@ export function AgentClientDetail({
     <>
       {error ? <p role="alert">{error}</p> : null}
       {client ? (
-        <div className={styles.list}>
+        <div
+          className={accessMode === "specialist" ? styles.clientDetailStack : styles.list}
+          data-testid={accessMode === "specialist" ? "specialist-client-detail-root" : undefined}
+        >
           <article className={styles.card}>
             <div className={styles.cardTop}>
               <div className={styles.cardMain}>
@@ -257,7 +260,7 @@ export function AgentClientDetail({
           {certs.length === 0 ? (
             <p className={styles.empty}>Пока нет сертификатов.</p>
           ) : accessMode === "specialist" ? (
-            <div className={styles.list}>
+            <div className={styles.clientCertStack}>
               {certs.map((c) => (
                 <SpecialistClientCertCard
                   key={c.id}

@@ -152,8 +152,9 @@ export function AgentClientFormDialog({
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             required
-            maxLength={100}
-            placeholder="Как обращаться к клиенту"
+            {...(accessMode === "specialist"
+              ? { maxLength: 100, placeholder: "Как обращаться к клиенту" }
+              : {})}
           />
         </label>
         {accessMode === "specialist" ? (

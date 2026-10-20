@@ -211,9 +211,19 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await page.waitForTimeout(500);
     await page.locator('#client-form').waitFor({ timeout: 15_000 });
   } else if (panel === 'form-edit-empty') {
-    await page.locator('[data-coll-open]').last().click();
-    await page.waitForTimeout(600);
-    await page.locator('[data-action^="client-edit:"]').first().click();
+    await page.evaluate(() => {
+      const opens = [
+        ...document.querySelectorAll('[data-coll-open], button.collection-open[data-coll-open]'),
+      ];
+      const byLabel = opens.find((el) => /Пустой|empty/i.test(el.textContent ?? ''));
+      const target = byLabel ?? opens[opens.length - 1];
+      if (target instanceof HTMLElement) target.click();
+    });
+    await page.waitForTimeout(700);
+    await page.evaluate(() => {
+      const edit = document.querySelector('[data-action^="client-edit:"]');
+      if (edit instanceof HTMLElement) edit.click();
+    });
     await page.waitForTimeout(500);
     await page.locator('#client-form').waitFor({ timeout: 15_000 });
   }

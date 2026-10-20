@@ -3,7 +3,7 @@
  * PARTNERS-SHARED-PROTOTYPE-01.1 — eligible gate fix + functional MOCK + limited ref/impl.
  */
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -36,31 +36,146 @@ import {
   createPartnersMockState,
   startPartnersSharedMockBff,
 } from './lib/r06-partners-shared-mock-bff.mjs';
+import { runClientsVisualCaptures } from './lib/r06-specialist-clients-visual.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const NAV_ROOT = process.env.R06_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
 const PROTO_DIR = process.env.R06_PROTO_DIR || '/tmp/r06-login-entry-prototype';
+const CLIENTS_IMPLEMENT_01_3 = process.env.R06_CLIENTS_IMPLEMENT_01_3 === '1';
 const IMPLEMENT_01_1 = process.env.R06_IMPLEMENT_01_1 === '1';
 const IMPLEMENT_01 = process.env.R06_IMPLEMENT_01 === '1' || IMPLEMENT_01_1;
-const TASK = IMPLEMENT_01_1
+const TASK = CLIENTS_IMPLEMENT_01_3
+  ? 'SPECIALIST-CLIENTS-IMPLEMENT-01.3'
+  : IMPLEMENT_01_1
   ? 'SPECIALIST-PARTNERS-IMPLEMENT-01.1'
   : IMPLEMENT_01
     ? 'SPECIALIST-PARTNERS-IMPLEMENT-01'
     : 'PARTNERS-SHARED-PROTOTYPE-01.1';
-const ARTIFACT_ROOT = IMPLEMENT_01_1
-  ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01-1'
-  : IMPLEMENT_01
-    ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01'
-    : 'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1';
+const ARTIFACT_ROOT = CLIENTS_IMPLEMENT_01_3
+  ? 'artifacts/remcard-r06-specialist/specialist-clients-implement-01-3'
+  : IMPLEMENT_01_1
+    ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01-1'
+    : IMPLEMENT_01
+      ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01'
+      : 'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1';
 const DIST =
   process.env.LOGIN_ENTRY_NEXT_DIST_DIR ||
-  (IMPLEMENT_01_1
-    ? '.next-r06-specialist-partners-implement-01-1'
-    : IMPLEMENT_01
-      ? '.next-r06-specialist-partners-implement-01'
-      : '.next-r06-partners-shared-01-1');
+  (CLIENTS_IMPLEMENT_01_3
+    ? '.next-r06-specialist-clients-implement-01-3'
+    : IMPLEMENT_01_1
+      ? '.next-r06-specialist-partners-implement-01-1'
+      : IMPLEMENT_01
+        ? '.next-r06-specialist-partners-implement-01'
+        : '.next-r06-partners-shared-01-1');
+const PUBLIC_ARTIFACT_ROOT = '/opt/cursor/artifacts/specialist-clients-implement-01-3';
 
 function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
+}
+
+function loadNavigatorEnv() {
+  const env = { ...process.env };
+  const envPath = path.join(NAV_ROOT, '.env.local');
+  if (!existsSync(envPath)) return env;
+  for (const line of readFileSync(envPath, 'utf8').split('\n')) {
+    if (!line || line.startsWith('#')) continue;
+    const idx = line.indexOf('=');
+    if (idx <= 0) continue;
+    env[line.slice(0, idx)] = line.slice(idx + 1);
+  }
+  return env;
+}
+
+function runNavigatorClientsCertLink() {
+  const navEnv = loadNavigatorEnv();
+  const res = spawnSync('pnpm', ['exec', 'tsx', 'scripts/r06-local-fixture.ts', 'clients-cert-link'], {
+    cwd: NAV_ROOT,
+    env: navEnv,
+    encoding: 'utf8',
+  });
+  const stdout = (res.stdout || '').trim();
+  let parsed = null;
+  try {
+    parsed = JSON.parse(stdout.split('\n').filter(Boolean).at(-1) ?? '{}');
+  } catch {
+    parsed = { ok: false, error: 'parse_failed', raw: stdout.slice(-500) };
+  }
+  return {
+    exitCode: res.status ?? 1,
+    stderr: (res.stderr || '').slice(-800),
+    result: parsed,
+    navigatorSha: gitRevParse(NAV_ROOT),
+  };
+}
+
+async function runMockLinkedScenario(mockBase) {
+  const create = await fetch(`${mockBase}/api/pro/agent-clients`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      displayName: 'Scenario Client',
+      need: 'Task A',
+      note: 'Note A',
+      city: 'Krasnodar',
+    }),
+  });
+  if (create.status !== 201) throw new Error(`mock_client_create_${create.status}`);
+  const { client } = await create.json();
+  const patch = await fetch(`${mockBase}/api/pro/agent-clients/${client.id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ need: 'Task B', note: null }),
+  });
+  if (patch.status !== 200) throw new Error(`mock_client_patch_${patch.status}`);
+  const cert = await fetch(`${mockBase}/api/store/certificate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      agentClientId: client.id,
+      partners: [{ storeUserId: 'x', storeName: 'X', isSelfScan: false, categories: [] }],
+    }),
+  });
+  if (cert.status !== 201) throw new Error(`mock_cert_create_${cert.status}`);
+  const certBody = await cert.json();
+  const detail = await fetch(`${mockBase}/api/pro/agent-clients/${client.id}`);
+  const detailBody = await detail.json();
+  const linked = detailBody.certificates?.some((c) => c.id === certBody.id);
+  if (!linked) throw new Error('mock_cert_not_in_detail_get');
+  return {
+    clientId: client.id,
+    certificateId: certBody.id,
+    need: detailBody.client.need,
+    note: detailBody.client.note,
+    boundary: 'stateful_mock_bff_not_navigator_handlers',
+  };
+}
+
+function copyClientsArtifactsToPublic(outDir, codeSha, manifestName, manifest) {
+  const pubDir = path.join(PUBLIC_ARTIFACT_ROOT, codeSha.slice(0, 12));
+  mkdirSync(pubDir, { recursive: true });
+  const copiedPairs = [];
+  for (const p of manifest.pairs || []) {
+    const row = { id: p.id, impl: null, ref: null, implSha256: null, refSha256: null };
+    if (p.impl && existsSync(p.impl)) {
+      const name = path.basename(p.impl);
+      const dest = path.join(pubDir, name);
+      copyFileSync(p.impl, dest);
+      row.impl = dest;
+      row.implSha256 = sha256File(dest);
+    }
+    if (p.ref && existsSync(p.ref)) {
+      const name = path.basename(p.ref);
+      const dest = path.join(pubDir, name);
+      copyFileSync(p.ref, dest);
+      row.ref = dest;
+      row.refSha256 = sha256File(dest);
+    }
+    copiedPairs.push(row);
+  }
+  const pubManifest = { ...manifest, publicArtifactDir: pubDir, copiedPairs };
+  writeFileSync(path.join(pubDir, manifestName), JSON.stringify(pubManifest, null, 2));
+  writeFileSync(path.join(outDir, 'PUBLIC-ARTIFACT-DIR.txt'), pubDir);
+  return pubDir;
 }
 
 async function waitForHttp(url, timeoutMs = 120_000) {
@@ -506,22 +621,22 @@ async function runSession(browser, refBase, { origin, outDir, mockMode, audience
 }
 
 function runUnitTests() {
-  const vitest = spawnSync(
-    'pnpm',
-    [
-      'exec',
-      'vitest',
-      'run',
-      'src/lib/partners-hub-presentation.test.ts',
-      'src/lib/partners-shared-ui-copy.test.ts',
-      'src/components/partners/PartnersHub.test.tsx',
-      'src/lib/agent-r04/partner-filters.test.ts',
-      'src/lib/agent-r04/partner-list-row.test.ts',
-      'src/lib/agent-r04/partnership-action-icons.test.ts',
-      'src/lib/partnership-rules.test.ts',
-    ],
-    { cwd: ROOT, encoding: 'utf8' },
-  );
+  const vitestFiles = [
+    'src/lib/partners-hub-presentation.test.ts',
+    'src/lib/partners-shared-ui-copy.test.ts',
+    'src/components/partners/PartnersHub.test.tsx',
+    'src/lib/agent-r04/partner-filters.test.ts',
+    'src/lib/agent-r04/partner-list-row.test.ts',
+    'src/lib/agent-r04/partnership-action-icons.test.ts',
+    'src/lib/partnership-rules.test.ts',
+  ];
+  if (CLIENTS_IMPLEMENT_01_3) {
+    vitestFiles.push('src/lib/agent-r03/clientListRow.test.ts');
+  }
+  const vitest = spawnSync('pnpm', ['exec', 'vitest', 'run', ...vitestFiles], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
   const tsxRules = spawnSync('npx', ['tsx', '--test', 'src/lib/partnership-rules.test.ts'], {
     cwd: ROOT,
     encoding: 'utf8',
@@ -532,7 +647,144 @@ function runUnitTests() {
   };
 }
 
+async function runClientsImplement013Main() {
+  verifyLoginEntryPrototypeTarball(ROOT);
+  assertCleanTree(ROOT);
+  const unit = runUnitTests();
+  if (unit.vitest.exitCode !== 0 || unit.partnershipRulesTsx.exitCode !== 0) {
+    throw new Error('unit_tests_failed');
+  }
+
+  const backendCertLink = runNavigatorClientsCertLink();
+
+  const provenance = collectPrefillProvenance(ROOT, DIST);
+  if (process.env.R06_FORCE_BUILD === '1') {
+    const { rmSync } = await import('node:fs');
+    rmSync(path.join(ROOT, DIST), { recursive: true, force: true });
+  }
+  const build = runIsolatedPlatformBuild(ROOT, DIST);
+  if (build.status === 'failed') throw new Error(`build_failed:${build.exitCode}`);
+
+  const codeSha = gitRevParse(ROOT);
+  const OUT = path.join(ROOT, ARTIFACT_ROOT, codeSha.slice(0, 12));
+  mkdirSync(OUT, { recursive: true });
+
+  const mock = await startPartnersSharedMockBff(createPartnersMockState('specialist'));
+  let mockLinked = null;
+  try {
+    mockLinked = await runMockLinkedScenario(mock.baseUrl);
+  } catch (e) {
+    mockLinked = { ok: false, error: String(e?.message || e), boundary: 'stateful_mock_bff_not_navigator_handlers' };
+  }
+
+  const platformPort = await findFreeLoopbackPort(30750, { maxScan: 40 });
+  const appOrigin = `http://127.0.0.1:${platformPort}`;
+  const envPin = pinProductionEnvLocal(ROOT, appOrigin, mock.baseUrl);
+  const serverHandle = spawnOwnedNextStart({
+    port: platformPort,
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LOGIN_ENTRY_NEXT_DIST_DIR: DIST,
+      NEXT_PUBLIC_APP_URL: appOrigin,
+      REMCARD_API_BASE_URL: mock.baseUrl,
+      REMCARD_PROXY_TRUST_LOOPBACK_ORIGIN: '1',
+      NODE_ENV: 'production',
+      PORT: String(platformPort),
+    },
+  });
+
+  ensureLoginEntryPrototypeExtracted(ROOT, PROTO_DIR);
+  const refStatic = await startLoginEntryPrototypeStatic(PROTO_DIR);
+  const browser = await chromium.launch({ headless: true });
+  let pairs = [];
+  let runtimeBuildId = null;
+
+  try {
+    if (!(await waitForHttp(`${appOrigin}/login`))) throw new Error('impl_not_ready');
+    runtimeBuildId = await probeRuntimeBuildId(appOrigin, build.buildId);
+    if (runtimeBuildId !== build.buildId) throw new Error('runtime_build_id_mismatch');
+    pairs = await runClientsVisualCaptures({
+      browser,
+      refBase: refStatic.baseUrl,
+      appOrigin,
+      outDir: OUT,
+    });
+  } finally {
+    await browser.close();
+    refStatic.server.close();
+    await stopOwnedServer(serverHandle);
+    envPin.restore();
+    await mock.close();
+  }
+
+  const pairsReport = pairs.map((p) => ({
+    id: p.id,
+    panel: p.panel,
+    audience: p.audience,
+    width: p.width,
+    height: p.height,
+    theme: p.theme,
+    impl: p.impl,
+    ref: p.ref,
+    refError: p.refError ?? null,
+    implSha256: p.impl && existsSync(p.impl) ? sha256File(p.impl) : null,
+    refSha256: p.ref && existsSync(p.ref) ? sha256File(p.ref) : null,
+  }));
+
+  const refFailures = pairsReport.filter((p) => p.refError);
+  const report = {
+    task: TASK,
+    generatedAt: new Date().toISOString(),
+    codeSha,
+    navigatorCodeSha: backendCertLink.navigatorSha,
+    sourceTreeDigest: provenance.sourceTreeDigest,
+    treeDirtyBeforeBuild: false,
+    build: { status: build.status, exitCode: build.exitCode, buildId: build.buildId, distDir: DIST },
+    runtimeVerified: { expected: build.buildId, actual: runtimeBuildId },
+    refProtoSha256: '382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d',
+    unit,
+    backendCertLinkScenario: backendCertLink,
+    mockLinkedScenario: mockLinked,
+    pairs: pairsReport,
+    refFailureCount: refFailures.length,
+    note: 'Backend cert link uses real Navigator route handlers + prof_r01_route_test_db; mock BFF chain is UI-only boundary.',
+  };
+
+  const manifestName = 'SPECIALIST-CLIENTS-IMPLEMENT-01-3.json';
+  writeFileSync(path.join(OUT, manifestName), JSON.stringify(report, null, 2));
+  const publicDir = copyClientsArtifactsToPublic(OUT, codeSha, manifestName, report);
+
+  const ok =
+    backendCertLink.exitCode === 0 &&
+    backendCertLink.result?.ok === true &&
+    refFailures.length === 0 &&
+    build.status !== 'failed';
+
+  console.log(
+    JSON.stringify(
+      {
+        ok,
+        out: OUT,
+        publicArtifactDir: publicDir,
+        codeSha,
+        navigatorSha: backendCertLink.navigatorSha,
+        buildId: build.buildId,
+        refFailures: refFailures.map((p) => p.id),
+        backendOk: backendCertLink.result?.ok ?? false,
+      },
+      null,
+      2,
+    ),
+  );
+  if (!ok) process.exit(1);
+}
+
 async function main() {
+  if (CLIENTS_IMPLEMENT_01_3) {
+    await runClientsImplement013Main();
+    return;
+  }
   verifyLoginEntryPrototypeTarball(ROOT);
   assertCleanTree(ROOT);
   const unit = runUnitTests();
