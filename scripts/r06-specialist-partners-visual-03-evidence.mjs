@@ -74,7 +74,10 @@ async function captureImpl(page, origin, spec, outDir) {
       await page.waitForTimeout(300);
     }
     if (spec.runSearch) {
-      await page.getByRole('button', { name: 'Найти' }).click();
+      await page
+        .getByTestId('agent-r04-modal-find')
+        .getByRole('button', { name: 'Найти', exact: true })
+        .click();
       await page.waitForTimeout(600);
     }
   } else if (spec.panel === 'cards') {
