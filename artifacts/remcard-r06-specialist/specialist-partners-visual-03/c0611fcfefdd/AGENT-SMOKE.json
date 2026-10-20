@@ -1,0 +1,14 @@
+{
+  "buildId": "9eBmvDmCczByGaRvZPxux",
+  "captures": [
+    {
+      "file": "impl-agent-list-1440-light-smoke.png",
+      "sha256": "4151abffe4c3a86ce727de9513c1f09909ee43b9cc5cf2b8437f1694f725b98f"
+    },
+    {
+      "file": "impl-agent-find-1440-light-smoke.png",
+      "sha256": "4e2e3029f43e30940f7bd86805df445fd9c815c4a3ebb0c9ef68d5422827222b"
+    }
+  ],
+  "note": "Shared list/find components; MOCK agent upstream; no pixel ref claim."
+}

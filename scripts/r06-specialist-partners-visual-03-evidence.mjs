@@ -190,6 +190,8 @@ async function main() {
         copyFileSync(path.join(REF_PIN, 'ref-specialist-active-list-1440-light.png'), path.join(OUT, refName));
       } else if (spec.id === 'find-1440-light' && existsSync(path.join(REF_PIN, 'ref-specialist-find-1440-light.png'))) {
         copyFileSync(path.join(REF_PIN, 'ref-specialist-find-1440-light.png'), path.join(OUT, refName));
+      } else if (spec.id === 'find-refine-1440-light') {
+        await captureRef(refPage, refStatic.baseUrl, { ...spec, refName }, OUT);
       } else if (spec.id === 'cards-1440-light' && existsSync(path.join(REF_PIN, 'ref-specialist-active-cards-1440-light.png'))) {
         copyFileSync(path.join(REF_PIN, 'ref-specialist-active-cards-1440-light.png'), path.join(OUT, refName));
       } else {

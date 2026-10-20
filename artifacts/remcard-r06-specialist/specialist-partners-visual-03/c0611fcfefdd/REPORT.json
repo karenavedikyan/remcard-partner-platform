@@ -1,0 +1,81 @@
+{
+  "task": "SPECIALIST-PARTNERS-VISUAL-03",
+  "codeSha": "c0611fcfefdde81f2d5e1909528fc7a926686071",
+  "buildId": "9eBmvDmCczByGaRvZPxux",
+  "distDir": ".next-r06-visual-03",
+  "pairs": [
+    {
+      "id": "list-1440-light",
+      "impl": {
+        "file": "impl-specialist-list-1440-light.png",
+        "sha256": "d2a79fa4d60a8fa3adcfc6033c8aa4e47be219fa89c4c79ec39c3f6394476077"
+      },
+      "ref": "ref-specialist-list-1440-light.png"
+    },
+    {
+      "id": "cards-1440-light",
+      "impl": {
+        "file": "impl-specialist-cards-1440-light.png",
+        "sha256": "185dada27e4698259d2d74dab10cc3536dee5ccfd96165313633d6c4f4ae4b57"
+      },
+      "ref": "ref-specialist-cards-1440-light.png"
+    },
+    {
+      "id": "find-1440-light",
+      "impl": {
+        "file": "impl-specialist-find-1440-light.png",
+        "sha256": "3c30430502270b8cde857699d02f971da7a70a870b842b3e1308bc9150c34cb3"
+      },
+      "ref": "ref-specialist-find-1440-light.png"
+    },
+    {
+      "id": "find-refine-1440-light",
+      "impl": {
+        "file": "impl-specialist-find-refine-1440-light.png",
+        "sha256": "653030371ff179b44569e3a7fce6cc96c77bab0ef626bf4f191140b36797d07b"
+      },
+      "ref": "ref-specialist-find-refine-1440-light.png"
+    },
+    {
+      "id": "list-375-light",
+      "impl": {
+        "file": "impl-specialist-list-375-light.png",
+        "sha256": "20e6ba560959002bc3c2631c408784c9f8d7dbb4c158bf1855ae93f6f5c1cc07"
+      },
+      "ref": "ref-specialist-list-375-light.png"
+    },
+    {
+      "id": "find-375-light",
+      "impl": {
+        "file": "impl-specialist-find-375-light.png",
+        "sha256": "d25feeaad23282ae7719cb14646ab59f8f618e7cc4bb9e883b5708105f8cc13c"
+      },
+      "ref": "ref-specialist-find-375-light.png"
+    },
+    {
+      "id": "find-375-dark",
+      "impl": {
+        "file": "impl-specialist-find-375-dark.png",
+        "sha256": "b5f770174aaf2cef72d09b118f557d2bd780778b71732f4d8f647229ee58df51"
+      },
+      "ref": "ref-specialist-find-375-dark.png"
+    },
+    {
+      "id": "list-320-smoke",
+      "impl": {
+        "file": "impl-specialist-list-320-smoke.png",
+        "sha256": "fececaf16cc929e987600734d7303d3b696e9dc3ec9b469652dac0a1412657a7"
+      },
+      "ref": null
+    },
+    {
+      "id": "find-320-smoke",
+      "impl": {
+        "file": "impl-specialist-find-320-smoke.png",
+        "sha256": "043ef2fce6b2135ef9f5d735096ed33383c69b5b4b706b3cb425151c826a6ff4"
+      },
+      "ref": null
+    }
+  ],
+  "note": "Ref pinned from 7818ba6ebd68 where available; impl from MOCK specialist shell."
+}
