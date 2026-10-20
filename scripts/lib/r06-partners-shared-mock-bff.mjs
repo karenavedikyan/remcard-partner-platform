@@ -4,6 +4,13 @@
  */
 import { createServer } from 'node:http';
 
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString('utf8');
+  return raw || '{}';
+}
+
 const TAXONOMY = {
   products: [{ kind: 'product', id: 'doors', label: 'Двери' }],
   services: [{ kind: 'service', id: 'design', label: 'Дизайн интерьера' }],
@@ -234,6 +241,123 @@ function r06Payload(mode, actorId) {
   };
 }
 
+function defaultMockClients(mode) {
+  if (mode === 'agent') {
+    return [
+      {
+        id: 'mock-agent-client-1',
+        displayName: 'Иван Агентский',
+        phone: null,
+        email: null,
+        city: 'Москва',
+        need: null,
+        note: 'Legacy task',
+        archivedAt: null,
+        createdAt: '2026-10-01T10:00:00.000Z',
+        updatedAt: '2026-10-12T10:00:00.000Z',
+        certificateCount: 1,
+        hasPurchases: false,
+      },
+    ];
+  }
+  return [
+    {
+      id: 'mock-spec-client-1',
+      displayName: 'Анна Клиентова',
+      phone: '+79001234567',
+      email: 'anna@example.mock',
+      city: 'Краснодар',
+      need: 'Дизайн кухни',
+      note: 'Планирует ремонт весной',
+      archivedAt: null,
+      createdAt: '2026-10-01T10:00:00.000Z',
+      updatedAt: '2026-10-15T12:00:00.000Z',
+      certificateCount: 2,
+      hasPurchases: true,
+    },
+    {
+      id: 'mock-spec-client-empty',
+      displayName: 'Пустой Контакт',
+      phone: null,
+      email: null,
+      city: null,
+      need: null,
+      note: null,
+      archivedAt: null,
+      createdAt: '2026-10-02T10:00:00.000Z',
+      updatedAt: '2026-10-02T10:00:00.000Z',
+      certificateCount: 0,
+      hasPurchases: false,
+    },
+  ];
+}
+
+function ensureClientsState(state) {
+  if (!state.clients) {
+    state.clients = new Map(defaultMockClients(state.mode).map((c) => [c.id, { ...c }]));
+    state.clientCerts = new Map([
+      [
+        'mock-spec-client-1',
+        [
+          {
+            id: 'mock-cert-1',
+            promoCode: 'DEMO1',
+            displayCode: 'RC-DEMO-1',
+            qrCode: 'qr-demo-1',
+            status: 'ACTIVE',
+            validUntil: null,
+            maxUsages: 1,
+            usageCount: 0,
+            createdAt: '2026-10-10T10:00:00.000Z',
+            userAlias: 'Кухня · скидки',
+            title: 'Кухня · скидки',
+            directionLabel: null,
+            partnerStoreName: 'Магазин «Юг»',
+            partnerCount: 1,
+            categorySummary: 'Двери',
+            discountPercent: 10,
+            archivedInWorkspace: false,
+            hasOrders: true,
+            agentClient: { id: 'mock-spec-client-1', displayName: 'Анна Клиентова' },
+            issuerKindSnapshot: null,
+          },
+        ],
+      ],
+    ]);
+    state.clientPurchases = new Map([
+      [
+        'mock-spec-client-1',
+        [
+          {
+            id: 'mock-order-1',
+            createdAt: '2026-10-11T10:00:00.000Z',
+            status: 'CONFIRMED',
+            statusLabel: 'Подтверждена',
+            countsAsPurchase: true,
+            totalAmount: 125000,
+            partnerName: 'Магазин «Юг»',
+            certificateId: 'mock-cert-1',
+            lineSummary: 'Двери',
+          },
+          {
+            id: 'mock-order-2',
+            createdAt: '2026-10-09T10:00:00.000Z',
+            status: 'CANCELLED',
+            statusLabel: 'Отменена',
+            countsAsPurchase: false,
+            totalAmount: 45000,
+            partnerName: 'Магазин «Юг»',
+            certificateId: 'mock-cert-1',
+            lineSummary: 'Плитка',
+          },
+        ],
+      ],
+    ]);
+    state.clientSeq = 100;
+    state.createdCerts = [];
+  }
+}
+
 export function createPartnersMockState(mode = 'specialist') {
   return {
     mode,
@@ -245,6 +369,11 @@ export function createPartnersMockState(mode = 'specialist') {
     preferencePatchFailIds: new Set(),
     discussionInvites: [],
     discussionInviteCounter: 0,
+    clients: null,
+    clientCerts: null,
+    clientPurchases: null,
+    clientSeq: 0,
+    createdCerts: [],
   };
 }
 
@@ -300,6 +429,158 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
       }
       if (path === '/api/pro/r06/status') {
         return send(200, r06Payload(state.mode, actor.id));
+      }
+      if (path === '/api/pro/r03/status') {
+        const agent = state.mode === 'agent';
+        return send(200, {
+          contractVersion: 'r03-smoke',
+          featureEnabled: true,
+          hasAgentActivity: agent,
+          eligible: agent,
+          userId: actor.id,
+          ineligibleReason: agent ? null : 'not_agent',
+        });
+      }
+      ensureClientsState(state);
+      if (path === '/api/pro/agent-clients' && req.method === 'GET') {
+        const url = new URL(req.url || '', 'http://127.0.0.1');
+        const archived = url.searchParams.get('archived') === 'true';
+        const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+        let rows = [...state.clients.values()].filter((c) =>
+          archived ? Boolean(c.archivedAt) : !c.archivedAt,
+        );
+        if (q) {
+          rows = rows.filter((c) =>
+            [c.displayName, c.city, c.need, c.note, c.phone, c.email]
+              .filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(q)),
+          );
+        }
+        const activeCount = [...state.clients.values()].filter((c) => !c.archivedAt).length;
+        const archivedCount = [...state.clients.values()].filter((c) => c.archivedAt).length;
+        return send(200, {
+          clients: rows,
+          nextCursor: null,
+          totalShown: rows.length,
+          page: 1,
+          pageSize: 25,
+          totalCount: rows.length,
+          totalPages: 1,
+          activeCount,
+          archivedCount,
+          hasNextPage: false,
+          hasPrevPage: false,
+          sort: 'updated_desc',
+        });
+      }
+      if (path === '/api/pro/agent-clients' && req.method === 'POST') {
+        const body = JSON.parse(await readBody(req));
+        state.clientSeq += 1;
+        const id = `mock-client-new-${state.clientSeq}`;
+        const row = {
+          id,
+          displayName: body.displayName,
+          phone: body.phone ?? null,
+          email: body.email ?? null,
+          city: body.city ?? null,
+          need: body.need ?? null,
+          note: body.note ?? null,
+          archivedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          certificateCount: 0,
+          hasPurchases: false,
+        };
+        state.clients.set(id, row);
+        state.clientCerts.set(id, []);
+        state.clientPurchases.set(id, []);
+        return send(201, { client: row });
+      }
+      const clientDetailMatch = path.match(/^\/api\/pro\/agent-clients\/([^/]+)$/);
+      if (clientDetailMatch) {
+        const clientId = decodeURIComponent(clientDetailMatch[1]);
+        const row = state.clients.get(clientId);
+        if (!row) return send(404, { error: 'Не найдено' });
+        if (req.method === 'GET') {
+          const certs = state.clientCerts.get(clientId) ?? [];
+          const purchases = state.clientPurchases.get(clientId) ?? [];
+          const purchaseCount = purchases.filter((p) => p.countsAsPurchase).length;
+          const lastCertificateAt = certs[0]?.createdAt ?? null;
+          return send(200, {
+            client: { ...row, purchaseCount, lastCertificateAt },
+            certificates: certs,
+            purchases,
+          });
+        }
+        if (req.method === 'PATCH') {
+          const body = JSON.parse(await readBody(req));
+          const next = { ...row, updatedAt: new Date().toISOString() };
+          if (body.displayName != null) next.displayName = body.displayName;
+          if ('phone' in body) next.phone = body.phone;
+          if ('email' in body) next.email = body.email;
+          if ('city' in body) next.city = body.city;
+          if ('need' in body) next.need = body.need;
+          if ('note' in body) next.note = body.note;
+          if (body.action === 'archive') next.archivedAt = new Date().toISOString();
+          if (body.action === 'restore') next.archivedAt = null;
+          state.clients.set(clientId, next);
+          return send(200, { client: next });
+        }
+      }
+      if (path === '/api/store/certificate' && req.method === 'POST') {
+        const body = JSON.parse(await readBody(req));
+        const agentClientId = body.agentClientId?.trim() || null;
+        if (state.mode !== 'specialist' && state.mode !== 'agent') {
+          return send(403, { error: 'Forbidden' });
+        }
+        if (agentClientId && !state.clients.has(agentClientId)) {
+          return send(400, { error: 'Клиент не найден' });
+        }
+        const certId = `mock-created-cert-${state.createdCerts.length + 1}`;
+        const cert = {
+          id: certId,
+          promoCode: `NEW${state.createdCerts.length + 1}`,
+          displayCode: `RC-NEW-${state.createdCerts.length + 1}`,
+          qrCode: `qr-new-${state.createdCerts.length + 1}`,
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          userAlias: 'Новый сертификат',
+          title: 'Новый сертификат',
+          agentClientId,
+        };
+        state.createdCerts.push(cert);
+        if (agentClientId) {
+          const client = state.clients.get(agentClientId);
+          const list = state.clientCerts.get(agentClientId) ?? [];
+          list.unshift({
+            id: certId,
+            promoCode: cert.promoCode,
+            displayCode: cert.displayCode,
+            qrCode: cert.qrCode,
+            status: 'ACTIVE',
+            validUntil: null,
+            maxUsages: 1,
+            usageCount: 0,
+            createdAt: cert.createdAt,
+            userAlias: cert.userAlias,
+            title: cert.title,
+            directionLabel: null,
+            partnerStoreName: 'Магазин «Юг»',
+            partnerCount: 1,
+            categorySummary: 'Двери',
+            discountPercent: 10,
+            archivedInWorkspace: false,
+            hasOrders: false,
+            agentClient: client
+              ? { id: client.id, displayName: client.displayName }
+              : null,
+            issuerKindSnapshot: null,
+          });
+          state.clientCerts.set(agentClientId, list);
+          client.certificateCount = list.length;
+          state.clients.set(agentClientId, client);
+        }
+        return send(201, { id: certId, certificate: cert });
       }
       if (path === '/api/pro/profile') return send(200, buildProfile(actor));
       if (path === '/api/pro/partner-taxonomy') return send(200, TAXONOMY);

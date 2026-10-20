@@ -345,10 +345,19 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
                 <Link href={`/clients/${client.id}`} className={styles.clientCardName}>
                   {client.displayName}
                 </Link>
-                <p className={styles.clientCardDetail}>{clientRowDetail(client, accessMode)}</p>
-                {clientRowCaption(client, accessMode) ? (
-                  <p className={styles.clientCardTask}>{clientRowCaption(client, accessMode)}</p>
-                ) : null}
+                {accessMode === "specialist" ? (
+                  <>
+                    <p className={styles.clientCardTask}>{clientRowCaption(client, accessMode)}</p>
+                    <p className={styles.clientCardDetail}>{clientRowDetail(client, accessMode)}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.clientCardDetail}>{clientRowDetail(client, accessMode)}</p>
+                    {clientRowCaption(client, accessMode) ? (
+                      <p className={styles.clientCardTask}>{clientRowCaption(client, accessMode)}</p>
+                    ) : null}
+                  </>
+                )}
                 <div className={styles.clientCardActions}>
                   <RecordRowActions
                     ariaLabel="Действия с клиентом"
@@ -484,6 +493,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
 
       <AgentClientFormDialog
         accessMode={accessMode}
+        editing={Boolean(editClient)}
         open={formOpen}
         title={editClient ? "Редактировать клиента" : "Новый клиент"}
         submitLabel={editClient ? "Сохранить" : "Добавить"}

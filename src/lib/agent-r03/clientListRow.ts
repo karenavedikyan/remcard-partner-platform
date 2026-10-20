@@ -10,45 +10,68 @@ function certificateCountLabel(count: number): string {
   return `${n} сертификатов`;
 }
 
-function taskLine(client: AgentClientRow, mode: OwnerClientsAccessMode): string {
-  if (mode === "specialist") {
-    return client.need?.trim() || "";
-  }
-  return client.note?.trim() || "";
+function specialistDetailLine(client: AgentClientRow): string {
+  const city = client.city?.trim();
+  const need = client.need?.trim();
+  if (city && need) return `${city} · ${need}`;
+  return city || need || "Добавьте задачу в карточке";
 }
 
-/** Under client name (reference caption): task / note, then city fallback. */
+/** Under client name in collection table/cards. */
 export function clientRowCaption(
   client: AgentClientRow,
   mode: OwnerClientsAccessMode = "agent",
 ): string {
-  const task = taskLine(client, mode);
+  if (mode === "specialist") {
+    return client.certificateCount > 0
+      ? certificateCountLabel(client.certificateCount)
+      : "Пока без сертификатов";
+  }
+  const task = client.note?.trim();
   if (task) return task;
   return client.city?.trim() || "";
 }
 
-/** Mobile list subtitle: city · task (frozen reference collection detail order). */
-export function clientRowMobileSubtitle(
-  client: AgentClientRow,
-  mode: OwnerClientsAccessMode = "agent",
-): string {
-  const task = taskLine(client, mode);
-  const city = client.city?.trim();
-  if (city && task) return `${city} · ${task}`;
-  return city || task || (mode === "specialist" ? "Добавьте задачу в карточке" : "Добавьте задачу в карточке");
-}
-
-/** Details column: certificate count; agent keeps bonus placeholder. */
+/** Collection «Подробности» column or card detail line. */
 export function clientRowDetail(
   client: AgentClientRow,
   mode: OwnerClientsAccessMode = "agent",
 ): string {
+  if (mode === "specialist") {
+    return specialistDetailLine(client);
+  }
   const countPart =
     client.certificateCount > 0
       ? certificateCountLabel(client.certificateCount)
       : "Пока без сертификатов";
-  if (mode === "specialist") return countPart;
   return `${countPart} · бонус —`;
+}
+
+/** Mobile list subtitle. */
+export function clientRowMobileSubtitle(
+  client: AgentClientRow,
+  mode: OwnerClientsAccessMode = "agent",
+): string {
+  if (mode === "specialist") {
+    return specialistDetailLine(client);
+  }
+  const task = client.note?.trim();
+  const city = client.city?.trim();
+  if (city && task) return `${city} · ${task}`;
+  return city || task || "Добавьте задачу в карточке";
+}
+
+/** Secondary mobile line (specialist: certificate count). */
+export function clientRowMobileMeta(
+  client: AgentClientRow,
+  mode: OwnerClientsAccessMode = "agent",
+): string {
+  if (mode === "specialist") {
+    return client.certificateCount > 0
+      ? certificateCountLabel(client.certificateCount)
+      : "Пока без сертификатов";
+  }
+  return clientRowDetail(client, mode);
 }
 
 export function clientPurchaseStatusLabel(client: AgentClientRow, archivedView: boolean): string {

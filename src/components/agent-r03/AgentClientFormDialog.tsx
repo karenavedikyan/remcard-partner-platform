@@ -20,6 +20,8 @@ type Props = {
   title: string;
   initial?: Partial<AgentClientFormValues>;
   submitLabel: string;
+  /** When true, optional contacts block stays open (edit flow). */
+  editing?: boolean;
   onClose: () => void;
   onSubmit: (values: AgentClientFormValues) => Promise<void>;
 };
@@ -30,6 +32,7 @@ export function AgentClientFormDialog({
   title,
   initial,
   submitLabel,
+  editing = false,
   onClose,
   onSubmit,
 }: Props) {
@@ -88,22 +91,28 @@ export function AgentClientFormDialog({
     }
   }
 
-  const contactFields =
+  const optionalContactsBlock =
     accessMode === "specialist" ? (
-      <details className={styles.certificateTerms} open={Boolean(phone || email || city)}>
-        <summary>Контакты (необязательно)</summary>
-        <label className={styles.field}>
-          Телефон
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
-        </label>
-        <label className={styles.field}>
-          Email
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-        </label>
-        <label className={styles.field}>
-          Город
-          <input value={city} onChange={(e) => setCity(e.target.value)} />
-        </label>
+      <details className={styles.certificateTerms} open={editing}>
+        <summary>Контакты и заметка · необязательно</summary>
+        <div className={styles.termsBody}>
+          <label className={styles.field}>
+            Город
+            <input value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+          </label>
+          <label className={styles.field}>
+            Телефон
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" maxLength={40} />
+          </label>
+          <label className={styles.field}>
+            Email
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" maxLength={120} />
+          </label>
+          <label className={styles.field}>
+            Заметка
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000} />
+          </label>
+        </div>
       </details>
     ) : (
       <>
@@ -119,6 +128,10 @@ export function AgentClientFormDialog({
           Город
           <input value={city} onChange={(e) => setCity(e.target.value)} />
         </label>
+        <label className={styles.field}>
+          Заметка
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
+        </label>
       </>
     );
 
@@ -128,25 +141,33 @@ export function AgentClientFormDialog({
         className={styles.dialogPanel}
         role="dialog"
         aria-labelledby="client-form-title"
+        data-testid="agent-client-form-dialog"
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => void handleSubmit(e)}
       >
         <h2 id="client-form-title">{title}</h2>
         <label className={styles.field}>
           Имя
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+          <input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            required
+            maxLength={100}
+            placeholder="Как обращаться к клиенту"
+          />
         </label>
         {accessMode === "specialist" ? (
           <label className={styles.field}>
-            Задача
-            <input value={need} onChange={(e) => setNeed(e.target.value)} maxLength={160} />
+            Задача · необязательно
+            <input
+              value={need}
+              onChange={(e) => setNeed(e.target.value)}
+              maxLength={160}
+              placeholder="Например, ремонт квартиры"
+            />
           </label>
         ) : null}
-        {contactFields}
-        <label className={styles.field}>
-          {accessMode === "specialist" ? "Заметка" : "Заметка"}
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
-        </label>
+        {optionalContactsBlock}
         {error ? (
           <p role="alert" className={styles.formError}>
             {error}

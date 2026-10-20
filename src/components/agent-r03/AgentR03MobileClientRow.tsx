@@ -6,7 +6,7 @@ import type { AgentClientRow } from "@/lib/agent-r03/types";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import {
   clientPurchaseStatusLabel,
-  clientRowDetail,
+  clientRowMobileMeta,
   clientRowMobileSubtitle,
 } from "@/lib/agent-r03/clientListRow";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
@@ -48,7 +48,7 @@ export function AgentR03MobileClientRow({
             {client.displayName}
           </Link>
           <p className={styles.meta}>{clientRowMobileSubtitle(client, accessMode)}</p>
-          <p className={styles.meta}>{clientRowDetail(client, accessMode)}</p>
+          <p className={styles.meta}>{clientRowMobileMeta(client, accessMode)}</p>
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>

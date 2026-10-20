@@ -3,6 +3,7 @@ import {
   clientPurchaseStatusLabel,
   clientRowCaption,
   clientRowDetail,
+  clientRowMobileMeta,
   clientRowMobileSubtitle,
 } from "./clientListRow";
 import type { AgentClientRow } from "./types";
@@ -35,9 +36,16 @@ describe("clientListRow", () => {
     expect(clientRowMobileSubtitle(legacy, "agent")).toBe("Москва · Legacy task");
   });
 
-  it("specialist mode uses need for caption without agent bonus", () => {
-    expect(clientRowCaption(base, "specialist")).toBe("Задача parity");
-    expect(clientRowDetail(base, "specialist")).toBe("2 сертификата");
+  it("specialist mode uses cert count caption and city·task detail", () => {
+    expect(clientRowCaption(base, "specialist")).toBe("2 сертификата");
+    expect(clientRowDetail(base, "specialist")).toBe("Краснодар · Задача parity");
+    expect(clientRowMobileSubtitle(base, "specialist")).toBe("Краснодар · Задача parity");
+    expect(clientRowMobileMeta(base, "specialist")).toBe("2 сертификата");
+  });
+
+  it("specialist empty task uses fallback in detail", () => {
+    const emptyNeed = { ...base, need: null };
+    expect(clientRowDetail(emptyNeed, "specialist")).toBe("Краснодар");
   });
 
   it("uses purchase status labels from hasPurchases", () => {

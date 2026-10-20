@@ -35,7 +35,7 @@ function SpecialistClientCertCard({
     <article className={styles.certCard} data-testid="specialist-client-cert-card">
       <div className={styles.certCardHead}>
         <div className={styles.certCardHeadText}>
-          <span className={styles.certCardEyebrow}>RemCard · рекомендация</span>
+          <span className={styles.certCardEyebrow}>RemCard · сертификат</span>
         </div>
       </div>
       <div className={styles.certCardBody}>
@@ -176,28 +176,10 @@ export function AgentClientDetail({
               <div className={styles.cardMain}>
                 <h1>{client.displayName}</h1>
                 {accessMode === "specialist" ? (
-                  <>
-                    <p className={styles.meta}>
-                      {client.need?.trim() || "Задача не указана"}
-                    </p>
-                    {(client.phone || client.email || client.city) && (
-                      <div className={styles.meta}>
-                        {client.city ? <span>{client.city}</span> : null}
-                        {client.phone ? (
-                          <span>
-                            {client.city ? " · " : ""}
-                            {formatPhoneForDisplay(client.phone)}
-                          </span>
-                        ) : null}
-                        {client.email ? <span> · {client.email}</span> : null}
-                      </div>
-                    )}
-                    {client.note?.trim() ? (
-                      <p className={styles.meta}>
-                        <strong>Заметка:</strong> {client.note}
-                      </p>
-                    ) : null}
-                  </>
+                  <p className={styles.meta}>
+                    {client.need?.trim() || "Задача пока не указана"} ·{" "}
+                    {client.city?.trim() || "Город не указан"}
+                  </p>
                 ) : (
                   <>
                     <p className={styles.meta}>
@@ -236,11 +218,42 @@ export function AgentClientDetail({
             ) : null}
 
             <Link href={createCertHref}>
-              <Button>{accessMode === "specialist" ? "Создать рекомендацию" : "Создать сертификат"}</Button>
+              <Button>Создать сертификат</Button>
             </Link>
           </article>
 
-          <h2>{accessMode === "specialist" ? "Рекомендации клиента" : "Сертификаты клиента"}</h2>
+          {accessMode === "specialist" ? (
+            <div className={styles.clientTwoCol}>
+              <article className={styles.card}>
+                <h2>Контакты</h2>
+                <div>
+                  <span className={styles.clientFieldEyebrow}>Телефон</span>
+                  <p className={styles.meta}>
+                    {client.phone ? formatPhoneForDisplay(client.phone) : "Не указан"}
+                  </p>
+                </div>
+                <div>
+                  <span className={styles.clientFieldEyebrow}>Email</span>
+                  <p className={styles.meta}>{client.email?.trim() || "Не указан"}</p>
+                </div>
+                <small className={styles.meta}>
+                  Контакты не отправляются партнёрам автоматически.
+                </small>
+              </article>
+              <article className={styles.card}>
+                <h2>Заметка о клиенте</h2>
+                <p className={styles.meta}>
+                  {client.note?.trim() ||
+                    "Здесь можно записать задачу клиента и о чём договорились."}
+                </p>
+                <Button variant="secondary" onClick={() => setEditOpen(true)}>
+                  Изменить заметку
+                </Button>
+              </article>
+            </div>
+          ) : null}
+
+          <h2>Сертификаты клиента</h2>
           {certs.length === 0 ? (
             <p className={styles.empty}>Пока нет сертификатов.</p>
           ) : accessMode === "specialist" ? (
@@ -262,29 +275,51 @@ export function AgentClientDetail({
           )}
 
           {accessMode === "specialist" ? (
-            <>
-              <h2>История покупок</h2>
-              {purchases.length === 0 ? (
-                <p className={styles.empty}>Покупок по сертификатам клиента пока нет.</p>
-              ) : (
-                purchases.map((p) => (
-                  <article key={p.id} className={styles.card}>
-                    <p className={styles.meta}>
-                      {new Date(p.createdAt).toLocaleDateString("ru-RU")} · {p.partnerName} ·{" "}
-                      {p.totalAmount.toLocaleString("ru-RU")} ₽ ·{" "}
-                      {p.statusLabel ?? p.status}
-                    </p>
-                    {p.lineSummary ? <p className={styles.meta}>{p.lineSummary}</p> : null}
-                  </article>
-                ))
-              )}
-            </>
+            <details
+              className={`${styles.certificateTerms} ${styles.card}`}
+              open={purchases.length > 0}
+              data-testid="client-purchase-history"
+            >
+              <summary>
+                История покупок{" "}
+                <span className={styles.badgeCount}>{purchases.length}</span>
+              </summary>
+              <div className={styles.termsBody}>
+                {purchases.length === 0 ? (
+                  <p className={styles.empty}>
+                    Покупок пока нет. Здесь появятся дата, партнёр, товары или услуги, сумма и
+                    статус после подтверждения покупки.
+                  </p>
+                ) : (
+                  purchases.map((p) => (
+                    <article key={p.id} className={styles.clientPurchaseRow}>
+                      <div>
+                        <strong>{p.lineSummary || "Покупка по сертификату"}</strong>
+                        <p className={styles.meta}>
+                          {p.partnerName} ·{" "}
+                          {new Date(p.createdAt).toLocaleDateString("ru-RU")}
+                        </p>
+                      </div>
+                      <div>
+                        <strong>{p.totalAmount.toLocaleString("ru-RU")} ₽</strong>
+                        <span className={styles.purchasePill}>{p.statusLabel ?? p.status}</span>
+                      </div>
+                    </article>
+                  ))
+                )}
+                <small className={styles.meta}>
+                  Создание или отправка сертификата сами по себе покупкой не считаются. В счётчике
+                  «Покупок» учитываются только подтверждённые заказы.
+                </small>
+              </div>
+            </details>
           ) : null}
         </div>
       ) : null}
 
       <AgentClientFormDialog
         accessMode={accessMode}
+        editing
         open={editOpen}
         title="Редактировать клиента"
         submitLabel="Сохранить"

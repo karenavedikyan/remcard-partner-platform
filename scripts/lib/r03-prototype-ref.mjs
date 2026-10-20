@@ -151,6 +151,84 @@ export async function verifyRefAgentSection(page, opts) {
   return { ok: true };
 }
 
+export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
+  const viewMode = opts.viewMode ?? 'list';
+  const panel = opts.panel ?? 'list';
+  await page.goto(`${baseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await page.waitForFunction(
+    () => {
+      const app = document.getElementById('app');
+      const text = app?.textContent ?? '';
+      return text.length > 80 && !/Загружаем прототип/i.test(text);
+    },
+    { timeout: 90_000 },
+  );
+
+  await page.evaluate(() => {
+    const sel = document.querySelector('[data-testid="scenario-role"]');
+    if (!(sel instanceof HTMLSelectElement)) throw new Error('ref_role_select_missing');
+    sel.value = 'specialist';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(600);
+
+  const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
+  if ((await cabinetBtn.getAttribute('aria-pressed')) !== 'true') {
+    await cabinetBtn.click({ force: true });
+    await page.waitForTimeout(800);
+  }
+
+  const menuBtn = page.locator('[data-action="menu"]').first();
+  if (await menuBtn.isVisible().catch(() => false)) {
+    await menuBtn.click();
+    await page.waitForTimeout(400);
+  }
+  await page.evaluate(() => {
+    const btn = document.querySelector('[data-action="nav:clients"], [data-testid="nav-clients"]');
+    if (btn instanceof HTMLElement) btn.click();
+  });
+  await page.waitForTimeout(800);
+  await page.getByRole('heading', { name: 'Клиенты' }).first().waitFor({ timeout: 25_000 });
+
+  const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
+  const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
+  if (await viewBtn.isVisible().catch(() => false)) {
+    await viewBtn.click();
+    await page.waitForTimeout(400);
+  }
+
+  if (panel === 'detail') {
+    await page.locator('[data-coll-open]').first().click();
+    await page.waitForTimeout(600);
+    await page.getByRole('heading', { name: /Анна|Клиент/i }).first().waitFor({ timeout: 15_000 });
+  } else if (panel === 'form-create') {
+    await page.locator('[data-action="client-add"]').first().click();
+    await page.waitForTimeout(500);
+    await page.locator('#client-form').waitFor({ timeout: 15_000 });
+  } else if (panel === 'form-edit-empty') {
+    await page.locator('[data-coll-open]').last().click();
+    await page.waitForTimeout(600);
+    await page.locator('[data-action^="client-edit:"]').first().click();
+    await page.waitForTimeout(500);
+    await page.locator('#client-form').waitFor({ timeout: 15_000 });
+  }
+
+  if (opts.theme === 'dark') {
+    const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
+    for (let i = 0; i < 6; i++) {
+      const theme = await page.evaluate(() =>
+        document.documentElement.getAttribute('data-theme'),
+      );
+      if (theme === 'dark') break;
+      if (await themeBtn.isVisible().catch(() => false)) await themeBtn.click();
+      await page.waitForTimeout(400);
+    }
+  }
+
+  await applyRefParityCaptureStyles(page);
+  return { ok: true, panel, viewMode };
+}
+
 export async function verifyImplAgentShell(page, section, viewMode) {
   if (!(await page.locator('[data-testid="agent-product-topbar"]').isVisible().catch(() => false))) {
     return { ok: false, reason: 'impl_not_agent_shell' };
