@@ -94,8 +94,9 @@ async function captureRef(refPage, refBase, spec, outPath) {
     viewMode: spec.viewMode,
     panel: spec.panel,
     theme: spec.theme,
+    width: spec.width,
+    height: spec.height,
   });
-  await refPage.setViewportSize({ width: spec.width, height: spec.height });
   await refPage.screenshot({ path: outPath, fullPage: false });
 }
 

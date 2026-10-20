@@ -154,6 +154,9 @@ export async function verifyRefAgentSection(page, opts) {
 export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   const viewMode = opts.viewMode ?? 'list';
   const panel = opts.panel ?? 'list';
+  if (opts.width && opts.height) {
+    await page.setViewportSize({ width: opts.width, height: opts.height });
+  }
   await page.goto(`${baseUrl}/roles.html`, { waitUntil: 'networkidle', timeout: 90_000 });
   await page.waitForFunction(
     () => {
@@ -172,11 +175,13 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   });
   await page.waitForTimeout(600);
 
-  const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
-  if ((await cabinetBtn.getAttribute('aria-pressed')) !== 'true') {
-    await cabinetBtn.click({ force: true });
-    await page.waitForTimeout(800);
-  }
+  await page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="view-cabinet"]');
+    if (btn instanceof HTMLElement && btn.getAttribute('aria-pressed') !== 'true') {
+      btn.click();
+    }
+  });
+  await page.waitForTimeout(800);
 
   const menuBtn = page.locator('[data-action="menu"]').first();
   if (await menuBtn.isVisible().catch(() => false)) {
