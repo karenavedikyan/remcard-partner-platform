@@ -17,8 +17,8 @@ type Props = {
   onSearchQueryChange: (q: string) => void;
   viewMode: AgentListViewMode;
   onViewModeChange: (mode: AgentListViewMode) => void;
-  archiveView: "active" | "archive";
-  onArchiveViewChange: (v: "active" | "archive") => void;
+  archiveView: "active" | "archive" | "hidden";
+  onArchiveViewChange: (v: "active" | "archive" | "hidden") => void;
   partnerType: AgentPartnerTypeFilter;
   specialization: string;
   stageId: string;
@@ -38,7 +38,7 @@ export function AgentR04ListToolbar(props: Props) {
   const invitations = props.listMode === "invitations";
   const hasFilters =
     props.chips.length > 0 ||
-    props.archiveView === "archive" ||
+    props.archiveView !== "active" ||
     props.sort !== "updated_desc" ||
     props.searchQuery.trim().length > 0;
 
@@ -74,12 +74,15 @@ export function AgentR04ListToolbar(props: Props) {
           <span className={styles.srOnly}>Показывать</span>
           <select
             value={props.archiveView}
-            onChange={(e) => props.onArchiveViewChange(e.target.value as "active" | "archive")}
+            onChange={(e) =>
+              props.onArchiveViewChange(e.target.value as "active" | "archive" | "hidden")
+            }
             data-testid="list-archive-view"
             aria-label="Показывать"
           >
             <option value="active">Активные</option>
             <option value="archive">Архив</option>
+            <option value="hidden">Скрытые</option>
           </select>
         </label>
         ) : null}

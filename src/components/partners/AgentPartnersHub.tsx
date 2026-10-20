@@ -111,6 +111,7 @@ export function AgentPartnersHub({
       <PartnersHub
         {...props}
         variant="agent-r04"
+        partnersAudience={presentationAudience}
         agentSegment={segment}
         agentInvitationFlow={segment === "invitations" ? invitationFlow : undefined}
         forcedTab="list"
@@ -128,6 +129,7 @@ export function AgentPartnersHub({
         <PartnersHub
           {...props}
           variant="agent-r04"
+          partnersAudience={presentationAudience}
           agentModalSurface={modalTab}
           forcedTab={modalTab}
           {...hubSearchRoleProps}

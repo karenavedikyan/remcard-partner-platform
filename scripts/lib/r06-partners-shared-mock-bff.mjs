@@ -243,6 +243,8 @@ export function createPartnersMockState(mode = 'specialist') {
     linkInvites: [],
     inviteCounter: 0,
     preferencePatchFailIds: new Set(),
+    discussionInvites: [],
+    discussionInviteCounter: 0,
   };
 }
 
@@ -435,7 +437,11 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         const pref = state.preferences.get(key) ?? null;
         return send(200, {
           preference: pref
-            ? { personalAlias: pref.personalAlias, archivedAt: pref.archivedAt }
+            ? {
+                personalAlias: pref.personalAlias,
+                archivedAt: pref.archivedAt,
+                hiddenAt: pref.hiddenAt ?? null,
+              }
             : null,
         });
       }
@@ -452,7 +458,11 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           return send(500, { error: 'mock_preference_patch_fail' });
         }
         const key = `${actor.id}:${partnershipId}`;
-        const prev = state.preferences.get(key) ?? { personalAlias: null, archivedAt: null };
+        const prev = state.preferences.get(key) ?? {
+          personalAlias: null,
+          archivedAt: null,
+          hiddenAt: null,
+        };
         const next = {
           personalAlias:
             body.personalAlias !== undefined ? body.personalAlias : prev.personalAlias,
@@ -462,9 +472,66 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
               : body.archived === false
                 ? null
                 : prev.archivedAt,
+          hiddenAt:
+            body.hidden === true
+              ? prev.hiddenAt ?? new Date().toISOString()
+              : body.hidden === false
+                ? null
+                : prev.hiddenAt,
         };
         state.preferences.set(key, next);
+        row.listPreference = next;
         return send(200, { preference: next });
+      }
+      if (path === '/api/partnership/discussion-invite' && req.method === 'GET') {
+        return send(200, { invites: state.discussionInvites });
+      }
+      if (path === '/api/partnership/discussion-invite' && req.method === 'POST') {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        const recipientLabel = String(body.recipientLabel ?? '').trim();
+        const cooperationSubject = String(body.cooperationSubject ?? '').trim();
+        if (!recipientLabel || !cooperationSubject) {
+          return send(400, { error: 'Заполните имя и предмет сотрудничества' });
+        }
+        state.discussionInviteCounter += 1;
+        const token = `mock-discussion-${state.discussionInviteCounter}`;
+        const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        const inviteId = `disc-mock-${state.discussionInviteCounter}`;
+        state.discussionInvites.unshift({
+          id: inviteId,
+          recipientLabel,
+          cooperationSubject,
+          status: 'PENDING',
+          expiresAt,
+          createdAt: new Date().toISOString(),
+          joinedAt: null,
+        });
+        return send(200, {
+          inviteId,
+          token,
+          expiresAt,
+          previewPath: `/invite/discussion/${token}`,
+        });
+      }
+      if (path.startsWith('/api/partnership/discussion-invite/public/') && req.method === 'GET') {
+        const token = path.split('/').pop();
+        const row = state.discussionInvites.find((i) => token.includes(String(state.discussionInviteCounter)));
+        if (!row && token.startsWith('mock-discussion-')) {
+          const n = Number(token.replace('mock-discussion-', ''));
+          const found = state.discussionInvites.find((i) => i.id === `disc-mock-${n}`);
+          if (found) {
+            return send(200, {
+              status: 'PENDING',
+              inviter: { displayName: actor.displayName, partnerType: actor.partnerType, city: 'Краснодар' },
+              recipientLabel: found.recipientLabel,
+              cooperationSubject: found.cooperationSubject,
+              expiresAt: found.expiresAt,
+            });
+          }
+        }
+        return send(404, { status: 'NOT_FOUND' });
       }
       return send(404, { error: 'not_mocked', path });
     } catch (e) {

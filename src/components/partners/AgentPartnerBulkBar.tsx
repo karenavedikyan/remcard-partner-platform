@@ -3,18 +3,27 @@
 import { Button } from "@/components/ui/Button";
 import styles from "./AgentPartnerBulkBar.module.css";
 
+export type BulkListOperation = "archive" | "hidden";
+
 export type BulkOutcome = {
   message: string;
   failedIds: string[];
-  archived: boolean;
+  operation: BulkListOperation;
+  /** false = apply (archive/hide), true = undo (restore/unhide) */
+  undo: boolean;
 };
+
+export type AgentListVisibility = "active" | "archive" | "hidden";
 
 type Props = {
   selectedCount: number;
   busy: boolean;
+  listVisibility: AgentListVisibility;
   outcome: BulkOutcome | null;
   onArchive: () => void;
-  onRestore: () => void;
+  onRestoreArchive: () => void;
+  onHide: () => void;
+  onRestoreHidden: () => void;
   onClearSelection: () => void;
   onRetryFailed: () => void;
   onDismissOutcome: () => void;
@@ -23,9 +32,12 @@ type Props = {
 export function AgentPartnerBulkBar({
   selectedCount,
   busy,
+  listVisibility,
   outcome,
   onArchive,
-  onRestore,
+  onRestoreArchive,
+  onHide,
+  onRestoreHidden,
   onClearSelection,
   onRetryFailed,
   onDismissOutcome,
@@ -57,12 +69,26 @@ export function AgentPartnerBulkBar({
             Выбрано: <strong>{selectedCount}</strong>
           </span>
           <div className={styles.actions}>
-            <Button type="button" variant="secondary" disabled={busy} onClick={onArchive}>
-              В архив
-            </Button>
-            <Button type="button" variant="secondary" disabled={busy} onClick={onRestore}>
-              Вернуть из архива
-            </Button>
+            {listVisibility === "active" ? (
+              <>
+                <Button type="button" variant="secondary" disabled={busy} onClick={onArchive}>
+                  В архив
+                </Button>
+                <Button type="button" variant="secondary" disabled={busy} onClick={onHide}>
+                  Убрать из списка
+                </Button>
+              </>
+            ) : null}
+            {listVisibility === "archive" ? (
+              <Button type="button" variant="secondary" disabled={busy} onClick={onRestoreArchive}>
+                Вернуть из архива
+              </Button>
+            ) : null}
+            {listVisibility === "hidden" ? (
+              <Button type="button" variant="secondary" disabled={busy} onClick={onRestoreHidden}>
+                Вернуть в список
+              </Button>
+            ) : null}
             <Button type="button" variant="secondary" disabled={busy} onClick={onClearSelection}>
               Снять выбор
             </Button>

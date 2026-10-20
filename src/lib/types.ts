@@ -175,6 +175,7 @@ export type Partnership = {
   listPreference?: {
     personalAlias: string | null;
     archivedAt: string | null;
+    hiddenAt?: string | null;
   } | null;
 };
 

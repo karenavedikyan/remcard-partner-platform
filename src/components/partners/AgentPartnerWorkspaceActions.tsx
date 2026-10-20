@@ -8,6 +8,7 @@ import type { Partnership } from "@/lib/types";
 import { RecordRowActions, type RecordRowAction } from "@/components/agent-r03/RecordRowActions";
 import { Button } from "@/components/ui/Button";
 import { PartnerPersonalAliasDialog } from "@/components/partners/PartnerPersonalAliasDialog";
+import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import styles from "./AgentPartnerRecordActions.module.css";
 
 type Variant = "listRow" | "cardToolbar" | "mobileFooter";
@@ -30,7 +31,9 @@ export function usePartnerWorkspaceRowActions(
   const [error, setError] = useState("");
   const [retry, setRetry] = useState<(() => void) | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [hideOpen, setHideOpen] = useState(false);
   const archived = Boolean(partnership.listPreference?.archivedAt);
+  const hidden = Boolean(partnership.listPreference?.hiddenAt);
 
   async function run(action: () => Promise<void>, onRetry?: () => void) {
     setBusy(true);
@@ -76,6 +79,16 @@ export function usePartnerWorkspaceRowActions(
         void run(doArchive, () => void run(doArchive));
       },
     },
+    ...(!archived && !hidden
+      ? [
+          {
+            id: "hide",
+            label: "Убрать из списка",
+            disabled: busy,
+            onClick: () => setHideOpen(true),
+          } satisfies RecordRowAction,
+        ]
+      : []),
   ];
 
   const errorBanner =
@@ -103,7 +116,22 @@ export function usePartnerWorkspaceRowActions(
     />
   );
 
-  return { rowActions, errorBanner, busy, renameDialog };
+  const hideDialog = (
+    <PartnerListHideDialog
+      open={hideOpen}
+      busy={busy}
+      onClose={() => setHideOpen(false)}
+      onConfirm={() => {
+        const doHide = async () => {
+          await patchPartnershipListPreference(partnership.id, { hidden: true });
+          setHideOpen(false);
+        };
+        void run(doHide, () => void run(doHide));
+      }}
+    />
+  );
+
+  return { rowActions, errorBanner, busy, renameDialog, hideDialog };
 }
 
 export function AgentPartnerWorkspaceActions({
@@ -114,7 +142,7 @@ export function AgentPartnerWorkspaceActions({
   ariaLabel,
   trailingActions = [],
 }: Props) {
-  const { rowActions, errorBanner, renameDialog } = usePartnerWorkspaceRowActions(
+  const { rowActions, errorBanner, renameDialog, hideDialog } = usePartnerWorkspaceRowActions(
     partnership,
     meId,
     onUpdated,
@@ -123,6 +151,7 @@ export function AgentPartnerWorkspaceActions({
     <div className={styles.wrap}>
       {errorBanner}
       {renameDialog}
+      {hideDialog}
       <RecordRowActions
         variant={variant}
         ariaLabel={ariaLabel}

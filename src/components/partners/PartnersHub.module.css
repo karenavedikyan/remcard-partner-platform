@@ -93,6 +93,37 @@
   gap: var(--space-4);
 }
 
+.linkModeTabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--offset, var(--surface-muted, #f3f4f6));
+  align-self: flex-start;
+}
+
+.linkModeTabs button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.linkModeTabs button[data-active="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+.linkModeTabs button:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
+}
+
 .modalLead {
   margin: 0;
   font-size: var(--text-sm);

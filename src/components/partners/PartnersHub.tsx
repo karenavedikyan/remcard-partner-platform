@@ -30,8 +30,11 @@ import {
 import { patchPartnershipListPreference } from "@/lib/agent-r04/api";
 import {
   AgentPartnerBulkBar,
+  type BulkListOperation,
   type BulkOutcome,
 } from "@/components/partners/AgentPartnerBulkBar";
+import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import { PartnerDiscussionInvitePanel } from "@/components/partners/PartnerDiscussionInvitePanel";
 import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
 import {
   AgentR04ListToolbar,
@@ -74,6 +77,7 @@ export type PartnersHubProps = {
   onCloseAgentModal?: () => void;
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
+  partnersAudience?: PartnersHubAudience;
 };
 
 type TabId = "list" | "find" | "link";
@@ -99,6 +103,7 @@ export function PartnersHub({
   onCloseAgentModal,
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
+  partnersAudience,
 }: PartnersHubProps) {
   const isAgentR04 = variant === "agent-r04";
   const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
@@ -127,7 +132,8 @@ export function PartnersHub({
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
-  const [listArchiveView, setListArchiveView] = useState<"active" | "archive">("active");
+  const [listArchiveView, setListArchiveView] = useState<"active" | "archive" | "hidden">("active");
+  const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
   const [listPartnerType, setListPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [listSpecialization, setListSpecialization] = useState("");
   const [listCity, setListCity] = useState("");
@@ -247,10 +253,13 @@ export function PartnersHub({
         return agentInvitationFlow === "outgoing" ? outgoing : !outgoing;
       });
     }
-    if (isAgentR04) {
+    if (isAgentR04 && agentSegment === "active") {
       rows = rows.filter((p) => {
         const archived = Boolean(p.listPreference?.archivedAt);
-        return listArchiveView === "archive" ? archived : !archived;
+        const hidden = Boolean(p.listPreference?.hiddenAt);
+        if (listArchiveView === "hidden") return hidden;
+        if (listArchiveView === "archive") return archived && !hidden;
+        return !archived && !hidden;
       });
       const q = listSearch.trim().toLowerCase();
       if (q) {
@@ -345,8 +354,12 @@ export function PartnersHub({
     });
   }, []);
 
-  const runBulkArchivePreference = useCallback(
-    async (archived: boolean, retryFailedOnly = false) => {
+  const runBulkListPreference = useCallback(
+    async (
+      operation: BulkListOperation,
+      apply: boolean,
+      retryFailedOnly = false,
+    ) => {
       if (bulkBusy) return;
       const ids = retryFailedOnly
         ? (bulkOutcome?.failedIds ?? [])
@@ -357,22 +370,33 @@ export function PartnersHub({
       let ok = 0;
       for (const id of ids) {
         try {
-          await patchPartnershipListPreference(id, { archived });
+          if (operation === "archive") {
+            await patchPartnershipListPreference(id, { archived: apply });
+          } else {
+            await patchPartnershipListPreference(id, { hidden: apply });
+          }
           ok += 1;
         } catch {
           failedIds.push(id);
         }
       }
-      const actionLabel = archived ? "перенесены в архив" : "возвращены из архива";
+      const actionLabel =
+        operation === "archive"
+          ? apply
+            ? "перенесены в архив"
+            : "возвращены из архива"
+          : apply
+            ? "убраны из вашего списка"
+            : "возвращены в список";
       let message: string;
       if (failedIds.length === 0) {
-        message = `Готово: ${ok} ${ok === 1 ? "запись" : ok < 5 ? "записи" : "записей"} ${actionLabel}. Партнёрство и условия не изменились — скрытие только в вашем списке.`;
+        message = `Готово: ${ok} ${ok === 1 ? "запись" : ok < 5 ? "записи" : "записей"} ${actionLabel}. Партнёрство и условия не изменились.`;
       } else if (ok === 0) {
         message = `Не удалось обновить ${failedIds.length} ${failedIds.length === 1 ? "запись" : "записи"}. Попробуйте повторить.`;
       } else {
         message = `Частично выполнено: ${ok} из ${ids.length} ${actionLabel}. Не удалось: ${failedIds.length}.`;
       }
-      setBulkOutcome({ message, failedIds, archived });
+      setBulkOutcome({ message, failedIds, operation, undo: !apply });
       setSelectedPartnerIds(new Set(failedIds));
       await loadList();
       setBulkBusy(false);
@@ -671,7 +695,35 @@ export function PartnersHub({
     return (
       <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
         {agentModalSurface === "link" ? (
-          <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
+          <>
+            {partnersAudience === "specialist-r04" ? (
+              <div className={styles.linkModeTabs} role="tablist" aria-label="Тип ссылки">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={linkInviteMode === "discussion"}
+                  data-active={linkInviteMode === "discussion"}
+                  onClick={() => setLinkInviteMode("discussion")}
+                >
+                  К обсуждению
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={linkInviteMode === "terms"}
+                  data-active={linkInviteMode === "terms"}
+                  onClick={() => setLinkInviteMode("terms")}
+                >
+                  С условиями
+                </button>
+              </div>
+            ) : null}
+            {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
+              <PartnerDiscussionInvitePanel showSectionTitle={false} />
+            ) : (
+              <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
+            )}
+          </>
         ) : (
           <>
             {agentFindSearchControls}
@@ -762,12 +814,21 @@ export function PartnersHub({
             <AgentPartnerBulkBar
               selectedCount={selectedPartnerIds.size}
               busy={bulkBusy}
+              listVisibility={listArchiveView}
               outcome={bulkOutcome}
-              onArchive={() => void runBulkArchivePreference(true)}
-              onRestore={() => void runBulkArchivePreference(false)}
+              onArchive={() => void runBulkListPreference("archive", true)}
+              onRestoreArchive={() => void runBulkListPreference("archive", false)}
+              onHide={() => void runBulkListPreference("hidden", true)}
+              onRestoreHidden={() => void runBulkListPreference("hidden", false)}
               onClearSelection={() => setSelectedPartnerIds(new Set())}
               onRetryFailed={() => {
-                if (bulkOutcome) void runBulkArchivePreference(bulkOutcome.archived, true);
+                if (bulkOutcome) {
+                  void runBulkListPreference(
+                    bulkOutcome.operation,
+                    !bulkOutcome.undo,
+                    true,
+                  );
+                }
               }}
               onDismissOutcome={() => setBulkOutcome(null)}
             />
@@ -783,6 +844,8 @@ export function PartnersHub({
                     ? "Отправленных приглашений пока нет"
                     : isAgentR04 && listArchiveView === "archive"
                       ? "В архиве пока нет записей"
+                      : isAgentR04 && listArchiveView === "hidden"
+                        ? "Скрытых записей пока нет"
                       : isAgentR04 && (listFilterChips.length || listSearch.trim())
                         ? "Записей не найдено"
                         : "Партнёров пока нет"

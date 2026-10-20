@@ -15,9 +15,11 @@ export async function fetchAgentR04Status() {
 
 export async function patchPartnershipListPreference(
   partnershipId: string,
-  body: { personalAlias?: string | null; archived?: boolean },
+  body: { personalAlias?: string | null; archived?: boolean; hidden?: boolean },
 ) {
-  return remcardFetch<{ preference: { personalAlias: string | null; archivedAt: string | null } }>(
+  return remcardFetch<{
+    preference: { personalAlias: string | null; archivedAt: string | null; hiddenAt: string | null };
+  }>(
     `/api/pro/partnership-list-preferences/${partnershipId}`,
     { method: "PATCH", body },
   );
