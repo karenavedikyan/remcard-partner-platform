@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { InviteLanding } from "./InviteLanding";
 
@@ -66,15 +67,7 @@ describe("InviteLanding presentation", () => {
     expect(screen.getByRole("button", { name: /Принять условия/ })).toBeDisabled();
   });
 
-  it("blocks accept when terms are hidden but session is ready", async () => {
-    vi.mocked(remcardFetch).mockResolvedValue({
-      status: "PENDING",
-      inviter: { displayName: "ОПТОВИК", partnerType: "STORE", city: "Краснодар" },
-      intendedPartnerType: null,
-      terms: undefined,
-      note: null,
-      expiresAt: new Date(Date.now() + 86400000).toISOString(),
-    });
+  const readySessionMocks = () => {
     vi.mocked(getAuthMe).mockResolvedValue({
       user: { id: "u1", role: "PRO", displayName: "Test", publicId: "RC-1" },
     } as never);
@@ -90,6 +83,47 @@ describe("InviteLanding presentation", () => {
         isAdmin: false,
       },
     } as never);
+  };
+
+  it("blocks accept for mixed valid and unknown terms without posting accept", async () => {
+    const valid10 = {
+      category: "plumbing",
+      categoryLabel: "Сантехника",
+      storePercent: 10,
+      isExcluded: false,
+    };
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "ОПТОВИК", partnerType: "STORE", city: "Краснодар" },
+      intendedPartnerType: null,
+      terms: [valid10, null],
+      note: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+    readySessionMocks();
+
+    render(<InviteLanding token="test-token" />);
+
+    expect(await screen.findByText(/Условия предложения недоступны/)).toBeInTheDocument();
+    const acceptBtn = screen.getByRole("button", { name: /Принять условия/ });
+    expect(acceptBtn).toBeDisabled();
+    await userEvent.click(acceptBtn);
+    expect(vi.mocked(remcardFetch)).not.toHaveBeenCalledWith(
+      "/api/partnership/link-invite/accept",
+      expect.anything(),
+    );
+  });
+
+  it("blocks accept when terms are hidden but session is ready", async () => {
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "ОПТОВИК", partnerType: "STORE", city: "Краснодар" },
+      intendedPartnerType: null,
+      terms: undefined,
+      note: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+    readySessionMocks();
 
     render(<InviteLanding token="test-token" />);
 

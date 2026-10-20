@@ -43,21 +43,23 @@ export function isValidLinkInviteParticipatingTerm(term: unknown): term is LinkI
   return true;
 }
 
-function isParticipatingTermRow(term: unknown): boolean {
-  return isTermRecord(term) && term.isExcluded !== true;
-}
-
 /**
  * Accept only when every participating row matches the public preview contract
- * and at least one participating row exists.
+ * and at least one participating row exists. Unknown non-object entries (null, strings, …)
+ * fail the whole preview; explicitly excluded object rows are ignored.
  */
 export function linkInvitePreviewHasAcceptableTerms(
   preview: Pick<LinkInvitePublicPreview, "terms">,
 ): boolean {
   if (!Array.isArray(preview.terms)) return false;
-  const participating = preview.terms.filter(isParticipatingTermRow);
-  if (participating.length === 0) return false;
-  return participating.every((term) => isValidLinkInviteParticipatingTerm(term));
+  let hasValidParticipating = false;
+  for (const term of preview.terms) {
+    if (!isTermRecord(term)) return false;
+    if (term.isExcluded === true) continue;
+    if (!isValidLinkInviteParticipatingTerm(term)) return false;
+    hasValidParticipating = true;
+  }
+  return hasValidParticipating;
 }
 
 /** Safe rows for terms table (skips malformed entries). */

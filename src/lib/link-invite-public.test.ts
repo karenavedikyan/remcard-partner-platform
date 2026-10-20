@@ -47,6 +47,9 @@ describe("linkInvitePreviewHasAcceptableTerms", () => {
       }),
       false,
     );
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [validRow, null] }), false);
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [validRow, "bad"] }), false);
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [validRow, {}] }), false);
     assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [validRow] }), true);
     assert.equal(
       linkInvitePreviewHasAcceptableTerms({
