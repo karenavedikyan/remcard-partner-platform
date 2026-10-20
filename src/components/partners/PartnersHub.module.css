@@ -88,9 +88,18 @@
   margin-bottom: var(--space-3);
 }
 
+.discussionContextPanel {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--offset, var(--surface-muted, #f6f7f8));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
 .modalSurface {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
+  padding: var(--space-1) 0;
 }
 
 .linkModeTabs {
@@ -115,8 +124,13 @@
 
 .linkModeTabs button[data-active="true"] {
   background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  color: var(--ink, var(--text));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+}
+
+.linkModeTabs button:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
 }
 
 .linkModeTabs button:focus-visible {

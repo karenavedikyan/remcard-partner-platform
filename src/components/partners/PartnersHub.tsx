@@ -59,6 +59,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
 import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
+import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
@@ -116,9 +117,8 @@ export function PartnersHub({
   const discussionInviteId = searchParams.get("discussion")?.trim() || null;
   const [discussionContext, setDiscussionContext] = useState<DiscussionInviteContextDto | null>(null);
   const [discussionContextError, setDiscussionContextError] = useState("");
-  const [listCounts, setListCounts] = useState<{ active: number; archive: number; hidden: number } | null>(
-    null,
-  );
+  const [bulkHideConfirmOpen, setBulkHideConfirmOpen] = useState(false);
+  const [bulkHidePendingIds, setBulkHidePendingIds] = useState<string[]>([]);
   const [tab, setTab] = useState<TabId>(forcedTab ?? "list");
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
@@ -199,12 +199,10 @@ export function PartnersHub({
         params.set("listVisibility", listArchiveView);
       }
       const qs = params.toString();
-      const data = await remcardFetch<{
-        partnerships: Partnership[];
-        listCounts?: { active: number; archive: number; hidden: number };
-      }>(`/api/partnership/list${qs ? `?${qs}` : ""}`);
+      const data = await remcardFetch<{ partnerships: Partnership[] }>(
+        `/api/partnership/list${qs ? `?${qs}` : ""}`,
+      );
       setPartnerships(data.partnerships ?? []);
-      if (data.listCounts) setListCounts(data.listCounts);
     } catch (caught) {
       setPartnerships([]);
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
@@ -396,11 +394,12 @@ export function PartnersHub({
       operation: BulkListOperation,
       apply: boolean,
       retryFailedOnly = false,
+      fixedIds?: string[],
     ) => {
       if (bulkBusy) return;
       const ids = retryFailedOnly
         ? (bulkOutcome?.failedIds ?? [])
-        : [...selectedPartnerIds];
+        : (fixedIds ?? [...selectedPartnerIds]);
       if (ids.length === 0) return;
       setBulkBusy(true);
       const failedIds: string[] = [];
@@ -818,8 +817,30 @@ export function PartnersHub({
         </p>
       ) : null}
 
+      <PartnerListHideDialog
+        open={bulkHideConfirmOpen}
+        busy={bulkBusy}
+        selectedCount={bulkHidePendingIds.length}
+        onClose={() => {
+          if (bulkBusy) return;
+          setBulkHideConfirmOpen(false);
+          setBulkHidePendingIds([]);
+        }}
+        onConfirm={() => {
+          const ids = bulkHidePendingIds;
+          if (ids.length === 0) {
+            setBulkHideConfirmOpen(false);
+            return;
+          }
+          void runBulkListPreference("hidden", true, false, ids).finally(() => {
+            setBulkHideConfirmOpen(false);
+            setBulkHidePendingIds([]);
+          });
+        }}
+      />
+
       {discussionContext ? (
-        <Panel compact data-testid="discussion-invite-context">
+        <Panel compact className={styles.discussionContextPanel} data-testid="discussion-invite-context">
           <p className={styles.attention}>
             <strong>Обсуждение:</strong> {discussionContext.cooperationSubject}
           </p>
@@ -860,11 +881,7 @@ export function PartnersHub({
             <div className={styles.agentToolbarShell}>
               <AgentR04ListToolbar
                 listMode={agentSegment === "invitations" ? "invitations" : "active"}
-                count={
-                  listCounts && agentSegment === "active"
-                    ? listCounts[listArchiveView]
-                    : visiblePartnerships.length
-                }
+                count={visiblePartnerships.length}
                 searchQuery={listSearch}
                 onSearchQueryChange={setListSearch}
                 viewMode={listViewMode}
@@ -895,7 +912,12 @@ export function PartnersHub({
               outcome={bulkOutcome}
               onArchive={() => void runBulkListPreference("archive", true)}
               onRestoreArchive={() => void runBulkListPreference("archive", false)}
-              onHide={() => void runBulkListPreference("hidden", true)}
+              onHide={() => {
+                const ids = [...selectedPartnerIds];
+                if (ids.length === 0) return;
+                setBulkHidePendingIds(ids);
+                setBulkHideConfirmOpen(true);
+              }}
               onRestoreHidden={() => void runBulkListPreference("hidden", false)}
               onClearSelection={() => setSelectedPartnerIds(new Set())}
               onRetryFailed={() => {

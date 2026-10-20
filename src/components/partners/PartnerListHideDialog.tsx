@@ -7,11 +7,19 @@ import styles from "./PartnerPersonalAliasDialog.module.css";
 type Props = {
   open: boolean;
   busy?: boolean;
+  selectedCount?: number;
   onConfirm: () => void;
   onClose: () => void;
 };
 
-export function PartnerListHideDialog({ open, busy, onConfirm, onClose }: Props) {
+export function PartnerListHideDialog({
+  open,
+  busy,
+  selectedCount = 1,
+  onConfirm,
+  onClose,
+}: Props) {
+  const bulk = selectedCount > 1;
   const titleId = useId();
   const confirmRef = useRef<HTMLButtonElement>(null);
 
@@ -37,17 +45,18 @@ export function PartnerListHideDialog({ open, busy, onConfirm, onClose }: Props)
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        data-testid="partner-list-hide-dialog"
+        data-testid={bulk ? "partner-bulk-hide-dialog" : "partner-list-hide-dialog"}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={titleId}>Убрать из списка?</h2>
+        <h2 id={titleId}>{bulk ? "Скрыть из вашего списка?" : "Убрать из списка?"}</h2>
         <p>
-          Партнёр исчезнет только из вашего списка. Партнёрство и согласованные условия сохранятся — вы
-          сможете вернуть запись из режима «Скрытые».
+          {bulk
+            ? "Партнёрства и согласованные условия сохранятся."
+            : "Партнёр исчезнет только из вашего списка. Партнёрство и согласованные условия сохранятся — вы сможете вернуть запись из режима «Скрытые»."}
         </p>
         <div className={styles.actions}>
           <Button ref={confirmRef} variant="primary" disabled={busy} onClick={onConfirm}>
-            Убрать из моего списка
+            {bulk ? `Скрыть ${selectedCount} ${selectedCount === 1 ? "запись" : selectedCount < 5 ? "записи" : "записей"}` : "Убрать из моего списка"}
           </Button>
           <Button variant="secondary" disabled={busy} onClick={onClose}>
             Отмена

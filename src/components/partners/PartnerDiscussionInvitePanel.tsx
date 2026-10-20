@@ -186,7 +186,11 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
         ) : null}
       </Panel>
 
-      <Panel title="Ваши ссылки к обсуждению" hint="Ожидающие ссылки можно отозвать до присоединения получателя.">
+      <Panel
+        className={styles.discussionLinksPanel}
+        title="Ваши ссылки к обсуждению"
+        hint="Ожидающие ссылки можно отозвать до присоединения получателя."
+      >
         {loadingInvites ? (
           <p className={styles.hint}>Загружаем список…</p>
         ) : invites.length === 0 ? (

@@ -97,11 +97,23 @@
 
 .linkListItem {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--line);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface);
+}
+
+.linkListItem .actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.discussionLinksPanel {
+  margin-top: var(--space-2);
 }
 
 .roleField {

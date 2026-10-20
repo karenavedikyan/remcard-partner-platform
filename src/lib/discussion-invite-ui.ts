@@ -10,6 +10,14 @@ export type DiscussionInviteContextDto = {
   counterpartyDisplayName: string;
   counterpartyCity: string | null;
   counterpartyPartnerType: string | null;
+  counterpartyStoreCategories?: string[];
+  counterpartySpecializations?: string[];
+  counterpartyOrganizationName?: string | null;
+  counterpartyOrganizationLogoUrl?: string | null;
+  counterpartyOrganizationPartnerType?: string | null;
+  counterpartyPhotoUrl?: string | null;
+  counterpartyBadges?: string[];
+  counterpartyBranches?: { address: string; city: string }[];
   canProposeTerms: boolean;
 };
 
@@ -21,15 +29,16 @@ export function discussionContextToInviteTarget(
     id: ctx.counterpartyUserId,
     displayName: ctx.counterpartyDisplayName,
     city: ctx.counterpartyCity,
-    photoUrl: null,
+    photoUrl: ctx.counterpartyPhotoUrl ?? null,
     description: null,
-    specializations: [],
-    badges: [],
-    storeCategories: [],
+    specializations: ctx.counterpartySpecializations ?? [],
+    badges: ctx.counterpartyBadges ?? [],
+    storeCategories: ctx.counterpartyStoreCategories ?? [],
     partnerType: ctx.counterpartyPartnerType,
-    organizationName: null,
-    organizationLogoUrl: null,
-    branches: [],
+    organizationName: ctx.counterpartyOrganizationName ?? null,
+    organizationLogoUrl: ctx.counterpartyOrganizationLogoUrl ?? null,
+    organizationPartnerType: ctx.counterpartyOrganizationPartnerType ?? null,
+    branches: ctx.counterpartyBranches ?? [],
     rating: null,
     ratingCount: 0,
     partnershipStatus: null,
