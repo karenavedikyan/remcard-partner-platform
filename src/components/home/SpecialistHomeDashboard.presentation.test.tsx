@@ -1,13 +1,20 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SpecialistHomeDashboard } from "./SpecialistHomeDashboard";
 
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: vi.fn(),
-  RemcardApiError: class extends Error {},
+  RemcardApiError: class RemcardApiError extends Error {
+    status: number;
+    constructor(message: string, status = 500) {
+      super(message);
+      this.status = status;
+    }
+  },
 }));
 
-const { remcardFetch } = await import("@/lib/api-client");
+const { remcardFetch, RemcardApiError } = await import("@/lib/api-client");
 
 describe("SpecialistHomeDashboard", () => {
   it("renders prototype copy and maps wallet metrics", async () => {
@@ -43,5 +50,75 @@ describe("SpecialistHomeDashboard", () => {
       "/recommendations",
     );
     expect(screen.getByRole("link", { name: /Бонусы/ })).toHaveAttribute("href", "/settlements");
+  });
+
+  it("shows zero certificates for empty list without treating as error", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path === "/api/pro/wallet/balance") {
+        return { role: "MASTER", totalRub: 0, paidRub: 0, pendingRub: 0, count: 0 };
+      }
+      if (path === "/api/store/certificate") {
+        return { certificates: [] };
+      }
+      throw new Error(path);
+    });
+
+    render(<SpecialistHomeDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("0")).toBeInTheDocument();
+      expect(screen.getAllByText("0 ₽").length).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.queryByRole("button", { name: /Обновить показатели/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps navigation when wallet fails but certificates load", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path === "/api/pro/wallet/balance") {
+        throw new RemcardApiError("Кошелёк недоступен", 503);
+      }
+      if (path === "/api/store/certificate") {
+        return { certificates: [{ id: "c1" }] };
+      }
+      throw new Error(path);
+    });
+
+    render(<SpecialistHomeDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("1")).toBeInTheDocument();
+      expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.getByRole("link", { name: /Партнёры/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Обновить показатели/ })).toBeInTheDocument();
+  });
+
+  it("retries metrics after partial failure", async () => {
+    let walletCalls = 0;
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path === "/api/pro/wallet/balance") {
+        walletCalls += 1;
+        if (walletCalls === 1) {
+          throw new RemcardApiError("Временная ошибка", 503);
+        }
+        return { role: "MASTER", totalRub: 500, paidRub: 100, pendingRub: 400, count: 1 };
+      }
+      if (path === "/api/store/certificate") {
+        return { certificates: [] };
+      }
+      throw new Error(path);
+    });
+
+    render(<SpecialistHomeDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Обновить показатели/ })).toBeInTheDocument();
+    });
+    await userEvent.click(screen.getByRole("button", { name: /Обновить показатели/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("500 ₽")).toBeInTheDocument();
+    });
+    expect(walletCalls).toBeGreaterThanOrEqual(2);
   });
 });
