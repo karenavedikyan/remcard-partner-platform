@@ -81,7 +81,8 @@ function loadNavigatorEnv() {
     if (!line || line.startsWith('#')) continue;
     const idx = line.indexOf('=');
     if (idx <= 0) continue;
-    env[line.slice(0, idx)] = line.slice(idx + 1);
+    const key = line.slice(0, idx);
+    env[key] = line.slice(idx + 1);
   }
   return env;
 }
