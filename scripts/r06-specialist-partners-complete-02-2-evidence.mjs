@@ -119,13 +119,17 @@ async function main() {
   });
 
   await shot('impl-specialist-bulk-hide-confirm-1440-light', async () => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ colorScheme: 'light' });
     await page.goto(`${origin}/partners`, { waitUntil: 'networkidle' });
-    const checkbox = page.locator('input[type="checkbox"]').first();
-    if (await checkbox.isVisible().catch(() => false)) {
-      await checkbox.check();
-      await page.getByRole('button', { name: /Скрыть/i }).click();
-      await page.locator('[data-testid="partner-bulk-hide-dialog"]').waitFor({ state: 'visible' });
-    }
+    const rowCheck = page.locator('table input[type="checkbox"]').nth(1);
+    await rowCheck.waitFor({ state: 'visible', timeout: 15_000 });
+    await rowCheck.check();
+    await page
+      .locator('[data-testid="agent-partner-bulk-bar"]')
+      .getByRole('button', { name: 'Убрать из списка' })
+      .click();
+    await page.locator('[data-testid="partner-bulk-hide-dialog"]').waitFor({ state: 'visible' });
   });
 
   await shot('impl-specialist-active-375-light', async () => {
