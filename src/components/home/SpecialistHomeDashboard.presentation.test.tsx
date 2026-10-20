@@ -17,6 +17,21 @@ vi.mock("@/lib/api-client", () => ({
 
 const { remcardFetch, RemcardApiError } = await import("@/lib/api-client");
 
+function compactStatText(value: string): string {
+  return value.replace(/[\u00a0\u202f\s]/g, "");
+}
+
+/** Match stat `<strong>` values (money may be split into nowrap group spans). */
+function getStatText(text: string): HTMLElement {
+  const expected = compactStatText(text);
+  return screen.getByText((_, element) => {
+    return (
+      element?.tagName === "STRONG" &&
+      compactStatText(element.textContent ?? "") === expected
+    );
+  });
+}
+
 describe("SpecialistHomeDashboard", () => {
   it("renders prototype copy and maps wallet metrics", async () => {
     vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
@@ -35,9 +50,9 @@ describe("SpecialistHomeDashboard", () => {
       screen.getByRole("heading", { level: 2, name: /Рекомендуйте проверенного партнёра/ }),
     ).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText("2")).toBeInTheDocument();
-      expect(screen.getByText("1 500 ₽")).toBeInTheDocument();
-      expect(screen.getByText("400 ₽")).toBeInTheDocument();
+      expect(getStatText("2")).toBeInTheDocument();
+      expect(getStatText("1 500 ₽")).toBeInTheDocument();
+      expect(getStatText("400 ₽")).toBeInTheDocument();
     });
 
     expect(screen.getByRole("link", { name: /Партнёры/ })).toHaveAttribute("href", "/partners");
@@ -87,8 +102,15 @@ describe("SpecialistHomeDashboard", () => {
     render(<SpecialistHomeDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("0")).toBeInTheDocument();
-      expect(screen.getAllByText("0 ₽").length).toBeGreaterThanOrEqual(2);
+      expect(getStatText("0")).toBeInTheDocument();
+      expect(
+        screen.getAllByText((_, element) => {
+          return (
+            element?.tagName === "STRONG" &&
+            compactStatText(element.textContent ?? "") === compactStatText("0 ₽")
+          );
+        }).length,
+      ).toBeGreaterThanOrEqual(2);
     });
     expect(screen.queryByRole("button", { name: /Обновить показатели/ })).not.toBeInTheDocument();
   });
@@ -134,8 +156,8 @@ describe("SpecialistHomeDashboard", () => {
     render(<SpecialistHomeDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("5 123 456 ₽")).toBeInTheDocument();
-      expect(screen.getByText("2 345 678 ₽")).toBeInTheDocument();
+      expect(getStatText("5 123 456 ₽")).toBeInTheDocument();
+      expect(getStatText("2 345 678 ₽")).toBeInTheDocument();
     });
   });
 
@@ -163,7 +185,7 @@ describe("SpecialistHomeDashboard", () => {
     await userEvent.click(screen.getByRole("button", { name: /Обновить показатели/ }));
 
     await waitFor(() => {
-      expect(screen.getByText("500 ₽")).toBeInTheDocument();
+      expect(getStatText("500 ₽")).toBeInTheDocument();
     });
     expect(walletCalls).toBeGreaterThanOrEqual(2);
   });

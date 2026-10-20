@@ -16,6 +16,7 @@ import {
 } from "@/lib/specialist-home/metrics";
 import { Button } from "@/components/ui/Button";
 import { IconArrowRight, IconArrowUpRight } from "@/components/layout/ThemeIcons";
+import { formattedMoneyWrapGroups } from "@/lib/specialist-home/display";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 type SpecialistHomeDashboardProps = {
@@ -53,6 +54,22 @@ function moneyLabel(slice: SpecialistHomeMoneySlice): string {
   if (slice.state === "error") return "—";
   if (slice.state === "empty") return formatMoneyRub(0);
   return formatMoneyRub(slice.rub);
+}
+
+function StatMoneyValue({ label }: { label: string }) {
+  const groups = formattedMoneyWrapGroups(label);
+  if (!groups) {
+    return <strong className={styles.statValue}>{label}</strong>;
+  }
+  return (
+    <strong className={`${styles.statValue} ${styles.statValueMoney}`}>
+      {groups.map((part, index) => (
+        <span key={`${part}-${index}`} className={styles.statValueGroup}>
+          {part}
+        </span>
+      ))}
+    </strong>
+  );
 }
 
 export function SpecialistHomeDashboard({
@@ -153,7 +170,7 @@ export function SpecialistHomeDashboard({
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Начислено</span>
-          <strong className={styles.statValue}>{moneyLabel(metrics.accrued)}</strong>
+          <StatMoneyValue label={moneyLabel(metrics.accrued)} />
           <span className={styles.statHint}>За покупки клиентов</span>
           {metrics.accrued.state === "error" ? (
             <p className={styles.statError} role="alert">
@@ -163,7 +180,7 @@ export function SpecialistHomeDashboard({
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Получено</span>
-          <strong className={styles.statValue}>{moneyLabel(metrics.received)}</strong>
+          <StatMoneyValue label={moneyLabel(metrics.received)} />
           <span className={styles.statHint}>Подтверждённые выплаты</span>
           {metrics.received.state === "error" ? (
             <p className={styles.statError} role="alert">
