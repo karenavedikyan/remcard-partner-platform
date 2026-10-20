@@ -42,13 +42,14 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
     return { ok: false, reason: 'ref_role_select_failed' };
   }
 
-  const cabinetBtn = page.locator('[data-testid="view-cabinet"]');
-  await cabinetBtn.waitFor({ state: 'attached', timeout: 20_000 });
-  const cabinetPressed = await cabinetBtn.getAttribute('aria-pressed');
-  if (cabinetPressed !== 'true') {
-    await cabinetBtn.click({ force: true });
-    await page.waitForTimeout(800);
-  }
+  await page.locator('[data-testid="view-cabinet"]').waitFor({ state: 'attached', timeout: 20_000 });
+  await page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="view-cabinet"]');
+    if (btn instanceof HTMLElement && btn.getAttribute('aria-pressed') !== 'true') {
+      btn.click();
+    }
+  });
+  await page.waitForTimeout(800);
 
   const navKey = section === 'certificates' ? 'home' : 'clients';
   const menuBtn = page.locator('[data-action="menu"]').first();

@@ -62,6 +62,7 @@ export async function prepareImplClients(page, origin, spec) {
 }
 
 export async function captureRefClients(refPage, refBase, spec, outPath) {
+  await refPage.setViewportSize({ width: spec.width, height: spec.height });
   if (spec.audience === 'agent') {
     await driveRefAgentSection(refPage, refBase, {
       section: 'clients',
