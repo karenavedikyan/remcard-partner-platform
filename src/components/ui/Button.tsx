@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, PropsWithChildren } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type PropsWithChildren } from "react";
 import styles from "./Button.module.css";
 
 type ButtonProps = PropsWithChildren<
@@ -7,20 +7,17 @@ type ButtonProps = PropsWithChildren<
   }
 >;
 
-export function Button({
-  children,
-  className,
-  variant = "primary",
-  type = "button",
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { children, className, variant = "primary", type = "button", ...props },
+  ref,
+) {
   const classes = [styles.button, styles[variant], className]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <button type={type} className={classes} {...props}>
+    <button ref={ref} type={type} className={classes} {...props}>
       {children}
     </button>
   );
-}
+});

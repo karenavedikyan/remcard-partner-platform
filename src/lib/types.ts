@@ -181,6 +181,12 @@ export type Partnership = {
 
 export type PartnershipListResponse = {
   partnerships: Partnership[];
+  listCounts?: {
+    active: number;
+    archive: number;
+    hidden: number;
+  };
+  listVisibility?: "active" | "archive" | "hidden" | "all";
 };
 
 export type PartnerSearchResult = {

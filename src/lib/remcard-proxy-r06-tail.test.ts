@@ -13,4 +13,14 @@ describe("R06 tail proxy allowlist", () => {
     expect(isAllowedProxyRoute("DELETE", "/api/pro/taxonomy-proposals")).toBe(false);
     expect(isAllowedProxyRoute("POST", "/api/pro/taxonomy-proposal")).toBe(false);
   });
+
+  it("allows partnership discussion-invite BFF routes", () => {
+    expect(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite")).toBe(true);
+    expect(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite")).toBe(true);
+    expect(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/disc-1")).toBe(true);
+    expect(isAllowedProxyRoute("DELETE", "/api/partnership/discussion-invite/disc-1")).toBe(true);
+    expect(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/public/tok")).toBe(true);
+    expect(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join")).toBe(true);
+    expect(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join")).toBe(false);
+  });
 });

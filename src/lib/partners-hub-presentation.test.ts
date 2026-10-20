@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { discussionContextToInviteTarget } from "./discussion-invite-ui";
 import { resolvePartnersHubPresentation } from "./partners-hub-presentation";
 
 describe("resolvePartnersHubPresentation", () => {
@@ -70,5 +71,23 @@ describe("resolvePartnersHubPresentation", () => {
     });
     expect(p.shell).toBe("legacy");
     expect(p.defaultSearchRole).toBeUndefined();
+  });
+});
+
+describe("discussionContextToInviteTarget", () => {
+  it("maps joined discussion to real counterparty user id for invite flow", () => {
+    const target = discussionContextToInviteTarget({
+      id: "disc-1",
+      recipientLabel: "Иван",
+      cooperationSubject: "Двери",
+      status: "JOINED",
+      role: "author",
+      counterpartyUserId: "user-b",
+      counterpartyDisplayName: "Иван Петров",
+      counterpartyCity: "Краснодар",
+      counterpartyPartnerType: "MASTER",
+      canProposeTerms: true,
+    });
+    expect(target?.id).toBe("user-b");
   });
 });

@@ -310,7 +310,38 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           if (!pref) return p;
           return { ...p, listPreference: pref };
         });
-        return send(200, { partnerships: withPrefs });
+        let active = 0;
+        let archive = 0;
+        let hidden = 0;
+        for (const row of withPrefs) {
+          const pref = row.listPreference;
+          const isHidden = Boolean(pref?.hiddenAt);
+          const isArchive = Boolean(pref?.archivedAt);
+          if (isHidden) hidden += 1;
+          else if (isArchive) archive += 1;
+          else active += 1;
+        }
+        const url = new URL(req.url || '', 'http://127.0.0.1');
+        const visibility = url.searchParams.get('listVisibility');
+        const filtered =
+          visibility === 'hidden'
+            ? withPrefs.filter((row) => Boolean(row.listPreference?.hiddenAt))
+            : visibility === 'archive'
+              ? withPrefs.filter(
+                  (row) =>
+                    Boolean(row.listPreference?.archivedAt) && !row.listPreference?.hiddenAt,
+                )
+              : visibility === 'active'
+                ? withPrefs.filter(
+                    (row) =>
+                      !row.listPreference?.hiddenAt && !row.listPreference?.archivedAt,
+                  )
+                : withPrefs;
+        return send(200, {
+          partnerships: filtered,
+          listCounts: { active, archive, hidden },
+          listVisibility: visibility || 'all',
+        });
       }
       if (path.startsWith('/api/partnership/search')) {
         state.searchCalls += 1;
@@ -501,12 +532,17 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         const inviteId = `disc-mock-${state.discussionInviteCounter}`;
         state.discussionInvites.unshift({
           id: inviteId,
+          token,
+          inviterId: actor.id,
+          joinedByUserId: null,
           recipientLabel,
           cooperationSubject,
           status: 'PENDING',
+          role: 'author',
           expiresAt,
           createdAt: new Date().toISOString(),
           joinedAt: null,
+          canProposeTerms: false,
         });
         return send(200, {
           inviteId,
@@ -516,22 +552,127 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         });
       }
       if (path.startsWith('/api/partnership/discussion-invite/public/') && req.method === 'GET') {
-        const token = path.split('/').pop();
-        const row = state.discussionInvites.find((i) => token.includes(String(state.discussionInviteCounter)));
-        if (!row && token.startsWith('mock-discussion-')) {
-          const n = Number(token.replace('mock-discussion-', ''));
-          const found = state.discussionInvites.find((i) => i.id === `disc-mock-${n}`);
-          if (found) {
+        const token = decodeURIComponent(path.split('/').pop() || '');
+        const row = state.discussionInvites.find((i) => i.token === token);
+        if (!row) return send(200, { status: 'NOT_FOUND', viewerRole: 'anonymous' });
+        const viewerRole =
+          row.inviterId === actor.id
+            ? 'inviter'
+            : row.joinedByUserId === actor.id
+              ? 'participant'
+              : 'other';
+        if (row.status === 'ACCEPTED' || row.status === 'JOINED') {
+          const status =
+            viewerRole === 'inviter' || viewerRole === 'participant' ? 'JOINED' : 'UNAVAILABLE';
+          return send(200, {
+            status,
+            viewerRole: viewerRole === 'other' ? 'other' : viewerRole,
+            inviteId: viewerRole === 'inviter' || viewerRole === 'participant' ? row.id : undefined,
+            canJoin: false,
+            inviter: { displayName: actor.displayName, partnerType: actor.partnerType, city: 'Краснодар' },
+            recipientLabel: row.recipientLabel,
+            cooperationSubject: row.cooperationSubject,
+            expiresAt: row.expiresAt,
+          });
+        }
+        if (row.status === 'PENDING' && viewerRole === 'inviter') {
+          return send(200, {
+            status: 'PENDING',
+            viewerRole: 'inviter',
+            canJoin: false,
+            inviter: { displayName: actor.displayName, partnerType: actor.partnerType, city: 'Краснодар' },
+            recipientLabel: row.recipientLabel,
+            cooperationSubject: row.cooperationSubject,
+            expiresAt: row.expiresAt,
+          });
+        }
+        return send(200, {
+          status: row.status === 'REVOKED' ? 'REVOKED' : row.status === 'EXPIRED' ? 'EXPIRED' : 'PENDING',
+          viewerRole: viewerRole === 'other' ? 'other' : 'anonymous',
+          canJoin: row.status === 'PENDING',
+          inviter: { displayName: actor.displayName, partnerType: actor.partnerType, city: 'Краснодар' },
+          recipientLabel: row.recipientLabel,
+          cooperationSubject: row.cooperationSubject,
+          expiresAt: row.expiresAt,
+        });
+      }
+      if (path === '/api/partnership/discussion-invite/join' && req.method === 'POST') {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        const token = String(body.token ?? '').trim();
+        const row = state.discussionInvites.find((i) => i.token === token);
+        if (!row) return send(404, { error: 'Ссылка не найдена' });
+        if (row.inviterId === actor.id) {
+          return send(403, { error: 'Нельзя принять собственное приглашение', code: 'SELF_INVITE' });
+        }
+        if (row.status === 'REVOKED') return send(410, { error: 'Приглашение отозвано', code: 'REVOKED' });
+        if (row.status === 'JOINED' || row.status === 'ACCEPTED') {
+          if (row.joinedByUserId === actor.id) {
             return send(200, {
-              status: 'PENDING',
-              inviter: { displayName: actor.displayName, partnerType: actor.partnerType, city: 'Краснодар' },
-              recipientLabel: found.recipientLabel,
-              cooperationSubject: found.cooperationSubject,
-              expiresAt: found.expiresAt,
+              ok: true,
+              inviteId: row.id,
+              alreadyJoined: true,
+              redirectPath: `/partners?discussion=${encodeURIComponent(row.id)}`,
             });
           }
+          return send(409, { error: 'Приглашение уже принято другим участником', code: 'RECIPIENT_TAKEN' });
         }
-        return send(404, { status: 'NOT_FOUND' });
+        row.status = 'JOINED';
+        row.joinedByUserId = actor.id;
+        row.joinedAt = new Date().toISOString();
+        row.canProposeTerms = true;
+        row.role = 'participant';
+        const author = state.discussionInvites.find((i) => i.id === row.id);
+        if (author) author.canProposeTerms = true;
+        return send(200, {
+          ok: true,
+          inviteId: row.id,
+          alreadyJoined: false,
+          redirectPath: `/partners?discussion=${encodeURIComponent(row.id)}`,
+        });
+      }
+      if (
+        path.startsWith('/api/partnership/discussion-invite/') &&
+        !path.includes('/public/') &&
+        path !== '/api/partnership/discussion-invite/join' &&
+        req.method === 'DELETE'
+      ) {
+        const id = path.split('/').pop();
+        const row = state.discussionInvites.find((i) => i.id === id && i.inviterId === actor.id);
+        if (!row) return send(404, { error: 'Не найдено' });
+        if (row.status !== 'PENDING') return send(409, { error: 'Приглашение уже закрыто' });
+        row.status = 'REVOKED';
+        return send(200, { ok: true });
+      }
+      if (
+        path.startsWith('/api/partnership/discussion-invite/') &&
+        !path.includes('/public/') &&
+        path !== '/api/partnership/discussion-invite/join' &&
+        req.method === 'GET'
+      ) {
+        const id = path.split('/').pop();
+        const row = state.discussionInvites.find(
+          (i) =>
+            i.id === id && (i.inviterId === actor.id || i.joinedByUserId === actor.id),
+        );
+        if (!row) return send(404, { error: 'Не найдено' });
+        const role = row.inviterId === actor.id ? 'author' : 'participant';
+        const counterpartyUserId = role === 'author' ? row.joinedByUserId : row.inviterId;
+        return send(200, {
+          context: {
+            id: row.id,
+            recipientLabel: row.recipientLabel,
+            cooperationSubject: row.cooperationSubject,
+            status: row.status === 'JOINED' ? 'JOINED' : row.status,
+            role,
+            counterpartyUserId: counterpartyUserId || 'mock-counterparty',
+            counterpartyDisplayName: row.recipientLabel,
+            counterpartyCity: 'Краснодар',
+            counterpartyPartnerType: 'MASTER',
+            canProposeTerms: Boolean(row.canProposeTerms && counterpartyUserId),
+          },
+        });
       }
       return send(404, { error: 'not_mocked', path });
     } catch (e) {

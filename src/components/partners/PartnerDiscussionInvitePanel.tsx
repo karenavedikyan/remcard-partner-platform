@@ -1,18 +1,46 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
 
-type Props = {
-  showSectionTitle?: boolean;
+type DiscussionInviteRow = {
+  id: string;
+  recipientLabel: string;
+  cooperationSubject: string;
+  status: string;
+  role: "author" | "participant";
+  expiresAt: string;
+  createdAt: string;
+  joinedAt: string | null;
+  canProposeTerms: boolean;
 };
 
-export function PartnerDiscussionInvitePanel({ showSectionTitle = true }: Props) {
+type Props = {
+  showSectionTitle?: boolean;
+  onOpenDiscussion?: (inviteId: string) => void;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: "Ожидает",
+  JOINED: "Присоединились",
+  REVOKED: "Отозвано",
+  EXPIRED: "Истекло",
+};
+
+export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDiscussion }: Props) {
+  const router = useRouter();
+  const openDiscussion =
+    onOpenDiscussion ??
+    ((inviteId: string) => {
+      router.push(`/partners?discussion=${encodeURIComponent(inviteId)}`);
+    });
   const [recipientLabel, setRecipientLabel] = useState("");
   const [cooperationSubject, setCooperationSubject] = useState("");
   const [creating, setCreating] = useState(false);
@@ -20,6 +48,27 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true }: Props)
   const [createdUrl, setCreatedUrl] = useState("");
   const [createdExpires, setCreatedExpires] = useState("");
   const [shareHint, setShareHint] = useState("");
+  const [invites, setInvites] = useState<DiscussionInviteRow[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(true);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const loadInvites = useCallback(async () => {
+    setLoadingInvites(true);
+    try {
+      const data = await remcardFetch<{ invites: DiscussionInviteRow[] }>(
+        "/api/partnership/discussion-invite",
+      );
+      setInvites(data.invites ?? []);
+    } catch {
+      setInvites([]);
+    } finally {
+      setLoadingInvites(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadInvites();
+  }, [loadInvites]);
 
   const createLink = useCallback(async () => {
     setError("");
@@ -39,12 +88,13 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true }: Props)
       });
       setCreatedUrl(`${getAppUrl()}${result.previewPath}`);
       setCreatedExpires(result.expiresAt);
+      await loadInvites();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать ссылку");
     } finally {
       setCreating(false);
     }
-  }, [cooperationSubject, recipientLabel]);
+  }, [cooperationSubject, loadInvites, recipientLabel]);
 
   async function copyUrl(url: string) {
     try {
@@ -52,6 +102,21 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true }: Props)
       setShareHint("Ссылка скопирована");
     } catch {
       setShareHint("Скопируйте ссылку вручную из поля ниже");
+    }
+  }
+
+  async function revokeInvite(id: string) {
+    setRevokingId(id);
+    setError("");
+    try {
+      await remcardFetch(`/api/partnership/discussion-invite/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      await loadInvites();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отозвать ссылку");
+    } finally {
+      setRevokingId(null);
     }
   }
 
@@ -119,6 +184,49 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true }: Props)
             </div>
           </div>
         ) : null}
+      </Panel>
+
+      <Panel title="Ваши ссылки к обсуждению" hint="Ожидающие ссылки можно отозвать до присоединения получателя.">
+        {loadingInvites ? (
+          <p className={styles.hint}>Загружаем список…</p>
+        ) : invites.length === 0 ? (
+          <p className={styles.hint}>Пока нет созданных ссылок.</p>
+        ) : (
+          <ul className={styles.linkList} data-testid="discussion-invite-list">
+            {invites.map((row) => (
+              <li key={row.id} className={styles.linkListItem}>
+                <div>
+                  <strong>{row.recipientLabel}</strong>
+                  <p className={styles.hint}>{row.cooperationSubject}</p>
+                  <p className={styles.hint}>
+                    {row.role === "author" ? "Вы создали" : "Вы участник"} · до{" "}
+                    {formatExpiry(row.expiresAt)}
+                  </p>
+                </div>
+                <div className={styles.actions}>
+                  <StatusBadge
+                    label={STATUS_LABEL[row.status] ?? row.status}
+                    tone={row.status === "JOINED" ? "active" : "neutral"}
+                  />
+                  {row.status === "JOINED" && row.canProposeTerms ? (
+                    <Button variant="secondary" onClick={() => openDiscussion(row.id)}>
+                      Открыть обсуждение
+                    </Button>
+                  ) : null}
+                  {row.role === "author" && row.status === "PENDING" ? (
+                    <Button
+                      variant="text"
+                      disabled={revokingId === row.id}
+                      onClick={() => void revokeInvite(row.id)}
+                    >
+                      {revokingId === row.id ? "Отзываем…" : "Отозвать"}
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Panel>
     </div>
   );

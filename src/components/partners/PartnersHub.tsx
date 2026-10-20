@@ -35,6 +35,10 @@ import {
 } from "@/components/partners/AgentPartnerBulkBar";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 import { PartnerDiscussionInvitePanel } from "@/components/partners/PartnerDiscussionInvitePanel";
+import {
+  discussionContextToInviteTarget,
+  type DiscussionInviteContextDto,
+} from "@/lib/discussion-invite-ui";
 import { AgentPartnerRecordActions } from "@/components/partners/AgentPartnerRecordActions";
 import {
   AgentR04ListToolbar,
@@ -109,6 +113,12 @@ export function PartnersHub({
   const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
   const searchParams = useSearchParams();
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
+  const discussionInviteId = searchParams.get("discussion")?.trim() || null;
+  const [discussionContext, setDiscussionContext] = useState<DiscussionInviteContextDto | null>(null);
+  const [discussionContextError, setDiscussionContextError] = useState("");
+  const [listCounts, setListCounts] = useState<{ active: number; archive: number; hidden: number } | null>(
+    null,
+  );
   const [tab, setTab] = useState<TabId>(forcedTab ?? "list");
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
@@ -184,15 +194,48 @@ export function PartnersHub({
     setLoadingList(true);
     setListError("");
     try {
-      const data = await remcardFetch<{ partnerships: Partnership[] }>("/api/partnership/list");
+      const params = new URLSearchParams();
+      if (isAgentR04 && agentSegment === "active") {
+        params.set("listVisibility", listArchiveView);
+      }
+      const qs = params.toString();
+      const data = await remcardFetch<{
+        partnerships: Partnership[];
+        listCounts?: { active: number; archive: number; hidden: number };
+      }>(`/api/partnership/list${qs ? `?${qs}` : ""}`);
       setPartnerships(data.partnerships ?? []);
+      if (data.listCounts) setListCounts(data.listCounts);
     } catch (caught) {
       setPartnerships([]);
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
     } finally {
       setLoadingList(false);
     }
+  }, [agentSegment, isAgentR04, listArchiveView]);
+
+  const loadDiscussionContext = useCallback(async (inviteId: string) => {
+    setDiscussionContextError("");
+    try {
+      const data = await remcardFetch<{ context: DiscussionInviteContextDto }>(
+        `/api/partnership/discussion-invite/${encodeURIComponent(inviteId)}`,
+      );
+      setDiscussionContext(data.context ?? null);
+    } catch (caught) {
+      setDiscussionContext(null);
+      setDiscussionContextError(
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить обсуждение",
+      );
+    }
   }, []);
+
+  useEffect(() => {
+    if (discussionInviteId) {
+      void loadDiscussionContext(discussionInviteId);
+    } else {
+      setDiscussionContext(null);
+      setDiscussionContextError("");
+    }
+  }, [discussionInviteId, loadDiscussionContext]);
 
   const loadSearch = useCallback(
     async (mode: "reset" | "append", cursor: string | null = null) => {
@@ -254,13 +297,7 @@ export function PartnersHub({
       });
     }
     if (isAgentR04 && agentSegment === "active") {
-      rows = rows.filter((p) => {
-        const archived = Boolean(p.listPreference?.archivedAt);
-        const hidden = Boolean(p.listPreference?.hiddenAt);
-        if (listArchiveView === "hidden") return hidden;
-        if (listArchiveView === "archive") return archived && !hidden;
-        return !archived && !hidden;
-      });
+      // Archive/hidden segmentation is applied on the server via listVisibility; invitations keep full list.
       const q = listSearch.trim().toLowerCase();
       if (q) {
         rows = rows.filter((p) => {
@@ -781,13 +818,53 @@ export function PartnersHub({
         </p>
       ) : null}
 
+      {discussionContext ? (
+        <Panel compact data-testid="discussion-invite-context">
+          <p className={styles.attention}>
+            <strong>Обсуждение:</strong> {discussionContext.cooperationSubject}
+          </p>
+          <p className={styles.partnerMeta}>
+            {discussionContext.role === "author" ? "Получатель" : "Инициатор"}:{" "}
+            {discussionContext.counterpartyDisplayName || discussionContext.recipientLabel}
+          </p>
+          {discussionContext.status === "JOINED" && discussionContext.canProposeTerms ? (
+            <div className={styles.searchAction}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  const target = discussionContextToInviteTarget(discussionContext);
+                  if (target) setInviteTarget(target);
+                }}
+              >
+                Предложить условия сотрудничества
+              </Button>
+            </div>
+          ) : (
+            <p className={styles.partnerMeta}>
+              {discussionContext.status === "PENDING"
+                ? "Ожидаем присоединения второго участника по ссылке."
+                : "Следующий шаг недоступен для текущего статуса обсуждения."}
+            </p>
+          )}
+        </Panel>
+      ) : discussionContextError && discussionInviteId ? (
+        <p className={styles.error} role="alert">
+          {discussionContextError}
+        </p>
+      ) : null}
+
       {tab === "list" ? (
         <>
           {isAgentR04 ? (
             <div className={styles.agentToolbarShell}>
               <AgentR04ListToolbar
                 listMode={agentSegment === "invitations" ? "invitations" : "active"}
-                count={visiblePartnerships.length}
+                count={
+                  listCounts && agentSegment === "active"
+                    ? listCounts[listArchiveView]
+                    : visiblePartnerships.length
+                }
                 searchQuery={listSearch}
                 onSearchQueryChange={setListSearch}
                 viewMode={listViewMode}

@@ -11,11 +11,33 @@ import styles from "./InviteLanding.module.css";
 
 type Preview = {
   status: string;
+  viewerRole?: string;
+  inviteId?: string;
+  canJoin?: boolean;
   inviter?: { displayName: string; partnerType: string | null; city: string | null };
   recipientLabel?: string;
   cooperationSubject?: string;
   expiresAt?: string;
 };
+
+function statusTitle(preview: Preview | null, joinedLocally: boolean): string {
+  const status = preview?.status ?? "NOT_FOUND";
+  const role = preview?.viewerRole;
+
+  if (joinedLocally || (status === "JOINED" && (role === "participant" || role === "inviter"))) {
+    return role === "inviter"
+      ? "Получатель присоединился к обсуждению"
+      : "Вы присоединились к обсуждению";
+  }
+  if (status === "UNAVAILABLE") return "Ссылка уже использована";
+  if (status === "JOINED") return "Ссылка уже использована";
+  if (status === "REVOKED") return "Приглашение отозвано";
+  if (status === "EXPIRED") return "Срок приглашения истёк";
+  if (role === "inviter" && status === "PENDING") {
+    return "Это ваша ссылка к обсуждению";
+  }
+  return "Ссылка недействительна";
+}
 
 export function DiscussionInviteLanding({ token }: { token: string }) {
   const router = useRouter();
@@ -24,25 +46,34 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [joined, setJoined] = useState(false);
+  const [redirectInviteId, setRedirectInviteId] = useState<string | null>(null);
+
+  const reloadPreview = useCallback(async () => {
+    try {
+      const data = await remcardFetch<Preview>(
+        `/api/partnership/discussion-invite/public/${encodeURIComponent(token)}`,
+      );
+      setPreview(data);
+      return data;
+    } catch {
+      setPreview({ status: "NOT_FOUND" });
+      return null;
+    }
+  }, [token]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const data = await remcardFetch<Preview>(
-          `/api/partnership/discussion-invite/public/${encodeURIComponent(token)}`,
-        );
-        if (!cancelled) setPreview(data);
-      } catch {
-        if (!cancelled) setPreview({ status: "NOT_FOUND" });
-      } finally {
-        if (!cancelled) setLoading(false);
+      const data = await reloadPreview();
+      if (!cancelled && data?.status === "JOINED" && data.inviteId) {
+        setRedirectInviteId(data.inviteId);
       }
+      if (!cancelled) setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [reloadPreview]);
 
   const join = useCallback(async () => {
     setBusy(true);
@@ -54,17 +85,31 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
         router.push(buildSessionRecoveryLoginHref(returnTo));
         return;
       }
-      await remcardFetch<{ ok: boolean; alreadyJoined?: boolean }>(
-        "/api/partnership/discussion-invite/join",
-        { method: "POST", body: { token } },
-      );
+      const result = await remcardFetch<{
+        ok: boolean;
+        alreadyJoined?: boolean;
+        inviteId?: string;
+        redirectPath?: string;
+      }>("/api/partnership/discussion-invite/join", { method: "POST", body: { token } });
       setJoined(true);
+      const inviteId = result.inviteId ?? preview?.inviteId ?? null;
+      setRedirectInviteId(inviteId);
+      await reloadPreview();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось присоединиться");
     } finally {
       setBusy(false);
     }
-  }, [router, token]);
+  }, [preview?.inviteId, reloadPreview, router, token]);
+
+  function openDiscussionContext() {
+    const id = redirectInviteId ?? preview?.inviteId;
+    if (id) {
+      router.push(`/partners?discussion=${encodeURIComponent(id)}`);
+      return;
+    }
+    router.push("/partners");
+  }
 
   if (loading) {
     return (
@@ -75,22 +120,52 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
   }
 
   const status = preview?.status ?? "NOT_FOUND";
-  if (status !== "PENDING" && !joined) {
-    const title =
-      status === "JOINED"
-        ? "Вы уже присоединились к обсуждению"
-        : status === "REVOKED"
-          ? "Приглашение отозвано"
-          : status === "EXPIRED"
-            ? "Срок приглашения истёк"
-            : "Ссылка недействительна";
+  const viewerRole = preview?.viewerRole;
+  const canShowJoinForm =
+    status === "PENDING" && viewerRole !== "inviter" && (preview?.canJoin ?? true) && !joined;
+  const showParticipantContinue =
+    joined ||
+    (status === "JOINED" && (viewerRole === "participant" || viewerRole === "inviter"));
+
+  if (!canShowJoinForm && !showParticipantContinue) {
+    const title = statusTitle(preview, joined);
     return (
       <div className={styles.page}>
         <div className={styles.wrap}>
           <BrandMark />
           <div className={styles.card}>
             <h1 className={styles.title}>{title}</h1>
+            {viewerRole === "inviter" && status === "PENDING" ? (
+              <p className={styles.lead}>
+                Отправьте ссылку получателю. Присоединиться к собственной ссылке нельзя — управление в
+                разделе «Партнёры».
+              </p>
+            ) : null}
             <Link href="/">На главную</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showParticipantContinue && !canShowJoinForm) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.wrap}>
+          <BrandMark />
+          <div className={styles.card}>
+            <h1 className={styles.title}>{statusTitle(preview, joined)}</h1>
+            {preview?.cooperationSubject ? (
+              <div className={styles.noteBlock}>
+                <strong>Предмет</strong>
+                <p>{preview.cooperationSubject}</p>
+              </div>
+            ) : null}
+            <p className={styles.lead}>
+              Дальше можно предложить условия сотрудничества штатным приглашением — партнёрство создаётся
+              только после согласования.
+            </p>
+            <Button onClick={openDiscussionContext}>Перейти к обсуждению</Button>
           </div>
         </div>
       </div>
@@ -127,7 +202,7 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
           {joined ? (
             <>
               <p className={styles.notice}>Вы присоединились к обсуждению.</p>
-              <Button onClick={() => router.push("/partners")}>Открыть кабинет</Button>
+              <Button onClick={openDiscussionContext}>Перейти к обсуждению</Button>
             </>
           ) : (
             <div className={styles.actions}>
