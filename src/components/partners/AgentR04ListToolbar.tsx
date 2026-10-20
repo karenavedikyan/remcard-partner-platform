@@ -14,6 +14,7 @@ type Props = {
   listMode?: "active" | "invitations";
   count: number;
   searchQuery: string;
+  searchPlaceholder?: string;
   onSearchQueryChange: (q: string) => void;
   viewMode: AgentListViewMode;
   onViewModeChange: (mode: AgentListViewMode) => void;
@@ -65,7 +66,7 @@ export function AgentR04ListToolbar(props: Props) {
           <input
             value={props.searchQuery}
             onChange={(e) => props.onSearchQueryChange(e.target.value)}
-            placeholder="Название, партнёр или категория"
+            placeholder={props.searchPlaceholder ?? "Название, партнёр или категория"}
             data-testid="agent-r04-list-search"
           />
         </label>

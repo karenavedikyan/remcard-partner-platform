@@ -87,6 +87,8 @@ export type PartnersHubProps = {
 
 type TabId = "list" | "find" | "link";
 
+const AGENT_R04_LIST_SEARCH_PLACEHOLDER = "Название партнёра или город";
+
 type TermRequestState = {
   state: "idle" | "loading" | "loaded" | "error";
   requests: TermChangeRequest[];
@@ -694,7 +696,6 @@ export function PartnersHub({
         <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
           Найдено: {searchResults.length}
           {searchNextCursor ? "+" : ""}
-          {searchResults.length > 0 ? " · демонстрационные профили из каталога" : ""}
         </p>
       ) : null}
       <div
@@ -892,6 +893,7 @@ export function PartnersHub({
                 listMode={agentSegment === "invitations" ? "invitations" : "active"}
                 count={visiblePartnerships.length}
                 searchQuery={listSearch}
+                searchPlaceholder={AGENT_R04_LIST_SEARCH_PLACEHOLDER}
                 onSearchQueryChange={setListSearch}
                 viewMode={listViewMode}
                 onViewModeChange={setListViewMode}
