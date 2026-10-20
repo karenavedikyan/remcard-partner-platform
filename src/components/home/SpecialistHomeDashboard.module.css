@@ -87,9 +87,9 @@
 }
 
 .statLabel {
-  display: block;
+  display: inline;
   font-size: 0.875rem;
-  line-height: 1.35;
+  line-height: 1.6;
   color: var(--muted);
   overflow-wrap: break-word;
 }
@@ -98,7 +98,7 @@
   display: block;
   font-size: 2rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.6;
   font-variant-numeric: tabular-nums;
   margin: var(--space-2) 0;
 }
@@ -116,9 +116,9 @@
 }
 
 .statHint {
-  display: block;
+  display: inline;
   font-size: 0.75rem;
-  line-height: 1.35;
+  line-height: 1.6;
   color: var(--muted);
   overflow-wrap: break-word;
 }
