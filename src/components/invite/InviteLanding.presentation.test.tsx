@@ -35,6 +35,37 @@ describe("InviteLanding presentation", () => {
     vi.mocked(fetchReadinessSafe).mockResolvedValue({ ok: false, error: "no-session" } as never);
   });
 
+  it("blocks accept and renders safely when participating terms are malformed", async () => {
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "ОПТОВИК", partnerType: "STORE", city: "Краснодар" },
+      intendedPartnerType: null,
+      terms: [null, { category: "x", isExcluded: false }],
+      note: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+    vi.mocked(getAuthMe).mockResolvedValue({
+      user: { id: "u1", role: "PRO", displayName: "Test", publicId: "RC-1" },
+    } as never);
+    vi.mocked(fetchReadinessSafe).mockResolvedValue({
+      ok: true,
+      data: {
+        canAccessCabinet: true,
+        needsProfileOnboarding: false,
+        needsProfileCompletion: false,
+        nextStep: "cabinet",
+        missingConsents: [],
+        isEmployee: false,
+        isAdmin: false,
+      },
+    } as never);
+
+    render(<InviteLanding token="test-token" />);
+
+    expect(await screen.findByText(/Условия предложения недоступны/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Принять условия/ })).toBeDisabled();
+  });
+
   it("blocks accept when terms are hidden but session is ready", async () => {
     vi.mocked(remcardFetch).mockResolvedValue({
       status: "PENDING",

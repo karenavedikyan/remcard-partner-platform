@@ -22,7 +22,9 @@ import {
   inviterDisplayName,
 } from "@/lib/invite-presentation";
 import {
+  linkInvitePreviewExcludedLabelsForDisplay,
   linkInvitePreviewHasAcceptableTerms,
+  linkInvitePreviewParticipatingRowsForDisplay,
   LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE,
 } from "@/lib/link-invite-public";
 import { Button } from "@/components/ui/Button";
@@ -326,8 +328,8 @@ export function InviteLanding({ token }: InviteLandingProps) {
     preview.intendedPartnerType,
     preview.inviter?.partnerType ?? null,
   );
-  const activeTerms = (preview.terms ?? []).filter((t) => !t.isExcluded);
-  const excludedTerms = (preview.terms ?? []).filter((t) => t.isExcluded);
+  const activeTerms = linkInvitePreviewParticipatingRowsForDisplay(preview.terms);
+  const excludedTerms = linkInvitePreviewExcludedLabelsForDisplay(preview.terms);
 
   const termsBlock = (
     <div className={styles.termsSection}>
@@ -342,7 +344,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
           </thead>
           <tbody>
             {activeTerms.map((term) => (
-              <tr key={term.category}>
+              <tr key={`${term.category}-${term.storePercent}`}>
                 <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
                 <td>{term.storePercent}%</td>
               </tr>

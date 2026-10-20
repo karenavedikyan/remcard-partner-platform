@@ -3,28 +3,81 @@ import { afterEach, describe, it } from "node:test";
 import { fetchRemcardUpstream } from "./remcard-server.ts";
 import {
   fetchPublicLinkInvitePreview,
+  isValidLinkInviteParticipatingTerm,
   linkInvitePreviewHasAcceptableTerms,
   LINK_INVITE_PUBLIC_PREVIEW_TIMEOUT_MS,
   linkInvitePublicPreviewDeps,
 } from "./link-invite-public.ts";
 import { buildInviteLinkMetadata } from "./invite-presentation.ts";
 
+const validRow = {
+  category: "plumbing",
+  categoryLabel: "Сантехника",
+  storePercent: 10,
+  isExcluded: false,
+};
+
 describe("linkInvitePreviewHasAcceptableTerms", () => {
-  it("requires an active participating category", () => {
+  it("requires every participating row to be valid", () => {
     assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: undefined }), false);
     assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [] }), false);
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [null] }), false);
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [{}] }), false);
     assert.equal(
       linkInvitePreviewHasAcceptableTerms({
-        terms: [{ category: "a", categoryLabel: "A", storePercent: 0, isExcluded: false }],
+        terms: [{ category: "a", categoryLabel: "A", isExcluded: false }],
+      }),
+      false,
+    );
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [{ category: "a", categoryLabel: "A", storePercent: NaN, isExcluded: false }],
+      }),
+      false,
+    );
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [{ category: "a", categoryLabel: "A", storePercent: "10", isExcluded: false }],
+      }),
+      false,
+    );
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [validRow, { category: "bad", isExcluded: false }],
+      }),
+      false,
+    );
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [validRow] }), true);
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [{ ...validRow, storePercent: 0 }],
       }),
       true,
     );
     assert.equal(
       linkInvitePreviewHasAcceptableTerms({
-        terms: [{ category: "a", categoryLabel: "A", storePercent: 10, isExcluded: true }],
+        terms: [{ category: "x", categoryLabel: "X", storePercent: 10, isExcluded: true }],
       }),
       false,
     );
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [
+          validRow,
+          { category: "tiles", categoryLabel: "Плитка", storePercent: 5, isExcluded: true },
+        ],
+      }),
+      true,
+    );
+  });
+
+  it("isValidLinkInviteParticipatingTerm accepts finite 0%", () => {
+    assert.equal(isValidLinkInviteParticipatingTerm(validRow), true);
+    assert.equal(
+      isValidLinkInviteParticipatingTerm({ ...validRow, storePercent: 0 }),
+      true,
+    );
+    assert.equal(isValidLinkInviteParticipatingTerm(null), false);
   });
 });
 

@@ -28,12 +28,63 @@ export type LinkInvitePublicPreview = {
   expiresAt?: string;
 };
 
-/** True when at least one participating category is present (0% is valid). */
+function isTermRecord(term: unknown): term is Record<string, unknown> {
+  return typeof term === "object" && term !== null && !Array.isArray(term);
+}
+
+/** Non-excluded row with a category id and finite storePercent (0% is valid). */
+export function isValidLinkInviteParticipatingTerm(term: unknown): term is LinkInvitePublicTerm {
+  if (!isTermRecord(term)) return false;
+  if (term.isExcluded === true) return false;
+  const category = term.category;
+  if (typeof category !== "string" || !category.trim()) return false;
+  const storePercent = term.storePercent;
+  if (typeof storePercent !== "number" || !Number.isFinite(storePercent)) return false;
+  return true;
+}
+
+function isParticipatingTermRow(term: unknown): boolean {
+  return isTermRecord(term) && term.isExcluded !== true;
+}
+
+/**
+ * Accept only when every participating row matches the public preview contract
+ * and at least one participating row exists.
+ */
 export function linkInvitePreviewHasAcceptableTerms(
   preview: Pick<LinkInvitePublicPreview, "terms">,
 ): boolean {
   if (!Array.isArray(preview.terms)) return false;
-  return preview.terms.some((term) => !term.isExcluded);
+  const participating = preview.terms.filter(isParticipatingTermRow);
+  if (participating.length === 0) return false;
+  return participating.every((term) => isValidLinkInviteParticipatingTerm(term));
+}
+
+/** Safe rows for terms table (skips malformed entries). */
+export function linkInvitePreviewParticipatingRowsForDisplay(
+  terms: LinkInvitePublicPreview["terms"],
+): LinkInvitePublicTerm[] {
+  if (!Array.isArray(terms)) return [];
+  return terms.filter(isValidLinkInviteParticipatingTerm);
+}
+
+/** Safe excluded category labels for footer copy. */
+export function linkInvitePreviewExcludedLabelsForDisplay(
+  terms: LinkInvitePublicPreview["terms"],
+): Array<{ category: string; categoryLabel: string }> {
+  if (!Array.isArray(terms)) return [];
+  const out: Array<{ category: string; categoryLabel: string }> = [];
+  for (const raw of terms) {
+    if (!isTermRecord(raw) || raw.isExcluded !== true) continue;
+    const category = typeof raw.category === "string" ? raw.category : "";
+    if (!category.trim()) continue;
+    const categoryLabel =
+      typeof raw.categoryLabel === "string" && raw.categoryLabel.trim()
+        ? raw.categoryLabel
+        : category;
+    out.push({ category, categoryLabel });
+  }
+  return out;
 }
 
 export const LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE =
