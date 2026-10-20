@@ -9,6 +9,7 @@ export type AgentClientFormValues = {
   phone: string;
   email: string;
   city: string;
+  need: string;
   note: string;
 };
 
@@ -33,6 +34,7 @@ export function AgentClientFormDialog({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [city, setCity] = useState("");
+  const [need, setNeed] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -43,9 +45,18 @@ export function AgentClientFormDialog({
     setPhone(initial?.phone ?? "");
     setEmail(initial?.email ?? "");
     setCity(initial?.city ?? "");
+    setNeed(initial?.need ?? "");
     setNote(initial?.note ?? "");
     setError("");
-  }, [open, initial?.displayName, initial?.phone, initial?.email, initial?.city, initial?.note]);
+  }, [
+    open,
+    initial?.displayName,
+    initial?.phone,
+    initial?.email,
+    initial?.city,
+    initial?.need,
+    initial?.note,
+  ]);
 
   if (!open) return null;
 
@@ -63,6 +74,7 @@ export function AgentClientFormDialog({
         phone: phone.trim(),
         email: email.trim(),
         city: city.trim(),
+        need: need.trim(),
         note: note.trim(),
       });
       onClose();
@@ -98,6 +110,10 @@ export function AgentClientFormDialog({
         <label className={styles.field}>
           Город
           <input value={city} onChange={(e) => setCity(e.target.value)} />
+        </label>
+        <label className={styles.field}>
+          Задача
+          <input value={need} onChange={(e) => setNeed(e.target.value)} maxLength={160} />
         </label>
         <label className={styles.field}>
           Заметка

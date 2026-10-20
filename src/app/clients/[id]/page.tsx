@@ -1,5 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { AgentClientDetail } from "@/components/agent-r03/AgentClientDetail";
+import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
@@ -18,8 +19,14 @@ export default async function ClientDetailPage(props: PageProps) {
 
   return (
     <CabinetShell returnTo="/clients">
-      <PageHeading eyebrow="Клиент" title="Карточка клиента" />
-      <AgentClientDetail clientId={params.id} />
+      <OwnerClientsGate>
+        {(mode) => (
+          <>
+            <PageHeading eyebrow="Клиент" title="Карточка клиента" />
+            <AgentClientDetail clientId={params.id} accessMode={mode} />
+          </>
+        )}
+      </OwnerClientsGate>
     </CabinetShell>
   );
 }

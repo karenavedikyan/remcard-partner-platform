@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
 import styles from "./AppShell.module.css";
 
-const NAV: Array<{
+const BASE_NAV: Array<{
   href: string;
   label: string;
   icon: NavIconKey;
@@ -26,6 +26,13 @@ const NAV: Array<{
   { href: "/settlements", label: "Взаиморасчёты", icon: "settlements" },
   { href: "/profile", label: "Профиль", icon: "profile" },
 ];
+
+function navForUser(partnerType?: string | null) {
+  if (partnerType !== "MASTER") return BASE_NAV;
+  const items = [...BASE_NAV];
+  items.splice(3, 0, { href: "/clients", label: "Клиенты", icon: "clients" });
+  return items;
+}
 
 const MOBILE_BOTTOM_NAV: Array<{ href: string; label: string; icon: NavIconKey }> = [
   { href: "/", label: "Главная", icon: "home" },
@@ -42,16 +49,17 @@ const PAGE_TITLES: Record<string, string> = {
   "/history": "История",
   "/settlements": "Взаиморасчёты",
   "/profile": "Профиль",
+  "/clients": "Клиенты",
   "/notifications": "Уведомления",
   "/login": "Вход",
   "/onboarding": "Регистрация",
 };
 
-function pageTitle(pathname: string): string {
+function pageTitle(pathname: string, navItems: typeof BASE_NAV): string {
   if (PAGE_TITLES[pathname]) {
     return PAGE_TITLES[pathname];
   }
-  const base = NAV.find(
+  const base = navItems.find(
     (item) => item.href !== "/" && (pathname === item.href || pathname.startsWith(`${item.href}/`)),
   );
   return base?.label ?? "Кабинет партнёра";
@@ -75,17 +83,19 @@ type AppShellProps = {
 function NavLinks({
   pathname,
   incomingCount,
+  navItems,
   className,
   onNavigate,
 }: {
   pathname: string;
   incomingCount: number;
+  navItems: typeof BASE_NAV;
   className?: string;
   onNavigate?: () => void;
 }) {
   return (
     <>
-      {NAV.map((item) => {
+      {navItems.map((item) => {
         const active =
           item.href === "/"
             ? pathname === "/"
@@ -120,7 +130,8 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
-  const currentPage = pageTitle(pathname);
+  const navItems = navForUser(user.partnerType);
+  const currentPage = pageTitle(pathname, navItems);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -170,7 +181,12 @@ export function AppShell({
         </div>
 
         <nav className={styles.nav}>
-          <NavLinks pathname={pathname} incomingCount={incomingCount} onNavigate={closeMobileMenu} />
+          <NavLinks
+            pathname={pathname}
+            incomingCount={incomingCount}
+            navItems={navItems}
+            onNavigate={closeMobileMenu}
+          />
         </nav>
 
         <div className={styles.sidebarFooter}>

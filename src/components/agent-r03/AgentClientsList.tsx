@@ -143,6 +143,7 @@ export function AgentClientsList() {
       phone: values.phone || undefined,
       email: values.email || undefined,
       city: values.city || undefined,
+      need: values.need || undefined,
       note: values.note || undefined,
     };
     if (editClient) {
@@ -151,6 +152,7 @@ export function AgentClientsList() {
         phone: values.phone ? values.phone : null,
         email: values.email ? values.email : null,
         city: values.city ? values.city : null,
+        need: values.need ? values.need : null,
         note: values.note ? values.note : null,
       });
     } else {
@@ -482,6 +484,7 @@ export function AgentClientsList() {
                 phone: editClient.phone ?? "",
                 email: editClient.email ?? "",
                 city: editClient.city ?? "",
+                need: editClient.need ?? "",
                 note: editClient.note ?? "",
               }
             : undefined

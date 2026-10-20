@@ -13,6 +13,7 @@ export type AgentClientRow = {
   phone: string | null;
   email: string | null;
   city: string | null;
+  need: string | null;
   note: string | null;
   archivedAt: string | null;
   createdAt: string;
@@ -78,3 +79,22 @@ export type AgentR03ListMeta = {
 };
 
 export type AgentR03ListSort = 'updated_desc' | 'name_asc' | 'name_desc' | 'created_desc';
+
+export type AgentClientPurchaseRow = {
+  id: string;
+  createdAt: string;
+  status: string;
+  totalAmount: number;
+  partnerName: string;
+  certificateId: string;
+  lineSummary: string | null;
+};
+
+export type AgentClientDetailResponse = {
+  client: AgentClientRow & {
+    purchaseCount?: number;
+    lastCertificateAt?: string | null;
+  };
+  certificates: AgentCertificateRow[];
+  purchases?: AgentClientPurchaseRow[];
+};

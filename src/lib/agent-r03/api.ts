@@ -1,5 +1,6 @@
 import { remcardFetch } from "@/lib/api-client";
 import type {
+  AgentClientDetailResponse,
   AgentClientRow,
   AgentCertificateRow,
   AgentR03ListMeta,
@@ -49,6 +50,7 @@ export function createAgentClient(body: {
   phone?: string;
   email?: string;
   city?: string;
+  need?: string;
   note?: string;
 }) {
   return remcardFetch<{ client: AgentClientRow }>("/api/pro/agent-clients", {
@@ -58,7 +60,7 @@ export function createAgentClient(body: {
 }
 
 export function fetchAgentClient(id: string) {
-  return remcardFetch<{ client: AgentClientRow; certificates: AgentCertificateRow[] }>(
+  return remcardFetch<AgentClientDetailResponse>(
     `/api/pro/agent-clients/${encodeURIComponent(id)}`,
   );
 }

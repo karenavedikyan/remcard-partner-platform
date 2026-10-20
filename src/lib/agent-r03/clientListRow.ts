@@ -11,14 +11,14 @@ function certificateCountLabel(count: number): string {
 
 /** Under client name (reference caption): task / purpose, then city fallback. */
 export function clientRowCaption(client: AgentClientRow): string {
-  const task = client.note?.trim();
+  const task = client.need?.trim();
   if (task) return task;
   return client.city?.trim() || "";
 }
 
 /** Mobile list subtitle: city · task (frozen reference collection detail order). */
 export function clientRowMobileSubtitle(client: AgentClientRow): string {
-  const task = client.note?.trim();
+  const task = client.need?.trim();
   const city = client.city?.trim();
   if (city && task) return `${city} · ${task}`;
   return city || task || "Добавьте задачу в карточке";
