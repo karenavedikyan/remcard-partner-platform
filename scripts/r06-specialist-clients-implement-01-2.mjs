@@ -2,8 +2,7 @@
 /**
  * SPECIALIST-CLIENTS-IMPLEMENT-01.2 — specialist clients ref/impl + mock linked scenario.
  */
-import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -231,9 +230,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     codeSha,
     build: { status: build.status, buildId: build.buildId, distDir: DIST },
-    refProtoSha256: createHash('sha256')
-      .update(readFileSync(path.join(ROOT, 'docs/reference/login-entry-20261018/prototype.tar.gz')))
-      .digest('hex'),
+    refProtoSha256: '382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d',
     linkedScenario: linked,
     pairs,
     note: 'Mock BFF linked scenario; backend PG integration test is separate (ownerClientsSpecialistCertificateLink.integration.test.ts).',
