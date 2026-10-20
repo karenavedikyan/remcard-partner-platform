@@ -13,7 +13,10 @@ import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import { getSessionUser } from "@/lib/session";
 import type { PartnershipListResponse } from "@/lib/types";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
-import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
+import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
+import { shouldRenderSpecialistHome } from "@/lib/specialist-home/gate";
+import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -64,12 +67,31 @@ export default async function HomePage(
     "/api/pro/cabinet-ui-preferences",
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
   );
-  const agentRoot = resolveActiveAgentRootRedirect(
-    prefsResult.ok ? prefsResult.data : null,
-    { prefsLoadOk: prefsResult.ok },
-  );
+  const prefsData = prefsResult.ok ? prefsResult.data : null;
+  const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
   if (agentRoot) {
     redirect(agentRoot);
+  }
+
+  const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
+  const isAgentCabinet = Boolean(enrichedPrefs && isActiveAgentCabinetContext(enrichedPrefs));
+  const specialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
+  const specialistHome = shouldRenderSpecialistHome(user, specialistR06Gate, { isAgentCabinet });
+
+  if (specialistHome) {
+    return (
+      <CabinetShell returnTo="/">
+        <PageHeading
+          eyebrow="RemCard PROF"
+          title="Ваш кабинет"
+          description="Начните с того, что нужно вам сегодня."
+        />
+        <SpecialistHomeDashboard
+          needsProfileCompletion={readiness.needsProfileCompletion}
+          catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+        />
+      </CabinetShell>
+    );
   }
 
   const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
