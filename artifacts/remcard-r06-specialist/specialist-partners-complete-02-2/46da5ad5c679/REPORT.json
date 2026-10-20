@@ -1,0 +1,39 @@
+{
+  "task": "SPECIALIST-PARTNERS-COMPLETE-02.2",
+  "generatedAt": "2026-10-20T07:19:03.526Z",
+  "codeSha": "46da5ad5c6790277748ea497fdbc313e44ca97fb",
+  "buildId": "qf9qL8GeCeKHFB_-6GpOX",
+  "distDir": ".next-r06-complete-02-2",
+  "shots": [
+    {
+      "file": "impl-specialist-active-list-1440-light.png",
+      "sha256": "a4d0de4cc79b9ce99fcbd2ceca1cc0290d6791a1a621ae31900c5596cf476330"
+    },
+    {
+      "file": "impl-specialist-find-1440-light.png",
+      "sha256": "3e1daabb4c2a4f448750c9b597fd27554dc3f7efbc0e8d2efd133c30a447042f"
+    },
+    {
+      "file": "impl-specialist-link-1440-light.png",
+      "sha256": "d30522947b249b6e9aec09ab49c9ca43dc7d3dc6c27b81fe59e88b43335dad5d"
+    },
+    {
+      "file": "impl-specialist-bulk-hide-confirm-1440-light.png",
+      "sha256": "a4d0de4cc79b9ce99fcbd2ceca1cc0290d6791a1a621ae31900c5596cf476330"
+    },
+    {
+      "file": "impl-specialist-active-375-light.png",
+      "sha256": "24fa007332a7198726c586f2a4f9d06ced0d32fe3038bf95bd8a31cb2ba1b79a"
+    },
+    {
+      "file": "impl-specialist-find-375-dark.png",
+      "sha256": "bdcc951ac9313eaaea690d04e85655ee91a2847465919986c045b3904a531132"
+    }
+  ],
+  "checks": {
+    "discussionCategories": "PASS (unit + mock context DTO)",
+    "filteredCount": "PASS (visiblePartnerships.length in toolbar)",
+    "bulkHideConfirm": "CAPTURED",
+    "designSurfaces": "CAPTURED (list/find/link/mobile)"
+  }
+}
