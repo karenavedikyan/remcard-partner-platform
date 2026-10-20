@@ -30,9 +30,10 @@
 }
 
 .heroTask h2 {
-  font-size: var(--text-lg);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
   margin-bottom: var(--space-2);
 }
 
@@ -43,6 +44,34 @@
   max-width: 40rem;
 }
 
+.primaryCtaLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  background: var(--accent-fill);
+  color: var(--primary-fg);
+  border: 1px solid var(--accent-fill);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.primaryCtaLink:hover {
+  background: var(--accent-fill-hover);
+}
+
+.primaryCtaLink:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -50,9 +79,9 @@
 }
 
 .stat {
-  padding: var(--space-5);
+  padding: 20px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   background: var(--surface);
   min-width: 0;
 }
@@ -60,26 +89,37 @@
 .statLabel {
   display: block;
   font-size: var(--text-sm);
+  line-height: 1.35;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .statValue {
   display: block;
-  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  font-size: clamp(1rem, 0.75rem + 1.1vw, 2rem);
   font-weight: 800;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
   margin: var(--space-2) 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .statHint {
+  display: block;
   font-size: var(--text-xs);
+  line-height: 1.35;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .statError {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
+  line-height: 1.35;
   color: var(--primary);
   margin-top: var(--space-2);
+  overflow-wrap: anywhere;
 }
 
 .twoCol {
@@ -97,8 +137,9 @@
 }
 
 .panel h2 {
-  font-size: var(--text-lg);
-  font-weight: 800;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
   margin-bottom: var(--space-4);
 }
 
@@ -126,6 +167,7 @@
   font-size: var(--text-base);
   font-weight: 700;
   margin: 0;
+  line-height: 1.35;
 }
 
 .actionLine small {
@@ -133,6 +175,8 @@
   font-size: var(--text-sm);
   color: var(--muted);
   margin-top: var(--space-1);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .iconBtn {
@@ -143,7 +187,7 @@
   height: 44px;
   flex-shrink: 0;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
 }
@@ -166,8 +210,32 @@
   margin: var(--space-5) 0;
 }
 
+.ghostCtaLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.ghostCtaLink:hover {
+  background: var(--offset);
+}
+
+.ghostCtaLink:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .retryRow {
-  margin-top: var(--space-4);
+  margin-top: calc(-1 * var(--space-2));
 }
 
 @media (max-width: 900px) {
@@ -178,6 +246,11 @@
   .heroTask {
     grid-template-columns: 1fr;
   }
+
+  .primaryCtaLink {
+    width: 100%;
+    justify-self: stretch;
+  }
 }
 
 @media (max-width: 680px) {
@@ -186,14 +259,27 @@
   }
 
   .stat {
-    padding: var(--space-3);
+    padding: 12px;
+  }
+
+  .statLabel {
+    font-size: var(--text-xs);
   }
 
   .statValue {
-    font-size: var(--text-lg);
+    font-size: clamp(0.875rem, 2.8vw + 0.55rem, 1.25rem);
+    margin: var(--space-1) 0;
   }
 
-  .heroTask .primaryCta {
+  .statHint {
+    font-size: 0.6875rem;
+  }
+
+  .heroTask {
+    gap: var(--space-4);
+  }
+
+  .primaryCtaLink {
     width: 100%;
   }
 

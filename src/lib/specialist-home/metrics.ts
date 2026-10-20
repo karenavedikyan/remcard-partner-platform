@@ -53,6 +53,8 @@ export function specialistHomeCertificateMetric(
   if (certError) {
     return { state: "error", message: certError };
   }
-  const count = list?.certificates?.length ?? 0;
-  return { state: "ok", value: count };
+  if (!list || !Array.isArray(list.certificates)) {
+    return { state: "error", message: "Не удалось загрузить сертификаты" };
+  }
+  return { state: "ok", value: list.certificates.length };
 }

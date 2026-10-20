@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { CertificateListResponse } from "../certificate-types.ts";
 import {
   specialistHomeCertificateMetric,
   specialistHomeMetricsFromWallet,
@@ -39,6 +40,13 @@ describe("specialistHomeCertificateMetric", () => {
       specialistHomeCertificateMetric({ certificates: [{ id: "1" } as never] }, null).value,
       1,
     );
+    assert.equal(specialistHomeCertificateMetric({ certificates: [] }, null).value, 0);
     assert.equal(specialistHomeCertificateMetric(null, "fail").state, "error");
+    assert.equal(specialistHomeCertificateMetric(null, null).state, "error");
+    assert.equal(specialistHomeCertificateMetric({} as CertificateListResponse, null).state, "error");
+    assert.equal(
+      specialistHomeCertificateMetric({ certificates: "bad" as never }, null).state,
+      "error",
+    );
   });
 });

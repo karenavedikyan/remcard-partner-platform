@@ -54,3 +54,19 @@ export function IconChevronRight(props: IconProps) {
     </Base>
   );
 }
+
+export function IconArrowRight(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Base>
+  );
+}
+
+export function IconArrowUpRight(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M7 17 17 7M7 7h10v10" />
+    </Base>
+  );
+}

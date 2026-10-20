@@ -20,7 +20,7 @@ export default function SpecialistHomeDevPreviewPage() {
       }}
     >
       <PageHeading
-        eyebrow="RemCard PROF"
+        eyebrow="Специалист"
         title="Ваш кабинет"
         description="Начните с того, что нужно вам сегодня."
       />

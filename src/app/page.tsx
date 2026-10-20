@@ -82,7 +82,7 @@ export default async function HomePage(
     return (
       <CabinetShell returnTo="/">
         <PageHeading
-          eyebrow="RemCard PROF"
+          eyebrow="Специалист"
           title="Ваш кабинет"
           description="Начните с того, что нужно вам сегодня."
         />

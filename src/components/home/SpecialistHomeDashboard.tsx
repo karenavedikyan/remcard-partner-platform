@@ -15,7 +15,7 @@ import {
   type SpecialistHomeMoneySlice,
 } from "@/lib/specialist-home/metrics";
 import { Button } from "@/components/ui/Button";
-import { IconChevronRight } from "@/components/layout/ThemeIcons";
+import { IconArrowRight, IconArrowUpRight } from "@/components/layout/ThemeIcons";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 type SpecialistHomeDashboardProps = {
@@ -36,7 +36,7 @@ const QUICK_LINKS = [
   },
   {
     href: "/settlements",
-    title: "Бонусы",
+    title: "Мои бонусы",
     subtitle: "Только относящиеся к вам данные",
   },
 ] as const;
@@ -135,8 +135,9 @@ export function SpecialistHomeDashboard({
             Помогите заказчику выбрать товары или услуги для его проекта.
           </p>
         </div>
-        <Link href="/recommendations/new" className={styles.primaryCta}>
-          <Button>Создать сертификат</Button>
+        <Link href="/recommendations/new" className={styles.primaryCtaLink}>
+          Создать сертификат
+          <IconArrowUpRight width={20} height={20} />
         </Link>
       </section>
 
@@ -153,6 +154,7 @@ export function SpecialistHomeDashboard({
         <div className={styles.stat}>
           <span className={styles.statLabel}>Начислено</span>
           <strong className={styles.statValue}>{moneyLabel(metrics.accrued)}</strong>
+          <span className={styles.statHint}>За покупки клиентов</span>
           {metrics.accrued.state === "error" ? (
             <p className={styles.statError} role="alert">
               {metrics.accrued.message}
@@ -162,6 +164,7 @@ export function SpecialistHomeDashboard({
         <div className={styles.stat}>
           <span className={styles.statLabel}>Получено</span>
           <strong className={styles.statValue}>{moneyLabel(metrics.received)}</strong>
+          <span className={styles.statHint}>Подтверждённые выплаты</span>
           {metrics.received.state === "error" ? (
             <p className={styles.statError} role="alert">
               {metrics.received.message}
@@ -182,13 +185,18 @@ export function SpecialistHomeDashboard({
         <section className={styles.panel}>
           <h2>С чего начать</h2>
           {QUICK_LINKS.map((item) => (
-            <Link key={item.href} href={item.href} className={styles.actionLine}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={styles.actionLine}
+              aria-label={`Открыть ${item.title}`}
+            >
               <div>
                 <h3>{item.title}</h3>
                 <small>{item.subtitle}</small>
               </div>
               <span className={styles.iconBtn} aria-hidden="true">
-                <IconChevronRight />
+                <IconArrowRight width={20} height={20} />
               </span>
             </Link>
           ))}
@@ -201,8 +209,8 @@ export function SpecialistHomeDashboard({
             Начните с одного нужного действия.
           </p>
           <div className={styles.divider} />
-          <Link href="/profile">
-            <Button variant="secondary">Настроить профиль</Button>
+          <Link href="/profile" className={styles.ghostCtaLink}>
+            Настроить профиль
           </Link>
         </section>
       </div>
