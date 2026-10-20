@@ -16,7 +16,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
 }));
 
-const { remcardFetch } = await import("@/lib/api-client");
+const { remcardFetch, getAuthMe } = await import("@/lib/api-client");
+const { fetchReadinessSafe } = await import("@/lib/auth-session");
 
 describe("InviteLanding presentation", () => {
   beforeEach(() => {
@@ -30,6 +31,40 @@ describe("InviteLanding presentation", () => {
       note: null,
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
     });
+    vi.mocked(getAuthMe).mockResolvedValue({ user: null } as never);
+    vi.mocked(fetchReadinessSafe).mockResolvedValue({ ok: false, error: "no-session" } as never);
+  });
+
+  it("blocks accept when terms are hidden but session is ready", async () => {
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "ОПТОВИК", partnerType: "STORE", city: "Краснодар" },
+      intendedPartnerType: null,
+      terms: undefined,
+      note: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+    vi.mocked(getAuthMe).mockResolvedValue({
+      user: { id: "u1", role: "PRO", displayName: "Test", publicId: "RC-1" },
+    } as never);
+    vi.mocked(fetchReadinessSafe).mockResolvedValue({
+      ok: true,
+      data: {
+        canAccessCabinet: true,
+        needsProfileOnboarding: false,
+        needsProfileCompletion: false,
+        nextStep: "cabinet",
+        missingConsents: [],
+        isEmployee: false,
+        isAdmin: false,
+      },
+    } as never);
+
+    render(<InviteLanding token="test-token" />);
+
+    expect(await screen.findByText(/Условия предложения недоступны/)).toBeInTheDocument();
+    const acceptBtn = screen.getByRole("button", { name: /Принять условия/ });
+    expect(acceptBtn).toBeDisabled();
   });
 
   it("shows role-aware hero, Russian categories, and guest CTA before terms copy", async () => {

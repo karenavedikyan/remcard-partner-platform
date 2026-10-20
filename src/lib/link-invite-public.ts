@@ -28,6 +28,17 @@ export type LinkInvitePublicPreview = {
   expiresAt?: string;
 };
 
+/** True when at least one participating category is present (0% is valid). */
+export function linkInvitePreviewHasAcceptableTerms(
+  preview: Pick<LinkInvitePublicPreview, "terms">,
+): boolean {
+  if (!Array.isArray(preview.terms)) return false;
+  return preview.terms.some((term) => !term.isExcluded);
+}
+
+export const LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE =
+  "Условия предложения недоступны. Принять предложение сейчас нельзя.";
+
 export async function fetchPublicLinkInvitePreview(
   token: string,
 ): Promise<LinkInvitePublicPreview | null> {

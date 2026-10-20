@@ -21,6 +21,10 @@ import {
   INVITE_PERCENT_EXPLAINER,
   inviterDisplayName,
 } from "@/lib/invite-presentation";
+import {
+  linkInvitePreviewHasAcceptableTerms,
+  LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE,
+} from "@/lib/link-invite-public";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
 import styles from "./InviteLanding.module.css";
@@ -159,7 +163,14 @@ export function InviteLanding({ token }: InviteLandingProps) {
   }, [refreshSession]);
 
   async function acceptInvite() {
-    if (accepting || profileBlocksPrivateAccept(authUser, readiness)) return;
+    if (
+      accepting ||
+      profileBlocksPrivateAccept(authUser, readiness) ||
+      !preview ||
+      !linkInvitePreviewHasAcceptableTerms(preview)
+    ) {
+      return;
+    }
     setAccepting(true);
     setAcceptError("");
     setExistingPartnershipId(null);
@@ -231,8 +242,13 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const hasSession = Boolean(authUser);
   const profileIncomplete = profileBlocksPrivateAccept(authUser, readiness);
   const needsContinuation = Boolean(hasSession && readiness && !isAuthFlowComplete(readiness));
+  const termsAcceptable = preview ? linkInvitePreviewHasAcceptableTerms(preview) : false;
   const canAccept =
-    hasSession && readiness && isAuthFlowComplete(readiness) && !profileIncomplete;
+    hasSession &&
+    readiness &&
+    isAuthFlowComplete(readiness) &&
+    !profileIncomplete &&
+    termsAcceptable;
 
   if (loadState === "loading" || !sessionChecked) {
     return (
@@ -473,11 +489,17 @@ export function InviteLanding({ token }: InviteLandingProps) {
             </>
           ) : hasSession ? (
             <>
-              <p className={styles.lead}>
-                Проверьте условия. «Принять условия» создаст активное партнёрство. «Не принимать»
-                закроет предложение без ответа — ссылка останется доступной, пока действует
-                приглашение.
-              </p>
+              {!termsAcceptable ? (
+                <div className={styles.notice} role="status">
+                  <p>{LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE}</p>
+                </div>
+              ) : (
+                <p className={styles.lead}>
+                  Проверьте условия. «Принять условия» создаст активное партнёрство. «Не принимать»
+                  закроет предложение без ответа — ссылка останется доступной, пока действует
+                  приглашение.
+                </p>
+              )}
               {acceptError ? (
                 <p className={styles.error} role="alert">
                   {acceptError}{" "}

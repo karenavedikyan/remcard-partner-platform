@@ -3,10 +3,30 @@ import { afterEach, describe, it } from "node:test";
 import { fetchRemcardUpstream } from "./remcard-server.ts";
 import {
   fetchPublicLinkInvitePreview,
+  linkInvitePreviewHasAcceptableTerms,
   LINK_INVITE_PUBLIC_PREVIEW_TIMEOUT_MS,
   linkInvitePublicPreviewDeps,
 } from "./link-invite-public.ts";
 import { buildInviteLinkMetadata } from "./invite-presentation.ts";
+
+describe("linkInvitePreviewHasAcceptableTerms", () => {
+  it("requires an active participating category", () => {
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: undefined }), false);
+    assert.equal(linkInvitePreviewHasAcceptableTerms({ terms: [] }), false);
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [{ category: "a", categoryLabel: "A", storePercent: 0, isExcluded: false }],
+      }),
+      true,
+    );
+    assert.equal(
+      linkInvitePreviewHasAcceptableTerms({
+        terms: [{ category: "a", categoryLabel: "A", storePercent: 10, isExcluded: true }],
+      }),
+      false,
+    );
+  });
+});
 
 describe("fetchPublicLinkInvitePreview", () => {
   afterEach(() => {
