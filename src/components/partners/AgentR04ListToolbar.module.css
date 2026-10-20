@@ -12,8 +12,22 @@
 }
 
 .searchField {
-  flex: 1 1 180px;
+  flex: 1 1 220px;
   min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.fieldLabel {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.compactSelect {
+  flex: 0 1 140px;
+  display: grid;
+  gap: var(--space-1);
 }
 
 .searchField input,
@@ -29,20 +43,20 @@
   min-height: 40px;
 }
 
-.compactSelect {
-  flex: 0 1 120px;
-}
-
 .moreFilters {
   flex: 0 1 auto;
   font-size: var(--text-sm);
   font-weight: 650;
+  align-self: flex-end;
+  margin-bottom: 0.35rem;
 }
 
 .moreFilters summary {
   cursor: pointer;
   list-style: none;
-  padding: var(--space-2) 0;
+  padding: var(--space-2) var(--space-1);
+  color: var(--accent, var(--primary));
+  font-weight: 700;
 }
 
 .moreGrid {
@@ -87,6 +101,11 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
 }
 
+.viewToggle button:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
+}
+
 .collectionCount {
   display: flex;
   flex-wrap: wrap;
@@ -96,9 +115,16 @@
   color: var(--muted);
 }
 
-.collectionCount > span {
+.collectionCount > span:first-child {
   font-weight: 700;
   color: var(--ink);
+}
+
+.selectionHint {
+  flex: 1 1 auto;
+  text-align: right;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
 }
 
 .chips {

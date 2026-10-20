@@ -639,32 +639,34 @@ export function PartnersHub({
   const agentFindSearchControls = (
     <>
       <p className={styles.modalLead}>
-        Начните со специализации и этапа ремонта — так можно найти партнёра без точного названия.
+        Поиск по всем партнёрам с одобренным профилем в RemCard. Оба поля ниже — основной способ отбора.
       </p>
       <div className={styles.modalFilterBlock}>
         <AgentPartnerDiscoveryFilters layout="modal-primary" {...agentDiscoveryFilterProps} />
       </div>
       <p className={styles.modalFilterHint}>
-        Специализация и этап работают вместе: показываем партнёров, которые подходят под оба условия.
+        Выберите один фильтр или оба — покажем партнёров, которые подходят под выбранные условия.
       </p>
-      <div className={styles.modalSearchRow}>
+      <div className={styles.modalSearchBlock}>
         <TextField
-          label="Поиск (необязательно)"
+          label="Поиск по словам необязательно"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Название, город или ID"
+          placeholder="Название, товар, услуга, этап или ID"
           hint="Можно оставить пустым и искать только по фильтрам выше"
         />
-        <Button
-          type="button"
-          onClick={() => {
-            setSearchNextCursor(null);
-            void loadSearch("reset");
-          }}
-          disabled={loadingSearch}
-        >
-          {loadingSearch ? "Поиск…" : "Найти"}
-        </Button>
+        <div className={styles.modalSearchAction}>
+          <Button
+            type="button"
+            onClick={() => {
+              setSearchNextCursor(null);
+              void loadSearch("reset");
+            }}
+            disabled={loadingSearch}
+          >
+            {loadingSearch ? "Поиск…" : "Найти"}
+          </Button>
+        </div>
       </div>
       <AgentPartnerDiscoveryFilters layout="modal-more" {...agentDiscoveryFilterProps} />
     </>
@@ -687,6 +689,13 @@ export function PartnersHub({
             Повторить
           </Button>
         </div>
+      ) : null}
+      {searchResults.length > 0 || loadingSearch ? (
+        <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
+          Найдено: {searchResults.length}
+          {searchNextCursor ? "+" : ""}
+          {searchResults.length > 0 ? " · демонстрационные профили из каталога" : ""}
+        </p>
       ) : null}
       <div
         className={styles.modalResults}

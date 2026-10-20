@@ -159,11 +159,22 @@
   line-height: 1.45;
 }
 
-.modalSearchRow {
+.modalSearchBlock {
   display: grid;
-  grid-template-columns: 1fr auto;
   gap: var(--space-3);
-  align-items: end;
+  margin-bottom: var(--space-2);
+}
+
+.modalSearchAction {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modalResultsLead {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--ink);
 }
 
 .modalResults {
@@ -176,12 +187,18 @@
 .modalResultRow {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-3);
-  align-items: center;
-  padding: var(--space-3);
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding: var(--space-4);
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 10px);
   background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.modalResultRow strong {
+  font-size: var(--text-md, 1rem);
+  font-weight: 700;
 }
 
 @media (max-width: 680px) {

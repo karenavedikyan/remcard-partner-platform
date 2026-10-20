@@ -183,7 +183,7 @@ export function AgentPartnerDiscoveryFilters({
 
   const cityTypeFold = (
     <details className={styles.moreFilters}>
-      <summary>Город и тип партнёра</summary>
+      <summary>Уточнить: город и тип партнёра</summary>
       <div className={styles.moreGrid}>
         <label className={styles.field}>
           <span>Город</span>

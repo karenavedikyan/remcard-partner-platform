@@ -61,17 +61,17 @@ export function AgentR04ListToolbar(props: Props) {
 
       <div className={styles.toolsRow}>
         <label className={styles.searchField}>
-          <span className={styles.srOnly}>Поиск</span>
+          <span className={styles.fieldLabel}>Поиск</span>
           <input
             value={props.searchQuery}
             onChange={(e) => props.onSearchQueryChange(e.target.value)}
-            placeholder="Поиск по названию или городу"
+            placeholder="Название, партнёр или категория"
             data-testid="agent-r04-list-search"
           />
         </label>
         {!invitations ? (
         <label className={styles.compactSelect}>
-          <span className={styles.srOnly}>Показывать</span>
+          <span className={styles.fieldLabel}>Показывать</span>
           <select
             value={props.archiveView}
             onChange={(e) =>
@@ -139,6 +139,9 @@ export function AgentR04ListToolbar(props: Props) {
 
       <div className={styles.collectionCount}>
         <span>Найдено: {props.count}</span>
+        {!invitations && props.count > 0 ? (
+          <span className={styles.selectionHint}>Выделите записи, чтобы работать с ними вместе</span>
+        ) : null}
         {hasFilters ? (
           <Button type="button" variant="secondary" onClick={props.onResetFilters}>
             Сбросить фильтры

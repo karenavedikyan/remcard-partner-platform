@@ -189,11 +189,8 @@ export function AgentPartnerCollection(props: Props) {
 
   const footer = (
     <div className={styles.listFooter} data-testid="agent-r04-list-pagination">
-      <span>
-        Страница {page + 1} из {pageCount} · всего {totalCount}
-      </span>
-      <label>
-        На странице
+      <label className={styles.pageSizeControl}>
+        <span>На странице</span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -206,21 +203,39 @@ export function AgentPartnerCollection(props: Props) {
           ))}
         </select>
       </label>
-      <span>
+      <span className={styles.pageStatus}>
+        Страница {page + 1} из {pageCount}
+      </span>
+      <span className={styles.pageNav}>
         <Button type="button" variant="secondary" disabled={page <= 0} onClick={() => onPageChange(page - 1)}>
           Назад
-        </Button>{" "}
+        </Button>
         <Button
           type="button"
           variant="secondary"
           disabled={page + 1 >= pageCount}
           onClick={() => onPageChange(page + 1)}
         >
-          Вперёд
+          Далее
         </Button>
       </span>
     </div>
   );
+
+  const selectPageRow =
+    pageIds.length > 0 ? (
+      <div className={styles.selectPageRow} data-testid="agent-r04-select-page-row">
+        <label className={styles.selectPageLabel}>
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => onToggleSelectAll(pageIds, e.target.checked)}
+            aria-label={`Выбрать страницу (${pageIds.length})`}
+          />
+          <span>Выбрать страницу ({pageIds.length})</span>
+        </label>
+      </div>
+    ) : null;
 
   if (viewMode === "cards") {
     return (
@@ -337,6 +352,7 @@ export function AgentPartnerCollection(props: Props) {
           );
         })}
       </div>
+      {selectPageRow}
       <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
         <table className={styles.dataTable} data-testid="agent-r04-partners-table">
           <colgroup>
