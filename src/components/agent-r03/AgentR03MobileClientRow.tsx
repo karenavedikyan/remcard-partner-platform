@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import type { AgentClientRow } from "@/lib/agent-r03/types";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import {
@@ -13,6 +14,7 @@ import styles from "./agent-r03.module.css";
 
 type Props = {
   client: AgentClientRow;
+  accessMode?: OwnerClientsAccessMode;
   archived: boolean;
   selected: boolean;
   onSelectChange: (checked: boolean) => void;
@@ -21,6 +23,7 @@ type Props = {
 
 export function AgentR03MobileClientRow({
   client,
+  accessMode = "agent",
   archived,
   selected,
   onSelectChange,
@@ -44,8 +47,8 @@ export function AgentR03MobileClientRow({
           <Link href={`/clients/${client.id}`} className={styles.mobileRecordTitle}>
             {client.displayName}
           </Link>
-          <p className={styles.meta}>{clientRowMobileSubtitle(client)}</p>
-          <p className={styles.meta}>{clientRowDetail(client)}</p>
+          <p className={styles.meta}>{clientRowMobileSubtitle(client, accessMode)}</p>
+          <p className={styles.meta}>{clientRowDetail(client, accessMode)}</p>
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>

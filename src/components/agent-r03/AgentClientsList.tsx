@@ -28,6 +28,7 @@ import {
   clientRowCaption,
   clientRowDetail,
 } from "@/lib/agent-r03/clientListRow";
+import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -41,7 +42,7 @@ const emptyMeta: AgentR03ListMeta = {
   hasPrevPage: false,
 };
 
-export function AgentClientsList() {
+export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerClientsAccessMode }) {
   const router = useRouter();
   const [items, setItems] = useState<AgentClientRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
@@ -143,18 +144,21 @@ export function AgentClientsList() {
       phone: values.phone || undefined,
       email: values.email || undefined,
       city: values.city || undefined,
-      need: values.need || undefined,
       note: values.note || undefined,
+      ...(accessMode === "specialist" ? { need: values.need || undefined } : {}),
     };
     if (editClient) {
-      await patchAgentClient(editClient.id, {
-        displayName: body.displayName,
+      const patch: Parameters<typeof patchAgentClient>[1] = {
+        displayName: body.displayName as string,
         phone: values.phone ? values.phone : null,
         email: values.email ? values.email : null,
         city: values.city ? values.city : null,
-        need: values.need ? values.need : null,
         note: values.note ? values.note : null,
-      });
+      };
+      if (accessMode === "specialist") {
+        patch.need = values.need ? values.need : null;
+      }
+      await patchAgentClient(editClient.id, patch);
     } else {
       await createAgentClient(body);
     }
@@ -258,7 +262,7 @@ export function AgentClientsList() {
 
   return (
     <div className={styles.r03Root}>
-      <AgentR03PageIntro variant="clients" />
+      {accessMode === "agent" ? <AgentR03PageIntro variant="clients" /> : null}
       <div className={styles.pageActions}>
         <Button onClick={openCreate}>Добавить клиента</Button>
       </div>
@@ -341,9 +345,9 @@ export function AgentClientsList() {
                 <Link href={`/clients/${client.id}`} className={styles.clientCardName}>
                   {client.displayName}
                 </Link>
-                <p className={styles.clientCardDetail}>{clientRowDetail(client)}</p>
-                {clientRowCaption(client) ? (
-                  <p className={styles.clientCardTask}>{clientRowCaption(client)}</p>
+                <p className={styles.clientCardDetail}>{clientRowDetail(client, accessMode)}</p>
+                {clientRowCaption(client, accessMode) ? (
+                  <p className={styles.clientCardTask}>{clientRowCaption(client, accessMode)}</p>
                 ) : null}
                 <div className={styles.clientCardActions}>
                   <RecordRowActions
@@ -365,6 +369,7 @@ export function AgentClientsList() {
               <AgentR03MobileClientRow
                 key={client.id}
                 client={client}
+                accessMode={accessMode}
                 archived={archived}
                 selected={selected.has(client.id)}
                 onSelectChange={(checked) => toggleSelected(client.id, checked)}
@@ -397,11 +402,15 @@ export function AgentClientsList() {
                       <Link href={`/clients/${client.id}`} className={styles.collectionOpenLink}>
                         {client.displayName}
                       </Link>
-                      {clientRowCaption(client) ? (
-                        <small className={styles.collectionCaption}>{clientRowCaption(client)}</small>
+                      {clientRowCaption(client, accessMode) ? (
+                        <small className={styles.collectionCaption}>
+                          {clientRowCaption(client, accessMode)}
+                        </small>
                       ) : null}
                     </td>
-                    <td className={styles.collectionDetail}>{clientRowDetail(client)}</td>
+                    <td className={styles.collectionDetail}>
+                      {clientRowDetail(client, accessMode)}
+                    </td>
                     <td>
                       <span className={styles.purchasePill}>
                         {clientPurchaseStatusLabel(client, archived)}
@@ -474,6 +483,7 @@ export function AgentClientsList() {
       />
 
       <AgentClientFormDialog
+        accessMode={accessMode}
         open={formOpen}
         title={editClient ? "Редактировать клиента" : "Новый клиент"}
         submitLabel={editClient ? "Сохранить" : "Добавить"}

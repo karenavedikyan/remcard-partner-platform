@@ -6,14 +6,14 @@ import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
+import {
+  OwnerClientsModeProvider,
+  type OwnerClientsAccessMode,
+} from "@/components/clients/OwnerClientsModeContext";
 
-export type OwnerClientsAccessMode = "agent" | "specialist";
+export type { OwnerClientsAccessMode };
 
-export function OwnerClientsGate({
-  children,
-}: {
-  children: (mode: OwnerClientsAccessMode) => React.ReactNode;
-}) {
+export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<OwnerClientsAccessMode | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,5 +66,5 @@ export function OwnerClientsGate({
       </p>
     );
   }
-  return <>{children(mode)}</>;
+  return <OwnerClientsModeProvider mode={mode}>{children}</OwnerClientsModeProvider>;
 }

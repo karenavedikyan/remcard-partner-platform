@@ -1,8 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
-import { AgentClientsList } from "@/components/agent-r03/AgentClientsList";
-import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
+import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
 import { CabinetShell } from "@/components/layout/CabinetShell";
-import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,18 +15,7 @@ export default async function ClientsPage() {
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
-      <OwnerClientsGate>
-        {(mode) => (
-          <>
-            <PageHeading
-              eyebrow={mode === "specialist" ? "Специалист" : "АГЕНТ"}
-              title="Клиенты"
-              description="Клиенты, с которыми вы работаете в кабинете."
-            />
-            <AgentClientsList />
-          </>
-        )}
-      </OwnerClientsGate>
+      <ClientsListWorkspace />
     </CabinetShell>
   );
 }

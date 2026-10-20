@@ -1,3 +1,4 @@
+import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import type { AgentClientRow } from "./types";
 
 function certificateCountLabel(count: number): string {
@@ -9,27 +10,44 @@ function certificateCountLabel(count: number): string {
   return `${n} сертификатов`;
 }
 
-/** Under client name (reference caption): task / purpose, then city fallback. */
-export function clientRowCaption(client: AgentClientRow): string {
-  const task = client.need?.trim();
+function taskLine(client: AgentClientRow, mode: OwnerClientsAccessMode): string {
+  if (mode === "specialist") {
+    return client.need?.trim() || "";
+  }
+  return client.note?.trim() || "";
+}
+
+/** Under client name (reference caption): task / note, then city fallback. */
+export function clientRowCaption(
+  client: AgentClientRow,
+  mode: OwnerClientsAccessMode = "agent",
+): string {
+  const task = taskLine(client, mode);
   if (task) return task;
   return client.city?.trim() || "";
 }
 
 /** Mobile list subtitle: city · task (frozen reference collection detail order). */
-export function clientRowMobileSubtitle(client: AgentClientRow): string {
-  const task = client.need?.trim();
+export function clientRowMobileSubtitle(
+  client: AgentClientRow,
+  mode: OwnerClientsAccessMode = "agent",
+): string {
+  const task = taskLine(client, mode);
   const city = client.city?.trim();
   if (city && task) return `${city} · ${task}`;
-  return city || task || "Добавьте задачу в карточке";
+  return city || task || (mode === "specialist" ? "Добавьте задачу в карточке" : "Добавьте задачу в карточке");
 }
 
-/** Details column: certificate count + honest bonus placeholder (no totals API). */
-export function clientRowDetail(client: AgentClientRow): string {
+/** Details column: certificate count; agent keeps bonus placeholder. */
+export function clientRowDetail(
+  client: AgentClientRow,
+  mode: OwnerClientsAccessMode = "agent",
+): string {
   const countPart =
     client.certificateCount > 0
       ? certificateCountLabel(client.certificateCount)
       : "Пока без сертификатов";
+  if (mode === "specialist") return countPart;
   return `${countPart} · бонус —`;
 }
 

@@ -1,8 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
-import { AgentClientDetail } from "@/components/agent-r03/AgentClientDetail";
-import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
+import { ClientDetailWorkspace } from "@/components/clients/ClientDetailWorkspace";
 import { CabinetShell } from "@/components/layout/CabinetShell";
-import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -19,14 +17,7 @@ export default async function ClientDetailPage(props: PageProps) {
 
   return (
     <CabinetShell returnTo="/clients">
-      <OwnerClientsGate>
-        {(mode) => (
-          <>
-            <PageHeading eyebrow="Клиент" title="Карточка клиента" />
-            <AgentClientDetail clientId={params.id} accessMode={mode} />
-          </>
-        )}
-      </OwnerClientsGate>
+      <ClientDetailWorkspace clientId={params.id} />
     </CabinetShell>
   );
 }

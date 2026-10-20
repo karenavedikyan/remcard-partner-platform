@@ -84,6 +84,8 @@ export type AgentClientPurchaseRow = {
   id: string;
   createdAt: string;
   status: string;
+  statusLabel?: string;
+  countsAsPurchase?: boolean;
   totalAmount: number;
   partnerName: string;
   certificateId: string;

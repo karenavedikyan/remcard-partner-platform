@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./PageHeading.module.css";
 
 type PageHeadingProps = {

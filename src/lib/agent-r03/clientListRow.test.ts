@@ -23,13 +23,21 @@ const base: AgentClientRow = {
 };
 
 describe("clientListRow", () => {
-  it("puts task under name and cert summary in details", () => {
-    expect(clientRowCaption(base)).toBe("Задача parity");
-    expect(clientRowDetail(base)).toBe("2 сертификата · бонус —");
+  it("agent mode uses note for caption and bonus in details", () => {
+    expect(clientRowCaption(base, "agent")).toBe("Внутренняя заметка");
+    expect(clientRowDetail(base, "agent")).toBe("2 сертификата · бонус —");
+    expect(clientRowMobileSubtitle(base, "agent")).toBe("Краснодар · Внутренняя заметка");
   });
 
-  it("formats mobile list subtitle as task · city", () => {
-    expect(clientRowMobileSubtitle(base)).toBe("Краснодар · Задача parity");
+  it("legacy agent client keeps note when need is null", () => {
+    const legacy = { ...base, need: null, note: "Legacy task", city: "Москва" };
+    expect(clientRowCaption(legacy, "agent")).toBe("Legacy task");
+    expect(clientRowMobileSubtitle(legacy, "agent")).toBe("Москва · Legacy task");
+  });
+
+  it("specialist mode uses need for caption without agent bonus", () => {
+    expect(clientRowCaption(base, "specialist")).toBe("Задача parity");
+    expect(clientRowDetail(base, "specialist")).toBe("2 сертификата");
   });
 
   it("uses purchase status labels from hasPurchases", () => {

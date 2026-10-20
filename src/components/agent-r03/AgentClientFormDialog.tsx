@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import { Button } from "@/components/ui/Button";
 import styles from "./agent-r03.module.css";
 
@@ -14,6 +15,7 @@ export type AgentClientFormValues = {
 };
 
 type Props = {
+  accessMode?: OwnerClientsAccessMode;
   open: boolean;
   title: string;
   initial?: Partial<AgentClientFormValues>;
@@ -23,6 +25,7 @@ type Props = {
 };
 
 export function AgentClientFormDialog({
+  accessMode = "agent",
   open,
   title,
   initial,
@@ -85,6 +88,40 @@ export function AgentClientFormDialog({
     }
   }
 
+  const contactFields =
+    accessMode === "specialist" ? (
+      <details className={styles.certificateTerms} open={Boolean(phone || email || city)}>
+        <summary>Контакты (необязательно)</summary>
+        <label className={styles.field}>
+          Телефон
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
+        </label>
+        <label className={styles.field}>
+          Email
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+        </label>
+        <label className={styles.field}>
+          Город
+          <input value={city} onChange={(e) => setCity(e.target.value)} />
+        </label>
+      </details>
+    ) : (
+      <>
+        <label className={styles.field}>
+          Телефон
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
+        </label>
+        <label className={styles.field}>
+          Email
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+        </label>
+        <label className={styles.field}>
+          Город
+          <input value={city} onChange={(e) => setCity(e.target.value)} />
+        </label>
+      </>
+    );
+
   return (
     <div className={styles.dialogBackdrop} role="presentation" onClick={onClose}>
       <form
@@ -99,24 +136,15 @@ export function AgentClientFormDialog({
           Имя
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
         </label>
+        {accessMode === "specialist" ? (
+          <label className={styles.field}>
+            Задача
+            <input value={need} onChange={(e) => setNeed(e.target.value)} maxLength={160} />
+          </label>
+        ) : null}
+        {contactFields}
         <label className={styles.field}>
-          Телефон
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
-        </label>
-        <label className={styles.field}>
-          Email
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-        </label>
-        <label className={styles.field}>
-          Город
-          <input value={city} onChange={(e) => setCity(e.target.value)} />
-        </label>
-        <label className={styles.field}>
-          Задача
-          <input value={need} onChange={(e) => setNeed(e.target.value)} maxLength={160} />
-        </label>
-        <label className={styles.field}>
-          Заметка
+          {accessMode === "specialist" ? "Заметка" : "Заметка"}
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
         </label>
         {error ? (
