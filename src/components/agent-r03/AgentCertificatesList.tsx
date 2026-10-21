@@ -18,7 +18,7 @@ import {
   fetchSpecialistIssuerCertificates,
   patchSpecialistIssuerCertificate,
 } from "@/lib/specialist-certificates/api";
-import { promptAndPatchSpecialistCertificateDiscounts } from "@/lib/specialist-certificates/editDiscounts";
+import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
 import {
   CERT_SORT_OPTIONS,
@@ -79,6 +79,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     lines: string[];
     url: string;
   } | null>(null);
+  const [editDiscountsCert, setEditDiscountsCert] = useState<AgentCertificateRow | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -209,14 +210,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
               disabledReason: cert.hasOrders
                 ? "Есть использования"
                 : "Сертификат отключён",
-              onClick: () => {
-                setBusy(true);
-                void promptAndPatchSpecialistCertificateDiscounts(cert)
-                  .then((ok) => {
-                    if (ok) return load();
-                  })
-                  .finally(() => setBusy(false));
-              },
+              onClick: () => setEditDiscountsCert(cert),
             } as import("./RecordRowActions").RecordRowAction,
           ]
         : []),
@@ -564,6 +558,13 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         lines={sharePreview?.lines ?? []}
         url={sharePreview?.url ?? ""}
         onClose={() => setSharePreview(null)}
+      />
+
+      <SpecialistCertificateEditDiscountsDialog
+        open={Boolean(editDiscountsCert)}
+        cert={editDiscountsCert}
+        onClose={() => setEditDiscountsCert(null)}
+        onSaved={() => load()}
       />
     </div>
   );

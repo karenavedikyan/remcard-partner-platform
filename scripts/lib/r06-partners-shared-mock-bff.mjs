@@ -432,7 +432,45 @@ function ensureClientsState(state) {
       ],
     ]);
     state.clientSeq = 100;
-    state.createdCerts = [];
+    state.createdCerts = [
+      {
+        id: 'mock-cert-visual-edit',
+        promoCode: 'VIS-EDIT',
+        displayCode: 'С-VIS-EDIT',
+        qrCode: 'qr-visual-edit',
+        status: 'ACTIVE',
+        validUntil: null,
+        maxUsages: 1,
+        usageCount: 0,
+        createdAt: '2026-10-12T10:00:00.000Z',
+        userAlias: 'Визуальный сертификат',
+        title: 'Визуальный сертификат',
+        directionLabel: 'Двери',
+        partnerStoreName: 'Магазин «Юг»',
+        partnerCount: 1,
+        categorySummary: 'Двери',
+        discountPercent: 4.7,
+        archivedInWorkspace: false,
+        hasOrders: false,
+        agentClient: null,
+        issuerKindSnapshot: 'SPECIALIST',
+        partnerOffers: [
+          {
+            storeName: 'Магазин «Юг»',
+            storeUserId: 'mock-store-visual-1',
+            categories: [
+              {
+                category: 'doors',
+                categoryLabel: 'Двери',
+                discountPercent: 4.7,
+                issuerBonusPercent: 5.3,
+                agentBonusPercent: null,
+              },
+            ],
+          },
+        ],
+      },
+    ];
   }
 }
 
@@ -592,10 +630,13 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         if (state.mode !== 'specialist') {
           return send(403, { error: 'SPECIALIST_ISSUER_INELIGIBLE' });
         }
+        if (state.certificatesListGetFail) {
+          return send(503, { error: 'mock_certificates_list_unavailable' });
+        }
         const url = new URL(req.url || '', 'http://127.0.0.1');
         const archived = url.searchParams.get('archived') === 'true';
         const q = (url.searchParams.get('q') || '').trim().toLowerCase();
-        let rows = collectIssuerCertificateRows(state);
+        let rows = state.certificatesForceEmpty ? [] : collectIssuerCertificateRows(state);
         if (archived) {
           rows = rows.filter((c) => c.archivedInWorkspace);
         } else {
@@ -649,6 +690,25 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           if (body.userAlias != null) {
             cert.userAlias = body.userAlias;
             cert.title = body.userAlias || cert.title;
+          }
+          if (body.action === 'updateDiscounts' && Array.isArray(body.updates)) {
+            for (const upd of body.updates) {
+              for (const offer of cert.partnerOffers ?? []) {
+                if (offer.storeUserId !== upd.storeUserId) continue;
+                for (const cat of offer.categories ?? []) {
+                  if (cat.category === upd.category) {
+                    cat.discountPercent = upd.discountPercent;
+                    if (cat.issuerBonusPercent != null) {
+                      cat.issuerBonusPercent = Math.max(
+                        0,
+                        Math.round((10 - upd.discountPercent) * 10) / 10,
+                      );
+                    }
+                  }
+                }
+              }
+            }
+            return send(200, { certificate: cert });
           }
           return send(200, { ok: true, certificate: cert });
         }

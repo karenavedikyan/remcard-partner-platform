@@ -30,7 +30,22 @@ export const CLIENTS_VISUAL_MATRIX = [
   { id: 'certs-create-1440-light', panel: 'certificates-create', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-create-step2-1440-light', panel: 'certificates-create-step2', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-list-1440-dark', panel: 'certificates-list', width: 1440, height: 900, theme: 'dark', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-list-cards-375-light', panel: 'certificates-list', width: 375, height: 812, theme: 'light', viewMode: 'cards', audience: 'specialist' },
+  { id: 'certs-list-empty-1440-light', panel: 'certificates-list-empty', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-list-error-1440-light', panel: 'certificates-list-error', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist', implOnly: true },
+  { id: 'certs-list-error-375-light', panel: 'certificates-list-error', width: 375, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist', implOnly: true },
+  { id: 'certs-list-error-375-dark', panel: 'certificates-list-error', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist', implOnly: true },
+  { id: 'certs-detail-1440-light', panel: 'certificates-detail', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-detail-375-dark', panel: 'certificates-detail', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-edit-discounts-1440-light', panel: 'certificates-edit-discounts', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
 ];
+
+export function clientsVisualMatrixForRun() {
+  if (process.env.R06_CLIENTS_IMPLEMENT_01_3 === '1') {
+    return CLIENTS_VISUAL_MATRIX.filter((spec) => spec.id.startsWith('certs-'));
+  }
+  return CLIENTS_VISUAL_MATRIX;
+}
 
 function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
@@ -41,11 +56,19 @@ export function applyClientsVisualScenario(mockState, spec) {
   mockState.mode = spec.audience === 'agent' ? 'agent' : 'specialist';
   mockState.clientsForceEmpty = spec.panel === 'list-empty';
   mockState.clientsListGetFail = spec.panel === 'list-error';
+  mockState.certificatesForceEmpty = spec.panel === 'certificates-list-empty';
+  mockState.certificatesListGetFail = spec.panel === 'certificates-list-error';
   if (spec.panel !== 'list-empty' && spec.panel !== 'list-error') {
     mockState.clientsForceEmpty = false;
   }
   if (spec.panel !== 'list-error') {
     mockState.clientsListGetFail = false;
+  }
+  if (spec.panel !== 'certificates-list-empty') {
+    mockState.certificatesForceEmpty = false;
+  }
+  if (spec.panel !== 'certificates-list-error') {
+    mockState.certificatesListGetFail = false;
   }
   mockState.clients = null;
   mockState.clientCerts = null;
@@ -98,6 +121,10 @@ async function assertImplPersona(page, audience, spec) {
     if (agentEyebrow > 0) throw new Error('impl_specialist_detail_polluted_by_agent');
   } else if (
     spec.panel === 'certificates-list' ||
+    spec.panel === 'certificates-list-empty' ||
+    spec.panel === 'certificates-list-error' ||
+    spec.panel === 'certificates-detail' ||
+    spec.panel === 'certificates-edit-discounts' ||
     spec.panel === 'certificates-create' ||
     spec.panel === 'certificates-create-step2'
   ) {
@@ -132,9 +159,26 @@ async function assertImplContent(page, spec) {
   if (spec.panel === 'form-create' || spec.panel === 'form-edit-empty') {
     await page.locator('[data-testid="agent-client-form-dialog"]').waitFor({ timeout: 15_000 });
   }
-  if (spec.panel === 'certificates-list') {
+  if (
+    spec.panel === 'certificates-list' ||
+    spec.panel === 'certificates-list-empty' ||
+    spec.panel === 'certificates-list-error'
+  ) {
     await page.getByTestId('specialist-certificates-root').waitFor({ timeout: 15_000 });
     await page.getByTestId('agent-r03-collection-toolbar').waitFor({ timeout: 15_000 });
+    if (spec.panel === 'certificates-list-error') {
+      await page
+        .locator('p[role="alert"]')
+        .filter({ hasText: /mock_certificates|Не удалось|ошиб/i })
+        .first()
+        .waitFor({ timeout: 20_000 });
+    }
+  }
+  if (spec.panel === 'certificates-detail' || spec.panel === 'certificates-edit-discounts') {
+    await page.getByTestId('agent-certificate-detail-root').waitFor({ timeout: 20_000 });
+  }
+  if (spec.panel === 'certificates-edit-discounts') {
+    await page.getByTestId('specialist-certificate-edit-discounts-dialog').waitFor({ timeout: 15_000 });
   }
   if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
     await page.getByTestId('specialist-certificate-create-step-1').waitFor({ timeout: 20_000 });
@@ -173,9 +217,31 @@ export async function prepareImplClients(page, origin, spec) {
       .filter({ hasText: /Контакты и заметка/i })
       .count();
     if (detailsOpen > 0) throw new Error('create_form_optional_should_be_closed');
-  } else if (spec.panel === 'certificates-list') {
+  } else if (
+    spec.panel === 'certificates-list' ||
+    spec.panel === 'certificates-list-empty' ||
+    spec.panel === 'certificates-list-error'
+  ) {
     await page.goto(`${origin}/recommendations`, { waitUntil: 'networkidle', timeout: 120_000 });
     await page.getByRole('heading', { name: 'Сертификаты' }).waitFor({ timeout: 30_000 });
+    if (spec.viewMode === 'cards' && spec.panel === 'certificates-list') {
+      const cardsBtn = page.getByRole('button', { name: /Карточки/i });
+      if (await cardsBtn.isVisible().catch(() => false)) await cardsBtn.click();
+    }
+  } else if (spec.panel === 'certificates-detail' || spec.panel === 'certificates-edit-discounts') {
+    await page.goto(`${origin}/recommendations/mock-cert-visual-edit`, {
+      waitUntil: 'networkidle',
+      timeout: 120_000,
+    });
+    if (spec.panel === 'certificates-edit-discounts') {
+      await page.getByRole('button', { name: /Ещё|Действия/i }).first().click().catch(() => {});
+      const editItem = page.getByRole('menuitem', { name: 'Изменить скидки' });
+      if (await editItem.isVisible().catch(() => false)) {
+        await editItem.click();
+      } else {
+        await page.getByRole('button', { name: 'Изменить скидки' }).click();
+      }
+    }
   } else if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
     await page.goto(`${origin}/recommendations/new`, { waitUntil: 'networkidle', timeout: 120_000 });
     await page.getByRole('heading', { name: /Создать сертификат/i }).waitFor({ timeout: 30_000 });
@@ -236,7 +302,7 @@ export async function runClientsVisualCaptures({ browser, refBase, appOrigin, ou
   const refPage = await browser.newPage();
   const pairs = [];
   try {
-    for (const spec of CLIENTS_VISUAL_MATRIX) {
+    for (const spec of clientsVisualMatrixForRun()) {
       applyClientsVisualScenario(mockState, spec);
       const implName = `impl-specialist-clients-${spec.id}.png`;
       const refName = `ref-specialist-clients-${spec.id}.png`;
@@ -249,7 +315,7 @@ export async function runClientsVisualCaptures({ browser, refBase, appOrigin, ou
       } catch (e) {
         implError = String(e?.message || e);
       }
-      const refUnavailable = spec.panel === 'list-error';
+      const refUnavailable = spec.panel === 'list-error' || spec.implOnly === true;
       let refError = null;
       let refUnavailableReason = null;
       if (!implError && !refUnavailable) {
@@ -282,7 +348,7 @@ export async function runClientsVisualCaptures({ browser, refBase, appOrigin, ou
         refSha256: !refError && !refUnavailable && refPath ? sha256File(refPath) : null,
         emptyVerified: spec.panel === 'list-empty' ? !implError : undefined,
         errorCaseBoundary:
-          spec.panel === 'list-error'
+          spec.panel === 'list-error' || spec.panel === 'certificates-list-error'
             ? 'impl_only_mock_503_alert_no_prototype_ref'
             : undefined,
       });

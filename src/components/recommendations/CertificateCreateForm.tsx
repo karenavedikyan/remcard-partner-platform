@@ -34,6 +34,7 @@ import {
   profileHrefForIssuerMissing,
 } from "@/lib/recommendation-profile-focus";
 import { createAgentCertificate } from "@/lib/agent-r03/api";
+import { patchSpecialistIssuerCertificate } from "@/lib/specialist-certificates/api";
 import {
   hashAgentCreatePayload,
   resolveCreateIdempotencySession,
@@ -115,6 +116,7 @@ export function CertificateCreateForm({
   const scopeResolveGenerationRef = useRef(0);
   const createIdempotencyRef = useRef<CreateIdempotencySession | null>(null);
   const [specialistStep, setSpecialistStep] = useState<1 | 2>(1);
+  const [privateAlias, setPrivateAlias] = useState("");
   const specialistWizard = issuerUi === "specialist";
 
   const resolveDraftScope = useCallback(async () => {
@@ -302,6 +304,10 @@ export function CertificateCreateForm({
           method: "POST",
           body,
         });
+      }
+      const aliasTrimmed = specialistWizard ? privateAlias.trim() : "";
+      if (specialistWizard && aliasTrimmed && result.id) {
+        await patchSpecialistIssuerCertificate(result.id, { userAlias: aliasTrimmed });
       }
       setCreated(result);
       if (persistableScope) clearRecommendationCreateDraft(persistableScope);
@@ -555,6 +561,20 @@ export function CertificateCreateForm({
                   }),
                 )}
               </div>
+            </section>
+          ) : null}
+
+          {specialistWizard && specialistStep === 2 ? (
+            <section className={styles.formSection} data-testid="specialist-certificate-create-alias">
+              <h3>Название для себя</h3>
+              <p className={styles.meta}>Необязательно. Видно только вам, не показывается клиенту.</p>
+              <TextField
+                label="Название"
+                value={privateAlias}
+                disabled={submitting}
+                maxLength={60}
+                onChange={(event) => setPrivateAlias(event.target.value)}
+              />
             </section>
           ) : null}
 

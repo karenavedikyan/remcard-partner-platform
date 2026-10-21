@@ -21,7 +21,7 @@ import { CertificateResultView } from "@/components/recommendations/CertificateR
 import { Button } from "@/components/ui/Button";
 import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
-import { promptAndPatchSpecialistCertificateDiscounts } from "@/lib/specialist-certificates/editDiscounts";
+import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import styles from "./agent-r03.module.css";
 
 export type AgentCertificateDetailAccessMode = "agent" | "specialist";
@@ -46,6 +46,7 @@ export function AgentCertificateDetail({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [editDiscountsOpen, setEditDiscountsOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -170,7 +171,7 @@ export function AgentCertificateDetail({
         </p>
       ) : null}
 
-      <div className={styles.card}>
+      <div className={styles.card} data-testid="agent-certificate-detail-root">
         <p className={styles.meta}>
           Код для клиента: <strong>{meta.displayCode}</strong>
           {meta.userAlias ? ` · для себя: ${meta.userAlias}` : null}
@@ -200,14 +201,7 @@ export function AgentCertificateDetail({
                     label: "Изменить скидки",
                     disabled: busy || meta.hasOrders || meta.status === "CANCELLED",
                     disabledReason: meta.hasOrders ? "Есть использования" : "Сертификат отключён",
-                    onClick: () => {
-                      setBusy(true);
-                      void promptAndPatchSpecialistCertificateDiscounts(meta)
-                        .then((ok) => {
-                          if (ok) return load();
-                        })
-                        .finally(() => setBusy(false));
-                    },
+                    onClick: () => setEditDiscountsOpen(true),
                   },
                 ]
               : []),
@@ -245,6 +239,13 @@ export function AgentCertificateDetail({
         title="Сертификат Ремкард"
         lines={[`Код: ${meta.displayCode}`, pageUrl]}
         url={pageUrl}
+      />
+
+      <SpecialistCertificateEditDiscountsDialog
+        open={editDiscountsOpen}
+        cert={meta}
+        onClose={() => setEditDiscountsOpen(false)}
+        onSaved={() => load()}
       />
     </>
   );
