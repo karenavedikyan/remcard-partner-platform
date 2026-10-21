@@ -384,16 +384,25 @@
 
 .inviteInline {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
+  flex-wrap: nowrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 0 0;
+  padding: 1rem 0 0;
   border-top: 1px solid var(--line);
   background: transparent;
 }
 
-@media (max-width: 519px) {
+.inviteInline > div:first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.inviteInline > a {
+  flex-shrink: 0;
+}
+
+@media (max-width: 680px) {
   .inviteInline {
     flex-direction: column;
     align-items: stretch;
@@ -449,24 +458,29 @@
 .allClientAction {
   border: none;
   background: transparent;
-  padding: 0;
+  padding: 0.35rem 0.5rem;
+  margin: -0.35rem -0.5rem;
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--primary);
+  font-weight: 700;
+  color: inherit;
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
 }
 
 .allClientAction:disabled {
-  opacity: 0.45;
+  opacity: 0.55;
   cursor: not-allowed;
-  text-decoration: none;
 }
 
 .allClientAction:hover:not(:disabled) {
-  color: color-mix(in srgb, var(--primary) 85%, #000);
+  background: var(--offset);
+}
+
+.allClientAction:focus-visible {
+  outline: 2px solid var(--accent-fill);
+  outline-offset: 2px;
 }
 
 .categoryAllocationHead {
@@ -477,21 +491,52 @@
 
 .categoryAllocationFields {
   display: grid;
-  gap: 0.65rem;
+  grid-template-columns: 85px minmax(0, 1fr) 100px;
+  align-items: end;
+  gap: 16px;
+  margin-top: 0.35rem;
 }
 
-@media (min-width: 520px) {
-  .categoryAllocationFields {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
-    align-items: end;
-  }
+.categoryAllocationFields > * {
+  min-width: 0;
 }
 
 .allocationLimit,
 .allocationBonus {
   display: grid;
-  gap: 0.15rem;
+  gap: 6px;
+  padding-bottom: 10px;
   font-size: var(--text-sm);
+}
+
+.allocationLimit strong,
+.allocationBonus strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.allocationBonus strong {
+  font-size: 18px;
+}
+
+@media (max-width: 680px) {
+  .categoryAllocationFields {
+    grid-template-columns: 65px minmax(0, 1fr) 74px;
+    gap: 8px;
+  }
+
+  .categoryAllocationFields small {
+    font-size: 12px;
+  }
+
+  .categoryAllocationFields label {
+    font-size: 12px;
+  }
+
+  .allocationLimit strong,
+  .allocationBonus strong {
+    font-size: 16px;
+  }
 }
 
 .optionalBlock {
@@ -617,7 +662,7 @@
   min-height: 44px;
   padding: 0.55rem 1.15rem;
   border: 1px solid rgb(255 255 255 / 35%);
-  border-radius: 999px;
+  border-radius: 8px;
   background: rgb(255 255 255 / 10%);
   color: #fff;
   font: inherit;
