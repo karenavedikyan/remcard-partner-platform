@@ -494,7 +494,7 @@
   grid-template-columns: 85px minmax(0, 1fr) 100px;
   align-items: end;
   gap: 16px;
-  margin-top: 0.35rem;
+  margin-top: 16px;
 }
 
 .categoryAllocationFields > * {
@@ -517,6 +517,14 @@
 
 .allocationBonus strong {
   font-size: 18px;
+}
+
+.specialistCreatePanel .allocationBonus strong {
+  color: #30684c;
+}
+
+:global([data-theme="dark"]) .specialistCreatePanel .allocationBonus strong {
+  color: #9ad4b3;
 }
 
 @media (max-width: 680px) {
