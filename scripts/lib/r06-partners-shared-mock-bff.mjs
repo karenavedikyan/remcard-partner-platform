@@ -378,36 +378,7 @@ function collectIssuerCertificateRows(state) {
   }
   for (const raw of state.createdCerts) {
     if (!byId.has(raw.id)) {
-      byId.set(raw.id, enrichOrdinaryIssuerCertDto({
-        id: raw.id,
-        promoCode: raw.promoCode,
-        displayCode: raw.displayCode ?? raw.promoCode,
-        qrCode: raw.qrCode,
-        status: raw.status ?? 'ACTIVE',
-        validUntil: null,
-        maxUsages: 1,
-        usageCount: 0,
-        createdAt: raw.createdAt ?? new Date().toISOString(),
-        userAlias: raw.userAlias ?? raw.title ?? null,
-        title: raw.title ?? raw.userAlias ?? 'Сертификат',
-        directionLabel: null,
-        partnerStoreName: 'Магазин «Юг»',
-        partnerCount: 1,
-        categorySummary: 'Двери',
-        discountPercent: 10,
-        archivedInWorkspace: false,
-        hasOrders: false,
-        agentClient: raw.agentClientId
-          ? state.clients.get(raw.agentClientId)
-            ? {
-                id: raw.agentClientId,
-                displayName: state.clients.get(raw.agentClientId).displayName,
-              }
-            : null
-          : null,
-        issuerKindSnapshot: null,
-        certificateUrl: 'https://remcard.test/c/demo',
-      }));
+      byId.set(raw.id, enrichOrdinaryIssuerCertDto(raw));
     }
   }
   return [...byId.values()];
@@ -633,31 +604,7 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         const certId = decodeURIComponent(storeCertByIdMatch[1]);
         const cert = collectIssuerCertificateRows(state).find((c) => c.id === certId);
         if (!cert) return send(404, { error: 'Не найдено' });
-        const offer = cert.partnerOffers?.[0];
-        const cat = offer?.categories?.[0];
-        return send(200, {
-          id: cert.id,
-          promoCode: cert.promoCode,
-          qrCode: cert.qrCode ?? `qr-${cert.id}`,
-          issuerKindSnapshot: cert.issuerKindSnapshot ?? 'SPECIALIST',
-          status: cert.status ?? 'ACTIVE',
-          validUntil: cert.validUntil ?? null,
-          maxUsages: cert.maxUsages ?? 1,
-          usageCount: cert.usageCount ?? 0,
-          createdAt: cert.createdAt ?? new Date().toISOString(),
-          discountPercent: cat?.discountPercent ?? cert.discountPercent ?? 0,
-          storeNames: offer?.storeName ? [offer.storeName] : [],
-          partners: (cert.partnerOffers ?? []).map((p) => ({
-            storeUserId: p.storeUserId,
-            storeName: p.storeName,
-            categories: (p.categories ?? []).map((c) => ({
-              category: c.category,
-              categoryLabel: c.categoryLabel,
-              discountPercent: c.discountPercent,
-              issuerPercent: c.issuerBonusPercent ?? 0,
-            })),
-          })),
-        });
+        return send(200, issuerRowToStoreCertificate(cert));
       }
       if (path === '/api/pro/r03/status') {
         const agent = state.mode === 'agent';
@@ -749,13 +696,6 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           hasPrevPage: false,
           sort: url.searchParams.get('sort') || 'created_desc',
         });
-      }
-      const storeCertMatch = path.match(/^\/api\/store\/certificate\/([^/]+)$/);
-      if (storeCertMatch && req.method === 'GET') {
-        const certId = decodeURIComponent(storeCertMatch[1]);
-        const row = collectIssuerCertificateRows(state).find((c) => c.id === certId);
-        if (!row) return send(404, { error: 'Не найдено' });
-        return send(200, issuerRowToStoreCertificate(row));
       }
       const specIssuerCertMatch = path.match(/^\/api\/pro\/specialist-issuer-certificates\/([^/]+)$/);
       if (specIssuerCertMatch && state.mode === 'specialist') {
