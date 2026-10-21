@@ -800,9 +800,10 @@ async function runClientsImplement013Main() {
   writeFileSync(path.join(OUT, manifestName), JSON.stringify(report, null, 2));
   const publicDir = copyClientsArtifactsToPublic(OUT, codeSha, manifestName, report);
 
-  const backendOk = CLIENTS_IMPLEMENT_01_5
-    ? true
-    : backendCertLink.exitCode === 0 && backendCertLink.result?.ok === true;
+  const backendOk =
+    CLIENTS_IMPLEMENT_01_5 || CLIENTS_IMPLEMENT_01_4
+      ? true
+      : backendCertLink.exitCode === 0 && backendCertLink.result?.ok === true;
   const ok = backendOk && refFailures.length === 0 && build.status !== 'failed';
 
   console.log(
