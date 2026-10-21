@@ -551,6 +551,37 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
       if (path === '/api/pro/context' && req.method === 'GET') {
         return send(200, { organization: null, activeBranch: null });
       }
+      const storeCertByIdMatch = path.match(/^\/api\/store\/certificate\/([^/]+)$/);
+      if (storeCertByIdMatch && req.method === 'GET') {
+        const certId = decodeURIComponent(storeCertByIdMatch[1]);
+        const cert = collectIssuerCertificateRows(state).find((c) => c.id === certId);
+        if (!cert) return send(404, { error: 'Не найдено' });
+        const offer = cert.partnerOffers?.[0];
+        const cat = offer?.categories?.[0];
+        return send(200, {
+          id: cert.id,
+          promoCode: cert.promoCode,
+          qrCode: cert.qrCode ?? `qr-${cert.id}`,
+          issuerKindSnapshot: cert.issuerKindSnapshot ?? 'SPECIALIST',
+          status: cert.status ?? 'ACTIVE',
+          validUntil: cert.validUntil ?? null,
+          maxUsages: cert.maxUsages ?? 1,
+          usageCount: cert.usageCount ?? 0,
+          createdAt: cert.createdAt ?? new Date().toISOString(),
+          discountPercent: cat?.discountPercent ?? cert.discountPercent ?? 0,
+          storeNames: offer?.storeName ? [offer.storeName] : [],
+          partners: (cert.partnerOffers ?? []).map((p) => ({
+            storeUserId: p.storeUserId,
+            storeName: p.storeName,
+            categories: (p.categories ?? []).map((c) => ({
+              category: c.category,
+              categoryLabel: c.categoryLabel,
+              discountPercent: c.discountPercent,
+              issuerPercent: c.issuerBonusPercent ?? 0,
+            })),
+          })),
+        });
+      }
       if (path === '/api/store/certificate/available-partners' && req.method === 'GET') {
         return send(200, {
           certificateRecommendationIssuerReady: true,

@@ -234,13 +234,7 @@ export async function prepareImplClients(page, origin, spec) {
       timeout: 120_000,
     });
     if (spec.panel === 'certificates-edit-discounts') {
-      await page.getByRole('button', { name: /Ещё|Действия/i }).first().click().catch(() => {});
-      const editItem = page.getByRole('menuitem', { name: 'Изменить скидки' });
-      if (await editItem.isVisible().catch(() => false)) {
-        await editItem.click();
-      } else {
-        await page.getByRole('button', { name: 'Изменить скидки' }).click();
-      }
+      await page.getByRole('button', { name: 'Изменить скидки' }).click();
     }
   } else if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
     await page.goto(`${origin}/recommendations/new`, { waitUntil: 'networkidle', timeout: 120_000 });

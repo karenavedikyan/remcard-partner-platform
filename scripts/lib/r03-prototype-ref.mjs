@@ -188,6 +188,9 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   }
   const certPanel =
     panel === 'certificates-list' ||
+    panel === 'certificates-list-empty' ||
+    panel === 'certificates-detail' ||
+    panel === 'certificates-edit-discounts' ||
     panel === 'certificates-create' ||
     panel === 'certificates-create-step2';
   const navKey = certPanel ? 'recommendations' : 'clients';
@@ -208,13 +211,23 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await page.getByRole('heading', { name: /Создать сертификат|Шаг/i }).first().waitFor({ timeout: 25_000 });
   }
 
-  if (panel !== 'certificates-create' && panel !== 'certificates-create-step2') {
+  if (
+    panel !== 'certificates-create' &&
+    panel !== 'certificates-create-step2' &&
+    panel !== 'certificates-detail' &&
+    panel !== 'certificates-edit-discounts'
+  ) {
     const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
     const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
     if (await viewBtn.isVisible().catch(() => false)) {
       await viewBtn.click();
       await page.waitForTimeout(400);
     }
+  }
+
+  if (panel === 'certificates-detail' || panel === 'certificates-edit-discounts') {
+    await page.locator('[data-coll-open]').first().click();
+    await page.waitForTimeout(600);
   }
 
   if (panel === 'detail') {
