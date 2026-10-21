@@ -35,22 +35,41 @@ export function NavIconPartners(props: IconProps) {
   return <PartnersHandshakeIcon {...props} size={20} strokeWidth={2} />;
 }
 
+function PrototypeNavIcon({ children, ...props }: IconProps & { children: React.ReactNode }) {
+  return (
+    <BaseIcon strokeWidth={1.7} {...props}>
+      {children}
+    </BaseIcon>
+  );
+}
+
 export function NavIconClients(props: IconProps) {
   return (
-    <BaseIcon {...props}>
+    <PrototypeNavIcon {...props}>
       <path d="M18 21a8 8 0 0 0-16 0" />
       <circle cx="10" cy="8" r="5" />
-      <circle cx="18" cy="8" r="5" />
-    </BaseIcon>
+      <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+    </PrototypeNavIcon>
   );
 }
 
 export function NavIconRecommendations(props: IconProps) {
   return (
-    <BaseIcon {...props}>
-      <path d="M7 4h10v16H7z" />
-      <path d="M10 8h4M10 12h4M10 16h2" />
-    </BaseIcon>
+    <PrototypeNavIcon {...props}>
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+      <path d="M13 5v2" />
+      <path d="M13 17v2" />
+      <path d="M13 11v2" />
+    </PrototypeNavIcon>
+  );
+}
+
+export function NavIconWallet(props: IconProps) {
+  return (
+    <PrototypeNavIcon {...props}>
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+    </PrototypeNavIcon>
   );
 }
 
@@ -117,6 +136,7 @@ export const NAV_ICONS = {
   recommendations: NavIconRecommendations,
   scanner: NavIconScanner,
   history: NavIconHistory,
+  wallet: NavIconWallet,
   settlements: NavIconSettlements,
   profile: NavIconProfile,
   notifications: NavIconNotifications,

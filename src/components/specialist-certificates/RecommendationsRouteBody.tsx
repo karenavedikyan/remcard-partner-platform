@@ -19,7 +19,6 @@ function RecommendationsListPageContent() {
         <PageHeading
           eyebrow={SPECIALIST_CERTIFICATES_PAGE.eyebrow}
           title={SPECIALIST_CERTIFICATES_PAGE.title}
-          description={SPECIALIST_CERTIFICATES_PAGE.description}
         />
         <SpecialistCertificatesList />
       </>

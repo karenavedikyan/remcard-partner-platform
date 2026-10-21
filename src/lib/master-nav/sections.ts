@@ -14,7 +14,7 @@ export const MASTER_DESKTOP_NAV: MasterNavItem[] = [
   { href: "/recommendations", label: "Сертификаты", icon: "recommendations" },
   { href: "/scanner", label: "Сканер", icon: "scanner" },
   { href: "/partners", label: "Партнёры", icon: "partners", badgeKey: "partners" },
-  { href: "/settlements", label: "Кошелёк", icon: "settlements" },
+  { href: "/settlements", label: "Кошелёк", icon: "wallet" },
   { href: "/profile", label: "Профиль", icon: "profile" },
 ];
 
@@ -23,7 +23,7 @@ export const MASTER_MOBILE_BOTTOM_KEYS = ["home", "scanner", "wallet", "profile"
 export const MASTER_MOBILE_BOTTOM: MasterNavItem[] = [
   { href: "/", label: "Главная", icon: "home" },
   { href: "/scanner", label: "Сканер", icon: "scanner" },
-  { href: "/settlements", label: "Кошелёк", icon: "settlements" },
+  { href: "/settlements", label: "Кошелёк", icon: "wallet" },
   { href: "/profile", label: "Профиль", icon: "profile" },
 ];
 

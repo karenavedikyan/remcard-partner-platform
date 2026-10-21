@@ -7,7 +7,10 @@ const REFERENCE_PATHS = {
     "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",
     "M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   ],
-  clients: ["M18 21a8 8 0 0 0-16 0"],
+  clients: [
+    "M18 21a8 8 0 0 0-16 0",
+    "M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3",
+  ],
   partners: [
     "m11 17 2 2a1 1 0 1 0 3-3",
     "m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4",
@@ -43,12 +46,7 @@ export function AgentNavIcon({ section }: { section: Pick<AgentNavSectionDef, "i
         {section.icon === "profile" || section.icon === "clients" ? (
           <>
             {section.icon === "profile" ? <circle cx="12" cy="8" r="5" /> : null}
-            {section.icon === "clients" ? (
-              <>
-                <circle cx="10" cy="8" r="5" />
-                <circle cx="18" cy="8" r="5" />
-              </>
-            ) : null}
+            {section.icon === "clients" ? <circle cx="10" cy="8" r="5" /> : null}
           </>
         ) : null}
         {paths.map((d) => <path key={d} d={d} />)}

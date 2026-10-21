@@ -42,4 +42,15 @@ describe("MASTER nav sections", () => {
     expect(masterPageTitle("/recommendations")).toBe("Сертификаты");
     expect(masterPageTitle("/recommendations/new")).toBe("Сертификаты");
   });
+
+  it("maps Кошелёk to wallet icon while href stays settlements", () => {
+    const walletItems = [...MASTER_DESKTOP_NAV, ...MASTER_MOBILE_BOTTOM].filter(
+      (i) => i.label === "Кошелёк",
+    );
+    expect(walletItems).toHaveLength(2);
+    for (const item of walletItems) {
+      expect(item.href).toBe("/settlements");
+      expect(item.icon).toBe("wallet");
+    }
+  });
 });
