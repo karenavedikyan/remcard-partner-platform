@@ -239,7 +239,7 @@ export async function prepareImplClients(page, origin, spec) {
       if (await cardsBtn.isVisible().catch(() => false)) await cardsBtn.click();
     }
   } else if (spec.panel === 'certificates-detail' || spec.panel === 'certificates-edit-discounts') {
-    await page.goto(`${origin}/recommendations/mock-cert-visual-edit`, {
+    await page.goto(`${origin}/recommendations/cmockcertvisualedit001`, {
       waitUntil: 'networkidle',
       timeout: 120_000,
     });
