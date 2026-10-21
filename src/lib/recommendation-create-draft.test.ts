@@ -4,6 +4,7 @@ import {
   clearRecommendationCreateDraftsForUser,
   loadRecommendationCreateDraft,
   recommendationCreateDraftKey,
+  recommendationCreateDraftKeyLegacyV2,
   reconcileRecommendationDraftWithPartners,
   saveRecommendationCreateDraft,
 } from "./recommendation-create-draft";
@@ -74,6 +75,72 @@ describe("recommendation-create-draft", () => {
       configurable: true,
       value: original,
     });
+  });
+
+  it("loads legacy v2 draft with wizard defaults", () => {
+    const v2Key = recommendationCreateDraftKeyLegacyV2(scopeA);
+    sessionStorage.setItem(
+      v2Key,
+      JSON.stringify({
+        v: 2,
+        userId: "u1",
+        organizationId: null,
+        branchId: null,
+        savedAt: Date.now(),
+        selectedKeys: ["store-1:part-1"],
+        discountDrafts: { "store-1::doors": "4" },
+        validityPreset: "6",
+      }),
+    );
+    const loaded = loadRecommendationCreateDraft(scopeA);
+    expect(loaded?.selectedKeys).toEqual(["store-1:part-1"]);
+    expect(loaded?.discountDrafts["store-1::doors"]).toBe("4");
+    expect(loaded?.validityPreset).toBe("6");
+    expect(loaded?.partnerSearchQuery).toBe("");
+    expect(loaded?.specialistStep).toBe(1);
+    expect(loaded?.selectedCategoryKeys).toEqual({});
+    expect(recommendationCreateDraftKey(scopeA)).not.toBe(v2Key);
+  });
+
+  it("prefers v3 over legacy v2 in the same scope", () => {
+    sessionStorage.setItem(
+      recommendationCreateDraftKeyLegacyV2(scopeA),
+      JSON.stringify({
+        v: 2,
+        userId: "u1",
+        organizationId: null,
+        branchId: null,
+        savedAt: Date.now(),
+        selectedKeys: ["old:1"],
+        discountDrafts: {},
+        validityPreset: "1",
+      }),
+    );
+    saveRecommendationCreateDraft(scopeA, {
+      selectedKeys: ["new:2"],
+      discountDrafts: {},
+      validityPreset: "3",
+    });
+    expect(loadRecommendationCreateDraft(scopeA)?.selectedKeys).toEqual(["new:2"]);
+  });
+
+  it("clearRecommendationCreateDraft removes legacy v2 only storage", () => {
+    sessionStorage.setItem(
+      recommendationCreateDraftKeyLegacyV2(scopeA),
+      JSON.stringify({
+        v: 2,
+        userId: "u1",
+        organizationId: null,
+        branchId: null,
+        savedAt: Date.now(),
+        selectedKeys: ["a:1"],
+        discountDrafts: {},
+        validityPreset: "3",
+      }),
+    );
+    clearRecommendationCreateDraft(scopeA);
+    expect(sessionStorage.getItem(recommendationCreateDraftKeyLegacyV2(scopeA))).toBeNull();
+    expect(loadRecommendationCreateDraft(scopeA)).toBeNull();
   });
 
   it("reconciles stale partner keys against current GET", () => {

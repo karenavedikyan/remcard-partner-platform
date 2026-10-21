@@ -37,15 +37,24 @@ export const CLIENTS_VISUAL_MATRIX = [
   { id: 'certs-list-error-375-dark', panel: 'certificates-list-error', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist', implOnly: true },
   { id: 'certs-detail-1440-light', panel: 'certificates-detail', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-detail-375-dark', panel: 'certificates-detail', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
-  { id: 'certs-edit-discounts-1440-light', panel: 'certificates-edit-discounts', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-edit-discounts-1440-light', panel: 'certificates-edit-discounts', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist', implOnly: true, refUnavailable: true, refUnavailableReason: 'prototype_has_no_discount_edit_dialog_only_link_edit_alias' },
+  { id: 'certs-edit-details-1440-light', panel: 'certificates-edit-details', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-320-light', panel: 'certificates-create', width: 320, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-375-light', panel: 'certificates-create', width: 375, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-375-dark', panel: 'certificates-create', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-step2-375-dark', panel: 'certificates-create-step2', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
 ];
 
 const CERTS_VISUAL_REMAINING_IDS = [
   'certs-create-1440-light',
   'certs-create-step2-1440-light',
+  'certs-create-320-light',
+  'certs-create-375-light',
+  'certs-create-375-dark',
+  'certs-create-step2-375-dark',
   'certs-detail-1440-light',
   'certs-detail-375-dark',
-  'certs-edit-discounts-1440-light',
+  'certs-edit-details-1440-light',
 ];
 
 export function clientsVisualMatrixForRun() {
@@ -140,6 +149,7 @@ async function assertImplPersona(page, audience, spec) {
     spec.panel === 'certificates-list-error' ||
     spec.panel === 'certificates-detail' ||
     spec.panel === 'certificates-edit-discounts' ||
+    spec.panel === 'certificates-edit-details' ||
     spec.panel === 'certificates-create' ||
     spec.panel === 'certificates-create-step2'
   ) {
@@ -189,11 +199,18 @@ async function assertImplContent(page, spec) {
         .waitFor({ timeout: 20_000 });
     }
   }
-  if (spec.panel === 'certificates-detail' || spec.panel === 'certificates-edit-discounts') {
-    await page.getByTestId('agent-certificate-detail-root').waitFor({ timeout: 20_000 });
+  if (
+    spec.panel === 'certificates-detail' ||
+    spec.panel === 'certificates-edit-discounts' ||
+    spec.panel === 'certificates-edit-details'
+  ) {
+    await page.getByTestId('specialist-certificate-detail-dialog').waitFor({ timeout: 20_000 });
   }
   if (spec.panel === 'certificates-edit-discounts') {
     await page.getByTestId('specialist-certificate-edit-discounts-dialog').waitFor({ timeout: 15_000 });
+  }
+  if (spec.panel === 'certificates-edit-details') {
+    await page.getByTestId('specialist-certificate-edit-details-dialog').waitFor({ timeout: 15_000 });
   }
   if (spec.panel === 'certificates-create') {
     await page.getByTestId('specialist-certificate-create-dialog').waitFor({ state: 'visible', timeout: 20_000 });
@@ -244,16 +261,24 @@ export async function prepareImplClients(page, origin, spec) {
       const cardsBtn = page.getByRole('button', { name: /Карточки/i });
       if (await cardsBtn.isVisible().catch(() => false)) await cardsBtn.click();
     }
-  } else if (spec.panel === 'certificates-detail' || spec.panel === 'certificates-edit-discounts') {
-    await page.goto(`${origin}/recommendations/cmockcertvisualedit001`, {
+  } else if (
+    spec.panel === 'certificates-detail' ||
+    spec.panel === 'certificates-edit-discounts' ||
+    spec.panel === 'certificates-edit-details'
+  ) {
+    await page.goto(`${origin}/recommendations?certificate=cmockcertvisualedit001`, {
       waitUntil: 'networkidle',
       timeout: 120_000,
     });
-    await page.getByText('Загрузка…').waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => {});
-    await page.getByTestId('agent-certificate-detail-root').waitFor({ state: 'visible', timeout: 60_000 });
+    await page.getByRole('heading', { name: 'Сертификаты' }).waitFor({ timeout: 30_000 });
+    await page.getByTestId('specialist-certificate-detail-dialog').waitFor({ state: 'visible', timeout: 60_000 });
     if (spec.panel === 'certificates-edit-discounts') {
       await page.getByRole('button', { name: 'Изменить скидки' }).click();
       await page.getByTestId('specialist-certificate-edit-discounts-dialog').waitFor({ state: 'visible', timeout: 30_000 });
+    }
+    if (spec.panel === 'certificates-edit-details') {
+      await page.getByRole('button', { name: 'Редактировать детали' }).click();
+      await page.getByTestId('specialist-certificate-edit-details-dialog').waitFor({ state: 'visible', timeout: 30_000 });
     }
   } else if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
     await page.goto(`${origin}/recommendations`, { waitUntil: 'networkidle', timeout: 120_000 });
@@ -333,17 +358,23 @@ export async function runClientsVisualCaptures({ browser, refBase, appOrigin, ou
       } catch (e) {
         implError = String(e?.message || e);
       }
-      const refUnavailable = spec.panel === 'list-error' || spec.implOnly === true;
+      const refUnavailable =
+        spec.panel === 'list-error' || spec.refUnavailable === true || spec.implOnly === true;
       let refError = null;
-      let refUnavailableReason = null;
+      let refUnavailableReason = spec.refUnavailableReason ?? null;
       if (!implError && !refUnavailable) {
         try {
           await captureRefClients(refPage, refBase, spec, refPath);
         } catch (e) {
           refError = String(e?.message || e);
         }
+      } else if (refUnavailable && !refUnavailableReason) {
+        refUnavailableReason =
+          spec.panel === 'list-error'
+            ? 'prototype_has_no_clients_list_network_error_state'
+            : 'impl_only_no_prototype_ref';
       } else if (refUnavailable) {
-        refUnavailableReason = 'prototype_has_no_clients_list_network_error_state';
+        /* keep spec.refUnavailableReason */
       } else {
         refError = `impl_failed:${implError}`;
       }

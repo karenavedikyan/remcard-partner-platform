@@ -2,9 +2,10 @@
 
 import { PageHeading } from "@/components/ui/PageHeading";
 import { RecommendationsList } from "@/components/recommendations/RecommendationsList";
-import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
 import { CertificateDetail } from "@/components/recommendations/CertificateDetail";
 import { RecommendationCreateWithClient } from "@/components/recommendations/RecommendationCreateWithClient";
+import { SpecialistCertificateDetailRedirect } from "@/components/specialist-certificates/SpecialistCertificateDetailRedirect";
+import { SpecialistRecommendationsNewRedirect } from "@/components/specialist-certificates/SpecialistRecommendationsNewRedirect";
 import { OwnerIssuerGate } from "@/components/specialist-certificates/OwnerIssuerGate";
 import { useOwnerIssuerMode } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { SpecialistCertificatesList } from "@/components/specialist-certificates/SpecialistCertificatesList";
@@ -39,7 +40,7 @@ function RecommendationsListPageContent() {
 function RecommendationsCreatePageContent() {
   const mode = useOwnerIssuerMode();
   if (mode === "specialist") {
-    return <RecommendationCreateWithClient issuerUi="specialist" />;
+    return <SpecialistRecommendationsNewRedirect />;
   }
   return (
     <>
@@ -56,21 +57,7 @@ function RecommendationsCreatePageContent() {
 function RecommendationsDetailPageContent({ certificateId }: { certificateId: string }) {
   const mode = useOwnerIssuerMode();
   if (mode === "specialist") {
-    return (
-      <>
-        <PageHeading
-          eyebrow={SPECIALIST_CERTIFICATES_PAGE.eyebrow}
-          title="Сертификат"
-          description="QR-код, ссылка для клиента и PDF-документ."
-        />
-        <AgentCertificateDetail
-          certificateId={certificateId}
-          accessMode="specialist"
-          listHref="/recommendations"
-          createHref="/recommendations/new"
-        />
-      </>
-    );
+    return <SpecialistCertificateDetailRedirect certificateId={certificateId} />;
   }
   return (
     <>

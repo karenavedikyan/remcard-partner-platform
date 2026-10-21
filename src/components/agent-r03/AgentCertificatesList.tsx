@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SpecialistCertificateCreateDialog } from "@/components/specialist-certificates/SpecialistCertificateCreateDialog";
+import { SpecialistCertificateDetailDialog } from "@/components/specialist-certificates/SpecialistCertificateDetailDialog";
 import { certificateListDetail } from "@/lib/agent-r03/certificateOffers";
 import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
 import { AgentR03PageIntro } from "./AgentR03PageIntro";
@@ -63,7 +64,9 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   const router = useRouter();
   const searchParams = useSearchParams();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailCertificateId, setDetailCertificateId] = useState<string | null>(null);
   const createClientId = searchParams.get("clientId")?.trim() || undefined;
+  const certificateQueryId = searchParams.get("certificate")?.trim() || null;
 
   useEffect(() => {
     if (!isSpecialist) return;
@@ -71,6 +74,13 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       setCreateDialogOpen(true);
     }
   }, [isSpecialist, searchParams]);
+
+  useEffect(() => {
+    if (!isSpecialist) return;
+    if (certificateQueryId) {
+      setDetailCertificateId(certificateQueryId);
+    }
+  }, [certificateQueryId, isSpecialist]);
 
   function openCreateDialog() {
     setCreateDialogOpen(true);
@@ -84,6 +94,15 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       const qs = next.toString();
       router.replace(qs ? `/recommendations?${qs}` : "/recommendations");
     }
+  }
+
+  function closeDetailDialog() {
+    setDetailCertificateId(null);
+    if (!isSpecialist || !certificateQueryId) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("certificate");
+    const qs = next.toString();
+    router.replace(qs ? `/recommendations?${qs}` : "/recommendations");
   }
   const detailBasePath = isSpecialist ? "/recommendations" : "/certificates";
   const [items, setItems] = useState<AgentCertificateRow[]>([]);
@@ -593,11 +612,18 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       />
 
       {isSpecialist ? (
-        <SpecialistCertificateCreateDialog
-          open={createDialogOpen}
-          agentClientId={createClientId}
-          onClose={closeCreateDialog}
-        />
+        <>
+          <SpecialistCertificateCreateDialog
+            open={createDialogOpen}
+            agentClientId={createClientId}
+            onClose={closeCreateDialog}
+          />
+          <SpecialistCertificateDetailDialog
+            open={Boolean(detailCertificateId)}
+            certificateId={detailCertificateId}
+            onClose={closeDetailDialog}
+          />
+        </>
       ) : null}
     </div>
   );

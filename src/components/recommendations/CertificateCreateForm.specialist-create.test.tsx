@@ -76,7 +76,7 @@ describe("CertificateCreateForm specialist create", () => {
 
   it("filters partners by search and keeps selection count", async () => {
     const user = userEvent.setup();
-    render(<CertificateCreateForm issuerUi="specialist" presentation="page" />);
+    render(<CertificateCreateForm issuerUi="specialist" presentation="dialog" />);
     await waitFor(() => {
       expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
     });
@@ -93,13 +93,13 @@ describe("CertificateCreateForm specialist create", () => {
 
   it("POST includes only selected category", async () => {
     const user = userEvent.setup();
-    render(<CertificateCreateForm issuerUi="specialist" presentation="page" />);
+    render(<CertificateCreateForm issuerUi="specialist" presentation="dialog" />);
     await waitFor(() => {
       expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
     });
     await user.click(screen.getByTestId("specialist-certificate-create-step-1").querySelector('input[type=checkbox]')!);
     await user.click(screen.getByRole("button", { name: "Далее: скидки" }));
-    await user.click(screen.getByTestId("specialist-cert-category-store-1::doors"));
+    await user.click(screen.getByTestId("specialist-cert-category-store-1::windows"));
     await user.click(screen.getByRole("button", { name: "Создать сертификат" }));
 
     await waitFor(() => {
@@ -123,5 +123,57 @@ describe("CertificateCreateForm specialist create", () => {
       .mock.calls.find((c) => c[0] === "/api/store/certificate" && c[1]?.method === "POST");
     const body = postCall?.[1]?.body as { partners: Array<{ categories: unknown[] }> };
     expect(body.partners[0]?.categories).toHaveLength(1);
+  });
+
+  it("apply full discount to client sets pool and keeps category selected", async () => {
+    const user = userEvent.setup();
+    render(<CertificateCreateForm issuerUi="specialist" presentation="dialog" />);
+    await waitFor(() => {
+      expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
+    });
+    await user.click(screen.getByTestId("specialist-certificate-create-step-1").querySelector('input[type=checkbox]')!);
+    await user.click(screen.getByRole("button", { name: "Далее: скидки" }));
+    const discountInput = screen.getAllByLabelText("Скидка клиенту, %")[0]!;
+    await user.clear(discountInput);
+    await user.type(discountInput, "3");
+    await user.click(screen.getByTestId("specialist-cert-all-client-store-1::doors"));
+    expect(discountInput).toHaveValue(10);
+    await user.click(screen.getByRole("button", { name: "Создать сертификат" }));
+    await waitFor(() => {
+      expect(
+        vi.mocked(remcardFetch).mock.calls.some(
+          (c) => c[0] === "/api/store/certificate" && c[1]?.method === "POST",
+        ),
+      ).toBe(true);
+    });
+    const postCall = vi
+      .mocked(remcardFetch)
+      .mock.calls.find((c) => c[0] === "/api/store/certificate" && c[1]?.method === "POST");
+    const body = postCall?.[1]?.body as {
+      partners: Array<{ categories: Array<{ category: string; discountPercent: number }> }>;
+    };
+    const doors = body.partners[0]?.categories.find((c) => c.category === "doors");
+    expect(doors?.discountPercent).toBe(10);
+  });
+
+  it("rejects specialist discount not on 0.1 step before POST", async () => {
+    const user = userEvent.setup();
+    render(<CertificateCreateForm issuerUi="specialist" presentation="dialog" />);
+    await waitFor(() => {
+      expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
+    });
+    await user.click(screen.getByTestId("specialist-certificate-create-step-1").querySelector('input[type=checkbox]')!);
+    await user.click(screen.getByRole("button", { name: "Далее: скидки" }));
+    const discountInput = screen.getAllByLabelText("Скидка клиенту, %")[0]!;
+    await user.clear(discountInput);
+    await user.type(discountInput, "1.25");
+    await user.click(screen.getByRole("button", { name: "Создать сертификат" }));
+    await waitFor(() => {
+      expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
+    });
+    const postCalls = vi
+      .mocked(remcardFetch)
+      .mock.calls.filter((c) => c[0] === "/api/store/certificate" && c[1]?.method === "POST");
+    expect(postCalls).toHaveLength(0);
   });
 });

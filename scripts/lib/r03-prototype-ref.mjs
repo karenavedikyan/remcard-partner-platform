@@ -171,17 +171,28 @@ async function selectRefPartnerAndGoToDiscounts(page) {
   await page.getByRole('heading', { name: 'Скидки по категориям' }).first().waitFor({ timeout: 25_000 });
 }
 
+async function dismissRefPrototypeToast(page) {
+  const closeBtn = page.getByRole('button', { name: 'Закрыть' }).first();
+  if (await closeBtn.isVisible().catch(() => false)) {
+    await closeBtn.click();
+    await page.waitForTimeout(500);
+  }
+}
+
 async function createRefDemoCertificate(page) {
   await openRefSpecialistCreateDialog(page);
   await selectRefPartnerAndGoToDiscounts(page);
   const categoryBox = page.locator('input[data-cert-category]').first();
   await categoryBox.waitFor({ state: 'visible', timeout: 25_000 });
-  await categoryBox.check();
+  if (!(await categoryBox.isChecked())) {
+    await categoryBox.check();
+  }
   const submit = page.locator('[data-testid="create-certificate"]').first();
   await submit.waitFor({ state: 'visible', timeout: 15_000 });
   await submit.click();
   await page.waitForTimeout(900);
   await page.locator('.dialog-body h3, .dialog-body .link-card').first().waitFor({ timeout: 25_000 });
+  await dismissRefPrototypeToast(page);
 }
 
 async function openRefCertificateDetailFromList(page) {
@@ -238,6 +249,7 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     panel === 'certificates-list-empty' ||
     panel === 'certificates-detail' ||
     panel === 'certificates-edit-discounts' ||
+    panel === 'certificates-edit-details' ||
     panel === 'certificates-create' ||
     panel === 'certificates-create-step2';
   const navKey = certPanel ? 'recommendations' : 'clients';
@@ -262,7 +274,8 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     panel !== 'certificates-create' &&
     panel !== 'certificates-create-step2' &&
     panel !== 'certificates-detail' &&
-    panel !== 'certificates-edit-discounts'
+    panel !== 'certificates-edit-discounts' &&
+    panel !== 'certificates-edit-details'
   ) {
     const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
     const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
@@ -274,8 +287,9 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
 
   if (panel === 'certificates-detail') {
     await openRefCertificateDetailFromList(page);
-  } else if (panel === 'certificates-edit-discounts') {
+  } else if (panel === 'certificates-edit-discounts' || panel === 'certificates-edit-details') {
     await openRefCertificateDetailFromList(page);
+    await dismissRefPrototypeToast(page);
     const editBtn = page.locator('[data-action^="link-edit:"]').first();
     await editBtn.waitFor({ state: 'visible', timeout: 25_000 });
     await editBtn.click();

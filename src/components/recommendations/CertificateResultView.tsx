@@ -22,9 +22,15 @@ type CertificateResultViewProps = {
   certificate: StoreCertificate;
   /** Public-facing code (e.g. А-RC-…); never includes private alias. */
   displayCode?: string | null;
+  /** Shown only immediately after create, not on ordinary detail view. */
+  showCreateSuccessBanner?: boolean;
 };
 
-export function CertificateResultView({ certificate, displayCode }: CertificateResultViewProps) {
+export function CertificateResultView({
+  certificate,
+  displayCode,
+  showCreateSuccessBanner = false,
+}: CertificateResultViewProps) {
   const shownCode = displayCode?.trim() || certificate.promoCode;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "ok" | "error">("idle");
@@ -112,7 +118,9 @@ export function CertificateResultView({ certificate, displayCode }: CertificateR
 
   return (
     <div className={styles.resultWrap} data-testid="recommendation-create-success">
-      <div className={styles.successBanner}>Готово — документ создан</div>
+      {showCreateSuccessBanner ? (
+        <div className={styles.successBanner}>Готово — документ создан</div>
+      ) : null}
 
       <div className={styles.certificateCard}>
         <div className={styles.cardHeader}>

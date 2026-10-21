@@ -227,7 +227,7 @@ export function SpecialistCertificateEditDiscountsDialog({ open, cert, onClose, 
                 />
                 {row.poolPercent != null ? (
                   <p className={styles.muted}>
-                    Бонус issuer: {issuerPreview != null ? `${issuerPreview}%` : "—"}
+                    Ваш бонус: {issuerPreview != null ? `${issuerPreview}%` : "—"}
                   </p>
                 ) : null}
               </div>

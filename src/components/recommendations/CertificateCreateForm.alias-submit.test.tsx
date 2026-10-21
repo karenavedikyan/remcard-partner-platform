@@ -93,9 +93,7 @@ async function goToSpecialistStep2(user: ReturnType<typeof userEvent.setup>) {
   await waitFor(() => {
     expect(screen.getByTestId("specialist-certificate-create-step-2")).toBeVisible();
   });
-  const categoryKey = "store-1::doors";
-  await user.click(screen.getByTestId(`specialist-cert-category-${categoryKey}`));
-  const discountInput = screen.getByLabelText("Скидка клиенту, %");
+  const discountInput = screen.getAllByLabelText("Скидка клиенту, %")[0]!;
   await user.clear(discountInput);
   await user.type(discountInput, "5");
 }

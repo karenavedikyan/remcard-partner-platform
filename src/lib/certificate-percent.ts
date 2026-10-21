@@ -54,6 +54,11 @@ export type ComputeCategoryResult =
   | { ok: true; value: ResolvedCategoryPercents }
   | { ok: false; message: string; reason: CategoryValidationFailureReason };
 
+export type ComputeCategoryOptions = {
+  /** Specialist create wizard: reject values not aligned to 0.1% step. */
+  requireTenthStep?: boolean;
+};
+
 /**
  * Validates and splits an agreed pool between client discount and PROF reward.
  * Does not clamp out-of-range values — returns an error instead.
@@ -61,6 +66,7 @@ export type ComputeCategoryResult =
 export function computeCategoryPercents(
   category: CategoryPercentInput,
   discountRaw: string,
+  options?: ComputeCategoryOptions,
 ): ComputeCategoryResult {
   const trimmed = discountRaw.trim();
   if (!trimmed) {
@@ -76,12 +82,14 @@ export function computeCategoryPercents(
     return { ok: false, message: "Скидка не может быть отрицательной", reason: "negative" };
   }
 
-  if (Math.abs(numeric * 10 - Math.round(numeric * 10)) > 1e-8) {
-    return {
-      ok: false,
-      message: "Укажите скидку от 0 до согласованного процента, с точностью до 0,1%.",
-      reason: "invalid",
-    };
+  if (options?.requireTenthStep) {
+    if (Math.abs(numeric * 10 - Math.round(numeric * 10)) > 1e-8) {
+      return {
+        ok: false,
+        message: "Укажите скидку от 0 до согласованного процента, с точностью до 0,1%.",
+        reason: "invalid",
+      };
+    }
   }
 
   const pool = resolvePoolPercent(category);
@@ -129,8 +137,9 @@ export function computeCategoryPercents(
 export function previewIssuerPercent(
   category: CategoryPercentInput,
   discountRaw: string,
+  options?: ComputeCategoryOptions,
 ): number | null {
-  const result = computeCategoryPercents(category, discountRaw);
+  const result = computeCategoryPercents(category, discountRaw, options);
   if (!result.ok) {
     return null;
   }
@@ -155,6 +164,7 @@ export type BuildPayloadInput = {
   discountDrafts: Record<string, string>;
   /** When set, only included keys (value true) are sent. Omitted keys mean all categories selected. */
   selectedCategoryKeys?: Record<string, boolean>;
+  requireTenthStep?: boolean;
   validUntil?: string;
   maxUsages?: number;
 };
@@ -209,6 +219,7 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
           isSelfScan: partner.isSelfScan,
         },
         raw,
+        input.requireTenthStep ? { requireTenthStep: true } : undefined,
       );
 
       if (!computed.ok) {

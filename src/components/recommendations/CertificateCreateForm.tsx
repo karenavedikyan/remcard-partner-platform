@@ -44,7 +44,6 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { storeCertificateDisplayCode } from "@/lib/certificate-url";
 import {
-  categoryKeysForPartners,
   defaultCategoryDiscountDraft,
   partnerMatchesSearch,
   partnerSelectionKey,
@@ -298,15 +297,47 @@ export function CertificateCreateForm({
     [partners],
   );
 
+  function ensurePartnerCategoryDefaults(partner: AvailablePartner) {
+    for (const cat of partner.categories) {
+      const fieldKey = categoryFieldKey(partner.storeUserId, cat.category);
+      const pool = resolvePoolPercent({
+        category: cat.category,
+        categoryLabel: cat.categoryLabel,
+        poolPercent: cat.poolPercent,
+        isSelfScan: partner.isSelfScan,
+      });
+      setSelectedCategoryKeys((prev) =>
+        prev[fieldKey] === undefined ? { ...prev, [fieldKey]: true } : prev,
+      );
+      setDiscountDrafts((prev) =>
+        prev[fieldKey]?.trim()
+          ? prev
+          : { ...prev, [fieldKey]: defaultCategoryDiscountDraft(pool) },
+      );
+    }
+  }
+
   function togglePartner(partner: AvailablePartner) {
     const key = partnerSelectionKey(partner);
     if (partner.programReady === false) {
       return;
     }
+    const adding = !selectedKeys.includes(key);
     setSelectedKeys((prev) =>
       prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
     );
+    if (adding) {
+      ensurePartnerCategoryDefaults(partner);
+    }
   }
+
+  useEffect(() => {
+    if (!specialistWizard) return;
+    for (const partner of selectedPartners) {
+      ensurePartnerCategoryDefaults(partner);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only fill undefined category slots
+  }, [selectedPartners, specialistWizard]);
 
   function toggleCategory(key: string, nextSelected: boolean, poolPercent: number | null) {
     setSelectedCategoryKeys((prev) => ({ ...prev, [key]: nextSelected }));
@@ -339,17 +370,13 @@ export function CertificateCreateForm({
     setSpecialistStep(2);
   }
 
-  useEffect(() => {
-    if (!specialistWizard || specialistStep !== 2) return;
-    const keys = categoryKeysForPartners(selectedPartners);
-    setSelectedCategoryKeys((prev) => {
-      const next = { ...prev };
-      for (const key of keys) {
-        if (next[key] === undefined) next[key] = false;
-      }
-      return next;
-    });
-  }, [selectedPartners, specialistStep, specialistWizard]);
+  const tenthStepOptions = specialistWizard ? { requireTenthStep: true as const } : undefined;
+
+  function applyFullDiscountToClient(fieldKey: string, pool: number | null) {
+    if (pool === null) return;
+    setSelectedCategoryKeys((prev) => ({ ...prev, [fieldKey]: true }));
+    setDiscountDrafts((prev) => ({ ...prev, [fieldKey]: String(pool) }));
+  }
 
   const partnersInviteHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -376,6 +403,7 @@ export function CertificateCreateForm({
       selectedPartners,
       discountDrafts,
       selectedCategoryKeys: specialistWizard ? selectedCategoryKeys : undefined,
+      requireTenthStep: specialistWizard,
       validUntil: validityToIso(validityPreset),
       maxUsages: 0,
     });
@@ -466,8 +494,11 @@ export function CertificateCreateForm({
   }
 
   function wrapSpecialistShell(node: ReactNode) {
-    const title =
-      specialistStep === 1 ? "Создать сертификат" : "Скидки по категориям";
+    const title = created
+      ? "Сертификат"
+      : specialistStep === 1
+        ? "Создать сертификат"
+        : "Скидки по категориям";
     const panelClass = specialistDialog
       ? `${agentStyles.r03Root} ${agentStyles.dialogPanel} ${styles.specialistCreatePanel}`
       : `${styles.specialistCreatePagePanel}`;
@@ -536,6 +567,7 @@ export function CertificateCreateForm({
         <CertificateResultView
           certificate={created}
           displayCode={storeCertificateDisplayCode(created)}
+          showCreateSuccessBanner
         />
       </>
     );
@@ -655,9 +687,9 @@ export function CertificateCreateForm({
                               checked={selected}
                               onChange={() => togglePartner(partner)}
                             />
-                            <span>
-                              <strong>{partner.storeName}</strong>
-                              <small className={styles.conditionMeta}>
+                            <span className={styles.partnerCardText}>
+                              <strong className={styles.partnerCardName}>{partner.storeName}</strong>
+                              <small className={styles.partnerCardMeta}>
                                 {partner.city ? `${partner.city} · ` : ""}
                                 {partner.categories
                                   .map((c) => displayCategoryLabel(c.category, c.categoryLabel))
@@ -740,6 +772,7 @@ export function CertificateCreateForm({
                                   isSelfScan: partner.isSelfScan,
                                 },
                                 draftValue,
+                                tenthStepOptions,
                               )
                             : null;
                           const rowBlocked = pool === null;
@@ -797,6 +830,22 @@ export function CertificateCreateForm({
                                       : "—"}
                                   </strong>
                                 </div>
+                              </div>
+                              <div className={styles.categoryAllocationFooter}>
+                                <p className={styles.conditionMeta}>
+                                  Можно отдать клиенту весь процент.
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  disabled={
+                                    !categorySelected || rowBlocked || pool === null || submitting
+                                  }
+                                  data-testid={`specialist-cert-all-client-${key}`}
+                                  onClick={() => applyFullDiscountToClient(key, pool)}
+                                >
+                                  Всё клиенту
+                                </Button>
                               </div>
                               {fieldErrorReasons[key] === "over_limit" && termsHref ? (
                                 <p className={styles.termsLinkWrap}>

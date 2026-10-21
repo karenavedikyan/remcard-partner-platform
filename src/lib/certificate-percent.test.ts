@@ -84,6 +84,32 @@ describe("certificate percent calculation", () => {
     assert.equal(result.reason, "over_limit");
   });
 
+  it("legacy default allows 1.25 on pool 10", () => {
+    const cat = { ...partnerCategory, poolPercent: 10 };
+    const result = computeCategoryPercents(cat, "1.25");
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.value.discountPercent, 1.25);
+    assert.equal(result.value.issuerPercent, 8.75);
+  });
+
+  it("specialist tenth-step rejects 1.25 on pool 10", () => {
+    const cat = { ...partnerCategory, poolPercent: 10 };
+    const result = computeCategoryPercents(cat, "1.25", { requireTenthStep: true });
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.reason, "invalid");
+  });
+
+  it("specialist tenth-step allows 1.2 on pool 10", () => {
+    const cat = { ...partnerCategory, poolPercent: 10 };
+    const result = computeCategoryPercents(cat, "1.2", { requireTenthStep: true });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.value.discountPercent, 1.2);
+    assert.equal(result.value.issuerPercent, 8.8);
+  });
+
   it("rejects empty discount draft", () => {
     const result = computeCategoryPercents(partnerCategory, "");
     assert.equal(result.ok, false);

@@ -231,7 +231,11 @@ export function AgentCertificateDetail({
         />
       </div>
 
-      <CertificateResultView certificate={storeCert} displayCode={meta.displayCode} />
+      <CertificateResultView
+        certificate={storeCert}
+        displayCode={meta.displayCode}
+        showCreateSuccessBanner={false}
+      />
 
       <SharePreviewDialog
         open={shareOpen}
