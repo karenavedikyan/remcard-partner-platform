@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
+import { mapRecommendationsPathToAgentCertificates } from "@/lib/specialist-certificates/recommendationsRedirect";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
 import {
@@ -14,6 +15,8 @@ import {
 
 export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<OwnerIssuerAccessMode | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -23,11 +26,15 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
     void Promise.all([fetchAgentR03Status(), fetchSpecialistR06Status()])
       .then(([r03, r06]) => {
         if (cancelled) return;
-        if (r03.featureEnabled && r03.eligible) {
-          router.replace("/certificates");
+        const r03Eligible = Boolean(r03.featureEnabled && r03.eligible);
+        const r06Eligible = Boolean(r06.featureEnabled && r06.eligible);
+        if (r03Eligible) {
+          const search = searchParams.toString();
+          const q = search ? `?${search}` : "";
+          router.replace(mapRecommendationsPathToAgentCertificates(pathname, q));
           return;
         }
-        if (r06.featureEnabled && r06.eligible) {
+        if (r06Eligible) {
           setMode("specialist");
           return;
         }
@@ -46,7 +53,7 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [pathname, router, searchParams]);
 
   if (loading) return <p className={styles.loading}>Загрузка…</p>;
   if (error) {

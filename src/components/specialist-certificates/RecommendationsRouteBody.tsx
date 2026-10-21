@@ -2,6 +2,7 @@
 
 import { PageHeading } from "@/components/ui/PageHeading";
 import { RecommendationsList } from "@/components/recommendations/RecommendationsList";
+import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
 import { CertificateDetail } from "@/components/recommendations/CertificateDetail";
 import { RecommendationCreateWithClient } from "@/components/recommendations/RecommendationCreateWithClient";
 import { OwnerIssuerGate } from "@/components/specialist-certificates/OwnerIssuerGate";
@@ -9,7 +10,6 @@ import { useOwnerIssuerMode } from "@/components/specialist-certificates/OwnerIs
 import { SpecialistCertificatesList } from "@/components/specialist-certificates/SpecialistCertificatesList";
 import {
   SPECIALIST_CERTIFICATE_CREATE,
-  SPECIALIST_CERTIFICATE_DETAIL,
   SPECIALIST_CERTIFICATES_PAGE,
 } from "@/lib/specialist-certificates/copy";
 
@@ -75,12 +75,11 @@ function RecommendationsDetailPageContent({ certificateId }: { certificateId: st
           title="Сертификат"
           description="QR-код, ссылка для клиента и PDF-документ."
         />
-        <CertificateDetail
+        <AgentCertificateDetail
           certificateId={certificateId}
+          accessMode="specialist"
           listHref="/recommendations"
           createHref="/recommendations/new"
-          backLabel={SPECIALIST_CERTIFICATE_DETAIL.backToList}
-          createAnotherLabel={SPECIALIST_CERTIFICATE_DETAIL.createAnother}
         />
       </>
     );

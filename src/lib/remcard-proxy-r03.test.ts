@@ -8,6 +8,9 @@ describe("R03 BFF allowlist", () => {
     expect(isAllowedProxyRoute("POST", "/api/pro/agent-clients/batch")).toBe(true);
     expect(isAllowedProxyRoute("POST", "/api/pro/agent-certificates")).toBe(true);
     expect(isAllowedProxyRoute("POST", "/api/pro/agent-certificates/batch")).toBe(true);
+    expect(isAllowedProxyRoute("GET", "/api/pro/specialist-issuer-certificates")).toBe(true);
+    expect(isAllowedProxyRoute("POST", "/api/pro/specialist-issuer-certificates/batch")).toBe(true);
+    expect(isAllowedProxyRoute("PATCH", "/api/pro/specialist-issuer-certificates/cert-1")).toBe(true);
     expect(isAllowedProxyRoute("PATCH", "/api/certificate/RC-TEST/alias")).toBe(true);
   });
 });

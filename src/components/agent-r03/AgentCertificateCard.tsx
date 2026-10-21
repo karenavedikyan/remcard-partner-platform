@@ -18,6 +18,7 @@ type Props = {
   selected: boolean;
   onSelectChange: (checked: boolean) => void;
   actions: RecordRowAction[];
+  detailBasePath?: string;
 };
 
 function IconTicket() {
@@ -43,6 +44,7 @@ export function AgentCertificateCard({
   selected,
   onSelectChange,
   actions,
+  detailBasePath = "/certificates",
 }: Props) {
   const displayTitle = cert.userAlias ?? cert.title;
   const summaryLine = certificatePartnerSummary(cert);
@@ -71,7 +73,7 @@ export function AgentCertificateCard({
           </div>
         </div>
         <div className={styles.certCardBody}>
-          <Link href={`/certificates/${cert.id}`} className={`${styles.certCardTitle} card-title`}>
+          <Link href={`${detailBasePath}/${cert.id}`} className={`${styles.certCardTitle} card-title`}>
             {displayTitle}
           </Link>
           <p className={styles.meta}>{summaryLine}</p>
@@ -117,7 +119,7 @@ export function AgentCertificateCard({
             {cert.displayCode ? ` · ${cert.displayCode}` : ""}
           </small>
           <Link
-            href={`/certificates/${cert.id}`}
+            href={`${detailBasePath}/${cert.id}`}
             className={styles.certCardMore}
             data-testid="agent-cert-more"
           >

@@ -292,6 +292,51 @@ function defaultMockClients(mode) {
   ];
 }
 
+function collectIssuerCertificateRows(state) {
+  ensureClientsState(state);
+  const byId = new Map();
+  for (const list of state.clientCerts.values()) {
+    for (const cert of list) {
+      byId.set(cert.id, { ...cert, certificateUrl: cert.certificateUrl ?? 'https://remcard.test/c/demo' });
+    }
+  }
+  for (const raw of state.createdCerts) {
+    if (!byId.has(raw.id)) {
+      byId.set(raw.id, {
+        id: raw.id,
+        promoCode: raw.promoCode,
+        displayCode: raw.displayCode ?? raw.promoCode,
+        qrCode: raw.qrCode,
+        status: raw.status ?? 'ACTIVE',
+        validUntil: null,
+        maxUsages: 1,
+        usageCount: 0,
+        createdAt: raw.createdAt ?? new Date().toISOString(),
+        userAlias: raw.userAlias ?? raw.title ?? null,
+        title: raw.title ?? raw.userAlias ?? 'Сертификат',
+        directionLabel: null,
+        partnerStoreName: 'Магазин «Юг»',
+        partnerCount: 1,
+        categorySummary: 'Двери',
+        discountPercent: 10,
+        archivedInWorkspace: false,
+        hasOrders: false,
+        agentClient: raw.agentClientId
+          ? state.clients.get(raw.agentClientId)
+            ? {
+                id: raw.agentClientId,
+                displayName: state.clients.get(raw.agentClientId).displayName,
+              }
+            : null
+          : null,
+        issuerKindSnapshot: null,
+        certificateUrl: 'https://remcard.test/c/demo',
+      });
+    }
+  }
+  return [...byId.values()];
+}
+
 function ensureClientsState(state) {
   if (!state.clients) {
     state.clients = new Map(defaultMockClients(state.mode).map((c) => [c.id, { ...c }]));
@@ -480,6 +525,79 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           hasPrevPage: false,
           sort: 'updated_desc',
         });
+      }
+      if (path === '/api/pro/specialist-issuer-certificates' && req.method === 'GET') {
+        if (state.mode !== 'specialist') {
+          return send(403, { error: 'SPECIALIST_ISSUER_INELIGIBLE' });
+        }
+        const url = new URL(req.url || '', 'http://127.0.0.1');
+        const archived = url.searchParams.get('archived') === 'true';
+        const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+        let rows = collectIssuerCertificateRows(state);
+        if (archived) {
+          rows = rows.filter((c) => c.archivedInWorkspace);
+        } else {
+          rows = rows.filter((c) => !c.archivedInWorkspace);
+        }
+        if (q) {
+          rows = rows.filter((c) =>
+            [c.title, c.userAlias, c.promoCode, c.partnerStoreName, c.categorySummary]
+              .filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(q)),
+          );
+        }
+        const activeCount = collectIssuerCertificateRows(state).filter((c) => !c.archivedInWorkspace)
+          .length;
+        const archivedCount = collectIssuerCertificateRows(state).filter((c) => c.archivedInWorkspace)
+          .length;
+        return send(200, {
+          certificates: rows,
+          nextCursor: null,
+          totalShown: rows.length,
+          page: 1,
+          pageSize: 25,
+          totalCount: rows.length,
+          totalPages: 1,
+          activeCount,
+          archivedCount,
+          hasNextPage: false,
+          hasPrevPage: false,
+          sort: url.searchParams.get('sort') || 'created_desc',
+        });
+      }
+      const specIssuerCertMatch = path.match(/^\/api\/pro\/specialist-issuer-certificates\/([^/]+)$/);
+      if (specIssuerCertMatch && state.mode === 'specialist') {
+        const certId = decodeURIComponent(specIssuerCertMatch[1]);
+        const rows = collectIssuerCertificateRows(state);
+        const cert = rows.find((c) => c.id === certId);
+        if (!cert) return send(404, { error: 'Не найдено' });
+        if (req.method === 'GET') {
+          return send(200, { certificate: cert });
+        }
+        if (req.method === 'PATCH') {
+          const body = JSON.parse(await readBody(req));
+          if (body.action === 'archive') cert.archivedInWorkspace = true;
+          if (body.action === 'restore') cert.archivedInWorkspace = false;
+          if (body.action === 'cancel') cert.status = 'CANCELLED';
+          if (body.userAlias != null) {
+            cert.userAlias = body.userAlias;
+            cert.title = body.userAlias || cert.title;
+          }
+          return send(200, { ok: true, certificate: cert });
+        }
+        if (req.method === 'DELETE') {
+          if (cert.hasOrders) {
+            return send(409, { error: 'CERT_HAS_USAGE', code: 'CERT_HAS_USAGE' });
+          }
+          for (const [clientId, list] of state.clientCerts.entries()) {
+            state.clientCerts.set(
+              clientId,
+              list.filter((c) => c.id !== certId),
+            );
+          }
+          state.createdCerts = state.createdCerts.filter((c) => c.id !== certId);
+          return send(200, { ok: true });
+        }
       }
       if (path === '/api/pro/agent-clients' && req.method === 'POST') {
         const body = JSON.parse(await readBody(req));

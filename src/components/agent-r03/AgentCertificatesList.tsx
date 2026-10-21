@@ -13,6 +13,13 @@ import {
   patchAgentCertificate,
 } from "@/lib/agent-r03/api";
 import {
+  batchSpecialistIssuerCertificates,
+  deleteSpecialistIssuerCertificate,
+  fetchSpecialistIssuerCertificates,
+  patchSpecialistIssuerCertificate,
+} from "@/lib/specialist-certificates/api";
+import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
+import {
   CERT_SORT_OPTIONS,
   CERT_STATUS_FILTER_OPTIONS,
 } from "@/lib/agent-r03/listSortOptions";
@@ -42,7 +49,15 @@ const emptyMeta: AgentR03ListMeta = {
   hasPrevPage: false,
 };
 
-export function AgentCertificatesList() {
+export type AgentCertificatesListAccessMode = "agent" | "specialist";
+
+type AgentCertificatesListProps = {
+  accessMode?: AgentCertificatesListAccessMode;
+};
+
+export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificatesListProps = {}) {
+  const isSpecialist = accessMode === "specialist";
+  const detailBasePath = isSpecialist ? "/recommendations" : "/certificates";
   const [items, setItems] = useState<AgentCertificateRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
   const [archived, setArchived] = useState(false);
@@ -68,14 +83,17 @@ export function AgentCertificatesList() {
     setLoadState("loading");
     setError("");
     try {
-      const data = await fetchAgentCertificates({
+      const listParams = {
         archived,
         q: appliedQ || undefined,
         page,
         limit: pageSize,
         sort,
         status: statusFilter || undefined,
-      });
+      };
+      const data = isSpecialist
+        ? await fetchSpecialistIssuerCertificates(listParams)
+        : await fetchAgentCertificates(listParams);
       setItems(data.certificates ?? []);
       setMeta({
         page: data.page ?? page,
@@ -95,7 +113,7 @@ export function AgentCertificatesList() {
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты",
       );
     }
-  }, [appliedQ, archived, page, pageSize, sort, statusFilter, searchRevision]);
+  }, [appliedQ, archived, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
 
   useEffect(() => {
     const stored = readAgentR03ViewMode("certificates");
@@ -149,7 +167,9 @@ export function AgentCertificatesList() {
     if (action === "delete" && !window.confirm(`Удалить ${ids.length} сертификат(ов)?`)) return;
     setBusy(true);
     try {
-      const res = await batchAgentCertificates({ action, ids });
+      const res = isSpecialist
+        ? await batchSpecialistIssuerCertificates({ action, ids })
+        : await batchAgentCertificates({ action, ids });
       if (res.skippedCount > 0) {
         window.alert(
           `Обработано: ${res.processedCount}, пропущено: ${res.skippedCount} (защищённые записи).`,
@@ -185,7 +205,7 @@ export function AgentCertificatesList() {
         disabled: busy,
         onClick: () => {
           setBusy(true);
-          void patchAgentCertificate(cert.id, {
+          void (isSpecialist ? patchSpecialistIssuerCertificate : patchAgentCertificate)(cert.id, {
             action: archived ? "restore" : "archive",
           })
             .then(() => load())
@@ -197,6 +217,28 @@ export function AgentCertificatesList() {
             .finally(() => setBusy(false));
         },
       },
+      ...(isSpecialist
+        ? [
+            {
+              id: "cancel",
+              label: "Отключить ссылку",
+              disabled: cert.status === "CANCELLED" || busy,
+              disabledReason: "Ссылка уже отключена",
+              onClick: () => {
+                if (!window.confirm("Отключить ссылку? Новые использования будут недоступны.")) return;
+                setBusy(true);
+                void patchSpecialistIssuerCertificate(cert.id, { action: "cancel" })
+                  .then(() => load())
+                  .catch((caught) => {
+                    window.alert(
+                      caught instanceof RemcardApiError ? caught.message : "Не удалось отключить",
+                    );
+                  })
+                  .finally(() => setBusy(false));
+              },
+            } as import("./RecordRowActions").RecordRowAction,
+          ]
+        : []),
       {
         id: "delete",
         label: "Удалить",
@@ -205,7 +247,7 @@ export function AgentCertificatesList() {
         onClick: () => {
           if (!window.confirm("Удалить сертификат без возможности восстановления?")) return;
           setBusy(true);
-          void deleteAgentCertificate(cert.id)
+          void (isSpecialist ? deleteSpecialistIssuerCertificate : deleteAgentCertificate)(cert.id)
             .then(() => load())
             .catch((caught) => {
               window.alert(
@@ -239,7 +281,9 @@ export function AgentCertificatesList() {
     }
     setBusy(true);
     try {
-      await patchAgentCertificate(cert.id, { userAlias: next.trim() });
+      await (isSpecialist ? patchSpecialistIssuerCertificate : patchAgentCertificate)(cert.id, {
+        userAlias: next.trim(),
+      });
       await load();
     } catch (caught) {
       window.alert(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
@@ -273,12 +317,25 @@ export function AgentCertificatesList() {
   }
 
   return (
-    <div className={styles.r03Root}>
-      <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
+    <div className={styles.r03Root} data-testid={isSpecialist ? "specialist-certificates-root" : undefined}>
+      {isSpecialist ? (
+        <section className={styles.pageIntroBlock}>
+          <p className={styles.pageIntroMuted}>{SPECIALIST_CERTIFICATES_PAGE.description}</p>
+          <Link href="/recommendations/new" className={styles.heroCtaInline}>
+            <Button>{SPECIALIST_CERTIFICATES_PAGE.createCta}</Button>
+          </Link>
+        </section>
+      ) : (
+        <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
+      )}
 
       <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
-        searchPlaceholder="Название, партнёр или категория"
+        searchPlaceholder={
+          isSpecialist
+            ? SPECIALIST_CERTIFICATES_PAGE.searchPlaceholder
+            : "Название, партнёр или категория"
+        }
         q={qDraft}
         onQChange={setQDraft}
         filtersActive={filtersActive}
@@ -337,7 +394,17 @@ export function AgentCertificatesList() {
 
       {loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty}>
-          <p>{archived ? "В архиве пока пусто." : "Сертификатов пока нет."}</p>
+          {isSpecialist && !archived ? (
+            <>
+              <p>{SPECIALIST_CERTIFICATES_PAGE.emptyTitle}</p>
+              <p className={styles.muted}>{SPECIALIST_CERTIFICATES_PAGE.emptyHint}</p>
+              <Link href="/recommendations/new">
+                <Button>{SPECIALIST_CERTIFICATES_PAGE.createCta}</Button>
+              </Link>
+            </>
+          ) : (
+            <p>{archived ? "В архиве пока пусто." : "Сертификатов пока нет."}</p>
+          )}
         </div>
       ) : null}
 
@@ -351,6 +418,7 @@ export function AgentCertificatesList() {
               selected={selected.has(cert.id)}
               onSelectChange={(checked) => toggleSelected(cert.id, checked)}
               actions={certRowActions(cert)}
+              detailBasePath={detailBasePath}
             />
           ))}
         </div>
@@ -366,6 +434,7 @@ export function AgentCertificatesList() {
                 selected={selected.has(cert.id)}
                 onSelectChange={(checked) => toggleSelected(cert.id, checked)}
                 actions={certRowActions(cert)}
+                detailBasePath={detailBasePath}
               />
             ))}
           </div>
@@ -393,7 +462,7 @@ export function AgentCertificatesList() {
                       />
                     </td>
                     <td>
-                      <Link href={`/certificates/${cert.id}`} className={styles.collectionOpenLink}>
+                      <Link href={`${detailBasePath}/${cert.id}`} className={styles.collectionOpenLink}>
                         {cert.userAlias ?? cert.title}
                       </Link>
                       <small className={styles.collectionCaption}>

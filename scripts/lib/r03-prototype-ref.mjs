@@ -186,12 +186,14 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await menuBtn.click();
     await page.waitForTimeout(400);
   }
-  await page.evaluate(() => {
-    const btn = document.querySelector('[data-action="nav:clients"], [data-testid="nav-clients"]');
+  const navKey = panel === 'certificates-list' ? 'recommendations' : 'clients';
+  const navHeading = panel === 'certificates-list' ? 'Сертификаты' : 'Клиенты';
+  await page.evaluate((key) => {
+    const btn = document.querySelector(`[data-action="nav:${key}"], [data-testid="nav-${key}"]`);
     if (btn instanceof HTMLElement) btn.click();
-  });
+  }, navKey);
   await page.waitForTimeout(800);
-  await page.getByRole('heading', { name: 'Клиенты' }).first().waitFor({ timeout: 25_000 });
+  await page.getByRole('heading', { name: navHeading }).first().waitFor({ timeout: 25_000 });
 
   const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
   const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();

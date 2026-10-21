@@ -14,9 +14,16 @@ type Props = {
   selected: boolean;
   onSelectChange: (checked: boolean) => void;
   actions: RecordRowAction[];
+  detailBasePath?: string;
 };
 
-export function AgentR03MobileCertRow({ cert, selected, onSelectChange, actions }: Props) {
+export function AgentR03MobileCertRow({
+  cert,
+  selected,
+  onSelectChange,
+  actions,
+  detailBasePath = "/certificates",
+}: Props) {
   const title = cert.userAlias ?? cert.title;
 
   return (
@@ -34,7 +41,7 @@ export function AgentR03MobileCertRow({ cert, selected, onSelectChange, actions 
           />
         </label>
         <div className={styles.mobileRecordMain}>
-          <Link href={`/certificates/${cert.id}`} className={styles.mobileRecordTitle}>
+          <Link href={`${detailBasePath}/${cert.id}`} className={styles.mobileRecordTitle}>
             {title}
           </Link>
           <p className={styles.meta}>

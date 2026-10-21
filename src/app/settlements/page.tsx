@@ -24,12 +24,13 @@ export default async function SettlementsPage() {
   });
   const r05Eligible =
     r05Result.ok && r05Result.data.featureEnabled && r05Result.data.eligible;
+  const masterWalletShell = user.partnerType === "MASTER" && !r05Eligible;
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading
-        eyebrow={r05Eligible ? "АГЕНТ" : "RemCard PROF"}
-        title={r05Eligible ? "Кошелёк" : "Взаиморасчёты"}
+        eyebrow={r05Eligible ? "АГЕНТ" : masterWalletShell ? "СПЕЦИАЛИСТ" : "RemCard PROF"}
+        title={r05Eligible || masterWalletShell ? "Кошелёк" : "Взаиморасчёты"}
         description={
           r05Eligible
             ? "Входящие обязательства партнёров и реквизиты для получения оплаты."

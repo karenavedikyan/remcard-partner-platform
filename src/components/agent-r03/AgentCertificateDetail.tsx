@@ -9,6 +9,11 @@ import {
   fetchAgentCertificate,
   patchAgentCertificate,
 } from "@/lib/agent-r03/api";
+import {
+  deleteSpecialistIssuerCertificate,
+  fetchSpecialistIssuerCertificate,
+  patchSpecialistIssuerCertificate,
+} from "@/lib/specialist-certificates/api";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { certificateStatusLabel, certificateStatusTone } from "@/lib/certificate-labels";
 import { resolveCertificatePageUrl, isTestCertificateUrl } from "@/lib/certificate-url";
@@ -18,7 +23,22 @@ import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
 import styles from "./agent-r03.module.css";
 
-export function AgentCertificateDetail({ certificateId }: { certificateId: string }) {
+export type AgentCertificateDetailAccessMode = "agent" | "specialist";
+
+type AgentCertificateDetailProps = {
+  certificateId: string;
+  accessMode?: AgentCertificateDetailAccessMode;
+  listHref?: string;
+  createHref?: string;
+};
+
+export function AgentCertificateDetail({
+  certificateId,
+  accessMode = "agent",
+  listHref = "/certificates",
+  createHref = "/certificates/new",
+}: AgentCertificateDetailProps) {
+  const isSpecialist = accessMode === "specialist";
   const [storeCert, setStoreCert] = useState<StoreCertificate | null>(null);
   const [meta, setMeta] = useState<AgentCertificateRow | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
@@ -32,7 +52,9 @@ export function AgentCertificateDetail({ certificateId }: { certificateId: strin
     try {
       const [store, agent] = await Promise.all([
         remcardFetch<StoreCertificate>(`/api/store/certificate/${encodeURIComponent(certificateId)}`),
-        fetchAgentCertificate(certificateId),
+        isSpecialist
+          ? fetchSpecialistIssuerCertificate(certificateId)
+          : fetchAgentCertificate(certificateId),
       ]);
       setStoreCert(store);
       setMeta(agent.certificate);
@@ -45,7 +67,7 @@ export function AgentCertificateDetail({ certificateId }: { certificateId: strin
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификат",
       );
     }
-  }, [certificateId]);
+  }, [certificateId, isSpecialist]);
 
   useEffect(() => {
     void load();
@@ -70,7 +92,9 @@ export function AgentCertificateDetail({ certificateId }: { certificateId: strin
     }
     setBusy(true);
     try {
-      await patchAgentCertificate(meta.id, { action });
+      await (isSpecialist ? patchSpecialistIssuerCertificate : patchAgentCertificate)(meta.id, {
+        action,
+      });
       await load();
     } catch (caught) {
       window.alert(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие");
@@ -89,7 +113,9 @@ export function AgentCertificateDetail({ certificateId }: { certificateId: strin
     }
     setBusy(true);
     try {
-      await patchAgentCertificate(meta.id, { userAlias: next.trim() });
+      await (isSpecialist ? patchSpecialistIssuerCertificate : patchAgentCertificate)(meta.id, {
+        userAlias: next.trim(),
+      });
       await load();
     } catch (caught) {
       window.alert(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
@@ -103,8 +129,8 @@ export function AgentCertificateDetail({ certificateId }: { certificateId: strin
     if (!window.confirm("Удалить сертификат без возможности восстановления?")) return;
     setBusy(true);
     try {
-      await deleteAgentCertificate(meta.id);
-      window.location.href = "/certificates";
+      await (isSpecialist ? deleteSpecialistIssuerCertificate : deleteAgentCertificate)(meta.id);
+      window.location.href = listHref;
     } catch (caught) {
       window.alert(caught instanceof RemcardApiError ? caught.message : "Не удалось удалить");
       setBusy(false);
@@ -129,10 +155,10 @@ export function AgentCertificateDetail({ certificateId }: { certificateId: strin
   return (
     <>
       <div className={styles.pageActions}>
-        <Link href="/certificates">
+        <Link href={listHref}>
           <Button variant="secondary">К списку</Button>
         </Link>
-        <Link href="/certificates/new">
+        <Link href={createHref}>
           <Button>Создать ещё</Button>
         </Link>
       </div>
