@@ -97,7 +97,12 @@ export function AgentCertificateCard({
                     <small>{term.partnerName}</small>
                     <span>
                       Клиенту <b>{formatDiscountPercent(term.discountPercent)}%</b>
-                      {term.agentBonusPercent != null && Number.isFinite(term.agentBonusPercent) ? (
+                      {term.issuerBonusPercent != null && Number.isFinite(term.issuerBonusPercent) ? (
+                        <>
+                          {" "}
+                          · ваш бонус <b>{formatDiscountPercent(term.issuerBonusPercent)}%</b>
+                        </>
+                      ) : term.agentBonusPercent != null && Number.isFinite(term.agentBonusPercent) ? (
                         <>
                           {" "}
                           · ваш бонус <b>{formatDiscountPercent(term.agentBonusPercent)}%</b>

@@ -292,17 +292,50 @@ function defaultMockClients(mode) {
   ];
 }
 
+function enrichOrdinaryIssuerCertDto(cert) {
+  const storeName = cert.partnerStoreName ?? 'Магазин «Юг»';
+  const discount = cert.discountPercent ?? 4.7;
+  return {
+    ...cert,
+    partnerOffers: cert.partnerOffers ?? [
+      {
+        storeName,
+        storeUserId: 'mock-store-visual-1',
+        categories: [
+          {
+            category: 'doors',
+            categoryLabel: cert.categorySummary ?? 'Двери',
+            discountPercent: discount,
+            issuerBonusPercent: 5,
+            agentBonusPercent: null,
+          },
+        ],
+      },
+    ],
+    terms: cert.terms ?? [
+      {
+        partnerName: storeName,
+        categoryName: cert.categorySummary ?? 'Двери',
+        discountPercent: discount,
+        issuerBonusPercent: 5,
+        agentBonusPercent: null,
+      },
+    ],
+    certificateUrl: cert.certificateUrl ?? 'https://remcard.test/c/demo',
+  };
+}
+
 function collectIssuerCertificateRows(state) {
   ensureClientsState(state);
   const byId = new Map();
   for (const list of state.clientCerts.values()) {
     for (const cert of list) {
-      byId.set(cert.id, { ...cert, certificateUrl: cert.certificateUrl ?? 'https://remcard.test/c/demo' });
+      byId.set(cert.id, enrichOrdinaryIssuerCertDto(cert));
     }
   }
   for (const raw of state.createdCerts) {
     if (!byId.has(raw.id)) {
-      byId.set(raw.id, {
+      byId.set(raw.id, enrichOrdinaryIssuerCertDto({
         id: raw.id,
         promoCode: raw.promoCode,
         displayCode: raw.displayCode ?? raw.promoCode,
@@ -331,7 +364,7 @@ function collectIssuerCertificateRows(state) {
           : null,
         issuerKindSnapshot: null,
         certificateUrl: 'https://remcard.test/c/demo',
-      });
+      }));
     }
   }
   return [...byId.values()];
@@ -607,7 +640,12 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           const body = JSON.parse(await readBody(req));
           if (body.action === 'archive') cert.archivedInWorkspace = true;
           if (body.action === 'restore') cert.archivedInWorkspace = false;
-          if (body.action === 'cancel') cert.status = 'CANCELLED';
+          if (body.action === 'cancel') {
+            if (cert.hasOrders || cert.usageCount > 0) {
+              return send(409, { error: 'CERT_HAS_OPERATIONS', code: 'CERT_HAS_OPERATIONS' });
+            }
+            cert.status = 'CANCELLED';
+          }
           if (body.userAlias != null) {
             cert.userAlias = body.userAlias;
             cert.title = body.userAlias || cert.title;

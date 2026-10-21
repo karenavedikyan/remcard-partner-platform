@@ -28,6 +28,8 @@ export const CLIENTS_VISUAL_MATRIX = [
   { id: 'certs-list-1440-light', panel: 'certificates-list', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-list-375-dark', panel: 'certificates-list', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-create-1440-light', panel: 'certificates-create', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-step2-1440-light', panel: 'certificates-create-step2', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-list-1440-dark', panel: 'certificates-list', width: 1440, height: 900, theme: 'dark', viewMode: 'list', audience: 'specialist' },
 ];
 
 function sha256File(filePath) {
@@ -130,8 +132,12 @@ async function assertImplContent(page, spec) {
     await page.getByTestId('specialist-certificates-root').waitFor({ timeout: 15_000 });
     await page.getByTestId('agent-r03-collection-toolbar').waitFor({ timeout: 15_000 });
   }
-  if (spec.panel === 'certificates-create') {
-    await page.getByRole('heading', { name: 'Партнёры' }).waitFor({ timeout: 20_000 });
+  if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
+    await page.getByTestId('specialist-certificate-create-step-1').waitFor({ timeout: 20_000 });
+  }
+  if (spec.panel === 'certificates-create-step2') {
+    await page.getByRole('button', { name: 'Далее' }).click();
+    await page.getByTestId('specialist-certificate-create-step-2').waitFor({ timeout: 20_000 });
   }
 }
 
@@ -166,9 +172,15 @@ export async function prepareImplClients(page, origin, spec) {
   } else if (spec.panel === 'certificates-list') {
     await page.goto(`${origin}/recommendations`, { waitUntil: 'networkidle', timeout: 120_000 });
     await page.getByRole('heading', { name: 'Сертификаты' }).waitFor({ timeout: 30_000 });
-  } else if (spec.panel === 'certificates-create') {
+  } else if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
     await page.goto(`${origin}/recommendations/new`, { waitUntil: 'networkidle', timeout: 120_000 });
     await page.getByRole('heading', { name: /Создать сертификат/i }).waitFor({ timeout: 30_000 });
+    if (spec.panel === 'certificates-create-step2') {
+      const partnerCheckbox = page.locator('.partnerPick input[type=checkbox]').first();
+      if (await partnerCheckbox.isVisible().catch(() => false)) {
+        await partnerCheckbox.check();
+      }
+    }
   } else if (spec.panel === 'form-edit-empty') {
     await page.goto(`${origin}/clients/mock-spec-client-empty`, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Изменить заметку' }).click();

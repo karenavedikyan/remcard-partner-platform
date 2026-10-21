@@ -25,10 +25,13 @@ export type AgentClientRow = {
 
 export type AgentCertificatePartnerOffer = {
   storeName: string;
+  storeUserId?: string;
   categories: Array<{
+    category?: string;
     categoryLabel: string;
     discountPercent: number;
     agentBonusPercent?: number | null;
+    issuerBonusPercent?: number | null;
   }>;
 };
 
@@ -37,6 +40,7 @@ export type AgentCertificateTermLine = {
   categoryName: string;
   discountPercent: number;
   agentBonusPercent?: number | null;
+  issuerBonusPercent?: number | null;
 };
 
 export type AgentCertificateRow = {

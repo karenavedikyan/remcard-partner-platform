@@ -114,6 +114,8 @@ export function CertificateCreateForm({
   const [stalePartnerKeys, setStalePartnerKeys] = useState<string[]>([]);
   const scopeResolveGenerationRef = useRef(0);
   const createIdempotencyRef = useRef<CreateIdempotencySession | null>(null);
+  const [specialistStep, setSpecialistStep] = useState<1 | 2>(1);
+  const specialistWizard = issuerUi === "specialist";
 
   const resolveDraftScope = useCallback(async () => {
     const generation = ++scopeResolveGenerationRef.current;
@@ -394,8 +396,12 @@ export function CertificateCreateForm({
               </ul>
             </section>
           ) : null}
-          <section className={styles.formSection}>
-            <h3>Партнёры</h3>
+          <section
+            className={styles.formSection}
+            data-testid={specialistWizard ? "specialist-certificate-create-step-1" : undefined}
+            hidden={specialistWizard && specialistStep !== 1}
+          >
+            <h3>{specialistWizard ? "Шаг 1 · Партнёры" : "Партнёры"}</h3>
             {selectablePartners.length === 0 ? (
               <p className={styles.meta}>
                 Нет доступных партнёрств для создания документа. Сначала оформите активное
@@ -435,9 +441,24 @@ export function CertificateCreateForm({
             )}
           </section>
 
+          {specialistWizard && specialistStep === 1 ? (
+            <div className={styles.pageActions}>
+              <Button
+                disabled={selectedPartners.length === 0 || issuerReady === false}
+                onClick={() => setSpecialistStep(2)}
+              >
+                Далее
+              </Button>
+            </div>
+          ) : null}
+
           {selectedPartners.length > 0 ? (
-            <section className={styles.formSection}>
-              <h3>Условия для клиента</h3>
+            <section
+              className={styles.formSection}
+              data-testid={specialistWizard ? "specialist-certificate-create-step-2" : undefined}
+              hidden={specialistWizard && specialistStep !== 2}
+            >
+              <h3>{specialistWizard ? "Шаг 2 · Условия для клиента" : "Условия для клиента"}</h3>
               <p className={styles.meta}>
                 Общий процент задаётся в условиях партнёрства. Здесь вы распределяете его между
                 скидкой клиенту и своим вознаграждением.
@@ -537,7 +558,10 @@ export function CertificateCreateForm({
             </section>
           ) : null}
 
-          <section className={styles.formSection}>
+          <section
+            className={styles.formSection}
+            hidden={specialistWizard && specialistStep !== 2}
+          >
             <h3>Срок действия</h3>
             <label className={styles.meta}>
               Срок
@@ -562,16 +586,30 @@ export function CertificateCreateForm({
             </p>
           ) : null}
 
-          <Button
-            disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
-            onClick={() => void submit()}
-          >
-            {submitting
-              ? "Создание…"
-              : agentR03 || issuerUi === "specialist"
-                ? "Создать сертификат"
-                : "Создать рекомендацию"}
-          </Button>
+          {specialistWizard && specialistStep === 2 ? (
+            <div className={styles.pageActions}>
+              <Button variant="secondary" disabled={submitting} onClick={() => setSpecialistStep(1)}>
+                Назад
+              </Button>
+              <Button
+                disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
+                onClick={() => void submit()}
+              >
+                {submitting ? "Создание…" : "Создать сертификат"}
+              </Button>
+            </div>
+          ) : !specialistWizard ? (
+            <Button
+              disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
+              onClick={() => void submit()}
+            >
+              {submitting
+                ? "Создание…"
+                : agentR03
+                  ? "Создать сертификат"
+                  : "Создать рекомендацию"}
+            </Button>
+          ) : null}
         </>
       ) : null}
     </>

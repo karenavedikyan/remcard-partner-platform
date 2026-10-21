@@ -21,6 +21,7 @@ import { CertificateResultView } from "@/components/recommendations/CertificateR
 import { Button } from "@/components/ui/Button";
 import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
+import { promptAndPatchSpecialistCertificateDiscounts } from "@/lib/specialist-certificates/editDiscounts";
 import styles from "./agent-r03.module.css";
 
 export type AgentCertificateDetailAccessMode = "agent" | "specialist";
@@ -192,6 +193,24 @@ export function AgentCertificateDetail({
               disabled: busy,
               onClick: () => void renamePrivate(),
             },
+            ...(isSpecialist
+              ? [
+                  {
+                    id: "edit-discounts",
+                    label: "Изменить скидки",
+                    disabled: busy || meta.hasOrders || meta.status === "CANCELLED",
+                    disabledReason: meta.hasOrders ? "Есть использования" : "Сертификат отключён",
+                    onClick: () => {
+                      setBusy(true);
+                      void promptAndPatchSpecialistCertificateDiscounts(meta)
+                        .then((ok) => {
+                          if (ok) return load();
+                        })
+                        .finally(() => setBusy(false));
+                    },
+                  },
+                ]
+              : []),
             {
               id: meta.archivedInWorkspace ? "restore" : "archive",
               label: meta.archivedInWorkspace ? "Восстановить из архива" : "В архив",
@@ -201,8 +220,10 @@ export function AgentCertificateDetail({
             {
               id: "disable",
               label: "Отключить действие",
-              disabled: busy || meta.status !== "ACTIVE",
-              disabledReason: "Уже отключён",
+              disabled: busy || meta.status !== "ACTIVE" || (isSpecialist && meta.hasOrders),
+              disabledReason: meta.hasOrders
+                ? "Есть использования"
+                : "Уже отключён",
               onClick: () => void runAction("cancel"),
             },
             {

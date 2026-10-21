@@ -18,6 +18,7 @@ import {
   fetchSpecialistIssuerCertificates,
   patchSpecialistIssuerCertificate,
 } from "@/lib/specialist-certificates/api";
+import { promptAndPatchSpecialistCertificateDiscounts } from "@/lib/specialist-certificates/editDiscounts";
 import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
 import {
   CERT_SORT_OPTIONS,
@@ -199,6 +200,26 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         disabled: busy,
         onClick: () => void renameCert(cert),
       },
+      ...(isSpecialist
+        ? [
+            {
+              id: "edit-discounts",
+              label: "Изменить скидки",
+              disabled: cert.hasOrders || busy || cert.status === "CANCELLED",
+              disabledReason: cert.hasOrders
+                ? "Есть использования"
+                : "Сертификат отключён",
+              onClick: () => {
+                setBusy(true);
+                void promptAndPatchSpecialistCertificateDiscounts(cert)
+                  .then((ok) => {
+                    if (ok) return load();
+                  })
+                  .finally(() => setBusy(false));
+              },
+            } as import("./RecordRowActions").RecordRowAction,
+          ]
+        : []),
       {
         id: archived ? "restore" : "archive",
         label: archived ? "Восстановить" : "В архив",
@@ -222,8 +243,10 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             {
               id: "cancel",
               label: "Отключить ссылку",
-              disabled: cert.status === "CANCELLED" || busy,
-              disabledReason: "Ссылка уже отключена",
+              disabled: cert.status === "CANCELLED" || cert.hasOrders || busy,
+              disabledReason: cert.hasOrders
+                ? "Есть использования"
+                : "Ссылка уже отключена",
               onClick: () => {
                 if (!window.confirm("Отключить ссылку? Новые использования будут недоступны.")) return;
                 setBusy(true);

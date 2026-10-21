@@ -186,7 +186,10 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await menuBtn.click();
     await page.waitForTimeout(400);
   }
-  const certPanel = panel === 'certificates-list' || panel === 'certificates-create';
+  const certPanel =
+    panel === 'certificates-list' ||
+    panel === 'certificates-create' ||
+    panel === 'certificates-create-step2';
   const navKey = certPanel ? 'recommendations' : 'clients';
   const navHeading = certPanel ? 'Сертификаты' : 'Клиенты';
   await page.evaluate((key) => {
@@ -196,16 +199,16 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   await page.waitForTimeout(800);
   await page.getByRole('heading', { name: navHeading }).first().waitFor({ timeout: 25_000 });
 
-  if (panel === 'certificates-create') {
+  if (panel === 'certificates-create' || panel === 'certificates-create-step2') {
     const createBtn = page.locator('[data-action="action:recommend"]').first();
     if (await createBtn.isVisible().catch(() => false)) {
       await createBtn.click();
       await page.waitForTimeout(700);
     }
-    await page.getByRole('heading', { name: /Создать сертификат/i }).first().waitFor({ timeout: 25_000 });
+    await page.getByRole('heading', { name: /Создать сертификат|Шаг/i }).first().waitFor({ timeout: 25_000 });
   }
 
-  if (panel !== 'certificates-create') {
+  if (panel !== 'certificates-create' && panel !== 'certificates-create-step2') {
     const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
     const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
     if (await viewBtn.isVisible().catch(() => false)) {
