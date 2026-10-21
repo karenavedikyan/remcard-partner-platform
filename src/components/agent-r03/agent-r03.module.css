@@ -1286,9 +1286,10 @@
 }
 
 .specialistClientFormPanel {
-  width: min(520px, 100%);
-  padding: 1.15rem 1.25rem 1.25rem;
-  gap: 0.85rem;
+  width: min(620px, 100%);
+  max-height: 85dvh;
+  padding: 24px;
+  gap: 8px;
   border-radius: 16px;
   border-color: var(--r03-line);
 }
@@ -1335,14 +1336,21 @@
   font-size: var(--text-sm);
 }
 
+.specialistClientFormPanel .field {
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .specialistClientFormPanel .field input,
 .specialistClientFormPanel .field textarea {
-  min-height: 2.5rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: 10px;
+  min-height: 46px;
+  padding: 12px;
+  border-radius: 8px;
   border: 1px solid var(--r03-line);
   background: var(--surface);
-  font-size: var(--text-sm);
+  font-size: 16px;
+  font-weight: 400;
   box-sizing: border-box;
 }
 

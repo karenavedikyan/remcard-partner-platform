@@ -16,7 +16,7 @@ function ClientDetailBody({ clientId }: { clientId: string }) {
         <PageHeading
           eyebrow="СПЕЦИАЛИСТ"
           title="Клиенты"
-          description="Кому вы помогаете с выбором и какие сертификаты связаны с клиентами."
+          description="Контакты, заметки, сертификаты и покупки клиента."
         />
       )}
       <AgentClientDetail clientId={clientId} accessMode={mode} />
