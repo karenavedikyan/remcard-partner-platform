@@ -295,8 +295,14 @@ function defaultMockClients(mode) {
 function enrichOrdinaryIssuerCertDto(cert) {
   const storeName = cert.partnerStoreName ?? 'Магазин «Юг»';
   const discount = cert.discountPercent ?? 4.7;
+  const createdAt = cert.createdAt ?? '2026-10-12T10:00:00.000Z';
   return {
     ...cert,
+    displayCode: cert.displayCode ?? cert.promoCode ?? 'RC-DEMO',
+    updatedAt: cert.updatedAt ?? createdAt,
+    createdAt,
+    hasOrders: Boolean(cert.hasOrders),
+    archivedInWorkspace: Boolean(cert.archivedInWorkspace),
     partnerOffers: cert.partnerOffers ?? [
       {
         storeName,
