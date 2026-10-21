@@ -62,7 +62,7 @@ async function assertImplPersona(page, audience, spec) {
   const onClientDetail =
     spec.panel === 'detail' ||
     spec.panel === 'detail-purchases' ||
-    (spec.panel === 'form-edit-empty' && !spec.id.includes('form-edit'));
+    spec.panel === 'form-edit-empty';
   if (audience === 'agent') {
     if (onClientDetail) {
       await page.getByRole('heading', { name: 'Клиенты' }).waitFor({ timeout: 15_000 }).catch(() =>
