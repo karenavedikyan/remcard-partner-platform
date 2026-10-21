@@ -205,11 +205,13 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await page.getByRole('heading', { name: /Создать сертификат/i }).first().waitFor({ timeout: 25_000 });
   }
 
-  const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
-  const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
-  if (await viewBtn.isVisible().catch(() => false)) {
-    await viewBtn.click();
-    await page.waitForTimeout(400);
+  if (panel !== 'certificates-create') {
+    const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
+    const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
+    if (await viewBtn.isVisible().catch(() => false)) {
+      await viewBtn.click();
+      await page.waitForTimeout(400);
+    }
   }
 
   if (panel === 'detail') {
