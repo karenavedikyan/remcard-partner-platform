@@ -226,8 +226,18 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   }
 
   if (panel === 'certificates-detail' || panel === 'certificates-edit-discounts') {
-    await page.locator('[data-coll-open]').first().click();
-    await page.waitForTimeout(600);
+    const certOpen = page.locator('[data-coll-open]').first();
+    if (await certOpen.isVisible().catch(() => false)) {
+      await certOpen.click();
+      await page.waitForTimeout(800);
+    }
+    if (panel === 'certificates-edit-discounts') {
+      const editBtn = page.locator('[data-action="edit-discounts"], [aria-label="Изменить скидки"]').first();
+      if (await editBtn.isVisible().catch(() => false)) {
+        await editBtn.click();
+        await page.waitForTimeout(500);
+      }
+    }
   }
 
   if (panel === 'detail') {

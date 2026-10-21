@@ -654,6 +654,7 @@ function runUnitTests() {
     vitestFiles.push(
       'src/lib/agent-r03/clientListRow.test.ts',
       'src/lib/agent-r03/specialistClientFormCopy.test.ts',
+      'src/components/recommendations/CertificateCreateForm.alias-submit.test.tsx',
     );
   }
   const vitest = spawnSync('pnpm', ['exec', 'vitest', 'run', ...vitestFiles], {
@@ -678,13 +679,14 @@ async function runClientsImplement013Main() {
     throw new Error('unit_tests_failed');
   }
 
-  const backendCertLink = CLIENTS_IMPLEMENT_01_5
-    ? {
-        skipped: true,
-        boundary: 'frontend_only_01_5',
-        navigatorSha: gitRevParse(NAV_ROOT),
-      }
-    : runNavigatorClientsCertLink();
+  const backendCertLink =
+    CLIENTS_IMPLEMENT_01_5 || CLIENTS_IMPLEMENT_01_4
+      ? {
+          skipped: true,
+          boundary: CLIENTS_IMPLEMENT_01_4 ? 'frontend_only_01_4' : 'frontend_only_01_5',
+          navigatorSha: gitRevParse(NAV_ROOT),
+        }
+      : runNavigatorClientsCertLink();
 
   const provenance = collectPrefillProvenance(ROOT, DIST);
   if (process.env.R06_FORCE_BUILD === '1') {

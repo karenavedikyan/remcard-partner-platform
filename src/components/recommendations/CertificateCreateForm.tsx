@@ -117,6 +117,9 @@ export function CertificateCreateForm({
   const createIdempotencyRef = useRef<CreateIdempotencySession | null>(null);
   const [specialistStep, setSpecialistStep] = useState<1 | 2>(1);
   const [privateAlias, setPrivateAlias] = useState("");
+  const [aliasSaveNotice, setAliasSaveNotice] = useState<string | null>(null);
+  const [aliasSavePending, setAliasSavePending] = useState(false);
+  const [pendingAliasValue, setPendingAliasValue] = useState<string | null>(null);
   const specialistWizard = issuerUi === "specialist";
 
   const resolveDraftScope = useCallback(async () => {
@@ -305,12 +308,24 @@ export function CertificateCreateForm({
           body,
         });
       }
-      const aliasTrimmed = specialistWizard ? privateAlias.trim() : "";
-      if (specialistWizard && aliasTrimmed && result.id) {
-        await patchSpecialistIssuerCertificate(result.id, { userAlias: aliasTrimmed });
-      }
       setCreated(result);
       if (persistableScope) clearRecommendationCreateDraft(persistableScope);
+
+      const aliasTrimmed = specialistWizard ? privateAlias.trim() : "";
+      if (specialistWizard && aliasTrimmed && result.id) {
+        setPendingAliasValue(aliasTrimmed);
+        try {
+          await patchSpecialistIssuerCertificate(result.id, { userAlias: aliasTrimmed });
+          setAliasSaveNotice(null);
+          setPendingAliasValue(null);
+        } catch (aliasCaught) {
+          setAliasSaveNotice("Сертификат создан, но название не сохранилось");
+          setSubmitError("");
+        }
+      } else {
+        setPendingAliasValue(null);
+        setAliasSaveNotice(null);
+      }
     } catch (caught) {
       if (caught instanceof RemcardApiError && caught.status === 422) {
         const payload = caught.body as {
@@ -334,12 +349,48 @@ export function CertificateCreateForm({
     }
   }
 
+  async function retryAliasSave() {
+    if (!created?.id || !pendingAliasValue?.trim() || aliasSavePending) {
+      return;
+    }
+    setAliasSavePending(true);
+    setAliasSaveNotice(null);
+    try {
+      await patchSpecialistIssuerCertificate(created.id, { userAlias: pendingAliasValue.trim() });
+      setPendingAliasValue(null);
+    } catch (caught) {
+      setAliasSaveNotice("Сертификат создан, но название не сохранилось");
+      setSubmitError(
+        caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить название",
+      );
+    } finally {
+      setAliasSavePending(false);
+    }
+  }
+
   if (created) {
     return (
-      <CertificateResultView
-        certificate={created}
-        displayCode={storeCertificateDisplayCode(created)}
-      />
+      <>
+        {aliasSaveNotice ? (
+          <div className={styles.errorBlock} data-testid="specialist-create-alias-notice">
+            <p role="alert">{aliasSaveNotice}</p>
+            {pendingAliasValue ? (
+              <Button
+                variant="secondary"
+                disabled={aliasSavePending}
+                data-testid="specialist-create-alias-retry"
+                onClick={() => void retryAliasSave()}
+              >
+                {aliasSavePending ? "Сохранение…" : "Сохранить название"}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        <CertificateResultView
+          certificate={created}
+          displayCode={storeCertificateDisplayCode(created)}
+        />
+      </>
     );
   }
 
