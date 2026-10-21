@@ -27,9 +27,13 @@ if (typeof window !== "undefined" && !window.matchMedia) {
 }
 
 vi.mock("next/link", () => ({
-  default: (props: { href: string; children: unknown }) => {
+  default: ({ href, children, ...rest }: { href: string; children: unknown }) => {
     const React = require("react") as typeof import("react");
-    return React.createElement("a", { href: props.href }, props.children as React.ReactNode);
+    return React.createElement(
+      "a",
+      { href, ...rest },
+      children as React.ReactNode,
+    );
   },
 }));
 

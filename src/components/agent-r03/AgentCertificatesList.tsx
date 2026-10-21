@@ -126,8 +126,11 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     url: string;
   } | null>(null);
   const [editDiscountsCert, setEditDiscountsCert] = useState<AgentCertificateRow | null>(null);
+  const listFetchGenerationRef = useRef(0);
 
   const load = useCallback(async () => {
+    const fetchId = ++listFetchGenerationRef.current;
+    const preserveItemsOnError = isSpecialist;
     setLoadState("loading");
     setError("");
     try {
@@ -142,6 +145,9 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       const data = isSpecialist
         ? await fetchSpecialistIssuerCertificates(listParams)
         : await fetchAgentCertificates(listParams);
+      if (fetchId !== listFetchGenerationRef.current) {
+        return;
+      }
       setItems(data.certificates ?? []);
       setMeta({
         page: data.page ?? page,
@@ -156,10 +162,17 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       });
       setLoadState("loaded");
     } catch (caught) {
-      setLoadState("error");
+      if (fetchId !== listFetchGenerationRef.current) {
+        return;
+      }
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты",
       );
+      if (preserveItemsOnError) {
+        setLoadState("loaded");
+      } else {
+        setLoadState("error");
+      }
     }
   }, [appliedQ, archived, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
 
@@ -523,7 +536,11 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
                       />
                     </td>
                     <td>
-                      <Link href={`${detailBasePath}/${cert.id}`} className={styles.collectionOpenLink}>
+                      <Link
+                        href={`${detailBasePath}/${cert.id}`}
+                        className={styles.collectionOpenLink}
+                        data-testid={isSpecialist ? `specialist-cert-list-name-${cert.id}` : undefined}
+                      >
                         {cert.userAlias ?? cert.title}
                       </Link>
                       <small className={styles.collectionCaption}>
@@ -618,6 +635,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             agentClientId={createClientId}
             onClose={closeCreateDialog}
             onCertificateCreated={() => void load()}
+            onListRefresh={() => void load()}
           />
           <SpecialistCertificateDetailDialog
             open={Boolean(detailCertificateId)}

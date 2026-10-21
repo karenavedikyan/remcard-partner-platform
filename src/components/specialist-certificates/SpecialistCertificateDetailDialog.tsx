@@ -81,10 +81,10 @@ export function SpecialistCertificateDetailDialog({
           onClick={(event) => event.stopPropagation()}
         >
           <div className={agentStyles.dialogTitleRow}>
-            <h2 id="specialist-cert-detail-title">Сертификат</h2>
+            <h2 id="specialist-cert-detail-title">Сертификат RemCard</h2>
             <button
               type="button"
-              className={agentStyles.dialogCloseBtn}
+              className={styles.specialistDialogCloseBtn}
               aria-label="Закрыть"
               onClick={onClose}
             >

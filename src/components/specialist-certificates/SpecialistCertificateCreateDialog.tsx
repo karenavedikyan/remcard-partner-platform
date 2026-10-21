@@ -8,6 +8,7 @@ type Props = {
   agentClientId?: string;
   onClose: () => void;
   onCertificateCreated?: (certificate: StoreCertificate) => void;
+  onListRefresh?: () => void;
 };
 
 export function SpecialistCertificateCreateDialog({
@@ -15,6 +16,7 @@ export function SpecialistCertificateCreateDialog({
   agentClientId,
   onClose,
   onCertificateCreated,
+  onListRefresh,
 }: Props) {
   if (!open) return null;
   return (
@@ -24,6 +26,7 @@ export function SpecialistCertificateCreateDialog({
       agentClientId={agentClientId}
       onRequestClose={onClose}
       onCertificateCreated={onCertificateCreated}
+      onListRefresh={onListRefresh}
     />
   );
 }

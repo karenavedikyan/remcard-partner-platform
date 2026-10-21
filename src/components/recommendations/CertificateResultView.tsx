@@ -214,9 +214,9 @@ export function CertificateResultView({
           <div className={styles.specialistCertCode} data-testid="certificate-code">
             {shownCode}
           </div>
-          <Button type="button" variant="secondary" onClick={() => void copyCode()}>
+          <button type="button" className={styles.specialistCopyCodeBtn} onClick={() => void copyCode()}>
             Скопировать код
-          </Button>
+          </button>
           {privateAlias?.trim() ? (
             <div className={styles.specialistCertManagement}>
               <span className={styles.specialistCertManagementLabel}>Название для себя</span>

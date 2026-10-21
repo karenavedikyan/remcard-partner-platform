@@ -90,6 +90,8 @@ type CertificateCreateFormProps = {
   onRequestClose?: () => void;
   /** Fired once after successful POST (including when alias PATCH fails). */
   onCertificateCreated?: (certificate: StoreCertificate) => void;
+  /** Reload parent list after alias persisted (initial PATCH or retry). */
+  onListRefresh?: () => void;
 };
 
 export function CertificateCreateForm({
@@ -100,6 +102,7 @@ export function CertificateCreateForm({
   presentation = "page",
   onRequestClose,
   onCertificateCreated,
+  onListRefresh,
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
@@ -451,6 +454,7 @@ export function CertificateCreateForm({
           await patchSpecialistIssuerCertificate(result.id, { userAlias: aliasTrimmed });
           setAliasSaveNotice(null);
           setPendingAliasValue(null);
+          onListRefresh?.();
         } catch (aliasCaught) {
           setAliasSaveNotice("Сертификат создан, но название не сохранилось");
           setSubmitError("");
@@ -491,6 +495,7 @@ export function CertificateCreateForm({
     try {
       await patchSpecialistIssuerCertificate(created.id, { userAlias: pendingAliasValue.trim() });
       setPendingAliasValue(null);
+      onListRefresh?.();
     } catch (caught) {
       setAliasSaveNotice("Сертификат создан, но название не сохранилось");
       setSubmitError(
@@ -503,7 +508,7 @@ export function CertificateCreateForm({
 
   function wrapSpecialistShell(node: ReactNode) {
     const title = created
-      ? "Сертификат"
+      ? "Сертификат RemCard"
       : specialistStep === 1
         ? "Создать сертификат"
         : "Скидки по категориям";
@@ -525,7 +530,7 @@ export function CertificateCreateForm({
           {specialistDialog ? (
             <button
               type="button"
-              className={agentStyles.dialogCloseBtn}
+              className={styles.specialistDialogCloseBtn}
               aria-label="Закрыть"
               disabled={submitting}
               onClick={() => onRequestClose?.()}
@@ -705,7 +710,7 @@ export function CertificateCreateForm({
                                   .map((c) => displayCategoryLabel(c.category, c.categoryLabel))
                                   .join(", ")}
                               </small>
-                              <span className={styles.partnerReadyBadge}>Условия согласованы</span>
+                              <span className={styles.partnerReadyChip}>Условия согласованы</span>
                             </span>
                           </label>
                         );
@@ -759,8 +764,9 @@ export function CertificateCreateForm({
                   </p>
                   <div className={styles.conditionsGrid}>
                     {selectedPartners.map((partner) => (
-                      <div key={partnerSelectionKey(partner)} className={styles.categoryGroup}>
-                        <h4>{partner.storeName}</h4>
+                      <div key={partnerSelectionKey(partner)} className={styles.categoryGroupPanel}>
+                        <h4 className={styles.categoryGroupTitle}>{partner.storeName}</h4>
+                        <div className={styles.categoryRows}>
                         {partner.categories.map((cat) => {
                           const key = categoryFieldKey(partner.storeUserId, cat.category);
                           const pool = resolvePoolPercent({
@@ -789,7 +795,7 @@ export function CertificateCreateForm({
                           const termsHref = partnershipTermsHref(partner.partnershipId);
 
                           return (
-                            <div key={key} className={styles.categoryAllocation}>
+                            <div key={key} className={styles.categoryRow}>
                               <label className={styles.categoryAllocationHead}>
                                 <input
                                   type="checkbox"
@@ -845,9 +851,9 @@ export function CertificateCreateForm({
                                 <p className={styles.conditionMeta}>
                                   Можно отдать клиенту весь процент.
                                 </p>
-                                <Button
+                                <button
                                   type="button"
-                                  variant="secondary"
+                                  className={styles.allClientAction}
                                   disabled={
                                     !categorySelected || rowBlocked || pool === null || submitting
                                   }
@@ -855,7 +861,7 @@ export function CertificateCreateForm({
                                   onClick={() => applyFullDiscountToClient(key, pool)}
                                 >
                                   Всё клиенту
-                                </Button>
+                                </button>
                               </div>
                               {fieldErrorReasons[key] === "over_limit" && termsHref ? (
                                 <p className={styles.termsLinkWrap}>
@@ -867,6 +873,7 @@ export function CertificateCreateForm({
                             </div>
                           );
                         })}
+                        </div>
                       </div>
                     ))}
                   </div>

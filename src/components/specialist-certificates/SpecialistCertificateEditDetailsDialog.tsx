@@ -88,7 +88,7 @@ export function SpecialistCertificateEditDetailsDialog({ open, cert, onClose, on
           <h2 id="specialist-cert-edit-details-title">Редактировать детали</h2>
           <button
             type="button"
-            className={agentStyles.dialogCloseBtn}
+            className={styles.specialistDialogCloseBtn}
             aria-label="Закрыть"
             disabled={saving}
             onClick={onClose}
@@ -106,13 +106,13 @@ export function SpecialistCertificateEditDetailsDialog({ open, cert, onClose, on
         <p className={styles.meta}>Название видно только вам и не меняет условия ссылки.</p>
         <label className={styles.partnerSearchField}>
           Партнёр
-          <input value={partnerLabel} readOnly disabled />
+          <input className={styles.readonlyField} value={partnerLabel} readOnly disabled />
         </label>
         <label className={styles.partnerSearchField}>
           Что предлагаете / рекомендуете
-          <input value={categoryLabel} readOnly disabled />
+          <input className={styles.readonlyField} value={categoryLabel} readOnly disabled />
         </label>
-        <p className={styles.notice}>
+        <p className={styles.editDetailsInfo}>
           Условия созданного сертификата не меняем задним числом. Для других условий создайте новый
           сертификат.
         </p>
@@ -121,9 +121,8 @@ export function SpecialistCertificateEditDetailsDialog({ open, cert, onClose, on
             {error}
           </p>
         ) : null}
-        <div className={styles.createFormFooter}>
-          <span />
-          <Button type="submit" disabled={saving}>
+        <div className={styles.editDetailsFooter}>
+          <Button type="submit" disabled={saving} className={styles.editDetailsSubmit}>
             {saving ? "Сохранение…" : "Сохранить"}
           </Button>
         </div>

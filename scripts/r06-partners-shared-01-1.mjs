@@ -656,6 +656,8 @@ function runUnitTests() {
       'src/lib/agent-r03/specialistClientFormCopy.test.ts',
       'src/components/recommendations/CertificateCreateForm.alias-submit.test.tsx',
       'src/components/recommendations/CertificateCreateForm.specialist-create.test.tsx',
+      'src/components/recommendations/CertificateCreateForm.draft-scope.test.tsx',
+      'src/components/agent-r03/AgentCertificatesList.specialist-mutations.test.tsx',
     );
   }
   const vitest = spawnSync('pnpm', ['exec', 'vitest', 'run', ...vitestFiles], {
