@@ -88,6 +88,8 @@ type CertificateCreateFormProps = {
   issuerUi?: "default" | "specialist";
   presentation?: "dialog" | "page";
   onRequestClose?: () => void;
+  /** Fired once after successful POST (including when alias PATCH fails). */
+  onCertificateCreated?: (certificate: StoreCertificate) => void;
 };
 
 export function CertificateCreateForm({
@@ -97,6 +99,7 @@ export function CertificateCreateForm({
   issuerUi = "default",
   presentation = "page",
   onRequestClose,
+  onCertificateCreated,
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
@@ -244,6 +247,7 @@ export function CertificateCreateForm({
       setPartnerSearchQuery(saved.partnerSearchQuery ?? "");
       setSpecialistStep(saved.specialistStep === 2 ? 2 : 1);
       setValidityPreset(saved.validityPreset as ValidityPreset);
+      setPrivateAlias(saved.privateAlias ?? "");
       setStalePartnerKeys(reconciled.stalePartnerKeys);
     } else if (hydratedScopeKey != null) {
       setSelectedKeys([]);
@@ -252,6 +256,7 @@ export function CertificateCreateForm({
       setPartnerSearchQuery("");
       setSpecialistStep(1);
       setValidityPreset(DEFAULT_VALIDITY);
+      setPrivateAlias("");
       setStalePartnerKeys([]);
     }
     setHydratedScopeKey(activeScopeKey);
@@ -267,6 +272,7 @@ export function CertificateCreateForm({
       partnerSearchQuery: specialistWizard ? partnerSearchQuery : undefined,
       specialistStep: specialistWizard ? specialistStep : undefined,
       selectedCategoryKeys: specialistWizard ? selectedCategoryKeys : undefined,
+      privateAlias: specialistWizard ? privateAlias.slice(0, 100) : undefined,
     });
   }, [
     activeScopeKey,
@@ -275,6 +281,7 @@ export function CertificateCreateForm({
     loadState,
     partnerSearchQuery,
     persistableScope,
+    privateAlias,
     selectedCategoryKeys,
     selectedKeys,
     specialistStep,
@@ -326,7 +333,7 @@ export function CertificateCreateForm({
     setSelectedKeys((prev) =>
       prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
     );
-    if (adding) {
+    if (adding && specialistWizard) {
       ensurePartnerCategoryDefaults(partner);
     }
   }
@@ -434,6 +441,7 @@ export function CertificateCreateForm({
         });
       }
       setCreated(result);
+      onCertificateCreated?.(result);
       if (persistableScope) clearRecommendationCreateDraft(persistableScope);
 
       const aliasTrimmed = specialistWizard ? privateAlias.trim() : "";
@@ -568,6 +576,8 @@ export function CertificateCreateForm({
           certificate={created}
           displayCode={storeCertificateDisplayCode(created)}
           showCreateSuccessBanner
+          presentation={specialistWizard ? "specialist" : "default"}
+          privateAlias={privateAlias.trim() || null}
         />
       </>
     );

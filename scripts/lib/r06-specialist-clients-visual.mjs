@@ -40,6 +40,10 @@ export const CLIENTS_VISUAL_MATRIX = [
   { id: 'certs-edit-discounts-1440-light', panel: 'certificates-edit-discounts', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist', implOnly: true, refUnavailable: true, refUnavailableReason: 'prototype_has_no_discount_edit_dialog_only_link_edit_alias' },
   { id: 'certs-edit-details-1440-light', panel: 'certificates-edit-details', width: 1440, height: 900, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-create-320-light', panel: 'certificates-create', width: 320, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-320-dark', panel: 'certificates-create', width: 320, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-step2-320-light', panel: 'certificates-create-step2', width: 320, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-step2-320-dark', panel: 'certificates-create-step2', width: 320, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
+  { id: 'certs-create-step2-375-light', panel: 'certificates-create-step2', width: 375, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-create-375-light', panel: 'certificates-create', width: 375, height: 812, theme: 'light', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-create-375-dark', panel: 'certificates-create', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
   { id: 'certs-create-step2-375-dark', panel: 'certificates-create-step2', width: 375, height: 812, theme: 'dark', viewMode: 'list', audience: 'specialist' },
@@ -49,8 +53,12 @@ const CERTS_VISUAL_REMAINING_IDS = [
   'certs-create-1440-light',
   'certs-create-step2-1440-light',
   'certs-create-320-light',
+  'certs-create-320-dark',
   'certs-create-375-light',
   'certs-create-375-dark',
+  'certs-create-step2-320-light',
+  'certs-create-step2-320-dark',
+  'certs-create-step2-375-light',
   'certs-create-step2-375-dark',
   'certs-detail-1440-light',
   'certs-detail-375-dark',
@@ -205,6 +213,14 @@ async function assertImplContent(page, spec) {
     spec.panel === 'certificates-edit-details'
   ) {
     await page.getByTestId('specialist-certificate-detail-dialog').waitFor({ timeout: 20_000 });
+    await page.getByTestId('specialist-certificate-preview').waitFor({ timeout: 20_000 });
+    await page.waitForFunction(
+      () => {
+        const img = document.querySelector('[data-testid="specialist-certificate-preview-qr"]');
+        return img instanceof HTMLImageElement && img.naturalWidth > 0;
+      },
+      { timeout: 25_000 },
+    );
   }
   if (spec.panel === 'certificates-edit-discounts') {
     await page.getByTestId('specialist-certificate-edit-discounts-dialog').waitFor({ timeout: 15_000 });

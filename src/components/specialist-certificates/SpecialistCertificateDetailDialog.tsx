@@ -16,9 +16,15 @@ type Props = {
   open: boolean;
   certificateId: string | null;
   onClose: () => void;
+  onListMutated?: () => void;
 };
 
-export function SpecialistCertificateDetailDialog({ open, certificateId, onClose }: Props) {
+export function SpecialistCertificateDetailDialog({
+  open,
+  certificateId,
+  onClose,
+  onListMutated,
+}: Props) {
   const [storeCert, setStoreCert] = useState<StoreCertificate | null>(null);
   const [meta, setMeta] = useState<AgentCertificateRow | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
@@ -115,6 +121,8 @@ export function SpecialistCertificateDetailDialog({ open, certificateId, onClose
                 certificate={storeCert}
                 displayCode={meta.displayCode}
                 showCreateSuccessBanner={false}
+                presentation="specialist"
+                privateAlias={meta.userAlias ?? meta.title ?? null}
               />
             </>
           ) : null}
@@ -125,13 +133,19 @@ export function SpecialistCertificateDetailDialog({ open, certificateId, onClose
         open={editDetailsOpen}
         cert={meta}
         onClose={() => setEditDetailsOpen(false)}
-        onSaved={() => load()}
+        onSaved={() => {
+          void load();
+          onListMutated?.();
+        }}
       />
       <SpecialistCertificateEditDiscountsDialog
         open={editDiscountsOpen}
         cert={meta}
         onClose={() => setEditDiscountsOpen(false)}
-        onSaved={() => load()}
+        onSaved={() => {
+          void load();
+          onListMutated?.();
+        }}
       />
     </>
   );

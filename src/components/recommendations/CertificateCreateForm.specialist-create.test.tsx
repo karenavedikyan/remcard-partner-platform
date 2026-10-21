@@ -49,6 +49,41 @@ const twoCategoryPartner = {
   ],
 };
 
+describe("CertificateCreateForm default issuer discounts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    vi.mocked(getAuthMe).mockResolvedValue({
+      user: { id: "u1", role: "PRO", displayName: "Tester" },
+    } as Awaited<ReturnType<typeof getAuthMe>>);
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/store/certificate/available-partners") {
+        return {
+          partners: [twoCategoryPartner],
+          certificateRecommendationIssuerReady: true,
+          certificateRecommendationIssuerMissing: [],
+        };
+      }
+      if (path === "/api/pro/context") {
+        return { organization: null, activeBranch: null, role: "SOLO", branches: [] };
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+  });
+
+  it("keeps API default discount percents when selecting a partner", async () => {
+    const user = userEvent.setup();
+    render(<CertificateCreateForm />);
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Партнёры" })).toBeVisible();
+    });
+    await user.click(screen.getByRole("checkbox"));
+    const inputs = screen.getAllByLabelText("Скидка клиенту, %");
+    expect(inputs[0]).toHaveValue(5);
+    expect(inputs[1]).toHaveValue(4);
+  });
+});
+
 describe("CertificateCreateForm specialist create", () => {
   beforeEach(() => {
     vi.clearAllMocks();

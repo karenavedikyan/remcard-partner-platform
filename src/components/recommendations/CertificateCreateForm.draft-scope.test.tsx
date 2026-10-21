@@ -146,6 +146,38 @@ describe("CertificateCreateForm draft scope", () => {
     });
   });
 
+  it("persists private alias across wizard back and remount in same scope", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <CertificateCreateForm issuerUi="specialist" presentation="dialog" />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
+    });
+    await user.click(
+      screen.getByTestId("specialist-certificate-create-step-1").querySelector('input[type=checkbox]')!,
+    );
+    await user.click(screen.getByRole("button", { name: "Далее: скидки" }));
+    await user.click(screen.getByTestId("specialist-certificate-create-alias").querySelector("summary")!);
+    await user.type(screen.getByLabelText("Название"), "Мой черновик");
+    await user.click(screen.getByRole("button", { name: "Назад" }));
+    await waitFor(() => {
+      const saved = loadRecommendationCreateDraft(scopeSolo);
+      expect(saved?.privateAlias).toBe("Мой черновик");
+    });
+    unmount();
+    render(<CertificateCreateForm issuerUi="specialist" presentation="dialog" />);
+    await waitFor(() => {
+      expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("specialist-cert-selected-count")).toHaveTextContent("Выбрано: 1");
+    });
+    await user.click(screen.getByRole("button", { name: "Далее: скидки" }));
+    await user.click(screen.getByTestId("specialist-certificate-create-alias").querySelector("summary")!);
+    expect(screen.getByLabelText("Название")).toHaveValue("Мой черновик");
+  });
+
   it("scope change resets in-memory form and does not copy draft into other scope", async () => {
     saveRecommendationCreateDraft(scopeOrg, {
       selectedKeys: ["store-1:part-1"],

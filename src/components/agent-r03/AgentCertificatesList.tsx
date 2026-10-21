@@ -617,11 +617,13 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             open={createDialogOpen}
             agentClientId={createClientId}
             onClose={closeCreateDialog}
+            onCertificateCreated={() => void load()}
           />
           <SpecialistCertificateDetailDialog
             open={Boolean(detailCertificateId)}
             certificateId={detailCertificateId}
             onClose={closeDetailDialog}
+            onListMutated={() => void load()}
           />
         </>
       ) : null}

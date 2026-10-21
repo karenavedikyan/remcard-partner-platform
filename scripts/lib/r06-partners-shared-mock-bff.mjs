@@ -327,7 +327,44 @@ function enrichOrdinaryIssuerCertDto(cert) {
         agentBonusPercent: null,
       },
     ],
-    certificateUrl: cert.certificateUrl ?? 'https://remcard.test/c/demo',
+    certificateUrl:
+      cert.certificateUrl ??
+      `https://remcard.test/certificate/${encodeURIComponent(cert.qrCode ?? cert.promoCode ?? cert.id ?? 'demo')}`,
+  };
+}
+
+function issuerRowToStoreCertificate(row) {
+  const offers = row.partnerOffers ?? [];
+  const partners = offers.map((offer, index) => ({
+    id: `mock-partner-${row.id}-${index}`,
+    storeUserId: offer.storeUserId,
+    storeName: offer.storeName,
+    partnershipId: offer.partnershipId ?? null,
+    isSelfScan: false,
+    categories: (offer.categories ?? []).map((cat) => ({
+      category: cat.category,
+      categoryLabel: cat.categoryLabel ?? cat.category,
+      discountPercent: cat.discountPercent,
+      issuerPercent: cat.issuerBonusPercent ?? undefined,
+    })),
+  }));
+  const qr = row.qrCode ?? row.promoCode ?? row.id;
+  return {
+    id: row.id,
+    promoCode: row.promoCode,
+    qrCode: row.qrCode ?? row.promoCode,
+    issuerKindSnapshot: row.issuerKindSnapshot ?? 'SPECIALIST',
+    status: row.status ?? 'ACTIVE',
+    validUntil: row.validUntil ?? null,
+    maxUsages: row.maxUsages ?? 1,
+    usageCount: row.usageCount ?? 0,
+    createdAt: row.createdAt,
+    certificateUrl:
+      row.certificateUrl ??
+      `https://remcard.test/certificate/${encodeURIComponent(String(qr))}`,
+    discountPercent: row.discountPercent ?? null,
+    storeNames: partners.map((p) => p.storeName),
+    partners,
   };
 }
 
@@ -454,12 +491,13 @@ function ensureClientsState(state) {
         directionLabel: 'Двери',
         partnerStoreName: 'Магазин «Юг»',
         partnerCount: 1,
-        categorySummary: 'Двери',
+        categorySummary: 'Двери, Окна',
         discountPercent: 4.7,
         archivedInWorkspace: false,
         hasOrders: false,
         agentClient: null,
         issuerKindSnapshot: 'SPECIALIST',
+        certificateUrl: 'https://remcard.test/certificate/qr-visual-edit',
         partnerOffers: [
           {
             storeName: 'Магазин «Юг»',
@@ -470,6 +508,13 @@ function ensureClientsState(state) {
                 categoryLabel: 'Двери',
                 discountPercent: 4.7,
                 issuerBonusPercent: 5.3,
+                agentBonusPercent: null,
+              },
+              {
+                category: 'windows',
+                categoryLabel: 'Окна',
+                discountPercent: 3.2,
+                issuerBonusPercent: 4.8,
                 agentBonusPercent: null,
               },
             ],
@@ -705,6 +750,13 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           sort: url.searchParams.get('sort') || 'created_desc',
         });
       }
+      const storeCertMatch = path.match(/^\/api\/store\/certificate\/([^/]+)$/);
+      if (storeCertMatch && req.method === 'GET') {
+        const certId = decodeURIComponent(storeCertMatch[1]);
+        const row = collectIssuerCertificateRows(state).find((c) => c.id === certId);
+        if (!row) return send(404, { error: 'Не найдено' });
+        return send(200, issuerRowToStoreCertificate(row));
+      }
       const specIssuerCertMatch = path.match(/^\/api\/pro\/specialist-issuer-certificates\/([^/]+)$/);
       if (specIssuerCertMatch && state.mode === 'specialist') {
         const certId = decodeURIComponent(specIssuerCertMatch[1]);
@@ -870,7 +922,25 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
           client.certificateCount = list.length;
           state.clients.set(agentClientId, client);
         }
-        return send(201, { id: certId, certificate: cert });
+        const listRow = enrichOrdinaryIssuerCertDto({
+          id: certId,
+          promoCode: cert.promoCode,
+          displayCode: cert.displayCode,
+          qrCode: cert.qrCode,
+          status: 'ACTIVE',
+          createdAt: cert.createdAt,
+          userAlias: cert.userAlias,
+          title: cert.title,
+          partnerStoreName: 'Магазин «Юг»',
+          partnerCount: 1,
+          categorySummary: 'Двери',
+          discountPercent: 10,
+          archivedInWorkspace: false,
+          hasOrders: false,
+          issuerKindSnapshot: 'SPECIALIST',
+          certificateUrl: `https://remcard.test/certificate/${encodeURIComponent(cert.qrCode)}`,
+        });
+        return send(201, issuerRowToStoreCertificate(listRow));
       }
       if (path === '/api/pro/profile') return send(200, buildProfile(actor));
       if (path === '/api/pro/partner-taxonomy') return send(200, TAXONOMY);

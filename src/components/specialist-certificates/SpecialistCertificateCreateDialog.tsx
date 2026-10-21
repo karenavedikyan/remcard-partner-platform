@@ -6,9 +6,15 @@ type Props = {
   open: boolean;
   agentClientId?: string;
   onClose: () => void;
+  onCertificateCreated?: (certificate: import("@/lib/certificate-types").StoreCertificate) => void;
 };
 
-export function SpecialistCertificateCreateDialog({ open, agentClientId, onClose }: Props) {
+export function SpecialistCertificateCreateDialog({
+  open,
+  agentClientId,
+  onClose,
+  onCertificateCreated,
+}: Props) {
   if (!open) return null;
   return (
     <CertificateCreateForm
@@ -16,6 +22,7 @@ export function SpecialistCertificateCreateDialog({ open, agentClientId, onClose
       presentation="dialog"
       agentClientId={agentClientId}
       onRequestClose={onClose}
+      onCertificateCreated={onCertificateCreated}
     />
   );
 }

@@ -22,6 +22,8 @@ export type RecommendationCreateDraft = {
   partnerSearchQuery?: string;
   specialistStep?: 1 | 2;
   selectedCategoryKeys?: Record<string, boolean>;
+  /** Owner-only label; never sent to public certificate APIs. */
+  privateAlias?: string;
 };
 
 export type RecommendationCreateDraftPayload = Omit<
@@ -98,6 +100,9 @@ function isValidDraftShape(raw: unknown): raw is RecommendationCreateDraft {
       if (typeof value !== "boolean") return false;
     }
   }
+  if (o.privateAlias != null) {
+    if (typeof o.privateAlias !== "string" || o.privateAlias.length > 100) return false;
+  }
   return true;
 }
 
@@ -148,6 +153,7 @@ function migrateLegacyV2Draft(
     partnerSearchQuery: "",
     specialistStep: 1,
     selectedCategoryKeys: {},
+    privateAlias: "",
   };
 }
 
