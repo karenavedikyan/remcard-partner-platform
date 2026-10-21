@@ -99,7 +99,7 @@ export function SpecialistCertificateEditDiscountsDialog({ open, cert, onClose, 
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
-    if (blocked || saving) return;
+    if (!cert || blocked || saving) return;
 
     const errors: Record<string, string> = {};
     const updates: Array<{ storeUserId: string; category: string; discountPercent: number }> = [];
@@ -138,9 +138,8 @@ export function SpecialistCertificateEditDiscountsDialog({ open, cert, onClose, 
 
     setSaving(true);
     setSubmitError("");
-    const activeCert = cert;
     try {
-      await patchSpecialistIssuerCertificate(activeCert.id, {
+      await patchSpecialistIssuerCertificate(cert.id, {
         action: "updateDiscounts",
         updates,
       });
