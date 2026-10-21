@@ -11,9 +11,19 @@ import styles from "./recommendations.module.css";
 
 type CertificateDetailProps = {
   certificateId: string;
+  listHref?: string;
+  createHref?: string;
+  backLabel?: string;
+  createAnotherLabel?: string;
 };
 
-export function CertificateDetail({ certificateId }: CertificateDetailProps) {
+export function CertificateDetail({
+  certificateId,
+  listHref = "/recommendations",
+  createHref = "/recommendations/new",
+  backLabel = "К списку",
+  createAnotherLabel = "Создать ещё",
+}: CertificateDetailProps) {
   const [certificate, setCertificate] = useState<StoreCertificate | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [error, setError] = useState("");
@@ -51,8 +61,8 @@ export function CertificateDetail({ certificateId }: CertificateDetailProps) {
         <Button variant="secondary" onClick={() => void load()}>
           Повторить
         </Button>
-        <Link href="/recommendations">
-          <Button variant="secondary">К списку</Button>
+        <Link href={listHref}>
+          <Button variant="secondary">{backLabel}</Button>
         </Link>
       </div>
     );
@@ -65,11 +75,11 @@ export function CertificateDetail({ certificateId }: CertificateDetailProps) {
   return (
     <>
       <div className={styles.pageActions}>
-        <Link href="/recommendations">
-          <Button variant="secondary">К списку</Button>
+        <Link href={listHref}>
+          <Button variant="secondary">{backLabel}</Button>
         </Link>
-        <Link href="/recommendations/new">
-          <Button>Создать ещё</Button>
+        <Link href={createHref}>
+          <Button>{createAnotherLabel}</Button>
         </Link>
       </div>
       <CertificateResultView

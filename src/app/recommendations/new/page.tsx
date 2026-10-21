@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { CabinetShell } from "@/components/layout/CabinetShell";
-import { PageHeading } from "@/components/ui/PageHeading";
-import { RecommendationCreateWithClient } from "@/components/recommendations/RecommendationCreateWithClient";
+import { RecommendationsCreateRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,13 +16,8 @@ export default async function NewRecommendationPage() {
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
-      <PageHeading
-        eyebrow="Новая рекомендация"
-        title="Создать документ для клиента"
-        description="Выберите партнёров и укажите скидку — условия проверит сервер."
-      />
       <Suspense fallback={<p>Загрузка формы…</p>}>
-        <RecommendationCreateWithClient />
+        <RecommendationsCreateRouteBody />
       </Suspense>
     </CabinetShell>
   );

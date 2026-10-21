@@ -82,12 +82,14 @@ type CertificateCreateFormProps = {
   agentR03?: boolean;
   agentClientId?: string;
   successHrefBase?: string;
+  issuerUi?: "default" | "specialist";
 };
 
 export function CertificateCreateForm({
   agentR03 = false,
   agentClientId,
   successHrefBase = "/recommendations",
+  issuerUi = "default",
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
@@ -564,7 +566,11 @@ export function CertificateCreateForm({
             disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
             onClick={() => void submit()}
           >
-            {submitting ? "Создание…" : agentR03 ? "Создать сертификат" : "Создать рекомендацию"}
+            {submitting
+              ? "Создание…"
+              : agentR03 || issuerUi === "specialist"
+                ? "Создать сертификат"
+                : "Создать рекомендацию"}
           </Button>
         </>
       ) : null}

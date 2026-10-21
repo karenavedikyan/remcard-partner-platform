@@ -10,6 +10,13 @@ import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
+import { MasterMobileMoreSheet } from "@/components/layout/MasterMobileMoreSheet";
+import {
+  MASTER_DESKTOP_NAV,
+  MASTER_MOBILE_BOTTOM,
+  masterNavMoreItems,
+  masterPageTitle,
+} from "@/lib/master-nav/sections";
 import styles from "./AppShell.module.css";
 
 const BASE_NAV: Array<{
@@ -28,10 +35,8 @@ const BASE_NAV: Array<{
 ];
 
 function navForUser(partnerType?: string | null) {
-  if (partnerType !== "MASTER") return BASE_NAV;
-  const items = [...BASE_NAV];
-  items.splice(3, 0, { href: "/clients", label: "Клиенты", icon: "clients" });
-  return items;
+  if (partnerType === "MASTER") return MASTER_DESKTOP_NAV;
+  return BASE_NAV;
 }
 
 const MOBILE_BOTTOM_NAV: Array<{ href: string; label: string; icon: NavIconKey }> = [
@@ -55,7 +60,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/onboarding": "Регистрация",
 };
 
-function pageTitle(pathname: string, navItems: typeof BASE_NAV): string {
+function pageTitle(pathname: string, navItems: typeof BASE_NAV, partnerType?: string | null): string {
+  if (partnerType === "MASTER") return masterPageTitle(pathname);
   if (PAGE_TITLES[pathname]) {
     return PAGE_TITLES[pathname];
   }
@@ -130,11 +136,19 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
+  const isMaster = user.partnerType === "MASTER";
   const navItems = navForUser(user.partnerType);
-  const currentPage = pageTitle(pathname, navItems);
+  const currentPage = pageTitle(pathname, navItems, user.partnerType);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const moreItems = isMaster ? masterNavMoreItems() : [];
+  const moreActive = isMaster && moreItems.some(
+    (item) =>
+      item.href !== "/" &&
+      (pathname === item.href || pathname.startsWith(`${item.href}/`)),
+  );
 
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
@@ -241,7 +255,7 @@ export function AppShell({
       </div>
 
       <nav className={styles.mobileBottom} aria-label="Мобильная навигация">
-        {MOBILE_BOTTOM_NAV.map((item) => {
+        {(isMaster ? MASTER_MOBILE_BOTTOM : MOBILE_BOTTOM_NAV).map((item) => {
           const active =
             item.href === "/"
               ? pathname === "/"
@@ -259,7 +273,23 @@ export function AppShell({
             </Link>
           );
         })}
+        {isMaster ? (
+          <button
+            type="button"
+            className={`${styles.mobileBottomLink} ${moreActive ? styles.mobileBottomLinkActive : ""}`}
+            aria-label="Ещё разделы"
+            aria-current={moreActive ? "page" : undefined}
+            data-testid="master-mobile-nav-more"
+            onClick={() => setMobileMoreOpen(true)}
+          >
+            <NAV_ICONS.more />
+            Ещё
+          </button>
+        ) : null}
       </nav>
+      {isMaster ? (
+        <MasterMobileMoreSheet open={mobileMoreOpen} onClose={() => setMobileMoreOpen(false)} />
+      ) : null}
     </div>
   );
 }

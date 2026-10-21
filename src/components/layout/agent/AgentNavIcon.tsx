@@ -1,4 +1,5 @@
 import { NAV_ICONS } from "@/components/layout/NavIcons";
+import { PartnersHandshakeIcon } from "@/components/layout/icons/PartnersHandshakeIcon";
 import type { AgentNavSectionDef } from "@/lib/agent-nav/sections";
 
 const REFERENCE_PATHS = {
@@ -22,6 +23,9 @@ const REFERENCE_PATHS = {
 } as const;
 
 export function AgentNavIcon({ section }: { section: Pick<AgentNavSectionDef, "icon"> }) {
+  if (section.icon === "partners") {
+    return <PartnersHandshakeIcon size={20} strokeWidth={2} />;
+  }
   if (section.icon in REFERENCE_PATHS) {
     const paths = REFERENCE_PATHS[section.icon as keyof typeof REFERENCE_PATHS];
     return (

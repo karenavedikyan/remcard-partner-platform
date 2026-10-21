@@ -1387,6 +1387,75 @@
   margin: 0;
 }
 
+.pageIntroBlock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.heroCtaInline {
+  text-decoration: none;
+}
+
+.collectionCardBody {
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.collectionCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem 1rem;
+  border-top: 1px solid var(--r03-line);
+}
+
+.collectionList {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.collectionRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--r03-line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.collectionRowSelect input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.collectionRowMain {
+  min-width: 0;
+}
+
+.collectionRowTitle {
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+
+.collectionRowTitle:hover {
+  color: var(--r03-accent);
+  text-decoration: underline;
+}
+
+.collectionRowActions {
+  display: flex;
+  gap: 0.35rem;
+}
+
 .pager {
   display: flex;
   gap: 0.5rem;

@@ -1,7 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { CabinetShell } from "@/components/layout/CabinetShell";
-import { PageHeading } from "@/components/ui/PageHeading";
-import { CertificateDetail } from "@/components/recommendations/CertificateDetail";
+import { RecommendationsDetailRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +19,7 @@ export default async function RecommendationDetailPage(props: RecommendationDeta
 
   return (
     <CabinetShell returnTo={returnPath}>
-      <PageHeading
-        eyebrow="Рекомендация"
-        title="Документ для клиента"
-        description="QR-код, ссылка для клиента и PDF-документ рекомендации."
-      />
-      <CertificateDetail certificateId={params.id} />
+      <RecommendationsDetailRouteBody certificateId={params.id} />
     </CabinetShell>
   );
 }
