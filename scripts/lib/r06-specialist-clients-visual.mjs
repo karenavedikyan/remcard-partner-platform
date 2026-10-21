@@ -131,7 +131,7 @@ async function assertImplContent(page, spec) {
     await page.getByTestId('agent-r03-collection-toolbar').waitFor({ timeout: 15_000 });
   }
   if (spec.panel === 'certificates-create') {
-    await page.locator('#certificate-create-root, form').first().waitFor({ timeout: 15_000 });
+    await page.getByRole('heading', { name: 'Партнёры' }).waitFor({ timeout: 20_000 });
   }
 }
 

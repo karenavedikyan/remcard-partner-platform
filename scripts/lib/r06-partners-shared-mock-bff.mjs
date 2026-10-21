@@ -477,6 +477,35 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
       if (path === '/api/pro/r06/status') {
         return send(200, r06Payload(state.mode, actor.id));
       }
+      if (path === '/api/pro/context' && req.method === 'GET') {
+        return send(200, { organization: null, activeBranch: null });
+      }
+      if (path === '/api/store/certificate/available-partners' && req.method === 'GET') {
+        return send(200, {
+          certificateRecommendationIssuerReady: true,
+          certificateRecommendationIssuerMissing: [],
+          partners: [
+            {
+              partnershipId: 'mock-partnership-visual-1',
+              storeUserId: 'mock-store-visual-1',
+              storeName: 'Кафе Партнёр',
+              city: 'Москва',
+              isSelfScan: false,
+              programReady: true,
+              categories: [
+                {
+                  category: 'food',
+                  categoryLabel: 'Кухня',
+                  poolPercent: 5,
+                  discountPercent: 3,
+                  issuerPercent: 2,
+                },
+              ],
+            },
+          ],
+          selfScanPartner: null,
+        });
+      }
       if (path === '/api/pro/r03/status') {
         const agent = state.mode === 'agent';
         return send(200, {
