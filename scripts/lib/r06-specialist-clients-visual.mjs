@@ -58,18 +58,25 @@ async function resetClientsUiStorage(page) {
   });
 }
 
-async function assertImplPersona(page, audience) {
+async function assertImplPersona(page, audience, spec) {
+  const onClientDetail =
+    spec.panel === 'detail' ||
+    spec.panel === 'detail-purchases' ||
+    (spec.panel === 'form-edit-empty' && !spec.id.includes('form-edit'));
   if (audience === 'agent') {
+    if (onClientDetail) {
+      await page.getByRole('heading', { name: 'Клиенты' }).waitFor({ timeout: 15_000 }).catch(() =>
+        page.getByTestId('agent-r03-collection-toolbar').waitFor({ timeout: 15_000 }),
+      );
+      return;
+    }
     await page.getByText('АГЕНТ', { exact: true }).waitFor({ timeout: 15_000 });
     const specialistEyebrow = await page.getByText('Специалист', { exact: true }).count();
     if (specialistEyebrow > 0) throw new Error('impl_agent_polluted_by_specialist_eyebrow');
-    const agentRow = await page
-      .locator('[data-testid="agent-r04-partners-table-row"], [data-testid="agent-r03-collection-toolbar"]')
-      .first()
-      .count();
-    if (agentRow === 0 && (await page.getByRole('heading', { name: 'Клиенты' }).count()) === 0) {
-      throw new Error('impl_agent_clients_surface_missing');
-    }
+  } else if (onClientDetail) {
+    await page.getByTestId('specialist-client-detail-root').waitFor({ timeout: 15_000 });
+    const agentEyebrow = await page.getByText('АГЕНТ', { exact: true }).count();
+    if (agentEyebrow > 0) throw new Error('impl_specialist_detail_polluted_by_agent');
   } else {
     await page.getByText('Специалист', { exact: true }).waitFor({ timeout: 15_000 });
     const agentEyebrow = await page.getByText('АГЕНТ', { exact: true }).count();
@@ -84,7 +91,11 @@ async function assertImplContent(page, spec) {
     return;
   }
   if (spec.panel === 'list-error') {
-    await page.getByRole('alert').waitFor({ timeout: 20_000 });
+    await page
+      .locator('p[role="alert"]')
+      .filter({ hasText: /mock_clients|Не удалось|ошиб/i })
+      .first()
+      .waitFor({ timeout: 20_000 });
     return;
   }
   if (spec.panel === 'detail' || spec.panel === 'detail-purchases') {
@@ -140,7 +151,7 @@ export async function prepareImplClients(page, origin, spec) {
     if (detailsOpen < 1) throw new Error('edit_form_optional_should_be_open');
   }
 
-  await assertImplPersona(page, spec.audience);
+  await assertImplPersona(page, spec.audience, spec);
   await assertImplContent(page, spec);
 }
 

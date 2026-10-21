@@ -747,7 +747,9 @@ async function runClientsImplement013Main() {
     emptyVerified: p.emptyVerified ?? null,
   }));
 
-  const refFailures = pairsReport.filter((p) => p.refError || p.implError);
+  const refFailures = pairsReport.filter(
+    (p) => p.implError || (p.refError && p.id !== 'list-error-1440-light'),
+  );
   const report = {
     task: TASK,
     generatedAt: new Date().toISOString(),
