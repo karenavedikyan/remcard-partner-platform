@@ -1,12 +1,13 @@
 "use client";
 
 import { CertificateCreateForm } from "@/components/recommendations/CertificateCreateForm";
+import type { StoreCertificate } from "@/lib/certificate-types";
 
 type Props = {
   open: boolean;
   agentClientId?: string;
   onClose: () => void;
-  onCertificateCreated?: (certificate: import("@/lib/certificate-types").StoreCertificate) => void;
+  onCertificateCreated?: (certificate: StoreCertificate) => void;
 };
 
 export function SpecialistCertificateCreateDialog({
