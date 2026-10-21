@@ -73,22 +73,19 @@ export async function driveRefAgentSection(page, baseUrl, opts) {
     await page.waitForTimeout(400);
   }
 
-  if (opts.dark) {
-    const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
-    for (let i = 0; i < 6; i++) {
-      const state = await page.evaluate(() => ({
-        theme:
-          document.documentElement.getAttribute('data-theme') ||
-          document.documentElement.dataset.theme ||
-          null,
-        colorScheme: getComputedStyle(document.documentElement).colorScheme,
-      }));
-      if (state.theme === 'dark' || state.colorScheme === 'dark') break;
-      if (await themeBtn.isVisible().catch(() => false)) {
-        await themeBtn.click();
-        await page.waitForTimeout(500);
-      } else break;
-    }
+  const agentTheme = opts.dark ? 'dark' : 'light';
+  await page.emulateMedia({ colorScheme: agentTheme === 'dark' ? 'dark' : 'light' });
+  const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
+  for (let i = 0; i < 6; i++) {
+    const actual = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    if (actual === agentTheme) break;
+    await page.evaluate((t) => {
+      document.documentElement.setAttribute('data-theme', t);
+    }, agentTheme);
+    if (await themeBtn.isVisible().catch(() => false)) {
+      await themeBtn.click({ force: true }).catch(() => null);
+      await page.waitForTimeout(500);
+    } else break;
   }
 
   if (opts.scrollList && viewMode === 'list') {
@@ -243,20 +240,19 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await page.locator('#client-form').waitFor({ timeout: 15_000 });
   }
 
-  if (opts.theme === 'dark') {
-    await page.emulateMedia({ colorScheme: 'dark' });
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    });
-    const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
-    for (let i = 0; i < 4; i++) {
-      const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-      if (theme === 'dark') break;
-      if (await themeBtn.isVisible().catch(() => false)) {
-        await themeBtn.click({ force: true }).catch(() => null);
-      }
-      await page.waitForTimeout(350);
+  const targetTheme = opts.theme === 'dark' ? 'dark' : 'light';
+  await page.emulateMedia({ colorScheme: targetTheme === 'dark' ? 'dark' : 'light' });
+  const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
+  for (let i = 0; i < 6; i++) {
+    const actual = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    if (actual === targetTheme) break;
+    await page.evaluate((t) => {
+      document.documentElement.setAttribute('data-theme', t);
+    }, targetTheme);
+    if (await themeBtn.isVisible().catch(() => false)) {
+      await themeBtn.click({ force: true }).catch(() => null);
     }
+    await page.waitForTimeout(350);
   }
 
   await applyRefParityCaptureStyles(page);
