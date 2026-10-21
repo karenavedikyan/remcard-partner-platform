@@ -12,7 +12,13 @@ function ClientDetailBody({ clientId }: { clientId: string }) {
     <>
       {mode === "agent" ? (
         <PageHeading eyebrow="Клиент" title="Карточка клиента" />
-      ) : null}
+      ) : (
+        <PageHeading
+          eyebrow="СПЕЦИАЛИСТ"
+          title="Клиенты"
+          description="Кому вы помогаете с выбором и какие сертификаты связаны с клиентами."
+        />
+      )}
       <AgentClientDetail clientId={clientId} accessMode={mode} />
     </>
   );

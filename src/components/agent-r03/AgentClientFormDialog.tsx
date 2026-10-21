@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import { Button } from "@/components/ui/Button";
+import { specialistClientFormCopy } from "@/lib/agent-r03/specialistClientFormCopy";
 import styles from "./agent-r03.module.css";
 
 export type AgentClientFormValues = {
@@ -139,12 +140,18 @@ export function AgentClientFormDialog({
     );
 
   const specialistForm = accessMode === "specialist";
+  const specialistCopy = specialistForm ? specialistClientFormCopy(editing) : null;
+  const dialogTitle = specialistCopy?.title ?? title;
+  const dialogSubmitLabel = specialistCopy?.submitLabel ?? submitLabel;
+  const nameFieldLabel = specialistCopy?.nameLabel ?? "Имя";
 
   return (
     <div className={styles.dialogBackdrop} role="presentation" onClick={onClose}>
       <form
         className={
-          specialistForm ? `${styles.dialogPanel} ${styles.specialistClientFormPanel}` : styles.dialogPanel
+          specialistForm
+            ? `${styles.r03Root} ${styles.dialogPanel} ${styles.specialistClientFormPanel}`
+            : styles.dialogPanel
         }
         role="dialog"
         aria-labelledby="client-form-title"
@@ -152,20 +159,24 @@ export function AgentClientFormDialog({
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => void handleSubmit(e)}
       >
-        <div className={styles.dialogTitleRow}>
-          <h2 id="client-form-title">{title}</h2>
-          <button
-            type="button"
-            className={styles.dialogCloseBtn}
-            aria-label="Закрыть"
-            onClick={onClose}
-            disabled={saving}
-          >
-            ×
-          </button>
-        </div>
+        {specialistForm ? (
+          <div className={styles.dialogTitleRow}>
+            <h2 id="client-form-title">{dialogTitle}</h2>
+            <button
+              type="button"
+              className={styles.dialogCloseBtn}
+              aria-label="Закрыть"
+              onClick={onClose}
+              disabled={saving}
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <h2 id="client-form-title">{dialogTitle}</h2>
+        )}
         <label className={styles.field}>
-          Имя
+          {nameFieldLabel}
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
@@ -192,14 +203,14 @@ export function AgentClientFormDialog({
             {error}
           </p>
         ) : null}
-        <div className={styles.dialogActions}>
+        <div className={specialistForm ? styles.specialistDialogActions : styles.dialogActions}>
           {!specialistForm ? (
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Отмена
             </Button>
           ) : null}
           <Button type="submit" disabled={saving} className={specialistForm ? styles.specialistFormPrimary : undefined}>
-            {saving ? "Сохранение…" : submitLabel}
+            {saving ? "Сохранение…" : dialogSubmitLabel}
           </Button>
         </div>
       </form>

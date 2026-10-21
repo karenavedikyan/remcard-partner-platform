@@ -196,21 +196,6 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   await page.waitForTimeout(800);
   await page.getByRole('heading', { name: 'Клиенты' }).first().waitFor({ timeout: 25_000 });
 
-  if (opts.theme === 'dark') {
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    });
-    const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
-    for (let i = 0; i < 4; i++) {
-      const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-      if (theme === 'dark') break;
-      if (await themeBtn.isVisible().catch(() => false)) {
-        await themeBtn.click({ force: true }).catch(() => null);
-      }
-      await page.waitForTimeout(350);
-    }
-  }
-
   const viewAction = viewMode === 'list' ? 'view-list' : 'view-cards';
   const viewBtn = page.locator(`[data-coll-action="${viewAction}"]`).first();
   if (await viewBtn.isVisible().catch(() => false)) {
@@ -232,17 +217,6 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
       await search.fill('__visual_empty_no_clients__');
       await page.waitForTimeout(500);
     }
-  } else if (panel === 'list-error') {
-    await page.evaluate(() => {
-      const main = document.querySelector('#main, main, .content');
-      if (!main) return;
-      const banner = document.createElement('p');
-      banner.className = 'error';
-      banner.setAttribute('role', 'alert');
-      banner.textContent = 'Не удалось загрузить клиентов. Повторите позже.';
-      main.prepend(banner);
-    });
-    await page.waitForTimeout(300);
   } else if (panel === 'detail-purchases') {
     await page.locator('[data-coll-open]').first().click();
     await page.waitForTimeout(600);
@@ -267,6 +241,22 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     });
     await page.waitForTimeout(500);
     await page.locator('#client-form').waitFor({ timeout: 15_000 });
+  }
+
+  if (opts.theme === 'dark') {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
+    const themeBtn = page.locator('[data-action="theme"], [data-testid="theme-toggle"]').first();
+    for (let i = 0; i < 4; i++) {
+      const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+      if (theme === 'dark') break;
+      if (await themeBtn.isVisible().catch(() => false)) {
+        await themeBtn.click({ force: true }).catch(() => null);
+      }
+      await page.waitForTimeout(350);
+    }
   }
 
   await applyRefParityCaptureStyles(page);

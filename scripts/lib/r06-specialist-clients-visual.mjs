@@ -47,6 +47,20 @@ export function applyClientsVisualScenario(mockState, spec) {
   mockState.clientPurchases = null;
 }
 
+async function applyVisualTheme(page, theme) {
+  await page.emulateMedia({ colorScheme: theme === 'dark' ? 'dark' : 'light' });
+  await page.evaluate((t) => {
+    document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+  }, theme);
+}
+
+async function assertVisualTheme(page, theme) {
+  const actual = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  if (actual !== theme) {
+    throw new Error(`theme_mismatch:expected=${theme} actual=${actual ?? 'null'}`);
+  }
+}
+
 async function resetClientsUiStorage(page) {
   await page.evaluate(() => {
     try {
@@ -111,10 +125,7 @@ async function assertImplContent(page, spec) {
 
 export async function prepareImplClients(page, origin, spec) {
   await page.setViewportSize({ width: spec.width, height: spec.height });
-  await page.emulateMedia({ colorScheme: spec.theme === 'dark' ? 'dark' : 'light' });
-  await page.evaluate((t) => {
-    document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
-  }, spec.theme);
+  await applyVisualTheme(page, spec.theme);
   await resetClientsUiStorage(page);
 
   if (spec.panel === 'list-empty' || spec.panel === 'list-error' || spec.panel === 'list') {
@@ -151,6 +162,8 @@ export async function prepareImplClients(page, origin, spec) {
     if (detailsOpen < 1) throw new Error('edit_form_optional_should_be_open');
   }
 
+  await applyVisualTheme(page, spec.theme);
+  await assertVisualTheme(page, spec.theme);
   await assertImplPersona(page, spec.audience, spec);
   await assertImplContent(page, spec);
 }
@@ -166,6 +179,8 @@ export async function captureRefClients(refPage, refBase, spec, outPath) {
       height: spec.height,
     });
     if (!drive.ok) throw new Error(drive.reason ?? 'ref_agent_clients_failed');
+  } else if (spec.panel === 'list-error') {
+    throw new Error('ref_unavailable:prototype_has_no_clients_list_network_error_state');
   } else {
     await driveRefSpecialistClients(refPage, refBase, {
       viewMode: spec.viewMode,
@@ -174,6 +189,7 @@ export async function captureRefClients(refPage, refBase, spec, outPath) {
       width: spec.width,
       height: spec.height,
     });
+    await assertVisualTheme(refPage, spec.theme);
   }
   await refPage.screenshot({ path: outPath, fullPage: Boolean(spec.fullPage) });
 }
@@ -196,13 +212,17 @@ export async function runClientsVisualCaptures({ browser, refBase, appOrigin, ou
       } catch (e) {
         implError = String(e?.message || e);
       }
+      const refUnavailable = spec.panel === 'list-error';
       let refError = null;
-      if (!implError) {
+      let refUnavailableReason = null;
+      if (!implError && !refUnavailable) {
         try {
           await captureRefClients(refPage, refBase, spec, refPath);
         } catch (e) {
           refError = String(e?.message || e);
         }
+      } else if (refUnavailable) {
+        refUnavailableReason = 'prototype_has_no_clients_list_network_error_state';
       } else {
         refError = `impl_failed:${implError}`;
       }
@@ -214,13 +234,20 @@ export async function runClientsVisualCaptures({ browser, refBase, appOrigin, ou
         height: spec.height,
         theme: spec.theme,
         persona: spec.audience,
+        themeVerified: spec.theme,
         impl: implError ? null : implPath,
-        ref: refError ? null : refPath,
+        ref: refError || refUnavailable ? null : refPath,
         implError,
         refError,
+        refUnavailable: refUnavailable || undefined,
+        refUnavailableReason,
         implSha256: !implError && implPath ? sha256File(implPath) : null,
-        refSha256: !refError && refPath ? sha256File(refPath) : null,
+        refSha256: !refError && !refUnavailable && refPath ? sha256File(refPath) : null,
         emptyVerified: spec.panel === 'list-empty' ? !implError : undefined,
+        errorCaseBoundary:
+          spec.panel === 'list-error'
+            ? 'impl_only_mock_503_alert_no_prototype_ref'
+            : undefined,
       });
     }
   } finally {

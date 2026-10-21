@@ -178,7 +178,11 @@ export function AgentClientDetail({
       {error ? <p role="alert">{error}</p> : null}
       {client ? (
         <div
-          className={accessMode === "specialist" ? styles.clientDetailStack : styles.list}
+          className={
+            accessMode === "specialist"
+              ? `${styles.r03Root} ${styles.clientDetailStack}`
+              : styles.list
+          }
           data-testid={accessMode === "specialist" ? "specialist-client-detail-root" : undefined}
         >
           {accessMode === "specialist" ? (
@@ -187,7 +191,11 @@ export function AgentClientDetail({
             </Link>
           ) : null}
           <article className={styles.card}>
-            <div className={styles.cardTop}>
+            <div
+              className={
+                accessMode === "specialist" ? `${styles.cardTop} ${styles.clientCardTopSpecialist}` : styles.cardTop
+              }
+            >
               <div className={styles.cardMain}>
                 {accessMode === "specialist" ? (
                   <div className={styles.clientIdentityRow}>
@@ -282,14 +290,16 @@ export function AgentClientDetail({
             </div>
           ) : null}
 
-          <div className={styles.clientSectionHead}>
-            <h2>Сертификаты клиента</h2>
-            {accessMode === "specialist" ? (
+          {accessMode === "specialist" ? (
+            <div className={styles.clientSectionHead}>
+              <h2>Сертификаты клиента</h2>
               <Link href={createCertHref}>
                 <Button>Создать сертификат</Button>
               </Link>
-            ) : null}
-          </div>
+            </div>
+          ) : (
+            <h2>Сертификаты клиента</h2>
+          )}
           {certs.length === 0 ? (
             <p className={styles.empty}>Пока нет сертификатов.</p>
           ) : accessMode === "specialist" ? (
