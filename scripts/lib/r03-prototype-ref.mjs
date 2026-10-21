@@ -172,13 +172,11 @@ async function selectRefPartnerAndGoToDiscounts(page) {
 }
 
 async function dismissRefPrototypeToast(page) {
-  const toast = page.locator('.action-toast');
-  if (!(await toast.isVisible().catch(() => false))) return;
-  const closeBtn = toast.getByRole('button', { name: /Закрыть/i });
-  if (await closeBtn.isVisible().catch(() => false)) {
-    await closeBtn.click();
-    await page.waitForTimeout(500);
-  }
+  await page.evaluate(() => {
+    const toast = document.querySelector('.action-toast');
+    toast?.querySelector('button')?.click();
+  });
+  await page.waitForTimeout(400);
 }
 
 async function createRefDemoCertificate(page) {
