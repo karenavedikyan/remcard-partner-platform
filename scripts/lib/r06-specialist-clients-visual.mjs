@@ -94,6 +94,8 @@ async function assertImplPersona(page, audience, spec) {
     await page.getByTestId('specialist-client-detail-root').waitFor({ timeout: 15_000 });
     const agentEyebrow = await page.getByText('АГЕНТ', { exact: true }).count();
     if (agentEyebrow > 0) throw new Error('impl_specialist_detail_polluted_by_agent');
+  } else if (spec.panel === 'certificates-list' || spec.panel === 'certificates-create') {
+    await page.getByText('СПЕЦИАЛИСТ', { exact: true }).waitFor({ timeout: 15_000 });
   } else {
     await page.getByText('Специалист', { exact: true }).waitFor({ timeout: 15_000 });
     const agentEyebrow = await page.getByText('АГЕНТ', { exact: true }).count();
