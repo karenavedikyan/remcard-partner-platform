@@ -93,7 +93,10 @@ export function AgentClientFormDialog({
 
   const optionalContactsBlock =
     accessMode === "specialist" ? (
-      <details className={styles.certificateTerms} open={editing}>
+      <details
+        className={`${styles.certificateTerms} ${styles.specialistOptionalContacts}`}
+        open={editing}
+      >
         <summary>Контакты и заметка · необязательно</summary>
         <div className={styles.termsBody}>
           <label className={styles.field}>
@@ -135,17 +138,32 @@ export function AgentClientFormDialog({
       </>
     );
 
+  const specialistForm = accessMode === "specialist";
+
   return (
     <div className={styles.dialogBackdrop} role="presentation" onClick={onClose}>
       <form
-        className={styles.dialogPanel}
+        className={
+          specialistForm ? `${styles.dialogPanel} ${styles.specialistClientFormPanel}` : styles.dialogPanel
+        }
         role="dialog"
         aria-labelledby="client-form-title"
         data-testid="agent-client-form-dialog"
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => void handleSubmit(e)}
       >
-        <h2 id="client-form-title">{title}</h2>
+        <div className={styles.dialogTitleRow}>
+          <h2 id="client-form-title">{title}</h2>
+          <button
+            type="button"
+            className={styles.dialogCloseBtn}
+            aria-label="Закрыть"
+            onClick={onClose}
+            disabled={saving}
+          >
+            ×
+          </button>
+        </div>
         <label className={styles.field}>
           Имя
           <input
@@ -175,10 +193,12 @@ export function AgentClientFormDialog({
           </p>
         ) : null}
         <div className={styles.dialogActions}>
-          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-            Отмена
-          </Button>
-          <Button type="submit" disabled={saving}>
+          {!specialistForm ? (
+            <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
+              Отмена
+            </Button>
+          ) : null}
+          <Button type="submit" disabled={saving} className={specialistForm ? styles.specialistFormPrimary : undefined}>
             {saving ? "Сохранение…" : submitLabel}
           </Button>
         </div>

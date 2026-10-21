@@ -23,6 +23,13 @@ import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
 import styles from "./agent-r03.module.css";
 
+function clientAvatarInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
 function SpecialistClientCertCard({
   cert,
   href,
@@ -174,16 +181,33 @@ export function AgentClientDetail({
           className={accessMode === "specialist" ? styles.clientDetailStack : styles.list}
           data-testid={accessMode === "specialist" ? "specialist-client-detail-root" : undefined}
         >
+          {accessMode === "specialist" ? (
+            <Link href="/clients" className={styles.clientBackLink} data-testid="specialist-client-back">
+              ← Все клиенты
+            </Link>
+          ) : null}
           <article className={styles.card}>
             <div className={styles.cardTop}>
               <div className={styles.cardMain}>
-                <h1>{client.displayName}</h1>
                 {accessMode === "specialist" ? (
-                  <p className={styles.meta}>
-                    {client.need?.trim() || "Задача пока не указана"} ·{" "}
-                    {client.city?.trim() || "Город не указан"}
-                  </p>
+                  <div className={styles.clientIdentityRow}>
+                    <span className={styles.clientAvatar} aria-hidden>
+                      {clientAvatarInitials(client.displayName)}
+                    </span>
+                    <div>
+                      <h1>{client.displayName}</h1>
+                      <p className={styles.meta}>
+                        {client.need?.trim() || "Задача пока не указана"} ·{" "}
+                        {client.city?.trim() || "Город не указан"}
+                      </p>
+                    </div>
+                  </div>
                 ) : (
+                  <>
+                    <h1>{client.displayName}</h1>
+                  </>
+                )}
+                {accessMode === "specialist" ? null : (
                   <>
                     <p className={styles.meta}>
                       {client.city ?? "Город не указан"}
@@ -197,33 +221,35 @@ export function AgentClientDetail({
               <RecordRowActions ariaLabel="Действия с клиентом" actions={rowActions} />
             </div>
 
-            {accessMode === "specialist" ? (
-              <div className={styles.statsRow}>
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Сертификатов</span>
-                  <strong className={styles.statValue}>{client.certificateCount}</strong>
-                </div>
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Покупок</span>
-                  <strong className={styles.statValue}>
-                    {typeof client.purchaseCount === "number" ? client.purchaseCount : "—"}
-                  </strong>
-                </div>
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Последний сертификат</span>
-                  <strong className={styles.statValue}>
-                    {client.lastCertificateAt
-                      ? new Date(client.lastCertificateAt).toLocaleDateString("ru-RU")
-                      : "—"}
-                  </strong>
-                </div>
-              </div>
+            {accessMode === "agent" ? (
+              <Link href={createCertHref}>
+                <Button>Создать сертификат</Button>
+              </Link>
             ) : null}
-
-            <Link href={createCertHref}>
-              <Button>Создать сертификат</Button>
-            </Link>
           </article>
+
+          {accessMode === "specialist" ? (
+            <div className={styles.statsRow} data-testid="specialist-client-metrics">
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Сертификатов</span>
+                <strong className={styles.statValue}>{client.certificateCount}</strong>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Покупок</span>
+                <strong className={styles.statValue}>
+                  {typeof client.purchaseCount === "number" ? client.purchaseCount : "—"}
+                </strong>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Последний сертификат</span>
+                <strong className={styles.statValue}>
+                  {client.lastCertificateAt
+                    ? new Date(client.lastCertificateAt).toLocaleDateString("ru-RU")
+                    : "—"}
+                </strong>
+              </div>
+            </div>
+          ) : null}
 
           {accessMode === "specialist" ? (
             <div className={styles.clientTwoCol}>
@@ -256,7 +282,14 @@ export function AgentClientDetail({
             </div>
           ) : null}
 
-          <h2>Сертификаты клиента</h2>
+          <div className={styles.clientSectionHead}>
+            <h2>Сертификаты клиента</h2>
+            {accessMode === "specialist" ? (
+              <Link href={createCertHref}>
+                <Button>Создать сертификат</Button>
+              </Link>
+            ) : null}
+          </div>
           {certs.length === 0 ? (
             <p className={styles.empty}>Пока нет сертификатов.</p>
           ) : accessMode === "specialist" ? (

@@ -10,7 +10,9 @@ function ClientDetailBody({ clientId }: { clientId: string }) {
   if (!mode) return null;
   return (
     <>
-      <PageHeading eyebrow="Клиент" title="Карточка клиента" />
+      {mode === "agent" ? (
+        <PageHeading eyebrow="Клиент" title="Карточка клиента" />
+      ) : null}
       <AgentClientDetail clientId={clientId} accessMode={mode} />
     </>
   );

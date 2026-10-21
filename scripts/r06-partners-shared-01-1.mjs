@@ -41,33 +41,43 @@ import { runClientsVisualCaptures } from './lib/r06-specialist-clients-visual.mj
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAV_ROOT = process.env.R06_NAVIGATOR_DIR || path.resolve(ROOT, '../remcard-navigator');
 const PROTO_DIR = process.env.R06_PROTO_DIR || '/tmp/r06-login-entry-prototype';
+const CLIENTS_IMPLEMENT_01_4 = process.env.R06_CLIENTS_IMPLEMENT_01_4 === '1';
 const CLIENTS_IMPLEMENT_01_3 = process.env.R06_CLIENTS_IMPLEMENT_01_3 === '1';
+const CLIENTS_IMPLEMENT = CLIENTS_IMPLEMENT_01_4 || CLIENTS_IMPLEMENT_01_3;
 const IMPLEMENT_01_1 = process.env.R06_IMPLEMENT_01_1 === '1';
 const IMPLEMENT_01 = process.env.R06_IMPLEMENT_01 === '1' || IMPLEMENT_01_1;
-const TASK = CLIENTS_IMPLEMENT_01_3
-  ? 'SPECIALIST-CLIENTS-IMPLEMENT-01.3'
-  : IMPLEMENT_01_1
+const TASK = CLIENTS_IMPLEMENT_01_4
+  ? 'SPECIALIST-CLIENTS-IMPLEMENT-01.4'
+  : CLIENTS_IMPLEMENT_01_3
+    ? 'SPECIALIST-CLIENTS-IMPLEMENT-01.3'
+    : IMPLEMENT_01_1
   ? 'SPECIALIST-PARTNERS-IMPLEMENT-01.1'
   : IMPLEMENT_01
     ? 'SPECIALIST-PARTNERS-IMPLEMENT-01'
     : 'PARTNERS-SHARED-PROTOTYPE-01.1';
-const ARTIFACT_ROOT = CLIENTS_IMPLEMENT_01_3
-  ? 'artifacts/remcard-r06-specialist/specialist-clients-implement-01-3'
-  : IMPLEMENT_01_1
+const ARTIFACT_ROOT = CLIENTS_IMPLEMENT_01_4
+  ? 'artifacts/remcard-r06-specialist/specialist-clients-implement-01-4'
+  : CLIENTS_IMPLEMENT_01_3
+    ? 'artifacts/remcard-r06-specialist/specialist-clients-implement-01-3'
+    : IMPLEMENT_01_1
     ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01-1'
     : IMPLEMENT_01
       ? 'artifacts/remcard-r06-specialist/specialist-partners-implement-01'
       : 'artifacts/remcard-r06-specialist/partners-shared-prototype-01-1';
 const DIST =
   process.env.LOGIN_ENTRY_NEXT_DIST_DIR ||
-  (CLIENTS_IMPLEMENT_01_3
-    ? '.next-r06-specialist-clients-implement-01-3'
-    : IMPLEMENT_01_1
+  (CLIENTS_IMPLEMENT_01_4
+    ? '.next-r06-specialist-clients-implement-01-4'
+    : CLIENTS_IMPLEMENT_01_3
+      ? '.next-r06-specialist-clients-implement-01-3'
+      : IMPLEMENT_01_1
       ? '.next-r06-specialist-partners-implement-01-1'
       : IMPLEMENT_01
         ? '.next-r06-specialist-partners-implement-01'
         : '.next-r06-partners-shared-01-1');
-const PUBLIC_ARTIFACT_ROOT = '/opt/cursor/artifacts/specialist-clients-implement-01-3';
+const PUBLIC_ARTIFACT_ROOT = CLIENTS_IMPLEMENT_01_4
+  ? '/opt/cursor/artifacts/specialist-clients-implement-01-4'
+  : '/opt/cursor/artifacts/specialist-clients-implement-01-3';
 
 function sha256File(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
@@ -631,7 +641,7 @@ function runUnitTests() {
     'src/lib/agent-r04/partnership-action-icons.test.ts',
     'src/lib/partnership-rules.test.ts',
   ];
-  if (CLIENTS_IMPLEMENT_01_3) {
+  if (CLIENTS_IMPLEMENT) {
     vitestFiles.push('src/lib/agent-r03/clientListRow.test.ts');
   }
   const vitest = spawnSync('pnpm', ['exec', 'vitest', 'run', ...vitestFiles], {
@@ -710,6 +720,7 @@ async function runClientsImplement013Main() {
       refBase: refStatic.baseUrl,
       appOrigin,
       outDir: OUT,
+      mockState: mock.state,
     });
   } finally {
     await browser.close();
@@ -723,17 +734,20 @@ async function runClientsImplement013Main() {
     id: p.id,
     panel: p.panel,
     audience: p.audience,
+    persona: p.persona ?? p.audience,
     width: p.width,
     height: p.height,
     theme: p.theme,
     impl: p.impl,
     ref: p.ref,
+    implError: p.implError ?? null,
     refError: p.refError ?? null,
-    implSha256: p.impl && existsSync(p.impl) ? sha256File(p.impl) : null,
-    refSha256: p.ref && existsSync(p.ref) ? sha256File(p.ref) : null,
+    implSha256: p.implSha256 ?? null,
+    refSha256: p.refSha256 ?? null,
+    emptyVerified: p.emptyVerified ?? null,
   }));
 
-  const refFailures = pairsReport.filter((p) => p.refError);
+  const refFailures = pairsReport.filter((p) => p.refError || p.implError);
   const report = {
     task: TASK,
     generatedAt: new Date().toISOString(),
@@ -752,7 +766,9 @@ async function runClientsImplement013Main() {
     note: 'Backend cert link uses real Navigator route handlers + prof_r01_route_test_db; mock BFF chain is UI-only boundary.',
   };
 
-  const manifestName = 'SPECIALIST-CLIENTS-IMPLEMENT-01-3.json';
+  const manifestName = CLIENTS_IMPLEMENT_01_4
+    ? 'SPECIALIST-CLIENTS-IMPLEMENT-01-4.json'
+    : 'SPECIALIST-CLIENTS-IMPLEMENT-01-3.json';
   writeFileSync(path.join(OUT, manifestName), JSON.stringify(report, null, 2));
   const publicDir = copyClientsArtifactsToPublic(OUT, codeSha, manifestName, report);
 
@@ -782,7 +798,7 @@ async function runClientsImplement013Main() {
 }
 
 async function main() {
-  if (CLIENTS_IMPLEMENT_01_3) {
+  if (CLIENTS_IMPLEMENT) {
     await runClientsImplement013Main();
     return;
   }

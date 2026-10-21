@@ -211,6 +211,26 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     await page.locator('[data-action="client-add"]').first().click();
     await page.waitForTimeout(500);
     await page.locator('#client-form').waitFor({ timeout: 15_000 });
+  } else if (panel === 'list-empty') {
+    const search = page.locator('#client-search, input[type=search]').first();
+    if (await search.isVisible().catch(() => false)) {
+      await search.fill('__visual_empty_no_clients__');
+      await page.waitForTimeout(500);
+    }
+  } else if (panel === 'list-error') {
+    const search = page.locator('#client-search, input[type=search]').first();
+    if (await search.isVisible().catch(() => false)) {
+      await search.fill('__visual_empty_no_clients__');
+      await page.waitForTimeout(400);
+    }
+  } else if (panel === 'detail-purchases') {
+    await page.locator('[data-coll-open]').first().click();
+    await page.waitForTimeout(600);
+    await page.evaluate(() => {
+      const block = document.querySelector('[data-testid="client-purchase-history"], details');
+      block?.scrollIntoView({ block: 'start' });
+    });
+    await page.waitForTimeout(400);
   } else if (panel === 'form-edit-empty') {
     await page.evaluate(() => {
       const opens = [

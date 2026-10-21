@@ -374,11 +374,12 @@ export function createPartnersMockState(mode = 'specialist') {
     clientPurchases: null,
     clientSeq: 0,
     createdCerts: [],
+    clientsForceEmpty: false,
+    clientsListGetFail: false,
   };
 }
 
 export function startPartnersSharedMockBff(state = createPartnersMockState()) {
-  const actor = actorForMode(state.mode);
   const partnerships =
     state.mode === 'agent'
       ? remapPartnershipsForProUser(SPEC_PARTNERSHIPS, AGENT_ID, 'Агент Демо')
@@ -387,6 +388,7 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         : SPEC_PARTNERSHIPS;
 
   const server = createServer(async (req, res) => {
+    const actor = actorForMode(state.mode);
     const url = new URL(req.url ?? '/', 'http://127.0.0.1');
     const path = url.pathname;
     const send = (status, body) => {
@@ -443,12 +445,18 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
       }
       ensureClientsState(state);
       if (path === '/api/pro/agent-clients' && req.method === 'GET') {
+        if (state.clientsListGetFail) {
+          state.clientsListGetFail = false;
+          return send(503, { error: 'mock_clients_list_unavailable' });
+        }
         const url = new URL(req.url || '', 'http://127.0.0.1');
         const archived = url.searchParams.get('archived') === 'true';
         const q = (url.searchParams.get('q') || '').trim().toLowerCase();
-        let rows = [...state.clients.values()].filter((c) =>
-          archived ? Boolean(c.archivedAt) : !c.archivedAt,
-        );
+        let rows = state.clientsForceEmpty
+          ? []
+          : [...state.clients.values()].filter((c) =>
+              archived ? Boolean(c.archivedAt) : !c.archivedAt,
+            );
         if (q) {
           rows = rows.filter((c) =>
             [c.displayName, c.city, c.need, c.note, c.phone, c.email]
@@ -976,7 +984,7 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         server,
         baseUrl: `http://127.0.0.1:${port}`,
         state,
-        actorId: actor.id,
+        actorId: actorForMode(state.mode).id,
         close: () =>
           new Promise((r) => {
             server.close(() => r());
