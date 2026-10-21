@@ -176,7 +176,10 @@ export async function prepareImplClients(page, origin, spec) {
     await page.goto(`${origin}/recommendations/new`, { waitUntil: 'networkidle', timeout: 120_000 });
     await page.getByRole('heading', { name: /Создать сертификат/i }).waitFor({ timeout: 30_000 });
     if (spec.panel === 'certificates-create-step2') {
-      const partnerCheckbox = page.locator('.partnerPick input[type=checkbox]').first();
+      const partnerCheckbox = page
+        .getByTestId('specialist-certificate-create-step-1')
+        .locator('input[type=checkbox]')
+        .first();
       if (await partnerCheckbox.isVisible().catch(() => false)) {
         await partnerCheckbox.check();
       }
