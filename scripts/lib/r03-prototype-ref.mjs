@@ -172,7 +172,9 @@ async function selectRefPartnerAndGoToDiscounts(page) {
 }
 
 async function dismissRefPrototypeToast(page) {
-  const closeBtn = page.getByRole('button', { name: 'Закрыть' }).first();
+  const toast = page.locator('.action-toast');
+  if (!(await toast.isVisible().catch(() => false))) return;
+  const closeBtn = toast.getByRole('button', { name: /Закрыть/i });
   if (await closeBtn.isVisible().catch(() => false)) {
     await closeBtn.click();
     await page.waitForTimeout(500);
@@ -204,7 +206,10 @@ async function openRefCertificateDetailFromList(page) {
   } else {
     await createRefDemoCertificate(page);
   }
-  await page.locator('.dialog-body h3').first().waitFor({ timeout: 25_000 });
+  await page
+    .locator('.dialog-body h3')
+    .first()
+    .waitFor({ state: 'visible', timeout: 25_000 });
 }
 
 export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
