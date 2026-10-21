@@ -195,6 +195,34 @@ describe("buildCreateCertificatePayload", () => {
     assert.equal(result.fieldErrors[key], "Укажите скидку клиенту");
   });
 
+  it("sends only selected categories when selectedCategoryKeys is set", () => {
+    const twoCatPartner = {
+      ...storePartner,
+      categories: [
+        storePartner.categories[0]!,
+        {
+          category: "windows",
+          categoryLabel: "Окна",
+          poolPercent: 10,
+          discountPercent: 4,
+          issuerPercent: 6,
+        },
+      ],
+    };
+    const doorsKey = categoryFieldKey("store-1", "doors");
+    const windowsKey = categoryFieldKey("store-1", "windows");
+    const result = buildCreateCertificatePayload({
+      selectedPartners: [twoCatPartner],
+      discountDrafts: { [doorsKey]: "3", [windowsKey]: "2" },
+      selectedCategoryKeys: { [doorsKey]: true, [windowsKey]: false },
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.body.partners.length, 1);
+    assert.equal(result.body.partners[0]!.categories.length, 1);
+    assert.equal(result.body.partners[0]!.categories[0]!.category, "doors");
+  });
+
   it("uses API default when draft absent and rejects cleared whitespace", () => {
     const key = categoryFieldKey("store-1", "doors");
     const result = buildCreateCertificatePayload({

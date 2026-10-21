@@ -52,7 +52,11 @@ export function clientsVisualMatrixForRun() {
   if (process.env.R06_CERTS_VISUAL_REMAINING === '1') {
     return CLIENTS_VISUAL_MATRIX.filter((spec) => CERTS_VISUAL_REMAINING_IDS.includes(spec.id));
   }
-  if (process.env.R06_CLIENTS_IMPLEMENT_01_3 === '1' || process.env.R06_CLIENTS_IMPLEMENT_01_4 === '1') {
+  if (
+    process.env.R06_CLIENTS_IMPLEMENT_01_3 === '1' ||
+    process.env.R06_CLIENTS_IMPLEMENT_01_4 === '1' ||
+    process.env.R06_CLIENTS_IMPLEMENT_01_5 === '1'
+  ) {
     return CLIENTS_VISUAL_MATRIX.filter((spec) => spec.id.startsWith('certs-'));
   }
   return CLIENTS_VISUAL_MATRIX;
@@ -192,10 +196,12 @@ async function assertImplContent(page, spec) {
     await page.getByTestId('specialist-certificate-edit-discounts-dialog').waitFor({ timeout: 15_000 });
   }
   if (spec.panel === 'certificates-create') {
+    await page.getByTestId('specialist-certificate-create-dialog').waitFor({ state: 'visible', timeout: 20_000 });
     await page.getByTestId('specialist-certificate-create-step-1').waitFor({ state: 'visible', timeout: 20_000 });
   }
   if (spec.panel === 'certificates-create-step2') {
     await page.getByTestId('specialist-certificate-create-step-2').waitFor({ state: 'visible', timeout: 20_000 });
+    await page.getByRole('heading', { name: 'Скидки по категориям' }).waitFor({ timeout: 20_000 });
   }
 }
 
@@ -250,9 +256,11 @@ export async function prepareImplClients(page, origin, spec) {
       await page.getByTestId('specialist-certificate-edit-discounts-dialog').waitFor({ state: 'visible', timeout: 30_000 });
     }
   } else if (spec.panel === 'certificates-create' || spec.panel === 'certificates-create-step2') {
-    await page.goto(`${origin}/recommendations/new`, { waitUntil: 'networkidle', timeout: 120_000 });
-    await page.getByRole('heading', { name: /Создать сертификат/i }).waitFor({ timeout: 30_000 });
+    await page.goto(`${origin}/recommendations`, { waitUntil: 'networkidle', timeout: 120_000 });
+    await page.getByRole('heading', { name: 'Сертификаты' }).waitFor({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Создать сертификат' }).first().click();
     await page.getByText('Загрузка партнёров…').waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => {});
+    await page.getByTestId('specialist-certificate-create-dialog').waitFor({ state: 'visible', timeout: 60_000 });
     await page.getByTestId('specialist-certificate-create-step-1').waitFor({ state: 'visible', timeout: 60_000 });
     if (spec.panel === 'certificates-create-step2') {
       const partnerCheckbox = page
@@ -260,8 +268,9 @@ export async function prepareImplClients(page, origin, spec) {
         .locator('input[type=checkbox]:not(:disabled)')
         .first();
       await partnerCheckbox.check();
-      await page.getByRole('button', { name: 'Далее' }).click();
+      await page.getByRole('button', { name: 'Далее: скидки' }).click();
       await page.getByTestId('specialist-certificate-create-step-2').waitFor({ state: 'visible', timeout: 30_000 });
+      await page.getByRole('heading', { name: 'Скидки по категориям' }).waitFor({ timeout: 30_000 });
     }
   } else if (spec.panel === 'form-edit-empty') {
     await page.goto(`${origin}/clients/mock-spec-client-empty`, { waitUntil: 'networkidle' });

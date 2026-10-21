@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SpecialistCertificateCreateDialog } from "@/components/specialist-certificates/SpecialistCertificateCreateDialog";
 import { certificateListDetail } from "@/lib/agent-r03/certificateOffers";
 import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
 import { AgentR03PageIntro } from "./AgentR03PageIntro";
@@ -58,6 +60,31 @@ type AgentCertificatesListProps = {
 
 export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificatesListProps = {}) {
   const isSpecialist = accessMode === "specialist";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const createClientId = searchParams.get("clientId")?.trim() || undefined;
+
+  useEffect(() => {
+    if (!isSpecialist) return;
+    if (searchParams.get("create") === "1") {
+      setCreateDialogOpen(true);
+    }
+  }, [isSpecialist, searchParams]);
+
+  function openCreateDialog() {
+    setCreateDialogOpen(true);
+  }
+
+  function closeCreateDialog() {
+    setCreateDialogOpen(false);
+    if (isSpecialist && searchParams.get("create") === "1") {
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete("create");
+      const qs = next.toString();
+      router.replace(qs ? `/recommendations?${qs}` : "/recommendations");
+    }
+  }
   const detailBasePath = isSpecialist ? "/recommendations" : "/certificates";
   const [items, setItems] = useState<AgentCertificateRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
@@ -338,9 +365,9 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       {isSpecialist ? (
         <section className={styles.pageIntroBlock}>
           <p className={styles.pageIntroMuted}>{SPECIALIST_CERTIFICATES_PAGE.description}</p>
-          <Link href="/recommendations/new" className={styles.heroCtaInline}>
-            <Button>{SPECIALIST_CERTIFICATES_PAGE.createCta}</Button>
-          </Link>
+          <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
+            {SPECIALIST_CERTIFICATES_PAGE.createCta}
+          </Button>
         </section>
       ) : (
         <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
@@ -415,9 +442,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             <>
               <p>{SPECIALIST_CERTIFICATES_PAGE.emptyTitle}</p>
               <p className={styles.muted}>{SPECIALIST_CERTIFICATES_PAGE.emptyHint}</p>
-              <Link href="/recommendations/new">
-                <Button>{SPECIALIST_CERTIFICATES_PAGE.createCta}</Button>
-              </Link>
+              <Button onClick={openCreateDialog}>{SPECIALIST_CERTIFICATES_PAGE.createCta}</Button>
             </>
           ) : (
             <p>{archived ? "В архиве пока пусто." : "Сертификатов пока нет."}</p>
@@ -566,6 +591,14 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         onClose={() => setEditDiscountsCert(null)}
         onSaved={() => load()}
       />
+
+      {isSpecialist ? (
+        <SpecialistCertificateCreateDialog
+          open={createDialogOpen}
+          agentClientId={createClientId}
+          onClose={closeCreateDialog}
+        />
+      ) : null}
     </div>
   );
 }

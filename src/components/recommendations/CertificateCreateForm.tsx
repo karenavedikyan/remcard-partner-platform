@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { displayCategoryLabel } from "@/lib/category-display";
 import { getAuthMe, RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
@@ -43,6 +43,13 @@ import {
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { storeCertificateDisplayCode } from "@/lib/certificate-url";
+import {
+  categoryKeysForPartners,
+  defaultCategoryDiscountDraft,
+  partnerMatchesSearch,
+  partnerSelectionKey,
+} from "@/lib/specialist-certificate-create-ui";
+import agentStyles from "@/components/agent-r03/agent-r03.module.css";
 import { CertificateResultView } from "./CertificateResultView";
 import styles from "./recommendations.module.css";
 
@@ -66,10 +73,6 @@ const VALIDITY_OPTIONS: Array<{ value: ValidityPreset; label: string }> = [
   { value: "unlimited", label: "Без ограничения" },
 ];
 
-function partnerKey(partner: AvailablePartner): string {
-  return `${partner.storeUserId}:${partner.partnershipId ?? "self"}`;
-}
-
 function validityToIso(value: ValidityPreset): string | undefined {
   if (value === "unlimited") {
     return undefined;
@@ -84,6 +87,8 @@ type CertificateCreateFormProps = {
   agentClientId?: string;
   successHrefBase?: string;
   issuerUi?: "default" | "specialist";
+  presentation?: "dialog" | "page";
+  onRequestClose?: () => void;
 };
 
 export function CertificateCreateForm({
@@ -91,6 +96,8 @@ export function CertificateCreateForm({
   agentClientId,
   successHrefBase = "/recommendations",
   issuerUi = "default",
+  presentation = "page",
+  onRequestClose,
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
@@ -116,11 +123,25 @@ export function CertificateCreateForm({
   const scopeResolveGenerationRef = useRef(0);
   const createIdempotencyRef = useRef<CreateIdempotencySession | null>(null);
   const [specialistStep, setSpecialistStep] = useState<1 | 2>(1);
+  const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
+  const [selectedCategoryKeys, setSelectedCategoryKeys] = useState<Record<string, boolean>>({});
   const [privateAlias, setPrivateAlias] = useState("");
   const [aliasSaveNotice, setAliasSaveNotice] = useState<string | null>(null);
   const [aliasSavePending, setAliasSavePending] = useState(false);
   const [pendingAliasValue, setPendingAliasValue] = useState<string | null>(null);
   const specialistWizard = issuerUi === "specialist";
+  const specialistDialog = specialistWizard && presentation === "dialog";
+
+  useEffect(() => {
+    if (!specialistDialog) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !submitting && !created) {
+        onRequestClose?.();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [created, onRequestClose, specialistDialog, submitting]);
 
   const resolveDraftScope = useCallback(async () => {
     const generation = ++scopeResolveGenerationRef.current;
@@ -202,7 +223,7 @@ export function CertificateCreateForm({
   );
 
   const partnerKeySet = useMemo(
-    () => new Set(selectablePartners.map((p) => partnerKey(p))),
+    () => new Set(selectablePartners.map((p) => partnerSelectionKey(p))),
     [selectablePartners],
   );
 
@@ -215,15 +236,22 @@ export function CertificateCreateForm({
       const reconciled = reconcileRecommendationDraftWithPartners({
         selectedKeys: saved.selectedKeys,
         discountDrafts: saved.discountDrafts,
+        selectedCategoryKeys: saved.selectedCategoryKeys,
         partnerKeys: partnerKeySet,
       });
       setSelectedKeys(reconciled.selectedKeys);
       setDiscountDrafts(reconciled.discountDrafts);
+      setSelectedCategoryKeys(reconciled.selectedCategoryKeys);
+      setPartnerSearchQuery(saved.partnerSearchQuery ?? "");
+      setSpecialistStep(saved.specialistStep === 2 ? 2 : 1);
       setValidityPreset(saved.validityPreset as ValidityPreset);
       setStalePartnerKeys(reconciled.stalePartnerKeys);
     } else if (hydratedScopeKey != null) {
       setSelectedKeys([]);
       setDiscountDrafts({});
+      setSelectedCategoryKeys({});
+      setPartnerSearchQuery("");
+      setSpecialistStep(1);
       setValidityPreset(DEFAULT_VALIDITY);
       setStalePartnerKeys([]);
     }
@@ -237,24 +265,41 @@ export function CertificateCreateForm({
       selectedKeys,
       discountDrafts,
       validityPreset,
+      partnerSearchQuery: specialistWizard ? partnerSearchQuery : undefined,
+      specialistStep: specialistWizard ? specialistStep : undefined,
+      selectedCategoryKeys: specialistWizard ? selectedCategoryKeys : undefined,
     });
   }, [
     activeScopeKey,
     discountDrafts,
     hydratedScopeKey,
     loadState,
+    partnerSearchQuery,
     persistableScope,
+    selectedCategoryKeys,
     selectedKeys,
+    specialistStep,
+    specialistWizard,
     validityPreset,
   ]);
 
   const selectedPartners = useMemo(
-    () => selectablePartners.filter((p) => selectedKeys.includes(partnerKey(p))),
+    () => selectablePartners.filter((p) => selectedKeys.includes(partnerSelectionKey(p))),
     [selectablePartners, selectedKeys],
   );
 
+  const filteredSelectablePartners = useMemo(
+    () => selectablePartners.filter((p) => partnerMatchesSearch(p, partnerSearchQuery)),
+    [partnerSearchQuery, selectablePartners],
+  );
+
+  const pendingPartners = useMemo(
+    () => partners.filter((p) => p.programReady === false || p.categories.length === 0),
+    [partners],
+  );
+
   function togglePartner(partner: AvailablePartner) {
-    const key = partnerKey(partner);
+    const key = partnerSelectionKey(partner);
     if (partner.programReady === false) {
       return;
     }
@@ -262,6 +307,57 @@ export function CertificateCreateForm({
       prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
     );
   }
+
+  function toggleCategory(key: string, nextSelected: boolean, poolPercent: number | null) {
+    setSelectedCategoryKeys((prev) => ({ ...prev, [key]: nextSelected }));
+    if (nextSelected && !discountDrafts[key]?.trim()) {
+      setDiscountDrafts((prev) => ({
+        ...prev,
+        [key]: defaultCategoryDiscountDraft(poolPercent),
+      }));
+    }
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+      setFieldErrorReasons((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+    }
+  }
+
+  function goToSpecialistDiscountsStep() {
+    setSubmitError("");
+    if (selectedPartners.length === 0) {
+      setSubmitError("Выберите хотя бы одного партнёра");
+      return;
+    }
+    setSpecialistStep(2);
+  }
+
+  useEffect(() => {
+    if (!specialistWizard || specialistStep !== 2) return;
+    const keys = categoryKeysForPartners(selectedPartners);
+    setSelectedCategoryKeys((prev) => {
+      const next = { ...prev };
+      for (const key of keys) {
+        if (next[key] === undefined) next[key] = false;
+      }
+      return next;
+    });
+  }, [selectedPartners, specialistStep, specialistWizard]);
+
+  const partnersInviteHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (agentClientId) params.set("clientId", agentClientId);
+    params.set("returnTo", "/recommendations");
+    const qs = params.toString();
+    return qs ? `/partners?${qs}` : "/partners";
+  }, [agentClientId]);
 
   async function submit() {
     if (submitting || created) {
@@ -279,6 +375,7 @@ export function CertificateCreateForm({
     const payloadResult = buildCreateCertificatePayload({
       selectedPartners,
       discountDrafts,
+      selectedCategoryKeys: specialistWizard ? selectedCategoryKeys : undefined,
       validUntil: validityToIso(validityPreset),
       maxUsages: 0,
     });
@@ -368,8 +465,58 @@ export function CertificateCreateForm({
     }
   }
 
+  function wrapSpecialistShell(node: ReactNode) {
+    const title =
+      specialistStep === 1 ? "Создать сертификат" : "Скидки по категориям";
+    const panelClass = specialistDialog
+      ? `${agentStyles.r03Root} ${agentStyles.dialogPanel} ${styles.specialistCreatePanel}`
+      : `${styles.specialistCreatePagePanel}`;
+
+    const panel = (
+      <div
+        className={panelClass}
+        role="dialog"
+        aria-modal={specialistDialog ? true : undefined}
+        aria-labelledby="specialist-cert-create-title"
+        data-testid="specialist-certificate-create-dialog"
+        onClick={specialistDialog ? (event) => event.stopPropagation() : undefined}
+      >
+        <div className={agentStyles.dialogTitleRow}>
+          <h2 id="specialist-cert-create-title">{title}</h2>
+          {specialistDialog ? (
+            <button
+              type="button"
+              className={agentStyles.dialogCloseBtn}
+              aria-label="Закрыть"
+              disabled={submitting}
+              onClick={() => onRequestClose?.()}
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+        {node}
+      </div>
+    );
+
+    if (specialistDialog) {
+      return (
+        <div
+          className={agentStyles.dialogBackdrop}
+          role="presentation"
+          onClick={() => {
+            if (!submitting) onRequestClose?.();
+          }}
+        >
+          {panel}
+        </div>
+      );
+    }
+    return <div className={styles.specialistCreatePageWrap}>{panel}</div>;
+  }
+
   if (created) {
-    return (
+    const result = (
       <>
         {aliasSaveNotice ? (
           <div className={styles.errorBlock} data-testid="specialist-create-alias-notice">
@@ -392,9 +539,10 @@ export function CertificateCreateForm({
         />
       </>
     );
+    return specialistWizard ? wrapSpecialistShell(result) : result;
   }
 
-  return (
+  const formBody = (
     <>
       {loadState === "loading" ? <p className={styles.loading}>Загрузка партнёров…</p> : null}
       {loadState === "error" ? (
@@ -453,236 +601,461 @@ export function CertificateCreateForm({
               </ul>
             </section>
           ) : null}
-          <section
-            className={styles.formSection}
-            data-testid={specialistWizard ? "specialist-certificate-create-step-1" : undefined}
-            hidden={specialistWizard && specialistStep !== 1}
-          >
-            <h3>{specialistWizard ? "Шаг 1 · Партнёры" : "Партнёры"}</h3>
-            {selectablePartners.length === 0 ? (
-              <p className={styles.meta}>
-                Нет доступных партнёрств для создания документа. Сначала оформите активное
-                партнёрство.
-              </p>
-            ) : (
-              <div className={styles.partnerPick}>
-                {partners.map((partner) => {
-                  const key = partnerKey(partner);
-                  const disabled = partner.programReady === false || partner.categories.length === 0;
-                  const selected = selectedKeys.includes(key);
-                  return (
-                    <label
-                      key={key}
-                      className={`${styles.partnerOption} ${selected ? styles.partnerOptionSelected : ""} ${disabled ? styles.partnerOptionDisabled : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected}
-                        disabled={disabled}
-                        onChange={() => togglePartner(partner)}
-                      />
-                      <span>
-                        <strong>{partner.storeName}</strong>
-                        {partner.city ? ` · ${partner.city}` : ""}
-                        {disabled && partner.programMissing?.length ? (
-                          <span className={styles.conditionMeta}>
-                            {" "}
-                            — профиль партнёра не готов
-                          </span>
-                        ) : null}
-                      </span>
-                    </label>
-                  );
-                })}
+          {specialistWizard ? (
+            <>
+              <div className={styles.createSteps} aria-label="Шаги создания сертификата">
+                <span className={specialistStep === 1 ? styles.createStepCurrent : styles.createStep}>
+                  <b>1</b>Партнёры
+                </span>
+                <span className={specialistStep === 2 ? styles.createStepCurrent : styles.createStep}>
+                  <b>2</b>Скидки
+                </span>
               </div>
-            )}
-          </section>
 
-          {specialistWizard && specialistStep === 1 ? (
-            <div className={styles.pageActions}>
-              <Button
-                disabled={selectedPartners.length === 0 || issuerReady === false}
-                onClick={() => setSpecialistStep(2)}
-              >
-                Далее
-              </Button>
-            </div>
-          ) : null}
-
-          {selectedPartners.length > 0 ? (
-            <section
-              className={styles.formSection}
-              data-testid={specialistWizard ? "specialist-certificate-create-step-2" : undefined}
-              hidden={specialistWizard && specialistStep !== 2}
-            >
-              <h3>{specialistWizard ? "Шаг 2 · Условия для клиента" : "Условия для клиента"}</h3>
-              <p className={styles.meta}>
-                Общий процент задаётся в условиях партнёрства. Здесь вы распределяете его между
-                скидкой клиенту и своим вознаграждением.
-              </p>
-              <div className={styles.conditionsGrid}>
-                {selectedPartners.flatMap((partner) =>
-                  partner.categories.map((cat) => {
-                    const key = categoryFieldKey(partner.storeUserId, cat.category);
-                    const pool = resolvePoolPercent({
-                      category: cat.category,
-                      categoryLabel: cat.categoryLabel,
-                      poolPercent: cat.poolPercent,
-                      isSelfScan: partner.isSelfScan,
-                    });
-                    const draftValue =
-                      discountDrafts[key] ??
-                      (cat.discountPercent != null ? String(cat.discountPercent) : "");
-                    const issuerPreview = previewIssuerPercent(
-                      {
-                        category: cat.category,
-                        categoryLabel: cat.categoryLabel,
-                        poolPercent: cat.poolPercent,
-                        isSelfScan: partner.isSelfScan,
-                      },
-                      draftValue,
-                    );
-                    const rowBlocked = pool === null;
-                    const termsHref = partnershipTermsHref(partner.partnershipId);
-
-                    return (
-                      <div
-                        key={key}
-                        className={`${styles.conditionRow} ${rowBlocked ? styles.conditionRowBlocked : ""}`}
-                      >
-                        <strong>
-                          {partner.storeName} —{" "}
-                          {displayCategoryLabel(cat.category, cat.categoryLabel)}
-                        </strong>
-                        {pool !== null ? (
-                          <p className={styles.agreedPercent}>
-                            Согласованный процент: <strong>{pool}%</strong>
+              {specialistStep === 1 ? (
+                <section data-testid="specialist-certificate-create-step-1">
+                  <p className={styles.meta}>
+                    Выберите одного или нескольких партнёров с уже согласованными условиями.
+                  </p>
+                  <label className={styles.partnerSearchField}>
+                    Найти партнёра
+                    <input
+                      type="search"
+                      value={partnerSearchQuery}
+                      data-testid="specialist-cert-partner-search"
+                      placeholder="Название, город, товар или услуга"
+                      onChange={(event) => setPartnerSearchQuery(event.target.value)}
+                    />
+                  </label>
+                  {selectablePartners.length === 0 ? (
+                    <p className={styles.meta}>
+                      Нет доступных партнёрств для создания документа. Сначала оформите активное
+                      партнёрство.
+                    </p>
+                  ) : filteredSelectablePartners.length === 0 ? (
+                    <div className={styles.notice}>
+                      <strong>Такого партнёра пока нет</strong>
+                      <p className={styles.meta}>
+                        Пригласите знакомую компанию. После принятия приглашения и согласования
+                        условий она станет доступна для сертификата.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.partnerPick}>
+                      {filteredSelectablePartners.map((partner) => {
+                        const key = partnerSelectionKey(partner);
+                        const selected = selectedKeys.includes(key);
+                        return (
+                          <label
+                            key={key}
+                            className={`${styles.partnerOption} ${selected ? styles.partnerOptionSelected : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => togglePartner(partner)}
+                            />
+                            <span>
+                              <strong>{partner.storeName}</strong>
+                              <small className={styles.conditionMeta}>
+                                {partner.city ? `${partner.city} · ` : ""}
+                                {partner.categories
+                                  .map((c) => displayCategoryLabel(c.category, c.categoryLabel))
+                                  .join(", ")}
+                              </small>
+                              <span className={styles.partnerReadyBadge}>Условия согласованы</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className={styles.inviteInline}>
+                    <div>
+                      <strong>Нужен новый партнёр?</strong>
+                      <p className={styles.meta}>
+                        Найдите его в RemCard или отправьте ссылку знакомому.
+                      </p>
+                    </div>
+                    <Link href={partnersInviteHref}>
+                      <Button variant="secondary" type="button">
+                        Найти или пригласить
+                      </Button>
+                    </Link>
+                  </div>
+                  {pendingPartners.length > 0 ? (
+                    <details className={styles.optionalBlock}>
+                      <summary>Ожидают согласования</summary>
+                      <div className={styles.optionalBlockBody}>
+                        {pendingPartners.map((partner) => (
+                          <p key={partnerSelectionKey(partner)} className={styles.meta}>
+                            {partner.storeName} · ещё нельзя добавить в сертификат
                           </p>
-                        ) : (
-                          <p className={styles.errorText} role="alert">
-                            Нет согласованного процента для этой категории
-                          </p>
-                        )}
-                        <TextField
-                          label="Скидка клиенту, %"
-                          type="number"
-                          inputMode="decimal"
-                          disabled={rowBlocked || submitting}
-                          value={draftValue}
-                          error={fieldErrors[key]}
-                          onChange={(event) => {
-                            const next = event.target.value;
-                            setDiscountDrafts((prev) => ({ ...prev, [key]: next }));
-                            if (fieldErrors[key]) {
-                              setFieldErrors((prev) => {
-                                const copy = { ...prev };
-                                delete copy[key];
-                                return copy;
-                              });
-                              setFieldErrorReasons((prev) => {
-                                const copy = { ...prev };
-                                delete copy[key];
-                                return copy;
-                              });
-                            }
-                          }}
-                        />
-                        {!partner.isSelfScan && pool !== null ? (
-                          <p className={styles.conditionMeta}>
-                            Ваше вознаграждение:{" "}
-                            <strong>
-                              {issuerPreview != null ? `${issuerPreview}%` : "—"}
-                            </strong>
-                          </p>
-                        ) : null}
-                        {fieldErrorReasons[key] === "over_limit" && termsHref ? (
-                          <p className={styles.termsLinkWrap}>
-                            <Link href={termsHref} className={styles.termsLink}>
-                              Изменить условия партнёрства
-                            </Link>
-                          </p>
-                        ) : null}
-                        {partner.isSelfScan ? (
-                          <p className={styles.conditionMeta}>
-                            Самосканирование: только скидка клиенту, вознаграждение PROF — 0%
-                          </p>
-                        ) : null}
+                        ))}
                       </div>
-                    );
-                  }),
+                    </details>
+                  ) : null}
+                  <div className={styles.createFormFooter}>
+                    <small data-testid="specialist-cert-selected-count">
+                      Выбрано: {selectedPartners.length}
+                    </small>
+                    <Button
+                      disabled={selectedPartners.length === 0 || issuerReady === false}
+                      onClick={goToSpecialistDiscountsStep}
+                    >
+                      Далее: скидки
+                    </Button>
+                  </div>
+                </section>
+              ) : null}
+
+              {specialistStep === 2 ? (
+                <section data-testid="specialist-certificate-create-step-2">
+                  <p className={styles.meta}>
+                    Вы задаёте скидку клиенту. Остаток согласованного процента становится вашим
+                    бонусом после покупки.
+                  </p>
+                  <div className={styles.conditionsGrid}>
+                    {selectedPartners.map((partner) => (
+                      <div key={partnerSelectionKey(partner)} className={styles.categoryGroup}>
+                        <h4>{partner.storeName}</h4>
+                        {partner.categories.map((cat) => {
+                          const key = categoryFieldKey(partner.storeUserId, cat.category);
+                          const pool = resolvePoolPercent({
+                            category: cat.category,
+                            categoryLabel: cat.categoryLabel,
+                            poolPercent: cat.poolPercent,
+                            isSelfScan: partner.isSelfScan,
+                          });
+                          const categorySelected = selectedCategoryKeys[key] === true;
+                          const draftValue =
+                            discountDrafts[key] ??
+                            (cat.discountPercent != null ? String(cat.discountPercent) : "");
+                          const issuerPreview = categorySelected
+                            ? previewIssuerPercent(
+                                {
+                                  category: cat.category,
+                                  categoryLabel: cat.categoryLabel,
+                                  poolPercent: cat.poolPercent,
+                                  isSelfScan: partner.isSelfScan,
+                                },
+                                draftValue,
+                              )
+                            : null;
+                          const rowBlocked = pool === null;
+                          const termsHref = partnershipTermsHref(partner.partnershipId);
+
+                          return (
+                            <div key={key} className={styles.categoryAllocation}>
+                              <label className={styles.categoryAllocationHead}>
+                                <input
+                                  type="checkbox"
+                                  checked={categorySelected}
+                                  data-testid={`specialist-cert-category-${key}`}
+                                  disabled={rowBlocked}
+                                  onChange={(event) =>
+                                    toggleCategory(key, event.target.checked, pool)
+                                  }
+                                />
+                                <strong>{displayCategoryLabel(cat.category, cat.categoryLabel)}</strong>
+                              </label>
+                              <div className={styles.categoryAllocationFields}>
+                                <div className={styles.allocationLimit}>
+                                  <small>Согласовано</small>
+                                  <strong>{pool != null ? `${pool}%` : "—"}</strong>
+                                </div>
+                                <TextField
+                                  label="Скидка клиенту, %"
+                                  type="number"
+                                  inputMode="decimal"
+                                  step="0.1"
+                                  disabled={!categorySelected || rowBlocked || submitting}
+                                  value={draftValue}
+                                  error={fieldErrors[key]}
+                                  onChange={(event) => {
+                                    const next = event.target.value;
+                                    setDiscountDrafts((prev) => ({ ...prev, [key]: next }));
+                                    if (fieldErrors[key]) {
+                                      setFieldErrors((prev) => {
+                                        const copy = { ...prev };
+                                        delete copy[key];
+                                        return copy;
+                                      });
+                                      setFieldErrorReasons((prev) => {
+                                        const copy = { ...prev };
+                                        delete copy[key];
+                                        return copy;
+                                      });
+                                    }
+                                  }}
+                                />
+                                <div className={styles.allocationBonus}>
+                                  <small>Ваш бонус</small>
+                                  <strong>
+                                    {categorySelected && issuerPreview != null
+                                      ? `${issuerPreview}%`
+                                      : "—"}
+                                  </strong>
+                                </div>
+                              </div>
+                              {fieldErrorReasons[key] === "over_limit" && termsHref ? (
+                                <p className={styles.termsLinkWrap}>
+                                  <Link href={termsHref} className={styles.termsLink}>
+                                    Изменить условия партнёрства
+                                  </Link>
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  <details className={styles.optionalBlock} data-testid="specialist-certificate-create-alias">
+                    <summary>Название для себя · необязательно</summary>
+                    <div className={styles.optionalBlockBody}>
+                      <TextField
+                        label="Название"
+                        value={privateAlias}
+                        disabled={submitting}
+                        maxLength={100}
+                        placeholder="Например, ремонт для Анны"
+                        onChange={(event) => setPrivateAlias(event.target.value)}
+                      />
+                    </div>
+                  </details>
+                  <details className={styles.optionalBlock}>
+                    <summary>Срок действия</summary>
+                    <div className={styles.optionalBlockBody}>
+                      <label className={styles.meta}>
+                        Срок
+                        <select
+                          value={validityPreset}
+                          disabled={submitting}
+                          data-testid="recommendation-validity-preset"
+                          onChange={(event) =>
+                            setValidityPreset(event.target.value as ValidityPreset)
+                          }
+                        >
+                          {VALIDITY_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </details>
+                  <p className={styles.notice}>
+                    Акционные модели не участвуют. Чтобы увеличить общий процент, сначала
+                    согласуйте новые условия с партнёром.
+                  </p>
+                  {submitError ? (
+                    <p className={styles.errorText} role="alert">
+                      {submitError}
+                    </p>
+                  ) : null}
+                  <div className={styles.createFormFooter}>
+                    <Button variant="secondary" disabled={submitting} onClick={() => setSpecialistStep(1)}>
+                      Назад
+                    </Button>
+                    <Button
+                      disabled={submitting || issuerReady === false}
+                      onClick={() => void submit()}
+                    >
+                      {submitting ? "Создание…" : "Создать сертификат"}
+                    </Button>
+                  </div>
+                </section>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <section className={styles.formSection}>
+                <h3>Партнёры</h3>
+                {selectablePartners.length === 0 ? (
+                  <p className={styles.meta}>
+                    Нет доступных партнёрств для создания документа. Сначала оформите активное
+                    партнёрство.
+                  </p>
+                ) : (
+                  <div className={styles.partnerPick}>
+                    {partners.map((partner) => {
+                      const key = partnerSelectionKey(partner);
+                      const disabled =
+                        partner.programReady === false || partner.categories.length === 0;
+                      const selected = selectedKeys.includes(key);
+                      return (
+                        <label
+                          key={key}
+                          className={`${styles.partnerOption} ${selected ? styles.partnerOptionSelected : ""} ${disabled ? styles.partnerOptionDisabled : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            disabled={disabled}
+                            onChange={() => togglePartner(partner)}
+                          />
+                          <span>
+                            <strong>{partner.storeName}</strong>
+                            {partner.city ? ` · ${partner.city}` : ""}
+                            {disabled && partner.programMissing?.length ? (
+                              <span className={styles.conditionMeta}>
+                                {" "}
+                                — профиль партнёра не готов
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 )}
-              </div>
-            </section>
-          ) : null}
+              </section>
 
-          {specialistWizard && specialistStep === 2 ? (
-            <section className={styles.formSection} data-testid="specialist-certificate-create-alias">
-              <h3>Название для себя</h3>
-              <p className={styles.meta}>Необязательно. Видно только вам, не показывается клиенту.</p>
-              <TextField
-                label="Название"
-                value={privateAlias}
-                disabled={submitting}
-                maxLength={60}
-                onChange={(event) => setPrivateAlias(event.target.value)}
-              />
-            </section>
-          ) : null}
+              {selectedPartners.length > 0 ? (
+                <section className={styles.formSection}>
+                  <h3>Условия для клиента</h3>
+                  <p className={styles.meta}>
+                    Общий процент задаётся в условиях партнёрства. Здесь вы распределяете его между
+                    скидкой клиенту и своим вознаграждением.
+                  </p>
+                  <div className={styles.conditionsGrid}>
+                    {selectedPartners.flatMap((partner) =>
+                      partner.categories.map((cat) => {
+                        const key = categoryFieldKey(partner.storeUserId, cat.category);
+                        const pool = resolvePoolPercent({
+                          category: cat.category,
+                          categoryLabel: cat.categoryLabel,
+                          poolPercent: cat.poolPercent,
+                          isSelfScan: partner.isSelfScan,
+                        });
+                        const draftValue =
+                          discountDrafts[key] ??
+                          (cat.discountPercent != null ? String(cat.discountPercent) : "");
+                        const issuerPreview = previewIssuerPercent(
+                          {
+                            category: cat.category,
+                            categoryLabel: cat.categoryLabel,
+                            poolPercent: cat.poolPercent,
+                            isSelfScan: partner.isSelfScan,
+                          },
+                          draftValue,
+                        );
+                        const rowBlocked = pool === null;
+                        const termsHref = partnershipTermsHref(partner.partnershipId);
 
-          <section
-            className={styles.formSection}
-            hidden={specialistWizard && specialistStep !== 2}
-          >
-            <h3>Срок действия</h3>
-            <label className={styles.meta}>
-              Срок
-              <select
-                value={validityPreset}
-                disabled={submitting}
-                data-testid="recommendation-validity-preset"
-                onChange={(event) => setValidityPreset(event.target.value as ValidityPreset)}
-              >
-                {VALIDITY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </section>
+                        return (
+                          <div
+                            key={key}
+                            className={`${styles.conditionRow} ${rowBlocked ? styles.conditionRowBlocked : ""}`}
+                          >
+                            <strong>
+                              {partner.storeName} —{" "}
+                              {displayCategoryLabel(cat.category, cat.categoryLabel)}
+                            </strong>
+                            {pool !== null ? (
+                              <p className={styles.agreedPercent}>
+                                Согласованный процент: <strong>{pool}%</strong>
+                              </p>
+                            ) : (
+                              <p className={styles.errorText} role="alert">
+                                Нет согласованного процента для этой категории
+                              </p>
+                            )}
+                            <TextField
+                              label="Скидка клиенту, %"
+                              type="number"
+                              inputMode="decimal"
+                              disabled={rowBlocked || submitting}
+                              value={draftValue}
+                              error={fieldErrors[key]}
+                              onChange={(event) => {
+                                const next = event.target.value;
+                                setDiscountDrafts((prev) => ({ ...prev, [key]: next }));
+                                if (fieldErrors[key]) {
+                                  setFieldErrors((prev) => {
+                                    const copy = { ...prev };
+                                    delete copy[key];
+                                    return copy;
+                                  });
+                                  setFieldErrorReasons((prev) => {
+                                    const copy = { ...prev };
+                                    delete copy[key];
+                                    return copy;
+                                  });
+                                }
+                              }}
+                            />
+                            {!partner.isSelfScan && pool !== null ? (
+                              <p className={styles.conditionMeta}>
+                                Ваше вознаграждение:{" "}
+                                <strong>
+                                  {issuerPreview != null ? `${issuerPreview}%` : "—"}
+                                </strong>
+                              </p>
+                            ) : null}
+                            {fieldErrorReasons[key] === "over_limit" && termsHref ? (
+                              <p className={styles.termsLinkWrap}>
+                                <Link href={termsHref} className={styles.termsLink}>
+                                  Изменить условия партнёрства
+                                </Link>
+                              </p>
+                            ) : null}
+                            {partner.isSelfScan ? (
+                              <p className={styles.conditionMeta}>
+                                Самосканирование: только скидка клиенту, вознаграждение PROF — 0%
+                              </p>
+                            ) : null}
+                          </div>
+                        );
+                      }),
+                    )}
+                  </div>
+                </section>
+              ) : null}
 
-          {submitError ? (
-            <p className={styles.errorText} role="alert">
-              {submitError}
-            </p>
-          ) : null}
+              <section className={styles.formSection}>
+                <h3>Срок действия</h3>
+                <label className={styles.meta}>
+                  Срок
+                  <select
+                    value={validityPreset}
+                    disabled={submitting}
+                    data-testid="recommendation-validity-preset"
+                    onChange={(event) => setValidityPreset(event.target.value as ValidityPreset)}
+                  >
+                    {VALIDITY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </section>
 
-          {specialistWizard && specialistStep === 2 ? (
-            <div className={styles.pageActions}>
-              <Button variant="secondary" disabled={submitting} onClick={() => setSpecialistStep(1)}>
-                Назад
-              </Button>
+              {submitError ? (
+                <p className={styles.errorText} role="alert">
+                  {submitError}
+                </p>
+              ) : null}
+
               <Button
                 disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
                 onClick={() => void submit()}
               >
-                {submitting ? "Создание…" : "Создать сертификат"}
+                {submitting
+                  ? "Создание…"
+                  : agentR03
+                    ? "Создать сертификат"
+                    : "Создать рекомендацию"}
               </Button>
-            </div>
-          ) : !specialistWizard ? (
-            <Button
-              disabled={submitting || selectablePartners.length === 0 || issuerReady === false}
-              onClick={() => void submit()}
-            >
-              {submitting
-                ? "Создание…"
-                : agentR03
-                  ? "Создать сертификат"
-                  : "Создать рекомендацию"}
-            </Button>
-          ) : null}
+            </>
+          )}
         </>
       ) : null}
     </>
   );
+
+  return specialistWizard ? wrapSpecialistShell(formBody) : formBody;
 }

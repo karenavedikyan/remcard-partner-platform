@@ -8,10 +8,7 @@ import { RecommendationCreateWithClient } from "@/components/recommendations/Rec
 import { OwnerIssuerGate } from "@/components/specialist-certificates/OwnerIssuerGate";
 import { useOwnerIssuerMode } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { SpecialistCertificatesList } from "@/components/specialist-certificates/SpecialistCertificatesList";
-import {
-  SPECIALIST_CERTIFICATE_CREATE,
-  SPECIALIST_CERTIFICATES_PAGE,
-} from "@/lib/specialist-certificates/copy";
+import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
 
 function RecommendationsListPageContent() {
   const mode = useOwnerIssuerMode();
@@ -42,16 +39,7 @@ function RecommendationsListPageContent() {
 function RecommendationsCreatePageContent() {
   const mode = useOwnerIssuerMode();
   if (mode === "specialist") {
-    return (
-      <>
-        <PageHeading
-          eyebrow={SPECIALIST_CERTIFICATES_PAGE.eyebrow}
-          title={SPECIALIST_CERTIFICATE_CREATE.title}
-          description={SPECIALIST_CERTIFICATES_PAGE.description}
-        />
-        <RecommendationCreateWithClient issuerUi="specialist" />
-      </>
-    );
+    return <RecommendationCreateWithClient issuerUi="specialist" />;
   }
   return (
     <>

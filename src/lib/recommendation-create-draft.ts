@@ -1,4 +1,4 @@
-export const RECOMMENDATION_CREATE_DRAFT_VERSION = 2;
+export const RECOMMENDATION_CREATE_DRAFT_VERSION = 3;
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const VALIDITY_PRESETS = new Set(["1", "3", "6", "12", "unlimited"]);
@@ -18,6 +18,9 @@ export type RecommendationCreateDraft = {
   selectedKeys: string[];
   discountDrafts: Record<string, string>;
   validityPreset: string;
+  partnerSearchQuery?: string;
+  specialistStep?: 1 | 2;
+  selectedCategoryKeys?: Record<string, boolean>;
 };
 
 export type RecommendationCreateDraftPayload = Omit<
@@ -82,6 +85,14 @@ function isValidDraftShape(raw: unknown): raw is RecommendationCreateDraft {
     if (typeof value !== "string") return false;
   }
   if (typeof o.validityPreset !== "string" || !VALIDITY_PRESETS.has(o.validityPreset)) return false;
+  if (o.partnerSearchQuery != null && typeof o.partnerSearchQuery !== "string") return false;
+  if (o.specialistStep != null && o.specialistStep !== 1 && o.specialistStep !== 2) return false;
+  if (o.selectedCategoryKeys != null) {
+    if (typeof o.selectedCategoryKeys !== "object" || Array.isArray(o.selectedCategoryKeys)) return false;
+    for (const value of Object.values(o.selectedCategoryKeys as Record<string, unknown>)) {
+      if (typeof value !== "boolean") return false;
+    }
+  }
   return true;
 }
 
@@ -183,10 +194,12 @@ export function clearRecommendationCreateDraftsForUser(userId: string): void {
 export function reconcileRecommendationDraftWithPartners(input: {
   selectedKeys: string[];
   discountDrafts: Record<string, string>;
+  selectedCategoryKeys?: Record<string, boolean>;
   partnerKeys: Set<string>;
 }): {
   selectedKeys: string[];
   discountDrafts: Record<string, string>;
+  selectedCategoryKeys: Record<string, boolean>;
   stalePartnerKeys: string[];
 } {
   const stalePartnerKeys = input.selectedKeys.filter((k) => !input.partnerKeys.has(k));
@@ -199,5 +212,12 @@ export function reconcileRecommendationDraftWithPartners(input: {
       discountDrafts[key] = value;
     }
   }
-  return { selectedKeys, discountDrafts, stalePartnerKeys };
+  const selectedCategoryKeys: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(input.selectedCategoryKeys ?? {})) {
+    const storeUserId = key.split("::")[0];
+    if (storeUserId && selectedStoreIds.has(storeUserId)) {
+      selectedCategoryKeys[key] = value;
+    }
+  }
+  return { selectedKeys, discountDrafts, selectedCategoryKeys, stalePartnerKeys };
 }

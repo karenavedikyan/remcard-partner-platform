@@ -15,6 +15,7 @@ export function RecommendationCreateWithClient({
       agentClientId={clientId}
       successHrefBase="/recommendations"
       issuerUi={issuerUi}
+      presentation={issuerUi === "specialist" ? "page" : "page"}
     />
   );
 }

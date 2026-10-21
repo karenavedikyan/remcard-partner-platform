@@ -88,11 +88,13 @@ async function goToSpecialistStep2(user: ReturnType<typeof userEvent.setup>) {
   await waitFor(() => {
     expect(screen.getByTestId("specialist-certificate-create-step-1")).toBeVisible();
   });
-  await user.click(screen.getByRole("checkbox"));
-  await user.click(screen.getByRole("button", { name: "Далее" }));
+  await user.click(screen.getByTestId("specialist-certificate-create-step-1").querySelector('input[type=checkbox]')!);
+  await user.click(screen.getByRole("button", { name: "Далее: скидки" }));
   await waitFor(() => {
     expect(screen.getByTestId("specialist-certificate-create-step-2")).toBeVisible();
   });
+  const categoryKey = "store-1::doors";
+  await user.click(screen.getByTestId(`specialist-cert-category-${categoryKey}`));
   const discountInput = screen.getByLabelText("Скидка клиенту, %");
   await user.clear(discountInput);
   await user.type(discountInput, "5");

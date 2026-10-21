@@ -76,6 +76,14 @@ export function computeCategoryPercents(
     return { ok: false, message: "Скидка не может быть отрицательной", reason: "negative" };
   }
 
+  if (Math.abs(numeric * 10 - Math.round(numeric * 10)) > 1e-8) {
+    return {
+      ok: false,
+      message: "Укажите скидку от 0 до согласованного процента, с точностью до 0,1%.",
+      reason: "invalid",
+    };
+  }
+
   const pool = resolvePoolPercent(category);
   if (pool === null) {
     return {
@@ -145,6 +153,8 @@ export type BuildPayloadInput = {
     categories: AvailablePartnerCategory[];
   }>;
   discountDrafts: Record<string, string>;
+  /** When set, only included keys (value true) are sent. Omitted keys mean all categories selected. */
+  selectedCategoryKeys?: Record<string, boolean>;
   validUntil?: string;
   maxUsages?: number;
 };
@@ -176,11 +186,16 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
   const fieldErrorReasons: Record<string, CategoryValidationFailureReason> = {};
   const partners: CreateCertificatePartnerInput[] = [];
 
+  let selectedCategoryCount = 0;
+
   for (const partner of input.selectedPartners) {
     const categories: CreateCertificatePartnerInput["categories"] = [];
 
     for (const cat of partner.categories) {
       const key = categoryFieldKey(partner.storeUserId, cat.category);
+      if (input.selectedCategoryKeys && input.selectedCategoryKeys[key] !== true) {
+        continue;
+      }
       const raw =
         input.discountDrafts[key] ??
         (cat.discountPercent != null ? String(cat.discountPercent) : "");
@@ -208,9 +223,13 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
         discountPercent: computed.value.discountPercent,
         issuerPercent: computed.value.issuerPercent,
       });
+      selectedCategoryCount += 1;
     }
 
-    if (categories.length !== partner.categories.length) {
+    if (categories.length === 0) {
+      continue;
+    }
+    if (!input.selectedCategoryKeys && categories.length !== partner.categories.length) {
       continue;
     }
 
@@ -232,10 +251,21 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
     };
   }
 
+  if (input.selectedCategoryKeys && selectedCategoryCount === 0) {
+    return {
+      ok: false,
+      formError: "Выберите хотя бы одну категорию",
+      fieldErrors: {},
+      fieldErrorReasons: {},
+    };
+  }
+
   if (partners.length === 0) {
     return {
       ok: false,
-      formError: "Выберите хотя бы одного партнёра",
+      formError: input.selectedCategoryKeys
+        ? "Выберите хотя бы одну категорию"
+        : "Выберите хотя бы одного партнёра",
       fieldErrors: {},
       fieldErrorReasons: {},
     };

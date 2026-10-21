@@ -149,6 +149,53 @@ export async function verifyRefAgentSection(page, opts) {
   return { ok: true };
 }
 
+async function openRefSpecialistCreateDialog(page) {
+  const createBtn = page.locator('[data-action="action:recommend"]').first();
+  await createBtn.waitFor({ state: 'visible', timeout: 25_000 });
+  await createBtn.click();
+  await page.waitForTimeout(700);
+  await page.getByRole('heading', { name: 'Создать сертификат' }).first().waitFor({ timeout: 25_000 });
+}
+
+async function selectRefPartnerAndGoToDiscounts(page) {
+  const partnerBox = page.locator('input[data-cert-partner]').first();
+  await partnerBox.waitFor({ state: 'visible', timeout: 25_000 });
+  await partnerBox.check();
+  const nextBtn = page.locator('[data-action="cert-next"]').first();
+  await nextBtn.waitFor({ state: 'visible', timeout: 15_000 });
+  if (await nextBtn.isDisabled()) {
+    throw new Error('ref_cert_next_disabled');
+  }
+  await nextBtn.click();
+  await page.waitForTimeout(700);
+  await page.getByRole('heading', { name: 'Скидки по категориям' }).first().waitFor({ timeout: 25_000 });
+}
+
+async function createRefDemoCertificate(page) {
+  await openRefSpecialistCreateDialog(page);
+  await selectRefPartnerAndGoToDiscounts(page);
+  const categoryBox = page.locator('input[data-cert-category]').first();
+  await categoryBox.waitFor({ state: 'visible', timeout: 25_000 });
+  await categoryBox.check();
+  const submit = page.locator('[data-testid="create-certificate"]').first();
+  await submit.waitFor({ state: 'visible', timeout: 15_000 });
+  await submit.click();
+  await page.waitForTimeout(900);
+  await page.locator('.dialog-body h3, .dialog-body .link-card').first().waitFor({ timeout: 25_000 });
+}
+
+async function openRefCertificateDetailFromList(page) {
+  const openBtn = page.locator('[data-coll-open]').first();
+  const visible = await openBtn.isVisible().catch(() => false);
+  if (visible) {
+    await openBtn.click();
+    await page.waitForTimeout(800);
+  } else {
+    await createRefDemoCertificate(page);
+  }
+  await page.locator('.dialog-body h3').first().waitFor({ timeout: 25_000 });
+}
+
 export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   const viewMode = opts.viewMode ?? 'list';
   const panel = opts.panel ?? 'list';
@@ -202,13 +249,13 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
   await page.waitForTimeout(800);
   await page.getByRole('heading', { name: navHeading }).first().waitFor({ timeout: 25_000 });
 
-  if (panel === 'certificates-create' || panel === 'certificates-create-step2') {
-    const createBtn = page.locator('[data-action="action:recommend"]').first();
-    if (await createBtn.isVisible().catch(() => false)) {
-      await createBtn.click();
-      await page.waitForTimeout(700);
-    }
-    await page.getByRole('heading', { name: /Создать сертификат|Шаг/i }).first().waitFor({ timeout: 25_000 });
+  if (panel === 'certificates-create') {
+    await openRefSpecialistCreateDialog(page);
+  } else if (panel === 'certificates-create-step2') {
+    await openRefSpecialistCreateDialog(page);
+    await selectRefPartnerAndGoToDiscounts(page);
+    const categoryField = page.locator('input[data-cert-discount]').first();
+    await categoryField.waitFor({ state: 'visible', timeout: 25_000 });
   }
 
   if (
@@ -225,19 +272,15 @@ export async function driveRefSpecialistClients(page, baseUrl, opts = {}) {
     }
   }
 
-  if (panel === 'certificates-detail' || panel === 'certificates-edit-discounts') {
-    const certOpen = page.locator('[data-coll-open]').first();
-    if (await certOpen.isVisible().catch(() => false)) {
-      await certOpen.click();
-      await page.waitForTimeout(800);
-    }
-    if (panel === 'certificates-edit-discounts') {
-      const editBtn = page.locator('[data-action="edit-discounts"], [aria-label="Изменить скидки"]').first();
-      if (await editBtn.isVisible().catch(() => false)) {
-        await editBtn.click();
-        await page.waitForTimeout(500);
-      }
-    }
+  if (panel === 'certificates-detail') {
+    await openRefCertificateDetailFromList(page);
+  } else if (panel === 'certificates-edit-discounts') {
+    await openRefCertificateDetailFromList(page);
+    const editBtn = page.locator('[data-action^="link-edit:"]').first();
+    await editBtn.waitFor({ state: 'visible', timeout: 25_000 });
+    await editBtn.click();
+    await page.waitForTimeout(700);
+    await page.locator('#link-edit-form button[type="submit"]').waitFor({ timeout: 25_000 });
   }
 
   if (panel === 'detail') {
