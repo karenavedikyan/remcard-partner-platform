@@ -1,22 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "@/lib/types";
 import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
 import { BrandMark } from "@/components/layout/BrandMark";
+import { CabinetMobileMoreSheet } from "@/components/layout/CabinetMobileMoreSheet";
 import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
-import { MasterMobileMoreSheet } from "@/components/layout/MasterMobileMoreSheet";
-import {
-  MASTER_DESKTOP_NAV,
-  MASTER_MOBILE_BOTTOM,
-  masterNavMoreItems,
-  masterPageTitle,
-} from "@/lib/master-nav/sections";
+import { isCabinetNavItemActive } from "@/lib/cabinet-nav/active";
+import { cabinetNavConfig } from "@/lib/cabinet-nav/config";
+import { resolveCabinetNavMode, usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
+import type { MasterNavItem } from "@/lib/master-nav/sections";
 import styles from "./AppShell.module.css";
 
 const BASE_NAV: Array<{
@@ -33,11 +31,6 @@ const BASE_NAV: Array<{
   { href: "/settlements", label: "Взаиморасчёты", icon: "settlements" },
   { href: "/profile", label: "Профиль", icon: "profile" },
 ];
-
-function navForUser(partnerType?: string | null) {
-  if (partnerType === "MASTER") return MASTER_DESKTOP_NAV;
-  return BASE_NAV;
-}
 
 const MOBILE_BOTTOM_NAV: Array<{ href: string; label: string; icon: NavIconKey }> = [
   { href: "/", label: "Главная", icon: "home" },
@@ -60,8 +53,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/onboarding": "Регистрация",
 };
 
-function pageTitle(pathname: string, navItems: typeof BASE_NAV, partnerType?: string | null): string {
-  if (partnerType === "MASTER") return masterPageTitle(pathname);
+function legacyPageTitle(pathname: string, navItems: typeof BASE_NAV): string {
   if (PAGE_TITLES[pathname]) {
     return PAGE_TITLES[pathname];
   }
@@ -88,24 +80,23 @@ type AppShellProps = {
 
 function NavLinks({
   pathname,
+  searchParams,
   incomingCount,
   navItems,
   className,
   onNavigate,
 }: {
   pathname: string;
+  searchParams: ReturnType<typeof useSearchParams>;
   incomingCount: number;
-  navItems: typeof BASE_NAV;
+  navItems: MasterNavItem[];
   className?: string;
   onNavigate?: () => void;
 }) {
   return (
     <>
       {navItems.map((item) => {
-        const active =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = isCabinetNavItemActive(item.href, pathname, searchParams);
         const Icon = NAV_ICONS[item.icon];
         const badge =
           item.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
@@ -136,19 +127,29 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
-  const isMaster = user.partnerType === "MASTER";
-  const navItems = navForUser(user.partnerType);
-  const currentPage = pageTitle(pathname, navItems, user.partnerType);
+  const searchParams = useSearchParams();
+  const navMode = resolveCabinetNavMode(user);
+  const prototypeShell = usesCabinetPrototypeShell(navMode);
+  const prototypeConfig = useMemo(
+    () => (prototypeShell ? cabinetNavConfig(navMode) : null),
+    [navMode, prototypeShell],
+  );
+
+  const navItems = prototypeConfig?.desktop ?? BASE_NAV;
+  const mobileBottom = prototypeConfig?.mobileBottom ?? MOBILE_BOTTOM_NAV;
+  const section = searchParams.get("section");
+  const currentPage = prototypeConfig
+    ? prototypeConfig.pageTitle(pathname, section)
+    : legacyPageTitle(pathname, BASE_NAV);
+
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const moreItems = isMaster ? masterNavMoreItems() : [];
-  const moreActive = isMaster && moreItems.some(
-    (item) =>
-      item.href !== "/" &&
-      (pathname === item.href || pathname.startsWith(`${item.href}/`)),
-  );
+  const moreItems = prototypeConfig?.moreItems() ?? [];
+  const moreActive =
+    prototypeShell &&
+    moreItems.some((item) => isCabinetNavItemActive(item.href, pathname, searchParams));
 
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
@@ -197,6 +198,7 @@ export function AppShell({
         <nav className={styles.nav}>
           <NavLinks
             pathname={pathname}
+            searchParams={searchParams}
             incomingCount={incomingCount}
             navItems={navItems}
             onNavigate={closeMobileMenu}
@@ -255,11 +257,8 @@ export function AppShell({
       </div>
 
       <nav className={styles.mobileBottom} aria-label="Мобильная навигация">
-        {(isMaster ? MASTER_MOBILE_BOTTOM : MOBILE_BOTTOM_NAV).map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        {mobileBottom.map((item) => {
+          const active = isCabinetNavItemActive(item.href, pathname, searchParams);
           const Icon = NAV_ICONS[item.icon];
           return (
             <Link
@@ -273,13 +272,13 @@ export function AppShell({
             </Link>
           );
         })}
-        {isMaster ? (
+        {prototypeShell ? (
           <button
             type="button"
             className={`${styles.mobileBottomLink} ${moreActive ? styles.mobileBottomLinkActive : ""}`}
             aria-label="Ещё разделы"
             aria-current={moreActive ? "page" : undefined}
-            data-testid="master-mobile-nav-more"
+            data-testid="cabinet-mobile-nav-more"
             onClick={() => setMobileMoreOpen(true)}
           >
             <NAV_ICONS.more />
@@ -287,8 +286,12 @@ export function AppShell({
           </button>
         ) : null}
       </nav>
-      {isMaster ? (
-        <MasterMobileMoreSheet open={mobileMoreOpen} onClose={() => setMobileMoreOpen(false)} />
+      {prototypeShell ? (
+        <CabinetMobileMoreSheet
+          open={mobileMoreOpen}
+          onClose={() => setMobileMoreOpen(false)}
+          items={moreItems}
+        />
       ) : null}
     </div>
   );

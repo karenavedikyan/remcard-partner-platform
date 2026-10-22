@@ -5,6 +5,7 @@ import { AppShell } from "./AppShell";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useSearchParams: () => ({ get: () => null }),
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
