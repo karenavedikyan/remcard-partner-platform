@@ -180,6 +180,7 @@ export async function persistCatalogDraftOnly(
         telegram: draft.telegram.trim() || null,
         publicEmail: draft.publicEmail.trim() || null,
         publicPhone: draft.publicPhone.trim() || null,
+        catalogTouched: draft.catalogTouched ?? undefined,
       },
     });
     const branchCount = profile.organization?.branchCount ?? 0;

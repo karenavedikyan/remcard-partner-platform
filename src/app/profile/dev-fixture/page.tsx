@@ -8,14 +8,15 @@ import {
 } from "@/lib/profile-sections";
 import type { ProProfileResponse } from "@/lib/types";
 
-/** Fixture UI for H1 screenshots only; route 404 in production builds. */
-const FIXTURE_PROFILE: ProProfileResponse = {
+function buildFixtureProfile(partnerType: "STORE" | "COMPANY"): ProProfileResponse {
+  const isCompany = partnerType === "COMPANY";
+  return {
   organization: {
     id: "org-fixture",
-    name: "Оптовик Юг",
+    name: isCompany ? "СтройКомпания Юг" : "Магазин Юг",
     catalogStatus: "DRAFT",
-    partnerType: "STORE",
-    branchCount: 3,
+    partnerType,
+    branchCount: isCompany ? 1 : 3,
     catalogPublished: false,
   },
   programs: [],
@@ -57,7 +58,8 @@ const FIXTURE_PROFILE: ProProfileResponse = {
     city: "Краснодар",
     specializations: [],
     role: "PRO",
-    partnerType: "STORE",
+    partnerType,
+    partnerActivities: [partnerType],
     description: null,
     catalogStatus: "DRAFT",
     isPublic: false,
@@ -78,9 +80,15 @@ const FIXTURE_PROFILE: ProProfileResponse = {
     showFullName: false,
   },
 };
+}
 
 export default async function ProfileDevFixturePage(props: {
-  searchParams?: Promise<{ section?: string; moderation?: string; branchId?: string }>;
+  searchParams?: Promise<{
+    section?: string;
+    moderation?: string;
+    branchId?: string;
+    partnerType?: string;
+  }>;
 }) {
   if (process.env.NODE_ENV === "production") {
     notFound();
@@ -94,6 +102,10 @@ export default async function ProfileDevFixturePage(props: {
   };
   const section: ProfileSectionId = resolveProfileSectionFromQuery(query);
   const moderationSection = isModerationDeepLink(query);
+  const partnerTypeParam = searchParams?.partnerType?.toUpperCase();
+  const partnerType: "STORE" | "COMPANY" =
+    partnerTypeParam === "COMPANY" ? "COMPANY" : "STORE";
+  const fixtureProfile = buildFixtureProfile(partnerType);
 
   return (
     <main
@@ -116,7 +128,7 @@ export default async function ProfileDevFixturePage(props: {
         </p>
       </header>
       <ProfileEditor
-        initial={FIXTURE_PROFILE}
+        initial={fixtureProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
         section={section}
         moderationSection={moderationSection}

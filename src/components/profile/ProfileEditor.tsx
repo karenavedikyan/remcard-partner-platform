@@ -25,10 +25,8 @@ import {
   catalogDraftFromProfile,
   isCatalogDraftDirty,
 } from "@/lib/profile-catalog-draft-sync";
-import {
-  catalogNavigatorStageIdsFromUser,
-  catalogTouchedFromUser,
-} from "@/lib/profile-catalog-stages-hydration";
+import { catalogNavigatorStageIdsFromUser } from "@/lib/profile-catalog-stages-hydration";
+import { catalogTouchedFromProfile } from "@/lib/profile-catalog-touched";
 import {
   persistWorkingProfileDraft,
   validateWorkingProfileDraft,
@@ -67,9 +65,11 @@ import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection"
 import { SpecialistAgentActivityCompact } from "./specialist/SpecialistAgentActivityCompact";
 import {
   catalogPrefillSourceKey,
+  markCatalogFieldTouched,
   mergeCatalogPrefill,
   parseCatalogTouched,
   workingProfileCatalogSeed,
+  type CatalogPrefillField,
   type CatalogTouchedMap,
 } from "@/lib/specialist-r06/catalog-prefill";
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
@@ -247,9 +247,13 @@ function ProfileEditorInner({
     catalogNavigatorStageIdsFromUser(initial.user),
   );
   const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
-    parseCatalogTouched(catalogTouchedFromUser(initial.user)),
+    parseCatalogTouched(catalogTouchedFromProfile(initial)),
   );
   const catalogPrefillAppliedKeyRef = useRef<string | null>(null);
+
+  const touchCatalogField = useCallback((field: CatalogPrefillField) => {
+    setCatalogTouched((t) => markCatalogFieldTouched(t, field));
+  }, []);
 
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
@@ -479,7 +483,7 @@ function ProfileEditorInner({
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
     setPartnerActivities(u.partnerActivities ?? catalogForm.partnerActivities ?? []);
     setCatalogNavigatorStageIds(catalogNavigatorStageIdsFromUser(u));
-    setCatalogTouched(parseCatalogTouched(catalogTouchedFromUser(u)));
+    setCatalogTouched(parseCatalogTouched(catalogTouchedFromProfile(next)));
   }, []);
 
   const loadNotes = useCallback(async () => {
@@ -1086,33 +1090,65 @@ function ProfileEditorInner({
             needsBranchFields={needsBranchFields}
             onProfileUpdated={applyProfile}
             catalogPublicName={catalogPublicName}
-            onCatalogPublicNameChange={setCatalogPublicName}
+            onCatalogPublicNameChange={(value) => {
+              setCatalogPublicName(value);
+              touchCatalogField("catalogPublicName");
+            }}
             onOrganizationNameChange={setOrganizationName}
             showFullName={showFullName}
             onShowFullNameChange={setShowFullName}
             catalogImageUrl={catalogImageUrl}
-            onCatalogImageUrlChange={setCatalogImageUrl}
+            onCatalogImageUrlChange={(value) => {
+              setCatalogImageUrl(value);
+              touchCatalogField("catalogImageUrl");
+            }}
             description={description}
-            onDescriptionChange={setDescription}
+            onDescriptionChange={(value) => {
+              setDescription(value);
+              touchCatalogField("description");
+            }}
             specializations={specializations}
-            onSpecializationsChange={setSpecializations}
+            onSpecializationsChange={(ids) => {
+              setSpecializations(ids);
+              touchCatalogField("specializations");
+            }}
             storeCategories={storeCategories}
-            onStoreCategoriesChange={setStoreCategories}
+            onStoreCategoriesChange={(ids) => {
+              setStoreCategories(ids);
+              touchCatalogField("storeCategories");
+            }}
             branchAddress={branchAddress}
             onBranchAddressChange={setBranchAddress}
             website={website}
-            onWebsiteChange={setWebsite}
+            onWebsiteChange={(value) => {
+              setWebsite(value);
+              touchCatalogField("website");
+            }}
             telegram={telegram}
-            onTelegramChange={setTelegram}
+            onTelegramChange={(value) => {
+              setTelegram(value);
+              touchCatalogField("telegram");
+            }}
             publicEmail={publicEmail}
-            onPublicEmailChange={setPublicEmail}
+            onPublicEmailChange={(value) => {
+              setPublicEmail(value);
+              touchCatalogField("publicEmail");
+            }}
             publicPhone={publicPhone}
-            onPublicPhoneChange={setPublicPhone}
+            onPublicPhoneChange={(value) => {
+              setPublicPhone(value);
+              touchCatalogField("publicPhone");
+            }}
             workingProductIds={productCategoryIds}
             workingServiceIds={serviceSpecializationIds}
             onCopyWorkingDirections={() => {
               setStoreCategories([...productCategoryIds]);
               setSpecializations([...serviceSpecializationIds]);
+              setCatalogTouched((t) => ({
+                ...t,
+                storeCategories: true,
+                specializations: true,
+              }));
             }}
           />
         ) : null}

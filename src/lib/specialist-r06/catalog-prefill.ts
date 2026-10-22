@@ -6,7 +6,7 @@ import {
   effectiveWorkingStageIds,
 } from "@/lib/profile-draft-sync";
 import { catalogPublicNameFromGetUser } from "@/lib/specialist-r06/catalog-display-name";
-import { catalogTouchedFromUser } from "@/lib/profile-catalog-stages-hydration";
+import { catalogTouchedFromProfile } from "@/lib/profile-catalog-touched";
 
 export type CatalogPrefillField =
   | "catalogPublicName"
@@ -42,7 +42,7 @@ export function catalogPrefillSourceKey(profile: ProProfileResponse): string {
     catalogDisplayName: u.catalogDisplayName ?? "",
     catalogDisplayNameSource: u.catalogDisplayNameSource ?? "live_public",
     catalogDraftPending: u.catalogDraftPending ?? false,
-    catalogTouched: catalogTouchedFromUser(u),
+    catalogTouched: catalogTouchedFromProfile(profile),
     displayName: u.displayName ?? "",
     catalogCity: u.catalogCity ?? "",
     city: u.city ?? "",
