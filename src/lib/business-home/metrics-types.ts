@@ -1,0 +1,45 @@
+export type BusinessHomeMetricSlice =
+  | { state: "loading" }
+  | { state: "ok"; value: number }
+  | { state: "empty" }
+  | { state: "error"; message: string }
+  | { state: "unavailable"; message: string }
+  | { state: "needs_branch"; message: string };
+
+export type BusinessHomeMetricsResponse = {
+  partnerType: "STORE" | "COMPANY";
+  activeBranchLabel: string | null;
+  metrics: {
+    primary: Exclude<BusinessHomeMetricSlice, { state: "loading" }>;
+    secondary: Exclude<BusinessHomeMetricSlice, { state: "loading" }>;
+    tertiary: Exclude<BusinessHomeMetricSlice, { state: "loading" }>;
+  };
+};
+
+export const initialBusinessHomeMetricSlices: [
+  BusinessHomeMetricSlice,
+  BusinessHomeMetricSlice,
+  BusinessHomeMetricSlice,
+] = [{ state: "loading" }, { state: "loading" }, { state: "loading" }];
+
+export function metricCountLabel(slice: BusinessHomeMetricSlice): string {
+  if (slice.state === "loading") return "…";
+  if (slice.state === "error" || slice.state === "unavailable") return "—";
+  if (slice.state === "needs_branch") return "—";
+  if (slice.state === "empty") return "0";
+  return String(slice.value);
+}
+
+export function metricHintForStorePrimary(
+  slice: BusinessHomeMetricSlice,
+  activeBranchLabel: string | null,
+): string {
+  if (slice.state === "needs_branch") return slice.message;
+  return activeBranchLabel?.trim() ? activeBranchLabel : "Текущий филиал";
+}
+
+export function partnersCountFromSlice(slice: BusinessHomeMetricSlice): number | null {
+  if (slice.state === "ok") return slice.value;
+  if (slice.state === "empty") return 0;
+  return null;
+}

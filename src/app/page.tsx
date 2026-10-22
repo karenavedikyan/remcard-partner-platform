@@ -16,7 +16,12 @@ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-
 import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
 import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
 import { shouldRenderSpecialistHome } from "@/lib/specialist-home/gate";
+import {
+  businessOwnerHomePartnerType,
+  shouldRenderBusinessOwnerHome,
+} from "@/lib/business-home/gate";
 import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
+import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +92,27 @@ export default async function HomePage(
           description="Начните с того, что нужно вам сегодня."
         />
         <SpecialistHomeDashboard
+          needsProfileCompletion={readiness.needsProfileCompletion}
+          catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+        />
+      </CabinetShell>
+    );
+  }
+
+  const businessOwnerHome = shouldRenderBusinessOwnerHome(user);
+  const businessPartnerType = businessOwnerHome ? businessOwnerHomePartnerType(user) : null;
+
+  if (businessOwnerHome && businessPartnerType) {
+    const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
+    return (
+      <CabinetShell returnTo="/">
+        <PageHeading
+          eyebrow={eyebrow}
+          title="Ваш кабинет"
+          description="Начните с того, что нужно вам сегодня."
+        />
+        <BusinessOwnerHomeDashboard
+          partnerType={businessPartnerType}
           needsProfileCompletion={readiness.needsProfileCompletion}
           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
         />
