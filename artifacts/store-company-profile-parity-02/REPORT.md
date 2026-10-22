@@ -4,8 +4,8 @@
 
 | Repo | Branch | Base (production) | Tip (this work) |
 |------|--------|-------------------|-----------------|
-| remcard-partner-platform | `feat/store-company-profile-parity-02` | `1abf5bd8c3890418d7731865c05da05a09e556c7` | _(see git log after push)_ |
-| remcard-navigator | `feat/store-company-profile-parity-02` | `3ab843c7221c60ab7e043b9063eb31e36b0da000` | _(see git log after push)_ |
+| remcard-partner-platform | `feat/store-company-profile-parity-02` | `1abf5bd8c3890418d7731865c05da05a09e556c7` | `07ba2c5` |
+| remcard-navigator | `feat/store-company-profile-parity-02` | `3ab843c7221c60ab7e043b9063eb31e36b0da000` | `515a57c8` |
 
 **Turn88 home (not merged into profile):**
 
