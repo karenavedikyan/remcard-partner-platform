@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
 import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
@@ -8,7 +8,12 @@ import walletStyles from "@/components/specialist-wallet/specialist-wallet.modul
 
 type WalletTab = "settlements" | "requisites";
 
-export function SpecialistMasterWallet() {
+type Props = {
+  /** Override settlements tab content (dev-fixture preview). */
+  settlementsSlot?: ReactNode;
+};
+
+export function SpecialistMasterWallet({ settlementsSlot }: Props) {
   const [tab, setTab] = useState<WalletTab>("settlements");
 
   return (
@@ -37,7 +42,7 @@ export function SpecialistMasterWallet() {
       </div>
       <div className={walletStyles.panel}>
         {tab === "settlements" ? (
-          <SpecialistSettlementsWorkspace />
+          settlementsSlot ?? <SpecialistSettlementsWorkspace />
         ) : (
           <div
             className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}

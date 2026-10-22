@@ -216,6 +216,10 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET"]),
       pattern: /^\/api\/pro\/wallet\/(balance|transactions|settlements)$/,
     },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/wallet\/settlements\/export$/,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r05\/status$/ },
     {
       methods: new Set(["GET"]),

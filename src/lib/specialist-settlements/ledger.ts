@@ -3,7 +3,7 @@ import type {
   SettlementObligation,
   SettlementPartnerGroup,
 } from "@/lib/settlements-types";
-import { groupObligationsByCounterparty, sumObligationAmounts } from "@/lib/settlements-mappers";
+import { sumObligationAmounts } from "@/lib/settlements-mappers";
 
 export type SettlementDirection = "receivable" | "payable";
 
@@ -19,6 +19,13 @@ export type SettlementViewMode = "rows" | "compact" | "cards";
 
 export function defaultLedgerFilters(): SettlementLedgerFilters {
   return { q: "", status: "open", from: "", to: "", sort: "date-desc" };
+}
+
+export function validateLedgerPeriod(from: string, to: string): string | null {
+  if (from && to && from > to) {
+    return "Дата начала периода не может быть позже даты окончания.";
+  }
+  return null;
 }
 
 function parseDay(iso: string): number {
@@ -49,6 +56,18 @@ function matchesQuery(row: SettlementObligation, q: string): boolean {
   );
 }
 
+function sortObligations(
+  rows: SettlementObligation[],
+  sort: SettlementLedgerFilters["sort"],
+): SettlementObligation[] {
+  return [...rows].sort((a, b) => {
+    if (sort === "amount-desc") return b.amount - a.amount;
+    if (sort === "amount-asc") return a.amount - b.amount;
+    if (sort === "date-asc") return parseDay(a.createdAt) - parseDay(b.createdAt);
+    return parseDay(b.createdAt) - parseDay(a.createdAt);
+  });
+}
+
 export function filterOpenObligations(
   rows: SettlementObligation[],
   filters: SettlementLedgerFilters,
@@ -58,35 +77,87 @@ export function filterOpenObligations(
     out = out.filter((row) => row.status !== "PAID" && row.status !== "CANCELLED");
   }
   out = out.filter((row) => inDateRange(row.createdAt, filters.from, filters.to));
-  out.sort((a, b) => {
-    if (filters.sort === "amount-desc") return b.amount - a.amount;
-    if (filters.sort === "amount-asc") return a.amount - b.amount;
-    if (filters.sort === "date-asc") return parseDay(a.createdAt) - parseDay(b.createdAt);
-    return parseDay(b.createdAt) - parseDay(a.createdAt);
-  });
-  return out;
+  return sortObligations(out, filters.sort);
 }
 
-export function filterCompletedRows(
+export type CompletedPeriodFilterResult = {
+  inPeriod: SettlementCompleted[];
+  excludedUnknownPaidAt: number;
+};
+
+/** Period filter uses paidAt only; legacy PAID without paidAt is excluded from period totals. */
+export function filterCompletedForPeriod(
   rows: SettlementCompleted[],
   direction: SettlementDirection | "both",
   filters: Pick<SettlementLedgerFilters, "q" | "from" | "to">,
-): SettlementCompleted[] {
-  let out = rows.filter((row) => {
-    if (direction !== "both" && row.direction !== direction) return false;
-    return matchesQuery(row, filters.q);
-  });
-  out = out.filter((row) => {
-    const when = row.paidAt ?? row.createdAt;
-    return inDateRange(when, filters.from, filters.to);
-  });
-  return out;
+): CompletedPeriodFilterResult {
+  let unknownPaidAt = 0;
+  const inPeriod: SettlementCompleted[] = [];
+  for (const row of rows) {
+    if (direction !== "both" && row.direction !== direction) continue;
+    if (!matchesQuery(row, filters.q)) continue;
+    if (!row.paidAt) {
+      unknownPaidAt += 1;
+      continue;
+    }
+    if (inDateRange(row.paidAt, filters.from, filters.to)) {
+      inPeriod.push(row);
+    }
+  }
+  return { inPeriod, excludedUnknownPaidAt: unknownPaidAt };
 }
 
 export function paginateRows<T>(rows: T[], page: number, pageSize: number): T[] {
-  const safePage = Math.max(1, page);
+  const maxPage = Math.max(1, Math.ceil(rows.length / pageSize) || 1);
+  const safePage = Math.min(Math.max(1, page), maxPage);
   const start = (safePage - 1) * pageSize;
   return rows.slice(start, start + pageSize);
+}
+
+export function pageCount(rows: unknown[], pageSize: number): number {
+  return Math.max(1, Math.ceil(rows.length / pageSize) || 1);
+}
+
+export function clampPage(page: number, rows: unknown[], pageSize: number): number {
+  return Math.min(Math.max(1, page), pageCount(rows, pageSize));
+}
+
+function groupObligationsByCounterparty(
+  rows: SettlementObligation[],
+): SettlementPartnerGroup[] {
+  const groups = new Map<string, SettlementPartnerGroup>();
+  for (const row of rows) {
+    const existing = groups.get(row.counterpartyId);
+    if (existing) {
+      existing.items.push(row);
+      existing.totalAmount += row.amount;
+      if (row.counterpartyName.trim()) {
+        existing.counterpartyName = row.counterpartyName;
+      }
+      continue;
+    }
+    groups.set(row.counterpartyId, {
+      counterpartyId: row.counterpartyId,
+      counterpartyName: row.counterpartyName,
+      totalAmount: row.amount,
+      items: [row],
+    });
+  }
+  return [...groups.values()];
+}
+
+function sortPartnerGroups(
+  groups: SettlementPartnerGroup[],
+  sort: SettlementLedgerFilters["sort"],
+): SettlementPartnerGroup[] {
+  return [...groups].sort((a, b) => {
+    if (sort === "amount-desc") return b.totalAmount - a.totalAmount;
+    if (sort === "amount-asc") return a.totalAmount - b.totalAmount;
+    const latest = (g: SettlementPartnerGroup) =>
+      Math.max(...g.items.map((i) => parseDay(i.createdAt)));
+    if (sort === "date-asc") return latest(a) - latest(b);
+    return latest(b) - latest(a);
+  });
 }
 
 export function partnerGroupsForDirection(
@@ -96,7 +167,8 @@ export function partnerGroupsForDirection(
   filters: SettlementLedgerFilters,
 ): SettlementPartnerGroup[] {
   const source = direction === "receivable" ? receivable : payable;
-  return groupObligationsByCounterparty(filterOpenObligations(source, filters));
+  const filtered = filterOpenObligations(source, filters);
+  return sortPartnerGroups(groupObligationsByCounterparty(filtered), filters.sort);
 }
 
 export function directionTotal(
@@ -125,9 +197,14 @@ export function buildExportRows(
   payable: SettlementObligation[],
   direction: SettlementDirection,
   filters: SettlementLedgerFilters,
+  counterpartyId?: string | null,
 ): SettlementExportRow[] {
   const source = direction === "receivable" ? receivable : payable;
-  return filterOpenObligations(source, filters).map((row) => ({
+  let rows = filterOpenObligations(source, filters);
+  if (counterpartyId) {
+    rows = rows.filter((row) => row.counterpartyId === counterpartyId);
+  }
+  return rows.map((row) => ({
     direction: direction === "receivable" ? "Мне должны" : "Я должен",
     counterparty: row.counterpartyName,
     orderId: row.orderId,
@@ -138,6 +215,18 @@ export function buildExportRows(
   }));
 }
 
+export function partnerCompletedHistory(
+  completed: SettlementCompleted[],
+  direction: SettlementDirection,
+  counterpartyId: string,
+  filters: SettlementLedgerFilters,
+): CompletedPeriodFilterResult {
+  const scoped = completed.filter(
+    (row) => row.direction === direction && row.counterpartyId === counterpartyId,
+  );
+  return filterCompletedForPeriod(scoped, direction, filters);
+}
+
 export function reconciliationSummary(
   completed: SettlementCompleted[],
   from: string,
@@ -145,18 +234,35 @@ export function reconciliationSummary(
 ): {
   receivableTotal: number;
   payableTotal: number;
+  rows: SettlementCompleted[];
+  excludedUnknownPaidAt: number;
   gaps: string[];
 } {
-  const filtered = filterCompletedRows(completed, "both", { q: "", from, to });
+  const { inPeriod, excludedUnknownPaidAt } = filterCompletedForPeriod(completed, "both", {
+    q: "",
+    from,
+    to,
+  });
   const receivableTotal = sumObligationAmounts(
-    filtered.filter((r) => r.direction === "receivable"),
+    inPeriod.filter((r) => r.direction === "receivable"),
   );
   const payableTotal = sumObligationAmounts(
-    filtered.filter((r) => r.direction === "payable"),
+    inPeriod.filter((r) => r.direction === "payable"),
   );
   const gaps = [
     "Нет журнала частичных выплат и подтверждений получателя — сводка только по завершённым order-linked записям.",
     "Исторические реквизиты и юр. стороны на дату события не восстанавливаются автоматически.",
   ];
-  return { receivableTotal, payableTotal, gaps };
+  if (excludedUnknownPaidAt > 0) {
+    gaps.push(
+      `${excludedUnknownPaidAt} legacy-записей PAID без даты выплаты (paidAt) не включены в периодную сводку.`,
+    );
+  }
+  return {
+    receivableTotal,
+    payableTotal,
+    rows: inPeriod,
+    excludedUnknownPaidAt,
+    gaps,
+  };
 }

@@ -8,6 +8,7 @@ import { PageHeading } from "@/components/ui/PageHeading";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { AgentR05Status } from "@/lib/agent-r05/api";
+import { resolveSettlementsPageShell } from "@/lib/settlements-page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -25,24 +26,29 @@ export default async function SettlementsPage() {
   });
   const r05Eligible =
     r05Result.ok && r05Result.data.featureEnabled && r05Result.data.eligible;
-  const masterWalletShell = user.partnerType === "MASTER" && !r05Eligible;
+  const shell = resolveSettlementsPageShell({
+    partnerType: user.partnerType,
+    r05Eligible,
+  });
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading
-        eyebrow={r05Eligible ? "АГЕНТ" : masterWalletShell ? "СПЕЦИАЛИСТ" : "RemCard PROF"}
-        title={r05Eligible || masterWalletShell ? "Кошелёк" : "Взаиморасчёты"}
+        eyebrow={
+          shell === "agent-r05" ? "АГЕНТ" : shell === "master-wallet" ? "СПЕЦИАЛИСТ" : "RemCard PROF"
+        }
+        title={shell === "hub" ? "Взаиморасчёты" : "Кошелёк"}
         description={
-          r05Eligible
+          shell === "agent-r05"
             ? "Входящие обязательства партнёров и реквизиты для получения оплаты."
-            : masterWalletShell
+            : shell === "master-wallet"
               ? "Взаиморасчёты с партнёрами в обоих направлениях и реквизиты для выплат."
               : "Открытые обязательства и завершённые выплаты между партнёрами."
         }
       />
-      {r05Eligible ? (
+      {shell === "agent-r05" ? (
         <AgentReceivablesWallet />
-      ) : masterWalletShell ? (
+      ) : shell === "master-wallet" ? (
         <SpecialistMasterWallet />
       ) : (
         <SettlementsHub />

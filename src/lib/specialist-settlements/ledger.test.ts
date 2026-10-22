@@ -1,13 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { SettlementObligation } from "@/lib/settlements-types";
+import type { SettlementCompleted, SettlementObligation } from "@/lib/settlements-types";
 import {
   buildExportRows,
+  clampPage,
   defaultLedgerFilters,
   directionTotal,
+  filterCompletedForPeriod,
   filterOpenObligations,
   paginateRows,
   partnerGroupsForDirection,
+  reconciliationSummary,
+  validateLedgerPeriod,
 } from "./ledger";
 
 const row = (overrides: Partial<SettlementObligation>): SettlementObligation => ({
@@ -31,42 +35,98 @@ describe("specialist-settlements ledger", () => {
     assert.equal(directionTotal(receivable, payable, "payable"), 80);
   });
 
-  it("excludes PAID and CANCELLED from open totals and filters", () => {
+  it("export from partner A excludes partner B across all matching rows", () => {
     const receivable = [
-      row({ id: "open", amount: 50 }),
-      row({ id: "paid", amount: 999, status: "PAID" }),
-      row({ id: "cancel", amount: 888, status: "CANCELLED" }),
+      row({ id: "a1", counterpartyId: "A", counterpartyName: "A", amount: 10 }),
+      row({ id: "b1", counterpartyId: "B", counterpartyName: "B", amount: 20 }),
     ];
     const filters = defaultLedgerFilters();
-    assert.equal(filterOpenObligations(receivable, filters).length, 1);
-    assert.equal(directionTotal(receivable, [], "receivable"), 50);
+    const exported = buildExportRows(receivable, [], "receivable", filters, "A");
+    assert.equal(exported.length, 1);
+    assert.equal(exported[0]?.counterparty, "A");
   });
 
-  it("paginates after filtering and export uses full selection", () => {
-    const receivable = [
-      row({ id: "a", amount: 10, createdAt: "2026-10-01T10:00:00.000Z" }),
-      row({ id: "b", amount: 20, createdAt: "2026-10-02T10:00:00.000Z" }),
-      row({ id: "c", amount: 30, createdAt: "2026-10-03T10:00:00.000Z" }),
+  it("reconciliation excludes rows outside period and unknown paidAt", () => {
+    const completed: SettlementCompleted[] = [
+      {
+        ...row({ id: "in", amount: 50, createdAt: "2026-09-01T10:00:00.000Z" }),
+        paidAt: "2026-10-05T10:00:00.000Z",
+        direction: "receivable",
+      },
+      {
+        ...row({ id: "out", amount: 99, createdAt: "2026-10-01T10:00:00.000Z" }),
+        paidAt: "2026-11-01T10:00:00.000Z",
+        direction: "receivable",
+      },
+      {
+        ...row({ id: "legacy", amount: 30, createdAt: "2026-10-02T10:00:00.000Z" }),
+        paidAt: null,
+        direction: "payable",
+      },
     ];
-    const filters = defaultLedgerFilters();
-    const page1 = paginateRows(filterOpenObligations(receivable, filters), 1, 2);
-    assert.equal(page1.length, 2);
-    const exported = buildExportRows(receivable, [], "receivable", filters);
-    assert.equal(exported.length, 3);
+    const recon = reconciliationSummary(completed, "2026-10-01", "2026-10-31");
+    assert.equal(recon.receivableTotal, 50);
+    assert.equal(recon.rows.length, 1);
+    assert.equal(recon.excludedUnknownPaidAt, 1);
+    const periodOnly = filterCompletedForPeriod(completed, "both", {
+      q: "",
+      from: "2026-10-01",
+      to: "2026-10-31",
+    });
+    assert.equal(periodOnly.inPeriod.length, 1);
+    assert.equal(periodOnly.excludedUnknownPaidAt, 1);
   });
 
-  it("groups partners per direction", () => {
+  it("clamps page when filters shrink result set on page 2", () => {
+    const payable = Array.from({ length: 11 }, (_, i) => {
+      const n = String(i + 1).padStart(2, "0");
+      return row({
+        id: `pay-${n}`,
+        counterpartyId: `PARTNER_${n}`,
+        counterpartyName: `PARTNER_${n}`,
+        createdAt: `2026-10-${10 + i}T10:00:00.000Z`,
+      });
+    });
+    const allGroups = partnerGroupsForDirection([], payable, "payable", defaultLedgerFilters());
+    assert.equal(allGroups.length, 11);
+    const narrowed = partnerGroupsForDirection([], payable, "payable", {
+      ...defaultLedgerFilters(),
+      from: "2026-10-11",
+    });
+    assert.ok(narrowed.some((g) => g.counterpartyId === "PARTNER_11"));
+    const clamped = clampPage(2, narrowed, 10);
+    assert.equal(clamped, 1);
+    assert.ok(
+      paginateRows(narrowed, clamped, 10).some((g) => g.counterpartyId === "PARTNER_11"),
+    );
+  });
+
+  it("sorts partner groups by amount ascending, not alphabetically", () => {
     const receivable = [
-      row({ id: "1", counterpartyId: "s1", counterpartyName: "Shop", amount: 100 }),
-      row({ id: "2", counterpartyId: "s1", counterpartyName: "Shop", amount: 50 }),
+      row({
+        id: "a",
+        counterpartyId: "A",
+        counterpartyName: "A",
+        amount: 100,
+      }),
+      row({
+        id: "z",
+        counterpartyId: "Z",
+        counterpartyName: "Z",
+        amount: 1,
+      }),
     ];
-    const payable = [row({ id: "3", counterpartyId: "m1", counterpartyName: "Master", amount: 80 })];
-    const filters = defaultLedgerFilters();
-    const recvGroups = partnerGroupsForDirection(receivable, payable, "receivable", filters);
-    assert.equal(recvGroups.length, 1);
-    assert.equal(recvGroups[0]?.totalAmount, 150);
-    const payGroups = partnerGroupsForDirection(receivable, payable, "payable", filters);
-    assert.equal(payGroups.length, 1);
-    assert.equal(payGroups[0]?.totalAmount, 80);
+    const filters = { ...defaultLedgerFilters(), sort: "amount-asc" as const };
+    const groups = partnerGroupsForDirection(receivable, [], "receivable", filters);
+    assert.equal(groups[0]?.counterpartyId, "Z");
+    assert.equal(groups[1]?.counterpartyId, "A");
+  });
+
+  it("validates invalid period range", () => {
+    assert.match(
+      validateLedgerPeriod("2026-10-12", "2026-10-01") ?? "",
+      /не может быть позже/i,
+    );
+    assert.equal(validateLedgerPeriod("2026-10-01", "2026-10-12"), null);
   });
 });

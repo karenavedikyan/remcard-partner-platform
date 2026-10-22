@@ -6,14 +6,8 @@ import { RemcardApiError } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import { bonusStatusLabel, bonusStatusTone } from "@/lib/history-labels";
 import { fetchSettlements, isSettlementsAccessDenied } from "@/lib/settlements-loader";
-import {
-  completedDirectionLabel,
-  sumObligationAmounts,
-} from "@/lib/settlements-mappers";
-import {
-  settlementAccrualHref,
-  settlementPurchaseHref,
-} from "@/lib/settlements-links";
+import { completedDirectionLabel } from "@/lib/settlements-mappers";
+import { settlementAccrualHref, settlementPurchaseHref } from "@/lib/settlements-links";
 import type {
   SettlementCompleted,
   SettlementObligation,
@@ -22,25 +16,33 @@ import type {
 } from "@/lib/settlements-types";
 import {
   buildExportRows,
+  clampPage,
   defaultLedgerFilters,
   directionTotal,
   filterOpenObligations,
+  pageCount,
   paginateRows,
+  partnerCompletedHistory,
   partnerGroupsForDirection,
   reconciliationSummary,
+  validateLedgerPeriod,
   type SettlementDirection,
   type SettlementLedgerFilters,
   type SettlementViewMode,
 } from "@/lib/specialist-settlements/ledger";
-import { downloadSettlementExportCsv } from "@/lib/specialist-settlements/export-csv";
+import { downloadMasterSettlementsXlsx } from "@/lib/specialist-settlements/export-xlsx";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import hubStyles from "@/components/settlements/settlements.module.css";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
 
-type Screen = "overview" | "partners" | "orders" | "reconciliation";
+type Screen = "overview" | "partners" | "orders" | "partnerHistory" | "reconciliation";
 
 const PAGE_SIZE = 10;
+
+type Props = {
+  previewData?: SettlementsResponse;
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -61,11 +63,15 @@ function ObligationCard({
 }) {
   const compact = view === "compact";
   const full = view === "cards";
+  const rowClass =
+    view === "rows"
+      ? `${hubStyles.row} ${walletStyles.rowFlat}`
+      : view === "compact"
+        ? `${hubStyles.row} ${walletStyles.rowCompact}`
+        : hubStyles.row;
+
   return (
-    <article
-      className={hubStyles.row}
-      data-testid={`specialist-settlement-row-${row.id}`}
-    >
+    <article className={rowClass} data-testid={`specialist-settlement-row-${row.id}`}>
       <div className={hubStyles.rowHeader}>
         <div>
           <p className={hubStyles.rowTitle}>{formatMoneyRub(row.amount)}</p>
@@ -75,35 +81,75 @@ function ObligationCard({
               Заказ: {row.orderId} · ID начисления: {row.id}
             </p>
           ) : null}
+          {full ? (
+            <p className={hubStyles.meta}>Партнёр: {row.counterpartyName}</p>
+          ) : null}
         </div>
         <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
       </div>
-      {!compact ? <p className={hubStyles.meta}>Создано: {formatDate(row.createdAt)}</p> : null}
-      <div className={hubStyles.actions}>
-        <Link href={settlementAccrualHref(row)} className={hubStyles.linkButton}>
-          Начисление
-        </Link>
-        <Link href={settlementPurchaseHref(row)} className={hubStyles.linkButton}>
-          Покупка
-        </Link>
-      </div>
+      {view !== "compact" ? (
+        <p className={hubStyles.meta}>Создано: {formatDate(row.createdAt)}</p>
+      ) : null}
+      {full ? (
+        <div className={hubStyles.actions}>
+          <Link href={settlementAccrualHref(row)} className={hubStyles.linkButton}>
+            Начисление
+          </Link>
+          <Link href={settlementPurchaseHref(row)} className={hubStyles.linkButton}>
+            Покупка
+          </Link>
+        </div>
+      ) : null}
     </article>
   );
 }
 
-export function SpecialistSettlementsWorkspace() {
+function CompletedRow({ row }: { row: SettlementCompleted }) {
+  return (
+    <Link
+      key={`${row.id}-${row.paidAt ?? "unknown"}`}
+      href={settlementAccrualHref(row)}
+      className={hubStyles.row}
+    >
+      <div className={hubStyles.rowHeader}>
+        <div>
+          <p className={hubStyles.rowTitle}>{formatMoneyRub(row.amount)}</p>
+          <p className={hubStyles.meta}>
+            {row.counterpartyName} · {completedDirectionLabel(row.direction)}
+          </p>
+          <p className={hubStyles.meta}>
+            {row.paidAt
+              ? `Зафиксировано: ${formatDate(row.paidAt)}`
+              : "Дата выплаты не зафиксирована (legacy PAID)"}
+          </p>
+        </div>
+        <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
+      </div>
+    </Link>
+  );
+}
+
+export function SpecialistSettlementsWorkspace({ previewData }: Props) {
   const [screen, setScreen] = useState<Screen>("overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
   const [selectedPartner, setSelectedPartner] = useState<SettlementPartnerGroup | null>(null);
   const [filters, setFilters] = useState<SettlementLedgerFilters>(defaultLedgerFilters());
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [view, setView] = useState<SettlementViewMode>("rows");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!previewData);
   const [error, setError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
-  const [data, setData] = useState<SettlementsResponse | null>(null);
+  const [exportError, setExportError] = useState("");
+  const [data, setData] = useState<SettlementsResponse | null>(previewData ?? null);
+
+  const periodError = useMemo(
+    () => validateLedgerPeriod(filters.from, filters.to),
+    [filters.from, filters.to],
+  );
 
   const load = useCallback(async () => {
+    if (previewData) return;
     setLoading(true);
     setError("");
     setAccessDenied(false);
@@ -123,11 +169,16 @@ export function SpecialistSettlementsWorkspace() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [previewData]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const updateFilters = useCallback((patch: Partial<SettlementLedgerFilters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setPage(1);
+  }, []);
 
   const receivableTotal = useMemo(
     () => directionTotal(data?.receivable ?? [], data?.payable ?? [], "receivable"),
@@ -139,33 +190,68 @@ export function SpecialistSettlementsWorkspace() {
   );
 
   const partnerGroups = useMemo(() => {
-    if (!data) return [];
-    return partnerGroupsForDirection(
-      data.receivable,
-      data.payable,
-      direction,
-      filters,
-    );
-  }, [data, direction, filters]);
+    if (!data || periodError) return [];
+    return partnerGroupsForDirection(data.receivable, data.payable, direction, filters);
+  }, [data, direction, filters, periodError]);
 
-  const orderRows = useMemo(() => {
-    if (!selectedPartner || !data) return [] as SettlementObligation[];
+  const allOrderRows = useMemo(() => {
+    if (!selectedPartner || !data || periodError) return [] as SettlementObligation[];
     const source = direction === "receivable" ? data.receivable : data.payable;
-    const filtered = filterOpenObligations(source, filters).filter(
+    return filterOpenObligations(source, filters).filter(
       (row) => row.counterpartyId === selectedPartner.counterpartyId,
     );
-    return paginateRows(filtered, page, PAGE_SIZE);
-  }, [data, direction, filters, page, selectedPartner]);
+  }, [data, direction, filters, periodError, selectedPartner]);
 
-  const pagedPartners = useMemo(
-    () => paginateRows(partnerGroups, page, PAGE_SIZE),
-    [partnerGroups, page],
-  );
+  const partnerHistory = useMemo(() => {
+    if (!selectedPartner || !data) return null;
+    return partnerCompletedHistory(
+      data.completed,
+      direction,
+      selectedPartner.counterpartyId,
+      filters,
+    );
+  }, [data, direction, filters, selectedPartner]);
 
   const recon = useMemo(() => {
-    if (!data) return null;
+    if (!data || periodError) return null;
     return reconciliationSummary(data.completed, filters.from, filters.to);
-  }, [data, filters.from, filters.to]);
+  }, [data, filters.from, filters.to, periodError]);
+
+  const listForPagination = useMemo(() => {
+    if (screen === "partners") return partnerGroups;
+    if (screen === "orders") return allOrderRows;
+    if (screen === "partnerHistory") return partnerHistory?.inPeriod ?? [];
+    if (screen === "reconciliation") return recon?.rows ?? [];
+    return [];
+  }, [allOrderRows, partnerGroups, partnerHistory, recon, screen]);
+
+  const safePage = useMemo(
+    () => clampPage(page, listForPagination, PAGE_SIZE),
+    [listForPagination, page],
+  );
+
+  useEffect(() => {
+    if (safePage !== page) setPage(safePage);
+  }, [page, safePage]);
+
+  const pagedPartners = useMemo(
+    () => paginateRows(partnerGroups, safePage, PAGE_SIZE),
+    [partnerGroups, safePage],
+  );
+  const orderRows = useMemo(
+    () => paginateRows(allOrderRows, safePage, PAGE_SIZE),
+    [allOrderRows, safePage],
+  );
+  const pagedReconRows = useMemo(
+    () => paginateRows(recon?.rows ?? [], safePage, PAGE_SIZE),
+    [recon, safePage],
+  );
+  const pagedHistoryRows = useMemo(
+    () => paginateRows(partnerHistory?.inPeriod ?? [], safePage, PAGE_SIZE),
+    [partnerHistory, safePage],
+  );
+
+  const totalPages = pageCount(listForPagination, PAGE_SIZE);
 
   function openDirection(next: SettlementDirection) {
     setDirection(next);
@@ -174,13 +260,25 @@ export function SpecialistSettlementsWorkspace() {
     setScreen("partners");
   }
 
-  function exportCurrent() {
-    if (!data) return;
-    const rows = buildExportRows(data.receivable, data.payable, direction, filters);
-    downloadSettlementExportCsv(
-      rows,
-      `RemCard-specialist-settlements-${direction}-${new Date().toISOString().slice(0, 10)}`,
-    );
+  async function exportCurrent() {
+    if (!data || periodError) return;
+    setExportError("");
+    try {
+      await downloadMasterSettlementsXlsx({
+        direction,
+        filters,
+        counterpartyId:
+          screen === "orders" || screen === "partnerHistory"
+            ? selectedPartner?.counterpartyId
+            : null,
+      });
+    } catch (caught) {
+      setExportError(
+        caught instanceof RemcardApiError
+          ? caught.message
+          : "Не удалось выгрузить Excel",
+      );
+    }
   }
 
   if (loading) {
@@ -220,67 +318,99 @@ export function SpecialistSettlementsWorkspace() {
       </p>
 
       <div className={walletStyles.toolbar}>
-        <input
-          aria-label="Поиск"
-          value={filters.q}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, q: e.target.value }));
-            setPage(1);
-          }}
-          placeholder="Партнёр, заказ, сертификат…"
-          className={walletStyles.search}
-        />
-        <select
-          aria-label="Сортировка"
-          value={filters.sort}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, sort: e.target.value as SettlementLedgerFilters["sort"] }))
-          }
-        >
-          <option value="date-desc">Сначала новые</option>
-          <option value="date-asc">Сначала старые</option>
-          <option value="amount-desc">Сумма ↓</option>
-          <option value="amount-asc">Сумма ↑</option>
-        </select>
-        <input
-          aria-label="Период с"
-          type="date"
-          value={filters.from}
-          onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
-        />
-        <input
-          aria-label="Период по"
-          type="date"
-          value={filters.to}
-          onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
-        />
-        <select
-          aria-label="Представление"
-          value={view}
-          onChange={(e) => setView(e.target.value as SettlementViewMode)}
-        >
-          <option value="rows">Строки</option>
-          <option value="compact">Компактные карточки</option>
-          <option value="cards">Полные карточки</option>
-        </select>
-        <Button type="button" variant="secondary" onClick={exportCurrent}>
-          Excel (CSV, весь отбор)
-        </Button>
         <Button
           type="button"
           variant="secondary"
-          onClick={() => {
-            setFilters(defaultLedgerFilters());
-            setPage(1);
-          }}
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((v) => !v)}
         >
-          Сбросить фильтры
+          {filtersOpen ? "Скрыть фильтры" : "Фильтры и представление"}
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => void exportCurrent()} disabled={Boolean(periodError)}>
+          Excel (.xlsx, весь отбор)
         </Button>
       </div>
 
+      {exportError ? (
+        <p className={hubStyles.error} role="alert">
+          {exportError}
+        </p>
+      ) : null}
+
+      {filtersOpen ? (
+        <div className={walletStyles.filtersPanel}>
+          <input
+            aria-label="Поиск"
+            value={filters.q}
+            onChange={(e) => updateFilters({ q: e.target.value })}
+            placeholder="Партнёр, заказ, сертификат…"
+            className={walletStyles.search}
+          />
+          <select
+            aria-label="Статус"
+            value={filters.status}
+            onChange={(e) =>
+              updateFilters({ status: e.target.value as SettlementLedgerFilters["status"] })
+            }
+          >
+            <option value="open">Открытые</option>
+            <option value="all">Все статусы</option>
+          </select>
+          <select
+            aria-label="Сортировка"
+            value={filters.sort}
+            onChange={(e) =>
+              updateFilters({ sort: e.target.value as SettlementLedgerFilters["sort"] })
+            }
+          >
+            <option value="date-desc">Сначала новые</option>
+            <option value="date-asc">Сначала старые</option>
+            <option value="amount-desc">Сумма ↓</option>
+            <option value="amount-asc">Сумма ↑</option>
+          </select>
+          <input
+            aria-label="Период с"
+            type="date"
+            value={filters.from}
+            onChange={(e) => updateFilters({ from: e.target.value })}
+          />
+          <input
+            aria-label="Период по"
+            type="date"
+            value={filters.to}
+            onChange={(e) => updateFilters({ to: e.target.value })}
+          />
+          <select
+            aria-label="Представление"
+            value={view}
+            onChange={(e) => setView(e.target.value as SettlementViewMode)}
+          >
+            <option value="rows">Строки</option>
+            <option value="compact">Компактные карточки</option>
+            <option value="cards">Полные карточки</option>
+          </select>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setFilters(defaultLedgerFilters());
+              setPage(1);
+            }}
+          >
+            Сбросить фильтры
+          </Button>
+        </div>
+      ) : null}
+
+      {periodError ? (
+        <div className={hubStyles.error} role="alert">
+          <p>{periodError}</p>
+        </div>
+      ) : null}
+
       {screen === "overview" ? (
         <>
-          <div className={hubStyles.summary}>
+          <div className={`${hubStyles.summary} ${walletStyles.directionSummary}`}>
             <button
               type="button"
               className={hubStyles.summaryCard}
@@ -299,10 +429,6 @@ export function SpecialistSettlementsWorkspace() {
               <p className={hubStyles.summaryLabel}>Я должен</p>
               <p className={hubStyles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
             </button>
-            <div className={hubStyles.summaryCard}>
-              <p className={hubStyles.summaryLabel}>Завершённые</p>
-              <p className={hubStyles.summaryValue}>{data.completed.length}</p>
-            </div>
           </div>
           <div className={hubStyles.actions}>
             <Button type="button" onClick={() => setScreen("reconciliation")}>
@@ -352,21 +478,55 @@ export function SpecialistSettlementsWorkspace() {
             onClick={() => {
               setScreen("partners");
               setSelectedPartner(null);
+              setPage(1);
             }}
           >
-            ← {selectedPartner.counterpartyName}
+            ← Партнёры
           </Button>
-          <div className={hubStyles.list}>
-            {orderRows.map((row) => (
-              <ObligationCard key={row.id} row={row} view={view} />
-            ))}
+          <h2 className={hubStyles.groupTitle}>{selectedPartner.counterpartyName}</h2>
+          <div className={hubStyles.actions}>
+            <Button type="button" variant="secondary" onClick={() => setScreen("partnerHistory")}>
+              История партнёра
+            </Button>
           </div>
+          {orderRows.length === 0 ? (
+            <div className={hubStyles.empty}>Нет открытых записей по текущему отбору.</div>
+          ) : (
+            <div className={hubStyles.list}>
+              {orderRows.map((row) => (
+                <ObligationCard key={row.id} row={row} view={view} />
+              ))}
+            </div>
+          )}
           {direction === "payable" ? (
             <p className={hubStyles.note}>
               Кнопка «Зафиксировать выплату» скрыта: протокол подтверждения получателем будет подключён
               отдельным этапом backend.
             </p>
           ) : null}
+        </>
+      ) : null}
+
+      {screen === "partnerHistory" && selectedPartner && partnerHistory ? (
+        <>
+          <Button type="button" variant="secondary" onClick={() => setScreen("orders")}>
+            ← {selectedPartner.counterpartyName}
+          </Button>
+          <h2 className={hubStyles.groupTitle}>История партнёра (завершённые)</h2>
+          <p className={hubStyles.note}>
+            Показаны только зафиксированные выплаты с известной датой paidAt в выбранном периоде.
+            Частичные выплаты и юридические snapshots не восстанавливаются.
+          </p>
+          {partnerHistory.excludedUnknownPaidAt > 0 ? (
+            <p className={hubStyles.meta}>
+              Исключено legacy PAID без paidAt: {partnerHistory.excludedUnknownPaidAt}
+            </p>
+          ) : null}
+          {pagedHistoryRows.length === 0 ? (
+            <div className={hubStyles.empty}>Нет завершённых записей по текущему отбору.</div>
+          ) : (
+            pagedHistoryRows.map((row) => <CompletedRow key={`${row.id}-hist`} row={row} />)
+          )}
         </>
       ) : null}
 
@@ -385,19 +545,11 @@ export function SpecialistSettlementsWorkspace() {
               <li key={gap}>{gap}</li>
             ))}
           </ul>
-          {data.completed.slice(0, 20).map((row: SettlementCompleted) => (
-            <Link key={`${row.id}-${row.paidAt}`} href={settlementAccrualHref(row)} className={hubStyles.row}>
-              <div className={hubStyles.rowHeader}>
-                <div>
-                  <p className={hubStyles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-                  <p className={hubStyles.meta}>
-                    {row.counterpartyName} · {completedDirectionLabel(row.direction)}
-                  </p>
-                </div>
-                <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
-              </div>
-            </Link>
-          ))}
+          {pagedReconRows.length === 0 ? (
+            <div className={hubStyles.empty}>Нет завершённых записей в выбранном периоде.</div>
+          ) : (
+            pagedReconRows.map((row) => <CompletedRow key={`${row.id}-recon`} row={row} />)
+          )}
         </>
       ) : null}
 
@@ -406,17 +558,35 @@ export function SpecialistSettlementsWorkspace() {
           <Button
             type="button"
             variant="secondary"
-            disabled={page <= 1}
+            disabled={safePage <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
             Назад
           </Button>
-          <span className={hubStyles.meta}>Страница {page}</span>
-          <Button type="button" variant="secondary" onClick={() => setPage((p) => p + 1)}>
+          <span className={hubStyles.meta}>
+            Страница {safePage} из {totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
             Вперёд
           </Button>
         </div>
       ) : null}
     </div>
   );
+}
+
+/** @internal test helper */
+export function _buildExportRowsForTest(
+  receivable: SettlementObligation[],
+  payable: SettlementObligation[],
+  direction: SettlementDirection,
+  filters: SettlementLedgerFilters,
+  counterpartyId?: string,
+) {
+  return buildExportRows(receivable, payable, direction, filters, counterpartyId);
 }

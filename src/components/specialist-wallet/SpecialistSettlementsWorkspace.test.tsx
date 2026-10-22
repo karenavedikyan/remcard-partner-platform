@@ -71,5 +71,26 @@ describe("SpecialistSettlementsWorkspace", () => {
     await user.click(screen.getByTestId("specialist-wallet-payable-total"));
     expect(await screen.findByRole("heading", { name: /я должен/i })).toBeInTheDocument();
     expect(screen.getByText("Beta Pro")).toBeInTheDocument();
+    expect(screen.queryByText(/завершённые/i)).toBeNull();
+  });
+
+  it("shows period validation error without treating it as empty data", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [],
+    });
+    render(<SpecialistSettlementsWorkspace />);
+    await screen.findByTestId("specialist-settlements-workspace");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /фильтры/i }));
+    const from = screen.getByLabelText("Период с");
+    const to = screen.getByLabelText("Период по");
+    await user.clear(from);
+    await user.type(from, "2026-10-20");
+    await user.clear(to);
+    await user.type(to, "2026-10-01");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/не может быть позже/i);
   });
 });
