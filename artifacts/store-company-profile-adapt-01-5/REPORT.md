@@ -4,7 +4,7 @@
 
 - **Product code (frozen):** `bbbf10f6e5dba4db0ade76251fd59a594e42af37` — no `src/` changes in this delivery.
 - **Backend:** `3ab843c7221c60ab7e043b9063eb31e36b0da000` (unchanged).
-- **Artifact delivery tip:** `28bfd9c` (PNG + diagnostics only; product code remains `bbbf10f`).
+- **Artifact delivery tip:** `eb6f0bd` (PNG + diagnostics only; product code remains `bbbf10f`).
 
 ## Fix applied (capture-time only)
 
