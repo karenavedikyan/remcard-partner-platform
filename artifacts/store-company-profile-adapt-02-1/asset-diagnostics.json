@@ -1,0 +1,26 @@
+{
+  "productCodeSha": "bd9fe4feea7059a42c1560f5d2af28980f8f35d7",
+  "captureBase": "http://127.0.0.1:3026",
+  "capturedAt": "2026-10-22T18:27:46.348Z",
+  "mockedBffRoutes": [
+    "/api/pro/partner-taxonomy (?q=)",
+    "/api/pro/profile GET/PATCH",
+    "/api/pro/organization",
+    "/api/pro/context",
+    "/api/pro/moderation-notes",
+    "/api/pro/agent-profile/status",
+    "/api/pro/r06/status",
+    "/api/auth/me GET/PATCH"
+  ],
+  "partnerTaxonomyRequests": 29,
+  "unmockedRequests": [],
+  "consoleErrorCount": 0,
+  "consoleErrorsSample": [],
+  "computedStylesSample": {
+    "bodyFontFamily": "Manrope, \"Manrope Fallback\"",
+    "bodyBackground": "rgb(246, 245, 243)",
+    "tabStripGap": "24px",
+    "fontsReady": "loaded"
+  },
+  "staticNote": "Steps 3–4 PNGs reused from store-company-profile-adapt-02 (contacts/review unchanged). Step 1, 2, summary reshot at productCodeSha."
+}
