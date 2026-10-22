@@ -11,28 +11,34 @@
 
 ### Published catalog locks with new partial draft
 
-`catalogTouchedFromProfile` for published organizations now merges `publishedOrgCatalogTouchedLocks()` with any `catalogTouched` parsed from `organization.catalogDraft`, instead of returning draft-only flags. Post-approve PATCH that creates `{}`, `{website:…}`, or `{catalogTouched:{description:true}}` no longer lets `mergeCatalogPrefill` restore working `storeCategories` or partnership phone into public fields.
+`catalogTouchedFromProfile` for published organizations merges `publishedOrgCatalogTouchedLocks()` with `catalogTouched` from `organization.catalogDraft`, instead of draft-only flags. After approve, PATCH that creates `{}`, `{website:…}`, or `{catalogTouched:{description:true}}` no longer restores working products or partnership phone into public catalog fields.
 
-Regression coverage: `profile-org-catalog-published-draft.test.ts` (three draft shapes, partial touched, intentional website draft, unpublished prefill unchanged). Existing null-draft and round-trip tests unchanged in intent.
+Tests: `profile-org-catalog-published-draft.test.ts`, extended `profile-catalog-touched.test.ts`; prior null-draft / round-trip behavior preserved.
 
-### Prototype step 1 + directions UI (frontend only)
+### Prototype step 1 + directions UI
 
-- Aside `journeyIntro` = store/company role note; field hints and form footnote from reference `9bc52fb` / `profile-wizard.js`
-- Business directions: tabs before search; prototype-aligned tab/choice styling; «Добавить / изменить» focuses search
+Aside `journeyIntro` = store/company role note; org/rep/city hints and basics footnote per reference `9bc52fb`. Business directions: tabs before search, prototype tab/choice styling, «Добавить / изменить» → search focus.
 
 ### Vitest include
 
-`wizard-facts.test.ts` and `profile-org-catalog-published-draft.test.ts` registered in `vitest.config.ts`.
+`wizard-facts.test.ts`, `profile-org-catalog-published-draft.test.ts` in `vitest.config.ts`.
 
-## Tests / build (this run)
+## Tests / build (measured)
 
-- Targeted vitest (adapt-02 suite + published-draft): see CI log in delivery commit message / local run output
-- `npm run build`: OK
-- Full default vitest (`src/**/*.test.tsx` glob): **not** claimed green — known unrelated failures in `ProfileEditor.test.tsx` / `profile-overview-display.test.tsx` pre-existing to this slice
+| Command | Result |
+|---------|--------|
+| Targeted vitest (21 files, adapt + catalog regressions) | **75 passed** |
+| `npm run build` | **OK** |
+| Full repo vitest (128 files) | **not claimed green** (10 failures in `ProfileEditor.test.tsx`, `profile-overview-display.test.tsx` — outside this slice) |
 
 ## Visual
 
-`artifacts/store-company-profile-adapt-02-1/visual/` — **reshot** step 1, step 2, filled summary (STORE/COMPANY × 1440/375/320); **reused** step 3–4 from `store-company-profile-adapt-02` (contacts/review unchanged). Capture: port **3026**, `R06_NEXT_DIST_DIR=.next-store-company-adapt-02-1-dev`, `productCodeSha` in `asset-diagnostics.json` (no PLACEHOLDER).
+Folder: `artifacts/store-company-profile-adapt-02-1/visual/`
+
+- **Reshot:** `*-step-1-*`, `*-step-2-*`, `*-summary-*` (STORE/COMPANY × 1440/375/320)
+- **Reused from adapt-02:** `*-step-3-*`, `*-step-4-*` (contacts / review unchanged)
+- Capture: `http://127.0.0.1:3026`, `R06_NEXT_DIST_DIR=.next-store-company-adapt-02-1-dev`
+- `asset-diagnostics.json`: real `productCodeSha`, 0 console errors, 0 unmocked BFF routes in capture run
 
 ## Changed source files
 
