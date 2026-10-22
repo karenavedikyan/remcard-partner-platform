@@ -6,7 +6,6 @@ import { RemcardApiError } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import { bonusStatusLabel, bonusStatusTone } from "@/lib/history-labels";
 import { fetchSettlements, isSettlementsAccessDenied } from "@/lib/settlements-loader";
-import { completedDirectionLabel } from "@/lib/settlements-mappers";
 import { settlementAccrualHref, settlementPurchaseHref } from "@/lib/settlements-links";
 import type {
   SettlementCompleted,
@@ -26,6 +25,7 @@ import {
   partnerGroupsForDirection,
   reconciliationSummary,
   resolveExportScope,
+  specialistCompletedRowCaption,
   validateLedgerPeriod,
   type SettlementDirection,
   type SettlementLedgerFilters,
@@ -115,16 +115,15 @@ function CompletedRow({ row }: { row: SettlementCompleted }) {
       <div className={hubStyles.rowHeader}>
         <div>
           <p className={hubStyles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-          <p className={hubStyles.meta}>
-            {row.counterpartyName} · {completedDirectionLabel(row.direction)}
-          </p>
+          <p className={hubStyles.meta}>{row.counterpartyName}</p>
+          <p className={hubStyles.meta}>{specialistCompletedRowCaption(row)}</p>
           <p className={hubStyles.meta}>
             {row.paidAt
               ? `Зафиксировано: ${formatDate(row.paidAt)}`
               : "Дата выплаты не зафиксирована (legacy PAID)"}
           </p>
         </div>
-        <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
+        <StatusBadge label="Зафиксированная выплата" tone={bonusStatusTone(row.status)} />
       </div>
     </Link>
   );
@@ -221,8 +220,8 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
 
   const recon = useMemo(() => {
     if (!data || periodError) return null;
-    return reconciliationSummary(data.completed, filters.from, filters.to);
-  }, [data, filters.from, filters.to, periodError]);
+    return reconciliationSummary(data.completed, filters);
+  }, [data, filters, periodError]);
 
   const listForPagination = useMemo(() => {
     if (screen === "partners") return partnerGroups;

@@ -77,6 +77,25 @@ export type CompletedPeriodFilterResult = {
   excludedUnknownPaidAt: number;
 };
 
+export function specialistCompletedRowCaption(row: SettlementCompleted): string {
+  const directionLabel = row.direction === "receivable" ? "Мне должны" : "Я должен";
+  return `Зафиксированная выплата · ${directionLabel}`;
+}
+
+function sortCompletedRows(
+  rows: SettlementCompleted[],
+  sort: SettlementLedgerFilters["sort"],
+): SettlementCompleted[] {
+  return [...rows].sort((a, b) => {
+    const aAt = parseDay(a.paidAt!);
+    const bAt = parseDay(b.paidAt!);
+    if (sort === "amount-desc") return b.amount - a.amount;
+    if (sort === "amount-asc") return a.amount - b.amount;
+    if (sort === "date-asc") return aAt - bAt;
+    return bAt - aAt;
+  });
+}
+
 /** Period filter uses paidAt only; legacy PAID without paidAt is excluded from period totals. */
 export function filterCompletedForPeriod(
   rows: SettlementCompleted[],
@@ -255,13 +274,16 @@ export function partnerCompletedHistory(
   const scoped = completed.filter(
     (row) => row.direction === direction && row.counterpartyId === counterpartyId,
   );
-  return filterCompletedForPeriod(scoped, direction, filters);
+  const filtered = filterCompletedForPeriod(scoped, direction, filters);
+  return {
+    ...filtered,
+    inPeriod: sortCompletedRows(filtered.inPeriod, filters.sort),
+  };
 }
 
 export function reconciliationSummary(
   completed: SettlementCompleted[],
-  from: string,
-  to: string,
+  filters: Pick<SettlementLedgerFilters, "q" | "from" | "to" | "sort">,
 ): {
   receivableTotal: number;
   payableTotal: number;
@@ -269,16 +291,13 @@ export function reconciliationSummary(
   excludedUnknownPaidAt: number;
   gaps: string[];
 } {
-  const { inPeriod, excludedUnknownPaidAt } = filterCompletedForPeriod(completed, "both", {
-    q: "",
-    from,
-    to,
-  });
+  const { inPeriod, excludedUnknownPaidAt } = filterCompletedForPeriod(completed, "both", filters);
+  const sorted = sortCompletedRows(inPeriod, filters.sort);
   const receivableTotal = sumObligationAmounts(
-    inPeriod.filter((r) => r.direction === "receivable"),
+    sorted.filter((r) => r.direction === "receivable"),
   );
   const payableTotal = sumObligationAmounts(
-    inPeriod.filter((r) => r.direction === "payable"),
+    sorted.filter((r) => r.direction === "payable"),
   );
   const gaps = [
     "Нет журнала частичных выплат и подтверждений получателя — сводка только по завершённым order-linked записям.",
@@ -292,7 +311,7 @@ export function reconciliationSummary(
   return {
     receivableTotal,
     payableTotal,
-    rows: inPeriod,
+    rows: sorted,
     excludedUnknownPaidAt,
     gaps,
   };

@@ -9,6 +9,7 @@ import {
   filterCompletedForPeriod,
   filterOpenObligations,
   paginateRows,
+  partnerCompletedHistory,
   partnerGroupsForDirection,
   reconciliationSummary,
   resolveExportScope,
@@ -66,7 +67,12 @@ describe("specialist-settlements ledger", () => {
         direction: "payable",
       },
     ];
-    const recon = reconciliationSummary(completed, "2026-10-01", "2026-10-31");
+    const recon = reconciliationSummary(completed, {
+      q: "",
+      from: "2026-10-01",
+      to: "2026-10-31",
+      sort: "date-desc",
+    });
     assert.equal(recon.receivableTotal, 50);
     assert.equal(recon.rows.length, 1);
     assert.equal(recon.excludedUnknownPaidAt, 1);
@@ -151,6 +157,71 @@ describe("specialist-settlements ledger", () => {
     assert.equal(resolveExportScope("partnerHistory"), "partnerHistory");
     assert.equal(resolveExportScope("reconciliation"), "reconciliation");
     assert.equal(resolveExportScope("orders"), "open");
+  });
+
+  it("reconciliation search filters rows and totals together", () => {
+    const completed: SettlementCompleted[] = [
+      {
+        ...row({ id: "a", counterpartyId: "ONLY_A", counterpartyName: "ONLY_A", amount: 40 }),
+        paidAt: "2026-10-05T10:00:00.000Z",
+        direction: "receivable",
+        status: "PAID",
+      },
+      {
+        ...row({ id: "b", counterpartyId: "ONLY_B", counterpartyName: "ONLY_B", amount: 90 }),
+        paidAt: "2026-10-06T10:00:00.000Z",
+        direction: "receivable",
+        status: "PAID",
+      },
+    ];
+    const all = reconciliationSummary(completed, {
+      q: "",
+      from: "",
+      to: "",
+      sort: "date-desc",
+    });
+    const filtered = reconciliationSummary(completed, {
+      q: "ONLY_A",
+      from: "",
+      to: "",
+      sort: "date-desc",
+    });
+    assert.equal(all.receivableTotal, 130);
+    assert.equal(filtered.receivableTotal, 40);
+    assert.equal(filtered.rows.length, 1);
+    assert.equal(filtered.rows[0]?.counterpartyName, "ONLY_A");
+  });
+
+  it("partner history and reconciliation sort matches amount and date modes", () => {
+    const completed: SettlementCompleted[] = [
+      {
+        ...row({ id: "h1", counterpartyId: "P1", amount: 200 }),
+        paidAt: "2026-10-02T10:00:00.000Z",
+        direction: "receivable",
+        status: "PAID",
+      },
+      {
+        ...row({ id: "h2", counterpartyId: "P1", amount: 100 }),
+        paidAt: "2026-10-01T10:00:00.000Z",
+        direction: "receivable",
+        status: "PAID",
+      },
+    ];
+    const asc = partnerCompletedHistory(completed, "receivable", "P1", {
+      ...defaultLedgerFilters(),
+      sort: "amount-asc",
+    });
+    assert.deepEqual(
+      asc.inPeriod.map((row) => row.amount),
+      [100, 200],
+    );
+    const reconDesc = reconciliationSummary(completed, {
+      q: "",
+      from: "",
+      to: "",
+      sort: "date-desc",
+    });
+    assert.equal(reconDesc.rows[0]?.id, "h1");
   });
 
   it("validates invalid period range", () => {
