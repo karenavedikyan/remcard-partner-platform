@@ -57,6 +57,11 @@ import type { ProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
 import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
+import { BusinessProfileSection } from "./business/BusinessProfileSection";
+import {
+  businessProfilePartnerType,
+  businessProfileWizardEligible,
+} from "@/lib/business-profile/eligibility";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
 import { SpecialistAgentActivityCompact } from "./specialist/SpecialistAgentActivityCompact";
@@ -232,6 +237,11 @@ function ProfileEditorInner({
     specialistR06Gate?.featureEnabled &&
       specialistR06Gate?.eligible &&
       profile.user.partnerType === "MASTER",
+  );
+  const businessPartnerType = businessProfilePartnerType(profile);
+  const businessProfileWizardUi = Boolean(
+    businessPartnerType &&
+      businessProfileWizardEligible(profile, cabinetAccess.proContext),
   );
   const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() =>
     catalogNavigatorStageIdsFromUser(initial.user),
@@ -498,7 +508,7 @@ function ProfileEditorInner({
   }, [cabinetAccess.canFetchModerationNotes, loadNotes]);
 
   useEffect(() => {
-    if (!specialistR06Ui) return;
+    if (!specialistR06Ui && !businessProfileWizardUi) return;
     const sourceKey = catalogPrefillSourceKey(profile);
     if (catalogPrefillAppliedKeyRef.current === sourceKey) return;
     catalogPrefillAppliedKeyRef.current = sourceKey;
@@ -528,6 +538,7 @@ function ProfileEditorInner({
     }
   }, [
     specialistR06Ui,
+    businessProfileWizardUi,
     profile,
     buildCatalogDraft,
     catalogTouched,
@@ -675,7 +686,8 @@ function ProfileEditorInner({
     activeSection !== "overview" &&
     activeSection !== "team" &&
     !(pureAgentCompactUi && activeSection === "basics") &&
-    !(specialistR06Ui && (activeSection === "basics" || activeSection === "catalog"));
+    !(specialistR06Ui && (activeSection === "basics" || activeSection === "catalog")) &&
+    !(businessProfileWizardUi && activeSection === "basics");
 
   return (
     <div
@@ -781,6 +793,13 @@ function ProfileEditorInner({
               />
             )}
           </>
+        ) : businessProfileWizardUi && businessPartnerType ? (
+          <BusinessProfileSection
+            profile={profile}
+            partnerType={businessPartnerType}
+            basicsEditable={basicsEditable}
+            onWorkingProfileSaved={applyProfile}
+          />
         ) : (
           <>
         <AgentProfileSection

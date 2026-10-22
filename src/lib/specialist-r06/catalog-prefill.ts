@@ -1,6 +1,10 @@
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
-import { effectiveWorkingServiceIds, effectiveWorkingStageIds } from "@/lib/profile-draft-sync";
+import {
+  effectiveWorkingProductIds,
+  effectiveWorkingServiceIds,
+  effectiveWorkingStageIds,
+} from "@/lib/profile-draft-sync";
 import { catalogPublicNameFromGetUser } from "@/lib/specialist-r06/catalog-display-name";
 import { catalogTouchedFromUser } from "@/lib/profile-catalog-stages-hydration";
 
@@ -61,14 +65,17 @@ export function workingProfileCatalogSeed(profile: ProProfileResponse): Partial<
   const w = profile.workingProfile;
   const u = profile.user;
   const publicName = catalogPublicNameFromGetUser(u);
+  const orgName = profile.organization?.name?.trim();
+  const catalogPublicName = orgName || publicName;
   const city = (u.catalogCity ?? u.city ?? "").trim();
   const partnershipPhone = (w?.partnershipContactPhone ?? "").trim();
   const partnershipEmail = (w?.partnershipContactEmail ?? "").trim();
   const publicPhone = (u.publicPhone ?? "").trim() || partnershipPhone;
   const publicEmail = (u.publicEmail ?? "").trim() || partnershipEmail;
   return {
-    catalogPublicName: publicName,
+    catalogPublicName,
     catalogCity: city,
+    storeCategories: [...effectiveWorkingProductIds(w)],
     specializations: [...effectiveWorkingServiceIds(w)],
     navigatorStageIds: [...effectiveWorkingStageIds(w)],
     description: (u.description ?? "").trim(),
@@ -112,8 +119,18 @@ export function mergeCatalogPrefill(
   applyText("telegram");
   applyText("catalogImageUrl");
 
-  if (!touched.specializations && (current.specializations?.length ?? 0) === 0 && seed.specializations?.length) {
+  if (
+    !touched.specializations &&
+    (current.specializations?.length ?? 0) === 0 &&
+    seed.specializations?.length
+  ) {
     next.specializations = [...seed.specializations];
+  }
+  if (
+    (current.storeCategories?.length ?? 0) === 0 &&
+    seed.storeCategories?.length
+  ) {
+    next.storeCategories = [...seed.storeCategories];
   }
   if (!touched.navigatorStageIds && (current.navigatorStageIds?.length ?? 0) === 0 && seed.navigatorStageIds?.length) {
     next.navigatorStageIds = [...seed.navigatorStageIds];

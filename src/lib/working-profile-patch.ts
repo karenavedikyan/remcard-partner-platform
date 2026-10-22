@@ -79,5 +79,12 @@ export function buildWorkingProfilePatchBody(
     body.partnerActivities = draft.partnerActivities;
   }
 
+  if (draft.website.trim() !== saved.website.trim()) {
+    body.website = draft.website.trim() || null;
+  }
+  if (draft.telegram.trim() !== saved.telegram.trim()) {
+    body.telegram = draft.telegram.trim() || null;
+  }
+
   return body;
 }

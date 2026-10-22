@@ -319,6 +319,13 @@ export function ProfileOverviewSection({
             </>
           ) : (
             <>
+              {hasOrganization &&
+              (partnerType === "STORE" || partnerType === "COMPANY") ? (
+                <div>
+                  <dt>{partnerType === "STORE" ? "Магазин" : "Компания"}</dt>
+                  <dd>{title}</dd>
+                </div>
+              ) : null}
               <div>
                 <dt>Представитель</dt>
                 <dd>{savedRepresentativeName(profile)}</dd>
