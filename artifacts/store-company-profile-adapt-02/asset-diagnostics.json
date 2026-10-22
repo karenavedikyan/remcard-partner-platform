@@ -1,0 +1,26 @@
+{
+  "productCodeSha": "PLACEHOLDER",
+  "captureBase": "http://127.0.0.1:3026",
+  "capturedAt": "2026-10-22T16:39:11.720Z",
+  "mockedBffRoutes": [
+    "/api/pro/partner-taxonomy (?q=)",
+    "/api/pro/profile GET/PATCH",
+    "/api/pro/organization",
+    "/api/pro/context",
+    "/api/pro/moderation-notes",
+    "/api/pro/agent-profile/status",
+    "/api/pro/r06/status",
+    "/api/auth/me GET/PATCH"
+  ],
+  "partnerTaxonomyRequests": 23,
+  "unmockedRequests": [],
+  "consoleErrorCount": 0,
+  "consoleErrorsSample": [],
+  "computedStylesSample": {
+    "bodyFontFamily": "Manrope, \"Manrope Fallback\"",
+    "bodyBackground": "rgb(246, 245, 243)",
+    "tabStripGap": "24px",
+    "fontsReady": "loaded"
+  },
+  "staticNote": "Step 1 & 3 PNGs reused from store-company-profile-adapt-01-4 (unchanged product UI)."
+}

@@ -1,0 +1,14 @@
+{
+  "steps": [
+    "search:плит -> check Плитка",
+    "unselect: Двери",
+    "back -> basics",
+    "forward -> directions"
+  ],
+  "computedStyles": {
+    "bodyFontFamily": "Manrope, \"Manrope Fallback\"",
+    "bodyBackground": "rgb(246, 245, 243)",
+    "tabStripGap": "24px",
+    "fontsReady": "loaded"
+  }
+}
