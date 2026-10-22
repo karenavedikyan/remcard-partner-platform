@@ -48,6 +48,18 @@ function orgProfile(catalogDraft: unknown): ProProfileResponse {
 }
 
 describe("catalogTouchedFromProfile", () => {
+  it("locks prefill fields when organization catalog is published and draft cleared on approve", () => {
+    const profile = orgProfile(null);
+    Object.assign(profile.organization!, {
+      catalogPublished: true,
+      catalogStatus: "APPROVED",
+      storeCategories: [],
+    });
+    const touched = catalogTouchedFromProfile(profile);
+    expect(touched.storeCategories).toBe(true);
+    expect(touched.specializations).toBe(true);
+    expect(touched.website).toBe(true);
+  });
   it("reads storeCategories touched from organization.catalogDraft", () => {
     const profile = orgProfile({ catalogTouched: { storeCategories: true } });
     expect(catalogTouchedFromProfile(profile)).toEqual({ storeCategories: true });

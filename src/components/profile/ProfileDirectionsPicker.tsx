@@ -34,6 +34,8 @@ type ProfileDirectionsPickerProps = {
   presentationVariant?: "default" | "specialistWorkingProfile";
   /** Hide lead paragraph (wizard renders intro above preset block). */
   omitLead?: boolean;
+  /** Store/company wizard: tabbed «Товары» / «Работы и услуги» instead of simultaneous groups. */
+  businessTabbedPick?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -88,6 +90,7 @@ export function ProfileDirectionsPicker({
   taxonomyProposalScope,
   presentationVariant = "default",
   omitLead = false,
+  businessTabbedPick = false,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -98,6 +101,7 @@ export function ProfileDirectionsPicker({
   const [loadState, setLoadState] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [loadError, setLoadError] = useState("");
   const [filter, setFilter] = useState("");
+  const [businessPickGroup, setBusinessPickGroup] = useState<"products" | "services">("products");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -378,18 +382,54 @@ export function ProfileDirectionsPicker({
 
       {fullTaxonomy && filtered ? (
         <>
-          {!specialistMode ? (
-          <fieldset className={styles.group} disabled={disabled}>
+          {businessTabbedPick && !specialistMode ? (
+            <div
+              className={styles.groupTabs}
+              role="group"
+              aria-label="Вид направления"
+              data-testid="business-direction-group-tabs"
+            >
+              <button
+                type="button"
+                className={`${styles.groupTab} ${businessPickGroup === "products" ? styles.groupTabActive : ""}`}
+                aria-pressed={businessPickGroup === "products"}
+                disabled={disabled}
+                onClick={() => setBusinessPickGroup("products")}
+              >
+                Товары
+              </button>
+              <button
+                type="button"
+                className={`${styles.groupTab} ${businessPickGroup === "services" ? styles.groupTabActive : ""}`}
+                aria-pressed={businessPickGroup === "services"}
+                disabled={disabled}
+                onClick={() => setBusinessPickGroup("services")}
+              >
+                Работы и услуги
+              </button>
+            </div>
+          ) : null}
+
+          {!specialistMode && (!businessTabbedPick || businessPickGroup === "products") ? (
+          <fieldset
+            className={businessTabbedPick ? styles.tileFieldset : styles.group}
+            disabled={disabled}
+          >
             <legend>Товары</legend>
-            <div className={styles.optionGrid}>
+            <div className={businessTabbedPick ? styles.tileGrid : styles.optionGrid}>
               {filtered.products.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Товары».</p>
               ) : (
-                orderedVisibleItems(fullTaxonomy.products, productCategoryIds, filter.trim()).map((item) => (
-                  <label key={item.id} className={styles.checkRow}>
+                orderedVisibleItems(fullTaxonomy.products, productCategoryIds, filter.trim()).map((item) => {
+                  const checked = productCategoryIds.includes(item.id);
+                  const rowClass = businessTabbedPick
+                    ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
+                    : styles.checkRow;
+                  return (
+                  <label key={item.id} className={rowClass}>
                     <input
                       type="checkbox"
-                      checked={productCategoryIds.includes(item.id)}
+                      checked={checked}
                       onChange={() => {
                         const next = toggleId(productCategoryIds, item.id);
                         onChangeProducts(next);
@@ -398,13 +438,14 @@ export function ProfileDirectionsPicker({
                     />
                     <span>{item.label}</span>
                   </label>
-                ))
+                  );
+                })
               )}
             </div>
           </fieldset>
           ) : null}
 
-          {(() => {
+          {(!businessTabbedPick || businessPickGroup === "services") ? (() => {
             const servicesInner = (
               <fieldset
                 className={tileLayout ? styles.tileFieldset : styles.group}
@@ -460,7 +501,7 @@ export function ProfileDirectionsPicker({
                 {servicesInner}
               </details>
             );
-          })()}
+          })() : null}
         </>
       ) : null}
 

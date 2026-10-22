@@ -484,3 +484,31 @@
   color: var(--ink);
   border: 1px solid var(--line);
 }
+
+.groupTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.groupTab {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.groupTabActive {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.groupTab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

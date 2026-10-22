@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { RemcardApiError } from "@/lib/api-client";
-import { displayCategoryLabel } from "@/lib/category-display";
-import { masterDirectionLabel } from "@/lib/master-direction-label";
+import {
+  buildBusinessDirectionLabelMap,
+  businessSummaryInitials,
+} from "@/lib/business-profile/wizard-facts";
+import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
 import {
   businessStepContextLabel,
@@ -23,6 +25,7 @@ import {
 } from "@/lib/profile-working-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
+import { BusinessWorkingProfileFacts } from "./BusinessWorkingProfileFacts";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profile/agent/AgentPhoneField";
 import styles from "../agent/AgentProfileWizard.module.css";
 import stepStyles from "../specialist/SpecialistWorkingProfileWizard.module.css";
@@ -34,17 +37,6 @@ const WORK_MODES = [
   { value: "BOTH", label: "По адресу и на выезде" },
   { value: "ONLINE", label: "Онлайн" },
 ] as const;
-
-function displayOrEmpty(value: string | undefined | null): string {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : "Не указано";
-}
-
-function directionChipLabel(kind: "product" | "service" | "stage", id: string): string {
-  if (kind === "product") return `Товар: ${displayCategoryLabel(id, id)}`;
-  if (kind === "service") return `Услуга: ${masterDirectionLabel(id)}`;
-  return `Этап: ${displayCategoryLabel(id, id)}`;
-}
 
 type Props = {
   initialProfile: ProProfileResponse;
@@ -94,6 +86,24 @@ export function BusinessWorkingProfileWizard({
   editingRef.current = editing;
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [directionLabelByKey, setDirectionLabelByKey] = useState<Map<string, string>>(
+    () => new Map(),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPartnerTaxonomy()
+      .then((data) => {
+        if (cancelled) return;
+        setDirectionLabelByKey(buildBusinessDirectionLabelMap(data));
+      })
+      .catch(() => {
+        if (!cancelled) setDirectionLabelByKey(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const resetWizardFromProfile = useCallback((source: ProProfileResponse, editingNext: boolean) => {
     profileRef.current = source;
@@ -259,16 +269,19 @@ export function BusinessWorkingProfileWizard({
 
   if (!editing && workingProfileCabinetReady(savedSnapshot)) {
     const orgTitle = savedSnapshot.organizationName.trim() || "—";
-    const rep = savedSnapshot.displayName.trim() || "—";
+    const publicId = profileRef.current.user.publicId?.trim() || "";
     return (
       <div className={styles.pw} data-testid="business-profile-completed-summary">
         <section className={styles.summary}>
           <div className={styles.summaryHeader}>
+            <div className={styles.avatar} aria-hidden>
+              {businessSummaryInitials(savedSnapshot)}
+            </div>
             <div className={styles.summaryIdentity}>
               <span className={styles.kicker}>{copy.kicker}</span>
               <h2 className={styles.summaryTitle}>{orgTitle}</h2>
               <p className={styles.cityMuted}>
-                {copy.repFieldLabel}: {rep} · {savedSnapshot.city.trim() || "Город не указан"}
+                {savedSnapshot.city.trim() || "Город не указан"}
               </p>
             </div>
             <span className={styles.summaryStatus}>Заполнено</span>
@@ -278,6 +291,13 @@ export function BusinessWorkingProfileWizard({
               {banner.text}
             </p>
           ) : null}
+          <BusinessWorkingProfileFacts
+            draft={savedSnapshot}
+            copy={copy}
+            labelByKey={directionLabelByKey}
+            areasText={areasText}
+            testId="business-summary-facts"
+          />
           <div className={styles.summaryActions}>
             <button
               type="button"
@@ -291,6 +311,7 @@ export function BusinessWorkingProfileWizard({
             >
               Редактировать профиль
             </button>
+            {publicId ? <span className={styles.cityMuted}>ID {publicId}</span> : null}
           </div>
         </section>
         <section className={styles.summaryAfter} aria-label="Каталог RemCard">
@@ -456,6 +477,8 @@ export function BusinessWorkingProfileWizard({
                 <p className={stepStyles.specializationLead}>{copy.directionsLead}</p>
                 <ProfileDirectionsPicker
                   tileLayout
+                  businessTabbedPick
+                  omitLead
                   collapseAdvancedDirections
                   presentationVariant="default"
                   productCategoryIds={draft.productCategoryIds}
@@ -579,62 +602,12 @@ export function BusinessWorkingProfileWizard({
                 className={`${stepStyles.stepPanel} ${stepStyles.reviewPanel}`}
                 data-testid="business-profile-review-panel"
               >
-                <dl className={stepStyles.reviewFacts} data-testid="business-review-facts">
-                  <div>
-                    <dt>{copy.orgFieldLabel}</dt>
-                    <dd>{displayOrEmpty(draft.organizationName)}</dd>
-                  </div>
-                  <div>
-                    <dt>{copy.repFieldLabel}</dt>
-                    <dd>{displayOrEmpty(draft.displayName)}</dd>
-                  </div>
-                  <div>
-                    <dt>Город</dt>
-                    <dd>{displayOrEmpty(draft.city)}</dd>
-                  </div>
-                  <div>
-                    <dt>Телефон</dt>
-                    <dd>
-                      {displayOrEmpty(
-                        draft.partnershipContactPhone
-                          ? formatPhoneForDisplay(draft.partnershipContactPhone)
-                          : "",
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Email</dt>
-                    <dd>{displayOrEmpty(draft.partnershipContactEmail)}</dd>
-                  </div>
-                </dl>
-                <div className={stepStyles.reviewDirections}>
-                  <strong>{copy.steps[1]}</strong>
-                  <div className={stepStyles.reviewChipRow}>
-                    {draft.productCategoryIds.length ||
-                    draft.serviceSpecializationIds.length ||
-                    draft.navigatorStageIds.length ? (
-                      <>
-                        {draft.productCategoryIds.map((id) => (
-                          <span key={`p-${id}`} className={stepStyles.reviewChip}>
-                            {directionChipLabel("product", id)}
-                          </span>
-                        ))}
-                        {draft.serviceSpecializationIds.map((id) => (
-                          <span key={`s-${id}`} className={stepStyles.reviewChip}>
-                            {directionChipLabel("service", id)}
-                          </span>
-                        ))}
-                        {draft.navigatorStageIds.map((id) => (
-                          <span key={`st-${id}`} className={stepStyles.reviewChip}>
-                            {directionChipLabel("stage", id)}
-                          </span>
-                        ))}
-                      </>
-                    ) : (
-                      <span className={styles.intro}>Можно добавить позже</span>
-                    )}
-                  </div>
-                </div>
+                <BusinessWorkingProfileFacts
+                  draft={workingDraft}
+                  copy={copy}
+                  labelByKey={directionLabelByKey}
+                  areasText={areasText}
+                />
                 <p className={stepStyles.reviewFootnote}>
                   Рабочий профиль и публикация в каталоге независимы. Сохранение не отправляет на
                   модерацию.

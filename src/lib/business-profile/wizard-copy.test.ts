@@ -6,6 +6,8 @@ describe("businessWizardCopy", () => {
     const copy = businessWizardCopy("STORE");
     expect(copy.journeyTitle).toBe("Профиль без лишнего");
     expect(copy.basicsStepTitle).toBe("Представьте ваш магазин");
+    expect(copy.basicsRoleNote).toContain("Адреса и команду");
+    expect(copy.directionsStepTitle).toBe("Чем вы занимаетесь?");
     expect(copy.steps).toEqual([
       "О магазине",
       "Ассортимент",

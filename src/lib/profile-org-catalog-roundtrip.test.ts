@@ -171,6 +171,32 @@ describe("organization catalog clear round-trip", () => {
     expect(merged.storeCategories).toEqual(["doors", "flooring"]);
   });
 
+  it("post-approve GET keeps empty public products despite working profile prefill seed", () => {
+    const profile = companyOrgProfile(
+      {
+        storeCategories: [],
+        catalogPublished: true,
+        catalogStatus: "APPROVED",
+        catalogDraft: null,
+        specializations: ["plumbing"],
+      },
+      ["doors"],
+    );
+    profile.workingProfile!.serviceSpecializationIds = [];
+    profile.workingProfile!.effectiveServiceSpecializationIds = [];
+
+    const hydrated = profileDraftFromProfile(profile);
+    expect(hydrated.storeCategories).toEqual([]);
+
+    const merged = mergeCatalogPrefill(
+      hydrated,
+      workingProfileCatalogSeed(profile),
+      catalogTouchedFromProfile(profile),
+    );
+    expect(merged.storeCategories).toEqual([]);
+    expect(merged.specializations).toEqual(["plumbing"]);
+  });
+
   it("explicit clear is not overwritten when working products change after save", async () => {
     const state: OrgBackendState = {
       storeCategories: [],

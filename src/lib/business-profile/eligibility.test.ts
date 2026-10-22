@@ -78,4 +78,26 @@ describe("businessProfileWizardEligible", () => {
   it("does not enable wizard for MASTER", () => {
     expect(businessProfileWizardEligible(profile({ partnerType: "MASTER" }), null)).toBe(false);
   });
+
+  it("allows PRO store owner with null context (own-scope cabinet)", () => {
+    expect(
+      businessProfileWizardEligible(
+        profile({ role: "PRO", partnerType: "STORE", partnerActivities: ["STORE"] }),
+        null,
+      ),
+    ).toBe(true);
+  });
+
+  it("blocks employer-context staff without own store/company activity", () => {
+    expect(
+      businessProfileWizardEligible(
+        profile({ role: "CLIENT", partnerType: "COMPANY", partnerActivities: [] }),
+        {
+          role: "ORG_TEAM_MEMBER",
+          organization: { id: "o1", name: "Employer" },
+          membershipKind: "BRANCH_STAFF",
+        },
+      ),
+    ).toBe(false);
+  });
 });
