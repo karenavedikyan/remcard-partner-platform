@@ -51,6 +51,7 @@ const profile: ProProfileResponse = {
     publicEmail: null,
     publicPhone: null,
     showFullName: false,
+    partnerActivities: [],
   },
 };
 
@@ -82,6 +83,8 @@ describe("buildWorkingProfilePatchBody", () => {
       partnershipContactName: "Мария",
       partnershipContactPhone: "",
       partnershipContactEmail: "",
+      partnerActivities: [],
+      catalogCity: "",
     });
     expect(body.productCategoryIds).toBeUndefined();
     expect(body.partnerSearchOptIn).toBeUndefined();
@@ -117,6 +120,8 @@ describe("buildWorkingProfilePatchBody", () => {
         partnershipContactName: "",
         partnershipContactPhone: "",
         partnershipContactEmail: "",
+        partnerActivities: [],
+        catalogCity: "",
       },
       { partnerSearchTouched: true },
     );

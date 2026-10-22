@@ -52,13 +52,26 @@ describe("businessProfileWizardEligible", () => {
     ).toBe(false);
   });
 
-  it("blocks organization staff employees", () => {
+  it("blocks organization staff without own partner activity", () => {
     expect(
       businessProfileWizardEligible(profile({ role: "CLIENT", partnerType: "STORE" }), {
         role: "ORG_TEAM_MEMBER",
         organization: { id: "o1", name: "Org" },
         membershipKind: "BRANCH_STAFF",
       }),
+    ).toBe(false);
+  });
+
+  it("blocks staff even when employer is STORE (no broad fallback)", () => {
+    expect(
+      businessProfileWizardEligible(
+        profile({ role: "CLIENT", partnerType: "COMPANY", partnerActivities: [] }),
+        {
+          role: "ORG_TEAM_MEMBER",
+          organization: { id: "o1", name: "Org" },
+          membershipKind: "HEAD_OFFICE",
+        },
+      ),
     ).toBe(false);
   });
 

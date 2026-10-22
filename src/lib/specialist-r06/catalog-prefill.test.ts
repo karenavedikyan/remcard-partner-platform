@@ -168,6 +168,44 @@ describe("catalog prefill from saved profile", () => {
     expect(merged.catalogPublicName).toBe("");
   });
 
+  it("does not restore storeCategories when explicitly touched empty", () => {
+    const current = profileDraftFromProfile(profile());
+    const emptyProducts = { ...current, storeCategories: [] };
+    const seed = workingProfileCatalogSeed(
+      profile({
+        workingProfile: {
+          ...profile().workingProfile!,
+          productCategoryIds: ["doors"],
+          effectiveProductCategoryIds: ["doors"],
+        },
+      }),
+    );
+    const merged = mergeCatalogPrefill(emptyProducts, seed, { storeCategories: true });
+    expect(merged.storeCategories).toEqual([]);
+  });
+
+  it("source key changes when organization name or working products change", () => {
+    const a = catalogPrefillSourceKey(profile());
+    const b = catalogPrefillSourceKey(
+      profile({
+        organization: {
+          id: "o1",
+          name: "New Org",
+          catalogStatus: "DRAFT",
+          partnerType: "STORE",
+          branchCount: 0,
+          storeCategories: [],
+        },
+        workingProfile: {
+          ...profile().workingProfile!,
+          productCategoryIds: ["doors"],
+          effectiveProductCategoryIds: ["doors"],
+        },
+      }),
+    );
+    expect(a).not.toBe(b);
+  });
+
   it("profileDraftFromProfile aligns catalog public name with GET provenance", () => {
     const draft = profileDraftFromProfile(
       profile({

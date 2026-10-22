@@ -73,6 +73,7 @@ export default defineConfig({
       "src/lib/business-nav/sections.test.ts",
       "src/lib/business-profile/eligibility.test.ts",
       "src/lib/business-profile/wizard-copy.test.ts",
+      "src/lib/profile-working-save.org-contacts.test.ts",
       "src/lib/specialist-certificates/recommendationsRedirect.test.ts",
       "src/components/layout/icons/PartnersHandshakeIcon.test.tsx",
       "src/lib/clients-rsc-boundary.test.ts",

@@ -536,6 +536,13 @@ function ProfileEditorInner({
     ) {
       setCatalogNavigatorStageIds(mergedStages);
     }
+    const mergedStore = merged.storeCategories ?? [];
+    if (
+      mergedStore.length !== storeCategories.length ||
+      mergedStore.some((id, i) => id !== storeCategories[i])
+    ) {
+      setStoreCategories(mergedStore);
+    }
   }, [
     specialistR06Ui,
     businessProfileWizardUi,
@@ -552,6 +559,7 @@ function ProfileEditorInner({
     catalogImageUrl,
     specializations,
     catalogNavigatorStageIds,
+    storeCategories,
   ]);
 
   useEffect(() => {

@@ -12,6 +12,7 @@ export type CatalogPrefillField =
   | "catalogPublicName"
   | "catalogCity"
   | "specializations"
+  | "storeCategories"
   | "navigatorStageIds"
   | "description"
   | "publicPhone"
@@ -36,6 +37,7 @@ export function parseCatalogTouched(raw: unknown): CatalogTouchedMap {
 export function catalogPrefillSourceKey(profile: ProProfileResponse): string {
   const w = profile.workingProfile;
   const u = profile.user;
+  const org = profile.organization;
   return JSON.stringify({
     catalogDisplayName: u.catalogDisplayName ?? "",
     catalogDisplayNameSource: u.catalogDisplayNameSource ?? "live_public",
@@ -53,7 +55,12 @@ export function catalogPrefillSourceKey(profile: ProProfileResponse): string {
     partnershipContactPhone: w?.partnershipContactPhone ?? "",
     partnershipContactEmail: w?.partnershipContactEmail ?? "",
     services: effectiveWorkingServiceIds(w),
+    products: effectiveWorkingProductIds(w),
     stages: effectiveWorkingStageIds(w),
+    organizationName: org?.name ?? "",
+    organizationWebsite: org?.website ?? "",
+    organizationTelegram: org?.telegram ?? "",
+    organizationStoreCategories: org?.storeCategories ?? [],
   });
 }
 
@@ -65,8 +72,10 @@ export function workingProfileCatalogSeed(profile: ProProfileResponse): Partial<
   const w = profile.workingProfile;
   const u = profile.user;
   const publicName = catalogPublicNameFromGetUser(u);
-  const orgName = profile.organization?.name?.trim();
+  const org = profile.organization;
+  const orgName = org?.name?.trim();
   const catalogPublicName = orgName || publicName;
+  const catalogOnOrg = Boolean(org && (u.partnerType === "STORE" || u.partnerType === "COMPANY"));
   const city = (u.catalogCity ?? u.city ?? "").trim();
   const partnershipPhone = (w?.partnershipContactPhone ?? "").trim();
   const partnershipEmail = (w?.partnershipContactEmail ?? "").trim();
@@ -80,8 +89,8 @@ export function workingProfileCatalogSeed(profile: ProProfileResponse): Partial<
     navigatorStageIds: [...effectiveWorkingStageIds(w)],
     description: (u.description ?? "").trim(),
     catalogImageUrl: (u.photoUrl ?? "").trim(),
-    website: (u.website ?? "").trim(),
-    telegram: (u.telegram ?? "").trim(),
+    website: (catalogOnOrg ? (org?.website ?? "") : (u.website ?? "")).trim(),
+    telegram: (catalogOnOrg ? (org?.telegram ?? "") : (u.telegram ?? "")).trim(),
     publicPhone,
     publicEmail,
   };
@@ -127,6 +136,7 @@ export function mergeCatalogPrefill(
     next.specializations = [...seed.specializations];
   }
   if (
+    !touched.storeCategories &&
     (current.storeCategories?.length ?? 0) === 0 &&
     seed.storeCategories?.length
   ) {

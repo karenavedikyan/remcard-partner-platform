@@ -131,8 +131,8 @@ export function BusinessWorkingProfileWizard({
 
   const skipStep = async () => {
     const next = draftWithAreas();
-    setStep((s) => Math.min(3, s + 1));
-    await persistServer(next);
+    const ok = await persistServer(next);
+    if (ok) setStep((s) => Math.min(3, s + 1));
   };
 
   const onSubmitStep = async (e: FormEvent) => {
@@ -368,6 +368,9 @@ export function BusinessWorkingProfileWizard({
                     </div>
                   </div>
                 </div>
+                <p className={stepStyles.basicsFootnote} data-testid="business-basics-role-note">
+                  {copy.basicsRoleNote}
+                </p>
               </div>
             ) : null}
             {step === 1 ? (

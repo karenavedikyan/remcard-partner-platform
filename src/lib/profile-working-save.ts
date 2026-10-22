@@ -1,5 +1,6 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
+import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { buildWorkingProfilePatchBody, type WorkingSaveOptions } from "@/lib/working-profile-patch";
@@ -77,29 +78,50 @@ export function workingProfileMissingFields(draft: ProfileDraft): string[] {
   return issues;
 }
 
-async function persistOrganizationName(
+async function persistOrganizationFromDraft(
   draft: ProfileDraft,
   profile: ProProfileResponse,
 ): Promise<void> {
+  if (draft.partnerType !== "STORE" && draft.partnerType !== "COMPANY") return;
+
+  const saved = profileDraftFromProfile(profile);
+  const body: Record<string, unknown> = {};
+
   const orgName = draft.organizationName.trim();
-  const savedOrg = profile.organization?.name?.trim() ?? "";
-  if (orgName === savedOrg) return;
-  const orgBody = { name: orgName, partnerType: draft.partnerType };
+  const savedOrgName = profile.organization?.name?.trim() ?? "";
+  if (orgName && orgName !== savedOrgName) {
+    body.name = orgName;
+    body.partnerType = draft.partnerType;
+  }
+
+  if (profile.organization) {
+    if (draft.website.trim() !== saved.website.trim()) {
+      body.website = draft.website.trim() || null;
+    }
+    if (draft.telegram.trim() !== saved.telegram.trim()) {
+      body.telegram = draft.telegram.trim() || null;
+    }
+  }
+
+  if (Object.keys(body).length === 0) return;
+
   const existing = await remcardFetch<{ organization: { id: string } | null }>(
     "/api/pro/organization",
     { method: "GET" },
   );
   if (existing.organization) {
-    await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
-  } else {
-    try {
-      await remcardFetch("/api/pro/organization", { method: "POST", body: orgBody });
-    } catch (caught) {
-      if (caught instanceof RemcardApiError && caught.status === 409) {
-        await remcardFetch("/api/pro/organization", { method: "PATCH", body: orgBody });
-      } else {
-        throw caught;
-      }
+    await remcardFetch("/api/pro/organization", { method: "PATCH", body });
+    return;
+  }
+  if (!orgName) return;
+  const createBody = { name: orgName, partnerType: draft.partnerType, ...body };
+  try {
+    await remcardFetch("/api/pro/organization", { method: "POST", body: createBody });
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 409) {
+      await remcardFetch("/api/pro/organization", { method: "PATCH", body });
+    } else {
+      throw caught;
     }
   }
 }
@@ -123,7 +145,7 @@ export async function persistWorkingProfileDraft(
   const orgBeforeProfile =
     needsOrg && Boolean(options.partnerSearchTouched && draft.partnerSearchOptIn);
   if (orgBeforeProfile) {
-    await persistOrganizationName(draft, profile);
+    await persistOrganizationFromDraft(draft, profile);
   }
 
   const patchBody = buildWorkingProfilePatchBody(profile, draft, options);
@@ -136,7 +158,7 @@ export async function persistWorkingProfileDraft(
   }
 
   if (needsOrg && !orgBeforeProfile) {
-    await persistOrganizationName(draft, profile);
+    await persistOrganizationFromDraft(draft, profile);
   }
 
   const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });

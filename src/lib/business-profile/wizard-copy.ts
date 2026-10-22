@@ -5,6 +5,8 @@ export type BusinessWizardCopy = {
   journeyTitle: string;
   journeyIntro: string;
   steps: [string, string, string, string];
+  basicsStepTitle: string;
+  basicsRoleNote: string;
   orgFieldLabel: string;
   repFieldLabel: string;
   directionsStepTitle: string;
@@ -15,8 +17,11 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
   if (partnerType === "STORE") {
     return {
       kicker: "Магазин",
-      journeyTitle: "Профиль магазина",
-      journeyIntro: "Название, представитель и город — для начала. Остальное можно добавить позже.",
+      journeyTitle: "Профиль без лишнего",
+      journeyIntro: "Имя и город для начала. Остальное можно заполнить позже.",
+      basicsStepTitle: "Представьте ваш магазин",
+      basicsRoleNote:
+        "Название магазина видят партнёры; имя представителя — для кабинета и связи.",
       steps: ["О магазине", "Ассортимент", "Связь и работа", "Проверка"],
       orgFieldLabel: "Название магазина",
       repFieldLabel: "Имя представителя",
@@ -26,8 +31,11 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
   }
   return {
     kicker: "Компания",
-    journeyTitle: "Профиль компании",
-    journeyIntro: "Название, представитель и город — для начала. Остальное можно добавить позже.",
+    journeyTitle: "Профиль без лишнего",
+    journeyIntro: "Имя и город для начала. Остальное можно заполнить позже.",
+    basicsStepTitle: "Представьте вашу компанию",
+    basicsRoleNote:
+      "Название компании видят партнёры; имя представителя — для кабинета и связи.",
     steps: ["О компании", "Направления", "Связь и работа", "Проверка"],
     orgFieldLabel: "Название компании",
     repFieldLabel: "Имя представителя",
@@ -37,7 +45,7 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
 }
 
 export function businessStepPanelTitle(step: number, copy: BusinessWizardCopy): string {
-  if (step === 0) return copy.steps[0]!;
+  if (step === 0) return copy.basicsStepTitle;
   if (step === 1) return copy.directionsStepTitle;
   if (step === 2) return "Как с вами связаться?";
   if (step === 3) return "Всё верно?";

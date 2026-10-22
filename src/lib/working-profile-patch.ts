@@ -1,5 +1,6 @@
 import type { ProfileDraft } from "@/lib/profile-save";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
+import { organizationWorkingCatalogEntityForDraft } from "@/lib/profile-org-catalog";
 import type { ProProfileResponse } from "@/lib/types";
 
 function arraysEqual(a: string[], b: string[]): boolean {
@@ -79,11 +80,14 @@ export function buildWorkingProfilePatchBody(
     body.partnerActivities = draft.partnerActivities;
   }
 
-  if (draft.website.trim() !== saved.website.trim()) {
-    body.website = draft.website.trim() || null;
-  }
-  if (draft.telegram.trim() !== saved.telegram.trim()) {
-    body.telegram = draft.telegram.trim() || null;
+  const orgCatalog = organizationWorkingCatalogEntityForDraft(profile, draft);
+  if (!orgCatalog) {
+    if (draft.website.trim() !== saved.website.trim()) {
+      body.website = draft.website.trim() || null;
+    }
+    if (draft.telegram.trim() !== saved.telegram.trim()) {
+      body.telegram = draft.telegram.trim() || null;
+    }
   }
 
   return body;
