@@ -4,7 +4,7 @@
 
 | Repo | Base | Tip (this delivery) |
 |------|------|---------------------|
-| remcard-partner-platform | `ce5b1c6c6227861d1a2ccd6e0f050fc101473067` | _(see git log after push)_ |
+| remcard-partner-platform | `ce5b1c6c6227861d1a2ccd6e0f050fc101473067` | `4e8fad3538ba0426629dcf41466a9917a9509b61` |
 | remcard-navigator | `3ab843c7221c60ab7e043b9063eb31e36b0da000` | **unchanged (freeze)** |
 
 Prior artifact tips (`ce5b1c6`, `bbbf10f`) are not release tags.
