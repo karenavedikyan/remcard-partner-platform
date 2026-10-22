@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesWallet";
+import { SpecialistMasterWallet } from "@/components/specialist-wallet/SpecialistMasterWallet";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
@@ -34,10 +35,18 @@ export default async function SettlementsPage() {
         description={
           r05Eligible
             ? "Входящие обязательства партнёров и реквизиты для получения оплаты."
-            : "Открытые обязательства и завершённые выплаты между партнёрами."
+            : masterWalletShell
+              ? "Взаиморасчёты с партнёрами в обоих направлениях и реквизиты для выплат."
+              : "Открытые обязательства и завершённые выплаты между партнёрами."
         }
       />
-      {r05Eligible ? <AgentReceivablesWallet /> : <SettlementsHub />}
+      {r05Eligible ? (
+        <AgentReceivablesWallet />
+      ) : masterWalletShell ? (
+        <SpecialistMasterWallet />
+      ) : (
+        <SettlementsHub />
+      )}
     </CabinetShell>
   );
 }
