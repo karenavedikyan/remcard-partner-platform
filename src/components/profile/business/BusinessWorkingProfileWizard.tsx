@@ -69,7 +69,10 @@ export function BusinessWorkingProfileWizard({
 }: Props) {
   const copy = businessWizardCopy(partnerType);
   const profileRef = useRef(initialProfile);
+  /** Bumped on identity change or unmount — stale persist must not touch UI/callbacks. */
   const persistGenerationRef = useRef(0);
+  /** Latest in-flight persist; older requests must not clear `saving` in finally. */
+  const persistRequestIdRef = useRef(0);
   const editingRef = useRef(false);
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
 
@@ -101,6 +104,13 @@ export function BusinessWorkingProfileWizard({
     setStep(0);
     setEditing(editingNext);
     setBanner(null);
+    setSaving(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      persistGenerationRef.current += 1;
+    };
   }, []);
 
   useEffect(() => {
@@ -136,18 +146,26 @@ export function BusinessWorkingProfileWizard({
     onBasicsDirtyChange?.(basicsDirty);
   }, [basicsDirty, onBasicsDirtyChange]);
 
+  const persistStillCurrent = (generationAtStart: number, requestId: number): boolean => {
+    return (
+      generationAtStart === persistGenerationRef.current &&
+      requestId === persistRequestIdRef.current
+    );
+  };
+
   const persistServer = async (nextDraft: ProfileDraft): Promise<boolean> => {
     const err = validateWorkingProfileDraft(nextDraft);
     if (err) {
       setBanner({ kind: "error", text: err });
       return false;
     }
+    const generationAtStart = persistGenerationRef.current;
+    const requestId = ++persistRequestIdRef.current;
     setSaving(true);
     setBanner(null);
-    const generationAtStart = persistGenerationRef.current;
     try {
       const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft);
-      if (generationAtStart !== persistGenerationRef.current) {
+      if (!persistStillCurrent(generationAtStart, requestId)) {
         return false;
       }
       profileRef.current = refreshed;
@@ -158,13 +176,18 @@ export function BusinessWorkingProfileWizard({
       onWorkingProfileSaved?.(refreshed);
       return true;
     } catch (e) {
+      if (!persistStillCurrent(generationAtStart, requestId)) {
+        return false;
+      }
       setBanner({
         kind: "error",
         text: e instanceof RemcardApiError ? e.message : "Не удалось сохранить профиль.",
       });
       return false;
     } finally {
-      setSaving(false);
+      if (persistStillCurrent(generationAtStart, requestId)) {
+        setSaving(false);
+      }
     }
   };
 
