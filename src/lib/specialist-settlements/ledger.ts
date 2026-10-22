@@ -4,6 +4,12 @@ import type {
   SettlementPartnerGroup,
 } from "@/lib/settlements-types";
 import { sumObligationAmounts } from "@/lib/settlements-mappers";
+import {
+  instantInMskCalendarRange,
+  validateMskPeriod,
+} from "@/lib/specialist-settlements/mskCalendar";
+
+export type SettlementExportScope = "open" | "partnerHistory" | "reconciliation";
 
 export type SettlementDirection = "receivable" | "payable";
 
@@ -22,27 +28,11 @@ export function defaultLedgerFilters(): SettlementLedgerFilters {
 }
 
 export function validateLedgerPeriod(from: string, to: string): string | null {
-  if (from && to && from > to) {
-    return "Дата начала периода не может быть позже даты окончания.";
-  }
-  return null;
+  return validateMskPeriod(from, to);
 }
 
 function parseDay(iso: string): number {
   return new Date(iso).getTime();
-}
-
-function inDateRange(iso: string, from: string, to: string): boolean {
-  const t = parseDay(iso);
-  if (from) {
-    const start = new Date(`${from}T00:00:00`).getTime();
-    if (t < start) return false;
-  }
-  if (to) {
-    const end = new Date(`${to}T23:59:59.999`).getTime();
-    if (t > end) return false;
-  }
-  return true;
 }
 
 function matchesQuery(row: SettlementObligation, q: string): boolean {
@@ -76,7 +66,9 @@ export function filterOpenObligations(
   if (filters.status === "open") {
     out = out.filter((row) => row.status !== "PAID" && row.status !== "CANCELLED");
   }
-  out = out.filter((row) => inDateRange(row.createdAt, filters.from, filters.to));
+  out = out.filter((row) =>
+    instantInMskCalendarRange(row.createdAt, filters.from, filters.to),
+  );
   return sortObligations(out, filters.sort);
 }
 
@@ -100,7 +92,7 @@ export function filterCompletedForPeriod(
       unknownPaidAt += 1;
       continue;
     }
-    if (inDateRange(row.paidAt, filters.from, filters.to)) {
+    if (instantInMskCalendarRange(row.paidAt, filters.from, filters.to)) {
       inPeriod.push(row);
     }
   }
@@ -160,15 +152,54 @@ function sortPartnerGroups(
   });
 }
 
+function completedOnlyPartnerGroups(
+  completed: SettlementCompleted[],
+  direction: SettlementDirection,
+  filters: SettlementLedgerFilters,
+): SettlementPartnerGroup[] {
+  const { inPeriod } = filterCompletedForPeriod(
+    completed.filter((row) => row.direction === direction),
+    direction,
+    filters,
+  );
+  const groups = new Map<string, SettlementPartnerGroup>();
+  for (const row of inPeriod) {
+    if (groups.has(row.counterpartyId)) continue;
+    groups.set(row.counterpartyId, {
+      counterpartyId: row.counterpartyId,
+      counterpartyName: row.counterpartyName,
+      totalAmount: 0,
+      items: [],
+      completedOnly: true,
+    });
+  }
+  return [...groups.values()];
+}
+
 export function partnerGroupsForDirection(
   receivable: SettlementObligation[],
   payable: SettlementObligation[],
+  completed: SettlementCompleted[],
   direction: SettlementDirection,
   filters: SettlementLedgerFilters,
 ): SettlementPartnerGroup[] {
   const source = direction === "receivable" ? receivable : payable;
   const filtered = filterOpenObligations(source, filters);
-  return sortPartnerGroups(groupObligationsByCounterparty(filtered), filters.sort);
+  let groups = sortPartnerGroups(groupObligationsByCounterparty(filtered), filters.sort);
+  if (filters.status === "all") {
+    const openIds = new Set(groups.map((group) => group.counterpartyId));
+    const extras = completedOnlyPartnerGroups(completed, direction, filters).filter(
+      (group) => !openIds.has(group.counterpartyId),
+    );
+    groups = sortPartnerGroups([...groups, ...extras], filters.sort);
+  }
+  return groups;
+}
+
+export function resolveExportScope(screen: string): SettlementExportScope {
+  if (screen === "reconciliation") return "reconciliation";
+  if (screen === "partnerHistory") return "partnerHistory";
+  return "open";
 }
 
 export function directionTotal(

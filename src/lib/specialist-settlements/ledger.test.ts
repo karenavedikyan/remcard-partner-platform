@@ -11,8 +11,10 @@ import {
   paginateRows,
   partnerGroupsForDirection,
   reconciliationSummary,
+  resolveExportScope,
   validateLedgerPeriod,
 } from "./ledger";
+import { instantInMskCalendarRange } from "./mskCalendar";
 
 const row = (overrides: Partial<SettlementObligation>): SettlementObligation => ({
   id: "b1",
@@ -87,9 +89,9 @@ describe("specialist-settlements ledger", () => {
         createdAt: `2026-10-${10 + i}T10:00:00.000Z`,
       });
     });
-    const allGroups = partnerGroupsForDirection([], payable, "payable", defaultLedgerFilters());
+    const allGroups = partnerGroupsForDirection([], payable, [], "payable", defaultLedgerFilters());
     assert.equal(allGroups.length, 11);
-    const narrowed = partnerGroupsForDirection([], payable, "payable", {
+    const narrowed = partnerGroupsForDirection([], payable, [], "payable", {
       ...defaultLedgerFilters(),
       from: "2026-10-11",
     });
@@ -117,9 +119,38 @@ describe("specialist-settlements ledger", () => {
       }),
     ];
     const filters = { ...defaultLedgerFilters(), sort: "amount-asc" as const };
-    const groups = partnerGroupsForDirection(receivable, [], "receivable", filters);
+    const groups = partnerGroupsForDirection(receivable, [], [], "receivable", filters);
     assert.equal(groups[0]?.counterpartyId, "Z");
     assert.equal(groups[1]?.counterpartyId, "A");
+  });
+
+  it("uses MSK calendar day for period boundaries", () => {
+    assert.equal(
+      instantInMskCalendarRange("2026-10-21T21:30:00.000Z", "2026-10-22", "2026-10-22"),
+      true,
+    );
+  });
+
+  it("lists completed-only partner when status is all", () => {
+    const completed = [
+      {
+        ...row({ id: "c1", counterpartyId: "CLOSED", counterpartyName: "CLOSED" }),
+        paidAt: "2026-10-05T10:00:00.000Z",
+        direction: "receivable" as const,
+        status: "PAID",
+      },
+    ];
+    const groups = partnerGroupsForDirection([], [], completed, "receivable", {
+      ...defaultLedgerFilters(),
+      status: "all",
+    });
+    assert.ok(groups.some((g) => g.counterpartyId === "CLOSED" && g.completedOnly));
+  });
+
+  it("maps export scope from active screen", () => {
+    assert.equal(resolveExportScope("partnerHistory"), "partnerHistory");
+    assert.equal(resolveExportScope("reconciliation"), "reconciliation");
+    assert.equal(resolveExportScope("orders"), "open");
   });
 
   it("validates invalid period range", () => {

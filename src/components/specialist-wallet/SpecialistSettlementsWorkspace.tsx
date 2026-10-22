@@ -25,6 +25,7 @@ import {
   partnerCompletedHistory,
   partnerGroupsForDirection,
   reconciliationSummary,
+  resolveExportScope,
   validateLedgerPeriod,
   type SettlementDirection,
   type SettlementLedgerFilters,
@@ -191,7 +192,13 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
 
   const partnerGroups = useMemo(() => {
     if (!data || periodError) return [];
-    return partnerGroupsForDirection(data.receivable, data.payable, direction, filters);
+    return partnerGroupsForDirection(
+      data.receivable,
+      data.payable,
+      data.completed,
+      direction,
+      filters,
+    );
   }, [data, direction, filters, periodError]);
 
   const allOrderRows = useMemo(() => {
@@ -264,13 +271,17 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
     if (!data || periodError) return;
     setExportError("");
     try {
+      const scope = resolveExportScope(screen);
       await downloadMasterSettlementsXlsx({
+        scope,
         direction,
         filters,
         counterpartyId:
-          screen === "orders" || screen === "partnerHistory"
+          scope === "partnerHistory"
             ? selectedPartner?.counterpartyId
-            : null,
+            : scope === "open" && (screen === "orders" || screen === "partners")
+              ? selectedPartner?.counterpartyId ?? null
+              : null,
       });
     } catch (caught) {
       setExportError(
@@ -413,21 +424,31 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
           <div className={`${hubStyles.summary} ${walletStyles.directionSummary}`}>
             <button
               type="button"
-              className={hubStyles.summaryCard}
+              className={`${hubStyles.summaryCard} ${walletStyles.directionTile} ${
+                screen !== "overview" && direction === "receivable"
+                  ? walletStyles.directionTileActive
+                  : ""
+              }`}
               onClick={() => openDirection("receivable")}
               data-testid="specialist-wallet-receivable-total"
             >
               <p className={hubStyles.summaryLabel}>Мне должны</p>
               <p className={hubStyles.summaryValue}>{formatMoneyRub(receivableTotal)}</p>
+              <p className={walletStyles.directionTileHint}>К партнёрам →</p>
             </button>
             <button
               type="button"
-              className={hubStyles.summaryCard}
+              className={`${hubStyles.summaryCard} ${walletStyles.directionTile} ${
+                screen !== "overview" && direction === "payable"
+                  ? walletStyles.directionTileActive
+                  : ""
+              }`}
               onClick={() => openDirection("payable")}
               data-testid="specialist-wallet-payable-total"
             >
               <p className={hubStyles.summaryLabel}>Я должен</p>
               <p className={hubStyles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
+              <p className={walletStyles.directionTileHint}>К партнёрам →</p>
             </button>
           </div>
           <div className={hubStyles.actions}>
@@ -462,7 +483,11 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
               >
                 <div className={hubStyles.groupHeader}>
                   <p className={hubStyles.groupTitle}>{group.counterpartyName}</p>
-                  <p className={hubStyles.groupTotal}>{formatMoneyRub(group.totalAmount)}</p>
+                  <p className={hubStyles.groupTotal}>
+                    {group.completedOnly
+                      ? "Только история"
+                      : formatMoneyRub(group.totalAmount)}
+                  </p>
                 </div>
               </button>
             ))
@@ -578,15 +603,4 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
       ) : null}
     </div>
   );
-}
-
-/** @internal test helper */
-export function _buildExportRowsForTest(
-  receivable: SettlementObligation[],
-  payable: SettlementObligation[],
-  direction: SettlementDirection,
-  filters: SettlementLedgerFilters,
-  counterpartyId?: string,
-) {
-  return buildExportRows(receivable, payable, direction, filters, counterpartyId);
 }

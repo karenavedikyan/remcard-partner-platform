@@ -35,6 +35,8 @@ export type SettlementPartnerGroup = {
   counterpartyName: string;
   totalAmount: number;
   items: SettlementObligation[];
+  /** No open rows; partner reachable via completed history when status=all. */
+  completedOnly?: boolean;
 };
 
 export type SettlementsTab = "receivable" | "payable" | "completed";

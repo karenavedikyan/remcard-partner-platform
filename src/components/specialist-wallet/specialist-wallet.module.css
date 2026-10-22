@@ -74,6 +74,26 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.directionTile {
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.directionTileActive {
+  border-color: var(--accent, var(--primary));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent, var(--primary)) 35%, transparent);
+}
+
+.directionTileHint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--accent, var(--primary));
+}
+
 .filtersPanel {
   display: flex;
   flex-wrap: wrap;
