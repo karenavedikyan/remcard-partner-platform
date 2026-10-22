@@ -7,6 +7,10 @@ export type BusinessWizardCopy = {
   steps: [string, string, string, string];
   basicsStepTitle: string;
   basicsRoleNote: string;
+  basicsFormFootnote: string;
+  orgFieldHint: string;
+  repFieldHint: string;
+  cityFieldHint: string;
   orgFieldLabel: string;
   repFieldLabel: string;
   directionsStepTitle: string;
@@ -18,10 +22,16 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
     return {
       kicker: "Магазин",
       journeyTitle: "Профиль без лишнего",
-      journeyIntro: "Имя и город для начала. Остальное можно заполнить позже.",
+      journeyIntro:
+        "Название, представитель и город. Адреса и команду настроите отдельно.",
       basicsStepTitle: "Представьте ваш магазин",
       basicsRoleNote:
         "Название, представитель и город. Адреса и команду настроите отдельно.",
+      basicsFormFootnote:
+        "Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.",
+      orgFieldHint: "Привычное название, без юридических реквизитов.",
+      repFieldHint: "Кто ведёт кабинет и общается с партнёрами.",
+      cityFieldHint: "Основной город. Остальные укажете в филиалах.",
       steps: ["О магазине", "Ассортимент", "Связь и работа", "Проверка"],
       orgFieldLabel: "Название магазина",
       repFieldLabel: "Имя представителя",
@@ -33,10 +43,16 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
   return {
     kicker: "Компания",
     journeyTitle: "Профиль без лишнего",
-    journeyIntro: "Имя и город для начала. Остальное можно заполнить позже.",
+    journeyIntro:
+      "Общие данные организации. Филиалы и доступы сотрудников не нужно заполнять сейчас.",
     basicsStepTitle: "Представьте вашу компанию",
     basicsRoleNote:
       "Общие данные организации. Филиалы и доступы сотрудников не нужно заполнять сейчас.",
+    basicsFormFootnote:
+      "Поля со звёздочкой обязательны. Это всё, что нужно для первого шага.",
+    orgFieldHint: "Привычное название, без юридических реквизитов.",
+    repFieldHint: "Кто ведёт кабинет и общается с партнёрами.",
+    cityFieldHint: "Основной город. Остальные укажете в филиалах.",
     steps: ["О компании", "Направления", "Связь и работа", "Проверка"],
     orgFieldLabel: "Название компании",
     repFieldLabel: "Имя представителя",

@@ -65,6 +65,18 @@ describe("catalogTouchedFromProfile", () => {
     expect(catalogTouchedFromProfile(profile)).toEqual({ storeCategories: true });
   });
 
+  it("merges published locks when draft exists without catalogTouched", () => {
+    const profile = orgProfile({});
+    Object.assign(profile.organization!, {
+      catalogPublished: true,
+      catalogStatus: "APPROVED",
+      storeCategories: [],
+    });
+    const touched = catalogTouchedFromProfile(profile);
+    expect(touched.storeCategories).toBe(true);
+    expect(touched.publicPhone).toBe(true);
+  });
+
   it("falls back to user.catalogDraft for solo MASTER", () => {
     const profile: ProProfileResponse = {
       ...orgProfile(null),

@@ -28,14 +28,15 @@ export function catalogTouchedFromProfile(profile: ProProfileResponse): Record<s
   if (catalogEntityForProfile(profile) === "organization") {
     const org = profile.organization;
     const raw = org?.catalogDraft;
+    let fromDraft: CatalogTouchedMap = {};
     if (raw && typeof raw === "object" && !Array.isArray(raw)) {
       const touched = (raw as Record<string, unknown>).catalogTouched;
-      return parseCatalogTouched(touched);
+      fromDraft = parseCatalogTouched(touched);
     }
     if (org?.catalogPublished) {
-      return publishedOrgCatalogTouchedLocks();
+      return { ...publishedOrgCatalogTouchedLocks(), ...fromDraft };
     }
-    return {};
+    return fromDraft;
   }
   return catalogTouchedFromUser(profile.user);
 }

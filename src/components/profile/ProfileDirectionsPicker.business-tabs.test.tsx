@@ -42,5 +42,11 @@ describe("ProfileDirectionsPicker business tabs", () => {
     await user.click(screen.getByRole("button", { name: "Работы и услуги" }));
     expect(screen.queryByRole("checkbox", { name: "Двери" })).toBeNull();
     expect(screen.getByRole("checkbox", { name: "Сантехника" })).toBeTruthy();
+
+    const tabs = screen.getByTestId("business-direction-group-tabs");
+    const search = screen.getByTestId("pw-search");
+    expect(
+      tabs.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

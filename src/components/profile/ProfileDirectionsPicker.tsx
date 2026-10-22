@@ -245,6 +245,7 @@ export function ProfileDirectionsPicker({
     styles.wrap,
     specialistMode && compactSpecialistGrid ? styles.specialistCompact : "",
     presentationVariant === "specialistWorkingProfile" ? styles.specialistWorkingProfile : "",
+    businessTabbedPick ? styles.businessWizardPick : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -272,11 +273,12 @@ export function ProfileDirectionsPicker({
             {!catalogGroupedDetails && presentationVariant !== "specialistWorkingProfile" ? (
               <small>Услуги и этапы сохраняются при смене вида</small>
             ) : null}
-            {presentationVariant === "specialistWorkingProfile" ? (
+            {presentationVariant === "specialistWorkingProfile" || businessTabbedPick ? (
               <button
                 type="button"
                 className={styles.focusSearchLink}
                 disabled={disabled}
+                data-testid="business-direction-add-edit"
                 onClick={() => searchInputRef.current?.focus()}
               >
                 Добавить / изменить
@@ -324,7 +326,7 @@ export function ProfileDirectionsPicker({
               ))}
             </ul>
           )}
-          {presentationVariant === "specialistWorkingProfile" ? (
+          {presentationVariant === "specialistWorkingProfile" || businessTabbedPick ? (
             <small className={styles.hint}>
               Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
               добавьте другие ниже.
@@ -351,22 +353,24 @@ export function ProfileDirectionsPicker({
         </ul>
       )}
 
-      <label className={tileLayout ? styles.searchTile : styles.search}>
-        <span className={tileLayout ? styles.searchLabel : undefined}>
-          {tileLayout ? "Найти направление" : "Поиск по справочнику"}
-        </span>
-        <input
-          ref={searchInputRef}
-          type="search"
-          data-testid={tileLayout ? "pw-search" : undefined}
-          value={filter}
-          disabled={disabled}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={
-            tileLayout ? "Например, двери или плитка" : "Например: двери, плитка, электрика"
-          }
-        />
-      </label>
+      {!businessTabbedPick ? (
+        <label className={tileLayout ? styles.searchTile : styles.search}>
+          <span className={tileLayout ? styles.searchLabel : undefined}>
+            {tileLayout ? "Найти направление" : "Поиск по справочнику"}
+          </span>
+          <input
+            ref={searchInputRef}
+            type="search"
+            data-testid={tileLayout ? "pw-search" : undefined}
+            value={filter}
+            disabled={disabled}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={
+              tileLayout ? "Например, двери или плитка" : "Например: двери, плитка, электрика"
+            }
+          />
+        </label>
+      ) : null}
 
       {loadState === "loading" && !fullTaxonomy ? (
         <p className={styles.hint}>Загружаем справочник…</p>
@@ -410,20 +414,39 @@ export function ProfileDirectionsPicker({
             </div>
           ) : null}
 
+          {businessTabbedPick ? (
+            <label className={styles.searchTile}>
+              <span className={styles.searchLabel}>Найти направление</span>
+              <input
+                ref={searchInputRef}
+                type="search"
+                data-testid="pw-search"
+                value={filter}
+                disabled={disabled}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Например, двери или плитка"
+              />
+            </label>
+          ) : null}
+
           {!specialistMode && (!businessTabbedPick || businessPickGroup === "products") ? (
           <fieldset
-            className={businessTabbedPick ? styles.tileFieldset : styles.group}
+            className={businessTabbedPick ? styles.businessChoicesFieldset : styles.group}
             disabled={disabled}
           >
-            <legend>Товары</legend>
-            <div className={businessTabbedPick ? styles.tileGrid : styles.optionGrid}>
+            <legend className={businessTabbedPick ? styles.srOnlyLegend : undefined}>Товары</legend>
+            <div
+              className={
+                businessTabbedPick ? styles.businessChoicesGrid : styles.optionGrid
+              }
+            >
               {filtered.products.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Товары».</p>
               ) : (
                 orderedVisibleItems(fullTaxonomy.products, productCategoryIds, filter.trim()).map((item) => {
                   const checked = productCategoryIds.includes(item.id);
                   const rowClass = businessTabbedPick
-                    ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
+                    ? `${styles.businessChoice}${checked ? ` ${styles.businessChoiceSelected}` : ""}`
                     : styles.checkRow;
                   return (
                   <label key={item.id} className={rowClass}>
@@ -448,11 +471,27 @@ export function ProfileDirectionsPicker({
           {(!businessTabbedPick || businessPickGroup === "services") ? (() => {
             const servicesInner = (
               <fieldset
-                className={tileLayout ? styles.tileFieldset : styles.group}
+                className={
+                  businessTabbedPick
+                    ? styles.businessChoicesFieldset
+                    : tileLayout
+                      ? styles.tileFieldset
+                      : styles.group
+                }
                 disabled={disabled}
               >
-                <legend>Работы и услуги</legend>
-                <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
+                <legend className={businessTabbedPick ? styles.srOnlyLegend : undefined}>
+                  Работы и услуги
+                </legend>
+                <div
+                  className={
+                    businessTabbedPick
+                      ? styles.businessChoicesGrid
+                      : tileLayout
+                        ? styles.tileGrid
+                        : styles.optionGrid
+                  }
+                >
                   {orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim())
                     .length === 0 ? (
                     <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
@@ -463,9 +502,11 @@ export function ProfileDirectionsPicker({
                       filter.trim(),
                     ).map((item) => {
                       const checked = serviceSpecializationIds.includes(item.id);
-                      const rowClass = tileLayout
-                        ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
-                        : styles.checkRow;
+                      const rowClass = businessTabbedPick
+                        ? `${styles.businessChoice}${checked ? ` ${styles.businessChoiceSelected}` : ""}`
+                        : tileLayout
+                          ? `${styles.tileOption}${checked ? ` ${styles.tileOptionSelected}` : ""}`
+                          : styles.checkRow;
                       return (
                         <label key={item.id} className={rowClass}>
                           <input

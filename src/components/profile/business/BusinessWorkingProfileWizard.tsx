@@ -345,7 +345,9 @@ export function BusinessWorkingProfileWizard({
         <aside className={styles.journey} aria-label="Этапы профиля">
           <span className={styles.kicker}>{copy.kicker}</span>
           <h2 className={styles.title}>{copy.journeyTitle}</h2>
-          <p className={styles.intro}>{copy.journeyIntro}</p>
+          <p className={styles.intro} data-testid="business-journey-intro">
+            {copy.journeyIntro}
+          </p>
           <ol className={styles.steps}>
             {copy.steps.map((label, i) => (
               <li
@@ -431,9 +433,7 @@ export function BusinessWorkingProfileWizard({
                           setDraft((d) => ({ ...d, organizationName: e.target.value }))
                         }
                       />
-                      <small className={stepStyles.basicsHelper}>
-                        Коммерческое название для партнёров и каталога, не имя представителя.
-                      </small>
+                      <small className={stepStyles.basicsHelper}>{copy.orgFieldHint}</small>
                     </div>
                     <div className={stepStyles.basicsField} data-profile-focus="displayName">
                       <label htmlFor="bp-rep">
@@ -448,6 +448,7 @@ export function BusinessWorkingProfileWizard({
                         disabled={!basicsEditable}
                         onChange={(e) => setDraft((d) => ({ ...d, displayName: e.target.value }))}
                       />
+                      <small className={stepStyles.basicsHelper}>{copy.repFieldHint}</small>
                     </div>
                     <div className={stepStyles.basicsField} data-profile-focus="city">
                       <label htmlFor="bp-city">
@@ -461,11 +462,12 @@ export function BusinessWorkingProfileWizard({
                         disabled={!basicsEditable}
                         onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
                       />
+                      <small className={stepStyles.basicsHelper}>{copy.cityFieldHint}</small>
                     </div>
                   </div>
                 </div>
-                <p className={stepStyles.basicsFootnote} data-testid="business-basics-role-note">
-                  {copy.basicsRoleNote}
+                <p className={stepStyles.basicsFootnote} data-testid="business-basics-form-footnote">
+                  {copy.basicsFormFootnote}
                 </p>
               </div>
             ) : null}
