@@ -56,6 +56,8 @@ import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
 import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
 import { BusinessProfileSection } from "./business/BusinessProfileSection";
+import { BusinessCatalogPrerequisite } from "./business/BusinessCatalogPrerequisite";
+import { OrganizationCatalogSection } from "./business/OrganizationCatalogSection";
 import {
   businessProfilePartnerType,
   businessProfileWizardEligible,
@@ -612,8 +614,11 @@ function ProfileEditorInner({
     : isWorkingProfileDirty(savedSnapshotRef.current, currentDraft);
 
   useEffect(() => {
-    if (activeSection !== "basics") setBusinessWizardDirty(false);
-  }, [activeSection]);
+    if (!businessProfileWizardUi) return;
+    if (activeSection !== "overview" && activeSection !== "basics") {
+      setBusinessWizardDirty(false);
+    }
+  }, [activeSection, businessProfileWizardUi]);
   const hasUnsavedCatalogChanges = isCatalogDraftDirty(
     savedCatalogSnapshotRef.current,
     currentDraft,
@@ -706,6 +711,13 @@ function ProfileEditorInner({
     !(specialistR06Ui && (activeSection === "basics" || activeSection === "catalog")) &&
     !(businessProfileWizardUi && activeSection === "basics");
 
+  const showBusinessProfileSurface = Boolean(
+    businessProfileWizardUi &&
+      businessPartnerType &&
+      (activeSection === "overview" || activeSection === "basics"),
+  );
+  const businessOrgCatalogUi = Boolean(businessProfileWizardUi && businessPartnerType);
+
   return (
     <div
       className={`${styles.shell} ${pureAgentCompactUi ? styles.pureAgentProduction : ""}`}
@@ -763,7 +775,24 @@ function ProfileEditorInner({
       >
       <div className={styles.main}>
         {!pureAgentCompactUi ? <ProfileBranchContextSwitcher /> : null}
-        {activeSection === "overview" && !agentNavPending ? (
+        {showBusinessProfileSurface ? (
+          <BusinessProfileSection
+            profile={profile}
+            partnerType={businessPartnerType!}
+            basicsEditable={basicsEditable}
+            onWorkingProfileSaved={applyProfile}
+            onBasicsDirtyChange={setBusinessWizardDirty}
+            forceEditing={
+              isProfileDevFixture && searchParams.get("wizard") === "1"
+            }
+            forceStep={
+              isProfileDevFixture && searchParams.get("wizard") === "1"
+                ? Number.parseInt(searchParams.get("wizardStep") ?? "0", 10)
+                : undefined
+            }
+          />
+        ) : null}
+        {activeSection === "overview" && !agentNavPending && !showBusinessProfileSurface ? (
           <>
             <AgentProfileSection
               userId={profile.user.id}
@@ -810,23 +839,7 @@ function ProfileEditorInner({
               />
             )}
           </>
-        ) : businessProfileWizardUi && businessPartnerType ? (
-          <BusinessProfileSection
-            profile={profile}
-            partnerType={businessPartnerType}
-            basicsEditable={basicsEditable}
-            onWorkingProfileSaved={applyProfile}
-            onBasicsDirtyChange={setBusinessWizardDirty}
-            forceEditing={
-              isProfileDevFixture && searchParams.get("wizard") === "1"
-            }
-            forceStep={
-              isProfileDevFixture && searchParams.get("wizard") === "1"
-                ? Number.parseInt(searchParams.get("wizardStep") ?? "0", 10)
-                : undefined
-            }
-          />
-        ) : (
+        ) : showBusinessProfileSurface ? null : (
           <>
         <AgentProfileSection
           userId={profile.user.id}
@@ -1095,7 +1108,100 @@ function ProfileEditorInner({
           />
         ) : null}
 
-        {activeSection === "catalog" && !pureAgentCompactUi && !(specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg) ? (
+        {activeSection === "catalog" &&
+        !pureAgentCompactUi &&
+        businessOrgCatalogUi &&
+        !profile.organization ? (
+          <BusinessCatalogPrerequisite
+            partnerType={businessPartnerType!}
+            onGoToBasics={() => navigateSection("basics")}
+          />
+        ) : null}
+
+        {activeSection === "catalog" &&
+        !pureAgentCompactUi &&
+        businessOrgCatalogUi &&
+        profile.organization ? (
+          <OrganizationCatalogSection
+            profile={profile}
+            draft={buildCatalogDraft()}
+            partnerType={businessPartnerType!}
+            needsBranchFields={needsBranchFields}
+            catalogEditable={catalogEditable}
+            catalogTouched={catalogTouched}
+            onCatalogTouchedChange={setCatalogTouched}
+            onProfileUpdated={applyProfile}
+            organizationName={organizationName}
+            onOrganizationNameChange={(value) => {
+              setOrganizationName(value);
+              touchCatalogField("catalogPublicName");
+            }}
+            catalogCity={catalogCity}
+            onCatalogCityChange={(value) => {
+              setCatalogCity(value);
+              touchCatalogField("catalogCity");
+            }}
+            branchAddress={branchAddress}
+            onBranchAddressChange={setBranchAddress}
+            catalogImageUrl={catalogImageUrl}
+            onCatalogImageUrlChange={(value) => {
+              setCatalogImageUrl(value);
+              touchCatalogField("catalogImageUrl");
+            }}
+            description={description}
+            onDescriptionChange={(value) => {
+              setDescription(value);
+              touchCatalogField("description");
+            }}
+            specializations={specializations}
+            onSpecializationsChange={(ids) => {
+              setSpecializations(ids);
+              touchCatalogField("specializations");
+            }}
+            storeCategories={storeCategories}
+            onStoreCategoriesChange={(ids) => {
+              setStoreCategories(ids);
+              touchCatalogField("storeCategories");
+            }}
+            website={website}
+            onWebsiteChange={(value) => {
+              setWebsite(value);
+              touchCatalogField("website");
+            }}
+            telegram={telegram}
+            onTelegramChange={(value) => {
+              setTelegram(value);
+              touchCatalogField("telegram");
+            }}
+            publicEmail={publicEmail}
+            onPublicEmailChange={(value) => {
+              setPublicEmail(value);
+              touchCatalogField("publicEmail");
+            }}
+            publicPhone={publicPhone}
+            onPublicPhoneChange={(value) => {
+              setPublicPhone(value);
+              touchCatalogField("publicPhone");
+            }}
+            workingProductIds={productCategoryIds}
+            workingServiceIds={serviceSpecializationIds}
+            onPullWorkingDirections={() => {
+              setStoreCategories([...productCategoryIds]);
+              setSpecializations([...serviceSpecializationIds]);
+              setCatalogTouched((t) => ({
+                ...t,
+                storeCategories: true,
+                specializations: true,
+              }));
+            }}
+            onRevertLocalEdits={revertCatalogLocalEdits}
+          />
+        ) : null}
+
+        {activeSection === "catalog" &&
+        !pureAgentCompactUi &&
+        !(specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg) &&
+        !businessOrgCatalogUi ? (
           <ProfileCatalogSection
             profile={profile}
             draft={buildDraft()}
