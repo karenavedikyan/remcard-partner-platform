@@ -74,6 +74,7 @@ export default defineConfig({
       "src/lib/business-nav/sections.test.ts",
       "src/lib/business-profile/eligibility.test.ts",
       "src/lib/business-profile/wizard-copy.test.ts",
+      "src/lib/business-profile/wizard-identity.test.ts",
       "src/lib/profile-working-save.org-contacts.test.ts",
       "src/lib/profile-catalog-touched.test.ts",
       "src/lib/profile-org-catalog-roundtrip.test.ts",

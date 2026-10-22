@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { RemcardApiError } from "@/lib/api-client";
 import { displayCategoryLabel } from "@/lib/category-display";
@@ -12,7 +12,8 @@ import {
   businessStepPanelTitle,
   businessWizardCopy,
 } from "@/lib/business-profile/wizard-copy";
-import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
+import { externalBusinessProfileIdentityShift } from "@/lib/business-profile/wizard-identity";
+import { isWorkingProfileDirty, profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProfileDraft } from "@/lib/profile-save";
 import { formatAreasForTextField, parseAreasFromText } from "@/lib/profile-working-areas";
 import {
@@ -50,6 +51,11 @@ type Props = {
   partnerType: BusinessProfilePartnerType;
   basicsEditable: boolean;
   onWorkingProfileSaved?: (next: ProProfileResponse) => void;
+  onBasicsDirtyChange?: (dirty: boolean) => void;
+  /** Dev-fixture only: open step editor without summary (visual QA). */
+  forceEditing?: boolean;
+  /** Dev-fixture only: initial step index 0..3 (visual QA). */
+  forceStep?: number;
 };
 
 export function BusinessWorkingProfileWizard({
@@ -57,9 +63,14 @@ export function BusinessWorkingProfileWizard({
   partnerType,
   basicsEditable,
   onWorkingProfileSaved,
+  onBasicsDirtyChange,
+  forceEditing = false,
+  forceStep,
 }: Props) {
   const copy = businessWizardCopy(partnerType);
   const profileRef = useRef(initialProfile);
+  const persistGenerationRef = useRef(0);
+  const editingRef = useRef(false);
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
 
   const [draft, setDraft] = useState<ProfileDraft>(() => profileDraftFromProfile(initialProfile));
@@ -69,26 +80,61 @@ export function BusinessWorkingProfileWizard({
   const [areasText, setAreasText] = useState(() =>
     formatAreasForTextField(profileDraftFromProfile(initialProfile).areas),
   );
-  const [step, setStep] = useState(0);
-  const [editing, setEditing] = useState(
-    () => !workingProfileCabinetReady(profileDraftFromProfile(initialProfile)),
+  const [step, setStep] = useState(() =>
+    typeof forceStep === "number" ? Math.min(3, Math.max(0, forceStep)) : 0,
   );
+  const [editing, setEditing] = useState(
+    () =>
+      forceEditing ||
+      !workingProfileCabinetReady(profileDraftFromProfile(initialProfile)),
+  );
+  editingRef.current = editing;
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const resetWizardFromProfile = useCallback((source: ProProfileResponse, editingNext: boolean) => {
+    profileRef.current = source;
+    const next = profileDraftFromProfile(source);
+    setDraft(next);
+    setSavedSnapshot(next);
+    setAreasText(formatAreasForTextField(next.areas));
+    setStep(0);
+    setEditing(editingNext);
+    setBanner(null);
+  }, []);
+
   useEffect(() => {
+    const prev = profileRef.current;
+    if (externalBusinessProfileIdentityShift(prev, initialProfile)) {
+      persistGenerationRef.current += 1;
+      resetWizardFromProfile(
+        initialProfile,
+        !workingProfileCabinetReady(profileDraftFromProfile(initialProfile)),
+      );
+      return;
+    }
     profileRef.current = initialProfile;
     const next = profileDraftFromProfile(initialProfile);
     setSavedSnapshot(next);
-    if (!editing) {
+    if (!editingRef.current) {
       setDraft(next);
       setAreasText(formatAreasForTextField(next.areas));
     }
-  }, [initialProfile, editing]);
+  }, [initialProfile, resetWizardFromProfile]);
 
   const draftWithAreas = useCallback((): ProfileDraft => {
     return { ...draft, areas: parseAreasFromText(areasText), partnerType };
   }, [areasText, draft, partnerType]);
+
+  const workingDraft = useMemo(() => draftWithAreas(), [draftWithAreas]);
+  const basicsDirty = useMemo(
+    () => isWorkingProfileDirty(savedSnapshot, workingDraft),
+    [savedSnapshot, workingDraft],
+  );
+
+  useEffect(() => {
+    onBasicsDirtyChange?.(basicsDirty);
+  }, [basicsDirty, onBasicsDirtyChange]);
 
   const persistServer = async (nextDraft: ProfileDraft): Promise<boolean> => {
     const err = validateWorkingProfileDraft(nextDraft);
@@ -98,8 +144,12 @@ export function BusinessWorkingProfileWizard({
     }
     setSaving(true);
     setBanner(null);
+    const generationAtStart = persistGenerationRef.current;
     try {
       const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft);
+      if (generationAtStart !== persistGenerationRef.current) {
+        return false;
+      }
       profileRef.current = refreshed;
       const synced = profileDraftFromProfile(refreshed);
       setDraft(synced);
@@ -181,6 +231,7 @@ export function BusinessWorkingProfileWizard({
     setSavedSnapshot(next);
     setAreasText(formatAreasForTextField(next.areas));
     setBanner({ kind: "success", text: "Отменены несохранённые правки." });
+    onBasicsDirtyChange?.(false);
   };
 
   if (!editing && workingProfileCabinetReady(savedSnapshot)) {
@@ -208,6 +259,7 @@ export function BusinessWorkingProfileWizard({
             <button
               type="button"
               className={`${styles.btn} ${styles.btnPrimary}`}
+              data-testid="business-profile-edit-button"
               disabled={!basicsEditable || saving}
               onClick={() => {
                 setStep(0);

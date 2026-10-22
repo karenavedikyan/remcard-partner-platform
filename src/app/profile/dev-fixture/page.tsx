@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
+import { PageHeading } from "@/components/ui/PageHeading";
 import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import {
   isModerationDeepLink,
@@ -88,6 +89,7 @@ export default async function ProfileDevFixturePage(props: {
     moderation?: string;
     branchId?: string;
     partnerType?: string;
+    wizard?: string;
   }>;
 }) {
   if (process.env.NODE_ENV === "production") {
@@ -118,15 +120,11 @@ export default async function ProfileDevFixturePage(props: {
         padding: "24px clamp(16px, 4vw, 32px)",
       }}
     >
-      <header style={{ marginBottom: 24 }}>
-        <p style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6c706a" }}>
-          Профиль партнёра
-        </p>
-        <h1 style={{ margin: "8px 0 0", fontSize: 32 }}>Профиль</h1>
-        <p style={{ color: "#6c706a", fontSize: 13, marginTop: 8 }}>
-          Fixture UI (без сессии) для проверки PROF-H1.
-        </p>
-      </header>
+      <PageHeading
+        eyebrow="Профиль партнёра"
+        title="Профиль"
+        description="Fixture UI (без сессии): рабочий профиль STORE/COMPANY и каталог RemCard."
+      />
       <ProfileEditor
         initial={fixtureProfile}
         cabinetAccess={ownerProfileCabinetAccess()}

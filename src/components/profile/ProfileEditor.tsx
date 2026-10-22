@@ -165,7 +165,8 @@ function ProfileEditorInner({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const profileBasePath = pathname.startsWith("/profile/dev-fixture")
+  const isProfileDevFixture = pathname.startsWith("/profile/dev-fixture");
+  const profileBasePath = isProfileDevFixture
     ? "/profile/dev-fixture"
     : "/profile";
   const [profile, setProfile] = useState(initial);
@@ -249,6 +250,7 @@ function ProfileEditorInner({
   const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
     parseCatalogTouched(catalogTouchedFromProfile(initial)),
   );
+  const [businessWizardDirty, setBusinessWizardDirty] = useState(false);
   const catalogPrefillAppliedKeyRef = useRef<string | null>(null);
 
   const touchCatalogField = useCallback((field: CatalogPrefillField) => {
@@ -605,10 +607,13 @@ function ProfileEditorInner({
 
   const currentDraft = buildDraft();
   draftRef.current = currentDraft;
-  const hasUnsavedBasicsChanges = isWorkingProfileDirty(
-    savedSnapshotRef.current,
-    currentDraft,
-  );
+  const hasUnsavedBasicsChanges = businessProfileWizardUi
+    ? businessWizardDirty
+    : isWorkingProfileDirty(savedSnapshotRef.current, currentDraft);
+
+  useEffect(() => {
+    if (activeSection !== "basics") setBusinessWizardDirty(false);
+  }, [activeSection]);
   const hasUnsavedCatalogChanges = isCatalogDraftDirty(
     savedCatalogSnapshotRef.current,
     currentDraft,
@@ -811,6 +816,15 @@ function ProfileEditorInner({
             partnerType={businessPartnerType}
             basicsEditable={basicsEditable}
             onWorkingProfileSaved={applyProfile}
+            onBasicsDirtyChange={setBusinessWizardDirty}
+            forceEditing={
+              isProfileDevFixture && searchParams.get("wizard") === "1"
+            }
+            forceStep={
+              isProfileDevFixture && searchParams.get("wizard") === "1"
+                ? Number.parseInt(searchParams.get("wizardStep") ?? "0", 10)
+                : undefined
+            }
           />
         ) : (
           <>

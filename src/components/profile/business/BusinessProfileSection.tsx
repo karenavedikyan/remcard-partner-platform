@@ -9,6 +9,9 @@ type Props = {
   partnerType: BusinessProfilePartnerType;
   basicsEditable: boolean;
   onWorkingProfileSaved?: (next: ProProfileResponse) => void;
+  onBasicsDirtyChange?: (dirty: boolean) => void;
+  forceEditing?: boolean;
+  forceStep?: number;
 };
 
 export function BusinessProfileSection({
@@ -16,14 +19,19 @@ export function BusinessProfileSection({
   partnerType,
   basicsEditable,
   onWorkingProfileSaved,
+  onBasicsDirtyChange,
+  forceEditing,
+  forceStep,
 }: Props) {
   return (
     <BusinessWorkingProfileWizard
-      key={profile.user.id}
       initialProfile={profile}
       partnerType={partnerType}
       basicsEditable={basicsEditable}
       onWorkingProfileSaved={onWorkingProfileSaved}
+      onBasicsDirtyChange={onBasicsDirtyChange}
+      forceEditing={forceEditing}
+      forceStep={forceStep}
     />
   );
 }
