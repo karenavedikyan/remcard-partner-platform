@@ -1,0 +1,7 @@
+{
+  "productCodeSha": "0fb7629acc6e32789311fd8dec1b017ad777b6fd",
+  "navigatorTip": "e5f82753491071819327777dc1e35a1da1d2873b",
+  "captureBase": "http://127.0.0.1:3027/dev/business-home-preview",
+  "syntheticFixture": true,
+  "note": "BFF /api/pro/business-home/metrics mocked in capture only"
+}

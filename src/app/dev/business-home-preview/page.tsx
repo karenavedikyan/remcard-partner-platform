@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/ui/PageHeading";
-import { CabinetShell } from "@/components/layout/CabinetShell";
 import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
 
+/** Local layout preview only (NODE_ENV !== production). Synthetic metrics via mocked BFF in capture. */
 export default async function BusinessHomePreviewPage(props: {
   searchParams?: Promise<{ partnerType?: string }>;
 }) {
@@ -15,13 +15,22 @@ export default async function BusinessHomePreviewPage(props: {
   const eyebrow = partnerType === "STORE" ? "Магазин" : "Компания";
 
   return (
-    <CabinetShell returnTo="/dev/business-home-preview">
+    <main
+      style={{
+        boxSizing: "border-box",
+        width: "100%",
+        maxWidth: 1200,
+        minWidth: 0,
+        margin: "0 auto",
+        padding: "32px clamp(16px, 4vw, 32px)",
+      }}
+    >
       <PageHeading
         eyebrow={eyebrow}
         title="Ваш кабинет"
         description="Начните с того, что нужно вам сегодня."
       />
       <BusinessOwnerHomeDashboard partnerType={partnerType} />
-    </CabinetShell>
+    </main>
   );
 }
