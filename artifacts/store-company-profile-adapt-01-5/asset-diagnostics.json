@@ -1,0 +1,26 @@
+{
+  "productCodeSha": "bbbf10f6e5dba4db0ade76251fd59a594e42af37",
+  "captureBase": "http://127.0.0.1:3024",
+  "capturedAt": "2026-10-22T15:54:23.568Z",
+  "mockedBffRoutes": [
+    "/api/pro/partner-taxonomy (?q=)",
+    "/api/pro/profile GET/PATCH",
+    "/api/pro/organization",
+    "/api/pro/context",
+    "/api/pro/moderation-notes",
+    "/api/pro/agent-profile/status",
+    "/api/pro/r06/status",
+    "/api/auth/me GET/PATCH"
+  ],
+  "partnerTaxonomyRequests": 10,
+  "unmockedRequests": [],
+  "consoleErrorCount": 0,
+  "consoleErrorsSample": [],
+  "computedStylesSample": {
+    "bodyFontFamily": "Manrope, \"Manrope Fallback\"",
+    "bodyBackground": "rgb(246, 245, 243)",
+    "tabStripGap": "24px",
+    "fontsReady": "loaded"
+  },
+  "staticNote": "Step 1 & 3 PNGs reused from store-company-profile-adapt-01-4 (unchanged product UI)."
+}
