@@ -1,0 +1,170 @@
+{
+  "task": "STORE-COMPANY-PROFILE-VISUAL-ACCEPT-03.1-control",
+  "status": "control-pass",
+  "captureCheckoutHead": "9e0dbb6e5e7ee3fa389ea31d314bc6fb9e7f4c35",
+  "implRenderSourceSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+  "implRenderVerifiedBaseSha": "4db16dc16166cc9c5d25899b87b109fb288b592b",
+  "branchBSha": "cadb77e5d1834a6c45f778e49e9f23469eb62b46",
+  "priorPartial": "visual-accept-03",
+  "frames": [
+    {
+      "id": "store-basics-summary",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics"
+      },
+      "file": "impl-store-basics-summary-1440-light.png",
+      "sha256": "82ae7b16a67d72d4d56cd29a448895bcdb8603b963fca57d07798011a1c03d45",
+      "bytes": 86207,
+      "implRenderSourceSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+      "captureCheckoutHead": "9e0dbb6e5e7ee3fa389ea31d314bc6fb9e7f4c35"
+    },
+    {
+      "id": "store-basics-summary",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:33983/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:33983/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:33983/roles.html"
+      },
+      "file": "ref-store-basics-summary-1440-light.png",
+      "sha256": "f1f3764f4cd91249f360474b286c57dacb7a26e2b84b74dca49256bd19fa3c7d",
+      "bytes": 80009,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-basics-step1",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics"
+      },
+      "file": "impl-store-basics-step1-1440-light.png",
+      "sha256": "4cebc124f9e769884129fa62a64f890a56a93379ae3e6aa6c4aa12fd9977718f",
+      "bytes": 111103,
+      "implRenderSourceSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+      "captureCheckoutHead": "9e0dbb6e5e7ee3fa389ea31d314bc6fb9e7f4c35"
+    },
+    {
+      "id": "store-basics-step1",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:33983/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:33983/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:33983/roles.html"
+      },
+      "file": "ref-store-basics-step1-1440-light.png",
+      "sha256": "264bcc61342ce42ee3a49921e90dc5179f0f4514996b4f778a5fc7aa0bc5fc11",
+      "bytes": 120413,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-step0",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-step0-1440-light.png",
+      "sha256": "5b650d2815e00e02e3980e3d8245fb96e9e741fa2b5e7953eab4e11ef5fb80f9",
+      "bytes": 96481,
+      "implRenderSourceSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+      "captureCheckoutHead": "9e0dbb6e5e7ee3fa389ea31d314bc6fb9e7f4c35"
+    },
+    {
+      "id": "store-catalog-step0",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:33983/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:33983/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:33983/roles.html"
+      },
+      "file": "ref-store-catalog-step0-1440-light.png",
+      "sha256": "7dd31294cbfa6dd2c0212951d96580c1c61059219ad6b759218ef296b75aca23",
+      "bytes": 96252,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    }
+  ]
+}
