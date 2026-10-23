@@ -4,8 +4,8 @@
 
 | Repo | Parent tip (turn89) | This supplement |
 |------|---------------------|-----------------|
-| remcard-partner-platform `feat/store-company-profile-parity-02` | `bdc298e7d6a6389d06931089bd4eacd4384e90ef` | _(see git log)_ |
-| remcard-navigator `feat/store-company-profile-parity-02` | `515a57c8b95ee5e8ac8deafcf2042b7d44caa632` | _(see git log)_ |
+| remcard-partner-platform `feat/store-company-profile-parity-02` | `bdc298e7d6a6389d06931089bd4eacd4384e90ef` | `536fc2c` |
+| remcard-navigator `feat/store-company-profile-parity-02` | `515a57c8b95ee5e8ac8deafcf2042b7d44caa632` | `c7fc61c6` |
 
 Home turn88 **not** included: F `a8a39e0…` / B `e5f8275…`.
 
