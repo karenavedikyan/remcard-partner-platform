@@ -154,7 +154,9 @@ pnpm run build   # exit 0
 
 **Runtime code SHA (не менялся в этом дополнении):** navigator **`15b296352c3a82691682e665a250e306b3f06db9`**; frontend production **`6a70eb1bdce37ddda86f4004ecc725a40807a5d2`**.
 
-**Команды (exit 0):** navigator vitest targeted **35**; frontend **7**; `pnpm run build` оба repo.
+**Команды (exit 0):** navigator vitest **8 files / 50 passed** (full SAVE-02 backend suite); frontend **7 passed**; `pnpm run build` navigator runtime **`15b29635`** exit 0.
+
+**Typecheck baseline:** `pnpm run typecheck` → **52** ошибки (как на `cadb77e5` и `15b29635`; на `d145aa1f` было **56** из‑за TS2556 в persistence doubles — исправлено в test tip без изменения runtime).
 
 **BLOCKED:** browser E2E + скриншоты в реальных test LK.
 
