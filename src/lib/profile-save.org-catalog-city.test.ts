@@ -250,12 +250,8 @@ describe("persistCatalogDraftOnly organization catalog city", () => {
 
   it("APPROVED org: org PATCH stages catalog; branch PATCH updates live city on GET", async () => {
     let liveCity = "Краснодар";
-    let orgDraftCity: string | null = null;
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/pro/organization" && init?.method === "PATCH") {
-        orgDraftCity = (init.body as { description?: string }).description
-          ? liveCity
-          : orgDraftCity;
         return { organization: { id: "org-st" } };
       }
       if (path === "/api/pro/organization/branches/br-1" && init?.method === "PATCH") {
