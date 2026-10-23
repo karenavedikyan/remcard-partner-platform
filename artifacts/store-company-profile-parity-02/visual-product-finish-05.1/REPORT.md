@@ -27,8 +27,8 @@ Capture: `/tmp/visual-finish-04-capture.mjs` with `PRODUCT_FINISH_05_1=1`, dev-f
 
 ## Verification
 
-- Business profile tests: **22/22** in partner-visibility + business folder slice (19 business wizard files + 3 new cases in partner-visibility file → 22 total in business run: actually 19 tests in 8 files - partner visibility has 6 tests now)
-- Full suite: **493 pass / 9 fail** (baseline ProfileEditor; +3 new unit tests vs 05 report)
+- Business profile slice: **19/19** (partner-visibility now 6 cases incl. opt-out, legacy untouched, identity reset)
+- Full suite: **493 pass / 9 fail** (same 9 ProfileEditor baseline; +3 new unit tests vs 05)
 - `tsc --noEmit`: pass
 
 ## Blockers
