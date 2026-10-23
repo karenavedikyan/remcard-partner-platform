@@ -339,9 +339,6 @@ export function ProfileDirectionsPicker({
               добавьте другие ниже.
             </small>
           ) : null}
-          {afterSelectionNote ? (
-            <p className={styles.afterSelectionNote}>{afterSelectionNote}</p>
-          ) : null}
         </section>
       ) : selectedChips.length === 0 ? (
         <p className={styles.empty}>Пока ничего не выбрано — отметьте направления ниже.</p>
@@ -362,6 +359,10 @@ export function ProfileDirectionsPicker({
           ))}
         </ul>
       )}
+
+      {afterSelectionNote && (tileLayout || catalogGroupedDetails) ? (
+        <p className={styles.afterSelectionNote}>{afterSelectionNote}</p>
+      ) : null}
 
       {!businessTabbedPick ? (
         <label className={tileLayout ? styles.searchTile : styles.search}>
