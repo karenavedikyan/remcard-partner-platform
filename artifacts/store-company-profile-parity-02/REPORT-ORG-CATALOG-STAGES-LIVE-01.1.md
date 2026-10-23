@@ -64,7 +64,7 @@ Attempt (prototype path + impl dev-fixture, no new runner script):
 | Repo | Tip (LIVE-01.1) |
 |------|-----------------|
 | B remcard-navigator | `cadb77e5d1834a6c45f778e49e9f23469eb62b46` |
-| F remcard-partner-platform | _(after artifact commit)_ |
+| F remcard-partner-platform | `12c4665` (docs/visual; app code unchanged) |
 
 ## Changed files (01.1)
 
