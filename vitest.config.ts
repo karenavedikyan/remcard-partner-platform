@@ -96,6 +96,7 @@ export default defineConfig({
       "src/lib/agent-profile/format-requisites-copy.test.ts",
       "src/components/profile/agent/AgentPayoutRequisitesPanel.test.tsx",
       "src/components/profile/agent/AgentProfileWizard.regression.test.tsx",
+      "src/components/profile/business/BusinessWorkingProfileWizard.prof-test-org-flow.test.tsx",
     ],
     testTimeout: 30_000,
   },
