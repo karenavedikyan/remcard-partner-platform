@@ -46,7 +46,7 @@ Meta unchanged: `catalogTouched`, `publicCatalogBranchId` pending rules (turn94)
 - B `npm run build`: OK (after `prisma generate` only)
 - F `npm run build`: OK
 - F full: **486 pass / 9 fail** (same 9 baseline failures; +1 new pass)
-- B targeted stage contract + PATCH: **22 pass**
+- B targeted stage contract + PATCH: **26 pass**
 
 ## Deploy blocker (explicit)
 
@@ -68,7 +68,28 @@ Meta unchanged: `catalogTouched`, `publicCatalogBranchId` pending rules (turn94)
 
 ## Tips after commit
 
-_(filled after push)_
+| Repo | Parent (turn start) | Tip (LIVE-01) |
+|------|---------------------|---------------|
+| F remcard-partner-platform | `63b33495d6307602054b8b7d19381d2e1dcf0eaa` | `969f654` _(run `git rev-parse HEAD` on branch for full SHA)_ |
+| B remcard-navigator | `a677ae90c61f6212057b0e8f693530bce19811ce` | `1742b562` |
+
+### F vitest baseline failures (unchanged, not fixed in LIVE-01)
+
+1. `profile-overview-display > staff CLIENT without partnerType shows organization, not MASTER`
+2. `ProfileEditor > legacy production areas: equivalent separators stay clean; edit and revert dirty cycle`
+3. `ProfileEditor > after save with legacy areas GET stays clean`
+4. `ProfileEditor > allows saving basics while catalog publication is pending review`
+5. `ProfileEditor > preserves unsaved basics input when switching sections`
+6. `ProfileEditor > warns before leaving basics with unsaved changes and keeps input when cancelled`
+7. `ProfileEditor > does not warn when leaving basics after save`
+8. `ProfileEditor > keeps unsaved name when initial prop is rerendered with new object`
+9. `ProfileEditor > resets form when signed-in user changes`
+
+## Changed files (this turn)
+
+**B:** `prisma/schema.prisma`, `prisma/migrations/20261023103000_org_catalog_navigator_stage_ids/migration.sql`, `catalogPublicationLifecycle.ts`, `orgCatalogNavigatorStages.ts`, `organization/route.ts`, `profile/route.ts`, `catalog/route.ts`, `catalog/org/[orgId]/route.ts`, tests listed above.
+
+**F:** `profile-org-catalog-stages-hydration.ts`, `profile-org-catalog-stages-hydration.test.ts`, `types.ts`, this report.
 
 ## Confirmation
 
