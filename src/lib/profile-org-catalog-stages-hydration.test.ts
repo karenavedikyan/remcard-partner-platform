@@ -3,19 +3,31 @@ import { orgCatalogNavigatorStageIdsFromProfile } from "./profile-org-catalog-st
 import type { ProProfileResponse } from "@/lib/types";
 
 describe("orgCatalogNavigatorStageIdsFromProfile", () => {
-  it("reads publicNavigatorStageIds from organization DTO", () => {
+  it("draft key overrides publicNavigatorStageIds live overlay", () => {
     const profile = {
       organization: {
-        publicNavigatorStageIds: ["L1-7", "L1-1"],
+        publicNavigatorStageIds: ["L1-1"],
+        catalogDraft: { navigatorStageIds: ["L1-7"] },
       },
     } as ProProfileResponse;
-    expect(orgCatalogNavigatorStageIdsFromProfile(profile)).toEqual(["L1-7", "L1-1"]);
+    expect(orgCatalogNavigatorStageIdsFromProfile(profile)).toEqual(["L1-7"]);
   });
 
-  it("falls back to catalogDraft navigatorStageIds", () => {
+  it("explicit draft [] overrides live", () => {
     const profile = {
       organization: {
-        catalogDraft: { navigatorStageIds: ["L1-3"] },
+        publicNavigatorStageIds: ["L1-1"],
+        catalogDraft: { navigatorStageIds: [] },
+      },
+    } as ProProfileResponse;
+    expect(orgCatalogNavigatorStageIdsFromProfile(profile)).toEqual([]);
+  });
+
+  it("falls back to publicNavigatorStageIds when draft key absent", () => {
+    const profile = {
+      organization: {
+        publicNavigatorStageIds: ["L1-3"],
+        catalogDraft: { catalogTouched: { navigatorStageIds: true } },
       },
     } as ProProfileResponse;
     expect(orgCatalogNavigatorStageIdsFromProfile(profile)).toEqual(["L1-3"]);
