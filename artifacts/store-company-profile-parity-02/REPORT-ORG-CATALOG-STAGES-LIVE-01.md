@@ -70,8 +70,8 @@ Meta unchanged: `catalogTouched`, `publicCatalogBranchId` pending rules (turn94)
 
 | Repo | Parent (turn start) | Tip (LIVE-01) |
 |------|---------------------|---------------|
-| F remcard-partner-platform | `63b33495d6307602054b8b7d19381d2e1dcf0eaa` | `969f654` _(run `git rev-parse HEAD` on branch for full SHA)_ |
-| B remcard-navigator | `a677ae90c61f6212057b0e8f693530bce19811ce` | `1742b562` |
+| F remcard-partner-platform | `63b33495d6307602054b8b7d19381d2e1dcf0eaa` | `9632336154d6b3d1257c4ec23121ef9273618291` (LIVE-01 code commit `969f6545326118751e7217bddb18d55faa6d9bf3`) |
+| B remcard-navigator | `a677ae90c61f6212057b0e8f693530bce19811ce` | `1742b562bba876cc72bdbcf4e40350faf4e13008` |
 
 ### F vitest baseline failures (unchanged, not fixed in LIVE-01)
 
