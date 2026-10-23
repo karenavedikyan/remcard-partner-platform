@@ -53,4 +53,7 @@ No-org full-shell screenshot still requires a dedicated fixture route (dev-fixtu
 
 ## Commits
 
-(Pushed tips recorded after `git push`.)
+| Repo | Tip |
+|------|-----|
+| remcard-navigator | `59c073f2` |
+| remcard-partner-platform | `fe42d59` |
