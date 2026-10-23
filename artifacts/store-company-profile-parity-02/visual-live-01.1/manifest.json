@@ -1,0 +1,19 @@
+{
+  "task": "ORG-CATALOG-STAGES-LIVE-01.1-partial-visual",
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "implCodeSha": "4db16dc154d6b3d1257c4ec23121ef9273618291",
+  "note": "Incomplete matrix — single STORE catalog tab pair only; not acceptance.",
+  "frames": [
+    {
+      "id": "store-catalog-tab-1440-light",
+      "role": "STORE",
+      "section": "catalog",
+      "viewport": "1440",
+      "theme": "light",
+      "ref": "ref-store-profile-catalog-1440-light.png",
+      "impl": "impl-store-profile-catalog-1440-light.png",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?section=catalog"
+    }
+  ]
+}
