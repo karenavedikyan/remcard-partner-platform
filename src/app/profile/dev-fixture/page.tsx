@@ -36,6 +36,7 @@ function buildFixtureProfile(
           publicCatalogCity,
           storeCategories: ["doors", "plumbing"],
           specializations: ["plumbing"],
+          publicNavigatorStageIds: ["L1-7"],
         },
     programs: [],
     workingProfile: {
