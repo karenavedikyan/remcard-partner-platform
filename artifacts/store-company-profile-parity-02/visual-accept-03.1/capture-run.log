@@ -1,0 +1,7 @@
+2026-10-23 VISUAL-ACCEPT-03.1 control (run3)
+attempt1: BLOCKER nav-profile strict (3 elements) — fixed .first()
+run3:
+OK pair store-basics-summary
+OK pair store-basics-step1
+OK pair store-catalog-step0
+result: 3 OK / 0 FAIL
