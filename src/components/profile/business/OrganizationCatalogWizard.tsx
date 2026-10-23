@@ -264,9 +264,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         <header className={`${catalogStyles.heading} ${surfaceStyles.businessCatalogIntroHeading}`}>
           <div>
             <span className={catalogStyles.kicker}>Публичная страница</span>
-            <h2 className={`${catalogStyles.title} ${surfaceStyles.businessIntroTitle}`}>
-              Подключение к каталогу
-            </h2>
+            <h2 className={surfaceStyles.businessIntroTitle}>Подключение к каталогу</h2>
           </div>
           <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
         </header>

@@ -173,7 +173,7 @@
 
 @media (max-width: 480px) {
   .businessCatalogIntroCard {
-    padding-inline: 1rem;
+    padding-inline: 0.75rem;
   }
 
   .businessCatalogIntroHeading {
@@ -182,10 +182,17 @@
     gap: 0.5rem;
   }
 
+  .businessCatalogIntroHeading > div:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
   .businessIntroTitle {
     font-size: 20px;
     font-weight: 800;
-    line-height: 1.25;
+    line-height: 1.2;
+    max-width: 100%;
+    letter-spacing: -0.02em;
   }
 
   .businessIntroLead {
@@ -200,5 +207,17 @@
 
   .businessCatalogPreviewHost {
     margin-inline: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .businessCatalogIntroCard {
+    padding-inline: 0.5rem;
+  }
+
+  .businessCatalogIntroCard .businessIntroTitle {
+    font-size: 18px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 }
