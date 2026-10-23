@@ -12,7 +12,19 @@ import {
 } from "@/lib/prof-test-org-transport.fixture";
 
 vi.mock("@/components/profile/agent/AgentPhoneField", () => ({
-  AgentPhoneField: () => null,
+  AgentPhoneField: ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+  }) => (
+    <input
+      aria-label="Телефон партнёра"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
 }));
 
 vi.mock("@/components/profile/ProfileDirectionsPicker", () => ({
@@ -27,28 +39,43 @@ vi.mock("@/lib/api-client", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/onboarding-save", () => ({
-  saveDisplayNameViaAuthMe: vi.fn().mockResolvedValue(undefined),
-}));
-
-async function walkFourSteps(user: ReturnType<typeof userEvent.setup>, partnerType: "STORE" | "COMPANY") {
+async function fillStep1(
+  user: ReturnType<typeof userEvent.setup>,
+  partnerType: "STORE" | "COMPANY",
+  rep: string,
+  city: string,
+  orgName: string,
+) {
   const orgLabel = partnerType === "STORE" ? /Название магазина/i : /Название компании/i;
   await screen.findByLabelText(orgLabel);
   await user.clear(screen.getByLabelText(orgLabel));
-  await user.type(screen.getByLabelText(orgLabel), partnerType === "STORE" ? "Магазин Юг" : "СтройКомпания");
+  await user.type(screen.getByLabelText(orgLabel), orgName);
   await user.clear(screen.getByLabelText(/Имя представителя/i));
-  await user.type(screen.getByLabelText(/Имя представителя/i), "Алексей");
+  await user.type(screen.getByLabelText(/Имя представителя/i), rep);
   await user.clear(screen.getByLabelText(/^Город/i));
-  await user.type(screen.getByLabelText(/^Город/i), "Краснодар");
+  await user.type(screen.getByLabelText(/^Город/i), city);
+}
+
+async function fillStep3Contacts(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText(/Сайт и Telegram/i));
+  await user.type(screen.getByLabelText("Сайт"), "https://shop.example");
+  await user.type(screen.getByLabelText("Telegram"), "@shop");
+  await user.type(screen.getByLabelText("Email"), "partner@example.com");
+  await user.type(screen.getByLabelText("Контактное лицо"), "Мария");
+}
+
+async function completeWizard(
+  user: ReturnType<typeof userEvent.setup>,
+  partnerType: "STORE" | "COMPANY",
+) {
+  await fillStep1(user, partnerType, "Иван Петров", "Сочи", partnerType === "STORE" ? "Магазин Юг" : "СтройКомпания");
   await user.click(screen.getByRole("button", { name: /Продолжить/i }));
   await waitFor(() => expect(screen.getByTestId("business-profile-progress")).toHaveTextContent("Шаг 2"));
-
   await user.click(screen.getByRole("button", { name: /Продолжить/i }));
   await waitFor(() => expect(screen.getByTestId("business-profile-progress")).toHaveTextContent("Шаг 3"));
-
-  await user.click(screen.getByRole("button", { name: /Пропустить/i }));
+  await fillStep3Contacts(user);
+  await user.click(screen.getByRole("button", { name: /Продолжить/i }));
   await waitFor(() => expect(screen.getByTestId("business-profile-progress")).toHaveTextContent("Шаг 4"));
-
   await user.click(screen.getByRole("button", { name: /Сохранить профиль/i }));
   await waitFor(() =>
     expect(screen.getByTestId("business-profile-completed-summary")).toBeInTheDocument(),
@@ -60,73 +87,62 @@ describe("BusinessWorkingProfileWizard prof-test org flow", () => {
     vi.mocked(remcardFetch).mockReset();
   });
 
-  it("STORE: four steps with stateful transport create then reload profile", async () => {
-    const transport = createProfTestOrgTransport("STORE");
-    vi.mocked(remcardFetch).mockImplementation(transport.handleRemcardFetch);
-    const user = userEvent.setup();
+  it.each(["STORE", "COMPANY"] as const)(
+    "%s: remount after unmount shows fresh GET summary",
+    async (partnerType) => {
+      const transport = createProfTestOrgTransport(partnerType);
+      vi.mocked(remcardFetch).mockImplementation(transport.handleRemcardFetch);
+      const user = userEvent.setup();
 
-    const { rerender } = render(
-      <BusinessWorkingProfileWizard
-        initialProfile={baseProfTestProfile("STORE")}
-        partnerType="STORE"
-        basicsEditable
-      />,
-    );
+      const { unmount } = render(
+        <BusinessWorkingProfileWizard
+          initialProfile={baseProfTestProfile(partnerType)}
+          partnerType={partnerType}
+          basicsEditable
+        />,
+      );
+      await completeWizard(user, partnerType);
+      unmount();
 
-    await walkFourSteps(user, "STORE");
-    expect(transport.getOrg()?.name).toBe("Магазин Юг");
+      const fresh = await transport.freshProfileGet();
+      render(
+        <BusinessWorkingProfileWizard
+          initialProfile={fresh}
+          partnerType={partnerType}
+          basicsEditable
+        />,
+      );
+      expect(screen.getByTestId("business-profile-completed-summary")).toBeInTheDocument();
+      expect(transport.getOrg()?.website).toBe("https://shop.example");
+      expect(fresh.user.displayName).toBe("Иван Петров");
+      expect(fresh.user.city).toBe("Сочи");
+    },
+  );
 
-    rerender(
-      <BusinessWorkingProfileWizard
-        initialProfile={transport.getProfile()}
-        partnerType="STORE"
-        basicsEditable
-      />,
-    );
-    expect(screen.getByTestId("business-profile-completed-summary")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Магазин Юг" })).toBeInTheDocument();
-  });
-
-  it("COMPANY: four steps create org via real persist chain", async () => {
-    const transport = createProfTestOrgTransport("COMPANY");
-    vi.mocked(remcardFetch).mockImplementation(transport.handleRemcardFetch);
-    const user = userEvent.setup();
-
-    render(
-      <BusinessWorkingProfileWizard
-        initialProfile={baseProfTestProfile("COMPANY")}
-        partnerType="COMPANY"
-        basicsEditable
-      />,
-    );
-
-    await walkFourSteps(user, "COMPANY");
-    expect(transport.getOrg()?.partnerType).toBe("COMPANY");
-  });
-
-  it("shows error banner on 403 without leaving step 1", async () => {
+  it.each(["STORE", "COMPANY"] as const)("%s: 403 keeps step 1 form values", async (partnerType) => {
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/pro/organization" && init?.method === "GET") return { organization: null };
       if (path === "/api/pro/organization" && init?.method === "POST") {
         throw new RemcardApiError(403, "Поля недоступны", { code: "PROF_TEST_ORG_WRITE_FORBIDDEN" });
+      }
+      if (path === "/api/auth/me" && init?.method === "PATCH") {
+        return { user: { displayName: "Иван" } };
       }
       return {};
     });
     const user = userEvent.setup();
     render(
       <BusinessWorkingProfileWizard
-        initialProfile={baseProfTestProfile("STORE")}
-        partnerType="STORE"
+        initialProfile={baseProfTestProfile(partnerType)}
+        partnerType={partnerType}
         basicsEditable
       />,
     );
-    await user.type(screen.getByLabelText(/Название магазина/i), "Магазин Юг");
-    await user.type(screen.getByLabelText(/Имя представителя/i), "Алексей");
-    await user.type(screen.getByLabelText(/^Город/i), "Краснодар");
+    const orgName = partnerType === "STORE" ? "Магазин Юг" : "СтройКомпания";
+    await fillStep1(user, partnerType, "Иван", "Сочи", orgName);
     await user.click(screen.getByRole("button", { name: /Продолжить/i }));
-
     await waitFor(() => expect(screen.getByText(/Поля недоступны/i)).toBeInTheDocument());
     expect(screen.getByTestId("business-profile-progress")).toHaveTextContent("Шаг 1");
-    expect(screen.getByDisplayValue("Магазин Юг")).toBeInTheDocument();
+    expect(screen.getByDisplayValue(orgName)).toBeInTheDocument();
   });
 });

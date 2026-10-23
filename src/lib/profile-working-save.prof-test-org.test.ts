@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
-import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
 import { persistWorkingProfileDraft } from "@/lib/profile-working-save";
 import {
   baseProfTestProfile,
@@ -15,10 +14,6 @@ vi.mock("@/lib/api-client", async (importOriginal) => {
     remcardFetch: vi.fn(),
   };
 });
-
-vi.mock("@/lib/onboarding-save", () => ({
-  saveDisplayNameViaAuthMe: vi.fn(),
-}));
 
 function draftBase(partnerType: "STORE" | "COMPANY", overrides: Partial<ProfileDraft> = {}): ProfileDraft {
   return {
@@ -55,53 +50,51 @@ function draftBase(partnerType: "STORE" | "COMPANY", overrides: Partial<ProfileD
 describe("persistWorkingProfileDraft organization chain (prof-test STORE/COMPANY)", () => {
   beforeEach(() => {
     vi.mocked(remcardFetch).mockReset();
-    vi.mocked(saveDisplayNameViaAuthMe).mockResolvedValue(undefined);
   });
 
-  it("STORE: POST create then PATCH update using refreshed profile between saves", async () => {
+  it("STORE: POST create then PATCH; auth/me + profile PATCH persist rep/city/contacts", async () => {
     const transport = createProfTestOrgTransport("STORE");
-    let profile = baseProfTestProfile("STORE");
     vi.mocked(remcardFetch).mockImplementation(transport.handleRemcardFetch);
 
-    const first = await persistWorkingProfileDraft(profile, draftBase("STORE"));
-    expect(transport.getOrg()?.name).toBe("Магазин Юг");
-    expect(remcardFetch).toHaveBeenCalledWith("/api/pro/organization", {
-      method: "POST",
-      body: expect.objectContaining({ name: "Магазин Юг", partnerType: "STORE" }),
+    let profile = baseProfTestProfile("STORE");
+    profile = await persistWorkingProfileDraft(
+      profile,
+      draftBase("STORE", { displayName: "Иван Петров", city: "Сочи" }),
+    );
+    expect(profile.user.displayName).toBe("Иван Петров");
+    expect(profile.user.city).toBe("Сочи");
+    expect(remcardFetch).toHaveBeenCalledWith("/api/auth/me", {
+      method: "PATCH",
+      body: { displayName: "Иван Петров" },
     });
 
-    profile = first;
-    const second = await persistWorkingProfileDraft(
+    profile = await persistWorkingProfileDraft(
       profile,
       draftBase("STORE", {
+        displayName: "Иван Петров",
+        city: "Сочи",
         organizationName: "Магазин Юг 2",
         website: "https://shop-south.example",
         telegram: "@shop_south",
+        productCategoryIds: ["doors", "plumbing"],
+        partnershipContactName: "Мария",
+        partnershipContactEmail: "m@example.com",
+        areas: ["Краснодар", "Сочи"],
+        partnerWorkMode: "BOTH",
       }),
     );
 
-    expect(remcardFetch).toHaveBeenCalledWith("/api/pro/organization", {
-      method: "PATCH",
-      body: expect.objectContaining({
-        name: "Магазин Юг 2",
-        website: "https://shop-south.example",
-        telegram: "@shop_south",
-      }),
-    });
     expect(transport.getOrg()?.name).toBe("Магазин Юг 2");
-    expect(second.organization?.name).toBe("Магазин Юг 2");
-    expect(
-      remcardFetch.mock.calls.filter(
-        (c) => c[0] === "/api/pro/organization" && c[1]?.method === "POST",
-      ),
-    ).toHaveLength(1);
+    expect(profile.workingProfile?.partnershipContactName).toBe("Мария");
+    expect(profile.workingProfile?.productCategoryIds).toEqual(["doors", "plumbing"]);
+    expect(profile.workingProfile?.areas).toEqual(["Краснодар", "Сочи"]);
   });
 
-  it("COMPANY: two saves, clear website/telegram, GET state stays empty", async () => {
+  it("COMPANY: clear website/telegram via org PATCH; fresh GET empty", async () => {
     const transport = createProfTestOrgTransport("COMPANY");
-    let profile = baseProfTestProfile("COMPANY");
     vi.mocked(remcardFetch).mockImplementation(transport.handleRemcardFetch);
 
+    let profile = baseProfTestProfile("COMPANY");
     profile = await persistWorkingProfileDraft(
       profile,
       draftBase("COMPANY", {
@@ -115,10 +108,9 @@ describe("persistWorkingProfileDraft organization chain (prof-test STORE/COMPANY
     );
 
     expect(transport.getOrg()?.website).toBeNull();
-    expect(transport.getOrg()?.telegram).toBeNull();
-    await expect(remcardFetch("/api/pro/organization", { method: "GET" })).resolves.toMatchObject({
-      organization: expect.objectContaining({ website: null, telegram: null }),
-    });
+    const fresh = await transport.freshProfileGet();
+    expect(fresh.organization?.telegram).toBeNull();
+    expect(fresh.organization?.website).toBeNull();
   });
 
   it("surfaces 403 org write errors without masking as auth loss", async () => {

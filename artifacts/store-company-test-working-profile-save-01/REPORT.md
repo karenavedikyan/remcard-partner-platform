@@ -134,14 +134,34 @@ pnpm run build   # exit 0
 
 ## Rollback (не выполнялся)
 
-1. Revert navigator to checkpoint `cadb77e5` (или SAVE-01 `780f2cdb` если нужен только fail-open fix без SAVE-02).
-2. Prof-test POST/PATCH снова blocked → wizard step 1 снова 401 (известное состояние).
-3. Guard: до rollback убедиться, что нет зависимости других веток от org write allowlist.
+1. **Единственная безопасная исходная цель:** production checkpoint **`cadb77e5d1834a6c45f778e49e9f23469eb62b46`** (после сверки с фактическим production).
+2. **`780f2cdb` НЕ rollback-цель:** в SAVE-01 остаётся fail-open между двумя проверками delegation.
+3. Откат на **`15b29635`** (SAVE-02 runtime) снимает fail-closed gate; применять только после осознанной приёмки фикса.
+4. На `cadb77e5` prof-test POST/PATCH снова blocked → wizard step 1 снова 401.
+
+---
+
+## SAVE-02 gates (дополнение turn108)
+
+| Gate | Доказательство |
+|------|----------------|
+| Route session unit | `profTestOrganizationRouteSession.test.ts` — real JWT, spy `verifySessionFromRequest`, test/real/401 |
+| Security matrix | `route.prof-test-organization-security-matrix.test.ts` — real session stack, 12 cases, 0 writes; delegation/slot state |
+| Race | `route.prof-test-fail-closed.test.ts` — `revokeDelegationAfterRead: 2` |
+| Catalog | `route.prof-test-org-visibility.test.ts` — draft+published fixture, predicate, IDs |
+| Frontend transport | `prof-test-org-transport.fixture.ts` — auth/me + profile PATCH |
+| Wizard remount | `BusinessWorkingProfileWizard.prof-test-org-flow.test.tsx` — unmount/mount, 403 STORE+COMPANY |
+
+**Runtime code SHA (не менялся в этом дополнении):** navigator **`15b296352c3a82691682e665a250e306b3f06db9`**; frontend production **`6a70eb1bdce37ddda86f4004ecc725a40807a5d2`**.
+
+**Команды (exit 0):** navigator vitest targeted **35**; frontend **7**; `pnpm run build` оба repo.
+
+**BLOCKED:** browser E2E + скриншоты в реальных test LK.
 
 ---
 
 ## Итог
 
-**READY FOR REVIEW** по автоматизированным критериям SAVE-02 на SHA **`15b29635`** (backend) / **`32d15af2`** (frontend tests).
+**READY FOR REVIEW** для release backend **`15b29635`** после owner smoke в test LK.
 
-**Остаток для полного PASS по ТЗ:** browser E2E + скриншоты в реальных test LK (blocker среды); расширенная PG-матрица delegation на `remcard_prof_test` (опционально в CI с БД).
+**BLOCKED:** browser/screenshots (`RC-TEST-8IWU-XC68`, `RC-TEST-W5VC-XGFA`) — не выполнялись.

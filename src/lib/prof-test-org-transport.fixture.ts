@@ -1,4 +1,4 @@
-import type { ProProfileResponse } from "@/lib/types";
+import type { ProProfileResponse, WorkingProfileDto } from "@/lib/types";
 
 export type ProfTestOrgRecord = {
   id: string;
@@ -64,6 +64,58 @@ export function baseProfTestProfile(partnerType: "STORE" | "COMPANY"): ProProfil
   };
 }
 
+function ensureWorkingProfile(profile: ProProfileResponse): WorkingProfileDto {
+  if (!profile.workingProfile) {
+    profile.workingProfile = baseProfTestProfile("STORE").workingProfile!;
+  }
+  return profile.workingProfile;
+}
+
+function applyWorkingProfilePatch(profile: ProProfileResponse, body: Record<string, unknown>) {
+  const wp = ensureWorkingProfile(profile);
+  if (body.city !== undefined) profile.user.city = String(body.city);
+  if (body.partnerWorkMode !== undefined) {
+    wp.partnerWorkMode = body.partnerWorkMode === null ? null : String(body.partnerWorkMode);
+  }
+  if (Array.isArray(body.productCategoryIds)) {
+    wp.productCategoryIds = body.productCategoryIds.map(String);
+    wp.effectiveProductCategoryIds = [...wp.productCategoryIds];
+  }
+  if (Array.isArray(body.serviceSpecializationIds)) {
+    wp.serviceSpecializationIds = body.serviceSpecializationIds.map(String);
+    wp.effectiveServiceSpecializationIds = [...wp.serviceSpecializationIds];
+  }
+  if (Array.isArray(body.navigatorStageIds)) {
+    wp.navigatorStageIds = body.navigatorStageIds.map(String);
+    wp.effectiveNavigatorStageIds = [...wp.navigatorStageIds];
+  }
+  if (body.primaryDirection !== undefined) {
+    wp.primaryDirection = body.primaryDirection as WorkingProfileDto["primaryDirection"];
+  }
+  if (Array.isArray(body.areas)) {
+    wp.areas = body.areas.map(String);
+    profile.user.areas = [...wp.areas];
+  }
+  if (body.partnershipContactName !== undefined) {
+    wp.partnershipContactName =
+      body.partnershipContactName === null ? null : String(body.partnershipContactName);
+  }
+  if (body.partnershipContactPhone !== undefined) {
+    wp.partnershipContactPhone =
+      body.partnershipContactPhone === null ? null : String(body.partnershipContactPhone);
+  }
+  if (body.partnershipContactEmail !== undefined) {
+    wp.partnershipContactEmail =
+      body.partnershipContactEmail === null ? null : String(body.partnershipContactEmail);
+  }
+  if (body.website !== undefined && !profile.organization) {
+    profile.user.website = body.website === null ? null : String(body.website);
+  }
+  if (body.telegram !== undefined && !profile.organization) {
+    profile.user.telegram = body.telegram === null ? null : String(body.telegram);
+  }
+}
+
 /** Stateful in-memory transport for prof-test org save integration tests. */
 export function createProfTestOrgTransport(partnerType: "STORE" | "COMPANY") {
   const ownerId = `u-${partnerType.toLowerCase()}-prof-test`;
@@ -73,8 +125,6 @@ export function createProfTestOrgTransport(partnerType: "STORE" | "COMPANY") {
   function syncProfileFromOrg() {
     if (!org) {
       profile = { ...profile, organization: null };
-      profile.user.website = null;
-      profile.user.telegram = null;
       return;
     }
     profile = {
@@ -98,6 +148,13 @@ export function createProfTestOrgTransport(partnerType: "STORE" | "COMPANY") {
   }
 
   async function handleRemcardFetch(path: string, init?: { method?: string; body?: unknown }) {
+    if (path === "/api/auth/me" && init?.method === "PATCH") {
+      const body = init.body as { displayName?: string };
+      if (body.displayName !== undefined) {
+        profile.user.displayName = body.displayName.trim();
+      }
+      return { user: { displayName: profile.user.displayName } };
+    }
     if (path === "/api/pro/organization" && init?.method === "GET") {
       syncProfileFromOrg();
       return {
@@ -140,24 +197,30 @@ export function createProfTestOrgTransport(partnerType: "STORE" | "COMPANY") {
       return { organization: profile.organization };
     }
     if (path === "/api/pro/profile" && init?.method === "PATCH") {
+      applyWorkingProfilePatch(profile, (init.body ?? {}) as Record<string, unknown>);
       syncProfileFromOrg();
       return { user: profile.user };
     }
     if (path === "/api/pro/profile" && init?.method === "GET") {
       syncProfileFromOrg();
-      return profile;
+      return structuredClone(profile);
     }
     throw new Error(`unexpected fetch ${path} ${init?.method ?? "GET"}`);
+  }
+
+  async function freshProfileGet() {
+    return handleRemcardFetch("/api/pro/profile", { method: "GET" }) as Promise<ProProfileResponse>;
   }
 
   return {
     ownerId,
     getOrg: () => org,
-    getProfile: () => profile,
+    getProfile: () => structuredClone(profile),
     setProfile: (next: ProProfileResponse) => {
       profile = next;
     },
     handleRemcardFetch,
+    freshProfileGet,
     syncProfileFromOrg,
   };
 }
