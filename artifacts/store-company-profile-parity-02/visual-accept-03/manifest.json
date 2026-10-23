@@ -1,0 +1,257 @@
+{
+  "task": "STORE-COMPANY-PROFILE-VISUAL-ACCEPT-03",
+  "status": "partial",
+  "supersededRejected": [
+    "artifacts/store-company-profile-parity-02/visual-live-01.1"
+  ],
+  "artifactCommitSha": "4b6ac041be3a03d0f1318db9cbac42349be0d645",
+  "implRenderSourceSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+  "implRenderVerifiedBaseSha": "4db16dc16166cc9c5d25899b87b109fb288b592b",
+  "branchBSha": "cadb77e5d1834a6c45f778e49e9f23469eb62b46",
+  "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "implBase": "http://127.0.0.1:3022/profile/dev-fixture",
+  "domMarkerImpl": "Dev-fixture в полном CabinetShell",
+  "captureNotes": "Viewport set via Playwright setViewportSize; screenshots are main element PNG (no browser chrome).",
+  "closedImplScreens": [
+    "STORE basics summary (5 viewports)",
+    "STORE basics step0 (5 viewports)",
+    "STORE team no-org (5 viewports)",
+    "COMPANY basics summary (5 viewports)",
+    "COMPANY basics step0 (5 viewports)"
+  ],
+  "openScreens": [
+    "STORE basics steps 1-3 all viewports",
+    "STORE catalog steps 0-4, pending, preview",
+    "COMPANY basics steps 1-3, catalog, pending, team",
+    "320 long-value scenarios",
+    "All ref prototype pairs"
+  ],
+  "frames": [
+    {
+      "file": "impl-company-basics-step0-1440-dark.png",
+      "side": "impl",
+      "sha256": "23968a248f221a83961b468543199d0e23a3caec286e4438fd6b6d9c8b342e6d",
+      "bytes": 89592,
+      "role": "COMPANY",
+      "state": "basics-step0",
+      "viewportKey": "1440-dark"
+    },
+    {
+      "file": "impl-company-basics-step0-1440-light.png",
+      "side": "impl",
+      "sha256": "d8527568a019668cee6b3f12abdd6d8bd6ad93f62119d117e779a0fff75c06ed",
+      "bytes": 89009,
+      "role": "COMPANY",
+      "state": "basics-step0",
+      "viewportKey": "1440-light"
+    },
+    {
+      "file": "impl-company-basics-step0-320-light.png",
+      "side": "impl",
+      "sha256": "869949ecd0b03fb51020000622d31e5aef7311d4a7c24b7377b9d6e418755282",
+      "bytes": 70140,
+      "role": "COMPANY",
+      "state": "basics-step0",
+      "viewportKey": "320-light"
+    },
+    {
+      "file": "impl-company-basics-step0-375-dark.png",
+      "side": "impl",
+      "sha256": "a19281afe784546a4ecd2be5847a990567b8f801ad93e16bce7a8f8eb364ae42",
+      "bytes": 71397,
+      "role": "COMPANY",
+      "state": "basics-step0",
+      "viewportKey": "375-dark"
+    },
+    {
+      "file": "impl-company-basics-step0-375-light.png",
+      "side": "impl",
+      "sha256": "6c26dd3014b2464ade046c58e593f8812fff9a27749ff67c6843f98c7d272000",
+      "bytes": 71341,
+      "role": "COMPANY",
+      "state": "basics-step0",
+      "viewportKey": "375-light"
+    },
+    {
+      "file": "impl-company-basics-summary-1440-dark.png",
+      "side": "impl",
+      "sha256": "1c105b75c6850bc65743fa2ff7d3e9bcb165d5693fa859aa36f14b8bc4fa167c",
+      "bytes": 85472,
+      "role": "COMPANY",
+      "state": "basics-summary",
+      "viewportKey": "1440-dark"
+    },
+    {
+      "file": "impl-company-basics-summary-1440-light.png",
+      "side": "impl",
+      "sha256": "fcef83b819f72fcf654e74b66439525015b27020b8f913d0e9641a50fb1fec8d",
+      "bytes": 85011,
+      "role": "COMPANY",
+      "state": "basics-summary",
+      "viewportKey": "1440-light"
+    },
+    {
+      "file": "impl-company-basics-summary-320-light.png",
+      "side": "impl",
+      "sha256": "d10d93ce508de3694f7cb53869f5c71ae199e9d2386860fd0a6fa8c3c2a758b8",
+      "bytes": 82741,
+      "role": "COMPANY",
+      "state": "basics-summary",
+      "viewportKey": "320-light"
+    },
+    {
+      "file": "impl-company-basics-summary-375-dark.png",
+      "side": "impl",
+      "sha256": "d5814d95677ce9b7d396fbb1891c2c03b539634bc89b311f6034c2eb04ab66dd",
+      "bytes": 82488,
+      "role": "COMPANY",
+      "state": "basics-summary",
+      "viewportKey": "375-dark"
+    },
+    {
+      "file": "impl-company-basics-summary-375-light.png",
+      "side": "impl",
+      "sha256": "10b341481eda395a6f38423cede638d0bab74c48dbe3a9e898711c89136d450e",
+      "bytes": 82276,
+      "role": "COMPANY",
+      "state": "basics-summary",
+      "viewportKey": "375-light"
+    },
+    {
+      "file": "impl-store-basics-step0-1440-dark.png",
+      "side": "impl",
+      "sha256": "10de7c7adfc0ba9bfbeb36a71da9e8f02bc6ca86485634d90ed43c0560124e77",
+      "bytes": 87128,
+      "role": "STORE",
+      "state": "basics-step0",
+      "viewportKey": "1440-dark"
+    },
+    {
+      "file": "impl-store-basics-step0-1440-light.png",
+      "side": "impl",
+      "sha256": "dcc4f7ddbacefc97790afccf20f014ac50805d5ecd679702842aa00f909fbf30",
+      "bytes": 86430,
+      "role": "STORE",
+      "state": "basics-step0",
+      "viewportKey": "1440-light"
+    },
+    {
+      "file": "impl-store-basics-step0-320-light.png",
+      "side": "impl",
+      "sha256": "e44006f0cba1c734ad4f332bc85cee18362857c28358ba9d1b498ade1c6848bf",
+      "bytes": 68346,
+      "role": "STORE",
+      "state": "basics-step0",
+      "viewportKey": "320-light"
+    },
+    {
+      "file": "impl-store-basics-step0-375-dark.png",
+      "side": "impl",
+      "sha256": "ceec70e2fd6dbe997911f13a448c3cd480ebe838294c5f0e63734dc5c463f713",
+      "bytes": 69984,
+      "role": "STORE",
+      "state": "basics-step0",
+      "viewportKey": "375-dark"
+    },
+    {
+      "file": "impl-store-basics-step0-375-light.png",
+      "side": "impl",
+      "sha256": "a46ac5ab307186e5e3eacab575ad73df380ba134377421f650d4b96b00fd81d9",
+      "bytes": 69857,
+      "role": "STORE",
+      "state": "basics-step0",
+      "viewportKey": "375-light"
+    },
+    {
+      "file": "impl-store-basics-summary-1440-dark.png",
+      "side": "impl",
+      "sha256": "66fd043e389271da492844400b92af146fbe432d2bb0f9f0013db6d6e3a75ce7",
+      "bytes": 83669,
+      "role": "STORE",
+      "state": "basics-summary",
+      "viewportKey": "1440-dark"
+    },
+    {
+      "file": "impl-store-basics-summary-1440-light.png",
+      "side": "impl",
+      "sha256": "3e778098d6c3fdf40382a4e66d71aeab6e593f69c75e82c0ab3dadfcb8f28619",
+      "bytes": 83298,
+      "role": "STORE",
+      "state": "basics-summary",
+      "viewportKey": "1440-light"
+    },
+    {
+      "file": "impl-store-basics-summary-320-light.png",
+      "side": "impl",
+      "sha256": "ffb5f349e6b16aed4f1337a79ad2e9b6dd8d89090df23dccde96a3f53b330136",
+      "bytes": 80926,
+      "role": "STORE",
+      "state": "basics-summary",
+      "viewportKey": "320-light"
+    },
+    {
+      "file": "impl-store-basics-summary-375-dark.png",
+      "side": "impl",
+      "sha256": "92776c502302d17e017e2a757d95c5b65fd2f10013e84f681d3ba270a55b7254",
+      "bytes": 80661,
+      "role": "STORE",
+      "state": "basics-summary",
+      "viewportKey": "375-dark"
+    },
+    {
+      "file": "impl-store-basics-summary-375-light.png",
+      "side": "impl",
+      "sha256": "f0d60a796c1b1d8262efa570b7c574880f62a00d8032d589f2d7691fe39de4e5",
+      "bytes": 80397,
+      "role": "STORE",
+      "state": "basics-summary",
+      "viewportKey": "375-light"
+    },
+    {
+      "file": "impl-store-team-noorg-1440-dark.png",
+      "side": "impl",
+      "sha256": "862b7134e823f83384df5f70b86499ca5f4981ec746150e0cf086b27b4106904",
+      "bytes": 52864,
+      "role": "STORE",
+      "state": "team-noorg",
+      "viewportKey": "1440-dark"
+    },
+    {
+      "file": "impl-store-team-noorg-1440-light.png",
+      "side": "impl",
+      "sha256": "d78eb8044065b241b466d611226073949e5d888f89978cbc6f206148eb5c582a",
+      "bytes": 56191,
+      "role": "STORE",
+      "state": "team-noorg",
+      "viewportKey": "1440-light"
+    },
+    {
+      "file": "impl-store-team-noorg-320-light.png",
+      "side": "impl",
+      "sha256": "35f9955e3192029e4926419908f0edf9b8ba444a1fd3547b50867a573a83d4f1",
+      "bytes": 50413,
+      "role": "STORE",
+      "state": "team-noorg",
+      "viewportKey": "320-light"
+    },
+    {
+      "file": "impl-store-team-noorg-375-dark.png",
+      "side": "impl",
+      "sha256": "79d47c870afa3ee68abbaf0b8429b2d447b9f948d2832fc83c30a08f48702107",
+      "bytes": 50178,
+      "role": "STORE",
+      "state": "team-noorg",
+      "viewportKey": "375-dark"
+    },
+    {
+      "file": "impl-store-team-noorg-375-light.png",
+      "side": "impl",
+      "sha256": "6d272bc02d093f44c906c2f92a53289ab53c5ac9d1897cf3185ccbd9f5799572",
+      "bytes": 52656,
+      "role": "STORE",
+      "state": "team-noorg",
+      "viewportKey": "375-light"
+    }
+  ]
+}

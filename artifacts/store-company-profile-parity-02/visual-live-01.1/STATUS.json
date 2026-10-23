@@ -1,0 +1,5 @@
+{
+  "status": "rejected_superseded",
+  "supersededBy": "artifacts/store-company-profile-parity-02/visual-accept-03",
+  "reason": "Wrong impl SHA suffix, WEBP-as-PNG with chrome, impl DOM matched prototype not dev-fixture"
+}

@@ -1,0 +1,1207 @@
+OK impl impl-store-basics-summary-1440-light.png
+OK impl impl-store-basics-summary-1440-dark.png
+OK impl impl-store-basics-summary-375-light.png
+OK impl impl-store-basics-summary-375-dark.png
+OK impl impl-store-basics-summary-320-light.png
+OK impl impl-store-basics-step0-1440-light.png
+OK impl impl-store-basics-step0-1440-dark.png
+OK impl impl-store-basics-step0-375-light.png
+OK impl impl-store-basics-step0-375-dark.png
+OK impl impl-store-basics-step0-320-light.png
+FAIL impl impl-store-basics-step1-1440-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step1-1440-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step1-375-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step1-375-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step1-320-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step2-1440-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step2-1440-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step2-375-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step2-375-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step2-320-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step3-1440-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step3-1440-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step3-375-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step3-375-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-basics-step3-320-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step0-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step0-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step0-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step0-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step0-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step1-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step1-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step1-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step1-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step1-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step2-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step2-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step2-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step2-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step2-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step3-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step3-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step3-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step3-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step3-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step4-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step4-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step4-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step4-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-step4-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-pending-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-pending-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-pending-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-pending-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-store-catalog-pending-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('Магазин Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+OK impl impl-store-team-noorg-1440-light.png
+OK impl impl-store-team-noorg-1440-dark.png
+OK impl impl-store-team-noorg-375-light.png
+OK impl impl-store-team-noorg-375-dark.png
+OK impl impl-store-team-noorg-320-light.png
+OK impl impl-company-basics-summary-1440-light.png
+OK impl impl-company-basics-summary-1440-dark.png
+OK impl impl-company-basics-summary-375-light.png
+OK impl impl-company-basics-summary-375-dark.png
+OK impl impl-company-basics-summary-320-light.png
+OK impl impl-company-basics-step0-1440-light.png
+OK impl impl-company-basics-step0-1440-dark.png
+OK impl impl-company-basics-step0-375-light.png
+OK impl impl-company-basics-step0-375-dark.png
+OK impl impl-company-basics-step0-320-light.png
+FAIL impl impl-company-basics-step1-1440-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step1-1440-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step1-375-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step1-375-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step1-320-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(1)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step2-1440-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step2-1440-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step2-375-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step2-375-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step2-320-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(2)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step3-1440-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step3-1440-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step3-375-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step3-375-dark.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-basics-step3-320-light.png locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('business-profile-wizard').locator('aside ol li button').nth(3)
+    - locator resolved to <button disabled type="button" class="AgentProfileWizard_stepBtn__qvYXV">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is not enabled
+     - retrying click action
+       - waiting 500ms
+
+    at openBasicsStep (/tmp/visual-accept-03-capture.mjs:100:61)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step0-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step0-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step0-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step0-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step0-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step1-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step1-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step1-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step1-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step1-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step2-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step2-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step2-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step2-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step2-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step3-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step3-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step3-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step3-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step3-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step4-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step4-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step4-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step4-375-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-step4-320-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogStep (/tmp/visual-accept-03-capture.mjs:114:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-pending-1440-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-pending-1440-dark.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
+FAIL impl impl-company-catalog-pending-375-light.png locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByText('СтройКомпания Юг').first() to be visible
+
+    at assertImplLoaded (/tmp/visual-accept-03-capture.mjs:79:55)
+    at async openCatalogPending (/tmp/visual-accept-03-capture.mjs:137:3)
+    at async main (/tmp/visual-accept-03-capture.mjs:237:9) {
+  name: 'TimeoutError'
+}
