@@ -34,9 +34,9 @@ Shallow `{ ...base, ...patch }` replaced the whole `catalogTouched` map before m
 | F `npm run build` | OK |
 | B `pnpm exec tsc --noEmit` | No new diagnostics in touched tests; repo baseline unchanged |
 
-## Tips (after push)
+## Tips
 
 | Repo | Tip |
 |------|-----|
-| remcard-navigator | _(filled on push)_ |
-| remcard-partner-platform | _(filled on push)_ |
+| remcard-navigator | `c88f6323` |
+| remcard-partner-platform | `a3eedde` |
