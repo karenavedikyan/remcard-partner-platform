@@ -83,7 +83,9 @@ function BusinessCatalogPublicationPreview({ profile, draft }: CatalogPublicatio
         </div>
       </div>
       {model.description ? <p className={styles.desc}>{model.description}</p> : null}
-      {(model.productLabels.length > 0 || model.serviceLabels.length > 0) && (
+      {(model.productLabels.length > 0 ||
+        model.serviceLabels.length > 0 ||
+        model.stageLabels.length > 0) && (
         <div className={styles.chipRow}>
           {model.productLabels.map((label) => (
             <span key={`p-${label}`} className={styles.chip}>
@@ -93,6 +95,11 @@ function BusinessCatalogPublicationPreview({ profile, draft }: CatalogPublicatio
           {model.serviceLabels.map((label) => (
             <span key={`s-${label}`} className={styles.chip}>
               Услуга: {label}
+            </span>
+          ))}
+          {model.stageLabels.map((label) => (
+            <span key={`stg-${label}`} className={styles.chip}>
+              Этап: {label}
             </span>
           ))}
         </div>

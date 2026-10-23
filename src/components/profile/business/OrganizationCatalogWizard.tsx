@@ -262,11 +262,11 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         data-testid="catalog-intro-card"
       >
         <header className={`${catalogStyles.heading} ${surfaceStyles.businessCatalogIntroHeading}`}>
-          <div>
+          <div className={surfaceStyles.businessCatalogIntroTopRow}>
             <span className={catalogStyles.kicker}>Публичная страница</span>
-            <h2 className={surfaceStyles.businessIntroTitle}>Подключение к каталогу</h2>
+            <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
           </div>
-          <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
+          <h2 className={surfaceStyles.businessIntroTitle}>Подключение к каталогу</h2>
         </header>
         <p className={`${catalogStyles.introLead} ${surfaceStyles.businessIntroLead}`}>
           Уже сохранённые данные подставляем из профиля: проверьте их и при необходимости измените.

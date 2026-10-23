@@ -105,6 +105,88 @@ describe("CatalogPublicationPreview", () => {
     expect(screen.queryByText(/^Товары:/)).toBeNull();
   });
 
+  it("business STORE shows stage chip from draft navigatorStageIds", () => {
+    render(
+      <CatalogPublicationPreview
+        profile={baseProfile("STORE")}
+        draft={baseDraft({
+          storeCategories: ["doors"],
+          navigatorStageIds: ["L1-7"],
+        })}
+        variant="business"
+      />,
+    );
+    expect(screen.getByText(/^Этап:/)).toBeTruthy();
+    expect(screen.getByText(/Инженерия/)).toBeTruthy();
+  });
+
+  it("business COMPANY shows stage chip from draft navigatorStageIds", () => {
+    render(
+      <CatalogPublicationPreview
+        profile={baseProfile("COMPANY")}
+        draft={baseDraft({
+          partnerType: "COMPANY",
+          storeCategories: [],
+          specializations: ["plumbing"],
+          navigatorStageIds: ["L1-7"],
+        })}
+        variant="business"
+      />,
+    );
+    expect(screen.getByText(/^Этап:/)).toBeTruthy();
+  });
+
+  it("business variant shows stage-only chip row without products or services", () => {
+    render(
+      <CatalogPublicationPreview
+        profile={baseProfile("STORE")}
+        draft={baseDraft({
+          storeCategories: [],
+          specializations: [],
+          navigatorStageIds: ["L1-7"],
+        })}
+        variant="business"
+      />,
+    );
+    expect(screen.queryByText(/^Товар:/)).toBeNull();
+    expect(screen.queryByText(/^Услуга:/)).toBeNull();
+    expect(screen.getByText(/^Этап:/)).toBeTruthy();
+  });
+
+  it("business variant omits stage chip when draft navigatorStageIds is empty", () => {
+    render(
+      <CatalogPublicationPreview
+        profile={{
+          ...baseProfile("STORE"),
+          workingProfile: {
+            productCategoryIds: [],
+            serviceSpecializationIds: [],
+            navigatorStageIds: ["L1-7"],
+            effectiveProductCategoryIds: [],
+            effectiveServiceSpecializationIds: [],
+            effectiveNavigatorStageIds: ["L1-7"],
+            primaryDirection: null,
+            partnerSearchVisible: false,
+            partnerSearchOptIn: false,
+            partnerSearchOptInExplicit: false,
+            partnerWorkMode: null,
+            areas: [],
+            partnershipContactName: null,
+            partnershipContactPhone: null,
+            partnershipContactEmail: null,
+          },
+        }}
+        draft={baseDraft({
+          storeCategories: ["doors"],
+          navigatorStageIds: [],
+        })}
+        variant="business"
+      />,
+    );
+    expect(screen.queryByText(/^Этап:/)).toBeNull();
+    expect(screen.getByText(/^Товар:/)).toBeTruthy();
+  });
+
   it("business variant shows draft pill and product chip row", () => {
     render(
       <CatalogPublicationPreview

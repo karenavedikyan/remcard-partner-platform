@@ -15,6 +15,7 @@
 .businessCatalogScope {
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .businessCatalogRoot {
@@ -31,7 +32,7 @@
   margin: 0.25rem 0 0;
   font-size: 20px;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.4;
 }
 
 .businessCatalogIntroCard {
@@ -39,6 +40,17 @@
 }
 
 .businessCatalogIntroHeading {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.businessCatalogIntroTopRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   min-width: 0;
 }
 
@@ -172,27 +184,20 @@
 }
 
 @media (max-width: 480px) {
+  .businessCatalogScope {
+    margin-inline: -0.75rem;
+    width: calc(100% + 1.5rem);
+  }
+
   .businessCatalogIntroCard {
-    padding-inline: 0.75rem;
-  }
-
-  .businessCatalogIntroHeading {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .businessCatalogIntroHeading > div:first-child {
-    width: 100%;
-    min-width: 0;
+    padding: 1.25rem 0.75rem;
   }
 
   .businessIntroTitle {
     font-size: 20px;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.4;
     max-width: 100%;
-    letter-spacing: -0.02em;
   }
 
   .businessIntroLead {
@@ -211,13 +216,12 @@
 }
 
 @media (max-width: 360px) {
-  .businessCatalogIntroCard {
-    padding-inline: 0.5rem;
+  .businessCatalogScope {
+    margin-inline: -1rem;
+    width: calc(100% + 2rem);
   }
 
-  .businessCatalogIntroCard .businessIntroTitle {
-    font-size: 18px;
-    line-height: 1.2;
-    letter-spacing: -0.01em;
+  .businessCatalogIntroCard {
+    padding-inline: 0.625rem;
   }
 }
