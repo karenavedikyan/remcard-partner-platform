@@ -247,4 +247,64 @@ describe("persistCatalogDraftOnly organization catalog city", () => {
     expect(posted.city).toBe("Сочи");
     expect(posted.address).toBe("ул. Морская 1");
   });
+
+  it("APPROVED org: org PATCH stages catalog; branch PATCH updates live city on GET", async () => {
+    let liveCity = "Краснодар";
+    let orgDraftCity: string | null = null;
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        orgDraftCity = (init.body as { description?: string }).description
+          ? liveCity
+          : orgDraftCity;
+        return { organization: { id: "org-st" } };
+      }
+      if (path === "/api/pro/organization/branches/br-1" && init?.method === "PATCH") {
+        liveCity = (init.body as { city: string }).city;
+        return { ok: true };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return storeOrgProfile({
+          branchCount: 1,
+          catalogStatus: "APPROVED",
+          publicCatalogCity: liveCity,
+        });
+      }
+      throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
+    });
+
+    const profile = storeOrgProfile({ branchCount: 1, catalogStatus: "APPROVED" });
+    const draft = {
+      ...profileDraftFromProfile(profile),
+      catalogCity: "Сочи",
+      catalogTouched: { catalogCity: true },
+    };
+
+    const refreshed = await persistCatalogDraftOnly(profile, draft);
+    expect(liveCity).toBe("Сочи");
+    expect(refreshed.organization?.publicCatalogCity).toBe("Сочи");
+  });
+
+  it("branch PENDING: city PATCH surfaces API error (no silent fallback)", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        return { organization: { id: "org-st" } };
+      }
+      if (path === "/api/pro/organization/branches/br-1" && init?.method === "PATCH") {
+        throw new Error("409 branch pending");
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return storeOrgProfile({ branchCount: 1 });
+      }
+      throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
+    });
+
+    const profile = storeOrgProfile({ branchCount: 1 });
+    const draft = {
+      ...profileDraftFromProfile(profile),
+      catalogCity: "Новгород",
+      catalogTouched: { catalogCity: true },
+    };
+
+    await expect(persistCatalogDraftOnly(profile, draft)).rejects.toThrow(/409 branch pending/);
+  });
 });
