@@ -68,6 +68,7 @@ export function BusinessWorkingProfileWizard({
   const persistRequestIdRef = useRef(0);
   const editingRef = useRef(false);
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
+  const partnerSearchTouchedRef = useRef(false);
 
   const [draft, setDraft] = useState<ProfileDraft>(() => profileDraftFromProfile(initialProfile));
   const [savedSnapshot, setSavedSnapshot] = useState<ProfileDraft>(() =>
@@ -116,6 +117,7 @@ export function BusinessWorkingProfileWizard({
     setEditing(editingNext);
     setBanner(null);
     setSaving(false);
+    partnerSearchTouchedRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -175,7 +177,9 @@ export function BusinessWorkingProfileWizard({
     setSaving(true);
     setBanner(null);
     try {
-      const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft);
+      const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft, {
+        partnerSearchTouched: partnerSearchTouchedRef.current,
+      });
       if (!persistStillCurrent(generationAtStart, requestId)) {
         return false;
       }
@@ -264,6 +268,7 @@ export function BusinessWorkingProfileWizard({
     setDraft(next);
     setSavedSnapshot(next);
     setAreasText(formatAreasForTextField(next.areas));
+    partnerSearchTouchedRef.current = false;
     setBanner({ kind: "success", text: "Отменены несохранённые правки." });
     onBasicsDirtyChange?.(false);
   };
@@ -617,6 +622,35 @@ export function BusinessWorkingProfileWizard({
                   labelByKey={directionLabelByKey}
                   areasText={areasText}
                 />
+                <label
+                  className={surfaceStyles.businessPartnerVisibility}
+                  data-testid="business-partner-search-opt-in"
+                >
+                  <input
+                    type="checkbox"
+                    checked={workingDraft.partnerSearchOptIn}
+                    disabled={!basicsEditable || saving}
+                    onChange={(e) => {
+                      partnerSearchTouchedRef.current = true;
+                      setDraft((d) => ({ ...d, partnerSearchOptIn: e.target.checked }));
+                    }}
+                  />
+                  <span>
+                    <strong>Показывать профиль партнёрам</strong>
+                    <small>
+                      Поиск внутри RemCard. Это не публикация в каталоге для клиентов.
+                    </small>
+                  </span>
+                </label>
+                {profileRef.current.workingProfile?.partnerSearchVisible != null ? (
+                  <p className={surfaceStyles.businessPartnerVisibilityHint}>
+                    Сейчас на сервере:{" "}
+                    {profileRef.current.workingProfile.partnerSearchVisible
+                      ? "виден партнёрам"
+                      : "скрыт из поиска партнёров"}
+                    .
+                  </p>
+                ) : null}
                 <p className={stepStyles.reviewFootnote}>
                   Рабочий профиль и публикация в каталоге независимы. Сохранение не отправляет на
                   модерацию.

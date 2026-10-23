@@ -1,0 +1,88 @@
+.card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--border, #dce0e3);
+  border-top: 3px solid var(--accent-emphasis, #b52a2e);
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: var(--surface, #fff);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pill {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--offset, #f6f7f8);
+  border: 1px solid var(--border, #dce0e3);
+  color: var(--ink, #282b30);
+}
+
+.header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0.25rem 0 0;
+  color: var(--muted, #656970);
+  font-size: 0.875rem;
+}
+
+.desc {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  border: 1px solid var(--border, #dce0e3);
+  background: var(--offset, #f6f7f8);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.contacts {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted, #656970);
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+}

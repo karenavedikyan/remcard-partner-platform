@@ -506,20 +506,37 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         ) : null}
 
         {step === 4 ? (
-          <div>
+          <div className={surfaceStyles.businessCatalogPreviewHost} data-testid="catalog-preview-step">
             <p className={catalogStyles.intro}>
-              Посмотрите карточку глазами клиента: всё ли понятно и нет ли лишних данных.
+              Посмотрите карточку глазами клиента: всё ли понятно и нет ли данных, которые вы не
+              хотите показывать публично.
             </p>
-            <CatalogPublicationPreview profile={profile} draft={draft} variant="default" />
-            {missing.length > 0 ? (
-              <ul className={catalogStyles.reviewList}>
-                {missing.map((m) => (
-                  <li key={m.id}>{m.label}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className={catalogStyles.intro}>Можно отправить заявку на модерацию.</p>
-            )}
+            <div
+              className={surfaceStyles.businessCatalogReadiness}
+              data-testid="catalog-readiness"
+            >
+              {missing.length > 0 ? (
+                <>
+                  <p className={catalogStyles.intro}>Осталось заполнить:</p>
+                  <ul className={catalogStyles.reviewList}>
+                    {missing.map((m) => (
+                      <li key={m.id}>{m.label}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p
+                  className={`${surfaceStyles.businessReadinessPill} ${surfaceStyles.businessReadinessPillGood}`}
+                >
+                  Обязательные поля заполнены
+                </p>
+              )}
+            </div>
+            <CatalogPublicationPreview profile={profile} draft={draft} variant="business" />
+            <p className={surfaceStyles.businessCatalogPreviewNotice}>
+              Когда всё готово, нажмите «{submitLabel}». Карточка появится в каталоге после
+              одобрения модератором. Сохранение черновика не публикует карточку.
+            </p>
           </div>
         ) : null}
       </section>

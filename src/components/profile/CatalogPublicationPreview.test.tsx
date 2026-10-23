@@ -104,4 +104,35 @@ describe("CatalogPublicationPreview", () => {
     expect(screen.getByText(/^Этап:/)).toBeTruthy();
     expect(screen.queryByText(/^Товары:/)).toBeNull();
   });
+
+  it("business variant shows draft pill and product chip row", () => {
+    render(
+      <CatalogPublicationPreview
+        profile={{
+          ...baseProfile("STORE"),
+          organization: {
+            id: "org-1",
+            name: "Магазин Юг",
+            catalogStatus: "DRAFT",
+            partnerType: "STORE",
+            branchCount: 1,
+            publicCatalogCity: "Краснодар",
+            storeCategories: ["doors"],
+            specializations: [],
+          },
+          catalogPublication: { catalogEntity: "organization", isLivePublic: false, draftPending: false },
+        }}
+        draft={baseDraft({
+          organizationName: "Магазин Юг",
+          catalogPublicName: "Магазин Юг",
+          catalogCity: "Краснодар",
+        })}
+        variant="business"
+      />,
+    );
+    const root = screen.getByTestId("catalog-public-preview");
+    expect(root.getAttribute("data-catalog-preview-variant")).toBe("business");
+    expect(screen.getByText(/Предпросмотр · не опубликовано/)).toBeTruthy();
+    expect(screen.getByText(/^Товар:/)).toBeTruthy();
+  });
 });
