@@ -15,6 +15,7 @@ export type BusinessWizardCopy = {
   repFieldLabel: string;
   directionsStepTitle: string;
   directionsLead: string;
+  directionsNavigatorNote: string;
 };
 
 export function businessWizardCopy(partnerType: BusinessProfilePartnerType): BusinessWizardCopy {
@@ -38,6 +39,8 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
       directionsStepTitle: "Чем вы занимаетесь?",
       directionsLead:
         "Выберите товары и услуги, которые предлагаете. Можно указать одно направление или оба.",
+      directionsNavigatorNote:
+        "Клиенты в навигаторе ремонта на remcard.ru выбирают партнёров для каждого этапа. Укажите свою специализацию и этапы, на которых вы выполняете работы или предлагаете товары: так клиент сможет найти вас в нужный момент.",
     };
   }
   return {
@@ -59,6 +62,8 @@ export function businessWizardCopy(partnerType: BusinessProfilePartnerType): Bus
     directionsStepTitle: "Чем вы занимаетесь?",
     directionsLead:
       "Выберите товары и услуги, которые предлагаете. Можно указать одно направление или оба.",
+    directionsNavigatorNote:
+      "Клиенты в навигаторе ремонта на remcard.ru выбирают партнёров для каждого этапа. Укажите направления и этапы, на которых вы выполняете работы: так клиент сможет найти вас в нужный момент.",
   };
 }
 

@@ -18,21 +18,32 @@ type OrganizationCatalogPublicBranchSelectorProps = {
   profile: ProProfileResponse;
   disabled?: boolean;
   onProfileUpdated: (next: ProProfileResponse) => void;
+  /** Dev-fixture: skip GET and use in-memory branch rows for acceptance captures. */
+  fixtureBranches?: OrgBranchRow[] | null;
 };
 
 export function OrganizationCatalogPublicBranchSelector({
   profile,
   disabled,
   onProfileUpdated,
+  fixtureBranches,
 }: OrganizationCatalogPublicBranchSelectorProps) {
-  const [branches, setBranches] = useState<OrgBranchRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const useFixture = fixtureBranches != null;
+  const [branches, setBranches] = useState<OrgBranchRow[]>(() =>
+    useFixture ? (fixtureBranches ?? []) : [],
+  );
+  const [loading, setLoading] = useState(!useFixture);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const pinnedId = profile.organization?.publicCatalogBranchId?.trim() ?? "";
 
   const loadBranches = useCallback(async () => {
+    if (useFixture) {
+      setBranches(fixtureBranches ?? []);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -51,11 +62,11 @@ export function OrganizationCatalogPublicBranchSelector({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fixtureBranches, useFixture]);
 
   useEffect(() => {
     void loadBranches();
-  }, [loadBranches, profile.organization?.id, profile.organization?.branchCount]);
+  }, [loadBranches, profile.organization?.id, profile.organization?.branchCount, fixtureBranches]);
 
   if (loading && branches.length === 0) {
     return (
@@ -80,6 +91,19 @@ export function OrganizationCatalogPublicBranchSelector({
 
   async function onSelect(branchId: string) {
     if (branchId === selectValue || disabled) return;
+    if (fixtureBranches != null) {
+      const branch = branches.find((b) => b.id === branchId);
+      if (!branch || !profile.organization) return;
+      onProfileUpdated({
+        ...profile,
+        organization: {
+          ...profile.organization,
+          publicCatalogBranchId: branchId,
+          publicCatalogCity: branch.city,
+        },
+      });
+      return;
+    }
     setSaving(true);
     setError("");
     try {

@@ -138,7 +138,7 @@ export default async function ProfileDevFixturePage(props: {
         cabinetAccess={ownerProfileCabinetAccess()}
         section={section}
         moderationSection={moderationSection}
-        returnTo="/profile/dev-fixture"
+        returnTo="/profile"
       />
     </>
   );

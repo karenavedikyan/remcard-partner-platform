@@ -28,11 +28,12 @@ import { markCatalogFieldTouched } from "@/lib/specialist-r06/catalog-prefill";
 import { OrganizationCatalogPublicBranchSelector } from "./OrganizationCatalogPublicBranchSelector";
 import editorStyles from "../ProfileEditor.module.css";
 import catalogStyles from "../specialist/SpecialistCatalogWizard.module.css";
+import surfaceStyles from "./BusinessProfileSurface.module.css";
 
 const STEPS = ["Карточка", "Направления", "Контакты", "Оформление", "Предпросмотр"] as const;
 const STEP_PANEL_TITLES = [
   "Карточка партнёра",
-  "Направления в каталоге",
+  "Категории и этапы для каталога",
   "Публичные контакты",
   "Фото и описание",
   "Предпросмотр карточки",
@@ -78,6 +79,13 @@ export type OrganizationCatalogWizardProps = {
   catalogStageIds: string[];
   onCatalogStageIdsChange: (ids: string[]) => void;
   onRevertLocalEdits?: () => void;
+  fixtureOrganizationBranches?: Array<{
+    id: string;
+    name: string;
+    city: string;
+    address: string;
+    isActive?: boolean;
+  }> | null;
 };
 
 function touchField(
@@ -149,8 +157,13 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         ? "Отправить повторно"
         : "Отправить на проверку";
 
-  const orgRoleHint =
-    "Укажите публичное название организации для карточки в каталоге. Город и адрес берутся из выбранного филиала.";
+  const catalogCardIntro =
+    "Помогите клиенту узнать вас и понять, с какой задачей к вам обратиться. Название и описание представляют вас без дополнительных объяснений.";
+
+  const catalogDirectionsNotice =
+    partnerType === "COMPANY"
+      ? "Для публикации обязательны хотя бы одна категория работ или услуг и хотя бы один этап ремонта. Незавершённую карточку можно сохранить как черновик."
+      : "Для публикации обязательны хотя бы одна категория товаров или услуг и хотя бы один этап ремонта. Незавершённую карточку можно сохранить как черновик.";
 
   async function saveDraft(event?: FormEvent) {
     event?.preventDefault();
@@ -226,7 +239,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
 
   return (
     <div
-      className={catalogStyles.root}
+      className={`${catalogStyles.root} ${surfaceStyles.businessCatalogRoot}`}
       data-testid="organization-catalog-wizard"
       data-catalog-step={step}
       data-catalog-status={catalogStatus}
@@ -236,6 +249,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
           profile={profile}
           disabled={!catalogEditable}
           onProfileUpdated={props.onOrganizationBranchPinUpdated ?? onProfileUpdated}
+          fixtureBranches={props.fixtureOrganizationBranches ?? undefined}
         />
       ) : null}
       <section className={catalogStyles.introCard} data-testid="catalog-intro-card">
@@ -273,12 +287,11 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
 
         {step === 0 ? (
           <div className={catalogStyles.fields}>
-            <p className={catalogStyles.stepIntro}>{orgRoleHint}</p>
+            <p className={catalogStyles.stepIntro}>{catalogCardIntro}</p>
             <div className={catalogStyles.field}>
               <label htmlFor="oc-public-name">
                 Публичное название организации{" "}
                 <span className={catalogStyles.required}>*</span>
-                <span className={catalogStyles.fieldHintInline}> · Для отправки на проверку</span>
               </label>
               <input
                 id="oc-public-name"
@@ -321,8 +334,8 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                   Филиалы уже добавлены ({branchCount})
                 </summary>
                 <p className={catalogStyles.fieldHint}>
-                  Адреса и контакты филиалов редактируются в разделе «Филиалы». Для каталога
-                  используется город выбранного рабочего филиала.
+                  Повторно вводить адрес первого филиала не нужно. Адреса настраиваются отдельно от
+                  публичной карточки организации.
                 </p>
               </details>
             ) : null}
@@ -342,10 +355,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
 
         {step === 1 ? (
           <div id="catalog-products">
-            <p className={catalogStyles.notice}>
-              Для публикации обязательны хотя бы одна категория товаров или услуг и хотя бы один
-              этап ремонта. Незавершённую карточку можно сохранить как черновик.
-            </p>
+            <p className={catalogStyles.notice}>{catalogDirectionsNotice}</p>
             <ProfileDirectionsPicker
               disabled={!catalogEditable}
               catalogMode

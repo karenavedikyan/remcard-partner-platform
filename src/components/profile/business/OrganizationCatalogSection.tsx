@@ -6,6 +6,7 @@ import {
   OrganizationCatalogWizard,
   type OrganizationCatalogWizardProps,
 } from "./OrganizationCatalogWizard";
+import surfaceStyles from "./BusinessProfileSurface.module.css";
 
 export function OrganizationCatalogSection(props: OrganizationCatalogWizardProps) {
   const status = effectiveCatalogStatus(props.profile);
@@ -18,5 +19,9 @@ export function OrganizationCatalogSection(props: OrganizationCatalogWizardProps
       />
     );
   }
-  return <OrganizationCatalogWizard {...props} />;
+  return (
+    <div className={surfaceStyles.businessCatalogScope} data-testid="business-catalog-scope">
+      <OrganizationCatalogWizard {...props} />
+    </div>
+  );
 }

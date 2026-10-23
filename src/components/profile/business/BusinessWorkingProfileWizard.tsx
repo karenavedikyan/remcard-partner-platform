@@ -29,6 +29,7 @@ import { BusinessWorkingProfileFacts } from "./BusinessWorkingProfileFacts";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profile/agent/AgentPhoneField";
 import styles from "../agent/AgentProfileWizard.module.css";
 import stepStyles from "../specialist/SpecialistWorkingProfileWizard.module.css";
+import surfaceStyles from "./BusinessProfileSurface.module.css";
 
 const WORK_MODES = [
   { value: "", label: "Не указано" },
@@ -477,6 +478,7 @@ export function BusinessWorkingProfileWizard({
                 data-testid="business-profile-directions-panel"
               >
                 <p className={stepStyles.specializationLead}>{copy.directionsLead}</p>
+                <p className={surfaceStyles.businessDirectionsNote}>{copy.directionsNavigatorNote}</p>
                 <ProfileDirectionsPicker
                   tileLayout
                   businessTabbedPick

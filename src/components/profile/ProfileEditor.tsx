@@ -36,6 +36,7 @@ import {
 } from "@/lib/profile-working-save";
 import type { EmployeesOverviewResponse } from "@/lib/employees-overview-types";
 import { DEV_FIXTURE_EMPLOYEES_OVERVIEW } from "@/lib/dev-profile-fixture-overview";
+import { devFixtureOrganizationBranches } from "@/lib/dev-profile-fixture-branches";
 import { ProfileBranchesSection } from "./ProfileBranchesSection";
 import { ProfileCatalogSection } from "./ProfileCatalogSection";
 import { ProfileTeamSection } from "./ProfileTeamSection";
@@ -713,6 +714,10 @@ function ProfileEditorInner({
   )
     ? DEV_FIXTURE_EMPLOYEES_OVERVIEW
     : undefined;
+  const fixtureOrganizationBranches =
+    isProfileDevFixture && businessPartnerType
+      ? devFixtureOrganizationBranches(businessPartnerType)
+      : undefined;
 
   const openNotes = useMemo(() => notes.filter((n) => !n.resolvedAt), [notes]);
 
@@ -1177,6 +1182,7 @@ function ProfileEditorInner({
             onCatalogTouchedChange={setCatalogTouched}
             onProfileUpdated={applyProfile}
             onOrganizationBranchPinUpdated={applyOrganizationCatalogBranchPin}
+            fixtureOrganizationBranches={fixtureOrganizationBranches}
             organizationName={organizationName}
             onOrganizationNameChange={(value) => {
               setOrganizationName(value);

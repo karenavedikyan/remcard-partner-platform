@@ -3,6 +3,7 @@
 import type { ProProfileResponse } from "@/lib/types";
 import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
 import { BusinessWorkingProfileWizard } from "./BusinessWorkingProfileWizard";
+import surfaceStyles from "./BusinessProfileSurface.module.css";
 
 type Props = {
   profile: ProProfileResponse;
@@ -24,14 +25,16 @@ export function BusinessProfileSection({
   forceStep,
 }: Props) {
   return (
-    <BusinessWorkingProfileWizard
-      initialProfile={profile}
-      partnerType={partnerType}
-      basicsEditable={basicsEditable}
-      onWorkingProfileSaved={onWorkingProfileSaved}
-      onBasicsDirtyChange={onBasicsDirtyChange}
-      forceEditing={forceEditing}
-      forceStep={forceStep}
-    />
+    <div className={surfaceStyles.businessScope} data-testid="business-profile-scope">
+      <BusinessWorkingProfileWizard
+        initialProfile={profile}
+        partnerType={partnerType}
+        basicsEditable={basicsEditable}
+        onWorkingProfileSaved={onWorkingProfileSaved}
+        onBasicsDirtyChange={onBasicsDirtyChange}
+        forceEditing={forceEditing}
+        forceStep={forceStep}
+      />
+    </div>
   );
 }
