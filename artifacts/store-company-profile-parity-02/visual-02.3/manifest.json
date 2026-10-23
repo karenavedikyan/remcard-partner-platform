@@ -1,0 +1,88 @@
+{
+  "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+  "prototypeSha": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "implBase": "http://127.0.0.1:3022",
+  "refBase": "http://127.0.0.1:38609",
+  "entries": [
+    {
+      "pair": "store-basics-wizard",
+      "refError": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('tab', { name: /Основные данные/i })\n",
+      "prototypeSha": "9bc52fb9152293e992e98dc50804a660cef10733"
+    },
+    {
+      "pair": "store-basics-flow",
+      "impl": "impl-store-basics-step3-1440-light.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "viewport": "1440-light"
+    },
+    {
+      "pair": "store-basics-flow",
+      "impl": "impl-store-basics-step3-1440-dark.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "viewport": "1440-dark"
+    },
+    {
+      "pair": "store-basics-flow",
+      "impl": "impl-store-basics-step3-375-light.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "viewport": "375-light"
+    },
+    {
+      "pair": "store-basics-flow",
+      "impl": "impl-store-basics-step3-375-dark.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "viewport": "375-dark"
+    },
+    {
+      "pair": "store-basics-flow",
+      "impl": "impl-store-basics-step3-320-light.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "viewport": "320-light"
+    },
+    {
+      "pair": "company-basics-wizard",
+      "refError": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('tab', { name: /Основные данные/i })\n",
+      "prototypeSha": "9bc52fb9152293e992e98dc50804a660cef10733"
+    },
+    {
+      "pair": "company-basics-flow",
+      "impl": "impl-company-basics-step3-1440-light.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "viewport": "1440-light"
+    },
+    {
+      "pair": "company-basics-flow",
+      "impl": "impl-company-basics-step3-1440-dark.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "viewport": "1440-dark"
+    },
+    {
+      "pair": "company-basics-flow",
+      "impl": "impl-company-basics-step3-375-light.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "viewport": "375-light"
+    },
+    {
+      "pair": "company-basics-flow",
+      "impl": "impl-company-basics-step3-375-dark.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "viewport": "375-dark"
+    },
+    {
+      "pair": "company-basics-flow",
+      "impl": "impl-company-basics-step3-320-light.png",
+      "implSha": "b520f5529964c71676010ca2b3b28e5fa9bb713e",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "viewport": "320-light"
+    }
+  ]
+}

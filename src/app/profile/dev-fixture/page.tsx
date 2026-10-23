@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { PageHeading } from "@/components/ui/PageHeading";
+import { DevProfileFixtureChrome } from "./DevProfileFixtureChrome";
 import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import {
   isModerationDeepLink,
@@ -9,78 +10,91 @@ import {
 } from "@/lib/profile-sections";
 import type { ProProfileResponse } from "@/lib/types";
 
-function buildFixtureProfile(partnerType: "STORE" | "COMPANY"): ProProfileResponse {
+function buildFixtureProfile(
+  partnerType: "STORE" | "COMPANY",
+  options: { noOrg?: boolean },
+): ProProfileResponse {
   const isCompany = partnerType === "COMPANY";
+  const branchCount = isCompany ? 1 : 3;
+  const publicCatalogBranchId = isCompany ? "branch-co-1" : "branch-st-1";
+  const publicCatalogCity = "Краснодар";
   return {
-  organization: {
-    id: "org-fixture",
-    name: isCompany ? "СтройКомпания Юг" : "Магазин Юг",
-    catalogStatus: "DRAFT",
-    partnerType,
-    branchCount: isCompany ? 1 : 3,
-    catalogPublished: false,
-  },
-  programs: [],
-  workingProfile: {
-    productCategoryIds: ["doors"],
-    serviceSpecializationIds: ["plumbing"],
-    navigatorStageIds: ["L1-7"],
-    primaryDirection: { kind: "product", id: "doors" },
-    effectiveProductCategoryIds: ["doors"],
-    effectiveServiceSpecializationIds: ["plumbing"],
-    partnerSearchVisible: false,
-    partnerSearchOptIn: false,
-    partnerSearchOptInExplicit: false,
-    workingDirectionsTouched: true,
-    partnerWorkMode: "BOTH",
-    areas: ["Краснодар, Анапа, Новороссийск"],
-    partnershipContactName: "Алексей",
-    partnershipContactPhone: null,
-    partnershipContactEmail: "partner@example.com",
-  },
-  catalogPublication: {
-    catalogEntity: "organization",
-    isLivePublic: false,
-    draftPending: false,
-    published: {
-      description: null,
+    organization: options.noOrg
+      ? null
+      : {
+          id: "org-fixture",
+          name: isCompany ? "СтройКомпания Юг" : "Магазин Юг",
+          catalogStatus: "DRAFT",
+          partnerType,
+          branchCount,
+          catalogPublished: false,
+          publicCatalogBranchId,
+          publicCatalogCity,
+          storeCategories: ["doors", "plumbing"],
+          specializations: ["plumbing"],
+        },
+    programs: [],
+    workingProfile: {
+      productCategoryIds: ["doors"],
+      serviceSpecializationIds: ["plumbing"],
+      navigatorStageIds: ["L1-7"],
+      primaryDirection: { kind: "product", id: "doors" },
+      effectiveProductCategoryIds: ["doors"],
+      effectiveServiceSpecializationIds: ["plumbing"],
+      partnerSearchVisible: false,
+      partnerSearchOptIn: false,
+      partnerSearchOptInExplicit: false,
+      workingDirectionsTouched: true,
+      partnerWorkMode: "BOTH",
+      areas: ["Краснодар, Анапа, Новороссийск"],
+      partnershipContactName: "Алексей",
+      partnershipContactPhone: "+79001112233",
+      partnershipContactEmail: "partner@example.com",
+    },
+    catalogPublication: {
+      catalogEntity: "organization",
+      isLivePublic: false,
+      draftPending: false,
+      published: {
+        description:
+          "Монтаж и сервисное обслуживание входных дверей премиум-класса с выездом по городу и области.",
+        specializations: ["plumbing"],
+        storeCategories: ["doors", "plumbing"],
+        website: "https://shop-south.example",
+        telegram: "@shop_south",
+        publicEmail: "catalog@shop-south.example",
+        publicPhone: "+79001234567",
+      },
+    },
+    user: {
+      id: "u-fixture",
+      publicId: "RC-DEMO",
+      displayName: "Алексей Петров",
+      city: "Краснодар",
       specializations: [],
+      role: "PRO",
+      partnerType,
+      partnerActivities: [partnerType],
+      description: null,
+      catalogStatus: "DRAFT",
+      isPublic: false,
+      rejectionReason: null,
+      badges: [],
+      photoUrl: null,
       storeCategories: ["doors", "plumbing"],
+      areas: [],
       website: null,
       telegram: null,
+      whatsapp: null,
+      instagram: null,
+      vk: null,
+      max: null,
+      yandex: null,
       publicEmail: null,
       publicPhone: null,
+      showFullName: false,
     },
-  },
-  user: {
-    id: "u-fixture",
-    publicId: "RC-DEMO",
-    displayName: "Алексей Петров",
-    city: "Краснодар",
-    specializations: [],
-    role: "PRO",
-    partnerType,
-    partnerActivities: [partnerType],
-    description: null,
-    catalogStatus: "DRAFT",
-    isPublic: false,
-    rejectionReason: null,
-    badges: [],
-    photoUrl: null,
-    storeCategories: ["doors", "plumbing"],
-    areas: [],
-    website: null,
-    telegram: null,
-    whatsapp: null,
-    instagram: null,
-    vk: null,
-    max: null,
-    yandex: null,
-    publicEmail: null,
-    publicPhone: null,
-    showFullName: false,
-  },
-};
+  };
 }
 
 export default async function ProfileDevFixturePage(props: {
@@ -90,6 +104,8 @@ export default async function ProfileDevFixturePage(props: {
     branchId?: string;
     partnerType?: string;
     wizard?: string;
+    wizardStep?: string;
+    noOrg?: string;
   }>;
 }) {
   if (process.env.NODE_ENV === "production") {
@@ -107,23 +123,15 @@ export default async function ProfileDevFixturePage(props: {
   const partnerTypeParam = searchParams?.partnerType?.toUpperCase();
   const partnerType: "STORE" | "COMPANY" =
     partnerTypeParam === "COMPANY" ? "COMPANY" : "STORE";
-  const fixtureProfile = buildFixtureProfile(partnerType);
+  const noOrg = searchParams?.noOrg === "1";
+  const fixtureProfile = buildFixtureProfile(partnerType, { noOrg });
 
-  return (
-    <main
-      style={{
-        boxSizing: "border-box",
-        width: "100%",
-        maxWidth: 1310,
-        minWidth: 0,
-        margin: "0 auto",
-        padding: "24px clamp(16px, 4vw, 32px)",
-      }}
-    >
+  const body = (
+    <>
       <PageHeading
         eyebrow="Профиль партнёра"
         title="Профиль"
-        description="Fixture UI (без сессии): рабочий профиль STORE/COMPANY и каталог RemCard."
+        description="Dev-fixture в полном CabinetShell: STORE/COMPANY профиль и каталог RemCard."
       />
       <ProfileEditor
         initial={fixtureProfile}
@@ -132,6 +140,10 @@ export default async function ProfileDevFixturePage(props: {
         moderationSection={moderationSection}
         returnTo="/profile/dev-fixture"
       />
-    </main>
+    </>
+  );
+
+  return (
+    <DevProfileFixtureChrome partnerType={partnerType}>{body}</DevProfileFixtureChrome>
   );
 }
