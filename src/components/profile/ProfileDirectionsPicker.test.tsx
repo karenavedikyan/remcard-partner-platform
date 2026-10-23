@@ -44,6 +44,27 @@ describe("ProfileDirectionsPicker", () => {
     expect(screen.getByText(/Товар: Двери ×/)).toBeTruthy();
   });
 
+  it("shows renovation stages for business org catalog mode", async () => {
+    render(
+      <ProfileDirectionsPicker
+        catalogMode
+        businessTabbedPick
+        catalogGroupedDetails
+        productCategoryIds={["doors"]}
+        serviceSpecializationIds={[]}
+        navigatorStageIds={[]}
+        primaryDirection={null}
+        onChangeProducts={vi.fn()}
+        onChangeServices={vi.fn()}
+        onChangeStages={vi.fn()}
+        onChangePrimary={vi.fn()}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("checkbox", { name: /Инженерия/i })).toBeInTheDocument(),
+    );
+  });
+
   it("defaults presentationVariant to default without specialistWorkingProfile class", async () => {
     const { container } = render(
       <ProfileDirectionsPicker

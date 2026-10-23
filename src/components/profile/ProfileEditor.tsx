@@ -439,6 +439,10 @@ function ProfileEditorInner({
   const savedCatalogSnapshotRef = useRef(catalogDraftFromProfile(initial));
   const syncedUserIdRef = useRef(initial.user.id);
   const draftRef = useRef<ProfileDraft | null>(null);
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+  const catalogTouchedRef = useRef(catalogTouched);
+  catalogTouchedRef.current = catalogTouched;
 
   const revertCatalogLocalEdits = useCallback(() => {
     const snap = savedCatalogSnapshotRef.current;
@@ -498,6 +502,34 @@ function ProfileEditorInner({
     setOrgCatalogNavigatorStageIds(orgCatalogNavigatorStageIdsFromProfile(next));
     setCatalogTouched(parseCatalogTouched(catalogTouchedFromProfile(next)));
   }, []);
+
+  const applyOrganizationCatalogBranchPin = useCallback(
+    (next: ProProfileResponse) => {
+      const prev = profileRef.current;
+      const sameOwner = prev.user.id === next.user.id;
+      const sameOrg =
+        Boolean(prev.organization?.id) &&
+        prev.organization?.id === next.organization?.id &&
+        Boolean(next.organization);
+      if (!sameOwner || !sameOrg || !next.organization) {
+        applyProfile(next);
+        return;
+      }
+      setProfile({
+        ...prev,
+        organization: {
+          ...prev.organization!,
+          publicCatalogBranchId: next.organization.publicCatalogBranchId,
+          publicCatalogCity: next.organization.publicCatalogCity,
+          branchCount: next.organization.branchCount ?? prev.organization!.branchCount,
+        },
+      });
+      if (!catalogTouchedRef.current.catalogCity) {
+        setCatalogCity(next.organization.publicCatalogCity ?? "");
+      }
+    },
+    [applyProfile],
+  );
 
   const loadNotes = useCallback(async () => {
     if (!cabinetAccess.canFetchModerationNotes) return;
@@ -1144,6 +1176,7 @@ function ProfileEditorInner({
             catalogTouched={catalogTouched}
             onCatalogTouchedChange={setCatalogTouched}
             onProfileUpdated={applyProfile}
+            onOrganizationBranchPinUpdated={applyOrganizationCatalogBranchPin}
             organizationName={organizationName}
             onOrganizationNameChange={(value) => {
               setOrganizationName(value);

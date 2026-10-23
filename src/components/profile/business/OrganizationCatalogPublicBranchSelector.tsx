@@ -11,6 +11,7 @@ type OrgBranchRow = {
   name: string;
   city: string;
   address: string;
+  isActive?: boolean;
 };
 
 type OrganizationCatalogPublicBranchSelectorProps = {
@@ -38,7 +39,11 @@ export function OrganizationCatalogPublicBranchSelector({
       const data = await remcardFetch<{
         organization: { branches: OrgBranchRow[] } | null;
       }>("/api/pro/organization", { method: "GET" });
-      setBranches(data.organization?.branches ?? []);
+      const rows = (data.organization?.branches ?? []).filter((b) => b.isActive !== false);
+      setBranches(rows);
+      if (rows.length === 0 && (data.organization?.branches?.length ?? 0) > 0) {
+        setError("Нет доступных филиалов для каталога");
+      }
     } catch (caught) {
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить филиалы",
@@ -61,6 +66,13 @@ export function OrganizationCatalogPublicBranchSelector({
   }
 
   if (branches.length === 0) {
+    if (error) {
+      return (
+        <p className={catalogStyles.bannerError} data-testid="catalog-public-branch-error" role="alert">
+          {error}
+        </p>
+      );
+    }
     return null;
   }
 

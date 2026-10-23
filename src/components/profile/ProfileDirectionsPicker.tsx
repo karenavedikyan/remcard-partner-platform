@@ -547,7 +547,9 @@ export function ProfileDirectionsPicker({
       ) : null}
 
       {(() => {
-        const stageBlock = !catalogMode || specialistMode ? (
+        const catalogStagesVisible =
+          specialistMode || (!catalogMode ? true : Boolean(businessTabbedPick));
+        const stageBlock = catalogStagesVisible ? (
           <fieldset
             className={tileLayout ? styles.tileFieldset : styles.group}
             disabled={disabled}

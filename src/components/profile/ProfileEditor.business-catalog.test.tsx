@@ -1,10 +1,12 @@
 /**
  * @vitest-environment jsdom
  */
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileEditor } from "./ProfileEditor";
 import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
+import { remcardFetch } from "@/lib/api-client";
 import type { ProProfileResponse } from "@/lib/types";
 
 vi.mock("next/navigation", () => ({
@@ -62,7 +64,7 @@ vi.mock("./ProfileOverviewSection", () => ({
   ProfileOverviewSection: () => null,
 }));
 
-function storeWithOrg(): ProProfileResponse {
+function storeWithOrg(overrides?: Partial<ProProfileResponse["organization"]>): ProProfileResponse {
   return {
     organization: {
       id: "org-st",
@@ -70,8 +72,11 @@ function storeWithOrg(): ProProfileResponse {
       catalogStatus: "DRAFT",
       partnerType: "STORE",
       branchCount: 0,
+      publicCatalogBranchId: "branch-a",
+      publicCatalogCity: "Анапа",
       storeCategories: [],
       specializations: [],
+      ...overrides,
     },
     programs: [],
     catalogPublication: {
@@ -117,6 +122,11 @@ function storeWithOrg(): ProProfileResponse {
 describe("ProfileEditor business catalog", () => {
   beforeEach(() => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(remcardFetch).mockReset();
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/moderation-notes") return { notes: [] };
+      throw new Error(`Unexpected ${String(path)} ${init?.method ?? "GET"}`);
+    });
   });
 
   it("shows five-step organization catalog wizard for store owner with org", async () => {
@@ -126,6 +136,97 @@ describe("ProfileEditor business catalog", () => {
     expect(await screen.findByTestId("organization-catalog-wizard")).toBeInTheDocument();
     expect(screen.getByText("Подключение к каталогу")).toBeInTheDocument();
     expect(screen.queryByText(/профиль специалиста/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps unsaved public org name when catalog branch pin changes (STORE)", async () => {
+    const initial = storeWithOrg({
+      branchCount: 2,
+      publicCatalogBranchId: "branch-a",
+    });
+    const refreshed = storeWithOrg({
+      branchCount: 2,
+      publicCatalogBranchId: "branch-b",
+      publicCatalogCity: "Москва",
+    });
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/moderation-notes") return { notes: [] };
+      if (path === "/api/pro/organization" && init?.method === "GET") {
+        return {
+          organization: {
+            branches: [
+              { id: "branch-a", name: "A", city: "Анапа", address: "1", isActive: true },
+              { id: "branch-b", name: "B", city: "Москва", address: "2", isActive: true },
+            ],
+          },
+        };
+      }
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        return { organization: { id: "org-st" } };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return refreshed;
+      }
+      throw new Error(`Unexpected ${String(path)} ${init?.method ?? "GET"}`);
+    });
+
+    const ui = userEvent.setup();
+    render(<ProfileEditor cabinetAccess={ownerProfileCabinetAccess()} initial={initial} />);
+    const nameInput = await screen.findByTestId("catalog-public-name");
+    await ui.clear(nameInput);
+    await ui.type(nameInput, "Несохранённый публичный черновик");
+    const select = await screen.findByTestId("catalog-public-branch-select");
+    await ui.selectOptions(select, "branch-b");
+    await waitFor(() =>
+      expect((nameInput as HTMLInputElement).value).toBe("Несохранённый публичный черновик"),
+    );
+  });
+
+  it("keeps unsaved public org name when catalog branch pin changes (COMPANY)", async () => {
+    const initial = storeWithOrg({
+      branchCount: 2,
+      partnerType: "COMPANY",
+      publicCatalogBranchId: "branch-a",
+    });
+    initial.user.partnerType = "COMPANY";
+    initial.user.partnerActivities = ["COMPANY"];
+    const refreshed = {
+      ...initial,
+      organization: {
+        ...initial.organization!,
+        publicCatalogBranchId: "branch-b",
+        publicCatalogCity: "Москва",
+      },
+    };
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/moderation-notes") return { notes: [] };
+      if (path === "/api/pro/organization" && init?.method === "GET") {
+        return {
+          organization: {
+            branches: [
+              { id: "branch-a", name: "A", city: "Анапа", address: "1", isActive: true },
+              { id: "branch-b", name: "B", city: "Москва", address: "2", isActive: true },
+            ],
+          },
+        };
+      }
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        return { organization: { id: "org-st" } };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return refreshed;
+      }
+      throw new Error(`Unexpected ${String(path)} ${init?.method ?? "GET"}`);
+    });
+
+    const ui = userEvent.setup();
+    render(<ProfileEditor cabinetAccess={ownerProfileCabinetAccess()} initial={initial} />);
+    const nameInput = await screen.findByTestId("catalog-public-name");
+    await ui.clear(nameInput);
+    await ui.type(nameInput, "Несохранённый публичный черновик");
+    await ui.selectOptions(await screen.findByTestId("catalog-public-branch-select"), "branch-b");
+    await waitFor(() =>
+      expect((nameInput as HTMLInputElement).value).toBe("Несохранённый публичный черновик"),
+    );
   });
 
   it("directs store owner without org to basics before catalog", async () => {

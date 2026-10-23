@@ -47,6 +47,8 @@ export type OrganizationCatalogWizardProps = {
   catalogTouched: CatalogTouchedMap;
   onCatalogTouchedChange: (next: CatalogTouchedMap) => void;
   onProfileUpdated: (next: ProProfileResponse) => void;
+  /** Pin-only refresh: must not reset unsaved catalog form state. */
+  onOrganizationBranchPinUpdated?: (next: ProProfileResponse) => void;
   organizationName: string;
   onOrganizationNameChange: (value: string) => void;
   catalogCity: string;
@@ -233,7 +235,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         <OrganizationCatalogPublicBranchSelector
           profile={profile}
           disabled={!catalogEditable}
-          onProfileUpdated={onProfileUpdated}
+          onProfileUpdated={props.onOrganizationBranchPinUpdated ?? onProfileUpdated}
         />
       ) : null}
       <section className={catalogStyles.introCard} data-testid="catalog-intro-card">
@@ -348,6 +350,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               disabled={!catalogEditable}
               catalogMode
               businessTabbedPick
+              catalogGroupedDetails
               copyFromWorkingProfileAvailable={
                 workingProductIds.length > 0 ||
                 workingServiceIds.length > 0 ||

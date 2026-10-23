@@ -54,4 +54,7 @@ Reviewer comparison bases (this turn): F `b520f5529964c71676010ca2b3b28e5fa9bb71
 
 ## SHA после коммитов 02.4
 
-_(заполняется после push)_
+| Repo | Tip |
+|------|-----|
+| remcard-partner-platform (F) | `647b556c076351f4ab8b5181a33cfc8eec5ba20a` |
+| remcard-navigator (B) | `9f61abe4ad5614c22c9ad1c2f5e63774830c56b6` |
