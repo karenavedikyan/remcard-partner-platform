@@ -193,6 +193,13 @@
   font-size: 0.9375rem;
 }
 
+.afterSelectionNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .hint {
   margin: 0;
   font-size: 0.875rem;

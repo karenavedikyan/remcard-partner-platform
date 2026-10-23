@@ -165,6 +165,11 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
       ? "Для публикации обязательны хотя бы одна категория работ или услуг и хотя бы один этап ремонта. Незавершённую карточку можно сохранить как черновик."
       : "Для публикации обязательны хотя бы одна категория товаров или услуг и хотя бы один этап ремонта. Незавершённую карточку можно сохранить как черновик.";
 
+  const catalogDirectionsLead =
+    partnerType === "COMPANY"
+      ? "Выберите работы и услуги, которые выполняете. Можно отметить несколько."
+      : "Выберите товары и услуги, которые предлагаете. Можно указать одно направление или оба.";
+
   async function saveDraft(event?: FormEvent) {
     event?.preventDefault();
     const committed = publicPhoneRef.current?.commitPending();
@@ -260,7 +265,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
           </div>
           <StatusBadge label={publicationLabel} tone={catalogStatusTone(catalogStatus)} />
         </header>
-        <p className={catalogStyles.introLead}>
+        <p className={`${catalogStyles.introLead} ${surfaceStyles.businessIntroLead}`}>
           Уже сохранённые данные подставляем из профиля: проверьте их и при необходимости измените.
           Черновик не публикуется, отправка на проверку будет только в конце.
         </p>
@@ -281,7 +286,9 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         ))}
       </nav>
       <section className={catalogStyles.card} data-testid="catalog-step-card">
-        <h2 className={catalogStyles.title}>{STEP_PANEL_TITLES[step]}</h2>
+        <h2 className={`${catalogStyles.title} ${surfaceStyles.businessStepPanelTitle}`}>
+          {STEP_PANEL_TITLES[step]}
+        </h2>
         {error ? <p className={catalogStyles.bannerError}>{error}</p> : null}
         {success ? <p className={catalogStyles.bannerSuccess}>{success}</p> : null}
 
@@ -293,6 +300,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 Публичное название организации{" "}
                 <span className={catalogStyles.required}>*</span>
               </label>
+              <span className={surfaceStyles.businessPublicNameStatus}>Для отправки на проверку</span>
               <input
                 id="oc-public-name"
                 data-testid="catalog-public-name"
@@ -304,7 +312,9 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                   onOrganizationNameChange(e.target.value);
                 }}
               />
-              <small className={catalogStyles.fieldHint}>
+              <small
+                className={`${catalogStyles.fieldHint} ${surfaceStyles.businessFieldHintBlock}`}
+              >
                 Привычное название магазина или компании.
               </small>
             </div>
@@ -361,6 +371,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               catalogMode
               businessTabbedPick
               catalogGroupedDetails
+              leadText={catalogDirectionsLead}
               copyFromWorkingProfileAvailable={
                 workingProductIds.length > 0 ||
                 workingServiceIds.length > 0 ||

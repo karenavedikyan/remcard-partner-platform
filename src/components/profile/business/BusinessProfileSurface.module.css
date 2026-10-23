@@ -6,7 +6,7 @@
   align-content: start;
 }
 
-.businessScope :global(.pw) {
+.businessPwRoot {
   max-width: none;
   width: 100%;
   margin: 0;
@@ -23,25 +23,60 @@
   margin: 0;
 }
 
-.businessCatalogRoot .introLead,
-.businessCatalogRoot .intro {
+.businessIntroLead {
   max-width: none;
 }
 
-.businessCatalogRoot .card .title {
-  font-size: clamp(1.35rem, 1.15rem + 0.5vw, 1.625rem);
+.businessStepPanelTitle {
+  margin: 0.25rem 0 0;
+  font-size: 20px;
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-.businessCatalogRoot .fieldHint {
+.businessFieldHintBlock {
   display: block;
   margin-top: 0.35rem;
 }
 
-.businessDirectionsNote {
-  margin: 0 0 var(--pw-4);
-  font-size: var(--pw-sm);
-  line-height: 1.5;
-  color: var(--pw-muted);
+.businessPublicNameStatus {
+  display: block;
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cw-muted, #656970);
+}
+
+.businessBranchRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.businessBranchRowLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.businessBranchRowSelect {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--cw-line, #dce0e3);
+  border-radius: 8px;
+  background: var(--cw-bg, #fff);
+  color: var(--cw-text, #282b30);
+  font: inherit;
+}
+
+@media (max-width: 800px) {
+  .businessBranchRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
 }

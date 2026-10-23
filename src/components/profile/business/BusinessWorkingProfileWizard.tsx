@@ -272,7 +272,10 @@ export function BusinessWorkingProfileWizard({
     const orgTitle = savedSnapshot.organizationName.trim() || "—";
     const publicId = profileRef.current.user.publicId?.trim() || "";
     return (
-      <div className={styles.pw} data-testid="business-profile-completed-summary">
+      <div
+        className={`${styles.pw} ${surfaceStyles.businessPwRoot}`}
+        data-testid="business-profile-completed-summary"
+      >
         <section className={styles.summary}>
           <div className={styles.summaryHeader}>
             <div className={styles.avatar} aria-hidden>
@@ -333,7 +336,9 @@ export function BusinessWorkingProfileWizard({
   return (
     <div
       className={
-        patternStep ? `${styles.pw} ${stepStyles.patternWizardRoot}` : styles.pw
+        patternStep
+          ? `${styles.pw} ${surfaceStyles.businessPwRoot} ${stepStyles.patternWizardRoot}`
+          : `${styles.pw} ${surfaceStyles.businessPwRoot}`
       }
       data-testid="business-profile-wizard"
     >
@@ -478,11 +483,11 @@ export function BusinessWorkingProfileWizard({
                 data-testid="business-profile-directions-panel"
               >
                 <p className={stepStyles.specializationLead}>{copy.directionsLead}</p>
-                <p className={surfaceStyles.businessDirectionsNote}>{copy.directionsNavigatorNote}</p>
                 <ProfileDirectionsPicker
                   tileLayout
                   businessTabbedPick
                   omitLead
+                  afterSelectionNote={copy.directionsNavigatorNote}
                   collapseAdvancedDirections
                   presentationVariant="default"
                   productCategoryIds={draft.productCategoryIds}

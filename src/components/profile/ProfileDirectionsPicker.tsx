@@ -36,6 +36,10 @@ type ProfileDirectionsPickerProps = {
   omitLead?: boolean;
   /** Store/company wizard: tabbed «Товары» / «Работы и услуги» instead of simultaneous groups. */
   businessTabbedPick?: boolean;
+  /** Overrides default lead copy (catalog / business role-specific). */
+  leadText?: string;
+  /** Business working profile: navigator note after «Уже выбрано», before tabs. */
+  afterSelectionNote?: string;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -91,6 +95,8 @@ export function ProfileDirectionsPicker({
   presentationVariant = "default",
   omitLead = false,
   businessTabbedPick = false,
+  leadText,
+  afterSelectionNote,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -258,11 +264,12 @@ export function ProfileDirectionsPicker({
     >
       {!omitLead ? (
         <p className={styles.lead}>
-          {catalogGroupedDetails
-            ? "Выберите работы и услуги, которые выполняете. Можно отметить несколько специализаций."
-            : specialistMode
-              ? "Выберите работы, которые выполняете. Можно несколько."
-              : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба."}
+          {leadText ??
+            (catalogGroupedDetails
+              ? "Выберите работы и услуги, которые выполняете. Можно отметить несколько специализаций."
+              : specialistMode
+                ? "Выберите работы, которые выполняете. Можно несколько."
+                : "Выберите товары, которые продаёте, и работы или услуги, которые выполняете. Можно указать одно направление или оба.")}
         </p>
       ) : null}
 
@@ -331,6 +338,9 @@ export function ProfileDirectionsPicker({
               Отмеченные варианты показаны первыми в списке. Нажмите ×, чтобы убрать лишнее, или
               добавьте другие ниже.
             </small>
+          ) : null}
+          {afterSelectionNote ? (
+            <p className={styles.afterSelectionNote}>{afterSelectionNote}</p>
           ) : null}
         </section>
       ) : selectedChips.length === 0 ? (

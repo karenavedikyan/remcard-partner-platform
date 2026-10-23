@@ -5,6 +5,7 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { formatStaffBranchLine } from "@/lib/profile-staff-cabinet";
 import type { ProProfileResponse } from "@/lib/types";
 import catalogStyles from "../specialist/SpecialistCatalogWizard.module.css";
+import surfaceStyles from "./BusinessProfileSurface.module.css";
 
 type OrgBranchRow = {
   id: string;
@@ -124,11 +125,16 @@ export function OrganizationCatalogPublicBranchSelector({
     }
   }
 
+  const selectId = "catalog-public-branch-select-input";
+
   return (
-    <label className={catalogStyles.publicBranchField} data-testid="catalog-public-branch-field">
-      <span className={catalogStyles.publicBranchLabel}>Текущий рабочий филиал</span>
+    <div className={surfaceStyles.businessBranchRow} data-testid="catalog-public-branch-field">
+      <label className={surfaceStyles.businessBranchRowLabel} htmlFor={selectId}>
+        Текущий рабочий филиал
+      </label>
       <select
-        className={catalogStyles.publicBranchSelect}
+        id={selectId}
+        className={surfaceStyles.businessBranchRowSelect}
         data-testid="catalog-public-branch-select"
         disabled={disabled || saving}
         value={selectValue}
@@ -141,6 +147,6 @@ export function OrganizationCatalogPublicBranchSelector({
         ))}
       </select>
       {error ? <span className={catalogStyles.bannerError}>{error}</span> : null}
-    </label>
+    </div>
   );
 }
