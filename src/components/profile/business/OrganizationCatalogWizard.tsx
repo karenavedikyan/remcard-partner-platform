@@ -25,12 +25,13 @@ import { ProfileDirectionsPicker } from "../ProfileDirectionsPicker";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "../agent/AgentPhoneField";
 import type { CatalogPrefillField, CatalogTouchedMap } from "@/lib/specialist-r06/catalog-prefill";
 import { markCatalogFieldTouched } from "@/lib/specialist-r06/catalog-prefill";
+import { OrganizationCatalogPublicBranchSelector } from "./OrganizationCatalogPublicBranchSelector";
 import editorStyles from "../ProfileEditor.module.css";
 import catalogStyles from "../specialist/SpecialistCatalogWizard.module.css";
 
 const STEPS = ["Карточка", "Направления", "Контакты", "Оформление", "Предпросмотр"] as const;
 const STEP_PANEL_TITLES = [
-  "Карточка организации",
+  "Карточка партнёра",
   "Направления в каталоге",
   "Публичные контакты",
   "Фото и описание",
@@ -71,6 +72,9 @@ export type OrganizationCatalogWizardProps = {
   onPullWorkingDirections: () => void;
   workingProductIds: string[];
   workingServiceIds: string[];
+  workingStageIds: string[];
+  catalogStageIds: string[];
+  onCatalogStageIdsChange: (ids: string[]) => void;
   onRevertLocalEdits?: () => void;
 };
 
@@ -114,6 +118,9 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
     onPullWorkingDirections,
     workingProductIds,
     workingServiceIds,
+    workingStageIds,
+    catalogStageIds,
+    onCatalogStageIdsChange,
   } = props;
 
   const router = useRouter();
@@ -141,9 +148,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         : "Отправить на проверку";
 
   const orgRoleHint =
-    partnerType === "STORE"
-      ? "Название магазина и город видят клиенты в каталоге."
-      : "Название компании и город видят клиенты в каталоге.";
+    "Укажите публичное название организации для карточки в каталоге. Город и адрес берутся из выбранного филиала.";
 
   async function saveDraft(event?: FormEvent) {
     event?.preventDefault();
@@ -200,18 +205,22 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
   const stepMissing = (idx: number): string | null => {
     if (idx === 0) {
       if (!organizationName.trim()) return "Публичное название организации";
-      if (!catalogCity.trim() && !draft.city.trim()) return "Город";
       if (needsBranchFields && branchAddress.trim().length < 3) return "Адрес первого филиала";
+      if (needsBranchFields && !catalogCity.trim() && !draft.city.trim()) return "Город";
     }
     if (idx === 1) {
       if (storeCategories.length === 0 && specializations.length === 0) {
         return "Товары и/или услуги";
+      }
+      if (catalogStageIds.length === 0) {
+        return "Хотя бы один этап ремонта";
       }
     }
     return null;
   };
 
   const branchCount = profile.organization?.branchCount ?? 0;
+  const hasBranches = branchCount > 0;
 
   return (
     <div
@@ -220,6 +229,13 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
       data-catalog-step={step}
       data-catalog-status={catalogStatus}
     >
+      {hasBranches ? (
+        <OrganizationCatalogPublicBranchSelector
+          profile={profile}
+          disabled={!catalogEditable}
+          onProfileUpdated={onProfileUpdated}
+        />
+      ) : null}
       <section className={catalogStyles.introCard} data-testid="catalog-intro-card">
         <header className={catalogStyles.heading}>
           <div>
@@ -260,6 +276,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               <label htmlFor="oc-public-name">
                 Публичное название организации{" "}
                 <span className={catalogStyles.required}>*</span>
+                <span className={catalogStyles.fieldHintInline}> · Для отправки на проверку</span>
               </label>
               <input
                 id="oc-public-name"
@@ -273,33 +290,39 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 }}
               />
               <small className={catalogStyles.fieldHint}>
-                Обязательно для отправки на проверку. Отдельно от имени представителя в кабинете.
+                Привычное название магазина или компании.
               </small>
             </div>
-            <div className={catalogStyles.field}>
-              <label htmlFor="oc-city">
-                Город <span className={catalogStyles.required}>*</span>
-              </label>
-              <input
-                id="oc-city"
-                value={catalogCity}
-                disabled={!catalogEditable}
-                onChange={(e) => {
-                  touchField(props, "catalogCity");
-                  onCatalogCityChange(e.target.value);
-                }}
-              />
-              <small className={catalogStyles.fieldHint}>
-                {branchCount > 0
-                  ? "Публичный город карточки сохраняется на основном филиале организации (не в рабочем профиле)."
-                  : "Город первого филиала; адрес укажите ниже, если филиалов ещё нет."}
-              </small>
-            </div>
-            {branchCount > 0 ? (
-              <p className={catalogStyles.notice}>
-                Филиалов в организации: {branchCount}. Адреса остальных филиалов — в разделе
-                «Филиалы».
-              </p>
+            {!hasBranches ? (
+              <div className={catalogStyles.field}>
+                <label htmlFor="oc-city">
+                  Город <span className={catalogStyles.required}>*</span>
+                </label>
+                <input
+                  id="oc-city"
+                  data-testid="catalog-city-input"
+                  value={catalogCity}
+                  disabled={!catalogEditable}
+                  onChange={(e) => {
+                    touchField(props, "catalogCity");
+                    onCatalogCityChange(e.target.value);
+                  }}
+                />
+                <small className={catalogStyles.fieldHint}>
+                  Город первого филиала; адрес укажите ниже, пока филиалов ещё нет.
+                </small>
+              </div>
+            ) : null}
+            {hasBranches ? (
+              <details className={catalogStyles.branchAccordion} data-testid="catalog-branches-accordion">
+                <summary className={catalogStyles.branchAccordionSummary}>
+                  Филиалы уже добавлены ({branchCount})
+                </summary>
+                <p className={catalogStyles.fieldHint}>
+                  Адреса и контакты филиалов редактируются в разделе «Филиалы». Для каталога
+                  используется город выбранного рабочего филиала.
+                </p>
+              </details>
             ) : null}
             {needsBranchFields ? (
               <TextField
@@ -318,24 +341,27 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
         {step === 1 ? (
           <div id="catalog-products">
             <p className={catalogStyles.notice}>
-              Для публикации нужны товары и/или услуги организации. Незавершённую карточку можно
-              сохранить как черновик.
+              Для публикации обязательны хотя бы одна категория товаров или услуг и хотя бы один
+              этап ремонта. Незавершённую карточку можно сохранить как черновик.
             </p>
             <ProfileDirectionsPicker
               disabled={!catalogEditable}
               catalogMode
               businessTabbedPick
               copyFromWorkingProfileAvailable={
-                workingProductIds.length > 0 || workingServiceIds.length > 0
+                workingProductIds.length > 0 ||
+                workingServiceIds.length > 0 ||
+                workingStageIds.length > 0
               }
               onCopyFromWorkingProfile={() => {
                 onPullWorkingDirections();
                 touchField(props, "specializations");
                 touchField(props, "storeCategories");
+                touchField(props, "navigatorStageIds");
               }}
               productCategoryIds={storeCategories}
               serviceSpecializationIds={specializations}
-              navigatorStageIds={[]}
+              navigatorStageIds={catalogStageIds}
               primaryDirection={null}
               onChangeProducts={(ids) => {
                 touchField(props, "storeCategories");
@@ -345,7 +371,10 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 touchField(props, "specializations");
                 onSpecializationsChange(ids);
               }}
-              onChangeStages={() => {}}
+              onChangeStages={(ids) => {
+                touchField(props, "navigatorStageIds");
+                onCatalogStageIdsChange(ids);
+              }}
               onChangePrimary={() => {}}
             />
           </div>

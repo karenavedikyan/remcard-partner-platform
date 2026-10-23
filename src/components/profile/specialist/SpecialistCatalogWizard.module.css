@@ -56,6 +56,55 @@
   max-width: 52rem;
 }
 
+.publicBranchField {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.publicBranchLabel {
+  font-size: var(--cw-sm);
+  font-weight: 600;
+  color: var(--cw-text);
+}
+
+.publicBranchSelect {
+  max-width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--cw-line);
+  border-radius: 8px;
+  background: var(--cw-bg);
+  color: var(--cw-text);
+  font: inherit;
+}
+
+.branchAccordion {
+  border: 1px solid var(--cw-line);
+  border-radius: 8px;
+  background: var(--cw-soft);
+  padding: 0.35rem 0.75rem;
+}
+
+.branchAccordionSummary {
+  cursor: pointer;
+  font-size: var(--cw-sm);
+  font-weight: 600;
+  color: var(--cw-text);
+  padding: 0.35rem 0;
+}
+
+.branchAccordionBody {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+  font-size: var(--cw-sm);
+  color: var(--cw-muted);
+}
+
+.branchAccordionBody li {
+  padding: 0.2rem 0;
+}
+
 .heading {
   display: flex;
   flex-wrap: wrap;
@@ -311,6 +360,12 @@
   margin-top: var(--cw-2);
   font-size: var(--cw-xs);
   line-height: 1.45;
+  color: var(--cw-muted);
+}
+
+.fieldHintInline {
+  font-size: var(--cw-xs);
+  font-weight: 500;
   color: var(--cw-muted);
 }
 

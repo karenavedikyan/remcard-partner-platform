@@ -57,6 +57,14 @@ export function catalogMissingForSubmit(
         fieldId: "catalog-products",
       });
     }
+    const stageIds = draft.catalogNavigatorStageIds ?? draft.navigatorStageIds ?? [];
+    if (stageIds.length === 0) {
+      missing.push({
+        id: "stages",
+        label: "Этапы ремонта",
+        fieldId: "catalog-products",
+      });
+    }
     return missing;
   }
 

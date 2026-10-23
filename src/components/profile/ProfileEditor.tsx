@@ -26,6 +26,7 @@ import {
   isCatalogDraftDirty,
 } from "@/lib/profile-catalog-draft-sync";
 import { catalogNavigatorStageIdsFromUser } from "@/lib/profile-catalog-stages-hydration";
+import { orgCatalogNavigatorStageIdsFromProfile } from "@/lib/profile-org-catalog-stages-hydration";
 import { catalogTouchedFromProfile } from "@/lib/profile-catalog-touched";
 import {
   persistWorkingProfileDraft,
@@ -249,6 +250,9 @@ function ProfileEditorInner({
   const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() =>
     catalogNavigatorStageIdsFromUser(initial.user),
   );
+  const [orgCatalogNavigatorStageIds, setOrgCatalogNavigatorStageIds] = useState<string[]>(() =>
+    orgCatalogNavigatorStageIdsFromProfile(initial),
+  );
   const [catalogTouched, setCatalogTouched] = useState<CatalogTouchedMap>(() =>
     parseCatalogTouched(catalogTouchedFromProfile(initial)),
   );
@@ -422,13 +426,14 @@ function ProfileEditorInner({
   ]);
 
   const buildCatalogDraft = useCallback((): ProfileDraft => {
+    const stages = catalogOnOrg ? orgCatalogNavigatorStageIds : catalogNavigatorStageIds;
     return {
       ...buildDraft(),
-      catalogNavigatorStageIds,
-      navigatorStageIds: catalogNavigatorStageIds,
+      catalogNavigatorStageIds: stages,
+      navigatorStageIds: stages,
       catalogTouched,
     };
-  }, [buildDraft, catalogNavigatorStageIds, catalogTouched]);
+  }, [buildDraft, catalogNavigatorStageIds, catalogOnOrg, catalogTouched, orgCatalogNavigatorStageIds]);
 
   const savedSnapshotRef = useRef(profileDraftFromProfile(initial));
   const savedCatalogSnapshotRef = useRef(catalogDraftFromProfile(initial));
@@ -448,6 +453,9 @@ function ProfileEditorInner({
     setShowFullName(snap.showFullName);
     setCatalogImageUrl(snap.catalogImageUrl);
     setCatalogNavigatorStageIds(snap.navigatorStageIds ?? []);
+    setOrgCatalogNavigatorStageIds(
+      snap.catalogNavigatorStageIds ?? snap.navigatorStageIds ?? [],
+    );
     setCatalogTouched({});
   }, []);
 
@@ -487,6 +495,7 @@ function ProfileEditorInner({
     setPartnershipContactEmail(w?.partnershipContactEmail ?? "");
     setPartnerActivities(u.partnerActivities ?? catalogForm.partnerActivities ?? []);
     setCatalogNavigatorStageIds(catalogNavigatorStageIdsFromUser(u));
+    setOrgCatalogNavigatorStageIds(orgCatalogNavigatorStageIdsFromProfile(next));
     setCatalogTouched(parseCatalogTouched(catalogTouchedFromProfile(next)));
   }, []);
 
@@ -703,20 +712,21 @@ function ProfileEditorInner({
 
   const workingMissing = workingProfileMissingFields(buildDraft());
   const workingComplete = workingProfileCabinetReady(buildDraft());
+  const businessOrgCatalogUi = Boolean(businessProfileWizardUi && businessPartnerType);
 
   const showAside =
     activeSection !== "overview" &&
     activeSection !== "team" &&
     !(pureAgentCompactUi && activeSection === "basics") &&
     !(specialistR06Ui && (activeSection === "basics" || activeSection === "catalog")) &&
-    !(businessProfileWizardUi && activeSection === "basics");
+    !(businessProfileWizardUi && activeSection === "basics") &&
+    !(businessOrgCatalogUi && activeSection === "catalog");
 
   const showBusinessProfileSurface = Boolean(
     businessProfileWizardUi &&
       businessPartnerType &&
       (activeSection === "overview" || activeSection === "basics"),
   );
-  const businessOrgCatalogUi = Boolean(businessProfileWizardUi && businessPartnerType);
 
   return (
     <div
@@ -774,7 +784,10 @@ function ProfileEditorInner({
         className={`${styles.grid} ${showAside ? "" : styles.gridSingle}`}
       >
       <div className={styles.main}>
-        {!pureAgentCompactUi ? <ProfileBranchContextSwitcher /> : null}
+        {!pureAgentCompactUi &&
+        !(businessOrgCatalogUi && activeSection === "catalog") ? (
+          <ProfileBranchContextSwitcher />
+        ) : null}
         {showBusinessProfileSurface ? (
           <BusinessProfileSection
             profile={profile}
@@ -1185,13 +1198,21 @@ function ProfileEditorInner({
             }}
             workingProductIds={productCategoryIds}
             workingServiceIds={serviceSpecializationIds}
+            catalogStageIds={orgCatalogNavigatorStageIds}
+            onCatalogStageIdsChange={(ids) => {
+              setOrgCatalogNavigatorStageIds(ids);
+              touchCatalogField("navigatorStageIds");
+            }}
+            workingStageIds={navigatorStageIds}
             onPullWorkingDirections={() => {
               setStoreCategories([...productCategoryIds]);
               setSpecializations([...serviceSpecializationIds]);
+              setOrgCatalogNavigatorStageIds([...navigatorStageIds]);
               setCatalogTouched((t) => ({
                 ...t,
                 storeCategories: true,
                 specializations: true,
+                navigatorStageIds: true,
               }));
             }}
             onRevertLocalEdits={revertCatalogLocalEdits}

@@ -280,6 +280,39 @@ describe("persistCatalogDraftOnly organization catalog city", () => {
     expect(refreshed.organization?.publicCatalogCity).toBe("Сочи");
   });
 
+  it("persists navigatorStageIds on org PATCH without branch city write", async () => {
+    const orgPatches: unknown[] = [];
+    const branchPatches: unknown[] = [];
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        orgPatches.push(init.body);
+        return { organization: { id: "org-st" } };
+      }
+      if (typeof path === "string" && path.includes("/branches/") && init?.method === "PATCH") {
+        branchPatches.push(init.body);
+        return { ok: true };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return storeOrgProfile({ branchCount: 1 });
+      }
+      throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
+    });
+
+    const profile = storeOrgProfile({ branchCount: 1 });
+    const draft = {
+      ...profileDraftFromProfile(profile),
+      catalogNavigatorStageIds: ["L1-7"],
+      navigatorStageIds: ["L1-7"],
+      catalogTouched: { navigatorStageIds: true },
+    };
+
+    await persistCatalogDraftOnly(profile, draft);
+    expect(branchPatches).toEqual([]);
+    expect(orgPatches.some((p) => (p as { navigatorStageIds?: string[] }).navigatorStageIds)).toBe(
+      true,
+    );
+  });
+
   it("branch PENDING: city PATCH surfaces API error (no silent fallback)", async () => {
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/pro/organization" && init?.method === "PATCH") {

@@ -2,6 +2,7 @@ import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { catalogEntityForProfile } from "@/lib/profile-catalog-state";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
+import { orgCatalogNavigatorStageIdsFromProfile } from "@/lib/profile-org-catalog-stages-hydration";
 
 const CATALOG_KEYS: (keyof ProfileDraft)[] = [
   "description",
@@ -43,7 +44,10 @@ function normalizeCatalog(d: ProfileDraft): ProfileDraft {
 }
 
 export function catalogDraftFromProfile(profile: ProProfileResponse): ProfileDraft {
-  return profileDraftFromProfile(profile);
+  const draft = profileDraftFromProfile(profile);
+  if (catalogEntityForProfile(profile) !== "organization") return draft;
+  const stages = orgCatalogNavigatorStageIdsFromProfile(profile);
+  return { ...draft, catalogNavigatorStageIds: stages, navigatorStageIds: stages };
 }
 
 export function isCatalogDraftDirty(saved: ProfileDraft, current: ProfileDraft): boolean {

@@ -132,6 +132,8 @@ export type ProProfileResponse = {
     /** Primary branch for public catalog geography (GET /api/pro/profile). */
     publicCatalogBranchId?: string | null;
     publicCatalogCity?: string | null;
+    /** Org catalog renovation stages (catalogDraft JSON overlay on GET). */
+    publicNavigatorStageIds?: string[];
   } | null;
   user: ProProfileUser;
   programs: Array<{ code: string; enabled: boolean }>;

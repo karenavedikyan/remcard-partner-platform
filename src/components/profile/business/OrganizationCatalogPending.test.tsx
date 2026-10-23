@@ -101,6 +101,9 @@ describe("OrganizationCatalogSection pending preview", () => {
         onPublicPhoneChange={() => {}}
         workingProductIds={[]}
         workingServiceIds={[]}
+        workingStageIds={[]}
+        catalogStageIds={[]}
+        onCatalogStageIdsChange={() => {}}
         onPullWorkingDirections={() => {}}
       />,
     );

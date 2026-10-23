@@ -174,6 +174,7 @@ export async function persistCatalogDraftOnly(
     const catalogCityValue = (draft.catalogCity ?? "").trim();
     const priorPublicCity = (profile.organization?.publicCatalogCity ?? "").trim();
 
+    const stageIds = draft.catalogNavigatorStageIds ?? draft.navigatorStageIds;
     const orgPatchBody: Record<string, unknown> = {
       name: draft.organizationName.trim() || undefined,
       description: draft.description.trim() || null,
@@ -186,7 +187,10 @@ export async function persistCatalogDraftOnly(
       publicPhone: draft.publicPhone.trim() || null,
       catalogTouched: draft.catalogTouched ?? undefined,
     };
-    if (catalogCityTouched && publicBranchId) {
+    if (stageIds !== undefined) {
+      orgPatchBody.navigatorStageIds = stageIds;
+    }
+    if (publicBranchId) {
       orgPatchBody.publicCatalogBranchId = publicBranchId;
     }
 
