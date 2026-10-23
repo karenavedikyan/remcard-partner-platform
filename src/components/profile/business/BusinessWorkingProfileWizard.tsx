@@ -642,15 +642,6 @@ export function BusinessWorkingProfileWizard({
                     </small>
                   </span>
                 </label>
-                {profileRef.current.workingProfile?.partnerSearchVisible != null ? (
-                  <p className={surfaceStyles.businessPartnerVisibilityHint}>
-                    Сейчас на сервере:{" "}
-                    {profileRef.current.workingProfile.partnerSearchVisible
-                      ? "виден партнёрам"
-                      : "скрыт из поиска партнёров"}
-                    .
-                  </p>
-                ) : null}
                 <p className={stepStyles.reviewFootnote}>
                   Рабочий профиль и публикация в каталоге независимы. Сохранение не отправляет на
                   модерацию.

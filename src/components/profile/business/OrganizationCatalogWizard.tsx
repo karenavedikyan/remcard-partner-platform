@@ -257,8 +257,11 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
           fixtureBranches={props.fixtureOrganizationBranches ?? undefined}
         />
       ) : null}
-      <section className={catalogStyles.introCard} data-testid="catalog-intro-card">
-        <header className={catalogStyles.heading}>
+      <section
+        className={`${catalogStyles.introCard} ${surfaceStyles.businessCatalogIntroCard}`}
+        data-testid="catalog-intro-card"
+      >
+        <header className={`${catalogStyles.heading} ${surfaceStyles.businessCatalogIntroHeading}`}>
           <div>
             <span className={catalogStyles.kicker}>Публичная страница</span>
             <h2 className={`${catalogStyles.title} ${surfaceStyles.businessIntroTitle}`}>

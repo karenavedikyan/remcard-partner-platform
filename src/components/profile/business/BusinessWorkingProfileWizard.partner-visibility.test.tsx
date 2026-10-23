@@ -145,6 +145,86 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[1][1].partnerSearchOptIn).toBe(true);
   });
 
+  it("serializes explicit opt-out as false when user unchecks", async () => {
+    const user = userEvent.setup();
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={storeProfile({ partnerSearchOptInExplicit: true, partnerSearchOptIn: true })}
+        partnerType="STORE"
+        basicsEditable
+        forceEditing
+        forceStep={3}
+      />,
+    );
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    await waitFor(() => expect(persist).toHaveBeenCalled());
+    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: true });
+    expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(false);
+  });
+
+  it("does not mark partner search touched on save when legacy visible was never explicit", async () => {
+    const user = userEvent.setup();
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={storeProfile({
+          partnerSearchVisible: true,
+          partnerSearchOptIn: false,
+          partnerSearchOptInExplicit: false,
+        })}
+        partnerType="STORE"
+        basicsEditable
+        forceEditing
+        forceStep={3}
+      />,
+    );
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    await waitFor(() => expect(persist).toHaveBeenCalled());
+    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+  });
+
+  it("resets partner toggle after identity change while editing", async () => {
+    const user = userEvent.setup();
+    const first = storeProfile({
+      partnerSearchOptInExplicit: true,
+      partnerSearchOptIn: false,
+    });
+    const second = {
+      ...storeProfile({
+        partnerSearchOptInExplicit: true,
+        partnerSearchOptIn: true,
+      }),
+      user: { ...storeProfile({}).user, id: "u2", displayName: "Другой" },
+    };
+
+    const { rerender } = render(
+      <BusinessWorkingProfileWizard initialProfile={first} partnerType="STORE" basicsEditable />,
+    );
+    await user.click(screen.getByRole("button", { name: /Редактировать профиль/i }));
+    await user.click(screen.getByRole("button", { name: "Продолжить →" }));
+    await user.click(screen.getByRole("button", { name: "Пропустить" }));
+    await user.click(screen.getByRole("button", { name: "Пропустить" }));
+    await screen.findByTestId("business-partner-search-opt-in");
+    await user.click(screen.getByRole("checkbox"));
+    expect(screen.getByRole("checkbox")).toBeChecked();
+
+    rerender(
+      <BusinessWorkingProfileWizard initialProfile={second} partnerType="STORE" basicsEditable />,
+    );
+    expect(await screen.findByText(/Другой/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Редактировать профиль/i }));
+    await user.click(screen.getByRole("button", { name: "Продолжить →" }));
+    await user.click(screen.getByRole("button", { name: "Пропустить" }));
+    await user.click(screen.getByRole("button", { name: "Пропустить" }));
+    await screen.findByTestId("business-partner-search-opt-in");
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    persist.mockReset();
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    await waitFor(() => expect(persist).toHaveBeenCalled());
+    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+  });
+
   it("disables toggle when basics are readonly", async () => {
     render(
       <BusinessWorkingProfileWizard
