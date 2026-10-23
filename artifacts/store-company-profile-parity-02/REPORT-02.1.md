@@ -39,7 +39,8 @@ Home turn88 **not** included: F `a8a39e0…` / B `e5f8275…`.
 
 - Frontend: `profile-save.org-catalog-city`, `OrganizationCatalogPending`, ProfileEditor (4 parity cases), `npm run build` OK
 - Navigator: org geography + organization/invites GET route tests (6 tests) via main-repo vitest
-- **Full frontend suite / visual 1440×375**: not re-baselined in this turn — see blockers below
+- Full frontend suite @ `3b3a983`: **473 passed / 9 failed** (129 files) — **3 turn89 regressions fixed** vs 12 failed @ `bdc298e`; remaining 9 match legacy baseline on `1abf5bd`
+- **Visual 1440×375**: not captured this turn — see blockers below
 
 ## Baseline note (9 legacy failures)
 
