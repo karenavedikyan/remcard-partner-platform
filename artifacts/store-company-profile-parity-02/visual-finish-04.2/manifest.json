@@ -1,0 +1,1225 @@
+{
+  "task": "STORE-COMPANY-PROFILE-VISUAL-FINISH-04.2",
+  "status": "partial",
+  "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+  "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+  "implRenderHistoricalBaseSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+  "branchBSha": "cadb77e5d1834a6c45f778e49e9f23469eb62b46",
+  "prototypeRefCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "priorDrop": "visual-finish-04.1",
+  "counts": {
+    "jobsAttempted": 23,
+    "jobsOk": 23,
+    "jobsFailed": 0,
+    "refImplPairs": 21,
+    "implOnly": 2,
+    "implOnlyIds": [
+      "store-catalog-pending",
+      "store-catalog-no-org"
+    ],
+    "skippedRef": 2
+  },
+  "notes": [
+    "04.2 adds working/catalog steps and mobile catalog; does not re-run 04.1 summary-only matrix.",
+    "Pending/no-org: impl-only — no equivalent ref scenario in business prototype entry.",
+    "Fixture phone/email/directions may differ from ref demo data; UI gates asserted per job."
+  ],
+  "summary": {
+    "ok": 23,
+    "fail": 0
+  },
+  "frames": [
+    {
+      "id": "store-catalog-branch-control",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-branch-control-375-light.png",
+      "sha256": "6770bea88259a6a279b3cb4213225fda8b9cc536d87301f8c511a0f9071f63d5",
+      "bytes": 47004,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "branchSelectBox": {
+        "rowWidth": 339,
+        "selectWidth": 339,
+        "selectHeight": 42
+      }
+    },
+    {
+      "id": "store-catalog-branch-control",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-branch-control-375-light.png",
+      "sha256": "1b007bec5efd1bb8ae6bc112532a6eda02077e165d19bf6a945d16e9e3863ce0",
+      "bytes": 54375,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-branch-control",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-branch-control-375-light.png",
+      "sha256": "1b48ce07fe7680ee4acb6e54420b9a1e67292982ab58ae7a15177aa4ffbd5f4d",
+      "bytes": 47725,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "branchSelectBox": {
+        "rowWidth": 339,
+        "selectWidth": 339,
+        "selectHeight": 42
+      }
+    },
+    {
+      "id": "company-catalog-branch-control",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-branch-control-375-light.png",
+      "sha256": "c43db81b3531453d46b6742856f7c7f8a6c2ec0c9f4b5ea8d8528da48fc8b83b",
+      "bytes": 54441,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-working-contacts",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics"
+      },
+      "file": "impl-store-working-contacts-1440-light.png",
+      "sha256": "ffaa180745a5d6add90e773ee2d30467330dbd63c4823bd1297120f5a6b8fbaa",
+      "bytes": 102618,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-working-contacts",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-working-contacts-1440-light.png",
+      "sha256": "034e309b9733a51e6f1774dcbc70d669825212567ffe7b86670f7ce5855efcb5",
+      "bytes": 111857,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-working-review",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=basics"
+      },
+      "file": "impl-store-working-review-1440-light.png",
+      "sha256": "3238fa65cd4c65a2c088278041546a3f88cdb99e0f4adb49f2964bdc7e270665",
+      "bytes": 107512,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-working-review",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-working-review-1440-light.png",
+      "sha256": "400a16bd688b141b8eabf1a2bd8e5004eb79018e2cd4e01d0fffbc8cdaa79780",
+      "bytes": 108772,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-working-contacts",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics"
+      },
+      "file": "impl-company-working-contacts-1440-light.png",
+      "sha256": "4f5cbe7176062d24e4a56b6715b86930f44b74b48f6519ba114ec1dba65533c8",
+      "bytes": 106096,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-working-contacts",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-working-contacts-1440-light.png",
+      "sha256": "5251c557599cc94b4228cd549471592a6689a9c0e3d79c80e7dc324956287da7",
+      "bytes": 117013,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-working-review",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=basics"
+      },
+      "file": "impl-company-working-review-1440-light.png",
+      "sha256": "00de5cb6c8757980f8039e9e881bdd4eb795dabc0c509f469d9d195649905549",
+      "bytes": 111127,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-working-review",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-working-review-1440-light.png",
+      "sha256": "73d3a8fd69ef156e9019d3d600e9bd8aab01eed1fdf56e383e310dd5683bec3d",
+      "bytes": 114402,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-contacts",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-contacts-1440-light.png",
+      "sha256": "f769603a851596dcfed981b15ba9b49cc93b12b6b61309219f52f0c92f10a58b",
+      "bytes": 96763,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-contacts",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-contacts-1440-light.png",
+      "sha256": "c1f0206e8b67234af5ff32a1b2359478d77e664172c84090ea9ded4bdce681d9",
+      "bytes": 106890,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-presentation",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-presentation-1440-light.png",
+      "sha256": "7fe8dbaeb58c4255b8045eeff73fc95880e4c94d8dd88e0b1665e1595a35ee38",
+      "bytes": 93221,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-presentation",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-presentation-1440-light.png",
+      "sha256": "4a566f2f064673b4ba1219c3a4c95f74a9e9ff15b6e4f231bfdb3e0d9b1a693e",
+      "bytes": 99801,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-preview",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-preview-1440-light.png",
+      "sha256": "607979539c4ac077f389615235991936a68d3bf485e3fdb50d1fe28db1489e22",
+      "bytes": 93531,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-preview",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-preview-1440-light.png",
+      "sha256": "ba3c809f727f7d739398cdac7f81dd65a9d45c6bc0c75a3989de167d6227e1bb",
+      "bytes": 96915,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-contacts",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-contacts-1440-light.png",
+      "sha256": "a2754dd62bed8ee1d105e0f42368347a40a527fda44e7da24573d0323a685279",
+      "bytes": 99798,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-catalog-contacts",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-contacts-1440-light.png",
+      "sha256": "a600cf278c82e7db5d155135c293293d537efcda0c71a22b643bb8eb50e76500",
+      "bytes": 109528,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-presentation",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-presentation-1440-light.png",
+      "sha256": "1bedbdf164d54b10fe94b6e7ff1d61cb12ebebdd060bd0789a7150cccd629aac",
+      "bytes": 96179,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-catalog-presentation",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-presentation-1440-light.png",
+      "sha256": "211412a9916609f01df7a84e2c68ae287d977140853cceff502b76a03465e7be",
+      "bytes": 102564,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-preview",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-preview-1440-light.png",
+      "sha256": "4826bafbee49c2cd686c95e5512c6f2bd38ac1ae15bc13a16e998cc84fc31b14",
+      "bytes": 97510,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-catalog-preview",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-preview-1440-light.png",
+      "sha256": "88100749571f41c6c6b4d7a56f5f9af7b29449d5664164c3d118c21a6b910eca",
+      "bytes": 99621,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-directions-375",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-directions-375-375-light.png",
+      "sha256": "2530327d07026f849e1c9ce090144acc2960d72e5015db648d1fce8f6ba6e01d",
+      "bytes": 47119,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-directions-375",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-directions-375-375-light.png",
+      "sha256": "63322844a37701cc82ce2e570b24948037fb8b87730e0c057b29b4e3fc486e06",
+      "bytes": 54196,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-contacts-375",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-contacts-375-375-light.png",
+      "sha256": "adb5dc58ecc6d0282145e678bb844e0bb7eaeb1a208ee6bf03d255731f551053",
+      "bytes": 46748,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-contacts-375",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-contacts-375-375-light.png",
+      "sha256": "6f5c1c5fee6cc0539b2bffa290d2e3cba2bc4ca4171823a56d06de161ead9f74",
+      "bytes": 54084,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-preview-375",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-preview-375-375-light.png",
+      "sha256": "52d62839cc4beafb05ff3c5054c46f9fc311ce7bffb6cf668a3ff11c147e1fac",
+      "bytes": 45993,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-preview-375",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-preview-375-375-light.png",
+      "sha256": "d74b7fd7a8da73a3c365a2a4fa33104ca884f4944ccc0dd9cca03a9e2dd865f0",
+      "bytes": 53278,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-directions-375-dark",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "dark"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-directions-375-dark-375-dark.png",
+      "sha256": "25884b36c343a485e38b03f45d5fa286500e694a2ea5f5139a893b13a61475e2",
+      "bytes": 46326,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-directions-375-dark",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "dark"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-directions-375-dark-375-dark.png",
+      "sha256": "63322844a37701cc82ce2e570b24948037fb8b87730e0c057b29b4e3fc486e06",
+      "bytes": 54196,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-directions-375",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-directions-375-375-light.png",
+      "sha256": "d7d73c46ea55bb1c0e92e42d1cd01255528bf3d28d6c71e82b854246f737f21a",
+      "bytes": 47842,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-catalog-directions-375",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-directions-375-375-light.png",
+      "sha256": "0296927a4962e997cbb8738e568eed8596186dd94aecaf79722bc1518b15d261",
+      "bytes": 54262,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-contacts-375",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-contacts-375-375-light.png",
+      "sha256": "bc19fa7f32b96bc0e36d8b5f7b6d7ffc1a80d3f648cb78486af52be63cb55d3a",
+      "bytes": 47481,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-catalog-contacts-375",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-contacts-375-375-light.png",
+      "sha256": "ec7c949ddf1af951068b471d733244567dea4d9885286605c1eecc65dc9f680b",
+      "bytes": 54149,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-preview-375-dark",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "dark"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog"
+      },
+      "file": "impl-company-catalog-preview-375-dark-375-dark.png",
+      "sha256": "47d90c9e6ae4bad6ddb6a62f6f7757b8c0e1e710c6bee9015fc0d4d071fbbb81",
+      "bytes": 45893,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "company-catalog-preview-375-dark",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "dark"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-preview-375-dark-375-dark.png",
+      "sha256": "df0b9d6467c268bfa26144ef386a6d44ad428a8b8aac32f5fde342ddd47179bc",
+      "bytes": 53269,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-longname-320",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog&orgName=%D0%9C%D0%B0%D0%B3%D0%B0%D0%B7%D0%B8%D0%BD+%C2%AB%D0%AE%D0%B3-%D0%94%D0%BB%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5-Naming-Fixture%C2%BB",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 320,
+        "innerHeight": 800,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog&orgName=%D0%9C%D0%B0%D0%B3%D0%B0%D0%B7%D0%B8%D0%BD+%C2%AB%D0%AE%D0%B3-%D0%94%D0%BB%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5-Naming-Fixture%C2%BB"
+      },
+      "file": "impl-store-catalog-longname-320-320-light.png",
+      "sha256": "d45616a313aac253f00fbe6cc02efdd1139253d4411ffb7debc9431f0305aceb",
+      "bytes": 42136,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "branchSelectBox": {
+        "rowWidth": 284,
+        "selectWidth": 284,
+        "selectHeight": 42
+      }
+    },
+    {
+      "id": "store-catalog-longname-320",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 320,
+        "innerHeight": 800,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-store-catalog-longname-320-320-light.png",
+      "sha256": "5d48566bee4ad7cb073a3cf4c2edc2134f6e08d748f87695b10d243110fa547c",
+      "bytes": 49094,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-longname-320",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog&orgName=%D0%A1%D1%82%D1%80%D0%BE%D0%B9%D0%9A%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D1%8F+%C2%AB%D0%AE%D0%B3-%D0%94%D0%BB%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5-Naming-Fixture%C2%BB",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 320,
+        "innerHeight": 800,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog&orgName=%D0%A1%D1%82%D1%80%D0%BE%D0%B9%D0%9A%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D1%8F+%C2%AB%D0%AE%D0%B3-%D0%94%D0%BB%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5-Naming-Fixture%C2%BB"
+      },
+      "file": "impl-company-catalog-longname-320-320-light.png",
+      "sha256": "365aee59d2212c5ece7b5c6fd86ed82fb2cdc672ee456fcdb159e7076fa06034",
+      "bytes": 42558,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "branchSelectBox": {
+        "rowWidth": 284,
+        "selectWidth": 284,
+        "selectHeight": 42
+      }
+    },
+    {
+      "id": "company-catalog-longname-320",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:36239/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:36239/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 320,
+        "innerHeight": 800,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:36239/roles.html"
+      },
+      "file": "ref-company-catalog-longname-320-320-light.png",
+      "sha256": "c970a9b5984d3c0ca7edd02d069f86a566dabc7d2619fdad995193b6ad3c20dd",
+      "bytes": 49162,
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "store-catalog-pending",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog&catalogStatus=PENDING",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog&catalogStatus=PENDING"
+      },
+      "file": "impl-store-catalog-pending-1440-light.png",
+      "sha256": "66bb7ccbbec5a0d4019fe6dc0e7ba4ff3f7e60c04c8d13c29fa4da7973d81785",
+      "bytes": 93890,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-pending",
+      "side": "ref",
+      "skipped": true,
+      "reason": "no ref pair for fixture state"
+    },
+    {
+      "id": "store-catalog-no-org",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&noOrg=1&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "devicePixelRatio": 1,
+        "scrollY": 0,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&noOrg=1&section=catalog"
+      },
+      "file": "impl-store-catalog-no-org-1440-light.png",
+      "sha256": "8023edea7b252d4ecc42c6db78ca35344a15b110f55045e25b7389a103f8c04c",
+      "bytes": 91811,
+      "implRenderSourceSha": "92705347b84b2e83ff009e2dd7a51aadcee9b388",
+      "captureCheckoutHead": "92705347b84b2e83ff009e2dd7a51aadcee9b388"
+    },
+    {
+      "id": "store-catalog-no-org",
+      "side": "ref",
+      "skipped": true,
+      "reason": "no ref pair for fixture state"
+    }
+  ]
+}
