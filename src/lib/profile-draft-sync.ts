@@ -40,7 +40,9 @@ export function profileDraftFromProfile(profile: ProProfileResponse): ProfileDra
   return {
     displayName: u.displayName ?? "",
     catalogPublicName: catalogOnOrg ? (org?.name ?? "") : catalogPublicNameFromGetUser(u),
-    catalogCity: catalogOnOrg ? "" : (u.catalogCity ?? u.city ?? ""),
+    catalogCity: catalogOnOrg
+      ? (org?.publicCatalogCity ?? "")
+      : (u.catalogCity ?? u.city ?? ""),
     showFullName: u.showFullName ?? false,
     catalogImageUrl: catalogOnOrg ? (org?.logoUrl ?? "") : (u.photoUrl ?? ""),
     city: u.city ?? "",

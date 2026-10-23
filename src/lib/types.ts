@@ -129,6 +129,9 @@ export type ProProfileResponse = {
     publicPhone?: string | null;
     partnerType: string | null;
     branchCount: number;
+    /** Primary branch for public catalog geography (GET /api/pro/profile). */
+    publicCatalogBranchId?: string | null;
+    publicCatalogCity?: string | null;
   } | null;
   user: ProProfileUser;
   programs: Array<{ code: string; enabled: boolean }>;

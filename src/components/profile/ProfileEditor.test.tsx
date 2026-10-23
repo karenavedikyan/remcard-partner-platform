@@ -84,6 +84,11 @@ vi.mock("@/lib/specialist-r06/api", () => ({
     }),
 }));
 
+vi.mock("@/lib/agent-profile/api", () => ({
+  fetchAgentProfileStatus: () =>
+    Promise.resolve({ featureEnabled: false, eligible: false, hasAgentActivity: false }),
+}));
+
 vi.mock("./ProfileDirectionsPicker", () => ({
   ProfileDirectionsPicker: ({
     serviceSpecializationIds,
@@ -471,44 +476,55 @@ describe("ProfileEditor", () => {
     expect(screen.getByRole("tab", { name: /Обзор/i })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("shows PENDING org status after catalog submit without resubmit button", async () => {
-    const draftProfile: ProProfileResponse = {
-      ...initial,
-      user: {
-        ...initial.user,
-        catalogStatus: "DRAFT",
-        partnerType: "STORE",
-        storeCategories: ["doors"],
-        specializations: [],
-      },
-      organization: {
-        id: "o1",
-        name: "Shop",
-        catalogStatus: "DRAFT",
-        partnerType: "STORE",
-        branchCount: 1,
-      },
-    };
-    vi.mocked(submitProfileForModerationReview).mockResolvedValue({
-      ...draftProfile,
-      organization: { ...draftProfile.organization!, catalogStatus: "PENDING" },
-    });
-
+  it("shows PENDING org five-step catalog pending view without resubmit button", () => {
     mockSearchParams = new URLSearchParams("section=catalog");
-    const ui = userEvent.setup();
-    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={draftProfile} section="catalog" />);
-    await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
-    await ui.click(screen.getByRole("button", { name: /Отправить на проверку/i }));
-
-    await waitFor(() => {
-      expect(submitProfileForModerationReview).toHaveBeenCalledTimes(1);
-    });
+    render(
+      <ProfileEditor
+        cabinetAccess={cabinetAccess}
+        initial={{
+          ...initial,
+          catalogPublication: {
+            catalogEntity: "organization",
+            isLivePublic: false,
+            draftPending: false,
+            published: {
+              description: null,
+              specializations: [],
+              storeCategories: ["doors"],
+              website: null,
+              telegram: null,
+              publicEmail: null,
+              publicPhone: null,
+            },
+          },
+          user: {
+            ...initial.user,
+            catalogStatus: "PENDING",
+            partnerType: "STORE",
+            partnerActivities: ["STORE"],
+            specializations: ["electrician"],
+            storeCategories: ["plumbing"],
+          },
+          organization: {
+            id: "o1",
+            name: "Shop",
+            catalogStatus: "PENDING",
+            partnerType: "STORE",
+            branchCount: 1,
+            specializations: ["tiles"],
+            storeCategories: ["doors"],
+          },
+        }}
+        section="catalog"
+      />,
+    );
+    expect(screen.getByTestId("specialist-catalog-pending")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Отправить на проверку/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("organization-catalog-wizard")).not.toBeInTheDocument();
   });
 
-  it("shows branch address field for store without organization in catalog section", async () => {
+  it("store without organization shows catalog prerequisite, not legacy expand panel", () => {
     mockSearchParams = new URLSearchParams("section=catalog");
-    const ui = userEvent.setup();
     render(
       <ProfileEditor
         cabinetAccess={cabinetAccess}
@@ -518,17 +534,20 @@ describe("ProfileEditor", () => {
             ...initial.user,
             catalogStatus: "DRAFT",
             partnerType: "STORE",
+            partnerActivities: ["STORE"],
             storeCategories: ["doors"],
           },
         }}
         section="catalog"
       />,
     );
-    await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
-    expect(screen.getByLabelText(/Адрес первого филиала/i)).toBeInTheDocument();
+    expect(screen.getByTestId("business-catalog-go-basics")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Подготовить профиль к публикации/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it("catalog section shows organization specializations, not owner user list", async () => {
+  it("organization catalog wizard uses org directions, not owner user arrays", async () => {
     mockSearchParams = new URLSearchParams("section=catalog");
     const ui = userEvent.setup();
     render(
@@ -552,7 +571,8 @@ describe("ProfileEditor", () => {
           },
           user: {
             ...initial.user,
-            partnerType: "STORE",
+            partnerType: "COMPANY",
+            partnerActivities: ["COMPANY"],
             specializations: ["electrician"],
             storeCategories: ["plumbing"],
           },
@@ -560,8 +580,9 @@ describe("ProfileEditor", () => {
             id: "o1",
             name: "Shop",
             catalogStatus: "DRAFT",
-            partnerType: "STORE",
+            partnerType: "COMPANY",
             branchCount: 1,
+            publicCatalogCity: "Краснодар",
             specializations: ["tiles"],
             storeCategories: ["doors"],
           },
@@ -569,11 +590,52 @@ describe("ProfileEditor", () => {
         section="catalog"
       />,
     );
-    await ui.click(screen.getByRole("button", { name: /Подготовить профиль к публикации/i }));
+    expect(screen.getByTestId("organization-catalog-wizard")).toBeInTheDocument();
+    await ui.click(screen.getByRole("button", { name: /^Далее$/i }));
     const picker = screen.getByTestId("catalog-directions");
     expect(picker.getAttribute("data-services")).toBe("tiles");
     expect(picker.getAttribute("data-products")).toBe("doors");
     expect(picker.getAttribute("data-services")).not.toContain("electrician");
+  });
+
+  it("store org without branches shows branch address on catalog step 1", async () => {
+    mockSearchParams = new URLSearchParams("section=catalog");
+    render(
+      <ProfileEditor
+        cabinetAccess={cabinetAccess}
+        initial={{
+          ...initial,
+          catalogPublication: {
+            catalogEntity: "organization",
+            isLivePublic: false,
+            draftPending: false,
+            published: {
+              description: null,
+              specializations: [],
+              storeCategories: [],
+              website: null,
+              telegram: null,
+              publicEmail: null,
+              publicPhone: null,
+            },
+          },
+          user: {
+            ...initial.user,
+            partnerType: "STORE",
+            partnerActivities: ["STORE"],
+          },
+          organization: {
+            id: "o1",
+            name: "Shop",
+            catalogStatus: "DRAFT",
+            partnerType: "STORE",
+            branchCount: 0,
+          },
+        }}
+        section="catalog"
+      />,
+    );
+    expect(screen.getByLabelText(/Адрес первого филиала/i)).toBeInTheDocument();
   });
 
   it("re-applies catalog prefill after saved profile refresh without full reload", async () => {

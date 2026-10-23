@@ -30,6 +30,8 @@ import {
   ProfileSoloPartnerEmployeeCard,
   type SoloPartnerEmployeeRow,
 } from "./ProfileSoloPartnerEmployeeCard";
+import { BusinessTeamPrerequisite } from "./business/BusinessTeamPrerequisite";
+import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
 import { ProfileTeamMemberEditor } from "./ProfileTeamMemberEditor";
 import {
   ProfileTeamInviteWizard,
@@ -72,9 +74,18 @@ async function copyInviteUrl(url: string): Promise<boolean> {
 type ProfileTeamSectionProps = {
   /** Dev-fixture only: skip network and render mock overview. */
   fixtureOverview?: EmployeesOverviewResponse;
+  /** STORE/COMPANY owner without organization yet — not SOLO-partner team. */
+  businessOwnerWithoutOrg?: boolean;
+  businessPartnerType?: BusinessProfilePartnerType;
+  onGoToBasics?: () => void;
 };
 
-export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps = {}) {
+export function ProfileTeamSection({
+  fixtureOverview,
+  businessOwnerWithoutOrg = false,
+  businessPartnerType,
+  onGoToBasics,
+}: ProfileTeamSectionProps = {}) {
   const { canOpenTeamSection, contextReady } = useProfileCabinetAccess();
   const fetchGenerationRef = useRef(0);
   const overviewRef = useRef<EmployeesOverviewResponse | null>(null);
@@ -114,6 +125,14 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
       } else {
         setInvites([]);
       }
+      return;
+    }
+    if (businessOwnerWithoutOrg) {
+      setOverview(null);
+      setInvites([]);
+      setSoloEmployees([]);
+      setLoading(false);
+      setError("");
       return;
     }
     if (!contextReady || !canOpenTeamSection) {
@@ -180,7 +199,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
         setLoading(false);
       }
     }
-  }, [canOpenTeamSection, contextReady, fixtureOverview]);
+  }, [businessOwnerWithoutOrg, canOpenTeamSection, contextReady, fixtureOverview]);
 
   useEffect(() => {
     if (fixtureOverview) return;
@@ -189,7 +208,7 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
     setInvites([]);
     setSoloEmployees([]);
     setError("");
-  }, [canOpenTeamSection, contextReady, fixtureOverview]);
+  }, [businessOwnerWithoutOrg, canOpenTeamSection, contextReady, fixtureOverview]);
 
   useEffect(() => {
     void load();
@@ -485,6 +504,15 @@ export function ProfileTeamSection({ fixtureOverview }: ProfileTeamSectionProps 
         </div>
       </article>
     ));
+  }
+
+  if (businessOwnerWithoutOrg && businessPartnerType && onGoToBasics) {
+    return (
+      <BusinessTeamPrerequisite
+        partnerType={businessPartnerType}
+        onGoToBasics={onGoToBasics}
+      />
+    );
   }
 
   if (!contextReady) {

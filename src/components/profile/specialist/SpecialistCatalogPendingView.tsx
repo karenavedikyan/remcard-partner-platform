@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { CatalogPublicationPreview } from "../CatalogPublicationPreview";
+import {
+  CatalogPublicationPreview,
+  type CatalogPublicationPreviewVariant,
+} from "../CatalogPublicationPreview";
 import type { ProProfileResponse } from "@/lib/types";
 import type { ProfileDraft } from "@/lib/profile-save";
 import styles from "./SpecialistCatalogPending.module.css";
@@ -9,9 +12,14 @@ import styles from "./SpecialistCatalogPending.module.css";
 type Props = {
   profile: ProProfileResponse;
   draft: ProfileDraft;
+  previewVariant?: CatalogPublicationPreviewVariant;
 };
 
-export function SpecialistCatalogPendingView({ profile, draft }: Props) {
+export function SpecialistCatalogPendingView({
+  profile,
+  draft,
+  previewVariant = "specialist",
+}: Props) {
   return (
     <div className={styles.root} data-testid="specialist-catalog-pending">
       <section className={styles.hero} aria-labelledby="catalog-pending-title">
@@ -64,7 +72,7 @@ export function SpecialistCatalogPendingView({ profile, draft }: Props) {
 
       <details className={styles.submitted}>
         <summary>Посмотреть отправленную карточку</summary>
-        <CatalogPublicationPreview profile={profile} draft={draft} variant="specialist" />
+        <CatalogPublicationPreview profile={profile} draft={draft} variant={previewVariant} />
       </details>
 
       <div className={styles.actions}>

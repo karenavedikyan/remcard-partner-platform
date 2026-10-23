@@ -79,6 +79,7 @@ export default defineConfig({
       "src/lib/profile-working-save.org-contacts.test.ts",
       "src/lib/profile-catalog-touched.test.ts",
       "src/lib/profile-org-catalog-roundtrip.test.ts",
+      "src/lib/profile-save.org-catalog-city.test.ts",
       "src/lib/profile-org-catalog-published-draft.test.ts",
       "src/lib/specialist-certificates/recommendationsRedirect.test.ts",
       "src/components/layout/icons/PartnersHandshakeIcon.test.tsx",

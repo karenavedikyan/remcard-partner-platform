@@ -11,7 +11,11 @@ export function OrganizationCatalogSection(props: OrganizationCatalogWizardProps
   const status = effectiveCatalogStatus(props.profile);
   if (status === "PENDING") {
     return (
-      <SpecialistCatalogPendingView profile={props.profile} draft={props.draft} />
+      <SpecialistCatalogPendingView
+        profile={props.profile}
+        draft={props.draft}
+        previewVariant="default"
+      />
     );
   }
   return <OrganizationCatalogWizard {...props} />;

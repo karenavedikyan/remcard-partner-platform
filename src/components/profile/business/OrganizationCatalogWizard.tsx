@@ -290,12 +290,14 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 }}
               />
               <small className={catalogStyles.fieldHint}>
-                Город из основных данных; для карточки можно уточнить.
+                {branchCount > 0
+                  ? "Публичный город карточки сохраняется на основном филиале организации (не в рабочем профиле)."
+                  : "Город первого филиала; адрес укажите ниже, если филиалов ещё нет."}
               </small>
             </div>
             {branchCount > 0 ? (
               <p className={catalogStyles.notice}>
-                Филиалов в организации: {branchCount}. Адреса филиалов настраиваются в разделе
+                Филиалов в организации: {branchCount}. Адреса остальных филиалов — в разделе
                 «Филиалы».
               </p>
             ) : null}

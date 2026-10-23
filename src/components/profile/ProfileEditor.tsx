@@ -1283,7 +1283,14 @@ function ProfileEditorInner({
         ) : null}
 
         {activeSection === "team" && !pureAgentCompactUi ? (
-          <ProfileTeamSection fixtureOverview={fixtureOverview} />
+          <ProfileTeamSection
+            fixtureOverview={fixtureOverview}
+            businessOwnerWithoutOrg={Boolean(
+              businessProfileWizardUi && businessPartnerType && !profile.organization,
+            )}
+            businessPartnerType={businessPartnerType ?? undefined}
+            onGoToBasics={() => navigateSection("basics")}
+          />
         ) : null}
 
         {activeSection === "notifications" ? (

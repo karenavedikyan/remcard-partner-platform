@@ -184,15 +184,25 @@ export async function persistCatalogDraftOnly(
       },
     });
     const branchCount = profile.organization?.branchCount ?? 0;
+    const catalogCityValue = (draft.catalogCity || draft.city).trim();
+    const publicBranchId = profile.organization?.publicCatalogBranchId?.trim();
     if (branchCount === 0 && draft.branchAddress.trim().length >= 3) {
       await remcardFetch("/api/pro/organization/branches", {
         method: "POST",
         body: {
-          city: (draft.catalogCity || draft.city).trim(),
+          city: catalogCityValue,
           address: draft.branchAddress.trim(),
           storeCategories: draft.storeCategories,
         },
       });
+    } else if (publicBranchId && catalogCityValue) {
+      await remcardFetch(
+        `/api/pro/organization/branches/${encodeURIComponent(publicBranchId)}`,
+        {
+          method: "PATCH",
+          body: { city: catalogCityValue },
+        },
+      );
     }
   } else {
     const trimmedPublic = (draft.catalogPublicName || "").trim();

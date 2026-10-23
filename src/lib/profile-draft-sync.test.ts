@@ -123,6 +123,37 @@ describe("profile-draft-sync", () => {
     expect(draft.specializations).not.toContain("electrician");
   });
 
+  it("hydrates organization catalogCity from publicCatalogCity on GET profile", () => {
+    const profile: ProProfileResponse = {
+      ...baseProfile,
+      catalogPublication: {
+        catalogEntity: "organization",
+        isLivePublic: false,
+        draftPending: false,
+        published: {
+          description: null,
+          specializations: [],
+          storeCategories: [],
+          website: null,
+          telegram: null,
+          publicEmail: null,
+          publicPhone: null,
+        },
+      },
+      user: { ...baseProfile.user, partnerType: "COMPANY", city: "Краснодар" },
+      organization: {
+        id: "org-co",
+        name: "Co",
+        catalogStatus: "DRAFT",
+        partnerType: "COMPANY",
+        branchCount: 1,
+        publicCatalogCity: "Казань",
+        publicCatalogBranchId: "br-1",
+      },
+    };
+    expect(profileDraftFromProfile(profile).catalogCity).toBe("Казань");
+  });
+
   it("legacy org owner initial editor draft matches saved snapshot (ОПТОВИК)", () => {
     const profile: ProProfileResponse = {
       organization: {
