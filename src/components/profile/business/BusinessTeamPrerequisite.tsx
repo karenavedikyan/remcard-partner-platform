@@ -16,7 +16,7 @@ export function BusinessTeamPrerequisite({ partnerType, onGoToBasics }: Props) {
     <Panel title="Сотрудники" hint="Команда организации открывается после основных данных.">
       <p className={styles.lead}>
         Сначала сохраните основные данные {label}. После создания организации здесь появятся
-        филиалы, сотрудники и приглашения — не SOLO-команда мастера.
+        филиалы, сотрудники и приглашения.
       </p>
       <div className={styles.actions}>
         <Button type="button" data-testid="business-team-go-basics" onClick={onGoToBasics}>

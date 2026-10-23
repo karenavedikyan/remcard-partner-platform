@@ -11,14 +11,15 @@ vi.mock("@/lib/api-client", async (importOriginal) => {
 
 function storeOrgProfile(overrides: {
   branchCount: number;
-  publicCatalogBranchId?: string;
-  publicCatalogCity?: string;
+  publicCatalogBranchId?: string | null;
+  publicCatalogCity?: string | null;
+  catalogStatus?: "DRAFT" | "APPROVED" | "PENDING";
 }): ProProfileResponse {
   return {
     organization: {
       id: "org-st",
       name: "Магазин",
-      catalogStatus: "DRAFT",
+      catalogStatus: overrides.catalogStatus ?? "DRAFT",
       partnerType: "STORE",
       branchCount: overrides.branchCount,
       publicCatalogBranchId: overrides.publicCatalogBranchId ?? "br-1",
@@ -69,10 +70,39 @@ describe("persistCatalogDraftOnly organization catalog city", () => {
     vi.mocked(remcardFetch).mockReset();
   });
 
-  it("STORE: PATCH primary branch city when branches exist", async () => {
-    let branchCity = "Краснодар";
+  it("description-only save does not PATCH branch city", async () => {
+    const branchPatches: unknown[] = [];
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        return { organization: { id: "org-st" } };
+      }
+      if (typeof path === "string" && path.includes("/branches/") && init?.method === "PATCH") {
+        branchPatches.push(init.body);
+        return { ok: true };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return storeOrgProfile({ branchCount: 1 });
+      }
+      throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
+    });
+
+    const profile = storeOrgProfile({ branchCount: 1 });
+    const draft = {
+      ...profileDraftFromProfile(profile),
+      description: "Новое описание",
+      catalogTouched: { description: true },
+    };
+
+    await persistCatalogDraftOnly(profile, draft);
+    expect(branchPatches).toEqual([]);
+  });
+
+  it("PATCH branch city and pin branch when catalogCity touched and changed", async () => {
+    let branchCity = "Краснодар";
+    let orgPin: string | undefined;
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        orgPin = (init.body as { publicCatalogBranchId?: string }).publicCatalogBranchId;
         return { organization: { id: "org-st" } };
       }
       if (path === "/api/pro/organization/branches/br-1" && init?.method === "PATCH") {
@@ -97,7 +127,85 @@ describe("persistCatalogDraftOnly organization catalog city", () => {
 
     const refreshed = await persistCatalogDraftOnly(profile, draft);
     expect(branchCity).toBe("Казань");
+    expect(orgPin).toBe("br-1");
     expect(profileDraftFromProfile(refreshed).catalogCity).toBe("Казань");
+  });
+
+  it("does not PATCH branch when catalogCity touched but unchanged", async () => {
+    const branchPatches: unknown[] = [];
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        return { organization: { id: "org-st" } };
+      }
+      if (typeof path === "string" && path.includes("/branches/") && init?.method === "PATCH") {
+        branchPatches.push(init.body);
+        return { ok: true };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        return storeOrgProfile({ branchCount: 1, publicCatalogCity: "Краснодар" });
+      }
+      throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
+    });
+
+    const profile = storeOrgProfile({ branchCount: 1, publicCatalogCity: "Краснодар" });
+    const draft = {
+      ...profileDraftFromProfile(profile),
+      catalogCity: "Краснодар",
+      catalogTouched: { catalogCity: true },
+    };
+
+    await persistCatalogDraftOnly(profile, draft);
+    expect(branchPatches).toEqual([]);
+  });
+
+  it("two branches: save city on pinned branch survives authoritative GET reload", async () => {
+    let pinnedId = "branch-a";
+    const branchCities: Record<string, string> = {
+      "branch-a": "Анапа",
+      "branch-b": "Москва",
+    };
+
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/pro/organization" && init?.method === "PATCH") {
+        const body = init.body as { publicCatalogBranchId?: string };
+        if (body.publicCatalogBranchId) pinnedId = body.publicCatalogBranchId;
+        return { organization: { id: "org-st" } };
+      }
+      if (path === "/api/pro/organization/branches/branch-a" && init?.method === "PATCH") {
+        branchCities["branch-a"] = (init.body as { city: string }).city;
+        return { ok: true };
+      }
+      if (path === "/api/pro/profile" && init?.method === "GET") {
+        const city = branchCities[pinnedId] ?? "Москва";
+        return storeOrgProfile({
+          branchCount: 2,
+          publicCatalogBranchId: pinnedId,
+          publicCatalogCity: city,
+        });
+      }
+      throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
+    });
+
+    const profile = storeOrgProfile({
+      branchCount: 2,
+      publicCatalogBranchId: "branch-a",
+      publicCatalogCity: "Анапа",
+    });
+
+    const draft = {
+      ...profileDraftFromProfile(profile),
+      catalogCity: "Ярославль",
+      catalogTouched: { catalogCity: true },
+    };
+
+    const once = await persistCatalogDraftOnly(profile, draft);
+    expect(branchCities["branch-a"]).toBe("Ярославль");
+    expect(pinnedId).toBe("branch-a");
+
+    const reloaded = await persistCatalogDraftOnly(once, profileDraftFromProfile(once));
+    expect(reloaded.organization?.publicCatalogBranchId).toBe("branch-a");
+    expect(reloaded.organization?.publicCatalogCity).toBe("Ярославль");
+    expect(profileDraftFromProfile(reloaded).catalogCity).toBe("Ярославль");
   });
 
   it("COMPANY: POST first branch with city when no branches yet", async () => {
@@ -120,7 +228,7 @@ describe("persistCatalogDraftOnly organization catalog city", () => {
       throw new Error(`Unexpected ${path} ${init?.method ?? "GET"}`);
     });
 
-    const profile = storeOrgProfile({ branchCount: 0, publicCatalogBranchId: undefined });
+    const profile = storeOrgProfile({ branchCount: 0, publicCatalogBranchId: null });
     profile.organization!.branchCount = 0;
     profile.organization!.publicCatalogBranchId = null;
     profile.organization!.publicCatalogCity = null;

@@ -168,34 +168,51 @@ export async function persistCatalogDraftOnly(
 ): Promise<ProProfileResponse> {
   const entity = catalogEntityForProfile(profile);
   if (entity === "organization") {
+    const touched = draft.catalogTouched ?? {};
+    const catalogCityTouched = touched.catalogCity === true;
+    const publicBranchId = profile.organization?.publicCatalogBranchId?.trim();
+    const catalogCityValue = (draft.catalogCity ?? "").trim();
+    const priorPublicCity = (profile.organization?.publicCatalogCity ?? "").trim();
+
+    const orgPatchBody: Record<string, unknown> = {
+      name: draft.organizationName.trim() || undefined,
+      description: draft.description.trim() || null,
+      storeCategories: draft.storeCategories,
+      specializations: draft.specializations,
+      website: draft.website.trim() || null,
+      logoUrl: draft.catalogImageUrl.trim() || null,
+      telegram: draft.telegram.trim() || null,
+      publicEmail: draft.publicEmail.trim() || null,
+      publicPhone: draft.publicPhone.trim() || null,
+      catalogTouched: draft.catalogTouched ?? undefined,
+    };
+    if (catalogCityTouched && publicBranchId) {
+      orgPatchBody.publicCatalogBranchId = publicBranchId;
+    }
+
     await remcardFetch("/api/pro/organization", {
       method: "PATCH",
-      body: {
-        name: draft.organizationName.trim() || undefined,
-        description: draft.description.trim() || null,
-        storeCategories: draft.storeCategories,
-        specializations: draft.specializations,
-        website: draft.website.trim() || null,
-        logoUrl: draft.catalogImageUrl.trim() || null,
-        telegram: draft.telegram.trim() || null,
-        publicEmail: draft.publicEmail.trim() || null,
-        publicPhone: draft.publicPhone.trim() || null,
-        catalogTouched: draft.catalogTouched ?? undefined,
-      },
+      body: orgPatchBody,
     });
     const branchCount = profile.organization?.branchCount ?? 0;
-    const catalogCityValue = (draft.catalogCity || draft.city).trim();
-    const publicBranchId = profile.organization?.publicCatalogBranchId?.trim();
     if (branchCount === 0 && draft.branchAddress.trim().length >= 3) {
+      const firstBranchCity = catalogCityTouched
+        ? catalogCityValue || draft.city.trim()
+        : draft.city.trim();
       await remcardFetch("/api/pro/organization/branches", {
         method: "POST",
         body: {
-          city: catalogCityValue,
+          city: firstBranchCity,
           address: draft.branchAddress.trim(),
           storeCategories: draft.storeCategories,
         },
       });
-    } else if (publicBranchId && catalogCityValue) {
+    } else if (
+      catalogCityTouched &&
+      publicBranchId &&
+      catalogCityValue &&
+      catalogCityValue !== priorPublicCity
+    ) {
       await remcardFetch(
         `/api/pro/organization/branches/${encodeURIComponent(publicBranchId)}`,
         {
