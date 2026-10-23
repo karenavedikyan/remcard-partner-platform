@@ -12,8 +12,10 @@ import type { ProProfileResponse } from "@/lib/types";
 
 function buildFixtureProfile(
   partnerType: "STORE" | "COMPANY",
-  options: { noOrg?: boolean },
+  options: { noOrg?: boolean; catalogStatus?: string },
 ): ProProfileResponse {
+  const catalogStatus =
+    options.catalogStatus === "PENDING" ? "PENDING" : ("DRAFT" as const);
   const isCompany = partnerType === "COMPANY";
   const branchCount = isCompany ? 1 : 3;
   const publicCatalogBranchId = isCompany ? "branch-co-1" : "branch-st-1";
@@ -24,7 +26,7 @@ function buildFixtureProfile(
       : {
           id: "org-fixture",
           name: isCompany ? "СтройКомпания Юг" : "Магазин Юг",
-          catalogStatus: "DRAFT",
+          catalogStatus,
           partnerType,
           branchCount,
           catalogPublished: false,
@@ -76,7 +78,7 @@ function buildFixtureProfile(
       partnerType,
       partnerActivities: [partnerType],
       description: null,
-      catalogStatus: "DRAFT",
+      catalogStatus,
       isPublic: false,
       rejectionReason: null,
       badges: [],
@@ -106,6 +108,7 @@ export default async function ProfileDevFixturePage(props: {
     wizard?: string;
     wizardStep?: string;
     noOrg?: string;
+    catalogStatus?: string;
   }>;
 }) {
   if (process.env.NODE_ENV === "production") {
@@ -124,7 +127,11 @@ export default async function ProfileDevFixturePage(props: {
   const partnerType: "STORE" | "COMPANY" =
     partnerTypeParam === "COMPANY" ? "COMPANY" : "STORE";
   const noOrg = searchParams?.noOrg === "1";
-  const fixtureProfile = buildFixtureProfile(partnerType, { noOrg });
+  const catalogStatusParam = searchParams?.catalogStatus?.toUpperCase();
+  const fixtureProfile = buildFixtureProfile(partnerType, {
+    noOrg,
+    catalogStatus: catalogStatusParam,
+  });
 
   const body = (
     <>
