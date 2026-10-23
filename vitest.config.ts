@@ -27,6 +27,7 @@ export default defineConfig({
       "src/lib/master-direction-label.test.ts",
       "src/lib/profile-overview-display.test.tsx",
       "src/lib/profile-working-save.test.ts",
+      "src/lib/profile-working-save.prof-test-org.test.ts",
       "src/lib/working-profile-patch.test.ts",
       "src/lib/branch-working-hours.test.ts",
       "src/lib/branch-catalog-preview.test.ts",
