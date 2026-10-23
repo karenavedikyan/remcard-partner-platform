@@ -1,0 +1,14 @@
+VISUAL-FINISH-04.1 capture run8
+OK store-basics-summary 1440-light
+OK store-basics-step1 1440-light
+OK store-catalog-step0 1440-light
+OK store-catalog-step1 1440-light
+OK company-basics-summary 1440-light
+OK company-catalog-step0 1440-light
+OK company-catalog-step1 1440-light
+OK store-basics-summary 375-light
+OK store-basics-summary 375-dark
+OK store-basics-summary 320-light
+OK store-catalog-pending 1440-light (impl-only)
+OK store-catalog-no-org 1440-light (impl-only)
+result: 12 OK / 0 FAIL (10 ref+impl + 2 impl-only)
