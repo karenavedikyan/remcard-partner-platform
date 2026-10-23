@@ -1,0 +1,253 @@
+{
+  "task": "STORE-COMPANY-PROFILE-PRODUCT-FINISH-05.2",
+  "status": "pass",
+  "captureCheckoutHead": "68f0df4c2114a99fcb6469ae72dde71298ced319",
+  "implRenderSourceSha": "68f0df4c2114a99fcb6469ae72dde71298ced319",
+  "implRenderHistoricalBaseSha": "969f6545326118751e7217bddb18d55faa6d9bf3",
+  "branchBSha": "cadb77e5d1834a6c45f778e49e9f23469eb62b46",
+  "prototypeRefCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+  "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d",
+  "priorDrop": "visual-finish-04.1",
+  "counts": {
+    "jobsAttempted": 2,
+    "jobsOk": 2,
+    "jobsFailed": 0,
+    "refImplPairs": 2,
+    "implOnly": 0,
+    "implOnlyIds": [],
+    "skippedRef": 0
+  },
+  "notes": [
+    "PRODUCT-FINISH-05.2: 2 control pairs — COMPANY 320 intro 20px + long name; STORE 375 business preview stage chip.",
+    "Manifest records introTypography computed styles and target bounding boxes."
+  ],
+  "summary": {
+    "ok": 2,
+    "fail": 0
+  },
+  "frames": [
+    {
+      "id": "store-catalog-preview-375",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 722,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=STORE&section=catalog"
+      },
+      "file": "impl-store-catalog-preview-375-375-light.png",
+      "sha256": "37047cbf47e3a994a672960383e94deb80a60f8e382ee5851a865584652a1b0c",
+      "bytes": 46527,
+      "captureGate": {
+        "gate": "business-preview-stage",
+        "targets": {
+          "previewCard": {
+            "gate": "catalog-preview-card",
+            "targetBox": {
+              "x": 31,
+              "y": 216,
+              "width": 313,
+              "height": 380
+            },
+            "scrollY": 722,
+            "scrollX": 0
+          },
+          "stageChip": {
+            "gate": "catalog-preview-stage-chip",
+            "targetBox": {
+              "x": 48,
+              "y": 387,
+              "width": 161,
+              "height": 39
+            },
+            "scrollY": 784,
+            "scrollX": 0
+          }
+        }
+      },
+      "implRenderSourceSha": "68f0df4c2114a99fcb6469ae72dde71298ced319",
+      "captureCheckoutHead": "68f0df4c2114a99fcb6469ae72dde71298ced319"
+    },
+    {
+      "id": "store-catalog-preview-375",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:41345/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:41345/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 375,
+        "height": 812,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 375,
+        "innerHeight": 812,
+        "devicePixelRatio": 1,
+        "scrollY": 863,
+        "url": "http://127.0.0.1:41345/roles.html"
+      },
+      "file": "ref-store-catalog-preview-375-375-light.png",
+      "sha256": "d8a1ea1ddff14eb07ae3bb8911f253f1ea97a0a735f6fba53e3c41eba9558b61",
+      "bytes": 48179,
+      "captureGate": {
+        "gate": "ref-catalog-preview-stage-chip",
+        "targetBox": {
+          "x": 54,
+          "y": 343,
+          "width": 142,
+          "height": 38
+        },
+        "scrollY": 863,
+        "scrollX": 0
+      },
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    },
+    {
+      "id": "company-catalog-longname-320",
+      "side": "impl",
+      "crop": "catalog-public-name",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "file": "impl-company-catalog-longname-320-320-light-input.png",
+      "sha256": "c1ef59464685fd8198241cd14fffcc8dff24b87e04bae3d73724150850c7adde",
+      "bytes": 41097,
+      "captureGate": {
+        "gate": "catalog-public-name",
+        "targetBox": {
+          "x": 19,
+          "y": 374,
+          "width": 282,
+          "height": 52
+        },
+        "scrollY": 652,
+        "scrollX": 0
+      }
+    },
+    {
+      "id": "company-catalog-longname-320",
+      "side": "impl",
+      "implUrl": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog&orgName=%D0%A1%D1%82%D1%80%D0%BE%D0%B9%D0%9A%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D1%8F+%C2%AB%D0%AE%D0%B3-%D0%94%D0%BB%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5-Naming-Fixture%C2%BB",
+      "loadedMarker": "Dev-fixture в полном CabinetShell",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 320,
+        "innerHeight": 800,
+        "devicePixelRatio": 1,
+        "scrollY": 652,
+        "url": "http://127.0.0.1:3022/profile/dev-fixture?partnerType=COMPANY&section=catalog&orgName=%D0%A1%D1%82%D1%80%D0%BE%D0%B9%D0%9A%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D1%8F+%C2%AB%D0%AE%D0%B3-%D0%94%D0%BB%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5-Naming-Fixture%C2%BB"
+      },
+      "file": "impl-company-catalog-longname-320-320-light.png",
+      "sha256": "da0854c4ae8c42fad2c381943f489c2f5d90a9cc5de236993dafd6deae077ac3",
+      "bytes": 43718,
+      "captureGate": {
+        "gate": "company-320-intro-and-name",
+        "introTypography": {
+          "fontSize": "20px",
+          "fontWeight": "800",
+          "lineHeight": "28px",
+          "letterSpacing": "normal",
+          "fontFamily": "Manrope"
+        },
+        "targets": {
+          "introTitle": {
+            "gate": "intro-title-20px",
+            "targetBox": {
+              "x": 27,
+              "y": 386,
+              "width": 254,
+              "height": 28
+            },
+            "scrollY": 153,
+            "scrollX": 0
+          },
+          "catalogPublicName": {
+            "targetBox": {
+              "x": 19,
+              "y": 873,
+              "width": 282,
+              "height": 52
+            },
+            "note": "input crop in companion impl-*-input.png"
+          }
+        }
+      },
+      "implRenderSourceSha": "68f0df4c2114a99fcb6469ae72dde71298ced319",
+      "captureCheckoutHead": "68f0df4c2114a99fcb6469ae72dde71298ced319",
+      "branchSelectBox": {
+        "rowWidth": 316,
+        "selectWidth": 316,
+        "selectHeight": 42
+      }
+    },
+    {
+      "id": "company-catalog-longname-320",
+      "side": "ref",
+      "refUrl": "http://127.0.0.1:41345/roles.html",
+      "refDom": {
+        "url": "http://127.0.0.1:41345/roles.html",
+        "title": "Ваш путь в RemCard · Регистрация и роли",
+        "heading": "Профиль",
+        "hasWelcomeTools": false,
+        "hasViewCabinet": true,
+        "hasScenarioRole": true
+      },
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "theme": "light"
+      },
+      "metrics": {
+        "innerWidth": 320,
+        "innerHeight": 800,
+        "devicePixelRatio": 1,
+        "scrollY": 184,
+        "url": "http://127.0.0.1:41345/roles.html"
+      },
+      "file": "ref-company-catalog-longname-320-320-light.png",
+      "sha256": "a871e81237785d1deb5fd59efc9db284791a96b0449e6d30be46ceddf8a6d868",
+      "bytes": 47804,
+      "captureGate": {
+        "gate": "ref-intro-title",
+        "targetBox": {
+          "x": 37,
+          "y": 341,
+          "width": 249,
+          "height": 28
+        },
+        "scrollY": 184,
+        "scrollX": 0,
+        "introTypography": {
+          "fontSize": "20px",
+          "fontWeight": "700",
+          "lineHeight": "28px",
+          "letterSpacing": "normal",
+          "fontFamily": "Manrope"
+        }
+      },
+      "prototypePackageCommit": "9bc52fb9152293e992e98dc50804a660cef10733",
+      "prototypeTarballSha256": "382c3faaf0daae2b8958915a7c6c060e4256a0ed71a2d58a5a835dc6c027260d"
+    }
+  ]
+}
