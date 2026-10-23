@@ -46,4 +46,9 @@ Tips at turn start:
 
 ## Tips после коммита 02.5
 
-_(after push)_
+| Repo | Tip |
+|------|-----|
+| F | `0a073cfe74ad325ff713a6a53677ad5e62d144bd` (code); `cdcc19064135e6d5e995db946f5b46f3911847ad` (feature commit без REPORT) |
+| B | `a677ae90c61f6212057b0e8f693530bce19811ce` |
+
+Visual artifact commit: **pending** (impl/ref manifest отдельно от code tip выше).
