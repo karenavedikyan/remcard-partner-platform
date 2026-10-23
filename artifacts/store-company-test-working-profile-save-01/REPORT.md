@@ -152,7 +152,7 @@ pnpm run build   # exit 0
 | Frontend transport | `prof-test-org-transport.fixture.ts` — auth/me + profile PATCH |
 | Wizard remount | `BusinessWorkingProfileWizard.prof-test-org-flow.test.tsx` — unmount/mount, 403 STORE+COMPANY |
 
-**Runtime code SHA (не менялся в этом дополнении):** navigator **`15b296352c3a82691682e665a250e306b3f06db9`**; frontend production **`6a70eb1bdce37ddda86f4004ecc725a40807a5d2`**.
+**Runtime release SHA (неизменен):** navigator **`15b296352c3a82691682e665a250e306b3f06db9`**. **Final backend test tip:** **`c25521dece68dcc05f0d293aac58ce067dd696d2`**. Frontend production **`6a70eb1bdce37ddda86f4004ecc725a40807a5d2`**; evidence **`f7d019fc`**.
 
 **Команды (exit 0):** navigator vitest **8 files / 50 passed** (full SAVE-02 backend suite); frontend **7 passed**; `pnpm run build` navigator runtime **`15b29635`** exit 0.
 
