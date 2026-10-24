@@ -1,0 +1,102 @@
+{
+  "light": {
+    "pending": {
+      "label": "На проверке",
+      "raw": {
+        "color": "rgb(120, 53, 15)",
+        "backgroundColor": "rgb(255, 251, 235)",
+        "borderTopColor": "rgb(217, 119, 6)"
+      },
+      "fg": "#78350f",
+      "bg": "#fffbeb",
+      "ratio": 8.74845105788553
+    },
+    "testBadge": {
+      "label": "Тестовый партнёр",
+      "raw": {
+        "color": "rgb(146, 64, 14)",
+        "backgroundColor": "rgb(254, 243, 199)",
+        "borderTopColor": "rgb(245, 158, 11)"
+      },
+      "fg": "#92400e",
+      "bg": "#fef3c7",
+      "ratio": 6.367237188363559
+    },
+    "company": null
+  },
+  "dark": {
+    "pending": {
+      "label": "На проверке",
+      "raw": {
+        "color": "rgb(254, 243, 199)",
+        "backgroundColor": "rgb(120, 53, 15)",
+        "borderTopColor": "rgb(251, 191, 36)"
+      },
+      "fg": "#fef3c7",
+      "bg": "#78350f",
+      "ratio": 8.147351692651375
+    },
+    "testBadge": {
+      "label": "Тестовый партнёр",
+      "raw": {
+        "color": "rgb(253, 230, 138)",
+        "backgroundColor": "rgb(146, 64, 14)",
+        "borderTopColor": "rgb(252, 211, 77)"
+      },
+      "fg": "#fde68a",
+      "bg": "#92400e",
+      "ratio": 5.693055806290443
+    },
+    "company": null
+  },
+  "dark1440": {
+    "pending": {
+      "label": "На проверке",
+      "raw": {
+        "color": "rgb(254, 243, 199)",
+        "backgroundColor": "rgb(120, 53, 15)",
+        "borderTopColor": "rgb(251, 191, 36)"
+      },
+      "fg": "#fef3c7",
+      "bg": "#78350f",
+      "ratio": 8.147351692651375
+    },
+    "testBadge": {
+      "label": "Тестовый партнёр",
+      "raw": {
+        "color": "rgb(253, 230, 138)",
+        "backgroundColor": "rgb(146, 64, 14)",
+        "borderTopColor": "rgb(252, 211, 77)"
+      },
+      "fg": "#fde68a",
+      "bg": "#92400e",
+      "ratio": 5.693055806290443
+    },
+    "company": null
+  },
+  "light390": {
+    "pending": {
+      "label": "На проверке",
+      "raw": {
+        "color": "rgb(120, 53, 15)",
+        "backgroundColor": "rgb(255, 251, 235)",
+        "borderTopColor": "rgb(217, 119, 6)"
+      },
+      "fg": "#78350f",
+      "bg": "#fffbeb",
+      "ratio": 8.74845105788553
+    },
+    "testBadge": {
+      "label": "Тестовый партнёр",
+      "raw": {
+        "color": "rgb(146, 64, 14)",
+        "backgroundColor": "rgb(254, 243, 199)",
+        "borderTopColor": "rgb(245, 158, 11)"
+      },
+      "fg": "#92400e",
+      "bg": "#fef3c7",
+      "ratio": 6.367237188363559
+    },
+    "company": null
+  }
+}
