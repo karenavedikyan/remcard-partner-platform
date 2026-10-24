@@ -26,6 +26,10 @@ export type ModerationPartnerSubmitted = {
   whatsapp?: string | null;
   instagram?: string | null;
   vk?: string | null;
+  max?: string | null;
+  yandex?: string | null;
+  publicEmail?: string | null;
+  publicPhone?: string | null;
   navigatorStageIds?: string[];
 };
 
@@ -120,8 +124,8 @@ export function buildModerationPartnerCatalogPreviewInput(partner: ModerationPar
     branchAddress: "",
     website: moderationSubmittedString(s.website),
     telegram: moderationSubmittedString(s.telegram),
-    publicEmail: "",
-    publicPhone: "",
+    publicEmail: moderationSubmittedString(s.publicEmail),
+    publicPhone: moderationSubmittedString(s.publicPhone),
     catalogPublicName: displayName,
     showFullName: false,
     catalogImageUrl: moderationSubmittedString(s.photoUrl),
@@ -151,3 +155,13 @@ export function buildModerationPartnerCatalogPreviewInput(partner: ModerationPar
 }
 
 export { formatPhoneForDisplay as moderationFormatPublicPhone };
+
+const PARTNER_ITEM_KIND_RU: Record<string, string> = {
+  SERVICE: "Услуга",
+  PRODUCT: "Товар",
+  PROMOTION: "Акция",
+};
+
+export function moderationPartnerItemKindLabel(itemKind: string): string {
+  return PARTNER_ITEM_KIND_RU[itemKind] ?? itemKind;
+}

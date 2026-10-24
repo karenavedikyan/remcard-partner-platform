@@ -261,6 +261,68 @@ async function runProfModerationFlow(browser, fx) {
 
   await page.setViewportSize({ width: 1440, height: 900 });
 
+  async function runPartnerPreviewGate(userId, title, marker) {
+    await page.goto(`${PROF_URL}/admin/moderation/partners/${userId}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.getByRole("heading", { level: 1, name: title }).waitFor({ timeout: 15000 });
+    await screenshotLightDark(page, `partner-preview-detail-${userId}`);
+
+    await page.getByRole("button", { name: /Карточка в списке/i }).click();
+    await page.getByRole("dialog").waitFor({ timeout: 10000 });
+    await page.getByTestId("catalog-public-preview").waitFor({ timeout: 10000 });
+    const listText = await page.getByRole("dialog").innerText();
+    assert(listText.includes(marker), "partner list preview shows submitted body marker");
+    assert(listText.includes("79991234567") || listText.includes("+7"), "partner list preview shows submitted phone");
+    assert(!listText.includes("LIVE body"), "partner list preview must not show live-only body");
+    await screenshot(page, `partner-preview-list-${userId}-1440.png`);
+    await page.getByRole("button", { name: /^Закрыть$/i }).click();
+
+    const previewResp = page.waitForResponse(
+      (r) =>
+        r.url().includes(`/partners/${userId}/public-preview`) &&
+        r.request().method() === "GET" &&
+        r.ok(),
+    );
+    await page.getByRole("button", { name: /Полная карточка/i }).click();
+    await page.getByRole("dialog").waitFor({ timeout: 10000 });
+    const pr = await previewResp;
+    assert(pr.ok(), `partner public-preview HTTP ${pr.status()}`);
+    const previewRoot = page.getByTestId("moderation-partner-full-preview");
+    await previewRoot.waitFor({ timeout: 20000 });
+    const fullText = await previewRoot.innerText();
+    assert(fullText.includes(marker), "partner full preview shows submitted body");
+    assert(fullText.includes("preview-submitted@test.local"), "partner full preview shows submitted email");
+    assert(!fullText.includes("LIVE body"), "partner full preview must not show live description");
+    await page.getByTestId("moderation-partner-preview-portfolio-image").waitFor({ timeout: 10000 });
+    await page.getByTestId("moderation-partner-preview-service-image").waitFor({ timeout: 10000 });
+    await screenshotLightDark(page, `partner-preview-full-${userId}`);
+    await page.getByRole("button", { name: /^Закрыть$/i }).click();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const previewResp390 = page.waitForResponse(
+      (r) =>
+        r.url().includes(`/partners/${userId}/public-preview`) &&
+        r.request().method() === "GET" &&
+        r.ok(),
+    );
+    await page.getByRole("button", { name: /Полная карточка/i }).click();
+    await page.getByRole("dialog").waitFor({ timeout: 10000 });
+    await previewResp390;
+    await previewRoot.waitFor({ timeout: 20000 });
+    await screenshot(page, `partner-preview-full-${userId}-390.png`);
+    await page.getByRole("button", { name: /^Закрыть$/i }).click();
+    await page.setViewportSize({ width: 1440, height: 900 });
+  }
+
+  if (fx.partnerPreviewUserId && fx.partnerPreviewSubmittedMarker) {
+    await runPartnerPreviewGate(
+      fx.partnerPreviewUserId,
+      fx.partnerPreviewTitle,
+      fx.partnerPreviewSubmittedMarker,
+    );
+  }
+
   async function partnerAction(userId, title, action, reasonOrComment, expectStatus) {
     await page.goto(`${PROF_URL}/admin/moderation/partners/${userId}`, { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { level: 1, name: title }).waitFor({ timeout: 10000 });
