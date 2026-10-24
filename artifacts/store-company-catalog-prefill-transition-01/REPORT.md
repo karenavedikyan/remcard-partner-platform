@@ -1,72 +1,75 @@
-# STORE-COMPANY-CATALOG-PREFILL-TRANSITION-01
+# STORE-COMPANY-CATALOG-PREFILL-TRANSITION-01 (acceptance closure)
 
 Дата: 24.10.2026. Агент: `bc-6cb74748-26bd-44fd-ae54-da856527f81b`.
 
 ## Статус
 
-**READY FOR REVIEW** (frontend-only). Browser smoke (desktop/mobile после перехода и reload) **не выполнялся** — в cloud VM нет изолированного browser runner для `dev-fixture` без отдельного поднятия dev-сервера и сценария; покрытие — component/integration tests на реальном `ProfileEditor` + `OrganizationCatalogWizard`.
+**READY FOR REVIEW** (frontend-only). Изолированный browser smoke (desktop/mobile после перехода и reload) **не выполнялся** — в среде агента нет подключённого browser runner для dev-fixture; доказательства — component/integration tests на реальном `ProfileEditor`, `BusinessWorkingProfileWizard`, `OrganizationCatalogWizard` со stateful API double.
 
-## Воспроизведённая причина
+## Подтверждённые причины (без переписывания решения)
 
-1. **`workingProfileCatalogSeed` / город:** выражение `(u.catalogCity ?? u.city ?? "").trim()` не подставляло рабочий `user.city`, когда `catalogCity === ""` (пустая строка — не `null`/`undefined`). Для STORE/COMPANY форма каталога берёт `organization.publicCatalogCity`; при пустом org-городе seed оставался пустым → merge не заполнял поле города в wizard.
-2. **`ProfileEditor` / этапы:** prefill-effect обновлял только `catalogNavigatorStageIds`, тогда как `OrganizationCatalogWizard` для org-сущности получает `catalogStageIds={orgCatalogNavigatorStageIds}` — сохранённые рабочие этапы не попадали в UI каталога.
-3. **`applyProfile` / повторный seed:** после save/GET `catalogPrefillAppliedKeyRef` сохранял старый ключ → при том же `catalogPrefillSourceKey` effect пропускал merge, хотя `applyProfile` уже сбросил catalog-slice с GET (пустой org draft).
+1. **Город seed:** пустая строка `catalogCity` / отсутствие org `publicCatalogCity` — рабочий `user.city` через `||`, без подмешивания `user.catalogCity` в org-карточку (backend GET: org city = `publicCatalogCity` с филиала, не user catalogCity).
+2. **Этапы org:** prefill сравнивал merged stages с **user** `catalogNavigatorStageIds`; при совпадении user draft с seed org `orgCatalogNavigatorStageIds` не обновлялся.
+3. **applyProfile:** ref prefill блокировал повторный merge после GET с тем же source key.
 
-## Таблица source → поле каталога → control
+## Дополнительные правки приёмки
 
-| Источник GET (рабочий / org) | Поле seed / draft | Control в `OrganizationCatalogWizard` |
-|------------------------------|-------------------|----------------------------------------|
-| `organization.name` | `catalogPublicName` / `organizationName` | `#oc-public-name` (`catalog-public-name`) |
-| `user.city` при пустом `organization.publicCatalogCity` и не-touched | `catalogCity` | `#oc-city` (`catalog-city-input`, без филиалов) |
-| `workingProfile.effectiveProductCategoryIds` | `storeCategories` | `ProfileDirectionsPicker` → товары |
-| `workingProfile.effectiveServiceSpecializationIds` | `specializations` | `ProfileDirectionsPicker` → услуги |
-| `workingProfile.effectiveNavigatorStageIds` | `navigatorStageIds` → **org** state | `ProfileDirectionsPicker` → этапы |
-| `workingProfile.partnershipContactPhone` / `user.publicPhone` | `publicPhone` | `AgentPhoneField` (шаг «Контакты») |
-| `workingProfile.partnershipContactEmail` / `user.publicEmail` | `publicEmail` | email input |
-| `organization.website` / `organization.telegram` (STORE/COMPANY) | `website`, `telegram` | поля шага оформления |
-| `organization.logoUrl` / описание org | только при наличии в GET | не расширяли scope |
+| # | Изменение |
+|---|-----------|
+| 1 | `ProfileEditor`: обновление org stages по `orgCatalogNavigatorStageIds`, не внутри user-only ветки |
+| 2 | `catalog-prefill.ts`: org city = `publicCatalogCity \|\| workingCity` (без user `catalogCity`) |
+| 3 | Regression: user `catalogDraft.navigatorStageIds` совпадает с working seed, org stages пуст → UI org wizard |
+| 4 | Integration: SAVE-02-based `prof-test-org-transport.fixture.ts` + `catalog-prefill-org-transport.fixture.ts`, real `persistWorkingProfileDraft` / `persistCatalogDraftOnly` |
+| 5 | Сценарии STORE/COMPANY: save basics → tab catalog; edit/clear catalog → save → GET → remount; working change не затирает catalog; dirty tab switch; org website/TG на шаге контактов |
 
-Имя представителя (`user.displayName`) не подменяет название организации — без изменений.
+## Таблица source → control
 
-## Diff scope (frontend-only)
+| GET source | Catalog field | Control |
+|------------|---------------|---------|
+| `organization.name` | card name | `catalog-public-name` |
+| `organization.publicCatalogCity` then `user.city` | city | `catalog-city-input` (no branches) |
+| `workingProfile.effective*Ids` | products/services/stages | `ProfileDirectionsPicker` in org wizard |
+| `organization.website` / `organization.telegram` | site/TG | step 2 «Сайт с контактами» / Telegram |
+| `workingProfile.partnershipContact*` → public contacts | phone/email | `AgentPhoneField`, email input |
 
-- `src/lib/specialist-r06/catalog-prefill.ts` — город seed для user/org.
-- `src/components/profile/ProfileEditor.tsx` — sync `orgCatalogNavigatorStageIds` при prefill; сброс `catalogPrefillAppliedKeyRef` в `applyProfile`.
-- Tests: `catalog-prefill.test.ts`, `ProfileEditor.catalog-prefill-transition.test.tsx`.
+## Diff scope
 
-Backend **не менялся**.
+- `src/lib/specialist-r06/catalog-prefill.ts`
+- `src/components/profile/ProfileEditor.tsx`
+- `src/lib/prof-test-org-transport.fixture.ts` (from SAVE-02 ref, reused)
+- `src/lib/catalog-prefill-org-transport.fixture.ts`
+- `src/lib/specialist-r06/catalog-prefill.test.ts`
+- `src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx`
 
-## Базы
+Backend: **без изменений** (`15b296352c3a82691682e665a250e306b3f06db9`).
 
-| Репозиторий | База задачи | Final SHA (после фикса) |
-|-------------|-------------|-------------------------|
-| remcard-partner-platform | `6a70eb1bdce37ddda86f4004ecc725a40807a5d2` (release/prof-v1-20261007) | `9e6595e3` (branch `fix/store-company-catalog-prefill-transition-01`) |
-| remcard-navigator | `15b296352c3a82691682e665a250e306b3f06db9` | без изменений |
-
-Production SAVE-02: backend deployment active, не затрагивался.
-
-## Проверки
+## Проверки (финальный прогон)
 
 ```bash
 cd remcard-partner-platform
 npm run test:component -- \
   src/lib/specialist-r06/catalog-prefill.test.ts \
-  src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx
-# 15 passed
+  src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx \
+  src/lib/profile-org-catalog-roundtrip.test.ts \
+  src/components/profile/ProfileEditor.business-catalog.test.tsx
+# Test Files 4 passed, Tests 35 passed
 
-npx tsc --noEmit
-# exit 0
-
-npm run build
-# exit 0
+npx tsc --noEmit   # exit 0
+npm run build      # exit 0
 ```
 
-Существующие: `profile-org-catalog-roundtrip.test.ts`, `OrganizationCatalogWizard.stages.test.tsx` — без регрессий в прогоне roundtrip.
+## SHA
 
-## Минимальный будущий выпуск
+| | |
+|--|--|
+| Frontend base (release/prof-v1-20261007) | `6a70eb1bdce37ddda86f4004ecc725a40807a5d2` |
+| Code fix (branch tip after this turn) | *(commit after push)* |
+| Backend (unchanged) | `15b296352c3a82691682e665a250e306b3f06db9` |
 
-**Frontend-only:** один commit/SHA на `fix/store-company-catalog-prefill-transition-01` от `6a70eb1b…`. Backend release не требуется.
+## Минимальный выпуск
 
-## PR / deploy
+Frontend-only: ветка `fix/store-company-catalog-prefill-transition-01`. PR/merge/deploy не выполнялись.
 
-Не выполнялись (по ограничениям задачи).
+## Не проверено
+
+- Изолированный browser smoke (desktop/mobile) после UI-перехода и reload.
