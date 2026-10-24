@@ -42,7 +42,7 @@ Multipart BFF (`d5dc0d6b`) не менялся; `remcard-proxy-multipart` не �
 | Baseline | `d5dc0d6bb7395a7e6f4a6d2b44460b07e949ce06` |
 | Backend (unchanged) | `15b296352c3a82691682e665a250e306b3f06db9` |
 | Branch | `fix/catalog-photo-preview-01` |
-| Final code / evidence | `16ddcd42781c55227f23bc7788f21cf59c4fab0e` |
+| Final code / evidence | `6e41d066c80bcc4028d3503b5d571169404c3d24` |
 
 ## Не проверено
 
