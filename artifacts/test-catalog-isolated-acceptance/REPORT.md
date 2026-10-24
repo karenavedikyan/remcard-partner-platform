@@ -9,7 +9,9 @@ Branch: `fix/test-catalog-full-cycle-01`. **Runtime code SHA:** `8d686357d0148fa
 | `scripts/catalog-qa-isolated/start.sh` | production Next on **3400**, `REMCARD_API_BASE_URL=http://127.0.0.1:3401` |
 | `scripts/catalog-qa-isolated/run-e2e.sh` | headless Playwright screenshots (1440 / 390) via `run-e2e.mjs` |
 
-Requires navigator isolated PG + backend `scripts/catalog-qa-isolated/start.sh` and `seed-e2e-fixture.sh`.
+Requires navigator isolated PG + backend/frontend `start.sh`. **`NEXT_PUBLIC_APP_URL`** must be set at **build** time to `http://127.0.0.1:3400`.
+
+Full lifecycle UI: `seed-ui-harness.sh` (navigator) then `run-ui-harness.sh` (real clicks, not pre-approved fixture-only).
 
 ## E2E (agent VM)
 

@@ -9,7 +9,9 @@ CATALOG_QA_LOG="${CATALOG_QA_LOG:-$NAV_ROOT/.catalog-qa-isolated/log}"
 
 catalog_qa_frontend_env() {
   export REMCARD_API_BASE_URL="http://127.0.0.1:${CATALOG_QA_BACKEND_PORT}"
-  export NEXT_PUBLIC_BASE_URL="http://127.0.0.1:${CATALOG_QA_FRONTEND_PORT}"
+  export NEXT_PUBLIC_APP_URL="http://127.0.0.1:${CATALOG_QA_FRONTEND_PORT}"
+  export NEXT_PUBLIC_BASE_URL="${NEXT_PUBLIC_BASE_URL:-http://127.0.0.1:${CATALOG_QA_BACKEND_PORT}}"
   export PORT="$CATALOG_QA_FRONTEND_PORT"
+  export HOSTNAME="127.0.0.1"
   export NODE_ENV="${NODE_ENV:-production}"
 }

@@ -13,18 +13,22 @@ fi
 
 cd "$REPO_ROOT"
 catalog_qa_frontend_env
-echo "[start] pnpm run build"
+echo "[start] pnpm run build (NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL)"
+NEXT_PUBLIC_APP_URL="$NEXT_PUBLIC_APP_URL" \
+NEXT_PUBLIC_BASE_URL="$NEXT_PUBLIC_BASE_URL" \
 pnpm run build
 
-echo "[start] next start -p $CATALOG_QA_FRONTEND_PORT"
+echo "[start] next start -H 127.0.0.1 -p $CATALOG_QA_FRONTEND_PORT"
 env -i \
   HOME="${HOME}" \
   PATH="${PATH}" \
   NODE_ENV=production \
+  HOSTNAME="127.0.0.1" \
   PORT="$CATALOG_QA_FRONTEND_PORT" \
   REMCARD_API_BASE_URL="$REMCARD_API_BASE_URL" \
+  NEXT_PUBLIC_APP_URL="$NEXT_PUBLIC_APP_URL" \
   NEXT_PUBLIC_BASE_URL="$NEXT_PUBLIC_BASE_URL" \
-  pnpm exec next start -p "$CATALOG_QA_FRONTEND_PORT" >>"$CATALOG_QA_LOG/frontend.log" 2>&1 &
+  pnpm exec next start -H 127.0.0.1 -p "$CATALOG_QA_FRONTEND_PORT" >>"$CATALOG_QA_LOG/frontend.log" 2>&1 &
 echo $! >"$PID_FILE"
 sleep 8
 curl -sf "http://127.0.0.1:${CATALOG_QA_FRONTEND_PORT}/" >/dev/null
