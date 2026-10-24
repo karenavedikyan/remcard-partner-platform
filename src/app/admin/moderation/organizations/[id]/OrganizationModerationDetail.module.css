@@ -1,0 +1,282 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 6rem;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.header {
+  margin-bottom: 1.25rem;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  flex: 1 1 12rem;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  background: var(--surface-muted, #f4f4f5);
+}
+
+.badgePending {
+  composes: badge;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.badgeTest {
+  composes: badge;
+  border-color: #fde68a;
+  background: #fef3c7;
+}
+
+.metaLine {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #52525b);
+  margin: 0.25rem 0;
+}
+
+.sectionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.previewBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.actionsPanel {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  background: var(--surface-elevated, #fff);
+  box-shadow: 0 -4px 24px rgb(0 0 0 / 8%);
+}
+
+.actionsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .actionsRow {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+.actionPrimary {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .actionPrimary {
+    width: auto;
+    flex: 1 1 12rem;
+  }
+}
+
+.diffList {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.readinessList {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.readinessRequired {
+  color: #b45309;
+}
+
+.readinessOk {
+  color: #15803d;
+}
+
+.techBlock {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #71717a);
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: var(--surface-muted, #fafafa);
+}
+
+.techBlock dt {
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
+.techBlock dd {
+  margin: 0.1rem 0 0;
+  word-break: break-all;
+}
+
+.branchCard {
+  border: 1px solid var(--border-subtle, #eee);
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.branchFocus {
+  border-color: #e53935;
+  border-width: 2px;
+}
+
+.branchDraftNote {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #52525b);
+}
+
+.photoThumb {
+  max-width: 100%;
+  width: 160px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--surface-muted, #f4f4f5);
+}
+
+.statusMessage {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.statusError {
+  composes: statusMessage;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.statusOk {
+  composes: statusMessage;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.dataGrid {
+  display: grid;
+  gap: 0.35rem 1rem;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 640px) {
+  .dataGrid {
+    grid-template-columns: 8rem 1fr;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgb(0 0 0 / 45%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .overlay {
+    align-items: center;
+    padding: 1rem;
+  }
+}
+
+.dialog {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  background: var(--surface-elevated, #fff);
+  border-radius: 12px 12px 0 0;
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .dialog {
+    border-radius: 12px;
+  }
+}
+
+.dialogTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.dialogField {
+  width: 100%;
+  min-height: 5rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem;
+  font: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle, #d4d4d8);
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.previewDialog {
+  composes: dialog;
+  max-width: min(640px, 100%);
+}
+
+.previewList {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.previewFull {
+  max-width: 100%;
+}

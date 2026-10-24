@@ -14,82 +14,80 @@ import {
   validateModerationRejectClient,
   validateModerationReviseClient,
 } from "@/lib/prof-admin-moderation-validation";
+import {
+  buildModerationBranchPreviewModel,
+  buildModerationOrgCatalogPreviewInput,
+  moderationCatalogStatusLabel,
+  moderationOrgChangeBlock,
+  moderationFormatPublicPhone,
+  moderationOrgCanPublishLabel,
+  moderationOrgPublicVisibility,
+  moderationOrgReadiness,
+  moderationPublicContactTypeLabel,
+  moderationSubmittedCategoryLabels,
+  moderationSubmittedServiceLabels,
+  moderationSubmittedStageLabels,
+  partnerTypeLabel,
+  type ModerationOrgDetail,
+} from "@/lib/prof-admin-moderation-org-display";
+import {
+  orgApproveAllConfirmMessage,
+  orgApproveConfirmMessage,
+  orgApproveButtonLabel,
+  orgRejectConfirmMessage,
+  orgReviseConfirmMessage,
+  staleRevisionUserMessage,
+  type OrgModerationAction,
+} from "@/lib/prof-admin-moderation-org-actions";
+import { Panel } from "@/components/ui/Panel";
+import { Button } from "@/components/ui/Button";
+import { BranchCatalogPublicationPreview } from "@/components/profile/BranchCatalogPublicationPreview";
+import { ModerationPreviewModal } from "./ModerationPreviewModal";
+import { ModerationConfirmDialog } from "./ModerationConfirmDialog";
+import styles from "./OrganizationModerationDetail.module.css";
 
 const MODERATION_FOCUS_HASH_KEY = "profModerationFocusHash";
 
-type BranchRow = {
-  id: string;
-  revisionToken?: string;
-  catalogStatus: string;
-  submitted: {
-    name?: string;
-    city?: string;
-    address?: string;
-    photoUrl?: string | null;
-    workingHours?: string | null;
-    description?: string | null;
-  };
-  hasSubmittedDiff: boolean;
-};
+type PreviewState = { mode: "list" | "full" } | null;
 
-type OrgPayload = {
-  id: string;
-  name: string;
-  partnerType: string;
-  catalogStatus: string;
-  catalogPublished: boolean;
-  ownerId: string;
-  ownerPublicId: string;
-  isTestPartner: boolean;
-  profTestPublicCatalogAllowed: boolean | null;
-  pendingBranchesCount: number;
-  hasSubmittedDiff: boolean;
-  revisionToken: string;
-  submitted: {
-    description?: string | null;
-    logoUrl?: string | null;
-    website?: string | null;
-    telegram?: string | null;
-    publicEmail?: string | null;
-    publicPhone?: string | null;
-    storeCategories?: string[];
-    specializations?: string[];
-    navigatorStageIds?: string[];
-  };
-  live: {
-    description?: string | null;
-    logoUrl?: string | null;
-    website?: string | null;
-    telegram?: string | null;
-    publicEmail?: string | null;
-    publicPhone?: string | null;
-    catalogPublished?: boolean;
-    storeCategories?: { key: string; label: string }[];
-    specializations?: { key: string; label: string }[];
-  };
-  publicContacts: { type: string; label: string | null; value: string; isPublic: boolean }[];
-  branches: BranchRow[];
-};
+type OrgDialog = { action: OrgModerationAction; text: string } | null;
+
+type BranchDialog = {
+  branchId: string;
+  action: "approve" | "reject" | "revise";
+  text: string;
+} | null;
+
+function SafePhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !src) {
+    return <div className={className} aria-hidden style={{ background: "#eee" }} />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />
+  );
+}
 
 export function OrganizationModerationDetailClient({ organizationId }: { organizationId: string }) {
   const searchParams = useSearchParams();
   const focusBranch = searchParams.get("branch");
-  const [org, setOrg] = useState<OrgPayload | null>(null);
+  const [org, setOrg] = useState<ModerationOrgDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [orgReviseComment, setOrgReviseComment] = useState("");
-  const [orgRejectReason, setOrgRejectReason] = useState("");
-  const [branchRejectReason, setBranchRejectReason] = useState("");
-  const [branchReviseComment, setBranchReviseComment] = useState("");
+  const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [preview, setPreview] = useState<PreviewState>(null);
+  const [orgDialog, setOrgDialog] = useState<OrgDialog>(null);
+  const [branchDialog, setBranchDialog] = useState<BranchDialog>(null);
+  const [testDialog, setTestDialog] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetchModerationOrganization(organizationId);
-      setOrg(res.organization as OrgPayload);
+      setOrg(res.organization as ModerationOrgDetail);
     } catch (e) {
       setOrg(null);
       setError(e instanceof RemcardApiError ? e.message : "Ошибка загрузки");
@@ -115,7 +113,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !org) return;
     const hash = window.location.hash.replace(/^#/, "");
     let branchFromHash: string | null = null;
     if (hash.startsWith("branch-")) {
@@ -129,289 +127,540 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     }
   }, [focusBranch, org]);
 
-  const focusedBranch = useMemo(
-    () => org?.branches.find((b) => b.id === focusBranch) ?? null,
-    [org, focusBranch],
+  const previewInput = useMemo(
+    () => (org ? buildModerationOrgCatalogPreviewInput(org) : null),
+    [org],
   );
 
-  const orgAction = async (action: "approve" | "approve-all" | "reject" | "revise") => {
+  const visibility = org ? moderationOrgPublicVisibility(org) : null;
+  const changeBlock = org ? moderationOrgChangeBlock(org) : null;
+  const readiness = org ? moderationOrgReadiness(org) : [];
+  const city = org ? org.branches.find((b) => b.submitted.city)?.submitted.city : null;
+
+  const handleApiError = (e: unknown) => {
+    if (e instanceof RemcardApiError && e.status === 409) {
+      setMessage({ kind: "err", text: staleRevisionUserMessage() });
+      void load();
+      return;
+    }
+    setMessage({
+      kind: "err",
+      text: e instanceof RemcardApiError ? e.message : "Ошибка",
+    });
+  };
+
+  const runOrgAction = async (action: OrgModerationAction, text: string) => {
     if (busy || !org) return;
     if (action === "reject") {
-      const err = validateModerationRejectClient(orgRejectReason);
+      const err = validateModerationRejectClient(text);
       if (err) {
-        setMessage(err);
+        setMessage({ kind: "err", text: err });
         return;
       }
     }
     if (action === "revise") {
-      const err = validateModerationReviseClient(orgReviseComment);
+      const err = validateModerationReviseClient(text);
       if (err) {
-        setMessage(err);
+        setMessage({ kind: "err", text: err });
         return;
       }
     }
-    if (action === "reject" && !window.confirm("Отклонить заявку организации?")) return;
-    if (action === "revise" && !window.confirm("Вернуть организацию на доработку?")) return;
-    if (action === "approve-all" && org) {
-      const ok = window.confirm(
-        `Одобрить организацию и все ${org.pendingBranchesCount} pending-филиалов?` +
-          (org.pendingBranchesCount === 0 ? " (филиалов pending нет)" : "") +
-          "\n\nПрофиль владельца (User) этим действием не одобряется — только org и филиалы.",
-      );
-      if (!ok) return;
-    }
-    if (action === "approve" && !window.confirm("Одобрить только организацию (без филиалов)?")) return;
 
     setBusy(true);
     setMessage(null);
-    const pendingBranchRevisions =
-      org?.branches
-        .filter((b) => b.catalogStatus === "PENDING")
-        .reduce<Record<string, string>>((acc, b) => {
-          if (b.revisionToken) acc[b.id] = b.revisionToken;
-          return acc;
-        }, {}) ?? {};
+    const pendingBranchRevisions = org.branches
+      .filter((b) => b.catalogStatus === "PENDING")
+      .reduce<Record<string, string>>((acc, b) => {
+        if (b.revisionToken) acc[b.id] = b.revisionToken;
+        return acc;
+      }, {});
 
     const body =
       action === "revise"
-        ? { comment: orgReviseComment.trim(), revisionToken: org.revisionToken, attachments: [] }
+        ? { comment: text.trim(), revisionToken: org.revisionToken, attachments: [] }
         : action === "reject"
-          ? { reason: orgRejectReason.trim(), revisionToken: org.revisionToken }
+          ? { reason: text.trim(), revisionToken: org.revisionToken }
           : action === "approve"
             ? { revisionToken: org.revisionToken }
             : action === "approve-all"
               ? { revisionToken: org.revisionToken, branchRevisions: pendingBranchRevisions }
               : {};
+
     try {
       await moderationOrganizationAction(organizationId, action, body);
-      setMessage("Решение по организации сохранено.");
-      await load();
+      setMessage({ kind: "ok", text: "Решение по организации сохранено." });
+      setOrgDialog(null);
+      try {
+        await load();
+      } catch {
+        setMessage({
+          kind: "ok",
+          text: "Решение сохранено, но карточку не удалось обновить. Нажмите «Обновить данные».",
+        });
+      }
     } catch (e) {
-      setMessage(e instanceof RemcardApiError ? e.message : "Ошибка");
+      handleApiError(e);
     }
     setBusy(false);
   };
 
-  const branchAction = async (branchId: string, action: "approve" | "reject" | "revise") => {
-    if (busy) return;
+  const runBranchAction = async (
+    branchId: string,
+    action: "approve" | "reject" | "revise",
+    text: string,
+  ) => {
+    if (busy || !org) return;
     if (action === "reject") {
-      const err = validateModerationRejectClient(branchRejectReason);
+      const err = validateModerationRejectClient(text);
       if (err) {
-        setMessage(err);
+        setMessage({ kind: "err", text: err });
         return;
       }
     }
     if (action === "revise") {
-      const err = validateModerationReviseClient(branchReviseComment);
+      const err = validateModerationReviseClient(text);
       if (err) {
-        setMessage(err);
+        setMessage({ kind: "err", text: err });
         return;
       }
     }
-    if (!window.confirm(`Подтвердите действие для филиала: ${action}`)) return;
+
     setBusy(true);
-    const branch = org?.branches.find((b) => b.id === branchId);
+    const branch = org.branches.find((b) => b.id === branchId);
     const body =
       action === "revise"
-        ? { comment: branchReviseComment.trim(), revisionToken: branch?.revisionToken, attachments: [] }
+        ? { comment: text.trim(), revisionToken: branch?.revisionToken, attachments: [] }
         : action === "reject"
-          ? { reason: branchRejectReason.trim(), revisionToken: branch?.revisionToken }
+          ? { reason: text.trim(), revisionToken: branch?.revisionToken }
           : { revisionToken: branch?.revisionToken };
+
     try {
       await moderationBranchAction(branchId, action, body);
-      setMessage("Решение по филиалу сохранено.");
-      await load();
+      setMessage({ kind: "ok", text: "Решение по филиалу сохранено." });
+      setBranchDialog(null);
+      try {
+        await load();
+      } catch {
+        setMessage({
+          kind: "ok",
+          text: "Решение сохранено, но карточку не удалось обновить. Нажмите «Обновить данные».",
+        });
+      }
     } catch (e) {
-      setMessage(e instanceof RemcardApiError ? e.message : "Ошибка");
+      handleApiError(e);
     }
     setBusy(false);
   };
 
   const toggleTestPublic = async (allowed: boolean) => {
     if (!org?.ownerId) return;
-    if (!window.confirm(allowed ? "Разрешить test в каталоге?" : "Скрыть test из каталога?")) return;
     setBusy(true);
     try {
       await setProfTestPublicCatalogShow(org.ownerId, allowed);
+      setTestDialog(null);
       await load();
+      setMessage({
+        kind: "ok",
+        text: allowed
+          ? "Разрешена публикация тестового партнёра (может затронуть другие карточки владельца)."
+          : "Тестовый партнёр скрыт из каталога.",
+      });
     } catch (e) {
-      setMessage(e instanceof RemcardApiError ? e.message : "Не удалось изменить opt-in");
+      handleApiError(e);
     }
     setBusy(false);
   };
 
-  if (loading) return <p>Загрузка…</p>;
-  if (error) return <p role="alert">{error}</p>;
-  if (!org) return <p>Не найдено</p>;
+  if (loading) return <p className={styles.page}>Загрузка…</p>;
+  if (error) {
+    return (
+      <p className={styles.page} role="alert">
+        {error}
+      </p>
+    );
+  }
+  if (!org || !previewInput) return <p className={styles.page}>Не найдено</p>;
 
   const backQs = searchParams.toString();
+  const orgPending = org.catalogStatus === "PENDING";
+  const pendingBranches = org.branches.filter((b) => b.catalogStatus === "PENDING");
 
   return (
-    <div>
-      <p>
-        <Link href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>← Очередь</Link>
-      </p>
-      <h1>{org.name}</h1>
-      <p>
-        {org.partnerType} · {org.catalogStatus} · owner {org.ownerPublicId}
-        {org.isTestPartner ? " · TEST" : ""}
-      </p>
-      {org.hasSubmittedDiff ? <p style={{ color: "#b45309" }}>Submitted отличается от live.</p> : null}
+    <div className={styles.page}>
+      <Link className={styles.backLink} href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>
+        ← Очередь модерации
+      </Link>
 
-      {org.submitted.logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={org.submitted.logoUrl} alt="" style={{ maxWidth: 160, marginBottom: 12 }} />
-      ) : null}
+      <header className={styles.header}>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{org.name}</h1>
+          <div className={styles.badges}>
+            <span className={styles.badge}>{partnerTypeLabel(org.partnerType)}</span>
+            <span className={orgPending ? styles.badgePending : styles.badge}>
+              {moderationCatalogStatusLabel(org.catalogStatus)}
+            </span>
+            {org.isTestPartner ? <span className={styles.badgeTest}>Тестовый партнёр</span> : null}
+          </div>
+        </div>
+        {city ? <p className={styles.metaLine}>Город: {city}</p> : null}
+        {org.updatedAt ? (
+          <p className={styles.metaLine}>
+            Обновлено в системе: {new Date(org.updatedAt).toLocaleString("ru-RU")} (не дата отправки
+            заявки)
+          </p>
+        ) : null}
+        {visibility ? (
+          <p className={styles.metaLine}>
+            <strong>Видимость в каталоге:</strong> {visibility.headline} — {visibility.detail}
+          </p>
+        ) : null}
+        <Button type="button" variant="secondary" disabled={busy} onClick={() => void load()}>
+          Обновить данные
+        </Button>
+      </header>
 
-      <section style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: "1rem" }}>Поданные данные</h2>
-        <p>{org.submitted.description ?? "—"}</p>
-        <p>Сайт: {org.submitted.website ?? "—"}</p>
-        <p>Telegram: {org.submitted.telegram ?? "—"}</p>
-        <p>Email: {org.submitted.publicEmail ?? "—"}</p>
-        <p>Телефон: {org.submitted.publicPhone ?? "—"}</p>
-        <p>Категории: {(org.submitted.storeCategories ?? []).join(", ") || "—"}</p>
-        <p>Специализации: {(org.submitted.specializations ?? []).join(", ") || "—"}</p>
-        <p>Этапы: {(org.submitted.navigatorStageIds ?? []).join(", ") || "—"}</p>
-      </section>
+      <div className={styles.previewBar}>
+        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "list" })}>
+          Посмотреть как в каталоге · список
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "full" })}>
+          Посмотреть как в каталоге · полная карточка
+        </Button>
+      </div>
 
-      <section style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: "1rem" }}>Live (опубликовано)</h2>
-        <p>{org.live.description ?? "—"}</p>
-        <p>Публикация org: {org.live.catalogPublished ? "да" : "нет"}</p>
-      </section>
+      <div className={styles.sectionGrid}>
+        <Panel title={changeBlock?.title ?? "Изменения"}>
+          <ul className={styles.diffList}>
+            {(changeBlock?.lines ?? []).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </Panel>
 
-      {org.publicContacts?.length ? (
-        <section style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: "1rem" }}>Контакты (live rows)</h2>
-          <ul>
-            {org.publicContacts.map((c, i) => (
-              <li key={`${c.type}-${i}`}>
-                {c.type}: {c.value} {c.isPublic ? "" : "(скрыт)"}
+        <Panel title="Готовность к публикации">
+          <p className={styles.metaLine}>{moderationOrgCanPublishLabel(org)}</p>
+          <ul className={styles.readinessList}>
+            {readiness.map((item) => (
+              <li
+                key={item.text}
+                className={
+                  item.level === "required"
+                    ? styles.readinessRequired
+                    : item.level === "ok"
+                      ? styles.readinessOk
+                      : undefined
+                }
+              >
+                {item.text}
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+        </Panel>
 
-      <section style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: "1rem" }}>Публикация test</h2>
-        {org.isTestPartner ? (
-          <>
-            <p>
-              Test opt-in:{" "}
-              {org.profTestPublicCatalogAllowed ? "разрешён" : "не разрешён — approved test скрыт"}
-            </p>
-            <button type="button" disabled={busy} onClick={() => void toggleTestPublic(true)}>
-              Разрешить test в каталоге
-            </button>{" "}
-            <button type="button" disabled={busy} onClick={() => void toggleTestPublic(false)}>
-              Скрыть test
-            </button>
-          </>
-        ) : (
-          <p>Real partner — opt-in не требуется.</p>
-        )}
-      </section>
+        <Panel title="Фото и описание">
+          {org.submitted.logoUrl ? (
+            <SafePhoto src={org.submitted.logoUrl} alt="" className={styles.photoThumb} />
+          ) : (
+            <p className={styles.metaLine}>Логотип не приложен</p>
+          )}
+          <p>{org.submitted.description?.trim() || "Описание не указано"}</p>
+        </Panel>
 
-      <section style={{ marginTop: 16 }}>
-        <h2 style={{ fontSize: "1rem" }}>Организация</h2>
-        <button type="button" disabled={busy || org.catalogStatus !== "PENDING"} onClick={() => void orgAction("approve")}>
-          Одобрить только организацию
-        </button>{" "}
-        <button
-          type="button"
-          disabled={busy || org.catalogStatus !== "PENDING"}
-          onClick={() => void orgAction("approve-all")}
-        >
-          Одобрить org + pending филиалы ({org.pendingBranchesCount})
-        </button>
-        <div style={{ marginTop: 8 }}>
-          <textarea
-            placeholder="Причина отклонения организации"
-            value={orgRejectReason}
-            onChange={(e) => setOrgRejectReason(e.target.value)}
-            rows={2}
-            style={{ width: "100%", maxWidth: 480 }}
-          />
-          <button type="button" disabled={busy} onClick={() => void orgAction("reject")}>
-            Отклонить организацию
-          </button>
-        </div>
-        <div style={{ marginTop: 8 }}>
-          <textarea
-            placeholder="Комментарий для доработки организации"
-            value={orgReviseComment}
-            onChange={(e) => setOrgReviseComment(e.target.value)}
-            rows={3}
-            style={{ width: "100%", maxWidth: 480 }}
-          />
-          <button type="button" disabled={busy} onClick={() => void orgAction("revise")}>
-            Вернуть организацию на доработку
-          </button>
-        </div>
-      </section>
+        <Panel title="Контакты (публичные в заявке)">
+          <div className={styles.dataGrid}>
+            <span>Сайт</span>
+            <span>{org.submitted.website?.trim() || "—"}</span>
+            <span>Telegram</span>
+            <span>{org.submitted.telegram?.trim() || "—"}</span>
+            <span>Email</span>
+            <span>{org.submitted.publicEmail?.trim() || "—"}</span>
+            <span>Телефон</span>
+            <span>{moderationFormatPublicPhone(org.submitted.publicPhone)}</span>
+          </div>
+        </Panel>
 
-      <section style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: "1rem" }}>Филиалы</h2>
-        <div style={{ marginBottom: 8 }}>
-          <textarea
-            placeholder="Причина отклонения филиала (для кнопок ниже)"
-            value={branchRejectReason}
-            onChange={(e) => setBranchRejectReason(e.target.value)}
-            rows={2}
-            style={{ width: "100%", maxWidth: 480 }}
-          />
-          <textarea
-            placeholder="Комментарий доработки филиала"
-            value={branchReviseComment}
-            onChange={(e) => setBranchReviseComment(e.target.value)}
-            rows={2}
-            style={{ width: "100%", maxWidth: 480, marginTop: 8 }}
-          />
-        </div>
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <Panel title="Товары и услуги">
+          <div className={styles.dataGrid}>
+            <span>Товары</span>
+            <span>{moderationSubmittedCategoryLabels(org.submitted.storeCategories).join(", ") || "—"}</span>
+            <span>Услуги</span>
+            <span>{moderationSubmittedServiceLabels(org.submitted.specializations).join(", ") || "—"}</span>
+            <span>Этапы</span>
+            <span>{moderationSubmittedStageLabels(org.submitted.navigatorStageIds).join(", ") || "—"}</span>
+          </div>
+        </Panel>
+
+        {org.live.catalogPublished ? (
+          <Panel title="Опубликовано сейчас (live)" hint="Для сравнения с отправленной заявкой">
+            <p>{org.live.description?.trim() || "Описание не заполнено"}</p>
+          </Panel>
+        ) : null}
+
+        {org.publicContacts?.length ? (
+          <Panel title="Служебно: строки publicContacts (опубликованный справочник)">
+            <ul className={styles.diffList}>
+              {org.publicContacts.map((c, i) => (
+                <li key={`${c.type}-${i}`}>
+                  {moderationPublicContactTypeLabel(c.type)}: {c.value}{" "}
+                  {c.isPublic ? "" : "(скрыт)"}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+
+        <Panel title="Адреса и филиалы">
           {org.branches.map((b) => (
-            <li
+            <article
               key={b.id}
               id={`branch-${b.id}`}
-              style={{
-                border: focusBranch === b.id ? "2px solid #e53935" : "1px solid #eee",
-                padding: 12,
-                marginBottom: 8,
-                borderRadius: 8,
-              }}
+              className={`${styles.branchCard} ${focusBranch === b.id ? styles.branchFocus : ""}`}
             >
-              <strong>{b.submitted.name}</strong> · {b.catalogStatus}
-              {b.hasSubmittedDiff ? " · diff" : ""}
-              <div>
+              <strong>{b.submitted.name ?? "Филиал"}</strong> ·{" "}
+              {moderationCatalogStatusLabel(b.catalogStatus)}
+              {b.catalogStatus === "DRAFT" ? (
+                <p className={styles.branchDraftNote}>Черновик — на проверку не отправлен.</p>
+              ) : null}
+              <p className={styles.metaLine}>
                 {b.submitted.city}, {b.submitted.address}
-              </div>
-              <div>Часы: {b.submitted.workingHours ?? "—"}</div>
+              </p>
+              {b.submitted.workingHours ? <p>Часы: {b.submitted.workingHours}</p> : null}
+              {b.submitted.description ? <p>{b.submitted.description}</p> : null}
               {b.submitted.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={b.submitted.photoUrl} alt="" style={{ maxWidth: 120, marginTop: 8 }} />
+                <SafePhoto src={b.submitted.photoUrl} alt="" className={styles.photoThumb} />
               ) : null}
               {b.catalogStatus === "PENDING" ? (
-                <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" disabled={busy} onClick={() => void branchAction(b.id, "approve")}>
+                <div className={styles.actionsRow} style={{ marginTop: "0.5rem" }}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => setBranchDialog({ branchId: b.id, action: "approve", text: "" })}
+                  >
                     Одобрить филиал
-                  </button>
-                  <button type="button" disabled={busy} onClick={() => void branchAction(b.id, "reject")}>
-                    Отклонить
-                  </button>
-                  <button type="button" disabled={busy} onClick={() => void branchAction(b.id, "revise")}>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="text"
+                    disabled={busy}
+                    onClick={() => setBranchDialog({ branchId: b.id, action: "revise", text: "" })}
+                  >
                     На доработку
-                  </button>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="text"
+                    disabled={busy}
+                    onClick={() => setBranchDialog({ branchId: b.id, action: "reject", text: "" })}
+                  >
+                    Отклонить
+                  </Button>
                 </div>
               ) : null}
-            </li>
+              {b.catalogStatus === "PENDING" ? (
+                <BranchCatalogPublicationPreview model={buildModerationBranchPreviewModel(b, org)} />
+              ) : null}
+            </article>
           ))}
-        </ul>
+        </Panel>
+
+        <Panel title="История проверки">
+          <p className={styles.metaLine}>
+            История решений по организации в API не передаётся. Показываются только сохранённые данные
+            текущей заявки.
+          </p>
+        </Panel>
+
+        {org.isTestPartner ? (
+          <Panel title="Публикация тестового партнёра">
+            <p className={styles.metaLine}>
+              Opt-in владельца:{" "}
+              {org.profTestPublicCatalogAllowed
+                ? "разрешён"
+                : "не разрешён — одобренные test-карточки скрыты"}
+            </p>
+            <p className={styles.metaLine}>
+              Действие может затронуть другие карточки этого владельца. Скрытие не удаляет аккаунт.
+              Обновление CDN-кэша каталога может занять до ~360 с.
+            </p>
+            <div className={styles.actionsRow}>
+              <Button type="button" variant="secondary" disabled={busy} onClick={() => setTestDialog(true)}>
+                Разрешить показ в каталоге
+              </Button>
+              <Button type="button" variant="text" disabled={busy} onClick={() => setTestDialog(false)}>
+                Скрыть из каталога
+              </Button>
+            </div>
+          </Panel>
+        ) : null}
+      </div>
+
+      <section className={styles.actionsPanel} aria-label="Решение по организации">
+        <h2 className={styles.dialogTitle}>Решение по организации</h2>
+        <p className={styles.metaLine}>{moderationOrgCanPublishLabel(org)}</p>
+        <div className={styles.actionsRow}>
+          <Button
+            className={styles.actionPrimary}
+            type="button"
+            disabled={busy || !orgPending}
+            onClick={() => setOrgDialog({ action: "approve", text: "" })}
+          >
+            {orgApproveButtonLabel(org)}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy || !orgPending}
+            onClick={() => setOrgDialog({ action: "revise", text: "" })}
+          >
+            Вернуть на доработку
+          </Button>
+          <Button
+            type="button"
+            variant="text"
+            disabled={busy || !orgPending}
+            onClick={() => setOrgDialog({ action: "reject", text: "" })}
+          >
+            Отклонить заявку
+          </Button>
+          {pendingBranches.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy || !orgPending}
+              onClick={() => setOrgDialog({ action: "approve-all", text: "" })}
+            >
+              Одобрить org и {pendingBranches.length} филиал(ов)
+            </Button>
+          ) : null}
+        </div>
       </section>
 
-      {focusedBranch ? <p>Фокус: филиал {focusedBranch.submitted.name}</p> : null}
-      {message ? <p role="status">{message}</p> : null}
+      {message ? (
+        <p className={message.kind === "err" ? styles.statusError : styles.statusOk} role="status">
+          {message.text}
+        </p>
+      ) : null}
+
+      <dl className={styles.techBlock}>
+        <dt>Служебная информация</dt>
+        <dd>ID организации: {org.id}</dd>
+        <dd>Owner public ID: {org.ownerPublicId}</dd>
+        <dd>revisionToken: {org.revisionToken}</dd>
+      </dl>
+
+      <ModerationPreviewModal
+        open={preview !== null}
+        mode={preview?.mode ?? "full"}
+        onClose={() => setPreview(null)}
+        profile={previewInput.profile}
+        draft={previewInput.draft}
+        partnerType={org.partnerType}
+      />
+
+      <ModerationConfirmDialog
+        open={orgDialog?.action === "approve"}
+        title="Одобрить заявку"
+        description={orgApproveConfirmMessage(org)}
+        confirmLabel="Подтвердить одобрение"
+        busy={busy}
+        textValue=""
+        onTextChange={() => {}}
+        onCancel={() => setOrgDialog(null)}
+        onConfirm={() => void runOrgAction("approve", "")}
+      />
+
+      <ModerationConfirmDialog
+        open={orgDialog?.action === "approve-all"}
+        title="Одобрить организацию и филиалы"
+        description={orgApproveAllConfirmMessage(org)}
+        confirmLabel="Подтвердить"
+        busy={busy}
+        textValue=""
+        onTextChange={() => {}}
+        onCancel={() => setOrgDialog(null)}
+        onConfirm={() => void runOrgAction("approve-all", "")}
+      />
+
+      <ModerationConfirmDialog
+        open={orgDialog?.action === "reject"}
+        title="Отклонить заявку"
+        description={orgRejectConfirmMessage(org)}
+        confirmLabel="Отклонить"
+        danger
+        busy={busy}
+        requireText
+        textLabel="Причина отказа"
+        textValue={orgDialog?.text ?? ""}
+        onTextChange={(t) => setOrgDialog((d) => (d ? { ...d, text: t } : d))}
+        onCancel={() => setOrgDialog(null)}
+        onConfirm={() => void runOrgAction("reject", orgDialog?.text ?? "")}
+      />
+
+      <ModerationConfirmDialog
+        open={orgDialog?.action === "revise"}
+        title="Вернуть на доработку"
+        description={orgReviseConfirmMessage(org)}
+        confirmLabel="Отправить на доработку"
+        busy={busy}
+        requireText
+        textLabel="Что нужно исправить"
+        textValue={orgDialog?.text ?? ""}
+        onTextChange={(t) => setOrgDialog((d) => (d ? { ...d, text: t } : d))}
+        onCancel={() => setOrgDialog(null)}
+        onConfirm={() => void runOrgAction("revise", orgDialog?.text ?? "")}
+      />
+
+      {branchDialog ? (
+        <ModerationConfirmDialog
+          open
+          title={
+            branchDialog.action === "approve"
+              ? "Одобрить филиал"
+              : branchDialog.action === "reject"
+                ? "Отклонить филиал"
+                : "Вернуть филиал на доработку"
+          }
+          description={`Филиал «${
+            org.branches.find((b) => b.id === branchDialog.branchId)?.submitted.name ?? branchDialog.branchId
+          }»`}
+          confirmLabel={
+            branchDialog.action === "approve"
+              ? "Одобрить"
+              : branchDialog.action === "reject"
+                ? "Отклонить"
+                : "На доработку"
+          }
+          danger={branchDialog.action === "reject"}
+          busy={busy}
+          requireText={branchDialog.action !== "approve"}
+          textLabel={
+            branchDialog.action === "reject" ? "Причина отказа" : "Что нужно исправить"
+          }
+          textValue={branchDialog.text}
+          onTextChange={(t) => setBranchDialog((d) => (d ? { ...d, text: t } : d))}
+          onCancel={() => setBranchDialog(null)}
+          onConfirm={() =>
+            void runBranchAction(branchDialog.branchId, branchDialog.action, branchDialog.text)
+          }
+        />
+      ) : null}
+
+      <ModerationConfirmDialog
+        open={testDialog !== null}
+        title={testDialog ? "Разрешить публикацию test" : "Скрыть test из каталога"}
+        description={
+          testDialog
+            ? "Разрешить показ карточек тестового партнёра в каталоге? Может затронуть все карточки владельца."
+            : "Скрыть тестового партнёра из каталога? Аккаунт не блокируется."
+        }
+        confirmLabel="Подтвердить"
+        busy={busy}
+        textValue=""
+        onTextChange={() => {}}
+        onCancel={() => setTestDialog(null)}
+        onConfirm={() => void toggleTestPublic(Boolean(testDialog))}
+      />
     </div>
   );
 }

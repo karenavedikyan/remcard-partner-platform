@@ -129,21 +129,32 @@ async function runProfModerationFlow(browser, fx) {
   const orgReturn = `/admin/moderation/organizations/${fx.pendingOrgId}`;
   await adminPasswordLogin(page, orgReturn);
   assert(page.url().includes(fx.pendingOrgId), "deep link lands on seeded org after login");
-  await page.getByRole("button", { name: /Одобрить только организацию/i }).waitFor({ timeout: 20000 });
+  await page.getByRole("button", { name: /Одобрить заявку/i }).waitFor({ timeout: 20000 });
   await page.getByRole("heading", { level: 1, name: fx.pendingOrgTitle }).waitFor({ timeout: 5000 });
   await screenshot(page, "org-detail-1440.png");
+
+  await page.getByRole("button", { name: /список/i }).click();
+  await page.getByRole("dialog").waitFor({ timeout: 10000 });
+  await page.getByTestId("catalog-public-preview").waitFor({ timeout: 10000 });
+  await screenshot(page, "org-preview-list-1440.png");
+  await page.getByRole("button", { name: /^Закрыть$/i }).click();
+
+  await page.getByRole("button", { name: /полная карточка/i }).click();
+  await page.getByRole("dialog").waitFor({ timeout: 10000 });
+  await screenshot(page, "org-preview-full-1440.png");
+  await page.getByRole("button", { name: /^Закрыть$/i }).click();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await assertHealthyPage(page, "org-detail-390");
   await screenshot(page, "org-detail-390.png");
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  page.once("dialog", (d) => d.accept());
   const orgApproveResp = page.waitForResponse(
     (r) =>
       r.url().includes(`/organizations/${fx.pendingOrgId}/approve`) && r.request().method() === "POST",
   );
-  await page.getByRole("button", { name: /Одобрить только организацию/i }).click();
+  await page.getByRole("button", { name: /Одобрить заявку/i }).click();
+  await page.getByRole("button", { name: /Подтвердить одобрение/i }).click();
   const oa = await orgApproveResp;
   assert(oa.ok(), `org approve HTTP ${oa.status()}`);
   await page.getByText(/Решение по организации сохранено/i).waitFor({ timeout: 10000 });
@@ -226,18 +237,16 @@ async function runProfModerationFlow(browser, fx) {
     { waitUntil: "domcontentloaded" },
   );
   await page.locator(`#branch-${fx.branchRejectBranchId}`).waitFor({ timeout: 10000 });
-  await page.getByPlaceholder("Причина отклонения филиала (для кнопок ниже)").fill(
-    "E2E branch reject: неверный адрес филиала.",
-  );
-  page.once("dialog", (d) => d.accept());
   const br = page.waitForResponse(
     (r) =>
       r.url().includes(`/branches/${fx.branchRejectBranchId}/reject`) && r.request().method() === "POST",
   );
   await page
     .locator(`#branch-${fx.branchRejectBranchId}`)
-    .getByRole("button", { name: "Отклонить" })
+    .getByRole("button", { name: /^Отклонить$/i })
     .click();
+  await page.getByLabel(/Причина отказа/i).fill("E2E branch reject: неверный адрес филиала.");
+  await page.getByRole("button", { name: /^Отклонить$/i }).last().click();
   const brs = await br;
   assert(brs.ok(), `branch reject HTTP ${brs.status()}`);
   await screenshot(page, "branch-after-reject-1440.png");
