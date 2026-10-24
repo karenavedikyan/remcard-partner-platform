@@ -155,7 +155,8 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     if (action === "approve-all" && org) {
       const ok = window.confirm(
         `Одобрить организацию и все ${org.pendingBranchesCount} pending-филиалов?` +
-          (org.pendingBranchesCount === 0 ? " (филиалов pending нет)" : ""),
+          (org.pendingBranchesCount === 0 ? " (филиалов pending нет)" : "") +
+          "\n\nПрофиль владельца (User) этим действием не одобряется — только org и филиалы.",
       );
       if (!ok) return;
     }

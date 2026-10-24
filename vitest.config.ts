@@ -43,6 +43,7 @@ export default defineConfig({
       "src/lib/taxonomy-proposal-normalize.test.ts",
       "src/lib/taxonomy-proposal-api.wire.test.ts",
       "src/lib/remcard-proxy-r06-tail.test.ts",
+      "src/lib/remcard-proxy-moderation.test.ts",
       "src/lib/theme-preference.test.ts",
       "src/lib/prof-notifications.test.ts",
       "src/lib/prof-notification-target.test.ts",
