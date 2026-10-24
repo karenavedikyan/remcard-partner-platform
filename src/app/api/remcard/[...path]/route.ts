@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
 import { assertServerOnly } from "@/lib/config";
+import { buildRemcardProxyRequestInput } from "@/lib/remcard-proxy-bff";
 import {
   buildProxyNextResponse,
-  normalizeProxyPath,
   proxyRemcardRequest,
 } from "@/lib/remcard-proxy";
 
 async function proxyRequest(request: NextRequest, pathSegments: string[]) {
   assertServerOnly("RemCard BFF proxy");
 
-  const pathname = normalizeProxyPath(pathSegments);
-  if (!pathname) {
+  const input = await buildRemcardProxyRequestInput(request, pathSegments);
+  if (!input) {
     return buildProxyNextResponse({
       ok: false,
       status: 403,
@@ -18,26 +18,7 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     });
   }
 
-  const bodyText =
-    request.method !== "GET" && request.method !== "HEAD"
-      ? await request.text()
-      : undefined;
-
-  const result = await proxyRemcardRequest({
-    method: request.method,
-    pathname,
-    search: request.nextUrl.search,
-    contentType: request.headers.get("content-type"),
-    cookieHeader: request.headers.get("cookie"),
-    origin: request.headers.get("origin"),
-    csrfHeader: request.headers.get("X-CSRF-Token"),
-    bodyText,
-    idempotencyKeyHeader:
-      request.method === "POST" &&
-      (pathname === "/api/store/order" || pathname === "/api/pro/agent-certificates")
-        ? request.headers.get("Idempotency-Key")
-        : null,
-  });
+  const result = await proxyRemcardRequest(input);
 
   return buildProxyNextResponse(result);
 }

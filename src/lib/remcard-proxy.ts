@@ -247,6 +247,39 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     },
   ];
 
+export function isMultipartFormDataContentType(contentType: string | null): boolean {
+  if (!contentType) {
+    return false;
+  }
+  const base = contentType.split(";", 1)[0]?.trim().toLowerCase();
+  return base === "multipart/form-data";
+}
+
+/** Read mutating request body without corrupting multipart binary payloads. */
+export async function readProxyRequestBody(
+  method: string,
+  contentType: string | null,
+  source: { text(): Promise<string>; arrayBuffer(): Promise<ArrayBuffer> },
+): Promise<Pick<ProxyRequestInput, "bodyText" | "bodyBinary">> {
+  if (method === "GET" || method === "HEAD") {
+    return {};
+  }
+  if (isMultipartFormDataContentType(contentType)) {
+    return { bodyBinary: await source.arrayBuffer() };
+  }
+  return { bodyText: await source.text() };
+}
+
+function proxyRequestJsonBody(input: ProxyRequestInput): string {
+  if (input.bodyText !== undefined) {
+    return input.bodyText;
+  }
+  if (input.bodyBinary !== undefined) {
+    return new TextDecoder("utf-8", { fatal: false }).decode(input.bodyBinary);
+  }
+  return "";
+}
+
 export type ProxyRequestInput = {
   method: string;
   pathname: string;
@@ -256,6 +289,7 @@ export type ProxyRequestInput = {
   origin: string | null;
   csrfHeader: string | null;
   bodyText?: string;
+  bodyBinary?: ArrayBuffer;
   /** Raw Idempotency-Key from client — validated and forwarded only for POST /api/store/order. */
   idempotencyKeyHeader?: string | null;
 };
@@ -579,7 +613,7 @@ export async function proxyRemcardRequest(
   if (upperMethod === "POST" && pathname === "/api/account/consent") {
     let payload: unknown;
     try {
-      payload = JSON.parse(input.bodyText ?? "");
+      payload = JSON.parse(proxyRequestJsonBody(input));
     } catch {
       return { ok: false, status: 400, body: JSON.stringify({ error: "INVALID_CONSENT_BODY" }) };
     }
@@ -636,8 +670,12 @@ export async function proxyRemcardRequest(
     signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   };
 
-  if (upperMethod !== "GET" && upperMethod !== "HEAD" && input.bodyText !== undefined) {
-    init.body = input.bodyText;
+  if (upperMethod !== "GET" && upperMethod !== "HEAD") {
+    if (input.bodyBinary !== undefined) {
+      init.body = new Uint8Array(input.bodyBinary);
+    } else if (input.bodyText !== undefined) {
+      init.body = input.bodyText;
+    }
   }
 
   let upstream: Response;

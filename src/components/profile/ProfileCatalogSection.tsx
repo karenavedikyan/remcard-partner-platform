@@ -226,11 +226,12 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
     setUploading(true);
     const result = await uploadCatalogImage(file);
     setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
     if (!result.ok) {
       setUploadError(result.error);
-      if (fileRef.current) fileRef.current.value = "";
       return;
     }
+    setUploadError("");
     onCatalogImageUrlChange(result.url);
   }
 

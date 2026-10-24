@@ -479,11 +479,18 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
+                setUploadError("");
                 setUploading(true);
                 void uploadCatalogImage(file).then((result) => {
                   setUploading(false);
-                  if (result.ok) onCatalogImageUrlChange(result.url);
-                  else setUploadError(result.error);
+                  if (fileRef.current) fileRef.current.value = "";
+                  if (result.ok) {
+                    touchField(props, "catalogImageUrl");
+                    onCatalogImageUrlChange(result.url);
+                    setUploadError("");
+                  } else {
+                    setUploadError(result.error);
+                  }
                 });
               }}
             />
