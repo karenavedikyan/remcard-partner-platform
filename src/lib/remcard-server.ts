@@ -47,11 +47,21 @@ export async function fetchRemcardUpstream<T>(
     };
   }
 
-  const response = await fetch(`${backendBaseUrl}${normalizedPath}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${backendBaseUrl}${normalizedPath}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
+      message: error instanceof Error ? error.message : "Upstream fetch failed",
+      configured: true,
+    };
+  }
 
   const text = await response.text();
   if (!response.ok) {

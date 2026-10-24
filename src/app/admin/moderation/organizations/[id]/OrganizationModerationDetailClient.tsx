@@ -19,6 +19,7 @@ const MODERATION_FOCUS_HASH_KEY = "profModerationFocusHash";
 
 type BranchRow = {
   id: string;
+  revisionToken?: string;
   catalogStatus: string;
   submitted: {
     name?: string;
@@ -164,10 +165,10 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     setMessage(null);
     const body =
       action === "revise"
-        ? { comment: orgReviseComment.trim(), revisionToken: org.revisionToken }
+        ? { comment: orgReviseComment.trim(), revisionToken: org.revisionToken, attachments: [] }
         : action === "reject"
           ? { reason: orgRejectReason.trim(), revisionToken: org.revisionToken }
-          : action === "approve"
+          : action === "approve" || action === "approve-all"
             ? { revisionToken: org.revisionToken }
             : {};
     try {
@@ -198,12 +199,13 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     }
     if (!window.confirm(`Подтвердите действие для филиала: ${action}`)) return;
     setBusy(true);
+    const branch = org?.branches.find((b) => b.id === branchId);
     const body =
       action === "revise"
-        ? { comment: branchReviseComment.trim() }
+        ? { comment: branchReviseComment.trim(), revisionToken: branch?.revisionToken, attachments: [] }
         : action === "reject"
-          ? { reason: branchRejectReason.trim() }
-          : {};
+          ? { reason: branchRejectReason.trim(), revisionToken: branch?.revisionToken }
+          : { revisionToken: branch?.revisionToken };
     try {
       await moderationBranchAction(branchId, action, body);
       setMessage("Решение по филиалу сохранено.");

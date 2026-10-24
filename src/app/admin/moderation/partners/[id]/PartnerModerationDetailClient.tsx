@@ -114,7 +114,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
     setMessage(null);
     const body =
       action === "revise"
-        ? { comment: reviseComment.trim(), revisionToken: partner?.revisionToken }
+        ? { comment: reviseComment.trim(), revisionToken: partner?.revisionToken, attachments: [] }
         : action === "reject"
           ? { reason: rejectReason.trim(), revisionToken: partner?.revisionToken }
           : action === "approve"
