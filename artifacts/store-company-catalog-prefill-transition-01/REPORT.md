@@ -40,7 +40,7 @@ Backend **не менялся**.
 
 | Репозиторий | База задачи | Final SHA (после фикса) |
 |-------------|-------------|-------------------------|
-| remcard-partner-platform | `6a70eb1bdce37ddda86f4004ecc725a40807a5d2` (release/prof-v1-20261007) | *(см. commit после push)* |
+| remcard-partner-platform | `6a70eb1bdce37ddda86f4004ecc725a40807a5d2` (release/prof-v1-20261007) | `9e6595e3` (branch `fix/store-company-catalog-prefill-transition-01`) |
 | remcard-navigator | `15b296352c3a82691682e665a250e306b3f06db9` | без изменений |
 
 Production SAVE-02: backend deployment active, не затрагивался.
