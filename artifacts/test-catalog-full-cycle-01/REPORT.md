@@ -2,7 +2,7 @@
 
 Baseline: `6e41d066c80bcc4028d3503b5d571169404c3d24`. Branch: `fix/test-catalog-full-cycle-01`.
 
-**Runtime code SHA:** see `git rev-parse` on latest non-docs commit (not embedded in this file).
+**Runtime code SHA:** `8d686357d0148fa8e0326829cdf515ac89e116c5`
 
 ## Submit + refresh failure (runtime)
 
