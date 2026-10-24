@@ -25,4 +25,4 @@ Inherited multipart/upload/preview tests not re-run in this turn.
 - Browser E2E moderation + public remcard.ru (BLOCKED: no isolated full stack run).
 - Admin toggle against production API.
 
-Final code SHA: _(set at commit tip)_.
+Final code SHA: `2712c54f69454cbf8cc4e97500a9732e443ad995`.
