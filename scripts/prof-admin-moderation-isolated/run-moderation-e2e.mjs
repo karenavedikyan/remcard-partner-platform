@@ -255,7 +255,7 @@ async function runProfModerationFlow(browser, fx) {
   await screenshotLightDark(page, "queue");
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator("tbody tr").first().waitFor({ timeout: 15000 });
+  await page.getByTestId("moderation-queue-card").first().waitFor({ timeout: 15000 });
   await assertHealthyPage(page, "queue-390");
   await screenshot(page, "queue-390.png");
 

@@ -194,7 +194,11 @@ export function AdminModerationClient() {
           </div>
           <div className={styles.cards}>
             {data.items.map((item) => (
-              <article key={`card-${item.entityKind}-${item.id}`} className={styles.card}>
+              <article
+                key={`card-${item.entityKind}-${item.id}`}
+                className={styles.card}
+                data-testid="moderation-queue-card"
+              >
                 <div className={styles.cardTitle}>{renderRow(item)}</div>
                 <p className={styles.subMeta}>
                   {ENTITY_RU[item.entityKind]} · {moderationCatalogStatusLabel(item.catalogStatus)}
