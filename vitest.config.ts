@@ -11,6 +11,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    env: {
+      NODE_ENV: "development",
+    },
     setupFiles: ["./vitest.setup.ts"],
     include: [
       "src/**/*.test.tsx",
@@ -46,6 +49,9 @@ export default defineConfig({
       "src/lib/prof-admin-moderation-org-display.test.ts",
       "src/lib/prof-admin-moderation-org-actions.test.ts",
       "src/lib/prof-admin-moderation-org-readiness.test.ts",
+      "src/lib/prof-admin-moderation-public-preview.test.ts",
+      "src/lib/category-display.test.ts",
+      "src/lib/branch-catalog-preview.test.ts",
       "src/lib/remcard-proxy-moderation.test.ts",
       "src/app/admin/moderation/organizations/[id]/OrganizationModerationDetail.actions.test.tsx",
       "src/app/admin/moderation/organizations/[id]/ModerationConfirmDialog.test.tsx",

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { Button } from "@/components/ui/Button";
+import { useModerationModalFocusTrap } from "./useModerationModalFocusTrap";
 import styles from "./OrganizationModerationDetail.module.css";
 
 type Props = {
@@ -35,6 +36,7 @@ export function ModerationConfirmDialog({
   onCancel,
 }: Props) {
   const titleId = useId();
+  const trapRef = useModerationModalFocusTrap(open);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const didFocusOnOpen = useRef(false);
@@ -74,6 +76,7 @@ export function ModerationConfirmDialog({
   return (
     <div className={styles.overlay} role="presentation" onClick={handleOverlay}>
       <div
+        ref={trapRef}
         className={styles.dialog}
         role="dialog"
         aria-modal="true"

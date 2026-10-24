@@ -43,10 +43,37 @@ export async function fetchModerationOrganization(orgId: string) {
   );
 }
 
-export async function fetchModerationOrganizationPublicPreview(orgId: string) {
+export type ModerationPublicPreviewRequest = {
+  orgRevision: string;
+  branchRevisions: Record<string, string>;
+  signal?: AbortSignal;
+};
+
+export async function fetchModerationOrganizationPublicPreview(
+  orgId: string,
+  params: ModerationPublicPreviewRequest,
+) {
+  const q = new URLSearchParams({
+    orgRevision: params.orgRevision,
+    branchRevisions: JSON.stringify(params.branchRevisions),
+  });
   return remcardFetch<Record<string, unknown>>(
-    `/api/pro/admin/moderation/organizations/${encodeURIComponent(orgId)}/public-preview`,
+    `/api/pro/admin/moderation/organizations/${encodeURIComponent(orgId)}/public-preview?${q.toString()}`,
+    { signal: params.signal },
   );
+}
+
+export function buildModerationOrgPreviewRevisionQuery(org: {
+  revisionToken: string;
+  branches: { id: string; catalogStatus: string; revisionToken?: string }[];
+}): Pick<ModerationPublicPreviewRequest, "orgRevision" | "branchRevisions"> {
+  const branchRevisions: Record<string, string> = {};
+  for (const b of org.branches) {
+    if (b.catalogStatus === "PENDING" && b.revisionToken) {
+      branchRevisions[b.id] = b.revisionToken;
+    }
+  }
+  return { orgRevision: org.revisionToken, branchRevisions };
 }
 
 export async function moderationPartnerAction(

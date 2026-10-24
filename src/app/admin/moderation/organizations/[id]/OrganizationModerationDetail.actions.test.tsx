@@ -8,11 +8,20 @@ const mockFetchOrg = vi.fn();
 const mockOrgAction = vi.fn();
 const mockBranchAction = vi.fn();
 
-vi.mock("@/lib/prof-admin-moderation-api", () => ({
-  fetchModerationOrganization: (...args: unknown[]) => mockFetchOrg(...args),
-  moderationOrganizationAction: (...args: unknown[]) => mockOrgAction(...args),
-  moderationBranchAction: (...args: unknown[]) => mockBranchAction(...args),
-}));
+vi.mock("@/lib/prof-admin-moderation-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/prof-admin-moderation-api")>();
+  return {
+    ...actual,
+    fetchModerationOrganization: (...args: unknown[]) => mockFetchOrg(...args),
+    moderationOrganizationAction: (...args: unknown[]) => mockOrgAction(...args),
+    moderationBranchAction: (...args: unknown[]) => mockBranchAction(...args),
+    fetchModerationOrganizationPublicPreview: vi.fn().mockResolvedValue({
+      organizationRevisionToken: "rev1",
+      organization: { publicContacts: [] },
+      branches: [],
+    }),
+  };
+});
 
 vi.mock("@/lib/prof-admin-api", () => ({
   setProfTestPublicCatalogShow: vi.fn(),

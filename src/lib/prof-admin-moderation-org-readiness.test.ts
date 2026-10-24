@@ -70,4 +70,21 @@ describe("validateOrgCatalogForModeration parity", () => {
     );
     expect(items.some((i) => i.level === "required" && i.text.includes("филиал"))).toBe(true);
   });
+
+  it("allows PENDING org with only DRAFT branch (submit parity)", () => {
+    const items = moderationOrgServerReadiness(
+      org({
+        branches: [
+          { id: "d1", catalogStatus: "DRAFT", submitted: {}, hasSubmittedDiff: false, isActive: true },
+        ],
+        submitted: {
+          storeCategories: ["wallpaper"],
+          specializations: [],
+          navigatorStageIds: ["L1-9"],
+        },
+      }),
+    );
+    expect(items.some((i) => i.level === "required" && i.text.includes("филиал"))).toBe(false);
+    expect(items.some((i) => i.level === "recommendation" && i.text.includes("черновик"))).toBe(true);
+  });
 });

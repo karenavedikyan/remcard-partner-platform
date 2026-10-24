@@ -35,6 +35,7 @@ export type ModerationOrgLive = {
 export type ModerationBranchRow = {
   id: string;
   revisionToken?: string;
+  isActive?: boolean;
   catalogStatus: string;
   submitted: {
     name?: string;

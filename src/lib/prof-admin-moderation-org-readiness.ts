@@ -49,8 +49,13 @@ export type ModerationReadinessItem = {
   text: string;
 };
 
+/** Active branches only — mirrors submit route `branches: { where: { isActive: true } }`. */
+export function moderationOrgActiveBranchCount(org: ModerationOrgDetail): number {
+  return org.branches.filter((b) => b.isActive !== false).length;
+}
+
 export function moderationOrgServerReadiness(org: ModerationOrgDetail): ModerationReadinessItem[] {
-  const branchCount = org.branches.filter((b) => b.catalogStatus !== "DRAFT").length;
+  const branchCount = moderationOrgActiveBranchCount(org);
   const serverErrors = validateOrgCatalogForModeration({
     name: org.name,
     branchCount,
@@ -66,6 +71,15 @@ export function moderationOrgServerReadiness(org: ModerationOrgDetail): Moderati
 
   if (serverErrors.length === 0) {
     items.push({ level: "ok", text: "Обязательные условия сервера для отправки в каталог выполнены." });
+  }
+
+  const pendingBranchCount = org.branches.filter((b) => b.catalogStatus === "PENDING").length;
+  const draftBranchCount = org.branches.filter((b) => b.catalogStatus === "DRAFT").length;
+  if (pendingBranchCount === 0 && draftBranchCount > 0) {
+    items.push({
+      level: "recommendation",
+      text: `${draftBranchCount} филиал(ов) в черновике — в каталоге после одобрения будут только уже отправленные на проверку точки.`,
+    });
   }
 
   if (!org.submitted.description?.trim()) {

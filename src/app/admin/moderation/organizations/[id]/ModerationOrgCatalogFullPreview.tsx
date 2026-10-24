@@ -10,6 +10,8 @@ import styles from "./OrganizationModerationDetail.module.css";
 
 export type ModerationPublicPreviewPayload = {
   previewLimitation: string;
+  organizationRevisionToken?: string;
+  branchRevisions?: Record<string, string>;
   isTestPartner: boolean;
   organization: {
     id: string;
