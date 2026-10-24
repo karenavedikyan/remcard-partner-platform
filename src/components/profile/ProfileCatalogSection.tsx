@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
@@ -9,12 +9,13 @@ import {
   catalogPublicationStatusLabel,
 } from "@/lib/profile-catalog-completeness";
 import { catalogEntityLabel } from "@/lib/profile-catalog-draft-sync";
+import { effectiveCatalogStatus, showRevisionBanner } from "@/lib/profile-catalog-state";
 import {
-  canSubmitProfileForModeration,
-  catalogPublicationEditable,
-  effectiveCatalogStatus,
-  showRevisionBanner,
-} from "@/lib/profile-catalog-state";
+  catalogPublicationFieldsEditable,
+  catalogSubmitPublicationAllowed,
+  processCatalogSubmitResult,
+  recoverCatalogSubmitStatus,
+} from "@/lib/catalog-submit-publication";
 import {
   discardCatalogDraft,
   persistCatalogDraftOnly,
@@ -117,6 +118,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
   );
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitAcceptedPendingSync, setSubmitAcceptedPendingSync] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
@@ -126,7 +128,15 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
   const catalogStatus = effectiveCatalogStatus(profile);
   const statusLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
   const publicationLabel = catalogPublicationStatusLabel(profile);
-  const canSubmit = canSubmitProfileForModeration(profile);
+  const canSubmit = catalogSubmitPublicationAllowed(profile, submitAcceptedPendingSync);
+  const publicationEditable =
+    catalogEditable && catalogPublicationFieldsEditable(profile, submitAcceptedPendingSync);
+
+  useEffect(() => {
+    if (effectiveCatalogStatus(profile) === "PENDING") {
+      setSubmitAcceptedPendingSync(false);
+    }
+  }, [profile]);
   const missing = catalogMissingForSubmit(profile, draft);
   const entity = catalogEntityLabel(profile);
   const draftPending = profile.catalogPublication?.draftPending || profile.user.catalogDraftPending;
@@ -159,6 +169,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
   }
 
   async function submitPublication() {
+    if (submitting || submitAcceptedPendingSync || !canSubmit) return;
     if (uploading) {
       setError("Дождитесь завершения загрузки изображения");
       return;
@@ -170,28 +181,45 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
     setSubmitting(true);
     setError("");
     setSuccess("");
+    const successCopy =
+      catalogStatus === "APPROVED"
+        ? "Изменения отправлены на повторную проверку"
+        : "Отправлено на проверку для публикации в каталоге";
     try {
       const result = await submitProfileForModerationReview(profile, draft);
-      const successCopy =
-        catalogStatus === "APPROVED"
-          ? "Изменения отправлены на повторную проверку"
-          : "Отправлено на проверку для публикации в каталоге";
-      if (result.refreshFailed) {
-        setSuccess(successCopy);
-        setError("Не удалось обновить статус на экране — обновите страницу.");
-        try {
-          onProfileUpdated(await refreshProfile());
-          setError("");
-        } catch {
-          /* keep hint */
-        }
-      } else if (result.profile) {
-        onProfileUpdated(result.profile);
-        setSuccess(successCopy);
-      }
+      const outcome = await processCatalogSubmitResult({
+        result,
+        profileBeforeSubmit: profile,
+        successMessage: successCopy,
+        refreshProfile,
+      });
+      if (outcome.profile) onProfileUpdated(outcome.profile);
+      setSubmitAcceptedPendingSync(outcome.submitAcceptedPendingSync);
+      if (outcome.successMessage) setSuccess(outcome.successMessage);
+      if (outcome.errorMessage) setError(outcome.errorMessage);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function recoverSubmitStatus() {
+    setSubmitting(true);
+    setError("");
+    try {
+      const { profile: recovered, pendingSyncCleared } = await recoverCatalogSubmitStatus(refreshProfile);
+      onProfileUpdated(recovered);
+      if (pendingSyncCleared) {
+        setSubmitAcceptedPendingSync(false);
+        setSuccess("Статус заявки обновлён: на проверке");
+      } else {
+        setError("Статус на сервере пока не «На проверке». Попробуйте позже.");
+      }
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось обновить статус");
     } finally {
       setSubmitting(false);
     }
@@ -304,7 +332,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                     label="Публичное название организации"
                     value={draft.organizationName}
                     onChange={(e) => onOrganizationNameChange(e.target.value)}
-                    disabled={!catalogEditable}
+                    disabled={!publicationEditable}
                     required
                   />
                 ) : (
@@ -313,7 +341,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                     label="Публичное имя"
                     value={catalogPublicName}
                     onChange={(e) => onCatalogPublicNameChange(e.target.value)}
-                    disabled={!catalogEditable}
+                    disabled={!publicationEditable}
                     required
                     hint="Отображается на remcard.ru при включённой опции «показывать полное имя»."
                   />
@@ -323,7 +351,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                     <input
                       type="checkbox"
                       checked={showFullName}
-                      disabled={!catalogEditable}
+                      disabled={!publicationEditable}
                       onChange={(e) => onShowFullNameChange(e.target.checked)}
                     />
                     <span>Показывать полное имя представителя в каталоге</span>
@@ -332,7 +360,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
               </div>
             </div>
 
-            <fieldset className={styles.fieldset} disabled={!catalogEditable}>
+            <fieldset className={styles.fieldset} disabled={!publicationEditable}>
               <legend>Логотип или фото</legend>
               <input
                 ref={fileRef}
@@ -345,7 +373,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={!catalogEditable || uploading}
+                  disabled={!publicationEditable || uploading}
                   onClick={() => fileRef.current?.click()}
                 >
                   {uploading ? "Загрузка…" : catalogImageUrl ? "Заменить изображение" : "Добавить изображение"}
@@ -354,7 +382,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={!catalogEditable}
+                    disabled={!publicationEditable}
                     onClick={() => onCatalogImageUrlChange("")}
                   >
                     Убрать — использовать автоматическую иконку
@@ -378,7 +406,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
               label="Описание для каталога"
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
-              disabled={!catalogEditable}
+              disabled={!publicationEditable}
             />
           </Panel>
 
@@ -389,12 +417,12 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
               подставляются автоматически.
             </p>
             {(workingProductIds.length > 0 || workingServiceIds.length > 0) && (
-              <Button type="button" variant="secondary" disabled={!catalogEditable} onClick={onCopyWorkingDirections}>
+              <Button type="button" variant="secondary" disabled={!publicationEditable} onClick={onCopyWorkingDirections}>
                 Перенести направления из рабочего профиля
               </Button>
             )}
             <ProfileDirectionsPicker
-              disabled={!catalogEditable}
+              disabled={!publicationEditable}
               catalogMode
               productCategoryIds={storeCategories}
               serviceSpecializationIds={specializations}
@@ -414,7 +442,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                 label="Адрес первого филиала"
                 value={branchAddress}
                 onChange={(e) => onBranchAddressChange(e.target.value)}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 hint="Нужен для отправки организации в каталог."
               />
             </Panel>
@@ -422,7 +450,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
 
           <Panel title="Как с вами связаться">
             <p className={styles.hint}>Эти контакты будут видны посетителям remcard.ru.</p>
-            <fieldset className={styles.fieldset} disabled={!catalogEditable}>
+            <fieldset className={styles.fieldset} disabled={!publicationEditable}>
               <div className={styles.fields}>
                 <TextField label="Сайт" value={website} onChange={(e) => onWebsiteChange(e.target.value)} />
                 <TextField
@@ -492,7 +520,7 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
               <div className={styles.actions}>
                 <Button
                   type="submit"
-                  disabled={saving || uploading || !catalogPublicationEditable(profile)}
+                  disabled={saving || uploading || !publicationEditable}
                 >
                   {saving ? "Сохранение…" : "Сохранить черновик"}
                 </Button>
@@ -501,9 +529,21 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
                     type="button"
                     variant="secondary"
                     disabled={submitting || saving || uploading}
+                    data-testid="catalog-submit-publication"
                     onClick={() => void submitPublication()}
                   >
                     {submitting ? "Отправка…" : submitLabel}
+                  </Button>
+                ) : null}
+                {submitAcceptedPendingSync ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={submitting}
+                    data-testid="catalog-recover-submit-status"
+                    onClick={() => void recoverSubmitStatus()}
+                  >
+                    Обновить статус
                   </Button>
                 ) : null}
                 {draftPending ? (

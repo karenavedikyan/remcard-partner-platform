@@ -1,16 +1,18 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState, useCallback, type ChangeEvent } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, useCallback, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
 import { catalogPublicationStatusLabel } from "@/lib/profile-catalog-completeness";
 import { specialistCatalogMissingForSubmit } from "@/lib/specialist-r06/catalog-completeness";
+import { effectiveCatalogStatus } from "@/lib/profile-catalog-state";
 import {
-  canSubmitProfileForModeration,
-  catalogPublicationEditable,
-  effectiveCatalogStatus,
-} from "@/lib/profile-catalog-state";
+  catalogPublicationFieldsEditable,
+  catalogSubmitPublicationAllowed,
+  processCatalogSubmitResult,
+  recoverCatalogSubmitStatus,
+} from "@/lib/catalog-submit-publication";
 import {
   persistCatalogDraftOnly,
   refreshProfile,
@@ -140,6 +142,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitAcceptedPendingSync, setSubmitAcceptedPendingSync] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
@@ -152,7 +155,15 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const publicationLabel = catalogPublicationStatusLabel(profile);
-  const canSubmit = canSubmitProfileForModeration(profile);
+  const canSubmit = catalogSubmitPublicationAllowed(profile, submitAcceptedPendingSync);
+  const publicationEditable =
+    catalogEditable && catalogPublicationFieldsEditable(profile, submitAcceptedPendingSync);
+
+  useEffect(() => {
+    if (effectiveCatalogStatus(profile) === "PENDING") {
+      setSubmitAcceptedPendingSync(false);
+    }
+  }, [profile]);
   const missing = useMemo(() => specialistCatalogMissingForSubmit(profile, draft), [profile, draft]);
   const draftPending = profile.catalogPublication?.draftPending || profile.user.catalogDraftPending;
 
@@ -190,6 +201,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   }
 
   async function submitPublication() {
+    if (submitting || submitAcceptedPendingSync || !canSubmit) return;
     const committed = publicPhoneRef.current?.commitPending();
     const draftForSubmit = {
       ...draft,
@@ -205,28 +217,44 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
     setSuccess("");
     try {
       const result = await submitProfileForModerationReview(profile, draftForSubmit);
-      if (result.refreshFailed) {
-        setSuccess("Заявка отправлена, ожидает проверки");
-        setError("Не удалось обновить статус на экране — обновите страницу.");
-        try {
-          const refreshed = await refreshProfile();
-          onProfileUpdated(refreshed);
-          setError("");
-        } catch {
-          /* keep soft refresh hint */
-        }
-      } else if (result.profile) {
-        onProfileUpdated(result.profile);
-        setSuccess("Заявка отправлена, ожидает проверки");
-      }
+      const outcome = await processCatalogSubmitResult({
+        result,
+        profileBeforeSubmit: profile,
+        successMessage: "Заявка отправлена, ожидает проверки",
+        refreshProfile,
+      });
+      if (outcome.profile) onProfileUpdated(outcome.profile);
+      setSubmitAcceptedPendingSync(outcome.submitAcceptedPendingSync);
+      if (outcome.successMessage) setSuccess(outcome.successMessage);
+      if (outcome.errorMessage) setError(outcome.errorMessage);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");
     } finally {
       setSubmitting(false);
       requestAnimationFrame(() => {
-        submitAlertRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        submitAlertRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
       });
+    }
+  }
+
+  async function recoverSubmitStatus() {
+    setSubmitting(true);
+    setError("");
+    try {
+      const { profile: recovered, pendingSyncCleared } = await recoverCatalogSubmitStatus(refreshProfile);
+      onProfileUpdated(recovered);
+      if (pendingSyncCleared) {
+        setSubmitAcceptedPendingSync(false);
+        setSuccess("Статус заявки обновлён: на проверке");
+      } else {
+        setError("Статус на сервере пока не «На проверке». Попробуйте позже.");
+      }
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось обновить статус");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -347,7 +375,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   id="sc-public-name"
                   placeholder="Например: Сергей · электромонтаж"
                   value={catalogPublicName}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => {
                     touchField(props, "catalogPublicName");
                     onCatalogPublicNameChange(e.target.value);
@@ -364,7 +392,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 <input
                   id="sc-city"
                   value={catalogCity}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => {
                     touchField(props, "catalogCity");
                     onCatalogCityChange(e.target.value);
@@ -378,7 +406,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 <input
                   type="checkbox"
                   checked={showFullName}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => onShowFullNameChange(e.target.checked)}
                 />
                 <span>Показывать полное имя представителя в каталоге</span>
@@ -396,7 +424,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 selectId="sc-specialist-kind"
                 specialistKind={catalogKind}
                 notice={catalogPresetNotice}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 persistCustomTitle={false}
                 onKindChange={(kind) => {
                   setCatalogKind(kind);
@@ -417,7 +445,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 }}
               />
               <ProfileDirectionsPicker
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 catalogMode
                 specialistMode
                 catalogGroupedDetails
@@ -466,7 +494,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   id="sc-web"
                   placeholder="example.ru"
                   value={website}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => {
                     touchField(props, "website");
                     onWebsiteChange(e.target.value);
@@ -482,7 +510,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                   id="sc-tg"
                   placeholder="@username"
                   value={telegram}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => {
                     touchField(props, "telegram");
                     onTelegramChange(e.target.value);
@@ -497,7 +525,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 <input
                   id="sc-email"
                   value={publicEmail}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => {
                     touchField(props, "publicEmail");
                     onPublicEmailChange(e.target.value);
@@ -510,7 +538,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
                 wrapperClassName={catalogStyles.phoneFieldWrap}
                 helperText="Можно 89186360088, 9186360088 или +79186360088. Сохраним через +7, без пробелов. Можно оставить пустым, если есть другой контакт."
                 value={publicPhone}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 onChange={(v) => {
                   touchField(props, "publicPhone");
                   onPublicPhoneChange(v);
@@ -526,7 +554,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
               </p>
               <CatalogWizardPhotoAttachment
                 catalogImageUrl={catalogImageUrl}
-                catalogEditable={catalogEditable}
+                catalogEditable={publicationEditable}
                 uploading={uploading}
                 uploadError={uploadError}
                 fileInputRef={fileRef}
@@ -541,7 +569,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
               <TextAreaField
                 label="Описание"
                 value={description}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 onChange={(e) => {
                   touchField(props, "description");
                   onDescriptionChange(e.target.value);
@@ -613,7 +641,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
               ? `${catalogStyles.btn} ${catalogStyles.btnGhost}`
               : `${catalogStyles.btn} ${catalogStyles.btnPrimary}`
           }
-          disabled={saving || submitting || !catalogPublicationEditable(profile)}
+          disabled={saving || submitting || !publicationEditable}
           onClick={() => void saveDraft()}
         >
           {saving ? "Сохранение…" : "Сохранить черновик"}
@@ -636,9 +664,21 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
             type="button"
             className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
             disabled={submitting || saving}
+            data-testid="catalog-submit-publication"
             onClick={() => void submitPublication()}
           >
             {submitting ? "Отправка…" : submitLabel}
+          </button>
+        ) : null}
+        {submitAcceptedPendingSync ? (
+          <button
+            type="button"
+            className={`${catalogStyles.btn} ${catalogStyles.btnGhost}`}
+            disabled={submitting}
+            data-testid="catalog-recover-submit-status"
+            onClick={() => void recoverSubmitStatus()}
+          >
+            Обновить статус
           </button>
         ) : null}
       </footer>

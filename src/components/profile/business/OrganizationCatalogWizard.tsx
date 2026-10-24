@@ -1,16 +1,18 @@
 "use client";
 
-import { FormEvent, useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
 import { catalogMissingForSubmit, catalogPublicationStatusLabel } from "@/lib/profile-catalog-completeness";
 import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
+import { effectiveCatalogStatus } from "@/lib/profile-catalog-state";
 import {
-  canSubmitProfileForModeration,
-  catalogPublicationEditable,
-  effectiveCatalogStatus,
-} from "@/lib/profile-catalog-state";
+  catalogPublicationFieldsEditable,
+  catalogSubmitPublicationAllowed,
+  processCatalogSubmitResult,
+  recoverCatalogSubmitStatus,
+} from "@/lib/catalog-submit-publication";
 import {
   persistCatalogDraftOnly,
   refreshProfile,
@@ -139,6 +141,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitAcceptedPendingSync, setSubmitAcceptedPendingSync] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
@@ -149,7 +152,15 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const publicationLabel = catalogPublicationStatusLabel(profile);
-  const canSubmit = canSubmitProfileForModeration(profile);
+  const canSubmit = catalogSubmitPublicationAllowed(profile, submitAcceptedPendingSync);
+  const publicationEditable =
+    catalogEditable && catalogPublicationFieldsEditable(profile, submitAcceptedPendingSync);
+
+  useEffect(() => {
+    if (effectiveCatalogStatus(profile) === "PENDING") {
+      setSubmitAcceptedPendingSync(false);
+    }
+  }, [profile]);
   const missing = useMemo(() => catalogMissingForSubmit(profile, draft), [profile, draft]);
   const draftPending = profile.catalogPublication?.draftPending || profile.user.catalogDraftPending;
 
@@ -200,6 +211,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
   }
 
   async function submitPublication() {
+    if (submitting || submitAcceptedPendingSync || !canSubmit) return;
     const committed = publicPhoneRef.current?.commitPending();
     const draftForSubmit = {
       ...draft,
@@ -215,28 +227,44 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
     setSuccess("");
     try {
       const result = await submitProfileForModerationReview(profile, draftForSubmit);
-      if (result.refreshFailed) {
-        setSuccess("Заявка отправлена, ожидает проверки");
-        setError("Не удалось обновить статус на экране — обновите страницу.");
-        try {
-          const refreshed = await refreshProfile();
-          onProfileUpdated(refreshed);
-          setError("");
-        } catch {
-          /* keep soft refresh hint */
-        }
-      } else if (result.profile) {
-        onProfileUpdated(result.profile);
-        setSuccess("Заявка отправлена, ожидает проверки");
-      }
+      const outcome = await processCatalogSubmitResult({
+        result,
+        profileBeforeSubmit: profile,
+        successMessage: "Заявка отправлена, ожидает проверки",
+        refreshProfile,
+      });
+      if (outcome.profile) onProfileUpdated(outcome.profile);
+      setSubmitAcceptedPendingSync(outcome.submitAcceptedPendingSync);
+      if (outcome.successMessage) setSuccess(outcome.successMessage);
+      if (outcome.errorMessage) setError(outcome.errorMessage);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");
     } finally {
       setSubmitting(false);
       requestAnimationFrame(() => {
-        submitAlertRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        submitAlertRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
       });
+    }
+  }
+
+  async function recoverSubmitStatus() {
+    setSubmitting(true);
+    setError("");
+    try {
+      const { profile: recovered, pendingSyncCleared } = await recoverCatalogSubmitStatus(refreshProfile);
+      onProfileUpdated(recovered);
+      if (pendingSyncCleared) {
+        setSubmitAcceptedPendingSync(false);
+        setSuccess("Статус заявки обновлён: на проверке");
+      } else {
+        setError("Статус на сервере пока не «На проверке». Попробуйте позже.");
+      }
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось обновить статус");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -297,7 +325,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
       {hasBranches ? (
         <OrganizationCatalogPublicBranchSelector
           profile={profile}
-          disabled={!catalogEditable}
+          disabled={!publicationEditable}
           onProfileUpdated={props.onOrganizationBranchPinUpdated ?? onProfileUpdated}
           fixtureBranches={props.fixtureOrganizationBranches ?? undefined}
         />
@@ -364,7 +392,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 data-testid="catalog-public-name"
                 placeholder={partnerType === "STORE" ? "Например: Магазин «СтройДом»" : "Например: Компания «ЮгСтрой»"}
                 value={organizationName}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 onChange={(e) => {
                   touchField(props, "catalogPublicName");
                   onOrganizationNameChange(e.target.value);
@@ -385,7 +413,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                   id="oc-city"
                   data-testid="catalog-city-input"
                   value={catalogCity}
-                  disabled={!catalogEditable}
+                  disabled={!publicationEditable}
                   onChange={(e) => {
                     touchField(props, "catalogCity");
                     onCatalogCityChange(e.target.value);
@@ -412,7 +440,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 id="catalog-branch-address"
                 label="Адрес первого филиала"
                 value={branchAddress}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 required
                 onChange={(e) => onBranchAddressChange(e.target.value)}
                 hint="Нужен, пока нет сохранённых филиалов."
@@ -425,7 +453,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
           <div id="catalog-products">
             <p className={catalogStyles.notice}>{catalogDirectionsNotice}</p>
             <ProfileDirectionsPicker
-              disabled={!catalogEditable}
+              disabled={!publicationEditable}
               catalogMode
               businessTabbedPick
               catalogGroupedDetails
@@ -474,7 +502,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 id="oc-web"
                 placeholder="example.ru"
                 value={website}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 onChange={(e) => {
                   touchField(props, "website");
                   onWebsiteChange(e.target.value);
@@ -487,7 +515,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 id="oc-tg"
                 placeholder="@username"
                 value={telegram}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 onChange={(e) => {
                   touchField(props, "telegram");
                   onTelegramChange(e.target.value);
@@ -499,7 +527,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               <input
                 id="oc-email"
                 value={publicEmail}
-                disabled={!catalogEditable}
+                disabled={!publicationEditable}
                 onChange={(e) => {
                   touchField(props, "publicEmail");
                   onPublicEmailChange(e.target.value);
@@ -510,7 +538,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               ref={publicPhoneRef}
               wrapperClassName={catalogStyles.phoneFieldWrap}
               value={publicPhone}
-              disabled={!catalogEditable}
+              disabled={!publicationEditable}
               onChange={(v) => {
                 touchField(props, "publicPhone");
                 onPublicPhoneChange(v);
@@ -526,7 +554,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
             </p>
             <CatalogWizardPhotoAttachment
               catalogImageUrl={catalogImageUrl}
-              catalogEditable={catalogEditable}
+              catalogEditable={publicationEditable}
               uploading={uploading}
               uploadError={uploadError}
               fileInputRef={fileRef}
@@ -541,7 +569,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
             <TextAreaField
               label="Описание"
               value={description}
-              disabled={!catalogEditable}
+              disabled={!publicationEditable}
               onChange={(e) => {
                 touchField(props, "description");
                 onDescriptionChange(e.target.value);
@@ -628,7 +656,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
               ? `${catalogStyles.btn} ${catalogStyles.btnGhost}`
               : `${catalogStyles.btn} ${catalogStyles.btnPrimary}`
           }
-          disabled={saving || submitting || !catalogPublicationEditable(profile)}
+          disabled={saving || submitting || !publicationEditable}
           onClick={() => void saveDraft()}
         >
           {saving ? "Сохранение…" : "Сохранить черновик"}
@@ -651,9 +679,21 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
             type="button"
             className={`${catalogStyles.btn} ${catalogStyles.btnPrimary}`}
             disabled={submitting || saving}
+            data-testid="catalog-submit-publication"
             onClick={() => void submitPublication()}
           >
             {submitting ? "Отправка…" : submitLabel}
+          </button>
+        ) : null}
+        {submitAcceptedPendingSync ? (
+          <button
+            type="button"
+            className={`${catalogStyles.btn} ${catalogStyles.btnGhost}`}
+            disabled={submitting}
+            data-testid="catalog-recover-submit-status"
+            onClick={() => void recoverSubmitStatus()}
+          >
+            Обновить статус
           </button>
         ) : null}
       </footer>
