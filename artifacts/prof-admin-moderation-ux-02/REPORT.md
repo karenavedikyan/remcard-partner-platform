@@ -1,48 +1,43 @@
 # PROF-ADMIN-MODERATION-UX-02 — READY FOR REVIEW (full scope)
 
-Branches: `fix/prof-admin-moderation-ux-02` on **remcard-partner-platform** and **remcard-navigator**. Full UX-02: org + **partner** detail, **queue**, public preview contracts, accepted regressions, isolated real-stack browser gate (synthetic fixtures, loopback PG `:55432`, external notifications off). No production deploy/SQL/env.
+Branches: `fix/prof-admin-moderation-ux-02` on **remcard-partner-platform** and **remcard-navigator**. Isolated loopback QA only; no production deploy/SQL/env.
 
 ## Git SHA (`git rev-parse HEAD`)
 
 | Role | Repository | SHA |
 |------|------------|-----|
-| **Frontend runtime** | remcard-partner-platform | `d47a91a91ae2da9e6485d900e77c7f164bdae801` |
-| **Backend runtime** | remcard-navigator | `fab2ccf52f926cf19f959af13157bae39e05fd1b` |
-| **Evidence tip (this REPORT + gate log + screenshots)** | remcard-partner-platform | `f1dee2a3e496dfd3aceeece8515dda8d1382d8cf` (docs-only commit atop runtime tip) |
+| **Frontend runtime** | remcard-partner-platform | `bd27f762e6053c5a8a5dfc02a9b15e21ff0b4f4a` |
+| **Backend runtime** | remcard-navigator | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
+| **Evidence tip (REPORT + browser log + screenshots)** | remcard-partner-platform | `9411de5897f6eae4a49009e43032de4559bdbc98` |
 
-Prior accepted regression tips (do not redo): frontend `f0c0bf95f50484e579dc50e2fc642f51d2a776b7`, backend `031066e5e71cf297e8b7533f39a5493afadc2599` — fetch loop + contact omit (see `0e1f75fc` REPORT).
+Prior evidence-only commit on this branch (superseded by this REPORT): `1a72651d6cd205b9188af41ca149265ad8bf2db4`. Do **not** use branch documentation HEAD as runtime SHA.
 
-Feature body on frontend tip `646ca1f9eacf9b8a8cf42f4ac697009af17011c8` (partner detail, queue, BFF preview).
+Accepted regression tips (unchanged): frontend `f0c0bf95f50484e579dc50e2fc642f51d2a776b7`, backend `031066e5e71cf297e8b7533f39a5493afadc2599`.
 
-## Gate matrix (original UX-02)
+## Gate matrix (UX-02)
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| Org detail PROF UI, dialogs, preview revision, test panel | **done** | `OrganizationModerationDetailClient`, E2E + screenshots |
-| Partner detail parity (dialogs, list/full preview, test publication, 409) | **done** | `PartnerModerationDetailClient`, `PartnerModerationPreviewModal`, E2E |
-| Queue PROF UI RU labels, filters/search, mobile cards, filter query preserved | **done** | `AdminModerationClient`, `data-testid=moderation-queue-card`, E2E |
-| Org public-preview + revision/no-store | **done** | navigator org route + integration tests |
-| Partner public-preview + revision/no-store | **done** | `profAdminModerationPartnerPublicPreview.ts`, BFF allowlist |
-| Fetch loop + contact omit regressions | **done** | accepted tips; tests still green in targeted runs |
-| Light/dark 1440 + queue 390 actual browser | **done** | `artifacts/.../screenshots/passed/*-{light,dark}-1440.png`, `queue-390.png` |
-| Test opt-in allow/hide + public origin HTTP | **done** | E2E `testOptInPartnerUserId`, `partner-test-opt-in-cycle-*` |
-| Targeted FE vitest + proxy + tsc + production build | **done** | commands below |
-| Backend unit/integration + repo tsc baseline | **done** | 52 baseline errors, 0 in new moderation preview paths |
-| Full `test:component` | **baseline delta only** | not claimed green repo-wide |
+| Queue + partner detail + test opt-in (prior pass) | **done** | unchanged |
+| Partner **full** preview: avatar, portfolio/service images, descriptions | **done** | `ModerationPartnerCatalogFullPreview.tsx` |
+| Partner **list** preview: submitted publicEmail/publicPhone (not account fallback) | **done** | `buildModerationPartnerCatalogPreviewInput` + BE detail DTO |
+| Browser: partner list/full preview + `GET …/public-preview` + media assertions | **done** | `run-moderation-e2e.mjs` `runPartnerPreviewGate` |
+| Partner public-preview **route/builder** PG integration (not token-only) | **done** | `profAdminModerationPartnerPublicPreview.integration.test.ts` (5) |
+| Org preview + fetch-loop/contact omit regressions | **done** | prior tips / existing tests |
 
-## Mapper / preview source map
+## Preview source map (partner)
 
-| View | Data | Renderer |
-|------|------|----------|
-| Org list preview | DTO `submitted` | `CatalogPublicationPreview` |
-| Org full preview | `GET …/organizations/{id}/public-preview?revision=` | `ModerationOrgCatalogFullPreview` |
-| Partner list preview | DTO `submitted` | `CatalogPublicationPreview` (specialist) |
-| Partner full preview | `GET …/partners/{userId}/public-preview?revision=` | `ModerationPartnerCatalogFullPreview` |
+| Surface | Source | Renderer |
+|---------|--------|----------|
+| List compact | Moderation detail `submitted.*` → `ProfileDraft` | `CatalogPublicationPreview` (specialist) |
+| Full card | `GET …/partners/{id}/public-preview?partnerRevision=` | `ModerationPartnerCatalogFullPreview` |
+| Profile header/contacts | `buildPublicPartnerProfile(submitted catalogUnderReview)` | same full component |
+| Portfolio/services images | DB rows on pending user (not live draft body) | full component `SafePreviewImage` |
 
-## Commands (agent VM, exit codes)
+## Commands (agent VM)
 
 ```bash
-# Frontend @ d47a91a9
+# Frontend @ bd27f762
 npx vitest run \
   src/lib/prof-admin-moderation-public-preview.test.ts \
   src/lib/remcard-proxy-moderation.test.ts \
@@ -54,39 +49,26 @@ npx vitest run \
   src/lib/prof-admin-moderation-org-actions.test.ts
 # exit 0 — 35 passed
 
-npm run test:proxy
-# exit 0 — 283 passed
-
 npx tsc --noEmit
 # exit 0
 
-REMCARD_API_BASE_URL=http://127.0.0.1:3421 NEXT_PUBLIC_APP_URL=http://127.0.0.1:3420 npm run build
-# exit 0
+# Backend @ 5a2c2a7d
+pnpm exec vitest run src/lib/__tests__/profAdminModerationPartnerPublicPreview.test.ts
+# exit 0 — 1 passed (revision token sanity)
 
-# Isolated browser (after bootstrap); harness @ fab2ccf5
-bash scripts/prof-admin-moderation-ux-02/run-browser-gate.sh
-# E2E: [moderation-e2e] OK — exit 0 (see browser-gate.log tail)
-
-# Backend @ fab2ccf5
-pnpm exec vitest run \
-  src/lib/__tests__/orgCatalogPublicContacts.preview.test.ts \
-  src/lib/__tests__/profAdminModerationPartnerPublicPreview.test.ts
-# exit 0 — 5 passed
+PROF_TEST_CATALOG_INTEGRATION_OK=1 pnpm exec vitest run \
+  src/lib/__tests__/profAdminModerationPartnerPublicPreview.integration.test.ts
+# exit 0 — 5 passed (route + builder snapshot, auth, 404, 409)
 
 PROF_TEST_CATALOG_INTEGRATION_OK=1 pnpm exec vitest run \
   src/lib/__tests__/profAdminModerationPublicPreview.integration.test.ts
-# exit 0 — 6 passed
+# exit 0 — 6 passed (org, unchanged)
 
-pnpm exec tsc --noEmit
-# exit 1 — 52 errors repo-wide baseline (pre-existing); 0 errors on partner preview routes/lib
+# Isolated browser (loopback PG :55432, tips above)
+bash scripts/prof-admin-moderation-ux-02/run-browser-gate.sh
+# [moderation-e2e] OK — includes partner preview gate + partner-*-preview-* screenshots
 ```
-
-## Browser gate notes
-
-- Stack: PG `:55432`, navigator `:3421`, partner `:3420`, `PROF_ADMIN_TEST_USERS_ENABLED=1`, synthetic seed only.
-- Flow: admin login → queue (1440 light/dark, 390 mobile cards) → org revise/reject/approve + previews → partner revise/reject/approve + previews → test opt-in cycle → branch reject.
-- Harness fix `fab2ccf5`: kill orphaned `next-server` via `netstat` when `lsof` misses loopback listeners (VM had stale `:3420`).
 
 ## Production
 
-No deploy, SQL migrate, env/DNS/secrets, main push, or live moderation.
+No deploy, migrations, env, or live moderation actions.
