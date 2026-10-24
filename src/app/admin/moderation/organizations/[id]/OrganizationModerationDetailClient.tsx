@@ -163,14 +163,24 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
 
     setBusy(true);
     setMessage(null);
+    const pendingBranchRevisions =
+      org?.branches
+        .filter((b) => b.catalogStatus === "PENDING")
+        .reduce<Record<string, string>>((acc, b) => {
+          if (b.revisionToken) acc[b.id] = b.revisionToken;
+          return acc;
+        }, {}) ?? {};
+
     const body =
       action === "revise"
         ? { comment: orgReviseComment.trim(), revisionToken: org.revisionToken, attachments: [] }
         : action === "reject"
           ? { reason: orgRejectReason.trim(), revisionToken: org.revisionToken }
-          : action === "approve" || action === "approve-all"
+          : action === "approve"
             ? { revisionToken: org.revisionToken }
-            : {};
+            : action === "approve-all"
+              ? { revisionToken: org.revisionToken, branchRevisions: pendingBranchRevisions }
+              : {};
     try {
       await moderationOrganizationAction(organizationId, action, body);
       setMessage("Решение по организации сохранено.");

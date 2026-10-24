@@ -157,10 +157,17 @@ async function runProfModerationFlow(browser, fx) {
   await page.reload();
   const q = await queueApi;
   assert(q.ok(), `queue GET ${q.status()}`);
+  const queueJson = await q.json();
+  const rowCount = queueJson?.items?.length ?? 0;
+  const totalPending = queueJson?.counts?.totalPending ?? 0;
+  hardAssert(rowCount > 0 && totalPending > 0, "queue API returned zero rows for screenshot");
+  await page.getByRole("table").waitFor({ timeout: 15000 });
+  await page.locator("tbody tr").first().waitFor({ timeout: 15000 });
   await assertHealthyPage(page, "queue-1440");
   await screenshot(page, "queue-1440.png");
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("tbody tr").first().waitFor({ timeout: 15000 });
   await assertHealthyPage(page, "queue-390");
   await screenshot(page, "queue-390.png");
 
