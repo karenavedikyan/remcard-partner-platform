@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
-import { createProfTestUser, disableProfTestUser } from "@/lib/prof-admin-api";
+import {
+  createProfTestUser,
+  disableProfTestUser,
+  setProfTestPublicCatalogShow,
+} from "@/lib/prof-admin-api";
 import { Button } from "@/components/ui/Button";
 import styles from "../admin-test-users.module.css";
 
@@ -15,6 +19,15 @@ type TestUser = {
   partnerActivities: string[];
   profTestDisabledAt: string | null;
   profTestCreatedAt: string | null;
+  profTestPublicCatalogAllowed?: boolean;
+  catalogStatus?: string | null;
+  isPublic?: boolean;
+  organizationsOwned?: Array<{
+    id: string;
+    name: string;
+    catalogStatus: string;
+    catalogPublished: boolean;
+  }>;
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -23,6 +36,30 @@ const KIND_LABEL: Record<string, string> = {
   store: "Магазин",
   company: "Компания",
 };
+
+function catalogStatusLabel(item: TestUser): string {
+  const org = item.organizationsOwned?.[0];
+  const status = org?.catalogStatus ?? item.catalogStatus ?? "DRAFT";
+  const map: Record<string, string> = {
+    DRAFT: "Черновик",
+    PENDING: "На проверке",
+    APPROVED: "Одобрен",
+    NEEDS_REVISION: "Нужны правки",
+    REJECTED: "Отклонён",
+  };
+  return map[status] ?? status;
+}
+
+function publicCatalogUrl(item: TestUser): string | null {
+  const org = item.organizationsOwned?.[0];
+  if (org?.catalogPublished) {
+    return `https://remcard.ru/catalog/org/${encodeURIComponent(org.id)}`;
+  }
+  if (item.isPublic && item.publicId) {
+    return `https://remcard.ru/partner/${encodeURIComponent(item.publicId)}`;
+  }
+  return null;
+}
 
 function kindLabel(item: TestUser) {
   const act = item.partnerActivities?.[0];
@@ -179,9 +216,23 @@ export function AdminTestUsersClient() {
           return (
             <li key={item.id} className={styles.card}>
               <strong>{item.displayName}</strong>
+              <span> · Тестовый партнёр</span>
               {disabled ? <span> · отключён</span> : null}
               <div className={styles.meta}>
-                {item.publicId} · {kindLabel(item)}
+                {item.publicId} · {kindLabel(item)} · Каталог: {catalogStatusLabel(item)}
+              </div>
+              <div className={styles.meta}>
+                Показ на remcard.ru:{" "}
+                {item.profTestPublicCatalogAllowed ? "Разрешён" : "Отключён"}
+                {publicCatalogUrl(item) ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a href={publicCatalogUrl(item)!} target="_blank" rel="noreferrer">
+                      Публичная карточка
+                    </a>
+                  </>
+                ) : null}
               </div>
               <div className={styles.actions}>
                 <Button
@@ -222,6 +273,38 @@ export function AdminTestUsersClient() {
                   }}
                 >
                   Сбросить профиль
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={disabled || busy}
+                  onClick={async () => {
+                    const allow = !item.profTestPublicCatalogAllowed;
+                    const verb = allow ? "Разрешить" : "Отключить";
+                    if (
+                      !window.confirm(
+                        `${verb} показ этого тестового партнёра на remcard.ru? Кабинет и данные сохраняются; скрывается только публичная витрина.`,
+                      )
+                    ) {
+                      return;
+                    }
+                    setRowBusy(item.id);
+                    setError("");
+                    try {
+                      await setProfTestPublicCatalogShow(item.id, allow);
+                      await reload();
+                    } catch (caught) {
+                      setError(
+                        caught instanceof RemcardApiError
+                          ? caught.message
+                          : "Не удалось изменить показ на сайте",
+                      );
+                    } finally {
+                      setRowBusy(null);
+                    }
+                  }}
+                >
+                  {item.profTestPublicCatalogAllowed ? "Скрыть на remcard.ru" : "Разрешить на remcard.ru"}
                 </Button>
                 <Button
                   type="button"

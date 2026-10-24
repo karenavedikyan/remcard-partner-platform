@@ -147,6 +147,7 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   const [catalogPresetNotice, setCatalogPresetNotice] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const publicPhoneRef = useRef<AgentPhoneFieldHandle>(null);
+  const submitAlertRef = useRef<HTMLParagraphElement>(null);
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const publicationLabel = catalogPublicationStatusLabel(profile);
@@ -204,12 +205,15 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
     try {
       const next = await submitProfileForModerationReview(profile, draftForSubmit);
       onProfileUpdated(next);
-      setSuccess("Заявка отправлена. Ожидает подтверждения — карточка ещё не опубликована.");
+      setSuccess("Заявка отправлена, ожидает проверки");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");
     } finally {
       setSubmitting(false);
+      requestAnimationFrame(() => {
+        submitAlertRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     }
   }
 
@@ -305,8 +309,16 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
       </nav>
       <section className={catalogStyles.card} data-testid="catalog-step-card">
         <h2 className={catalogStyles.title}>{STEP_PANEL_TITLES[step]}</h2>
-        {error ? <p className={catalogStyles.bannerError}>{error}</p> : null}
-        {success ? <p className={catalogStyles.bannerSuccess}>{success}</p> : null}
+        {error ? (
+          <p ref={submitAlertRef} className={catalogStyles.bannerError} role="alert">
+            {error}
+          </p>
+        ) : null}
+        {success ? (
+          <p ref={submitAlertRef} className={catalogStyles.bannerSuccess} role="status" aria-live="polite">
+            {success}
+          </p>
+        ) : null}
 
           {step === 0 ? (
             <div className={catalogStyles.fields}>

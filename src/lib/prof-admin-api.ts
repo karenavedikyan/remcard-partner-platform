@@ -37,3 +37,13 @@ export async function disableProfTestUser(id: string) {
     body: { action: "disable" },
   });
 }
+
+export async function setProfTestPublicCatalogShow(id: string, allowed: boolean) {
+  return remcardFetch<{ ok: boolean; profTestPublicCatalogAllowed: boolean }>(
+    `/api/pro/admin/test-users/${id}`,
+    {
+      method: "PATCH",
+      body: { action: "setPublicCatalogShow", allowed },
+    },
+  );
+}
