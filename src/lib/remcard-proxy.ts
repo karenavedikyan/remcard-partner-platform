@@ -48,6 +48,32 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["POST"]),
       pattern: /^\/api\/pro\/admin\/test-users\/[\w-]+\/reset$/,
     },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/moderation$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/admin\/moderation\/partners\/[\w-]+$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/moderation\/partners\/[\w-]+\/(approve|reject|revise)$/,
+    },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/admin\/moderation\/organizations\/[\w-]+$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern:
+        /^\/api\/pro\/admin\/moderation\/organizations\/[\w-]+\/(approve-all|reject|revise)$/,
+    },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/admin\/moderation\/branches\/[\w-]+$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/moderation\/branches\/[\w-]+\/(approve|reject|revise)$/,
+    },
     { methods: new Set(["POST"]), pattern: /^\/api\/upload$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/logout$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/auth\/logout-all-sessions$/ },
