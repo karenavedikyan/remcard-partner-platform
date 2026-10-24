@@ -8,7 +8,7 @@ Branches: `fix/prof-admin-moderation-ux-02` on **remcard-partner-platform** and 
 |------|------------|-----|
 | **Frontend runtime** | remcard-partner-platform | `d47a91a91ae2da9e6485d900e77c7f164bdae801` |
 | **Backend runtime** | remcard-navigator | `fab2ccf52f926cf19f959af13157bae39e05fd1b` |
-| **Evidence tip (this REPORT + gate log + screenshots)** | remcard-partner-platform | `d4f72e147b94dea79795e907ae346a0922313ca8` |
+| **Evidence tip (this REPORT + gate log + screenshots)** | remcard-partner-platform | `f1dee2a3e496dfd3aceeece8515dda8d1382d8cf` (docs-only commit atop runtime tip) |
 
 Prior accepted regression tips (do not redo): frontend `f0c0bf95f50484e579dc50e2fc642f51d2a776b7`, backend `031066e5e71cf297e8b7533f39a5493afadc2599` — fetch loop + contact omit (see `0e1f75fc` REPORT).
 
