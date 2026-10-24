@@ -502,6 +502,7 @@ function ProfileEditorInner({
     setCatalogNavigatorStageIds(catalogNavigatorStageIdsFromUser(u));
     setOrgCatalogNavigatorStageIds(orgCatalogNavigatorStageIdsFromProfile(next));
     setCatalogTouched(parseCatalogTouched(catalogTouchedFromProfile(next)));
+    catalogPrefillAppliedKeyRef.current = null;
   }, []);
 
   const applyOrganizationCatalogBranchPin = useCallback(
@@ -585,6 +586,9 @@ function ProfileEditorInner({
       mergedStages.some((id, i) => id !== catalogNavigatorStageIds[i])
     ) {
       setCatalogNavigatorStageIds(mergedStages);
+      if (catalogOnOrg) {
+        setOrgCatalogNavigatorStageIds(mergedStages);
+      }
     }
     const mergedStore = merged.storeCategories ?? [];
     if (
@@ -610,6 +614,7 @@ function ProfileEditorInner({
     specializations,
     catalogNavigatorStageIds,
     storeCategories,
+    catalogOnOrg,
   ]);
 
   useEffect(() => {

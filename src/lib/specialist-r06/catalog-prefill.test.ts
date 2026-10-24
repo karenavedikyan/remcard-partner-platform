@@ -206,6 +206,43 @@ describe("catalog prefill from saved profile", () => {
     expect(a).not.toBe(b);
   });
 
+  it("uses working city when user catalogCity is empty string (not null)", () => {
+    const seed = workingProfileCatalogSeed(
+      profile({
+        user: { city: "Сочи", catalogCity: "" },
+      }),
+    );
+    expect(seed.catalogCity).toBe("Сочи");
+  });
+
+  it("STORE org seed prefers empty publicCatalogCity then working city", () => {
+    const seed = workingProfileCatalogSeed(
+      profile({
+        user: {
+          partnerType: "STORE",
+          city: "Краснодар",
+          catalogCity: "",
+        },
+        organization: {
+          id: "o1",
+          name: "Магазин",
+          catalogStatus: "DRAFT",
+          partnerType: "STORE",
+          branchCount: 0,
+          publicCatalogCity: "",
+          storeCategories: [],
+        },
+        catalogPublication: {
+          catalogEntity: "organization",
+          isLivePublic: false,
+          draftPending: false,
+        },
+      }),
+    );
+    expect(seed.catalogCity).toBe("Краснодар");
+    expect(seed.catalogPublicName).toBe("Магазин");
+  });
+
   it("profileDraftFromProfile aligns catalog public name with GET provenance", () => {
     const draft = profileDraftFromProfile(
       profile({

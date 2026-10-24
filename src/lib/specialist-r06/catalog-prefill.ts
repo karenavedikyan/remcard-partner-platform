@@ -76,7 +76,11 @@ export function workingProfileCatalogSeed(profile: ProProfileResponse): Partial<
   const orgName = org?.name?.trim();
   const catalogPublicName = orgName || publicName;
   const catalogOnOrg = Boolean(org && (u.partnerType === "STORE" || u.partnerType === "COMPANY"));
-  const city = (u.catalogCity ?? u.city ?? "").trim();
+  const workingCity = (u.city ?? "").trim();
+  const userCatalogCity = (u.catalogCity ?? "").trim();
+  const city = catalogOnOrg
+    ? (org?.publicCatalogCity ?? "").trim() || userCatalogCity || workingCity
+    : userCatalogCity || workingCity;
   const partnershipPhone = (w?.partnershipContactPhone ?? "").trim();
   const partnershipEmail = (w?.partnershipContactEmail ?? "").trim();
   const publicPhone = (u.publicPhone ?? "").trim() || partnershipPhone;
