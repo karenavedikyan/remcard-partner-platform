@@ -48,6 +48,7 @@ export default defineConfig({
       "src/lib/remcard-proxy-r06-tail.test.ts",
       "src/lib/prof-admin-moderation-org-display.test.ts",
       "src/lib/prof-admin-moderation-partner-display.test.ts",
+      "src/lib/moderation-badge-contrast.test.ts",
       "src/lib/prof-admin-moderation-org-actions.test.ts",
       "src/lib/prof-admin-moderation-org-readiness.test.ts",
       "src/lib/prof-admin-moderation-public-preview.test.ts",

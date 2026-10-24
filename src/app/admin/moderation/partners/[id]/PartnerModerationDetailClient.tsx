@@ -233,7 +233,13 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{title}</h1>
           <div className={styles.badges}>
-            <span className={styles.badge}>{moderationCatalogStatusLabel(partner.catalogStatus)}</span>
+            <span
+              className={
+                partner.catalogStatus === "PENDING" ? styles.badgePending : styles.badge
+              }
+            >
+              {moderationCatalogStatusLabel(partner.catalogStatus)}
+            </span>
             <span className={styles.badge}>{partnerTypeLabel(partner.partnerType ?? "")}</span>
             {partner.isTestPartner ? <span className={styles.badgeTest}>TEST</span> : null}
           </div>

@@ -75,8 +75,15 @@
   font-weight: 600;
   background: #fef3c7;
   color: #92400e;
+  border: 1px solid #f59e0b;
   padding: 0 6px;
   border-radius: 4px;
+}
+
+:global([data-theme="dark"]) .badgeTest {
+  background: #92400e;
+  color: #fde68a;
+  border-color: #fcd34d;
 }
 
 .subMeta {
