@@ -24,3 +24,45 @@ export function contrastRatio(foreground: string, background: string): number {
 export function relativeLuminanceFromHex(hex: string): number {
   return relativeLuminance(hexToRgb(hex));
 }
+
+export type Rgba = { r: number; g: number; b: number; a: number };
+
+/** Parse `rgb()` / `rgba()` from computed styles (hex not required). */
+export function parseRgbCss(css: string): Rgba | null {
+  const m = css.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/);
+  if (!m) return null;
+  return {
+    r: Number(m[1]),
+    g: Number(m[2]),
+    b: Number(m[3]),
+    a: m[4] === undefined ? 1 : Number(m[4]),
+  };
+}
+
+export function rgbaToHex({ r, g, b }: Rgba): string {
+  const hex = (n: number) => Math.round(n).toString(16).padStart(2, "0");
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
+}
+
+/** Alpha-composite foreground over background (both 0–255). */
+export function compositeRgb(fg: Rgba, bg: Rgba): Rgba {
+  const a = fg.a + bg.a * (1 - fg.a);
+  if (a <= 0) return { r: 0, g: 0, b: 0, a: 0 };
+  return {
+    r: (fg.r * fg.a + bg.r * bg.a * (1 - fg.a)) / a,
+    g: (fg.g * fg.a + bg.g * bg.a * (1 - fg.a)) / a,
+    b: (fg.b * fg.a + bg.b * bg.a * (1 - fg.a)) / a,
+    a,
+  };
+}
+
+export function contrastRatioFromCssColors(foregroundCss: string, backgroundCss: string): number | null {
+  const fg = parseRgbCss(foregroundCss);
+  const bg = parseRgbCss(backgroundCss);
+  if (!fg || !bg) return null;
+  const effective =
+    fg.a < 1 ? compositeRgb(fg, bg) : fg;
+  const effectiveBg = bg.a < 1 ? null : bg;
+  if (!effectiveBg) return null;
+  return contrastRatio(rgbaToHex(effective), rgbaToHex(effectiveBg));
+}

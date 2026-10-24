@@ -39,5 +39,7 @@ vi.mock("next/link", () => ({
 
 afterEach(() => {
   cleanup();
-  sessionStorage.clear();
+  if (typeof sessionStorage !== "undefined") {
+    sessionStorage.clear();
+  }
 });
