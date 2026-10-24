@@ -1,28 +1,32 @@
-# TEST-CATALOG-FULL-CYCLE-01 (frontend slice)
+# TEST-CATALOG-FULL-CYCLE-01 (frontend)
 
-Baseline: `6e41d066c80bcc4028d3503b5d571169404c3d24` + merged `fix/catalog-photo-preview-01` (`69fe084a`). Branch: `fix/test-catalog-full-cycle-01`.
+Baseline: `6e41d066c80bcc4028d3503b5d571169404c3d24`. Branch: `fix/test-catalog-full-cycle-01`.
 
-## Changes
+## This revision (review fixes)
 
-- **`/admin/test-users`** — row shows «Тестовый партнёр», catalog moderation status, public link when live; actions **«Разрешить/Скрыть на remcard.ru»** (confirm, busy state) via `setProfTestPublicCatalogShow`.
-- **Catalog wizards (org + specialist)** — submit success copy «Заявка отправлена, ожидает проверки»; `role=alert`/`aria-live`; scroll to banner after submit attempt; «Отправка…» on submit button (org footer already had pattern).
+- **`adminTestUserPublicCatalogUrl`** — SOLO links use internal `User.id` (`/partner/:id`); link only when `profTestPublicCatalogAllowed`, approved, and not blocked/disabled.
+- **Create test user** — checkbox `publicCatalogShow` (default off) → POST `publicCatalogShow`.
+- **`submitProfileForModerationReview`** — submit success decoupled from profile GET refresh; wizards show success + soft refresh hint on GET failure; recovery via `refreshProfile()`.
+- Wizards updated: `OrganizationCatalogWizard`, `SpecialistCatalogWizard`, `ProfileCatalogSection`.
 
-## Tests / build
+## Tests (this run)
 
 ```bash
-npx tsc --noEmit
-# exit 0
+pnpm vitest run src/lib/admin-test-users-public-link.test.ts src/lib/profile-save.submit.test.tsx
+# 8 passed, exit 0
 
-npm run build
-# exit 0
+pnpm exec tsc --noEmit  # exit 0
+pnpm run build          # exit 0
 ```
 
-Inherited multipart/upload/preview tests not re-run in this turn.
+Regression suite (23+ existing tests) unchanged; toggle/lifecycle browser E2E not added.
 
-## Not verified
+## BLOCKED
 
-- Live Timeweb cabinet submit with real test delegation.
-- Browser E2E moderation + public remcard.ru (BLOCKED: no isolated full stack run).
-- Admin toggle against production API.
+- Browser E2E 1440/390 on isolated prof + remcard stack.
+- Full wizard lifecycle UI test with live moderation (needs PG + staff session).
 
-Final code SHA: `2712c54f69454cbf8cc4e97500a9732e443ad995`.
+## SHA (fill after push)
+
+- Runtime code SHA: _(code commit)_
+- Evidence tip SHA: _(docs tip)_

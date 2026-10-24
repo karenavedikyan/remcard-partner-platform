@@ -313,10 +313,16 @@ export async function discardCatalogDraft(profile: ProProfileResponse): Promise<
   });
 }
 
+export type SubmitProfileModerationResult = {
+  profile: ProProfileResponse | null;
+  submitAccepted: true;
+  refreshFailed?: boolean;
+};
+
 export async function submitProfileForModerationReview(
   profile: ProProfileResponse,
   draft: ProfileDraft,
-): Promise<ProProfileResponse> {
+): Promise<SubmitProfileModerationResult> {
   await persistCatalogDraftOnly(profile, draft);
   if (catalogEntityForProfile(profile) === "organization") {
     await remcardFetch("/api/pro/organization/submit-for-moderation", {
@@ -329,7 +335,12 @@ export async function submitProfileForModerationReview(
       body: { action: "submitForModeration" },
     });
   }
-  return remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
+  try {
+    const profileRefreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
+    return { profile: profileRefreshed, submitAccepted: true };
+  } catch {
+    return { profile: null, submitAccepted: true, refreshFailed: true };
+  }
 }
 
 export async function refreshProfile(): Promise<ProProfileResponse> {

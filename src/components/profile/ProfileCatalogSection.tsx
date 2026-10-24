@@ -171,13 +171,24 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
     setError("");
     setSuccess("");
     try {
-      const next = await submitProfileForModerationReview(profile, draft);
-      onProfileUpdated(next);
-      setSuccess(
+      const result = await submitProfileForModerationReview(profile, draft);
+      const successCopy =
         catalogStatus === "APPROVED"
           ? "Изменения отправлены на повторную проверку"
-          : "Отправлено на проверку для публикации в каталоге",
-      );
+          : "Отправлено на проверку для публикации в каталоге";
+      if (result.refreshFailed) {
+        setSuccess(successCopy);
+        setError("Не удалось обновить статус на экране — обновите страницу.");
+        try {
+          onProfileUpdated(await refreshProfile());
+          setError("");
+        } catch {
+          /* keep hint */
+        }
+      } else if (result.profile) {
+        onProfileUpdated(result.profile);
+        setSuccess(successCopy);
+      }
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");

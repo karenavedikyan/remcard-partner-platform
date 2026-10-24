@@ -27,6 +27,7 @@ export async function createProfTestUser(body: {
   displayName: string;
   kind: "agent" | "master" | "store" | "company";
   city: string;
+  publicCatalogShow?: boolean;
 }) {
   return remcardFetch("/api/pro/admin/test-users", { method: "POST", body });
 }

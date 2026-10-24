@@ -13,6 +13,7 @@ import {
 } from "@/lib/profile-catalog-state";
 import {
   persistCatalogDraftOnly,
+  refreshProfile,
   submitProfileForModerationReview,
   type ProfileDraft,
 } from "@/lib/profile-save";
@@ -203,9 +204,21 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
     setError("");
     setSuccess("");
     try {
-      const next = await submitProfileForModerationReview(profile, draftForSubmit);
-      onProfileUpdated(next);
-      setSuccess("Заявка отправлена, ожидает проверки");
+      const result = await submitProfileForModerationReview(profile, draftForSubmit);
+      if (result.refreshFailed) {
+        setSuccess("Заявка отправлена, ожидает проверки");
+        setError("Не удалось обновить статус на экране — обновите страницу.");
+        try {
+          const refreshed = await refreshProfile();
+          onProfileUpdated(refreshed);
+          setError("");
+        } catch {
+          /* keep soft refresh hint */
+        }
+      } else if (result.profile) {
+        onProfileUpdated(result.profile);
+        setSuccess("Заявка отправлена, ожидает проверки");
+      }
       router.refresh();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось отправить");

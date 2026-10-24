@@ -9,6 +9,7 @@ import {
   setProfTestPublicCatalogShow,
 } from "@/lib/prof-admin-api";
 import { Button } from "@/components/ui/Button";
+import { adminTestUserPublicCatalogUrl } from "@/lib/admin-test-users-public-link";
 import styles from "../admin-test-users.module.css";
 
 type TestUser = {
@@ -22,6 +23,7 @@ type TestUser = {
   profTestPublicCatalogAllowed?: boolean;
   catalogStatus?: string | null;
   isPublic?: boolean;
+  isBlocked?: boolean;
   organizationsOwned?: Array<{
     id: string;
     name: string;
@@ -50,17 +52,6 @@ function catalogStatusLabel(item: TestUser): string {
   return map[status] ?? status;
 }
 
-function publicCatalogUrl(item: TestUser): string | null {
-  const org = item.organizationsOwned?.[0];
-  if (org?.catalogPublished) {
-    return `https://remcard.ru/catalog/org/${encodeURIComponent(org.id)}`;
-  }
-  if (item.isPublic && item.publicId) {
-    return `https://remcard.ru/partner/${encodeURIComponent(item.publicId)}`;
-  }
-  return null;
-}
-
 function kindLabel(item: TestUser) {
   const act = item.partnerActivities?.[0];
   if (act && KIND_LABEL[act.toLowerCase()]) return KIND_LABEL[act.toLowerCase()];
@@ -84,6 +75,7 @@ export function AdminTestUsersClient() {
     displayName: "Тест · Агент 1",
     kind: "agent" as "agent" | "master" | "store" | "company",
     city: "Краснодар",
+    publicCatalogShow: false,
   });
 
   const reload = useCallback(async () => {
@@ -180,6 +172,14 @@ export function AdminTestUsersClient() {
           Город
           <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
         </label>
+        <label className={styles.checkboxRow}>
+          <input
+            type="checkbox"
+            checked={form.publicCatalogShow}
+            onChange={(e) => setForm((f) => ({ ...f, publicCatalogShow: e.target.checked }))}
+          />
+          Разрешить показ в каталоге remcard.ru после одобрения
+        </label>
         <Button type="button" disabled={creating} onClick={() => void create()}>
           {creating ? "Создание…" : "Создать"}
         </Button>
@@ -224,11 +224,11 @@ export function AdminTestUsersClient() {
               <div className={styles.meta}>
                 Показ на remcard.ru:{" "}
                 {item.profTestPublicCatalogAllowed ? "Разрешён" : "Отключён"}
-                {publicCatalogUrl(item) ? (
+                {adminTestUserPublicCatalogUrl(item) ? (
                   <>
                     {" "}
                     ·{" "}
-                    <a href={publicCatalogUrl(item)!} target="_blank" rel="noreferrer">
+                    <a href={adminTestUserPublicCatalogUrl(item)!} target="_blank" rel="noreferrer">
                       Публичная карточка
                     </a>
                   </>

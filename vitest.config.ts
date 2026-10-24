@@ -80,6 +80,8 @@ export default defineConfig({
       "src/lib/profile-catalog-touched.test.ts",
       "src/lib/profile-org-catalog-roundtrip.test.ts",
       "src/lib/profile-save.org-catalog-city.test.ts",
+      "src/lib/profile-save.submit.test.tsx",
+      "src/lib/admin-test-users-public-link.test.ts",
       "src/lib/profile-org-catalog-stages-hydration.test.ts",
       "src/components/profile/business/OrganizationCatalogWizard.stages.test.tsx",
       "src/components/profile/ProfileEditor.business-catalog.test.tsx",
