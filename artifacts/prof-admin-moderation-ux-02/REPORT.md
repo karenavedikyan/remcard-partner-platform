@@ -7,7 +7,7 @@ Independent review blockers for **organization moderation detail** addressed on 
 | Role | Repository | SHA |
 |------|------------|-----|
 | **Runtime frontend (tested)** | remcard-partner-platform | `22ff4eed8e13f3cdb58c1c1bd0c7988dc1a9e925` |
-| **Evidence REPORT (this file)** | remcard-partner-platform | same commit as runtime |
+| **Evidence REPORT (this file)** | remcard-partner-platform | `0a3158834867073a6cf3e2c37b64909e301bc571` |
 | **Backend (mutations baseline + read contract)** | remcard-navigator | `a221e5304272169bbbca7fe611dc28e1b534c948` |
 | **Prior blocked candidate** | remcard-partner-platform | `a2bfd7ba8af1030440e81059264c54a1625fcbab` |
 | **Prior published frontend checkpoint** | remcard-partner-platform | `93942eeb10e965aed7a84add014d50476d3380ef` |
