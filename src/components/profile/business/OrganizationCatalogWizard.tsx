@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
@@ -21,6 +21,7 @@ import { catalogStatusTone } from "@/lib/partnership-labels";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import { CatalogPublicationPreview } from "../CatalogPublicationPreview";
+import { CatalogWizardPhotoAttachment } from "../CatalogWizardPhotoAttachment";
 import { ProfileDirectionsPicker } from "../ProfileDirectionsPicker";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "../agent/AgentPhoneField";
 import type { CatalogPrefillField, CatalogTouchedMap } from "@/lib/specialist-r06/catalog-prefill";
@@ -221,6 +222,33 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
       setSubmitting(false);
     }
   }
+
+  const handleCatalogPhotoFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setUploadError("");
+      setUploading(true);
+      void uploadCatalogImage(file).then((result) => {
+        setUploading(false);
+        if (fileRef.current) fileRef.current.value = "";
+        if (result.ok) {
+          touchField(props, "catalogImageUrl");
+          onCatalogImageUrlChange(result.url);
+          setUploadError("");
+        } else {
+          setUploadError(result.error);
+        }
+      });
+    },
+    [onCatalogImageUrlChange, props],
+  );
+
+  const handleCatalogPhotoRemove = useCallback(() => {
+    touchField(props, "catalogImageUrl");
+    onCatalogImageUrlChange("");
+    setUploadError("");
+  }, [onCatalogImageUrlChange, props]);
 
   const stepMissing = (idx: number): string | null => {
     if (idx === 0) {
@@ -471,38 +499,20 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
             <p className={catalogStyles.intro}>
               Фото и описание необязательны. Можно перейти к предпросмотру без заполнения.
             </p>
-            <input
-              ref={fileRef}
-              type="file"
+            <CatalogWizardPhotoAttachment
+              catalogImageUrl={catalogImageUrl}
+              catalogEditable={catalogEditable}
+              uploading={uploading}
+              uploadError={uploadError}
+              fileInputRef={fileRef}
               accept={CATALOG_IMAGE_ACCEPT}
-              className={editorStyles.visuallyHidden}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setUploadError("");
-                setUploading(true);
-                void uploadCatalogImage(file).then((result) => {
-                  setUploading(false);
-                  if (fileRef.current) fileRef.current.value = "";
-                  if (result.ok) {
-                    touchField(props, "catalogImageUrl");
-                    onCatalogImageUrlChange(result.url);
-                    setUploadError("");
-                  } else {
-                    setUploadError(result.error);
-                  }
-                });
-              }}
+              fileInputClassName={editorStyles.visuallyHidden}
+              btnClassName={catalogStyles.btn}
+              btnGhostClassName={catalogStyles.btnGhost}
+              bannerErrorClassName={catalogStyles.bannerError}
+              onFileChange={handleCatalogPhotoFileChange}
+              onRemove={handleCatalogPhotoRemove}
             />
-            <button
-              type="button"
-              className={catalogStyles.btn}
-              disabled={!catalogEditable || uploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              {uploading ? "Загрузка…" : catalogImageUrl ? "Заменить фото" : "Добавить фото"}
-            </button>
-            {uploadError ? <p className={catalogStyles.bannerError}>{uploadError}</p> : null}
             <TextAreaField
               label="Описание"
               value={description}

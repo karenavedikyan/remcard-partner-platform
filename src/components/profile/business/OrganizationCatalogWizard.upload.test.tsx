@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -81,14 +81,17 @@ function baseProfile(partnerType: "STORE" | "COMPANY"): ProProfileResponse {
   } as ProProfileResponse;
 }
 
-function WizardHarness(props: {
+type HarnessProps = {
   partnerType: "STORE" | "COMPANY";
   onCatalogTouchedChange: (t: ProfileDraft["catalogTouched"]) => void;
   onCatalogImageUrlChange: (url: string) => void;
   catalogImageUrl: string;
   description: string;
   onDescriptionChange: (v: string) => void;
-}) {
+  catalogEditable?: boolean;
+};
+
+function WizardHarness(props: HarnessProps) {
   const profile = baseProfile(props.partnerType);
   const draft: ProfileDraft = {
     ...profileDraftFromProfile(profile),
@@ -97,6 +100,11 @@ function WizardHarness(props: {
   };
   const [stageIds, setStageIds] = useState<string[]>(["L1-7"]);
   const [storeCategories] = useState<string[]>(["doors"]);
+  const [imageUrl, setImageUrl] = useState(props.catalogImageUrl);
+
+  useEffect(() => {
+    setImageUrl(props.catalogImageUrl);
+  }, [props.catalogImageUrl]);
 
   return (
     <OrganizationCatalogWizard
@@ -104,7 +112,7 @@ function WizardHarness(props: {
       draft={{ ...draft, storeCategories, navigatorStageIds: stageIds }}
       partnerType={props.partnerType}
       needsBranchFields={false}
-      catalogEditable
+      catalogEditable={props.catalogEditable ?? true}
       catalogTouched={{}}
       onCatalogTouchedChange={props.onCatalogTouchedChange}
       onProfileUpdated={() => {}}
@@ -114,8 +122,11 @@ function WizardHarness(props: {
       onCatalogCityChange={() => {}}
       branchAddress=""
       onBranchAddressChange={() => {}}
-      catalogImageUrl={props.catalogImageUrl}
-      onCatalogImageUrlChange={props.onCatalogImageUrlChange}
+      catalogImageUrl={imageUrl}
+      onCatalogImageUrlChange={(url) => {
+        setImageUrl(url);
+        props.onCatalogImageUrlChange(url);
+      }}
       description={props.description}
       onDescriptionChange={props.onDescriptionChange}
       specializations={[]}
@@ -138,6 +149,21 @@ function WizardHarness(props: {
       onPullWorkingDirections={() => {}}
     />
   );
+}
+
+async function goToPhotoStep(ui: ReturnType<typeof userEvent.setup>) {
+  await ui.click(screen.getByRole("button", { name: "Далее" }));
+  await ui.click(screen.getByRole("button", { name: "Далее" }));
+  await ui.click(screen.getByRole("button", { name: "Далее" }));
+  await waitFor(() =>
+    expect(screen.getByTestId("organization-catalog-wizard")).toHaveAttribute("data-catalog-step", "3"),
+  );
+}
+
+function fileInput() {
+  return screen.getByTestId("organization-catalog-wizard").querySelector(
+    'input[type="file"]',
+  ) as HTMLInputElement;
 }
 
 describe("OrganizationCatalogWizard catalog image upload (STORE/COMPANY step 4)", () => {
@@ -166,25 +192,24 @@ describe("OrganizationCatalogWizard catalog image upload (STORE/COMPANY step 4)"
         onCatalogTouchedChange={onTouched}
       />,
     );
-    await ui.click(screen.getByRole("button", { name: "Далее" }));
-    await ui.click(screen.getByRole("button", { name: "Далее" }));
-    await ui.click(screen.getByRole("button", { name: "Далее" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("organization-catalog-wizard")).toHaveAttribute("data-catalog-step", "3"),
-    );
+    await goToPhotoStep(ui);
 
     const file = new File([new Uint8Array([137, 80, 78, 71])], "a.png", { type: "image/png" });
-    const input = screen.getByTestId("organization-catalog-wizard").querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
+    const input = fileInput();
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() =>
       expect(screen.getByText("Не удалось обработать изображение. Выберите JPG или PNG.")).toBeInTheDocument(),
     );
     expect(onUrl).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("catalog-wizard-photo-attached")).toBeNull();
 
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => expect(onUrl).toHaveBeenCalledWith("https://cdn.example/org.png"));
+    expect(screen.getByText("Фото прикреплено")).toBeInTheDocument();
+    expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+      "src",
+      "https://cdn.example/org.png",
+    );
     expect(screen.queryByText("Не удалось обработать изображение. Выберите JPG или PNG.")).toBeNull();
     expect(description).toBe("Описание черновика");
     expect(onTouched).toHaveBeenCalled();
@@ -202,29 +227,162 @@ describe("OrganizationCatalogWizard catalog image upload (STORE/COMPANY step 4)"
       <WizardHarness
         partnerType="STORE"
         catalogImageUrl="https://cdn.example/previous.png"
-        description=""
+        description="Текст описания"
         onDescriptionChange={() => {}}
         onCatalogImageUrlChange={onUrl}
         onCatalogTouchedChange={() => {}}
       />,
     );
-    await ui.click(screen.getByRole("button", { name: "Далее" }));
-    await ui.click(screen.getByRole("button", { name: "Далее" }));
-    await ui.click(screen.getByRole("button", { name: "Далее" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("organization-catalog-wizard")).toHaveAttribute("data-catalog-step", "3"),
-    );
+    await goToPhotoStep(ui);
 
-    const input = screen.getByTestId("organization-catalog-wizard").querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
-    fireEvent.change(input, {
+    fireEvent.change(fileInput(), {
       target: { files: [new File([new Uint8Array([1, 2, 3])], "bad.png", { type: "image/png" })] },
     });
     await waitFor(() =>
       expect(screen.getByText("Не удалось обработать изображение. Выберите JPG или PNG.")).toBeInTheDocument(),
     );
     expect(onUrl).not.toHaveBeenCalled();
+    expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+      "src",
+      "https://cdn.example/previous.png",
+    );
+    expect(screen.getByText("Текст описания")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Заменить фото" })).toBeInTheDocument();
+  });
+
+  it("shows thumbnail for saved URL, replace updates src, remove clears attachment", async () => {
+    const ui = userEvent.setup();
+    vi.spyOn(catalogUpload, "uploadCatalogImage").mockResolvedValue({
+      ok: true,
+      url: "https://cdn.example/new.png",
+    });
+    const onUrl = vi.fn();
+    const onTouched = vi.fn();
+    render(
+      <WizardHarness
+        partnerType="STORE"
+        catalogImageUrl="https://cdn.example/saved.png"
+        description=""
+        onDescriptionChange={() => {}}
+        onCatalogImageUrlChange={onUrl}
+        onCatalogTouchedChange={onTouched}
+      />,
+    );
+    await goToPhotoStep(ui);
+    expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+      "src",
+      "https://cdn.example/saved.png",
+    );
+    expect(screen.getByText("Фото прикреплено")).toBeInTheDocument();
+
+    fireEvent.change(fileInput(), {
+      target: { files: [new File([new Uint8Array([1])], "b.png", { type: "image/png" })] },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+        "src",
+        "https://cdn.example/new.png",
+      ),
+    );
+
+    await ui.click(screen.getByRole("button", { name: "Убрать фото" }));
+    expect(onUrl).toHaveBeenCalledWith("");
+    await waitFor(() => expect(screen.queryByTestId("catalog-wizard-photo-attached")).toBeNull());
+    expect(screen.getByRole("button", { name: "Добавить фото" })).toBeInTheDocument();
+    expect(onTouched).toHaveBeenCalled();
+  });
+
+  it("remount with saved URL still shows thumbnail on photo step", async () => {
+    const ui = userEvent.setup();
+    const { unmount } = render(
+      <WizardHarness
+        partnerType="COMPANY"
+        catalogImageUrl="https://cdn.example/persisted.png"
+        description=""
+        onDescriptionChange={() => {}}
+        onCatalogImageUrlChange={() => {}}
+        onCatalogTouchedChange={() => {}}
+      />,
+    );
+    await goToPhotoStep(ui);
+    expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+      "src",
+      "https://cdn.example/persisted.png",
+    );
+    unmount();
+    render(
+      <WizardHarness
+        partnerType="COMPANY"
+        catalogImageUrl="https://cdn.example/persisted.png"
+        description=""
+        onDescriptionChange={() => {}}
+        onCatalogImageUrlChange={() => {}}
+        onCatalogTouchedChange={() => {}}
+      />,
+    );
+    await goToPhotoStep(ui);
+    expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+      "src",
+      "https://cdn.example/persisted.png",
+    );
+  });
+
+  it("shows preview-unavailable when image fails to load and recovers on new URL", async () => {
+    const ui = userEvent.setup();
+    render(
+      <WizardHarness
+        partnerType="STORE"
+        catalogImageUrl="https://cdn.example/broken.png"
+        description=""
+        onDescriptionChange={() => {}}
+        onCatalogImageUrlChange={() => {}}
+        onCatalogTouchedChange={() => {}}
+      />,
+    );
+    await goToPhotoStep(ui);
+    const img = screen.getByTestId("catalog-wizard-photo-thumb");
+    fireEvent.error(img);
+    expect(screen.getByTestId("catalog-wizard-photo-preview-unavailable")).toHaveTextContent(
+      "Предпросмотр недоступен",
+    );
+    expect(screen.getByText("Фото прикреплено")).toBeInTheDocument();
+
+    vi.spyOn(catalogUpload, "uploadCatalogImage").mockResolvedValue({
+      ok: true,
+      url: "https://cdn.example/fixed.png",
+    });
+    fireEvent.change(fileInput(), {
+      target: { files: [new File([new Uint8Array([1])], "c.png", { type: "image/png" })] },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+        "src",
+        "https://cdn.example/fixed.png",
+      ),
+    );
+    expect(screen.queryByTestId("catalog-wizard-photo-preview-unavailable")).toBeNull();
+  });
+
+  it("locked catalog shows attachment without mutation actions", async () => {
+    const ui = userEvent.setup();
+    render(
+      <WizardHarness
+        partnerType="STORE"
+        catalogEditable={false}
+        catalogImageUrl="https://cdn.example/locked.png"
+        description=""
+        onDescriptionChange={() => {}}
+        onCatalogImageUrlChange={() => {}}
+        onCatalogTouchedChange={() => {}}
+      />,
+    );
+    await goToPhotoStep(ui);
+    expect(screen.getByText("Фото прикреплено")).toBeInTheDocument();
+    expect(screen.getByTestId("catalog-wizard-photo-thumb")).toHaveAttribute(
+      "src",
+      "https://cdn.example/locked.png",
+    );
+    expect(screen.queryByRole("button", { name: "Заменить фото" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Убрать фото" })).toBeNull();
   });
 });

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Catalog photo preview fixture</title>
+    <style>
+      :root {
+        --cw-accent: #b52a2e;
+        --cw-text: #282b30;
+        --cw-muted: #656970;
+        --cw-bg: #fff;
+        --cw-soft: #f6f7f8;
+        --cw-line: #dce0e3;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        background: var(--cw-bg);
+        color: var(--cw-text);
+        margin: 0;
+        padding: 1.5rem;
+        display: grid;
+        gap: 2rem;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+      .panel { border: 1px solid var(--cw-line); border-radius: 12px; padding: 1rem; max-width: 100%; }
+      .attached { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+      .thumb {
+        width: 7.5rem; height: 7.5rem; max-width: min(7.5rem, 28vw);
+        border: 1px solid var(--cw-line); border-radius: 10px; background: var(--cw-soft);
+        display: flex; align-items: center; justify-content: center; overflow: hidden;
+      }
+      .thumb img { width: 100%; height: 100%; object-fit: contain; }
+      .status { font-weight: 600; font-size: 0.875rem; margin: 0 0 0.5rem; }
+      .warn { color: var(--cw-muted); font-weight: 500; margin-left: 0.5rem; }
+      .btn {
+        min-height: 44px; padding: 0.75rem 1.25rem; border-radius: 7px;
+        border: 1px solid var(--cw-line); background: var(--cw-bg); font-weight: 700; font-size: 0.875rem;
+      }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .hint { font-size: 0.75rem; color: var(--cw-muted); margin: 0.5rem 0 0; }
+      .error { color: #b52a2e; font-size: 0.875rem; margin: 0.5rem 0 0; }
+    </style>
+  </head>
+  <body>
+    <section class="panel" id="empty">
+      <h2>Пустое состояние</h2>
+      <button type="button" class="btn">Добавить фото</button>
+    </section>
+    <section class="panel" id="attached">
+      <h2>Фото прикреплено</h2>
+      <div class="attached">
+        <div class="thumb">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23e8eaed' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23656970' font-size='12'%3ELogo%3C/text%3E%3C/svg%3E" alt="Прикреплённое фото для каталога" />
+        </div>
+        <div>
+          <p class="status">Фото прикреплено</p>
+          <div class="actions">
+            <button type="button" class="btn">Заменить фото</button>
+            <button type="button" class="btn">Убрать фото</button>
+          </div>
+          <p class="hint">Изменения сохранятся вместе с черновиком</p>
+        </div>
+      </div>
+    </section>
+    <section class="panel" id="preview-error">
+      <h2>Ошибка предпросмотра</h2>
+      <div class="attached">
+        <div class="thumb"><span style="font-size:0.75rem;color:var(--cw-muted);padding:0.35rem;text-align:center">Нет превью</span></div>
+        <div>
+          <p class="status">Фото прикреплено <span class="warn">Предпросмотр недоступен</span></p>
+          <div class="actions">
+            <button type="button" class="btn">Заменить фото</button>
+            <button type="button" class="btn">Убрать фото</button>
+          </div>
+          <p class="error">Не удалось обработать изображение. Выберите JPG или PNG.</p>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
