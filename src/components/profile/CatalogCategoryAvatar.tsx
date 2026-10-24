@@ -17,7 +17,12 @@ export function CatalogCategoryAvatar({
   size = "preview",
 }: CatalogCategoryAvatarProps) {
   const Icon = getCategoryIcon(categories, partnerType);
-  const src = imageUrl?.trim();
+  const src =
+    typeof imageUrl === "string"
+      ? imageUrl.trim()
+      : imageUrl == null
+        ? ""
+        : String(imageUrl).trim();
   const wrapClass = size === "compact" ? styles.compact : styles.preview;
 
   return (

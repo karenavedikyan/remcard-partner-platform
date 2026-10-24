@@ -15,6 +15,12 @@ export type BranchPreviewModel = {
   imageUrl: string | null;
 };
 
+function branchField(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (value == null) return "";
+  return String(value).trim();
+}
+
 export function buildBranchPreviewModel(input: {
   name: string;
   city: string;
@@ -27,18 +33,22 @@ export function buildBranchPreviewModel(input: {
   contacts: BranchContactsForm;
 }): BranchPreviewModel {
   const contactLines = BRANCH_CONTACT_KINDS.filter(
-    (k) => input.contacts[k].isActive && input.contacts[k].value.trim(),
-  ).map((k) => `${k}: ${input.contacts[k].value.trim()}`);
+    (k) => input.contacts[k].isActive && branchField(input.contacts[k].value),
+  ).map((k) => `${k}: ${branchField(input.contacts[k].value)}`);
 
   return {
-    title: input.name.trim() || input.address.trim() || "Филиал",
-    city: input.city.trim(),
-    address: input.address.trim(),
-    description: input.description.trim(),
-    workingHours: input.workingHours.trim(),
-    productLabels: input.storeCategories.map((id) => displayCategoryLabel(id, null)),
-    serviceLabels: input.specializations.map((id) => masterDirectionLabel(id)),
+    title: branchField(input.name) || branchField(input.address) || "Филиал",
+    city: branchField(input.city),
+    address: branchField(input.address),
+    description: branchField(input.description),
+    workingHours: branchField(input.workingHours),
+    productLabels: input.storeCategories
+      .filter((id): id is string => typeof id === "string")
+      .map((id) => displayCategoryLabel(id, null)),
+    serviceLabels: input.specializations
+      .filter((id): id is string => typeof id === "string")
+      .map((id) => masterDirectionLabel(id)),
     contactLines,
-    imageUrl: input.photoUrl.trim() || null,
+    imageUrl: branchField(input.photoUrl) || null,
   };
 }

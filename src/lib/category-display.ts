@@ -20,7 +20,7 @@ const KNOWN_CATEGORY_KEYS = new Set<string>([
 ]);
 
 function resolveCategoryKey(category: string): string {
-  const trimmed = category.trim();
+  const trimmed = (typeof category === "string" ? category : String(category ?? "")).trim();
   if (!trimmed) return trimmed;
   return LEGACY_CATEGORY_ALIASES[trimmed] ?? trimmed;
 }
@@ -61,7 +61,10 @@ export function displayCategoryLabel(
 ): string {
   const categoryKey = resolveCategoryKey(category);
   const canonical = canonicalCategoryLabel(categoryKey);
-  const stored = storedLabel?.trim();
+  const stored =
+    storedLabel == null
+      ? ""
+      : (typeof storedLabel === "string" ? storedLabel : String(storedLabel)).trim();
   if (!stored) {
     return canonical;
   }
@@ -79,7 +82,7 @@ export function displayCategoryLabel(
 
 /** When only a stored label is available (history rows), resolve display safely. */
 export function displayCategoryLabelFromStored(storedLabel: string): string {
-  const stored = storedLabel.trim();
+  const stored = (typeof storedLabel === "string" ? storedLabel : String(storedLabel ?? "")).trim();
   if (!stored) {
     return UNKNOWN_CATEGORY_DISPLAY_LABEL;
   }

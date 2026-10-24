@@ -31,7 +31,7 @@ const MASTER_TRADE_LABELS: Record<string, string> = {
 };
 
 export function masterDirectionLabel(id: string): string {
-  const trimmed = id.trim();
+  const trimmed = (typeof id === "string" ? id : String(id ?? "")).trim();
   if (!trimmed) return UNKNOWN_CATEGORY_DISPLAY_LABEL;
   if (/^L1-\d+$/.test(trimmed)) {
     const stage = ONBOARDING_STAGES.find((s) => s.id === trimmed);

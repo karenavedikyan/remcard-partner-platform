@@ -9,6 +9,12 @@ import { catalogEntityForProfile } from "@/lib/profile-catalog-state";
 const GENERIC = "Партнёр RemCard";
 const DEFAULT_NAME = "Пользователь";
 
+function draftField(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  return String(value);
+}
+
 export type CatalogPreviewModel = {
   publicName: string;
   city: string;
@@ -32,17 +38,17 @@ export function catalogPublicTitle(
 ): string {
   const entity = catalogEntityForProfile(profile);
   if (entity === "organization") {
-    const name = draft.organizationName.trim();
+    const name = draftField(draft.organizationName).trim();
     if (name && name !== GENERIC) return name;
-    const city = draft.city.trim();
+    const city = draftField(draft.city).trim();
     if (city) return `Партнёр в ${city}`;
     return GENERIC;
   }
   if (draft.showFullName) {
-    const dn = (draft.catalogPublicName || draft.displayName).trim();
+    const dn = draftField(draft.catalogPublicName || draft.displayName).trim();
     if (dn && dn !== DEFAULT_NAME && dn !== GENERIC) return dn;
   }
-  const city = draft.city.trim();
+  const city = draftField(draft.city).trim();
   const pt = draft.partnerType;
   if (pt === "STORE" || pt === "COMPANY") {
     return city ? `Партнёр в ${city}` : GENERIC;
@@ -55,30 +61,40 @@ export function buildCatalogPreviewModel(
   draft: ProfileDraft,
 ): CatalogPreviewModel {
   const partnerType = draft.partnerType || profile.user.partnerType || "MASTER";
-  const productLabels = draft.storeCategories.map((id) => displayCategoryLabel(id));
-  const serviceLabels = draft.specializations.map((id) => masterDirectionLabel(id));
-  const stageLabels = draft.navigatorStageIds.map((id) => {
+  const productLabels = draft.storeCategories
+    .filter((id): id is string => typeof id === "string")
+    .map((id) => displayCategoryLabel(id));
+  const serviceLabels = draft.specializations
+    .filter((id): id is string => typeof id === "string")
+    .map((id) => masterDirectionLabel(id));
+  const stageLabels = draft.navigatorStageIds
+    .filter((id): id is string => typeof id === "string")
+    .map((id) => {
     const stage = ONBOARDING_STAGES.find((s) => s.id === id);
     return stage ? `${stage.icon} ${stage.title}` : masterDirectionLabel(id);
   });
   const categoriesForAvatar =
     draft.storeCategories.length > 0 ? draft.storeCategories : draft.specializations;
-  const rawPhone = draft.publicPhone.trim();
+  const rawPhone = draftField(draft.publicPhone).trim();
   const displayPhone = rawPhone ? formatPhoneForDisplay(rawPhone) : "";
 
   return {
     publicName: catalogPublicTitle(draft, profile),
-    city: (draft.catalogCity || draft.city).trim() || profile.user.catalogCity || profile.user.city || "",
-    description: draft.description.trim(),
+    city:
+      draftField(draft.catalogCity || draft.city).trim() ||
+      profile.user.catalogCity ||
+      profile.user.city ||
+      "",
+    description: draftField(draft.description).trim(),
     productLabels,
     serviceLabels,
     stageLabels,
-    imageUrl: draft.catalogImageUrl.trim() || null,
+    imageUrl: draftField(draft.catalogImageUrl).trim() || null,
     categoriesForAvatar,
     partnerType,
-    website: draft.website.trim(),
-    telegram: draft.telegram.trim(),
-    publicEmail: draft.publicEmail.trim(),
+    website: draftField(draft.website).trim(),
+    telegram: draftField(draft.telegram).trim(),
+    publicEmail: draftField(draft.publicEmail).trim(),
     publicPhone: displayPhone,
     showFullName: draft.showFullName,
   };

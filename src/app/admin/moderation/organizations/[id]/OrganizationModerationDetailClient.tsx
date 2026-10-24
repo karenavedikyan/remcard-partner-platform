@@ -25,6 +25,7 @@ import {
   moderationSubmittedCategoryLabels,
   moderationSubmittedServiceLabels,
   moderationSubmittedStageLabels,
+  moderationSubmittedString,
   partnerTypeLabel,
   type ModerationOrgDetail,
 } from "@/lib/prof-admin-moderation-org-display";
@@ -433,17 +434,17 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
           ) : (
             <p className={styles.metaLine}>Логотип не приложен</p>
           )}
-          <p>{org.submitted.description?.trim() || "Описание не указано"}</p>
+          <p>{moderationSubmittedString(org.submitted.description) || "Описание не указано"}</p>
         </Panel>
 
         <Panel title="Контакты (публичные в заявке)">
           <div className={styles.dataGrid}>
             <span>Сайт</span>
-            <span>{org.submitted.website?.trim() || "—"}</span>
+            <span>{moderationSubmittedString(org.submitted.website) || "—"}</span>
             <span>Telegram</span>
-            <span>{org.submitted.telegram?.trim() || "—"}</span>
+            <span>{moderationSubmittedString(org.submitted.telegram) || "—"}</span>
             <span>Email</span>
-            <span>{org.submitted.publicEmail?.trim() || "—"}</span>
+            <span>{moderationSubmittedString(org.submitted.publicEmail) || "—"}</span>
             <span>Телефон</span>
             <span>{moderationFormatPublicPhone(org.submitted.publicPhone)}</span>
           </div>
@@ -462,7 +463,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
 
         {org.live.catalogPublished ? (
           <Panel title="Опубликовано сейчас" hint="Для сравнения с отправленной заявкой">
-            <p>{org.live.description?.trim() || "Описание не заполнено"}</p>
+            <p>{moderationSubmittedString(org.live.description) || "Описание не заполнено"}</p>
           </Panel>
         ) : null}
 

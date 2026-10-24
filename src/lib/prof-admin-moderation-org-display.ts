@@ -81,9 +81,9 @@ export function moderationCatalogStatusLabel(status: string): string {
 
 export function moderationOrgCity(org: ModerationOrgDetail): string {
   const fromBranch = org.branches.find(
-    (b) => b.catalogStatus !== "DRAFT" && b.submitted.city?.trim(),
+    (b) => b.catalogStatus !== "DRAFT" && moderationSubmittedString(b.submitted.city),
   )?.submitted.city;
-  return fromBranch?.trim() ?? "";
+  return moderationSubmittedString(fromBranch);
 }
 
 export type ModerationVisibilityState = {
@@ -131,8 +131,9 @@ export type ModerationChangeBlock = {
 };
 
 function labelList(keys: string[], resolver: (k: string) => string): string {
-  if (!keys.length) return "—";
-  return keys.map(resolver).join(", ");
+  const ids = keys.filter((k): k is string => typeof k === "string");
+  if (!ids.length) return "—";
+  return ids.map(resolver).join(", ");
 }
 
 function liveCategoryLabels(live: ModerationOrgLive, kind: "storeCategories" | "specializations"): string {
@@ -163,9 +164,9 @@ export function moderationOrgChangeBlock(org: ModerationOrgDetail): ModerationCh
   }
 
   const lines: string[] = [];
-  const push = (label: string, from: string | null | undefined, to: string | null | undefined) => {
-    const a = (from ?? "").trim();
-    const b = (to ?? "").trim();
+  const push = (label: string, from: unknown, to: unknown) => {
+    const a = moderationSubmittedString(from);
+    const b = moderationSubmittedString(to);
     if (a === b) return;
     if (!b && a) {
       lines.push(`${label}: удалено (было «${a}»)`);
@@ -220,22 +221,26 @@ export function moderationOrgChangeBlock(org: ModerationOrgDetail): ModerationCh
   };
 }
 
+function moderationStringIds(ids: string[] | undefined): string[] {
+  return (ids ?? []).filter((id): id is string => typeof id === "string");
+}
+
 export function moderationSubmittedCategoryLabels(ids: string[] | undefined): string[] {
-  return (ids ?? []).map((id) => displayCategoryLabel(id));
+  return moderationStringIds(ids).map((id) => displayCategoryLabel(id));
 }
 
 export function moderationSubmittedServiceLabels(ids: string[] | undefined): string[] {
-  return (ids ?? []).map((id) => masterDirectionLabel(id));
+  return moderationStringIds(ids).map((id) => masterDirectionLabel(id));
 }
 
 export function moderationSubmittedStageLabels(ids: string[] | undefined): string[] {
-  return (ids ?? []).map((id) => {
+  return moderationStringIds(ids).map((id) => {
     const stage = ONBOARDING_STAGES.find((s) => s.id === id);
     return stage ? `${stage.icon} ${stage.title}` : masterDirectionLabel(id);
   });
 }
 
-function moderationSubmittedString(value: unknown): string {
+export function moderationSubmittedString(value: unknown): string {
   if (typeof value === "string") return value.trim();
   if (value == null) return "";
   return String(value).trim();
@@ -253,8 +258,8 @@ export function buildModerationOrgCatalogPreviewInput(org: ModerationOrgDetail):
     city,
     description: moderationSubmittedString(s.description),
     partnerType: org.partnerType,
-    specializations: s.specializations ?? [],
-    storeCategories: s.storeCategories ?? [],
+    specializations: moderationStringIds(s.specializations),
+    storeCategories: moderationStringIds(s.storeCategories),
     organizationName: org.name,
     branchAddress: "",
     website: moderationSubmittedString(s.website),
@@ -266,7 +271,7 @@ export function buildModerationOrgCatalogPreviewInput(org: ModerationOrgDetail):
     catalogImageUrl: moderationSubmittedString(s.logoUrl),
     productCategoryIds: [],
     serviceSpecializationIds: [],
-    navigatorStageIds: s.navigatorStageIds ?? [],
+    navigatorStageIds: moderationStringIds(s.navigatorStageIds),
     primaryDirection: null,
     partnerSearchOptIn: false,
     partnerWorkMode: "",
@@ -301,14 +306,18 @@ export function buildModerationBranchPreviewModel(
   org: ModerationOrgDetail,
 ) {
   return buildBranchPreviewModel({
-    name: branch.submitted.name ?? "Филиал",
-    city: branch.submitted.city ?? "",
-    address: branch.submitted.address ?? "",
-    description: branch.submitted.description?.trim() ?? "",
-    workingHours: branch.submitted.workingHours?.trim() ?? "",
-    storeCategories: org.submitted.storeCategories ?? [],
-    specializations: org.submitted.specializations ?? [],
-    photoUrl: branch.submitted.photoUrl?.trim() ?? "",
+    name: moderationSubmittedString(branch.submitted.name) || "Филиал",
+    city: moderationSubmittedString(branch.submitted.city),
+    address: moderationSubmittedString(branch.submitted.address),
+    description: moderationSubmittedString(branch.submitted.description),
+    workingHours: moderationSubmittedString(branch.submitted.workingHours),
+    storeCategories: (org.submitted.storeCategories ?? []).filter(
+      (id): id is string => typeof id === "string",
+    ),
+    specializations: (org.submitted.specializations ?? []).filter(
+      (id): id is string => typeof id === "string",
+    ),
+    photoUrl: moderationSubmittedString(branch.submitted.photoUrl),
     contacts: emptyBranchContactsForm(),
   });
 }
@@ -326,8 +335,8 @@ export function moderationPublicContactTypeLabel(type: string): string {
   return map[type] ?? type;
 }
 
-export function moderationFormatPublicPhone(raw: string | null | undefined): string {
-  const v = raw?.trim() ?? "";
+export function moderationFormatPublicPhone(raw: unknown): string {
+  const v = moderationSubmittedString(raw);
   if (!v) return "—";
   return formatPhoneForDisplay(v) || v;
 }

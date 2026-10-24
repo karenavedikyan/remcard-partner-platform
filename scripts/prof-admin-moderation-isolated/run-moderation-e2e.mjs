@@ -121,7 +121,9 @@ async function runMainSiteSmoke(page) {
 async function runProfModerationFlow(browser, fx) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
-  page.on("pageerror", (err) => failures.push(`prof pageerror: ${err.message}`));
+  page.on("pageerror", (err) =>
+    failures.push(`prof pageerror: ${err.message}${err.stack ? `\n${err.stack}` : ""}`),
+  );
   page.on("console", (msg) => {
     if (msg.type() === "error") failures.push(`prof console error: ${msg.text()}`);
   });

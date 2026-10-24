@@ -22,7 +22,7 @@ function LegacyCatalogPublicationPreview({
   draft,
 }: CatalogPublicationPreviewProps) {
   const model = buildCatalogPreviewModel(profile, draft);
-  const legacyPhone = draft.publicPhone.trim();
+  const legacyPhone = model.publicPhone;
 
   return (
     <div className={legacyStyles.card} data-testid="catalog-public-preview">
