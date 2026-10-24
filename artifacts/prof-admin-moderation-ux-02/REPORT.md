@@ -6,11 +6,13 @@ Branches: `fix/prof-admin-moderation-ux-02` on **remcard-partner-platform** and 
 
 | Role | Repository | SHA |
 |------|------------|-----|
-| **Frontend runtime** | remcard-partner-platform | `bd27f762e6053c5a8a5dfc02a9b15e21ff0b4f4a` |
+| **Frontend runtime** | remcard-partner-platform | `8b417145ce7c78761e1b86fc833bd28794559da3` |
 | **Backend runtime** | remcard-navigator | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
-| **Evidence tip (REPORT + browser log + screenshots)** | remcard-partner-platform | `8ae75fbc7e6c1a963b01b48b6599654da21a5e68` |
+| **Evidence tip (REPORT + browser log + screenshots)** | remcard-partner-platform | Relative artifacts in this commit; exact evidence SHA in final response |
 
-Prior evidence-only commit on this branch (superseded by this REPORT): `1a72651d6cd205b9188af41ca149265ad8bf2db4`. Do **not** use branch documentation HEAD as runtime SHA.
+**Previous preview evidence (partner full preview gate):** `9e2b06e7fd6978478b929bcdc95c5a1a3de3e7a3` — superseded for runtime `8b417145`; retained for historical screenshots in git history.
+
+Do **not** use branch documentation HEAD as frontend/backend runtime SHA.
 
 Accepted regression tips (unchanged): frontend `f0c0bf95f50484e579dc50e2fc642f51d2a776b7`, backend `031066e5e71cf297e8b7533f39a5493afadc2599`.
 
@@ -18,12 +20,12 @@ Accepted regression tips (unchanged): frontend `f0c0bf95f50484e579dc50e2fc642f51
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| Queue + partner detail + test opt-in (prior pass) | **done** | unchanged |
-| Partner **full** preview: avatar, portfolio/service images, descriptions | **done** | `ModerationPartnerCatalogFullPreview.tsx` |
-| Partner **list** preview: submitted publicEmail/publicPhone (not account fallback) | **done** | `buildModerationPartnerCatalogPreviewInput` + BE detail DTO |
-| Browser: partner list/full preview + `GET …/public-preview` + media assertions | **done** | `run-moderation-e2e.mjs` `runPartnerPreviewGate` |
-| Partner public-preview **route/builder** PG integration (not token-only) | **done** | `profAdminModerationPartnerPublicPreview.integration.test.ts` (5) |
-| Org preview + fetch-loop/contact omit regressions | **done** | prior tips / existing tests |
+| Queue + partner detail + test opt-in | **done** | prior passes; queue 390 / dark 1440 screenshots in `screenshots/passed/` |
+| Partner full/list preview + PG route tests | **done** | prior tip `9e2b06e7…`; integration @ `5a2c2a7d` |
+| Partner **visibility**: live snapshot vs public catalog (test opt-in) | **done** | `moderationPartnerPublicVisibility` @ `8b417145` |
+| Unit: partner visibility | **done** | `prof-admin-moderation-partner-display.test.ts` — 4 passed |
+| E2E: allow/hide UI assertions (`partner-catalog-public-line`, header) | **done** | `run-moderation-e2e.mjs` test opt-in block; log tail `E2E_EXIT=0` |
+| Org preview + fetch-loop/contact omit | **done** | accepted tips / existing tests |
 
 ## Preview source map (partner)
 
@@ -31,13 +33,12 @@ Accepted regression tips (unchanged): frontend `f0c0bf95f50484e579dc50e2fc642f51
 |---------|--------|----------|
 | List compact | Moderation detail `submitted.*` → `ProfileDraft` | `CatalogPublicationPreview` (specialist) |
 | Full card | `GET …/partners/{id}/public-preview?partnerRevision=` | `ModerationPartnerCatalogFullPreview` |
-| Profile header/contacts | `buildPublicPartnerProfile(submitted catalogUnderReview)` | same full component |
-| Portfolio/services images | DB rows on pending user (not live draft body) | full component `SafePreviewImage` |
+| Public catalog visibility (admin) | live `isPublic` + status + test opt-in | `moderationPartnerPublicVisibility` |
 
-## Commands (agent VM)
+## Commands (agent VM, exit codes)
 
 ```bash
-# Frontend @ bd27f762
+# Frontend @ 8b417145
 npx vitest run \
   src/lib/prof-admin-moderation-public-preview.test.ts \
   src/lib/remcard-proxy-moderation.test.ts \
@@ -46,27 +47,33 @@ npx vitest run \
   src/app/admin/moderation/organizations/[id]/ModerationConfirmDialog.test.tsx \
   src/lib/prof-admin-moderation-org-readiness.test.ts \
   src/lib/prof-admin-moderation-org-display.test.ts \
-  src/lib/prof-admin-moderation-org-actions.test.ts
-# exit 0 — 35 passed
+  src/lib/prof-admin-moderation-org-actions.test.ts \
+  src/lib/prof-admin-moderation-partner-display.test.ts
+# exit 0 — 39 passed (35 moderation subset + 4 partner visibility)
 
 npx tsc --noEmit
 # exit 0
 
 # Backend @ 5a2c2a7d
 pnpm exec vitest run src/lib/__tests__/profAdminModerationPartnerPublicPreview.test.ts
-# exit 0 — 1 passed (revision token sanity)
+# exit 0 — 1 passed
 
 PROF_TEST_CATALOG_INTEGRATION_OK=1 pnpm exec vitest run \
   src/lib/__tests__/profAdminModerationPartnerPublicPreview.integration.test.ts
-# exit 0 — 5 passed (route + builder snapshot, auth, 404, 409)
+# exit 0 — 5 passed
 
-PROF_TEST_CATALOG_INTEGRATION_OK=1 pnpm exec vitest run \
-  src/lib/__tests__/profAdminModerationPublicPreview.integration.test.ts
-# exit 0 — 6 passed (org, unchanged)
+pnpm exec tsc --noEmit
+# exit 1 — 52 errors repo-wide baseline (pre-existing); 0 new in UX-02 partner preview paths
 
-# Isolated browser (loopback PG :55432, tips above)
-bash scripts/prof-admin-moderation-ux-02/run-browser-gate.sh
-# [moderation-e2e] OK — includes partner preview gate + partner-*-preview-* screenshots
+# Browser @ pinned runtime SHAs (loopback PG :55432, :3421 / :3420)
+# See browser-gate.log section: FE=8b417145… BE=5a2c2a7d…
+cd remcard-navigator && bash scripts/prof-admin-moderation-isolated/start-frontend.sh
+pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-moderation-fixtures.ts
+cd remcard-partner-platform && \
+  PROF_E2E_URL=http://127.0.0.1:3420 NAV_E2E_URL=http://127.0.0.1:3421 \
+  PROF_MOD_E2E_ARTIFACTS=$PWD/artifacts/prof-admin-moderation-ux-02/screenshots \
+  node scripts/prof-admin-moderation-isolated/run-moderation-e2e.mjs
+# exit 0 — [moderation-e2e] OK (includes visibility allow/hide assertions)
 ```
 
 ## Production

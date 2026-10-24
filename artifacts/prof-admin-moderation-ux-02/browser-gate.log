@@ -600,3 +600,7 @@ Error: listen EADDRINUSE: address already in use 127.0.0.1:3420
 [moderation-e2e] OK — passed screenshots in /agent/repos/remcard-partner-platform/artifacts/prof-admin-moderation-ux-02/screenshots/passed
 [browser-gate] E2E OK exit=0 2026-10-24T19:15:26Z tips FE=d47a91a9 BE=fab2ccf5
 [browser-gate] E2E OK exit=0 partner-preview-gate FE=bd27f762 BE=5a2c2a7d 2026-10-24T20:35:18Z
+
+=== browser-gate E2E rerun @ FE=8b417145ce7c78761e1b86fc833bd28794559da3 BE=5a2c2a7d9d5c03f2b948626dea2a987daa0422a4 2026-10-24T20:44:42Z ===
+[moderation-e2e] OK — passed screenshots in /agent/repos/remcard-partner-platform/artifacts/prof-admin-moderation-ux-02/screenshots/passed
+E2E_EXIT=0
