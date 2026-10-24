@@ -381,13 +381,46 @@ async function runProfModerationFlow(browser, fx) {
     });
     await page.getByRole("heading", { level: 1, name: fx.testOptInPartnerTitle }).waitFor({ timeout: 15000 });
     await page.getByRole("button", { name: /Разрешить показ в каталоге/i }).click();
+    const allowPatch = page.waitForResponse(
+      (r) =>
+        r.url().includes(`/test-users/${fx.testOptInPartnerUserId}`) &&
+        r.request().method() === "PATCH" &&
+        r.ok(),
+    );
     await page.getByRole("button", { name: /^Подтвердить$/i }).click();
-    await page.getByText(/Публикация тестового партнёра разрешена/i).waitFor({ timeout: 15000 });
+    await allowPatch;
+    await page.getByRole("status").filter({ hasText: /разрешена/i }).waitFor({ timeout: 15000 });
     await assertPartnerPublicHidden(fx.testOptInPartnerUserId, false);
+    const catalogLine = page.getByTestId("partner-catalog-public-line");
+    await catalogLine.waitFor({ timeout: 10000 });
+    let catalogText = await catalogLine.innerText();
+    assert(catalogText.includes("видна"), "after allow: catalog line must say visible");
+    assert(
+      (await page.getByTestId("partner-live-snapshot").innerText()).includes("опубликована"),
+      "after allow: live snapshot still published",
+    );
+
     await page.getByRole("button", { name: /Скрыть из каталога/i }).click();
+    const hidePatch = page.waitForResponse(
+      (r) =>
+        r.url().includes(`/test-users/${fx.testOptInPartnerUserId}`) &&
+        r.request().method() === "PATCH" &&
+        r.ok(),
+    );
     await page.getByRole("button", { name: /^Подтвердить$/i }).click();
-    await page.getByText(/скрыт из каталога/i).waitFor({ timeout: 15000 });
+    await hidePatch;
+    await page.getByRole("status").filter({ hasText: /скрыт из каталога/i }).waitFor({ timeout: 15000 });
     await assertPartnerPublicHidden(fx.testOptInPartnerUserId, true);
+    await catalogLine.waitFor({ timeout: 10000 });
+    catalogText = await catalogLine.innerText();
+    assert(catalogText.includes("скрыта"), "after hide: catalog line must say hidden");
+    assert(!catalogText.includes("видна"), "after hide: catalog line must not say visible");
+    const headerVis = await page.getByTestId("partner-catalog-visibility").innerText();
+    assert(headerVis.includes("Скрыта"), "after hide: header visibility headline");
+    assert(
+      (await page.getByTestId("partner-live-snapshot").innerText()).includes("опубликована"),
+      "after hide: live snapshot remains published while catalog hidden",
+    );
     await screenshotLightDark(page, "partner-test-opt-in-cycle");
   }
 

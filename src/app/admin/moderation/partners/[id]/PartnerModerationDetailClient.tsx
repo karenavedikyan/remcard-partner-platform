@@ -239,6 +239,10 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
           </div>
         </div>
         <p className={styles.metaLine}>Публичный ID: {partner.publicId}</p>
+        <p className={styles.metaLine} data-testid="partner-catalog-visibility">
+          <strong>Видимость в каталоге:</strong> {visibility.catalogVisibilityHeadline} —{" "}
+          {visibility.catalogVisibilityDetail}
+        </p>
         {changeBlock ? <p className={styles.metaLine}>{changeBlock}</p> : null}
       </header>
 
@@ -273,7 +277,13 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
         </Panel>
 
         <Panel title="Опубликовано сейчас (live)">
-          <p>Публичная карточка: {visibility.livePublic ? "видна в каталоге" : "скрыта"}</p>
+          <p data-testid="partner-live-snapshot">
+            Сохранённая live-версия:{" "}
+            {visibility.liveSnapshotPublished ? "опубликована (isPublic)" : "не опубликована"}
+          </p>
+          <p data-testid="partner-catalog-public-line">
+            В публичном каталоге: {visibility.catalogPubliclyVisible ? "видна" : "скрыта"}
+          </p>
           <p>Название: {partner.live.displayName ?? "—"}</p>
           <p>Город: {partner.live.city ?? "—"}</p>
           <p>{partner.live.description ?? "—"}</p>

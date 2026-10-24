@@ -95,13 +95,72 @@ export function moderationPartnerChangeBlock(partner: ModerationPartnerDetail): 
   return `Изменённые поля: ${fields.join(", ")}`;
 }
 
-export function moderationPartnerPublicVisibility(partner: ModerationPartnerDetail): {
-  livePublic: boolean;
+export type ModerationPartnerVisibilityState = {
+  /** Last approved live snapshot stored on user (isPublic, not REJECTED). */
+  liveSnapshotPublished: boolean;
+  /** Visible on public remcard.ru catalog (live snapshot + test opt-in + status gates). */
+  catalogPubliclyVisible: boolean;
   testOptIn: boolean | null;
-} {
+  catalogVisibilityHeadline: string;
+  catalogVisibilityDetail: string;
+};
+
+function partnerLiveSnapshotPublished(partner: ModerationPartnerDetail): boolean {
+  return Boolean(partner.live.isPublic) && partner.catalogStatus !== "REJECTED";
+}
+
+function partnerTestBlockedFromPublicCatalog(partner: ModerationPartnerDetail): boolean {
+  if (!partner.isTestPartner) return false;
+  return !partner.profTestPublicCatalogAllowed;
+}
+
+/** Aligns with navigator `userPublishedInCatalogWhere` / `profTestOwnerPublicCatalogWhere`. */
+export function moderationPartnerPublicVisibility(
+  partner: ModerationPartnerDetail,
+): ModerationPartnerVisibilityState {
+  const liveSnapshotPublished = partnerLiveSnapshotPublished(partner);
+  const testOptIn = partner.isTestPartner ? Boolean(partner.profTestPublicCatalogAllowed) : null;
+  const catalogPubliclyVisible =
+    liveSnapshotPublished && !partnerTestBlockedFromPublicCatalog(partner);
+
+  if (partner.isTestPartner && testOptIn === false && liveSnapshotPublished) {
+    return {
+      liveSnapshotPublished,
+      catalogPubliclyVisible: false,
+      testOptIn,
+      catalogVisibilityHeadline: "Скрыта",
+      catalogVisibilityDetail:
+        "Live-версия сохранена, но тестовый партнёр скрыт из каталога до явного opt-in.",
+    };
+  }
+  if (!liveSnapshotPublished) {
+    return {
+      liveSnapshotPublished,
+      catalogPubliclyVisible: false,
+      testOptIn,
+      catalogVisibilityHeadline: "Не в каталоге",
+      catalogVisibilityDetail:
+        partner.catalogStatus === "REJECTED"
+          ? "Карточка отклонена или не опубликована."
+          : "Опубликованная live-версия ещё не включена (isPublic).",
+    };
+  }
+  if (catalogPubliclyVisible) {
+    return {
+      liveSnapshotPublished,
+      catalogPubliclyVisible: true,
+      testOptIn,
+      catalogVisibilityHeadline: "Видна",
+      catalogVisibilityDetail:
+        "Текущая одобренная версия доступна в публичном каталоге (кэш до ~360 с).",
+    };
+  }
   return {
-    livePublic: Boolean(partner.live.isPublic),
-    testOptIn: partner.isTestPartner ? partner.profTestPublicCatalogAllowed : null,
+    liveSnapshotPublished,
+    catalogPubliclyVisible: false,
+    testOptIn,
+    catalogVisibilityHeadline: "Скрыта",
+    catalogVisibilityDetail: "Публикация заблокирована правилами каталога.",
   };
 }
 
