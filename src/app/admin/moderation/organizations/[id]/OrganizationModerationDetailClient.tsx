@@ -10,6 +10,12 @@ import {
   moderationOrganizationAction,
 } from "@/lib/prof-admin-moderation-api";
 import { setProfTestPublicCatalogShow } from "@/lib/prof-admin-api";
+import {
+  validateModerationRejectClient,
+  validateModerationReviseClient,
+} from "@/lib/prof-admin-moderation-validation";
+
+const MODERATION_FOCUS_HASH_KEY = "profModerationFocusHash";
 
 type BranchRow = {
   id: string;
@@ -37,6 +43,7 @@ type OrgPayload = {
   profTestPublicCatalogAllowed: boolean | null;
   pendingBranchesCount: number;
   hasSubmittedDiff: boolean;
+  revisionToken: string;
   submitted: {
     description?: string | null;
     logoUrl?: string | null;
@@ -95,6 +102,19 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (window.location.hash) {
+      sessionStorage.setItem(MODERATION_FOCUS_HASH_KEY, window.location.hash);
+    } else {
+      const saved = sessionStorage.getItem(MODERATION_FOCUS_HASH_KEY);
+      if (saved) {
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${saved}`);
+        sessionStorage.removeItem(MODERATION_FOCUS_HASH_KEY);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     const hash = window.location.hash.replace(/^#/, "");
     let branchFromHash: string | null = null;
     if (hash.startsWith("branch-")) {
@@ -114,15 +134,23 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
   );
 
   const orgAction = async (action: "approve" | "approve-all" | "reject" | "revise") => {
-    if (busy) return;
-    if (action === "reject" && orgRejectReason.trim().length < 3) {
-      setMessage("Укажите причину отклонения организации.");
-      return;
+    if (busy || !org) return;
+    if (action === "reject") {
+      const err = validateModerationRejectClient(orgRejectReason);
+      if (err) {
+        setMessage(err);
+        return;
+      }
     }
-    if (action === "revise" && orgReviseComment.trim().length < 3) {
-      setMessage("Укажите комментарий для доработки организации.");
-      return;
+    if (action === "revise") {
+      const err = validateModerationReviseClient(orgReviseComment);
+      if (err) {
+        setMessage(err);
+        return;
+      }
     }
+    if (action === "reject" && !window.confirm("Отклонить заявку организации?")) return;
+    if (action === "revise" && !window.confirm("Вернуть организацию на доработку?")) return;
     if (action === "approve-all" && org) {
       const ok = window.confirm(
         `Одобрить организацию и все ${org.pendingBranchesCount} pending-филиалов?` +
@@ -136,10 +164,12 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     setMessage(null);
     const body =
       action === "revise"
-        ? { comment: orgReviseComment.trim() }
+        ? { comment: orgReviseComment.trim(), revisionToken: org.revisionToken }
         : action === "reject"
-          ? { reason: orgRejectReason.trim() }
-          : {};
+          ? { reason: orgRejectReason.trim(), revisionToken: org.revisionToken }
+          : action === "approve"
+            ? { revisionToken: org.revisionToken }
+            : {};
     try {
       await moderationOrganizationAction(organizationId, action, body);
       setMessage("Решение по организации сохранено.");
@@ -152,13 +182,19 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
 
   const branchAction = async (branchId: string, action: "approve" | "reject" | "revise") => {
     if (busy) return;
-    if (action === "reject" && branchRejectReason.trim().length < 3) {
-      setMessage("Укажите причину отклонения филиала.");
-      return;
+    if (action === "reject") {
+      const err = validateModerationRejectClient(branchRejectReason);
+      if (err) {
+        setMessage(err);
+        return;
+      }
     }
-    if (action === "revise" && branchReviseComment.trim().length < 3) {
-      setMessage("Укажите комментарий для доработки филиала.");
-      return;
+    if (action === "revise") {
+      const err = validateModerationReviseClient(branchReviseComment);
+      if (err) {
+        setMessage(err);
+        return;
+      }
     }
     if (!window.confirm(`Подтвердите действие для филиала: ${action}`)) return;
     setBusy(true);

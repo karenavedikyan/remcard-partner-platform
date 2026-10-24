@@ -22,10 +22,16 @@ const ENTITY_RU: Record<string, string> = {
   branch: "Филиал",
 };
 
-function itemHref(item: ModerationQueueItem): string {
-  if (item.entityKind === "user") return `/admin/moderation/partners/${item.id}`;
-  if (item.entityKind === "organization") return `/admin/moderation/organizations/${item.id}`;
-  return `/admin/moderation/organizations/${item.organizationId}?branch=${item.id}`;
+function itemHref(item: ModerationQueueItem, queueQuery: string): string {
+  const base =
+    item.entityKind === "user"
+      ? `/admin/moderation/partners/${item.id}`
+      : item.entityKind === "organization"
+        ? `/admin/moderation/organizations/${item.id}`
+        : `/admin/moderation/organizations/${item.organizationId}?branch=${item.id}`;
+  if (!queueQuery) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}${queueQuery}`;
 }
 
 export function AdminModerationClient() {
@@ -40,6 +46,8 @@ export function AdminModerationClient() {
   const testFilter = searchParams.get("testFilter") ?? "all";
   const partnerType = searchParams.get("partnerType") ?? "all";
   const status = searchParams.get("status") ?? "PENDING";
+
+  const queueQuery = searchParams.toString();
 
   const queryKey = useMemo(
     () => JSON.stringify({ q, entityKind, testFilter, partnerType, status }),
@@ -148,7 +156,7 @@ export function AdminModerationClient() {
             {data.items.map((item) => (
               <tr key={`${item.entityKind}-${item.id}`} style={{ borderBottom: "1px solid #eee" }}>
                 <td style={{ padding: "0.4rem" }}>
-                  <Link href={itemHref(item)}>{item.title}</Link>
+                  <Link href={itemHref(item, queueQuery)}>{item.title}</Link>
                   {item.isTestPartner ? (
                     <span
                       style={{

@@ -5,6 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { fetchModerationPartner, moderationPartnerAction } from "@/lib/prof-admin-moderation-api";
+import {
+  validateModerationRejectClient,
+  validateModerationReviseClient,
+} from "@/lib/prof-admin-moderation-validation";
 import { setProfTestPublicCatalogShow as setTestShowApi } from "@/lib/prof-admin-api";
 
 type Submitted = {
@@ -33,6 +37,7 @@ type PartnerPayload = {
   live: { displayName?: string; isPublic?: boolean };
   hasSubmittedDiff: boolean;
   fieldDiffs?: string[];
+  revisionToken?: string;
   portfolioItems: {
     id: string;
     title: string | null;
@@ -87,13 +92,19 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
 
   const run = async (action: "approve" | "reject" | "revise") => {
     if (busy) return;
-    if (action === "revise" && reviseComment.trim().length < 3) {
-      setMessage("Комментарий для доработки обязателен.");
-      return;
+    if (action === "revise") {
+      const err = validateModerationReviseClient(reviseComment);
+      if (err) {
+        setMessage(err);
+        return;
+      }
     }
-    if (action === "reject" && rejectReason.trim().length < 3) {
-      setMessage("Причина отклонения обязательна.");
-      return;
+    if (action === "reject") {
+      const err = validateModerationRejectClient(rejectReason);
+      if (err) {
+        setMessage(err);
+        return;
+      }
     }
     if (action === "approve" && !window.confirm("Одобрить заявку?")) return;
     if (action === "reject" && !window.confirm("Отклонить заявку?")) return;
@@ -103,10 +114,12 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
     setMessage(null);
     const body =
       action === "revise"
-        ? { comment: reviseComment.trim() }
+        ? { comment: reviseComment.trim(), revisionToken: partner?.revisionToken }
         : action === "reject"
-          ? { reason: rejectReason.trim() }
-          : {};
+          ? { reason: rejectReason.trim(), revisionToken: partner?.revisionToken }
+          : action === "approve"
+            ? { revisionToken: partner?.revisionToken }
+            : {};
     try {
       await moderationPartnerAction(partnerId, action, body);
       setMessage("Готово.");
