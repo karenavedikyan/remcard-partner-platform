@@ -219,16 +219,15 @@ async function runProfModerationFlow(browser, fx) {
 
   await page.goto(`${PROF_URL}/admin/moderation`, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Модерация каталога" }).waitFor();
-  const queueApi = page.waitForResponse(
-    (r) => r.url().includes("/api/pro/admin/moderation?") && r.request().method() === "GET",
-  );
-  await page.reload();
-  const q = await queueApi;
-  assert(q.ok(), `queue GET ${q.status()}`);
-  const queueJson = await q.json();
-  const rowCount = queueJson?.items?.length ?? 0;
-  const totalPending = queueJson?.counts?.totalPending ?? 0;
-  hardAssert(rowCount > 0 && totalPending > 0, "queue API returned zero rows for screenshot");
+  await Promise.all([
+    page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/pro/admin/moderation?") &&
+        r.request().method() === "GET" &&
+        r.ok(),
+    ),
+    page.reload({ waitUntil: "domcontentloaded" }),
+  ]);
   await page.getByRole("table").waitFor({ timeout: 15000 });
   await page.locator("tbody tr").first().waitFor({ timeout: 15000 });
   await assertHealthyPage(page, "queue-1440");

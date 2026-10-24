@@ -46,7 +46,7 @@ export function ModerationOrgCatalogFullPreview({ data }: { data: ModerationPubl
   const byCity = useMemo(() => {
     const map = new Map<string, typeof data.branches>();
     for (const b of data.branches) {
-      const c = b.city.trim() || "Город не указан";
+      const c = String(b.city ?? "").trim() || "Город не указан";
       if (!map.has(c)) map.set(c, []);
       map.get(c)!.push(b);
     }

@@ -235,6 +235,12 @@ export function moderationSubmittedStageLabels(ids: string[] | undefined): strin
   });
 }
 
+function moderationSubmittedString(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (value == null) return "";
+  return String(value).trim();
+}
+
 export function buildModerationOrgCatalogPreviewInput(org: ModerationOrgDetail): {
   profile: ProProfileResponse;
   draft: ProfileDraft;
@@ -245,19 +251,19 @@ export function buildModerationOrgCatalogPreviewInput(org: ModerationOrgDetail):
     displayName: org.name,
     catalogCity: city,
     city,
-    description: s.description?.trim() ?? "",
+    description: moderationSubmittedString(s.description),
     partnerType: org.partnerType,
     specializations: s.specializations ?? [],
     storeCategories: s.storeCategories ?? [],
     organizationName: org.name,
     branchAddress: "",
-    website: s.website?.trim() ?? "",
-    telegram: s.telegram?.trim() ?? "",
-    publicEmail: s.publicEmail?.trim() ?? "",
-    publicPhone: s.publicPhone?.trim() ?? "",
+    website: moderationSubmittedString(s.website),
+    telegram: moderationSubmittedString(s.telegram),
+    publicEmail: moderationSubmittedString(s.publicEmail),
+    publicPhone: moderationSubmittedString(s.publicPhone),
     catalogPublicName: org.name,
     showFullName: false,
-    catalogImageUrl: s.logoUrl?.trim() ?? "",
+    catalogImageUrl: moderationSubmittedString(s.logoUrl),
     productCategoryIds: [],
     serviceSpecializationIds: [],
     navigatorStageIds: s.navigatorStageIds ?? [],
