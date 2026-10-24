@@ -8,7 +8,7 @@ Branches: `fix/prof-admin-moderation-ux-02` on **remcard-partner-platform** and 
 |------|------------|-----|
 | **Frontend runtime** | remcard-partner-platform | `bd27f762e6053c5a8a5dfc02a9b15e21ff0b4f4a` |
 | **Backend runtime** | remcard-navigator | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
-| **Evidence tip (REPORT + browser log + screenshots)** | remcard-partner-platform | `9411de5897f6eae4a49009e43032de4559bdbc98` |
+| **Evidence tip (REPORT + browser log + screenshots)** | remcard-partner-platform | `8ae75fbc7e6c1a963b01b48b6599654da21a5e68` |
 
 Prior evidence-only commit on this branch (superseded by this REPORT): `1a72651d6cd205b9188af41ca149265ad8bf2db4`. Do **not** use branch documentation HEAD as runtime SHA.
 
