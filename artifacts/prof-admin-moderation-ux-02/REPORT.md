@@ -6,7 +6,7 @@ Independent review blockers for **organization moderation detail** addressed on 
 
 | Role | Repository | SHA |
 |------|------------|-----|
-| **Runtime frontend (tested)** | remcard-partner-platform | `05cfeb26a8f8c0e8b0e8f8c0e8b0e8f8c0e8b0e8` |
+| **Runtime frontend (tested)** | remcard-partner-platform | `22ff4eed8e13f3cdb58c1c1bd0c7988dc1a9e925` |
 | **Evidence REPORT (this file)** | remcard-partner-platform | same commit as runtime |
 | **Backend (mutations baseline + read contract)** | remcard-navigator | `a221e5304272169bbbca7fe611dc28e1b534c948` |
 | **Prior blocked candidate** | remcard-partner-platform | `a2bfd7ba8af1030440e81059264c54a1625fcbab` |
@@ -74,7 +74,7 @@ Note: full `npm run test:component` reports unrelated pre-existing failures in `
 | Branch reject dialog | PASS |
 | Partner revise/reject/approve (legacy partner UI) | PASS |
 
-Screenshots: `artifacts/prof-admin-moderation-ux-02/screenshots/passed/` (incl. `org-revise-dialog-1440.png`, `org-after-revise-1440.png`, `org-after-reject-1440.png`, `org-preview-dialog-390.png` when gate re-run on this tip).
+Screenshots: `artifacts/prof-admin-moderation-ux-02/screenshots/passed/` (incl. `org-revise-dialog-1440.png`, `org-after-revise-1440.png`, `org-after-reject-1440.png`, `org-preview-dialog-390.png`).
 
 ## Residual scope
 
