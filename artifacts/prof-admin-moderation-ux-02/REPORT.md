@@ -8,7 +8,7 @@ Final independent review follow-up on `fix/prof-admin-moderation-ux-02`. **Organ
 |------|------------|-----|
 | **Runtime frontend (built + browser gate)** | remcard-partner-platform | `95048687a2d1bc849ac3fd7f3bfab32856bf50a0` |
 | **Runtime backend (public-preview + projection)** | remcard-navigator | `1b6a5f4151b80a09ffad6267f2de670598282764` |
-| **Evidence REPORT tip** | remcard-partner-platform | `7155b145cc4357865fd83d4b730f1c9a9ae4a478` |
+| **Evidence REPORT tip** | remcard-partner-platform | `git rev-parse HEAD` on branch (REPORT/artifacts only vs runtime `95048687…`) |
 | **Prior frontend runtime (review 2026-10-24)** | remcard-partner-platform | `22ff4eed8e13f3cdb58c1c1bd0c7988dc1a9e925` |
 | **Prior backend runtime (review 2026-10-24)** | remcard-navigator | `a221e530faed8c76bff2ae34f77e7f16c4357f27` |
 | **Mutation/security baseline** | remcard-navigator | `0255c94a96f68c3b102662c677b44846be9636ae` |
