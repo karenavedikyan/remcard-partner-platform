@@ -57,6 +57,11 @@
   background: #fef3c7;
 }
 
+.contactList {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+}
+
 .metaLine {
   font-size: 0.9rem;
   color: var(--muted, #656970);

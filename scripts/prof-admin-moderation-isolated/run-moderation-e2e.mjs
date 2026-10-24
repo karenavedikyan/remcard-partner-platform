@@ -50,6 +50,25 @@ async function screenshot(page, relName, passed = true) {
   await page.screenshot({ path: path.join(dir, relName), fullPage: true });
 }
 
+async function screenshotLightDark(page, baseName, passed = true) {
+  await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+  await screenshot(page, `${baseName}-light-1440.png`, passed);
+  await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+  await screenshot(page, `${baseName}-dark-1440.png`, passed);
+  await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+}
+
+async function assertPartnerPublicHidden(userId, expectHidden) {
+  const res = await fetch(`${NAV_URL}/partner/${encodeURIComponent(userId)}`, {
+    redirect: "manual",
+  });
+  if (expectHidden) {
+    assert(res.status === 404 || res.status === 302, `expected hidden partner HTTP ${res.status}`);
+  } else {
+    assert(res.status === 200, `expected public partner HTTP 200 got ${res.status}`);
+  }
+}
+
 async function adminPasswordLogin(page, returnTo) {
   const capsResp = page.waitForResponse(
     (r) =>
@@ -133,7 +152,7 @@ async function runProfModerationFlow(browser, fx) {
   assert(page.url().includes(fx.pendingOrgId), "deep link lands on seeded org after login");
   await page.getByRole("button", { name: /Одобрить заявку/i }).waitFor({ timeout: 20000 });
   await page.getByRole("heading", { level: 1, name: fx.pendingOrgTitle }).waitFor({ timeout: 5000 });
-  await screenshot(page, "org-detail-1440.png");
+  await screenshotLightDark(page, "org-detail");
 
   await page.getByRole("button", { name: /список/i }).click();
   await page.getByRole("dialog").waitFor({ timeout: 10000 });
@@ -144,7 +163,7 @@ async function runProfModerationFlow(browser, fx) {
   await page.getByRole("button", { name: /полная карточка/i }).click();
   await page.getByRole("dialog").waitFor({ timeout: 10000 });
   await page.getByTestId("moderation-catalog-full-preview").waitFor({ timeout: 20000 });
-  await screenshot(page, "org-preview-full-1440.png");
+  await screenshotLightDark(page, "org-preview-full");
   await page.getByRole("button", { name: /^Закрыть$/i }).click();
 
   await page.getByRole("button", { name: /Вернуть на доработку/i }).click();
@@ -233,7 +252,7 @@ async function runProfModerationFlow(browser, fx) {
   await page.getByRole("table").waitFor({ timeout: 15000 });
   await page.locator("tbody tr").first().waitFor({ timeout: 15000 });
   await assertHealthyPage(page, "queue-1440");
-  await screenshot(page, "queue-1440.png");
+  await screenshotLightDark(page, "queue");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("tbody tr").first().waitFor({ timeout: 15000 });
@@ -244,29 +263,32 @@ async function runProfModerationFlow(browser, fx) {
 
   async function partnerAction(userId, title, action, reasonOrComment, expectStatus) {
     await page.goto(`${PROF_URL}/admin/moderation/partners/${userId}`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("heading", { name: title }).waitFor({ timeout: 10000 });
-    page.once("dialog", (d) => d.accept());
+    await page.getByRole("heading", { level: 1, name: title }).waitFor({ timeout: 10000 });
+    await screenshotLightDark(page, `partner-detail-${userId}`);
     if (action === "revise") {
-      await page.getByPlaceholder("Комментарий для доработки").fill(reasonOrComment);
+      await page.getByRole("button", { name: /Вернуть на доработку/i }).click();
+      await page.getByLabel(/Что нужно исправить/i).fill(reasonOrComment);
       const respP = page.waitForResponse(
         (r) => r.url().includes(`/partners/${userId}/revise`) && r.request().method() === "POST",
       );
-      await page.getByRole("button", { name: /Вернуть на доработку/i }).click();
+      await page.getByRole("button", { name: /Отправить на доработку/i }).click();
       const r = await respP;
       assert(r.status() === expectStatus, `partner revise ${userId} HTTP ${r.status()}`);
     } else if (action === "reject") {
-      await page.getByPlaceholder("Причина отклонения").fill(reasonOrComment);
+      await page.getByRole("button", { name: /Отклонить заявку/i }).click();
+      await page.getByLabel(/Причина отказа/i).fill(reasonOrComment);
       const respP = page.waitForResponse(
         (r) => r.url().includes(`/partners/${userId}/reject`) && r.request().method() === "POST",
       );
-      await page.getByRole("button", { name: /Отклонить/i }).click();
+      await page.getByRole("button", { name: /^Отклонить$/i }).last().click();
       const r = await respP;
       assert(r.status() === expectStatus, `partner reject ${userId} HTTP ${r.status()}`);
     } else {
       const respP = page.waitForResponse(
         (r) => r.url().includes(`/partners/${userId}/approve`) && r.request().method() === "POST",
       );
-      await page.getByRole("button", { name: /^Одобрить$/i }).click();
+      await page.getByRole("button", { name: /Одобрить заявку/i }).click();
+      await page.getByRole("button", { name: /Подтвердить одобрение/i }).click();
       const r = await respP;
       assert(r.ok(), `partner approve ${userId} HTTP ${r.status()}`);
     }
@@ -289,6 +311,23 @@ async function runProfModerationFlow(browser, fx) {
     200,
   );
   await partnerAction(fx.partnerApproveUserId, fx.partnerApproveTitle, "approve", null, 200);
+
+  if (fx.testOptInPartnerUserId) {
+    await assertPartnerPublicHidden(fx.testOptInPartnerUserId, true);
+    await page.goto(`${PROF_URL}/admin/moderation/partners/${fx.testOptInPartnerUserId}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.getByRole("heading", { level: 1, name: fx.testOptInPartnerTitle }).waitFor({ timeout: 15000 });
+    await page.getByRole("button", { name: /Разрешить показ в каталоге/i }).click();
+    await page.getByRole("button", { name: /^Подтвердить$/i }).click();
+    await page.getByText(/Публикация тестового партнёра разрешена/i).waitFor({ timeout: 15000 });
+    await assertPartnerPublicHidden(fx.testOptInPartnerUserId, false);
+    await page.getByRole("button", { name: /Скрыть из каталога/i }).click();
+    await page.getByRole("button", { name: /^Подтвердить$/i }).click();
+    await page.getByText(/скрыт из каталога/i).waitFor({ timeout: 15000 });
+    await assertPartnerPublicHidden(fx.testOptInPartnerUserId, true);
+    await screenshotLightDark(page, "partner-test-opt-in-cycle");
+  }
 
   await page.goto(
     `${PROF_URL}/admin/moderation/organizations/${fx.branchRejectOrgId}?branch=${fx.branchRejectBranchId}`,

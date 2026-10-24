@@ -4,190 +4,306 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
-import { fetchModerationPartner, moderationPartnerAction } from "@/lib/prof-admin-moderation-api";
+import {
+  fetchModerationPartner,
+  moderationPartnerAction,
+} from "@/lib/prof-admin-moderation-api";
+import { setProfTestPublicCatalogShow } from "@/lib/prof-admin-api";
 import {
   validateModerationRejectClient,
   validateModerationReviseClient,
 } from "@/lib/prof-admin-moderation-validation";
-import { setProfTestPublicCatalogShow as setTestShowApi } from "@/lib/prof-admin-api";
+import {
+  moderationCatalogStatusLabel,
+  moderationPartnerChangeBlock,
+  moderationPartnerPublicVisibility,
+  moderationPartnerSubmittedCategoryLabels,
+  moderationPartnerSubmittedStageLabels,
+  moderationSubmittedString,
+  partnerTypeLabel,
+  type ModerationPartnerDetail,
+} from "@/lib/prof-admin-moderation-partner-display";
+import {
+  partnerApproveConfirmMessage,
+  partnerRejectConfirmMessage,
+  partnerReviseConfirmMessage,
+  staleRevisionUserMessage,
+  type PartnerModerationAction,
+} from "@/lib/prof-admin-moderation-partner-actions";
+import { Panel } from "@/components/ui/Panel";
+import { Button } from "@/components/ui/Button";
+import { ModerationConfirmDialog } from "../../organizations/[id]/ModerationConfirmDialog";
+import { PartnerModerationPreviewModal } from "./PartnerModerationPreviewModal";
+import styles from "../../organizations/[id]/OrganizationModerationDetail.module.css";
 
-type Submitted = {
-  displayName?: string | null;
-  city?: string | null;
-  description?: string | null;
-  photoUrl?: string | null;
-  specializations?: string[];
-  storeCategories?: string[];
-  website?: string | null;
-  telegram?: string | null;
-  whatsapp?: string | null;
-  instagram?: string | null;
-  vk?: string | null;
-};
+type PreviewState = { mode: "list" | "full" } | null;
 
-type PartnerPayload = {
-  id: string;
-  publicId: string;
-  catalogStatus: string;
-  isPublic: boolean;
-  isTestPartner: boolean;
-  profTestPublicCatalogAllowed: boolean | null;
-  rejectionReason: string | null;
-  submitted: Submitted;
-  live: { displayName?: string; isPublic?: boolean };
-  hasSubmittedDiff: boolean;
-  fieldDiffs?: string[];
-  revisionToken?: string;
-  portfolioItems: {
-    id: string;
-    title: string | null;
-    description: string | null;
-    images: string[];
-  }[];
-  services: {
-    id: string;
-    title: string;
-    description: string | null;
-    itemKind: string;
-    city: string;
-    images: string[];
-  }[];
-  moderationNotes: { id: string; comment: string; createdAt: string; resolvedAt: string | null }[];
-};
+type PartnerDialog = {
+  action: PartnerModerationAction;
+  text: string;
+  revisionAtOpen: string;
+  fieldError: string | null;
+} | null;
+
+function SafePhoto({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !src) {
+    return (
+      <div className={styles.photoWrap} aria-hidden>
+        <span className={styles.photoFallback}>Нет фото</span>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.photoWrap}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className={styles.photoThumb} onError={() => setFailed(true)} />
+      <a className={styles.photoZoomLink} href={src} target="_blank" rel="noopener noreferrer">
+        Увеличить
+      </a>
+    </div>
+  );
+}
 
 export function PartnerModerationDetailClient({ partnerId }: { partnerId: string }) {
   const searchParams = useSearchParams();
-  const [partner, setPartner] = useState<PartnerPayload | null>(null);
+  const [partner, setPartner] = useState<ModerationPartnerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reviseComment, setReviseComment] = useState("");
-  const [rejectReason, setRejectReason] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [preview, setPreview] = useState<PreviewState>(null);
+  const [partnerDialog, setPartnerDialog] = useState<PartnerDialog>(null);
+  const [testDialog, setTestDialog] = useState<boolean | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const backQs = searchParams.toString();
+
+  const load = useCallback(
+    async (opts?: { keepExistingOnError?: boolean }) => {
+      if (!opts?.keepExistingOnError) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const res = await fetchModerationPartner(partnerId);
+        setPartner(res.partner as ModerationPartnerDetail);
+        setError(null);
+      } catch (e) {
+        const msg = e instanceof RemcardApiError ? e.message : "Ошибка загрузки";
+        if (opts?.keepExistingOnError) {
+          setMessage({
+            kind: "err",
+            text: `${msg}. Показаны последние данные — нажмите «Обновить данные».`,
+          });
+        } else {
+          setPartner(null);
+          setError(msg);
+        }
+      }
+      setLoading(false);
+    },
+    [partnerId],
+  );
+
+  const refreshAfterMutation = useCallback(async () => {
     try {
       const res = await fetchModerationPartner(partnerId);
-      setPartner(res.partner as PartnerPayload);
-    } catch (e) {
-      setPartner(null);
-      setError(e instanceof RemcardApiError ? e.message : "Ошибка загрузки");
+      setPartner(res.partner as ModerationPartnerDetail);
+      return true;
+    } catch {
+      setMessage({
+        kind: "ok",
+        text: "Решение сохранено, но карточку не удалось обновить. Нажмите «Обновить данные».",
+      });
+      return false;
     }
-    setLoading(false);
   }, [partnerId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash.replace(/^#/, "");
-    if (hash === "approve" || hash === "reject" || hash === "revise") {
-      setMessage(`Фокус: ${hash} — подтвердите действие кнопкой ниже.`);
+  const handleApiError = (e: unknown) => {
+    if (e instanceof RemcardApiError && e.status === 409) {
+      setPartnerDialog(null);
+      setPreview(null);
+      setTestDialog(null);
+      setMessage({ kind: "err", text: staleRevisionUserMessage() });
+      void load();
+      return;
     }
-  }, []);
+    setMessage({
+      kind: "err",
+      text: e instanceof RemcardApiError ? e.message : "Ошибка",
+    });
+  };
 
-  const run = async (action: "approve" | "reject" | "revise") => {
-    if (busy) return;
-    if (action === "revise") {
-      const err = validateModerationReviseClient(reviseComment);
-      if (err) {
-        setMessage(err);
-        return;
-      }
+  const openDialog = (action: PartnerModerationAction) => {
+    if (!partner) return;
+    setPartnerDialog({
+      action,
+      text: "",
+      revisionAtOpen: partner.revisionToken,
+      fieldError: null,
+    });
+  };
+
+  const runPartnerAction = async (action: PartnerModerationAction, text: string) => {
+    if (busy || !partner || !partnerDialog) return;
+    if (partner.revisionToken !== partnerDialog.revisionAtOpen) {
+      setPartnerDialog(null);
+      setMessage({ kind: "err", text: staleRevisionUserMessage() });
+      void load();
+      return;
     }
     if (action === "reject") {
-      const err = validateModerationRejectClient(rejectReason);
+      const err = validateModerationRejectClient(text);
       if (err) {
-        setMessage(err);
+        setPartnerDialog({ ...partnerDialog, fieldError: err });
         return;
       }
     }
-    if (action === "approve" && !window.confirm("Одобрить заявку?")) return;
-    if (action === "reject" && !window.confirm("Отклонить заявку?")) return;
-    if (action === "revise" && !window.confirm("Вернуть на доработку?")) return;
+    if (action === "revise") {
+      const err = validateModerationReviseClient(text);
+      if (err) {
+        setPartnerDialog({ ...partnerDialog, fieldError: err });
+        return;
+      }
+    }
 
     setBusy(true);
     setMessage(null);
     const body =
       action === "revise"
-        ? { comment: reviseComment.trim(), revisionToken: partner?.revisionToken, attachments: [] }
+        ? { comment: text.trim(), revisionToken: partner.revisionToken, attachments: [] }
         : action === "reject"
-          ? { reason: rejectReason.trim(), revisionToken: partner?.revisionToken }
-          : action === "approve"
-            ? { revisionToken: partner?.revisionToken }
-            : {};
+          ? { reason: text.trim(), revisionToken: partner.revisionToken }
+          : { revisionToken: partner.revisionToken };
+
     try {
       await moderationPartnerAction(partnerId, action, body);
-      setMessage("Готово.");
-      await load();
+      setPartnerDialog(null);
+      setMessage({ kind: "ok", text: "Решение по партнёру сохранено." });
+      await refreshAfterMutation();
     } catch (e) {
-      setMessage(e instanceof RemcardApiError ? e.message : "Ошибка");
+      handleApiError(e);
     }
     setBusy(false);
   };
 
   const toggleTestPublic = async (allowed: boolean) => {
-    if (!window.confirm(allowed ? "Разрешить публичный показ test?" : "Скрыть test из каталога?")) {
-      return;
-    }
     setBusy(true);
     try {
-      await setTestShowApi(partnerId, allowed);
-      await load();
+      await setProfTestPublicCatalogShow(partnerId, allowed);
+      setTestDialog(null);
+      setMessage({
+        kind: "ok",
+        text: allowed ? "Публикация тестового партнёра разрешена." : "Тестовый партнёр скрыт из каталога.",
+      });
+      await refreshAfterMutation();
     } catch (e) {
-      setMessage(e instanceof RemcardApiError ? e.message : "Не удалось изменить opt-in");
+      handleApiError(e);
     }
     setBusy(false);
   };
 
-  if (loading) return <p>Загрузка…</p>;
-  if (error) return <p role="alert">{error}</p>;
-  if (!partner) return <p>Не найдено</p>;
+  if (loading) return <p className={styles.page}>Загрузка…</p>;
+  if (error) {
+    return (
+      <p className={styles.page} role="alert">
+        {error}
+      </p>
+    );
+  }
+  if (!partner) return <p className={styles.page}>Не найдено</p>;
 
   const sub = partner.submitted;
-  const backQs = searchParams.toString();
+  const visibility = moderationPartnerPublicVisibility(partner);
+  const changeBlock = moderationPartnerChangeBlock(partner);
+  const pending = partner.catalogStatus === "PENDING";
+  const title = moderationSubmittedString(sub.displayName) || partner.publicId;
 
   return (
-    <div>
-      <p>
-        <Link href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>← Очередь</Link>
-      </p>
-      <h1>{sub.displayName ?? partner.publicId}</h1>
-      <p>
-        ID {partner.publicId} · {partner.catalogStatus}
-        {partner.isTestPartner ? " · TEST" : ""}
-      </p>
-      {partner.hasSubmittedDiff ? (
-        <p style={{ color: "#b45309" }}>
-          Изменённые поля: {(partner.fieldDiffs ?? []).join(", ") || "см. diff"}
-        </p>
-      ) : null}
+    <div className={styles.page}>
+      <Link className={styles.backLink} href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>
+        ← Очередь модерации
+      </Link>
 
-      {sub.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={sub.photoUrl} alt="" style={{ maxWidth: 240, borderRadius: 8, marginBottom: 12 }} />
-      ) : (
-        <p>Фото не заполнено</p>
-      )}
+      <header className={styles.header}>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{title}</h1>
+          <div className={styles.badges}>
+            <span className={styles.badge}>{moderationCatalogStatusLabel(partner.catalogStatus)}</span>
+            <span className={styles.badge}>{partnerTypeLabel(partner.partnerType ?? "")}</span>
+            {partner.isTestPartner ? <span className={styles.badgeTest}>TEST</span> : null}
+          </div>
+        </div>
+        <p className={styles.metaLine}>Публичный ID: {partner.publicId}</p>
+        {changeBlock ? <p className={styles.metaLine}>{changeBlock}</p> : null}
+      </header>
 
-      <section style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: "1rem" }}>Поданные данные</h2>
-        <p>Город: {sub.city ?? "—"}</p>
-        <p>{sub.description ?? "Описание не заполнено"}</p>
-        <p>Категории: {(sub.storeCategories ?? []).join(", ") || "—"}</p>
-        <p>Специализации: {(sub.specializations ?? []).join(", ") || "—"}</p>
-        <p>Сайт: {sub.website ?? "—"}</p>
-        <p>Telegram: {sub.telegram ?? "—"}</p>
-        <p>WhatsApp: {sub.whatsapp ?? "—"}</p>
-      </section>
+      <div className={styles.actionsRow}>
+        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "list" })}>
+          Карточка в списке
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "full" })}>
+          Полная карточка
+        </Button>
+        <Button type="button" variant="text" disabled={busy} onClick={() => void load()}>
+          Обновить данные
+        </Button>
+      </div>
 
-      {partner.services?.length ? (
-        <section style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: "1rem" }}>Услуги/товары</h2>
+      <div className={styles.sectionGrid}>
+        <Panel title="Отправленная заявка">
+          {sub.photoUrl ? (
+            <SafePhoto src={sub.photoUrl} alt="" />
+          ) : (
+            <p className={styles.metaLine}>Фото не заполнено</p>
+          )}
+          <p>Город: {moderationSubmittedString(sub.city) || "—"}</p>
+          <p>{moderationSubmittedString(sub.description) || "Описание не заполнено"}</p>
+          <p>Категории: {moderationPartnerSubmittedCategoryLabels(partner).join(", ") || "—"}</p>
+          <p>
+            Этапы: {moderationPartnerSubmittedStageLabels(sub.navigatorStageIds).join(", ") || "—"}
+          </p>
+          <p>Сайт: {moderationSubmittedString(sub.website) || "—"}</p>
+          <p>Telegram: {moderationSubmittedString(sub.telegram) || "—"}</p>
+          <p>WhatsApp: {moderationSubmittedString(sub.whatsapp) || "—"}</p>
+        </Panel>
+
+        <Panel title="Опубликовано сейчас (live)">
+          <p>Публичная карточка: {visibility.livePublic ? "видна в каталоге" : "скрыта"}</p>
+          <p>Название: {partner.live.displayName ?? "—"}</p>
+          <p>Город: {partner.live.city ?? "—"}</p>
+          <p>{partner.live.description ?? "—"}</p>
+        </Panel>
+
+        {partner.isTestPartner ? (
+          <Panel title="Публикация тестового партнёра">
+            <p className={styles.metaLine}>
+              Opt-in:{" "}
+              {visibility.testOptIn
+                ? "разрешён показ в каталоге"
+                : "не разрешён — одобренные test-карточки скрыты"}
+            </p>
+            <p className={styles.metaLine}>
+              Обновление CDN-кэша каталога может занять до ~360 с после изменения.
+            </p>
+            <div className={styles.actionsRow}>
+              <Button type="button" variant="secondary" disabled={busy} onClick={() => setTestDialog(true)}>
+                Разрешить показ в каталоге
+              </Button>
+              <Button type="button" variant="text" disabled={busy} onClick={() => setTestDialog(false)}>
+                Скрыть из каталога
+              </Button>
+            </div>
+          </Panel>
+        ) : null}
+      </div>
+
+      {partner.services.length ? (
+        <Panel title="Услуги и товары в заявке">
           <ul>
             {partner.services.map((s) => (
               <li key={s.id}>
@@ -195,89 +311,116 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
               </li>
             ))}
           </ul>
-        </section>
+        </Panel>
       ) : null}
 
-      {partner.portfolioItems?.length ? (
-        <section style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: "1rem" }}>Портфолио</h2>
+      {partner.portfolioItems.length ? (
+        <Panel title="Портфолио">
           <ul>
             {partner.portfolioItems.map((p) => (
-              <li key={p.id}>
-                {p.title ?? "Без названия"}
-                {p.images[0] ? (
-                  <>
-                    {" "}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.images[0]} alt="" style={{ maxWidth: 80, verticalAlign: "middle" }} />
-                  </>
-                ) : null}
-              </li>
+              <li key={p.id}>{p.title ?? "Без названия"}</li>
             ))}
           </ul>
-        </section>
+        </Panel>
       ) : null}
 
-      <section style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: "1rem" }}>Публикация</h2>
-        <p>Live публичный: {partner.isPublic ? "да" : "нет"}</p>
-        {partner.isTestPartner ? (
-          <>
-            <p>
-              Test opt-in:{" "}
-              {partner.profTestPublicCatalogAllowed
-                ? "разрешён"
-                : "не разрешён — approved test скрыт"}
-            </p>
-            <button type="button" disabled={busy} onClick={() => void toggleTestPublic(true)}>
-              Разрешить test в каталоге
-            </button>{" "}
-            <button type="button" disabled={busy} onClick={() => void toggleTestPublic(false)}>
-              Скрыть test
-            </button>
-          </>
-        ) : null}
+      <section className={styles.actionsPanel} aria-label="Решение по партнёру">
+        <h2 className={styles.dialogTitle}>Решение по партнёру</h2>
+        <div className={styles.actionsRow}>
+          <Button
+            className={styles.actionPrimary}
+            type="button"
+            disabled={busy || !pending}
+            onClick={() => openDialog("approve")}
+          >
+            Одобрить заявку
+          </Button>
+          <Button type="button" variant="secondary" disabled={busy || !pending} onClick={() => openDialog("revise")}>
+            Вернуть на доработку
+          </Button>
+          <Button type="button" variant="text" disabled={busy || !pending} onClick={() => openDialog("reject")}>
+            Отклонить заявку
+          </Button>
+        </div>
       </section>
 
-      {partner.rejectionReason ? <p>Причина: {partner.rejectionReason}</p> : null}
-
-      {partner.moderationNotes?.length ? (
-        <section>
-          <h2 style={{ fontSize: "1rem" }}>Замечания</h2>
-          <ul>
-            {partner.moderationNotes.map((n) => (
-              <li key={n.id}>
-                {n.comment} ({new Date(n.createdAt).toLocaleString("ru-RU")})
-              </li>
-            ))}
-          </ul>
-        </section>
+      {message ? (
+        <p className={message.kind === "err" ? styles.statusError : styles.statusOk} role="status">
+          {message.text}
+        </p>
       ) : null}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480, marginTop: 16 }}>
-        <button type="button" disabled={busy} onClick={() => void run("approve")}>
-          Одобрить
-        </button>
-        <textarea
-          placeholder="Причина отклонения"
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          rows={2}
-        />
-        <button type="button" disabled={busy} onClick={() => void run("reject")}>
-          Отклонить
-        </button>
-        <textarea
-          placeholder="Комментарий для доработки"
-          value={reviseComment}
-          onChange={(e) => setReviseComment(e.target.value)}
-          rows={3}
-        />
-        <button type="button" disabled={busy} onClick={() => void run("revise")}>
-          Вернуть на доработку
-        </button>
-      </div>
-      {message ? <p>{message}</p> : null}
+      <PartnerModerationPreviewModal
+        open={preview !== null}
+        mode={preview?.mode ?? "full"}
+        onClose={() => setPreview(null)}
+        partner={partner}
+      />
+
+      <ModerationConfirmDialog
+        open={partnerDialog?.action === "approve"}
+        title="Одобрить заявку"
+        description={partnerApproveConfirmMessage(partner)}
+        confirmLabel="Подтвердить одобрение"
+        busy={busy}
+        textValue=""
+        onTextChange={() => {}}
+        onCancel={() => setPartnerDialog(null)}
+        onConfirm={() => void runPartnerAction("approve", "")}
+      />
+
+      <ModerationConfirmDialog
+        open={partnerDialog?.action === "reject"}
+        title="Отклонить заявку"
+        description={partnerRejectConfirmMessage(partner)}
+        confirmLabel="Отклонить"
+        danger
+        busy={busy}
+        requireText
+        textLabel="Причина отказа"
+        textValue={partnerDialog?.text ?? ""}
+        textError={partnerDialog?.fieldError}
+        onTextChange={(t) =>
+          setPartnerDialog((d) => (d ? { ...d, text: t, fieldError: null } : d))
+        }
+        onCancel={() => setPartnerDialog(null)}
+        onConfirm={() => void runPartnerAction("reject", partnerDialog?.text ?? "")}
+      />
+
+      <ModerationConfirmDialog
+        open={partnerDialog?.action === "revise"}
+        title="Вернуть на доработку"
+        description={partnerReviseConfirmMessage(partner)}
+        confirmLabel="Отправить на доработку"
+        busy={busy}
+        requireText
+        textLabel="Что нужно исправить"
+        textValue={partnerDialog?.text ?? ""}
+        textError={partnerDialog?.fieldError}
+        onTextChange={(t) =>
+          setPartnerDialog((d) => (d ? { ...d, text: t, fieldError: null } : d))
+        }
+        onCancel={() => setPartnerDialog(null)}
+        onConfirm={() => void runPartnerAction("revise", partnerDialog?.text ?? "")}
+      />
+
+      <ModerationConfirmDialog
+        open={testDialog !== null}
+        title={
+          testDialog ? "Разрешить публикацию тестового партнёра" : "Скрыть тестового партнёра из каталога"
+        }
+        description={
+          testDialog
+            ? "Разрешить показ карточки тестового партнёра в каталоге?"
+            : "Скрыть тестового партнёра из каталога? Аккаунт не блокируется."
+        }
+        confirmLabel="Подтвердить"
+        busy={busy}
+        textValue=""
+        onTextChange={() => {}}
+        onCancel={() => setTestDialog(null)}
+        onConfirm={() => void toggleTestPublic(Boolean(testDialog))}
+      />
     </div>
   );
 }

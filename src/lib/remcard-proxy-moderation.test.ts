@@ -7,6 +7,7 @@ describe("prof admin moderation BFF proxy security", () => {
       isAllowedProxyRoute(
         "GET",
         "/api/pro/admin/moderation/organizations/org1/public-preview",
+        "/api/pro/admin/moderation/partners/u1/public-preview",
       ),
     ).toBe(true);
     expect(

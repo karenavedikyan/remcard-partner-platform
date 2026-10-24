@@ -9,12 +9,10 @@ import {
   type ModerationQueueItem,
   type ModerationQueueResponse,
 } from "@/lib/prof-admin-moderation-api";
-
-const PARTNER_TYPE_RU: Record<string, string> = {
-  MASTER: "Специалист",
-  COMPANY: "Компания",
-  STORE: "Магазин",
-};
+import { moderationCatalogStatusLabel } from "@/lib/prof-admin-moderation-org-display";
+import { partnerTypeLabel } from "@/lib/profile-overview-display";
+import { Button } from "@/components/ui/Button";
+import styles from "./AdminModeration.module.css";
 
 const ENTITY_RU: Record<string, string> = {
   user: "Партнёр",
@@ -69,13 +67,14 @@ export function AdminModerationClient() {
     } catch (e) {
       setData(null);
       setError(e instanceof RemcardApiError ? e.message : "Ошибка загрузки");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [q, entityKind, testFilter, partnerType, status]);
 
   useEffect(() => {
     void load();
-  }, [load, queryKey]);
+  }, [queryKey, load]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -84,110 +83,129 @@ export function AdminModerationClient() {
     router.push(`/admin/moderation?${next.toString()}`);
   };
 
+  const pendingTotal = loading ? null : (data?.counts.totalPending ?? 0);
+
+  const renderRow = (item: ModerationQueueItem) => (
+    <>
+      <Link href={itemHref(item, queueQuery)}>{item.title}</Link>
+      {item.isTestPartner ? <span className={styles.badgeTest}>TEST</span> : null}
+      {item.publicId ? <div className={styles.subMeta}>{item.publicId}</div> : null}
+      {item.entityKind === "branch" && item.organizationName ? (
+        <div className={styles.subMeta}>{item.organizationName}</div>
+      ) : null}
+    </>
+  );
+
   return (
-    <div>
-      <h1 style={{ fontSize: "1.25rem", marginBottom: "0.75rem" }}>Модерация каталога</h1>
-      <p style={{ color: "#666", marginBottom: "1rem" }}>
+    <div className={styles.page}>
+      <h1 className={styles.title}>Модерация каталога</h1>
+      <p className={styles.summary}>
         Ожидает решения:{" "}
-        <strong>{data?.counts.totalPending ?? "…"}</strong> (партнёры {data?.counts.users ?? "…"},
-        организации {data?.counts.organizations ?? "…"}, филиалы {data?.counts.branches ?? "…"})
+        <strong>{pendingTotal === null ? "…" : pendingTotal}</strong>
+        {data ? (
+          <>
+            {" "}
+            (партнёры {data.counts.users}, организации {data.counts.organizations}, филиалы{" "}
+            {data.counts.branches})
+          </>
+        ) : loading ? (
+          " — загрузка…"
+        ) : null}
       </p>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
+      <div className={styles.toolbar}>
         <input
+          className={styles.search}
           type="search"
           placeholder="Поиск по имени или ID"
           defaultValue={q}
           onKeyDown={(e) => {
             if (e.key === "Enter") setParam("q", (e.target as HTMLInputElement).value.trim());
           }}
-          style={{ flex: "1 1 200px", padding: "0.4rem 0.6rem" }}
         />
-        <select value={entityKind} onChange={(e) => setParam("entityKind", e.target.value)}>
+        <select className={styles.select} value={entityKind} onChange={(e) => setParam("entityKind", e.target.value)}>
           <option value="all">Все типы</option>
           <option value="user">Партнёры</option>
           <option value="organization">Организации</option>
           <option value="branch">Филиалы</option>
         </select>
-        <select value={partnerType} onChange={(e) => setParam("partnerType", e.target.value)}>
+        <select className={styles.select} value={partnerType} onChange={(e) => setParam("partnerType", e.target.value)}>
           <option value="all">Все роли</option>
           <option value="MASTER">Специалист</option>
           <option value="STORE">Магазин</option>
           <option value="COMPANY">Компания</option>
         </select>
-        <select value={testFilter} onChange={(e) => setParam("testFilter", e.target.value)}>
+        <select className={styles.select} value={testFilter} onChange={(e) => setParam("testFilter", e.target.value)}>
           <option value="all">Test + real</option>
           <option value="test">Только test</option>
           <option value="real">Только real</option>
         </select>
-        <select value={status} onChange={(e) => setParam("status", e.target.value)}>
-          <option value="PENDING">Pending</option>
-          <option value="NEEDS_REVISION">Needs revision</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="APPROVED">Approved</option>
+        <select className={styles.select} value={status} onChange={(e) => setParam("status", e.target.value)}>
+          <option value="PENDING">На проверке</option>
+          <option value="NEEDS_REVISION">На доработке</option>
+          <option value="REJECTED">Отклонено</option>
+          <option value="APPROVED">Одобрено</option>
         </select>
-        <button type="button" onClick={() => void load()}>
+        <Button type="button" variant="secondary" onClick={() => void load()}>
           Обновить
-        </button>
+        </Button>
       </div>
 
       {loading ? <p>Загрузка…</p> : null}
       {error ? (
-        <p role="alert" style={{ color: "#b00020" }}>
+        <p className={styles.error} role="alert">
           {error}
         </p>
       ) : null}
       {!loading && !error && data?.items.length === 0 ? (
-        <p>Заявок по фильтру нет.</p>
+        <p className={styles.empty}>Заявок по фильтру нет.</p>
       ) : null}
 
       {!loading && !error && data && data.items.length > 0 ? (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-              <th style={{ padding: "0.4rem" }}>Объект</th>
-              <th>Тип</th>
-              <th>Город</th>
-              <th>Статус</th>
-              <th>Обновлено</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Объект</th>
+                  <th>Тип</th>
+                  <th>Город</th>
+                  <th>Статус</th>
+                  <th>Обновлено</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((item) => (
+                  <tr key={`${item.entityKind}-${item.id}`}>
+                    <td>{renderRow(item)}</td>
+                    <td>
+                      {ENTITY_RU[item.entityKind] ?? item.entityKind}
+                      {item.partnerType
+                        ? ` · ${partnerTypeLabel(item.partnerType) ?? item.partnerType}`
+                        : ""}
+                    </td>
+                    <td>{item.city ?? "—"}</td>
+                    <td>{moderationCatalogStatusLabel(item.catalogStatus)}</td>
+                    <td>{new Date(item.updatedAt).toLocaleString("ru-RU")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.cards}>
             {data.items.map((item) => (
-              <tr key={`${item.entityKind}-${item.id}`} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: "0.4rem" }}>
-                  <Link href={itemHref(item, queueQuery)}>{item.title}</Link>
-                  {item.isTestPartner ? (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        fontSize: "0.75rem",
-                        background: "#fef3c7",
-                        padding: "0 4px",
-                        borderRadius: 4,
-                      }}
-                    >
-                      TEST
-                    </span>
-                  ) : null}
-                  {item.publicId ? (
-                    <div style={{ fontSize: "0.75rem", color: "#666" }}>{item.publicId}</div>
-                  ) : null}
-                  {item.entityKind === "branch" && item.organizationName ? (
-                    <div style={{ fontSize: "0.75rem", color: "#666" }}>{item.organizationName}</div>
-                  ) : null}
-                </td>
-                <td>
-                  {ENTITY_RU[item.entityKind] ?? item.entityKind}
-                  {item.partnerType ? ` · ${PARTNER_TYPE_RU[item.partnerType] ?? item.partnerType}` : ""}
-                </td>
-                <td>{item.city ?? "—"}</td>
-                <td>{item.catalogStatus}</td>
-                <td>{new Date(item.updatedAt).toLocaleString("ru-RU")}</td>
-              </tr>
+              <article key={`card-${item.entityKind}-${item.id}`} className={styles.card}>
+                <div className={styles.cardTitle}>{renderRow(item)}</div>
+                <p className={styles.subMeta}>
+                  {ENTITY_RU[item.entityKind]} · {moderationCatalogStatusLabel(item.catalogStatus)}
+                </p>
+                <p className={styles.subMeta}>
+                  {item.city ?? "Город не указан"} · {new Date(item.updatedAt).toLocaleString("ru-RU")}
+                </p>
+              </article>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </>
       ) : null}
     </div>
   );

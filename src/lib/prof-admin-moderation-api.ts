@@ -77,6 +77,29 @@ export function buildModerationOrgPreviewRevisionQuery(org: {
 }
 
 /** Stable primitive for effects — avoids refetch loops from new object identity each render. */
+export type ModerationPartnerPublicPreviewRequest = {
+  partnerRevision: string;
+  signal?: AbortSignal;
+};
+
+export async function fetchModerationPartnerPublicPreview(
+  userId: string,
+  params: ModerationPartnerPublicPreviewRequest,
+) {
+  const q = new URLSearchParams({ partnerRevision: params.partnerRevision });
+  return remcardFetch<Record<string, unknown>>(
+    `/api/pro/admin/moderation/partners/${encodeURIComponent(userId)}/public-preview?${q.toString()}`,
+    { signal: params.signal },
+  );
+}
+
+export function moderationPartnerPreviewRevisionFetchKey(partner: {
+  id: string;
+  revisionToken: string;
+}): string {
+  return `${partner.id}|${partner.revisionToken}`;
+}
+
 export function moderationOrgPreviewRevisionFetchKey(org: {
   id: string;
   revisionToken: string;
