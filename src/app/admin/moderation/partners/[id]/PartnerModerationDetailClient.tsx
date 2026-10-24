@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { fetchModerationPartner, moderationPartnerAction } from "@/lib/prof-admin-moderation-api";
 import { setProfTestPublicCatalogShow as setTestShowApi } from "@/lib/prof-admin-api";
@@ -11,6 +12,13 @@ type Submitted = {
   city?: string | null;
   description?: string | null;
   photoUrl?: string | null;
+  specializations?: string[];
+  storeCategories?: string[];
+  website?: string | null;
+  telegram?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  vk?: string | null;
 };
 
 type PartnerPayload = {
@@ -24,10 +32,26 @@ type PartnerPayload = {
   submitted: Submitted;
   live: { displayName?: string; isPublic?: boolean };
   hasSubmittedDiff: boolean;
+  fieldDiffs?: string[];
+  portfolioItems: {
+    id: string;
+    title: string | null;
+    description: string | null;
+    images: string[];
+  }[];
+  services: {
+    id: string;
+    title: string;
+    description: string | null;
+    itemKind: string;
+    city: string;
+    images: string[];
+  }[];
   moderationNotes: { id: string; comment: string; createdAt: string; resolvedAt: string | null }[];
 };
 
 export function PartnerModerationDetailClient({ partnerId }: { partnerId: string }) {
+  const searchParams = useSearchParams();
   const [partner, setPartner] = useState<PartnerPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,11 +136,12 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
   if (!partner) return <p>Не найдено</p>;
 
   const sub = partner.submitted;
+  const backQs = searchParams.toString();
 
   return (
     <div>
       <p>
-        <Link href="/admin/moderation">← Очередь</Link>
+        <Link href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>← Очередь</Link>
       </p>
       <h1>{sub.displayName ?? partner.publicId}</h1>
       <p>
@@ -124,7 +149,9 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
         {partner.isTestPartner ? " · TEST" : ""}
       </p>
       {partner.hasSubmittedDiff ? (
-        <p style={{ color: "#b45309" }}>Есть отличия submitted vs live (повторная заявка).</p>
+        <p style={{ color: "#b45309" }}>
+          Изменённые поля: {(partner.fieldDiffs ?? []).join(", ") || "см. diff"}
+        </p>
       ) : null}
 
       {sub.photoUrl ? (
@@ -138,7 +165,45 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
         <h2 style={{ fontSize: "1rem" }}>Поданные данные</h2>
         <p>Город: {sub.city ?? "—"}</p>
         <p>{sub.description ?? "Описание не заполнено"}</p>
+        <p>Категории: {(sub.storeCategories ?? []).join(", ") || "—"}</p>
+        <p>Специализации: {(sub.specializations ?? []).join(", ") || "—"}</p>
+        <p>Сайт: {sub.website ?? "—"}</p>
+        <p>Telegram: {sub.telegram ?? "—"}</p>
+        <p>WhatsApp: {sub.whatsapp ?? "—"}</p>
       </section>
+
+      {partner.services?.length ? (
+        <section style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: "1rem" }}>Услуги/товары</h2>
+          <ul>
+            {partner.services.map((s) => (
+              <li key={s.id}>
+                {s.title} ({s.itemKind}) · {s.city}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {partner.portfolioItems?.length ? (
+        <section style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: "1rem" }}>Портфолио</h2>
+          <ul>
+            {partner.portfolioItems.map((p) => (
+              <li key={p.id}>
+                {p.title ?? "Без названия"}
+                {p.images[0] ? (
+                  <>
+                    {" "}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.images[0]} alt="" style={{ maxWidth: 80, verticalAlign: "middle" }} />
+                  </>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section style={{ marginBottom: 16 }}>
         <h2 style={{ fontSize: "1rem" }}>Публикация</h2>

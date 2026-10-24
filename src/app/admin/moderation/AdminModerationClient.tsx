@@ -114,6 +114,7 @@ export function AdminModerationClient() {
         </select>
         <select value={status} onChange={(e) => setParam("status", e.target.value)}>
           <option value="PENDING">Pending</option>
+          <option value="NEEDS_REVISION">Needs revision</option>
           <option value="REJECTED">Rejected</option>
           <option value="APPROVED">Approved</option>
         </select>

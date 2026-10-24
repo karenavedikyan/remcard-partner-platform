@@ -56,7 +56,7 @@ export async function moderationPartnerAction(
 
 export async function moderationOrganizationAction(
   orgId: string,
-  action: "approve-all" | "reject" | "revise",
+  action: "approve" | "approve-all" | "reject" | "revise",
   body?: Record<string, unknown>,
 ) {
   return remcardFetch(
