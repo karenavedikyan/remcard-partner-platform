@@ -141,14 +141,71 @@ async function runProfModerationFlow(browser, fx) {
 
   await page.getByRole("button", { name: /полная карточка/i }).click();
   await page.getByRole("dialog").waitFor({ timeout: 10000 });
+  await page.getByTestId("moderation-catalog-full-preview").waitFor({ timeout: 20000 });
   await screenshot(page, "org-preview-full-1440.png");
   await page.getByRole("button", { name: /^Закрыть$/i }).click();
 
+  await page.getByRole("button", { name: /Вернуть на доработку/i }).click();
+  const reviseField = page.getByLabel(/Что нужно исправить/i);
+  await reviseField.waitFor({ timeout: 5000 });
+  await reviseField.fill("E2E revise org: первое второе");
+  await screenshot(page, "org-revise-dialog-1440.png");
+  await page.getByRole("button", { name: /^Отмена$/i }).click();
+
   await page.setViewportSize({ width: 390, height: 844 });
   await assertHealthyPage(page, "org-detail-390");
+  await page.getByRole("button", { name: /список/i }).click();
+  await page.getByRole("dialog").waitFor({ timeout: 10000 });
+  await screenshot(page, "org-preview-dialog-390.png");
+  await page.getByRole("button", { name: /^Закрыть$/i }).click();
   await screenshot(page, "org-detail-390.png");
 
   await page.setViewportSize({ width: 1440, height: 900 });
+
+  async function orgModerationAction(orgId, title, action, text) {
+    await page.goto(`${PROF_URL}/admin/moderation/organizations/${orgId}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.getByRole("heading", { level: 1, name: title }).waitFor({ timeout: 15000 });
+    if (action === "revise") {
+      await page.getByRole("button", { name: /Вернуть на доработку/i }).click();
+      await page.getByLabel(/Что нужно исправить/i).fill(text);
+      const respP = page.waitForResponse(
+        (r) => r.url().includes(`/organizations/${orgId}/revise`) && r.request().method() === "POST",
+      );
+      await page.getByRole("button", { name: /Отправить на доработку/i }).click();
+      const r = await respP;
+      assert(r.ok(), `org revise ${orgId} HTTP ${r.status()}`);
+      await screenshot(page, "org-after-revise-1440.png");
+    } else if (action === "reject") {
+      await page.getByRole("button", { name: /Отклонить заявку/i }).click();
+      await page.getByLabel(/Причина/i).fill(text);
+      const respP = page.waitForResponse(
+        (r) => r.url().includes(`/organizations/${orgId}/reject`) && r.request().method() === "POST",
+      );
+      await page.getByRole("button", { name: /^Отклонить$/i }).last().click();
+      const r = await respP;
+      assert(r.ok(), `org reject ${orgId} HTTP ${r.status()}`);
+      await screenshot(page, "org-after-reject-1440.png");
+    }
+    await assertHealthyPage(page, `org-${action}-${orgId}`);
+  }
+
+  await orgModerationAction(
+    fx.orgReviseOrgId,
+    fx.orgReviseOrgTitle,
+    "revise",
+    "E2E org revise: уточните описание и контакты.",
+  );
+  await orgModerationAction(
+    fx.orgRejectOrgId,
+    fx.orgRejectOrgTitle,
+    "reject",
+    "E2E org reject: заявка не соответствует правилам каталога.",
+  );
+
+  await page.goto(`${PROF_URL}${orgReturn}`, { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { level: 1, name: fx.pendingOrgTitle }).waitFor({ timeout: 15000 });
   const orgApproveResp = page.waitForResponse(
     (r) =>
       r.url().includes(`/organizations/${fx.pendingOrgId}/approve`) && r.request().method() === "POST",

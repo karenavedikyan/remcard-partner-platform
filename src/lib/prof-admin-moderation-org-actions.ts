@@ -11,7 +11,7 @@ export function orgApproveButtonLabel(org: ModerationOrgDetail): string {
 
 export function orgApproveConfirmMessage(org: ModerationOrgDetail): string {
   const base = `Одобрить заявку организации «${org.name}» (${org.partnerType})?`;
-  const ownerNote = " Профиль владельца (User) этим действием не одобряется.";
+  const ownerNote = " Профиль владельца этим действием не одобряется.";
   if (org.isTestPartner && org.profTestPublicCatalogAllowed === false) {
     return (
       `${base}${ownerNote}\n\nПосле одобрения карточка останется скрытой, пока вы отдельно не разрешите публикацию тестового партнёра.`
@@ -26,12 +26,18 @@ export function orgApproveAllConfirmMessage(org: ModerationOrgDetail): string {
   return (
     `Одобрить организацию «${org.name}» и ${pending.length} филиал(ов) на проверке?\n\n` +
     `Филиалы: ${names}\n\n` +
-    "Профиль владельца (User) не одобряется."
+    "Профиль владельца не одобряется."
   );
 }
 
 export function orgRejectConfirmMessage(org: ModerationOrgDetail): string {
-  return `Отклонить заявку организации «${org.name}»? Карточка не будет опубликована.`;
+  if (org.live.catalogPublished) {
+    return (
+      `Отклонить отправленную заявку «${org.name}»?\n\n` +
+      "Текущая опубликованная версия в каталоге сохранится; отклоняется только новая отправленная заявка."
+    );
+  }
+  return `Отклонить заявку «${org.name}»? Карточка не будет опубликована.`;
 }
 
 export function orgReviseConfirmMessage(org: ModerationOrgDetail): string {

@@ -3,7 +3,6 @@ import {
   buildModerationOrgCatalogPreviewInput,
   moderationOrgChangeBlock,
   moderationOrgPublicVisibility,
-  moderationOrgReadiness,
   moderationSubmittedCategoryLabels,
   type ModerationOrgDetail,
 } from "@/lib/prof-admin-moderation-org-display";
@@ -77,6 +76,17 @@ describe("moderationOrgChangeBlock", () => {
     expect(block.title).toContain("Новая заявка");
   });
 
+  it("resubmit diff includes logo change", () => {
+    const block = moderationOrgChangeBlock(
+      baseOrg({
+        hasSubmittedDiff: true,
+        live: { catalogPublished: true, logoUrl: "https://old/logo.png" },
+        submitted: { logoUrl: "https://new/logo.png" },
+      }),
+    );
+    expect(block.lines.some((l) => l.includes("Логотип"))).toBe(true);
+  });
+
   it("resubmit diff includes removed description", () => {
     const block = moderationOrgChangeBlock(
       baseOrg({
@@ -110,11 +120,3 @@ describe("catalog preview from submitted revision", () => {
   });
 });
 
-describe("moderationOrgReadiness", () => {
-  it("flags missing store categories for COMPANY", () => {
-    const items = moderationOrgReadiness(
-      baseOrg({ submitted: { storeCategories: [], specializations: ["plumbing"] } }),
-    );
-    expect(items.some((i) => i.level === "required" && i.text.includes("категории"))).toBe(true);
-  });
-});

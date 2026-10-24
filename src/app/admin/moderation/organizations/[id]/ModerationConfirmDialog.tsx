@@ -25,7 +25,6 @@ export function ModerationConfirmDialog({
   title,
   description,
   confirmLabel,
-  danger,
   busy,
   requireText,
   textLabel,
@@ -37,21 +36,43 @@ export function ModerationConfirmDialog({
 }: Props) {
   const titleId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const didFocusOnOpen = useRef(false);
+
+  useEffect(() => {
+    if (!open) {
+      didFocusOnOpen.current = false;
+      return;
+    }
+    if (didFocusOnOpen.current) return;
+    didFocusOnOpen.current = true;
+    if (requireText) {
+      textRef.current?.focus();
+    } else {
+      cancelRef.current?.focus();
+    }
+  }, [open, requireText]);
+
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
 
   useEffect(() => {
     if (!open) return;
-    cancelRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape" && !busy) onCancelRef.current();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
+  }, [open, busy]);
 
   if (!open) return null;
 
+  const handleOverlay = () => {
+    if (!busy) onCancel();
+  };
+
   return (
-    <div className={styles.overlay} role="presentation" onClick={onCancel}>
+    <div className={styles.overlay} role="presentation" onClick={handleOverlay}>
       <div
         className={styles.dialog}
         role="dialog"
@@ -69,11 +90,13 @@ export function ModerationConfirmDialog({
           <>
             <label htmlFor={`${titleId}-field`}>{textLabel}</label>
             <textarea
+              ref={textRef}
               id={`${titleId}-field`}
               className={styles.dialogField}
               value={textValue}
               onChange={(e) => onTextChange(e.target.value)}
               disabled={busy}
+              aria-invalid={textError ? true : undefined}
             />
             {textError ? (
               <p className={styles.statusError} role="alert">
@@ -86,12 +109,7 @@ export function ModerationConfirmDialog({
           <Button ref={cancelRef} type="button" variant="secondary" disabled={busy} onClick={onCancel}>
             Отмена
           </Button>
-          <Button
-            type="button"
-            variant={danger ? "primary" : "primary"}
-            disabled={busy}
-            onClick={onConfirm}
-          >
+          <Button type="button" variant="primary" disabled={busy} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

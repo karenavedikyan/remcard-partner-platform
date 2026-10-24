@@ -5,6 +5,12 @@ describe("prof admin moderation BFF proxy security", () => {
   it("allows moderation mutation paths on allowlist", () => {
     expect(
       isAllowedProxyRoute(
+        "GET",
+        "/api/pro/admin/moderation/organizations/org1/public-preview",
+      ),
+    ).toBe(true);
+    expect(
+      isAllowedProxyRoute(
         "POST",
         "/api/pro/admin/moderation/organizations/org1/approve",
       ),

@@ -1,23 +1,48 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CatalogPublicationPreview } from "@/components/profile/CatalogPublicationPreview";
 import { Button } from "@/components/ui/Button";
-import type { ProfileDraft } from "@/lib/profile-save";
-import type { ProProfileResponse } from "@/lib/types";
+import { RemcardApiError } from "@/lib/api-client";
+import { fetchModerationOrganizationPublicPreview } from "@/lib/prof-admin-moderation-api";
+import { buildModerationOrgCatalogPreviewInput } from "@/lib/prof-admin-moderation-org-display";
+import type { ModerationOrgDetail } from "@/lib/prof-admin-moderation-org-display";
+import {
+  ModerationOrgCatalogFullPreview,
+  type ModerationPublicPreviewPayload,
+} from "./ModerationOrgCatalogFullPreview";
 import styles from "./OrganizationModerationDetail.module.css";
 
 type Props = {
   open: boolean;
   mode: "list" | "full";
   onClose: () => void;
-  profile: ProProfileResponse;
-  draft: ProfileDraft;
-  partnerType: string;
+  org: ModerationOrgDetail;
 };
 
-export function ModerationPreviewModal({ open, mode, onClose, profile, draft, partnerType }: Props) {
+export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [fullPayload, setFullPayload] = useState<ModerationPublicPreviewPayload | null>(null);
+  const [fullError, setFullError] = useState<string | null>(null);
+  const [fullLoading, setFullLoading] = useState(false);
+
+  const loadFull = useCallback(async () => {
+    setFullLoading(true);
+    setFullError(null);
+    try {
+      const res = await fetchModerationOrganizationPublicPreview(org.id);
+      setFullPayload(res as ModerationPublicPreviewPayload);
+    } catch (e) {
+      setFullPayload(null);
+      setFullError(e instanceof RemcardApiError ? e.message : "Не удалось загрузить предпросмотр");
+    }
+    setFullLoading(false);
+  }, [org.id]);
+
+  useEffect(() => {
+    if (!open || mode !== "full") return;
+    void loadFull();
+  }, [open, mode, loadFull]);
 
   useEffect(() => {
     if (!open) return;
@@ -31,7 +56,8 @@ export function ModerationPreviewModal({ open, mode, onClose, profile, draft, pa
 
   if (!open) return null;
 
-  const variant = partnerType === "MASTER" ? "specialist" : "business";
+  const { profile, draft } = buildModerationOrgCatalogPreviewInput(org);
+  const variant = org.partnerType === "MASTER" ? "specialist" : "business";
 
   return (
     <div className={styles.overlay} role="presentation" onClick={onClose}>
@@ -43,14 +69,30 @@ export function ModerationPreviewModal({ open, mode, onClose, profile, draft, pa
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="moderation-preview-title" className={styles.dialogTitle}>
-          {mode === "list" ? "Карточка в списке" : "Полная карточка"} · предпросмотр заявки
+          {mode === "list" ? "Карточка в списке каталога" : "Полная карточка организации"}
         </h2>
         <p className={styles.metaLine}>
-          Показаны данные отправленной на проверку версии. Публикация не выполняется.
+          {mode === "list"
+            ? "Компактный вид результата поиска (отправленная заявка)."
+            : "Структура публичной страницы /catalog/org (отправленная заявка, без интерактивных действий связи)."}
         </p>
-        <div className={mode === "list" ? styles.previewList : styles.previewFull}>
-          <CatalogPublicationPreview variant={variant} profile={profile} draft={draft} />
-        </div>
+
+        {mode === "list" ? (
+          <div className={styles.previewList}>
+            <CatalogPublicationPreview variant={variant} profile={profile} draft={draft} />
+          </div>
+        ) : fullLoading ? (
+          <p>Загрузка предпросмотра…</p>
+        ) : fullError ? (
+          <p role="alert" className={styles.statusError}>
+            {fullError}
+          </p>
+        ) : fullPayload ? (
+          <div className={styles.previewFull}>
+            <ModerationOrgCatalogFullPreview data={fullPayload} />
+          </div>
+        ) : null}
+
         <div className={styles.dialogActions}>
           <Button ref={closeRef} type="button" variant="primary" onClick={onClose}>
             Закрыть

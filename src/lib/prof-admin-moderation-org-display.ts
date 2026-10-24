@@ -80,8 +80,10 @@ export function moderationCatalogStatusLabel(status: string): string {
 }
 
 export function moderationOrgCity(org: ModerationOrgDetail): string {
-  const fromBranch = org.branches.find((b) => b.submitted.city?.trim())?.submitted.city?.trim();
-  return fromBranch ?? "";
+  const fromBranch = org.branches.find(
+    (b) => b.catalogStatus !== "DRAFT" && b.submitted.city?.trim(),
+  )?.submitted.city;
+  return fromBranch?.trim() ?? "";
 }
 
 export type ModerationVisibilityState = {
@@ -177,6 +179,7 @@ export function moderationOrgChangeBlock(org: ModerationOrgDetail): ModerationCh
   };
 
   push("Описание", live.description, s.description);
+  push("Логотип", live.logoUrl, s.logoUrl);
   push("Сайт", live.website, s.website);
   push("Telegram", live.telegram, s.telegram);
   push("Email", live.publicEmail, s.publicEmail);
@@ -194,6 +197,15 @@ export function moderationOrgChangeBlock(org: ModerationOrgDetail): ModerationCh
     lines.push(`Услуги: ${liveSvc} → ${subSvc}`);
   }
 
+  const liveStages = "—";
+  const subStages =
+    (s.navigatorStageIds ?? []).length > 0
+      ? moderationSubmittedStageLabels(s.navigatorStageIds).join(", ")
+      : "—";
+  if (subStages !== liveStages && (s.navigatorStageIds?.length ?? 0) > 0) {
+    lines.push(`Этапы ремонта: ${subStages}`);
+  }
+
   if (!lines.length && org.hasSubmittedDiff) {
     lines.push("Есть отличия отправленной версии от опубликованной (детали в блоках ниже).");
   }
@@ -206,69 +218,6 @@ export function moderationOrgChangeBlock(org: ModerationOrgDetail): ModerationCh
     title: "Повторная заявка",
     lines,
   };
-}
-
-export type ModerationReadinessItem = {
-  level: "required" | "recommendation" | "ok";
-  text: string;
-};
-
-export function moderationOrgReadiness(org: ModerationOrgDetail): ModerationReadinessItem[] {
-  const items: ModerationReadinessItem[] = [];
-  const s = org.submitted;
-  const pt = org.partnerType;
-
-  if (org.name.trim().length < 2) {
-    items.push({ level: "required", text: "Укажите название организации (минимум 2 символа)." });
-  } else {
-    items.push({ level: "ok", text: "Название организации указано." });
-  }
-
-  if (pt === "STORE" || pt === "COMPANY") {
-    if (!(s.storeCategories?.length ?? 0)) {
-      items.push({ level: "required", text: "Выберите категории товаров." });
-    } else {
-      items.push({ level: "ok", text: "Категории товаров выбраны." });
-    }
-  }
-
-  if (pt === "MASTER" || pt === "COMPANY") {
-    if (!(s.specializations?.length ?? 0)) {
-      items.push({ level: "required", text: "Выберите направления услуг." });
-    } else {
-      items.push({ level: "ok", text: "Направления услуг выбраны." });
-    }
-  }
-
-  const pendingBranches = org.branches.filter((b) => b.catalogStatus === "PENDING");
-  if ((pt === "STORE" || pt === "COMPANY") && pendingBranches.length === 0 && org.catalogStatus === "PENDING") {
-    items.push({
-      level: "recommendation",
-      text: "Нет филиалов на проверке — проверьте, что заявка по организации полная.",
-    });
-  }
-
-  if (!s.description?.trim()) {
-    items.push({ level: "recommendation", text: "Описание не заполнено — рекомендуется добавить для каталога." });
-  }
-
-  if (org.isTestPartner && org.profTestPublicCatalogAllowed === false) {
-    items.push({
-      level: "recommendation",
-      text: "После одобрения карточка останется скрытой до разрешения публикации тестового партнёра.",
-    });
-  }
-
-  return items;
-}
-
-export function moderationOrgCanPublishLabel(org: ModerationOrgDetail): string {
-  const required = moderationOrgReadiness(org).filter((i) => i.level === "required");
-  if (required.length) return "Нельзя рекомендовать публикацию — не выполнены обязательные условия.";
-  if (org.isTestPartner && org.profTestPublicCatalogAllowed === false) {
-    return "После одобрения заявка будет принята, но карточка останется скрытой (test opt-in).";
-  }
-  return "После одобрения одобренная версия станет доступна в каталоге (с учётом кэша).";
 }
 
 export function moderationSubmittedCategoryLabels(ids: string[] | undefined): string[] {

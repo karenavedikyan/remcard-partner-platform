@@ -43,6 +43,12 @@ export async function fetchModerationOrganization(orgId: string) {
   );
 }
 
+export async function fetchModerationOrganizationPublicPreview(orgId: string) {
+  return remcardFetch<Record<string, unknown>>(
+    `/api/pro/admin/moderation/organizations/${encodeURIComponent(orgId)}/public-preview`,
+  );
+}
+
 export async function moderationPartnerAction(
   userId: string,
   action: "approve" | "reject" | "revise",

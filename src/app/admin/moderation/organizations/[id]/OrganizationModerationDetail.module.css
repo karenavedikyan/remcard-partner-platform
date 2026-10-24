@@ -40,8 +40,9 @@
   font-weight: 600;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  background: var(--surface-muted, #f4f4f5);
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--offset, #f4f4f5);
+  color: var(--ink, #282b30);
 }
 
 .badgePending {
@@ -58,7 +59,7 @@
 
 .metaLine {
   font-size: 0.9rem;
-  color: var(--text-secondary, #52525b);
+  color: var(--muted, #656970);
   margin: 0.25rem 0;
 }
 
@@ -78,15 +79,23 @@
 }
 
 .actionsPanel {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
+  position: relative;
+  z-index: 1;
   margin-top: 1.5rem;
   padding: 1rem;
   border-radius: 12px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  background: var(--surface-elevated, #fff);
-  box-shadow: 0 -4px 24px rgb(0 0 0 / 8%);
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 8px rgb(0 0 0 / 6%);
+}
+
+@media (min-width: 640px) {
+  .actionsPanel {
+    position: sticky;
+    bottom: 0.75rem;
+    z-index: 20;
+    box-shadow: 0 -4px 24px rgb(0 0 0 / 8%);
+  }
 }
 
 .actionsRow {
@@ -136,11 +145,12 @@
 
 .techBlock {
   font-size: 0.8rem;
-  color: var(--text-secondary, #71717a);
+  color: var(--muted, #656970);
   margin-top: 1.5rem;
   padding: 0.75rem;
   border-radius: 8px;
-  background: var(--surface-muted, #fafafa);
+  background: var(--offset, #f6f7f8);
+  border: 1px solid var(--line, #e5e7eb);
 }
 
 .techBlock dt {
@@ -154,10 +164,11 @@
 }
 
 .branchCard {
-  border: 1px solid var(--border-subtle, #eee);
+  border: 1px solid var(--line, #eee);
   border-radius: 10px;
   padding: 0.75rem;
   margin-bottom: 0.75rem;
+  background: var(--surface, #fff);
 }
 
 .branchFocus {
@@ -167,7 +178,20 @@
 
 .branchDraftNote {
   font-size: 0.85rem;
-  color: var(--text-secondary, #52525b);
+  color: var(--muted, #656970);
+}
+
+.photoWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.photoZoomLink {
+  font-size: 0.85rem;
+  color: var(--ink, #282b30);
+  text-decoration: underline;
 }
 
 .photoThumb {
@@ -176,7 +200,20 @@
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 8px;
-  background: var(--surface-muted, #f4f4f5);
+  background: var(--offset, #f4f4f5);
+}
+
+.photoFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: var(--offset, #f4f4f5);
+  color: var(--muted, #656970);
+  font-size: 0.85rem;
+  border: 1px dashed var(--line, #d4d4d8);
 }
 
 .statusMessage {
@@ -233,9 +270,11 @@
   max-width: 520px;
   max-height: min(90vh, 720px);
   overflow: auto;
-  background: var(--surface-elevated, #fff);
+  background: var(--surface, #fff);
+  color: var(--ink, #282b30);
   border-radius: 12px 12px 0 0;
   padding: 1.25rem;
+  border: 1px solid var(--line, #e5e7eb);
 }
 
 @media (min-width: 640px) {
@@ -257,7 +296,9 @@
   padding: 0.5rem;
   font: inherit;
   border-radius: 8px;
-  border: 1px solid var(--border-subtle, #d4d4d8);
+  border: 1px solid var(--line, #d4d4d8);
+  background: var(--surface, #fff);
+  color: var(--ink, #282b30);
 }
 
 .dialogActions {
@@ -279,4 +320,72 @@
 
 .previewFull {
   max-width: 100%;
+}
+
+.fullPreviewRoot {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--offset, #f6f7f8);
+}
+
+.previewLimitation {
+  font-size: 0.85rem;
+  color: var(--muted, #656970);
+  margin: 0 0 0.75rem;
+}
+
+.fullPreviewHero {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.fullPreviewTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--ink, #282b30);
+}
+
+.fullPreviewDesc {
+  font-size: 0.95rem;
+  margin: 0 0 0.75rem;
+  white-space: pre-wrap;
+  color: var(--ink, #282b30);
+}
+
+.fullPreviewSectionTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: var(--ink, #282b30);
+}
+
+.fullPreviewContacts ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.fullPreviewBranches {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.fullPreviewBranch {
+  padding: 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--surface, #fff);
+}
+
+.fullPreviewBranchAddress {
+  font-size: 0.85rem;
+  color: var(--muted, #656970);
+  margin: 0.25rem 0 0;
 }
