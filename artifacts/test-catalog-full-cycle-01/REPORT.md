@@ -3,7 +3,7 @@
 Baseline: `6e41d066c80bcc4028d3503b5d571169404c3d24`. Branch: `fix/test-catalog-full-cycle-01`.
 
 **Runtime code SHA:** `e092ef261d538b986df45da05dbd4db592f5c656`  
-**Evidence tip SHA:** _(docs commit below; runtime remains e092ef26)_
+**Evidence tip SHA:** `2f27e5340522605efb0a9a0278242e3d83412175`
 
 ## Review fixes in runtime
 
