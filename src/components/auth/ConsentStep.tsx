@@ -80,7 +80,11 @@ export function ConsentStep({
 
   return (
     <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="consent-title">
+      <section
+        className={styles.card}
+        aria-labelledby="consent-title"
+        data-testid="registration-auth-consents"
+      >
         <span className={styles.eyebrow}>RemCard PROF</span>
         <h1 id="consent-title" className={styles.title}>
           Обязательные соглашения

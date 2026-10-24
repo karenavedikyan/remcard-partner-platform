@@ -4,6 +4,29 @@
   padding-top: var(--space-6);
 }
 
+/* Name/city steps: wide two-column layout (ref ~1140), without stretching provider card width. */
+.dataRegistration {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-8) 4rem;
+}
+
+/* Matches frozen `.registration.entry-page` shell (auth / narrow entry flow). */
+.entryFlowPage {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-8) 4rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 760px) {
+  .dataRegistration,
+  .entryFlowPage {
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
+}
+
 /* Types step only — matches frozen prototype .registration / .role-grid (not wizard width). */
 .typesRegistration {
   max-width: 1140px;
@@ -226,6 +249,7 @@
   gap: var(--space-2);
   text-align: center;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .entryProgress li > span {
@@ -264,6 +288,31 @@
   flex-direction: row;
   align-items: center;
   text-align: left;
+}
+
+/* Data steps: compact inline progress (ref), not full-width wizard grid. */
+.entryProgress.entryProgressDataRegistration {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-6);
+  max-width: 42rem;
+  margin-bottom: var(--space-10);
+  grid-template-columns: unset;
+}
+
+.entryProgress.entryProgressDataRegistration li {
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+  gap: var(--space-2);
+  white-space: nowrap;
+  font-size: var(--text-xs);
+}
+
+.entryProgress.entryProgressDataRegistration li > span {
+  width: 26px;
+  height: 26px;
+  font-size: 0.625rem;
 }
 
 .typeCardIcon {
@@ -416,6 +465,35 @@
 }
 
 @media (max-width: 760px) {
+  .entryProgress.entryProgressDataRegistration {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: var(--space-3);
+    max-width: none;
+    margin-bottom: var(--space-6);
+    font-size: var(--text-xs);
+    width: 100%;
+  }
+
+  .entryProgress.entryProgressDataRegistration li {
+    flex: 0 1 auto;
+    min-width: auto;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-1);
+    white-space: normal;
+    line-height: 1.6;
+    font-size: var(--text-xs);
+  }
+
+  .entryProgress.entryProgressDataRegistration li > span {
+    width: 28px;
+    height: 28px;
+    font-size: 0.6875rem;
+  }
+
   .entryProgress.entryProgressTypesRegistration {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -440,14 +518,32 @@
   }
 }
 
+@media (max-width: 360px) {
+  .entryProgress.entryProgressDataRegistration {
+    justify-content: flex-start;
+  }
+
+  /* Ref @320: 12px label gaps with wider space before «Подтверждение» (space-5). */
+  .entryProgress.entryProgressDataRegistration li:nth-child(3) {
+    margin-inline-start: calc(var(--space-5) - var(--space-3));
+  }
+}
+
 @media (max-width: 680px) {
-  .entryProgress:not(.entryProgressTypesRegistration) {
+  .entryProgress:not(.entryProgressTypesRegistration):not(.entryProgressDataRegistration) {
     gap: var(--space-2);
     margin-bottom: var(--space-6);
     font-size: 0.625rem;
   }
 
-  .entryProgress:not(.entryProgressTypesRegistration) li > span {
+  .entryProgress:not(.entryProgressTypesRegistration):not(.entryProgressDataRegistration) li {
+    white-space: normal;
+    font-size: 0.5625rem;
+    line-height: 1.15;
+    gap: var(--space-1);
+  }
+
+  .entryProgress:not(.entryProgressTypesRegistration):not(.entryProgressDataRegistration) li > span {
     width: 24px;
     height: 24px;
   }
