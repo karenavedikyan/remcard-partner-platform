@@ -1,87 +1,101 @@
-# PROF-ADMIN-MODERATION-UX-02 — READY FOR REVIEW (org detail package)
+# PROF-ADMIN-MODERATION-UX-02 — org detail package (NOT full UX-02 release)
 
-Independent review blockers for **organization moderation detail** addressed on this branch tip. Residual product scope (partner detail + queue UX parity) remains **BLOCKED** — see [Residual scope](#residual-scope).
+Final independent review follow-up on `fix/prof-admin-moderation-ux-02`. **Organization moderation detail** gates addressed on tips below. **Full UX-02** remains **BLOCKED** (partner detail + queue parity, dark-theme browser matrix, live test opt-in toggle cycle in browser).
 
-## Checked SHAs
+## Git SHAs (`git rev-parse HEAD` only)
 
 | Role | Repository | SHA |
 |------|------------|-----|
-| **Runtime frontend (tested)** | remcard-partner-platform | `22ff4eed8e13f3cdb58c1c1bd0c7988dc1a9e925` |
-| **Evidence REPORT (this file)** | remcard-partner-platform | `0a3158834867073a6cf3e2c37b64909e301bc571` |
-| **Backend (mutations baseline + read contract)** | remcard-navigator | `a221e5304272169bbbca7fe611dc28e1b534c948` |
-| **Prior blocked candidate** | remcard-partner-platform | `a2bfd7ba8af1030440e81059264c54a1625fcbab` |
-| **Prior published frontend checkpoint** | remcard-partner-platform | `93942eeb10e965aed7a84add014d50476d3380ef` |
+| **Runtime frontend (built + browser gate)** | remcard-partner-platform | `95048687a2d1bc849ac3fd7f3bfab32856bf50a0` |
+| **Runtime backend (public-preview + projection)** | remcard-navigator | `1b6a5f4151b80a09ffad6267f2de670598282764` |
+| **Evidence REPORT tip** | remcard-partner-platform | `7155b145cc4357865fd83d4b730f1c9a9ae4a478` |
+| **Prior frontend runtime (review 2026-10-24)** | remcard-partner-platform | `22ff4eed8e13f3cdb58c1c1bd0c7988dc1a9e925` |
+| **Prior backend runtime (review 2026-10-24)** | remcard-navigator | `a221e530faed8c76bff2ae34f77e7f16c4357f27` |
 | **Mutation/security baseline** | remcard-navigator | `0255c94a96f68c3b102662c677b44846be9636ae` |
 
-Backend delta from `0255c94a`: **read-only** `GET /api/pro/admin/moderation/organizations/[id]/public-preview` (+ builder `profAdminModerationPublicPreview.ts`). No change to approve/reject/409/security.
+Backend delta from `0255c94a`: read-only `GET /api/pro/admin/moderation/organizations/[id]/public-preview`, contact projection helper, revision validation (409), `Cache-Control: private, no-store` on preview and moderation auth denials.
 
-## Blocker closure map
+## Review blockers — closure
 
-| Review finding | Fix |
-|----------------|-----|
-| Full preview = wizard only | **List** = `CatalogPublicationPreview` (search card). **Full** = BFF → public-preview API → `ModerationOrgCatalogFullPreview` (cities, branches, contacts, limitation banner). |
-| Readiness ≠ server | `prof-admin-moderation-org-readiness.ts` mirrors `validateOrgCatalogForModeration` (name, branch, products **or** services, stages); recommendations separated. |
-| Dialog focus steal | Focus only on open; stable Escape handler; `textError` on field; busy blocks overlay/Escape. |
-| 409 / refresh errors | Close dialogs on 409 + reload; POST success + GET failure keeps data + one POST (tests). |
-| Mobile / tokens | Actions panel static flow on &lt;640px; `--surface/--ink/--muted/--offset/--line`; photo fallback + zoom link. |
-| Diff / copy | Logo + stages in diff; reject copy for resubmit vs first publication; reduced raw “User/test” admin copy. |
-| BFF security tests dropped | `remcard-proxy-moderation.test.ts` back in `vitest.config.ts` (+ public-preview GET allowlist). |
-| Evidence gaps | +26 targeted unit/component tests; E2E org revise/reject dialogs, full preview testid, mobile preview dialog screenshots. |
+| Finding | Resolution |
+|---------|------------|
+| Preview mixed live org contacts with submitted scalar fields | `projectOrgPublicContactsForModerationPreview` mirrors `syncOrgCatalogPublicContactsFromDraft` (overlay/clear phone/email/telegram; keep extra channels e.g. vk). |
+| Branch preview used live phone/email under review | Pending branches use `catalogUnderReview.publicContacts` when present (`branchSubmittedContacts`). DRAFT branches excluded from preview list. |
+| No revision binding | Client sends `orgRevision` + `branchRevisions`; server validates (`stale_revision` → 409); response includes `organizationRevisionToken` + `branchRevisions`; modal aborts in-flight fetch; client 409/token mismatch message. |
+| Readiness counted non-DRAFT only | `moderationOrgActiveBranchCount` = active branches (matches submit `isActive: true`); PENDING org + DRAFT branch → no false “add branch” required; draft-only → recommendation not requirement. |
+| Wrong backend SHA in prior REPORT | Prior typo `a221e53ddab5…` invalid; authoritative `a221e530faed8c76bff2ae34f77e7f16c4357f27` at review; new tip `1b6a5f41…`. |
+| Missing backend tests for new route | Unit: `orgCatalogPublicContacts.preview.test.ts` (2). PG integration: `profAdminModerationPublicPreview.integration.test.ts` (6) with `PROF_TEST_CATALOG_INTEGRATION_OK=1`. |
+| Frontend did not test public-preview | `prof-admin-moderation-public-preview.test.ts` (revision query + 409). Modal wired to API with `cache: no-store` via `remcardFetch`. |
+| Focus trap | `useModerationModalFocusTrap` on confirm + full preview modals; dialog focus typing tests pass. |
 
-## Mapper / preview source map
+## Residual BLOCKED (honest gates)
 
-| View | Data source | Renderer |
-|------|-------------|----------|
-| List card | Moderation DTO `submitted` + non-DRAFT branch city | `buildModerationOrgCatalogPreviewInput` → `CatalogPublicationPreview` |
-| Full page | `GET …/public-preview` (submitted org + **PENDING** active branches, public contacts) | `ModerationOrgCatalogFullPreview` |
-| Limitation | API `previewLimitation` | Shown above full preview (not live catalog; no draft-only branches) |
+| Gate | Status |
+|------|--------|
+| `/admin/moderation/partners/[id]` UX-02 parity | **BLOCKED** |
+| Moderation queue list UX-02 | **BLOCKED** |
+| Dark theme screenshots (org detail) | **BLOCKED** (not in gate script) |
+| Browser proof of test opt-in allow/hide toggle | **BLOCKED** (UI block covered in component tests only) |
+| Full `npm run test:component` | **BLOCKED** unrelated failures (`ProfileEditor`, `profile-overview-display`) |
 
-## Commands / results
+## Commands / exit codes (2026-10-24, agent VM)
 
 ```bash
-cd remcard-partner-platform
-NODE_ENV=development npm test -- run \
+# remcard-navigator
+pnpm exec vitest run src/lib/__tests__/orgCatalogPublicContacts.preview.test.ts
+# 2 passed, 1 file, exit 0
+
+PROF_TEST_CATALOG_INTEGRATION_OK=1 pnpm exec vitest run \
+  src/lib/__tests__/profAdminModerationPublicPreview.integration.test.ts
+# 6 passed, 1 file, exit 0
+
+pnpm exec tsc --noEmit 2>&1 | rg 'profAdminModerationPublicPreview|orgCatalogPublicContacts|public-preview/route|profAdminModerationGuard' || true
+# no errors in changed files (repo-wide tsc has pre-existing failures elsewhere)
+
+# remcard-partner-platform
+npx vitest run \
+  src/lib/prof-admin-moderation-public-preview.test.ts \
+  src/lib/prof-admin-moderation-org-readiness.test.ts \
   src/lib/prof-admin-moderation-org-display.test.ts \
   src/lib/prof-admin-moderation-org-actions.test.ts \
-  src/lib/prof-admin-moderation-org-readiness.test.ts \
   src/lib/remcard-proxy-moderation.test.ts \
-  src/app/admin/moderation/organizations/[id]/OrganizationModerationDetail.actions.test.tsx \
-  src/app/admin/moderation/organizations/[id]/ModerationConfirmDialog.test.tsx
-# 26 passed, exit 0
+  src/lib/branch-catalog-preview.test.ts \
+  src/app/admin/moderation/organizations/\[id\]/OrganizationModerationDetail.actions.test.tsx \
+  src/app/admin/moderation/organizations/\[id\]/ModerationConfirmDialog.test.tsx
+# 31 passed, 8 files, exit 0
 
-NODE_ENV=development npm run test:proxy
+npx tsx --test src/lib/category-display.test.ts
+# 10 passed, exit 0
+
+npm run test:proxy
 # 283 passed, exit 0
 
-npm exec tsc -- --noEmit
-# exit 0
-
-REMCARD_API_BASE_URL=http://127.0.0.1:3421 NEXT_PUBLIC_APP_URL=http://127.0.0.1:3420 npm run build
+npx tsc --noEmit
 # exit 0
 
 bash scripts/prof-admin-moderation-ux-02/run-browser-gate.sh
 # exit 0 — artifacts/prof-admin-moderation-ux-02/browser-gate.log
 ```
 
-Note: full `npm run test:component` reports unrelated pre-existing failures in `ProfileEditor.test.tsx` / `profile-overview-display.test.tsx` (not modified this task).
-
-## Browser matrix (isolated PG, synthetic fixtures)
+## Browser matrix (isolated PG, post-tip `95048687` / `1b6a5f41`)
 
 | Scenario | Result |
 |----------|--------|
-| Org detail 1440/390, preview list + full (`moderation-catalog-full-preview`) | PASS |
-| Org revise dialog typing + dedicated org revise/reject POST | PASS |
+| Org detail 1440/390 | PASS |
+| Preview list (`catalog-public-preview`) | PASS |
+| Preview full (`moderation-catalog-full-preview` + revision query) | PASS |
+| Org revise / reject dialogs + POST | PASS |
 | Org approve, queue 1440/390 | PASS |
 | Branch reject dialog | PASS |
-| Partner revise/reject/approve (legacy partner UI) | PASS |
+| Partner approve/revise/reject (legacy partner UI) | PASS |
 
-Screenshots: `artifacts/prof-admin-moderation-ux-02/screenshots/passed/` (incl. `org-revise-dialog-1440.png`, `org-after-revise-1440.png`, `org-after-reject-1440.png`, `org-preview-dialog-390.png`).
+Screenshots: `artifacts/prof-admin-moderation-ux-02/screenshots/passed/` (incl. `org-preview-full-1440.png`, `org-preview-dialog-390.png`, `org-revise-dialog-1440.png`).
 
-## Residual scope
+## Production
 
-- **BLOCKED (not in this release slice):** `/admin/moderation/partners/[id]` and queue list still use pre-UX-02 patterns; not claimed as done.
-- **Production:** no deploy, SQL, env, or real-application mutations.
+No deploy, SQL, env, or real-application mutations.
 
 ## Rollback
 
-- Frontend org UX only: deploy `93942eeb10e965aed7a84add014d50476d3380ef`.
-- Full pair before UX-02: frontend `93942eeb` + backend `0255c94a` (omit public-preview route if reverting backend tip).
+- Org detail frontend only: `93942eeb10e965aed7a84add014d50476d3380ef`.
+- Backend without public-preview: `0255c94a96f68c3b102662c677b44846be9636ae`.

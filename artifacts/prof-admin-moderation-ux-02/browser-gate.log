@@ -5,11 +5,11 @@ $ node scripts/build-app.mjs
 [legal] env check OK
 Prisma schema loaded from prisma/schema.prisma
 
-✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 609ms
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 964ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
 
   ▲ Next.js 14.2.35
   - Environments: .env.local
@@ -31,6 +31,14 @@ Import trace for requested module:
 
    Linting and checking validity of types ...
 
+./src/app/admin/moderation/page.tsx
+873:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/team/AdminTeamClient.tsx
+422:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/users/[id]/page.tsx
+315:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nex
 ./src/app/admin/moderation/page.tsx
 873:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
@@ -121,15 +129,7 @@ Import trace for requested module:
 258:6  Warning: React Hook useEffect has a missing dependency: 'setQuery'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 488:6  Warning: React Hook useEffect has missing dependencies: 'close' and 'navigateTo'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 511:6  Warning: React Hook useEffect has a missing dependency: 'embed'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-621:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-679:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-./src/lib/cert-pdf.tsx
-301:35  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
-362:15  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
-
-info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
-   Collecting page data ...
+621:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consid   Collecting page data ...
    Generating static pages (0/277) ...
 [oauth] start called while not configured { provider: 'vk' }
 [oauth] start called while not configured { provider: 'yandex' }
@@ -142,7 +142,7 @@ info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/d
 
 Route (app)                                                         Size     First Load JS
 ┌ ○ /                                                               9.35 kB         113 kB
-├ ○ /_not-found                                                     244 B          89.5 kB
+├ ○ /_not-found                                                     243 B          89.5 kB
 ├ ○ /about                                                          5.26 kB         145 kB
 ├ ○ /account                                                        888 B           117 kB
 ├ ƒ /account/privacy                                                2.84 kB         110 kB
@@ -152,7 +152,7 @@ Route (app)                                                         Size     Fir
 ├ ƒ /admin/certificates                                             1.51 kB         141 kB
 ├ ƒ Route (app)                                                         Size     First Load JS
 ┌ ○ /                                                               9.35 kB         113 kB
-├ ○ /_not-found                                                     244 B          89.5 kB
+├ ○ /_not-found                                                     243 B          89.5 kB
 ├ ○ /about                                                          5.26 kB         145 kB
 ├ ○ /account                                                        888 B           117 kB
 ├ ƒ /account/privacy                                                2.84 kB         110 kB
@@ -532,7 +532,7 @@ Route (app)                                                         Size     Fir
 ├ ƒ /pro/events                                                     7.16 kB        96.4 kB
 ├ ƒ /pro/leads                                                      7.62 kB         153 kB
 ├ ƒ /pro/leads/[id]                                                 11.2 kB         100 kB
-├ ƒ /pro/leads/new                                                  243 B          89.5 kB
+├ ƒ /pro/leads/new                                                  244 B          89.5 kB
 ├ ƒ /pro/limits                                                     3.43 kB         108 kB
 ├ ƒ /pro/limits/my-requests                                         243 B          89.5 kB
 ├ ƒ /pro/moderation-notes                                           2.62 kB        91.9 kB
@@ -540,14 +540,14 @@ Route (app)                                                         Size     Fir
 ├ ƒ /pro/organization/branch/[id]                                   13.1 kB         154 kB
 ├ ƒ /pro/organization/stats                                         4.71 kB         211 kB
 ├ ƒ /pro/partners                                                   5.86 kB         169 kB
-├ ƒ /pro/partners/find                                              242 B          89.5 kB
+├ ƒ /pro/partners/find                                              243 B          89.5 kB
 ├ ƒ /pro/pro-clients                                                3.83 kB         170 kB
 ├ ƒ /pro/pro-clients/lookup                                         3.22 kB        92.5 kB
 ├ ƒ /pro/profile                                                    34.5 kB         194 kB
 ├ ƒ /pro/programs                                                   3.55 kB         102 kB
 ├ ƒ /pro/programs/[code]/connect                                    2.19 kB         100 kB
 ├ ƒ /pro/programs/certificates                                      243 B          89.5 kB
-├ ƒ /pro/programs/certificates/limits                               243 B          89.5 kB
+├ ƒ /pro/programs/certificates/limits                               244 B          89.5 kB
 ├ ƒ /pro/programs/cross-requests                                    4.15 kB         102 kB
 ├ ƒ /pro/programs/pro-clients                                       243 B          89.5 kB
 ├ ƒ /pro/projects                                                   3.96 kB         102 kB
@@ -563,20 +563,18 @@ Route (app)                                                         Size     Fir
 ├ ƒ /shared/[code]/opengraph-image                                  0 B                0 B
 ├ ○ /sitemap.xml                                                    0 B                0 B
 ├ ○ /store                                                          1.69 kB          91 kB
-├ ○ /○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
-
-[start] next start -p 3421
+├ ○ /store/partners                                                 3.31 kB         166 kB
+�[start] next start -p 3421
 {"status":"ok","service":"remcard","database":"ok","deployment":"legacy","release":"unknown"}
-[start] backend OK pid=576908 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/backend.log
+[start] backend OK pid=584775 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/backend.log
 [start-frontend] clean .next + npm run build (REMCARD_API_BASE_URL=http://127.0.0.1:3421)
 [start-frontend] next start -p 3420
-[start-frontend] OK pid=577112 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/frontend.log
+[start-frontend] OK pid=584973 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/frontend.log
 [start-frontend] REMCARD_API_BASE_URL=http://127.0.0.1:3421
 [browser-gate] seed synthetic moderation fixtures (fresh pending org/partners)
 {
   "ok": true,
-  "pendingOrgId": "cmvmjs6h70004jscyui9s5399"
+  "pendingOrgId": "cmvmks30q0004jsfbveyxwjnc"
 }
 [moderation-e2e] OK — passed screenshots in /agent/repos/remcard-partner-platform/artifacts/prof-admin-moderation-ux-02/screenshots/passed
 [browser-gate] log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/browser-gate.log
@@ -585,15 +583,15 @@ as static content
 
 [start] next start -p 3421
 {"status":"ok","service":"remcard","database":"ok","deployment":"legacy","release":"unknown"}
-[start] backend OK pid=576908 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/backend.log
+[start] backend OK pid=584775 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/backend.log
 [start-frontend] clean .next + npm run build (REMCARD_API_BASE_URL=http://127.0.0.1:3421)
 [start-frontend] next start -p 3420
-[start-frontend] OK pid=577112 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/frontend.log
+[start-frontend] OK pid=584973 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/frontend.log
 [start-frontend] REMCARD_API_BASE_URL=http://127.0.0.1:3421
 [browser-gate] seed synthetic moderation fixtures (fresh pending org/partners)
 {
   "ok": true,
-  "pendingOrgId": "cmvmjs6h70004jscyui9s5399"
+  "pendingOrgId": "cmvmks30q0004jsfbveyxwjnc"
 }
 [moderation-e2e] OK — passed screenshots in /agent/repos/remcard-partner-platform/artifacts/prof-admin-moderation-ux-02/screenshots/passed
 [browser-gate] log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/browser-gate.log
