@@ -27,7 +27,7 @@ Preview uses **catalogUnderReview/submitted** snapshot from backend `buildProfOr
 
 | Role | Repository | SHA |
 |------|------------|-----|
-| **Runtime frontend (tested)** | remcard-partner-platform | `1b655c865456da83449a615a84a58f0a095ed2c3` |
+| **Runtime frontend (tested)** | remcard-partner-platform | `a2bfd7ba8af1030440e81059264c54a1625fcbab` |
 | **Backend (unchanged baseline)** | remcard-navigator | `0255c94a96f68c3b102662c677b44846be9636ae` |
 
 Backend moderation mutations / 409 / security: **reuse** prior `prof-admin-catalog-moderation-01` evidence on `0255c94a` (not re-run this turn).
