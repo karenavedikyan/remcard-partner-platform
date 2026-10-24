@@ -581,14 +581,18 @@ function ProfileEditorInner({
     ) {
       setSpecializations(mergedSpecs);
     }
-    if (
+    if (catalogOnOrg) {
+      if (
+        mergedStages.length !== orgCatalogNavigatorStageIds.length ||
+        mergedStages.some((id, i) => id !== orgCatalogNavigatorStageIds[i])
+      ) {
+        setOrgCatalogNavigatorStageIds(mergedStages);
+      }
+    } else if (
       mergedStages.length !== catalogNavigatorStageIds.length ||
       mergedStages.some((id, i) => id !== catalogNavigatorStageIds[i])
     ) {
       setCatalogNavigatorStageIds(mergedStages);
-      if (catalogOnOrg) {
-        setOrgCatalogNavigatorStageIds(mergedStages);
-      }
     }
     const mergedStore = merged.storeCategories ?? [];
     if (
@@ -613,6 +617,7 @@ function ProfileEditorInner({
     catalogImageUrl,
     specializations,
     catalogNavigatorStageIds,
+    orgCatalogNavigatorStageIds,
     storeCategories,
     catalogOnOrg,
   ]);

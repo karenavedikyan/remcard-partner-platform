@@ -215,6 +215,56 @@ describe("catalog prefill from saved profile", () => {
     expect(seed.catalogCity).toBe("Сочи");
   });
 
+  it("STORE org seed ignores user.catalogCity (non-org provenance)", () => {
+    const seed = workingProfileCatalogSeed(
+      profile({
+        user: {
+          partnerType: "STORE",
+          city: "Сочи",
+          catalogCity: "Москва",
+        },
+        organization: {
+          id: "o1",
+          name: "Магазин",
+          catalogStatus: "DRAFT",
+          partnerType: "STORE",
+          branchCount: 0,
+          publicCatalogCity: "",
+          storeCategories: [],
+        },
+        catalogPublication: {
+          catalogEntity: "organization",
+          isLivePublic: false,
+          draftPending: false,
+        },
+      }),
+    );
+    expect(seed.catalogCity).toBe("Сочи");
+  });
+
+  it("STORE org seed prefers publicCatalogCity over working city", () => {
+    const seed = workingProfileCatalogSeed(
+      profile({
+        user: { partnerType: "STORE", city: "Сочи" },
+        organization: {
+          id: "o1",
+          name: "Магазин",
+          catalogStatus: "DRAFT",
+          partnerType: "STORE",
+          branchCount: 1,
+          publicCatalogCity: "Анапа",
+          storeCategories: [],
+        },
+        catalogPublication: {
+          catalogEntity: "organization",
+          isLivePublic: false,
+          draftPending: false,
+        },
+      }),
+    );
+    expect(seed.catalogCity).toBe("Анапа");
+  });
+
   it("STORE org seed prefers empty publicCatalogCity then working city", () => {
     const seed = workingProfileCatalogSeed(
       profile({
