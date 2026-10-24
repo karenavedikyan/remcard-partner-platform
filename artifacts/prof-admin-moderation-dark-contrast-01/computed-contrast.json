@@ -1,102 +1,1021 @@
 {
-  "light": {
-    "pending": {
-      "label": "На проверке",
-      "raw": {
-        "color": "rgb(120, 53, 15)",
-        "backgroundColor": "rgb(255, 251, 235)",
-        "borderTopColor": "rgb(217, 119, 6)"
-      },
-      "fg": "#78350f",
-      "bg": "#fffbeb",
-      "ratio": 8.74845105788553
-    },
-    "testBadge": {
-      "label": "Тестовый партнёр",
-      "raw": {
-        "color": "rgb(146, 64, 14)",
-        "backgroundColor": "rgb(254, 243, 199)",
-        "borderTopColor": "rgb(245, 158, 11)"
-      },
-      "fg": "#92400e",
-      "bg": "#fef3c7",
-      "ratio": 6.367237188363559
-    },
-    "company": null
+  "metadata": {
+    "frontendRuntimeSha": "be43ffc8a34088392635fb9e9079b5929369c117",
+    "backendRuntimeSha": "5a2c2a7d9d5c03f2b948626dea2a987daa0422a4",
+    "evidenceCapturedAt": "2026-10-24T22:14:34.012Z",
+    "profUrl": "http://127.0.0.1:3420",
+    "evidenceRepoHeadAtCapture": "67663509ced2899d8bcbc901019618ff529e424b",
+    "measuredSurfaces": [
+      "org detail header badges: На проверке, Тестовый партнёр (computed fg/bg, all captured viewports)"
+    ],
+    "buttonStateProbe": "secondary/primary action + preview buttons: default/hover/focus-visible contrast asserted; disabled recorded only (opacity, no WCAG claim)",
+    "notMeasuredInBrowser": [
+      "queue list cards",
+      "partner detail page",
+      "loading spinner buttons",
+      "readiness list chips (CSS-only regression)"
+    ]
   },
-  "dark": {
-    "pending": {
-      "label": "На проверке",
-      "raw": {
-        "color": "rgb(254, 243, 199)",
-        "backgroundColor": "rgb(120, 53, 15)",
-        "borderTopColor": "rgb(251, 191, 36)"
+  "results": {
+    "light": {
+      "pending": {
+        "label": "На проверке",
+        "raw": {
+          "color": "rgb(120, 53, 15)",
+          "backgroundColor": "rgb(255, 251, 235)",
+          "borderTopColor": "rgb(217, 119, 6)"
+        },
+        "fg": "#78350f",
+        "bg": "#fffbeb",
+        "ratio": 8.74845105788553
       },
-      "fg": "#fef3c7",
-      "bg": "#78350f",
-      "ratio": 8.147351692651375
-    },
-    "testBadge": {
-      "label": "Тестовый партнёр",
-      "raw": {
-        "color": "rgb(253, 230, 138)",
-        "backgroundColor": "rgb(146, 64, 14)",
-        "borderTopColor": "rgb(252, 211, 77)"
+      "testBadge": {
+        "label": "Тестовый партнёр",
+        "raw": {
+          "color": "rgb(146, 64, 14)",
+          "backgroundColor": "rgb(254, 243, 199)",
+          "borderTopColor": "rgb(245, 158, 11)"
+        },
+        "fg": "#92400e",
+        "bg": "#fef3c7",
+        "ratio": 6.367237188363559
       },
-      "fg": "#fde68a",
-      "bg": "#92400e",
-      "ratio": 5.693055806290443
+      "buttons": [
+        {
+          "name": "/каталоге · список/i",
+          "states": [
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(254, 253, 253)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#fefdfd",
+              "ratio": 14.564136867629173,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "/каталоге · полная карточка/i",
+          "states": [
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(254, 253, 253)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#fefdfd",
+              "ratio": 14.564136867629173,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Одобрить заявку",
+          "states": [
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "default"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "hover"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Отклонить заявку",
+          "states": [
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "default"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "hover"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "disabled"
+            }
+          ]
+        }
+      ],
+      "dialogClose": {
+        "label": "Закрыть",
+        "raw": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(193, 43, 47)",
+          "borderTopColor": "rgb(255, 255, 255)"
+        },
+        "fg": "#ffffff",
+        "bg": "#c12b2f",
+        "ratio": 5.746986072166571,
+        "state": "default"
+      }
     },
-    "company": null
-  },
-  "dark1440": {
-    "pending": {
-      "label": "На проверке",
-      "raw": {
-        "color": "rgb(254, 243, 199)",
-        "backgroundColor": "rgb(120, 53, 15)",
-        "borderTopColor": "rgb(251, 191, 36)"
+    "dark": {
+      "pending": {
+        "label": "На проверке",
+        "raw": {
+          "color": "rgb(254, 243, 199)",
+          "backgroundColor": "rgb(120, 53, 15)",
+          "borderTopColor": "rgb(251, 191, 36)"
+        },
+        "fg": "#fef3c7",
+        "bg": "#78350f",
+        "ratio": 8.147351692651375
       },
-      "fg": "#fef3c7",
-      "bg": "#78350f",
-      "ratio": 8.147351692651375
-    },
-    "testBadge": {
-      "label": "Тестовый партнёр",
-      "raw": {
-        "color": "rgb(253, 230, 138)",
-        "backgroundColor": "rgb(146, 64, 14)",
-        "borderTopColor": "rgb(252, 211, 77)"
+      "testBadge": {
+        "label": "Тестовый партнёр",
+        "raw": {
+          "color": "rgb(253, 230, 138)",
+          "backgroundColor": "rgb(146, 64, 14)",
+          "borderTopColor": "rgb(252, 211, 77)"
+        },
+        "fg": "#fde68a",
+        "bg": "#92400e",
+        "ratio": 5.693055806290443
       },
-      "fg": "#fde68a",
-      "bg": "#92400e",
-      "ratio": 5.693055806290443
+      "buttons": [
+        {
+          "name": "/каталоге · список/i",
+          "states": [
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "/каталоге · полная карточка/i",
+          "states": [
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Одобрить заявку",
+          "states": [
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(181, 72, 68)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b54844",
+              "ratio": 5.282795102676187,
+              "state": "default"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(181, 72, 68)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b54844",
+              "ratio": 5.282795102676187,
+              "state": "hover"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(181, 72, 68)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b54844",
+              "ratio": 5.282795102676187,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(181, 72, 68)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b54844",
+              "ratio": 5.282795102676187,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Отклонить заявку",
+          "states": [
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "default"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "hover"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "disabled"
+            }
+          ]
+        }
+      ],
+      "dialogClose": {
+        "label": "Закрыть",
+        "raw": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(181, 72, 68)",
+          "borderTopColor": "rgb(255, 255, 255)"
+        },
+        "fg": "#ffffff",
+        "bg": "#b54844",
+        "ratio": 5.282795102676187,
+        "state": "default"
+      }
     },
-    "company": null
-  },
-  "light390": {
-    "pending": {
-      "label": "На проверке",
-      "raw": {
-        "color": "rgb(120, 53, 15)",
-        "backgroundColor": "rgb(255, 251, 235)",
-        "borderTopColor": "rgb(217, 119, 6)"
+    "dark1440": {
+      "pending": {
+        "label": "На проверке",
+        "raw": {
+          "color": "rgb(254, 243, 199)",
+          "backgroundColor": "rgb(120, 53, 15)",
+          "borderTopColor": "rgb(251, 191, 36)"
+        },
+        "fg": "#fef3c7",
+        "bg": "#78350f",
+        "ratio": 8.147351692651375
       },
-      "fg": "#78350f",
-      "bg": "#fffbeb",
-      "ratio": 8.74845105788553
-    },
-    "testBadge": {
-      "label": "Тестовый партнёр",
-      "raw": {
-        "color": "rgb(146, 64, 14)",
-        "backgroundColor": "rgb(254, 243, 199)",
-        "borderTopColor": "rgb(245, 158, 11)"
+      "testBadge": {
+        "label": "Тестовый партнёр",
+        "raw": {
+          "color": "rgb(253, 230, 138)",
+          "backgroundColor": "rgb(146, 64, 14)",
+          "borderTopColor": "rgb(252, 211, 77)"
+        },
+        "fg": "#fde68a",
+        "bg": "#92400e",
+        "ratio": 5.693055806290443
       },
-      "fg": "#92400e",
-      "bg": "#fef3c7",
-      "ratio": 6.367237188363559
+      "buttons": [
+        {
+          "name": "/каталоге · список/i",
+          "states": [
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "/каталоге · полная карточка/i",
+          "states": [
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgb(57, 64, 56)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Одобрить заявку",
+          "states": [
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(179, 71, 67)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b34743",
+              "ratio": 5.385877639930712,
+              "state": "default"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(181, 72, 68)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b54844",
+              "ratio": 5.282795102676187,
+              "state": "hover"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(181, 72, 68)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b54844",
+              "ratio": 5.282795102676187,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(178, 70, 66)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#b24642",
+              "ratio": 5.457765453949567,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Отклонить заявку",
+          "states": [
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "default"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "hover"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(240, 241, 236)",
+                "backgroundColor": "rgb(32, 37, 32)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#f0f1ec",
+              "bg": "#202520",
+              "ratio": 13.73406146865272,
+              "state": "disabled"
+            }
+          ]
+        }
+      ],
+      "dialogClose": {
+        "label": "Закрыть",
+        "raw": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(181, 72, 68)",
+          "borderTopColor": "rgb(255, 255, 255)"
+        },
+        "fg": "#ffffff",
+        "bg": "#b54844",
+        "ratio": 5.282795102676187,
+        "state": "default"
+      }
     },
-    "company": null
+    "light390": {
+      "pending": {
+        "label": "На проверке",
+        "raw": {
+          "color": "rgb(120, 53, 15)",
+          "backgroundColor": "rgb(255, 251, 235)",
+          "borderTopColor": "rgb(217, 119, 6)"
+        },
+        "fg": "#78350f",
+        "bg": "#fffbeb",
+        "ratio": 8.74845105788553
+      },
+      "testBadge": {
+        "label": "Тестовый партнёр",
+        "raw": {
+          "color": "rgb(146, 64, 14)",
+          "backgroundColor": "rgb(254, 243, 199)",
+          "borderTopColor": "rgb(245, 158, 11)"
+        },
+        "fg": "#92400e",
+        "bg": "#fef3c7",
+        "ratio": 6.367237188363559
+      },
+      "buttons": [
+        {
+          "name": "/каталоге · список/i",
+          "states": [
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · список/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "/каталоге · полная карточка/i",
+          "states": [
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "default"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "hover"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "focus-visible"
+            },
+            {
+              "label": "/каталоге · полная карточка/i",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgb(229, 229, 223)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Одобрить заявку",
+          "states": [
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "default"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "hover"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Одобрить заявку",
+              "raw": {
+                "color": "rgb(255, 255, 255)",
+                "backgroundColor": "rgb(193, 43, 47)",
+                "borderTopColor": "rgb(255, 255, 255)"
+              },
+              "fg": "#ffffff",
+              "bg": "#c12b2f",
+              "ratio": 5.746986072166571,
+              "state": "disabled"
+            }
+          ]
+        },
+        {
+          "name": "Отклонить заявку",
+          "states": [
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "default"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "hover"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "focus-visible"
+            },
+            {
+              "label": "Отклонить заявку",
+              "raw": {
+                "color": "rgb(37, 41, 35)",
+                "backgroundColor": "rgb(255, 255, 255)",
+                "borderTopColor": "rgba(0, 0, 0, 0)"
+              },
+              "fg": "#252923",
+              "bg": "#ffffff",
+              "ratio": 14.787607342185408,
+              "state": "disabled"
+            }
+          ]
+        }
+      ],
+      "dialogClose": {
+        "label": "Закрыть",
+        "raw": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(193, 43, 47)",
+          "borderTopColor": "rgb(255, 255, 255)"
+        },
+        "fg": "#ffffff",
+        "bg": "#c12b2f",
+        "ratio": 5.746986072166571,
+        "state": "default"
+      }
+    }
   }
 }

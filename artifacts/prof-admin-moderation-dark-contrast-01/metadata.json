@@ -1,0 +1,17 @@
+{
+  "frontendRuntimeSha": "be43ffc8a34088392635fb9e9079b5929369c117",
+  "backendRuntimeSha": "5a2c2a7d9d5c03f2b948626dea2a987daa0422a4",
+  "evidenceCapturedAt": "2026-10-24T22:14:34.012Z",
+  "profUrl": "http://127.0.0.1:3420",
+  "evidenceRepoHeadAtCapture": "67663509ced2899d8bcbc901019618ff529e424b",
+  "measuredSurfaces": [
+    "org detail header badges: На проверке, Тестовый партнёр (computed fg/bg, all captured viewports)"
+  ],
+  "buttonStateProbe": "secondary/primary action + preview buttons: default/hover/focus-visible contrast asserted; disabled recorded only (opacity, no WCAG claim)",
+  "notMeasuredInBrowser": [
+    "queue list cards",
+    "partner detail page",
+    "loading spinner buttons",
+    "readiness list chips (CSS-only regression)"
+  ]
+}

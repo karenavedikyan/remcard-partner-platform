@@ -1,64 +1,47 @@
 # PROF admin moderation — dark contrast hotfix evidence
 
-## Runtime refs (unchanged backend / prior UX-02 baseline)
+## Runtime refs (production unchanged)
 
-| Role | SHA |
-|------|-----|
-| UX-02 published frontend (branch base) | `8b417145ce7c78761e1b86fc833bd28794559da3` |
-| Backend (unchanged) | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
-| This hotfix frontend | see `git rev-parse HEAD` on branch `fix/prof-admin-moderation-dark-contrast-01` after evidence commit |
+| Role | Exact SHA |
+|------|-----------|
+| **Frontend runtime (product hotfix)** | `be43ffc8a34088392635fb9e9079b5929369c117` |
+| **Backend runtime (unchanged)** | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
+| **UX-02 published frontend base** | `8b417145ce7c78761e1b86fc833bd28794559da3` |
 
-Production was **not** deployed or modified.
+Evidence files in this directory belong to the **evidence commit** that contains them (see git history on branch `fix/prof-admin-moderation-dark-contrast-01`). Evidence commits do **not** change the product runtime SHA above.
 
-## Fix summary
+Production deploy, backend, env, and release refs were **not** modified.
 
-Explicit light/dark foreground, background, and border pairs for organization detail badges (pending, test), queue `badgeTest`, and related status chips. WCAG regression tests in `src/lib/moderation-badge-contrast.*`.
+## What was measured vs not
 
-## Harness
+**Browser (computed fg/bg, ≥4.5:1 asserted in capture script):**
 
-Isolated catalog QA on loopback: PG `:55432`, backend `:3421` @ `5a2c2a7d`, PROF `:3420` production build of this branch. Synthetic fixtures via `seed-moderation-fixtures.ts` (no production accounts or real moderation actions).
+- Org detail header badges **«На проверке»** and **«Тестовый партнёр»** — light/dark, 390×844 and 1440 (see `computed-contrast.json`, `metadata.json`).
+- Org detail **preview + decision buttons** — default / hover / focus-visible text contrast asserted; **disabled** sampled only (opacity 0.55, no WCAG claim).
 
-## Browser evidence
+**CSS file regression (vitest, reads `OrganizationModerationDetail.module.css` + `AdminModeration.module.css`):**
 
-Script: `npx tsx scripts/prof-admin-moderation-dark-contrast/capture-evidence.ts`  
-Env: `CATALOG_QA_ROOT=/agent/repos/remcard-navigator/.catalog-qa-isolated`, `PROF_E2E_URL=http://127.0.0.1:3420`
+- `badgePending`, `badgeTest`, `statusOk`, `statusError`, queue `badgeTest` light + `:global([data-theme="dark"])` pairs.
 
-Screenshots: `artifacts/prof-admin-moderation-dark-contrast-01/screenshots/`  
-Computed styles: `computed-contrast.json`
+**Not measured in browser (no claim):**
 
-## Measured contrast (computed in Chromium, opaque RGB)
+- Moderation queue list, partner detail, loading-state buttons, full approve/revise/reject dialog confirm flows.
 
-| Surface | Theme | Viewport | Foreground | Background | Ratio | AA 4.5:1 |
-|---------|-------|----------|------------|------------|-------|----------|
-| «На проверке» | light | 1440 | `#78350f` | `#fffbeb` | 8.75:1 | pass |
-| «Тестовый партнёр» | light | 1440 | `#92400e` | `#fef3c7` | 6.37:1 | pass |
-| «На проверке» | dark | 390 | `#fef3c7` | `#78350f` | 8.15:1 | pass |
-| «Тестовый партнёр» | dark | 390 | `#fde68a` | `#92400e` | 5.69:1 | pass |
-| «На проверке» | dark | 1440 | `#fef3c7` | `#78350f` | 8.15:1 | pass |
-| «Тестовый партнёр» | dark | 1440 | `#fde68a` | `#92400e` | 5.69:1 | pass |
+## Regression proof
 
-Dark pending/test no longer use light `--ink` on light yellow fills (pre-fix defect).
+See `css-regression-demo.log`: temporarily setting dark `.badgePending` to light-on-light **fails** `src/lib/moderation-badge-contrast.test.ts`; restored CSS passes.
 
-## Commands and exit codes
+## Commands (exit codes)
 
 | Command | Exit |
 |---------|------|
-| `npx vitest run` (10 moderation files listed in task) | 0 |
+| `npx vitest run src/lib/moderation-badge-contrast.test.ts` | 0 |
+| Moderation-focused vitest subset (41 tests, same list as UX-02 gate) | 0 |
 | `npx tsc --noEmit` | 0 |
-| `npm run build` | 0 |
-| `npx tsx scripts/prof-admin-moderation-dark-contrast/capture-evidence.ts` | 0 |
+| `MODERATION_HOTFIX_FE_SHA=be43ffc… npx tsx scripts/prof-admin-moderation-dark-contrast/capture-evidence.ts` | 0 |
 
-## Files touched (product)
+Capture requires loopback harness (PG `:55432`, backend `:3421`, PROF `:3420` build pinned to FE runtime) and `CATALOG_QA_ROOT` fixtures.
 
-- `src/app/admin/moderation/organizations/[id]/OrganizationModerationDetail.module.css`
-- `src/app/admin/moderation/AdminModeration.module.css`
-- `src/app/admin/moderation/partners/[id]/PartnerModerationDetailClient.tsx`
-- `src/lib/moderation-badge-contrast.ts`
-- `src/lib/moderation-badge-contrast.pairs.ts`
-- `src/lib/moderation-badge-contrast.test.ts`
-- `vitest.config.ts`
+## Measured badge contrast (Chromium)
 
-Evidence-only:
-
-- `scripts/prof-admin-moderation-dark-contrast/capture-evidence.ts`
-- `artifacts/prof-admin-moderation-dark-contrast-01/**`
+Values in `computed-contrast.json` — dark 390 pending/test both ≥4.5:1 after fix.
