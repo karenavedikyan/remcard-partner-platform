@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   buildModerationOrgPreviewRevisionQuery,
   fetchModerationOrganizationPublicPreview,
+  moderationOrgPreviewRevisionFetchKey,
 } from "@/lib/prof-admin-moderation-api";
 import { RemcardApiError } from "@/lib/api-client";
 
@@ -14,6 +15,23 @@ vi.mock("@/lib/api-client", async (importOriginal) => {
 });
 
 import { remcardFetch } from "@/lib/api-client";
+
+describe("moderationOrgPreviewRevisionFetchKey", () => {
+  it("is stable for the same revision data across new object identities", () => {
+    const branches = [{ id: "p1", catalogStatus: "PENDING", revisionToken: "b1" }];
+    const a = moderationOrgPreviewRevisionFetchKey({
+      id: "org",
+      revisionToken: "rev",
+      branches,
+    });
+    const b = moderationOrgPreviewRevisionFetchKey({
+      id: "org",
+      revisionToken: "rev",
+      branches: [...branches],
+    });
+    expect(a).toBe(b);
+  });
+});
 
 describe("buildModerationOrgPreviewRevisionQuery", () => {
   it("includes only pending branch revision tokens", () => {

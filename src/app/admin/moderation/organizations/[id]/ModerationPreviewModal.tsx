@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CatalogPublicationPreview } from "@/components/profile/CatalogPublicationPreview";
 import { Button } from "@/components/ui/Button";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   buildModerationOrgPreviewRevisionQuery,
   fetchModerationOrganizationPublicPreview,
+  moderationOrgPreviewRevisionFetchKey,
 } from "@/lib/prof-admin-moderation-api";
 import { buildModerationOrgCatalogPreviewInput } from "@/lib/prof-admin-moderation-org-display";
 import type { ModerationOrgDetail } from "@/lib/prof-admin-moderation-org-display";
@@ -32,24 +33,33 @@ export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
   const [fullError, setFullError] = useState<string | null>(null);
   const [fullLoading, setFullLoading] = useState(false);
   const loadGenRef = useRef(0);
+  const orgRef = useRef(org);
+  orgRef.current = org;
 
-  const revisionQuery = buildModerationOrgPreviewRevisionQuery(org);
+  const revisionFetchKey = moderationOrgPreviewRevisionFetchKey(org);
 
-  const loadFull = useCallback(
-    async (signal: AbortSignal) => {
-      const gen = ++loadGenRef.current;
-      setFullLoading(true);
-      setFullError(null);
+  useEffect(() => {
+    if (!open || mode !== "full") return;
+
+    const ac = new AbortController();
+    const gen = ++loadGenRef.current;
+    const { id: orgId, revisionToken } = orgRef.current;
+    const revisionQuery = buildModerationOrgPreviewRevisionQuery(orgRef.current);
+
+    setFullLoading(true);
+    setFullError(null);
+
+    void (async () => {
       try {
-        const res = await fetchModerationOrganizationPublicPreview(org.id, {
+        const res = await fetchModerationOrganizationPublicPreview(orgId, {
           ...revisionQuery,
-          signal,
+          signal: ac.signal,
         });
         if (gen !== loadGenRef.current) return;
         const payload = res as ModerationPublicPreviewPayload;
         if (
           payload.organizationRevisionToken &&
-          payload.organizationRevisionToken !== org.revisionToken
+          payload.organizationRevisionToken !== revisionToken
         ) {
           setFullPayload(null);
           setFullError(staleRevisionUserMessage());
@@ -68,19 +78,13 @@ export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
       } finally {
         if (gen === loadGenRef.current) setFullLoading(false);
       }
-    },
-    [org.id, org.revisionToken, revisionQuery],
-  );
+    })();
 
-  useEffect(() => {
-    if (!open || mode !== "full") return;
-    const ac = new AbortController();
-    void loadFull(ac.signal);
     return () => {
       ac.abort();
       loadGenRef.current += 1;
     };
-  }, [open, mode, loadFull]);
+  }, [open, mode, revisionFetchKey]);
 
   useEffect(() => {
     if (!open) {

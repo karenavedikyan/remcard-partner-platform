@@ -55,6 +55,7 @@ export default defineConfig({
       "src/lib/remcard-proxy-moderation.test.ts",
       "src/app/admin/moderation/organizations/[id]/OrganizationModerationDetail.actions.test.tsx",
       "src/app/admin/moderation/organizations/[id]/ModerationConfirmDialog.test.tsx",
+      "src/app/admin/moderation/organizations/[id]/ModerationPreviewModal.test.tsx",
       "src/lib/theme-preference.test.ts",
       "src/lib/prof-notifications.test.ts",
       "src/lib/prof-notification-target.test.ts",

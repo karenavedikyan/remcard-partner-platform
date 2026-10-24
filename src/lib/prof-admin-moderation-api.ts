@@ -76,6 +76,20 @@ export function buildModerationOrgPreviewRevisionQuery(org: {
   return { orgRevision: org.revisionToken, branchRevisions };
 }
 
+/** Stable primitive for effects — avoids refetch loops from new object identity each render. */
+export function moderationOrgPreviewRevisionFetchKey(org: {
+  id: string;
+  revisionToken: string;
+  branches: { id: string; catalogStatus: string; revisionToken?: string }[];
+}): string {
+  const q = buildModerationOrgPreviewRevisionQuery(org);
+  const branchPart = Object.keys(q.branchRevisions)
+    .sort()
+    .map((id) => `${id}=${q.branchRevisions[id]}`)
+    .join("&");
+  return `${org.id}|${q.orgRevision}|${branchPart}`;
+}
+
 export async function moderationPartnerAction(
   userId: string,
   action: "approve" | "reject" | "revise",
