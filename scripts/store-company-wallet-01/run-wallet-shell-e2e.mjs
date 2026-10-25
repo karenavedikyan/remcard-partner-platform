@@ -162,14 +162,25 @@ async function requisitesUiFlow(page, label, tag) {
   await page.getByTestId("bank-bank").fill("Gate Bank");
   await page.getByTestId("bank-bik").fill("044525225");
   await page.getByTestId("bank-account").fill("40817810099910004312");
+  const saveWait = page.waitForResponse(
+    (r) =>
+      r.url().includes("/agent-payout-requisites") &&
+      r.request().method() === "POST" &&
+      r.status() >= 200 &&
+      r.status() < 300,
+    { timeout: 60_000 },
+  );
   await page.getByTestId("bank-save").click();
-  await page.waitForTimeout(800);
+  const saveRes = await saveWait;
+  const saved = await saveRes.json();
+  const createdItem = saved.item;
+  assert(createdItem?.id, `${label}: requisites POST created`);
   const listAfter = await page.request.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
     headers: proxyHeaders(),
   });
   const body = await listAfter.json();
-  const item = (body.items ?? []).find((i) => i.legalName === legalName);
-  assert(item?.id, `${label}: requisites created`);
+  const item = (body.items ?? []).find((i) => i.id === createdItem.id);
+  assert(item?.id, `${label}: requisites in list`);
   assert(!item?.accountNumber, `${label}: list masked account`);
   assert(item?.accountNumberMasked, `${label}: masked present`);
   const detail = await page.request.get(
