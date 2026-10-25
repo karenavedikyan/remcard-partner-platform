@@ -10,7 +10,10 @@ import {
 } from "@/lib/certificate-percent";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { RemcardApiError } from "@/lib/api-client";
-import { patchSpecialistIssuerCertificate } from "@/lib/specialist-certificates/api";
+import {
+  type IssuerCertificatesApiMode,
+  issuerCertificatesApi,
+} from "@/lib/business-owner-certificates/issuer-api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import styles from "./agent-r03.module.css";
@@ -62,11 +65,19 @@ function buildRows(cert: AgentCertificateRow): RowModel[] {
 type Props = {
   open: boolean;
   cert: AgentCertificateRow | null;
+  issuerListApi?: IssuerCertificatesApiMode;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 };
 
-export function SpecialistCertificateEditDiscountsDialog({ open, cert, onClose, onSaved }: Props) {
+export function SpecialistCertificateEditDiscountsDialog({
+  open,
+  cert,
+  issuerListApi = "specialist",
+  onClose,
+  onSaved,
+}: Props) {
+  const patchIssuer = issuerCertificatesApi(issuerListApi).patchCertificate;
   const rows = useMemo(() => (cert ? buildRows(cert) : []), [cert]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -139,7 +150,7 @@ export function SpecialistCertificateEditDiscountsDialog({ open, cert, onClose, 
     setSaving(true);
     setSubmitError("");
     try {
-      await patchSpecialistIssuerCertificate(cert.id, {
+      await patchIssuer(cert.id, {
         action: "updateDiscounts",
         updates,
       });

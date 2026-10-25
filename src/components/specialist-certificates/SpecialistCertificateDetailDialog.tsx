@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { StoreCertificate } from "@/lib/certificate-types";
-import { fetchSpecialistIssuerCertificate } from "@/lib/specialist-certificates/api";
+import {
+  type IssuerCertificatesApiMode,
+  issuerCertificatesApi,
+} from "@/lib/business-owner-certificates/issuer-api";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { CertificateResultView } from "@/components/recommendations/CertificateResultView";
 import { SpecialistCertificateEditDetailsDialog } from "./SpecialistCertificateEditDetailsDialog";
@@ -15,6 +18,7 @@ import styles from "@/components/recommendations/recommendations.module.css";
 type Props = {
   open: boolean;
   certificateId: string | null;
+  issuerListApi?: IssuerCertificatesApiMode;
   onClose: () => void;
   onListMutated?: () => void;
 };
@@ -22,9 +26,11 @@ type Props = {
 export function SpecialistCertificateDetailDialog({
   open,
   certificateId,
+  issuerListApi = "specialist",
   onClose,
   onListMutated,
 }: Props) {
+  const fetchIssuerMeta = issuerCertificatesApi(issuerListApi).fetchCertificate;
   const [storeCert, setStoreCert] = useState<StoreCertificate | null>(null);
   const [meta, setMeta] = useState<AgentCertificateRow | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
@@ -39,7 +45,7 @@ export function SpecialistCertificateDetailDialog({
     try {
       const [store, agent] = await Promise.all([
         remcardFetch<StoreCertificate>(`/api/store/certificate/${encodeURIComponent(certificateId)}`),
-        fetchSpecialistIssuerCertificate(certificateId),
+        fetchIssuerMeta(certificateId),
       ]);
       setStoreCert(store);
       setMeta(agent.certificate);
@@ -132,6 +138,7 @@ export function SpecialistCertificateDetailDialog({
       <SpecialistCertificateEditDetailsDialog
         open={editDetailsOpen}
         cert={meta}
+        issuerListApi={issuerListApi}
         onClose={() => setEditDetailsOpen(false)}
         onSaved={() => {
           void load();
@@ -141,6 +148,7 @@ export function SpecialistCertificateDetailDialog({
       <SpecialistCertificateEditDiscountsDialog
         open={editDiscountsOpen}
         cert={meta}
+        issuerListApi={issuerListApi}
         onClose={() => setEditDiscountsOpen(false)}
         onSaved={() => {
           void load();

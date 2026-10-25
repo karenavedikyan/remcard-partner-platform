@@ -135,6 +135,12 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET", "PATCH", "DELETE"]),
       pattern: /^\/api\/pro\/specialist-issuer-certificates\/[\w-]+$/,
     },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/business-owner-certificates$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/business-owner-certificates\/batch$/ },
+    {
+      methods: new Set(["GET", "PATCH", "DELETE"]),
+      pattern: /^\/api\/pro\/business-owner-certificates\/[\w-]+$/,
+    },
     {
       methods: new Set(["PATCH"]),
       pattern: /^\/api\/certificate\/[\w-]+\/alias$/,

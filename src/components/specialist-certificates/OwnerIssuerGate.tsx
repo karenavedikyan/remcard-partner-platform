@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { RemcardApiError } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { mapRecommendationsPathToAgentCertificates } from "@/lib/specialist-certificates/recommendationsRedirect";
+import { shouldRenderBusinessOwnerHome } from "@/lib/business-home/gate";
+import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
 import {
@@ -18,13 +20,20 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<OwnerIssuerAccessMode | null>(null);
+  const [businessPartnerType, setBusinessPartnerType] = useState<"STORE" | "COMPANY" | undefined>(
+    undefined,
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([fetchAgentR03Status(), fetchSpecialistR06Status()])
-      .then(([r03, r06]) => {
+    void Promise.all([
+      fetchAgentR03Status(),
+      fetchSpecialistR06Status(),
+      remcardFetch<AuthUser>("/api/auth/me"),
+    ])
+      .then(([r03, r06, me]) => {
         if (cancelled) return;
         const r03Eligible = Boolean(r03.featureEnabled && r03.eligible);
         const r06Eligible = Boolean(r06.featureEnabled && r06.eligible);
@@ -36,6 +45,13 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
         }
         if (r06Eligible) {
           setMode("specialist");
+          return;
+        }
+        if (shouldRenderBusinessOwnerHome(me)) {
+          setMode("business");
+          if (me.partnerType === "STORE" || me.partnerType === "COMPANY") {
+            setBusinessPartnerType(me.partnerType);
+          }
           return;
         }
         setMode("legacy");
@@ -67,5 +83,9 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
     );
   }
   if (!mode) return null;
-  return <OwnerIssuerModeProvider mode={mode}>{children}</OwnerIssuerModeProvider>;
+  return (
+    <OwnerIssuerModeProvider mode={mode} businessPartnerType={businessPartnerType}>
+      {children}
+    </OwnerIssuerModeProvider>
+  );
 }

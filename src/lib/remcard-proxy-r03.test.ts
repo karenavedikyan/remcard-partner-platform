@@ -11,6 +11,9 @@ describe("R03 BFF allowlist", () => {
     expect(isAllowedProxyRoute("GET", "/api/pro/specialist-issuer-certificates")).toBe(true);
     expect(isAllowedProxyRoute("POST", "/api/pro/specialist-issuer-certificates/batch")).toBe(true);
     expect(isAllowedProxyRoute("PATCH", "/api/pro/specialist-issuer-certificates/cert-1")).toBe(true);
+    expect(isAllowedProxyRoute("GET", "/api/pro/business-owner-certificates")).toBe(true);
+    expect(isAllowedProxyRoute("POST", "/api/pro/business-owner-certificates/batch")).toBe(true);
+    expect(isAllowedProxyRoute("PATCH", "/api/pro/business-owner-certificates/cert-1")).toBe(true);
     expect(isAllowedProxyRoute("PATCH", "/api/certificate/RC-TEST/alias")).toBe(true);
   });
 });

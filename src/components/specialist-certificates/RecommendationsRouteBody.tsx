@@ -7,12 +7,18 @@ import { RecommendationCreateWithClient } from "@/components/recommendations/Rec
 import { SpecialistCertificateDetailRedirect } from "@/components/specialist-certificates/SpecialistCertificateDetailRedirect";
 import { SpecialistRecommendationsNewRedirect } from "@/components/specialist-certificates/SpecialistRecommendationsNewRedirect";
 import { OwnerIssuerGate } from "@/components/specialist-certificates/OwnerIssuerGate";
-import { useOwnerIssuerMode } from "@/components/specialist-certificates/OwnerIssuerModeContext";
+import {
+  useOwnerIssuerMode,
+  useOwnerIssuerModeValue,
+} from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { SpecialistCertificatesList } from "@/components/specialist-certificates/SpecialistCertificatesList";
+import { AgentCertificatesList } from "@/components/agent-r03/AgentCertificatesList";
+import { businessCertificatesPageCopy } from "@/lib/business-owner-certificates/copy";
 import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
 
 function RecommendationsListPageContent() {
   const mode = useOwnerIssuerMode();
+  const modeValue = useOwnerIssuerModeValue();
   if (mode === "specialist") {
     return (
       <>
@@ -21,6 +27,17 @@ function RecommendationsListPageContent() {
           title={SPECIALIST_CERTIFICATES_PAGE.title}
         />
         <SpecialistCertificatesList />
+      </>
+    );
+  }
+  if (mode === "business") {
+    const copy = businessCertificatesPageCopy({
+      partnerType: modeValue?.businessPartnerType ?? "STORE",
+    });
+    return (
+      <>
+        <PageHeading eyebrow={copy.eyebrow} title={copy.title} />
+        <AgentCertificatesList accessMode="business" />
       </>
     );
   }
@@ -38,7 +55,7 @@ function RecommendationsListPageContent() {
 
 function RecommendationsCreatePageContent() {
   const mode = useOwnerIssuerMode();
-  if (mode === "specialist") {
+  if (mode === "specialist" || mode === "business") {
     return <SpecialistRecommendationsNewRedirect />;
   }
   return (
@@ -55,7 +72,7 @@ function RecommendationsCreatePageContent() {
 
 function RecommendationsDetailPageContent({ certificateId }: { certificateId: string }) {
   const mode = useOwnerIssuerMode();
-  if (mode === "specialist") {
+  if (mode === "specialist" || mode === "business") {
     return <SpecialistCertificateDetailRedirect certificateId={certificateId} />;
   }
   return (

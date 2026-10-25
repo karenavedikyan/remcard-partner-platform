@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { RemcardApiError } from "@/lib/api-client";
-import { patchSpecialistIssuerCertificate } from "@/lib/specialist-certificates/api";
+import {
+  type IssuerCertificatesApiMode,
+  issuerCertificatesApi,
+} from "@/lib/business-owner-certificates/issuer-api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import agentStyles from "@/components/agent-r03/agent-r03.module.css";
@@ -12,11 +15,19 @@ import styles from "@/components/recommendations/recommendations.module.css";
 type Props = {
   open: boolean;
   cert: AgentCertificateRow | null;
+  issuerListApi?: IssuerCertificatesApiMode;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 };
 
-export function SpecialistCertificateEditDetailsDialog({ open, cert, onClose, onSaved }: Props) {
+export function SpecialistCertificateEditDetailsDialog({
+  open,
+  cert,
+  issuerListApi = "specialist",
+  onClose,
+  onSaved,
+}: Props) {
+  const patchIssuer = issuerCertificatesApi(issuerListApi).patchCertificate;
   const [alias, setAlias] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -60,7 +71,7 @@ export function SpecialistCertificateEditDetailsDialog({ open, cert, onClose, on
     setSaving(true);
     setError("");
     try {
-      await patchSpecialistIssuerCertificate(cert.id, { userAlias: trimmed });
+      await patchIssuer(cert.id, { userAlias: trimmed });
       await onSaved();
       onClose();
     } catch (caught) {
