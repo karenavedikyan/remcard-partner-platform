@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "art": "/agent/repos/remcard-partner-platform/artifacts/store-company-home-adapt-02/visual-shell",
+  "frontendRuntimeSha": "76384901f56625106ef815dbae6186cb2a1483c1",
+  "backendRuntimeSha": "c47715634ffb2b21908c05570c5a11291a4460f6",
+  "profUrl": "http://127.0.0.1:3420",
+  "harnessState": "/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json",
+  "capturedAt": "2026-10-25T08:57:14.028Z",
+  "failures": []
+}

@@ -19,7 +19,7 @@ describe("business owner home gate", () => {
     ).toBe(true);
   });
 
-  it("keeps legacy home for pure agent and staff", () => {
+  it("keeps legacy home for pure agent even when partnerType is STORE", () => {
     expect(
       shouldRenderBusinessOwnerHome({
         role: "PRO",
@@ -27,6 +27,9 @@ describe("business owner home gate", () => {
         partnerActivities: ["AGENT"],
       }),
     ).toBe(false);
+  });
+
+  it("keeps legacy home for non-pro and master", () => {
     expect(
       shouldRenderBusinessOwnerHome({
         role: "CLIENT",
