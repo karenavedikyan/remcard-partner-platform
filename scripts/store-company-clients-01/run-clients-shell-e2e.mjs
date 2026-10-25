@@ -116,11 +116,27 @@ async function createCertificateFromClient(page, clientId, label) {
   } else {
     await page.getByLabel("Скидка клиенту, %").first().fill("5");
   }
+  const postPromise = page.waitForResponse(
+    (r) =>
+      r.url().includes("/api/pro/business-owner-certificates") &&
+      r.request().method() === "POST",
+    { timeout: 120_000 },
+  );
   await page
     .getByTestId("specialist-certificate-create-step-2")
     .getByRole("button", { name: "Создать сертификат" })
     .click();
-  await page.getByTestId("specialist-certificate-preview").waitFor({ timeout: 120_000 });
+  const postRes = await postPromise;
+  assert(
+    postRes.status() >= 200 && postRes.status() < 300,
+    `${label}: cert POST ${postRes.status()} ${await postRes.text().catch(() => "")}`,
+  );
+  await page
+    .locator(
+      '[data-testid="specialist-certificate-preview"], [data-testid="recommendation-create-success"], [data-testid="certificate-code"]',
+    )
+    .first()
+    .waitFor({ timeout: 60_000 });
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
     { headers: proxyHeaders() },
