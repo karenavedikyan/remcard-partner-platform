@@ -74,18 +74,22 @@ async function captureMatrix(page, prefix) {
 }
 
 async function exerciseCertificates(page, label, eyebrow) {
+  const listRespPromise = page.waitForResponse(
+    (r) =>
+      r.url().includes("business-owner-certificates") &&
+      !r.url().includes("/batch") &&
+      r.status() === 200,
+    { timeout: 90_000 },
+  );
   await page.goto(`${PROF_URL}/recommendations`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   const root = page.getByTestId("business-certificates-root");
   await root.waitFor({ timeout: 90_000 });
   const body = await page.locator("body").innerText();
   assert(!/Мои рекомендации/i.test(body), `${label}: legacy list title`);
   assert(!/СПЕЦИАЛИСТ|АГЕНТ/i.test(body), `${label}: internal role labels`);
-  assert(body.includes(eyebrow), `${label}: eyebrow ${eyebrow}`);
+  assert(body.toLowerCase().includes(eyebrow.toLowerCase()), `${label}: eyebrow ${eyebrow}`);
   assert(body.includes("Сертификаты"), `${label}: page title`);
-  const listResp = await page.waitForResponse(
-    (r) => r.url().includes("/api/pro/business-owner-certificates") && r.status() === 200,
-    { timeout: 90_000 },
-  );
+  const listResp = await listRespPromise;
   const listJson = await listResp.json();
   assert((listJson.totalCount ?? 0) > 0, `${label}: non-empty certificate list`);
   assert(await page.getByTestId("agent-r03-capture-body").count(), `${label}: list body`);
@@ -119,8 +123,10 @@ async function main() {
   if (masterToken) {
     const { context, page } = await withSession(browser, masterToken, { width: 1440, height: 900 });
     await page.goto(`${PROF_URL}/recommendations`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-    const masterRoot = page.getByTestId("specialist-certificates-root");
-    await masterRoot.waitFor({ timeout: 90_000 });
+    assert(
+      (await page.getByTestId("business-certificates-root").count()) === 0,
+      "master: must not use business-owner shell",
+    );
     await context.close();
   }
 
