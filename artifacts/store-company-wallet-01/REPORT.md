@@ -2,74 +2,76 @@
 
 **Status: READY FOR REVIEW (isolated harness)**
 
-## Bases (pinned start)
+## Block 1 (accepted — unchanged this iteration)
 
-| Repo | Base SHA |
-|------|----------|
-| remcard-partner-platform | `6dde2193fe481d111aef64750ecac5c24f4f6c51` |
-| remcard-navigator | `9c61f8141ab28d47f10092235498c30cd3a50076` |
+Canonical business / legacy-agent guard and prof-test financial policy were **not** modified. Backend admission tests and `pg-prof-test-financial-guard.log` remain the accepted baseline.
 
-## Runtime / evidence (final combined capture)
+## Runtime capture (combined gate)
 
 | | |
 |--|--|
-| **Frontend application** | `7562b289a8a96490c0ccbf591d18d9fb1792c8a4` |
-| **Backend application** | `d9374b6f2c2b9970e24d67a8475f1a56d88f62d3` |
-| **Branches** | `feat/store-company-wallet-01` (both repos) |
-| **Capture UTC** | `2026-10-25T20:17:25.000Z` → `2026-10-25T20:20:09.575Z` |
-| **Gate exit** | `shell-browser-gate.exit` = `0` |
-| **Evidence tip** (docs-only after capture) | commit after `7562b289` if present — runtime SHA above is authoritative |
+| **Frontend** | `a418561e904101e53b24e02a5469776de2281c5b` |
+| **Backend (gate runtime)** | `a0b3d71c191e7c197fbd80cbadd27c3adf8389f1` |
+| **Backend product tip delta** | `a0b3d71c` = `d9374b6f` + integration test-only commit (`profTestOwnerFinancialWrite.integration.test.ts` node env); no product guard change |
+| **Branch** | `feat/store-company-wallet-01` (both repos) |
+| **Capture UTC** | `2026-10-25T20:51:07.000Z` → `2026-10-25T20:53:20.903Z` |
+| **Exit** | `shell-browser-gate.exit` = `0`, `shell-gate.json` `ok: true`, `failures: []` |
 
-## Blocker closure (this iteration)
+Prior evidence SHA pair `7562b289` / `d9374b6f` superseded by this capture.
 
-### 1. Legacy-agent guard
+## Block 2 — product UI path (no API fallback)
 
-- `shouldBlockProfTestOwnerFinancialWrite` uses `isBusinessStoreCompanyWalletOwner` (not raw `partnerType`).
-- Pure AGENT + technical STORE: prof-test requisites/payout **not** blocked at this layer; R05/payout auth unchanged downstream.
-- Business prof-test STORE/COMPANY + MASTER: blocked (`PROF_TEST_BLOCKED`).
-- Tests: unit suite + `profTestOwnerFinancialWrite.integration.test.ts` (real delegated cookie on catalog QA) in gate log `pg-prof-test-financial-guard.log`.
+### Requisites (STORE + COMPANY `realOwner`)
 
-### 2. Owner UI gate (P0)
+- Fills **all** required fields including `bank-correspondent`; `form.checkValidity()` before submit.
+- **No** `page.request.post` fallback on create; gate fails if UI POST missing.
+- UI POST create → masked list GET → authorized detail GET → **Посмотреть** detail in panel.
+- Stale `expectedVersion` PATCH → **409**; UI **Изменить** PATCH (revise) → new `requisitesId`, version bump, reload shows edited legal name.
 
-Per STORE/COMPANY `realOwner` (synthetic, isolated):
+### Settlements workspace
 
-- Settlements API: **exact** payable/receivable sums and fixture bonus IDs (`walletGate` in harness state), not `>=`.
-- Drill-down: receivable partner → accrual + purchase links → return; payable → export POST parsed (sheet «Взаиморасчёты», orderId + amount match fixture rows).
-- Payout: UI modal → DB snapshot (`wallet-gate-db-snapshot.ts`) — one `BonusPayoutRecord`, bonus `PAID` + `paidAt`; idempotent replay `replay: true`, record count stays 1.
-- Requisites: UI form fill + bind assert; POST create (UI submit or equivalent BFF POST with same payload if headless submit silent) → masked list + unmasked detail GET → reload shows legal name.
+- Exact payable/receivable sums vs `walletGate` fixture IDs.
+- Receivable filter: nonsense query → empty; partner substring → row amount visible.
+- **Покупка** link → `/history/purchases/{orderId}` → return.
+- **Excel (.xlsx, весь отбор)** button → Playwright **download**; full sheet parsed — exact row set (orderId, amount, partner, status), no extras/foreign rows.
+- Payout modal → DB snapshot: one `BonusPayoutRecord`, `PAID`, `CASH`, idempotency present; replay `replay: true`, count stays 1; completed API contains bonus; overview payable total excludes paid amount.
 
-### 3. Access / error matrix
+### Fixture amounts (unchanged)
 
-- Anonymous settlements **401**; delegated prof-test store: requisites **403** `PROF_TEST_BLOCKED`, payout deny with **0** new payout records.
-- Cross-owner: company session cannot POST payout on store fixture bonus (**403/404**).
-- Component: `SpecialistSettlementsWorkspace.payout.test.tsx` (modal + `scopeKey` clears dialog).
-
-## Fixture amounts (gate seed)
-
-| Owner | Payable open | Receivable open |
-|-------|-------------|-----------------|
+| Owner | Payable | Receivable |
+|-------|---------|------------|
 | Store | 1200 ₽ | 800 ₽ |
 | Company | 950 ₽ | 650 ₽ |
 
-Bonus IDs recorded in `ui-harness-state.json` → `roles.*.walletGate`.
+## Block 3 — context / access / races
+
+### Frontend
+
+- `scopeKey` = `{partnerType}:{ownerUserId}` from settlements page (not STORE/COMPANY alone).
+- Settlements `load()` uses generation token; stale responses cannot restore data after scope switch / 403 / unmount; single initial fetch effect.
+- Tests: `SpecialistSettlementsWorkspace.scope.test.tsx` (deferred fetch, late success after 403, retry, unmount) + existing payout modal tests.
+
+### Gate access matrix
+
+- Anonymous settlements **401**.
+- Delegated prof-test **STORE** and **COMPANY**: settlements read OK; requisites POST **403** `PROF_TEST_BLOCKED`; payout POST deny, **0** new payout records.
+- Company vs store bonus (pre-payout): foreign payout **403/404**, ledger has no foreign bonus id.
+- Company vs store (post store flow): foreign requisites detail/patch **403/404**; export rows exclude store `payOrderId`; no payout re-test on already-settled bonus.
 
 ## Commands
 
 ```bash
 bash scripts/store-company-wallet-01/run-browser-gate.sh
-cd remcard-navigator && npm test -- --run \
-  src/lib/__tests__/businessWalletAdmission.test.ts \
-  src/lib/__tests__/masterOwnerRequisitesAccess.test.ts \
-  src/lib/__tests__/ownerPayoutRequisitesMutatingAccess.test.ts \
-  src/lib/__tests__/agentR05IncomingOnlyWallet.test.ts
 cd remcard-partner-platform && npm test -- --run \
-  src/components/specialist-wallet/SpecialistSettlementsWorkspace.payout.test.tsx
+  src/components/specialist-wallet/SpecialistSettlementsWorkspace.test.tsx \
+  src/components/specialist-wallet/SpecialistSettlementsWorkspace.payout.test.tsx \
+  src/components/specialist-wallet/SpecialistSettlementsWorkspace.scope.test.tsx
 ```
-
-Backend full `tsc` baseline (~52 diagnostics) unchanged — not claimed green. No migrations.
 
 ## Artifacts
 
 - `shell-gate.json`, `metadata-shell.json`, `shell-browser-gate.log`, `shell-browser-gate.exit`
 - `pg-prof-test-financial-guard.log`
 - `visual-shell/store-wallet-real-*`, `visual-shell/company-wallet-real-*`
+
+No main / deploy / production SQL / real-money writes outside isolated catalog QA.

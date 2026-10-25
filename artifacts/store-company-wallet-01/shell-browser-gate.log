@@ -2,32 +2,37 @@
   "ok": true,
   "failures": [],
   "application": {
-    "frontendSha": "a418561e904101e53b24e02a5469776de2281c5b",
-    "backendSha": "a0b3d71c191e7c197fbd80cbadd27c3adf8389f1",
-    "captureStartedAt": "2026-10-25T20:51:07.000Z",
-    "captureCompletedAt": "2026-10-25T20:53:20.903Z"
+    "frontendSha": "8ffcfb568fa0e8cbba4fcf85b1f18f782f07b311",
+    "backendSha": "4e3eacd1a4f8682cf8d0d780fcc6403e7b2deb8a",
+    "captureStartedAt": "2026-10-25T21:31:48.000Z",
+    "captureCompletedAt": "2026-10-25T21:34:09.767Z"
   },
   "flow": {
     "anonymousDenied": true,
+    "storeStaff": {
+      "restricted": true,
+      "authorized": true,
+      "revoked": true
+    },
     "delegatedStore": {
-      "requisitesWriteDenied": true,
+      "requisitesMutationsDenied": true,
       "payoutWriteDenied": true
     },
     "delegatedCompany": {
-      "requisitesWriteDenied": true,
+      "requisitesMutationsDenied": true,
       "payoutWriteDenied": true
     },
     "store": {
-      "payoutBonusId": "cmvoaytdi0008jshhmh03fxdw",
-      "requisitesId": "cmvob18fa0005jsulk2k67bgb",
+      "payoutBonusId": "cmvocf4n70008jskkbjs6gf2u",
+      "requisitesId": "cmvochptw0003js1d4b4wx6n2",
       "requisitesVersion": 2,
-      "payOrderId": "cmvoaytdh0006jshhgd88i4zx"
+      "payOrderId": "cmvocf4n40006jskkdpy3udje"
     },
     "company": {
-      "payoutBonusId": "cmvoaytds000qjshh3lye4qtt",
-      "requisitesId": "cmvob1g6t000hjsuldvegp33s",
+      "payoutBonusId": "cmvocf4ni000qjskkqvewas3s",
+      "requisitesId": "cmvochxlz000djs1d1ir95miz",
       "requisitesVersion": 2,
-      "payOrderId": "cmvoaytdr000ojshh5cfs6ikl"
+      "payOrderId": "cmvocf4nh000ojskkz2xg6g3u"
     }
   }
 }

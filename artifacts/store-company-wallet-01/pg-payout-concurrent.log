@@ -1,0 +1,9 @@
+
+ RUN  v4.1.5 /agent/repos/remcard-navigator
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  21:31:54
+   Duration  787ms (transform 198ms, setup 130ms, import 279ms, tests 110ms, environment 0ms)
+
