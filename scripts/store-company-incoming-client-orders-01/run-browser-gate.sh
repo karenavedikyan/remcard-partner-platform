@@ -6,6 +6,7 @@ ISO="$NAV_ROOT/scripts/prof-admin-moderation-isolated"
 ART="$PLATFORM_ROOT/artifacts/store-company-incoming-client-orders-01"
 LOG="$ART/shell-browser-gate.log"
 mkdir -p "$ART"
+: >"$LOG"
 
 export E2E_APPLICATION_FRONTEND_SHA="$(git -C "$PLATFORM_ROOT" rev-parse HEAD)"
 export E2E_APPLICATION_BACKEND_SHA="$(git -C "$NAV_ROOT" rev-parse HEAD)"
@@ -25,8 +26,10 @@ pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-clients-gate-
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-client-receiving-purchase.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-client-receiving-leak-fixture.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-incoming-client-order-link-fixture.ts
-pnpm exec tsx scripts/prof-admin-moderation-isolated/verify-incoming-client-order-migrations.ts \
-  | tee "$ART/migration-verify.json"
+node scripts/prof-admin-moderation-isolated/apply-incoming-client-order-migrations-sql.mjs \
+  | tee "$ART/migration-sql-verify.json"
+pnpm exec vitest run src/lib/__tests__/agentClientDeleteLinkRace.integration.test.ts \
+  2>&1 | tee "$ART/pg-delete-link-race.log"
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3421 CATALOG_QA_FRONTEND_PORT=3420 bash "$ISO/stop.sh" || true
 CATALOG_QA_BACKEND_PORT=3421 CATALOG_QA_FRONTEND_PORT=3420 bash "$ISO/start.sh"

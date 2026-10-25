@@ -50,17 +50,6 @@ export function PurchaseReceivingClientPanel({
   const linked = purchase.receivingClient ?? null;
   const revision = currentRevision(purchase);
 
-  useEffect(() => {
-    panelGeneration.current += 1;
-    setQuery("");
-    setClients([]);
-    setSelectedId(null);
-    setPending(null);
-    setActionError("");
-    setSearchError("");
-    searchGeneration.current += 1;
-  }, [scopeKey]);
-
   const loadClients = useCallback(
     async (q: string, generation: number) => {
       setSearching(true);
@@ -85,11 +74,28 @@ export function PurchaseReceivingClientPanel({
   );
 
   useEffect(() => {
+    panelGeneration.current += 1;
+    setQuery("");
+    setClients([]);
+    setSelectedId(null);
+    setPending(null);
+    setActionError("");
+    setSearchError("");
+    setSaving(false);
+    setCreateOpen(false);
+    searchGeneration.current += 1;
+    if (purchase.canManageReceivingClient) {
+      const generation = searchGeneration.current;
+      void loadClients("", generation);
+    }
+  }, [scopeKey, loadClients, purchase.canManageReceivingClient]);
+
+  useEffect(() => {
     if (!purchase.canManageReceivingClient) return;
     const generation = ++searchGeneration.current;
     const handle = window.setTimeout(() => void loadClients(query, generation), 300);
     return () => window.clearTimeout(handle);
-  }, [loadClients, purchase.canManageReceivingClient, query]);
+  }, [loadClients, purchase.canManageReceivingClient, query, scopeKey]);
 
   const selectedLabel = useMemo(() => {
     if (!selectedId) return null;
@@ -133,9 +139,7 @@ export function PurchaseReceivingClientPanel({
         caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие",
       );
     } finally {
-      if (capturedPanelGen === panelGeneration.current) {
-        setSaving(false);
-      }
+      setSaving(false);
     }
   }
 
@@ -273,7 +277,9 @@ export function PurchaseReceivingClientPanel({
         submitLabel="Создать"
         onClose={() => setCreateOpen(false)}
         onSubmit={async (values) => {
+          const capturedPanelGen = panelGeneration.current;
           const created = await createAgentClient(values);
+          if (capturedPanelGen !== panelGeneration.current) return;
           setClients((prev) => [
             { id: created.client.id, displayName: created.client.displayName },
             ...prev,

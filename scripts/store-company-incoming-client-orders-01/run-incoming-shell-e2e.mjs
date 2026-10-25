@@ -120,6 +120,29 @@ async function resetLinkIfAny(page, orderId, label) {
   return revision;
 }
 
+async function uiCreateClient(page, displayName) {
+  await page.getByRole("button", { name: "Новый клиент" }).click();
+  const dialog = page.getByTestId("agent-client-form-dialog");
+  await dialog.waitFor({ timeout: 30_000 });
+  await dialog.locator("label").filter({ hasText: "Имя" }).locator("input").fill(displayName);
+  await dialog.getByRole("button", { name: "Создать" }).click();
+  await dialog.waitFor({ state: "hidden", timeout: 60_000 }).catch(() => undefined);
+}
+
+async function captureClientReceivingLinked(page, prefix, clientId) {
+  await page.goto(`${PROF_URL}/clients/${encodeURIComponent(clientId)}`, {
+    waitUntil: "networkidle",
+    timeout: 120_000,
+  });
+  const receiving = page.getByTestId("client-receiving-purchases");
+  await receiving.waitFor({ timeout: 60_000 });
+  await receiving.evaluate((el) => {
+    if (el instanceof HTMLDetailsElement) el.open = true;
+  });
+  await page.waitForTimeout(150);
+  await capturePair(page, `${prefix}-client-receiving-linked`);
+}
+
 async function uiLinkClient(page, clientDisplayName, label) {
   await page.getByTestId("receiving-client-search").fill(clientDisplayName.slice(0, 8));
   await page.waitForTimeout(400);
@@ -194,16 +217,35 @@ async function runIncomingFlow(browser, state, roleKey, prefix, foreignClientId,
   );
 
   await capturePair(page, `${prefix}-purchase-linked`);
+  await captureClientReceivingLinked(page, prefix, localClientId);
+
+  const batchLinked = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients/batch`, {
+    headers: proxyHeaders(),
+    data: { action: "delete", ids: [localClientId] },
+  });
+  assert(batchLinked.status() === 200, `${prefix}: batch delete HTTP ${batchLinked.status()}`);
+  const batchLinkedJson = await batchLinked.json();
+  assert(
+    (batchLinkedJson.skipped ?? []).some(
+      (s) => s.id === localClientId && s.reason === "has_receiving_order_links",
+    ),
+    `${prefix}: batch skip linked client`,
+  );
 
   const altName = `${prefix} alt ${Date.now()}`;
-  const createRes = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients`, {
-    headers: proxyHeaders(),
-    data: { displayName: altName, city: "Краснодар" },
+  await page.goto(`${PROF_URL}/history/purchases/${encodeURIComponent(orderId)}`, {
+    waitUntil: "networkidle",
+    timeout: 120_000,
   });
-  assert(createRes.status() >= 200 && createRes.status() < 300, `${prefix}: alt client POST`);
-  const altBody = await createRes.json();
-  const altClientId = altBody.client?.id;
-  assert(altClientId, `${prefix}: alt client id`);
+  await page.getByTestId("purchase-receiving-client-panel").waitFor({ timeout: 60_000 });
+  await uiCreateClient(page, altName);
+  const listAfterCreate = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients?limit=50`,
+    { headers: proxyHeaders() },
+  );
+  const listJson = listAfterCreate.ok() ? await listAfterCreate.json() : { clients: [] };
+  const altClientId = (listJson.clients ?? []).find((c) => c.displayName === altName)?.id;
+  assert(altClientId, `${prefix}: alt client id from UI create`);
 
   await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("purchase-receiving-client-panel").waitFor({ timeout: 60_000 });
@@ -262,6 +304,18 @@ async function runIncomingFlow(browser, state, roleKey, prefix, foreignClientId,
     await staffCtx.context.close();
   }
 
+  const batchAlt = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients/batch`, {
+    headers: proxyHeaders(),
+    data: { action: "delete", ids: [altClientId, localClientId] },
+  });
+  const batchAltJson = batchAlt.ok() ? await batchAlt.json() : {};
+  assert(
+    (batchAltJson.skipped ?? []).some(
+      (s) => s.id === altClientId && s.reason === "has_receiving_order_links",
+    ),
+    `${prefix}: batch skip alt while linked`,
+  );
+
   await page.getByRole("button", { name: "Снять привязку" }).click();
   await page.getByTestId("receiving-client-pending").waitFor();
   await page.getByRole("button", { name: "Подтвердить" }).click();
@@ -285,13 +339,6 @@ async function runIncomingFlow(browser, state, roleKey, prefix, foreignClientId,
     (finalOrder.body?.order?.linkedAccruals?.length ?? 0) === baselineBonusLen,
     `${prefix}: bonus links unchanged`,
   );
-
-  await page.goto(`${PROF_URL}/clients/${encodeURIComponent(altClientId)}`, {
-    waitUntil: "networkidle",
-    timeout: 120_000,
-  });
-  await page.getByTestId("client-receiving-purchases").waitFor({ timeout: 60_000 });
-  await capturePair(page, `${prefix}-client-detail`);
 
   flow.completed = true;
   await context.close();
@@ -326,6 +373,19 @@ async function main() {
       storeForeignClientId,
       null,
     );
+
+    const companyToken = state.roles?.company?.realOwner?.ownerSessionToken;
+    const storeIncomingOrderId = state.roles?.store?.gateIncomingOrderId;
+    if (companyToken && storeIncomingOrderId) {
+      const { context, page } = await withSession(browser, companyToken);
+      const cross = await page.request.get(
+        `${PROF_URL}/api/remcard/api/store/orders/${encodeURIComponent(storeIncomingOrderId)}`,
+        { headers: proxyHeaders() },
+      );
+      assert(cross.status() === 404 || cross.status() === 403, `company cross store order ${cross.status()}`);
+      flow.companyCrossStoreOrderDenied = cross.status();
+      await context.close();
+    }
   } finally {
     await browser.close();
   }

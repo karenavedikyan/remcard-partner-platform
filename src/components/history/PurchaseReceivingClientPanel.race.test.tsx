@@ -158,5 +158,11 @@ describe("PurchaseReceivingClientPanel race (mounted)", () => {
     });
 
     expect(onLinked).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    await screen.findByText("Client one");
+    fireEvent.click(screen.getByText("Client one"));
+    expect(screen.getByRole("button", { name: "Сохранить привязку" })).not.toBeDisabled();
   });
 });

@@ -1,49 +1,52 @@
 # STORE-COMPANY-INCOMING-CLIENT-ORDERS-01
 
-**Status: FINAL READY FOR INDEPENDENT REVIEW** (not deployed)
+**Status: READY FOR INDEPENDENT REVIEW (isolated harness)** — not deployed; not production migration apply.
 
-## Evidence tip (aligned gate run)
+## Evidence tip (single final capture — refresh after last push)
 
-| | SHA / time |
-|--|--|
-| Frontend | `dcb780830806df26e43d73e163556ece698d453a` |
-| Backend | `e1e663325310918ffa68c0846347fde77c765ccf` |
-| Capture | `2026-10-25T14:49:35.000Z` → `2026-10-25T14:51:38.874Z` |
-| Gate exit | `artifacts/store-company-incoming-client-orders-01/shell-browser-gate.exit` = 0 |
+Gate runner: `scripts/store-company-incoming-client-orders-01/run-browser-gate.sh`
 
-Artifacts: `shell-gate.json`, `metadata-shell.json`, `migration-verify.json`, `shell-browser-gate.log`, `visual-shell/*-{light,dark}-390.png`.
+Record from gate stdout JSON: `application.frontendSha`, `application.backendSha`, `captureStartedAt`, `captureCompletedAt`.
 
-## Bases (undeployed clients package)
+Artifacts (one clean run):
+
+- `shell-gate.json`, `metadata-shell.json`
+- `migration-sql-verify.json` — **two migration.sql files** on disposable PG schema (FK + unique + indexes)
+- `pg-delete-link-race.log` — concurrent delete/link integration (catalog QA PostgreSQL)
+- `shell-browser-gate.log` (truncated each run), `shell-browser-gate.exit` (single line)
+- `visual-shell/*` — purchase linked + **client receiving linked (before unlink)**
+
+## Bases
 
 | Repo | Clients base |
 |------|----------------|
 | remcard-navigator | `8b1e932e` |
 | remcard-partner-platform | `5281a1de` |
 
-## Migrations (additive)
+## Third review closure (only remaining items)
 
-1. `20261025143000_store_company_incoming_client_order_link`
-2. `20261025180000_incoming_client_link_revision_audit`
+1. **Delete/link race** — `FOR UPDATE` on `AgentClient` in link + soft-delete transactions; concurrent integration test in gate.
+2. **UI reset** — scope reset clears `saving`/`createOpen`, reloads clients on order change; PATCH `finally` always clears saving; extended panel race test.
+3. **SQL migrations** — `apply-incoming-client-order-migrations-sql.mjs` applies both `.sql` files on disposable schema; index `OrderReceivingClientAnchor_receivingOwnerUserId_idx` added to migration file.
 
-Catalog QA verify: `verify-incoming-client-order-migrations.ts` (schema/tables/linkedAt/unique; production uses migrate deploy ledger).
+## Migrations
 
-## Review fix summary
+- `20261025143000_store_company_incoming_client_order_link`
+- `20261025180000_incoming_client_link_revision_audit`
 
-- **CAS / audit:** `OrderReceivingClientAnchor.revision`, mandatory `expectedVersion`, transactional bump + events (`LINK`/`CHANGE`/`UNLINK`), `linkedAt`.
-- **Priority:** explicit link only on chosen client; own-issued fallback requires no link row and `fallbackSuppressed=false`.
-- **Delete:** `evaluateAgentClientDelete` for single + batch.
-- **UI:** pending confirm per action, search generation guard, order-scoped PATCH callback, 409 reload; `PurchaseReceivingClientPanel.race.test.tsx`.
-- **Gate:** UI link → change → unlink, API readback, foreign CRM deny, financial fields unchanged, STORE + COMPANY screenshots.
+Production path: migrate deploy ledger (not executed here).
 
 ## Tests
 
-- BE unit: `orderReceivingAgentClientLink.test.ts` (exit 0)
-- BE integration: `orderReceivingClientLink.integration.test.ts` (prof R01 DB when configured)
-- FE: `PurchaseReceivingClientPanel.race.test.tsx`; proxy PATCH allowlist test
-- Isolated E2E: `scripts/store-company-incoming-client-orders-01/run-browser-gate.sh`
+| Suite | Where |
+|-------|--------|
+| Panel race (2) | partner-platform vitest |
+| Delete/link race (1) | navigator vitest on catalog QA PG (in gate) |
+| SQL migration apply | gate `migration-sql-verify.json` |
+| UI E2E STORE+COMPANY | gate runner (link UI create, batch skip, company cross-order deny) |
 
-Backend full `tsc` remains legacy exit 2 (~52 baseline diagnostics); not claimed green.
+Backend full `tsc` remains legacy exit 2 (~52 baseline).
 
 ## Migration release checklist (prepare only)
 
-Backup → read-only preflight → apply both migrations in order → deploy backend then frontend → smoke link/change/unlink/batch skip → rollback app without dropping anchor/event/link tables.
+Backup → preflight → apply both migrations in order → backend → frontend → smoke → rollback app without dropping new tables.
