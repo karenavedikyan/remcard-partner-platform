@@ -29,7 +29,7 @@ pnpm exec vitest run src/lib/__tests__/profTestOwnerFinancialWrite.integration.t
   cat "$ART/pg-prof-test-financial-guard.log" >>"$LOG"
   exit 1
 }
-pnpm exec vitest run src/lib/__tests__/profIPayout.integration.test.ts -t "concurrent idempotent" >"$ART/pg-payout-concurrent.log" 2>&1 || {
+pnpm exec vitest run src/lib/__tests__/walletGatePayoutConcurrent.integration.test.ts >"$ART/pg-payout-concurrent.log" 2>&1 || {
   echo "payout concurrent integration failed" >>"$LOG"
   cat "$ART/pg-payout-concurrent.log" >>"$LOG"
   exit 1
