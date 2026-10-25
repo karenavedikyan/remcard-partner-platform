@@ -116,7 +116,10 @@ async function createCertificateFromClient(page, clientId, label) {
   } else {
     await page.getByLabel("Скидка клиенту, %").first().fill("5");
   }
-  await page.getByRole("button", { name: "Создать сертификат" }).click();
+  await page
+    .getByTestId("specialist-certificate-create-step-2")
+    .getByRole("button", { name: "Создать сертификат" })
+    .click();
   await page.getByTestId("specialist-certificate-preview").waitFor({ timeout: 120_000 });
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
