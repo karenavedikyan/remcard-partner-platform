@@ -34,7 +34,10 @@ import {
   profileHrefForIssuerMissing,
 } from "@/lib/recommendation-profile-focus";
 import { createAgentCertificate } from "@/lib/agent-r03/api";
-import { patchSpecialistIssuerCertificate } from "@/lib/specialist-certificates/api";
+import {
+  type IssuerCertificatesApiMode,
+  issuerCertificatesApi,
+} from "@/lib/business-owner-certificates/issuer-api";
 import {
   hashAgentCreatePayload,
   resolveCreateIdempotencySession,
@@ -86,6 +89,7 @@ type CertificateCreateFormProps = {
   agentClientId?: string;
   successHrefBase?: string;
   issuerUi?: "default" | "specialist";
+  issuerListApi?: IssuerCertificatesApiMode;
   presentation?: "dialog" | "page";
   onRequestClose?: () => void;
   /** Fired once after successful POST (including when alias PATCH fails). */
@@ -99,12 +103,14 @@ export function CertificateCreateForm({
   agentClientId,
   successHrefBase = "/recommendations",
   issuerUi = "default",
+  issuerListApi = "specialist",
   presentation = "page",
   onRequestClose,
   onCertificateCreated,
   onListRefresh,
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
+  const issuerPatch = issuerCertificatesApi(issuerListApi).patchCertificate;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [loadError, setLoadError] = useState("");
@@ -451,7 +457,7 @@ export function CertificateCreateForm({
       if (specialistWizard && aliasTrimmed && result.id) {
         setPendingAliasValue(aliasTrimmed);
         try {
-          await patchSpecialistIssuerCertificate(result.id, { userAlias: aliasTrimmed });
+          await issuerPatch(result.id, { userAlias: aliasTrimmed });
           setAliasSaveNotice(null);
           setPendingAliasValue(null);
           onListRefresh?.();
@@ -493,7 +499,7 @@ export function CertificateCreateForm({
     setAliasSavePending(true);
     setAliasSaveNotice(null);
     try {
-      await patchSpecialistIssuerCertificate(created.id, { userAlias: pendingAliasValue.trim() });
+      await issuerPatch(created.id, { userAlias: pendingAliasValue.trim() });
       setPendingAliasValue(null);
       onListRefresh?.();
     } catch (caught) {

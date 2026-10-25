@@ -21,6 +21,14 @@ import {
   fetchSpecialistIssuerCertificates,
   patchSpecialistIssuerCertificate,
 } from "@/lib/specialist-certificates/api";
+import {
+  batchBusinessOwnerCertificates,
+  deleteBusinessOwnerCertificate,
+  fetchBusinessOwnerCertificates,
+  patchBusinessOwnerCertificate,
+} from "@/lib/business-owner-certificates/api";
+import { businessCertificatesPageCopy } from "@/lib/business-owner-certificates/copy";
+import { useOwnerIssuerModeValue } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
 import {
@@ -53,7 +61,7 @@ const emptyMeta: AgentR03ListMeta = {
   hasPrevPage: false,
 };
 
-export type AgentCertificatesListAccessMode = "agent" | "specialist";
+export type AgentCertificatesListAccessMode = "agent" | "specialist" | "business";
 
 type AgentCertificatesListProps = {
   accessMode?: AgentCertificatesListAccessMode;
@@ -61,6 +69,25 @@ type AgentCertificatesListProps = {
 
 export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificatesListProps = {}) {
   const isSpecialist = accessMode === "specialist";
+  const isBusiness = accessMode === "business";
+  const isIssuerShell = isSpecialist || isBusiness;
+  const ownerMode = useOwnerIssuerModeValue();
+  const issuerPageCopy = isBusiness
+    ? businessCertificatesPageCopy({
+        partnerType: ownerMode?.businessPartnerType ?? "STORE",
+      })
+    : SPECIALIST_CERTIFICATES_PAGE;
+  const issuerListApi = isBusiness ? "business" : "specialist";
+  const patchIssuerCertificate = isBusiness
+    ? patchBusinessOwnerCertificate
+    : isSpecialist
+      ? patchSpecialistIssuerCertificate
+      : patchAgentCertificate;
+  const deleteIssuerCertificate = isBusiness
+    ? deleteBusinessOwnerCertificate
+    : isSpecialist
+      ? deleteSpecialistIssuerCertificate
+      : deleteAgentCertificate;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -69,18 +96,18 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   const certificateQueryId = searchParams.get("certificate")?.trim() || null;
 
   useEffect(() => {
-    if (!isSpecialist) return;
+    if (!isIssuerShell) return;
     if (searchParams.get("create") === "1") {
       setCreateDialogOpen(true);
     }
-  }, [isSpecialist, searchParams]);
+  }, [isIssuerShell, searchParams]);
 
   useEffect(() => {
-    if (!isSpecialist) return;
+    if (!isIssuerShell) return;
     if (certificateQueryId) {
       setDetailCertificateId(certificateQueryId);
     }
-  }, [certificateQueryId, isSpecialist]);
+  }, [certificateQueryId, isIssuerShell]);
 
   function openCreateDialog() {
     setCreateDialogOpen(true);
@@ -88,7 +115,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
 
   function closeCreateDialog() {
     setCreateDialogOpen(false);
-    if (isSpecialist && searchParams.get("create") === "1") {
+    if (isIssuerShell && searchParams.get("create") === "1") {
       const next = new URLSearchParams(searchParams.toString());
       next.delete("create");
       const qs = next.toString();
@@ -98,13 +125,13 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
 
   function closeDetailDialog() {
     setDetailCertificateId(null);
-    if (!isSpecialist || !certificateQueryId) return;
+    if (!isIssuerShell || !certificateQueryId) return;
     const next = new URLSearchParams(searchParams.toString());
     next.delete("certificate");
     const qs = next.toString();
     router.replace(qs ? `/recommendations?${qs}` : "/recommendations");
   }
-  const detailBasePath = isSpecialist ? "/recommendations" : "/certificates";
+  const detailBasePath = isIssuerShell ? "/recommendations" : "/certificates";
   const [items, setItems] = useState<AgentCertificateRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
   const [archived, setArchived] = useState(false);
@@ -130,7 +157,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
 
   const load = useCallback(async () => {
     const fetchId = ++listFetchGenerationRef.current;
-    const preserveItemsOnError = isSpecialist;
+    const preserveItemsOnError = isIssuerShell;
     setLoadState("loading");
     setError("");
     try {
@@ -142,9 +169,11 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         sort,
         status: statusFilter || undefined,
       };
-      const data = isSpecialist
-        ? await fetchSpecialistIssuerCertificates(listParams)
-        : await fetchAgentCertificates(listParams);
+      const data = isBusiness
+        ? await fetchBusinessOwnerCertificates(listParams)
+        : isSpecialist
+          ? await fetchSpecialistIssuerCertificates(listParams)
+          : await fetchAgentCertificates(listParams);
       if (fetchId !== listFetchGenerationRef.current) {
         return;
       }
@@ -174,7 +203,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         setLoadState("error");
       }
     }
-  }, [appliedQ, archived, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
+  }, [appliedQ, archived, isBusiness, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
 
   useEffect(() => {
     const stored = readAgentR03ViewMode("certificates");
@@ -228,9 +257,11 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     if (action === "delete" && !window.confirm(`Удалить ${ids.length} сертификат(ов)?`)) return;
     setBusy(true);
     try {
-      const res = isSpecialist
-        ? await batchSpecialistIssuerCertificates({ action, ids })
-        : await batchAgentCertificates({ action, ids });
+      const res = isBusiness
+        ? await batchBusinessOwnerCertificates({ action, ids })
+        : isSpecialist
+          ? await batchSpecialistIssuerCertificates({ action, ids })
+          : await batchAgentCertificates({ action, ids });
       if (res.skippedCount > 0) {
         window.alert(
           `Обработано: ${res.processedCount}, пропущено: ${res.skippedCount} (защищённые записи).`,
@@ -260,7 +291,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         disabled: busy,
         onClick: () => void renameCert(cert),
       },
-      ...(isSpecialist
+      ...(isIssuerShell
         ? [
             {
               id: "edit-discounts",
@@ -279,7 +310,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         disabled: busy,
         onClick: () => {
           setBusy(true);
-          void (isSpecialist ? patchSpecialistIssuerCertificate : patchAgentCertificate)(cert.id, {
+          void patchIssuerCertificate(cert.id, {
             action: archived ? "restore" : "archive",
           })
             .then(() => load())
@@ -291,7 +322,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             .finally(() => setBusy(false));
         },
       },
-      ...(isSpecialist
+      ...(isIssuerShell
         ? [
             {
               id: "cancel",
@@ -303,7 +334,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
               onClick: () => {
                 if (!window.confirm("Отключить ссылку? Новые использования будут недоступны.")) return;
                 setBusy(true);
-                void patchSpecialistIssuerCertificate(cert.id, { action: "cancel" })
+                void patchIssuerCertificate(cert.id, { action: "cancel" })
                   .then(() => load())
                   .catch((caught) => {
                     window.alert(
@@ -323,7 +354,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         onClick: () => {
           if (!window.confirm("Удалить сертификат без возможности восстановления?")) return;
           setBusy(true);
-          void (isSpecialist ? deleteSpecialistIssuerCertificate : deleteAgentCertificate)(cert.id)
+          void deleteIssuerCertificate(cert.id)
             .then(() => load())
             .catch((caught) => {
               window.alert(
@@ -357,7 +388,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     }
     setBusy(true);
     try {
-      await (isSpecialist ? patchSpecialistIssuerCertificate : patchAgentCertificate)(cert.id, {
+      await patchIssuerCertificate(cert.id, {
         userAlias: next.trim(),
       });
       await load();
@@ -393,12 +424,21 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   }
 
   return (
-    <div className={styles.r03Root} data-testid={isSpecialist ? "specialist-certificates-root" : undefined}>
-      {isSpecialist ? (
+    <div
+      className={styles.r03Root}
+      data-testid={
+        isBusiness
+          ? "business-certificates-root"
+          : isSpecialist
+            ? "specialist-certificates-root"
+            : undefined
+      }
+    >
+      {isIssuerShell ? (
         <section className={styles.pageIntroBlock}>
-          <p className={styles.pageIntroMuted}>{SPECIALIST_CERTIFICATES_PAGE.description}</p>
+          <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
-            {SPECIALIST_CERTIFICATES_PAGE.createCta}
+            {issuerPageCopy.createCta}
           </Button>
         </section>
       ) : (
@@ -408,9 +448,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
         searchPlaceholder={
-          isSpecialist
-            ? SPECIALIST_CERTIFICATES_PAGE.searchPlaceholder
-            : "Название, партнёр или категория"
+          isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
         }
         q={qDraft}
         onQChange={setQDraft}
@@ -470,11 +508,11 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
 
       {loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty}>
-          {isSpecialist && !archived ? (
+          {isIssuerShell && !archived ? (
             <>
-              <p>{SPECIALIST_CERTIFICATES_PAGE.emptyTitle}</p>
-              <p className={styles.muted}>{SPECIALIST_CERTIFICATES_PAGE.emptyHint}</p>
-              <Button onClick={openCreateDialog}>{SPECIALIST_CERTIFICATES_PAGE.createCta}</Button>
+              <p>{issuerPageCopy.emptyTitle}</p>
+              <p className={styles.muted}>{issuerPageCopy.emptyHint}</p>
+              <Button onClick={openCreateDialog}>{issuerPageCopy.createCta}</Button>
             </>
           ) : (
             <p>{archived ? "В архиве пока пусто." : "Сертификатов пока нет."}</p>
@@ -624,15 +662,17 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       <SpecialistCertificateEditDiscountsDialog
         open={Boolean(editDiscountsCert)}
         cert={editDiscountsCert}
+        issuerListApi={isIssuerShell ? issuerListApi : "specialist"}
         onClose={() => setEditDiscountsCert(null)}
         onSaved={() => load()}
       />
 
-      {isSpecialist ? (
+      {isIssuerShell ? (
         <>
           <SpecialistCertificateCreateDialog
             open={createDialogOpen}
             agentClientId={createClientId}
+            issuerListApi={issuerListApi}
             onClose={closeCreateDialog}
             onCertificateCreated={() => void load()}
             onListRefresh={() => void load()}
@@ -640,6 +680,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
           <SpecialistCertificateDetailDialog
             open={Boolean(detailCertificateId)}
             certificateId={detailCertificateId}
+            issuerListApi={issuerListApi}
             onClose={closeDetailDialog}
             onListMutated={() => void load()}
           />
