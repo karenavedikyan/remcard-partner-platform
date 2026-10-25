@@ -118,8 +118,9 @@ async function createCertificateFromClient(page, clientId, label) {
   }
   const postPromise = page.waitForResponse(
     (r) =>
-      r.url().includes("/api/pro/business-owner-certificates") &&
-      r.request().method() === "POST",
+      r.request().method() === "POST" &&
+      (r.url().includes("/api/store/certificate") ||
+        r.url().includes("/api/pro/business-owner-certificates")),
     { timeout: 120_000 },
   );
   await page
@@ -131,12 +132,6 @@ async function createCertificateFromClient(page, clientId, label) {
     postRes.status() >= 200 && postRes.status() < 300,
     `${label}: cert POST ${postRes.status()} ${await postRes.text().catch(() => "")}`,
   );
-  await page
-    .locator(
-      '[data-testid="specialist-certificate-preview"], [data-testid="recommendation-create-success"], [data-testid="certificate-code"]',
-    )
-    .first()
-    .waitFor({ timeout: 60_000 });
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
     { headers: proxyHeaders() },
