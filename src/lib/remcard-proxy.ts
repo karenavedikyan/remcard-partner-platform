@@ -157,6 +157,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/pro\/organization\/branches$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: branchByIdPath() },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/employees-overview$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/business-home\/metrics$/ },
     {
       methods: new Set(["GET", "POST"]),
       pattern: /^\/api\/pro\/organization\/permission-templates$/,

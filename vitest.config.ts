@@ -52,6 +52,8 @@ export default defineConfig({
       "src/lib/prof-admin-moderation-org-actions.test.ts",
       "src/lib/prof-admin-moderation-org-readiness.test.ts",
       "src/lib/prof-admin-moderation-public-preview.test.ts",
+      "src/lib/business-home/gate.test.ts",
+      "src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx",
       "src/lib/category-display.test.ts",
       "src/lib/branch-catalog-preview.test.ts",
       "src/lib/remcard-proxy-moderation.test.ts",
