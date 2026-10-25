@@ -1,5 +1,5 @@
 /**
- * Isolated partners gate: delegated prof-test read + policy checks; ordinary-owner UI/API flow.
+ * Isolated partners acceptance gate — strict UI flow, no loose invite/accept assertions.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -13,6 +13,9 @@ const STATE_PATH =
 const ART_DIR = path.resolve("artifacts/store-company-partners-01");
 const ART = path.join(ART_DIR, "visual-shell");
 const failures = [];
+const INVITE_PERCENT = "8";
+const TERM_CHANGE_PERCENT = "9";
+const ALIAS_LABEL = "Gate alias store→co";
 
 function proxyExtraHeaders() {
   return { Origin: PROF_URL };
@@ -52,8 +55,45 @@ async function withSession(browser, token, viewport) {
   return { context, page: await context.newPage() };
 }
 
+function partnershipsBetween(list, userA, userB) {
+  return (list ?? []).filter(
+    (p) =>
+      (p.storeUserId === userA && p.proUserId === userB) ||
+      (p.storeUserId === userB && p.proUserId === userA),
+  );
+}
+
+async function apiList(page) {
+  const res = await page.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
+    headers: proxyExtraHeaders(),
+  });
+  assert(res.status() === 200, `list GET ${res.status()}`);
+  return res.ok() ? res.json() : { partnerships: [] };
+}
+
+async function apiGetPartnership(page, id) {
+  const { partnerships } = await apiList(page);
+  return partnerships.find((p) => p.id === id) ?? null;
+}
+
+async function assertNoStoreCompanyLink(page, storeUserId, companyUserId, label) {
+  const { partnerships } = await apiList(page);
+  const between = partnershipsBetween(partnerships, storeUserId, companyUserId);
+  assert(
+    between.every((p) => p.status === "TERMINATED" || p.status === "REJECTED"),
+    `${label}: no active/invited store↔company link before invite (${between.map((p) => p.status).join(",")})`,
+  );
+}
+
+async function assertPartnershipSides(p, storeUserId, companyUserId, label) {
+  assert(p?.storeUserId === storeUserId, `${label}: storeUserId`);
+  assert(p?.proUserId === companyUserId, `${label}: proUserId`);
+}
+
 async function captureMatrix(page, prefix) {
   fs.mkdirSync(ART, { recursive: true });
+  assert(!page.url().startsWith("about:"), `${prefix}: capture page not blank`);
+  await page.getByTestId("agent-r04-partners").waitFor({ timeout: 60_000 });
   for (const theme of ["light", "dark"]) {
     await page.evaluate((t) => {
       document.documentElement.setAttribute("data-theme", t);
@@ -71,6 +111,11 @@ async function captureMatrix(page, prefix) {
     ]) {
       await page.setViewportSize(viewport);
       await page.waitForTimeout(120);
+      const overflow = await page.evaluate(() => {
+        const el = document.documentElement;
+        return el.scrollWidth - el.clientWidth;
+      });
+      assert(overflow <= 2, `${prefix}-${theme}-${suffix}: horizontal overflow ${overflow}px`);
       await page.screenshot({
         path: path.join(ART, `${prefix}-${theme}-${suffix}.png`),
         fullPage: true,
@@ -79,7 +124,20 @@ async function captureMatrix(page, prefix) {
   }
 }
 
-async function exerciseDelegatedHub(page, label, audience) {
+async function prepareHubForCapture(page, rowHint) {
+  await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
+  await page.getByTestId("agent-r04-partners").waitFor({ timeout: 90_000 });
+  const modal = page.getByTestId("agent-r04-modal-find");
+  if (await modal.isVisible().catch(() => false)) {
+    await page.keyboard.press("Escape");
+    await modal.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => undefined);
+  }
+  await page.getByRole("tab", { name: "Мои партнёры" }).click();
+  await page.getByTestId("agent-r04-partners-list").waitFor({ timeout: 60_000 });
+  await page.getByText(rowHint, { exact: false }).first().waitFor({ timeout: 60_000 });
+}
+
+async function exerciseDelegatedHub(page, label, audience, foreignPartnershipId) {
   await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
   const hub = page.getByTestId("agent-r04-partners");
   await hub.waitFor({ timeout: 90_000 });
@@ -87,10 +145,6 @@ async function exerciseDelegatedHub(page, label, audience) {
     (await hub.getAttribute("data-partners-audience")) === audience,
     `${label}: audience ${audience}`,
   );
-  const listRes = await page.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
-    headers: proxyExtraHeaders(),
-  });
-  assert(listRes.status() === 200, `${label}: list ${listRes.status()}`);
 
   const searchRole = audience === "business-company-r04" ? "pro" : "store";
   const searchRes = await page.request.get(
@@ -99,119 +153,178 @@ async function exerciseDelegatedHub(page, label, audience) {
   );
   assert(searchRes.status() === 200, `${label}: search ${searchRes.status()}`);
   const searchJson = await searchRes.json();
-  assert((searchJson.partners ?? []).length > 0, `${label}: search returned partners`);
+  assert((searchJson.partners ?? []).length > 0, `${label}: prof-test discovery rows`);
+
+  const beforeForeign = await apiGetPartnership(page, foreignPartnershipId);
+  assert(beforeForeign?.id === foreignPartnershipId, `${label}: foreign partnership exists`);
+  const beforeStatus = beforeForeign.status;
 
   const foreignPatch = await page.request.patch(
-    `${PROF_URL}/api/remcard/api/partnership/nonexistent-partnership-id`,
+    `${PROF_URL}/api/remcard/api/partnership/${encodeURIComponent(foreignPartnershipId)}`,
     { headers: proxyExtraHeaders(), data: { action: "cancel" } },
   );
-  assert(
-    foreignPatch.status() === 403 || foreignPatch.status() === 404 || foreignPatch.status() === 401,
-    `${label}: foreign PATCH denied (${foreignPatch.status()})`,
-  );
+  assert(foreignPatch.status() === 403, `${label}: foreign PATCH denied (${foreignPatch.status()})`);
+
+  const afterForeign = await apiGetPartnership(page, foreignPartnershipId);
+  assert(afterForeign?.status === beforeStatus, `${label}: foreign partnership unchanged`);
 }
 
-async function exerciseRealOwnerHub(page, label, audience, counterpartyUserId, eyebrowText) {
-  await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
-  const hub = page.getByTestId("agent-r04-partners");
-  await hub.waitFor({ timeout: 90_000 });
-  assert(
-    (await hub.getAttribute("data-partners-audience")) === audience,
-    `${label}: audience ${audience}`,
-  );
-  assert(
-    (await page.getByRole("heading", { level: 1, name: "Партнёры" }).count()) > 0,
-    `${label}: partners page heading`,
-  );
-  assert(
-    (await page.locator("span").filter({ hasText: eyebrowText }).count()) > 0,
-    `${label}: eyebrow ${eyebrowText}`,
-  );
+async function uiInviteStoreToCompany(page, companyMeta, storeUserId, companyUserId) {
+  await assertNoStoreCompanyLink(page, storeUserId, companyUserId, "store-pre-invite");
 
+  await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByRole("button", { name: "Найти или пригласить партнёра" }).click();
-  await page.getByTestId("agent-r04-modal-find").waitFor({ timeout: 60_000 });
   const modal = page.getByTestId("agent-r04-modal-find");
-  const searchPhrase = audience === "business-store-r04" ? "Synthetic company" : "Synthetic store";
-  await modal.getByPlaceholder("Название, товар, услуга, этап или ID").fill(searchPhrase);
+  await modal.waitFor({ timeout: 60_000 });
+
+  await modal.getByPlaceholder("Название, товар, услуга, этап или ID").fill(companyMeta.publicId);
   const searchWait = page.waitForResponse(
     (res) => res.url().includes("/partnership/search") && res.status() === 200,
     { timeout: 60_000 },
   );
   await modal.getByRole("button", { name: "Найти" }).click();
   await searchWait;
-  await modal
-    .locator('[data-loading="false"]')
-    .first()
-    .waitFor({ timeout: 30_000 })
-    .catch(() => undefined);
-  const apiRole = audience === "business-store-r04" ? "store" : "pro";
-  const apiSearch = await page.request.get(
-    `${PROF_URL}/api/remcard/api/partnership/search?q=${encodeURIComponent(searchPhrase)}&role=${apiRole}&limit=5`,
-    { headers: proxyExtraHeaders() },
-  );
-  assert(apiSearch.status() === 200, `${label}: real-owner search API ${apiSearch.status()}`);
-  const apiJson = await apiSearch.json();
-  assert((apiJson.partners ?? []).length > 0, `${label}: real-owner search API results`);
 
-  const invitePost = await page.request.post(`${PROF_URL}/api/remcard/api/partnership/invite`, {
-    headers: proxyExtraHeaders(),
-    data: {
-      targetUserId: counterpartyUserId,
-      note: `gate-${label}-${Date.now()}`,
-      terms: [
-        {
-          category: "doors",
-          categoryLabel: "Двери",
-          storePercent: 8,
-          isExcluded: false,
-        },
-      ],
-    },
-  });
-  assert(
-    invitePost.status() === 200 ||
-      invitePost.status() === 201 ||
-      invitePost.status() === 409 ||
-      invitePost.status() === 400,
-    `${label}: invite POST ${invitePost.status()}`,
-  );
-  if (invitePost.status() === 400) {
-    const errBody = await invitePost.json().catch(() => ({}));
-    assert(
-      String(errBody.error ?? "").includes("уже существует") ||
-        String(errBody.error ?? "").includes("Партнёрство"),
-      `${label}: invite 400 must be existing partnership, got ${JSON.stringify(errBody)}`,
-    );
+  const targetRow = modal.locator("article").filter({ hasText: companyMeta.displayName });
+  assert((await targetRow.count()) > 0, "store-invite: search UI shows company target");
+  await targetRow.getByRole("button", { name: "Пригласить" }).click();
+
+  const inviteDialog = page.getByRole("dialog");
+  await inviteDialog.waitFor({ timeout: 30_000 });
+  const percentField = inviteDialog.getByLabel("Процент");
+  if ((await percentField.count()) > 0) {
+    await percentField.first().fill(INVITE_PERCENT);
+  } else {
+    await inviteDialog.getByRole("checkbox").check();
   }
+
+  const inviteWait = page.waitForResponse(
+    (res) => res.url().includes("/partnership/invite") && res.status() === 200,
+    { timeout: 60_000 },
+  );
+  await inviteDialog.getByRole("button", { name: "Отправить приглашение" }).click();
+  const inviteRes = await inviteWait;
+  const inviteBody = await inviteRes.json();
+  const partnershipId = inviteBody.partnershipId ?? inviteBody.partnership?.id;
+  assert(partnershipId, "store-invite: partnershipId from invite UI");
+
+  const invited = inviteBody.partnership ?? (await apiGetPartnership(page, partnershipId));
+  assert(invited?.status === "INVITED", `store-invite: status INVITED (${invited?.status})`);
+  await assertPartnershipSides(invited, storeUserId, companyUserId, "store-invite");
+
+  await page.keyboard.press("Escape");
+  await modal.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => undefined);
+
+  return partnershipId;
 }
 
-async function acceptIncomingInvite(page, label) {
+async function uiAcceptIncomingCompany(page, partnershipId, storeMeta, storeUserId, companyUserId) {
   await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByRole("tab", { name: "Приглашения" }).click();
   await page.getByTestId("agent-invites-incoming").click();
-  const listRes = await page.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
-    headers: proxyExtraHeaders(),
-  });
-  const listJson = await listRes.json();
-  const partnerships = listJson.partnerships ?? [];
-  const pending = partnerships.find(
-    (p) => p.status === "INVITED" || p.status === "PENDING" || p.status === "INVITE_PENDING",
+
+  const fromApi = await apiGetPartnership(page, partnershipId);
+  assert(fromApi?.status === "INVITED", `company-pre-accept: INVITED (${fromApi?.status})`);
+  await assertPartnershipSides(fromApi, storeUserId, companyUserId, "company-pre-accept");
+
+  const row = page
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: storeMeta.displayName });
+  assert((await row.count()) > 0, "company-accept: incoming row for store");
+  await row.getByRole("button", { name: "Детали" }).click();
+
+  const acceptWait = page.waitForResponse(
+    (res) =>
+      res.url().includes(`/api/partnership/${partnershipId}`) &&
+      res.request().method() === "PATCH" &&
+      res.status() === 200,
+    { timeout: 60_000 },
   );
-  if (!pending?.id) {
-    assert(
-      partnerships.some((p) => p.status === "ACTIVE"),
-      `${label}: pending invite or active partnership`,
-    );
-    return;
-  }
-  const accept = await page.request.patch(
-    `${PROF_URL}/api/remcard/api/partnership/${encodeURIComponent(pending.id)}`,
-    { headers: proxyExtraHeaders(), data: { action: "accept" } },
-  );
-  assert(accept.status() === 200, `${label}: accept invite ${accept.status()}`);
+  await page.getByRole("button", { name: "Принять", exact: true }).click();
+  await acceptWait;
+
+  const active = await apiGetPartnership(page, partnershipId);
+  assert(active?.status === "ACTIVE", `company-post-accept: ACTIVE (${active?.status})`);
+  const term = (active?.terms ?? []).find((t) => t.category === "doors" && !t.isExcluded);
+  assert(term && Number(term.storePercent) === Number(INVITE_PERCENT), "company-post-accept: doors terms");
 }
 
-function writeArtifacts(delegated, realOwner) {
+async function uiTermChangeCycle(storePage, companyPage, partnershipId, storeUserId, companyUserId) {
+  await storePage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
+  const storeRow = storePage
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: "Synthetic company" });
+  await storeRow.getByRole("button", { name: "Детали" }).click();
+  await storePage.getByRole("button", { name: "Изменение условий" }).click();
+  await storePage
+    .getByLabel(/Двери \(сейчас/)
+    .fill(TERM_CHANGE_PERCENT);
+  const proposeWait = storePage.waitForResponse(
+    (res) => res.url().includes("/term-change") && res.request().method() === "POST" && res.status() === 200,
+    { timeout: 60_000 },
+  );
+  await storePage.getByRole("button", { name: "Предложить изменение условий" }).click();
+  await proposeWait;
+
+  await companyPage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
+  const companyRow = companyPage
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: "Synthetic store" });
+  await companyRow.getByRole("button", { name: "Детали" }).click();
+  await companyPage.getByRole("button", { name: "Изменение условий" }).click();
+  const approveWait = companyPage.waitForResponse(
+    (res) => res.url().includes("/term-change") && res.url().includes("/respond") && res.status() === 200,
+    { timeout: 60_000 },
+  );
+  await companyPage.getByRole("button", { name: "Согласовать" }).click();
+  await approveWait;
+
+  const storeP = await apiGetPartnership(storePage, partnershipId);
+  const companyP = await apiGetPartnership(companyPage, partnershipId);
+  assert(storeP?.status === "ACTIVE" && companyP?.status === "ACTIVE", "term-change: both ACTIVE");
+  await assertPartnershipSides(storeP, storeUserId, companyUserId, "term-change-store");
+  const term = (storeP?.terms ?? []).find((t) => t.category === "doors" && !t.isExcluded);
+  assert(term && Number(term.storePercent) === Number(TERM_CHANGE_PERCENT), "term-change: applied percent");
+}
+
+async function uiAliasArchiveRestore(page, partnershipId, companyPage, storeUserId, companyUserId) {
+  await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
+  const row = page
+    .locator('[data-testid="agent-r04-partners-table-row"]')
+    .filter({ hasText: "Synthetic company" });
+  await row.getByRole("button", { name: "Переименовать для себя" }).click();
+  const aliasDialog = page.getByTestId("partner-personal-alias-dialog");
+  await aliasDialog.waitFor({ timeout: 30_000 });
+  await aliasDialog.getByLabel("Подпись в вашем списке").fill(ALIAS_LABEL);
+  const aliasWait = page.waitForResponse(
+    (res) =>
+      res.url().includes("/partnership-list-preferences/") && res.request().method() === "PATCH",
+    { timeout: 60_000 },
+  );
+  await aliasDialog.getByRole("button", { name: "Сохранить" }).click();
+  await aliasWait;
+
+  await row.getByRole("button", { name: "В архив" }).click();
+  await page.waitForTimeout(500);
+
+  const companyView = await apiGetPartnership(companyPage, partnershipId);
+  assert(companyView?.status === "ACTIVE", "archive: counterparty still ACTIVE");
+  assert(!companyView?.listPreference?.archivedAt, "archive: no counterparty personal archive");
+
+  await page.getByTestId("list-archive-view").selectOption("archive");
+  await page.getByText(ALIAS_LABEL).first().waitFor({ timeout: 30_000 });
+
+  await row.getByRole("button", { name: "Вернуть из архива" }).click();
+  await page.getByTestId("list-archive-view").selectOption("active");
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByText(ALIAS_LABEL).first().waitFor({ timeout: 60_000 });
+
+  const storeP = await apiGetPartnership(page, partnershipId);
+  await assertPartnershipSides(storeP, storeUserId, companyUserId, "alias-reload-store");
+}
+
+function writeArtifacts(delegated, realOwner, flowMeta) {
   const captureCompletedAt = new Date().toISOString();
   const meta = {
     applicationRuntime: {
@@ -222,10 +335,11 @@ function writeArtifacts(delegated, realOwner) {
     harnessState: STATE_PATH,
     delegatedProfTestReadGate: delegated,
     realOwnerFullFlow: realOwner,
+    flowMeta,
     failures,
     ok: failures.length === 0,
     profTestPolicyNote:
-      "POST /api/partnership/invite is on existing prof-test allowlist; this gate uses foreign PATCH deny for delegated write-negative.",
+      "Delegated: read + PATCH cancel on existing foreign partnershipId → 403, record unchanged. POST invite not used for delegated full flow.",
   };
   fs.mkdirSync(ART_DIR, { recursive: true });
   fs.writeFileSync(path.join(ART_DIR, "shell-gate.json"), JSON.stringify(meta, null, 2));
@@ -251,59 +365,128 @@ async function main() {
   const harness = loadHarness();
   const storeDel = harness.roles?.store?.delegationToken;
   const companyDel = harness.roles?.company?.delegationToken;
-  const storeReal = harness.roles?.store?.realOwner?.ownerSessionToken;
-  const companyReal = harness.roles?.company?.realOwner?.ownerSessionToken;
-  const companyUserId = harness.roles?.company?.realOwner?.userId;
-  const storeUserId = harness.roles?.store?.realOwner?.userId;
-  if (!storeDel || !companyDel || !storeReal || !companyReal || !companyUserId || !storeUserId) {
-    throw new Error("harness missing delegation or realOwner tokens/userIds");
+  const storeRealMeta = harness.roles?.store?.realOwner;
+  const companyRealMeta = harness.roles?.company?.realOwner;
+  if (!storeDel || !companyDel || !storeRealMeta?.ownerSessionToken || !companyRealMeta?.ownerSessionToken) {
+    throw new Error("harness missing tokens");
+  }
+  const {
+    userId: storeUserId,
+    ownerSessionToken: storeReal,
+    publicId: storePublicId,
+    displayName: storeDisplayName,
+    partnershipId: foreignPartnershipId,
+  } = storeRealMeta;
+  const {
+    userId: companyUserId,
+    ownerSessionToken: companyReal,
+    publicId: companyPublicId,
+    displayName: companyDisplayName,
+  } = companyRealMeta;
+  if (!storePublicId || !companyPublicId || !foreignPartnershipId) {
+    throw new Error("harness missing publicId or foreign partnershipId — re-run seed-business-owner-real-sessions");
   }
 
   const browser = await chromium.launch({ headless: true });
   const delegated = {};
   const realOwner = {};
+  let flowPartnershipId = null;
 
   {
     const { context, page } = await withSession(browser, storeDel, { width: 1440, height: 900 });
-    await exerciseDelegatedHub(page, "store-delegated", "business-store-r04");
+    await exerciseDelegatedHub(page, "store-delegated", "business-store-r04", foreignPartnershipId);
+    await prepareHubForCapture(page, "Мои партнёры");
     await captureMatrix(page, "store-partners-delegated");
-    delegated.store = { readHub: true };
+    delegated.store = { readHub: true, foreignDeny403: true };
     await context.close();
   }
 
   {
     const { context, page } = await withSession(browser, companyDel, { width: 1440, height: 900 });
-    await exerciseDelegatedHub(page, "company-delegated", "business-company-r04");
+    await exerciseDelegatedHub(page, "company-delegated", "business-company-r04", foreignPartnershipId);
+    await prepareHubForCapture(page, "Мои партнёры");
     await captureMatrix(page, "company-partners-delegated");
-    delegated.company = { readHub: true };
+    delegated.company = { readHub: true, foreignDeny403: true };
     await context.close();
   }
 
+  let storeContext;
+  let companyContext;
+  let storePage;
+  let companyPage;
   {
-    const { context, page } = await withSession(browser, storeReal, { width: 1440, height: 900 });
-    await exerciseRealOwnerHub(page, "store-real", "business-store-r04", companyUserId, "Магазин");
-    realOwner.store = { searchAndInvite: true };
-    await context.close();
-  }
+    storeContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await storeContext.addCookies([
+      {
+        name: "remcard-token",
+        value: storeReal,
+        domain: "127.0.0.1",
+        path: "/",
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+      },
+    ]);
+    storePage = await storeContext.newPage();
 
-  {
-    const { context, page } = await withSession(browser, companyReal, { width: 1440, height: 900 });
-    await acceptIncomingInvite(page, "company-real-accept");
-    await exerciseRealOwnerHub(page, "company-real-search", "business-company-r04", storeUserId, "Компания");
-    await captureMatrix(page, "company-partners-real");
-    realOwner.company = { acceptInvite: true, search: true };
-    await context.close();
-  }
+    companyContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await companyContext.addCookies([
+      {
+        name: "remcard-token",
+        value: companyReal,
+        domain: "127.0.0.1",
+        path: "/",
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+      },
+    ]);
+    companyPage = await companyContext.newPage();
 
-  {
-    const { context, page } = await withSession(browser, storeReal, { width: 1440, height: 900 });
-    await captureMatrix(page, "store-partners-real");
-    await context.close();
+    flowPartnershipId = await uiInviteStoreToCompany(
+      storePage,
+      { publicId: companyPublicId, displayName: companyDisplayName },
+      storeUserId,
+      companyUserId,
+    );
+    realOwner.store = { uiInvite: true, partnershipId: flowPartnershipId };
+
+    await uiAcceptIncomingCompany(
+      companyPage,
+      flowPartnershipId,
+      { displayName: storeDisplayName },
+      storeUserId,
+      companyUserId,
+    );
+    realOwner.company = { uiAccept: true, partnershipId: flowPartnershipId };
+
+    const storeActive = await apiGetPartnership(storePage, flowPartnershipId);
+    const companyActive = await apiGetPartnership(companyPage, flowPartnershipId);
+    assert(storeActive?.status === "ACTIVE" && companyActive?.status === "ACTIVE", "both sides ACTIVE after accept");
+
+    await uiTermChangeCycle(storePage, companyPage, flowPartnershipId, storeUserId, companyUserId);
+    realOwner.termChange = { partnershipId: flowPartnershipId, percent: TERM_CHANGE_PERCENT };
+
+    await uiAliasArchiveRestore(storePage, flowPartnershipId, companyPage, storeUserId, companyUserId);
+    realOwner.workspace = { alias: ALIAS_LABEL, archiveRestore: true };
+
+    await prepareHubForCapture(storePage, ALIAS_LABEL);
+    await captureMatrix(storePage, "store-partners-real");
+    await prepareHubForCapture(companyPage, storeDisplayName);
+    await captureMatrix(companyPage, "company-partners-real");
+
+    await storeContext.close();
+    await companyContext.close();
   }
 
   await browser.close();
 
-  const meta = writeArtifacts(delegated, realOwner);
+  const meta = writeArtifacts(delegated, realOwner, {
+    partnershipId: flowPartnershipId,
+    storeUserId,
+    companyUserId,
+    invitePercent: INVITE_PERCENT,
+  });
   if (failures.length) {
     console.error(JSON.stringify({ ok: false, failures, applicationRuntime: meta.applicationRuntime }, null, 2));
     process.exit(1);
