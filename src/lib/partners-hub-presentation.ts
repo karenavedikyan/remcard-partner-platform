@@ -10,7 +10,12 @@ export type PartnersPageHeading = {
   description: string;
 };
 
-export type PartnersHubAudience = "legacy" | "agent-r04" | "specialist-r04";
+export type PartnersHubAudience =
+  | "legacy"
+  | "agent-r04"
+  | "specialist-r04"
+  | "business-store-r04"
+  | "business-company-r04";
 
 export type PartnersHubPresentation = {
   shell: PartnersHubShell;
@@ -23,9 +28,18 @@ export type PartnersHubPresentation = {
 type R04Gate = Pick<AgentR04Status, "featureEnabled" | "eligible">;
 type R06Gate = Pick<SpecialistR06Status, "featureEnabled" | "eligible">;
 
+export type BusinessPartnersPresentationGate = {
+  eligible: boolean;
+  partnerType: "STORE" | "COMPANY";
+};
+
+const BUSINESS_HEADING_DESCRIPTION =
+  "Действующие партнёры, поиск в RemCard и согласование условий.";
+
 export function resolvePartnersHubPresentation(input: {
   r04: R04Gate | null;
   r06: R06Gate | null;
+  business?: BusinessPartnersPresentationGate | null;
 }): PartnersHubPresentation {
   const r04Eligible = Boolean(input.r04?.featureEnabled && input.r04?.eligible);
 
@@ -51,7 +65,20 @@ export function resolvePartnersHubPresentation(input: {
       heading: {
         eyebrow: "Специалист",
         title: "Партнёры",
-        description: "Действующие партнёры, поиск в RemCard и согласование условий.",
+        description: BUSINESS_HEADING_DESCRIPTION,
+      },
+    };
+  }
+
+  if (input.business?.eligible) {
+    const isStore = input.business.partnerType === "STORE";
+    return {
+      shell: "shared-r04",
+      audience: isStore ? "business-store-r04" : "business-company-r04",
+      heading: {
+        eyebrow: isStore ? "Магазин" : "Компания",
+        title: "Партнёры",
+        description: BUSINESS_HEADING_DESCRIPTION,
       },
     };
   }

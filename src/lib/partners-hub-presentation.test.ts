@@ -78,6 +78,39 @@ describe("resolvePartnersHubPresentation", () => {
     expect(p.shell).toBe("legacy");
     expect(p.defaultSearchRole).toBeUndefined();
   });
+
+  it("uses shared business shell for org owner store without agent search role", () => {
+    const p = resolvePartnersHubPresentation({
+      r04: { featureEnabled: false, eligible: false },
+      r06: { featureEnabled: false, eligible: false },
+      business: { eligible: true, partnerType: "STORE" },
+    });
+    expect(p.shell).toBe("shared-r04");
+    expect(p.audience).toBe("business-store-r04");
+    expect(p.heading.eyebrow).toBe("Магазин");
+    expect(p.defaultSearchRole).toBeUndefined();
+    expect(p.heading.title).toBe("Партнёры");
+    expect(JSON.stringify(p.heading)).not.toMatch(/АГЕНТ|СПЕЦИАЛИСТ|R04|R06/);
+  });
+
+  it("prefers r06 over business when both eligible", () => {
+    const p = resolvePartnersHubPresentation({
+      r04: { featureEnabled: false, eligible: false },
+      r06: { featureEnabled: true, eligible: true },
+      business: { eligible: true, partnerType: "COMPANY" },
+    });
+    expect(p.audience).toBe("specialist-r04");
+  });
+
+  it("uses company business audience", () => {
+    const p = resolvePartnersHubPresentation({
+      r04: null,
+      r06: null,
+      business: { eligible: true, partnerType: "COMPANY" },
+    });
+    expect(p.audience).toBe("business-company-r04");
+    expect(p.heading.eyebrow).toBe("Компания");
+  });
 });
 
 describe("discussionContextToInviteTarget", () => {

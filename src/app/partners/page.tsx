@@ -10,6 +10,7 @@ import type { ProProfileResponse } from "@/lib/types";
 import { partnersPageReturnPath } from "@/lib/partners-return-path";
 import type { AgentR04Status } from "@/lib/agent-r04/api";
 import { resolvePartnersHubPresentation } from "@/lib/partners-hub-presentation";
+import { resolveBusinessOwnerPartnersEligibility } from "@/lib/business-partners/gate";
 import type { SpecialistR06Status } from "@/lib/specialist-r06/types";
 
 export const dynamic = "force-dynamic";
@@ -40,14 +41,23 @@ export default async function PartnersPage(props: {
   }
 
   const upstreamHeaders = cookieHeader ? { cookie: cookieHeader } : undefined;
-  const [r04Result, r06Result] = await Promise.all([
+  const [r04Result, r06Result, proContextResult] = await Promise.all([
     fetchRemcardUpstream<AgentR04Status>("/api/pro/r04/status", { headers: upstreamHeaders }),
     fetchRemcardUpstream<SpecialistR06Status>("/api/pro/r06/status", { headers: upstreamHeaders }),
+    fetchRemcardUpstream<{ role: string }>("/api/pro/context", { headers: upstreamHeaders }),
   ]);
+
+  const businessPartners = resolveBusinessOwnerPartnersEligibility({
+    user,
+    proContextRole: proContextResult.ok ? proContextResult.data.role : null,
+  });
 
   const presentation = resolvePartnersHubPresentation({
     r04: r04Result.ok ? r04Result.data : null,
     r06: r06Result.ok ? r06Result.data : null,
+    business: businessPartners.eligible
+      ? { eligible: true, partnerType: businessPartners.partnerType }
+      : null,
   });
 
   return (

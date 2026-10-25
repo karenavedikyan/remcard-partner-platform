@@ -18,6 +18,17 @@ const AGENT_COPY: PartnersSharedUiCopy = {
   hubModalTitleLink: "Пригласить партнёра",
 };
 
+const BUSINESS_COPY: PartnersSharedUiCopy = {
+  activeLead:
+    "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас.",
+  invitationsLead:
+    "Входящие и отправленные приглашения. Принятие не меняет условия автоматически — только поддержанные шаги контракта.",
+  footnote:
+    "Здесь партнёрство с другими участниками RemCard. Управление сотрудниками — в разделе команды.",
+  hubModalTitleFind: "Найти партнёра",
+  hubModalTitleLink: "Пригласить партнёра",
+};
+
 const SPECIALIST_COPY: PartnersSharedUiCopy = {
   activeLead:
     "Ваши действующие партнёры. Ожидающие приглашения находятся в соседней вкладке. Фильтры применяются вместе. Архив скрывает запись только из списка, не отменяя условия.",
@@ -31,5 +42,6 @@ const SPECIALIST_COPY: PartnersSharedUiCopy = {
 
 export function partnersSharedUiCopy(audience: PartnersHubAudience | undefined): PartnersSharedUiCopy {
   if (audience === "specialist-r04") return SPECIALIST_COPY;
+  if (audience === "business-store-r04" || audience === "business-company-r04") return BUSINESS_COPY;
   return AGENT_COPY;
 }
