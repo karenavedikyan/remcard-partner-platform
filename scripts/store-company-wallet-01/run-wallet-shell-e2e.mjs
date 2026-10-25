@@ -443,7 +443,7 @@ async function requisitesListSnapshot(api) {
   };
 }
 
-async function delegatedWalletPolicy(page, label, walletGate, ownerRequisitesId) {
+async function delegatedWalletPolicy(page, label, payableBonusId, ownerRequisitesId) {
   assert(ownerRequisitesId, `${label}: missing owner requisites fixture id`);
   const settlements = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
     headers: proxyHeaders(),
@@ -508,13 +508,12 @@ async function delegatedWalletPolicy(page, label, walletGate, ownerRequisitesId)
   const detailAfterBody = await detailAfter.json();
   assert(detailAfterBody.item?.version === versionBefore, `${label}: requisites version unchanged`);
 
-  const bonusId = walletGate?.payableBonusIds?.[0];
-  assert(bonusId, `${label}: missing gate bonus id`);
-  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  assert(payableBonusId, `${label}: missing delegated payable bonus id`);
+  const beforePay = dbSnapshot(payableBonusId).payoutRecordCount;
   const pay = await page.request.post(
-    `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
+    `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(payableBonusId)}/pay`,
     {
-      headers: { ...proxyHeaders(), "Idempotency-Key": `gate-delegated-${bonusId}` },
+      headers: { ...proxyHeaders(), "Idempotency-Key": `gate-delegated-${payableBonusId}` },
       data: { payoutMethod: "CASH" },
     },
   );
@@ -522,7 +521,7 @@ async function delegatedWalletPolicy(page, label, walletGate, ownerRequisitesId)
     pay.status() === 403 || pay.status() === 401,
     `${label}: payout write ${pay.status()} (expected policy deny)`,
   );
-  const afterPay = dbSnapshot(bonusId).payoutRecordCount;
+  const afterPay = dbSnapshot(payableBonusId).payoutRecordCount;
   assert(afterPay === beforePay, `${label}: payout record count unchanged`);
 }
 
@@ -620,7 +619,7 @@ async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
   }
 }
 
-async function staffWalletForbidden(api, label, bonusId) {
+async function staffWalletForbidden(api, label, bonusId, ownerRequisitesId) {
   const beforePay = dbSnapshot(bonusId).payoutRecordCount;
   const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
   assert(res.status() === 403, `${label}: staff settlements ${res.status()}`);
@@ -629,7 +628,12 @@ async function staffWalletForbidden(api, label, bonusId) {
   );
   assert(exp.status() === 403, `${label}: staff export ${exp.status()}`);
   const req = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`);
-  assert(req.status() === 403, `${label}: staff requisites list ${req.status()}`);
+  assert(req.status() === 200, `${label}: staff requisites list HTTP ${res.status()}`);
+  const reqItems = (await req.json()).items ?? [];
+  assert(
+    !reqItems.some((i) => i.id === ownerRequisitesId),
+    `${label}: staff requisites must not expose owner sets`,
+  );
   const pay = await api.post(`${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`, {
     headers: { "Idempotency-Key": `staff-forbidden-${bonusId}` },
     data: { payoutMethod: "CASH" },
@@ -641,7 +645,11 @@ async function staffWalletForbidden(api, label, bonusId) {
 async function staffWalletAuthorized(api, label, walletGate, bonusId, foreignRequisitesId) {
   const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
   assert(res.status() === 200, `${label}: authorized staff settlements ${res.status()}`);
-  assertExactGateSettlements(await res.json(), walletGate, label);
+  const ledger = await res.json();
+  const paySum = sumGateRows(ledger.payable, walletGate.payableBonusIds);
+  assert(paySum === walletGate.payableOpen, `${label}: staff payable scope ${paySum}`);
+  const recvLeak = sumGateRows(ledger.receivable, walletGate.receivableBonusIds);
+  assert(recvLeak === 0, `${label}: staff receivable scope excludes owner receivables`);
   const exp = await api.post(
     `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?scope=open&direction=payable&status=open&sort=debt-desc`,
   );
@@ -732,6 +740,10 @@ async function main() {
   const companyReal = harness.roles?.company?.realOwner?.ownerSessionToken;
   const storeDel = harness.roles?.store?.delegationToken;
   const companyDel = harness.roles?.company?.delegationToken;
+  const storeDelegatedRequisitesId = harness.roles?.store?.delegatedOwnerRequisitesId;
+  const companyDelegatedRequisitesId = harness.roles?.company?.delegatedOwnerRequisitesId;
+  const storeDelegatedBonusId = harness.roles?.store?.delegatedPayableBonusId;
+  const companyDelegatedBonusId = harness.roles?.company?.delegatedPayableBonusId;
   const storeWallet = harness.roles?.store?.walletGate;
   const companyWallet = harness.roles?.company?.walletGate;
   const storeStaff = harness.roles?.store?.walletStaff;
@@ -749,6 +761,13 @@ async function main() {
     "missing store walletStaff fixtures (run seed-business-wallet-gate-access-fixtures)",
   );
   assert(storeOwnerRequisitesId && companyOwnerRequisitesId, "missing seeded owner requisites ids");
+  assert(
+    storeDelegatedRequisitesId &&
+      companyDelegatedRequisitesId &&
+      storeDelegatedBonusId &&
+      companyDelegatedBonusId,
+    "missing delegated wallet fixtures",
+  );
   assert(storeOwnerUserId && companyOwnerUserId, "missing owner user ids");
 
   const browser = await chromium.launch({ headless: true });
@@ -767,7 +786,12 @@ async function main() {
 
   {
     const restrictedApi = await withApiToken(storeStaff.restrictedSessionToken);
-    await staffWalletForbidden(restrictedApi, "store-staff-restricted", storeWallet.payableBonusIds[0]);
+    await staffWalletForbidden(
+      restrictedApi,
+      "store-staff-restricted",
+      storeWallet.payableBonusIds[0],
+      storeOwnerRequisitesId,
+    );
     await restrictedApi.dispose();
     const authorizedApi = await withApiToken(storeStaff.authorizedSessionToken);
     await staffWalletAuthorized(
@@ -786,14 +810,24 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, storeDel);
-    await delegatedWalletPolicy(page, "store-delegated", storeWallet, storeOwnerRequisitesId);
+    await delegatedWalletPolicy(
+      page,
+      "store-delegated",
+      storeDelegatedBonusId,
+      storeDelegatedRequisitesId,
+    );
     await context.close();
     flow.delegatedStore = { requisitesMutationsDenied: true, payoutWriteDenied: true };
   }
 
   {
     const { context, page } = await withSession(browser, companyDel);
-    await delegatedWalletPolicy(page, "company-delegated", companyWallet, companyOwnerRequisitesId);
+    await delegatedWalletPolicy(
+      page,
+      "company-delegated",
+      companyDelegatedBonusId,
+      companyDelegatedRequisitesId,
+    );
     await context.close();
     flow.delegatedCompany = { requisitesMutationsDenied: true, payoutWriteDenied: true };
   }
