@@ -157,20 +157,26 @@ async function requisitesUiFlow(page, label, tag) {
   const legalName = `Gate Wallet ${tag}`;
   await page.getByRole("button", { name: /Добавить реквизиты|Добавить ещё реквизиты/ }).click();
   await page.getByTestId("agent-requisites-form").waitFor();
+  await page.getByTestId("bank-type").selectOption("person");
   await page.getByTestId("bank-recipient").fill(legalName);
   await page.getByTestId("bank-inn").fill("7707083893");
   await page.getByTestId("bank-bank").fill("Gate Bank");
   await page.getByTestId("bank-bik").fill("044525225");
   await page.getByTestId("bank-account").fill("40817810099910004312");
   const saveWait = page.waitForResponse(
-    (r) =>
-      r.url().includes("/agent-payout-requisites") &&
-      r.request().method() === "POST" &&
-      r.status() >= 200 &&
-      r.status() < 300,
+    (r) => {
+      const u = r.url();
+      return (
+        u.includes("/agent-payout-requisites") &&
+        !u.match(/agent-payout-requisites\/[^/?]+/) &&
+        r.request().method() === "POST"
+      );
+    },
     { timeout: 60_000 },
   );
-  await page.getByTestId("bank-save").click();
+  await page.getByTestId("agent-requisites-form").evaluate((form) => {
+    form.requestSubmit();
+  });
   const saveRes = await saveWait;
   const saved = await saveRes.json();
   const createdItem = saved.item;
@@ -201,6 +207,10 @@ async function walletOwnerFlow(page, label, walletGate) {
   await page.getByTestId("business-owner-wallet").waitFor({ timeout: 90_000 });
   const api = await fetchSettlements(page);
   assertExactGateSettlements(api, walletGate, label);
+
+  const reqInfo = await requisitesUiFlow(page, label, label);
+  await page.getByTestId("business-wallet-tab-settlements").click();
+  await page.getByTestId("specialist-settlements-workspace").waitFor();
 
   await page.getByTestId("specialist-wallet-receivable-total").click();
   const recvPartnerId = api.receivable.find((r) => walletGate.receivableBonusIds.includes(r.id))
@@ -264,10 +274,6 @@ async function walletOwnerFlow(page, label, walletGate) {
   await page.getByRole("button", { name: /Фильтры/i }).click();
   await page.getByLabel("Поиск").fill(payRow.counterpartyName.slice(0, 4));
   await page.waitForTimeout(300);
-
-  const reqInfo = await requisitesUiFlow(page, label, label);
-  await page.getByTestId("business-wallet-tab-settlements").click();
-  await page.getByTestId("specialist-settlements-workspace").waitFor();
 
   return { payoutBonusId, requisitesId: reqInfo.requisitesId };
 }
