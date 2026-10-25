@@ -1,0 +1,41 @@
+{
+  "endpoint": "GET /api/pro/business-home/metrics",
+  "auth": "getProfCabinetUser + ORG_OWNER pro context",
+  "STORE": {
+    "primary": {
+      "label": "Продажи сегодня",
+      "model": "Order.count",
+      "period": "MSK calendar day",
+      "scope": "store order access + active branch certificate scope"
+    },
+    "secondary": {
+      "label": "Партнёры",
+      "model": "Partnership.count ACTIVE",
+      "scope": "owner storeUserId"
+    },
+    "tertiary": {
+      "label": "Мои операции",
+      "model": "Order.count",
+      "period": "MSK calendar day",
+      "scope": "store order access AND storeUserId = actor",
+      "limit": "Not a full operations journal; distinct from primary sales filter"
+    }
+  },
+  "COMPANY": {
+    "primary": {
+      "label": "Филиалы",
+      "model": "Branch.count isActive",
+      "scope": "organization"
+    },
+    "secondary": {
+      "label": "Сотрудники",
+      "model": "branch employees + OrganizationMember ACTIVE deduped",
+      "scope": "excludes owner; no pending invites"
+    },
+    "tertiary": {
+      "label": "Партнёры",
+      "model": "Partnership.count ACTIVE",
+      "scope": "owner storeUserId"
+    }
+  }
+}

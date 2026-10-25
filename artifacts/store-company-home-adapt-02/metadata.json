@@ -1,0 +1,6 @@
+{
+  "frontendRuntimeSha": "be43ffc8a34088392635fb9e9079b5929369c117",
+  "backendRuntimeSha": "5a2c2a7d9d5c03f2b948626dea2a987daa0422a4",
+  "captureNote": "Dev preview with mocked /api/pro/business-home/metrics; server guard proof is vitest route tests on navigator.",
+  "capturedAt": "2026-10-25T08:39:45.446Z"
+}
