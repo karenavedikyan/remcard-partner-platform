@@ -14,6 +14,9 @@ const STATE_PATH =
   path.join("/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json");
 const ART = path.resolve("artifacts/store-company-home-adapt-02/visual-shell");
 const failures = [];
+/** Non-fatal 401 observations (logged in shell-gate.json for audit). */
+const observedHttp401 = [];
+const checklist = { storeScannerHeadingAndFind: false, companyInviteWizardDialog: false };
 
 function gitHead(repo) {
   return execSync(`git -C ${repo} rev-parse HEAD`, { encoding: "utf8" }).trim();
@@ -56,9 +59,11 @@ async function withSession(browser, token, viewport) {
   ]);
   const page = await context.newPage();
   page.on("response", (res) => {
+    if (res.status() !== 401) return;
     const url = res.url();
-    if (url.includes("business-home/metrics") && res.status() === 401) {
-      failures.push(`metrics 401: ${url}`);
+    observedHttp401.push({ url, method: res.request().method() });
+    if (url.includes("business-home/metrics")) {
+      failures.push(`FATAL metrics 401: ${url}`);
     }
   });
   page.on("pageerror", (err) => failures.push(`pageerror: ${String(err)}`));
@@ -78,10 +83,22 @@ async function captureShell(page, name) {
   await page.screenshot({ path: path.join(ART, name), fullPage: true });
 }
 
-async function primarySalesValue(page) {
+/** Poll until React commits primary stat (not loading "…"). */
+async function waitForPrimarySales(page, expected, label) {
   const value = page.locator('[aria-live="polite"] > div').first().locator("strong");
-  await value.waitFor({ timeout: 60_000 });
-  return (await value.innerText()).trim();
+  await value.waitFor({ state: "attached", timeout: 60_000 });
+  const deadline = Date.now() + 60_000;
+  while Date.now() < deadline) {
+    const text = (await value.innerText()).trim();
+    if (text === expected) return;
+    if (text !== "…" && text !== "" && text !== expected) {
+      failures.push(`${label}: primary sales expected ${expected} got ${text}`);
+      return;
+    }
+    await page.waitForTimeout(75);
+  }
+  const final = (await value.innerText()).trim();
+  failures.push(`${label}: primary sales expected ${expected} timed out (last=${final})`);
 }
 
 async function exerciseStoreTwoBranchMetrics(page, harness) {
@@ -102,8 +119,7 @@ async function exerciseStoreTwoBranchMetrics(page, harness) {
     ),
     select.selectOption(branchA),
   ]);
-  const aSales = await primarySalesValue(page);
-  assert(aSales === "1", `branch A sales expected 1 got ${aSales}`);
+  await waitForPrimarySales(page, "1", "branch A");
 
   await Promise.all([
     page.waitForResponse(
@@ -112,8 +128,7 @@ async function exerciseStoreTwoBranchMetrics(page, harness) {
     ),
     select.selectOption(branchB),
   ]);
-  const bSales = await primarySalesValue(page);
-  assert(bSales === "0", `branch B sales expected 0 got ${bSales}`);
+  await waitForPrimarySales(page, "0", "branch B");
 }
 
 async function exerciseStoreForeignDeny(token) {
@@ -136,6 +151,7 @@ async function exerciseStore(page) {
   await page.waitForURL(/\/scanner/, { timeout: 30_000 });
   await page.getByRole("heading", { level: 1, name: "Сканер" }).waitFor({ timeout: 30_000 });
   await page.getByRole("button", { name: /^Найти$/ }).waitFor({ timeout: 30_000 });
+  checklist.storeScannerHeadingAndFind = true;
 }
 
 async function exerciseCompany(page) {
@@ -150,6 +166,7 @@ async function exerciseCompany(page) {
   await wizardOpen.waitFor({ timeout: 60_000 });
   await wizardOpen.click();
   await page.getByRole("dialog", { name: /Пригласить сотрудника/ }).waitFor({ timeout: 30_000 });
+  checklist.companyInviteWizardDialog = true;
 }
 
 async function assertMasterNotBusinessHome(page) {
@@ -208,12 +225,22 @@ async function main() {
 
   await browser.close();
 
+  const feRuntime =
+    process.env.HOME_ADAPT_FE_RUNTIME_SHA?.trim() ||
+    gitHead("/agent/repos/remcard-partner-platform");
+  const beRuntime =
+    process.env.HOME_ADAPT_BE_RUNTIME_SHA?.trim() ||
+    gitHead("/agent/repos/remcard-navigator");
+
   const meta = {
-    frontendRuntimeSha: gitHead("/agent/repos/remcard-partner-platform"),
-    backendRuntimeSha: gitHead("/agent/repos/remcard-navigator"),
+    frontendRuntimeSha: feRuntime,
+    backendRuntimeSha: beRuntime,
     profUrl: PROF_URL,
+    navUrl: NAV_URL,
     harnessState: STATE_PATH,
     capturedAt: new Date().toISOString(),
+    observedHttp401,
+    ctaChecks: { ...checklist },
     failures,
     ok: failures.length === 0,
   };
