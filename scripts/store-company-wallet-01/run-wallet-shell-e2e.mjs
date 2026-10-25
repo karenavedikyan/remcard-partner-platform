@@ -167,15 +167,41 @@ async function delegatedWalletPolicy(page, label) {
   const reqPost = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
     headers: proxyHeaders(),
     data: {
-      label: "Injected",
-      recipientName: "Test",
+      kind: "person",
+      legalName: "Gate delegated write attempt",
       inn: "7707083893",
-      accountNumber: "40817810099910004312",
+      bankName: "Test Bank",
       bik: "044525225",
-      bankName: "Bank",
+      accountNumber: "40817810099910004312",
     },
   });
-  assert(reqPost.status() === 403, `${label}: requisites write ${reqPost.status()}`);
+  assert(
+    reqPost.status() === 403 || reqPost.status() === 401,
+    `${label}: requisites write ${reqPost.status()}`,
+  );
+  const bonusId = harnessBonusIdForDelegated(label);
+  if (bonusId) {
+    const pay = await page.request.post(
+      `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
+      {
+        headers: { ...proxyHeaders(), "Idempotency-Key": `gate-delegated-${bonusId}` },
+        data: { payoutMethod: "CASH" },
+      },
+    );
+    assert(pay.status() === 403 || pay.status() === 401, `${label}: payout write ${pay.status()}`);
+  }
+}
+
+function harnessBonusIdForDelegated(label) {
+  try {
+    const harness = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
+    if (label.startsWith("store")) {
+      return harness.roles?.store?.walletGate?.payableBonusIds?.[0] ?? null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function writeArtifacts(flow, captureCompletedAt) {
