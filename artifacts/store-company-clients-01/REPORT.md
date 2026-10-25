@@ -35,4 +35,7 @@ Command: `bash scripts/store-company-clients-01/run-browser-gate.sh`
 
 ## Branches
 
-`feat/store-company-clients-01` — FE tip documents tests/REPORT; runtime SHAs above.
+| FE evidence tip (tests + REPORT) | `f5fcc96d4ad9a6e9c569ff66b39f5ca5d63a2030` |
+| Runtime unchanged | gate at `bb3e7575` / `8b1e932e` (no re-run for test-only commit) |
+
+Vitest (mounted list race): `AgentClientsList.race.test.tsx` 2 passed; with `AgentClientDetail.race.test.tsx` + `business-clients/*` → **7 passed / 4 files**.
