@@ -330,6 +330,7 @@ async function main() {
     const companyFlow = await realOwnerFlow(page, "company-real");
     flow.companyRealClientId = companyFlow.clientId;
     flow.companyRealClientName = companyFlow.clientName;
+    await mutationChecks(page, companyFlow.clientId, foreignClientId, "company-real");
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
     await captureMatrix(page, "company-clients-real");
