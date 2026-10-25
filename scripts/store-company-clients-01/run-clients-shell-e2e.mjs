@@ -142,7 +142,7 @@ async function realOwnerFlow(page, label) {
   await dialog.waitFor({ timeout: 30_000 });
   await dialog.locator("label").filter({ hasText: "Имя" }).locator("input").fill(CLIENT_NAME);
   await dialog.locator("label").filter({ hasText: "Город" }).locator("input").fill("Краснодар");
-  await dialog.locator("label").filter({ hasText: "Потребность" }).locator("textarea").fill("Gate need");
+  await dialog.locator("label").filter({ hasText: "Потребность" }).locator("input").fill("Gate need");
   await dialog.getByRole("button", { name: "Добавить" }).click();
   await dialog.waitFor({ state: "hidden", timeout: 60_000 }).catch(() => undefined);
   await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 60_000 });

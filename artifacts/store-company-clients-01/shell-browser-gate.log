@@ -1,12 +1,8 @@
-{
-  "ok": true,
-  "flow": {
-    "delegatedStore": {
-      "foreignDeny": true
-    },
-    "storeRealClientId": "cmvnuxtzg0001js8hf12m05rb",
-    "companyReal": {
-      "hub": true
-    }
-  }
+locator.fill: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('agent-client-form-dialog').locator('label').filter({ hasText: 'Потребность' }).locator('textarea')
+
+    at realOwnerFlow (/agent/repos/remcard-partner-platform/scripts/store-company-clients-01/run-clients-shell-e2e.mjs:145:88)
+    at async main (/agent/repos/remcard-partner-platform/scripts/store-company-clients-01/run-clients-shell-e2e.mjs:294:30) {
+  name: 'TimeoutError'
 }

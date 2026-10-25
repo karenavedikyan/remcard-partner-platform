@@ -186,9 +186,9 @@ export function AgentClientFormDialog({
               : {})}
           />
         </label>
-        {accessMode === "specialist" ? (
+        {accessMode === "specialist" || accessMode === "business" ? (
           <label className={styles.field}>
-            Задача · необязательно
+            {accessMode === "business" ? "Потребность · необязательно" : "Задача · необязательно"}
             <input
               value={need}
               onChange={(e) => setNeed(e.target.value)}
