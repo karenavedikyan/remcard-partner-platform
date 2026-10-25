@@ -1,51 +1,44 @@
-# STORE-COMPANY-CLIENTS-01
+# STORE-COMPANY-CLIENTS-01 (A/B/C closure)
 
-**Status: READY FOR REVIEW (acceptance groups A–C)**
+**Status: READY FOR REVIEW**
 
-## A. Purchases semantics
+## A — Purchases (honest scope)
 
-- **По нашим рекомендациям:** `listAgentClientRecommendationPurchases` — заказы с `certificate.agentClientId`, `certificate.proUserId = owner`, `order.proUserId = owner`, принятие у **чужого** партнёра (`certificatePartner.storeUserId ≠ owner`).
-- **Покупки у нас:** `listAgentClientReceivingPurchases` — заказы с той же привязкой сертификата к CRM-клиенту, принятие у **своей** организации (`certificatePartner.storeUserId = owner`). Без join по телефону/имени, без CLIENT User и без всех org orders.
-- Business detail: две секции (`client-recommendation-purchases`, `client-receiving-purchases`). Agent/specialist — одна история (исходящие).
-- Copy: контакты «не отправляются партнёрам автоматически» (`businessClientsPageCopy`).
-- Fixture: `seed-business-client-receiving-purchase.ts` → `gateReceivingClientId` + подтверждённый order; foreign client read/deny в gate.
-
-## B. Flow & mutations (isolated gate)
-
-- STORE + COMPANY real owners: UI create → detail → edit note/need/phone clear → reload → archive/restore on detail.
-- Certificate: UI wizard (partner → discounts → **POST `/api/store/certificate`** with `agentClientId`) + detail API shows linked certs. Backend: `resolveClientCertificateLinkAccess` allows **business** org owners.
-- Mutations: protected delete 409 with cert; batch delete partial (own disposable + foreign id); POST injection (`ownerUserId`/`org`/`actor`) ignored; delegated STORE/COMPANY foreign PATCH/DELETE deny.
-- **Need/потребность:** editable/clear in business via shared `AgentClientFormDialog` + PATCH.
-
-## C. Race & gate resilience
-
-- `AgentClientsList` / `AgentClientDetail`: load generation guards; detail clears state on `clientId` change.
-- `AgentClientDetail.race.test.tsx`: stale response + error path.
-- `OwnerClientsGate`: R03/R06 first; business `/me`+`/context` isolated (failures there do not break agent/specialist).
-- BE `ownerClientsAccess.test.ts`: COMPANY owner, staff deny, `proCtx` reset in `beforeEach`.
-
-## Runtime SHA (gate capture)
-
-| | SHA / time |
+| Slice | Contract |
 | --- | --- |
-| Frontend application | `f78052a7c0782dc9736b6821d571472560de5d2d` |
-| Backend application | `f713bf25b58fde996c6130baa12a1068022f711b` |
-| Capture | `2026-10-25T14:06:01.000Z` → `2026-10-25T14:08:06.168Z` |
-| Gate exit | `0` (`shell-browser-gate.exit`) |
+| **По нашим рекомендациям (business)** | Orders on **owner-issued** certs for CRM client, excluding acceptance at own org (`certificatePartnerId` null **or** partner ≠ owner). |
+| **Покупки у нас (business)** | Orders at own org where **we issued** the cert with `agentClientId` on this CRM client (`certificate.proUserId = owner`). |
+| **BLOCKED (documented, no schema change)** | Purchases at our store using **another recommender’s** certificate — no `AgentClient` link on accepting owner (`receivingPurchaseScope.blockedIncomingThirdPartyRecommender`). Leak fixture proves foreign issuer order id **not** listed on store CRM client receiving panel. |
+| **Agent/specialist** | **Legacy** `listAgentClientLegacyPurchases` — all orders on owner certs (nullable `certificatePartnerId` preserved). |
 
-Stdout includes top-level `applicationRuntime` (see `shell-gate.json`).
+UI footer: all order statuses shown; aggregate counter remains confirmed-only.
 
-## Backend deploy note
+## B — Gate flows
 
-Product changes beyond owner clients guard:
+- STORE + COMPANY: create with phone/email/need → edit/clear → reload readback → UI cert POST id match on detail → archive/restore → disposable **UI delete** with confirm.
+- Mutations: real foreign client id in batch skip; store uses company foreign CRM id, company uses **store-owned** foreign CRM id; injection read own 200 / other owner 404.
+- `ownerClientCertificateLink.test.ts`: prisma + proContext mocked (no DATABASE_URL).
 
-- `ownerClientsAccess.ts` (business mode)
-- `agentClientPurchases.ts` (split lists)
-- `ownerClientCertificateLink.ts` (business cert ↔ client link)
+## C — Stability
 
-**Deploy backend first**, then frontend.
+- Detail load error + **Повторить** (`client-detail-retry`); race test clicks retry.
+- `OwnerClientsGate`: business `/me`+`/context` failure → error+retry (not silent empty).
+- List load generation unit mirror: `clientsListLoadGuard.test.ts`.
 
-## Branches
+## Single success capture (aligned)
 
-- FE: `feat/store-company-clients-01` @ `f78052a7`
-- BE: `feat/store-company-clients-01` @ `f713bf25`
+| Field | Value |
+| --- | --- |
+| FE application SHA | `e79cc33431bc7c6c86db5d0c30ebe25bd0640c78` |
+| BE application SHA | `8b1e932ea9c611ccb5e2aac18ab50dac7faebbf1` |
+| Capture | `2026-10-25T14:14:01.000Z` → `2026-10-25T14:16:09.786Z` |
+| Exit | `0` (`shell-browser-gate.exit`) |
+| stdout / `shell-gate.json` / `metadata-shell.json` | Same `applicationRuntime` object |
+
+Command: `bash scripts/store-company-clients-01/run-browser-gate.sh`
+
+## Deploy
+
+Backend first (`agentClientPurchases`, `agentClientPurchaseScope`, `ownerClientCertificateLink`, detail API fields).
+
+Branches: `feat/store-company-clients-01` on both repos @ SHAs above.

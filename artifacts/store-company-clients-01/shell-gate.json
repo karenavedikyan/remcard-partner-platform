@@ -1,9 +1,9 @@
 {
   "applicationRuntime": {
-    "frontendSha": "e79cc33431bc7c6c86db5d0c30ebe25bd0640c78",
+    "frontendSha": "bb3e757536910383f1f0e7d871810ae347c9c84f",
     "backendSha": "8b1e932ea9c611ccb5e2aac18ab50dac7faebbf1",
-    "captureStartedAt": "2026-10-25T14:14:01.000Z",
-    "captureCompletedAt": "2026-10-25T14:16:09.786Z"
+    "captureStartedAt": "2026-10-25T14:16:27.000Z",
+    "captureCompletedAt": "2026-10-25T14:18:38.524Z"
   },
   "profUrl": "http://127.0.0.1:3420",
   "flow": {
@@ -13,15 +13,15 @@
     "delegatedCompany": {
       "foreignDeny": true
     },
-    "storeRealClientId": "cmvnwukf40001jsbh0x2r10ov",
-    "storeRealClientName": "Gate UI client store-real 1792937757624",
-    "companyRealClientId": "cmvnwup50000cjsbhi2srtlam",
-    "companyRealClientName": "Gate UI client company-real 1792937763638"
+    "storeRealClientId": "cmvnwxr560001jsjjlb8vu2s4",
+    "storeRealClientName": "Gate UI client store-real 1792937906271",
+    "companyRealClientId": "cmvnwxvzj000cjsjjk96fe4zx",
+    "companyRealClientName": "Gate UI client company-real 1792937912497"
   },
-  "companyForeignClientId": "cmvnws4zs0001jsx22186cz9a",
-  "storeForeignClientId": "cmvnws5mc0009js0t8svhj3kx",
-  "receivingClientId": "cmvnws59i0001jsz3sezd4wzv",
-  "leakOrderId": "cmvnws5m90006js0tn64p0ntv",
+  "companyForeignClientId": "cmvnwv9tm0001js5trns5f3jg",
+  "storeForeignClientId": "cmvnwvaes0009js994z9k79ge",
+  "receivingClientId": "cmvnwva410001js7jdssxkpkd",
+  "leakOrderId": "cmvnwvaeo0006js996hftdh4t",
   "failures": [],
   "ok": true
 }
