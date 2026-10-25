@@ -1,22 +1,37 @@
 {
-  "frontendRuntimeSha": "0269ffbc8ee09bef60a41203cde1cae07396f960",
-  "backendRuntimeSha": "8fabfdda64398afd7cb8ba46a2b3d352201af6aa",
+  "applicationRuntime": {
+    "frontendSha": "020918dff2aad929e88de5f07f43445f30080577",
+    "backendSha": "2b1bac4fbe31e2d686b4a2655d89d0bf7cf9847d",
+    "captureStartedAt": "2026-10-25T11:57:36.000Z",
+    "captureCompletedAt": "2026-10-25T11:59:38.896Z"
+  },
   "profUrl": "http://127.0.0.1:3420",
   "navUrl": "http://127.0.0.1:3421",
   "harnessState": "/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json",
-  "capturedAt": "2026-10-25T11:37:25.749Z",
+  "delegatedProfTestReadGate": {
+    "store": {
+      "readList": true,
+      "writeDenials": true,
+      "viewOnlyDetail": true
+    },
+    "company": {
+      "readList": true,
+      "writeDenials": true
+    },
+    "master": {
+      "noBusinessShell": true
+    }
+  },
+  "realOwnerFullFlow": {
+    "store": {
+      "createDetailPdfMutations": true,
+      "certId": "cmvnrz6mf0001js1fgqjuegnm"
+    },
+    "company": {
+      "createDetailPdfMutations": true,
+      "certId": "cmvnrz88c000cjs1fnjmgrtqk"
+    }
+  },
   "failures": [],
-  "ok": true,
-  "profTestWritePolicy": {
-    "allowedRead": [
-      "GET /api/pro/business-owner-certificates",
-      "GET /api/pro/business-owner-certificates/:id",
-      "GET /api/store/certificate/:id"
-    ],
-    "deniedWithoutAllowlistDelta": [
-      "POST /api/store/certificate",
-      "PATCH /api/pro/business-owner-certificates/:id",
-      "GET /api/certificate/:id/pdf"
-    ]
-  }
+  "ok": true
 }

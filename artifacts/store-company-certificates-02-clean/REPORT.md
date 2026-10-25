@@ -15,7 +15,7 @@ Legacy branch `feat/store-company-certificates-01` remains on the remote (unchan
 | Backend production base | `f3baba9ca2666a569efea16d238ef8ca68e7ee2d` |
 | Frontend production base | `1dcd79c2` (FE adapt base on branch) |
 | **Backend tip (clean)** | `8fabfdda64398afd7cb8ba46a2b3d352201af6aa` |
-| **Frontend tip (clean)** | `0269ffbc8ee09bef60a41203cde1cae07396f960` |
+| **Frontend tip (clean)** | `a8caf57a` (see `shell-gate.json` `frontendRuntimeSha`) |
 
 Clean BE history: `73b196ae…` is **not** an ancestor (`merge-base --is-ancestor` → false). `.catalog-qa-isolated/` is gitignored; no QA pgdata/WAL/tokens in tree.
 

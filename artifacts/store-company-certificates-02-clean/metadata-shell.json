@@ -1,8 +1,9 @@
 {
-  "frontendRuntimeSha": "0269ffbc8ee09bef60a41203cde1cae07396f960",
-  "backendRuntimeSha": "8fabfdda64398afd7cb8ba46a2b3d352201af6aa",
+  "frontendApplicationSha": "020918dff2aad929e88de5f07f43445f30080577",
+  "backendApplicationSha": "2b1bac4fbe31e2d686b4a2655d89d0bf7cf9847d",
+  "captureStartedAt": "2026-10-25T11:57:36.000Z",
+  "captureCompletedAt": "2026-10-25T11:59:38.896Z",
   "captureKind": "store-company-certificates-02-clean",
   "profUrl": "http://127.0.0.1:3420",
-  "navUrl": "http://127.0.0.1:3421",
-  "capturedAt": "2026-10-25T11:37:25.749Z"
+  "navUrl": "http://127.0.0.1:3421"
 }
