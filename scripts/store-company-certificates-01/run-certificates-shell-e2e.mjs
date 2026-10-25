@@ -177,10 +177,11 @@ async function exerciseDelegatedDetailReadOnly(page, label, certId) {
     `${PROF_URL}/recommendations?certificate=${encodeURIComponent(certId)}`,
     { waitUntil: "networkidle", timeout: 120_000 },
   );
-  await page.getByTestId("specialist-certificate-detail-dialog").waitFor({ timeout: 90_000 });
-  await page.getByTestId("certificate-detail-view-only-issuer").waitFor({ timeout: 30_000 });
+  const detailDialog = page.getByTestId("specialist-certificate-detail-dialog");
+  await detailDialog.waitFor({ timeout: 90_000 });
+  await detailDialog.getByTestId("certificate-detail-view-only-issuer").waitFor({ timeout: 30_000 });
   assert(
-    (await page.getByRole("button", { name: "Изменить скидки" }).count()) === 0,
+    (await detailDialog.getByRole("button", { name: "Изменить скидки" }).count()) === 0,
     `${label}: discount button hidden for view-only cert`,
   );
   const detailApi = await page.request.get(
