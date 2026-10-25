@@ -277,6 +277,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   }
 
   function certRowActions(cert: AgentCertificateRow): import("./RecordRowActions").RecordRowAction[] {
+    const canIssuerMutate = !isBusiness || cert.canMutateIssuer !== false;
     return [
       {
         id: "share",
@@ -291,7 +292,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         disabled: busy,
         onClick: () => void renameCert(cert),
       },
-      ...(isIssuerShell
+      ...(isIssuerShell && canIssuerMutate
         ? [
             {
               id: "edit-discounts",
@@ -322,7 +323,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             .finally(() => setBusy(false));
         },
       },
-      ...(isIssuerShell
+      ...(isIssuerShell && canIssuerMutate
         ? [
             {
               id: "cancel",
@@ -346,24 +347,28 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             } as import("./RecordRowActions").RecordRowAction,
           ]
         : []),
-      {
-        id: "delete",
-        label: "Удалить",
-        disabled: cert.hasOrders || busy,
-        disabledReason: "Есть покупки — используйте архив",
-        onClick: () => {
-          if (!window.confirm("Удалить сертификат без возможности восстановления?")) return;
-          setBusy(true);
-          void deleteIssuerCertificate(cert.id)
-            .then(() => load())
-            .catch((caught) => {
-              window.alert(
-                caught instanceof RemcardApiError ? caught.message : "Не удалось удалить",
-              );
-            })
-            .finally(() => setBusy(false));
-        },
-      },
+      ...(canIssuerMutate || !isBusiness
+        ? [
+            {
+              id: "delete",
+              label: "Удалить",
+              disabled: cert.hasOrders || busy,
+              disabledReason: "Есть покупки — используйте архив",
+              onClick: () => {
+                if (!window.confirm("Удалить сертификат без возможности восстановления?")) return;
+                setBusy(true);
+                void deleteIssuerCertificate(cert.id)
+                  .then(() => load())
+                  .catch((caught) => {
+                    window.alert(
+                      caught instanceof RemcardApiError ? caught.message : "Не удалось удалить",
+                    );
+                  })
+                  .finally(() => setBusy(false));
+              },
+            } as import("./RecordRowActions").RecordRowAction,
+          ]
+        : []),
     ];
   }
 

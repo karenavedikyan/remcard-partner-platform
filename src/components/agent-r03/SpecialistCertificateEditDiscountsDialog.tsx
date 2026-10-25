@@ -12,7 +12,7 @@ import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   type IssuerCertificatesApiMode,
-  issuerCertificatesApi,
+  patchIssuerCertificate,
 } from "@/lib/business-owner-certificates/issuer-api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
@@ -77,7 +77,6 @@ export function SpecialistCertificateEditDiscountsDialog({
   onClose,
   onSaved,
 }: Props) {
-  const patchIssuer = issuerCertificatesApi(issuerListApi).patchCertificate;
   const rows = useMemo(() => (cert ? buildRows(cert) : []), [cert]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -150,7 +149,7 @@ export function SpecialistCertificateEditDiscountsDialog({
     setSaving(true);
     setSubmitError("");
     try {
-      await patchIssuer(cert.id, {
+      await patchIssuerCertificate(issuerListApi, cert.id, {
         action: "updateDiscounts",
         updates,
       });

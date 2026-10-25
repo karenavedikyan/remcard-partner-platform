@@ -68,6 +68,8 @@ export type AgentCertificateRow = {
   hasOrders: boolean;
   agentClient: { id: string; displayName: string } | null;
   issuerKindSnapshot: string | null;
+  /** False when viewer sees org cert issued by another pro user (business owner list). */
+  canMutateIssuer?: boolean;
 };
 
 export type AgentR03ListMeta = {

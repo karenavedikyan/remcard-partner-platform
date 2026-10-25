@@ -5,7 +5,7 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { StoreCertificate } from "@/lib/certificate-types";
 import {
   type IssuerCertificatesApiMode,
-  issuerCertificatesApi,
+  fetchIssuerCertificate,
 } from "@/lib/business-owner-certificates/issuer-api";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { CertificateResultView } from "@/components/recommendations/CertificateResultView";
@@ -30,7 +30,6 @@ export function SpecialistCertificateDetailDialog({
   onClose,
   onListMutated,
 }: Props) {
-  const fetchIssuerMeta = issuerCertificatesApi(issuerListApi).fetchCertificate;
   const [storeCert, setStoreCert] = useState<StoreCertificate | null>(null);
   const [meta, setMeta] = useState<AgentCertificateRow | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
@@ -45,7 +44,7 @@ export function SpecialistCertificateDetailDialog({
     try {
       const [store, agent] = await Promise.all([
         remcardFetch<StoreCertificate>(`/api/store/certificate/${encodeURIComponent(certificateId)}`),
-        fetchIssuerMeta(certificateId),
+        fetchIssuerCertificate(issuerListApi, certificateId),
       ]);
       setStoreCert(store);
       setMeta(agent.certificate);

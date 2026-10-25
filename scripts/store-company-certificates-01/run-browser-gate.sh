@@ -3,7 +3,7 @@ set -euo pipefail
 NAV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../remcard-navigator" && pwd)"
 PLATFORM_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ISO="$NAV_ROOT/scripts/prof-admin-moderation-isolated"
-ART="$PLATFORM_ROOT/artifacts/store-company-certificates-01"
+ART="$PLATFORM_ROOT/artifacts/store-company-certificates-02-clean"
 LOG="$ART/shell-browser-gate.log"
 mkdir -p "$ART"
 

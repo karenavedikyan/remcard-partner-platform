@@ -54,6 +54,7 @@ export default defineConfig({
       "src/lib/prof-admin-moderation-public-preview.test.ts",
       "src/lib/business-home/gate.test.ts",
       "src/lib/business-owner-certificates/copy.test.ts",
+      "src/lib/business-owner-certificates/issuer-api.test.ts",
       "src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx",
       "src/lib/category-display.test.ts",
       "src/lib/branch-catalog-preview.test.ts",

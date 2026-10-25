@@ -5,7 +5,7 @@ import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   type IssuerCertificatesApiMode,
-  issuerCertificatesApi,
+  patchIssuerCertificate,
 } from "@/lib/business-owner-certificates/issuer-api";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
@@ -27,7 +27,6 @@ export function SpecialistCertificateEditDetailsDialog({
   onClose,
   onSaved,
 }: Props) {
-  const patchIssuer = issuerCertificatesApi(issuerListApi).patchCertificate;
   const [alias, setAlias] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -71,7 +70,7 @@ export function SpecialistCertificateEditDetailsDialog({
     setSaving(true);
     setError("");
     try {
-      await patchIssuer(cert.id, { userAlias: trimmed });
+      await patchIssuerCertificate(issuerListApi, cert.id, { userAlias: trimmed });
       await onSaved();
       onClose();
     } catch (caught) {

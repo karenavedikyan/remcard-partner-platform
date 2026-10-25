@@ -36,7 +36,7 @@ import {
 import { createAgentCertificate } from "@/lib/agent-r03/api";
 import {
   type IssuerCertificatesApiMode,
-  issuerCertificatesApi,
+  patchIssuerCertificate,
 } from "@/lib/business-owner-certificates/issuer-api";
 import {
   hashAgentCreatePayload,
@@ -110,7 +110,6 @@ export function CertificateCreateForm({
   onListRefresh,
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
-  const issuerPatch = issuerCertificatesApi(issuerListApi).patchCertificate;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [loadError, setLoadError] = useState("");
@@ -457,7 +456,7 @@ export function CertificateCreateForm({
       if (specialistWizard && aliasTrimmed && result.id) {
         setPendingAliasValue(aliasTrimmed);
         try {
-          await issuerPatch(result.id, { userAlias: aliasTrimmed });
+          await patchIssuerCertificate(issuerListApi, result.id, { userAlias: aliasTrimmed });
           setAliasSaveNotice(null);
           setPendingAliasValue(null);
           onListRefresh?.();
@@ -499,7 +498,9 @@ export function CertificateCreateForm({
     setAliasSavePending(true);
     setAliasSaveNotice(null);
     try {
-      await issuerPatch(created.id, { userAlias: pendingAliasValue.trim() });
+      await patchIssuerCertificate(issuerListApi, created.id, {
+        userAlias: pendingAliasValue.trim(),
+      });
       setPendingAliasValue(null);
       onListRefresh?.();
     } catch (caught) {
