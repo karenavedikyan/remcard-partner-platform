@@ -1,79 +1,47 @@
-# STORE-COMPANY-HOME-ADAPT-02
+# STORE-COMPANY-HOME-ADAPT-02 (re-check closure)
 
-## Runtime refs (evidence tip)
+## Runtime pair (code commits — full SHA)
 
 | Role | SHA |
 |------|-----|
-| Frontend base | `be43ffc8a34088392635fb9e9079b5929369c117` |
-| Backend base | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
-| **Frontend product (evidence tip)** | `935e05c007a2cc904a66e58f7f4397b75cff3009a` |
-| **Backend product (evidence tip)** | `cfbc456607307460c6b263b951a761a54f734635` |
+| Frontend | `1dcd79c2b740a91c6bc7d9624ad8f7ba5ac96cf1` |
+| Backend | `f3baba9ca2666a569efea16d238ef8ca68e7ee2d` |
+| Merge-base FE | `be43ffc8a34088392635fb9e9079b5929369c117` |
+| Merge-base BE | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
 
-**Status: READY** for review re-check on `feat/store-company-home-adapt-02` (no merge/deploy).
+**Status: READY** on `feat/store-company-home-adapt-02` (no merge/deploy/SQL/env/deps).
 
-## Blockers 1–5 (closed)
+## Final blocker fixes (this revision)
 
-1. Owner branch via `resolveOwnerBusinessHomeBranch` + cookie/query; no reliance on ORG_OWNER `activeBranch`; foreign / needs_branch / single-branch auto-select.
-2. Sales count strict `certificatePartner.branchId === selected` (no null OR).
-3. Employee union excludes REVOKED / blocked; dedup; owner not counted.
-4. GET `Cache-Control: private, no-store`; `404` + `NO_ORG` vs `403` + `FORBIDDEN`.
-5. FE branch picker (PATCH context), `contextEpoch` reload, stale-response guard, partial errors.
+| Item | Fix |
+|------|-----|
+| Prof-test branch picker | No `PATCH /api/pro/context`; home uses `GET /api/pro/business-home/metrics?branchId=` + `sessionStorage` (`home-branch-preference.ts`) |
+| Single branch + stale cookie | Picker shown when `invalid_branch` / `needs_branch` even with one branch |
+| Shell E2E 2 branches | `seed-business-home-shell.ts` + delegated owner select A→sales 1, B→0; foreign `branchId` → `invalid_branch` (0 writes) |
+| Employees | `deletedAt: null` on both org-member and branch-employee user filters + deleted fixture |
+| 401 metrics | `private, no-store` on 401 (matches other responses) |
+| Load tests | Real stale race (slow initial resolves after branch select); real `<select>` + retry click |
+| Browser CTA | Scanner: heading «Сканер» + «Найти»; company: `team-open-invite-wizard` dialog open, no submit |
 
-## Gate 6 — CabinetShell synthetic stack
+## Evidence
 
-Script: `scripts/store-company-home-adapt-02/run-browser-gate.sh` (isolated PG :55432, PROF :3420, NAV :3421, production `next build`).
+| Artifact | Purpose |
+|----------|---------|
+| `metadata-shell.json` | **Canonical** shell capture SHAs (matches runtime pair above) |
+| `visual-shell/` | CabinetShell light/dark 1440/375/320 |
+| `shell-gate.json` / `shell-browser-gate.exit` | Gate `0`, failures `[]` |
+| `metadata.json` | **Historical** — dev-preview mock only (`be43`/`5a2`); not acceptance |
 
-| Check | Result |
-|-------|--------|
-| `shell-browser-gate.exit` | `0` |
-| Store CTA → `/scanner` | pass |
-| Company CTA → `/profile?section=team` | pass |
-| Master not on business owner home | pass |
-| Light/dark × 1440/375/320 screenshots | `artifacts/store-company-home-adapt-02/visual-shell/` |
-| `shell-gate.json` failures | `[]` |
+## Gates (this revision)
 
-Dev-preview captures under `visual/` remain supplementary only.
-
-## Gate 7 — tests
-
-| Suite | Exit |
-|-------|------|
-| navigator `businessHomeOwnerBranch.test.ts` | 0 |
-| navigator `businessHomeMskPeriod.test.ts` | 0 |
-| navigator `businessHomeMetrics.integration.test.ts` (real `getProContext` + prisma) | 0 |
-| navigator `route.test.ts` + `route.integration.test.ts` (real auth + builder) | 0 |
-| partner gate + presentation + load lifecycle | 0 |
+| Gate | Result |
+|------|--------|
+| navigator business-home vitest (unit + PG integration + route integration) | 16 passed |
+| partner business-home vitest | 12 passed |
 | partner `npm run build` | 0 |
-| navigator `tsc --noEmit` error count vs BE base `5a2c2a7d` | **52 = 52** (Δ new diagnostics **0**; baseline remains **52**, not 56) |
+| `shell-browser-gate` | 0 |
+| navigator `pnpm exec tsc --noEmit` vs BE base | **52 errors, Δ0** (base and tip both 52 TS diagnostics; non-zero exit with existing baseline debt — not 56 from `5a239b4`) |
 
-### TS2339 diagnostic (blocker 1 confirmation)
+## Unchanged (accepted earlier)
 
-Independent `pnpm exec tsc --noEmit` on `remcard-navigator`:
-
-| Commit | Role | `error TS` count | exit |
-|--------|------|------------------|------|
-| `5a2c2a7d` | BE merge-base | 52 | 2 |
-| `5a239b4` | first metrics landing | **56** (+4 vs base) | 2 |
-| `c477156` | home-branch adapter fix | **52** | 2 |
-| `cfbc456` | tip (incl. route integration) | **52** | 0 |
-
-Exactly **four** new errors on `5a239b4`, all `TS2339` on `never` from `params.ctx.activeBranch.{name,city,address,id}` while `ORG_OWNER` narrows `activeBranch` to `null`:
-
-```
-src/lib/businessHomeMetrics.ts(155,28): Property 'name' does not exist on type 'never'.
-src/lib/businessHomeMetrics.ts(156,28): Property 'city' does not exist on type 'never'.
-src/lib/businessHomeMetrics.ts(157,31): Property 'address' does not exist on type 'never'.
-src/lib/businessHomeMetrics.ts(169,33): Property 'id' does not exist on type 'never'.
-```
-
-Closed in `c477156` via local `resolveOwnerBusinessHomeBranch` + `selectedBranch` / `preferredBranchId` — **no** `any`, **no** `@ts-ignore`, **no** change to global `getProContext` / `proBranchContext.ts`. Tip `businessHomeMetrics.ts` does not read `ctx.activeBranch`.
-
-Not in automated matrix (deferred): expired prof-test delegation HTTP case, MSK midnight order boundary on live PG (unit MSK tests cover range math).
-
-## Preserved UX
-
-Moderation UX-02, catalog, dark contrast from `be43ffc` baseline unchanged on this branch scope.
-
-## «Мои операции»
-
-Actor `storeUserId` orders today (MSK) with explicit UI subtitle — not a universal ops journal.
+Owner adapter (`resolveOwnerBusinessHomeBranch`), strict branch sales (no null OR), NO_ORG vs FORBIDDEN, MSK unit tests, UX-02/catalog/dark scope.
