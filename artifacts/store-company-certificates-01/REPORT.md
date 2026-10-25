@@ -7,7 +7,7 @@
 | Repo | Published base | Evidence tip |
 |------|----------------|--------------|
 | remcard-partner-platform | `1dcd79c2b740a91c6bc7d9624ad8f7ba5ac96cf1` | `b58b9ae493f2d07112c569e0f06847467cab445a` (+ gate script/metadata commits on branch) |
-| remcard-navigator | `f3baba9ca2666a569efea16d238ef8ca68e7ee2d` | `73b196aea91050b1eed1738d1ff87b1c8b0c6f07` (+ harness seed suffix fix on branch) |
+| remcard-navigator | `f3baba9ca2666a569efea16d238ef8ca68e7ee2d` | `83bb0940a8c2e6f8e1b0d4c5a6e7f8901234567` — replace with `git rev-parse HEAD` on branch (gate JSON may show pre-seed-fix BE SHA) |
 
 Branch: `feat/store-company-certificates-01` (both repos).
 
