@@ -48,6 +48,7 @@ export type PurchaseRow = {
   linkedAccrualIds: string[];
   items: PurchaseItemRow[];
   receivingClient?: ReceivingClientLinkSnapshot | null;
+  receivingLinkRevision?: number;
   canManageReceivingClient?: boolean;
   recommendationSource?: {
     recommenderName: string;
@@ -87,6 +88,7 @@ export type StoreOrdersResponse = {
 export type StoreOrderDetailResponse = {
   order: StoreOrdersResponse["orders"][number] & {
     receivingClient?: ReceivingClientLinkSnapshot | null;
+    receivingLinkRevision?: number;
     canManageReceivingClient?: boolean;
     recommendationSource?: {
       recommenderName: string;

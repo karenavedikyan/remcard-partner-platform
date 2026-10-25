@@ -1,5 +1,5 @@
 /**
- * Isolated gate: incoming third-party cert → link local CRM → client receiving list.
+ * Incoming third-party cert: UI link / change / unlink + API readback + deny cases.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -13,15 +13,17 @@ const STATE_PATH =
 const ART_DIR = path.resolve("artifacts/store-company-incoming-client-orders-01");
 const ART = path.join(ART_DIR, "visual-shell");
 const failures = [];
+let captureCompletedAt = null;
 
 const APPLICATION_RUNTIME = {
-  frontendSha: execSync("git -C /agent/repos/remcard-partner-platform rev-parse HEAD", {
-    encoding: "utf8",
-  }).trim(),
-  backendSha: execSync("git -C /agent/repos/remcard-navigator rev-parse HEAD", {
-    encoding: "utf8",
-  }).trim(),
-  captureStartedAt: new Date().toISOString(),
+  frontendSha:
+    process.env.E2E_APPLICATION_FRONTEND_SHA?.trim() ||
+    execSync("git -C /agent/repos/remcard-partner-platform rev-parse HEAD", { encoding: "utf8" }).trim(),
+  backendSha:
+    process.env.E2E_APPLICATION_BACKEND_SHA?.trim() ||
+    execSync("git -C /agent/repos/remcard-navigator rev-parse HEAD", { encoding: "utf8" }).trim(),
+  captureStartedAt:
+    process.env.E2E_CAPTURE_STARTED_AT?.trim() || new Date().toISOString(),
 };
 
 function assert(cond, msg) {
@@ -30,6 +32,30 @@ function assert(cond, msg) {
 
 function proxyHeaders() {
   return { Origin: PROF_URL };
+}
+
+function wipeVisualShellPngs() {
+  fs.mkdirSync(ART, { recursive: true });
+  for (const name of fs.readdirSync(ART)) {
+    if (name.endsWith(".png")) fs.unlinkSync(path.join(ART, name));
+  }
+}
+
+function writeArtifacts(flow, ok) {
+  fs.mkdirSync(ART_DIR, { recursive: true });
+  const payload = {
+    ok,
+    failures,
+    application: { ...APPLICATION_RUNTIME, captureCompletedAt },
+    flow,
+    migrationPaths: [
+      "20261025143000_store_company_incoming_client_order_link",
+      "20261025180000_incoming_client_link_revision_audit",
+    ],
+  };
+  fs.writeFileSync(path.join(ART_DIR, "shell-gate.json"), JSON.stringify(payload, null, 2));
+  fs.writeFileSync(path.join(ART_DIR, "metadata-shell.json"), JSON.stringify(payload, null, 2));
+  fs.writeFileSync(path.join(ART_DIR, "shell-browser-gate.exit"), ok ? "0\n" : "1\n");
 }
 
 async function withSession(browser, token) {
@@ -48,7 +74,7 @@ async function withSession(browser, token) {
   return { context, page: await context.newPage() };
 }
 
-async function capturePurchaseAndClient(page, prefix) {
+async function capturePair(page, prefix) {
   fs.mkdirSync(ART, { recursive: true });
   for (const theme of ["light", "dark"]) {
     await page.evaluate((t) => {
@@ -68,91 +94,256 @@ async function capturePurchaseAndClient(page, prefix) {
   }
 }
 
-async function runRole(browser, state, roleKey, prefix) {
+async function fetchOrder(page, orderId) {
+  const res = await page.request.get(
+    `${PROF_URL}/api/remcard/api/store/orders/${encodeURIComponent(orderId)}`,
+    { headers: proxyHeaders() },
+  );
+  return { status: res.status(), body: res.ok() ? await res.json() : null };
+}
+
+async function resetLinkIfAny(page, orderId, label) {
+  const first = await fetchOrder(page, orderId);
+  assert(first.status === 200, `${label}: order GET ${first.status}`);
+  let revision = first.body?.order?.receivingLinkRevision ?? 0;
+  if (first.body?.order?.receivingClient) {
+    const unlink = await page.request.patch(
+      `${PROF_URL}/api/remcard/api/store/orders/${encodeURIComponent(orderId)}/receiving-client`,
+      {
+        headers: proxyHeaders(),
+        data: { action: "unlink", expectedVersion: revision },
+      },
+    );
+    assert(unlink.status() === 200, `${label}: pre-unlink ${unlink.status()}`);
+    revision += 1;
+  }
+  return revision;
+}
+
+async function uiLinkClient(page, clientDisplayName, label) {
+  await page.getByTestId("receiving-client-search").fill(clientDisplayName.slice(0, 8));
+  await page.waitForTimeout(400);
+  await page.getByRole("button", { name: clientDisplayName }).click();
+  const saveBtn = page.getByRole("button", { name: /Сохранить привязку|Сменить клиента/ });
+  await saveBtn.click();
+  await page.getByTestId("receiving-client-pending").waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Подтвердить" }).click();
+  await page.waitForTimeout(500);
+}
+
+async function runIncomingFlow(browser, state, roleKey, prefix, foreignClientId, staffToken) {
   const role = state.roles?.[roleKey];
-  const token = role?.realOwner?.token;
+  const token = role?.realOwner?.ownerSessionToken;
   const orderId = role?.gateIncomingOrderId;
   const localClientId = role?.gateIncomingLocalClientId;
   assert(token, `${prefix}: missing owner token`);
   assert(orderId && localClientId, `${prefix}: missing incoming fixture ids`);
+  if (!token || !orderId || !localClientId) {
+    return { orderId, localClientId, prefix, aborted: true };
+  }
 
   const { context, page } = await withSession(browser, token);
+  const flow = { orderId, localClientId, prefix };
 
-  const linkRes = await page.request.patch(
-    `${PROF_URL}/api/remcard/api/store/orders/${encodeURIComponent(orderId)}/receiving-client`,
-    {
-      headers: proxyHeaders(),
-      data: { action: "link", agentClientId: localClientId },
-    },
-  );
-  assert(linkRes.status() === 200, `${prefix}: link ${linkRes.status()}`);
+  const baselineOrder = await fetchOrder(page, orderId);
+  const baselineBonusLen = baselineOrder.body?.order?.linkedAccruals?.length ?? 0;
+  const baselineTotal = baselineOrder.body?.order?.totalAmount;
 
-  const clientRes = await page.request.get(
+  let revision = await resetLinkIfAny(page, orderId, prefix);
+
+  const clientMeta = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(localClientId)}`,
     { headers: proxyHeaders() },
   );
-  assert(clientRes.status() === 200, `${prefix}: client GET ${clientRes.status()}`);
-  const clientJson = await clientRes.json();
-  const receiving = clientJson.receivingPurchases ?? [];
-  assert(
-    receiving.some((p) => p.id === orderId),
-    `${prefix}: receiving list missing order ${orderId}`,
-  );
+  assert(clientMeta.status() === 200, `${prefix}: local client GET`);
+  const clientJson = await clientMeta.json();
+  const clientName = clientJson.client?.displayName ?? "";
+  assert(clientName, `${prefix}: client display name`);
+  const receivingBefore = clientJson.receivingPurchases ?? [];
+  assert(!receivingBefore.some((p) => p.id === orderId), `${prefix}: receiving empty before link`);
 
   await page.goto(`${PROF_URL}/history/purchases/${encodeURIComponent(orderId)}`, {
     waitUntil: "networkidle",
     timeout: 120_000,
   });
   await page.getByTestId("purchase-receiving-client-panel").waitFor({ timeout: 60_000 });
-  await capturePurchaseAndClient(page, `${prefix}-purchase`);
+  await uiLinkClient(page, clientName, prefix);
 
-  await page.goto(`${PROF_URL}/clients/${encodeURIComponent(localClientId)}`, {
+  const afterLink = await fetchOrder(page, orderId);
+  assert(afterLink.body?.order?.receivingClient?.agentClientId === localClientId, `${prefix}: linked id`);
+  assert(
+    afterLink.body?.order?.receivingLinkRevision > revision,
+    `${prefix}: revision bumped after link`,
+  );
+  revision = afterLink.body?.order?.receivingLinkRevision;
+
+  const clientAfter = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(localClientId)}`,
+    { headers: proxyHeaders() },
+  );
+  const clientAfterJson = clientAfter.ok() ? await clientAfter.json() : {};
+  assert(
+    (clientAfterJson.receivingPurchases ?? []).some((p) => p.id === orderId),
+    `${prefix}: exact order in receiving list`,
+  );
+  assert(
+    !(clientAfterJson.receivingPurchases ?? []).some(
+      (p) => p.id === orderId && p.recommenderName?.includes("+7999"),
+    ),
+    `${prefix}: no foreign phone in recommender`,
+  );
+
+  await capturePair(page, `${prefix}-purchase-linked`);
+
+  const altName = `${prefix} alt ${Date.now()}`;
+  const createRes = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients`, {
+    headers: proxyHeaders(),
+    data: { displayName: altName, city: "Краснодар" },
+  });
+  assert(createRes.status() >= 200 && createRes.status() < 300, `${prefix}: alt client POST`);
+  const altBody = await createRes.json();
+  const altClientId = altBody.client?.id;
+  assert(altClientId, `${prefix}: alt client id`);
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByTestId("purchase-receiving-client-panel").waitFor({ timeout: 60_000 });
+  await uiLinkClient(page, altName, prefix);
+
+  const afterChange = await fetchOrder(page, orderId);
+  assert(
+    afterChange.body?.order?.receivingClient?.agentClientId === altClientId,
+    `${prefix}: changed client id`,
+  );
+  revision = afterChange.body?.order?.receivingLinkRevision;
+
+  const oldClient = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(localClientId)}`,
+    { headers: proxyHeaders() },
+  );
+  const oldJson = oldClient.ok() ? await oldClient.json() : {};
+  assert(
+    !(oldJson.receivingPurchases ?? []).some((p) => p.id === orderId),
+    `${prefix}: order removed from previous client card`,
+  );
+
+  const foreignPatch = await page.request.patch(
+    `${PROF_URL}/api/remcard/api/store/orders/${encodeURIComponent(orderId)}/receiving-client`,
+    {
+      headers: proxyHeaders(),
+      data: {
+        action: "link",
+        agentClientId: foreignClientId,
+        expectedVersion: afterChange.body?.order?.receivingLinkRevision ?? revision,
+      },
+    },
+  );
+  assert(
+    foreignPatch.status() === 404 || foreignPatch.status() === 403,
+    `${prefix}: foreign client deny ${foreignPatch.status()}`,
+  );
+
+  if (staffToken) {
+    const staffCtx = await withSession(browser, staffToken);
+    const staffPatch = await staffCtx.page.request.patch(
+      `${PROF_URL}/api/remcard/api/store/orders/${encodeURIComponent(orderId)}/receiving-client`,
+      {
+        headers: proxyHeaders(),
+        data: {
+          action: "link",
+          agentClientId: localClientId,
+          expectedVersion: afterChange.body?.order?.receivingLinkRevision ?? revision,
+        },
+      },
+    );
+    assert(
+      staffPatch.status() === 403 || staffPatch.status() === 401,
+      `${prefix}: staff link deny ${staffPatch.status()}`,
+    );
+    await staffCtx.context.close();
+  }
+
+  await page.getByRole("button", { name: "Снять привязку" }).click();
+  await page.getByTestId("receiving-client-pending").waitFor();
+  await page.getByRole("button", { name: "Подтвердить" }).click();
+  await page.waitForTimeout(400);
+
+  const afterUnlink = await fetchOrder(page, orderId);
+  assert(!afterUnlink.body?.order?.receivingClient, `${prefix}: unlinked`);
+  const altAfter = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(altClientId)}`,
+    { headers: proxyHeaders() },
+  );
+  const altAfterJson = altAfter.ok() ? await altAfter.json() : {};
+  assert(
+    !(altAfterJson.receivingPurchases ?? []).some((p) => p.id === orderId),
+    `${prefix}: absent after unlink`,
+  );
+
+  const finalOrder = await fetchOrder(page, orderId);
+  assert(finalOrder.body?.order?.totalAmount === baselineTotal, `${prefix}: total unchanged`);
+  assert(
+    (finalOrder.body?.order?.linkedAccruals?.length ?? 0) === baselineBonusLen,
+    `${prefix}: bonus links unchanged`,
+  );
+
+  await page.goto(`${PROF_URL}/clients/${encodeURIComponent(altClientId)}`, {
     waitUntil: "networkidle",
     timeout: 120_000,
   });
   await page.getByTestId("client-receiving-purchases").waitFor({ timeout: 60_000 });
-  await capturePurchaseAndClient(page, `${prefix}-client`);
+  await capturePair(page, `${prefix}-client-detail`);
 
+  flow.completed = true;
   await context.close();
+  return flow;
 }
 
 async function main() {
+  wipeVisualShellPngs();
   const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
+  const storeForeignClientId = state.roles?.store?.gateForeignClientId;
+  const companyForeignClientId = state.roles?.company?.gateForeignClientId;
+  assert(companyForeignClientId, "missing company foreign CRM id for store deny");
+  assert(storeForeignClientId, "missing store foreign CRM id for company deny");
+  const storeStaff = state.roles?.store?.delegationToken ?? null;
+
   const browser = await chromium.launch({ headless: true });
+  const flow = {};
   try {
-    await runRole(browser, state, "store", "store");
-    await runRole(browser, state, "company", "company");
+    flow.store = await runIncomingFlow(
+      browser,
+      state,
+      "store",
+      "store",
+      companyForeignClientId,
+      storeStaff,
+    );
+    flow.company = await runIncomingFlow(
+      browser,
+      state,
+      "company",
+      "company",
+      storeForeignClientId,
+      null,
+    );
   } finally {
     await browser.close();
   }
 
-  const captureCompletedAt = new Date().toISOString();
-  fs.mkdirSync(ART_DIR, { recursive: true });
+  captureCompletedAt = new Date().toISOString();
   const ok = failures.length === 0;
-  fs.writeFileSync(
-    path.join(ART_DIR, "shell-gate.json"),
-    JSON.stringify(
-      {
-        ok,
-        failures,
-        application: APPLICATION_RUNTIME,
-        captureCompletedAt,
-      },
-      null,
-      2,
-    ),
-  );
-  fs.writeFileSync(path.join(ART_DIR, "shell-browser-gate.exit"), ok ? "0\n" : "1\n");
+  writeArtifacts(flow, ok);
+  const stdout = { ok, application: { ...APPLICATION_RUNTIME, captureCompletedAt }, failures, flow };
+  console.log(JSON.stringify(stdout, null, 2));
   if (!ok) {
-    console.error(failures.join("\n"));
     process.exit(1);
   }
-  console.log(
-    JSON.stringify({ ok, ...APPLICATION_RUNTIME, captureCompletedAt }, null, 2),
-  );
 }
 
 main().catch((e) => {
-  console.error(e);
+  captureCompletedAt = new Date().toISOString();
+  failures.push(String(e?.stack ?? e));
+  writeArtifacts({ fatal: String(e) }, false);
+  console.error(JSON.stringify({ ok: false, failures }, null, 2));
   process.exit(1);
 });

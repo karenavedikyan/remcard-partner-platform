@@ -70,6 +70,8 @@ function mapStoreOrderRow(
           }))
         : [],
     receivingClient: "receivingClient" in order ? order.receivingClient ?? null : undefined,
+    receivingLinkRevision:
+      "receivingLinkRevision" in order ? order.receivingLinkRevision : undefined,
     canManageReceivingClient:
       "canManageReceivingClient" in order ? order.canManageReceivingClient : undefined,
     recommendationSource:

@@ -1,0 +1,7 @@
+{
+  "ok": false,
+  "failures": [
+    "store: missing owner token",
+    "browserContext.addCookies: cookies[0].value: expected string, got undefined\n    at withSession (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:63:17)\n    at async runIncomingFlow (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:142:29)\n    at async main (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:294:18)"
+  ]
+}

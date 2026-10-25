@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { createAgentClient, fetchAgentClients } from "@/lib/agent-r03/api";
 import { patchStoreOrderReceivingClient } from "@/lib/history-receiving-client-api";
@@ -10,18 +10,31 @@ import { AgentClientFormDialog } from "@/components/agent-r03/AgentClientFormDia
 import { Button } from "@/components/ui/Button";
 import styles from "./history.module.css";
 
+type PendingAction =
+  | { kind: "unlink"; expectedVersion: number }
+  | { kind: "link"; agentClientId: string; label: string; expectedVersion: number };
+
 type PurchaseReceivingClientPanelProps = {
   purchase: PurchaseRow;
   onLinked: (patch: {
+    orderId: string;
     receivingClient: ReceivingClientLinkSnapshot | null;
+    receivingLinkRevision: number;
   }) => void;
+  onReload: () => void;
 };
+
+function currentRevision(purchase: PurchaseRow): number {
+  return purchase.receivingLinkRevision ?? purchase.receivingClient?.version ?? 0;
+}
 
 export function PurchaseReceivingClientPanel({
   purchase,
   onLinked,
+  onReload,
 }: PurchaseReceivingClientPanelProps) {
   const orderId = purchase.orderId ?? purchase.id;
+  const scopeKey = orderId;
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -30,30 +43,51 @@ export function PurchaseReceivingClientPanel({
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [confirmChange, setConfirmChange] = useState(false);
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const searchGeneration = useRef(0);
+  const panelGeneration = useRef(0);
 
   const linked = purchase.receivingClient ?? null;
-  const version = linked?.version;
+  const revision = currentRevision(purchase);
 
-  const loadClients = useCallback(async (q: string) => {
-    setSearching(true);
+  useEffect(() => {
+    panelGeneration.current += 1;
+    setQuery("");
+    setClients([]);
+    setSelectedId(null);
+    setPending(null);
+    setActionError("");
     setSearchError("");
-    try {
-      const data = await fetchAgentClients({ q: q.trim() || undefined, limit: 20 });
-      setClients(data.clients.map((c) => ({ id: c.id, displayName: c.displayName })));
-    } catch (caught) {
-      setSearchError(
-        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить клиентов",
-      );
-      setClients([]);
-    } finally {
-      setSearching(false);
-    }
-  }, []);
+    searchGeneration.current += 1;
+  }, [scopeKey]);
+
+  const loadClients = useCallback(
+    async (q: string, generation: number) => {
+      setSearching(true);
+      setSearchError("");
+      try {
+        const data = await fetchAgentClients({ q: q.trim() || undefined, limit: 20 });
+        if (generation !== searchGeneration.current) return;
+        setClients(data.clients.map((c) => ({ id: c.id, displayName: c.displayName })));
+      } catch (caught) {
+        if (generation !== searchGeneration.current) return;
+        setSearchError(
+          caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить клиентов",
+        );
+        setClients([]);
+      } finally {
+        if (generation === searchGeneration.current) {
+          setSearching(false);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!purchase.canManageReceivingClient) return;
-    const handle = window.setTimeout(() => void loadClients(query), 300);
+    const generation = ++searchGeneration.current;
+    const handle = window.setTimeout(() => void loadClients(query, generation), 300);
     return () => window.clearTimeout(handle);
   }, [loadClients, purchase.canManageReceivingClient, query]);
 
@@ -62,54 +96,63 @@ export function PurchaseReceivingClientPanel({
     return clients.find((c) => c.id === selectedId)?.displayName ?? null;
   }, [clients, selectedId]);
 
-  async function saveLink() {
-    if (!selectedId) return;
-    if (linked && linked.agentClientId !== selectedId && !confirmChange) {
-      setConfirmChange(true);
-      return;
-    }
+  async function executePending() {
+    if (!pending) return;
+    const capturedOrderId = orderId;
+    const capturedPanelGen = panelGeneration.current;
     setSaving(true);
     setActionError("");
     try {
-      const res = await patchStoreOrderReceivingClient(orderId, {
-        action: "link",
-        agentClientId: selectedId,
-        expectedVersion: version,
+      const res = await patchStoreOrderReceivingClient(
+        capturedOrderId,
+        pending.kind === "unlink"
+          ? { action: "unlink", expectedVersion: pending.expectedVersion }
+          : {
+              action: "link",
+              agentClientId: pending.agentClientId,
+              expectedVersion: pending.expectedVersion,
+            },
+      );
+      if (capturedPanelGen !== panelGeneration.current) return;
+      onLinked({
+        orderId: capturedOrderId,
+        receivingClient: res.receivingClient,
+        receivingLinkRevision: res.receivingLinkRevision,
       });
-      onLinked({ receivingClient: res.receivingClient });
-      setConfirmChange(false);
+      setPending(null);
       setSelectedId(null);
     } catch (caught) {
+      if (capturedPanelGen !== panelGeneration.current) return;
+      if (caught instanceof RemcardApiError && caught.status === 409) {
+        setActionError("Привязка уже изменилась. Обновляем карточку…");
+        setPending(null);
+        onReload();
+        return;
+      }
       setActionError(
-        caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить привязку",
+        caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие",
       );
     } finally {
-      setSaving(false);
+      if (capturedPanelGen === panelGeneration.current) {
+        setSaving(false);
+      }
     }
   }
 
-  async function unlink() {
-    if (!linked) return;
-    if (!confirmChange) {
-      setConfirmChange(true);
-      return;
-    }
-    setSaving(true);
-    setActionError("");
-    try {
-      const res = await patchStoreOrderReceivingClient(orderId, {
-        action: "unlink",
-        expectedVersion: version,
-      });
-      onLinked({ receivingClient: res.receivingClient });
-      setConfirmChange(false);
-    } catch (caught) {
-      setActionError(
-        caught instanceof RemcardApiError ? caught.message : "Не удалось снять привязку",
-      );
-    } finally {
-      setSaving(false);
-    }
+  function requestUnlink() {
+    setPending({ kind: "unlink", expectedVersion: revision });
+  }
+
+  function requestLink() {
+    if (!selectedId) return;
+    const label = selectedLabel ?? "клиента";
+    if (linked && linked.agentClientId === selectedId) return;
+    setPending({
+      kind: "link",
+      agentClientId: selectedId,
+      label,
+      expectedVersion: revision,
+    });
   }
 
   if (!purchase.canManageReceivingClient) {
@@ -133,16 +176,9 @@ export function PurchaseReceivingClientPanel({
               {linked.displayName}
             </Link>
           </p>
-          <div className={styles.rowHeader}>
-            <Button type="button" variant="secondary" disabled={saving} onClick={() => void unlink()}>
-              {confirmChange ? "Подтвердить снятие" : "Снять привязку"}
-            </Button>
-            {confirmChange ? (
-              <Button type="button" variant="text" onClick={() => setConfirmChange(false)}>
-                Отмена
-              </Button>
-            ) : null}
-          </div>
+          <Button type="button" variant="secondary" disabled={saving} onClick={requestUnlink}>
+            Снять привязку
+          </Button>
         </>
       ) : (
         <p className={styles.meta}>Клиент: не указан</p>
@@ -162,7 +198,13 @@ export function PurchaseReceivingClientPanel({
       {searchError ? (
         <p className={styles.error} role="alert">
           {searchError}{" "}
-          <button type="button" onClick={() => void loadClients(query)}>
+          <button
+            type="button"
+            onClick={() => {
+              const generation = ++searchGeneration.current;
+              void loadClients(query, generation);
+            }}
+          >
             Повторить
           </button>
         </p>
@@ -178,7 +220,7 @@ export function PurchaseReceivingClientPanel({
                 className={selectedId === c.id ? styles.clientPickActive : styles.clientPick}
                 onClick={() => {
                   setSelectedId(c.id);
-                  setConfirmChange(false);
+                  setPending(null);
                 }}
               >
                 {c.displayName}
@@ -191,17 +233,33 @@ export function PurchaseReceivingClientPanel({
         <Button type="button" variant="secondary" onClick={() => setCreateOpen(true)}>
           Новый клиент
         </Button>
-        <Button type="button" disabled={!selectedId || saving} onClick={() => void saveLink()}>
-          {confirmChange && linked
-            ? "Подтвердить смену клиента"
-            : linked
-              ? "Сменить клиента"
-              : "Сохранить привязку"}
+        <Button
+          type="button"
+          disabled={!selectedId || saving || Boolean(linked && linked.agentClientId === selectedId)}
+          onClick={requestLink}
+        >
+          {linked ? "Сменить клиента" : "Сохранить привязку"}
         </Button>
       </div>
-      {selectedLabel && !linked ? (
-        <p className={styles.meta}>Выбран: {selectedLabel}</p>
+
+      {pending ? (
+        <div className={styles.confirmBox} data-testid="receiving-client-pending">
+          <p className={styles.meta}>
+            {pending.kind === "unlink"
+              ? "Снять привязку покупки к текущему клиенту?"
+              : `Привязать покупку к «${pending.label}»?`}
+          </p>
+          <div className={styles.rowHeader}>
+            <Button type="button" disabled={saving} onClick={() => void executePending()}>
+              Подтвердить
+            </Button>
+            <Button type="button" variant="text" onClick={() => setPending(null)}>
+              Отмена
+            </Button>
+          </div>
+        </div>
       ) : null}
+
       {actionError ? (
         <p className={styles.error} role="alert">
           {actionError}
@@ -216,7 +274,10 @@ export function PurchaseReceivingClientPanel({
         onClose={() => setCreateOpen(false)}
         onSubmit={async (values) => {
           const created = await createAgentClient(values);
-          setClients((prev) => [{ id: created.client.id, displayName: created.client.displayName }, ...prev]);
+          setClients((prev) => [
+            { id: created.client.id, displayName: created.client.displayName },
+            ...prev,
+          ]);
           setSelectedId(created.client.id);
           setCreateOpen(false);
         }}

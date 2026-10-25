@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "workflow": "catalog_qa_db_push_then_schema_verify",
+  "migrationSqlPaths": [
+    "/agent/repos/remcard-navigator/prisma/migrations/20261025143000_store_company_incoming_client_order_link/migration.sql",
+    "/agent/repos/remcard-navigator/prisma/migrations/20261025180000_incoming_client_link_revision_audit/migration.sql"
+  ],
+  "migrationSqlPresent": true,
+  "tables": {
+    "OrderReceivingAgentClientLink": true,
+    "OrderReceivingClientAnchor": true,
+    "OrderReceivingAgentClientLinkEvent": true
+  },
+  "linkedAtColumn": true,
+  "uniqueOrderLinkOk": true,
+  "note": "Production apply uses prisma migrate deploy ledger; QA harness uses db push per bootstrap.sh"
+}

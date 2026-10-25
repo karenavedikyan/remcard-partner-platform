@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "failures": [],
+  "application": {
+    "frontendSha": "32462ccd2f4783254a56c7265dc0a951afdb5526",
+    "backendSha": "c9673183c358c8e1e3a1cef77cf4a961b80cf1b5",
+    "captureStartedAt": "2026-10-25T14:49:14.000Z",
+    "captureCompletedAt": "2026-10-25T14:49:28.267Z"
+  },
+  "flow": {
+    "store": {
+      "orderId": "cmvnxxyvg0008jsgqeihn1x2g",
+      "localClientId": "cmvnxxyv70001jsgq3hzmdh7b",
+      "prefix": "store",
+      "completed": true
+    },
+    "company": {
+      "orderId": "cmvnxxyvs000kjsgq5tldz41j",
+      "localClientId": "cmvnxxyvj000bjsgq2q4wkf59",
+      "prefix": "company",
+      "completed": true
+    }
+  },
+  "migrationPaths": [
+    "20261025143000_store_company_incoming_client_order_link",
+    "20261025180000_incoming_client_link_revision_audit"
+  ]
+}

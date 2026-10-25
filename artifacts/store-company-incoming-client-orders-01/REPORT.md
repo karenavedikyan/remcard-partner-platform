@@ -1,64 +1,46 @@
 # STORE-COMPANY-INCOMING-CLIENT-ORDERS-01
 
-**Status: FINAL READY FOR INDEPENDENT REVIEW** (not deployed)
+**Status: CHANGES REQUIRED → resubmission after review fixes** (not deployed)
 
-## Bases and dependency chain
+## Bases
 
-| Repo | Branch | Base (clients package tip) | Role |
-|------|--------|----------------------------|------|
-| remcard-navigator | `feat/store-company-incoming-client-orders-01` | `8b1e932ea9c611ccb5e2aac18ab50dac7faebbf1` | Backend + migration |
-| remcard-partner-platform | `feat/store-company-incoming-client-orders-01` | `5281a1de1da0d397690e4821e8ba40fce533b6aa` | UI + gate |
+| Repo | Clients base | Feature branch |
+|------|--------------|----------------|
+| remcard-navigator | `8b1e932e` | `feat/store-company-incoming-client-orders-01` |
+| remcard-partner-platform | `5281a1de` | `feat/store-company-incoming-client-orders-01` |
 
-Implementation tips at handoff: backend `c9673183`, frontend `c151db2e`, migration `20261025143000_store_company_incoming_client_order_link`.
+Includes undeployed `feat/store-company-clients-01` package.
 
-This release **includes** the undeployed `feat/store-company-clients-01` stack; it is not a delta on `main` alone.
+## Review fixes (four groups)
 
-## Plan and model
+1. **Write / audit / CAS** — `OrderReceivingClientAnchor.revision` with mandatory `expectedVersion`; atomic `updateMany` bump; audit `OrderReceivingAgentClientLinkEvent`; `linkedAt` on link row; P2002 → 409.
+2. **Priority / delete** — own-issued fallback only when no explicit link and `fallbackSuppressed` false; explicit link to client B excludes order from client A; shared `evaluateAgentClientDelete` for single + batch delete.
+3. **UI** — separate pending confirm for link vs unlink; search generation guard; PATCH scoped to order id; 409 reload; component race tests.
+4. **Evidence** — `run-browser-gate.sh` + expanded UI/API runner; migration verify script; artifacts: `shell-gate.json`, `metadata-shell.json`, `migration-verify.json`, `shell-browser-gate.log`, `shell-browser-gate.exit`, PNGs under `visual-shell/`.
 
-See `remcard-navigator/PLAN.md`. Additive table `OrderReceivingAgentClientLink` (unique `orderId`, FK to `Order` + `AgentClient`, `receivingOwnerUserId`, `linkedByUserId`, `version`).
+## Migrations (additive only)
 
-Migration path: `prisma/migrations/20261025143000_store_company_incoming_client_order_link/migration.sql`
+- `20261025143000_store_company_incoming_client_order_link`
+- `20261025180000_incoming_client_link_revision_audit`
 
-## API / UI
+Isolated verify: `scripts/prof-admin-moderation-isolated/verify-incoming-client-order-migrations.ts` (deploy twice + uniqueness check).
 
-- `PATCH /api/store/orders/[orderId]/receiving-client` — owner-only link/unlink (idempotent, version conflict 409).
-- `GET /api/store/orders/[orderId]` — owner extras: `receivingClient`, `recommendationSource`, `canManageReceivingClient`.
-- `listAgentClientReceivingPurchases` — explicit links ∪ own-issued cert path; recommender display name only.
-- Purchase detail: `PurchaseReceivingClientPanel`; client detail updated receiving copy + order links.
+## Tests (targeted)
 
-## Tests
+- Backend unit: `orderReceivingAgentClientLink.test.ts`
+- Backend integration (prof R01 DB): `orderReceivingClientLink.integration.test.ts` — CAS, priority, unlink suppression, bounded cleanup
+- Frontend: `PurchaseReceivingClientPanel.race.test.tsx`; proxy allowlist test for PATCH route
+- Full stack: `scripts/store-company-incoming-client-orders-01/run-browser-gate.sh`
 
-- Unit: `orderReceivingAgentClientLink.test.ts` (vitest, exit 0).
-- Integration (isolated DB only): `orderReceivingClientLink.integration.test.ts` when `DATABASE_URL` is prof R01 test DB.
-- Frontend `tsc --noEmit`: clean on partner-platform tip.
-
-Backend full `tsc` retains pre-existing diagnostic baseline (~52 issues); not claimed green.
-
-## Isolated migration verify
-
-On disposable fixture DB only:
-
-```bash
-cd remcard-navigator
-DATABASE_URL=… npx prisma migrate deploy
-# re-run deploy → idempotent; FK/uniqueness enforced by schema
-```
-
-**Rollback code without dropping table:** old code ignores link table; links remain in DB until explicit cleanup. New code reads links; rolling back frontend/backend together keeps data consistent.
+Backend full `tsc` remains exit 2 with legacy baseline (~52 diagnostics); not claimed green.
 
 ## Migration release checklist (prepare only)
 
-1. Backup production DB snapshot.
-2. Read-only preflight: `SELECT COUNT(*) FROM "Order"` baseline; confirm no name collision on `OrderReceivingAgentClientLink`.
-3. Apply additive migration via standard ledger workflow (single CREATE TABLE + indexes + FKs).
-4. Deploy **backend** first, then **frontend** (proxy allowlist includes PATCH route).
-5. Smoke: owner opens incoming purchase → link client → client receiving list shows order id; no second order/bonus on PATCH.
-6. Rollback: revert app versions; **do not** drop link table if orders were linked in prod.
+1. Backup DB.
+2. Read-only preflight counts on `Order` / new tables.
+3. Apply both additive migrations in order via standard ledger workflow.
+4. Deploy backend → frontend.
+5. Smoke: link incoming purchase, change, unlink; batch delete skip `has_receiving_order_links`.
+6. Rollback app without dropping link/anchor/event tables.
 
-## Browser gate
-
-Script: `scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs`
-
-Requires harness seeds (clients gate + `seed-incoming-client-order-link-fixture.ts`) and running PROF stack. Artifacts under `artifacts/store-company-incoming-client-orders-01/visual-shell/` when capture is run in environment.
-
-Record application SHAs from gate stdout JSON at capture time.
+Record **evidence tip SHAs** from gate stdout `application.frontendSha` / `application.backendSha` and `captureCompletedAt` after a green gate run.

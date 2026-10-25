@@ -166,8 +166,16 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
       {purchase.direction === "accepted" && purchase.canManageReceivingClient ? (
         <PurchaseReceivingClientPanel
           purchase={purchase}
-          onLinked={({ receivingClient }) => {
-            setPurchase((prev) => (prev ? { ...prev, receivingClient } : prev));
+          onReload={() => void load()}
+          onLinked={({ orderId: linkedOrderId, receivingClient, receivingLinkRevision }) => {
+            setPurchase((prev) => {
+              if (!prev || (prev.orderId ?? prev.id) !== linkedOrderId) return prev;
+              return {
+                ...prev,
+                receivingClient,
+                receivingLinkRevision,
+              };
+            });
           }}
         />
       ) : null}

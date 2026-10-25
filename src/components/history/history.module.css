@@ -93,6 +93,14 @@
   border-color: var(--primary);
 }
 
+.confirmBox {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--soft) 25%, var(--surface));
+}
+
 .amounts {
   display: grid;
   gap: 2px;
