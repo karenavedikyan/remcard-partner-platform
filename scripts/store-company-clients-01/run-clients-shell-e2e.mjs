@@ -103,10 +103,10 @@ async function delegatedReadAndForeignDeny(page, foreignClientId, label) {
 async function createCertificateFromClient(page, clientId, label) {
   await page.getByTestId("business-client-create-cert").click();
   await page.getByTestId("specialist-certificate-create-dialog").waitFor({ timeout: 90_000 });
-  const partnerRow = page.locator('[data-testid^="specialist-cert-partner-"]').first();
-  await partnerRow.waitFor({ timeout: 90_000 });
-  await partnerRow.click();
-  await page.getByRole("button", { name: "Далее" }).click();
+  const partnerCheckbox = page.locator('[data-testid="specialist-certificate-create-step-1"] input[type="checkbox"]').first();
+  await partnerCheckbox.waitFor({ timeout: 90_000 });
+  await partnerCheckbox.check();
+  await page.getByRole("button", { name: "Далее: скидки" }).click();
   const category = page.locator('[data-testid^="specialist-cert-category-"]').first();
   await category.waitFor({ timeout: 60_000 });
   await category.locator("input").fill("10");
