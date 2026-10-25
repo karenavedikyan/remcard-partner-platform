@@ -1,0 +1,30 @@
+{
+  "applicationRuntime": {
+    "frontendSha": "68620f6a27631b2dae5c819683b8f4e48ff105ac",
+    "backendSha": "eee39348251c2f562ee287b21b9f2e364fb1afb6",
+    "captureStartedAt": "2026-10-25T12:34:16.000Z",
+    "captureCompletedAt": "2026-10-25T12:36:17.009Z"
+  },
+  "profUrl": "http://127.0.0.1:3420",
+  "harnessState": "/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json",
+  "delegatedProfTestReadGate": {
+    "store": {
+      "readHub": true
+    },
+    "company": {
+      "readHub": true
+    }
+  },
+  "realOwnerFullFlow": {
+    "store": {
+      "searchAndInvite": true
+    },
+    "company": {
+      "acceptInvite": true,
+      "search": true
+    }
+  },
+  "failures": [],
+  "ok": true,
+  "profTestPolicyNote": "POST /api/partnership/invite is on existing prof-test allowlist; this gate uses foreign PATCH deny for delegated write-negative."
+}

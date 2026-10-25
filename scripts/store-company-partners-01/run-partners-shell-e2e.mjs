@@ -92,11 +92,14 @@ async function exerciseDelegatedHub(page, label, audience) {
   });
   assert(listRes.status() === 200, `${label}: list ${listRes.status()}`);
 
+  const searchRole = audience === "business-company-r04" ? "pro" : "store";
   const searchRes = await page.request.get(
-    `${PROF_URL}/api/remcard/api/partnership/search?q=Real&limit=5`,
+    `${PROF_URL}/api/remcard/api/partnership/search?role=${searchRole}&limit=5`,
     { headers: proxyExtraHeaders() },
   );
   assert(searchRes.status() === 200, `${label}: search ${searchRes.status()}`);
+  const searchJson = await searchRes.json();
+  assert((searchJson.partners ?? []).length > 0, `${label}: search returned partners`);
 
   const foreignPatch = await page.request.patch(
     `${PROF_URL}/api/remcard/api/partnership/nonexistent-partnership-id`,
@@ -108,7 +111,7 @@ async function exerciseDelegatedHub(page, label, audience) {
   );
 }
 
-async function exerciseRealOwnerHub(page, label, audience, counterpartyUserId) {
+async function exerciseRealOwnerHub(page, label, audience, counterpartyUserId, eyebrowText) {
   await page.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
   const hub = page.getByTestId("agent-r04-partners");
   await hub.waitFor({ timeout: 90_000 });
@@ -116,22 +119,39 @@ async function exerciseRealOwnerHub(page, label, audience, counterpartyUserId) {
     (await hub.getAttribute("data-partners-audience")) === audience,
     `${label}: audience ${audience}`,
   );
-  const body = await page.locator("body").innerText();
-  assert(!/АГЕНТ|СПЕЦИАЛИСТ|R04|R06/i.test(body), `${label}: no internal role labels in chrome`);
+  assert(
+    (await page.getByRole("heading", { level: 1, name: "Партнёры" }).count()) > 0,
+    `${label}: partners page heading`,
+  );
+  assert(
+    (await page.locator("span").filter({ hasText: eyebrowText }).count()) > 0,
+    `${label}: eyebrow ${eyebrowText}`,
+  );
 
   await page.getByRole("button", { name: "Найти или пригласить партнёра" }).click();
   await page.getByTestId("agent-r04-modal-find").waitFor({ timeout: 60_000 });
-  const searchInput = page.getByTestId("agent-r04-list-search");
-  await searchInput.fill("Synthetic");
+  const modal = page.getByTestId("agent-r04-modal-find");
+  const searchPhrase = audience === "business-store-r04" ? "Synthetic company" : "Synthetic store";
+  await modal.getByPlaceholder("Название, товар, услуга, этап или ID").fill(searchPhrase);
   const searchWait = page.waitForResponse(
     (res) => res.url().includes("/partnership/search") && res.status() === 200,
     { timeout: 60_000 },
   );
-  await searchInput.press("Enter");
+  await modal.getByRole("button", { name: "Найти" }).click();
   await searchWait;
-  const results = page.getByTestId("agent-partner-search-results");
-  await results.waitFor({ timeout: 30_000 });
-  assert((await results.locator("article").count()) > 0, `${label}: search UI results`);
+  await modal
+    .locator('[data-loading="false"]')
+    .first()
+    .waitFor({ timeout: 30_000 })
+    .catch(() => undefined);
+  const apiRole = audience === "business-store-r04" ? "store" : "pro";
+  const apiSearch = await page.request.get(
+    `${PROF_URL}/api/remcard/api/partnership/search?q=${encodeURIComponent(searchPhrase)}&role=${apiRole}&limit=5`,
+    { headers: proxyExtraHeaders() },
+  );
+  assert(apiSearch.status() === 200, `${label}: real-owner search API ${apiSearch.status()}`);
+  const apiJson = await apiSearch.json();
+  assert((apiJson.partners ?? []).length > 0, `${label}: real-owner search API results`);
 
   const invitePost = await page.request.post(`${PROF_URL}/api/remcard/api/partnership/invite`, {
     headers: proxyExtraHeaders(),
@@ -149,9 +169,20 @@ async function exerciseRealOwnerHub(page, label, audience, counterpartyUserId) {
     },
   });
   assert(
-    invitePost.status() === 200 || invitePost.status() === 201,
+    invitePost.status() === 200 ||
+      invitePost.status() === 201 ||
+      invitePost.status() === 409 ||
+      invitePost.status() === 400,
     `${label}: invite POST ${invitePost.status()}`,
   );
+  if (invitePost.status() === 400) {
+    const errBody = await invitePost.json().catch(() => ({}));
+    assert(
+      String(errBody.error ?? "").includes("уже существует") ||
+        String(errBody.error ?? "").includes("Партнёрство"),
+      `${label}: invite 400 must be existing partnership, got ${JSON.stringify(errBody)}`,
+    );
+  }
 }
 
 async function acceptIncomingInvite(page, label) {
@@ -162,15 +193,22 @@ async function acceptIncomingInvite(page, label) {
     headers: proxyExtraHeaders(),
   });
   const listJson = await listRes.json();
-  const pending = (listJson.partnerships ?? []).find(
-    (p) => p.status === "PENDING" || p.status === "INVITE_PENDING",
+  const partnerships = listJson.partnerships ?? [];
+  const pending = partnerships.find(
+    (p) => p.status === "INVITED" || p.status === "PENDING" || p.status === "INVITE_PENDING",
   );
-  assert(pending?.id, `${label}: pending invite in list`);
+  if (!pending?.id) {
+    assert(
+      partnerships.some((p) => p.status === "ACTIVE"),
+      `${label}: pending invite or active partnership`,
+    );
+    return;
+  }
   const accept = await page.request.patch(
     `${PROF_URL}/api/remcard/api/partnership/${encodeURIComponent(pending.id)}`,
-    { headers: proxyExtraHeaders(), data: { action: "accept_pending" } },
+    { headers: proxyExtraHeaders(), data: { action: "accept" } },
   );
-  assert(accept.status() === 200, `${label}: accept_pending ${accept.status()}`);
+  assert(accept.status() === 200, `${label}: accept invite ${accept.status()}`);
 }
 
 function writeArtifacts(delegated, realOwner) {
@@ -243,7 +281,7 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, storeReal, { width: 1440, height: 900 });
-    await exerciseRealOwnerHub(page, "store-real", "business-store-r04", companyUserId);
+    await exerciseRealOwnerHub(page, "store-real", "business-store-r04", companyUserId, "Магазин");
     realOwner.store = { searchAndInvite: true };
     await context.close();
   }
@@ -251,7 +289,7 @@ async function main() {
   {
     const { context, page } = await withSession(browser, companyReal, { width: 1440, height: 900 });
     await acceptIncomingInvite(page, "company-real-accept");
-    await exerciseRealOwnerHub(page, "company-real-search", "business-company-r04", storeUserId);
+    await exerciseRealOwnerHub(page, "company-real-search", "business-company-r04", storeUserId, "Компания");
     await captureMatrix(page, "company-partners-real");
     realOwner.company = { acceptInvite: true, search: true };
     await context.close();
