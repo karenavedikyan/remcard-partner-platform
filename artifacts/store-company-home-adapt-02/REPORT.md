@@ -44,7 +44,29 @@ Dev-preview captures under `visual/` remain supplementary only.
 | navigator `route.test.ts` + `route.integration.test.ts` (real auth + builder) | 0 |
 | partner gate + presentation + load lifecycle | 0 |
 | partner `npm run build` | 0 |
-| navigator `tsc --noEmit` error count vs BE base `5a2c2a7d` | **52 = 52** (no new TS2339 in `businessHomeMetrics`; owner branch uses `resolveOwnerBusinessHomeBranch`, not `ctx.activeBranch`) |
+| navigator `tsc --noEmit` error count vs BE base `5a2c2a7d` | **52 = 52** (Δ new diagnostics **0**; baseline remains **52**, not 56) |
+
+### TS2339 diagnostic (blocker 1 confirmation)
+
+Independent `pnpm exec tsc --noEmit` on `remcard-navigator`:
+
+| Commit | Role | `error TS` count | exit |
+|--------|------|------------------|------|
+| `5a2c2a7d` | BE merge-base | 52 | 2 |
+| `5a239b4` | first metrics landing | **56** (+4 vs base) | 2 |
+| `c477156` | home-branch adapter fix | **52** | 2 |
+| `cfbc456` | tip (incl. route integration) | **52** | 0 |
+
+Exactly **four** new errors on `5a239b4`, all `TS2339` on `never` from `params.ctx.activeBranch.{name,city,address,id}` while `ORG_OWNER` narrows `activeBranch` to `null`:
+
+```
+src/lib/businessHomeMetrics.ts(155,28): Property 'name' does not exist on type 'never'.
+src/lib/businessHomeMetrics.ts(156,28): Property 'city' does not exist on type 'never'.
+src/lib/businessHomeMetrics.ts(157,31): Property 'address' does not exist on type 'never'.
+src/lib/businessHomeMetrics.ts(169,33): Property 'id' does not exist on type 'never'.
+```
+
+Closed in `c477156` via local `resolveOwnerBusinessHomeBranch` + `selectedBranch` / `preferredBranchId` — **no** `any`, **no** `@ts-ignore`, **no** change to global `getProContext` / `proBranchContext.ts`. Tip `businessHomeMetrics.ts` does not read `ctx.activeBranch`.
 
 Not in automated matrix (deferred): expired prof-test delegation HTTP case, MSK midnight order boundary on live PG (unit MSK tests cover range math).
 
