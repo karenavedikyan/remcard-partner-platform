@@ -12,17 +12,19 @@ type WalletTab = "settlements" | "requisites";
 
 type Props = {
   partnerType: BusinessClientsPartnerType;
+  /** Stable owner id for settlements load / modal cleanup (not only STORE vs COMPANY). */
+  ownerUserId: string;
   settlementsSlot?: ReactNode;
 };
 
-export function BusinessOwnerWallet({ partnerType, settlementsSlot }: Props) {
+export function BusinessOwnerWallet({ partnerType, ownerUserId, settlementsSlot }: Props) {
   const copy = businessWalletPageCopy(partnerType);
   const [tab, setTab] = useState<WalletTab>("settlements");
 
   const workspace =
     settlementsSlot ?? (
       <SpecialistSettlementsWorkspace
-        scopeKey={partnerType}
+        scopeKey={`${partnerType}:${ownerUserId}`}
         payableSummaryLabel={copy.payableSummaryLabel}
         payableDirectionLabel={copy.payableDirectionLabel}
         payableHint={copy.payableHint}

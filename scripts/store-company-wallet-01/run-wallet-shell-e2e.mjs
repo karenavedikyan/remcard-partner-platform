@@ -18,6 +18,8 @@ const ART_DIR = path.resolve("artifacts/store-company-wallet-01");
 const ART = path.join(ART_DIR, "visual-shell");
 const failures = [];
 
+const GATE_CORR_ACCOUNT = "30101810400000000225";
+
 const APPLICATION_RUNTIME = {
   frontendSha:
     process.env.E2E_APPLICATION_FRONTEND_SHA?.trim() ||
@@ -96,7 +98,11 @@ async function fetchSettlements(page) {
   return res.json();
 }
 
-async function parseExportBuffer(buffer, expectedRows, label) {
+function exportRowKey(row) {
+  return `${row.orderId}|${row.amount}|${row.counterparty}|${row.status}`;
+}
+
+async function parseExportBufferExact(buffer, expectedRows, label) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer);
   const sheet = wb.getWorksheet("Взаиморасчёты") ?? wb.worksheets[0];
@@ -106,8 +112,10 @@ async function parseExportBuffer(buffer, expectedRows, label) {
   header.eachCell((cell, n) => col.set(String(cell.value).trim(), n));
   const orderCol = col.get("Заказ");
   const amountCol = col.get("Сумма, ₽");
-  assert(orderCol && amountCol, `${label}: export_columns_missing`);
-  const matches = [];
+  const partnerCol = col.get("Партнёр");
+  const statusCol = col.get("Статус");
+  assert(orderCol && amountCol && partnerCol && statusCol, `${label}: export_columns_missing`);
+  const parsed = [];
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
     const orderId = String(row.getCell(orderCol).value ?? "").trim();
@@ -116,34 +124,40 @@ async function parseExportBuffer(buffer, expectedRows, label) {
       typeof amountRaw === "number"
         ? Math.round(amountRaw)
         : Math.round(Number(String(amountRaw).replace(/\s/g, "").replace(",", ".")));
-    for (const exp of expectedRows) {
-      if (exp.orderId === orderId && exp.amount === amount) matches.push(exp.id);
-    }
+    const counterparty = String(row.getCell(partnerCol).value ?? "").trim();
+    const status = String(row.getCell(statusCol).value ?? "").trim();
+    parsed.push({ orderId, amount, counterparty, status });
   });
-  return matches;
+  const expectedKeys = new Set(
+    expectedRows.map((r) =>
+      exportRowKey({
+        orderId: r.orderId,
+        amount: r.amount,
+        counterparty: r.counterpartyName,
+        status: r.status,
+      }),
+    ),
+  );
+  const parsedKeys = new Set(parsed.map((r) => exportRowKey(r)));
+  assert(parsed.length === expectedRows.length, `${label}: export row count ${parsed.length} !== ${expectedRows.length}`);
+  for (const key of expectedKeys) {
+    assert(parsedKeys.has(key), `${label}: export missing row ${key}`);
+  }
+  for (const key of parsedKeys) {
+    assert(expectedKeys.has(key), `${label}: export foreign/extra row ${key}`);
+  }
+  return parsed;
 }
 
-async function exportOpenPayable(page, gate, payableRows, label) {
-  const qs = new URLSearchParams({
-    scope: "open",
-    direction: "payable",
-    q: "",
-    status: "open",
-    from: "",
-    to: "",
-    sort: "debt-desc",
-  });
-  const res = await page.request.post(
-    `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?${qs}`,
-    { headers: proxyHeaders() },
-  );
-  assert(res.status() === 200, `${label}: export status ${res.status()}`);
-  const buf = Buffer.from(await res.body());
-  const expected = payableRows.filter((r) => gate.payableBonusIds.includes(r.id));
-  const matched = await parseExportBuffer(buf, expected, label);
-  for (const id of gate.payableBonusIds) {
-    assert(matched.includes(id), `${label}: export missing row for bonus ${id}`);
-  }
+async function exportViaWorkspaceButton(page, expectedRows, label) {
+  const downloadPromise = page.waitForEvent("download", { timeout: 90_000 });
+  await page.getByRole("button", { name: /Excel \(\.xlsx, весь отбор\)/i }).click();
+  const download = await downloadPromise;
+  const tmpPath = await download.path();
+  assert(tmpPath, `${label}: download path missing`);
+  const buf = fs.readFileSync(tmpPath);
+  assert(buf.length > 100, `${label}: export file too small`);
+  await parseExportBufferExact(buf, expectedRows, label);
 }
 
 async function requisitesUiFlow(page, label, tag) {
@@ -153,7 +167,6 @@ async function requisitesUiFlow(page, label, tag) {
     headers: proxyHeaders(),
   });
   assert(listBefore.status() === 200, `${label}: requisites list ${listBefore.status()}`);
-  const masked = await listBefore.json();
   const legalName = `Gate Wallet ${tag}`;
   await page.getByRole("button", { name: /Добавить реквизиты|Добавить ещё реквизиты/ }).click();
   await page.getByTestId("agent-requisites-form").waitFor();
@@ -163,41 +176,36 @@ async function requisitesUiFlow(page, label, tag) {
   await page.getByTestId("bank-bank").pressSequentially("Gate Bank", { delay: 10 });
   await page.getByTestId("bank-bik").pressSequentially("044525225", { delay: 10 });
   await page.getByTestId("bank-account").pressSequentially("40817810099910004312", { delay: 10 });
+  await page.getByTestId("bank-correspondent").pressSequentially(GATE_CORR_ACCOUNT, { delay: 10 });
   assert((await page.getByTestId("bank-recipient").inputValue()) === legalName, `${label}: form legalName bound`);
-  const payload = {
-    kind: "person",
-    legalName,
-    inn: "7707083893",
-    bankName: "Gate Bank",
-    bik: "044525225",
-    accountNumber: "40817810099910004312",
-    isPrimary: true,
-  };
-  const saveWait = page
-    .waitForResponse(
-      (r) => {
-        const u = r.url();
-        return (
-          u.includes("/agent-payout-requisites") &&
-          !u.match(/agent-payout-requisites\/[^/?]+/) &&
-          r.request().method() === "POST"
-        );
-      },
-      { timeout: 20_000 },
-    )
-    .catch(() => null);
+  assert(
+    (await page.getByTestId("bank-correspondent").inputValue()) === GATE_CORR_ACCOUNT,
+    `${label}: form corrAccount bound`,
+  );
+  const formValid = await page.getByTestId("agent-requisites-form").evaluate((form) => form.checkValidity());
+  assert(formValid, `${label}: requisites form invalid before submit`);
+
+  const saveWait = page.waitForResponse(
+    (r) => {
+      const u = r.url();
+      return (
+        u.includes("/agent-payout-requisites") &&
+        !u.match(/agent-payout-requisites\/[^/?]+/) &&
+        r.request().method() === "POST" &&
+        r.status() >= 200 &&
+        r.status() < 300
+      );
+    },
+    { timeout: 60_000 },
+  );
   await page.getByTestId("bank-save").click();
-  let saveRes = await saveWait;
-  if (!saveRes) {
-    saveRes = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
-      headers: proxyHeaders(),
-      data: payload,
-    });
-    assert(saveRes.status() >= 200 && saveRes.status() < 300, `${label}: requisites POST ${saveRes.status()}`);
-  }
+  const saveRes = await saveWait;
+  assert(saveRes, `${label}: UI requisites POST missing (native validation or submit failed)`);
   const saved = await saveRes.json();
   const createdItem = saved.item;
   assert(createdItem?.id, `${label}: requisites POST created`);
+  await page.getByTestId("agent-requisites-form").waitFor({ state: "hidden", timeout: 30_000 });
+
   const listAfter = await page.request.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
     headers: proxyHeaders(),
   });
@@ -206,17 +214,92 @@ async function requisitesUiFlow(page, label, tag) {
   assert(item?.id, `${label}: requisites in list`);
   assert(!item?.accountNumber, `${label}: list masked account`);
   assert(item?.accountNumberMasked, `${label}: masked present`);
+
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(item.id)}`,
     { headers: proxyHeaders() },
   );
   assert(detail.status() === 200, `${label}: detail GET ${detail.status()}`);
   const detailBody = await detail.json();
-  assert(detailBody.item?.accountNumber?.includes("99910004312"), `${label}: authorized detail`);
+  assert(detailBody.item?.accountNumber?.includes("99910004312"), `${label}: authorized detail account`);
+  assert(detailBody.item?.corrAccount?.includes(GATE_CORR_ACCOUNT.slice(-8)), `${label}: authorized detail corr`);
+  const versionAfterCreate = detailBody.item?.version;
+  assert(typeof versionAfterCreate === "number", `${label}: detail version after create`);
+
+  await page.getByTestId("bank-record").getByRole("button", { name: "Посмотреть" }).click();
+  await page.getByTestId("bank-record-detail").waitFor();
+  assert(await page.getByTestId("bank-detail-inn").isVisible(), `${label}: UI detail inn visible`);
+
+  const stalePatch = await page.request.patch(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(item.id)}`,
+    {
+      headers: proxyHeaders(),
+      data: {
+        action: "revise",
+        kind: "person",
+        legalName: `${legalName} Stale`,
+        inn: "7707083893",
+        bankName: "Gate Bank",
+        bik: "044525225",
+        accountNumber: "40817810099910004312",
+        corrAccount: GATE_CORR_ACCOUNT,
+        expectedVersion: Math.max(0, versionAfterCreate - 2),
+      },
+    },
+  );
+  assert(stalePatch.status() === 409, `${label}: stale requisites PATCH ${stalePatch.status()}`);
+
+  const editedName = `${legalName} Edited`;
+  await page.getByTestId("bank-record").getByRole("button", { name: "Изменить" }).click();
+  await page.getByTestId("agent-requisites-form").waitFor();
+  await page.getByTestId("bank-recipient").fill(editedName);
+  const patchWait = page.waitForResponse(
+    (r) =>
+      r.url().includes(`/agent-payout-requisites/${encodeURIComponent(item.id)}`) &&
+      r.request().method() === "PATCH" &&
+      r.status() >= 200 &&
+      r.status() < 300,
+    { timeout: 60_000 },
+  );
+  await page.getByTestId("bank-save").click();
+  const patchRes = await patchWait;
+  assert(patchRes, `${label}: UI requisites PATCH missing`);
+  await page.getByTestId("agent-requisites-form").waitFor({ state: "hidden", timeout: 30_000 });
+  await page.getByText(editedName).waitFor({ timeout: 30_000 });
+
+  const detailAfterEdit = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(item.id)}`,
+    { headers: proxyHeaders() },
+  );
+  const detailEdited = await detailAfterEdit.json();
+  assert(detailEdited.item?.legalName === editedName, `${label}: edit persisted`);
+  assert(
+    typeof detailEdited.item?.version === "number" && detailEdited.item.version > versionAfterCreate,
+    `${label}: version bumped after edit`,
+  );
+
   await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("business-wallet-tab-requisites").click();
-  await page.getByText(legalName).waitFor({ timeout: 30_000 });
-  return { requisitesId: item.id, legalName };
+  await page.getByText(editedName).waitFor({ timeout: 30_000 });
+
+  return { requisitesId: item.id, legalName: editedName, version: detailEdited.item.version };
+}
+
+async function assertReceivableFilters(page, api, walletGate, label) {
+  const recvRow = api.receivable.find((r) => walletGate.receivableBonusIds.includes(r.id));
+  assert(recvRow, `${label}: recv row for filters`);
+  await page.getByRole("button", { name: /Фильтры/i }).click();
+  await page.getByLabel("Поиск").fill("ZZZ-GATE-NO-MATCH");
+  await page.waitForTimeout(400);
+  assert(
+    (await page.getByText("Нет открытых записей по текущему отбору.").count()) > 0,
+    `${label}: search exclusion empty state`,
+  );
+  await page.getByLabel("Поиск").fill(recvRow.counterpartyName.slice(0, 6));
+  await page.waitForTimeout(400);
+  await page.getByTestId(`specialist-settlement-row-${recvRow.id}`).waitFor({ timeout: 15_000 });
+  const rowText = await page.getByTestId(`specialist-settlement-row-${recvRow.id}`).innerText();
+  assert(rowText.includes(String(recvRow.amount)), `${label}: filtered row amount visible`);
 }
 
 async function walletOwnerFlow(page, label, walletGate) {
@@ -236,23 +319,41 @@ async function walletOwnerFlow(page, label, walletGate) {
   await page.getByTestId(`specialist-partner-group-${recvPartnerId}`).click();
   const recvRow = api.receivable.find((r) => r.id === walletGate.receivableBonusIds[0]);
   assert(recvRow, `${label}: recv row`);
+  await assertReceivableFilters(page, api, walletGate, label);
   const accrualLink = page.getByRole("link", { name: "Начисление" }).first();
-  const purchaseLink = page.getByRole("link", { name: "Покупка" }).first();
   await accrualLink.click();
   await page.waitForURL(/\/history\//, { timeout: 60_000 });
   await page.goto(`${PROF_URL}/settlements`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByTestId("business-owner-wallet").waitFor({ timeout: 90_000 });
+
   await page.getByTestId("specialist-wallet-payable-total").click();
   const payRow = api.payable.find((r) => r.id === walletGate.payableBonusIds[0]);
   assert(payRow, `${label}: pay row`);
   await page.getByTestId(`specialist-partner-group-${payRow.counterpartyId}`).click();
 
-  await exportOpenPayable(page, walletGate, api.payable, label);
+  const purchaseLink = page.getByRole("link", { name: "Покупка" }).first();
+  const purchaseHref = await purchaseLink.getAttribute("href");
+  assert(purchaseHref?.includes(payRow.orderId), `${label}: purchase href orderId`);
+  await purchaseLink.click();
+  await page.waitForURL(new RegExp(`/history/purchases/${payRow.orderId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), {
+    timeout: 60_000,
+  });
+  await page.goto(`${PROF_URL}/settlements`, { waitUntil: "networkidle", timeout: 120_000 });
+  await page.getByTestId("business-owner-wallet").waitFor({ timeout: 90_000 });
+  await page.getByTestId("specialist-wallet-payable-total").click();
+  await page.getByTestId(`specialist-partner-group-${payRow.counterpartyId}`).click();
+
+  const exportExpected = api.payable.filter(
+    (r) =>
+      walletGate.payableBonusIds.includes(r.id) && r.counterpartyId === payRow.counterpartyId,
+  );
+  await exportViaWorkspaceButton(page, exportExpected, label);
 
   const payoutBonusId = walletGate.payableBonusIds[0];
   const before = dbSnapshot(payoutBonusId);
   assert(before.payoutRecordCount === 0, `${label}: payout records before ${before.payoutRecordCount}`);
   assert(before.bonus?.status === "CONFIRMED", `${label}: bonus open before payout`);
+  assert(before.bonus?.amount === payRow.amount, `${label}: bonus amount snapshot`);
 
   await page.getByTestId(`specialist-settlements-record-payout-${payoutBonusId}`).click();
   await page.getByRole("heading", { name: "Зафиксировать выплату" }).waitFor();
@@ -268,6 +369,9 @@ async function walletOwnerFlow(page, label, walletGate) {
   assert(after.payoutRecordCount === 1, `${label}: payout records after ${after.payoutRecordCount}`);
   assert(after.bonus?.status === "PAID", `${label}: bonus PAID`);
   assert(after.bonus?.paidAt, `${label}: paidAt set`);
+  assert(after.bonus?.payoutMethod === "CASH", `${label}: payout method CASH`);
+  assert(after.payoutRecords?.[0]?.payoutMethod === "CASH", `${label}: payout record method`);
+  assert(after.payoutRecords?.[0]?.idempotencyKey === idempotencyKey, `${label}: idempotency key stored`);
 
   const dup = await page.request.post(
     `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(payoutBonusId)}/pay`,
@@ -282,17 +386,28 @@ async function walletOwnerFlow(page, label, walletGate) {
   const afterDup = dbSnapshot(payoutBonusId);
   assert(afterDup.payoutRecordCount === 1, `${label}: still one payout record`);
 
+  await page.waitForTimeout(500);
   const afterApi = await fetchSettlements(page);
   assert(
     !afterApi.payable.some((r) => r.id === payoutBonusId),
     `${label}: payable row closed in API`,
   );
+  await page.getByTestId("specialist-wallet-payable-total").click();
+  await page.getByTestId(`specialist-partner-group-${payRow.counterpartyId}`).click();
+  await page.getByRole("button", { name: /История партнёра/i }).click();
+  await page.getByText(String(payRow.amount)).first().waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: new RegExp(`← ${payRow.counterpartyName}`) }).click();
+  await page.getByRole("button", { name: /← Партнёры/i }).click();
+  await page.getByRole("button", { name: /← Обзор/i }).click();
+  const payableTile = await page.getByTestId("specialist-wallet-payable-total").innerText();
+  assert(!payableTile.includes(String(payRow.amount)), `${label}: payable summary excludes paid row`);
 
-  await page.getByRole("button", { name: /Фильтры/i }).click();
-  await page.getByLabel("Поиск").fill(payRow.counterpartyName.slice(0, 4));
-  await page.waitForTimeout(300);
-
-  return { payoutBonusId, requisitesId: reqInfo.requisitesId };
+  return {
+    payoutBonusId,
+    requisitesId: reqInfo.requisitesId,
+    requisitesVersion: reqInfo.version,
+    payOrderId: payRow.orderId,
+  };
 }
 
 async function delegatedWalletPolicy(page, label, walletGate) {
@@ -309,6 +424,7 @@ async function delegatedWalletPolicy(page, label, walletGate) {
       bankName: "Test Bank",
       bik: "044525225",
       accountNumber: "40817810099910004312",
+      corrAccount: GATE_CORR_ACCOUNT,
     },
   });
   assert(reqPost.status() === 403, `${label}: requisites write ${reqPost.status()}`);
@@ -333,15 +449,87 @@ async function delegatedWalletPolicy(page, label, walletGate) {
   }
 }
 
-async function foreignAccessDenied(page, actorLabel, foreignBonusId) {
+async function foreignAccessMatrix(page, actorLabel, foreign) {
+  const { bonusId, requisitesId, foreignOrderId } = foreign;
   const pay = await page.request.post(
-    `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(foreignBonusId)}/pay`,
+    `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
     {
-      headers: { ...proxyHeaders(), "Idempotency-Key": `foreign-${foreignBonusId}` },
+      headers: { ...proxyHeaders(), "Idempotency-Key": `foreign-${bonusId}` },
       data: { payoutMethod: "CASH" },
     },
   );
   assert(pay.status() === 403 || pay.status() === 404, `${actorLabel}: foreign payout ${pay.status()}`);
+  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+
+  const settlements = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
+    headers: proxyHeaders(),
+  });
+  assert(settlements.status() === 200, `${actorLabel}: own settlements read`);
+  const ownBody = await settlements.json();
+  assert(
+    !ownBody.payable.some((r) => r.id === bonusId) && !ownBody.receivable.some((r) => r.id === bonusId),
+    `${actorLabel}: foreign bonus absent from own ledger`,
+  );
+
+  if (requisitesId) {
+    const reqDetail = await page.request.get(
+      `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(requisitesId)}`,
+      { headers: proxyHeaders() },
+    );
+    assert(
+      reqDetail.status() === 403 || reqDetail.status() === 404,
+      `${actorLabel}: foreign requisites detail ${reqDetail.status()}`,
+    );
+    const reqPatch = await page.request.patch(
+      `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(requisitesId)}`,
+      {
+        headers: proxyHeaders(),
+        data: { action: "setPrimary" },
+      },
+    );
+    assert(
+      reqPatch.status() === 403 || reqPatch.status() === 404,
+      `${actorLabel}: foreign requisites patch ${reqPatch.status()}`,
+    );
+  }
+
+  if (foreignOrderId) {
+    const exportForeign = await page.request.post(
+      `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?scope=open&direction=payable&status=open&sort=debt-desc`,
+      { headers: proxyHeaders() },
+    );
+    assert(exportForeign.status() === 200, `${actorLabel}: export HTTP ${exportForeign.status()}`);
+    const buf = Buffer.from(await exportForeign.body());
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const sheet = wb.worksheets[0];
+    let foreignRow = false;
+    sheet?.eachRow((row, n) => {
+      if (n === 1) return;
+      const text = row.values?.join("|") ?? "";
+      if (text.includes(foreignOrderId)) foreignRow = true;
+    });
+    assert(!foreignRow, `${actorLabel}: export must not leak foreign order ${foreignOrderId}`);
+  }
+
+  const afterPay = dbSnapshot(bonusId).payoutRecordCount;
+  assert(afterPay === beforePay, `${actorLabel}: foreign payout left DB unchanged`);
+}
+
+async function staffWalletDenied(page, label) {
+  const res = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
+    headers: proxyHeaders(),
+  });
+  assert(res.status() === 403 || res.status() === 401, `${label}: staff settlements ${res.status()}`);
+  const exp = await page.request.post(
+    `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?scope=open&direction=payable&status=open&sort=debt-desc`,
+    { headers: proxyHeaders() },
+  );
+  assert(exp.status() === 403 || exp.status() === 401, `${label}: staff export ${exp.status()}`);
+  const req = await page.request.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
+    headers: proxyHeaders(),
+  });
+  assert(req.status() === 403 || req.status() === 401, `${label}: staff requisites list ${req.status()}`);
 }
 
 async function captureWallet(page, prefix) {
@@ -398,6 +586,8 @@ async function main() {
   const storeReal = harness.roles?.store?.realOwner?.ownerSessionToken;
   const companyReal = harness.roles?.company?.realOwner?.ownerSessionToken;
   const storeDel = harness.roles?.store?.delegationToken;
+  const companyDel = harness.roles?.company?.delegationToken;
+  const staffToken = harness.staffModerationToken;
   const storeWallet = harness.roles?.store?.walletGate;
   const companyWallet = harness.roles?.company?.walletGate;
   assert(storeReal && companyReal, "missing real owner tokens");
@@ -417,6 +607,13 @@ async function main() {
     flow.anonymousDenied = true;
   }
 
+  if (staffToken) {
+    const { context, page } = await withSession(browser, staffToken);
+    await staffWalletDenied(page, "staff-mod");
+    await context.close();
+    flow.staffModerationDenied = true;
+  }
+
   if (storeDel) {
     const { context, page } = await withSession(browser, storeDel);
     await delegatedWalletPolicy(page, "store-delegated", storeWallet);
@@ -424,9 +621,20 @@ async function main() {
     flow.delegatedStore = { requisitesWriteDenied: true, payoutWriteDenied: true };
   }
 
+  if (companyDel) {
+    const { context, page } = await withSession(browser, companyDel);
+    await delegatedWalletPolicy(page, "company-delegated", companyWallet);
+    await context.close();
+    flow.delegatedCompany = { requisitesWriteDenied: true, payoutWriteDenied: true };
+  }
+
   {
     const { context, page } = await withSession(browser, companyReal);
-    await foreignAccessDenied(page, "company-foreign", storeWallet.payableBonusIds[0]);
+    await foreignAccessMatrix(page, "company-foreign-pre", {
+      bonusId: storeWallet.payableBonusIds[0],
+      requisitesId: null,
+      foreignOrderId: null,
+    });
     await context.close();
   }
 
@@ -439,6 +647,11 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, companyReal);
+    await foreignAccessMatrix(page, "company-foreign-post", {
+      bonusId: storeWallet.payableBonusIds[0],
+      requisitesId: flow.store?.requisitesId,
+      foreignOrderId: flow.store?.payOrderId ?? null,
+    });
     flow.company = await walletOwnerFlow(page, "company-real", companyWallet);
     await captureWallet(page, "company-wallet-real");
     await context.close();

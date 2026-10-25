@@ -59,13 +59,13 @@ describe("SpecialistSettlementsWorkspace payout path", () => {
 
   it("clears payout dialog state when scopeKey changes", async () => {
     const user = userEvent.setup();
-    const { rerender } = render(<SpecialistSettlementsWorkspace scopeKey="store" />);
+    const { rerender } = render(<SpecialistSettlementsWorkspace scopeKey="store:owner-a" />);
     await screen.findByTestId("specialist-settlements-workspace");
     await user.click(screen.getByTestId("specialist-wallet-payable-total"));
     await user.click(screen.getByTestId("specialist-partner-group-cp-1"));
     await user.click(screen.getByTestId("specialist-settlements-record-payout-bonus-gate-1"));
     expect(screen.getByRole("heading", { name: "Зафиксировать выплату" })).toBeInTheDocument();
-    rerender(<SpecialistSettlementsWorkspace scopeKey="company" />);
+    rerender(<SpecialistSettlementsWorkspace scopeKey="company:owner-b" />);
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: "Зафиксировать выплату" })).toBeNull(),
     );

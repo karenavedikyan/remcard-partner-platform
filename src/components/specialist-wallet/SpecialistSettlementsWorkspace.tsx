@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import { bonusStatusLabel, bonusStatusTone } from "@/lib/history-labels";
@@ -175,6 +175,7 @@ export function SpecialistSettlementsWorkspace({
   const [exportError, setExportError] = useState("");
   const [data, setData] = useState<SettlementsResponse | null>(previewData ?? null);
   const [payoutTarget, setPayoutTarget] = useState<PayoutRecordTarget | null>(null);
+  const loadGenerationRef = useRef(0);
 
   const openPayoutModal = useCallback((row: SettlementObligation) => {
     if (!row.payoutActions) return;
@@ -194,12 +195,16 @@ export function SpecialistSettlementsWorkspace({
 
   const load = useCallback(async () => {
     if (previewData) return;
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError("");
     setAccessDenied(false);
     try {
-      setData(await fetchSettlements());
+      const result = await fetchSettlements();
+      if (generation !== loadGenerationRef.current) return;
+      setData(result);
     } catch (caught) {
+      if (generation !== loadGenerationRef.current) return;
       setData(null);
       if (isSettlementsAccessDenied(caught)) {
         setAccessDenied(true);
@@ -211,15 +216,14 @@ export function SpecialistSettlementsWorkspace({
           : "Не удалось загрузить взаиморасчёты",
       );
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, [previewData]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  useEffect(() => {
+    loadGenerationRef.current += 1;
     setPayoutTarget(null);
     setScreen("overview");
     setDirection("receivable");

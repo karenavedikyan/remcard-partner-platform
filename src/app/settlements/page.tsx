@@ -67,7 +67,7 @@ export default async function SettlementsPage() {
       {shell === "agent-r05" ? (
         <AgentReceivablesWallet />
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
-        <BusinessOwnerWallet partnerType={businessPartnerType} />
+        <BusinessOwnerWallet partnerType={businessPartnerType} ownerUserId={user.id} />
       ) : shell === "master-wallet" ? (
         <SpecialistMasterWallet />
       ) : (
