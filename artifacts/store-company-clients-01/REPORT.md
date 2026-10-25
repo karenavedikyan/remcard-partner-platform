@@ -25,11 +25,11 @@ No new CRM schema, no AGENT/SERVICE assignment, no parallel API.
 
 | | SHA / time |
 | --- | --- |
-| Frontend application (gate) | `fdbbf33f…` — see `metadata-shell.json` full hash after docs commit |
-| Backend application (gate) | `546606bb…` — product `src` delta + QA seed script |
+| Frontend application (gate) | `fdbbf33fa7dd4624aecfc01679e02ff7d143f3f7` |
+| Backend application (gate) | `546606bbe5176181d0b66f243fc34e4c4aba6985` |
 | Backend product base (unchanged core) | `2b1bac4fbe31e2d686b4a2655d89d0bf7cf9847d` |
 | Frontend product base | `6331c0f0f26d9b5d83bcc1dad79288d99585a2f9` |
-| Capture | `metadata-shell.json` `captureStartedAt` → `captureCompletedAt` |
+| Capture | `2026-10-25T13:20:38.000Z` → `2026-10-25T13:22:36.924Z` |
 
 ## Tests & gate
 
