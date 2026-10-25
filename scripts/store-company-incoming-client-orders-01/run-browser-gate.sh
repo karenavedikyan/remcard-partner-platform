@@ -40,5 +40,5 @@ set +o pipefail
 node scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs 2>&1 | tee -a "$LOG"
 e2e_exit=${PIPESTATUS[0]}
 set -o pipefail
-echo "$e2e_exit" >>"$ART/shell-browser-gate.exit"
+echo "$e2e_exit" >"$ART/shell-browser-gate.exit"
 exit "$e2e_exit"
