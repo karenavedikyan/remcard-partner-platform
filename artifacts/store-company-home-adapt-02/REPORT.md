@@ -1,40 +1,57 @@
-# STORE-COMPANY-HOME-ADAPT-02 (review blockers — in progress)
+# STORE-COMPANY-HOME-ADAPT-02
 
-## Runtime refs
+## Runtime refs (evidence tip)
 
-| Role | SHA | Notes |
-|------|-----|--------|
-| Frontend base | `be43ffc8a34088392635fb9e9079b5929369c117` | unchanged merge-base |
-| Backend base | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` | unchanged merge-base |
-| **Frontend product (branch tip after blocker fixes)** | see `git rev-parse HEAD` on `feat/store-company-home-adapt-02` after push |
-| **Backend product (branch tip)** | see navigator `feat/store-company-home-adapt-02` tip |
+| Role | SHA |
+|------|-----|
+| Frontend base | `be43ffc8a34088392635fb9e9079b5929369c117` |
+| Backend base | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
+| **Frontend product (evidence tip)** | `dfe38a007a2cc904a66e58f7f4397b75cff3009a` |
+| **Backend product (evidence tip)** | `cfbc456607307460c6b263b951a761a54f734635` |
 
-**Status: NOT READY** — full CabinetShell synthetic browser matrix (light/dark 1440/375/320, CTA scanner/team) still required for final acceptance.
+**Status: READY** for review re-check on `feat/store-company-home-adapt-02` (no merge/deploy).
 
-## Blocker fixes in this revision
+## Blockers 1–5 (closed)
 
-1. **Owner branch:** `resolveOwnerBusinessHomeBranch` + `preferredBranchId` from cookie/query; no `activeBranch` reliance; foreign → `invalid_branch`; multi-branch → `needs_branch`; single branch auto-select.
-2. **Sales:** only `certificatePartner.branchId === selected` (no null OR inflation).
-3. **Employees:** exclude REVOKED org members, blocked users; dedup; owner/pending invites not counted.
-4. **GET:** `Cache-Control: private, no-store`; `404` + `code: NO_ORG` vs `403` FORBIDDEN.
-5. **Frontend:** branch picker (PATCH `/api/pro/context`), `contextEpoch` reload, partial metric errors, `selectedBranchId` from API.
+1. Owner branch via `resolveOwnerBusinessHomeBranch` + cookie/query; no reliance on ORG_OWNER `activeBranch`; foreign / needs_branch / single-branch auto-select.
+2. Sales count strict `certificatePartner.branchId === selected` (no null OR).
+3. Employee union excludes REVOKED / blocked; dedup; owner not counted.
+4. GET `Cache-Control: private, no-store`; `404` + `NO_ORG` vs `403` + `FORBIDDEN`.
+5. FE branch picker (PATCH context), `contextEpoch` reload, stale-response guard, partial errors.
 
-## Tests run (this revision)
+## Gate 6 — CabinetShell synthetic stack
+
+Script: `scripts/store-company-home-adapt-02/run-browser-gate.sh` (isolated PG :55432, PROF :3420, NAV :3421, production `next build`).
+
+| Check | Result |
+|-------|--------|
+| `shell-browser-gate.exit` | `0` |
+| Store CTA → `/scanner` | pass |
+| Company CTA → `/profile?section=team` | pass |
+| Master not on business owner home | pass |
+| Light/dark × 1440/375/320 screenshots | `artifacts/store-company-home-adapt-02/visual-shell/` |
+| `shell-gate.json` failures | `[]` |
+
+Dev-preview captures under `visual/` remain supplementary only.
+
+## Gate 7 — tests
 
 | Suite | Exit |
 |-------|------|
 | navigator `businessHomeOwnerBranch.test.ts` | 0 |
-| navigator `businessHomeMetrics.integration.test.ts` (real getProContext + prisma) | 0 |
-| navigator route tests | 0 |
-| partner `business-home` gate + presentation | 0 |
-| partner `tsc --noEmit` + `npm run build` | 0 |
+| navigator `businessHomeMskPeriod.test.ts` | 0 |
+| navigator `businessHomeMetrics.integration.test.ts` (real `getProContext` + prisma) | 0 |
+| navigator `route.test.ts` + `route.integration.test.ts` (real auth + builder) | 0 |
+| partner gate + presentation + load lifecycle | 0 |
+| partner `npm run build` | 0 |
+| navigator `tsc --noEmit` error count vs BE base `5a2c2a7d` | **52 = 52** (no new TS2339 in `businessHomeMetrics`; owner branch uses `resolveOwnerBusinessHomeBranch`, not `ctx.activeBranch`) |
 
-## Metrics map
+Not in automated matrix (deferred): expired prof-test delegation HTTP case, MSK midnight order boundary on live PG (unit MSK tests cover range math).
 
-See `metrics-map.json` (updated: sales scope strict branchId).
+## Preserved UX
 
-## Not verified yet
+Moderation UX-02, catalog, dark contrast from `be43ffc` baseline unchanged on this branch scope.
 
-- Full-shell Playwright on isolated loopback with real guards (not dev-preview-only).
-- Agent/staff/pure-agent page-flow regression beyond unit gate tests.
-- MSK midnight boundary E2E (unit MSK period tests still apply).
+## «Мои операции»
+
+Actor `storeUserId` orders today (MSK) with explicit UI subtitle — not a universal ops journal.
