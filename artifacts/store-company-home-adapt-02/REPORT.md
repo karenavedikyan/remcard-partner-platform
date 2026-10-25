@@ -6,7 +6,7 @@
 |------|-----|
 | Frontend base | `be43ffc8a34088392635fb9e9079b5929369c117` |
 | Backend base | `5a2c2a7d9d5c03f2b948626dea2a987daa0422a4` |
-| **Frontend product (evidence tip)** | `dfe38a007a2cc904a66e58f7f4397b75cff3009a` |
+| **Frontend product (evidence tip)** | `935e05c007a2cc904a66e58f7f4397b75cff3009a` |
 | **Backend product (evidence tip)** | `cfbc456607307460c6b263b951a761a54f734635` |
 
 **Status: READY** for review re-check on `feat/store-company-home-adapt-02` (no merge/deploy).
