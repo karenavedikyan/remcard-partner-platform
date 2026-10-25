@@ -59,6 +59,39 @@ function dbSnapshot(bonusId) {
   return JSON.parse(out.trim());
 }
 
+function loadAccessBaseline(bonusId, ownerUserId) {
+  const out = execSync(
+    `pnpm exec tsx scripts/prof-admin-moderation-isolated/wallet-gate-access-baseline.ts`,
+    {
+      cwd: NAV_ROOT,
+      env: {
+        ...process.env,
+        BONUS_ID: bonusId,
+        REQUISITES_OWNER_USER_ID: ownerUserId,
+      },
+      encoding: "utf8",
+    },
+  );
+  return JSON.parse(out.trim());
+}
+
+function assertOwnerScopeUnchanged(before, after, label) {
+  assert(
+    JSON.stringify(before.requisites) === JSON.stringify(after.requisites),
+    `${label}: owner requisites baseline unchanged`,
+  );
+  assert(
+    before.payoutRecordCount === after.payoutRecordCount,
+    `${label}: payout record count baseline unchanged`,
+  );
+  assert(before.bonus?.status === after.bonus?.status, `${label}: bonus status baseline unchanged`);
+  assert(before.bonus?.paidAt === after.bonus?.paidAt, `${label}: bonus paidAt baseline unchanged`);
+  assert(
+    before.bonus?.payoutMethod === after.bonus?.payoutMethod,
+    `${label}: bonus payoutMethod baseline unchanged`,
+  );
+}
+
 async function withSession(browser, token, viewport = { width: 1440, height: 900 }) {
   const context = await browser.newContext({ viewport, acceptDownloads: true });
   await context.addCookies([
@@ -619,8 +652,11 @@ async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
   }
 }
 
-async function staffWalletForbidden(api, label, bonusId, ownerRequisitesId) {
-  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+async function staffWalletForbidden(api, label, bonusId, ownerRequisitesId, ownerUserId) {
+  const before = loadAccessBaseline(bonusId, ownerUserId);
+  const ownerSet = before.requisites.sets.find((s) => s.id === ownerRequisitesId);
+  const ownerVersion = ownerSet?.version ?? 1;
+
   const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
   assert(res.status() === 403, `${label}: staff settlements ${res.status()}`);
   const exp = await api.post(
@@ -628,18 +664,70 @@ async function staffWalletForbidden(api, label, bonusId, ownerRequisitesId) {
   );
   assert(exp.status() === 403, `${label}: staff export ${exp.status()}`);
   const req = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`);
-  assert(req.status() === 200, `${label}: staff requisites list HTTP ${res.status()}`);
+  assert(req.status() === 200, `${label}: staff requisites list ${req.status()}`);
   const reqItems = (await req.json()).items ?? [];
   assert(
     !reqItems.some((i) => i.id === ownerRequisitesId),
-    `${label}: staff requisites must not expose owner sets`,
+    `${label}: staff requisites list must not expose owner sets`,
   );
+
+  const ownerDetail = await api.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+  );
+  assert(
+    ownerDetail.status() === 403 || ownerDetail.status() === 404,
+    `${label}: staff owner requisites detail ${ownerDetail.status()}`,
+  );
+
+  for (const body of [
+    { action: "setPrimary" },
+    { action: "archive" },
+    {
+      action: "revise",
+      kind: "person",
+      legalName: "Staff revise owner attempt",
+      inn: "7707083893",
+      bankName: "Gate Bank",
+      bik: "044525225",
+      accountNumber: "40817810099910004312",
+      corrAccount: GATE_CORR_ACCOUNT,
+      expectedVersion: ownerVersion,
+    },
+  ]) {
+    const patch = await api.patch(
+      `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+      { data: body },
+    );
+    assert(
+      patch.status() === 403 || patch.status() === 404,
+      `${label}: staff owner PATCH ${body.action} ${patch.status()}`,
+    );
+  }
+
+  const staffCreate = await api.post(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
+    data: {
+      kind: "person",
+      legalName: `Staff own scope ${label}`,
+      inn: "7707083893",
+      bankName: "Staff Bank",
+      bik: "044525225",
+      accountNumber: "40817810099910004312",
+      corrAccount: GATE_CORR_ACCOUNT,
+    },
+  });
+  assert(
+    staffCreate.status() === 403 || staffCreate.status() === 201 || staffCreate.status() === 200,
+    `${label}: staff own-scope requisites POST ${staffCreate.status()}`,
+  );
+
   const pay = await api.post(`${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`, {
     headers: { "Idempotency-Key": `staff-forbidden-${bonusId}` },
     data: { payoutMethod: "CASH" },
   });
   assert(pay.status() === 403 || pay.status() === 401, `${label}: staff payout ${pay.status()}`);
-  assert(dbSnapshot(bonusId).payoutRecordCount === beforePay, `${label}: staff payout DB unchanged`);
+
+  const after = loadAccessBaseline(bonusId, ownerUserId);
+  assertOwnerScopeUnchanged(before, after, label);
 }
 
 async function staffWalletAuthorized(api, label, walletGate, bonusId, foreignRequisitesId) {
@@ -674,7 +762,11 @@ async function staffWalletAuthorized(api, label, walletGate, bonusId, foreignReq
   assert(dbSnapshot(bonusId).payoutRecordCount === beforePay, `${label}: authorized staff payout DB unchanged`);
 }
 
-async function staffWalletRevoked(api, label) {
+async function staffWalletRevoked(api, label, bonusId, ownerRequisitesId, ownerUserId) {
+  const before = loadAccessBaseline(bonusId, ownerUserId);
+  const ownerSet = before.requisites.sets.find((s) => s.id === ownerRequisitesId);
+  const ownerVersion = ownerSet?.version ?? 1;
+
   const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
   assert(res.status() === 401, `${label}: revoked staff settlements ${res.status()}`);
   const exp = await api.post(
@@ -682,7 +774,57 @@ async function staffWalletRevoked(api, label) {
   );
   assert(exp.status() === 401, `${label}: revoked staff export ${exp.status()}`);
   const req = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`);
-  assert(req.status() === 401, `${label}: revoked staff requisites ${req.status()}`);
+  assert(req.status() === 401, `${label}: revoked staff requisites list ${req.status()}`);
+
+  const ownerDetail = await api.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+  );
+  assert(ownerDetail.status() === 401, `${label}: revoked staff owner detail ${ownerDetail.status()}`);
+
+  const pay = await api.post(`${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`, {
+    headers: { "Idempotency-Key": `staff-revoked-${bonusId}` },
+    data: { payoutMethod: "CASH" },
+  });
+  assert(pay.status() === 401, `${label}: revoked staff payout ${pay.status()}`);
+
+  const revokedMutations = [
+    { action: "setPrimary" },
+    { action: "archive" },
+    {
+      action: "revise",
+      kind: "person",
+      legalName: "Revoked revise attempt",
+      inn: "7707083893",
+      bankName: "Gate Bank",
+      bik: "044525225",
+      accountNumber: "40817810099910004312",
+      corrAccount: GATE_CORR_ACCOUNT,
+      expectedVersion: ownerVersion,
+    },
+  ];
+  for (const body of revokedMutations) {
+    const patch = await api.patch(
+      `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+      { data: body },
+    );
+    assert(patch.status() === 401, `${label}: revoked staff PATCH ${body.action} ${patch.status()}`);
+  }
+
+  const create = await api.post(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
+    data: {
+      kind: "person",
+      legalName: "Revoked create attempt",
+      inn: "7707083893",
+      bankName: "Gate Bank",
+      bik: "044525225",
+      accountNumber: "40817810099910004312",
+      corrAccount: GATE_CORR_ACCOUNT,
+    },
+  });
+  assert(create.status() === 401, `${label}: revoked staff requisites POST ${create.status()}`);
+
+  const after = loadAccessBaseline(bonusId, ownerUserId);
+  assertOwnerScopeUnchanged(before, after, label);
 }
 
 async function captureWallet(page, prefix) {
@@ -791,6 +933,7 @@ async function main() {
       "store-staff-restricted",
       storeWallet.payableBonusIds[0],
       storeOwnerRequisitesId,
+      storeOwnerUserId,
     );
     await restrictedApi.dispose();
     const authorizedApi = await withApiToken(storeStaff.authorizedSessionToken);
@@ -803,7 +946,13 @@ async function main() {
     );
     await authorizedApi.dispose();
     const revokedApi = await withApiToken(storeStaff.revokedSessionToken);
-    await staffWalletRevoked(revokedApi, "store-staff-revoked");
+    await staffWalletRevoked(
+      revokedApi,
+      "store-staff-revoked",
+      storeWallet.payableBonusIds[0],
+      storeOwnerRequisitesId,
+      storeOwnerUserId,
+    );
     await revokedApi.dispose();
     flow.storeStaff = { restricted: true, authorized: true, revoked: true };
   }
