@@ -1,44 +1,38 @@
 # STORE-COMPANY-CLIENTS-01 (A/B/C closure)
 
-**Status: READY FOR REVIEW**
+**Status: ACCEPTED WITH DOCUMENTED A LIMIT** — not «полный READY» по покупкам у нас для чужих входящих сертификатов.
 
 ## A — Purchases (honest scope)
 
 | Slice | Contract |
 | --- | --- |
-| **По нашим рекомендациям (business)** | Orders on **owner-issued** certs for CRM client, excluding acceptance at own org (`certificatePartnerId` null **or** partner ≠ owner). |
-| **Покупки у нас (business)** | Orders at own org where **we issued** the cert with `agentClientId` on this CRM client (`certificate.proUserId = owner`). |
-| **BLOCKED (documented, no schema change)** | Purchases at our store using **another recommender’s** certificate — no `AgentClient` link on accepting owner (`receivingPurchaseScope.blockedIncomingThirdPartyRecommender`). Leak fixture proves foreign issuer order id **not** listed on store CRM client receiving panel. |
-| **Agent/specialist** | **Legacy** `listAgentClientLegacyPurchases` — all orders on owner certs (nullable `certificatePartnerId` preserved). |
+| **Supported** | **Own-issued accepting:** «Покупки у нас» только по нашим сертификатам с `agentClientId` на CRM-клиенте. |
+| **BLOCKED** | **Incoming third-party recommender** at our store — `BLOCKED_MISSING_LINK` (нет связи AgentClient ↔ заказ без schema). Leak fixture: foreign issuer order id not in receiving list. |
+| **Recommendations (business)** | Owner-issued certs at partners; legacy nullable `certificatePartnerId` on recommendation side. |
+| **Agent/specialist** | `listAgentClientLegacyPurchases` unchanged. |
 
-UI footer: all order statuses shown; aggregate counter remains confirmed-only.
+## B / C
 
-## B — Gate flows
+Accepted per review (both ordinary owners, cert id, mutations, detail/gate retry).
 
-- STORE + COMPANY: create with phone/email/need → edit/clear → reload readback → UI cert POST id match on detail → archive/restore → disposable **UI delete** with confirm.
-- Mutations: real foreign client id in batch skip; store uses company foreign CRM id, company uses **store-owned** foreign CRM id; injection read own 200 / other owner 404.
-- `ownerClientCertificateLink.test.ts`: prisma + proContext mocked (no DATABASE_URL).
+## C — List race evidence
 
-## C — Stability
+- `src/components/agent-r03/AgentClientsList.race.test.tsx` — mounted list, mocked `fetchAgentClients`, beta resolves then alpha resolve/reject; DOM + selection clear.
 
-- Detail load error + **Повторить** (`client-detail-retry`); race test clicks retry.
-- `OwnerClientsGate`: business `/me`+`/context` failure → error+retry (not silent empty).
-- List load generation unit mirror: `clientsListLoadGuard.test.ts`.
+## Runtime capture (unchanged since bb3e7575 gate)
 
-## Single success capture (aligned)
+Application code **not changed** in list-race test commit; gate artifacts remain valid.
 
 | Field | Value |
 | --- | --- |
-| FE application SHA | `e79cc33431bc7c6c86db5d0c30ebe25bd0640c78` |
+| FE application SHA (gate) | `bb3e757536910383f1f0e7d871810ae347c9c84f` |
 | BE application SHA | `8b1e932ea9c611ccb5e2aac18ab50dac7faebbf1` |
-| Capture | `2026-10-25T14:14:01.000Z` → `2026-10-25T14:16:09.786Z` |
-| Exit | `0` (`shell-browser-gate.exit`) |
-| stdout / `shell-gate.json` / `metadata-shell.json` | Same `applicationRuntime` object |
+| Capture | `2026-10-25T14:16:27.000Z` → `2026-10-25T14:18:38.524Z` |
+| Exit | `0` |
+| stdout / `shell-gate.json` / `metadata-shell.json` | Same `applicationRuntime` |
 
 Command: `bash scripts/store-company-clients-01/run-browser-gate.sh`
 
-## Deploy
+## Branches
 
-Backend first (`agentClientPurchases`, `agentClientPurchaseScope`, `ownerClientCertificateLink`, detail API fields).
-
-Branches: `feat/store-company-clients-01` on both repos @ SHAs above.
+`feat/store-company-clients-01` — FE tip documents tests/REPORT; runtime SHAs above.
