@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "failures": [],
+  "application": {
+    "frontendSha": "60798b3667ca1b84a61d46a502909c9766a9ee10",
+    "backendSha": "d2f65f507da7de85ec1b86416fd90cb61d241375",
+    "captureStartedAt": "2026-10-25T19:52:51.000Z",
+    "captureCompletedAt": "2026-10-25T19:54:55.603Z"
+  },
+  "flow": {
+    "delegatedStore": {
+      "requisitesWriteDenied": true
+    },
+    "store": {
+      "payoutBonusId": "cmvo8vw5l0008jsmhbwr70gv2",
+      "hasPayout": true
+    },
+    "company": {
+      "payoutBonusId": "cmvo8vw5w000qjsmhuzk186f8",
+      "hasPayout": true
+    }
+  }
+}
