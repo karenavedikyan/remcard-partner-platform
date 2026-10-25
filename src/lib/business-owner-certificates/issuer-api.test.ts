@@ -27,6 +27,7 @@ describe("patchIssuerCertificate", () => {
   });
 
   it("routes business mode to business-owner API", async () => {
+    vi.mocked(patchSpecialistIssuerCertificate).mockClear();
     await patchIssuerCertificate("business", "c2", { action: "archive" });
     expect(patchBusinessOwnerCertificate).toHaveBeenCalledWith("c2", { action: "archive" });
     expect(patchSpecialistIssuerCertificate).not.toHaveBeenCalled();

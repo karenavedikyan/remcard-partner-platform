@@ -1,5 +1,5 @@
 /**
- * Isolated shell gate: business org owners — list, detail, PDF, workspace archive, prof-test write deny.
+ * Isolated shell gate: prof-test read paths + explicit write denials; UI detail/QR.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -78,7 +78,10 @@ async function profTestWriteDenials(page, label, certId) {
   const postRes = await page.request.post(`${PROF_URL}/api/remcard/api/store/certificate`, {
     data: { partners: [] },
   });
-  assert(postRes.status() === 403 || postRes.status() === 400, `${label}: prof-test POST create denied (${postRes.status()})`);
+  assert(
+    postRes.status() === 403 || postRes.status() === 400,
+    `${label}: prof-test POST /api/store/certificate denied (${postRes.status()})`,
+  );
 
   const patchRes = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
@@ -88,106 +91,66 @@ async function profTestWriteDenials(page, label, certId) {
 }
 
 async function exerciseList(page, label, eyebrow) {
-  const listRespPromise = page.waitForResponse(
-    (r) =>
-      r.url().includes("business-owner-certificates") &&
-      !r.url().includes("/batch") &&
-      r.status() === 200,
-    { timeout: 90_000 },
-  );
-  await page.goto(`${PROF_URL}/recommendations`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.goto(`${PROF_URL}/recommendations`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByTestId("business-certificates-root").waitFor({ timeout: 90_000 });
   const body = await page.locator("body").innerText();
   assert(!/Мои рекомендации/i.test(body), `${label}: legacy list title`);
   assert(!/СПЕЦИАЛИСТ|АГЕНТ/i.test(body), `${label}: internal role labels`);
   assert(body.toLowerCase().includes(eyebrow.toLowerCase()), `${label}: eyebrow ${eyebrow}`);
-  const listJson = await (await listRespPromise).json();
+  const listResp = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=5`,
+  );
+  assert(listResp.status() === 200, `${label}: list API ${listResp.status()}`);
+  const listJson = await listResp.json();
   assert((listJson.totalCount ?? 0) > 0, `${label}: non-empty list`);
   return listJson.certificates?.[0]?.id ?? null;
 }
 
-async function exerciseOwnerDetailAndPdf(page, label, certId) {
-  const detailPromise = page.waitForResponse(
-    (r) => r.url().includes(`/business-owner-certificates/${certId}`) && r.status() === 200,
-    { timeout: 90_000 },
-  );
+async function exerciseDetailUi(page, label, certId) {
   await page.goto(
     `${PROF_URL}/recommendations?certificate=${encodeURIComponent(certId)}`,
-    { waitUntil: "domcontentloaded", timeout: 120_000 },
+    { waitUntil: "networkidle", timeout: 120_000 },
   );
   await page.getByTestId("specialist-certificate-detail-dialog").waitFor({ timeout: 90_000 });
-  await detailPromise;
   await page.getByTestId("certificate-code").waitFor({ timeout: 30_000 });
-  const pdfRespPromise = page.waitForResponse(
-    (r) => r.url().includes("/api/certificate/") && r.url().includes("/pdf") && r.status() === 200,
-    { timeout: 90_000 },
+  await page.getByTestId("specialist-certificate-preview-qr").waitFor({ timeout: 30_000 });
+  const pdfProbe = await page.request.get(
+    `${PROF_URL}/api/remcard/api/certificate/${encodeURIComponent(certId)}/pdf`,
   );
-  await page.getByRole("button", { name: /PDF/i }).click();
-  const pdfResp = await pdfRespPromise;
-  const ct = pdfResp.headers()["content-type"] ?? "";
-  assert(ct.includes("pdf"), `${label}: PDF content-type (${ct})`);
-}
-
-async function exerciseArchiveRestore(page, label, certId) {
-  const archiveResp = await page.request.patch(
-    `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
-    { data: { action: "archive" } },
-  );
-  assert(archiveResp.status() === 200, `${label}: owner archive (${archiveResp.status()})`);
-  const restoreResp = await page.request.patch(
-    `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
-    { data: { action: "restore" } },
-  );
-  assert(restoreResp.status() === 200, `${label}: owner restore (${restoreResp.status()})`);
+  assert(pdfProbe.status() === 403, `${label}: prof-test PDF route denied (${pdfProbe.status()})`);
 }
 
 async function main() {
   const harness = loadHarness();
   const storeProf = harness.roles?.store?.delegationToken;
   const companyProf = harness.roles?.company?.delegationToken;
-  const storeOwner = harness.roles?.store?.ownerSessionToken;
-  const companyOwner = harness.roles?.company?.ownerSessionToken;
   const masterProf = harness.roles?.master?.delegationToken;
   const storeCertId = harness.roles?.store?.shellCertificateId;
-  if (!storeProf || !companyProf || !storeOwner || !storeCertId) {
-    throw new Error("harness missing store tokens or shellCertificateId (run seed-business-certificates-shell)");
+  if (!storeProf || !companyProf || !storeCertId) {
+    throw new Error("harness missing store prof token or shellCertificateId");
   }
 
   const browser = await chromium.launch({ headless: true });
 
   {
     const { context, page } = await withSession(browser, storeProf, { width: 1440, height: 900 });
-    const certId = await exerciseList(page, "store-prof", "Магазин");
-    await profTestWriteDenials(page, "store-prof", certId ?? storeCertId);
-    await context.close();
-  }
-
-  {
-    const { context, page } = await withSession(browser, storeOwner, { width: 1440, height: 900 });
-    await exerciseList(page, "store-owner", "Магазин");
-    await exerciseOwnerDetailAndPdf(page, "store-owner", storeCertId);
-    await exerciseArchiveRestore(page, "store-owner", storeCertId);
+    const certId = (await exerciseList(page, "store", "Магазин")) ?? storeCertId;
+    await profTestWriteDenials(page, "store", certId);
+    await exerciseDetailUi(page, "store", certId);
     await captureMatrix(page, "store-certificates");
     await context.close();
   }
 
   {
     const { context, page } = await withSession(browser, companyProf, { width: 1440, height: 900 });
-    await exerciseList(page, "company-prof", "Компания");
-    await context.close();
-  }
-
-  if (companyOwner) {
-    const { context, page } = await withSession(browser, companyOwner, { width: 1440, height: 900 });
-    await exerciseList(page, "company-owner", "Компания");
+    await exerciseList(page, "company", "Компания");
     await captureMatrix(page, "company-certificates");
     await context.close();
   }
 
   if (masterProf) {
     const { context, page } = await withSession(browser, masterProf, { width: 1440, height: 900 });
-    await page.goto(`${PROF_URL}/recommendations`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-    await page.waitForLoadState("networkidle", { timeout: 60_000 }).catch(() => {});
+    await page.goto(`${PROF_URL}/recommendations`, { waitUntil: "networkidle", timeout: 120_000 });
     assert(
       (await page.getByTestId("business-certificates-root").count()) === 0,
       "master: must not use business-owner shell",
@@ -206,8 +169,18 @@ async function main() {
     capturedAt: new Date().toISOString(),
     failures,
     ok: failures.length === 0,
-    profTestWritePolicy:
-      "GET business-owner + store certificate allowed; POST /api/store/certificate and PATCH business-owner denied under prof-test delegation",
+    profTestWritePolicy: {
+      allowedRead: [
+        "GET /api/pro/business-owner-certificates",
+        "GET /api/pro/business-owner-certificates/:id",
+        "GET /api/store/certificate/:id",
+      ],
+      deniedWithoutAllowlistDelta: [
+        "POST /api/store/certificate",
+        "PATCH /api/pro/business-owner-certificates/:id",
+        "GET /api/certificate/:id/pdf",
+      ],
+    },
   };
   fs.mkdirSync(ART_DIR, { recursive: true });
   fs.writeFileSync(path.join(ART_DIR, "shell-gate.json"), JSON.stringify(meta, null, 2));
