@@ -107,9 +107,15 @@ async function createCertificateFromClient(page, clientId, label) {
   await partnerCheckbox.waitFor({ timeout: 90_000 });
   await partnerCheckbox.check();
   await page.getByRole("button", { name: "Далее: скидки" }).click();
-  const category = page.locator('[data-testid^="specialist-cert-category-"]').first();
-  await category.waitFor({ timeout: 60_000 });
-  await category.locator("input").fill("10");
+  const categoryCheckbox = page.locator('[data-testid^="specialist-cert-category-"]').first();
+  await categoryCheckbox.waitFor({ timeout: 60_000 });
+  await categoryCheckbox.check();
+  const allClientBtn = page.locator('[data-testid^="specialist-cert-all-client-"]').first();
+  if (await allClientBtn.isVisible().catch(() => false)) {
+    await allClientBtn.click();
+  } else {
+    await page.getByLabel("Скидка клиенту, %").first().fill("5");
+  }
   await page.getByRole("button", { name: "Создать сертификат" }).click();
   await page.getByTestId("specialist-certificate-preview").waitFor({ timeout: 120_000 });
   const detail = await page.request.get(
