@@ -31,10 +31,11 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
     void Promise.all([
       fetchAgentR03Status(),
       fetchSpecialistR06Status(),
-      remcardFetch<AuthUser>("/api/auth/me"),
+      remcardFetch<{ user: AuthUser }>("/api/auth/me"),
     ])
-      .then(([r03, r06, me]) => {
+      .then(([r03, r06, mePayload]) => {
         if (cancelled) return;
+        const me = mePayload.user;
         const r03Eligible = Boolean(r03.featureEnabled && r03.eligible);
         const r06Eligible = Boolean(r06.featureEnabled && r06.eligible);
         if (r03Eligible) {
