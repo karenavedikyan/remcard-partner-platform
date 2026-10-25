@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "workflow": "disposable_schema_sql_files",
+  "schema": "incoming_link_mig_sql_verify",
+  "migrationSqlPaths": [
+    "20261025143000_store_company_incoming_client_order_link/migration.sql",
+    "20261025180000_incoming_client_link_revision_audit/migration.sql"
+  ],
+  "uniqueOrderIdEnforced": true,
+  "fkAgentClientEnforced": true,
+  "requiredIndexesPresent": [
+    "OrderReceivingAgentClientLink_orderId_key",
+    "OrderReceivingClientAnchor_receivingOwnerUserId_idx",
+    "OrderReceivingAgentClientLinkEvent_orderId_createdAt_idx"
+  ],
+  "ledgerNoOpNote": "Production uses _prisma_migrations ledger; this run drops disposable schema only"
+}

@@ -125,7 +125,7 @@ async function uiCreateClient(page, displayName) {
   const dialog = page.getByTestId("agent-client-form-dialog");
   await dialog.waitFor({ timeout: 30_000 });
   await dialog.locator("label").filter({ hasText: "Имя" }).locator("input").fill(displayName);
-  await dialog.getByRole("button", { name: "Создать" }).click();
+  await dialog.getByRole("button", { name: "Добавить клиента" }).click();
   await dialog.waitFor({ state: "hidden", timeout: 60_000 }).catch(() => undefined);
 }
 

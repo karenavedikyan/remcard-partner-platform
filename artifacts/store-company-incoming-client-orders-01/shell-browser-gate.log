@@ -1,31 +1,6 @@
 {
   "ok": false,
   "failures": [
-    "store: missing owner token",
-    "browserContext.addCookies: cookies[0].value: expected string, got undefined\n    at withSession (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:63:17)\n    at async runIncomingFlow (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:142:29)\n    at async main (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:294:18)"
+    "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByTestId('agent-client-form-dialog').getByRole('button', { name: 'Создать' })\n\n    at uiCreateClient (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:128:57)\n    at async runIncomingFlow (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:241:3)\n    at async main (/agent/repos/remcard-partner-platform/scripts/store-company-incoming-client-orders-01/run-incoming-shell-e2e.mjs:360:18)"
   ]
-}
-{
-  "ok": true,
-  "application": {
-    "frontendSha": "dcb780830806df26e43d73e163556ece698d453a",
-    "backendSha": "e1e663325310918ffa68c0846347fde77c765ccf",
-    "captureStartedAt": "2026-10-25T14:49:35.000Z",
-    "captureCompletedAt": "2026-10-25T14:51:38.874Z"
-  },
-  "failures": [],
-  "flow": {
-    "store": {
-      "orderId": "cmvny1w450008jssql5ku1ish",
-      "localClientId": "cmvny1w3v0001jssqgmqe8l2g",
-      "prefix": "store",
-      "completed": true
-    },
-    "company": {
-      "orderId": "cmvny1w4e000kjssqbjx5ut4r",
-      "localClientId": "cmvny1w48000bjssqx06zf54r",
-      "prefix": "company",
-      "completed": true
-    }
-  }
 }
