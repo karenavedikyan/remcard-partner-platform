@@ -50,6 +50,8 @@ type Props = {
   payableSummaryLabel?: string;
   payableDirectionLabel?: string;
   payableHint?: string | null;
+  /** When scope changes, clears stale UI (payout dialog, drill-down). */
+  scopeKey?: string;
 };
 
 const DEFAULT_PAYABLE_SUMMARY = "Я должен";
@@ -158,6 +160,7 @@ export function SpecialistSettlementsWorkspace({
   payableSummaryLabel = DEFAULT_PAYABLE_SUMMARY,
   payableDirectionLabel = DEFAULT_PAYABLE_SUMMARY,
   payableHint = null,
+  scopeKey = "default",
 }: Props) {
   const [screen, setScreen] = useState<Screen>("overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
@@ -215,6 +218,18 @@ export function SpecialistSettlementsWorkspace({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPayoutTarget(null);
+    setScreen("overview");
+    setDirection("receivable");
+    setSelectedPartner(null);
+    setPage(1);
+    setExportError("");
+    if (!previewData) {
+      void load();
+    }
+  }, [scopeKey, load, previewData]);
 
   const updateFilters = useCallback((patch: Partial<SettlementLedgerFilters>) => {
     setFilters((f) => ({ ...f, ...patch }));

@@ -23,6 +23,11 @@ catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-owner-real-sessions.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-wallet-gate-fixtures.ts
+pnpm exec vitest run src/lib/__tests__/profTestOwnerFinancialWrite.integration.test.ts >"$ART/pg-prof-test-financial-guard.log" 2>&1 || {
+  echo "prof-test financial guard integration failed" >>"$LOG"
+  cat "$ART/pg-prof-test-financial-guard.log" >>"$LOG"
+  exit 1
+}
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3431 CATALOG_QA_FRONTEND_PORT=3430 bash "$ISO/stop.sh" || true
 CATALOG_QA_BACKEND_PORT=3431 CATALOG_QA_FRONTEND_PORT=3430 bash "$ISO/start.sh"

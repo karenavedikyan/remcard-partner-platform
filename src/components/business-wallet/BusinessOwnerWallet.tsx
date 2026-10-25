@@ -22,6 +22,7 @@ export function BusinessOwnerWallet({ partnerType, settlementsSlot }: Props) {
   const workspace =
     settlementsSlot ?? (
       <SpecialistSettlementsWorkspace
+        scopeKey={partnerType}
         payableSummaryLabel={copy.payableSummaryLabel}
         payableDirectionLabel={copy.payableDirectionLabel}
         payableHint={copy.payableHint}
