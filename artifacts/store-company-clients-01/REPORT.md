@@ -28,9 +28,9 @@
 
 | | SHA / time |
 | --- | --- |
-| Frontend application | `81a4d36b3089a79666210770089c94f93b3b3178` |
+| Frontend application | `f78052a7c0782dc9736b6821d571472560de5d2d` |
 | Backend application | `f713bf25b58fde996c6130baa12a1068022f711b` |
-| Capture | `2026-10-25T14:03:06.000Z` → `2026-10-25T14:05:15.079Z` |
+| Capture | `2026-10-25T14:06:01.000Z` → `2026-10-25T14:08:06.168Z` |
 | Gate exit | `0` (`shell-browser-gate.exit`) |
 
 Stdout includes top-level `applicationRuntime` (see `shell-gate.json`).
@@ -47,5 +47,5 @@ Product changes beyond owner clients guard:
 
 ## Branches
 
-- FE: `feat/store-company-clients-01` @ `81a4d36b`
+- FE: `feat/store-company-clients-01` @ `f78052a7`
 - BE: `feat/store-company-clients-01` @ `f713bf25`

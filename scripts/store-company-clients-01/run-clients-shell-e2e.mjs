@@ -102,6 +102,13 @@ async function delegatedReadAndForeignDeny(page, foreignClientId, label) {
   assert(del.status() === 404 || del.status() === 403, `${label}: foreign DELETE ${del.status()}`);
 }
 
+function wipeVisualShellPngs() {
+  fs.mkdirSync(ART, { recursive: true });
+  for (const name of fs.readdirSync(ART)) {
+    if (name.endsWith(".png")) fs.unlinkSync(path.join(ART, name));
+  }
+}
+
 async function createCertificateFromClient(page, clientId, label) {
   await page.getByTestId("business-client-create-cert").click();
   await page.getByTestId("specialist-certificate-create-dialog").waitFor({ timeout: 90_000 });
@@ -134,24 +141,43 @@ async function createCertificateFromClient(page, clientId, label) {
     postRes.status() >= 200 && postRes.status() < 300,
     `${label}: cert POST ${postRes.status()} ${await postRes.text().catch(() => "")}`,
   );
+  const postJson = await postRes.json().catch(() => ({}));
+  const createdCertId = postJson.id ?? postJson.certificate?.id;
+  assert(createdCertId, `${label}: cert id from POST body`);
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
     { headers: proxyHeaders() },
   );
   assert(detail.status() === 200, `${label}: detail after cert ${detail.status()}`);
   const body = await detail.json();
-  assert((body.certificates ?? []).length >= 1, `${label}: certificate persisted on client`);
   assert(
-    (body.certificates ?? []).length >= 1,
-    `${label}: cert linked on client detail`,
+    (body.certificates ?? []).some((c) => c.id === createdCertId),
+    `${label}: exact cert id on client detail`,
   );
   await page.goto(`${PROF_URL}/clients/${encodeURIComponent(clientId)}`, {
     waitUntil: "networkidle",
   });
   await page.getByTestId("business-client-detail-root").waitFor({ timeout: 60_000 });
+  return createdCertId;
+}
+
+async function cleanDeleteViaUi(page, clientId, label) {
+  await page.goto(`${PROF_URL}/clients/${encodeURIComponent(clientId)}`, {
+    waitUntil: "networkidle",
+  });
+  await page.getByTestId("business-client-detail-root").waitFor({ timeout: 60_000 });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Удалить" }).click();
+  await page.waitForURL("**/clients", { timeout: 60_000 });
+  const gone = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(gone.status() === 404, `${label}: clean delete UI ${gone.status()}`);
 }
 
 async function realOwnerFlow(page, label) {
+  let flowCertId;
   const CLIENT_NAME = clientNameFor(label);
   await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByTestId("business-clients-root").waitFor({ timeout: 90_000 });
@@ -165,7 +191,9 @@ async function realOwnerFlow(page, label) {
   await dialog.waitFor({ timeout: 30_000 });
   await dialog.locator("label").filter({ hasText: "Имя" }).locator("input").fill(CLIENT_NAME);
   await dialog.locator("label").filter({ hasText: "Город" }).locator("input").fill("Краснодар");
-  await dialog.locator("label").filter({ hasText: "Потребность" }).locator("input").fill("Gate need");
+  await dialog.locator("label").filter({ hasText: "Потребность" }).locator("input").fill("Gate need initial");
+  await dialog.locator("label").filter({ hasText: "Телефон" }).locator("input").fill("+79990001122");
+  await dialog.locator("label").filter({ hasText: "Email" }).locator("input").fill("gate-client@example.com");
   await dialog.getByRole("button", { name: "Добавить" }).click();
   await dialog.waitFor({ state: "hidden", timeout: 60_000 }).catch(() => undefined);
   await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 60_000 });
@@ -183,28 +211,48 @@ async function realOwnerFlow(page, label) {
   await page.getByRole("button", { name: "Редактировать" }).click();
   await dialog.waitFor({ timeout: 30_000 });
   await dialog.locator("label").filter({ hasText: "Заметка" }).locator("textarea").fill("Gate note persisted");
-  await dialog.locator("label").filter({ hasText: "Телефон" }).locator("input").fill("");
+  await dialog.locator("label").filter({ hasText: "Телефон" }).locator("input").fill("+79990003344");
+  await dialog.locator("label").filter({ hasText: "Email" }).locator("input").fill("");
+  await dialog.locator("label").filter({ hasText: "Потребность" }).locator("input").fill("");
   await dialog.getByRole("button", { name: "Сохранить" }).click();
   await page.getByText("Gate note persisted").waitFor({ timeout: 30_000 });
 
   await page.reload({ waitUntil: "networkidle" });
   await page.getByText("Gate note persisted").waitFor({ timeout: 30_000 });
+  const afterEdit = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
+    { headers: proxyHeaders() },
+  );
+  const afterEditBody = afterEdit.ok() ? await afterEdit.json() : { client: {} };
+  assert(afterEditBody.client?.phone?.includes("79990003344"), `${label}: phone persisted after reload`);
+  assert(afterEditBody.client?.email == null || afterEditBody.client?.email === "", `${label}: email cleared`);
+  assert(afterEditBody.client?.need == null || afterEditBody.client?.need === "", `${label}: need cleared`);
 
   const certLink = page.getByTestId("business-client-create-cert");
   await certLink.waitFor({ timeout: 30_000 });
   const href = await certLink.getAttribute("href");
   assert(href?.includes(`clientId=${encodeURIComponent(clientId)}`), `${label}: cert builder clientId`);
-  await createCertificateFromClient(page, clientId, label);
+  const certId = await createCertificateFromClient(page, clientId, label);
+  flowCertId = certId;
 
   await page.getByRole("button", { name: "В архив" }).click();
   await page.getByRole("button", { name: "Восстановить" }).waitFor({ timeout: 30_000 });
   await page.getByRole("button", { name: "Восстановить" }).click();
   await page.getByRole("button", { name: "В архив" }).waitFor({ timeout: 30_000 });
 
-  return { clientId, clientName: CLIENT_NAME };
+  const disposable = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients`, {
+    headers: proxyHeaders(),
+    data: { displayName: `Disposable ${label} ${Date.now()}` },
+  });
+  assert(disposable.status() === 201, `${label}: disposable create ${disposable.status()}`);
+  const disposableId = (await disposable.json()).client?.id;
+  assert(disposableId, `${label}: disposable id`);
+  await cleanDeleteViaUi(page, disposableId, label);
+
+  return { clientId, clientName: CLIENT_NAME, certId: flowCertId };
 }
 
-async function mutationChecks(page, clientWithCertId, foreignClientId, label) {
+async function mutationChecks(page, clientWithCertId, batchForeignClientId, label, otherOwnerToken) {
   const inject = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients`, {
     headers: proxyHeaders(),
     data: { displayName: `Inject owner ${Date.now()}`, ownerUserId: "evil-owner", org: "x", actor: "y" },
@@ -213,6 +261,31 @@ async function mutationChecks(page, clientWithCertId, foreignClientId, label) {
   const injectBody = await inject.json();
   const injectId = injectBody.client?.id;
   assert(injectId, `${label}: injected create id`);
+  const ownRead = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(injectId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(ownRead.status() === 200, `${label}: inject read own ${ownRead.status()}`);
+  if (otherOwnerToken) {
+    const otherCtx = await page.context().browser().newContext();
+    await otherCtx.addCookies([
+      {
+        name: "remcard-token",
+        value: otherOwnerToken,
+        domain: "127.0.0.1",
+        path: "/",
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+      },
+    ]);
+    const otherRead = await otherCtx.request.get(
+      `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(injectId)}`,
+      { headers: proxyHeaders() },
+    );
+    assert(otherRead.status() === 404 || otherRead.status() === 403, `${label}: inject foreign read ${otherRead.status()}`);
+    await otherCtx.close();
+  }
   const delProtected = await page.request.delete(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientWithCertId)}`,
     { headers: proxyHeaders() },
@@ -220,15 +293,23 @@ async function mutationChecks(page, clientWithCertId, foreignClientId, label) {
   assert(delProtected.status() === 409, `${label}: protected delete ${delProtected.status()}`);
   const batch = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients/batch`, {
     headers: proxyHeaders(),
-    data: { action: "delete", ids: [injectId, "gate-nonexistent-client-id"] },
+    data: { action: "delete", ids: [injectId, batchForeignClientId] },
   });
   assert(batch.status() === 200, `${label}: batch ${batch.status()}`);
   const batchBody = await batch.json();
-  assert(batchBody.processedCount === 1, `${label}: batch partial processed`);
-  assert(batchBody.skippedCount === 1, `${label}: batch partial skipped`);
+  assert(batchBody.processedCount === 1, `${label}: batch partial processed ${JSON.stringify(batchBody)}`);
+  assert(batchBody.skippedCount === 1, `${label}: batch partial skipped ${JSON.stringify(batchBody)}`);
+  const foreignPatch = await page.request.patch(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(batchForeignClientId)}`,
+    { headers: proxyHeaders(), data: { displayName: "Blocked" } },
+  );
+  assert(
+    foreignPatch.status() === 404 || foreignPatch.status() === 403,
+    `${label}: foreign PATCH in mutations ${foreignPatch.status()}`,
+  );
 }
 
-async function assertReceivingPurchaseFixture(page, receivingClientId, foreignClientId, label) {
+async function assertReceivingPurchaseFixture(page, receivingClientId, leakOrderId, label) {
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(receivingClientId)}`,
     { headers: proxyHeaders() },
@@ -236,15 +317,14 @@ async function assertReceivingPurchaseFixture(page, receivingClientId, foreignCl
   assert(detail.status() === 200, `${label}: receiving client detail ${detail.status()}`);
   const body = await detail.json();
   assert((body.receivingPurchases ?? []).length >= 1, `${label}: nonzero receiving purchase`);
-  const foreignDetail = await page.request.get(
-    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(foreignClientId)}`,
-    { headers: proxyHeaders() },
+  assert(
+    !(body.receivingPurchases ?? []).some((p) => p.id === leakOrderId),
+    `${label}: foreign issuer order must not leak into receiving list`,
   );
-  assert(foreignDetail.status() === 404 || foreignDetail.status() === 403, `${label}: foreign read blocked`);
+  assert(body.receivingPurchaseScope?.blockedIncomingThirdPartyRecommender?.code === "BLOCKED_MISSING_LINK", `${label}: receiving scope contract`);
 }
 
-function writeArtifacts(meta) {
-  const captureCompletedAt = new Date().toISOString();
+function writeArtifacts(meta, captureCompletedAt) {
   const payload = {
     applicationRuntime: { ...APPLICATION_RUNTIME, captureCompletedAt },
     profUrl: PROF_URL,
@@ -271,38 +351,65 @@ function writeArtifacts(meta) {
   );
 }
 
+function finishRun(flow, meta, captureCompletedAt) {
+  writeArtifacts({ flow, ...meta }, captureCompletedAt);
+  const stdoutPayload = {
+    ok: failures.length === 0,
+    applicationRuntime: { ...APPLICATION_RUNTIME, captureCompletedAt },
+    flow,
+    failures,
+  };
+  if (failures.length) {
+    console.error(JSON.stringify(stdoutPayload, null, 2));
+    process.exit(1);
+  }
+  console.log(JSON.stringify(stdoutPayload, null, 2));
+}
+
 async function main() {
+  wipeVisualShellPngs();
   const harness = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
   const storeDel = harness.roles?.store?.delegationToken;
   const storeReal = harness.roles?.store?.realOwner?.ownerSessionToken;
   const companyDel = harness.roles?.company?.delegationToken;
   const companyReal = harness.roles?.company?.realOwner?.ownerSessionToken;
-  const foreignClientId = harness.roles?.company?.gateForeignClientId;
+  const companyForeignClientId = harness.roles?.company?.gateForeignClientId;
+  const storeForeignClientId = harness.roles?.store?.gateForeignClientId;
   const receivingClientId = harness.roles?.store?.gateReceivingClientId;
-  if (!storeDel || !storeReal || !companyReal || !foreignClientId || !receivingClientId) {
+  const leakOrderId = harness.roles?.store?.gateLeakOrderId;
+  if (
+    !storeDel ||
+    !storeReal ||
+    !companyReal ||
+    !companyForeignClientId ||
+    !storeForeignClientId ||
+    !receivingClientId ||
+    !leakOrderId
+  ) {
     throw new Error("harness missing tokens or fixture client ids");
   }
 
   const browser = await chromium.launch({ headless: true });
   const flow = {};
+  let captureCompletedAt;
 
   {
     const { context, page } = await withSession(browser, storeDel);
-    await delegatedReadAndForeignDeny(page, foreignClientId, "store-delegated");
+    await delegatedReadAndForeignDeny(page, companyForeignClientId, "store-delegated");
     flow.delegatedStore = { foreignDeny: true };
     await context.close();
   }
 
   if (companyDel) {
     const { context, page } = await withSession(browser, companyDel);
-    await delegatedReadAndForeignDeny(page, foreignClientId, "company-delegated");
+    await delegatedReadAndForeignDeny(page, storeForeignClientId, "company-delegated");
     flow.delegatedCompany = { foreignDeny: true };
     await context.close();
   }
 
   {
     const { context, page } = await withSession(browser, storeReal);
-    await assertReceivingPurchaseFixture(page, receivingClientId, foreignClientId, "store-real");
+    await assertReceivingPurchaseFixture(page, receivingClientId, leakOrderId, "store-real");
     await page.goto(`${PROF_URL}/clients/${encodeURIComponent(receivingClientId)}`, {
       waitUntil: "networkidle",
     });
@@ -313,7 +420,7 @@ async function main() {
     const storeFlow = await realOwnerFlow(page, "store-real");
     flow.storeRealClientId = storeFlow.clientId;
     flow.storeRealClientName = storeFlow.clientName;
-    await mutationChecks(page, storeFlow.clientId, foreignClientId, "store-real");
+    await mutationChecks(page, storeFlow.clientId, companyForeignClientId, "store-real", companyReal);
     const stillThere = await page.request.get(
       `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(storeFlow.clientId)}`,
       { headers: proxyHeaders() },
@@ -330,7 +437,7 @@ async function main() {
     const companyFlow = await realOwnerFlow(page, "company-real");
     flow.companyRealClientId = companyFlow.clientId;
     flow.companyRealClientName = companyFlow.clientName;
-    await mutationChecks(page, companyFlow.clientId, foreignClientId, "company-real");
+    await mutationChecks(page, companyFlow.clientId, storeForeignClientId, "company-real", storeReal);
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
     await captureMatrix(page, "company-clients-real");
@@ -338,22 +445,29 @@ async function main() {
   }
 
   await browser.close();
-  writeArtifacts({ flow, foreignClientId, receivingClientId });
-  const captureCompletedAt = new Date().toISOString();
-  const stdoutPayload = {
-    ok: failures.length === 0,
-    applicationRuntime: { ...APPLICATION_RUNTIME, captureCompletedAt },
-    flow,
-    failures,
-  };
-  if (failures.length) {
-    console.error(JSON.stringify(stdoutPayload, null, 2));
-    process.exit(1);
-  }
-  console.log(JSON.stringify(stdoutPayload, null, 2));
+  captureCompletedAt = new Date().toISOString();
+  finishRun(flow, {
+    companyForeignClientId,
+    storeForeignClientId,
+    receivingClientId,
+    leakOrderId,
+  }, captureCompletedAt);
 }
 
 main().catch((e) => {
-  console.error(e);
+  const captureCompletedAt = new Date().toISOString();
+  failures.push(String(e?.stack ?? e));
+  writeArtifacts({ fatal: String(e) }, captureCompletedAt);
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        applicationRuntime: { ...APPLICATION_RUNTIME, captureCompletedAt },
+        failures,
+      },
+      null,
+      2,
+    ),
+  );
   process.exit(1);
 });

@@ -1,8 +1,22 @@
-locator.fill: Timeout 30000ms exceeded.
-Call log:
-  - waiting for getByTestId('agent-client-form-dialog').locator('label').filter({ hasText: 'Потребность' }).locator('textarea')
-
-    at realOwnerFlow (/agent/repos/remcard-partner-platform/scripts/store-company-clients-01/run-clients-shell-e2e.mjs:145:88)
-    at async main (/agent/repos/remcard-partner-platform/scripts/store-company-clients-01/run-clients-shell-e2e.mjs:294:30) {
-  name: 'TimeoutError'
+{
+  "ok": true,
+  "applicationRuntime": {
+    "frontendSha": "f78052a7c0782dc9736b6821d571472560de5d2d",
+    "backendSha": "f713bf25b58fde996c6130baa12a1068022f711b",
+    "captureStartedAt": "2026-10-25T14:06:01.000Z",
+    "captureCompletedAt": "2026-10-25T14:08:06.168Z"
+  },
+  "flow": {
+    "delegatedStore": {
+      "foreignDeny": true
+    },
+    "delegatedCompany": {
+      "foreignDeny": true
+    },
+    "storeRealClientId": "cmvnwk8ko0001jse1xsr4dlq2",
+    "storeRealClientName": "Gate UI client store-real 1792937275714",
+    "companyRealClientId": "cmvnwkcnv000ajse1f4tf2s08",
+    "companyRealClientName": "Gate UI client company-real 1792937280906"
+  },
+  "failures": []
 }

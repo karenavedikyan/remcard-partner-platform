@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { AgentClientDetail } from "./AgentClientDetail";
 
 vi.mock("next/link", () => ({
@@ -57,7 +58,7 @@ describe("AgentClientDetail race guards", () => {
     await waitFor(() => expect(screen.queryByText("Stale A")).not.toBeInTheDocument());
   });
 
-  it("shows error then succeeds on retry via reload", async () => {
+  it("retry clears error and loads client", async () => {
     fetchAgentClient
       .mockRejectedValueOnce(new Error("network"))
       .mockResolvedValueOnce({
@@ -68,6 +69,12 @@ describe("AgentClientDetail race guards", () => {
       });
 
     render(<AgentClientDetail clientId="c1" accessMode="business" />);
-    await waitFor(() => expect(screen.getByText(/Ошибка загрузки|network/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("client-detail-load-error")).toBeInTheDocument(),
+    );
+    await userEvent.click(screen.getByTestId("client-detail-retry"));
+    await waitFor(() => expect(screen.getByText("Recovered")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(fetchAgentClient).toHaveBeenCalledTimes(2);
   });
 });

@@ -108,8 +108,9 @@ function PurchaseHistoryPanel({
           ))
         )}
         <small className={styles.meta}>
-          В списке только подтверждённые заказы по связанным сертификатам; выдача сертификата сама
-          по себе покупкой не считается.
+          Показаны все заказы по связанным сертификатам, включая отменённые и возвращённые. В
+          общем счётчике «покупок» учитываются только подтверждённые статусы; выдача сертификата
+          сама по себе покупкой не считается.
         </small>
       </div>
     </details>
@@ -242,7 +243,14 @@ export function AgentClientDetail({
 
   return (
     <>
-      {error ? <p role="alert">{error}</p> : null}
+      {error && !client ? (
+        <div className={styles.errorBlock} data-testid="client-detail-load-error">
+          <p role="alert">{error}</p>
+          <Button variant="secondary" data-testid="client-detail-retry" onClick={() => void reload()}>
+            Повторить
+          </Button>
+        </div>
+      ) : null}
       {client ? (
         <div
           className={
@@ -413,7 +421,7 @@ export function AgentClientDetail({
                 testId="client-receiving-purchases"
                 title="Покупки у нас"
                 purchases={receivingPurchases}
-                emptyHint="Подтверждённых покупок у вашей организации по сертификатам этого клиента пока нет."
+                emptyHint="Покупки у вашей организации показываются только по вашим сертификатам, привязанным к этому CRM-клиенту. Заказы по чужим рекомендациям сюда не попадают."
               />
             </>
           ) : null}

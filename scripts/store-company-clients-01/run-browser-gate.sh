@@ -23,6 +23,7 @@ pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-owner-real-sessions.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-clients-gate-fixtures.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-client-receiving-purchase.ts
+pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-client-receiving-leak-fixture.ts
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3421 CATALOG_QA_FRONTEND_PORT=3420 bash "$ISO/stop.sh" || true
 CATALOG_QA_BACKEND_PORT=3421 CATALOG_QA_FRONTEND_PORT=3420 bash "$ISO/start.sh"

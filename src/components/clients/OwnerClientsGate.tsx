@@ -64,8 +64,15 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
           setBusinessPartnerType(business.partnerType);
           return;
         }
-      } catch {
-        /* business-only probes failed; agent/specialist already ruled out */
+      } catch (caught) {
+        if (!cancelled) {
+          setError(
+            caught instanceof RemcardApiError
+              ? caught.message
+              : "Не удалось проверить доступ к клиентам организации",
+          );
+        }
+        return;
       }
       if (!cancelled) setMode(null);
     })().finally(() => {
