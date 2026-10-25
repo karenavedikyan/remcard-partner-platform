@@ -185,6 +185,30 @@ async function realOwnerFlow(page, label) {
   return clientId;
 }
 
+async function mutationChecks(page, clientWithCertId, foreignClientId, label) {
+  const inject = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients`, {
+    headers: proxyHeaders(),
+    data: { displayName: `Inject owner ${Date.now()}`, ownerUserId: "evil-owner", org: "x", actor: "y" },
+  });
+  assert(inject.status() === 201, `${label}: create with injection ${inject.status()}`);
+  const injectBody = await inject.json();
+  const injectId = injectBody.client?.id;
+  assert(injectId, `${label}: injected create id`);
+  const delProtected = await page.request.delete(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientWithCertId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(delProtected.status() === 409, `${label}: protected delete ${delProtected.status()}`);
+  const batch = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients/batch`, {
+    headers: proxyHeaders(),
+    data: { action: "delete", ids: [injectId, foreignClientId] },
+  });
+  assert(batch.status() === 200, `${label}: batch ${batch.status()}`);
+  const batchBody = await batch.json();
+  assert(batchBody.processedCount === 1, `${label}: batch partial processed`);
+  assert(batchBody.skippedCount === 1, `${label}: batch partial skipped`);
+}
+
 async function assertReceivingPurchaseFixture(page, receivingClientId, foreignClientId, label) {
   const detail = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(receivingClientId)}`,
@@ -268,6 +292,7 @@ async function main() {
     assert(Number.parseInt(recvBadge ?? "0", 10) >= 1, "store-real: receiving UI count");
 
     flow.storeRealClientId = await realOwnerFlow(page, "store-real");
+    await mutationChecks(page, flow.storeRealClientId, foreignClientId, "store-real");
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
     await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
