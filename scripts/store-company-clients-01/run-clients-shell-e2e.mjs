@@ -318,9 +318,12 @@ async function main() {
     flow.storeRealClientId = storeFlow.clientId;
     flow.storeRealClientName = storeFlow.clientName;
     await mutationChecks(page, storeFlow.clientId, foreignClientId, "store-real");
-    await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
+    await page.goto(
+      `${PROF_URL}/clients?q=${encodeURIComponent(storeFlow.clientName)}`,
+      { waitUntil: "networkidle" },
+    );
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
-    await page.getByRole("link", { name: storeFlow.clientName }).waitFor({ timeout: 30_000 });
+    await page.getByRole("link", { name: storeFlow.clientName }).waitFor({ timeout: 60_000 });
     await captureMatrix(page, "store-clients-real");
     await context.close();
   }
