@@ -16,7 +16,11 @@ bash "$ISO/bootstrap.sh"
 
 echo "[home-adapt-02] seed ui harness (store/company/master tokens)"
 cd "$NAV_ROOT"
+# shellcheck source=lib.sh
+source "$ISO/lib.sh"
+catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
+pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-home-shell.ts
 
 echo "[home-adapt-02] start backend + production frontend"
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3421 CATALOG_QA_FRONTEND_PORT=3420 bash "$ISO/stop.sh" || true

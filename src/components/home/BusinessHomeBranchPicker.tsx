@@ -12,14 +12,23 @@ type ProContextPayload = {
 
 type Props = {
   selectedBranchId: string | null;
-  onBranchSaved: () => void;
+  /** When true, show picker even for a single branch (e.g. invalid stale cookie). */
+  branchSelectionRequired: boolean;
+  onBranchSelected: (branchId: string) => void;
 };
 
-/** Explicit owner branch choice via existing PATCH /api/pro/context (no GET side effects). */
-export function BusinessHomeBranchPicker({ selectedBranchId, onBranchSaved }: Props) {
+/**
+ * Store home branch choice: read-only context list + local selection passed as GET metrics ?branchId=.
+ * Does not PATCH /api/pro/context (prof-test allowlist is GET-only there).
+ */
+export function BusinessHomeBranchPicker({
+  selectedBranchId,
+  branchSelectionRequired,
+  onBranchSelected,
+}: Props) {
   const [branches, setBranches] = useState<ProContextPayload["branches"]>([]);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -39,19 +48,19 @@ export function BusinessHomeBranchPicker({ selectedBranchId, onBranchSaved }: Pr
     void load();
   }, [load]);
 
-  if (branches.length <= 1) return null;
+  if (branches.length === 0) return null;
+  if (branches.length === 1 && !branchSelectionRequired) return null;
 
   async function onChange(branchId: string) {
     if (!branchId || branchId === selectedBranchId) return;
-    setSaving(true);
+    setPendingId(branchId);
     setError("");
     try {
-      await remcardFetch("/api/pro/context", { method: "PATCH", body: { branchId } });
-      onBranchSaved();
+      onBranchSelected(branchId);
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось выбрать филиал");
     } finally {
-      setSaving(false);
+      setPendingId(null);
     }
   }
 
@@ -62,7 +71,7 @@ export function BusinessHomeBranchPicker({ selectedBranchId, onBranchSaved }: Pr
         <select
           className={styles.branchContextSelect}
           data-testid="business-home-branch-select"
-          disabled={saving}
+          disabled={pendingId !== null}
           value={selectedBranchId ?? ""}
           onChange={(e) => void onChange(e.target.value)}
         >

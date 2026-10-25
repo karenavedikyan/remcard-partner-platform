@@ -16,6 +16,11 @@ import {
 import { Button } from "@/components/ui/Button";
 import { IconArrowRight, IconArrowUpRight } from "@/components/layout/ThemeIcons";
 import { BusinessHomeBranchPicker } from "./BusinessHomeBranchPicker";
+import {
+  businessHomeMetricsPath,
+  readBusinessHomeBranchId,
+  writeBusinessHomeBranchId,
+} from "@/lib/business-home/home-branch-preference";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 type Props = {
@@ -62,6 +67,7 @@ export function BusinessOwnerHomeDashboard({
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded">("loading");
   const [contextEpoch, setContextEpoch] = useState(0);
+  const [homeBranchId, setHomeBranchId] = useState<string | null>(() => readBusinessHomeBranchId());
   const loadGenerationRef = useRef(0);
 
   const loadMetrics = useCallback(async () => {
@@ -71,12 +77,18 @@ export function BusinessOwnerHomeDashboard({
     setActiveBranchLabel(null);
 
     try {
+      const branchQueryId = readBusinessHomeBranchId() ?? homeBranchId;
       const data = await remcardFetch<BusinessHomeMetricsResponse>(
-        "/api/pro/business-home/metrics",
+        businessHomeMetricsPath(branchQueryId),
       );
       if (generation !== loadGenerationRef.current) return;
       setActiveBranchLabel(data.activeBranchLabel);
-      setSelectedBranchId(data.selectedBranchId ?? null);
+      const resolvedId = data.selectedBranchId ?? branchQueryId ?? null;
+      setSelectedBranchId(resolvedId);
+      if (resolvedId && data.metrics.primary.state !== "invalid_branch") {
+        writeBusinessHomeBranchId(resolvedId);
+        setHomeBranchId(resolvedId);
+      }
       setSlices([
         data.metrics.primary,
         data.metrics.secondary,
@@ -99,7 +111,18 @@ export function BusinessOwnerHomeDashboard({
       setSlices([err, { state: "error", message }, { state: "error", message }]);
       setLoadState("loaded");
     }
-  }, [contextEpoch]);
+  }, [contextEpoch, homeBranchId]);
+
+  const branchSelectionRequired =
+    loadState === "loaded" &&
+    partnerType === "STORE" &&
+    (slices[0]?.state === "needs_branch" || slices[0]?.state === "invalid_branch");
+
+  const handleBranchSelected = useCallback((branchId: string) => {
+    writeBusinessHomeBranchId(branchId);
+    setHomeBranchId(branchId);
+    setContextEpoch((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     void loadMetrics();
@@ -138,7 +161,8 @@ export function BusinessOwnerHomeDashboard({
       {partnerType === "STORE" ? (
         <BusinessHomeBranchPicker
           selectedBranchId={selectedBranchId}
-          onBranchSaved={() => setContextEpoch((n) => n + 1)}
+          branchSelectionRequired={branchSelectionRequired}
+          onBranchSelected={handleBranchSelected}
         />
       ) : null}
 

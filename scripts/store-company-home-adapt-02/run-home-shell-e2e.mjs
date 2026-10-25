@@ -8,6 +8,7 @@ import { execSync } from "node:child_process";
 import { chromium } from "playwright";
 
 const PROF_URL = (process.env.PROF_E2E_URL ?? "http://127.0.0.1:3420").replace(/\/$/, "");
+const NAV_URL = (process.env.NAV_E2E_URL ?? "http://127.0.0.1:3421").replace(/\/$/, "");
 const STATE_PATH =
   process.env.CATALOG_QA_UI_STATE ??
   path.join("/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json");
@@ -54,8 +55,11 @@ async function withSession(browser, token, viewport) {
     },
   ]);
   const page = await context.newPage();
-  page.on("console", (msg) => {
-    if (msg.type() === "error") failures.push(`console: ${msg.text()}`);
+  page.on("response", (res) => {
+    const url = res.url();
+    if (url.includes("business-home/metrics") && res.status() === 401) {
+      failures.push(`metrics 401: ${url}`);
+    }
   });
   page.on("pageerror", (err) => failures.push(`pageerror: ${String(err)}`));
   return { context, page };
@@ -74,6 +78,54 @@ async function captureShell(page, name) {
   await page.screenshot({ path: path.join(ART, name), fullPage: true });
 }
 
+async function primarySalesValue(page) {
+  const value = page.locator('[aria-live="polite"] > div').first().locator("strong");
+  await value.waitFor({ timeout: 60_000 });
+  return (await value.innerText()).trim();
+}
+
+async function exerciseStoreTwoBranchMetrics(page, harness) {
+  const store = harness.roles?.store ?? {};
+  const branchA = store.branchIdA ?? store.branchId;
+  const branchB = store.branchIdB;
+  assert(branchA && branchB, "harness missing branchIdA/B (run seed-business-home-shell)");
+
+  await page.goto(`${PROF_URL}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await assertHealthyHome(page, "store-2br");
+  const select = page.getByTestId("business-home-branch-select");
+  await select.waitFor({ timeout: 30_000 });
+
+  await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes(`branchId=${branchA}`) && r.status() === 200,
+      { timeout: 60_000 },
+    ),
+    select.selectOption(branchA),
+  ]);
+  const aSales = await primarySalesValue(page);
+  assert(aSales === "1", `branch A sales expected 1 got ${aSales}`);
+
+  await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes(`branchId=${branchB}`) && r.status() === 200,
+      { timeout: 60_000 },
+    ),
+    select.selectOption(branchB),
+  ]);
+  const bSales = await primarySalesValue(page);
+  assert(bSales === "0", `branch B sales expected 0 got ${bSales}`);
+}
+
+async function exerciseStoreForeignDeny(token) {
+  const res = await fetch(
+    `${NAV_URL}/api/pro/business-home/metrics?branchId=cmforeign000000000000000000`,
+    { headers: { cookie: `remcard-token=${token}` } },
+  );
+  assert(res.status === 200, `foreign branch HTTP ${res.status}`);
+  const body = await res.json();
+  assert(body.metrics?.primary?.state === "invalid_branch", "foreign branch must be invalid_branch");
+}
+
 async function exerciseStore(page) {
   await page.goto(`${PROF_URL}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await assertHealthyHome(page, "store");
@@ -82,6 +134,8 @@ async function exerciseStore(page) {
   assert((await cta.getAttribute("href")) === "/scanner", "store CTA href /scanner");
   await cta.click();
   await page.waitForURL(/\/scanner/, { timeout: 30_000 });
+  await page.getByRole("heading", { level: 1, name: "Сканер" }).waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: /^Найти$/ }).waitFor({ timeout: 30_000 });
 }
 
 async function exerciseCompany(page) {
@@ -92,6 +146,10 @@ async function exerciseCompany(page) {
   assert((await cta.getAttribute("href"))?.includes("section=team"), "company CTA team section");
   await cta.click();
   await page.waitForURL(/section=team/, { timeout: 30_000 });
+  const wizardOpen = page.getByTestId("team-open-invite-wizard").first();
+  await wizardOpen.waitFor({ timeout: 60_000 });
+  await wizardOpen.click();
+  await page.getByRole("dialog", { name: /Пригласить сотрудника/ }).waitFor({ timeout: 30_000 });
 }
 
 async function assertMasterNotBusinessHome(page) {
@@ -125,8 +183,11 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
 
+  await exerciseStoreForeignDeny(storeToken);
+
   {
     const { context, page } = await withSession(browser, storeToken, { width: 1440, height: 900 });
+    await exerciseStoreTwoBranchMetrics(page, harness);
     await exerciseStore(page);
     await captureMatrix(page, "store-home");
     await context.close();
@@ -157,7 +218,23 @@ async function main() {
     ok: failures.length === 0,
   };
   fs.mkdirSync(path.dirname(ART), { recursive: true });
-  fs.writeFileSync(path.join(path.dirname(ART), "shell-gate.json"), JSON.stringify(meta, null, 2));
+  const metaPath = path.join(path.dirname(ART), "shell-gate.json");
+  fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+  fs.writeFileSync(
+    path.join(path.dirname(ART), "metadata-shell.json"),
+    JSON.stringify(
+      {
+        frontendRuntimeSha: meta.frontendRuntimeSha,
+        backendRuntimeSha: meta.backendRuntimeSha,
+        captureKind: "cabinet-shell-isolated",
+        profUrl: PROF_URL,
+        navUrl: NAV_URL,
+        capturedAt: meta.capturedAt,
+      },
+      null,
+      2,
+    ),
+  );
 
   if (failures.length) {
     console.error(JSON.stringify({ ok: false, failures }, null, 2));

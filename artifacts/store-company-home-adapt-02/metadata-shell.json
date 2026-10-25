@@ -1,0 +1,8 @@
+{
+  "frontendRuntimeSha": "e0b9dc23c91b05892b3bfd0d5969993d9019883a",
+  "backendRuntimeSha": "cfbc456607307460c6b263b951a761a54f734635",
+  "captureKind": "cabinet-shell-isolated",
+  "profUrl": "http://127.0.0.1:3420",
+  "navUrl": "http://127.0.0.1:3421",
+  "capturedAt": "2026-10-25T09:17:10.001Z"
+}
