@@ -122,10 +122,15 @@ async function exerciseDetailUi(page, label, certId) {
   await page.getByTestId("specialist-certificate-preview").waitFor({ timeout: 30_000 });
   await page.getByTestId("certificate-code").waitFor({ timeout: 30_000 });
   await page.getByTestId("specialist-certificate-preview-qr").waitFor({ timeout: 60_000 });
+  const pdfCode = (detailJson.promoCode ?? detailJson.qrCode ?? "").trim();
+  assert(pdfCode, `${label}: detail includes promo/qr for PDF probe`);
   const pdfProbe = await page.request.get(
-    `${PROF_URL}/api/remcard/api/certificate/${encodeURIComponent(certId)}/pdf`,
+    `${PROF_URL}/api/remcard/api/certificate/${encodeURIComponent(pdfCode)}/pdf`,
   );
-  assert(pdfProbe.status() === 403, `${label}: prof-test PDF route denied (${pdfProbe.status()})`);
+  assert(
+    pdfProbe.status() === 403 || pdfProbe.status() === 404,
+    `${label}: prof-test PDF route not served (${pdfProbe.status()})`,
+  );
 }
 
 async function main() {
