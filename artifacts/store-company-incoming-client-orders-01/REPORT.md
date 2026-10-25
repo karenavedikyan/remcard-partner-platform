@@ -9,6 +9,8 @@
 | remcard-navigator | `feat/store-company-incoming-client-orders-01` | `8b1e932ea9c611ccb5e2aac18ab50dac7faebbf1` | Backend + migration |
 | remcard-partner-platform | `feat/store-company-incoming-client-orders-01` | `5281a1de1da0d397690e4821e8ba40fce533b6aa` | UI + gate |
 
+Implementation tips at handoff: backend `c9673183`, frontend `c151db2e`, migration `20261025143000_store_company_incoming_client_order_link`.
+
 This release **includes** the undeployed `feat/store-company-clients-01` stack; it is not a delta on `main` alone.
 
 ## Plan and model
