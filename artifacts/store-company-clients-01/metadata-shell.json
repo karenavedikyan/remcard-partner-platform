@@ -1,8 +1,8 @@
 {
-  "frontendApplicationSha": "81a4d36b3089a79666210770089c94f93b3b3178",
+  "frontendApplicationSha": "f78052a7c0782dc9736b6821d571472560de5d2d",
   "backendApplicationSha": "f713bf25b58fde996c6130baa12a1068022f711b",
-  "captureStartedAt": "2026-10-25T14:03:06.000Z",
-  "captureCompletedAt": "2026-10-25T14:05:15.079Z",
+  "captureStartedAt": "2026-10-25T14:06:01.000Z",
+  "captureCompletedAt": "2026-10-25T14:08:06.168Z",
   "captureKind": "store-company-clients-01",
   "profUrl": "http://127.0.0.1:3420"
 }
