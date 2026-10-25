@@ -4,11 +4,13 @@ export type BusinessHomeMetricSlice =
   | { state: "empty" }
   | { state: "error"; message: string }
   | { state: "unavailable"; message: string }
-  | { state: "needs_branch"; message: string };
+  | { state: "needs_branch"; message: string }
+  | { state: "invalid_branch"; message: string };
 
 export type BusinessHomeMetricsResponse = {
   partnerType: "STORE" | "COMPANY";
   activeBranchLabel: string | null;
+  selectedBranchId?: string | null;
   metrics: {
     primary: Exclude<BusinessHomeMetricSlice, { state: "loading" }>;
     secondary: Exclude<BusinessHomeMetricSlice, { state: "loading" }>;
@@ -25,7 +27,7 @@ export const initialBusinessHomeMetricSlices: [
 export function metricCountLabel(slice: BusinessHomeMetricSlice): string {
   if (slice.state === "loading") return "…";
   if (slice.state === "error" || slice.state === "unavailable") return "—";
-  if (slice.state === "needs_branch") return "—";
+  if (slice.state === "needs_branch" || slice.state === "invalid_branch") return "—";
   if (slice.state === "empty") return "0";
   return String(slice.value);
 }
@@ -34,7 +36,7 @@ export function metricHintForStorePrimary(
   slice: BusinessHomeMetricSlice,
   activeBranchLabel: string | null,
 ): string {
-  if (slice.state === "needs_branch") return slice.message;
+  if (slice.state === "needs_branch" || slice.state === "invalid_branch") return slice.message;
   return activeBranchLabel?.trim() ? activeBranchLabel : "Текущий филиал";
 }
 

@@ -15,6 +15,7 @@ import {
 } from "@/lib/business-home/metrics-types";
 import { Button } from "@/components/ui/Button";
 import { IconArrowRight, IconArrowUpRight } from "@/components/layout/ThemeIcons";
+import { BusinessHomeBranchPicker } from "./BusinessHomeBranchPicker";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 type Props = {
@@ -58,13 +59,16 @@ export function BusinessOwnerHomeDashboard({
   const copy = businessHomeCopy(partnerType);
   const [slices, setSlices] = useState(initialBusinessHomeMetricSlices);
   const [activeBranchLabel, setActiveBranchLabel] = useState<string | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded">("loading");
+  const [contextEpoch, setContextEpoch] = useState(0);
   const loadGenerationRef = useRef(0);
 
   const loadMetrics = useCallback(async () => {
     const generation = ++loadGenerationRef.current;
     setLoadState("loading");
     setSlices(initialBusinessHomeMetricSlices);
+    setActiveBranchLabel(null);
 
     try {
       const data = await remcardFetch<BusinessHomeMetricsResponse>(
@@ -72,6 +76,7 @@ export function BusinessOwnerHomeDashboard({
       );
       if (generation !== loadGenerationRef.current) return;
       setActiveBranchLabel(data.activeBranchLabel);
+      setSelectedBranchId(data.selectedBranchId ?? null);
       setSlices([
         data.metrics.primary,
         data.metrics.secondary,
@@ -80,15 +85,21 @@ export function BusinessOwnerHomeDashboard({
       setLoadState("loaded");
     } catch (caught) {
       if (generation !== loadGenerationRef.current) return;
+      if (caught instanceof RemcardApiError && caught.status === 404) {
+        const err = { state: "unavailable" as const, message: caught.message };
+        setSlices([err, err, err]);
+        setLoadState("loaded");
+        return;
+      }
       const message =
         caught instanceof RemcardApiError
           ? caught.message
           : "Не удалось загрузить показатели";
       const err = { state: "error" as const, message };
-      setSlices([err, err, err]);
+      setSlices([err, { state: "error", message }, { state: "error", message }]);
       setLoadState("loaded");
     }
-  }, []);
+  }, [contextEpoch]);
 
   useEffect(() => {
     void loadMetrics();
@@ -100,7 +111,13 @@ export function BusinessOwnerHomeDashboard({
   const hints = statHints(partnerType, slices, activeBranchLabel);
   const metricsFailed =
     loadState === "loaded" &&
-    slices.some((s) => s.state === "error" || s.state === "unavailable");
+    slices.some(
+      (s) =>
+        s.state === "error" ||
+        s.state === "unavailable" ||
+        s.state === "needs_branch" ||
+        s.state === "invalid_branch",
+    );
 
   return (
     <div className={styles.grid}>
@@ -116,6 +133,13 @@ export function BusinessOwnerHomeDashboard({
           <p>Укажите имя представителя, город и направления работы, чтобы отправить карточку на проверку.</p>
           <Link href="/profile">Заполнить профиль →</Link>
         </section>
+      ) : null}
+
+      {partnerType === "STORE" ? (
+        <BusinessHomeBranchPicker
+          selectedBranchId={selectedBranchId}
+          onBranchSaved={() => setContextEpoch((n) => n + 1)}
+        />
       ) : null}
 
       <section className={styles.heroTask} aria-labelledby="business-home-hero">
