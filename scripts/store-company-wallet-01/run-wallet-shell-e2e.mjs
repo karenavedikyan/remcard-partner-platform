@@ -96,27 +96,34 @@ async function fetchSettlements(page) {
   return res.json();
 }
 
-async function parseExportBuffer(buffer, expectedAccrualIds) {
+async function parseExportBuffer(buffer, expectedRows, label) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer);
-  const sheet = wb.getWorksheet("Заказы") ?? wb.worksheets[0];
-  if (!sheet) throw new Error("export_sheet_missing");
+  const sheet = wb.getWorksheet("Взаиморасчёты") ?? wb.worksheets[0];
+  if (!sheet) throw new Error(`${label}: export_sheet_missing`);
   const header = sheet.getRow(1);
   const col = new Map();
   header.eachCell((cell, n) => col.set(String(cell.value).trim(), n));
-  const idCol = col.get("ID начисления");
-  const amountCol = col.get("Остаток, ₽") ?? col.get("Сумма, ₽");
-  assert(idCol && amountCol, "export_columns_missing");
-  const found = new Set();
+  const orderCol = col.get("Заказ");
+  const amountCol = col.get("Сумма, ₽");
+  assert(orderCol && amountCol, `${label}: export_columns_missing`);
+  const matches = [];
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
-    const id = String(row.getCell(idCol).value ?? "").trim();
-    if (expectedAccrualIds.includes(id)) found.add(id);
+    const orderId = String(row.getCell(orderCol).value ?? "").trim();
+    const amountRaw = row.getCell(amountCol).value;
+    const amount =
+      typeof amountRaw === "number"
+        ? Math.round(amountRaw)
+        : Math.round(Number(String(amountRaw).replace(/\s/g, "").replace(",", ".")));
+    for (const exp of expectedRows) {
+      if (exp.orderId === orderId && exp.amount === amount) matches.push(exp.id);
+    }
   });
-  return found;
+  return matches;
 }
 
-async function exportOpenPayable(page, gate, label) {
+async function exportOpenPayable(page, gate, payableRows, label) {
   const qs = new URLSearchParams({
     scope: "open",
     direction: "payable",
@@ -132,9 +139,10 @@ async function exportOpenPayable(page, gate, label) {
   );
   assert(res.status() === 200, `${label}: export status ${res.status()}`);
   const buf = Buffer.from(await res.body());
-  const found = await parseExportBuffer(buf, gate.payableBonusIds);
+  const expected = payableRows.filter((r) => gate.payableBonusIds.includes(r.id));
+  const matched = await parseExportBuffer(buf, expected, label);
   for (const id of gate.payableBonusIds) {
-    assert(found.has(id), `${label}: export missing accrual ${id}`);
+    assert(matched.includes(id), `${label}: export missing row for bonus ${id}`);
   }
 }
 
@@ -201,7 +209,7 @@ async function walletOwnerFlow(page, label, walletGate) {
   assert(payRow, `${label}: pay row`);
   await page.getByTestId(`specialist-partner-group-${payRow.counterpartyId}`).click();
 
-  await exportOpenPayable(page, walletGate, label);
+  await exportOpenPayable(page, walletGate, api.payable, label);
 
   const payoutBonusId = walletGate.payableBonusIds[0];
   const before = dbSnapshot(payoutBonusId);
