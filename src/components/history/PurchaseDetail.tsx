@@ -18,6 +18,7 @@ import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PurchaseReceivingClientPanel } from "@/components/history/PurchaseReceivingClientPanel";
 import styles from "./history.module.css";
 
 function formatDate(iso: string) {
@@ -143,7 +144,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
           {purchase.direction === "accepted" ? "Принято у меня" : "По моей рекомендации"}
         </p>
         <p className={styles.meta}>Партнёр: {purchase.partnerName}</p>
-        {purchase.clientName ? <p className={styles.meta}>Клиент: {purchase.clientName}</p> : null}
+        {purchase.clientName ? (
+          <p className={styles.meta}>Клиент документа: {purchase.clientName}</p>
+        ) : null}
         {purchase.branchName ? <p className={styles.meta}>Филиал: {purchase.branchName}</p> : null}
         {purchase.executorName ? (
           <p className={styles.meta}>Исполнитель: {purchase.executorName}</p>
@@ -159,6 +162,15 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
           </p>
         ) : null}
       </div>
+
+      {purchase.direction === "accepted" && purchase.canManageReceivingClient ? (
+        <PurchaseReceivingClientPanel
+          purchase={purchase}
+          onLinked={({ receivingClient }) => {
+            setPurchase((prev) => (prev ? { ...prev, receivingClient } : prev));
+          }}
+        />
+      ) : null}
 
       <div className={styles.amounts}>
         <span>До скидки: {formatMoneyRub(purchase.totalAmount)}</span>

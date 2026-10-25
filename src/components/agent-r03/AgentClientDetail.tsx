@@ -98,7 +98,14 @@ function PurchaseHistoryPanel({
                 <strong>{p.lineSummary || "Покупка по сертификату"}</strong>
                 <p className={styles.meta}>
                   {p.partnerName} · {new Date(p.createdAt).toLocaleDateString("ru-RU")}
+                  {p.recommenderName ? ` · ${p.recommenderName}` : ""}
                 </p>
+                <Link
+                  className={styles.meta}
+                  href={`/history/purchases/${encodeURIComponent(p.id)}`}
+                >
+                  Заказ №{p.id}
+                </Link>
               </div>
               <div>
                 <strong>{p.totalAmount.toLocaleString("ru-RU")} ₽</strong>
@@ -421,7 +428,7 @@ export function AgentClientDetail({
                 testId="client-receiving-purchases"
                 title="Покупки у нас"
                 purchases={receivingPurchases}
-                emptyHint="Покупки у вашей организации показываются только по вашим сертификатам, привязанным к этому CRM-клиенту. Заказы по чужим рекомендациям сюда не попадают."
+                emptyHint="Покупки у вас появятся после явной привязки на карточке покупки или по вашим сертификатам, уже связанным с этим клиентом."
               />
             </>
           ) : null}

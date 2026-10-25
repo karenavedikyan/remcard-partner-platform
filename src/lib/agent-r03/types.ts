@@ -96,6 +96,8 @@ export type AgentClientPurchaseRow = {
   partnerName: string;
   certificateId: string;
   lineSummary: string | null;
+  recommenderName?: string | null;
+  receivingLinkSource?: "explicit_link" | "own_issued_certificate" | null;
 };
 
 export type AgentClientDetailResponse = {

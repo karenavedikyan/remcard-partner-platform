@@ -248,6 +248,10 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET"]),
       pattern: /^\/api\/store\/orders\/c[a-z0-9]{20,}$/i,
     },
+    {
+      methods: new Set(["PATCH"]),
+      pattern: /^\/api\/store\/orders\/c[a-z0-9]{20,}\/receiving-client$/i,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/orders$/ },
     {
       methods: new Set(["GET"]),

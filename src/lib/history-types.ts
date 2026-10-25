@@ -15,6 +15,14 @@ export type LinkedAccrualRef = {
   type: AccrualType;
 };
 
+export type ReceivingClientLinkSnapshot = {
+  agentClientId: string;
+  displayName: string;
+  version: number;
+  linkedAt: string;
+  linkedByUserId: string;
+};
+
 export type PurchaseRow = {
   id: string;
   source: PurchaseSource;
@@ -39,6 +47,13 @@ export type PurchaseRow = {
   /** Legacy flat ids — kept for backward compatibility. */
   linkedAccrualIds: string[];
   items: PurchaseItemRow[];
+  receivingClient?: ReceivingClientLinkSnapshot | null;
+  canManageReceivingClient?: boolean;
+  recommendationSource?: {
+    recommenderName: string;
+    certificateId: string;
+    promoCode: string;
+  } | null;
 };
 
 export type StoreOrdersResponse = {
@@ -71,6 +86,13 @@ export type StoreOrdersResponse = {
 
 export type StoreOrderDetailResponse = {
   order: StoreOrdersResponse["orders"][number] & {
+    receivingClient?: ReceivingClientLinkSnapshot | null;
+    canManageReceivingClient?: boolean;
+    recommendationSource?: {
+      recommenderName: string;
+      certificateId: string;
+      promoCode: string;
+    } | null;
     items: Array<{
       id: string;
       category: string;

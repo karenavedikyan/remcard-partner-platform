@@ -69,6 +69,11 @@ function mapStoreOrderRow(
             issuerAmount: item.issuerAmount,
           }))
         : [],
+    receivingClient: "receivingClient" in order ? order.receivingClient ?? null : undefined,
+    canManageReceivingClient:
+      "canManageReceivingClient" in order ? order.canManageReceivingClient : undefined,
+    recommendationSource:
+      "recommendationSource" in order ? order.recommendationSource ?? null : undefined,
   };
 }
 
