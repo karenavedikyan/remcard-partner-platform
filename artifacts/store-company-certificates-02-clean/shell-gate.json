@@ -1,10 +1,10 @@
 {
-  "frontendRuntimeSha": "3941e0239ac362a1b7ab93b237c752a4b7493618",
+  "frontendRuntimeSha": "0269ffbc8ee09bef60a41203cde1cae07396f960",
   "backendRuntimeSha": "8fabfdda64398afd7cb8ba46a2b3d352201af6aa",
   "profUrl": "http://127.0.0.1:3420",
   "navUrl": "http://127.0.0.1:3421",
   "harnessState": "/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json",
-  "capturedAt": "2026-10-25T11:36:48.466Z",
+  "capturedAt": "2026-10-25T11:37:25.749Z",
   "failures": [],
   "ok": true,
   "profTestWritePolicy": {
