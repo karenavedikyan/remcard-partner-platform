@@ -273,6 +273,13 @@ describe("remcard proxy transport checks", () => {
       isAllowedProxyRoute("GET", "/api/store/orders/cabcdefghijklmnopqrst"),
       true,
     );
+    assert.equal(
+      isAllowedProxyRoute(
+        "PATCH",
+        "/api/store/orders/cabcdefghijklmnopqrst/receiving-client",
+      ),
+      true,
+    );
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/orders"), true);
     assert.equal(
       isAllowedProxyRoute("GET", "/api/pro/orders/cabcdefghijklmnopqrst"),
