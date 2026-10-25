@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   deleteAgentClient,
   fetchAgentClient,
@@ -68,6 +68,54 @@ function SpecialistClientCertCard({
   );
 }
 
+function PurchaseHistoryPanel({
+  testId,
+  title,
+  purchases,
+  emptyHint,
+}: {
+  testId: string;
+  title: string;
+  purchases: AgentClientPurchaseRow[];
+  emptyHint: string;
+}) {
+  return (
+    <details
+      className={`${styles.certificateTerms} ${styles.card}`}
+      open={purchases.length > 0}
+      data-testid={testId}
+    >
+      <summary>
+        {title} <span className={styles.badgeCount}>{purchases.length}</span>
+      </summary>
+      <div className={styles.termsBody}>
+        {purchases.length === 0 ? (
+          <p className={styles.empty}>{emptyHint}</p>
+        ) : (
+          purchases.map((p) => (
+            <article key={p.id} className={styles.clientPurchaseRow}>
+              <div>
+                <strong>{p.lineSummary || "Покупка по сертификату"}</strong>
+                <p className={styles.meta}>
+                  {p.partnerName} · {new Date(p.createdAt).toLocaleDateString("ru-RU")}
+                </p>
+              </div>
+              <div>
+                <strong>{p.totalAmount.toLocaleString("ru-RU")} ₽</strong>
+                <span className={styles.purchasePill}>{p.statusLabel ?? p.status}</span>
+              </div>
+            </article>
+          ))
+        )}
+        <small className={styles.meta}>
+          В списке только подтверждённые заказы по связанным сертификатам; выдача сертификата сама
+          по себе покупкой не считается.
+        </small>
+      </div>
+    </details>
+  );
+}
+
 export function AgentClientDetail({
   clientId,
   accessMode = "agent",
@@ -80,7 +128,9 @@ export function AgentClientDetail({
   >(null);
   const [certs, setCerts] = useState<AgentCertificateRow[]>([]);
   const [purchases, setPurchases] = useState<AgentClientPurchaseRow[]>([]);
+  const [receivingPurchases, setReceivingPurchases] = useState<AgentClientPurchaseRow[]>([]);
   const [error, setError] = useState("");
+  const loadGeneration = useRef(0);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -90,20 +140,33 @@ export function AgentClientDetail({
   const businessPresentation = accessMode === "business";
 
   const reload = useCallback(() => {
+    const generation = ++loadGeneration.current;
+    setError("");
     return fetchAgentClient(clientId)
       .then((res) => {
+        if (generation !== loadGeneration.current) return;
         setClient(res.client);
         setCerts(res.certificates);
-        setPurchases(res.purchases ?? []);
+        setPurchases(res.recommendationPurchases ?? res.purchases ?? []);
+        setReceivingPurchases(res.receivingPurchases ?? []);
       })
       .catch((caught) => {
+        if (generation !== loadGeneration.current) return;
+        setClient(null);
+        setCerts([]);
+        setPurchases([]);
+        setReceivingPurchases([]);
         setError(caught instanceof RemcardApiError ? caught.message : "Ошибка загрузки");
       });
   }, [clientId]);
 
   useEffect(() => {
+    setClient(null);
+    setCerts([]);
+    setPurchases([]);
+    setReceivingPurchases([]);
     void reload();
-  }, [reload]);
+  }, [clientId, reload]);
 
   async function saveClient(values: AgentClientFormValues) {
     if (!client) return;
@@ -114,7 +177,7 @@ export function AgentClientDetail({
       city: values.city ? values.city : null,
       note: values.note ? values.note : null,
     };
-    if (accessMode === "specialist") {
+    if (accessMode === "specialist" || accessMode === "business") {
       patch.need = values.need ? values.need : null;
     }
     await patchAgentClient(client.id, patch);
@@ -330,45 +393,29 @@ export function AgentClientDetail({
             ))
           )}
 
-          {specialistPresentation || businessPresentation ? (
-            <details
-              className={`${styles.certificateTerms} ${styles.card}`}
-              open={purchases.length > 0}
-              data-testid="client-purchase-history"
-            >
-              <summary>
-                История покупок{" "}
-                <span className={styles.badgeCount}>{purchases.length}</span>
-              </summary>
-              <div className={styles.termsBody}>
-                {purchases.length === 0 ? (
-                  <p className={styles.empty}>
-                    Покупок пока нет. Здесь появятся дата, партнёр, товары или услуги, сумма и
-                    статус после подтверждения покупки.
-                  </p>
-                ) : (
-                  purchases.map((p) => (
-                    <article key={p.id} className={styles.clientPurchaseRow}>
-                      <div>
-                        <strong>{p.lineSummary || "Покупка по сертификату"}</strong>
-                        <p className={styles.meta}>
-                          {p.partnerName} ·{" "}
-                          {new Date(p.createdAt).toLocaleDateString("ru-RU")}
-                        </p>
-                      </div>
-                      <div>
-                        <strong>{p.totalAmount.toLocaleString("ru-RU")} ₽</strong>
-                        <span className={styles.purchasePill}>{p.statusLabel ?? p.status}</span>
-                      </div>
-                    </article>
-                  ))
-                )}
-                <small className={styles.meta}>
-                  Создание или отправка сертификата сами по себе покупкой не считаются. В счётчике
-                  «Покупок» учитываются только подтверждённые заказы.
-                </small>
-              </div>
-            </details>
+          {specialistPresentation ? (
+            <PurchaseHistoryPanel
+              testId="client-purchase-history"
+              title="История покупок"
+              purchases={purchases}
+              emptyHint="Покупок по рекомендациям пока нет."
+            />
+          ) : null}
+          {businessPresentation ? (
+            <>
+              <PurchaseHistoryPanel
+                testId="client-recommendation-purchases"
+                title="По нашим рекомендациям"
+                purchases={purchases}
+                emptyHint="Покупок у партнёров по исходящим сертификатам пока нет."
+              />
+              <PurchaseHistoryPanel
+                testId="client-receiving-purchases"
+                title="Покупки у нас"
+                purchases={receivingPurchases}
+                emptyHint="Подтверждённых покупок у вашей организации по сертификатам этого клиента пока нет."
+              />
+            </>
           ) : null}
         </div>
       ) : null}

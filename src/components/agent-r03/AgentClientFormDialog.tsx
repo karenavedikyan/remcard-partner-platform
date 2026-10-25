@@ -139,7 +139,7 @@ export function AgentClientFormDialog({
       </>
     );
 
-  const specialistForm = accessMode === "specialist";
+  const specialistForm = accessMode === "specialist" || accessMode === "business";
   const specialistCopy = specialistForm ? specialistClientFormCopy(editing) : null;
   const dialogTitle = specialistCopy?.title ?? title;
   const dialogSubmitLabel = specialistCopy?.submitLabel ?? submitLabel;

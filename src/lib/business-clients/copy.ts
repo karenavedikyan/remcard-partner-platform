@@ -6,6 +6,6 @@ export function businessClientsPageCopy(partnerType: BusinessClientsPartnerType)
     eyebrow,
     title: "Клиенты",
     description:
-      "Собственные записи о клиентах вашей организации. Контакты не передаются автоматически в RemCard.",
+      "Собственные записи о клиентах вашей организации. Контакты хранятся в RemCard и не отправляются партнёрам автоматически.",
   };
 }

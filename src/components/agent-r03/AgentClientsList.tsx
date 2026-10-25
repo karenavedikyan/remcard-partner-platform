@@ -62,8 +62,10 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadGeneration = useRef(0);
 
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setLoadState("loading");
     setError("");
     try {
@@ -74,6 +76,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         limit: pageSize,
         sort,
       });
+      if (generation !== loadGeneration.current) return;
       setItems(data.clients ?? []);
       setMeta({
         page: data.page ?? page,
@@ -88,6 +91,8 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       });
       setLoadState("loaded");
     } catch (caught) {
+      if (generation !== loadGeneration.current) return;
+      setItems([]);
       setLoadState("error");
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить клиентов");
     }
@@ -145,7 +150,9 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       email: values.email || undefined,
       city: values.city || undefined,
       note: values.note || undefined,
-      ...(accessMode === "specialist" ? { need: values.need || undefined } : {}),
+      ...(accessMode === "specialist" || accessMode === "business"
+        ? { need: values.need || undefined }
+        : {}),
     };
     if (editClient) {
       const patch: Parameters<typeof patchAgentClient>[1] = {
@@ -155,7 +162,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         city: values.city ? values.city : null,
         note: values.note ? values.note : null,
       };
-      if (accessMode === "specialist") {
+      if (accessMode === "specialist" || accessMode === "business") {
         patch.need = values.need ? values.need : null;
       }
       await patchAgentClient(editClient.id, patch);

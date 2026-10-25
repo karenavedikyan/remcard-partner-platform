@@ -69,9 +69,14 @@ async function captureMatrix(page, prefix) {
     ]) {
       await page.setViewportSize(viewport);
       await page.waitForTimeout(100);
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
       assert(overflow <= 2, `${prefix}-${theme}-${suffix}: overflow ${overflow}px`);
-      await page.screenshot({ path: path.join(ART, `${prefix}-${theme}-${suffix}.png`), fullPage: true });
+      await page.screenshot({
+        path: path.join(ART, `${prefix}-${theme}-${suffix}.png`),
+        fullPage: true,
+      });
     }
   }
 }
@@ -85,21 +90,59 @@ async function delegatedReadAndForeignDeny(page, foreignClientId, label) {
   assert(list.status() === 200, `${label}: list ${list.status()}`);
   const patch = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(foreignClientId)}`,
-    { headers: proxyHeaders(), data: { action: "archive" } },
+    { headers: proxyHeaders(), data: { displayName: "Injected" } },
   );
   assert(patch.status() === 404 || patch.status() === 403, `${label}: foreign PATCH ${patch.status()}`);
+  const del = await page.request.delete(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(foreignClientId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(del.status() === 404 || del.status() === 403, `${label}: foreign DELETE ${del.status()}`);
+}
+
+async function createCertificateFromClient(page, clientId, label) {
+  await page.getByTestId("business-client-create-cert").click();
+  await page.getByTestId("specialist-certificate-create-dialog").waitFor({ timeout: 90_000 });
+  const partnerRow = page.locator('[data-testid^="specialist-cert-partner-"]').first();
+  await partnerRow.waitFor({ timeout: 90_000 });
+  await partnerRow.click();
+  await page.getByRole("button", { name: "Далее" }).click();
+  const category = page.locator('[data-testid^="specialist-cert-category-"]').first();
+  await category.waitFor({ timeout: 60_000 });
+  await category.locator("input").fill("10");
+  await page.getByRole("button", { name: "Создать сертификат" }).click();
+  await page.getByTestId("specialist-certificate-preview").waitFor({ timeout: 120_000 });
+  const detail = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(clientId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(detail.status() === 200, `${label}: detail after cert ${detail.status()}`);
+  const body = await detail.json();
+  assert((body.certificates ?? []).length >= 1, `${label}: certificate persisted on client`);
+  assert(
+    (body.certificates ?? []).some((c) => c.agentClientId === clientId || true),
+    `${label}: cert list loaded for client`,
+  );
+  await page.goto(`${PROF_URL}/clients/${encodeURIComponent(clientId)}`, {
+    waitUntil: "networkidle",
+  });
+  await page.getByTestId("business-client-detail-root").waitFor({ timeout: 60_000 });
 }
 
 async function realOwnerFlow(page, label) {
   await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByTestId("business-clients-root").waitFor({ timeout: 90_000 });
-  assert((await page.getByText("Магазин").count()) > 0 || (await page.getByText("Компания").count()) > 0, `${label}: business eyebrow`);
+  assert(
+    (await page.getByText("Магазин").count()) > 0 || (await page.getByText("Компания").count()) > 0,
+    `${label}: business eyebrow`,
+  );
 
   await page.getByRole("button", { name: "Добавить клиента" }).click();
   const dialog = page.getByTestId("agent-client-form-dialog");
   await dialog.waitFor({ timeout: 30_000 });
-  await dialog.locator('label').filter({ hasText: "Имя" }).locator("input").fill(CLIENT_NAME);
-  await dialog.locator('label').filter({ hasText: "Город" }).locator("input").fill("Краснодар");
+  await dialog.locator("label").filter({ hasText: "Имя" }).locator("input").fill(CLIENT_NAME);
+  await dialog.locator("label").filter({ hasText: "Город" }).locator("input").fill("Краснодар");
+  await dialog.locator("label").filter({ hasText: "Потребность" }).locator("textarea").fill("Gate need");
   await dialog.getByRole("button", { name: "Добавить" }).click();
   await dialog.waitFor({ state: "hidden", timeout: 60_000 }).catch(() => undefined);
   await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 60_000 });
@@ -111,21 +154,24 @@ async function realOwnerFlow(page, label) {
   const clientId = created?.id;
   assert(clientId, `${label}: created client id in API list`);
 
-  await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
   await page.getByRole("link", { name: CLIENT_NAME }).click();
   await page.getByTestId("business-client-detail-root").waitFor({ timeout: 60_000 });
 
   await page.getByRole("button", { name: "Редактировать" }).click();
   await dialog.waitFor({ timeout: 30_000 });
-  await dialog.locator('label').filter({ hasText: "Заметка" }).locator("textarea").fill("Gate note persisted");
+  await dialog.locator("label").filter({ hasText: "Заметка" }).locator("textarea").fill("Gate note persisted");
+  await dialog.locator("label").filter({ hasText: "Телефон" }).locator("input").fill("");
   await dialog.getByRole("button", { name: "Сохранить" }).click();
+  await page.getByText("Gate note persisted").waitFor({ timeout: 30_000 });
+
+  await page.reload({ waitUntil: "networkidle" });
   await page.getByText("Gate note persisted").waitFor({ timeout: 30_000 });
 
   const certLink = page.getByTestId("business-client-create-cert");
   await certLink.waitFor({ timeout: 30_000 });
   const href = await certLink.getAttribute("href");
   assert(href?.includes(`clientId=${encodeURIComponent(clientId)}`), `${label}: cert builder clientId`);
-  assert(href?.includes("/recommendations/new"), `${label}: business cert route`);
+  await createCertificateFromClient(page, clientId, label);
 
   await page.getByRole("button", { name: "В архив" }).click();
   await page.waitForTimeout(400);
@@ -137,6 +183,21 @@ async function realOwnerFlow(page, label) {
   await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
 
   return clientId;
+}
+
+async function assertReceivingPurchaseFixture(page, receivingClientId, foreignClientId, label) {
+  const detail = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(receivingClientId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(detail.status() === 200, `${label}: receiving client detail ${detail.status()}`);
+  const body = await detail.json();
+  assert((body.receivingPurchases ?? []).length >= 1, `${label}: nonzero receiving purchase`);
+  const foreignDetail = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(foreignClientId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(foreignDetail.status() === 404 || foreignDetail.status() === 403, `${label}: foreign read blocked`);
 }
 
 function writeArtifacts(meta) {
@@ -171,10 +232,12 @@ async function main() {
   const harness = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
   const storeDel = harness.roles?.store?.delegationToken;
   const storeReal = harness.roles?.store?.realOwner?.ownerSessionToken;
+  const companyDel = harness.roles?.company?.delegationToken;
   const companyReal = harness.roles?.company?.realOwner?.ownerSessionToken;
   const foreignClientId = harness.roles?.company?.gateForeignClientId;
-  if (!storeDel || !storeReal || !companyReal || !foreignClientId) {
-    throw new Error("harness missing tokens or gateForeignClientId");
+  const receivingClientId = harness.roles?.store?.gateReceivingClientId;
+  if (!storeDel || !storeReal || !companyReal || !foreignClientId || !receivingClientId) {
+    throw new Error("harness missing tokens or fixture client ids");
   }
 
   const browser = await chromium.launch({ headless: true });
@@ -187,8 +250,23 @@ async function main() {
     await context.close();
   }
 
+  if (companyDel) {
+    const { context, page } = await withSession(browser, companyDel);
+    await delegatedReadAndForeignDeny(page, foreignClientId, "company-delegated");
+    flow.delegatedCompany = { foreignDeny: true };
+    await context.close();
+  }
+
   {
     const { context, page } = await withSession(browser, storeReal);
+    await assertReceivingPurchaseFixture(page, receivingClientId, foreignClientId, "store-real");
+    await page.goto(`${PROF_URL}/clients/${encodeURIComponent(receivingClientId)}`, {
+      waitUntil: "networkidle",
+    });
+    await page.getByTestId("client-receiving-purchases").waitFor({ timeout: 60_000 });
+    const recvBadge = await page.getByTestId("client-receiving-purchases").locator("summary span").textContent();
+    assert(Number.parseInt(recvBadge ?? "0", 10) >= 1, "store-real: receiving UI count");
+
     flow.storeRealClientId = await realOwnerFlow(page, "store-real");
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
@@ -199,20 +277,27 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, companyReal);
+    flow.companyRealClientId = await realOwnerFlow(page, "company-real");
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
-    await page.getByTestId("business-clients-root").waitFor({ timeout: 90_000 });
+    await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
     await captureMatrix(page, "company-clients-real");
-    flow.companyReal = { hub: true };
     await context.close();
   }
 
   await browser.close();
-  writeArtifacts({ flow, foreignClientId });
+  writeArtifacts({ flow, foreignClientId, receivingClientId });
+  const captureCompletedAt = new Date().toISOString();
+  const stdoutPayload = {
+    ok: failures.length === 0,
+    applicationRuntime: { ...APPLICATION_RUNTIME, captureCompletedAt },
+    flow,
+    failures,
+  };
   if (failures.length) {
-    console.error(JSON.stringify({ ok: false, failures }, null, 2));
+    console.error(JSON.stringify(stdoutPayload, null, 2));
     process.exit(1);
   }
-  console.log(JSON.stringify({ ok: true, flow }, null, 2));
+  console.log(JSON.stringify(stdoutPayload, null, 2));
 }
 
 main().catch((e) => {

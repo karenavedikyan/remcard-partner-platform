@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RemcardApiError } from "@/lib/api-client";
-import { remcardFetch } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
@@ -26,13 +25,12 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
-      fetchAgentR03Status(),
-      fetchSpecialistR06Status(),
-      remcardFetch<{ user: AuthUser }>("/api/auth/me"),
-      remcardFetch<{ role: string }>("/api/pro/context"),
-    ])
-      .then(([r03, r06, mePayload, proCtx]) => {
+    void (async () => {
+      try {
+        const [r03, r06] = await Promise.all([
+          fetchAgentR03Status(),
+          fetchSpecialistR06Status(),
+        ]);
         if (cancelled) return;
         if (r03.featureEnabled && r03.eligible) {
           setMode("agent");
@@ -42,6 +40,21 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
           setMode("specialist");
           return;
         }
+      } catch (caught) {
+        if (!cancelled) {
+          setError(
+            caught instanceof RemcardApiError ? caught.message : "Не удалось проверить доступ",
+          );
+        }
+        return;
+      }
+
+      try {
+        const [mePayload, proCtx] = await Promise.all([
+          remcardFetch<{ user: AuthUser }>("/api/auth/me"),
+          remcardFetch<{ role: string }>("/api/pro/context"),
+        ]);
+        if (cancelled) return;
         const business = resolveBusinessOwnerClientsEligibility({
           user: mePayload.user,
           proContextRole: proCtx.role,
@@ -51,18 +64,13 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
           setBusinessPartnerType(business.partnerType);
           return;
         }
-        setMode(null);
-      })
-      .catch((caught) => {
-        if (!cancelled) {
-          setError(
-            caught instanceof RemcardApiError ? caught.message : "Не удалось проверить доступ",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      } catch {
+        /* business-only probes failed; agent/specialist already ruled out */
+      }
+      if (!cancelled) setMode(null);
+    })().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };

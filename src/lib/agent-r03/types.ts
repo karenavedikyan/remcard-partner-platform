@@ -105,4 +105,7 @@ export type AgentClientDetailResponse = {
   };
   certificates: AgentCertificateRow[];
   purchases?: AgentClientPurchaseRow[];
+  recommendationPurchases?: AgentClientPurchaseRow[];
+  receivingPurchases?: AgentClientPurchaseRow[];
+  purchaseScope?: "business_split" | "recommendation_only";
 };
