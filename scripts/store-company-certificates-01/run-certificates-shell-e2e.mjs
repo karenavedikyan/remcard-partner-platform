@@ -107,13 +107,21 @@ async function exerciseList(page, label, eyebrow) {
 }
 
 async function exerciseDetailUi(page, label, certId) {
+  const detailApi = await page.request.get(
+    `${PROF_URL}/api/remcard/api/store/certificate/${encodeURIComponent(certId)}`,
+  );
+  assert(detailApi.status() === 200, `${label}: store certificate detail API ${detailApi.status()}`);
+  const detailJson = await detailApi.json();
+  assert(Boolean(detailJson.qrCode?.trim()), `${label}: detail includes qrCode for client link/QR`);
+
   await page.goto(
     `${PROF_URL}/recommendations?certificate=${encodeURIComponent(certId)}`,
     { waitUntil: "networkidle", timeout: 120_000 },
   );
   await page.getByTestId("specialist-certificate-detail-dialog").waitFor({ timeout: 90_000 });
+  await page.getByTestId("specialist-certificate-preview").waitFor({ timeout: 30_000 });
   await page.getByTestId("certificate-code").waitFor({ timeout: 30_000 });
-  await page.getByTestId("specialist-certificate-preview-qr").waitFor({ timeout: 30_000 });
+  await page.getByTestId("specialist-certificate-preview-qr").waitFor({ timeout: 60_000 });
   const pdfProbe = await page.request.get(
     `${PROF_URL}/api/remcard/api/certificate/${encodeURIComponent(certId)}/pdf`,
   );
