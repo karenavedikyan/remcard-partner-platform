@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { chromium } from "playwright";
+import { chromium, request as playwrightRequest } from "playwright";
 
 const NAV_ROOT = path.resolve("/agent/repos/remcard-navigator");
 const requireNav = createRequire(path.join(NAV_ROOT, "package.json"));
@@ -34,8 +34,17 @@ function assert(cond, msg) {
   if (!cond) failures.push(msg);
 }
 
-function proxyHeaders() {
-  return { Origin: PROF_URL };
+function proxyHeaders(token) {
+  const headers = { Origin: PROF_URL };
+  if (token) headers.Cookie = `remcard-token=${token}`;
+  return headers;
+}
+
+async function withApiToken(token) {
+  return playwrightRequest.newContext({
+    baseURL: PROF_URL,
+    extraHTTPHeaders: proxyHeaders(token),
+  });
 }
 
 function dbSnapshot(bonusId) {
@@ -311,7 +320,7 @@ async function assertReceivableFilters(page, api, walletGate, label) {
   assert(rowText.includes(String(recvRow.amount)), `${label}: filtered row amount visible`);
 }
 
-async function walletOwnerFlow(page, label, walletGate) {
+async function walletOwnerFlow(page, label, walletGate, ownerUserId) {
   await page.goto(`${PROF_URL}/settlements`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByTestId("business-owner-wallet").waitFor({ timeout: 90_000 });
   const api = await fetchSettlements(page);
@@ -381,6 +390,8 @@ async function walletOwnerFlow(page, label, walletGate) {
   assert(after.bonus?.payoutMethod === "CASH", `${label}: payout method CASH`);
   assert(after.payoutRecords?.[0]?.payoutMethod === "CASH", `${label}: payout record method`);
   assert(after.payoutRecords?.[0]?.idempotencyKey, `${label}: idempotency key stored`);
+  assert(after.payoutRecords?.[0]?.actorUserId === ownerUserId, `${label}: payout actor owner`);
+  assert(after.payoutRecords?.[0]?.amount === payRow.amount, `${label}: payout amount snapshot`);
 
   const dup = await page.request.post(
     `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(payoutBonusId)}/pay`,
@@ -419,11 +430,34 @@ async function walletOwnerFlow(page, label, walletGate) {
   };
 }
 
-async function delegatedWalletPolicy(page, label, walletGate) {
+async function requisitesListSnapshot(api) {
+  const res = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
+    headers: proxyHeaders(),
+  });
+  assert(res.status() === 200, `requisites list snapshot ${res.status()}`);
+  const body = await res.json();
+  const items = body.items ?? [];
+  return {
+    count: items.length,
+    primaryId: items.find((i) => i.isPrimary)?.id ?? null,
+  };
+}
+
+async function delegatedWalletPolicy(page, label, walletGate, ownerRequisitesId) {
+  assert(ownerRequisitesId, `${label}: missing owner requisites fixture id`);
   const settlements = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
     headers: proxyHeaders(),
   });
   assert(settlements.status() === 200, `${label}: delegated settlements read ${settlements.status()}`);
+  const reqBefore = await requisitesListSnapshot(page.request);
+  const detailBefore = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(detailBefore.status() === 200, `${label}: delegated owner requisites read ${detailBefore.status()}`);
+  const detailBeforeBody = await detailBefore.json();
+  const versionBefore = detailBeforeBody.item?.version;
+
   const reqPost = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
     headers: proxyHeaders(),
     data: {
@@ -438,24 +472,58 @@ async function delegatedWalletPolicy(page, label, walletGate) {
   });
   assert(reqPost.status() === 403, `${label}: requisites write ${reqPost.status()}`);
   const body = await reqPost.json();
-  assert(body.code === "PROF_TEST_BLOCKED", `${label}: requisites code`);
-  const bonusId = walletGate?.payableBonusIds?.[0];
-  if (bonusId) {
-    const before = dbSnapshot(bonusId).payoutRecordCount;
-    const pay = await page.request.post(
-      `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
-      {
-        headers: { ...proxyHeaders(), "Idempotency-Key": `gate-delegated-${bonusId}` },
-        data: { payoutMethod: "CASH" },
-      },
+  assert(body.code === "PROF_TEST_BLOCKED", `${label}: requisites create code`);
+
+  const patchCases = [
+    { action: "setPrimary" },
+    { action: "archive" },
+    {
+      action: "revise",
+      kind: "person",
+      legalName: "Delegated revise attempt",
+      inn: "7707083893",
+      bankName: "Gate Bank",
+      bik: "044525225",
+      accountNumber: "40817810099910004312",
+      corrAccount: GATE_CORR_ACCOUNT,
+      expectedVersion: versionBefore,
+    },
+  ];
+  for (const patchBody of patchCases) {
+    const patch = await page.request.patch(
+      `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+      { headers: proxyHeaders(), data: patchBody },
     );
-    assert(
-      pay.status() === 403 || pay.status() === 401,
-      `${label}: payout write ${pay.status()} (expected policy deny)`,
-    );
-    const after = dbSnapshot(bonusId).payoutRecordCount;
-    assert(after === before, `${label}: payout record count unchanged`);
+    assert(patch.status() === 403, `${label}: requisites PATCH ${patchBody.action} ${patch.status()}`);
+    const patchJson = await patch.json();
+    assert(patchJson.code === "PROF_TEST_BLOCKED", `${label}: PATCH ${patchBody.action} code`);
   }
+  const reqAfter = await requisitesListSnapshot(page.request);
+  assert(reqAfter.count === reqBefore.count, `${label}: requisites count unchanged`);
+  assert(reqAfter.primaryId === reqBefore.primaryId, `${label}: primary requisites unchanged`);
+  const detailAfter = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(ownerRequisitesId)}`,
+    { headers: proxyHeaders() },
+  );
+  const detailAfterBody = await detailAfter.json();
+  assert(detailAfterBody.item?.version === versionBefore, `${label}: requisites version unchanged`);
+
+  const bonusId = walletGate?.payableBonusIds?.[0];
+  assert(bonusId, `${label}: missing gate bonus id`);
+  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  const pay = await page.request.post(
+    `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
+    {
+      headers: { ...proxyHeaders(), "Idempotency-Key": `gate-delegated-${bonusId}` },
+      data: { payoutMethod: "CASH" },
+    },
+  );
+  assert(
+    pay.status() === 403 || pay.status() === 401,
+    `${label}: payout write ${pay.status()} (expected policy deny)`,
+  );
+  const afterPay = dbSnapshot(bonusId).payoutRecordCount;
+  assert(afterPay === beforePay, `${label}: payout record count unchanged`);
 }
 
 async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
@@ -471,7 +539,6 @@ async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
       },
     );
     assert(pay.status() === 403 || pay.status() === 404, `${actorLabel}: foreign payout ${pay.status()}`);
-    beforePay = dbSnapshot(bonusId).payoutRecordCount;
   }
 
   const settlements = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
@@ -485,6 +552,16 @@ async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
   );
 
   if (requisitesId) {
+    let ownerVersionBefore = null;
+    if (opts.ownerVerifyToken) {
+      const ownerApi = await withApiToken(opts.ownerVerifyToken);
+      const ownerDetail = await ownerApi.get(
+        `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(requisitesId)}`,
+      );
+      assert(ownerDetail.status() === 200, `${actorLabel}: owner verify detail ${ownerDetail.status()}`);
+      ownerVersionBefore = (await ownerDetail.json()).item?.version ?? null;
+      await ownerApi.dispose();
+    }
     const reqDetail = await page.request.get(
       `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(requisitesId)}`,
       { headers: proxyHeaders() },
@@ -504,6 +581,18 @@ async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
       reqPatch.status() === 403 || reqPatch.status() === 404,
       `${actorLabel}: foreign requisites patch ${reqPatch.status()}`,
     );
+    if (opts.ownerVerifyToken && ownerVersionBefore != null) {
+      const ownerApi = await withApiToken(opts.ownerVerifyToken);
+      const ownerAfter = await ownerApi.get(
+        `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(requisitesId)}`,
+      );
+      const ownerAfterBody = await ownerAfter.json();
+      assert(
+        ownerAfterBody.item?.version === ownerVersionBefore,
+        `${actorLabel}: foreign patch left owner requisites version`,
+      );
+      await ownerApi.dispose();
+    }
   }
 
   if (foreignOrderId) {
@@ -531,20 +620,61 @@ async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
   }
 }
 
-async function staffWalletDenied(page, label) {
-  const res = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
-    headers: proxyHeaders(),
-  });
-  assert(res.status() === 403 || res.status() === 401, `${label}: staff settlements ${res.status()}`);
-  const exp = await page.request.post(
+async function staffWalletForbidden(api, label, bonusId) {
+  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
+  assert(res.status() === 403, `${label}: staff settlements ${res.status()}`);
+  const exp = await api.post(
     `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?scope=open&direction=payable&status=open&sort=debt-desc`,
-    { headers: proxyHeaders() },
   );
-  assert(exp.status() === 403 || exp.status() === 401, `${label}: staff export ${exp.status()}`);
-  const req = await page.request.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
-    headers: proxyHeaders(),
+  assert(exp.status() === 403, `${label}: staff export ${exp.status()}`);
+  const req = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`);
+  assert(req.status() === 403, `${label}: staff requisites list ${req.status()}`);
+  const pay = await api.post(`${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`, {
+    headers: { "Idempotency-Key": `staff-forbidden-${bonusId}` },
+    data: { payoutMethod: "CASH" },
   });
-  assert(req.status() === 403 || req.status() === 401, `${label}: staff requisites list ${req.status()}`);
+  assert(pay.status() === 403 || pay.status() === 401, `${label}: staff payout ${pay.status()}`);
+  assert(dbSnapshot(bonusId).payoutRecordCount === beforePay, `${label}: staff payout DB unchanged`);
+}
+
+async function staffWalletAuthorized(api, label, walletGate, bonusId, foreignRequisitesId) {
+  const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
+  assert(res.status() === 200, `${label}: authorized staff settlements ${res.status()}`);
+  assertExactGateSettlements(await res.json(), walletGate, label);
+  const exp = await api.post(
+    `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?scope=open&direction=payable&status=open&sort=debt-desc`,
+  );
+  assert(exp.status() === 200, `${label}: authorized staff export ${exp.status()}`);
+  const req = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`);
+  assert(req.status() === 200, `${label}: authorized staff requisites list ${req.status()}`);
+  if (foreignRequisitesId) {
+    const foreignDetail = await api.get(
+      `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(foreignRequisitesId)}`,
+    );
+    assert(
+      foreignDetail.status() === 403 || foreignDetail.status() === 404,
+      `${label}: staff foreign requisites ${foreignDetail.status()}`,
+    );
+  }
+  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  const pay = await api.post(`${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`, {
+    headers: { "Idempotency-Key": `staff-auth-${bonusId}` },
+    data: { payoutMethod: "CASH" },
+  });
+  assert(pay.status() === 403, `${label}: authorized staff payout denied ${pay.status()}`);
+  assert(dbSnapshot(bonusId).payoutRecordCount === beforePay, `${label}: authorized staff payout DB unchanged`);
+}
+
+async function staffWalletRevoked(api, label) {
+  const res = await api.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`);
+  assert(res.status() === 401, `${label}: revoked staff settlements ${res.status()}`);
+  const exp = await api.post(
+    `${PROF_URL}/api/remcard/api/pro/wallet/settlements/export?scope=open&direction=payable&status=open&sort=debt-desc`,
+  );
+  assert(exp.status() === 401, `${label}: revoked staff export ${exp.status()}`);
+  const req = await api.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`);
+  assert(req.status() === 401, `${label}: revoked staff requisites ${req.status()}`);
 }
 
 async function captureWallet(page, prefix) {
@@ -604,8 +734,22 @@ async function main() {
   const companyDel = harness.roles?.company?.delegationToken;
   const storeWallet = harness.roles?.store?.walletGate;
   const companyWallet = harness.roles?.company?.walletGate;
+  const storeStaff = harness.roles?.store?.walletStaff;
+  const storeOwnerRequisitesId = harness.roles?.store?.walletOwnerRequisitesId;
+  const companyOwnerRequisitesId = harness.roles?.company?.walletOwnerRequisitesId;
+  const storeOwnerUserId = harness.roles?.store?.realOwner?.userId;
+  const companyOwnerUserId = harness.roles?.company?.realOwner?.userId;
   assert(storeReal && companyReal, "missing real owner tokens");
+  assert(storeDel && companyDel, "missing prof-test delegation tokens");
   assert(storeWallet && companyWallet, "missing walletGate fixture");
+  assert(
+    storeStaff?.restrictedSessionToken &&
+      storeStaff?.authorizedSessionToken &&
+      storeStaff?.revokedSessionToken,
+    "missing store walletStaff fixtures (run seed-business-wallet-gate-access-fixtures)",
+  );
+  assert(storeOwnerRequisitesId && companyOwnerRequisitesId, "missing seeded owner requisites ids");
+  assert(storeOwnerUserId && companyOwnerUserId, "missing owner user ids");
 
   const browser = await chromium.launch({ headless: true });
   const flow = {};
@@ -621,18 +765,37 @@ async function main() {
     flow.anonymousDenied = true;
   }
 
-  if (storeDel) {
-    const { context, page } = await withSession(browser, storeDel);
-    await delegatedWalletPolicy(page, "store-delegated", storeWallet);
-    await context.close();
-    flow.delegatedStore = { requisitesWriteDenied: true, payoutWriteDenied: true };
+  {
+    const restrictedApi = await withApiToken(storeStaff.restrictedSessionToken);
+    await staffWalletForbidden(restrictedApi, "store-staff-restricted", storeWallet.payableBonusIds[0]);
+    await restrictedApi.dispose();
+    const authorizedApi = await withApiToken(storeStaff.authorizedSessionToken);
+    await staffWalletAuthorized(
+      authorizedApi,
+      "store-staff-authorized",
+      storeWallet,
+      storeWallet.payableBonusIds[0],
+      companyOwnerRequisitesId,
+    );
+    await authorizedApi.dispose();
+    const revokedApi = await withApiToken(storeStaff.revokedSessionToken);
+    await staffWalletRevoked(revokedApi, "store-staff-revoked");
+    await revokedApi.dispose();
+    flow.storeStaff = { restricted: true, authorized: true, revoked: true };
   }
 
-  if (companyDel) {
-    const { context, page } = await withSession(browser, companyDel);
-    await delegatedWalletPolicy(page, "company-delegated", companyWallet);
+  {
+    const { context, page } = await withSession(browser, storeDel);
+    await delegatedWalletPolicy(page, "store-delegated", storeWallet, storeOwnerRequisitesId);
     await context.close();
-    flow.delegatedCompany = { requisitesWriteDenied: true, payoutWriteDenied: true };
+    flow.delegatedStore = { requisitesMutationsDenied: true, payoutWriteDenied: true };
+  }
+
+  {
+    const { context, page } = await withSession(browser, companyDel);
+    await delegatedWalletPolicy(page, "company-delegated", companyWallet, companyOwnerRequisitesId);
+    await context.close();
+    flow.delegatedCompany = { requisitesMutationsDenied: true, payoutWriteDenied: true };
   }
 
   {
@@ -647,7 +810,7 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, storeReal);
-    flow.store = await walletOwnerFlow(page, "store-real", storeWallet);
+    flow.store = await walletOwnerFlow(page, "store-real", storeWallet, storeOwnerUserId);
     await captureWallet(page, "store-wallet-real");
     await context.close();
   }
@@ -662,9 +825,9 @@ async function main() {
         requisitesId: flow.store?.requisitesId,
         foreignOrderId: flow.store?.payOrderId ?? null,
       },
-      { includePayout: false },
+      { includePayout: false, ownerVerifyToken: storeReal },
     );
-    flow.company = await walletOwnerFlow(page, "company-real", companyWallet);
+    flow.company = await walletOwnerFlow(page, "company-real", companyWallet, companyOwnerUserId);
     await captureWallet(page, "company-wallet-real");
     await context.close();
   }

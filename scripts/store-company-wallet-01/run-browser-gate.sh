@@ -23,9 +23,15 @@ catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-owner-real-sessions.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-wallet-gate-fixtures.ts
+pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-wallet-gate-access-fixtures.ts
 pnpm exec vitest run src/lib/__tests__/profTestOwnerFinancialWrite.integration.test.ts >"$ART/pg-prof-test-financial-guard.log" 2>&1 || {
   echo "prof-test financial guard integration failed" >>"$LOG"
   cat "$ART/pg-prof-test-financial-guard.log" >>"$LOG"
+  exit 1
+}
+pnpm exec vitest run src/lib/__tests__/profIPayout.integration.test.ts -t "concurrent idempotent" >"$ART/pg-payout-concurrent.log" 2>&1 || {
+  echo "payout concurrent integration failed" >>"$LOG"
+  cat "$ART/pg-payout-concurrent.log" >>"$LOG"
   exit 1
 }
 
