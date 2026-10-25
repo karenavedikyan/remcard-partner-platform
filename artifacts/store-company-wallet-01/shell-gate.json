@@ -2,22 +2,24 @@
   "ok": true,
   "failures": [],
   "application": {
-    "frontendSha": "60798b3667ca1b84a61d46a502909c9766a9ee10",
-    "backendSha": "d2f65f507da7de85ec1b86416fd90cb61d241375",
-    "captureStartedAt": "2026-10-25T19:52:51.000Z",
-    "captureCompletedAt": "2026-10-25T19:54:55.603Z"
+    "frontendSha": "7562b289a8a96490c0ccbf591d18d9fb1792c8a4",
+    "backendSha": "d9374b6f2c2b9970e24d67a8475f1a56d88f62d3",
+    "captureStartedAt": "2026-10-25T20:17:25.000Z",
+    "captureCompletedAt": "2026-10-25T20:20:09.575Z"
   },
   "flow": {
+    "anonymousDenied": true,
     "delegatedStore": {
-      "requisitesWriteDenied": true
+      "requisitesWriteDenied": true,
+      "payoutWriteDenied": true
     },
     "store": {
-      "payoutBonusId": "cmvo8vw5l0008jsmhbwr70gv2",
-      "hasPayout": true
+      "payoutBonusId": "cmvo9rh2w0008js4h1mf9ofia",
+      "requisitesId": "cmvo9u90p0003jsguwaklwt7a"
     },
     "company": {
-      "payoutBonusId": "cmvo8vw5w000qjsmhuzk186f8",
-      "hasPayout": true
+      "payoutBonusId": "cmvo9rh38000qjs4hu8pmezh0",
+      "requisitesId": "cmvo9utf2000djsguztxmz281"
     }
   }
 }
