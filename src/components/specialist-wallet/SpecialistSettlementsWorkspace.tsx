@@ -32,6 +32,10 @@ import {
   type SettlementViewMode,
 } from "@/lib/specialist-settlements/ledger";
 import { downloadMasterSettlementsXlsx } from "@/lib/specialist-settlements/export-xlsx";
+import {
+  PayoutRecordModal,
+  type PayoutRecordTarget,
+} from "@/components/payout/PayoutRecordModal";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import hubStyles from "@/components/settlements/settlements.module.css";
@@ -43,7 +47,12 @@ const PAGE_SIZE = 10;
 
 type Props = {
   previewData?: SettlementsResponse;
+  payableSummaryLabel?: string;
+  payableDirectionLabel?: string;
+  payableHint?: string | null;
 };
+
+const DEFAULT_PAYABLE_SUMMARY = "Я должен";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -58,10 +67,15 @@ function formatDate(iso: string) {
 function ObligationCard({
   row,
   view,
+  onRecordPayout,
 }: {
   row: SettlementObligation;
   view: SettlementViewMode;
+  onRecordPayout?: (row: SettlementObligation) => void;
 }) {
+  const canPayout =
+    row.payoutActions &&
+    (row.payoutActions.canRecordCash || row.payoutActions.canRecordTransfer);
   const compact = view === "compact";
   const full = view === "cards";
   const rowClass =
@@ -91,7 +105,7 @@ function ObligationCard({
       {view !== "compact" ? (
         <p className={hubStyles.meta}>Создано: {formatDate(row.createdAt)}</p>
       ) : null}
-      {full ? (
+      {view === "rows" || full ? (
         <div className={hubStyles.actions}>
           <Link href={settlementAccrualHref(row)} className={hubStyles.linkButton}>
             Начисление
@@ -99,6 +113,16 @@ function ObligationCard({
           <Link href={settlementPurchaseHref(row)} className={hubStyles.linkButton}>
             Покупка
           </Link>
+          {canPayout && onRecordPayout ? (
+            <Button
+              type="button"
+              variant="secondary"
+              data-testid={`specialist-settlements-record-payout-${row.id}`}
+              onClick={() => onRecordPayout(row)}
+            >
+              Зафиксировать выплату
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </article>
@@ -129,7 +153,12 @@ function CompletedRow({ row }: { row: SettlementCompleted }) {
   );
 }
 
-export function SpecialistSettlementsWorkspace({ previewData }: Props) {
+export function SpecialistSettlementsWorkspace({
+  previewData,
+  payableSummaryLabel = DEFAULT_PAYABLE_SUMMARY,
+  payableDirectionLabel = DEFAULT_PAYABLE_SUMMARY,
+  payableHint = null,
+}: Props) {
   const [screen, setScreen] = useState<Screen>("overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
   const [selectedPartner, setSelectedPartner] = useState<SettlementPartnerGroup | null>(null);
@@ -142,6 +171,18 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
   const [accessDenied, setAccessDenied] = useState(false);
   const [exportError, setExportError] = useState("");
   const [data, setData] = useState<SettlementsResponse | null>(previewData ?? null);
+  const [payoutTarget, setPayoutTarget] = useState<PayoutRecordTarget | null>(null);
+
+  const openPayoutModal = useCallback((row: SettlementObligation) => {
+    if (!row.payoutActions) return;
+    setPayoutTarget({
+      bonusId: row.id,
+      counterpartyName: row.counterpartyName,
+      amount: row.amount,
+      basis: row.basis,
+      payoutActions: row.payoutActions,
+    });
+  }, []);
 
   const periodError = useMemo(
     () => validateLedgerPeriod(filters.from, filters.to),
@@ -445,8 +486,9 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
               onClick={() => openDirection("payable")}
               data-testid="specialist-wallet-payable-total"
             >
-              <p className={hubStyles.summaryLabel}>Я должен</p>
+              <p className={hubStyles.summaryLabel}>{payableSummaryLabel}</p>
               <p className={hubStyles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
+              {payableHint ? <p className={hubStyles.meta}>{payableHint}</p> : null}
               <p className={walletStyles.directionTileHint}>К партнёрам →</p>
             </button>
           </div>
@@ -464,7 +506,7 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
             ← Обзор
           </Button>
           <h2 className={hubStyles.groupTitle}>
-            {direction === "receivable" ? "Мне должны" : "Я должен"}
+            {direction === "receivable" ? "Мне должны" : payableDirectionLabel}
           </h2>
           {pagedPartners.length === 0 ? (
             <div className={hubStyles.empty}>Нет записей по текущему отбору.</div>
@@ -473,6 +515,7 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
               <button
                 key={group.counterpartyId}
                 type="button"
+                data-testid={`specialist-partner-group-${group.counterpartyId}`}
                 className={`${hubStyles.group} ${walletStyles.partnerButton}`}
                 onClick={() => {
                   setSelectedPartner(group);
@@ -518,16 +561,15 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
           ) : (
             <div className={hubStyles.list}>
               {orderRows.map((row) => (
-                <ObligationCard key={row.id} row={row} view={view} />
+                <ObligationCard
+                  key={row.id}
+                  row={row}
+                  view={view}
+                  onRecordPayout={direction === "payable" ? openPayoutModal : undefined}
+                />
               ))}
             </div>
           )}
-          {direction === "payable" ? (
-            <p className={hubStyles.note}>
-              Кнопка «Зафиксировать выплату» скрыта: протокол подтверждения получателем будет подключён
-              отдельным этапом backend.
-            </p>
-          ) : null}
         </>
       ) : null}
 
@@ -599,6 +641,14 @@ export function SpecialistSettlementsWorkspace({ previewData }: Props) {
             Вперёд
           </Button>
         </div>
+      ) : null}
+
+      {payoutTarget ? (
+        <PayoutRecordModal
+          target={payoutTarget}
+          onClose={() => setPayoutTarget(null)}
+          onSuccess={() => void load()}
+        />
       ) : null}
     </div>
   );

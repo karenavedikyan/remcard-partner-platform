@@ -12,14 +12,29 @@ describe("resolveSettlementsPageShell", () => {
 
   it("routes pure R05 agent to agent shell", () => {
     assert.equal(
-      resolveSettlementsPageShell({ partnerType: "STORE", r05Eligible: true }),
+      resolveSettlementsPageShell({
+        partnerType: "STORE",
+        partnerActivities: ["AGENT"],
+        r05Eligible: true,
+      }),
       "agent-r05",
+    );
+  });
+
+  it("routes business store owner to master wallet even when R05 eligible", () => {
+    assert.equal(
+      resolveSettlementsPageShell({
+        partnerType: "STORE",
+        partnerActivities: ["STORE"],
+        r05Eligible: true,
+      }),
+      "master-wallet",
     );
   });
 
   it("routes other PRO users to hub", () => {
     assert.equal(
-      resolveSettlementsPageShell({ partnerType: "STORE", r05Eligible: false }),
+      resolveSettlementsPageShell({ partnerType: "PROF", r05Eligible: false }),
       "hub",
     );
   });
