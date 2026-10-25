@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "applicationRuntime": {
+    "frontendSha": "54a2b07d832f8a8c5dc31a366864fee4db1e724d",
+    "backendSha": "eee39348251c2f562ee287b21b9f2e364fb1afb6",
+    "captureStartedAt": "2026-10-25T12:36:36.000Z",
+    "captureCompletedAt": "2026-10-25T12:38:37.406Z"
+  },
+  "delegated": {
+    "store": {
+      "readHub": true
+    },
+    "company": {
+      "readHub": true
+    }
+  },
+  "realOwner": {
+    "store": {
+      "searchAndInvite": true
+    },
+    "company": {
+      "acceptInvite": true,
+      "search": true
+    }
+  }
+}
