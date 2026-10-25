@@ -7,6 +7,11 @@ ART="$PLATFORM_ROOT/artifacts/store-company-certificates-02-clean"
 LOG="$ART/shell-browser-gate.log"
 mkdir -p "$ART"
 
+export E2E_APPLICATION_FRONTEND_SHA="$(git -C "$PLATFORM_ROOT" rev-parse HEAD)"
+export E2E_APPLICATION_BACKEND_SHA="$(git -C "$NAV_ROOT" rev-parse HEAD)"
+export E2E_CAPTURE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+echo "[certificates-01] application runtime FE=${E2E_APPLICATION_FRONTEND_SHA} BE=${E2E_APPLICATION_BACKEND_SHA}"
+
 export CATALOG_QA_BACKEND_PORT=3421
 export CATALOG_QA_FRONTEND_PORT=3420
 export JWT_SECRET="${JWT_SECRET:-catalog-qa-local-jwt-signing-key-32chars-min}"
@@ -21,6 +26,7 @@ source "$ISO/lib.sh"
 catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-certificates-shell.ts
+pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-owner-real-sessions.ts
 
 echo "[certificates-01] start backend + production frontend"
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3421 CATALOG_QA_FRONTEND_PORT=3420 bash "$ISO/stop.sh" || true

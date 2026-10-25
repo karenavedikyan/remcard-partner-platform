@@ -252,7 +252,17 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   const filtersActive = Boolean(appliedQ || archived || statusFilter || sort !== "created_desc");
 
   async function runBatch(action: "archive" | "restore" | "delete") {
-    const ids = [...selected];
+    let ids = [...selected];
+    if (action === "delete" && isBusiness) {
+      ids = ids.filter((id) => {
+        const cert = items.find((c) => c.id === id);
+        return cert && cert.canMutateIssuer !== false;
+      });
+      if (!ids.length) {
+        window.alert("Удаление доступно только для сертификатов, которые вы создали.");
+        return;
+      }
+    }
     if (!ids.length) return;
     if (action === "delete" && !window.confirm(`Удалить ${ids.length} сертификат(ов)?`)) return;
     setBusy(true);
@@ -415,6 +425,9 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
 
   const currentPage = meta.page ?? page;
   const totalPages = Math.max(1, meta.totalPages ?? 1);
+  const selectedRows = items.filter((c) => selected.has(c.id));
+  const batchDeleteAllowed =
+    !isBusiness || selectedRows.every((c) => c.canMutateIssuer !== false);
 
   function formatCertDate(iso: string) {
     try {
@@ -650,7 +663,16 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
               Восстановить
             </Button>
           )}
-          <Button variant="secondary" disabled={busy} onClick={() => void runBatch("delete")}>
+          <Button
+            variant="secondary"
+            disabled={busy || !batchDeleteAllowed}
+            title={
+              batchDeleteAllowed
+                ? undefined
+                : "В выборке есть сертификаты других авторов — удаление недоступно"
+            }
+            onClick={() => void runBatch("delete")}
+          >
             Удалить
           </Button>
         </div>

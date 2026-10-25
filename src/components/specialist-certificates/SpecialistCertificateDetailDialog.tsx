@@ -57,7 +57,7 @@ export function SpecialistCertificateDetailDialog({
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификат",
       );
     }
-  }, [certificateId]);
+  }, [certificateId, issuerListApi]);
 
   useEffect(() => {
     if (!open || !certificateId) return;
@@ -74,6 +74,9 @@ export function SpecialistCertificateDetailDialog({
   }, [editDetailsOpen, editDiscountsOpen, onClose, open]);
 
   if (!open || !certificateId) return null;
+
+  const isBusinessIssuer = issuerListApi === "business";
+  const canIssuerMutate = !isBusinessIssuer || meta?.canMutateIssuer !== false;
 
   return (
     <>
@@ -113,14 +116,25 @@ export function SpecialistCertificateDetailDialog({
                 <Button variant="secondary" type="button" onClick={() => setEditDetailsOpen(true)}>
                   Редактировать детали
                 </Button>
-                <Button
-                  variant="secondary"
-                  type="button"
-                  disabled={meta.hasOrders || meta.status === "CANCELLED"}
-                  onClick={() => setEditDiscountsOpen(true)}
-                >
-                  Изменить скидки
-                </Button>
+                {canIssuerMutate ? (
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    disabled={meta.hasOrders || meta.status === "CANCELLED"}
+                    onClick={() => setEditDiscountsOpen(true)}
+                  >
+                    Изменить скидки
+                  </Button>
+                ) : (
+                  <p
+                    className={styles.meta}
+                    data-testid="certificate-detail-view-only-issuer"
+                    role="status"
+                  >
+                    Скидки и отключение ссылки доступны только автору сертификата. Вы можете
+                    переименовать запись для себя или перенести её в архив.
+                  </p>
+                )}
               </div>
               <CertificateResultView
                 certificate={storeCert}
@@ -144,16 +158,18 @@ export function SpecialistCertificateDetailDialog({
           onListMutated?.();
         }}
       />
-      <SpecialistCertificateEditDiscountsDialog
-        open={editDiscountsOpen}
-        cert={meta}
-        issuerListApi={issuerListApi}
-        onClose={() => setEditDiscountsOpen(false)}
-        onSaved={() => {
-          void load();
-          onListMutated?.();
-        }}
-      />
+      {canIssuerMutate ? (
+        <SpecialistCertificateEditDiscountsDialog
+          open={editDiscountsOpen}
+          cert={meta}
+          issuerListApi={issuerListApi}
+          onClose={() => setEditDiscountsOpen(false)}
+          onSaved={() => {
+            void load();
+            onListMutated?.();
+          }}
+        />
+      ) : null}
     </>
   );
 }
