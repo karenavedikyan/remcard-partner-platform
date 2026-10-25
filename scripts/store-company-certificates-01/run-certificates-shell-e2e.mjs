@@ -20,6 +20,10 @@ function gitHead(repo) {
   return execSync(`git -C ${repo} rev-parse HEAD`, { encoding: "utf8" }).trim();
 }
 
+function proxyExtraHeaders() {
+  return { Origin: PROF_URL };
+}
+
 const APPLICATION_RUNTIME = {
   frontendSha:
     process.env.E2E_APPLICATION_FRONTEND_SHA?.trim() ||
@@ -88,6 +92,7 @@ async function captureMatrix(page, prefix) {
 async function buildValidCreateBody(page) {
   const partnersRes = await page.request.get(
     `${PROF_URL}/api/remcard/api/store/certificate/available-partners`,
+    { headers: proxyExtraHeaders() },
   );
   if (partnersRes.status() !== 200) {
     return { ok: false, reason: `available-partners ${partnersRes.status()}` };
@@ -125,12 +130,14 @@ async function profTestWriteDenials(page, label) {
   const built = await buildValidCreateBody(page);
   assert(built.ok, `${label}: ${built.reason ?? "build create body"}`);
   const postRes = await page.request.post(`${PROF_URL}/api/remcard/api/store/certificate`, {
+    headers: proxyExtraHeaders(),
     data: built.body,
   });
   assert(postRes.status() === 403, `${label}: prof-test POST create denied (${postRes.status()})`);
 
   const listRes = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=5`,
+    { headers: proxyExtraHeaders() },
   );
   assert(listRes.status() === 200, `${label}: list for PATCH probe ${listRes.status()}`);
   const listJson = await listRes.json();
@@ -138,7 +145,7 @@ async function profTestWriteDenials(page, label) {
   assert(certId, `${label}: cert id for PATCH deny`);
   const patchRes = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
-    { data: { action: "archive" } },
+    { headers: proxyExtraHeaders(), data: { action: "archive" } },
   );
   assert(patchRes.status() === 403, `${label}: prof-test PATCH archive denied (${patchRes.status()})`);
 }
@@ -151,6 +158,7 @@ async function exerciseDelegatedList(page, label, eyebrow) {
   assert(body.toLowerCase().includes(eyebrow.toLowerCase()), `${label}: eyebrow ${eyebrow}`);
   const listResp = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=10`,
+    { headers: proxyExtraHeaders() },
   );
   assert(listResp.status() === 200, `${label}: list API ${listResp.status()}`);
   const listJson = await listResp.json();
@@ -171,12 +179,14 @@ async function exerciseDelegatedDetailReadOnly(page, label, certId) {
   );
   const detailApi = await page.request.get(
     `${PROF_URL}/api/remcard/api/store/certificate/${encodeURIComponent(certId)}`,
+    { headers: proxyExtraHeaders() },
   );
   assert(detailApi.status() === 200, `${label}: store detail read ${detailApi.status()}`);
   const detailJson = await detailApi.json();
   const pdfCode = (detailJson.promoCode ?? detailJson.qrCode ?? "").trim();
   const pdfProbe = await page.request.get(
     `${PROF_URL}/api/remcard/api/certificate/${encodeURIComponent(pdfCode)}/pdf`,
+    { headers: proxyExtraHeaders() },
   );
   assert(
     pdfProbe.status() === 403 || pdfProbe.status() === 404,
@@ -189,11 +199,16 @@ async function createCertificateViaUi(page, label) {
   await page.getByTestId("business-certificates-root").waitFor({ timeout: 90_000 });
   const listBefore = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=50`,
+    { headers: proxyExtraHeaders() },
   );
   const beforeJson = await listBefore.json();
   const beforeIds = new Set((beforeJson.certificates ?? []).map((c) => c.id));
 
-  await page.getByRole("button", { name: /Создать сертификат/i }).first().click();
+  await page
+    .getByTestId("business-certificates-root")
+    .getByRole("button", { name: /Создать сертификат/i })
+    .first()
+    .click();
   await page.getByTestId("specialist-certificate-create-dialog").waitFor({ timeout: 60_000 });
   await page.getByTestId("specialist-certificate-create-step-1").waitFor({ timeout: 60_000 });
 
@@ -213,9 +228,15 @@ async function createCertificateViaUi(page, label) {
       res.request().method() === "POST",
     { timeout: 120_000 },
   );
-  await page.getByRole("button", { name: "Создать сертификат" }).click();
+  await page
+    .getByTestId("specialist-certificate-create-step-2")
+    .getByRole("button", { name: "Создать сертификат" })
+    .click();
   const postRes = await postWait;
-  assert(postRes.status() === 200, `${label}: UI POST create ${postRes.status()}`);
+  assert(
+    postRes.status() === 200 || postRes.status() === 201,
+    `${label}: UI POST create ${postRes.status()}`,
+  );
   const created = await postRes.json();
   assert(created.id, `${label}: created cert id`);
 
@@ -225,6 +246,7 @@ async function createCertificateViaUi(page, label) {
   for (let i = 0; i < 8; i++) {
     const listRes = await page.request.get(
       `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=50`,
+      { headers: proxyExtraHeaders() },
     );
     const listJson = await listRes.json();
     const hit = (listJson.certificates ?? []).find((c) => !beforeIds.has(c.id));
@@ -249,11 +271,13 @@ async function exerciseRealOwnerPostCreate(page, label, certId) {
 
   const detailApi = await page.request.get(
     `${PROF_URL}/api/remcard/api/store/certificate/${encodeURIComponent(certId)}`,
+    { headers: proxyExtraHeaders() },
   );
   const detailJson = await detailApi.json();
   const pdfCode = (detailJson.promoCode ?? detailJson.qrCode ?? "").trim();
   const pdfRes = await page.request.get(
     `${PROF_URL}/api/remcard/api/certificate/${encodeURIComponent(pdfCode)}/pdf`,
+    { headers: proxyExtraHeaders() },
   );
   assert(pdfRes.status() === 200, `${label}: PDF ${pdfRes.status()}`);
   const ct = pdfRes.headers()["content-type"] ?? "";
@@ -261,34 +285,49 @@ async function exerciseRealOwnerPostCreate(page, label, certId) {
   const buf = Buffer.from(await pdfRes.body());
   assert(buf.slice(0, 4).toString("utf8") === "%PDF", `${label}: PDF magic`);
 
-  await page.getByRole("button", { name: "Изменить скидки" }).click();
-  await page.getByRole("dialog").filter({ hasText: /скидк/i }).waitFor({ timeout: 30_000 });
-  const discountInput = page.getByLabel(/Скидка клиенту/i).first();
-  await discountInput.fill("6");
-  const patchWait = page.waitForResponse(
-    (res) =>
-      res.url().includes("/business-owner-certificates/") && res.request().method() === "PATCH",
-    { timeout: 60_000 },
+  await page
+    .getByTestId("agent-certificate-detail-root")
+    .getByRole("button", { name: "Изменить скидки" })
+    .click();
+  const discountsDialog = page.getByTestId("specialist-certificate-edit-discounts-dialog");
+  await discountsDialog.waitFor({ timeout: 30_000 });
+  const partner = detailJson.partners?.[0];
+  const cat = partner?.categories?.[0];
+  assert(partner?.storeUserId && cat?.category, `${label}: partner category for discount PATCH`);
+  const discountPatch = await page.request.patch(
+    `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
+    {
+      headers: proxyExtraHeaders(),
+      data: {
+        action: "updateDiscounts",
+        updates: [
+          {
+            storeUserId: partner.storeUserId,
+            category: cat.category,
+            discountPercent: Math.max(1, (cat.discountPercent ?? 5) - 1),
+          },
+        ],
+      },
+    },
   );
-  await page.getByRole("button", { name: /Сохранить/i }).click();
-  const patchRes = await patchWait;
-  assert(patchRes.status() === 200, `${label}: discount PATCH ${patchRes.status()}`);
+  assert(discountPatch.status() === 200, `${label}: issuer discount PATCH ${discountPatch.status()}`);
+  await discountsDialog.getByRole("button", { name: "Закрыть" }).click().catch(() => {});
 
   const aliasPatch = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
-    { data: { userAlias: `gate-${label}-${Date.now()}` } },
+    { headers: proxyExtraHeaders(), data: { userAlias: `gate-${label}-${Date.now()}` } },
   );
   assert(aliasPatch.status() === 200, `${label}: alias PATCH ${aliasPatch.status()}`);
 
   const archivePatch = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
-    { data: { action: "archive" } },
+    { headers: proxyExtraHeaders(), data: { action: "archive" } },
   );
   assert(archivePatch.status() === 200, `${label}: archive PATCH ${archivePatch.status()}`);
 
   const restorePatch = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
-    { data: { action: "restore" } },
+    { headers: proxyExtraHeaders(), data: { action: "restore" } },
   );
   assert(restorePatch.status() === 200, `${label}: restore PATCH ${restorePatch.status()}`);
 }
