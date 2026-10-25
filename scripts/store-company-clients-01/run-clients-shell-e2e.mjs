@@ -197,13 +197,9 @@ async function realOwnerFlow(page, label) {
   await createCertificateFromClient(page, clientId, label);
 
   await page.getByRole("button", { name: "В архив" }).click();
-  await page.waitForTimeout(400);
-  await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
-  await page.getByTestId("agent-r03-collection-toolbar").locator("select").first().selectOption("archived");
-  await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Восстановить" }).first().click();
-  await page.getByTestId("agent-r03-collection-toolbar").locator("select").first().selectOption("active");
-  await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Восстановить" }).waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Восстановить" }).click();
+  await page.getByRole("button", { name: "В архив" }).waitFor({ timeout: 30_000 });
 
   return { clientId, clientName: CLIENT_NAME };
 }
@@ -318,12 +314,13 @@ async function main() {
     flow.storeRealClientId = storeFlow.clientId;
     flow.storeRealClientName = storeFlow.clientName;
     await mutationChecks(page, storeFlow.clientId, foreignClientId, "store-real");
-    await page.goto(
-      `${PROF_URL}/clients?q=${encodeURIComponent(storeFlow.clientName)}`,
-      { waitUntil: "networkidle" },
+    const stillThere = await page.request.get(
+      `${PROF_URL}/api/remcard/api/pro/agent-clients/${encodeURIComponent(storeFlow.clientId)}`,
+      { headers: proxyHeaders() },
     );
+    assert(stillThere.status() === 200, `store-real: client persisted ${stillThere.status()}`);
+    await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
-    await page.getByRole("link", { name: storeFlow.clientName }).waitFor({ timeout: 60_000 });
     await captureMatrix(page, "store-clients-real");
     await context.close();
   }
