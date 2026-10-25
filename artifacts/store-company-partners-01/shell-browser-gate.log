@@ -1,26 +1,37 @@
 {
   "ok": true,
   "applicationRuntime": {
-    "frontendSha": "54a2b07d832f8a8c5dc31a366864fee4db1e724d",
-    "backendSha": "eee39348251c2f562ee287b21b9f2e364fb1afb6",
-    "captureStartedAt": "2026-10-25T12:36:36.000Z",
-    "captureCompletedAt": "2026-10-25T12:38:37.406Z"
+    "frontendSha": "6331c0f0f26d9b5d83bcc1dad79288d99585a2f9",
+    "backendSha": "b428476f760a210072c9ad4e3ccb36ad8e19f3aa",
+    "captureStartedAt": "2026-10-25T12:56:33.000Z",
+    "captureCompletedAt": "2026-10-25T12:58:39.792Z"
   },
   "delegated": {
     "store": {
-      "readHub": true
+      "readHub": true,
+      "foreignDeny403": true
     },
     "company": {
-      "readHub": true
+      "readHub": true,
+      "foreignDeny403": true
     }
   },
   "realOwner": {
     "store": {
-      "searchAndInvite": true
+      "uiInvite": true,
+      "partnershipId": "cmvnu2xx40001jspvjos4qvo7"
     },
     "company": {
-      "acceptInvite": true,
-      "search": true
+      "uiAccept": true,
+      "partnershipId": "cmvnu2xx40001jspvjos4qvo7"
+    },
+    "termChange": {
+      "partnershipId": "cmvnu2xx40001jspvjos4qvo7",
+      "percent": "9"
+    },
+    "workspace": {
+      "alias": "Gate alias store→co",
+      "archiveRestore": true
     }
   }
 }

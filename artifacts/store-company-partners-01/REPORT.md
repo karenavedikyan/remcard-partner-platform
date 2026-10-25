@@ -20,10 +20,10 @@ No `StorePartnersHub`, no parallel APIs, no forced agent search role.
 
 | Repo | Branch | Application SHA (runtime) | Published base |
 | --- | --- | --- | --- |
-| remcard-partner-platform | `feat/store-company-partners-01` | `54a2b07d…` (see `metadata-shell.json`) | `020918dff2aad929e88de5f07f43445f30080577` |
+| remcard-partner-platform | `feat/store-company-partners-01` | `54a2b07d832f8a8c5dc31a366864fee4db1e724d` | `020918dff2aad929e88de5f07f43445f30080577` |
 | remcard-navigator | `feat/store-company-partners-01` | `eee39348251c2f562ee287b21b9f2e364fb1afb6` | `2b1bac4fbe31e2d686b4a2655d89d0bf7cf9847d` |
 
-Evidence capture (single gate run): see `shell-gate.json` / `metadata-shell.json` — `captureStartedAt` `2026-10-25T12:34:16.000Z`, `captureCompletedAt` `2026-10-25T12:36:17.009Z`.
+Evidence capture (single gate run): see `shell-gate.json` / `metadata-shell.json` — `captureStartedAt` `2026-10-25T12:36:36.000Z`, `captureCompletedAt` `2026-10-25T12:38:37.406Z`.
 
 ## Owner / actor / capabilities (frontend)
 
