@@ -1,77 +1,69 @@
 # STORE-COMPANY-WALLET-01
 
-**Status: READY FOR REVIEW (isolated harness)**
+**Status: READY FOR REVIEW (review04 remainders closed)**
 
-## Block 1 (accepted — unchanged this iteration)
+## Block 1 (accepted — not modified)
 
-Canonical business / legacy-agent guard and prof-test financial policy were **not** modified. Backend admission tests and `pg-prof-test-financial-guard.log` remain the accepted baseline.
+Business / legacy-agent guard and prof-test financial admission unchanged. `pg-prof-test-financial-guard.log` remains the accepted guard proof.
 
-## Runtime capture (combined gate)
+## Authoritative runtime (review04 capture)
 
 | | |
 |--|--|
-| **Frontend** | `a418561e904101e53b24e02a5469776de2281c5b` |
-| **Backend (gate runtime)** | `a0b3d71c191e7c197fbd80cbadd27c3adf8389f1` |
-| **Backend product tip delta** | `a0b3d71c` = `d9374b6f` + integration test-only commit (`profTestOwnerFinancialWrite.integration.test.ts` node env); no product guard change |
+| **Frontend** | `1a0fbf32dd75cd3994dc456789da84e217af3823` |
+| **Backend** | `0152db578de69c387e73536214ebec940aebda27` |
 | **Branch** | `feat/store-company-wallet-01` (both repos) |
-| **Capture UTC** | `2026-10-25T20:51:07.000Z` → `2026-10-25T20:53:20.903Z` |
-| **Exit** | `shell-browser-gate.exit` = `0`, `shell-gate.json` `ok: true`, `failures: []` |
+| **Capture UTC** | `2026-10-25T21:51:14.000Z` → `2026-10-25T21:53:42.707Z` |
+| **Gate** | `shell-browser-gate.exit` = `0`, `shell-gate.json` / `metadata-shell.json`: `ok: true`, `failures: []` |
 
-Prior evidence SHA pair `7562b289` / `d9374b6f` superseded by this capture.
+### Evidence tip vs runtime
 
-## Block 2 — product UI path (no API fallback)
+| Repo | Runtime (gate) | Evidence tip (docs commit) |
+|------|----------------|----------------------------|
+| remcard-partner-platform | `1a0fbf32…` | Same as runtime (runner + REPORT in this capture) |
+| remcard-navigator | `0152db57…` | Same as runtime (baseline script + concurrent integration test) |
 
-### Requisites (STORE + COMPANY `realOwner`)
+Prior accepted UI/runtime pair (`8ffcfb56…` / `4e3eacd1…`, capture `21:31:48` → `21:34:09`) covered block1, delegated policy, and initial access matrix; **review04** only extends staff depth, concurrent payout assertions, and reporting.
 
-- Fills **all** required fields including `bank-correspondent`; `form.checkValidity()` before submit.
-- **No** `page.request.post` fallback on create; gate fails if UI POST missing.
-- UI POST create → masked list GET → authorized detail GET → **Посмотреть** detail in panel.
-- Stale `expectedVersion` PATCH → **409**; UI **Изменить** PATCH (revise) → new `requisitesId`, version bump, reload shows edited legal name.
+### Historical captures (not current)
 
-### Settlements workspace
+| Label | Frontend | Backend | Capture UTC |
+|-------|----------|---------|-------------|
+| review04 pre-close | `8ffcfb568fa0e8cbba4fcf85b1f18f782f07b311` | `4e3eacd1a4f8682cf8d0d780fcc6403e7b2deb8a` | `2026-10-25T21:31:48` → `2026-10-25T21:34:09` |
+| Earlier partial | `a418561e…` / `7562b289…` | `a0b3d71c…` / `d9374b6f…` | superseded |
 
-- Exact payable/receivable sums vs `walletGate` fixture IDs.
-- Receivable filter: nonsense query → empty; partner substring → row amount visible.
-- **Покупка** link → `/history/purchases/{orderId}` → return.
-- **Excel (.xlsx, весь отбор)** button → Playwright **download**; full sheet parsed — exact row set (orderId, amount, partner, status), no extras/foreign rows.
-- Payout modal → DB snapshot: one `BonusPayoutRecord`, `PAID`, `CASH`, idempotency present; replay `replay: true`, count stays 1; completed API contains bonus; overview payable total excludes paid amount.
+## Accepted UI / load (unchanged)
 
-### Fixture amounts (unchanged)
+Requisites UI POST/PATCH (incl. `bank-correspondent`), Excel via workspace button + download parse; payout modal + DB; `scopeKey` + load generation; 9 workspace component tests; delegated STORE/COMPANY PATCH policy; foreign payout before snapshot.
+
+## review04 remainders (this capture)
+
+| Remainder | Proof |
+|-----------|--------|
+| **Staff revoked — missing HTTP cases** | `run-wallet-shell-e2e.mjs` `staffWalletRevoked`: payout POST, owner requisites GET detail, POST create, PATCH `setPrimary` / `archive` / `revise` → **401**; `loadAccessBaseline` before/after → owner requisites + bonus status/paidAt/method + payout record count unchanged |
+| **Staff restricted — owner requisites** | `staffWalletForbidden`: owner detail **403/404**; owner PATCH mutations denied; own-scope requisites POST per contract (not owner scope); payout **403/401**; same baseline compare — owner scope unchanged |
+| **Parallel payout — one effect, one event** | `walletGatePayoutConcurrent.integration.test.ts`: parallel same `Idempotency-Key` → one `payoutRecordId`, both **200**, replay **200** with `replay: true`; one `BonusPayoutRecord` (actor = store real owner, amount/method CASH); bonus **PAID** + `paidAt`; exactly one `PROF_BONUS_PAYOUT_RECORDED` audit (filtered by `payoutRecordId`); one inbox row `prof:payout:{payoutRecordId}:{recipientUserId}`; retry adds no second record/audit/inbox; `notifyUser` mocked, inbox persistence real (`pg-payout-concurrent.log`) |
+| **CASH bank requisites snapshot on payout record** | **Не применимо** — `BonusPayoutRecord` has no requisites snapshot field; pay endpoint does not accept `requisitesId` for CASH |
+
+Baseline script: `remcard-navigator` `scripts/prof-admin-moderation-isolated/wallet-gate-access-baseline.ts` (no bank secrets in stdout).
+
+## Fixture amounts (store/company realOwner)
 
 | Owner | Payable | Receivable |
 |-------|---------|------------|
 | Store | 1200 ₽ | 800 ₽ |
 | Company | 950 ₽ | 650 ₽ |
 
-## Block 3 — context / access / races
-
-### Frontend
-
-- `scopeKey` = `{partnerType}:{ownerUserId}` from settlements page (not STORE/COMPANY alone).
-- Settlements `load()` uses generation token; stale responses cannot restore data after scope switch / 403 / unmount; single initial fetch effect.
-- Tests: `SpecialistSettlementsWorkspace.scope.test.tsx` (deferred fetch, late success after 403, retry, unmount) + existing payout modal tests.
-
-### Gate access matrix
-
-- Anonymous settlements **401**.
-- Delegated prof-test **STORE** and **COMPANY**: settlements read OK; requisites POST **403** `PROF_TEST_BLOCKED`; payout POST deny, **0** new payout records.
-- Company vs store bonus (pre-payout): foreign payout **403/404**, ledger has no foreign bonus id.
-- Company vs store (post store flow): foreign requisites detail/patch **403/404**; export rows exclude store `payOrderId`; no payout re-test on already-settled bonus.
-
-## Commands
+## Command
 
 ```bash
 bash scripts/store-company-wallet-01/run-browser-gate.sh
-cd remcard-partner-platform && npm test -- --run \
-  src/components/specialist-wallet/SpecialistSettlementsWorkspace.test.tsx \
-  src/components/specialist-wallet/SpecialistSettlementsWorkspace.payout.test.tsx \
-  src/components/specialist-wallet/SpecialistSettlementsWorkspace.scope.test.tsx
 ```
 
 ## Artifacts
 
 - `shell-gate.json`, `metadata-shell.json`, `shell-browser-gate.log`, `shell-browser-gate.exit`
-- `pg-prof-test-financial-guard.log`
+- `pg-prof-test-financial-guard.log`, `pg-payout-concurrent.log`
 - `visual-shell/store-wallet-real-*`, `visual-shell/company-wallet-real-*`
 
-No main / deploy / production SQL / real-money writes outside isolated catalog QA.
+No main / deploy / production SQL / real-money writes outside catalog QA.
