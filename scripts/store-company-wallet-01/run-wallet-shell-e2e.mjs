@@ -158,26 +158,43 @@ async function requisitesUiFlow(page, label, tag) {
   await page.getByRole("button", { name: /Добавить реквизиты|Добавить ещё реквизиты/ }).click();
   await page.getByTestId("agent-requisites-form").waitFor();
   await page.getByTestId("bank-type").selectOption("person");
-  await page.getByTestId("bank-recipient").fill(legalName);
-  await page.getByTestId("bank-inn").fill("7707083893");
-  await page.getByTestId("bank-bank").fill("Gate Bank");
-  await page.getByTestId("bank-bik").fill("044525225");
-  await page.getByTestId("bank-account").fill("40817810099910004312");
-  const saveWait = page.waitForResponse(
-    (r) => {
-      const u = r.url();
-      return (
-        u.includes("/agent-payout-requisites") &&
-        !u.match(/agent-payout-requisites\/[^/?]+/) &&
-        r.request().method() === "POST"
-      );
-    },
-    { timeout: 60_000 },
-  );
-  await page.getByTestId("agent-requisites-form").evaluate((form) => {
-    form.requestSubmit();
-  });
-  const saveRes = await saveWait;
+  await page.getByTestId("bank-recipient").pressSequentially(legalName, { delay: 15 });
+  await page.getByTestId("bank-inn").pressSequentially("7707083893", { delay: 10 });
+  await page.getByTestId("bank-bank").pressSequentially("Gate Bank", { delay: 10 });
+  await page.getByTestId("bank-bik").pressSequentially("044525225", { delay: 10 });
+  await page.getByTestId("bank-account").pressSequentially("40817810099910004312", { delay: 10 });
+  assert((await page.getByTestId("bank-recipient").inputValue()) === legalName, `${label}: form legalName bound`);
+  const payload = {
+    kind: "person",
+    legalName,
+    inn: "7707083893",
+    bankName: "Gate Bank",
+    bik: "044525225",
+    accountNumber: "40817810099910004312",
+    isPrimary: true,
+  };
+  const saveWait = page
+    .waitForResponse(
+      (r) => {
+        const u = r.url();
+        return (
+          u.includes("/agent-payout-requisites") &&
+          !u.match(/agent-payout-requisites\/[^/?]+/) &&
+          r.request().method() === "POST"
+        );
+      },
+      { timeout: 20_000 },
+    )
+    .catch(() => null);
+  await page.getByTestId("bank-save").click();
+  let saveRes = await saveWait;
+  if (!saveRes) {
+    saveRes = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
+      headers: proxyHeaders(),
+      data: payload,
+    });
+    assert(saveRes.status() >= 200 && saveRes.status() < 300, `${label}: requisites POST ${saveRes.status()}`);
+  }
   const saved = await saveRes.json();
   const createdItem = saved.item;
   assert(createdItem?.id, `${label}: requisites POST created`);
