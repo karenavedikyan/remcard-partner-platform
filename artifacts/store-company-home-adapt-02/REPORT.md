@@ -9,7 +9,7 @@
 
 ## Evidence tip (test/script + artifacts only)
 
-Commit after this gate run documents `waitForPrimarySales` polling and one full `run-browser-gate.sh` output.
+`1c2afeec46f3add7fde20191cba4691cb4e60074` — `waitForPrimarySales` polling + one full `run-browser-gate.sh` (log/exit/json from same run).
 
 ## Shell browser gate (single run 2026-10-25T09:33:40Z)
 
