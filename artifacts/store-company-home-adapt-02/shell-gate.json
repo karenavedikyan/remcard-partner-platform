@@ -2,8 +2,23 @@
   "frontendRuntimeSha": "1dcd79c2b740a91c6bc7d9624ad8f7ba5ac96cf1",
   "backendRuntimeSha": "f3baba9ca2666a569efea16d238ef8ca68e7ee2d",
   "profUrl": "http://127.0.0.1:3420",
+  "navUrl": "http://127.0.0.1:3421",
   "harnessState": "/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json",
+<<<<<<< Updated upstream
   "capturedAt": "2026-10-25T09:17:39.301Z",
+=======
+  "capturedAt": "2026-10-25T09:33:40.430Z",
+  "observedHttp401": [
+    {
+      "url": "http://127.0.0.1:3420/api/remcard/api/pro/organization/permission-templates?organizationId=cmvnmoxik000wjs0yqt7q22pk",
+      "method": "GET"
+    }
+  ],
+  "ctaChecks": {
+    "storeScannerHeadingAndFind": true,
+    "companyInviteWizardDialog": true
+  },
+>>>>>>> Stashed changes
   "failures": [],
   "ok": true
 }

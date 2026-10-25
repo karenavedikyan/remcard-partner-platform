@@ -88,7 +88,7 @@ async function waitForPrimarySales(page, expected, label) {
   const value = page.locator('[aria-live="polite"] > div').first().locator("strong");
   await value.waitFor({ state: "attached", timeout: 60_000 });
   const deadline = Date.now() + 60_000;
-  while Date.now() < deadline) {
+  while (Date.now() < deadline) {
     const text = (await value.innerText()).trim();
     if (text === expected) return;
     if (text !== "…" && text !== "" && text !== expected) {
