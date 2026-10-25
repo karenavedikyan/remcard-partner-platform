@@ -76,7 +76,7 @@ export function SpecialistCertificateDetailDialog({
   if (!open || !certificateId) return null;
 
   const isBusinessIssuer = issuerListApi === "business";
-  const canIssuerMutate = !isBusinessIssuer || meta?.canMutateIssuer !== false;
+  const canIssuerMutate = !isBusinessIssuer || meta?.canMutateIssuer === true;
 
   return (
     <>

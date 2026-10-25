@@ -256,7 +256,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     if (action === "delete" && isBusiness) {
       ids = ids.filter((id) => {
         const cert = items.find((c) => c.id === id);
-        return cert && cert.canMutateIssuer !== false;
+        return cert && cert.canMutateIssuer === true;
       });
       if (!ids.length) {
         window.alert("Удаление доступно только для сертификатов, которые вы создали.");
@@ -287,7 +287,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   }
 
   function certRowActions(cert: AgentCertificateRow): import("./RecordRowActions").RecordRowAction[] {
-    const canIssuerMutate = !isBusiness || cert.canMutateIssuer !== false;
+    const canIssuerMutate = !isBusiness || cert.canMutateIssuer === true;
     return [
       {
         id: "share",
@@ -427,7 +427,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   const totalPages = Math.max(1, meta.totalPages ?? 1);
   const selectedRows = items.filter((c) => selected.has(c.id));
   const batchDeleteAllowed =
-    !isBusiness || selectedRows.every((c) => c.canMutateIssuer !== false);
+    !isBusiness || selectedRows.every((c) => c.canMutateIssuer === true);
 
   function formatCertDate(iso: string) {
     try {

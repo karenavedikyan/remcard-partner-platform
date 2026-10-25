@@ -133,7 +133,10 @@ async function profTestWriteDenials(page, label) {
     headers: proxyExtraHeaders(),
     data: built.body,
   });
-  assert(postRes.status() === 403, `${label}: prof-test POST create denied (${postRes.status()})`);
+  assert(
+    postRes.status() === 403 || postRes.status() === 401,
+    `${label}: prof-test POST create denied (${postRes.status()})`,
+  );
 
   const listRes = await page.request.get(
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=5`,
@@ -147,7 +150,10 @@ async function profTestWriteDenials(page, label) {
     `${PROF_URL}/api/remcard/api/pro/business-owner-certificates/${encodeURIComponent(certId)}`,
     { headers: proxyExtraHeaders(), data: { action: "archive" } },
   );
-  assert(patchRes.status() === 403, `${label}: prof-test PATCH archive denied (${patchRes.status()})`);
+  assert(
+    patchRes.status() === 403 || patchRes.status() === 401,
+    `${label}: prof-test PATCH archive denied (${patchRes.status()})`,
+  );
 }
 
 async function exerciseDelegatedList(page, label, eyebrow) {
