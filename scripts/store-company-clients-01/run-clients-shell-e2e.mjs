@@ -13,7 +13,9 @@ const STATE_PATH =
 const ART_DIR = path.resolve("artifacts/store-company-clients-01");
 const ART = path.join(ART_DIR, "visual-shell");
 const failures = [];
-const CLIENT_NAME = `Gate UI client ${Date.now()}`;
+function clientNameFor(label) {
+  return `Gate UI client ${label} ${Date.now()}`;
+}
 
 function proxyHeaders() {
   return { Origin: PROF_URL };
@@ -150,6 +152,7 @@ async function createCertificateFromClient(page, clientId, label) {
 }
 
 async function realOwnerFlow(page, label) {
+  const CLIENT_NAME = clientNameFor(label);
   await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle", timeout: 120_000 });
   await page.getByTestId("business-clients-root").waitFor({ timeout: 90_000 });
   assert(
@@ -202,7 +205,7 @@ async function realOwnerFlow(page, label) {
   await page.getByTestId("agent-r03-collection-toolbar").locator("select").first().selectOption("active");
   await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
 
-  return clientId;
+  return { clientId, clientName: CLIENT_NAME };
 }
 
 async function mutationChecks(page, clientWithCertId, foreignClientId, label) {
@@ -311,18 +314,22 @@ async function main() {
     const recvBadge = await page.getByTestId("client-receiving-purchases").locator("summary span").textContent();
     assert(Number.parseInt(recvBadge ?? "0", 10) >= 1, "store-real: receiving UI count");
 
-    flow.storeRealClientId = await realOwnerFlow(page, "store-real");
-    await mutationChecks(page, flow.storeRealClientId, foreignClientId, "store-real");
+    const storeFlow = await realOwnerFlow(page, "store-real");
+    flow.storeRealClientId = storeFlow.clientId;
+    flow.storeRealClientName = storeFlow.clientName;
+    await mutationChecks(page, storeFlow.clientId, foreignClientId, "store-real");
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
-    await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
+    await page.getByRole("link", { name: storeFlow.clientName }).waitFor({ timeout: 30_000 });
     await captureMatrix(page, "store-clients-real");
     await context.close();
   }
 
   {
     const { context, page } = await withSession(browser, companyReal);
-    flow.companyRealClientId = await realOwnerFlow(page, "company-real");
+    const companyFlow = await realOwnerFlow(page, "company-real");
+    flow.companyRealClientId = companyFlow.clientId;
+    flow.companyRealClientName = companyFlow.clientName;
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
     await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
     await captureMatrix(page, "company-clients-real");
