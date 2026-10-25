@@ -469,6 +469,7 @@ export function AgentPayoutRequisitesPanel({ disabled }: AgentPayoutRequisitesPa
                   key={item.id}
                   className={styles.bankRecord}
                   data-testid="bank-record"
+                  data-requisites-id={item.id}
                 >
                   <div className={styles.bankCardHead}>
                     <strong>{item.label?.trim() || item.legalName}</strong>

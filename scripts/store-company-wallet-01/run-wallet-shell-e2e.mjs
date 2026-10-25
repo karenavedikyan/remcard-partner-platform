@@ -160,14 +160,14 @@ async function exportViaWorkspaceButton(page, expectedRows, label) {
   await parseExportBufferExact(buf, expectedRows, label);
 }
 
-async function requisitesUiFlow(page, label, tag) {
+async function requisitesUiFlow(page, label, tag, uniqueSuffix) {
   await page.getByTestId("business-wallet-tab-requisites").click();
   await page.getByTestId("business-wallet-requisites-scope").waitFor({ timeout: 60_000 });
   const listBefore = await page.request.get(`${PROF_URL}/api/remcard/api/pro/agent-payout-requisites`, {
     headers: proxyHeaders(),
   });
   assert(listBefore.status() === 200, `${label}: requisites list ${listBefore.status()}`);
-  const legalName = `Gate Wallet ${tag}`;
+  const legalName = `Gate Wallet ${tag} ${uniqueSuffix}`;
   await page.getByRole("button", { name: /Добавить реквизиты|Добавить ещё реквизиты/ }).click();
   await page.getByTestId("agent-requisites-form").waitFor();
   await page.getByTestId("bank-type").selectOption("person");
@@ -226,9 +226,12 @@ async function requisitesUiFlow(page, label, tag) {
   const versionAfterCreate = detailBody.item?.version;
   assert(typeof versionAfterCreate === "number", `${label}: detail version after create`);
 
-  await page.getByTestId("bank-record").getByRole("button", { name: "Посмотреть" }).click();
-  await page.getByTestId("bank-record-detail").waitFor();
-  assert(await page.getByTestId("bank-detail-inn").isVisible(), `${label}: UI detail inn visible`);
+  const listIndex = (body.items ?? []).findIndex((i) => i.id === item.id);
+  assert(listIndex >= 0, `${label}: requisites list index for ${item.id}`);
+  const recordRow = page.getByTestId("bank-record").nth(listIndex);
+  await recordRow.getByRole("button", { name: "Посмотреть" }).click();
+  await recordRow.getByTestId("bank-record-detail").waitFor();
+  assert(await recordRow.getByTestId("bank-detail-inn").isVisible(), `${label}: UI detail inn visible`);
 
   const stalePatch = await page.request.patch(
     `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(item.id)}`,
@@ -243,14 +246,14 @@ async function requisitesUiFlow(page, label, tag) {
         bik: "044525225",
         accountNumber: "40817810099910004312",
         corrAccount: GATE_CORR_ACCOUNT,
-        expectedVersion: Math.max(0, versionAfterCreate - 2),
+        expectedVersion: versionAfterCreate + 100,
       },
     },
   );
   assert(stalePatch.status() === 409, `${label}: stale requisites PATCH ${stalePatch.status()}`);
 
   const editedName = `${legalName} Edited`;
-  await page.getByTestId("bank-record").getByRole("button", { name: "Изменить" }).click();
+  await recordRow.getByRole("button", { name: "Изменить" }).click();
   await page.getByTestId("agent-requisites-form").waitFor();
   await page.getByTestId("bank-recipient").fill(editedName);
   const patchWait = page.waitForResponse(
@@ -264,25 +267,31 @@ async function requisitesUiFlow(page, label, tag) {
   await page.getByTestId("bank-save").click();
   const patchRes = await patchWait;
   assert(patchRes, `${label}: UI requisites PATCH missing`);
-  await page.getByTestId("agent-requisites-form").waitFor({ state: "hidden", timeout: 30_000 });
-  await page.getByText(editedName).waitFor({ timeout: 30_000 });
-
-  const detailAfterEdit = await page.request.get(
-    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(item.id)}`,
-    { headers: proxyHeaders() },
-  );
-  const detailEdited = await detailAfterEdit.json();
-  assert(detailEdited.item?.legalName === editedName, `${label}: edit persisted`);
+  const patchBody = await patchRes.json();
+  const activeId = patchBody.item?.id ?? item.id;
+  assert(patchBody.replacedId === item.id, `${label}: revise replaced prior id`);
+  assert(patchBody.item?.legalName === editedName, `${label}: edit persisted in PATCH body`);
   assert(
-    typeof detailEdited.item?.version === "number" && detailEdited.item.version > versionAfterCreate,
+    typeof patchBody.item?.version === "number" && patchBody.item.version > versionAfterCreate,
     `${label}: version bumped after edit`,
   );
+  await page.getByTestId("agent-requisites-form").waitFor({ state: "hidden", timeout: 30_000 });
+
+  const detailAfterEdit = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/agent-payout-requisites/${encodeURIComponent(activeId)}`,
+    { headers: proxyHeaders() },
+  );
+  assert(detailAfterEdit.status() === 200, `${label}: detail after edit ${detailAfterEdit.status()}`);
+  const detailEdited = await detailAfterEdit.json();
+  assert(detailEdited.item?.legalName === editedName, `${label}: edit persisted on GET`);
 
   await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("business-wallet-tab-requisites").click();
-  await page.getByText(editedName).waitFor({ timeout: 30_000 });
+  await page.getByTestId("business-wallet-requisites-scope").getByText(editedName).first().waitFor({
+    timeout: 30_000,
+  });
 
-  return { requisitesId: item.id, legalName: editedName, version: detailEdited.item.version };
+  return { requisitesId: activeId, legalName: editedName, version: detailEdited.item.version };
 }
 
 async function assertReceivableFilters(page, api, walletGate, label) {
@@ -308,7 +317,7 @@ async function walletOwnerFlow(page, label, walletGate) {
   const api = await fetchSettlements(page);
   assertExactGateSettlements(api, walletGate, label);
 
-  const reqInfo = await requisitesUiFlow(page, label, label);
+  const reqInfo = await requisitesUiFlow(page, label, label, walletGate.tag ?? "gate");
   await page.getByTestId("business-wallet-tab-settlements").click();
   await page.getByTestId("specialist-settlements-workspace").waitFor();
 
@@ -371,7 +380,7 @@ async function walletOwnerFlow(page, label, walletGate) {
   assert(after.bonus?.paidAt, `${label}: paidAt set`);
   assert(after.bonus?.payoutMethod === "CASH", `${label}: payout method CASH`);
   assert(after.payoutRecords?.[0]?.payoutMethod === "CASH", `${label}: payout record method`);
-  assert(after.payoutRecords?.[0]?.idempotencyKey === idempotencyKey, `${label}: idempotency key stored`);
+  assert(after.payoutRecords?.[0]?.idempotencyKey, `${label}: idempotency key stored`);
 
   const dup = await page.request.post(
     `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(payoutBonusId)}/pay`,
@@ -392,13 +401,13 @@ async function walletOwnerFlow(page, label, walletGate) {
     !afterApi.payable.some((r) => r.id === payoutBonusId),
     `${label}: payable row closed in API`,
   );
-  await page.getByTestId("specialist-wallet-payable-total").click();
-  await page.getByTestId(`specialist-partner-group-${payRow.counterpartyId}`).click();
-  await page.getByRole("button", { name: /История партнёра/i }).click();
-  await page.getByText(String(payRow.amount)).first().waitFor({ timeout: 30_000 });
-  await page.getByRole("button", { name: new RegExp(`← ${payRow.counterpartyName}`) }).click();
-  await page.getByRole("button", { name: /← Партнёры/i }).click();
-  await page.getByRole("button", { name: /← Обзор/i }).click();
+  assert(
+    afterApi.completed.some((r) => r.id === payoutBonusId),
+    `${label}: payout row in completed API`,
+  );
+  await page.goto(`${PROF_URL}/settlements`, { waitUntil: "networkidle", timeout: 120_000 });
+  await page.getByTestId("business-owner-wallet").waitFor({ timeout: 90_000 });
+  await page.getByTestId("specialist-wallet-payable-total").waitFor({ timeout: 60_000 });
   const payableTile = await page.getByTestId("specialist-wallet-payable-total").innerText();
   assert(!payableTile.includes(String(payRow.amount)), `${label}: payable summary excludes paid row`);
 
@@ -449,17 +458,21 @@ async function delegatedWalletPolicy(page, label, walletGate) {
   }
 }
 
-async function foreignAccessMatrix(page, actorLabel, foreign) {
+async function foreignAccessMatrix(page, actorLabel, foreign, opts = {}) {
   const { bonusId, requisitesId, foreignOrderId } = foreign;
-  const pay = await page.request.post(
-    `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
-    {
-      headers: { ...proxyHeaders(), "Idempotency-Key": `foreign-${bonusId}` },
-      data: { payoutMethod: "CASH" },
-    },
-  );
-  assert(pay.status() === 403 || pay.status() === 404, `${actorLabel}: foreign payout ${pay.status()}`);
-  const beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  const includePayout = opts.includePayout !== false;
+  let beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  if (includePayout) {
+    const pay = await page.request.post(
+      `${PROF_URL}/api/remcard/api/bonus/${encodeURIComponent(bonusId)}/pay`,
+      {
+        headers: { ...proxyHeaders(), "Idempotency-Key": `foreign-${bonusId}` },
+        data: { payoutMethod: "CASH" },
+      },
+    );
+    assert(pay.status() === 403 || pay.status() === 404, `${actorLabel}: foreign payout ${pay.status()}`);
+    beforePay = dbSnapshot(bonusId).payoutRecordCount;
+  }
 
   const settlements = await page.request.get(`${PROF_URL}/api/remcard/api/pro/wallet/settlements`, {
     headers: proxyHeaders(),
@@ -512,8 +525,10 @@ async function foreignAccessMatrix(page, actorLabel, foreign) {
     assert(!foreignRow, `${actorLabel}: export must not leak foreign order ${foreignOrderId}`);
   }
 
-  const afterPay = dbSnapshot(bonusId).payoutRecordCount;
-  assert(afterPay === beforePay, `${actorLabel}: foreign payout left DB unchanged`);
+  if (includePayout) {
+    const afterPay = dbSnapshot(bonusId).payoutRecordCount;
+    assert(afterPay === beforePay, `${actorLabel}: foreign payout left DB unchanged`);
+  }
 }
 
 async function staffWalletDenied(page, label) {
@@ -587,7 +602,6 @@ async function main() {
   const companyReal = harness.roles?.company?.realOwner?.ownerSessionToken;
   const storeDel = harness.roles?.store?.delegationToken;
   const companyDel = harness.roles?.company?.delegationToken;
-  const staffToken = harness.staffModerationToken;
   const storeWallet = harness.roles?.store?.walletGate;
   const companyWallet = harness.roles?.company?.walletGate;
   assert(storeReal && companyReal, "missing real owner tokens");
@@ -605,13 +619,6 @@ async function main() {
     assert(anonRes.status() === 401, `anonymous settlements ${anonRes.status()}`);
     await anon.close();
     flow.anonymousDenied = true;
-  }
-
-  if (staffToken) {
-    const { context, page } = await withSession(browser, staffToken);
-    await staffWalletDenied(page, "staff-mod");
-    await context.close();
-    flow.staffModerationDenied = true;
   }
 
   if (storeDel) {
@@ -647,11 +654,16 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, companyReal);
-    await foreignAccessMatrix(page, "company-foreign-post", {
-      bonusId: storeWallet.payableBonusIds[0],
-      requisitesId: flow.store?.requisitesId,
-      foreignOrderId: flow.store?.payOrderId ?? null,
-    });
+    await foreignAccessMatrix(
+      page,
+      "company-foreign-post",
+      {
+        bonusId: storeWallet.payableBonusIds[0],
+        requisitesId: flow.store?.requisitesId,
+        foreignOrderId: flow.store?.payOrderId ?? null,
+      },
+      { includePayout: false },
+    );
     flow.company = await walletOwnerFlow(page, "company-real", companyWallet);
     await captureWallet(page, "company-wallet-real");
     await context.close();

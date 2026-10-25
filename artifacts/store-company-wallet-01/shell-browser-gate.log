@@ -2,10 +2,10 @@
   "ok": true,
   "failures": [],
   "application": {
-    "frontendSha": "7562b289a8a96490c0ccbf591d18d9fb1792c8a4",
-    "backendSha": "d9374b6f2c2b9970e24d67a8475f1a56d88f62d3",
-    "captureStartedAt": "2026-10-25T20:17:25.000Z",
-    "captureCompletedAt": "2026-10-25T20:20:09.575Z"
+    "frontendSha": "a418561e904101e53b24e02a5469776de2281c5b",
+    "backendSha": "a0b3d71c191e7c197fbd80cbadd27c3adf8389f1",
+    "captureStartedAt": "2026-10-25T20:51:07.000Z",
+    "captureCompletedAt": "2026-10-25T20:53:20.903Z"
   },
   "flow": {
     "anonymousDenied": true,
@@ -13,13 +13,21 @@
       "requisitesWriteDenied": true,
       "payoutWriteDenied": true
     },
+    "delegatedCompany": {
+      "requisitesWriteDenied": true,
+      "payoutWriteDenied": true
+    },
     "store": {
-      "payoutBonusId": "cmvo9rh2w0008js4h1mf9ofia",
-      "requisitesId": "cmvo9u90p0003jsguwaklwt7a"
+      "payoutBonusId": "cmvoaytdi0008jshhmh03fxdw",
+      "requisitesId": "cmvob18fa0005jsulk2k67bgb",
+      "requisitesVersion": 2,
+      "payOrderId": "cmvoaytdh0006jshhgd88i4zx"
     },
     "company": {
-      "payoutBonusId": "cmvo9rh38000qjs4hu8pmezh0",
-      "requisitesId": "cmvo9utf2000djsguztxmz281"
+      "payoutBonusId": "cmvoaytds000qjshh3lye4qtt",
+      "requisitesId": "cmvob1g6t000hjsuldvegp33s",
+      "requisitesVersion": 2,
+      "payOrderId": "cmvoaytdr000ojshh5cfs6ikl"
     }
   }
 }
