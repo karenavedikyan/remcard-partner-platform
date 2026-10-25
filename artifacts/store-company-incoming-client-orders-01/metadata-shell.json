@@ -2,21 +2,21 @@
   "ok": true,
   "failures": [],
   "application": {
-    "frontendSha": "298e9fdf027bbf622e1b1195e7dba6fb816536c3",
+    "frontendSha": "6dde2193fe481d111aef64750ecac5c24f4f6c51",
     "backendSha": "9c61f8141ab28d47f10092235498c30cd3a50076",
-    "captureStartedAt": "2026-10-25T15:37:32.000Z",
-    "captureCompletedAt": "2026-10-25T15:37:49.058Z"
+    "captureStartedAt": "2026-10-25T15:37:52.000Z",
+    "captureCompletedAt": "2026-10-25T15:40:05.977Z"
   },
   "flow": {
     "store": {
-      "orderId": "cmvnzmwfx0008jshf41hql9w7",
-      "localClientId": "cmvnzmwfl0001jshf9h66gfn3",
+      "orderId": "cmvnzs0dp0008jspu8r1krkjf",
+      "localClientId": "cmvnzs0df0001jspu68wxfezi",
       "prefix": "store",
       "completed": true
     },
     "company": {
-      "orderId": "cmvnzmwg6000kjshf1qpigwha",
-      "localClientId": "cmvnzmwfz000bjshfa4s3mlxz",
+      "orderId": "cmvnzs0dy000kjspuookzaiaj",
+      "localClientId": "cmvnzs0ds000bjspui86j9gez",
       "prefix": "company",
       "completed": true
     },
