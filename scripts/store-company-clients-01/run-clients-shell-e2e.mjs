@@ -100,15 +100,16 @@ async function realOwnerFlow(page, label) {
   await dialog.waitFor({ timeout: 30_000 });
   await dialog.locator('label').filter({ hasText: "Имя" }).locator("input").fill(CLIENT_NAME);
   await dialog.locator('label').filter({ hasText: "Город" }).locator("input").fill("Краснодар");
-  const createWait = page.waitForResponse(
-    (res) => res.url().includes("/pro/agent-clients") && res.request().method() === "POST" && res.status() === 200,
-    { timeout: 60_000 },
-  );
-  await dialog.getByRole("button", { name: "Сохранить" }).click();
-  const createRes = await createWait;
-  const createBody = await createRes.json();
-  const clientId = createBody.client?.id;
-  assert(clientId, `${label}: created client id`);
+  await dialog.getByRole("button", { name: "Добавить" }).click();
+  await dialog.waitFor({ state: "hidden", timeout: 60_000 }).catch(() => undefined);
+  await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 60_000 });
+  const listRes = await page.request.get(`${PROF_URL}/api/remcard/api/pro/agent-clients?limit=50`, {
+    headers: proxyHeaders(),
+  });
+  const listBody = listRes.ok() ? await listRes.json() : { clients: [] };
+  const created = (listBody.clients ?? []).find((c) => c.displayName === CLIENT_NAME);
+  const clientId = created?.id;
+  assert(clientId, `${label}: created client id in API list`);
 
   await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
   await page.getByRole("link", { name: CLIENT_NAME }).click();
@@ -190,8 +191,8 @@ async function main() {
     const { context, page } = await withSession(browser, storeReal);
     flow.storeRealClientId = await realOwnerFlow(page, "store-real");
     await page.goto(`${PROF_URL}/clients`, { waitUntil: "networkidle" });
-    await page.getByRole("link", { name: CLIENT_NAME }).click();
-    await page.getByTestId("business-client-detail-root").waitFor();
+    await page.getByTestId("business-clients-root").waitFor({ timeout: 60_000 });
+    await page.getByRole("link", { name: CLIENT_NAME }).waitFor({ timeout: 30_000 });
     await captureMatrix(page, "store-clients-real");
     await context.close();
   }

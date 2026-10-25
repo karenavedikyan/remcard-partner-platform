@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "flow": {
+    "delegatedStore": {
+      "foreignDeny": true
+    },
+    "storeRealClientId": "cmvnuxtzg0001js8hf12m05rb",
+    "companyReal": {
+      "hub": true
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "applicationRuntime": {
+    "frontendSha": "fdbbf33fa7dd4624aecfc01679e02ff7d143f3f7",
+    "backendSha": "546606bbe5176181d0b66f243fc34e4c4aba6985",
+    "captureStartedAt": "2026-10-25T13:20:38.000Z",
+    "captureCompletedAt": "2026-10-25T13:22:36.924Z"
+  },
+  "profUrl": "http://127.0.0.1:3420",
+  "flow": {
+    "delegatedStore": {
+      "foreignDeny": true
+    },
+    "storeRealClientId": "cmvnuxtzg0001js8hf12m05rb",
+    "companyReal": {
+      "hub": true
+    }
+  },
+  "foreignClientId": "cmvnuvhpl0001jsy8nmjl6z3z",
+  "failures": [],
+  "ok": true
+}
