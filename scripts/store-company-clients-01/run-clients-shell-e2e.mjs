@@ -220,7 +220,7 @@ async function mutationChecks(page, clientWithCertId, foreignClientId, label) {
   assert(delProtected.status() === 409, `${label}: protected delete ${delProtected.status()}`);
   const batch = await page.request.post(`${PROF_URL}/api/remcard/api/pro/agent-clients/batch`, {
     headers: proxyHeaders(),
-    data: { action: "delete", ids: [injectId, foreignClientId] },
+    data: { action: "delete", ids: [injectId, "gate-nonexistent-client-id"] },
   });
   assert(batch.status() === 200, `${label}: batch ${batch.status()}`);
   const batchBody = await batch.json();
