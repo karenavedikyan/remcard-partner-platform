@@ -22,7 +22,12 @@ export function clientRowCaption(
   client: AgentClientRow,
   mode: OwnerClientsAccessMode = "agent",
 ): string {
-  if (mode === "specialist") {
+  if (mode === "specialist" || mode === "business") {
+    if (mode === "business") {
+      const task = client.note?.trim();
+      if (task) return task;
+      return client.city?.trim() || "";
+    }
     return client.certificateCount > 0
       ? certificateCountLabel(client.certificateCount)
       : "Пока без сертификатов";
@@ -40,6 +45,11 @@ export function clientRowDetail(
   if (mode === "specialist") {
     return specialistDetailLine(client);
   }
+  if (mode === "business") {
+    return client.certificateCount > 0
+      ? certificateCountLabel(client.certificateCount)
+      : "Пока без сертификатов";
+  }
   const countPart =
     client.certificateCount > 0
       ? certificateCountLabel(client.certificateCount)
@@ -52,7 +62,13 @@ export function clientRowMobileSubtitle(
   client: AgentClientRow,
   mode: OwnerClientsAccessMode = "agent",
 ): string {
-  if (mode === "specialist") {
+  if (mode === "specialist" || mode === "business") {
+    if (mode === "business") {
+      const city = client.city?.trim();
+      const task = client.note?.trim();
+      if (city && task) return `${city} · ${task}`;
+      return city || task || "Добавьте заметку в карточке";
+    }
     return specialistDetailLine(client);
   }
   const task = client.note?.trim();
@@ -66,7 +82,12 @@ export function clientRowMobileMeta(
   client: AgentClientRow,
   mode: OwnerClientsAccessMode = "agent",
 ): string {
-  if (mode === "specialist") {
+  if (mode === "specialist" || mode === "business") {
+    if (mode === "business") {
+      return client.certificateCount > 0
+        ? certificateCountLabel(client.certificateCount)
+        : "Пока без сертификатов";
+    }
     return client.certificateCount > 0
       ? certificateCountLabel(client.certificateCount)
       : "Пока без сертификатов";

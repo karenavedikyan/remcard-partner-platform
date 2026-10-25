@@ -13,6 +13,7 @@ import type {
   AgentCertificateRow,
 } from "@/lib/agent-r03/types";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
+import { ownerClientsUsesRecommendationCerts } from "@/lib/clients-owner-mode";
 import { certificatePartnerSummary } from "@/lib/agent-r03/certificateOffers";
 import { certificateUsageLabel } from "@/lib/agent-r03/certificateUsageLabel";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
@@ -84,6 +85,10 @@ export function AgentClientDetail({
   const [shareOpen, setShareOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const recommendationCerts = ownerClientsUsesRecommendationCerts(accessMode);
+  const specialistPresentation = accessMode === "specialist";
+  const businessPresentation = accessMode === "business";
+
   const reload = useCallback(() => {
     return fetchAgentClient(clientId)
       .then((res) => {
@@ -116,12 +121,11 @@ export function AgentClientDetail({
     await reload();
   }
 
-  const createCertHref =
-    accessMode === "specialist"
-      ? `/recommendations/new?clientId=${encodeURIComponent(clientId)}`
-      : `/certificates/new?clientId=${encodeURIComponent(clientId)}`;
+  const createCertHref = recommendationCerts
+    ? `/recommendations/new?clientId=${encodeURIComponent(clientId)}`
+    : `/certificates/new?clientId=${encodeURIComponent(clientId)}`;
 
-  const certDetailBase = accessMode === "specialist" ? "/recommendations" : "/certificates";
+  const certDetailBase = recommendationCerts ? "/recommendations" : "/certificates";
 
   const rowActions = client
     ? [
@@ -179,13 +183,19 @@ export function AgentClientDetail({
       {client ? (
         <div
           className={
-            accessMode === "specialist"
+            specialistPresentation
               ? `${styles.r03Root} ${styles.clientDetailStack}`
               : styles.list
           }
-          data-testid={accessMode === "specialist" ? "specialist-client-detail-root" : undefined}
+          data-testid={
+            specialistPresentation
+              ? "specialist-client-detail-root"
+              : businessPresentation
+                ? "business-client-detail-root"
+                : undefined
+          }
         >
-          {accessMode === "specialist" ? (
+          {specialistPresentation ? (
             <Link href="/clients" className={styles.clientBackLink} data-testid="specialist-client-back">
               ← Все клиенты
             </Link>
@@ -193,11 +203,11 @@ export function AgentClientDetail({
           <article className={styles.card}>
             <div
               className={
-                accessMode === "specialist" ? `${styles.cardTop} ${styles.clientCardTopSpecialist}` : styles.cardTop
+                specialistPresentation ? `${styles.cardTop} ${styles.clientCardTopSpecialist}` : styles.cardTop
               }
             >
               <div className={styles.cardMain}>
-                {accessMode === "specialist" ? (
+                {specialistPresentation ? (
                   <div className={styles.clientIdentityRow}>
                     <span className={styles.clientAvatar} aria-hidden>
                       {clientAvatarInitials(client.displayName)}
@@ -215,7 +225,7 @@ export function AgentClientDetail({
                     <h1>{client.displayName}</h1>
                   </>
                 )}
-                {accessMode === "specialist" ? null : (
+                {specialistPresentation ? null : (
                   <>
                     <p className={styles.meta}>
                       {client.city ?? "Город не указан"}
@@ -229,14 +239,14 @@ export function AgentClientDetail({
               <RecordRowActions ariaLabel="Действия с клиентом" actions={rowActions} />
             </div>
 
-            {accessMode === "agent" ? (
-              <Link href={createCertHref}>
+            {accessMode === "agent" || businessPresentation ? (
+              <Link href={createCertHref} data-testid="business-client-create-cert">
                 <Button>Создать сертификат</Button>
               </Link>
             ) : null}
           </article>
 
-          {accessMode === "specialist" ? (
+          {specialistPresentation ? (
             <div className={styles.statsRow} data-testid="specialist-client-metrics">
               <div className={styles.statCard}>
                 <span className={styles.statLabel}>Сертификатов</span>
@@ -259,7 +269,7 @@ export function AgentClientDetail({
             </div>
           ) : null}
 
-          {accessMode === "specialist" ? (
+          {specialistPresentation ? (
             <div className={styles.clientTwoCol}>
               <article className={styles.card}>
                 <h2>Контакты</h2>
@@ -290,7 +300,7 @@ export function AgentClientDetail({
             </div>
           ) : null}
 
-          {accessMode === "specialist" ? (
+          {specialistPresentation ? (
             <div className={styles.clientSectionHead}>
               <h2>Сертификаты клиента</h2>
               <Link href={createCertHref}>
@@ -302,7 +312,7 @@ export function AgentClientDetail({
           )}
           {certs.length === 0 ? (
             <p className={styles.empty}>Пока нет сертификатов.</p>
-          ) : accessMode === "specialist" ? (
+          ) : specialistPresentation ? (
             <div className={styles.clientCertStack}>
               {certs.map((c) => (
                 <SpecialistClientCertCard
@@ -320,7 +330,7 @@ export function AgentClientDetail({
             ))
           )}
 
-          {accessMode === "specialist" ? (
+          {specialistPresentation || businessPresentation ? (
             <details
               className={`${styles.certificateTerms} ${styles.card}`}
               open={purchases.length > 0}

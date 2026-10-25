@@ -261,7 +261,16 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
   const totalPages = Math.max(1, meta.totalPages ?? 1);
 
   return (
-    <div className={styles.r03Root}>
+    <div
+      className={styles.r03Root}
+      data-testid={
+        accessMode === "business"
+          ? "business-clients-root"
+          : accessMode === "specialist"
+            ? "specialist-clients-root"
+            : undefined
+      }
+    >
       {accessMode === "agent" ? <AgentR03PageIntro variant="clients" /> : null}
       <div className={styles.pageActions}>
         <Button onClick={openCreate}>Добавить клиента</Button>

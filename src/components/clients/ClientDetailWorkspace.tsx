@@ -3,18 +3,33 @@
 import { AgentClientDetail } from "@/components/agent-r03/AgentClientDetail";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
-import { useOwnerClientsMode } from "@/components/clients/OwnerClientsModeContext";
+import {
+  useOwnerClientsBusinessPartnerType,
+  useOwnerClientsMode,
+} from "@/components/clients/OwnerClientsModeContext";
+import { businessClientsPageCopy } from "@/lib/business-clients/copy";
 
 function ClientDetailBody({ clientId }: { clientId: string }) {
   const mode = useOwnerClientsMode();
+  const businessPartnerType = useOwnerClientsBusinessPartnerType();
   if (!mode) return null;
+  const businessHeading =
+    mode === "business" && businessPartnerType
+      ? businessClientsPageCopy(businessPartnerType)
+      : null;
   return (
     <>
       {mode === "agent" ? (
         <PageHeading eyebrow="Клиент" title="Карточка клиента" />
+      ) : businessHeading ? (
+        <PageHeading
+          eyebrow={businessHeading.eyebrow}
+          title="Карточка клиента"
+          description={businessHeading.description}
+        />
       ) : (
         <PageHeading
-          eyebrow="СПЕЦИАЛИСТ"
+          eyebrow="Специалист"
           title="Клиенты"
           description="Контакты, заметки, сертификаты и покупки клиента."
         />

@@ -54,6 +54,8 @@ export default defineConfig({
       "src/lib/prof-admin-moderation-public-preview.test.ts",
       "src/lib/business-home/gate.test.ts",
       "src/lib/business-partners/gate.test.ts",
+      "src/lib/business-clients/gate.test.ts",
+      "src/lib/business-clients/client-list-row.test.ts",
       "src/lib/business-owner-certificates/copy.test.ts",
       "src/lib/business-owner-certificates/api.test.ts",
       "src/lib/business-owner-certificates/issuer-api.test.ts",
