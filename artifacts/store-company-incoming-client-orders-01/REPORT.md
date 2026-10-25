@@ -1,46 +1,49 @@
 # STORE-COMPANY-INCOMING-CLIENT-ORDERS-01
 
-**Status: CHANGES REQUIRED → resubmission after review fixes** (not deployed)
+**Status: FINAL READY FOR INDEPENDENT REVIEW** (not deployed)
 
-## Bases
+## Evidence tip (aligned gate run)
 
-| Repo | Clients base | Feature branch |
-|------|--------------|----------------|
-| remcard-navigator | `8b1e932e` | `feat/store-company-incoming-client-orders-01` |
-| remcard-partner-platform | `5281a1de` | `feat/store-company-incoming-client-orders-01` |
+| | SHA / time |
+|--|--|
+| Frontend | `dcb780830806df26e43d73e163556ece698d453a` |
+| Backend | `e1e663325310918ffa68c0846347fde77c765ccf` |
+| Capture | `2026-10-25T14:49:35.000Z` → `2026-10-25T14:51:38.874Z` |
+| Gate exit | `artifacts/store-company-incoming-client-orders-01/shell-browser-gate.exit` = 0 |
 
-Includes undeployed `feat/store-company-clients-01` package.
+Artifacts: `shell-gate.json`, `metadata-shell.json`, `migration-verify.json`, `shell-browser-gate.log`, `visual-shell/*-{light,dark}-390.png`.
 
-## Review fixes (four groups)
+## Bases (undeployed clients package)
 
-1. **Write / audit / CAS** — `OrderReceivingClientAnchor.revision` with mandatory `expectedVersion`; atomic `updateMany` bump; audit `OrderReceivingAgentClientLinkEvent`; `linkedAt` on link row; P2002 → 409.
-2. **Priority / delete** — own-issued fallback only when no explicit link and `fallbackSuppressed` false; explicit link to client B excludes order from client A; shared `evaluateAgentClientDelete` for single + batch delete.
-3. **UI** — separate pending confirm for link vs unlink; search generation guard; PATCH scoped to order id; 409 reload; component race tests.
-4. **Evidence** — `run-browser-gate.sh` + expanded UI/API runner; migration verify script; artifacts: `shell-gate.json`, `metadata-shell.json`, `migration-verify.json`, `shell-browser-gate.log`, `shell-browser-gate.exit`, PNGs under `visual-shell/`.
+| Repo | Clients base |
+|------|----------------|
+| remcard-navigator | `8b1e932e` |
+| remcard-partner-platform | `5281a1de` |
 
-## Migrations (additive only)
+## Migrations (additive)
 
-- `20261025143000_store_company_incoming_client_order_link`
-- `20261025180000_incoming_client_link_revision_audit`
+1. `20261025143000_store_company_incoming_client_order_link`
+2. `20261025180000_incoming_client_link_revision_audit`
 
-Isolated verify: `scripts/prof-admin-moderation-isolated/verify-incoming-client-order-migrations.ts` (deploy twice + uniqueness check).
+Catalog QA verify: `verify-incoming-client-order-migrations.ts` (schema/tables/linkedAt/unique; production uses migrate deploy ledger).
 
-## Tests (targeted)
+## Review fix summary
 
-- Backend unit: `orderReceivingAgentClientLink.test.ts`
-- Backend integration (prof R01 DB): `orderReceivingClientLink.integration.test.ts` — CAS, priority, unlink suppression, bounded cleanup
-- Frontend: `PurchaseReceivingClientPanel.race.test.tsx`; proxy allowlist test for PATCH route
-- Full stack: `scripts/store-company-incoming-client-orders-01/run-browser-gate.sh`
+- **CAS / audit:** `OrderReceivingClientAnchor.revision`, mandatory `expectedVersion`, transactional bump + events (`LINK`/`CHANGE`/`UNLINK`), `linkedAt`.
+- **Priority:** explicit link only on chosen client; own-issued fallback requires no link row and `fallbackSuppressed=false`.
+- **Delete:** `evaluateAgentClientDelete` for single + batch.
+- **UI:** pending confirm per action, search generation guard, order-scoped PATCH callback, 409 reload; `PurchaseReceivingClientPanel.race.test.tsx`.
+- **Gate:** UI link → change → unlink, API readback, foreign CRM deny, financial fields unchanged, STORE + COMPANY screenshots.
 
-Backend full `tsc` remains exit 2 with legacy baseline (~52 diagnostics); not claimed green.
+## Tests
+
+- BE unit: `orderReceivingAgentClientLink.test.ts` (exit 0)
+- BE integration: `orderReceivingClientLink.integration.test.ts` (prof R01 DB when configured)
+- FE: `PurchaseReceivingClientPanel.race.test.tsx`; proxy PATCH allowlist test
+- Isolated E2E: `scripts/store-company-incoming-client-orders-01/run-browser-gate.sh`
+
+Backend full `tsc` remains legacy exit 2 (~52 baseline diagnostics); not claimed green.
 
 ## Migration release checklist (prepare only)
 
-1. Backup DB.
-2. Read-only preflight counts on `Order` / new tables.
-3. Apply both additive migrations in order via standard ledger workflow.
-4. Deploy backend → frontend.
-5. Smoke: link incoming purchase, change, unlink; batch delete skip `has_receiving_order_links`.
-6. Rollback app without dropping link/anchor/event tables.
-
-Record **evidence tip SHAs** from gate stdout `application.frontendSha` / `application.backendSha` and `captureCompletedAt` after a green gate run.
+Backup → read-only preflight → apply both migrations in order → deploy backend then frontend → smoke link/change/unlink/batch skip → rollback app without dropping anchor/event/link tables.
