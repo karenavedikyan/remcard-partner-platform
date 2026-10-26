@@ -287,8 +287,8 @@ async function main() {
     await storeCtx.close();
 
     const { context: agentCtx2, page: agentPage2 } = await withSession(browser, agentToken, {
-      width: 390,
-      height: 844,
+      width: 1440,
+      height: 900,
     });
     await agentPage2.evaluate(() => {
       document.documentElement.setAttribute("data-theme", "dark");
@@ -301,8 +301,16 @@ async function main() {
     await agentPage2.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
     await agentPage2.getByTestId("agent-r04-partners").waitFor({ timeout: 60_000 });
     await agentPage2.getByRole("tab", { name: "Приглашения" }).click();
-    await agentPage2.getByTestId("agent-invites-incoming").click();
-    const incomingRow = agentPage2.getByTestId("agent-r04-partners-table-row").first();
+    // Agent initiated the store invite — counter-offer appears under «Отправленные», not «Входящие».
+    await agentPage2.getByTestId("agent-invites-outgoing").click();
+    const storeLabel =
+      flow.storeOwner.organizationName?.trim() ||
+      flow.storeOwner.displayName?.trim() ||
+      "Agent terms store";
+    const incomingRow = agentPage2
+      .getByTestId("agent-r04-partners-table-row")
+      .filter({ hasText: storeLabel })
+      .first();
     await incomingRow.waitFor({ timeout: 60_000 });
     await incomingRow.getByRole("button", { name: "Детали" }).click();
     const acceptBtn = agentPage2.getByRole("button", { name: "Принять условия" }).first();
@@ -316,7 +324,20 @@ async function main() {
     );
     await acceptBtn.click();
     await acceptWait;
-    await agentPage2.getByText(/11\.5%|11,5%|ACTIVE|актив/i).first().waitFor({ timeout: 60_000 });
+    const agentListRes = await agentPage2.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
+      headers: { Origin: PROF_URL, Cookie: `remcard-token=${agentToken}` },
+    });
+    assert(agentListRes.ok(), `agent list after accept ${agentListRes.status()}`);
+    const agentList = await agentListRes.json();
+    const accepted = (agentList.partnerships ?? []).find((p) => p.id === partnershipId);
+    assert(accepted?.status === "ACTIVE", `agent accept → ACTIVE (${accepted?.status})`);
+    const doorsTerm = accepted?.terms?.find((t) => t.category === "doors" && !t.isExcluded);
+    assert(
+      doorsTerm && Math.abs(Number(doorsTerm.storePercent) - 11.5) < 0.01,
+      "agent accepted 11.5% doors term",
+    );
+    step("agent-accept-11.5-ui");
+    await agentPage2.setViewportSize({ width: 390, height: 844 });
     await capture(agentPage2, "agent-accept-dark-390");
     await agentCtx2.close();
   } finally {

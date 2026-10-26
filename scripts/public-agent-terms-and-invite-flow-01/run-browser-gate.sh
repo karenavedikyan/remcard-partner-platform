@@ -51,10 +51,41 @@ export CATALOG_QA_UI_STATE="$NAV_ROOT/.catalog-qa-isolated/ui-harness-state.json
 export PROF_R04_AGENT_PARTNERS_ENABLED=1
 export NAV_ROOT PLATFORM_ROOT ART LOG E2E_CAPTURE_STARTED_AT E2E_APPLICATION_FRONTEND_SHA E2E_APPLICATION_BACKEND_SHA
 
+echo "[agent-terms-flow] waiting for BFF proxy + seeded summary…" | tee -a "$LOG"
+AGENT_TOKEN="$(
+  node -e "const s=require(process.argv[1]);process.stdout.write(s.roles?.agentTermsFlow?.agent?.agentSessionToken||'')" "$CATALOG_QA_UI_STATE"
+)"
+STORE_UID="$(
+  node -e "const s=require(process.argv[1]);process.stdout.write(s.roles?.agentTermsFlow?.storeOwner?.userId||'')" "$CATALOG_QA_UI_STATE"
+)"
+bff_ready=0
+for _ in $(seq 1 90); do
+  if [[ -n "$AGENT_TOKEN" && -n "$STORE_UID" ]]; then
+    code="$(
+      curl -s -o /dev/null -w "%{http_code}" \
+        -H "Origin: ${PROF_E2E_URL}" \
+        -H "Cookie: remcard-token=${AGENT_TOKEN}" \
+        "${PROF_E2E_URL}/api/remcard/api/partner/${STORE_UID}/certificate-program-summary" || true
+    )"
+    if [[ "$code" == "200" ]]; then
+      bff_ready=1
+      echo "[agent-terms-flow] BFF ready (summary HTTP ${code})" | tee -a "$LOG"
+      break
+    fi
+  fi
+  sleep 2
+done
+if [[ "$bff_ready" -ne 1 ]]; then
+  echo "[agent-terms-flow] FAILED BFF not ready for certificate-program-summary" | tee -a "$LOG"
+  exit 1
+fi
+
 run_node_step() {
   local script="$1"
+  set +e
   node "$script" 2>&1 | tee -a "$LOG"
   local ec="${PIPESTATUS[0]}"
+  set -e
   if [[ "$ec" -ne 0 ]]; then
     echo "[agent-terms-flow] FAILED exit=${ec} script=${script}" | tee -a "$LOG"
     exit "$ec"
