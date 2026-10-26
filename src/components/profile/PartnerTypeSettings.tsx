@@ -36,6 +36,7 @@ export function PartnerTypeSettings({
   const [ack, setAck] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [recoveryNotice, setRecoveryNotice] = useState("");
   const [success, setSuccess] = useState("");
 
   const loadState = useCallback(async (previewTarget?: PartnerKindUi) => {
@@ -72,6 +73,7 @@ export function PartnerTypeSettings({
 
   function openFlow() {
     setSuccess("");
+    setRecoveryNotice("");
     if (hasUnsavedBasicsChanges) {
       setStep("unsaved");
       return;
@@ -116,13 +118,15 @@ export function PartnerTypeSettings({
       const nextProfile = await remcardFetch<ProProfileResponse>("/api/pro/profile");
       onProfileUpdated(nextProfile);
     } catch {
-      setError(
+      setRecoveryNotice(
         "Тип партнёрства уже изменён на сервере, но полный профиль не загрузился. Обновите страницу — повторная смена не нужна.",
       );
       onRequestRefresh();
       await loadState().catch(() => {});
       setPending(false);
-      closeDialog();
+      setStep("closed");
+      setAck(false);
+      setError("");
       return;
     }
 
@@ -175,6 +179,26 @@ export function PartnerTypeSettings({
           {success ? (
             <p className={styles.success} role="status" data-testid="partner-type-success">
               {success}
+            </p>
+          ) : null}
+          {recoveryNotice ? (
+            <p
+              className={styles.error}
+              role="alert"
+              data-testid="partner-type-recovery"
+            >
+              {recoveryNotice}{" "}
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid="partner-type-recovery-reload"
+                onClick={() => {
+                  onRequestRefresh();
+                  void loadState().catch(() => {});
+                }}
+              >
+                Обновить данные
+              </Button>
             </p>
           ) : null}
         </div>

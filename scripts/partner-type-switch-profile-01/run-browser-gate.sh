@@ -11,6 +11,13 @@ export E2E_APPLICATION_FRONTEND_SHA="$(git -C "$PLATFORM_ROOT" rev-parse HEAD)"
 export E2E_APPLICATION_BACKEND_SHA="$(git -C "$NAV_ROOT" rev-parse HEAD)"
 export E2E_CAPTURE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
 
+: >"$LOG"
+{
+  echo "[partner-type-gate] startedAt=$E2E_CAPTURE_STARTED_AT"
+  echo "[partner-type-gate] backend=$E2E_APPLICATION_BACKEND_SHA"
+  echo "[partner-type-gate] frontend=$E2E_APPLICATION_FRONTEND_SHA"
+} >>"$LOG"
+
 cd "$PLATFORM_ROOT"
 pnpm exec tsc --noEmit >>"$LOG" 2>&1
 pnpm run build >>"$LOG" 2>&1
@@ -27,11 +34,15 @@ pnpm exec vitest run \
   src/lib/__tests__/partnerTypeSwitch.integration.test.ts \
   src/lib/__tests__/partnerTypeSwitchProfTest.integration.test.ts \
   src/lib/__tests__/proWalletPartnerKind.test.ts \
+  src/lib/__tests__/proWalletPrincipal.test.ts \
   src/app/api/pro/partner-type/switch/__tests__/route.post.prof-test-fail-closed.test.ts \
   >>"$LOG" 2>&1
 
 cd "$PLATFORM_ROOT"
 pnpm exec vitest run src/components/profile/PartnerTypeSettings.test.tsx >>"$LOG" 2>&1
+
+cd "$NAV_ROOT"
+pnpm exec vitest run src/lib/__tests__/proWalletPrincipal.test.ts >>"$LOG" 2>&1
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3453 CATALOG_QA_FRONTEND_PORT=3452 bash "$ISO/stop.sh" >>"$LOG" 2>&1 || true
 CATALOG_QA_BACKEND_PORT=3453 CATALOG_QA_FRONTEND_PORT=3452 bash "$ISO/start.sh" >>"$LOG" 2>&1

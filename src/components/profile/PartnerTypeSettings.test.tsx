@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PartnerTypeSettings } from "./PartnerTypeSettings";
 
 const remcardFetch = vi.fn();
@@ -28,6 +28,10 @@ const baseProfile = {
 };
 
 describe("PartnerTypeSettings", () => {
+  beforeEach(() => {
+    remcardFetch.mockReset();
+  });
+
   it("renders current type and open action", async () => {
     remcardFetch.mockResolvedValue({
       currentKind: "agent",
@@ -118,13 +122,60 @@ describe("PartnerTypeSettings", () => {
     fireEvent.click(document.querySelector("[data-partner-type-ack]")!);
     fireEvent.click(screen.getByTestId("partner-type-apply"));
 
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/уже изменён на сервере/i);
-    });
-    expect(onRefresh).toHaveBeenCalled();
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const recovery = await screen.findByTestId("partner-type-recovery");
+    expect(recovery.textContent).toMatch(/уже изменён на сервере/i);
     const postCalls = remcardFetch.mock.calls.filter(
       (c) => c[0] === "/api/pro/partner-type/switch" && c[1]?.method === "POST",
     );
     expect(postCalls.length).toBe(1);
+  });
+
+  it("settled post-commit recovery keeps notice after dialog closes", async () => {
+    const state = {
+      currentKind: "agent" as const,
+      isEmployee: false,
+      publicId: "RC-REVIEW-TEST",
+      options: switchOptions,
+      preview: null,
+    };
+    let committed = false;
+    remcardFetch.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/api/pro/profile") throw new Error("profile unavailable");
+      if (init?.method === "POST") {
+        committed = true;
+        return { ok: true, newKind: "specialist" };
+      }
+      return {
+        ...state,
+        currentKind: committed ? ("specialist" as const) : ("agent" as const),
+      };
+    });
+    const refresh = vi.fn();
+    render(
+      <PartnerTypeSettings
+        profile={{
+          ...baseProfile,
+          user: { ...baseProfile.user, publicId: "RC-REVIEW-TEST" },
+        }}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={vi.fn()}
+        onRequestRefresh={refresh}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /Сменить тип партнёрства/ }));
+    fireEvent.click(await screen.findByRole("radio", { name: /Специалист/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Продолжить" }));
+    fireEvent.click(await screen.findByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /Сменить на/ }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByTestId("partner-type-recovery").textContent).toMatch(
+      /уже изменён на сервере/i,
+    );
+    expect(
+      remcardFetch.mock.calls.filter(([, init]) => init?.method === "POST"),
+    ).toHaveLength(1);
   });
 });
