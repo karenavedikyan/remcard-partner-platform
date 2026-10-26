@@ -1,0 +1,37 @@
+{
+  "failures": [],
+  "runtime": {
+    "frontendSha": "033c6a20e699d1d63d083857adfb02264301da15",
+    "backendSha": "c644f96e2fd610e03d1930c199343424ed51357e",
+    "captureStartedAt": "2026-10-26T08:21:46.000Z"
+  },
+  "extra": {
+    "partnershipId": "cmvoznixy0001jszbsgpomv3j",
+    "storeUserId": "cmvozc1yt0000jsncjjddczg2",
+    "version11": "2026-10-26T08:22:15.161Z",
+    "version115": "2026-10-26T08:22:15.324Z",
+    "termBeforeAccept": {
+      "id": "cmvoznj8c000ajszb4mptppuy",
+      "partnershipId": "cmvoznixy0001jszbsgpomv3j",
+      "category": "doors",
+      "categoryLabel": "Двери",
+      "storePercent": 11.5,
+      "minMargin": null,
+      "isExcluded": false,
+      "validFrom": "2026-10-26T08:22:15.324Z",
+      "validUntil": null,
+      "createdAt": "2026-10-26T08:22:15.324Z",
+      "updatedAt": "2026-10-26T08:22:15.324Z"
+    },
+    "evidence": {
+      "steps": [
+        "read-summary-12.5",
+        "agent-request-no-terms",
+        "partner-offer-11",
+        "agent-request-changes-10",
+        "accept-11.5",
+        "org-limit-edit-no-partnership-mutation"
+      ]
+    }
+  }
+}

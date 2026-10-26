@@ -1,0 +1,3010 @@
+[agent-terms-flow] FE=033c6a20e699d1d63d083857adfb02264301da15 BE=c644f96e2fd610e03d1930c199343424ed51357e
+
+> remcard-partner-platform@0.1.0 test:proxy /agent/repos/remcard-partner-platform
+> tsx --test src/lib/account-session-exit.test.ts src/lib/prof-admin-api.test.ts src/lib/remcard-proxy.test.ts src/lib/remcard-proxy-multipart.test.ts src/lib/agent-nav/mobile-nav-editor.test.ts src/lib/agent-nav/theme-sync-policy.test.ts src/lib/prof-i-permissions.test.ts src/lib/payout-record.test.ts src/lib/employees-overview-types.test.ts src/lib/notification-settings-ui.test.ts src/lib/profile-catalog-state.test.ts src/lib/profile-save.test.ts src/lib/onboarding-save.test.ts src/lib/auth-flow.test.ts src/lib/auth-consent.test.ts src/lib/auth-session.test.ts src/lib/onboarding-save.test.ts src/lib/category-display.test.ts src/lib/invite-presentation.test.ts src/lib/link-invite-public.test.ts src/lib/term-change-labels.test.ts src/lib/invite-opengraph.test.ts src/lib/site-opengraph.test.ts src/lib/partnership-rules.test.ts src/lib/partnership-agent-inviter.test.ts src/lib/parse-pool-percent.test.ts src/lib/invite-form-state.test.ts src/lib/certificate-url.test.ts src/lib/certificate-percent.test.ts src/lib/certificate-code.test.ts src/lib/order-totals.test.ts src/lib/scanner-flow.test.ts src/lib/scanner-order-submit.test.ts src/lib/store-order-attempt.test.ts src/lib/store-order-idempotency-key.test.ts src/lib/qr-scanner-decode.test.ts src/lib/history-filters.test.ts src/lib/history-mappers.test.ts src/lib/history-links.test.ts src/lib/history-format.test.ts src/lib/history-sources.test.ts src/lib/history-labels.test.ts src/lib/history-loader.test.ts src/lib/accrual-type.test.ts src/lib/settlements-links.test.ts src/lib/settlements-mappers.test.ts src/lib/settlements-page-shell.test.ts src/lib/specialist-settlements/ledger.test.ts src/lib/specialist-settlements/mskCalendar.test.ts src/lib/specialist-home/gate.test.ts src/lib/specialist-home/metrics.test.ts src/lib/specialist-home/display.test.ts
+
+TAP version 13
+# Subtest: account-session-exit paths
+    # Subtest: uses BFF-safe POST endpoints
+    ok 1 - uses BFF-safe POST endpoints
+      ---
+      duration_ms: 0.498091
+      type: 'test'
+      ...
+    1..1
+ok 1 - account-session-exit paths
+  ---
+  duration_ms: 1.031703
+  type: 'suite'
+  ...
+# Subtest: parseAccrualType
+    # Subtest: accepts bonus and agentBonus only
+    ok 1 - accepts bonus and agentBonus only
+      ---
+      duration_ms: 0.406056
+      type: 'test'
+      ...
+    1..1
+ok 2 - parseAccrualType
+  ---
+  duration_ms: 0.964015
+  type: 'suite'
+  ...
+# Subtest: accrualDetailHref
+    # Subtest: includes type query for settlement links
+    ok 1 - includes type query for settlement links
+      ---
+      duration_ms: 0.11299
+      type: 'test'
+      ...
+    1..1
+ok 3 - accrualDetailHref
+  ---
+  duration_ms: 0.180252
+  type: 'suite'
+  ...
+# Subtest: mobile-nav-editor
+    # Subtest: enters replacement mode when panel is full
+    ok 1 - enters replacement mode when panel is full
+      ---
+      duration_ms: 0.567198
+      type: 'test'
+      ...
+    # Subtest: applies replacement and clears pending state
+    ok 2 - applies replacement and clears pending state
+      ---
+      duration_ms: 0.627871
+      type: 'test'
+      ...
+    # Subtest: blocks save while replacement pending
+    ok 3 - blocks save while replacement pending
+      ---
+      duration_ms: 0.133848
+      type: 'test'
+      ...
+    1..3
+ok 4 - mobile-nav-editor
+  ---
+  duration_ms: 2.029392
+  type: 'suite'
+  ...
+# Subtest: theme-sync-policy
+    # Subtest: skips persist before hydration and when theme unchanged
+    ok 1 - skips persist before hydration and when theme unchanged
+      ---
+      duration_ms: 0.398606
+      type: 'test'
+      ...
+    1..1
+ok 5 - theme-sync-policy
+  ---
+  duration_ms: 0.920327
+  type: 'suite'
+  ...
+# Subtest: auth-consent
+    # Subtest: maps document version mismatch
+    ok 1 - maps document version mismatch
+      ---
+      duration_ms: 0.510018
+      type: 'test'
+      ...
+    # Subtest: maps missing active document
+    ok 2 - maps missing active document
+      ---
+      duration_ms: 0.123751
+      type: 'test'
+      ...
+    # Subtest: labels known consent kinds
+    ok 3 - labels known consent kinds
+      ---
+      duration_ms: 0.155687
+      type: 'test'
+      ...
+    1..3
+ok 6 - auth-consent
+  ---
+  duration_ms: 1.415765
+  type: 'suite'
+  ...
+# Subtest: sanitizeReturnTo
+    # Subtest: allows safe internal paths
+    ok 1 - allows safe internal paths
+      ---
+      duration_ms: 0.55771
+      type: 'test'
+      ...
+    # Subtest: rejects external, login loops and onboarding loops
+    ok 2 - rejects external, login loops and onboarding loops
+      ---
+      duration_ms: 0.120528
+      type: 'test'
+      ...
+    # Subtest: allows /join as return target
+    ok 3 - allows /join as return target
+      ---
+      duration_ms: 0.119009
+      type: 'test'
+      ...
+    1..3
+ok 7 - sanitizeReturnTo
+  ---
+  duration_ms: 1.377225
+  type: 'suite'
+  ...
+# Subtest: resolveStepFromReadiness
+    # Subtest: routes session with pending consents to consents step
+    ok 1 - routes session with pending consents to consents step
+      ---
+      duration_ms: 0.151197
+      type: 'test'
+      ...
+    # Subtest: routes employee without cabinet access to access_denied
+    ok 2 - routes employee without cabinet access to access_denied
+      ---
+      duration_ms: 0.102102
+      type: 'test'
+      ...
+    1..2
+ok 8 - resolveStepFromReadiness
+  ---
+  duration_ms: 0.401991
+  type: 'suite'
+  ...
+# Subtest: isAuthFlowComplete
+    # Subtest: detects ready cabinet access
+    ok 1 - detects ready cabinet access
+      ---
+      duration_ms: 0.194252
+      type: 'test'
+      ...
+    1..1
+ok 9 - isAuthFlowComplete
+  ---
+  duration_ms: 0.407969
+  type: 'suite'
+  ...
+# Subtest: resolveAuthFlowFromReadiness
+    # Subtest: shows login consents before profile onboarding for new CLIENT
+    ok 1 - shows login consents before profile onboarding for new CLIENT
+      ---
+      duration_ms: 0.126657
+      type: 'test'
+      ...
+    # Subtest: routes OWNER+PRO with cabinet access to complete
+    ok 2 - routes OWNER+PRO with cabinet access to complete
+      ---
+      duration_ms: 0.060224
+      type: 'test'
+      ...
+    # Subtest: routes empty consents with denied access to access_denied
+    ok 3 - routes empty consents with denied access to access_denied
+      ---
+      duration_ms: 0.200186
+      type: 'test'
+      ...
+    # Subtest: routes to onboarding only after login consents are satisfied
+    ok 4 - routes to onboarding only after login consents are satisfied
+      ---
+      duration_ms: 0.187008
+      type: 'test'
+      ...
+    1..4
+ok 10 - resolveAuthFlowFromReadiness
+  ---
+  duration_ms: 0.732518
+  type: 'suite'
+  ...
+# Subtest: resolveDestinationAfterAuth
+    # Subtest: routes ready PRO to returnTo
+    ok 1 - routes ready PRO to returnTo
+      ---
+      duration_ms: 0.200253
+      type: 'test'
+      ...
+    # Subtest: defaults ready login without returnTo to root (agent /certificates handled on / page)
+    ok 2 - defaults ready login without returnTo to root (agent /certificates handled on / page)
+      ---
+      duration_ms: 0.042222
+      type: 'test'
+      ...
+    # Subtest: routes OWNER+PRO with cabinet access to returnTo despite isAdmin
+    ok 3 - routes OWNER+PRO with cabinet access to returnTo despite isAdmin
+      ---
+      duration_ms: 0.045713
+      type: 'test'
+      ...
+    # Subtest: routes CLIENT profile need to onboarding
+    ok 4 - routes CLIENT profile need to onboarding
+      ---
+      duration_ms: 0.047331
+      type: 'test'
+      ...
+    # Subtest: routes returning ready user to cabinet when registrationAgentJoin has plain join
+    ok 5 - routes returning ready user to cabinet when registrationAgentJoin has plain join
+      ---
+      duration_ms: 0.191357
+      type: 'test'
+      ...
+    # Subtest: preserves invite for ready user in agent registration auth return
+    ok 6 - preserves invite for ready user in agent registration auth return
+      ---
+      duration_ms: 0.171728
+      type: 'test'
+      ...
+    # Subtest: routes new registration profile user with invite to join finish
+    ok 7 - routes new registration profile user with invite to join finish
+      ---
+      duration_ms: 0.063179
+      type: 'test'
+      ...
+    # Subtest: rejects unsafe nested returnTo for ready agent join
+    ok 8 - rejects unsafe nested returnTo for ready agent join
+      ---
+      duration_ms: 0.064602
+      type: 'test'
+      ...
+    # Subtest: routes legacy onboarding partnerType directly without returnTo loop
+    ok 9 - routes legacy onboarding partnerType directly without returnTo loop
+      ---
+      duration_ms: 0.049582
+      type: 'test'
+      ...
+    # Subtest: routes agent registration join to finish step instead of onboarding
+    ok 10 - routes agent registration join to finish step instead of onboarding
+      ---
+      duration_ms: 0.043843
+      type: 'test'
+      ...
+    # Subtest: routes unsupported context to role notice instead of login loop
+    ok 11 - routes unsupported context to role notice instead of login loop
+      ---
+      duration_ms: 0.04212
+      type: 'test'
+      ...
+    # Subtest: denies employee when backend has not granted cabinet access
+    ok 12 - denies employee when backend has not granted cabinet access
+      ---
+      duration_ms: 0.095454
+      type: 'test'
+      ...
+    # Subtest: blocks cabinet access for CLIENT without completed profile onboarding
+    ok 13 - blocks cabinet access for CLIENT without completed profile onboarding
+      ---
+      duration_ms: 0.063036
+      type: 'test'
+      ...
+    # Subtest: allows employee when backend grants cabinet access
+    ok 14 - allows employee when backend grants cabinet access
+      ---
+      duration_ms: 0.046165
+      type: 'test'
+      ...
+    1..14
+ok 11 - resolveDestinationAfterAuth
+  ---
+  duration_ms: 1.393315
+  type: 'suite'
+  ...
+# Subtest: mapVerifyCodeError
+    # Subtest: maps auth failures to user-facing messages
+    ok 1 - maps auth failures to user-facing messages
+      ---
+      duration_ms: 0.159545
+      type: 'test'
+      ...
+    1..1
+ok 12 - mapVerifyCodeError
+  ---
+  duration_ms: 0.206374
+  type: 'suite'
+  ...
+# Subtest: buildSessionRecoveryLoginHref
+    # Subtest: passes safe final destination without onboarding wrapper
+    ok 1 - passes safe final destination without onboarding wrapper
+      ---
+      duration_ms: 0.142449
+      type: 'test'
+      ...
+    # Subtest: rejects external and loop-prone returnTo values
+    ok 2 - rejects external and loop-prone returnTo values
+      ---
+      duration_ms: 0.067848
+      type: 'test'
+      ...
+    1..2
+ok 13 - buildSessionRecoveryLoginHref
+  ---
+  duration_ms: 0.263884
+  type: 'suite'
+  ...
+# Subtest: sessionRetryMessage
+    # Subtest: does not mention invalid code after session established
+    ok 1 - does not mention invalid code after session established
+      ---
+      duration_ms: 0.132961
+      type: 'test'
+      ...
+    1..1
+ok 14 - sessionRetryMessage
+  ---
+  duration_ms: 0.170469
+  type: 'suite'
+  ...
+# Subtest: consentRequirementKey
+    # Subtest: binds checkbox to kind and legalDocumentId
+    ok 1 - binds checkbox to kind and legalDocumentId
+      ---
+      duration_ms: 0.448789
+      type: 'test'
+      ...
+    1..1
+ok 15 - consentRequirementKey
+  ---
+  duration_ms: 0.939126
+  type: 'suite'
+  ...
+# Subtest: category display resolver
+    # Subtest: maps store chips to Russian labels
+    ok 1 - maps store chips to Russian labels
+      ---
+      duration_ms: 0.640211
+      type: 'test'
+      ...
+    # Subtest: covers every STORE_CATEGORY_CHIP_KEYS entry
+    ok 2 - covers every STORE_CATEGORY_CHIP_KEYS entry
+      ---
+      duration_ms: 0.294856
+      type: 'test'
+      ...
+    # Subtest: keeps general partnership label
+    ok 3 - keeps general partnership label
+      ---
+      duration_ms: 0.16677
+      type: 'test'
+      ...
+    # Subtest: prefers canonical Russian when API label equals raw key
+    ok 4 - prefers canonical Russian when API label equals raw key
+      ---
+      duration_ms: 0.134842
+      type: 'test'
+      ...
+    # Subtest: preserves substantive saved Russian labels
+    ok 5 - preserves substantive saved Russian labels
+      ---
+      duration_ms: 0.084551
+      type: 'test'
+      ...
+    # Subtest: displayCategoryLabelFromStored keeps normal Russian names
+    ok 6 - displayCategoryLabelFromStored keeps normal Russian names
+      ---
+      duration_ms: 0.108527
+      type: 'test'
+      ...
+    # Subtest: displayCategoryLabelFromStored translates raw English codes
+    ok 7 - displayCategoryLabelFromStored translates raw English codes
+      ---
+      duration_ms: 0.072872
+      type: 'test'
+      ...
+    # Subtest: uses canonical from category id when stored English label mismatches
+    ok 8 - uses canonical from category id when stored English label mismatches
+      ---
+      duration_ms: 0.104559
+      type: 'test'
+      ...
+    # Subtest: does not expose unknown tech codes
+    ok 9 - does not expose unknown tech codes
+      ---
+      duration_ms: 0.192178
+      type: 'test'
+      ...
+    # Subtest: resolves legacy all alias to general label
+    ok 10 - resolves legacy all alias to general label
+      ---
+      duration_ms: 0.216399
+      type: 'test'
+      ...
+    1..10
+ok 16 - category display resolver
+  ---
+  duration_ms: 2.922899
+  type: 'suite'
+  ...
+# Subtest: parseCertificateCode
+    # Subtest: returns promo code as-is
+    ok 1 - returns promo code as-is
+      ---
+      duration_ms: 1.131578
+      type: 'test'
+      ...
+    # Subtest: extracts from production certificate URL
+    ok 2 - extracts from production certificate URL
+      ---
+      duration_ms: 0.157716
+      type: 'test'
+      ...
+    # Subtest: extracts from test localhost URL
+    ok 3 - extracts from test localhost URL
+      ---
+      duration_ms: 0.168657
+      type: 'test'
+      ...
+    # Subtest: extracts from add-page URL
+    ok 4 - extracts from add-page URL
+      ---
+      duration_ms: 0.095638
+      type: 'test'
+      ...
+    # Subtest: rejects malformed percent-encoding in certificate URL
+    ok 5 - rejects malformed percent-encoding in certificate URL
+      ---
+      duration_ms: 0.25915
+      type: 'test'
+      ...
+    # Subtest: rejects empty input
+    ok 6 - rejects empty input
+      ---
+      duration_ms: 0.077285
+      type: 'test'
+      ...
+    1..6
+ok 17 - parseCertificateCode
+  ---
+  duration_ms: 2.565421
+  type: 'suite'
+  ...
+# Subtest: extractCertificateCode
+    # Subtest: returns promo code as-is
+    ok 1 - returns promo code as-is
+      ---
+      duration_ms: 0.176812
+      type: 'test'
+      ...
+    # Subtest: returns empty for malformed URL
+    ok 2 - returns empty for malformed URL
+      ---
+      duration_ms: 0.22349
+      type: 'test'
+      ...
+    1..2
+ok 18 - extractCertificateCode
+  ---
+  duration_ms: 0.595807
+  type: 'suite'
+  ...
+# Subtest: certificate percent calculation
+    # Subtest: rounds like navigator toPercent helper
+    ok 1 - rounds like navigator toPercent helper
+      ---
+      duration_ms: 0.66796
+      type: 'test'
+      ...
+    # Subtest: partner pool 15%: client 5% → PROF 10%
+    ok 2 - partner pool 15%: client 5% → PROF 10%
+      ---
+      duration_ms: 0.192134
+      type: 'test'
+      ...
+    # Subtest: partner pool 15%: client 15% → PROF 0%
+    ok 3 - partner pool 15%: client 15% → PROF 0%
+      ---
+      duration_ms: 0.158877
+      type: 'test'
+      ...
+    # Subtest: partner pool 15%: client 0% → PROF 15%
+    ok 4 - partner pool 15%: client 0% → PROF 15%
+      ---
+      duration_ms: 0.09348
+      type: 'test'
+      ...
+    # Subtest: partner pool 15%: client 20% → error, no silent clamp
+    ok 5 - partner pool 15%: client 20% → error, no silent clamp
+      ---
+      duration_ms: 0.10069
+      type: 'test'
+      ...
+    # Subtest: rejects negative discount
+    ok 6 - rejects negative discount
+      ---
+      duration_ms: 0.073415
+      type: 'test'
+      ...
+    # Subtest: self-scan: client 5% → PROF 0%
+    ok 7 - self-scan: client 5% → PROF 0%
+      ---
+      duration_ms: 0.069763
+      type: 'test'
+      ...
+    # Subtest: self-scan: rejects over 100% without clamping
+    ok 8 - self-scan: rejects over 100% without clamping
+      ---
+      duration_ms: 0.09603
+      type: 'test'
+      ...
+    # Subtest: legacy default allows 1.25 on pool 10
+    ok 9 - legacy default allows 1.25 on pool 10
+      ---
+      duration_ms: 0.122408
+      type: 'test'
+      ...
+    # Subtest: specialist tenth-step rejects 1.25 on pool 10
+    ok 10 - specialist tenth-step rejects 1.25 on pool 10
+      ---
+      duration_ms: 0.200086
+      type: 'test'
+      ...
+    # Subtest: specialist tenth-step allows 1.2 on pool 10
+    ok 11 - specialist tenth-step allows 1.2 on pool 10
+      ---
+      duration_ms: 0.085505
+      type: 'test'
+      ...
+    # Subtest: rejects empty discount draft
+    ok 12 - rejects empty discount draft
+      ---
+      duration_ms: 0.056137
+      type: 'test'
+      ...
+    # Subtest: rejects missing pool for partner category
+    ok 13 - rejects missing pool for partner category
+      ---
+      duration_ms: 0.080173
+      type: 'test'
+      ...
+    # Subtest: previewIssuerPercent returns null for over-limit input
+    ok 14 - previewIssuerPercent returns null for over-limit input
+      ---
+      duration_ms: 0.145643
+      type: 'test'
+      ...
+    # Subtest: pool 20% after term change: client 7% → PROF 13%
+    ok 15 - pool 20% after term change: client 7% → PROF 13%
+      ---
+      duration_ms: 0.059434
+      type: 'test'
+      ...
+    1..15
+ok 19 - certificate percent calculation
+  ---
+  duration_ms: 3.702407
+  type: 'suite'
+  ...
+# Subtest: buildCreateCertificatePayload
+    # Subtest: builds partner payload with recalculated issuerPercent
+    ok 1 - builds partner payload with recalculated issuerPercent
+      ---
+      duration_ms: 0.229436
+      type: 'test'
+      ...
+    # Subtest: does not build payload when discount exceeds agreed pool
+    ok 2 - does not build payload when discount exceeds agreed pool
+      ---
+      duration_ms: 0.129189
+      type: 'test'
+      ...
+    # Subtest: keeps self-scan issuerPercent at 0
+    ok 3 - keeps self-scan issuerPercent at 0
+      ---
+      duration_ms: 0.073351
+      type: 'test'
+      ...
+    # Subtest: returns field errors instead of throwing for invalid values
+    ok 4 - returns field errors instead of throwing for invalid values
+      ---
+      duration_ms: 0.056619
+      type: 'test'
+      ...
+    # Subtest: sends only selected categories when selectedCategoryKeys is set
+    ok 5 - sends only selected categories when selectedCategoryKeys is set
+      ---
+      duration_ms: 0.143282
+      type: 'test'
+      ...
+    # Subtest: uses API default when draft absent and rejects cleared whitespace
+    ok 6 - uses API default when draft absent and rejects cleared whitespace
+      ---
+      duration_ms: 0.116395
+      type: 'test'
+      ...
+    1..6
+ok 20 - buildCreateCertificatePayload
+  ---
+  duration_ms: 0.856222
+  type: 'suite'
+  ...
+# Subtest: certificate url helpers
+    # Subtest: prefers server certificateUrl
+    ok 1 - prefers server certificateUrl
+      ---
+      duration_ms: 0.467868
+      type: 'test'
+      ...
+    # Subtest: uses promo code for pdf path
+    ok 2 - uses promo code for pdf path
+      ---
+      duration_ms: 0.129629
+      type: 'test'
+      ...
+    # Subtest: detects test-only public urls
+    ok 3 - detects test-only public urls
+      ---
+      duration_ms: 0.156207
+      type: 'test'
+      ...
+    # Subtest: builds client-visible discount summary without issuer percents
+    ok 4 - builds client-visible discount summary without issuer percents
+      ---
+      duration_ms: 0.248331
+      type: 'test'
+      ...
+    1..4
+ok 21 - certificate url helpers
+  ---
+  duration_ms: 1.741953
+  type: 'suite'
+  ...
+# Subtest: employees-overview contract
+    # Subtest: parses navigator ORG_OWNER fixture without top-level pendingInvites array
+    ok 1 - parses navigator ORG_OWNER fixture without top-level pendingInvites array
+      ---
+      duration_ms: 0.486534
+      type: 'test'
+      ...
+    # Subtest: detects manage rights for owner
+    ok 2 - detects manage rights for owner
+      ---
+      duration_ms: 0.101351
+      type: 'test'
+      ...
+    1..2
+ok 22 - employees-overview contract
+  ---
+  duration_ms: 1.189896
+  type: 'suite'
+  ...
+# Subtest: filterPurchases
+    # Subtest: filters by search on promo code and order id
+    ok 1 - filters by search on promo code and order id
+      ---
+      duration_ms: 0.511431
+      type: 'test'
+      ...
+    # Subtest: filters by direction and status
+    ok 2 - filters by direction and status
+      ---
+      duration_ms: 0.117838
+      type: 'test'
+      ...
+    1..2
+ok 23 - filterPurchases
+  ---
+  duration_ms: 1.195859
+  type: 'suite'
+  ...
+# Subtest: filterAccruals
+    # Subtest: filters accruals by status and search
+    ok 1 - filters accruals by status and search
+      ---
+      duration_ms: 0.169839
+      type: 'test'
+      ...
+    1..1
+ok 24 - filterAccruals
+  ---
+  duration_ms: 0.241051
+  type: 'suite'
+  ...
+# Subtest: formatMoneyRub
+    # Subtest: keeps whole rubles without decimals
+    ok 1 - keeps whole rubles without decimals
+      ---
+      duration_ms: 10.519621
+      type: 'test'
+      ...
+    # Subtest: shows kopecks when amount is fractional
+    ok 2 - shows kopecks when amount is fractional
+      ---
+      duration_ms: 0.457644
+      type: 'test'
+      ...
+    1..2
+ok 25 - formatMoneyRub
+  ---
+  duration_ms: 11.665303
+  type: 'suite'
+  ...
+# Subtest: purchaseRowDateLabel
+    # Subtest: labels issued-order date as purchase date
+    ok 1 - labels issued-order date as purchase date
+      ---
+      duration_ms: 0.444793
+      type: 'test'
+      ...
+    # Subtest: labels accepted-bonus date as accrual date
+    ok 2 - labels accepted-bonus date as accrual date
+      ---
+      duration_ms: 0.088248
+      type: 'test'
+      ...
+    1..2
+ok 26 - purchaseRowDateLabel
+  ---
+  duration_ms: 1.093302
+  type: 'suite'
+  ...
+# Subtest: history-links typed accrual refs
+    # Subtest: does not match purchases by promoCode alone
+    ok 1 - does not match purchases by promoCode alone
+      ---
+      duration_ms: 0.566028
+      type: 'test'
+      ...
+    # Subtest: links all typed accruals for a purchase
+    ok 2 - links all typed accruals for a purchase
+      ---
+      duration_ms: 0.589765
+      type: 'test'
+      ...
+    # Subtest: does not link accrual when only id matches but type differs
+    ok 3 - does not link accrual when only id matches but type differs
+      ---
+      duration_ms: 0.155928
+      type: 'test'
+      ...
+    # Subtest: returns no links for self-scan purchase
+    ok 4 - returns no links for self-scan purchase
+      ---
+      duration_ms: 0.100111
+      type: 'test'
+      ...
+    # Subtest: finds purchase for accrual by typed ref in loaded list
+    ok 5 - finds purchase for accrual by typed ref in loaded list
+      ---
+      duration_ms: 0.108577
+      type: 'test'
+      ...
+    # Subtest: does not link two purchases with same promoCode only
+    ok 6 - does not link two purchases with same promoCode only
+      ---
+      duration_ms: 0.088252
+      type: 'test'
+      ...
+    1..6
+ok 27 - history-links typed accrual refs
+  ---
+  duration_ms: 2.283899
+  type: 'suite'
+  ...
+# Subtest: mergeAccrualRowsById type-safe keys
+    # Subtest: does not overwrite bonus with agentBonus when ids collide
+    ok 1 - does not overwrite bonus with agentBonus when ids collide
+      ---
+      duration_ms: 1.535306
+      type: 'test'
+      ...
+    1..1
+ok 28 - mergeAccrualRowsById type-safe keys
+  ---
+  duration_ms: 2.10125
+  type: 'suite'
+  ...
+# Subtest: resolveAccrualLookup
+    # Subtest: returns row found in merged sources
+    ok 1 - returns row found in merged sources
+      ---
+      duration_ms: 0.351906
+      type: 'test'
+      ...
+    # Subtest: throws when wallet ok without row and settlements failed
+    ok 2 - throws when wallet ok without row and settlements failed
+      ---
+      duration_ms: 0.370474
+      type: 'test'
+      ...
+    # Subtest: allows not-found when both sources succeeded
+    ok 3 - allows not-found when both sources succeeded
+      ---
+      duration_ms: 0.095596
+      type: 'test'
+      ...
+    # Subtest: allows not-found when wallet unavailable and settlements succeeded
+    ok 4 - allows not-found when wallet unavailable and settlements succeeded
+      ---
+      duration_ms: 0.061458
+      type: 'test'
+      ...
+    # Subtest: finds settlement-only row when wallet unavailable
+    ok 5 - finds settlement-only row when wallet unavailable
+      ---
+      duration_ms: 0.056724
+      type: 'test'
+      ...
+    # Subtest: throws when wallet failed and settlements ok but row missing
+    ok 6 - throws when wallet failed and settlements ok but row missing
+      ---
+      duration_ms: 0.12718
+      type: 'test'
+      ...
+    # Subtest: returns null for ambiguous id without type when both types share id
+    ok 7 - returns null for ambiguous id without type when both types share id
+      ---
+      duration_ms: 0.172135
+      type: 'test'
+      ...
+    # Subtest: disambiguates shared id when accrualType is provided
+    ok 8 - disambiguates shared id when accrualType is provided
+      ---
+      duration_ms: 0.121368
+      type: 'test'
+      ...
+    1..8
+ok 29 - resolveAccrualLookup
+  ---
+  duration_ms: 1.734867
+  type: 'suite'
+  ...
+# Subtest: history mappers
+    # Subtest: maps store orders with typed bonus links
+    ok 1 - maps store orders with typed bonus links
+      ---
+      duration_ms: 0.610375
+      type: 'test'
+      ...
+    # Subtest: maps pro order detail preserving agentBonus links
+    ok 2 - maps pro order detail preserving agentBonus links
+      ---
+      duration_ms: 0.165827
+      type: 'test'
+      ...
+    # Subtest: maps wallet transactions with orderId and accrualType
+    ok 3 - maps wallet transactions with orderId and accrualType
+      ---
+      duration_ms: 0.227377
+      type: 'test'
+      ...
+    # Subtest: maps store bonus list preserving optional orderId
+    ok 4 - maps store bonus list preserving optional orderId
+      ---
+      duration_ms: 0.411742
+      type: 'test'
+      ...
+    # Subtest: maps wallet scope from server role
+    ok 5 - maps wallet scope from server role
+      ---
+      duration_ms: 0.076021
+      type: 'test'
+      ...
+    1..5
+ok 30 - history mappers
+  ---
+  duration_ms: 2.209884
+  type: 'suite'
+  ...
+# Subtest: history source warnings
+    # Subtest: does not show legacy limitation once accepted-order API is used
+    ok 1 - does not show legacy limitation once accepted-order API is used
+      ---
+      duration_ms: 0.43128
+      type: 'test'
+      ...
+    # Subtest: shows empty note when accepted source available but no accepted rows
+    ok 2 - shows empty note when accepted source available but no accepted rows
+      ---
+      duration_ms: 0.108449
+      type: 'test'
+      ...
+    # Subtest: shows access denied note without treating store 403 as empty accepted history
+    ok 3 - shows access denied note without treating store 403 as empty accepted history
+      ---
+      duration_ms: 0.129903
+      type: 'test'
+      ...
+    1..3
+ok 31 - history source warnings
+  ---
+  duration_ms: 1.262137
+  type: 'suite'
+  ...
+# Subtest: invite form state
+    # Subtest: preserves edits across parent re-renders with the same reset key
+    ok 1 - preserves edits across parent re-renders with the same reset key
+      ---
+      duration_ms: 0.630641
+      type: 'test'
+      ...
+    # Subtest: reinitializes when opening invite for another partner
+    ok 2 - reinitializes when opening invite for another partner
+      ---
+      duration_ms: 0.13061
+      type: 'test'
+      ...
+    # Subtest: keeps user input after API error
+    ok 3 - keeps user input after API error
+      ---
+      duration_ms: 0.211319
+      type: 'test'
+      ...
+    # Subtest: uses general fallback rows only when categories are empty
+    ok 4 - uses general fallback rows only when categories are empty
+      ---
+      duration_ms: 0.12193
+      type: 'test'
+      ...
+    # Subtest: requires explicit general confirmation state
+    ok 5 - requires explicit general confirmation state
+      ---
+      duration_ms: 0.07991
+      type: 'test'
+      ...
+    1..5
+ok 32 - invite form state
+  ---
+  duration_ms: 2.73579
+  type: 'suite'
+  ...
+# Subtest: invite opengraph image
+    # Subtest: uses standard OG dimensions and png
+    ok 1 - uses standard OG dimensions and png
+      ---
+      duration_ms: 0.374662
+      type: 'test'
+      ...
+    1..1
+ok 33 - invite opengraph image
+  ---
+  duration_ms: 0.903231
+  type: 'suite'
+  ...
+# Subtest: site opengraph image
+    # Subtest: uses standard OG dimensions and png
+    ok 1 - uses standard OG dimensions and png
+      ---
+      duration_ms: 0.09877
+      type: 'test'
+      ...
+    1..1
+ok 34 - site opengraph image
+  ---
+  duration_ms: 0.165009
+  type: 'suite'
+  ...
+# Subtest: invite presentation
+    # Subtest: resolves store inviter audience as master-facing copy
+    ok 1 - resolves store inviter audience as master-facing copy
+      ---
+      duration_ms: 0.684576
+      type: 'test'
+      ...
+    # Subtest: uses store-invitee copy when master invites a store
+    ok 2 - uses store-invitee copy when master invites a store
+      ---
+      duration_ms: 0.30436
+      type: 'test'
+      ...
+    # Subtest: builds active metadata with inviter in title
+    ok 3 - builds active metadata with inviter in title
+      ---
+      duration_ms: 0.694836
+      type: 'test'
+      ...
+    # Subtest: uses neutral metadata for expired invites
+    ok 4 - uses neutral metadata for expired invites
+      ---
+      duration_ms: 0.407914
+      type: 'test'
+      ...
+    # Subtest: builds share message with inviter name and optional benefit line
+    ok 5 - builds share message with inviter name and optional benefit line
+      ---
+      duration_ms: 0.382983
+      type: 'test'
+      ...
+    # Subtest: falls back inviter display name
+    ok 6 - falls back inviter display name
+      ---
+      duration_ms: 0.226119
+      type: 'test'
+      ...
+    1..6
+ok 35 - invite presentation
+  ---
+  duration_ms: 3.826047
+  type: 'suite'
+  ...
+# Subtest: linkInvitePreviewHasAcceptableTerms
+    # Subtest: requires every participating row to be valid
+    ok 1 - requires every participating row to be valid
+      ---
+      duration_ms: 0.523831
+      type: 'test'
+      ...
+    # Subtest: isValidLinkInviteParticipatingTerm accepts finite 0%
+    ok 2 - isValidLinkInviteParticipatingTerm accepts finite 0%
+      ---
+      duration_ms: 0.954211
+      type: 'test'
+      ...
+    1..2
+ok 36 - linkInvitePreviewHasAcceptableTerms
+  ---
+  duration_ms: 2.100452
+  type: 'suite'
+  ...
+# Subtest: fetchPublicLinkInvitePreview
+    # Subtest: returns NOT_FOUND shape for empty token without calling upstream
+    ok 1 - returns NOT_FOUND shape for empty token without calling upstream
+      ---
+      duration_ms: 1.595712
+      type: 'test'
+      ...
+    # Subtest: returns null when upstream fetch rejects (network)
+    ok 2 - returns null when upstream fetch rejects (network)
+      ---
+      duration_ms: 0.304002
+      type: 'test'
+      ...
+    # Subtest: returns null on abort/timeout and passes bounded signal
+    ok 3 - returns null on abort/timeout and passes bounded signal
+      ---
+      duration_ms: 0.289045
+      type: 'test'
+      ...
+    # Subtest: returns null when upstream throws on invalid JSON parse
+    ok 4 - returns null when upstream throws on invalid JSON parse
+      ---
+      duration_ms: 0.233485
+      type: 'test'
+      ...
+    # Subtest: returns null when upstream responds with error envelope
+    ok 5 - returns null when upstream responds with error envelope
+      ---
+      duration_ms: 0.184496
+      type: 'test'
+      ...
+    # Subtest: maps null preview to neutral metadata for generateMetadata
+    ok 6 - maps null preview to neutral metadata for generateMetadata
+      ---
+      duration_ms: 0.39078
+      type: 'test'
+      ...
+    1..6
+ok 37 - fetchPublicLinkInvitePreview
+  ---
+  duration_ms: 3.263256
+  type: 'suite'
+  ...
+# Subtest: fetchPublicLinkInvitePreview integration
+    # Subtest: returns null for unreachable upstream without throwing
+    ok 1 - returns null for unreachable upstream without throwing
+      ---
+      duration_ms: 13.94935
+      type: 'test'
+      ...
+    1..1
+ok 38 - fetchPublicLinkInvitePreview integration
+  ---
+  duration_ms: 14.031648
+  type: 'suite'
+  ...
+# Subtest: notification-settings-ui
+    # Subtest: turning off both channels sets explicit empty list
+    ok 1 - turning off both channels sets explicit empty list
+      ---
+      duration_ms: 0.900721
+      type: 'test'
+      ...
+    # Subtest: legacy default treats empty as all messengers enabled
+    ok 2 - legacy default treats empty as all messengers enabled
+      ---
+      duration_ms: 0.093124
+      type: 'test'
+      ...
+    1..2
+ok 39 - notification-settings-ui
+  ---
+  duration_ms: 1.643634
+  type: 'suite'
+  ...
+# Subtest: onboarding-save
+    # Subtest: buildProfilePatchBody omits displayName for STORE
+    ok 1 - buildProfilePatchBody omits displayName for STORE
+      ---
+      duration_ms: 0.528747
+      type: 'test'
+      ...
+    # Subtest: buildOrganizationUpsertBody keeps org name separate from profile PATCH
+    ok 2 - buildOrganizationUpsertBody keeps org name separate from profile PATCH
+      ---
+      duration_ms: 0.499922
+      type: 'test'
+      ...
+    # Subtest: buildProfilePatchBody sends only working minimum for MASTER
+    ok 3 - buildProfilePatchBody sends only working minimum for MASTER
+      ---
+      duration_ms: 0.134578
+      type: 'test'
+      ...
+    # Subtest: displayNameMatchesSaved compares trimmed values
+    ok 4 - displayNameMatchesSaved compares trimmed values
+      ---
+      duration_ms: 0.100489
+      type: 'test'
+      ...
+    # Subtest: organizationNameMatchesSaved compares trimmed values
+    ok 5 - organizationNameMatchesSaved compares trimmed values
+      ---
+      duration_ms: 1.19446
+      type: 'test'
+      ...
+    1..5
+ok 40 - onboarding-save
+  ---
+  duration_ms: 3.235429
+  type: 'suite'
+  ...
+# Subtest: order totals
+    # Subtest: computes discount and issuer bonus from gross amount
+    ok 1 - computes discount and issuer bonus from gross amount
+      ---
+      duration_ms: 0.501281
+      type: 'test'
+      ...
+    # Subtest: builds order items for positive amounts only
+    ok 2 - builds order items for positive amounts only
+      ---
+      duration_ms: 0.138351
+      type: 'test'
+      ...
+    # Subtest: rejects invalid amount draft
+    ok 3 - rejects invalid amount draft
+      ---
+      duration_ms: 0.160538
+      type: 'test'
+      ...
+    # Subtest: rejects empty purchase
+    ok 4 - rejects empty purchase
+      ---
+      duration_ms: 0.088575
+      type: 'test'
+      ...
+    1..4
+ok 41 - order totals
+  ---
+  duration_ms: 1.652204
+  type: 'suite'
+  ...
+# Subtest: parsePoolPercentInput
+    # Subtest: rejects empty
+    ok 1 - rejects empty
+      ---
+      duration_ms: 0.437129
+      type: 'test'
+      ...
+    # Subtest: parses comma decimals
+    ok 2 - parses comma decimals
+      ---
+      duration_ms: 0.112024
+      type: 'test'
+      ...
+    1..2
+ok 42 - parsePoolPercentInput
+  ---
+  duration_ms: 1.261924
+  type: 'suite'
+  ...
+# Subtest: isAgentCooperationInviter
+    # Subtest: allows legacy AGENT on technical STORE partnerType
+    ok 1 - allows legacy AGENT on technical STORE partnerType
+      ---
+      duration_ms: 0.470943
+      type: 'test'
+      ...
+    # Subtest: blocks business STORE owner with STORE activity
+    ok 2 - blocks business STORE owner with STORE activity
+      ---
+      duration_ms: 0.093341
+      type: 'test'
+      ...
+    # Subtest: allows COMPANY agent activity when not business store wallet
+    ok 3 - allows COMPANY agent activity when not business store wallet
+      ---
+      duration_ms: 0.106712
+      type: 'test'
+      ...
+    1..3
+ok 43 - isAgentCooperationInviter
+  ---
+  duration_ms: 1.306781
+  type: 'suite'
+  ...
+# Subtest: partnership invite rules
+    # Subtest: uses inviter categories for store inviting master
+    ok 1 - uses inviter categories for store inviting master
+      ---
+      duration_ms: 1.011763
+      type: 'test'
+      ...
+    # Subtest: does not slice categories and keeps all trade-side values
+    ok 2 - does not slice categories and keeps all trade-side values
+      ---
+      duration_ms: 0.201581
+      type: 'test'
+      ...
+    # Subtest: inviteRowsToTerms sets Russian categoryLabel for all store keys
+    ok 3 - inviteRowsToTerms sets Russian categoryLabel for all store keys
+      ---
+      duration_ms: 0.125472
+      type: 'test'
+      ...
+    # Subtest: uses target store categories when master invites store
+    ok 4 - uses target store categories when master invites store
+      ---
+      duration_ms: 0.106711
+      type: 'test'
+      ...
+    # Subtest: uses inviter categories when master invites master
+    ok 5 - uses inviter categories when master invites master
+      ---
+      duration_ms: 0.082759
+      type: 'test'
+      ...
+    # Subtest: requires explicit general row when no categories
+    ok 6 - requires explicit general row when no categories
+      ---
+      duration_ms: 0.162882
+      type: 'test'
+      ...
+    # Subtest: rejects invite rows without active categories
+    ok 7 - rejects invite rows without active categories
+      ---
+      duration_ms: 0.119391
+      type: 'test'
+      ...
+    # Subtest: uses inviter categories for COMPANY with non-STORE organization (not org name heuristic)
+    ok 8 - uses inviter categories for COMPANY with non-STORE organization (not org name heuristic)
+      ---
+      duration_ms: 0.150665
+      type: 'test'
+      ...
+    # Subtest: uses target categories for STORE partnerType
+    ok 9 - uses target categories for STORE partnerType
+      ---
+      duration_ms: 0.109817
+      type: 'test'
+      ...
+    # Subtest: uses target categories for confirmed STORE organization owner
+    ok 10 - uses target categories for confirmed STORE organization owner
+      ---
+      duration_ms: 0.231314
+      type: 'test'
+      ...
+    # Subtest: uses inviter categories for MASTER without organization
+    ok 11 - uses inviter categories for MASTER without organization
+      ---
+      duration_ms: 0.193194
+      type: 'test'
+      ...
+    # Subtest: blocks invite when organization type is unknown and may change trade side
+    ok 12 - blocks invite when organization type is unknown and may change trade side
+      ---
+      duration_ms: 0.143229
+      type: 'test'
+      ...
+    # Subtest: allows store inviter even when target organization type is unknown
+    ok 13 - allows store inviter even when target organization type is unknown
+      ---
+      duration_ms: 0.128837
+      type: 'test'
+      ...
+    # Subtest: allows peer invite when target has no organization name
+    ok 14 - allows peer invite when target has no organization name
+      ---
+      duration_ms: 0.08126
+      type: 'test'
+      ...
+    1..14
+ok 44 - partnership invite rules
+  ---
+  duration_ms: 3.777829
+  type: 'suite'
+  ...
+# Subtest: partnership search semantics
+    # Subtest: defaults store owners to role=store search
+    ok 1 - defaults store owners to role=store search
+      ---
+      duration_ms: 0.069188
+      type: 'test'
+      ...
+    1..1
+ok 45 - partnership search semantics
+  ---
+  duration_ms: 0.121117
+  type: 'suite'
+  ...
+# Subtest: partnership action rules
+    # Subtest: shows accept/reject to invite receiver when terms present
+    ok 1 - shows accept/reject to invite receiver when terms present
+      ---
+      duration_ms: 0.216613
+      type: 'test'
+      ...
+    # Subtest: shows counter_offer to receiver for agent request without terms
+    ok 2 - shows counter_offer to receiver for agent request without terms
+      ---
+      duration_ms: 0.071311
+      type: 'test'
+      ...
+    # Subtest: shows waiting to agent initiator for empty invite
+    ok 3 - shows waiting to agent initiator for empty invite
+      ---
+      duration_ms: 0.062178
+      type: 'test'
+      ...
+    # Subtest: shows cancel to invite author when terms present
+    ok 4 - shows cancel to invite author when terms present
+      ---
+      duration_ms: 0.055268
+      type: 'test'
+      ...
+    # Subtest: allows accept_pending only for non-author in PENDING
+    ok 5 - allows accept_pending only for non-author in PENDING
+      ---
+      duration_ms: 0.064618
+      type: 'test'
+      ...
+    # Subtest: blocks accept_pending for pending author
+    ok 6 - blocks accept_pending for pending author
+      ---
+      duration_ms: 0.075047
+      type: 'test'
+      ...
+    # Subtest: counts attention using pendingProposedBy not initiatedBy
+    ok 7 - counts attention using pendingProposedBy not initiatedBy
+      ---
+      duration_ms: 0.121524
+      type: 'test'
+      ...
+    1..7
+ok 46 - partnership action rules
+  ---
+  duration_ms: 0.779458
+  type: 'suite'
+  ...
+# Subtest: payout-record copy
+    # Subtest: uses external-fact wording for cash and transfer
+    ok 1 - uses external-fact wording for cash and transfer
+      ---
+      duration_ms: 0.579894
+      type: 'test'
+      ...
+    1..1
+ok 47 - payout-record copy
+  ---
+  duration_ms: 1.101135
+  type: 'suite'
+  ...
+# Subtest: prof-admin-api request bodies
+    # Subtest: adminPasswordLogin sends a single JSON object (not double-stringified)
+    ok 1 - adminPasswordLogin sends a single JSON object (not double-stringified)
+      ---
+      duration_ms: 34.785129
+      type: 'test'
+      ...
+    # Subtest: createProfTestUser preserves kind/name/city object fields
+    ok 2 - createProfTestUser preserves kind/name/city object fields
+      ---
+      duration_ms: 2.365188
+      type: 'test'
+      ...
+    1..2
+ok 48 - prof-admin-api request bodies
+  ---
+  duration_ms: 37.816967
+  type: 'suite'
+  ...
+# Subtest: prof-i-permissions (client)
+    # Subtest: enables ledger when cash is toggled on
+    ok 1 - enables ledger when cash is toggled on
+      ---
+      duration_ms: 0.530326
+      type: 'test'
+      ...
+    # Subtest: clears payout flags when ledger is toggled off
+    ok 2 - clears payout flags when ledger is toggled off
+      ---
+      duration_ms: 0.155708
+      type: 'test'
+      ...
+    # Subtest: round-trips action ids
+    ok 3 - round-trips action ids
+      ---
+      duration_ms: 0.546792
+      type: 'test'
+      ...
+    1..3
+ok 49 - prof-i-permissions (client)
+  ---
+  duration_ms: 1.843088
+  type: 'suite'
+  ...
+# Subtest: profile-catalog-state
+    # Subtest: uses organization catalog status when org exists
+    ok 1 - uses organization catalog status when org exists
+      ---
+      duration_ms: 0.49848
+      type: 'test'
+      ...
+    # Subtest: allows submit for APPROVED when catalog draft pending
+    ok 2 - allows submit for APPROVED when catalog draft pending
+      ---
+      duration_ms: 0.110552
+      type: 'test'
+      ...
+    # Subtest: allows submit for solo user in NEEDS_REVISION
+    ok 3 - allows submit for solo user in NEEDS_REVISION
+      ---
+      duration_ms: 0.118177
+      type: 'test'
+      ...
+    1..3
+ok 50 - profile-catalog-state
+  ---
+  duration_ms: 1.31713
+  type: 'suite'
+  ...
+# Subtest: validateProfileDraft
+    # Subtest: rejects invalid representative name
+    ok 1 - rejects invalid representative name
+      ---
+      duration_ms: 0.649006
+      type: 'test'
+      ...
+    # Subtest: requires branch address for store without org
+    ok 2 - requires branch address for store without org
+      ---
+      duration_ms: 0.134209
+      type: 'test'
+      ...
+    1..2
+ok 51 - validateProfileDraft
+  ---
+  duration_ms: 1.456413
+  type: 'suite'
+  ...
+# Subtest: processQrDecode
+    # Subtest: emits once for a valid QR from an active scanner generation
+    ok 1 - emits once for a valid QR from an active scanner generation
+      ---
+      duration_ms: 0.567175
+      type: 'test'
+      ...
+    # Subtest: ignores duplicate decode within dedup window
+    ok 2 - ignores duplicate decode within dedup window
+      ---
+      duration_ms: 0.155842
+      type: 'test'
+      ...
+    # Subtest: ignores decode after scanner generation was closed
+    ok 3 - ignores decode after scanner generation was closed
+      ---
+      duration_ms: 0.112927
+      type: 'test'
+      ...
+    1..3
+ok 52 - processQrDecode
+  ---
+  duration_ms: 1.434075
+  type: 'suite'
+  ...
+# Subtest: QrScanner handler contract
+    # Subtest: calls onCode exactly once before bumping generation on valid QR
+    ok 1 - calls onCode exactly once before bumping generation on valid QR
+      ---
+      duration_ms: 0.156554
+      type: 'test'
+      ...
+    # Subtest: does not call onCode after scanner close
+    ok 2 - does not call onCode after scanner close
+      ---
+      duration_ms: 0.088895
+      type: 'test'
+      ...
+    1..2
+ok 53 - QrScanner handler contract
+  ---
+  duration_ms: 0.370222
+  type: 'suite'
+  ...
+# Subtest: multipart catalog upload proxy body
+    # Subtest: detects multipart content-type
+    ok 1 - detects multipart content-type
+      ---
+      duration_ms: 0.477131
+      type: 'test'
+      ...
+    # Subtest: regression: request.text() corrupts multipart PNG bytes
+    ok 2 - regression: request.text() corrupts multipart PNG bytes
+      ---
+      duration_ms: 8.941348
+      type: 'test'
+      ...
+    # Subtest: readProxyRequestBody preserves multipart bytes (not text path)
+    ok 3 - readProxyRequestBody preserves multipart bytes (not text path)
+      ---
+      duration_ms: 1.824401
+      type: 'test'
+      ...
+    # Subtest: proxies catalog upload through BFF input builder and upstream stub
+    ok 4 - proxies catalog upload through BFF input builder and upstream stub
+      ---
+      duration_ms: 31.063089
+      type: 'test'
+      ...
+    # Subtest: text-only proxy path would break catalog PNG (documented failure mode)
+    ok 5 - text-only proxy path would break catalog PNG (documented failure mode)
+      ---
+      duration_ms: 4.562968
+      type: 'test'
+      ...
+    1..5
+ok 54 - multipart catalog upload proxy body
+  ---
+  duration_ms: 51.96525
+  type: 'suite'
+  ...
+# Subtest: remcard proxy transport checks
+    # Subtest: requires a document ID for cabinet consents without weakening Origin
+    ok 1 - requires a document ID for cabinet consents without weakening Origin
+      ---
+      duration_ms: 1.500435
+      type: 'test'
+      ...
+    # Subtest: preserves document binding and forwards a version mismatch without retry
+    ok 2 - preserves document binding and forwards a version mismatch without retry
+      ---
+      duration_ms: 46.906868
+      type: 'test'
+      ...
+    # Subtest: normalizes paths and rejects traversal
+    ok 3 - normalizes paths and rejects traversal
+      ---
+      duration_ms: 0.223163
+      type: 'test'
+      ...
+    # Subtest: allows only verified route/method pairs
+    ok 4 - allows only verified route/method pairs
+      ---
+      duration_ms: 2.408095
+      type: 'test'
+      ...
+    # Subtest: forwards only allowlisted cookies
+    ok 5 - forwards only allowlisted cookies
+      ---
+      duration_ms: 0.189318
+      type: 'test'
+      ...
+    # Subtest: rejects missing or foreign origins for mutating requests
+    ok 6 - rejects missing or foreign origins for mutating requests
+      ---
+      duration_ms: 0.152688
+      type: 'test'
+      ...
+    # Subtest: detects statuses that must not include a body
+    ok 7 - detects statuses that must not include a body
+      ---
+      duration_ms: 0.125624
+      type: 'test'
+      ...
+    # Subtest: allows only trusted redirect locations
+    ok 8 - allows only trusted redirect locations
+      ---
+      duration_ms: 0.350799
+      type: 'test'
+      ...
+    # Subtest: rejects Location bypasses via backslash, protocol-relative, control chars, and userinfo
+    ok 9 - rejects Location bypasses via backslash, protocol-relative, control chars, and userinfo
+      ---
+      duration_ms: 0.303947
+      type: 'test'
+      ...
+    # Subtest: rejects dot-segment Location normalization to protocol-relative paths
+    ok 10 - rejects dot-segment Location normalization to protocol-relative paths
+      ---
+      duration_ms: 0.347528
+      type: 'test'
+      ...
+    # Subtest: filters upstream Set-Cookie names on responses
+    ok 11 - filters upstream Set-Cookie names on responses
+      ---
+      duration_ms: 0.134407
+      type: 'test'
+      ...
+    # Subtest: buildProxyNextResponse never forwards disallowed Set-Cookie headers
+    ok 12 - buildProxyNextResponse never forwards disallowed Set-Cookie headers
+      ---
+      duration_ms: 0.236218
+      type: 'test'
+      ...
+    # Subtest: proxies PDF bytes without text corruption
+    ok 13 - proxies PDF bytes without text corruption
+      ---
+      duration_ms: 3.787713
+      type: 'test'
+      ...
+    # Subtest: preserves query strings on upstream requests
+    ok 14 - preserves query strings on upstream requests
+      ---
+      duration_ms: 1.654314
+      type: 'test'
+      ...
+    # Subtest: forwards trusted redirect Location headers
+    ok 15 - forwards trusted redirect Location headers
+      ---
+      duration_ms: 1.955257
+      type: 'test'
+      ...
+    # Subtest: drops external redirect Location headers
+    ok 16 - drops external redirect Location headers
+      ---
+      duration_ms: 2.01235
+      type: 'test'
+      ...
+    # Subtest: builds no-body responses for 204 and 304
+    ok 17 - builds no-body responses for 204 and 304
+      ---
+      duration_ms: 2.476209
+      type: 'test'
+      ...
+    # Subtest: forwards only allowlisted Set-Cookie headers from upstream
+    ok 18 - forwards only allowlisted Set-Cookie headers from upstream
+      ---
+      duration_ms: 6.401355
+      type: 'test'
+      ...
+    # Subtest: forwards multiple Set-Cookie headers on logout
+    ok 19 - forwards multiple Set-Cookie headers on logout
+      ---
+      duration_ms: 2.773989
+      type: 'test'
+      ...
+    # Subtest: blocks disallowed paths and foreign origins
+    ok 20 - blocks disallowed paths and foreign origins
+      ---
+      duration_ms: 0.225343
+      type: 'test'
+      ...
+    # Subtest: rejects backend URLs with embedded credentials
+    ok 21 - rejects backend URLs with embedded credentials
+      ---
+      duration_ms: 0.209098
+      type: 'test'
+      ...
+    # Subtest: requires both upstream Basic Auth env vars when one is set
+    ok 22 - requires both upstream Basic Auth env vars when one is set
+      ---
+      duration_ms: 0.138236
+      type: 'test'
+      ...
+    # Subtest: sends upstream Basic Auth only from server env
+    ok 23 - sends upstream Basic Auth only from server env
+      ---
+      duration_ms: 2.643943
+      type: 'test'
+      ...
+    # Subtest: proxies verify-code login with origin check and session cookie
+    ok 24 - proxies verify-code login with origin check and session cookie
+      ---
+      duration_ms: 13.353997
+      type: 'test'
+      ...
+    # Subtest: requires Idempotency-Key for POST /api/store/order and forwards valid keys
+    ok 25 - requires Idempotency-Key for POST /api/store/order and forwards valid keys
+      ---
+      duration_ms: 3.045802
+      type: 'test'
+      ...
+    # Subtest: times out hung upstream requests
+    ok 26 - times out hung upstream requests
+      ---
+      duration_ms: 15002.178148
+      type: 'test'
+      ...
+    1..26
+ok 55 - remcard proxy transport checks
+  ---
+  duration_ms: 15100.95678
+  type: 'suite'
+  ...
+# Subtest: shouldApplyPreviewResponse
+    # Subtest: accepts the latest request id
+    ok 1 - accepts the latest request id
+      ---
+      duration_ms: 0.460632
+      type: 'test'
+      ...
+    # Subtest: rejects stale responses
+    ok 2 - rejects stale responses
+      ---
+      duration_ms: 0.083708
+      type: 'test'
+      ...
+    # Subtest: rejects aborted responses
+    ok 3 - rejects aborted responses
+      ---
+      duration_ms: 0.13715
+      type: 'test'
+      ...
+    1..3
+ok 56 - shouldApplyPreviewResponse
+  ---
+  duration_ms: 1.384967
+  type: 'suite'
+  ...
+# Subtest: isPreviewSessionAllowed
+    # Subtest: accepts allowed preview sessions
+    ok 1 - accepts allowed preview sessions
+      ---
+      duration_ms: 0.110128
+      type: 'test'
+      ...
+    # Subtest: rejects denied preview sessions
+    ok 2 - rejects denied preview sessions
+      ---
+      duration_ms: 0.063946
+      type: 'test'
+      ...
+    1..2
+ok 57 - isPreviewSessionAllowed
+  ---
+  duration_ms: 0.299099
+  type: 'suite'
+  ...
+# Subtest: validateOrderCreateResponse
+    # Subtest: accepts a well-formed 201 payload
+    ok 1 - accepts a well-formed 201 payload
+      ---
+      duration_ms: 0.517609
+      type: 'test'
+      ...
+    # Subtest: rejects empty body
+    ok 2 - rejects empty body
+      ---
+      duration_ms: 0.193964
+      type: 'test'
+      ...
+    # Subtest: rejects malformed structure
+    ok 3 - rejects malformed structure
+      ---
+      duration_ms: 0.137937
+      type: 'test'
+      ...
+    1..3
+ok 58 - validateOrderCreateResponse
+  ---
+  duration_ms: 1.451251
+  type: 'suite'
+  ...
+# Subtest: reduceOrderSubmitState
+    # Subtest: marks malformed 201 JSON payload as uncertain and blocks retry
+    ok 1 - marks malformed 201 JSON payload as uncertain and blocks retry
+      ---
+      duration_ms: 0.4124
+      type: 'test'
+      ...
+    # Subtest: marks empty 201 body as uncertain
+    ok 2 - marks empty 201 body as uncertain
+      ---
+      duration_ms: 0.152762
+      type: 'test'
+      ...
+    # Subtest: accepts valid 201 and shows success
+    ok 3 - accepts valid 201 and shows success
+      ---
+      duration_ms: 0.086133
+      type: 'test'
+      ...
+    # Subtest: keeps form editable on validation 400 without marking uncertain
+    ok 4 - keeps form editable on validation 400 without marking uncertain
+      ---
+      duration_ms: 0.184029
+      type: 'test'
+      ...
+    # Subtest: marks 504 as uncertain without second POST
+    ok 5 - marks 504 as uncertain without second POST
+      ---
+      duration_ms: 0.20178
+      type: 'test'
+      ...
+    # Subtest: 409 sets conflict state without clearing key semantics
+    ok 6 - 409 sets conflict state without clearing key semantics
+      ---
+      duration_ms: 0.20802
+      type: 'test'
+      ...
+    # Subtest: 409 after reload: conflict persists, no normal confirm
+    ok 7 - 409 after reload: conflict persists, no normal confirm
+      ---
+      duration_ms: 0.165943
+      type: 'test'
+      ...
+    # Subtest: retry 400 keeps uncertain (unknown_persist)
+    ok 8 - retry 400 keeps uncertain (unknown_persist)
+      ---
+      duration_ms: 0.146573
+      type: 'test'
+      ...
+    # Subtest: allows retry check when uncertain
+    ok 9 - allows retry check when uncertain
+      ---
+      duration_ms: 0.073912
+      type: 'test'
+      ...
+    # Subtest: treats 201 with invalid JSON error as uncertain
+    ok 10 - treats 201 with invalid JSON error as uncertain
+      ---
+      duration_ms: 0.090574
+      type: 'test'
+      ...
+    # Subtest: status 0 on first POST marks uncertain without clearing key semantics
+    ok 11 - status 0 on first POST marks uncertain without clearing key semantics
+      ---
+      duration_ms: 0.073988
+      type: 'test'
+      ...
+    # Subtest: 401 on retry preserves uncertain state
+    ok 12 - 401 on retry preserves uncertain state
+      ---
+      duration_ms: 0.065603
+      type: 'test'
+      ...
+    1..12
+ok 59 - reduceOrderSubmitState
+  ---
+  duration_ms: 2.242928
+  type: 'suite'
+  ...
+# Subtest: settlementAccrualHref
+    # Subtest: includes accrualType in detail URL
+    ok 1 - includes accrualType in detail URL
+      ---
+      duration_ms: 0.437837
+      type: 'test'
+      ...
+    1..1
+ok 60 - settlementAccrualHref
+  ---
+  duration_ms: 0.939953
+  type: 'suite'
+  ...
+# Subtest: groupObligationsByCounterparty
+    # Subtest: groups by counterpartyId and sums amounts
+    ok 1 - groups by counterpartyId and sums amounts
+      ---
+      duration_ms: 5.772257
+      type: 'test'
+      ...
+    # Subtest: keeps partners separate even when names match
+    ok 2 - keeps partners separate even when names match
+      ---
+      duration_ms: 0.155734
+      type: 'test'
+      ...
+    1..2
+ok 61 - groupObligationsByCounterparty
+  ---
+  duration_ms: 6.528282
+  type: 'suite'
+  ...
+# Subtest: mapSettlementsToAccrualRows
+    # Subtest: maps both directions for accrual detail merge
+    ok 1 - maps both directions for accrual detail merge
+      ---
+      duration_ms: 0.337395
+      type: 'test'
+      ...
+    1..1
+ok 62 - mapSettlementsToAccrualRows
+  ---
+  duration_ms: 0.424633
+  type: 'suite'
+  ...
+# Subtest: mergeAccrualRowsById
+    # Subtest: adds settlement-only accruals without duplicating wallet rows
+    ok 1 - adds settlement-only accruals without duplicating wallet rows
+      ---
+      duration_ms: 0.242535
+      type: 'test'
+      ...
+    1..1
+ok 63 - mergeAccrualRowsById
+  ---
+  duration_ms: 0.321708
+  type: 'suite'
+  ...
+# Subtest: resolveSettlementsPageShell
+    # Subtest: keeps MASTER wallet when R05 is eligible (MASTER+AGENT)
+    ok 1 - keeps MASTER wallet when R05 is eligible (MASTER+AGENT)
+      ---
+      duration_ms: 0.438305
+      type: 'test'
+      ...
+    # Subtest: routes pure R05 agent to agent shell
+    ok 2 - routes pure R05 agent to agent shell
+      ---
+      duration_ms: 0.134686
+      type: 'test'
+      ...
+    # Subtest: routes business store owner to master wallet even when R05 eligible
+    ok 3 - routes business store owner to master wallet even when R05 eligible
+      ---
+      duration_ms: 0.147309
+      type: 'test'
+      ...
+    # Subtest: routes other PRO users to hub
+    ok 4 - routes other PRO users to hub
+      ---
+      duration_ms: 0.103928
+      type: 'test'
+      ...
+    1..4
+ok 64 - resolveSettlementsPageShell
+  ---
+  duration_ms: 1.491426
+  type: 'suite'
+  ...
+# Subtest: site opengraph
+    # Subtest: builds home metadata with absolute image URL and twitter card
+    ok 1 - builds home metadata with absolute image URL and twitter card
+      ---
+      duration_ms: 0.696976
+      type: 'test'
+      ...
+    # Subtest: builds login metadata with login page url
+    ok 2 - builds login metadata with login page url
+      ---
+      duration_ms: 0.145013
+      type: 'test'
+      ...
+    # Subtest: site image url differs from invite personal preview image
+    ok 3 - site image url differs from invite personal preview image
+      ---
+      duration_ms: 0.140475
+      type: 'test'
+      ...
+    # Subtest: invite metadata still uses invite image and personal title
+    ok 4 - invite metadata still uses invite image and personal title
+      ---
+      duration_ms: 0.300955
+      type: 'test'
+      ...
+    1..4
+ok 65 - site opengraph
+  ---
+  duration_ms: 1.942638
+  type: 'suite'
+  ...
+# Subtest: formattedMoneyWrapGroups
+    # Subtest: splits thousands groups without breaking digits inside a group
+    ok 1 - splits thousands groups without breaking digits inside a group
+      ---
+      duration_ms: 0.890693
+      type: 'test'
+      ...
+    # Subtest: preserves fractional kopecks on the last numeric group
+    ok 2 - preserves fractional kopecks on the last numeric group
+      ---
+      duration_ms: 0.142494
+      type: 'test'
+      ...
+    # Subtest: returns null for non-money labels
+    ok 3 - returns null for non-money labels
+      ---
+      duration_ms: 0.130053
+      type: 'test'
+      ...
+    1..3
+ok 66 - formattedMoneyWrapGroups
+  ---
+  duration_ms: 1.792296
+  type: 'suite'
+  ...
+# Subtest: shouldRenderSpecialistHome
+    # Subtest: enables for eligible MASTER when not agent cabinet
+    ok 1 - enables for eligible MASTER when not agent cabinet
+      ---
+      duration_ms: 0.435536
+      type: 'test'
+      ...
+    # Subtest: disables for agent cabinet, store, or ineligible r06
+    ok 2 - disables for agent cabinet, store, or ineligible r06
+      ---
+      duration_ms: 0.100068
+      type: 'test'
+      ...
+    1..2
+ok 67 - shouldRenderSpecialistHome
+  ---
+  duration_ms: 1.191323
+  type: 'suite'
+  ...
+# Subtest: specialistHomeMetricsFromWallet
+    # Subtest: maps MASTER wallet totals without treating errors as zero
+    ok 1 - maps MASTER wallet totals without treating errors as zero
+      ---
+      duration_ms: 0.444362
+      type: 'test'
+      ...
+    # Subtest: rejects non-MASTER wallet role for specialist home
+    ok 2 - rejects non-MASTER wallet role for specialist home
+      ---
+      duration_ms: 0.093443
+      type: 'test'
+      ...
+    1..2
+ok 68 - specialistHomeMetricsFromWallet
+  ---
+  duration_ms: 1.154669
+  type: 'suite'
+  ...
+# Subtest: specialistHomeCertificateMetric
+    # Subtest: returns count on success and error slice on failure
+    ok 1 - returns count on success and error slice on failure
+      ---
+      duration_ms: 0.192952
+      type: 'test'
+      ...
+    1..1
+ok 69 - specialistHomeCertificateMetric
+  ---
+  duration_ms: 0.265415
+  type: 'suite'
+  ...
+# Subtest: specialist-settlements ledger
+    # Subtest: counts receivable and payable totals separately without netting
+    ok 1 - counts receivable and payable totals separately without netting
+      ---
+      duration_ms: 10.835511
+      type: 'test'
+      ...
+    # Subtest: export from partner A excludes partner B across all matching rows
+    ok 2 - export from partner A excludes partner B across all matching rows
+      ---
+      duration_ms: 0.371509
+      type: 'test'
+      ...
+    # Subtest: reconciliation excludes rows outside period and unknown paidAt
+    ok 3 - reconciliation excludes rows outside period and unknown paidAt
+      ---
+      duration_ms: 1.072532
+      type: 'test'
+      ...
+    # Subtest: clamps page when filters shrink result set on page 2
+    ok 4 - clamps page when filters shrink result set on page 2
+      ---
+      duration_ms: 1.672261
+      type: 'test'
+      ...
+    # Subtest: sorts partner groups by amount ascending, not alphabetically
+    ok 5 - sorts partner groups by amount ascending, not alphabetically
+      ---
+      duration_ms: 0.276675
+      type: 'test'
+      ...
+    # Subtest: uses MSK calendar day for period boundaries
+    ok 6 - uses MSK calendar day for period boundaries
+      ---
+      duration_ms: 0.156775
+      type: 'test'
+      ...
+    # Subtest: lists completed-only partner when status is all
+    ok 7 - lists completed-only partner when status is all
+      ---
+      duration_ms: 0.438907
+      type: 'test'
+      ...
+    # Subtest: maps export scope from active screen
+    ok 8 - maps export scope from active screen
+      ---
+      duration_ms: 0.14631
+      type: 'test'
+      ...
+    # Subtest: reconciliation search filters rows and totals together
+    ok 9 - reconciliation search filters rows and totals together
+      ---
+      duration_ms: 0.480407
+      type: 'test'
+      ...
+    # Subtest: partner history and reconciliation sort matches amount and date modes
+    ok 10 - partner history and reconciliation sort matches amount and date modes
+      ---
+      duration_ms: 1.066309
+      type: 'test'
+      ...
+    # Subtest: validates invalid period range
+    ok 11 - validates invalid period range
+      ---
+      duration_ms: 0.309163
+      type: 'test'
+      ...
+    1..11
+ok 70 - specialist-settlements ledger
+  ---
+  duration_ms: 19.447406
+  type: 'suite'
+  ...
+# Subtest: mskCalendar (frontend)
+    # Subtest: matches MSK day across UTC midnight
+    ok 1 - matches MSK day across UTC midnight
+      ---
+      duration_ms: 12.245371
+      type: 'test'
+      ...
+    # Subtest: validates impossible calendar dates
+    ok 2 - validates impossible calendar dates
+      ---
+      duration_ms: 0.234131
+      type: 'test'
+      ...
+    1..2
+ok 71 - mskCalendar (frontend)
+  ---
+  duration_ms: 13.120374
+  type: 'suite'
+  ...
+# Subtest: store-order-attempt
+    # Subtest: createStoreOrderAttempt persists before POST
+    ok 1 - createStoreOrderAttempt persists before POST
+      ---
+      duration_ms: 0.993875
+      type: 'test'
+      ...
+    # Subtest: prepareStoreOrderRetry reuses stored key+body
+    ok 2 - prepareStoreOrderRetry reuses stored key+body
+      ---
+      duration_ms: 0.263527
+      type: 'test'
+      ...
+    # Subtest: does not overwrite attempt when form amount changes 1000 → 2000
+    ok 3 - does not overwrite attempt when form amount changes 1000 → 2000
+      ---
+      duration_ms: 0.376935
+      type: 'test'
+      ...
+    # Subtest: persists conflict after 409 and blocks retry
+    ok 4 - persists conflict after 409 and blocks retry
+      ---
+      duration_ms: 1.59639
+      type: 'test'
+      ...
+    # Subtest: does not expose foreign-user attempts
+    ok 5 - does not expose foreign-user attempts
+      ---
+      duration_ms: 0.269736
+      type: 'test'
+      ...
+    # Subtest: treats in_flight after reload as unknown
+    ok 6 - treats in_flight after reload as unknown
+      ---
+      duration_ms: 0.136241
+      type: 'test'
+      ...
+    # Subtest: releaseStoreOrderAttemptForEdit clears after validation failure
+    ok 7 - releaseStoreOrderAttemptForEdit clears after validation failure
+      ---
+      duration_ms: 0.17767
+      type: 'test'
+      ...
+    # Subtest: status 0 is uncertain on first POST and unknown_persist on retry
+    ok 8 - status 0 is uncertain on first POST and unknown_persist on retry
+      ---
+      duration_ms: 0.151474
+      type: 'test'
+      ...
+    # Subtest: classifyStoreOrderPostResponse distinguishes first 400 vs retry 400
+    ok 9 - classifyStoreOrderPostResponse distinguishes first 400 vs retry 400
+      ---
+      duration_ms: 0.174684
+      type: 'test'
+      ...
+    # Subtest: clears attempt on new purchase
+    ok 10 - clears attempt on new purchase
+      ---
+      duration_ms: 0.2022
+      type: 'test'
+      ...
+    1..10
+ok 72 - store-order-attempt
+  ---
+  duration_ms: 5.124388
+  type: 'suite'
+  ...
+# Subtest: parseStoreOrderIdempotencyKey
+    # Subtest: accepts UUID keys
+    ok 1 - accepts UUID keys
+      ---
+      duration_ms: 0.424195
+      type: 'test'
+      ...
+    # Subtest: rejects empty and invalid keys
+    ok 2 - rejects empty and invalid keys
+      ---
+      duration_ms: 0.113852
+      type: 'test'
+      ...
+    1..2
+ok 73 - parseStoreOrderIdempotencyKey
+  ---
+  duration_ms: 1.145326
+  type: 'suite'
+  ...
+# Subtest: resolveStoreOrderIdempotencyKey
+    # Subtest: requires key only for POST /api/store/order
+    ok 1 - requires key only for POST /api/store/order
+      ---
+      duration_ms: 0.601816
+      type: 'test'
+      ...
+    # Subtest: forwards optional key for bonus payout POST
+    ok 2 - forwards optional key for bonus payout POST
+      ---
+      duration_ms: 0.156948
+      type: 'test'
+      ...
+    1..2
+ok 74 - resolveStoreOrderIdempotencyKey
+  ---
+  duration_ms: 0.860029
+  type: 'suite'
+  ...
+# Subtest: term change labels
+    # Subtest: shows proposer waiting copy for initiator
+    ok 1 - shows proposer waiting copy for initiator
+      ---
+      duration_ms: 0.508875
+      type: 'test'
+      ...
+    # Subtest: shows counterparty proposal for responder
+    ok 2 - shows counterparty proposal for responder
+      ---
+      duration_ms: 0.103297
+      type: 'test'
+      ...
+    1..2
+ok 75 - term change labels
+  ---
+  duration_ms: 1.204869
+  type: 'suite'
+  ...
+1..75
+# tests 291
+# suites 75
+# pass 291
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17335.739773
+
+> remcard-partner-platform@0.1.0 build /agent/repos/remcard-partner-platform
+> next build
+
+   ▲ Next.js 15.5.27
+   - Experiments (use with caution):
+     · cpus: 1
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.9s
+   Linting and checking validity of types ...
+
+./src/app/admin/moderation/organizations/[id]/ModerationOrgCatalogFullPreview.tsx
+56:6  Warning: React Hook useMemo has a missing dependency: 'data'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/agent-r03/AgentCertificatesList.tsx
+209:6  Warning: React Hook useCallback has a missing dependency: 'isIssuerShell'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/agent-r03/AgentClientsList.tsx
+99:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/home/BusinessOwnerHomeDashboard.tsx
+114:6  Warning: React Hook useCallback has an unnecessary dependency: 'contextEpoch'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/layout/agent/useAgentThemeSync.ts
+89:6  Warning: React Hook useEffect has a missing dependency: 'queuePersist'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/notifications/ProfNotificationCenter.tsx
+15:6  Warning: React Hook useEffect has a missing dependency: 'notifications'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/partners/PartnersHub.tsx
+348:6  Warning: React Hook useMemo has an unnecessary dependency: 'listArchiveView'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/profile/ProfileEditor.tsx
+346:7  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./src/components/profile/ProfileTeamMemberEditor.tsx
+38:5  Warning: React Hook useMemo has missing dependencies: 'member' and 'overview'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+41:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+42:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./src/components/profile/agent/AgentProfileSection.tsx
+60:19  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/13) ...
+   Generating static pages (3/13) 
+   Generating static pages (6/13) 
+   Generating static pages (9/13) 
+ ✓ Generating static pages (13/13)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                  Size  First Load JS
+┌ ƒ /                                     13.6 kB         156 kB
+├ ○ /_not-found                              1 kB         104 kB
+├ ƒ /account/signed-out                     705 B         107 kB
+├ ƒ /admin/moderation                     2.54 kB         122 kB
+├ ƒ /admin/moderation/organizations/[id]  10.8 kB         141 kB
+├ ƒ /admin/moderation/partners/[id]       8.42 kB         139 kB
+├ ƒ /admin/password                       2.57 kB         105 kB
+├ ƒ /admin/test-users                     4.76 kB         107 kB
+├ ƒ /api/csrf                               152 B         103 kB
+├ ƒ /api/remcard/[...path]                  152 B         103 kB
+├ ƒ /certificates                           858 B         178 kB
+├ ƒ /certificates/[id]                    4.37 kB         163 kB
+├ ƒ /certificates/new                     3.62 kB         164 kB
+├ ƒ /clients                              6.36 kB         152 kB
+├ ƒ /clients/[id]                         4.42 kB         150 kB
+├ ○ /dev-fixtures/account-session         3.11 kB         111 kB
+├ ○ /dev/business-home-preview             2.4 kB         113 kB
+├ ○ /dev/r01-agent-shell                  1.99 kB         121 kB
+├ ƒ /dev/r02-agent-profile                1.99 kB         115 kB
+├ ○ /dev/specialist-home-preview          4.95 kB         111 kB
+├ ƒ /history                              3.71 kB         145 kB
+├ ƒ /history/accruals/[id]                4.21 kB         146 kB
+├ ƒ /history/purchases/[id]               8.68 kB         150 kB
+├ ƒ /invite/[token]                       13.6 kB         124 kB
+├ ƒ /invite/accept                        2.87 kB         113 kB
+├ ƒ /invite/discussion/[token]             2.2 kB         112 kB
+├ ○ /invite/opengraph-image                 152 B         103 kB
+├ ƒ /join                                 9.54 kB         125 kB
+├ ƒ /login                                4.08 kB         119 kB
+├ ƒ /notifications                          322 B         137 kB
+├ ƒ /onboarding                           10.4 kB         116 kB
+├ ○ /opengraph-image                        152 B         103 kB
+├ ƒ /partners                             2.78 kB         173 kB
+├ ƒ /partners/agent-terms                 4.52 kB         142 kB
+├ ○ /partners/dev-fixture                 1.83 kB         142 kB
+├ ƒ /profile                                293 B         243 kB
+├ ○ /profile/dev-fixture                  5.34 kB         226 kB
+├ ƒ /profile/staff-access-scope-fixture   1.48 kB         218 kB
+├ ƒ /recommendations                        224 B         181 kB
+├ ƒ /recommendations/[id]                   225 B         181 kB
+├ ƒ /recommendations/new                    225 B         181 kB
+├ ƒ /scanner                              9.32 kB         146 kB
+├ ƒ /settlements                          8.07 kB         160 kB
+└ ○ /settlements/dev-fixture              2.02 kB         123 kB
++ First Load JS shared by all              103 kB
+  ├ chunks/1255-8dc91b756d944555.js       46.2 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js   54.2 kB
+  └ other shared chunks (total)           2.22 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+ RUN  v4.1.5 /agent/repos/remcard-navigator
+
+
+ Test Files  7 passed (7)
+      Tests  15 passed (15)
+   Start at  08:13:13
+   Duration  2.05s (transform 388ms, setup 826ms, import 629ms, tests 37ms, environment 2.42s)
+
+[bootstrap] prisma db push (acceptance bootstrap only)
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "remcard_prof_test", schema "public" at "127.0.0.1:55432"
+
+The database is already in sync with the Prisma schema.
+
+[bootstrap] seed legal documents (local QA only)
+[seed-legal] Starting...
+[seed-legal] PERSONAL_DATA: active version = 3.1
+[seed-legal] TERMS: active version = 2.0
+[seed-legal] MARKETING: active version = 2.0
+[seed-legal] CROSS_BORDER: active version = 2.0
+[seed-legal] ANALYTICS: active version = 2.0
+[seed-legal] TRANSFER_TO_PARTNER: active version = 2.0
+[seed-legal] PUBLIC_OFFER_PRO: active version = 1.0
+[seed-legal] Done.
+[bootstrap] staff fixtures + consents
+[seed-legal-consents] ok
+[bootstrap] public tables=84
+profTestPublicCatalogAllowed|boolean|false
+PROF_TEST_PUBLIC_CATALOG_SHOW_UPDATED
+[bootstrap] OK DATABASE_URL=postgresql://remcard_catalogqa@127.0.0.1:55432/remcard_prof_test
+[seed-ui-harness] wrote /agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json
+[seed-agent-terms-invite-flow] store=cmvozc1yt0000jsncjjddczg2 agent=cmvozc1zr000hjsnc6toi7ik0 pool=12.5% doors
+[stop] done
+[start] pnpm run build
+$ node scripts/build-app.mjs
+[legal] env check OK
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 578ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ (serwist) Bundling the service worker script with the URL '/sw.js' and the scope '/'...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ⚠ Compiled with warnings
+
+./node_modules/.pnpm/framer-motion@11.18.2_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/framer-motion/dist/cjs/index.js
+Module not found: Can't resolve '@emotion/is-prop-valid' in '/agent/repos/remcard-navigator/node_modules/.pnpm/framer-motion@11.18.2_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/framer-motion/dist/cjs'
+
+Import trace for requested module:
+./node_modules/.pnpm/framer-motion@11.18.2_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/framer-motion/dist/cjs/index.js
+./src/components/motion/LazyMotionDiv.tsx
+./src/app/page.tsx
+
+   Linting and checking validity of types ...
+
+./src/app/admin/moderation/page.tsx
+873:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/team/AdminTeamClient.tsx
+422:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/users/[id]/page.tsx
+315:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/client/favorites/page.tsx
+286:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/client/profile/page.tsx
+222:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/pro/ProDashboardClient.tsx
+626:6  Warning: React Hook useEffect has a missing dependency: 'branchRole'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/pro/agent-setup/page.tsx
+318:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/pro/certificates/new/CertificateWizard.tsx
+294:6  Warning: React Hook useEffect has a missing dependency: 'loadAvailablePartners'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/pro/events/page.tsx
+554:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/pro/leads/[id]/page.tsx
+199:6  Warning: React Hook useEffect has a missing dependency: 'lead'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+700:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/pro/limits/LimitsPageClient.tsx
+31:6  Warning: React Hook useEffect has a missing dependency: 'L'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+36:6  Warning: React Hook useEffect has a missing dependency: 'L'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/pro/organization/page.tsx
+315:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/pro/pro-clients/lookup/page.tsx
+118:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/pro/programs/certificates/CertificateProgramClient.tsx
+41:6  Warning: React Hook useEffect has a missing dependency: 'L'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+46:6  Warning: React Hook useEffect has a missing dependency: 'L'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/analytics/YandexMetrikaGate.tsx
+35:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/auth/UserMenu.tsx
+195:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+201:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/catalog/CatalogImage.tsx
+74:7  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+85:5  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/certificates/CertificatePartnerCards.tsx
+51:5  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/navigator/AcceptanceClientBlock.tsx
+52:6  Warning: React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/navigator/PhotoUpload.tsx
+170:9  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+194:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+216:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/navigator/StageDocuments.tsx
+312:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/partner/PartnerContactActions.tsx
+277:17  Warning: Elements with the ARIA role "option" must have the following attributes defined: aria-selected  jsx-a11y/role-has-required-aria-props
+
+./src/components/pro/AgentOwnerDashboard.tsx
+135:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/pro/OrganizationPublicContactsSection.tsx
+76:5  Warning: React Hook useMemo has an unnecessary dependency: 'orgId'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+87:6  Warning: React Hook useEffect has a missing dependency: 'publicContacts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/pwa/InstallBanner.tsx
+67:6  Warning: React Hook useEffect has a missing dependency: 'SEVEN_DAYS_MS'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/shared/RoleSwitcherMenu.tsx
+72:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/shared/SpotlightSearch.tsx
+258:6  Warning: React Hook useEffect has a missing dependency: 'setQuery'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+488:6  Warning: React Hook useEffect has missing dependencies: 'close' and 'navigateTo'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+511:6  Warning: React Hook useEffect has a missing dependency: 'embed'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+621:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+679:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/lib/cert-pdf.tsx
+301:35  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+362:15  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/280) ...
+[oauth] start called while not configured { provider: 'vk' }
+[oauth] start called while not configured { provider: 'yandex' }
+   Generating static pages (70/280) 
+   Generating static pages (140/280) 
+   Generating static pages (210/280) 
+ ✓ Generating static pages (280/280)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                         Size     First Load JS
+┌ ○ /                                                               9.35 kB         113 kB
+├ ○ /_not-found                                                     244 B          89.5 kB
+├ ○ /about                                                          5.26 kB         145 kB
+├ ○ /account                                                        888 B           117 kB
+├ ƒ /account/privacy                                                2.84 kB         110 kB
+├ ƒ /admin                                                          3.99 kB        93.3 kB
+├ ○ /admin-login                                                    1.72 kB          91 kB
+├ ƒ /admin/analytics                                                13 kB           219 kB
+├ ƒ /admin/certificates                                             1.51 kB         141 kB
+├ ƒ /admin/consents                                                 2.02 kB         101 kB
+├ ƒ /admin/legal-documents                                          1.43 kB        90.7 kB
+├ ƒ /admin/moderation                                               7.7 kB          153 kB
+├ ƒ /admin/moderation/organizations/[id]                            5.1 kB          108 kB
+├ ƒ /admin/moderation/partners/[id]                                 8.3 kB          103 kB
+├ ƒ /admin/oauth-burnin                                             1.77 kB          91 kB
+├ ƒ /admin/profile                                                  4.4 kB           99 kB
+├ ƒ /admin/recruiting                                               1.31 kB        90.6 kB
+├ ƒ /admin/requests                                                 6.46 kB         143 kB
+├ ƒ /admin/team                                                     5.63 kB         147 kB
+├ ƒ /admin/users                                                    5.93 kB         148 kB
+├ ƒ /admin/users/[id]                                               6 kB           95.3 kB
+├ ƒ /admin/wallet                                                   3.06 kB        92.3 kB
+├ ƒ /api/account/cabinet-readiness                                  0 B                0 B
+├ ƒ /api/account/consent                                            0 B                0 B
+├ ƒ /api/account/consents/[consentId]/withdraw                      0 B                0 B
+├ ƒ /api/account/export                                             0 B                0 B
+├ ƒ /api/account/request-deletion                                   0 B                0 B
+├ ƒ /api/admin/activity                                             0 B                0 B
+├ ƒ /api/admin/analytics                                            0 B                0 B
+├ ƒ /api/admin/analytics/export                                     0 B                0 B
+├ ƒ /api/admin/certificates                                         0 B                0 B
+├ ƒ /api/admin/concierge                                            0 B                0 B
+├ ƒ /api/admin/consents                                             0 B                0 B
+├ ƒ /api/admin/consents/export                                      0 B                0 B
+├ ƒ /api/admin/leads                                                0 B                0 B
+├ ƒ /api/admin/legal-documents/publish                              0 B                0 B
+├ ƒ /api/admin/moderate                                             0 B                0 B
+├ ƒ /api/admin/moderation                                           0 B                0 B
+├ ƒ /api/admin/moderation/branches/[branchId]/approve               0 B                0 B
+├ ƒ /api/admin/moderation/branches/[branchId]/reject                0 B                0 B
+├ ƒ /api/admin/moderation/branches/[branchId]/revise                0 B                0 B
+├ ƒ /api/admin/moderation/organizations/[id]                        0 B                0 B
+├ ƒ /api/admin/moderation/organizations/[id]/approve-all            0 B                0 B
+├ ƒ /api/admin/moderation/organizations/[id]/reject                 0 B                0 B
+├ ƒ /api/admin/moderation/organizations/[id]/revise                 0 B                0 B
+├ ƒ /api/admin/moderation/partners/[userId]                         0 B                0 B
+├ ƒ /api/admin/moderation/partners/[userId]/approve                 0 B                0 B
+├ ƒ /api/admin/moderation/partners/[userId]/reject                  0 B                0 B
+├ ƒ /api/admin/moderation/partners/[userId]/revise                  0 B                0 B
+├ ƒ /api/admin/moderation/reviews/[reviewId]/approve                0 B                0 B
+├ ƒ /api/admin/moderation/reviews/[reviewId]/reject                 0 B                0 B
+├ ƒ /api/admin/nav-counts                                           0 B                0 B
+├ ƒ /api/admin/oauth-burnin/recent                                  0 B                0 B
+├ ƒ /api/admin/oauth-burnin/run                                     0 B                0 B
+├ ƒ /api/admin/oauth-failed-logs                                    0 B                0 B
+├ ƒ /api/admin/profile                                              0 B                0 B
+├ ƒ /api/admin/recruiting                                           0 B                0 B
+├ ƒ /api/admin/requests                                             0 B                0 B
+├ ƒ /api/admin/stats                                                0 B                0 B
+├ ƒ /api/admin/team                                                 0 B                0 B
+├ ƒ /api/admin/team/search                                          0 B                0 B
+├ ƒ /api/admin/users                                                0 B                0 B
+├ ƒ /api/admin/users/[id]                                           0 B                0 B
+├ ƒ /api/admin/users/[id]/bonus                                     0 B                0 B
+├ ƒ /api/admin/users/[id]/notify                                    0 B                0 B
+├ ƒ /api/admin/wallet                                               0 B                0 B
+├ ƒ /api/admin/wallet/team                                          0 B                0 B
+├ ƒ /api/analytics/pageview                                         0 B                0 B
+├ ƒ /api/auth/force-logout                                          0 B                0 B
+├ ƒ /api/auth/logout                                                0 B                0 B
+├ ƒ /api/auth/logout-all-sessions                                   0 B                0 B
+├ ƒ /api/auth/max                                                   0 B                0 B
+├ ƒ /api/auth/me                                                    0 B                0 B
+├ ƒ /api/auth/sign-out-other-sessions                               0 B                0 B
+├ ƒ /api/auth/telegram                                              0 B                0 B
+├ ƒ /api/auth/verify-code                                           0 B                0 B
+├ ƒ /api/auth/vk/callback                                           0 B                0 B
+├ ƒ /api/auth/vk/start                                              0 B                0 B
+├ ƒ /api/auth/yandex/callback                                       0 B                0 B
+├ ƒ /api/auth/yandex/start                                          0 B                0 B
+├ ƒ /api/bonus/[id]/pay                                             0 B                0 B
+├ ƒ /api/bonus/[id]/payout-actions                                  0 B                0 B
+├ ƒ /api/bonus/balance                                              0 B                0 B
+├ ƒ /api/catalog                                                    0 B                0 B
+├ ƒ /api/catalog/[id]                                               0 B                0 B
+├ ƒ /api/catalog/branch/[id]                                        0 B                0 B
+├ ƒ /api/catalog/org/[orgId]                                        0 B                0 B
+├ ƒ /api/catalog/partners                                           0 B                0 B
+├ ƒ /api/certificate                                                0 B                0 B
+├ ƒ /api/certificate/[code]                                         0 B                0 B
+├ ƒ /api/certificate/[code]/alias                                   0 B                0 B
+├ ƒ /api/certificate/[code]/pdf                                     0 B                0 B
+├ ƒ /api/client/avatar                                              0 B                0 B
+├ ƒ /api/client/become-pro                                          0 B                0 B
+├ ƒ /api/client/certificates                                        0 B                0 B
+├ ƒ /api/client/certificates/add                                    0 B                0 B
+├ ƒ /api/client/certificates/agree                                  0 B                0 B
+├ ƒ /api/client/concierge                                           0 B                0 B
+├ ƒ /api/client/favorites                                           0 B                0 B
+├ ƒ /api/client/favorites/services                                  0 B                0 B
+├ ƒ /api/client/leads/unread-count                                  0 B                0 B
+├ ƒ /api/client/notifications                                       0 B                0 B
+├ ƒ /api/client/notifications/[id]                                  0 B                0 B
+├ ƒ /api/client/notifications/unread-count                          0 B                0 B
+├ ƒ /api/client/orders                                              0 B                0 B
+├ ƒ /api/client/projects                                            0 B                0 B
+├ ƒ /api/client/projects/[id]                                       0 B                0 B
+├ ƒ /api/client/projects/[id]/share                                 0 B                0 B
+├ ƒ /api/client/projects/[id]/unshare                               0 B                0 B
+├ ƒ /api/client/referral                                            0 B                0 B
+├ ƒ /api/client/reviews                                             0 B                0 B
+├ ƒ /api/client/wallet                                              0 B                0 B
+├ ƒ /api/cookie-consent                                             0 B                0 B
+├ ƒ /api/cron/bot-updates-cleanup                                   0 B                0 B
+├ ƒ /api/cron/confirm-bonuses                                       0 B                0 B
+├ ƒ /api/cron/daily-retention                                       0 B                0 B
+├ ƒ /api/cron/events-reminder                                       0 B                0 B
+├ ƒ /api/cron/invites-expire                                        0 B                0 B
+├ ƒ /api/cron/oauth-account-burnin                                  0 B                0 B
+├ ƒ /api/cron/timer-notifications                                   0 B                0 B
+├ ƒ /api/csrf                                                       0 B                0 B
+├ ƒ /api/delegations                                                0 B                0 B
+├ ƒ /api/delegations/[code]                                         0 B                0 B
+├ ƒ /api/delegations/[code]/tasks                                   0 B                0 B
+├ ƒ /api/events                                                     0 B                0 B
+├ ƒ /api/events/[id]                                                0 B                0 B
+├ ƒ /api/events/[id]/accept                                         0 B                0 B
+├ ƒ /api/events/[id]/close                                          0 B                0 B
+├ ƒ /api/events/[id]/redo                                           0 B                0 B
+├ ƒ /api/events/[id]/reject                                         0 B                0 B
+├ ƒ /api/events/[id]/submit                                         0 B                0 B
+├ ƒ /api/files/[...key]                                             0 B                0 B
+├ ƒ /api/health                                                     0 B                0 B
+├ ƒ /api/invite/[token]                                             0 B                0 B
+├ ƒ /api/invite/accept                                              0 B                0 B
+├ ƒ /api/leads                                                      0 B                0 B
+├ ƒ /api/leads/[id]                                                 0 B                0 B
+├ ƒ /api/leads/[id]/archive                                         0 B                0 B
+├ ƒ /api/leads/[id]/hide                                            0 B                0 B
+├ ƒ /api/leads/[id]/remind                                          0 B                0 B
+├ ƒ /api/leads/[id]/replies                                         0 B                0 B
+├ ƒ /api/leads/[id]/replies/read                                    0 B                0 B
+├ ƒ /api/leads/[id]/status                                          0 B                0 B
+├ ƒ /api/max/webhook                                                0 B                0 B
+├ ƒ /api/partner-contact-click                                      0 B                0 B
+├ ƒ /api/partner/[id]/certificate-program-summary                   0 B                0 B
+├ ƒ /api/partner/[id]/stats                                         0 B                0 B
+├ ƒ /api/partner/rem-score                                          0 B                0 B
+├ ƒ /api/partner/rem-score/batch                                    0 B                0 B
+├ ƒ /api/partnership/[id]                                           0 B                0 B
+├ ƒ /api/partnership/discussion-invite                              0 B                0 B
+├ ƒ /api/partnership/discussion-invite/[id]                         0 B                0 B
+├ ƒ /api/partnership/discussion-invite/join                         0 B                0 B
+├ ƒ /api/partnership/discussion-invite/public/[token]               0 B                0 B
+├ ƒ /api/partnership/incoming-count                                 0 B                0 B
+├ ƒ /api/partnership/invite                                         0 B                0 B
+├ ƒ /api/partnership/link-invite                                    0 B                0 B
+├ ƒ /api/partnership/link-invite/[id]                               0 B                0 B
+├ ƒ /api/partnership/link-invite/accept                             0 B                0 B
+├ ƒ /api/partnership/link-invite/public/[token]                     0 B                0 B
+├ ƒ /api/partnership/list                                           0 B                0 B
+├ ƒ /api/partnership/remind                                         0 B                0 B
+├ ƒ /api/partnership/search                                         0 B                0 B
+├ ƒ /api/partnerships/[id]/term-change                              0 B                0 B
+├ ƒ /api/partnerships/[id]/term-change/[requestId]/respond          0 B                0 B
+├ ƒ /api/pdf/progress-report                                        0 B                0 B
+├ ○ /api/pro/admin/auth/capabilities                                0 B                0 B
+├ ƒ /api/pro/admin/auth/change-password                             0 B                0 B
+├ ƒ /api/pro/admin/auth/password-login                              0 B                0 B
+├ ƒ /api/pro/admin/moderation                                       0 B                0 B
+├ ƒ /api/pro/admin/moderation/branches/[branchId]                   0 B                0 B
+├ ƒ /api/pro/admin/moderation/branches/[branchId]/approve           0 B                0 B
+├ ƒ /api/pro/admin/moderation/branches/[branchId]/reject            0 B                0 B
+├ ƒ /api/pro/admin/moderation/branches/[branchId]/revise            0 B                0 B
+├ ƒ /api/pro/admin/moderation/organizations/[id]                    0 B                0 B
+├ ƒ /api/pro/admin/moderation/organizations/[id]/approve            0 B                0 B
+├ ƒ /api/pro/admin/moderation/organizations/[id]/approve-all        0 B                0 B
+├ ƒ /api/pro/admin/moderation/organizations/[id]/public-preview     0 B                0 B
+├ ƒ /api/pro/admin/moderation/organizations/[id]/reject             0 B                0 B
+├ ƒ /api/pro/admin/moderation/organizations/[id]/revise             0 B                0 B
+├ ƒ /api/pro/admin/moderation/partners/[userId]                     0 B                0 B
+├ ƒ /api/pro/admin/moderation/partners/[userId]/approve             0 B                0 B
+├ ƒ /api/pro/admin/moderation/partners/[userId]/public-preview      0 B                0 B
+├ ƒ /api/pro/admin/moderation/partners/[userId]/reject              0 B                0 B
+├ ƒ /api/pro/admin/moderation/partners/[userId]/revise              0 B                0 B
+├ ƒ /api/pro/admin/test-users                                       0 B                0 B
+├ ƒ /api/pro/admin/test-users/[id]                                  0 B                0 B
+├ ƒ /api/pro/admin/test-users/[id]/enter                            0 B                0 B
+├ ƒ /api/pro/admin/test-users/[id]/reset                            0 B                0 B
+├ ƒ /api/pro/admin/test-users/return                                0 B                0 B
+├ ƒ /api/pro/agent-activate                                         0 B                0 B
+├ ƒ /api/pro/agent-certificates                                     0 B                0 B
+├ ƒ /api/pro/agent-certificates/[id]                                0 B                0 B
+├ ƒ /api/pro/agent-certificates/batch                               0 B                0 B
+├ ƒ /api/pro/agent-clients                                          0 B                0 B
+├ ƒ /api/pro/agent-clients/[id]                                     0 B                0 B
+├ ƒ /api/pro/agent-clients/batch                                    0 B                0 B
+├ ƒ /api/pro/agent-payout-requisites                                0 B                0 B
+├ ƒ /api/pro/agent-payout-requisites/[id]                           0 B                0 B
+├ ƒ /api/pro/agent-profile/draft                                    0 B                0 B
+├ ƒ /api/pro/agent-profile/enable-activity                          0 B                0 B
+├ ƒ /api/pro/agent-profile/finish                                   0 B                0 B
+├ ƒ /api/pro/agent-profile/status                                   0 B                0 B
+├ ƒ /api/pro/analytics                                              0 B                0 B
+├ ƒ /api/pro/auth/sign-out-other-sessions                           0 B                0 B
+├ ƒ /api/pro/business-home/metrics                                  0 B                0 B
+├ ƒ /api/pro/business-owner-certificates                            0 B                0 B
+├ ƒ /api/pro/business-owner-certificates/[id]                       0 B                0 B
+├ ƒ /api/pro/business-owner-certificates/batch                      0 B                0 B
+├ ƒ /api/pro/cabinet-ui-preferences                                 0 B                0 B
+├ ƒ /api/pro/certificate-program-profile                            0 B                0 B
+├ ƒ /api/pro/clients/lookup                                         0 B                0 B
+├ ƒ /api/pro/context                                                0 B                0 B
+├ ƒ /api/pro/cross-requests                                         0 B                0 B
+├ ƒ /api/pro/employees                                              0 B                0 B
+├ ƒ /api/pro/employees/[id]                                         0 B                0 B
+├ ƒ /api/pro/invites                                                0 B                0 B
+├ ƒ /api/pro/invites/[id]                                           0 B                0 B
+├ ƒ /api/pro/invites/by-public-id                                   0 B                0 B
+├ ƒ /api/pro/lead-readiness                                         0 B                0 B
+├ ƒ /api/pro/leads/unread-count                                     0 B                0 B
+├ ƒ /api/pro/limits/branch/[branchId]                               0 B                0 B
+├ ƒ /api/pro/limits/effective                                       0 B                0 B
+├ ƒ /api/pro/limits/org                                             0 B                0 B
+├ ƒ /api/pro/limits/requests                                        0 B                0 B
+├ ƒ /api/pro/limits/requests/[requestId]                            0 B                0 B
+├ ƒ /api/pro/metrics                                                0 B                0 B
+├ ƒ /api/pro/moderation-notes                                       0 B                0 B
+├ ƒ /api/pro/notification-bind/start                                0 B                0 B
+├ ƒ /api/pro/notification-bind/status                               0 B                0 B
+├ ƒ /api/pro/notification-settings                                  0 B                0 B
+├ ƒ /api/pro/notification-settings/test                             0 B                0 B
+├ ƒ /api/pro/notifications                                          0 B                0 B
+├ ƒ /api/pro/notifications/[id]                                     0 B                0 B
+├ ƒ /api/pro/notifications/unread-count                             0 B                0 B
+├ ƒ /api/pro/orders                                                 0 B                0 B
+├ ƒ /api/pro/orders/[orderId]                                       0 B                0 B
+├ ƒ /api/pro/organization                                           0 B                0 B
+├ ƒ /api/pro/organization/branches                                  0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]                             0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]/employees                   0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]/employees/[empId]           0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]/employees/[empId]/transfer  0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]/public-contacts             0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]/services                    0 B                0 B
+├ ƒ /api/pro/organization/branches/[id]/submit-for-moderation       0 B                0 B
+├ ƒ /api/pro/organization/employees-overview                        0 B                0 B
+├ ƒ /api/pro/organization/match-user                                0 B                0 B
+├ ƒ /api/pro/organization/permission-templates                      0 B                0 B
+├ ƒ /api/pro/organization/public-contacts                           0 B                0 B
+├ ƒ /api/pro/organization/remind-moderation                         0 B                0 B
+├ ƒ /api/pro/organization/stats                                     0 B                0 B
+├ ƒ /api/pro/organization/submit-for-moderation                     0 B                0 B
+├ ƒ /api/pro/organization/team-members/[userId]                     0 B                0 B
+├ ƒ /api/pro/partner-contact-stats                                  0 B                0 B
+├ ƒ /api/pro/partner-taxonomy                                       0 B                0 B
+├ ƒ /api/pro/partnership-list-preferences/[partnershipId]           0 B                0 B
+├ ƒ /api/pro/portfolio                                              0 B                0 B
+├ ƒ /api/pro/portfolio/[id]                                         0 B                0 B
+├ ƒ /api/pro/profile                                                0 B                0 B
+├ ƒ /api/pro/programs/[code]/enable                                 0 B                0 B
+├ ƒ /api/pro/programs/[code]/rates                                  0 B                0 B
+├ ƒ /api/pro/programs/[code]/readiness                              0 B                0 B
+├ ƒ /api/pro/projects                                               0 B                0 B
+├ ƒ /api/pro/projects/[id]                                          0 B                0 B
+├ ƒ /api/pro/projects/[id]/acceptance                               0 B                0 B
+├ ƒ /api/pro/projects/[id]/comments                                 0 B                0 B
+├ ƒ /api/pro/projects/[id]/partner-notify                           0 B                0 B
+├ ƒ /api/pro/projects/[id]/photos                                   0 B                0 B
+├ ƒ /api/pro/projects/bulk-delete                                   0 B                0 B
+├ ƒ /api/pro/r03/status                                             0 B                0 B
+├ ƒ /api/pro/r04/status                                             0 B                0 B
+├ ƒ /api/pro/r05/status                                             0 B                0 B
+├ ƒ /api/pro/r06/status                                             0 B                0 B
+├ ƒ /api/pro/registration/agent/finish                              0 B                0 B
+├ ○ /api/pro/registration/capabilities                              0 B                0 B
+├ ƒ /api/pro/requests                                               0 B                0 B
+├ ƒ /api/pro/services                                               0 B                0 B
+├ ƒ /api/pro/services/[id]                                          0 B                0 B
+├ ƒ /api/pro/specialist-issuer-certificates                         0 B                0 B
+├ ƒ /api/pro/specialist-issuer-certificates/[id]                    0 B                0 B
+├ ƒ /api/pro/specialist-issuer-certificates/batch                   0 B                0 B
+├ ƒ /api/pro/specialist-profile/draft                               0 B                0 B
+├ ƒ /api/pro/specialist-profile/finish                              0 B                0 B
+├ ƒ /api/pro/stats                                                  0 B                0 B
+├ ƒ /api/pro/taxonomy-proposals                                     0 B                0 B
+├ ƒ /api/pro/upgrade                                                0 B                0 B
+├ ƒ /api/pro/wallet/agent-receivables/export                        0 B                0 B
+├ ƒ /api/pro/wallet/agent-receivables/orders                        0 B                0 B
+├ ƒ /api/pro/wallet/agent-receivables/orders/[orderId]              0 B                0 B
+├ ƒ /api/pro/wallet/agent-receivables/overview                      0 B                0 B
+├ ƒ /api/pro/wallet/agent-receivables/partners                      0 B                0 B
+├ ƒ /api/pro/wallet/balance                                         0 B                0 B
+├ ƒ /api/pro/wallet/settlements                                     0 B                0 B
+├ ƒ /api/pro/wallet/settlements/export                              0 B                0 B
+├ ƒ /api/pro/wallet/transactions                                    0 B                0 B
+├ ƒ /api/profile/contacts/link                                      0 B                0 B
+├ ƒ /api/project/[id]/expenses                                      0 B                0 B
+├ ƒ /api/projects                                                   0 B                0 B
+├ ƒ /api/projects/[objectType]                                      0 B                0 B
+├ ƒ /api/public/stats                                               0 B                0 B
+├ ƒ /api/referral                                                   0 B                0 B
+├ ƒ /api/referral/click                                             0 B                0 B
+├ ƒ /api/referral/track                                             0 B                0 B
+├ ƒ /api/requests                                                   0 B                0 B
+├ ƒ /api/security/csp-report                                        0 B                0 B
+├ ƒ /api/shared/[code]                                              0 B                0 B
+├ ƒ /api/spotlight                                                  0 B                0 B
+├ ○ /api/stats                                                      0 B                0 B
+├ ƒ /api/store/analytics                                            0 B                0 B
+├ ƒ /api/store/bonus-list                                           0 B                0 B
+├ ƒ /api/store/certificate                                          0 B                0 B
+├ ƒ /api/store/certificate/[id]                                     0 B                0 B
+├ ƒ /api/store/certificate/agent-partner-limits                     0 B                0 B
+├ ƒ /api/store/certificate/agent-program-partners                   0 B                0 B
+├ ƒ /api/store/certificate/available-partners                       0 B                0 B
+├ ƒ /api/store/order                                                0 B                0 B
+├ ƒ /api/store/order/preview                                        0 B                0 B
+├ ƒ /api/store/orders                                               0 B                0 B
+├ ƒ /api/store/orders/[orderId]                                     0 B                0 B
+├ ƒ /api/store/orders/[orderId]/receiving-client                    0 B                0 B
+├ ƒ /api/store/scan                                                 0 B                0 B
+├ ƒ /api/telegram/webhook                                           0 B                0 B
+├ ƒ /api/timer-started                                              0 B                0 B
+├ ƒ /api/upload                                                     0 B                0 B
+├ ƒ /api/upload/agent-logo                                          0 B                0 B
+├ ƒ /api/upload/avatar                                              0 B                0 B
+├ ƒ /api/users/by-id                                                0 B                0 B
+├ ƒ /api/vk/webhook                                                 0 B                0 B
+├ ○ /calculators                                                    13.1 kB         210 kB
+├ ○ /catalog                                                        6.68 kB        95.9 kB
+├ ƒ /catalog/[id]                                                   25.4 kB         166 kB
+├ ƒ /catalog/branch/[id]                                            6.68 kB         171 kB
+├ ƒ /catalog/org/[orgId]                                            7.08 kB         202 kB
+├ ƒ /certificate/[code]                                             5.18 kB         134 kB
+├ ƒ /certificate/[code]/add                                         244 B          89.5 kB
+├ ƒ /certificate/[code]/pdf-share                                   2.28 kB        91.5 kB
+├ ○ /certificates                                                   11.3 kB         176 kB
+├ ○ /certificates/opengraph-image                                   0 B                0 B
+├ ƒ /client                                                         2.21 kB        96.8 kB
+├ ƒ /client/agent-setup                                             4.8 kB          188 kB
+├ ƒ /client/become-pro                                              4.88 kB         127 kB
+├ ƒ /client/certificates                                            7.75 kB         189 kB
+├ ƒ /client/concierge                                               3.18 kB        92.4 kB
+├ ƒ /client/favorites                                               4.87 kB         147 kB
+├ ƒ /client/leads                                                   2.67 kB        91.9 kB
+├ ƒ /client/leads/[id]                                              3.21 kB         101 kB
+├ ƒ /client/notifications                                           5.97 kB         101 kB
+├ ƒ /client/orders                                                  7.69 kB         138 kB
+├ ƒ /client/profile                                                 6.82 kB         132 kB
+├ ƒ /client/projects                                                11.7 kB         181 kB
+├ ƒ /client/reviews                                                 2.72 kB          92 kB
+├ ƒ /client/wallet                                                  4.21 kB        93.5 kB
+├ ○ /concierge                                                      1.58 kB        90.8 kB
+├ ○ /contacts                                                       3.97 kB         143 kB
+├ ○ /cookies                                                        1.21 kB         141 kB
+├ ○ /cookies/settings                                               2.23 kB         100 kB
+├ ○ /estimate                                                       18.7 kB         158 kB
+├ ○ /for-pros                                                       8.24 kB         168 kB
+├ ○ /for-pros/opengraph-image                                       0 B                0 B
+├ ƒ /invite/accept                                                  244 B          89.5 kB
+├ ○ /legal/backup-policy                                            188 B          98.2 kB
+├ ○ /legal/backup-policy/download                                   0 B                0 B
+├ ○ /legal/data-protection                                          184 B          98.2 kB
+├ ○ /legal/data-protection/download                                 0 B                0 B
+├ ƒ /legal/public-offer-pro                                         2.38 kB         100 kB
+├ ƒ /legal/public-offer-pro/download                                0 B                0 B
+├ ○ /legal/retention-policy                                         188 B          98.2 kB
+├ ○ /legal/retention-policy/download                                0 B                0 B
+├ ○ /my/certificates                                                780 B           117 kB
+├ ○ /navigator                                                      3.49 kB        92.7 kB
+├ ƒ /navigator/[objectType]                                         515 kB          773 kB
+├ ○ /opengraph-image                                                0 B                0 B
+├ ƒ /partner/[id]                                                   8.81 kB         204 kB
+├ ƒ /privacy                                                        2.19 kB         142 kB
+├ ƒ /pro                                                            28.3 kB         218 kB
+├ ƒ /pro/agent                                                      3.89 kB         102 kB
+├ ƒ /pro/agent-setup                                                5.65 kB         160 kB
+├ ƒ /pro/catalog                                                    3.99 kB         102 kB
+├ ƒ /pro/certificates                                               6.59 kB         197 kB
+├ ƒ /pro/certificates/new                                           14.4 kB         136 kB
+├ ƒ /pro/certificates/program                                       4.17 kB         108 kB
+├ ƒ /pro/clients/lookup                                             244 B          89.5 kB
+├ ƒ /pro/cross-requests                                             4.87 kB         103 kB
+├ ƒ /pro/events                                                     7.16 kB        96.4 kB
+├ ƒ /pro/leads                                                      7.62 kB         153 kB
+├ ƒ /pro/leads/[id]                                                 11.2 kB         100 kB
+├ ƒ /pro/leads/new                                                  244 B          89.5 kB
+├ ƒ /pro/limits                                                     3.43 kB         108 kB
+├ ƒ /pro/limits/my-requests                                         244 B          89.5 kB
+├ ƒ /pro/moderation-notes                                           2.62 kB        91.9 kB
+├ ƒ /pro/organization                                               19 kB           202 kB
+├ ƒ /pro/organization/branch/[id]                                   13.1 kB         154 kB
+├ ƒ /pro/organization/stats                                         4.71 kB         211 kB
+├ ƒ /pro/partners                                                   5.86 kB         169 kB
+├ ƒ /pro/partners/find                                              243 B          89.5 kB
+├ ƒ /pro/pro-clients                                                3.83 kB         170 kB
+├ ƒ /pro/pro-clients/lookup                                         3.22 kB        92.5 kB
+├ ƒ /pro/profile                                                    34.5 kB         194 kB
+├ ƒ /pro/programs                                                   3.55 kB         102 kB
+├ ƒ /pro/programs/[code]/connect                                    2.19 kB         100 kB
+├ ƒ /pro/programs/certificates                                      244 B          89.5 kB
+├ ƒ /pro/programs/certificates/limits                               244 B          89.5 kB
+├ ƒ /pro/programs/cross-requests                                    4.15 kB         102 kB
+├ ƒ /pro/programs/pro-clients                                       244 B          89.5 kB
+├ ƒ /pro/projects                                                   3.96 kB         102 kB
+├ ƒ /pro/requests                                                   244 B          89.5 kB
+├ ƒ /pro/setup                                                      4.79 kB         144 kB
+├ ƒ /pro/stats                                                      4.77 kB         211 kB
+├ ƒ /pro/wallet                                                     5.66 kB         100 kB
+├ ƒ /ref/[code]                                                     1.96 kB        91.2 kB
+├ ○ /referral                                                       4.31 kB         144 kB
+├ ○ /request                                                        9.46 kB         149 kB
+├ ○ /robots.txt                                                     0 B                0 B
+├ ƒ /shared/[code]                                                  7.63 kB         240 kB
+├ ƒ /shared/[code]/opengraph-image                                  0 B                0 B
+├ ○ /sitemap.xml                                                    0 B                0 B
+├ ○ /store                                                          1.69 kB          91 kB
+├ ○ /store/partners                                                 3.31 kB         166 kB
+├ ○ /store/partners/find                                            2.81 kB         159 kB
+├ ○ /store/scan                                                     10.1 kB         130 kB
+├ ƒ /task/[code]                                                    4.81 kB        94.1 kB
+├ ○ /team                                                           6.73 kB         105 kB
+└ ƒ /terms                                                          2.18 kB         142 kB
++ First Load JS shared by all                                       89.3 kB
+  ├ chunks/54980837-52f65c77b2ead5cc.js                             53.6 kB
+  ├ chunks/8178-baea4255d2156f38.js                                 33.3 kB
+  └ other shared chunks (total)                                     2.36 kB
+
+
+ƒ Middleware                                                        26.2 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[start] next start -p 3453
+{"status":"ok","service":"remcard","database":"ok","deployment":"legacy","release":"unknown"}
+[start] backend OK pid=155467 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/backend.log
+[start-frontend] clean .next + npm run build (REMCARD_API_BASE_URL=http://127.0.0.1:3453)
+[start-frontend] next start -p 3452
+[start-frontend] OK pid=155686 log=/agent/repos/remcard-navigator/.catalog-qa-isolated/log/frontend.log
+[start-frontend] REMCARD_API_BASE_URL=http://127.0.0.1:3453

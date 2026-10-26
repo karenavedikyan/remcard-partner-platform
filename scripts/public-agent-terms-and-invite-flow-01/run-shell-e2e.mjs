@@ -51,8 +51,24 @@ async function jsonFetch(token, method, pathname, body) {
   return { status: res.status, data };
 }
 
+async function waitForProfReady() {
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      const res = await fetch(`${PROF_URL}/api/remcard/api/auth/me`, {
+        headers: { Origin: PROF_URL },
+      });
+      if (res.status === 401 || res.status === 200) return;
+    } catch {
+      /* retry */
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  failures.push(`PROF not ready at ${PROF_URL}`);
+}
+
 async function main() {
   fs.mkdirSync(ART_DIR, { recursive: true });
+  await waitForProfReady();
   if (!fs.existsSync(STATE_PATH)) {
     failures.push(`missing harness state: ${STATE_PATH}`);
     writeReport();
