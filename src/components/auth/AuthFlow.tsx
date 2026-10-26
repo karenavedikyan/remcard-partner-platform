@@ -264,7 +264,7 @@ export function AuthFlow({
       try {
         await remcardFetch("/api/auth/verify-code", {
           method: "POST",
-          body: { code },
+          body: { code, entrySite: "prof" },
         });
         codeConsumedRef.current = true;
         setCode("");

@@ -126,7 +126,7 @@ describe("AuthFlow", () => {
     await waitFor(() => {
       expect(remcardFetch).toHaveBeenCalledWith("/api/auth/verify-code", {
         method: "POST",
-        body: { code: "123456" },
+        body: { code: "123456", entrySite: "prof" },
       });
     });
     expect(getAuthMe.mock.calls.length).toBeGreaterThanOrEqual(2);
