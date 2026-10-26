@@ -7,8 +7,10 @@ READY FOR REVIEW (not DEPLOYED)
 - **Backend baseline (branch root):** `1267da4274826e06b7358f1a785fe275c9cec836`
 - **Frontend baseline (branch root):** `f3b996714e2900a20a7ff1d99b8f2d45315a876b`
 
-## Application SHAs (this implementation)
-See `browser-capture.json` / git tips on branch `fix/partner-type-switch-profile-01` after evidence commit.
+## Application SHAs (deployable; browser-tested)
+- **Backend:** `8072fe4eff0975a138878a1fb223843849778d94`
+- **Frontend:** `a7982c7f07a9876feae10156b75e1dd3276f5841` (application); evidence tip updates on `artifacts/` commit
+- **Browser capture:** see `browser-capture.json` (`runtime.frontendSha` / `runtime.backendSha` must match commits used for `start-frontend.sh` / `start.sh`)
 
 ## UI ↔ server mapping
 | UI kind | `partnerType` | `partnerActivities` |

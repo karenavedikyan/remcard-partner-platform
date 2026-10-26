@@ -1,13 +1,18 @@
 {
   "failures": [],
   "runtime": {
-    "frontendSha": "a7982c7f07a9876feae10156b75e1dd3276f5841",
+    "frontendSha": "01aa1610e67f9ce7a4610a3ab1823814b5b3f509",
     "backendSha": "8072fe4eff0975a138878a1fb223843849778d94",
-    "captureStartedAt": "2026-10-26T11:38:16.000Z"
+    "captureStartedAt": "2026-10-26T11:38:40.000Z"
   },
   "steps": [
-    "screenshot-light-1440",
     "switch-agent-to-specialist",
-    "screenshot-light-390"
+    "switch-specialist-to-store",
+    "switch-store-to-company",
+    "switch-company-to-agent",
+    "screenshot-light-1440",
+    "screenshot-dark-1440",
+    "screenshot-light-390",
+    "screenshot-dark-390"
   ]
 }

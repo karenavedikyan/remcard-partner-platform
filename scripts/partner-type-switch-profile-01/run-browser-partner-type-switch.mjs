@@ -59,17 +59,49 @@ async function main() {
     return;
   }
 
+  async function uiSwitch(page, fromKind, toKind) {
+    await page.goto(`${PROF_URL}/profile?section=overview`, {
+      waitUntil: "networkidle",
+      timeout: 120_000,
+    });
+    await page.getByTestId("partner-type-settings").waitFor({ timeout: 60_000 });
+    await page.getByTestId("partner-type-open").click();
+    await page.getByTestId("partner-type-choose").waitFor({ timeout: 30_000 });
+    await page.locator(`input[name="partner-type"][value="${toKind}"]`).click();
+    await page.locator('[data-partner-type-action="review"]').click();
+    await page.getByTestId("partner-type-review").waitFor({ timeout: 30_000 });
+    await page.locator("[data-partner-type-ack]").check();
+    const wait = page.waitForResponse(
+      (res) =>
+        res.url().includes("/api/pro/partner-type/switch") &&
+        res.request().method() === "POST" &&
+        res.status() === 200,
+      { timeout: 60_000 },
+    );
+    await page.getByTestId("partner-type-apply").click();
+    await wait;
+    await page.reload({ waitUntil: "networkidle" });
+    const me = await page.request.get(`${PROF_URL}/api/remcard/api/pro/partner-type/switch`, {
+      headers: { Origin: PROF_URL, Cookie: `remcard-token=${token}` },
+    });
+    assert(me.ok(), `GET switch after ${fromKind}->${toKind}`);
+    const body = await me.json();
+    assert(body.currentKind === toKind, `persisted ${toKind} (from ${fromKind})`);
+    steps.push(`switch-${fromKind}-to-${toKind}`);
+  }
+
   const browser = await chromium.launch({ headless: true });
   const chain = ["agent", "specialist", "store", "company", "agent"];
   try {
+    const { context, page } = await withSession(browser, token, { width: 1440, height: 900 });
+    for (let i = 0; i < chain.length - 1; i++) {
+      await uiSwitch(page, chain[i], chain[i + 1]);
+    }
     for (const viewport of [
       { w: 1440, h: 900, tag: "1440" },
       { w: 390, h: 844, tag: "390" },
     ]) {
-      const { context, page } = await withSession(browser, token, {
-        width: viewport.w,
-        height: viewport.h,
-      });
+      await page.setViewportSize({ width: viewport.w, height: viewport.h });
       for (const theme of ["light", "dark"]) {
         await page.goto(`${PROF_URL}/profile?section=overview`, {
           waitUntil: "networkidle",
@@ -80,49 +112,22 @@ async function main() {
           try {
             localStorage.setItem("remcard-theme", t);
           } catch {
-            /* about:blank guard */
+            /* ignore */
           }
         }, theme);
         await page.getByTestId("partner-type-settings").waitFor({ timeout: 60_000 });
         const themeAttr = await page.evaluate(() =>
           document.documentElement.getAttribute("data-theme"),
         );
-        assert(themeAttr === theme, `theme ${theme}`);
+        assert(themeAttr === theme, `theme ${theme} ${viewport.tag}`);
         await page.screenshot({
           path: path.join(ART, `profile-partner-type-${theme}-${viewport.tag}.png`),
           fullPage: true,
         });
         steps.push(`screenshot-${theme}-${viewport.tag}`);
-        break;
       }
-      if (viewport.tag === "1440") {
-        const firstTarget = chain[1];
-        await page.getByTestId("partner-type-open").click();
-        await page.getByTestId("partner-type-choose").waitFor({ timeout: 30_000 });
-        await page.locator(`input[name="partner-type"][value="${firstTarget}"]`).click();
-        await page.locator('[data-partner-type-action="review"]').click();
-        await page.getByTestId("partner-type-review").waitFor({ timeout: 30_000 });
-        await page.locator("[data-partner-type-ack]").check();
-        const wait = page.waitForResponse(
-          (res) =>
-            res.url().includes("/api/pro/partner-type/switch") &&
-            res.request().method() === "POST" &&
-            res.status() === 200,
-          { timeout: 60_000 },
-        );
-        await page.getByTestId("partner-type-apply").click();
-        await wait;
-        await page.reload({ waitUntil: "networkidle" });
-        const me = await page.request.get(`${PROF_URL}/api/remcard/api/pro/partner-type/switch`, {
-          headers: { Origin: PROF_URL, Cookie: `remcard-token=${token}` },
-        });
-        assert(me.ok(), "switch state GET after reload");
-        const body = await me.json();
-        assert(body.currentKind === firstTarget, `persisted ${firstTarget}`);
-        steps.push(`switch-agent-to-${firstTarget}`);
-      }
-      await context.close();
     }
+    await context.close();
   } finally {
     await browser.close();
   }
