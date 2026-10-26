@@ -59,6 +59,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
 import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
+import { PartnerGeneralTermsDetails } from "@/components/partners/PartnerGeneralTermsDetails";
+import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterOfferDialog";
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
@@ -141,6 +143,8 @@ export function PartnersHub({
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
+  const [counterOfferPartnership, setCounterOfferPartnership] = useState<Partnership | null>(null);
+  const showAgentPublishedTerms = isAgentR04 || searchRole === "agent";
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
@@ -580,6 +584,14 @@ export function PartnersHub({
     }
   }
 
+  function handlePartnershipUiAction(partnership: Partnership, actionKind: string) {
+    if (actionKind === "counter_offer") {
+      setCounterOfferPartnership(partnership);
+      return;
+    }
+    void runPartnershipAction(partnership.id, actionKind);
+  }
+
   async function loadTermRequests(partnershipId: string) {
     setExpandedTermPartnershipId(partnershipId);
     setTermRequests((prev) => ({
@@ -718,6 +730,9 @@ export function PartnersHub({
                       {line}
                     </p>
                   ))}
+                  {showAgentPublishedTerms ? (
+                    <PartnerGeneralTermsDetails partnerUserId={partner.id} />
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -814,6 +829,14 @@ export function PartnersHub({
             {attentionCount === 1 ? "партнёрство ждёт вашего решения" : "партнёрства ждут вашего решения"}.
           </p>
         </Panel>
+      ) : null}
+
+      {!isAgentR04 ? (
+        <p className={styles.partnerMeta}>
+          <Link href="/partners/agent-terms">Мои условия для агентов</Link>
+          {" · "}
+          опубликованные категории и общий процент для новых запросов
+        </p>
       ) : null}
 
       {listError && tab === "list" ? (
@@ -979,7 +1002,14 @@ export function PartnersHub({
               meId={meId}
               viewMode={listViewMode}
               busyId={busyId}
-              onRunAction={(id, action) => void runPartnershipAction(id, action)}
+              onRunAction={(id, action) => {
+                if (action === "counter_offer") {
+                  const partnership = partnerships.find((item) => item.id === id);
+                  if (partnership) setCounterOfferPartnership(partnership);
+                  return;
+                }
+                void runPartnershipAction(id, action);
+              }}
               onUpdated={() => void loadList()}
               termRequests={termRequests}
               onLoadTermRequests={(id) => void loadTermRequests(id)}
@@ -1114,7 +1144,7 @@ export function PartnersHub({
                           key={action.kind}
                           variant={action.variant ?? "primary"}
                           disabled={busyId === partnership.id}
-                          onClick={() => void runPartnershipAction(partnership.id, action.kind)}
+                          onClick={() => handlePartnershipUiAction(partnership, action.kind)}
                         >
                           {action.label}
                         </Button>
@@ -1318,6 +1348,9 @@ export function PartnersHub({
                               : ""}
                           </p>
                         ) : null}
+                        {showAgentPublishedTerms ? (
+                          <PartnerGeneralTermsDetails partnerUserId={partner.id} />
+                        ) : null}
                       </div>
                       {status ? (
                         <StatusBadge
@@ -1379,6 +1412,18 @@ export function PartnersHub({
           onClose={() => setInviteTarget(null)}
           onSent={() => {
             setTab(isAgentR04 ? (forcedTab ?? "list") : "list");
+            void loadList();
+          }}
+        />
+      ) : null}
+
+      {counterOfferPartnership ? (
+        <PartnerCounterOfferDialog
+          partnership={counterOfferPartnership}
+          busy={busyId === counterOfferPartnership.id}
+          onClose={() => setCounterOfferPartnership(null)}
+          onSent={() => {
+            setCounterOfferPartnership(null);
             void loadList();
           }}
         />

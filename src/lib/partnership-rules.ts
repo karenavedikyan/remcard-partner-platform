@@ -12,9 +12,23 @@ export const DEFAULT_GENERAL_PERCENT = 10;
 export const INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE =
   "Не удалось определить условия партнёра. Приглашение пока недоступно";
 
+export function isAgentActivityInviter(user: {
+  partnerType: string | null;
+  partnerActivities?: string[];
+  isStoreOwner?: boolean;
+}): boolean {
+  if (user.isStoreOwner || user.partnerType === "STORE") return false;
+  return (user.partnerActivities ?? []).includes("AGENT");
+}
+
+export function partnershipInviteTermsEmpty(partnership: Partnership): boolean {
+  return !partnership.terms?.some((t) => !t.isExcluded);
+}
+
 export type PartnerSideProfile = {
   id: string;
   partnerType: string | null;
+  partnerActivities?: string[];
   storeCategories: string[];
   specializations: string[];
   /**
@@ -38,6 +52,7 @@ export type PartnershipActionKind =
   | "reject"
   | "cancel"
   | "accept_pending"
+  | "counter_offer"
   | "withdraw_counter"
   | "pause"
   | "resume";
@@ -120,6 +135,16 @@ export function resolveInviteTradeSideCategories(
     return { categories: tradeSideTermCategories(inviter), mode: "store" };
   }
 
+  if (isAgentActivityInviter(inviter)) {
+    if (isStoreSide(target)) {
+      return { categories: tradeSideTermCategories(target), mode: "pro" };
+    }
+    if (target.partnerType === "MASTER" || target.partnerType === "COMPANY") {
+      return { categories: tradeSideTermCategories(target), mode: "pro" };
+    }
+    return { categories: [], mode: "pro", blockedReason: "Партнёр недоступен для приглашения" };
+  }
+
   if (inviter.partnerType === "MASTER" || inviter.partnerType === "COMPANY") {
     if (isStoreSide(target)) {
       return { categories: tradeSideTermCategories(target), mode: "pro" };
@@ -194,6 +219,7 @@ export function profileUserToPartnerSide(
   return {
     id: user.id,
     partnerType: user.partnerType,
+    partnerActivities: user.partnerActivities,
     storeCategories: user.storeCategories,
     specializations: user.specializations,
     isStoreOwner:
@@ -276,7 +302,22 @@ export function getPartnershipUiActions(
 
   if (partnership.status === "INVITED") {
     if (iAmInitiator) {
+      if (partnershipInviteTermsEmpty(partnership)) {
+        return [
+          {
+            kind: "waiting",
+            message: "Ожидаем итоговое предложение партнёра по категориям",
+          },
+          { kind: "cancel", label: "Отозвать запрос", variant: "secondary" },
+        ];
+      }
       return [{ kind: "cancel", label: "Отозвать приглашение", variant: "secondary" }];
+    }
+    if (partnershipInviteTermsEmpty(partnership)) {
+      return [
+        { kind: "counter_offer", label: "Предложение агенту", variant: "primary" },
+        { kind: "reject", label: "Отклонить", variant: "secondary" },
+      ];
     }
     return [
       { kind: "accept", label: "Принять", variant: "primary" },
@@ -301,6 +342,7 @@ export function getPartnershipUiActions(
     if (authorId && !iAmAuthor) {
       return [
         { kind: "accept_pending", label: "Принять условия", variant: "primary" },
+        { kind: "counter_offer", label: "Запросить другие условия", variant: "secondary" },
         { kind: "reject", label: "Отклонить", variant: "secondary" },
       ];
     }

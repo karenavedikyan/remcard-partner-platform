@@ -20,6 +20,7 @@ import {
   DEFAULT_GENERAL_PERCENT,
   GENERAL_PARTNERSHIP_CATEGORY,
   inviteRowsToTerms,
+  isAgentActivityInviter,
   profileUserToPartnerSide,
   resolveInviteTradeSideCategories,
   searchResultToPartnerSide,
@@ -78,6 +79,7 @@ export function PartnerInviteDialog({
 }: PartnerInviteDialogProps) {
   const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const targetSide = searchResultToPartnerSide(target);
+  const agentCooperationRequest = isAgentActivityInviter(inviterSide);
   const resolved = resolveInviteTradeSideCategories(inviterSide, targetSide);
   const resetKey = buildInviteFormResetKey(target.id, resolved.categories);
 
@@ -107,32 +109,48 @@ export function PartnerInviteDialog({
       dispatch({ type: "set_error", error: resolved.blockedReason });
       return;
     }
-    const activeRows = activeInviteRows(form);
-    const validationError = validateInviteRows(activeRows);
-    if (validationError) {
-      dispatch({ type: "set_error", error: validationError });
-      return;
-    }
-    if (form.useGeneralFallback && !form.generalConfirmed) {
+    if (!agentCooperationRequest) {
+      const activeRows = activeInviteRows(form);
+      const validationError = validateInviteRows(activeRows);
+      if (validationError) {
+        dispatch({ type: "set_error", error: validationError });
+        return;
+      }
+      if (form.useGeneralFallback && !form.generalConfirmed) {
+        dispatch({
+          type: "set_error",
+          error: `Подтвердите отправку с общими условиями: «${categoryLabel(GENERAL_PARTNERSHIP_CATEGORY)}» — ${DEFAULT_GENERAL_PERCENT}%`,
+        });
+        return;
+      }
+    } else if (!form.note.trim()) {
       dispatch({
         type: "set_error",
-        error: `Подтвердите отправку с общими условиями: «${categoryLabel(GENERAL_PARTNERSHIP_CATEGORY)}» — ${DEFAULT_GENERAL_PERCENT}%`,
+        error: "Укажите предмет сотрудничества или интересующие товары и услуги",
       });
       return;
     }
 
     setSending(true);
     try {
+      const activeRows = activeInviteRows(form);
       await remcardFetch("/api/partnership/invite", {
         method: "POST",
-        body: {
-          targetUserId: target.id,
-          note: form.note.trim() || null,
-          terms: inviteRowsToTerms(activeRows).map((term) => ({
-            ...term,
-            categoryLabel: categoryLabel(term.category),
-          })),
-        },
+        body: agentCooperationRequest
+          ? {
+              targetUserId: target.id,
+              note: form.note.trim() || null,
+              cooperationRequest: true,
+              terms: [],
+            }
+          : {
+              targetUserId: target.id,
+              note: form.note.trim() || null,
+              terms: inviteRowsToTerms(activeRows).map((term) => ({
+                ...term,
+                categoryLabel: categoryLabel(term.category),
+              })),
+            },
       });
       onSent();
       onClose();
@@ -161,7 +179,9 @@ export function PartnerInviteDialog({
       >
         <h3 id="invite-title">{title}</h3>
         <p className={styles.hint}>
-          Укажите процент по каждой категории. Партнёр увидит эти условия перед принятием приглашения.
+          {agentCooperationRequest
+            ? "Ознакомьтесь с общими условиями партнёра выше. Числовые ставки указывает принимающий партнёр в персональном предложении."
+            : "Укажите процент по каждой категории. Партнёр увидит эти условия перед принятием приглашения."}
         </p>
 
         {resolved.blockedReason ? (
@@ -170,7 +190,7 @@ export function PartnerInviteDialog({
           </p>
         ) : null}
 
-        {!resolved.blockedReason && resolved.categories.length === 0 ? (
+        {!agentCooperationRequest && !resolved.blockedReason && resolved.categories.length === 0 ? (
           <div className={styles.notice}>
             <p>
               Категории для условий не заполнены. Можно отправить упрощённое приглашение с категорией «
@@ -192,7 +212,7 @@ export function PartnerInviteDialog({
           </div>
         ) : null}
 
-        {!resolved.blockedReason && resolved.categories.length > 0 ? (
+        {!agentCooperationRequest && !resolved.blockedReason && resolved.categories.length > 0 ? (
           <div className={styles.termsList}>
             {form.rows.map((row, index) => (
               <div key={row.category} className={styles.termRow}>
@@ -231,10 +251,14 @@ export function PartnerInviteDialog({
         ) : null}
 
         <TextAreaField
-          label="Комментарий к приглашению"
+          label={
+            agentCooperationRequest
+              ? "Предмет сотрудничества / интересующие товары или услуги"
+              : "Комментарий к приглашению"
+          }
           value={form.note}
           onChange={(event) => dispatch({ type: "set_note", note: event.target.value })}
-          hint="Необязательно"
+          hint={agentCooperationRequest ? "Обязательно для запроса без процентов" : "Необязательно"}
         />
 
         {form.error ? (

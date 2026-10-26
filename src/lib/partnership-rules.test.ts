@@ -265,16 +265,74 @@ describe("partnership search semantics", () => {
 });
 
 describe("partnership action rules", () => {
-  it("shows accept/reject to invite receiver", () => {
-    const actions = getPartnershipUiActions(basePartnership({ status: "INVITED" }), "master-1");
+  it("shows accept/reject to invite receiver when terms present", () => {
+    const actions = getPartnershipUiActions(
+      basePartnership({
+        status: "INVITED",
+        terms: [
+          {
+            id: "t1",
+            category: "doors",
+            categoryLabel: "Двери",
+            storePercent: 10,
+            isExcluded: false,
+            minMargin: null,
+          },
+        ],
+      }),
+      "master-1",
+    );
     assert.deepEqual(
       actions.map((item) => item.kind),
       ["accept", "reject"],
     );
   });
 
-  it("shows cancel to invite author", () => {
-    const actions = getPartnershipUiActions(basePartnership({ status: "INVITED" }), "store-1");
+  it("shows counter_offer to receiver for agent request without terms", () => {
+    const actions = getPartnershipUiActions(
+      basePartnership({
+        status: "INVITED",
+        initiatedBy: "master-1",
+        storeUserId: "store-1",
+        proUserId: "master-1",
+        terms: [],
+      }),
+      "store-1",
+    );
+    assert.deepEqual(actions.map((item) => item.kind), ["counter_offer", "reject"]);
+  });
+
+  it("shows waiting to agent initiator for empty invite", () => {
+    const actions = getPartnershipUiActions(
+      basePartnership({
+        status: "INVITED",
+        initiatedBy: "master-1",
+        storeUserId: "store-1",
+        proUserId: "master-1",
+        terms: [],
+      }),
+      "master-1",
+    );
+    assert.deepEqual(actions.map((item) => item.kind), ["waiting", "cancel"]);
+  });
+
+  it("shows cancel to invite author when terms present", () => {
+    const actions = getPartnershipUiActions(
+      basePartnership({
+        status: "INVITED",
+        terms: [
+          {
+            id: "t1",
+            category: "doors",
+            categoryLabel: "Двери",
+            storePercent: 10,
+            isExcluded: false,
+            minMargin: null,
+          },
+        ],
+      }),
+      "store-1",
+    );
     assert.deepEqual(actions.map((item) => item.kind), ["cancel"]);
   });
 
@@ -284,7 +342,11 @@ describe("partnership action rules", () => {
       pendingProposedBy: "master-1",
     });
     const responder = getPartnershipUiActions(pending, "store-1");
-    assert.deepEqual(responder.map((item) => item.kind), ["accept_pending", "reject"]);
+    assert.deepEqual(responder.map((item) => item.kind), [
+      "accept_pending",
+      "counter_offer",
+      "reject",
+    ]);
 
     const author = getPartnershipUiActions(pending, "master-1");
     assert.deepEqual(author.map((item) => item.kind), ["withdraw_counter"]);

@@ -1,0 +1,82 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--color-text-muted, #5c6570);
+}
+
+.muted {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #5c6570);
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  color: var(--color-danger, #b42318);
+  font-size: 0.875rem;
+}
+
+.retry {
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid var(--color-border, #e4e7ec);
+}
+
+.subheading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.formRow {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .formRow {
+    grid-template-columns: 1fr 12rem;
+    align-items: end;
+  }
+}
+
+.selectLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.select {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border, #d0d5dd);
+  background: var(--color-surface, #fff);
+  font: inherit;
+}
