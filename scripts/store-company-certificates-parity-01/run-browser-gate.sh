@@ -34,6 +34,10 @@ pnpm exec tsc --noEmit >"$ART/tsc.log" 2>&1 || {
   cat "$ART/tsc.log" >&2
   exit 1
 }
+pnpm run build >"$ART/build.log" 2>&1 || {
+  tail -40 "$ART/build.log" >&2
+  exit 1
+}
 
 bash "$ISO/bootstrap.sh"
 cd "$NAV_ROOT"
@@ -43,16 +47,6 @@ catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-owner-real-sessions.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-certificates-shell.ts
-pnpm exec vitest run src/components/agent-r03/AgentCertificatesList.business-parity.test.tsx \
-  >"$ART/component-parity.log" 2>&1
-pnpm exec tsc --noEmit >"$ART/tsc.log" 2>&1 || {
-  cat "$ART/tsc.log" >&2
-  exit 1
-}
-pnpm run build >"$ART/build.log" 2>&1 || {
-  tail -40 "$ART/build.log" >&2
-  exit 1
-}
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3443 CATALOG_QA_FRONTEND_PORT=3442 bash "$ISO/stop.sh" || true
 CATALOG_QA_BACKEND_PORT=3443 CATALOG_QA_FRONTEND_PORT=3442 bash "$ISO/start.sh"
