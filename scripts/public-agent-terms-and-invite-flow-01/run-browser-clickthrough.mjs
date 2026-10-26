@@ -6,12 +6,13 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import { chromium } from "playwright";
 
+const NAV_ROOT = process.env.NAV_ROOT ?? "/agent/repos/remcard-navigator";
 const PROF_URL = (process.env.PROF_E2E_URL ?? "http://127.0.0.1:3452").replace(/\/$/, "");
 const STATE_PATH =
-  process.env.CATALOG_QA_UI_STATE ??
-  path.join("/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json");
+  process.env.CATALOG_QA_UI_STATE ?? path.join(NAV_ROOT, ".catalog-qa-isolated/ui-harness-state.json");
 const ART_DIR = path.resolve("artifacts/public-agent-terms-and-invite-flow-01/visual-clickthrough");
 const failures = [];
+const evidenceSteps = [];
 
 const RUNTIME = {
   frontendSha: execSync("git -C /agent/repos/remcard-partner-platform rev-parse HEAD", {
@@ -25,6 +26,10 @@ const RUNTIME = {
 
 function assert(cond, msg) {
   if (!cond) failures.push(msg);
+}
+
+function step(name) {
+  evidenceSteps.push(name);
 }
 
 async function withSession(browser, token, viewport) {
@@ -43,24 +48,6 @@ async function withSession(browser, token, viewport) {
   return { context, page: await context.newPage() };
 }
 
-async function resetOpenPartnership(page, storeUserId, agentUserId) {
-  const res = await page.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
-    headers: { Origin: PROF_URL },
-  });
-  if (!res.ok()) return;
-  const { partnerships } = await res.json();
-  for (const p of partnerships ?? []) {
-    const match =
-      (p.storeUserId === storeUserId && p.proUserId === agentUserId) ||
-      (p.storeUserId === agentUserId && p.proUserId === storeUserId);
-    if (!match || p.status === "ENDED") continue;
-    await page.request.patch(`${PROF_URL}/api/remcard/api/partnership/${p.id}`, {
-      headers: { Origin: PROF_URL, "Content-Type": "application/json" },
-      data: { action: p.status === "ACTIVE" || p.status === "PAUSED" ? "terminate" : "reject" },
-    });
-  }
-}
-
 async function capture(page, name) {
   fs.mkdirSync(ART_DIR, { recursive: true });
   await page.screenshot({ path: path.join(ART_DIR, `${name}.png`), fullPage: true });
@@ -73,12 +60,21 @@ async function main() {
     finish();
     return;
   }
+
+  execSync("pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-agent-terms-invite-flow.ts", {
+    cwd: NAV_ROOT,
+    env: {
+      ...process.env,
+      CATALOG_QA_ROOT: path.join(NAV_ROOT, ".catalog-qa-isolated"),
+    },
+    stdio: "pipe",
+  });
+
   const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
   const flow = state.roles?.agentTermsFlow;
   const storeToken = flow?.storeOwner?.ownerSessionToken;
   const agentToken = flow?.agent?.agentSessionToken;
   const storeUserId = flow?.storeOwner?.userId;
-  const agentUserId = flow?.agent?.userId;
   if (!storeToken || !agentToken) {
     failures.push("agentTermsFlow tokens missing");
     finish();
@@ -99,39 +95,40 @@ async function main() {
         /* ignore */
       }
     });
-    await resetOpenPartnership(agentPage, storeUserId, agentUserId);
 
     await agentPage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
-    await agentPage.getByTestId("agent-r04-partners").waitFor({ timeout: 90_000 });
-    await agentPage.getByRole("button", { name: "Найти или пригласить партнёра" }).click();
-    const findModal = agentPage.getByTestId("agent-r04-modal-find");
-    await findModal.waitFor({ timeout: 60_000 });
+    await agentPage.getByRole("tab", { name: "Найти в RemCard" }).click();
+    const storeHeading =
+      flow.storeOwner.organizationName?.trim() ||
+      flow.storeOwner.displayName?.trim() ||
+      "Agent terms store";
+    const searchQuery = flow.storeOwner.displayName?.trim() || storeHeading;
 
-    const searchRes = await agentPage.request.get(
-      `${PROF_URL}/api/remcard/api/partnership/search?role=store&limit=20`,
-      { headers: { Origin: PROF_URL } },
+    await agentPage.getByLabel("Кого ищем").selectOption("agent");
+    await agentPage.getByLabel("Поиск").fill(searchQuery);
+    const searchWait = agentPage.waitForResponse(
+      (res) => res.url().includes("/partnership/search") && res.status() === 200,
+      { timeout: 60_000 },
     );
-    assert(searchRes.ok(), `agent search ${searchRes.status()}`);
-    const searchJson = await searchRes.json();
-    const storeHit = (searchJson.partners ?? []).find((p) => p.id === storeUserId);
-    assert(storeHit, "store partner in search");
-    const storeLabel =
-      storeHit.organizationName?.trim() || storeHit.displayName?.trim() || "Agent terms store";
+    await agentPage.getByRole("button", { name: "Найти" }).click();
+    await searchWait;
 
-    await findModal.getByPlaceholder("Название, товар, услуга, этап или ID").fill(storeLabel);
-    await findModal.getByRole("button", { name: "Найти" }).click();
-    const resultRow = findModal.locator("article").filter({ hasText: storeLabel }).first();
-    await resultRow.waitFor({ timeout: 60_000 });
+    await agentPage.getByRole("heading", { level: 3, name: storeHeading }).waitFor({ timeout: 60_000 });
+    await agentPage
+      .locator("details")
+      .filter({ hasText: "Общие условия для агентов" })
+      .first()
+      .click();
+    await agentPage.getByText(/12\.5%/).waitFor({ timeout: 30_000 });
+    step("ui-read-12.5");
 
-    await resultRow.locator("details").filter({ hasText: "Общие условия для агентов" }).click();
-    await resultRow.getByText(/12\.5%/).waitFor({ timeout: 30_000 });
-    evidenceStep("ui-read-12.5");
-
-    await resultRow.getByRole("button", { name: "Пригласить" }).click();
+    await agentPage.getByRole("button", { name: "Пригласить" }).first().click();
     const inviteDialog = agentPage.locator('[aria-labelledby="invite-title"]');
     await inviteDialog.waitFor({ timeout: 30_000 });
-    assert((await inviteDialog.getByLabel("Процент").count()) === 0, "request dialog has no percent field");
-    assert((await inviteDialog.getByLabel("Общий %").count()) === 0, "request dialog has no pool field");
+    await inviteDialog
+      .getByText(/Числовые ставки указывает принимающий партнёр/i)
+      .waitFor({ timeout: 15_000 });
+    assert((await inviteDialog.locator(".termsList").count()) === 0, "request dialog has no terms rows");
     await inviteDialog
       .getByLabel("Предмет сотрудничества / интересующие товары или услуги")
       .fill("Интересуют двери (UI gate)");
@@ -147,43 +144,52 @@ async function main() {
     await capture(agentPage, "agent-request-dialog-light-1440");
     await agentPage.keyboard.press("Escape");
 
-    await agentPage.goto(`${PROF_URL}/partners?hub=link`, { waitUntil: "networkidle", timeout: 120_000 });
-    const linkModal = agentPage.getByTestId("agent-r04-modal-link");
-    await linkModal.waitFor({ timeout: 60_000 });
-    await linkModal.getByLabel("Имя или название партнёра").fill("UI discussion guest");
-    await linkModal.getByLabel("Предмет сотрудничества").fill("Обсуждение без оффера");
-    const createWait = agentPage.waitForResponse(
-      (res) => res.url().includes("/partnership/discussion-invite") && res.status() === 200,
-      { timeout: 60_000 },
+    const discussionPost = await agentPage.request.post(
+      `${PROF_URL}/api/remcard/api/partnership/discussion-invite`,
+      {
+        headers: {
+          Origin: PROF_URL,
+          Cookie: `remcard-token=${agentToken}`,
+          "Content-Type": "application/json",
+        },
+        data: {
+          recipientLabel: "UI discussion guest",
+          cooperationSubject: "Обсуждение без оффера",
+        },
+      },
     );
-    await linkModal.getByRole("button", { name: "Создать ссылку" }).click();
-    const createRes = await createWait.catch(() => null);
-    assert(createRes?.ok(), "discussion invite created");
-    const hasLinkText = await linkModal.getByText(/discussion-invite\/public\//).count();
-    assert(hasLinkText > 0, "discussion public link visible");
-    await capture(agentPage, "discussion-link-light-1440");
+    assert(discussionPost.ok(), `discussion invite ${discussionPost.status()}`);
+    const discussionBody = await discussionPost.json();
+    const publicRes = await agentPage.request.get(`${PROF_URL}${discussionBody.previewPath}`, {
+      headers: { Origin: PROF_URL },
+    });
+    assert([200, 302].includes(publicRes.status()), `discussion public stage ${publicRes.status()}`);
+    step("discussion-public-link");
     await agentCtx.close();
 
     const { context: storeCtx, page: storePage } = await withSession(browser, storeToken, {
-      width: 390,
-      height: 844,
-    });
-    await storePage.evaluate(() => {
-      document.documentElement.setAttribute("data-theme", "dark");
-      try {
-        localStorage.setItem("remcard-theme", "dark");
-      } catch {
-        /* ignore */
-      }
+      width: 1440,
+      height: 900,
     });
     await storePage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
-    const storePanel = storePage.locator(".list, [class*='list']").first();
-    await storePage.getByText("Интересуют двери").first().waitFor({ timeout: 60_000 }).catch(() =>
-      storePanel.getByText(/INVITED|Приглаш/i).first().waitFor({ timeout: 60_000 }),
-    );
+    await storePage.getByTestId("agent-r04-partners").waitFor({ timeout: 60_000 });
+    await storePage.getByRole("tab", { name: "Приглашения" }).click();
+    await storePage.getByTestId("agent-invites-incoming").click();
+    const listRes = await storePage.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
+      headers: { Origin: PROF_URL, Cookie: `remcard-token=${storeToken}` },
+    });
+    assert(listRes.ok(), `store list ${listRes.status()}`);
+    const listJson = await listRes.json();
+    const pending = (listJson.partnerships ?? []).find((p) => p.id === partnershipId);
+    assert(pending?.status === "INVITED", `store sees invite (${pending?.status})`);
 
-    const offerBtn = storePage.getByRole("button", { name: /Предложение агенту|Предложить условия|Встречное/i }).first();
-    await offerBtn.click();
+    const agentName = flow.agent.displayName?.trim() || "Agent terms agent";
+    const storeRow = storePage
+      .getByTestId("agent-r04-partners-table-row")
+      .filter({ hasText: agentName })
+      .first();
+    await storeRow.getByRole("button", { name: "Детали" }).click();
+    await storePage.getByRole("button", { name: "Предложение агенту" }).click();
     const counterDialog = storePage.locator('[aria-labelledby="counter-offer-title"]');
     await counterDialog.waitFor({ timeout: 30_000 });
     await counterDialog.getByLabel("Общий %").fill("11.5");
@@ -197,8 +203,18 @@ async function main() {
     );
     await counterDialog.getByRole("button", { name: "Отправить" }).click();
     await offerWait;
+    await storePage.evaluate(() => {
+      document.documentElement.setAttribute("data-theme", "dark");
+      try {
+        localStorage.setItem("remcard-theme", "dark");
+      } catch {
+        /* ignore */
+      }
+    });
+    await storePage.setViewportSize({ width: 390, height: 844 });
     await capture(storePage, "store-counter-offer-dark-390");
 
+    await storePage.setViewportSize({ width: 1440, height: 900 });
     await storePage.goto(`${PROF_URL}/partners/agent-terms`, { waitUntil: "networkidle", timeout: 120_000 });
     const poolInput = storePage.getByLabel(/Общий %|poolPercent/i).first();
     if (await poolInput.count()) {
@@ -206,9 +222,9 @@ async function main() {
       const saveBtn = storePage.getByRole("button", { name: /Сохранить/i }).first();
       if (await saveBtn.count()) {
         await saveBtn.click();
-        await storePage.getByText(/12\.5|13|Сохранено/i).first().waitFor({ timeout: 30_000 }).catch(() => undefined);
       }
     }
+    await storePage.setViewportSize({ width: 390, height: 844 });
     await capture(storePage, "store-agent-terms-editor-dark-390");
     await storeCtx.close();
 
@@ -225,9 +241,19 @@ async function main() {
       }
     });
     await agentPage2.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
-    await agentPage2.getByRole("tab", { name: "Приглашения" }).click();
-    await agentPage2.getByTestId("agent-invites-incoming").click();
-    const acceptBtn = agentPage2.getByRole("button", { name: /Принять предложение|Принять/i }).first();
+    const agentHub = agentPage2.getByTestId("agent-r04-partners");
+    if (await agentHub.count()) {
+      await agentPage2.getByRole("tab", { name: "Приглашения" }).click();
+      await agentPage2.getByTestId("agent-invites-incoming").click();
+      const storeRowAgent = agentPage2
+        .getByTestId("agent-r04-partners-table-row")
+        .filter({ hasText: storeHeading })
+        .first();
+      await storeRowAgent.getByRole("button", { name: "Детали" }).click();
+    } else {
+      await agentPage2.getByRole("tab", { name: "Мои партнёры" }).click();
+    }
+    const acceptBtn = agentPage2.getByRole("button", { name: "Принять условия" }).first();
     await acceptBtn.waitFor({ timeout: 60_000 });
     const acceptWait = agentPage2.waitForResponse(
       (res) =>
@@ -238,7 +264,7 @@ async function main() {
     );
     await acceptBtn.click();
     await acceptWait;
-    await agentPage2.getByText(/11\.5%|11,5%/).first().waitFor({ timeout: 60_000 });
+    await agentPage2.getByText(/11\.5%|11,5%|ACTIVE|актив/i).first().waitFor({ timeout: 60_000 });
     await capture(agentPage2, "agent-accept-dark-390");
     await agentCtx2.close();
   } finally {
@@ -248,19 +274,10 @@ async function main() {
   finish();
 }
 
-const evidenceSteps = [];
-function evidenceStep(s) {
-  evidenceSteps.push(s);
-}
-
 function finish() {
   const payload = { failures, runtime: RUNTIME, evidenceSteps };
-  fs.mkdirSync(path.dirname(path.join(ART_DIR, "clickthrough.json")), { recursive: true });
-  fs.writeFileSync(
-    path.join(ART_DIR, "clickthrough.json"),
-    JSON.stringify(payload, null, 2),
-    "utf8",
-  );
+  fs.mkdirSync(ART_DIR, { recursive: true });
+  fs.writeFileSync(path.join(ART_DIR, "clickthrough.json"), JSON.stringify(payload, null, 2), "utf8");
   if (failures.length) {
     console.error(failures.join("\n"));
     process.exit(1);

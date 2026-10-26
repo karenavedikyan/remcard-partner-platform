@@ -1,27 +1,27 @@
 {
   "failures": [],
   "runtime": {
-    "frontendSha": "033c6a20e699d1d63d083857adfb02264301da15",
-    "backendSha": "c644f96e2fd610e03d1930c199343424ed51357e",
-    "captureStartedAt": "2026-10-26T08:21:46.000Z"
+    "frontendSha": "1b04a9a647bba5c5a2950608076ba490f0643bb2",
+    "backendSha": "ba0e2f09aed404923c7815351d014a991b6154f5",
+    "captureStartedAt": "2026-10-26T08:51:38.000Z"
   },
   "extra": {
-    "partnershipId": "cmvoznixy0001jszbsgpomv3j",
-    "storeUserId": "cmvozc1yt0000jsncjjddczg2",
-    "version11": "2026-10-26T08:22:15.161Z",
-    "version115": "2026-10-26T08:22:15.324Z",
+    "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
+    "storeUserId": "cmvozxki00000jsxvah2n66q7",
+    "version11": "2026-10-26T08:51:40.082Z",
+    "version115": "2026-10-26T08:51:40.565Z",
     "termBeforeAccept": {
-      "id": "cmvoznj8c000ajszb4mptppuy",
-      "partnershipId": "cmvoznixy0001jszbsgpomv3j",
+      "id": "cmvp0pdat002ojs8nky40d75n",
+      "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
       "category": "doors",
       "categoryLabel": "Двери",
       "storePercent": 11.5,
       "minMargin": null,
       "isExcluded": false,
-      "validFrom": "2026-10-26T08:22:15.324Z",
+      "validFrom": "2026-10-26T08:51:40.565Z",
       "validUntil": null,
-      "createdAt": "2026-10-26T08:22:15.324Z",
-      "updatedAt": "2026-10-26T08:22:15.324Z"
+      "createdAt": "2026-10-26T08:51:40.565Z",
+      "updatedAt": "2026-10-26T08:51:40.565Z"
     },
     "evidence": {
       "steps": [
@@ -30,8 +30,22 @@
         "partner-offer-11",
         "agent-request-changes-10",
         "accept-11.5",
+        "certificate-builder-11.5",
         "org-limit-edit-no-partnership-mutation"
       ]
     }
+  },
+  "clickthrough": {
+    "failures": [],
+    "evidenceSteps": [
+      "ui-read-12.5",
+      "discussion-public-link"
+    ],
+    "screenshots": [
+      "visual-clickthrough/agent-request-dialog-light-1440.png",
+      "visual-clickthrough/store-counter-offer-dark-390.png",
+      "visual-clickthrough/store-agent-terms-editor-dark-390.png",
+      "visual-clickthrough/agent-accept-dark-390.png"
+    ]
   }
 }

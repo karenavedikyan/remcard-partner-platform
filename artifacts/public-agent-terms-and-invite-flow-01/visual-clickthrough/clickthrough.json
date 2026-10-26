@@ -1,0 +1,12 @@
+{
+  "failures": [],
+  "runtime": {
+    "frontendSha": "1b04a9a647bba5c5a2950608076ba490f0643bb2",
+    "backendSha": "ba0e2f09aed404923c7815351d014a991b6154f5",
+    "captureStartedAt": "2026-10-26T08:51:38.000Z"
+  },
+  "evidenceSteps": [
+    "ui-read-12.5",
+    "discussion-public-link"
+  ]
+}

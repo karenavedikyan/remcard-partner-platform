@@ -7,9 +7,10 @@ import { execSync } from "node:child_process";
 
 const PROF_URL = (process.env.PROF_E2E_URL ?? "http://127.0.0.1:3452").replace(/\/$/, "");
 const API = `${PROF_URL}/api/remcard`;
+const NAV_ROOT = process.env.NAV_ROOT ?? "/agent/repos/remcard-navigator";
 const STATE_PATH =
   process.env.CATALOG_QA_UI_STATE ??
-  path.join("/agent/repos/remcard-navigator/.catalog-qa-isolated/ui-harness-state.json");
+  path.join(NAV_ROOT, ".catalog-qa-isolated/ui-harness-state.json");
 const ART_DIR = path.resolve("artifacts/public-agent-terms-and-invite-flow-01");
 const failures = [];
 
@@ -35,6 +36,22 @@ function proxyHeaders(token) {
   };
 }
 
+async function resetAgentStorePartnership(storeToken, agentToken, storeUserId, agentUserId) {
+  for (const token of [storeToken, agentToken]) {
+    const list = await jsonFetch(token, "GET", "/api/partnership/list");
+    if (list.status !== 200) continue;
+    for (const p of list.data?.partnerships ?? []) {
+      const match =
+        (p.storeUserId === storeUserId && p.proUserId === agentUserId) ||
+        (p.storeUserId === agentUserId && p.proUserId === storeUserId);
+      if (!match || p.status === "ENDED") continue;
+      const action =
+        p.status === "ACTIVE" || p.status === "PAUSED" ? "terminate" : "reject";
+      await jsonFetch(token, "PATCH", `/api/partnership/${p.id}`, { action });
+    }
+  }
+}
+
 async function jsonFetch(token, method, pathname, body) {
   const res = await fetch(`${API}${pathname}`, {
     method,
@@ -51,29 +68,46 @@ async function jsonFetch(token, method, pathname, body) {
   return { status: res.status, data };
 }
 
-async function waitForProfReady() {
-  for (let attempt = 0; attempt < 30; attempt++) {
+async function waitForProfReady(agentToken, storeUserId) {
+  for (let attempt = 0; attempt < 45; attempt++) {
     try {
-      const res = await fetch(`${PROF_URL}/api/remcard/api/auth/me`, {
-        headers: { Origin: PROF_URL },
+      const me = await fetch(`${PROF_URL}/api/remcard/api/auth/me`, {
+        headers: { Origin: PROF_URL, Cookie: `remcard-token=${agentToken}` },
       });
-      if (res.status === 401 || res.status === 200) return;
+      if (me.status !== 401 && me.status !== 200) {
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+      const summary = await fetch(
+        `${PROF_URL}/api/remcard/api/partner/${encodeURIComponent(storeUserId)}/certificate-program-summary`,
+        {
+          headers: { Origin: PROF_URL, Cookie: `remcard-token=${agentToken}` },
+        },
+      );
+      if (summary.status === 200) return;
     } catch {
       /* retry */
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
-  failures.push(`PROF not ready at ${PROF_URL}`);
+  failures.push(`PROF BFF not ready for remcard proxy at ${PROF_URL}`);
 }
 
 async function main() {
   fs.mkdirSync(ART_DIR, { recursive: true });
-  await waitForProfReady();
   if (!fs.existsSync(STATE_PATH)) {
     failures.push(`missing harness state: ${STATE_PATH}`);
     writeReport();
     process.exit(1);
   }
+  execSync("pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-agent-terms-invite-flow.ts", {
+    cwd: NAV_ROOT,
+    env: {
+      ...process.env,
+      CATALOG_QA_ROOT: path.join(NAV_ROOT, ".catalog-qa-isolated"),
+    },
+    stdio: "pipe",
+  });
   const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
   const flow = state.roles?.agentTermsFlow;
   if (!flow?.storeOwner?.ownerSessionToken || !flow?.agent?.agentSessionToken) {
@@ -85,6 +119,13 @@ async function main() {
   const storeToken = flow.storeOwner.ownerSessionToken;
   const agentToken = flow.agent.agentSessionToken;
   const storeUserId = flow.storeOwner.userId;
+  await waitForProfReady(agentToken, storeUserId);
+  await resetAgentStorePartnership(
+    storeToken,
+    agentToken,
+    storeUserId,
+    flow.agent.userId,
+  );
   const evidence = { steps: [] };
 
   const summary = await jsonFetch(

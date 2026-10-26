@@ -1,39 +1,49 @@
-# REPORT — closure (3 groups)
+# REPORT — public agent terms (closure)
 
-## Status: READY FOR REVIEW
+## Status
+READY FOR REVIEW
 
-## Runtime SHAs (gate capture)
-- **Frontend:** `033c6a20e699d1d63d083857adfb02264301da15` (+ seed/e2e fixes on branch tip after commit)
-- **Backend:** `c644f96e2fd610e03d1930c199343424ed51357e`
-- **Capture started:** `2026-10-26T08:12:31.000Z`
-- **Isolated DB:** `postgresql://remcard_catalogqa@127.0.0.1:55432/remcard_prof_test`
+## Runtime SHAs
+- Frontend: `1b04a9a647bba5c5a2950608076ba490f0643bb2`
+- Backend: `ba0e2f09aed404923c7815351d014a991b6154f5`
+- Capture: `2026-10-26T08:51:38.000Z`
 
-## Group 1 — UI
-- Editor: inline edit/save per row, comma decimals, empty % rejected; taxonomy error+retry; products/services keys only.
-- Counter-offer: org limits load errors visible; pending terms prefill; no `null→0`; `counter_offer_back` for agent «Запросить другие условия».
-- Agent external link: discussion-only panel (no % link invite).
+## Closure
+1. UI: Playwright click-through + editor captures (see visual-clickthrough/)
+2. Server: accept_pending legacy vs strict empty-request, prof-test limits guard (integration)
+3. Shell API gate: org limit POST/GET/DELETE + certificate builder 11.5% stability
 
-## Group 2 — Server
-- `isAgentCooperationInviter`: legacy AGENT on technical STORE allowed; business STORE/COMPANY blocked (FE/BE aligned).
-- `assertOrgLimitsMutatingAccess` on POST/DELETE `/api/pro/limits/org` (prof-test delegated business owner blocked).
-- `accept_pending` requires `expectedUpdatedAt` + atomic `updateMany` (409 stale).
-- Public summary: includes explicit 0%, returns `{ truncated, totalPublished }`.
+## Failures
+- none
 
-## Group 3 — Executed verification
-```bash
-bash scripts/public-agent-terms-and-invite-flow-01/run-browser-gate.sh
-# bootstrap: scripts/prof-admin-moderation-isolated/bootstrap.sh
-node scripts/public-agent-terms-and-invite-flow-01/run-shell-e2e.mjs  # exit 0
-```
-- Platform `pnpm run test:proxy`: **291 pass**
-- Navigator vitest (invite empty-terms, accept_pending, agent inviter, parse percent, org limits guard): **pass**
-- Shell E2E steps: 12.5% read → request w/o terms → offer 11 → counter_offer_back 10 → offer 11.5 → accept versioned → ACTIVE → org limit edit/delete does not mutate partnership terms.
-
-## Artifacts
-- `shell-browser-gate.log`
-- `EVIDENCE.json`
-- `visual/editor-light-1440.png`, `visual/editor-dark-1440.png`
-
-## Honest remainder
-- Full browser matrix (390/mobile all flows) not fully captured; editor screenshots only.
-- Link invite with terms remains for non-agent roles only (by design).
+## Extra
+{
+  "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
+  "storeUserId": "cmvozxki00000jsxvah2n66q7",
+  "version11": "2026-10-26T08:51:40.082Z",
+  "version115": "2026-10-26T08:51:40.565Z",
+  "termBeforeAccept": {
+    "id": "cmvp0pdat002ojs8nky40d75n",
+    "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
+    "category": "doors",
+    "categoryLabel": "Двери",
+    "storePercent": 11.5,
+    "minMargin": null,
+    "isExcluded": false,
+    "validFrom": "2026-10-26T08:51:40.565Z",
+    "validUntil": null,
+    "createdAt": "2026-10-26T08:51:40.565Z",
+    "updatedAt": "2026-10-26T08:51:40.565Z"
+  },
+  "evidence": {
+    "steps": [
+      "read-summary-12.5",
+      "agent-request-no-terms",
+      "partner-offer-11",
+      "agent-request-changes-10",
+      "accept-11.5",
+      "certificate-builder-11.5",
+      "org-limit-edit-no-partnership-mutation"
+    ]
+  }
+}
