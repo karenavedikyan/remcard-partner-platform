@@ -26,7 +26,7 @@ Duplicate «Создать сертификат» on empty business list: intro 
 | **Branch** | `fix/store-company-certificates-prototype-parity-01` (from `1a0fbf32…`) |
 | **Capture UTC** | `2026-10-26T07:23:38.000Z` → `2026-10-26T07:23:52.670Z` |
 | **Prior evidence tip** | `a642121ef7586a3f87ac178baea4e3936db88cbe` |
-| **This evidence tip** | `0bd5d3b0d83907979fed7ef45d1dfe38b716cb04` (artifacts); REPORT tip line fixed in subsequent docs commit |
+| **This evidence tip** | `0bd5d3b0d83907979fed7ef45d1dfe38b716cb04` |
 
 ## Commands / exit
 
