@@ -7,7 +7,7 @@ import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import { parsePoolPercentInput } from "@/lib/parse-pool-percent";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
-import { TextField } from "@/components/ui/FormField";
+import { SelectField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerAgentGeneralTermsEditor.module.css";
 
 type OrgLimitRow = {
@@ -170,7 +170,7 @@ export function PartnerAgentGeneralTermsEditor({
   return (
     <div className={styles.root}>
       <Panel compact>
-        <p className={styles.lead}>
+        <p className={styles.lead} data-testid="agent-general-terms-lead">
           Эти условия видны агентам в RemCard до отправки запроса на сотрудничество. Они применяются к
           новым обсуждениям и не меняют уже принятые персональные условия и выпущенные сертификаты.
         </p>
@@ -265,10 +265,10 @@ export function PartnerAgentGeneralTermsEditor({
           ) : (
             <>
               <div className={styles.formRow}>
-                <label className={styles.selectLabel}>
-                  Категория
-                  <select
-                    className={styles.select}
+                <div className={styles.selectField}>
+                  <SelectField
+                    label="Категория"
+                    data-testid="agent-general-terms-category-select"
                     value={pickCategory}
                     disabled={taxonomyState !== "ready"}
                     onChange={(event) => setPickCategory(event.target.value)}
@@ -279,8 +279,8 @@ export function PartnerAgentGeneralTermsEditor({
                         {categoryLabel(key)}
                       </option>
                     ))}
-                  </select>
-                </label>
+                  </SelectField>
+                </div>
                 <TextField
                   label="Общий процент"
                   type="text"
