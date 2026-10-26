@@ -32,6 +32,11 @@ import {
   type AuthLoginProvider,
 } from "@/lib/auth-flow";
 import { getMaxBotLoginUrl, getTelegramBotLoginUrl } from "@/lib/auth-config";
+import {
+  fetchReleaseWindowStatus,
+  releaseWindowBlocksLogin,
+  type ReleaseWindowPhase,
+} from "@/lib/release-window";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
@@ -78,6 +83,7 @@ export function AuthFlow({
   const [code, setCode] = useState("");
   const [readiness, setReadiness] = useState<CabinetReadiness | null>(null);
   const [error, setError] = useState("");
+  const [releaseWindowPhase, setReleaseWindowPhase] = useState<ReleaseWindowPhase>("OPEN");
   const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(false);
   const [retryKind, setRetryKind] = useState<RetryKind>("network");
@@ -208,6 +214,12 @@ export function AuthFlow({
     };
   }, []);
 
+  useEffect(() => {
+    void fetchReleaseWindowStatus().then((status) => {
+      if (status?.phase) setReleaseWindowPhase(status.phase);
+    });
+  }, []);
+
   const retrySessionCheck = useCallback(async () => {
     if (submitLock.current || loading || booting) return;
     submitLock.current = true;
@@ -233,13 +245,19 @@ export function AuthFlow({
 
   const chooseProvider = useCallback(
     (next: AuthLoginProvider) => {
+      if (releaseWindowBlocksLogin(releaseWindowPhase)) {
+        setError(
+          "Сервис временно недоступен из‑за технического окна обновления. Попробуйте позже.",
+        );
+        return;
+      }
       setProvider(next);
       setError("");
       setResendStatus("");
       setStep("code");
       openMessengerForLogin(messengerLoginUrl(next, maxBotUrl, telegramBotUrl));
     },
-    [maxBotUrl, telegramBotUrl],
+    [maxBotUrl, releaseWindowPhase, telegramBotUrl],
   );
 
   const resendCode = useCallback(() => {
@@ -256,6 +274,12 @@ export function AuthFlow({
       if (submitLock.current || loading) return;
       if (code.length !== 6) {
         setError("Введите 6-значный код из бота.");
+        return;
+      }
+      if (releaseWindowBlocksLogin(releaseWindowPhase)) {
+        setError(
+          "Сервис временно недоступен из‑за технического окна обновления. Попробуйте позже.",
+        );
         return;
       }
 

@@ -31,6 +31,7 @@ const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
 const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: RegExp }> =
   [
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/auth\/me$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/release-window\/status$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/auth\/capabilities$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/admin\/auth\/password-login$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/admin\/auth\/change-password$/ },

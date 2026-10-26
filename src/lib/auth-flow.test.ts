@@ -314,6 +314,15 @@ describe("resolveDestinationAfterAuth", () => {
   });
 });
 
+describe("mapVerifyCodeError release window", () => {
+  it("maps 503 RELEASE_WINDOW_CLOSED", () => {
+    assert.match(
+      mapVerifyCodeError(503, { code: "RELEASE_WINDOW_CLOSED" }),
+      /технического окна/i,
+    );
+  });
+});
+
 describe("mapVerifyCodeError", () => {
   it("maps auth failures to user-facing messages", () => {
     assert.match(mapVerifyCodeError(401, { error: "x" }), /неверный/i);

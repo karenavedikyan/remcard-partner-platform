@@ -175,6 +175,13 @@ export function mapVerifyCodeError(
   if (status === 403) {
     return "Аккаунт заблокирован.";
   }
+  if (status === 503) {
+    const code = (body as { code?: string } | null)?.code;
+    if (code === "RELEASE_WINDOW_CLOSED") {
+      return "Сервис временно недоступен из‑за технического окна обновления. Попробуйте позже.";
+    }
+    return "Временная ошибка сервера. Попробуйте позже.";
+  }
   if (status === 0) {
     return "Не удалось связаться с сервером. Проверьте соединение.";
   }
