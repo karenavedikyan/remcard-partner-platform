@@ -48,6 +48,7 @@ import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { PartnerTypeSettings } from "./PartnerTypeSettings";
 import { ProfileBranchContextSwitcher } from "./ProfileBranchContextSwitcher";
 import {
   ProfileCabinetAccessProvider,
@@ -947,17 +948,9 @@ function ProfileEditorInner({
                   required
                 />
               </div>
-              <SelectField
-                label="Тип партнёра"
-                value={partnerType}
-                onChange={(event) => setPartnerType(event.target.value)}
-              >
-                {PARTNER_TYPES.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </SelectField>
+              <p className={styles.notesList}>
+                Тип партнёрства меняется в блоке «Тип партнёрства» на вкладке «Обзор» (с подтверждением).
+              </p>
 
               {partnerType === "STORE" || partnerType === "COMPANY" ? (
                 <TextField
@@ -1424,6 +1417,15 @@ function ProfileEditorInner({
             )}
           </Panel>
         )}
+
+        {(activeSection === "overview" || activeSection === "basics") && basicsEditable ? (
+          <PartnerTypeSettings
+            profile={profile}
+            hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+            onProfileUpdated={applyProfile}
+            onRequestRefresh={() => router.refresh()}
+          />
+        ) : null}
 
         <ProfileSessionActions />
       </div>

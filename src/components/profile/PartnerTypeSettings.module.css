@@ -1,0 +1,169 @@
+.settings {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.settings h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+.settings p {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.current {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.settings > .openBtn {
+  flex-shrink: 0;
+}
+
+.success {
+  color: var(--green);
+  font-size: var(--text-sm);
+}
+
+.dialogBody {
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+.dialogBody h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+  color: var(--ink);
+}
+
+.dialogBody section p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.options {
+  display: grid;
+  gap: var(--space-3);
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  cursor: pointer;
+  background: var(--surface);
+}
+
+.option:has(input:checked) {
+  background: var(--offset);
+  border-color: var(--primary-fill);
+}
+
+.option input,
+.ack input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--primary-fill);
+  flex-shrink: 0;
+}
+
+.option > span {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.optionDesc,
+.tag {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.tag {
+  margin-left: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.transition {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.transition span {
+  padding: 0 var(--space-2);
+  color: var(--muted);
+}
+
+.ack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+  padding: var(--space-3) 0;
+  color: var(--ink);
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-6) var(--space-6);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.actions :global(.btn) {
+  min-height: 44px;
+}
+
+.error {
+  color: var(--primary);
+  font-size: var(--text-sm);
+  margin: var(--space-2) 0 0;
+}
+
+@media (max-width: 680px) {
+  .settings {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .settings > .openBtn {
+    width: 100%;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .actions:has([data-partner-type-action="apply"]) > :global(.primary) {
+    grid-column: 1 / -1;
+  }
+
+  .actions > :global(.btn) {
+    min-width: 0;
+  }
+}
