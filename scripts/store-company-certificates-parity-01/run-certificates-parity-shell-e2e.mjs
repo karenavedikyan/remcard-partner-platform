@@ -110,7 +110,10 @@ async function assertPrototypeParity(page, label) {
   assert(await details.count(), `${label}: client-arrived details present`);
   const open = await details.evaluate((el) => el.open);
   assert(!open, `${label}: client-arrived details closed by default`);
-  const scan = root.getByRole("link", { name: "Проверить сертификат" });
+  const scan = root.getByRole("link", {
+    name: "Проверить сертификат",
+    includeHidden: true,
+  });
   assert((await scan.count()) === 1, `${label}: scanner link`);
   assert((await scan.getAttribute("href")) === "/scanner", `${label}: scanner href`);
 }
