@@ -40,7 +40,7 @@ Frontend-only UX parity for business `/recommendations` (STORE/COMPANY) against 
 | **Backend (unchanged)** | `0152db578de69c387e73536214ebec940aebda27` |
 | **Branch** | `fix/store-company-certificates-prototype-parity-01` (from `1a0fbf32…`) |
 | **Capture UTC** | `2026-10-26T07:13:25.000Z` → `2026-10-26T07:13:35.418Z` |
-| **Evidence tip** | Docs/artifacts commit on this branch (see `git show` for `REPORT.md`) |
+| **Evidence tip** | `776c53b969ced4f99663ed7b1f021470a0f120ee` (docs/artifacts; runtime code `4eb3e95b…`) |
 
 ## Commands / exit
 
