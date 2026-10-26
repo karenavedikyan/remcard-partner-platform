@@ -9,7 +9,8 @@ READY FOR REVIEW (not DEPLOYED)
 
 ## Application SHAs (audit follow-up)
 - **Backend (runtime):** `a81ded226fcdd823896d8a12792426a3981052b2`
-- **Frontend (runtime):** see evidence tip commit below (application + `artifacts/`)
+- **Frontend (runtime):** `8e2bec34a2b23cf6147f4703208ac4bbcb73c8ac`
+- **Browser evidence:** `browser-capture.json` — failures `[]`, runtime SHAs above
 - **Prior blocked candidates (superseded):** backend `8072fe4e`, frontend `a7982c7f`
 
 ## Audit blockers addressed in `a81ded22` / frontend follow-up

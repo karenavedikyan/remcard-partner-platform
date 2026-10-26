@@ -1,13 +1,22 @@
 {
-  "failures": [
-    "TimeoutError: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByTestId('profile-overview-role') to be visible\n"
-  ],
+  "failures": [],
   "runtime": {
-    "frontendSha": "df479d6d81ae27b1c41fd78a8570140388e8d86f",
+    "frontendSha": "8e2bec34a2b23cf6147f4703208ac4bbcb73c8ac",
     "backendSha": "a81ded226fcdd823896d8a12792426a3981052b2",
-    "captureStartedAt": "2026-10-26T11:52:28.000Z"
+    "captureStartedAt": "2026-10-26T11:56:10.000Z"
   },
   "steps": [
-    "switch-agent-to-specialist"
+    "switch-agent-to-specialist",
+    "switch-specialist-to-store",
+    "switch-store-to-company",
+    "switch-company-to-agent",
+    "dialog-captures-light-1440",
+    "screenshot-light-1440",
+    "dialog-captures-dark-1440",
+    "screenshot-dark-1440",
+    "dialog-captures-light-390",
+    "screenshot-light-390",
+    "dialog-captures-dark-390",
+    "screenshot-dark-390"
   ]
 }
