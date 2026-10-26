@@ -1,0 +1,107 @@
+
+> remcard-partner-platform@0.1.0 build /agent/repos/remcard-partner-platform
+> next build
+
+   ▲ Next.js 15.5.27
+   - Experiments (use with caution):
+     · cpus: 1
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 8.6s
+   Linting and checking validity of types ...
+
+./src/app/admin/moderation/organizations/[id]/ModerationOrgCatalogFullPreview.tsx
+56:6  Warning: React Hook useMemo has a missing dependency: 'data'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/agent-r03/AgentCertificatesList.tsx
+209:6  Warning: React Hook useCallback has a missing dependency: 'isIssuerShell'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/agent-r03/AgentClientsList.tsx
+99:6  Warning: React Hook useCallback has an unnecessary dependency: 'searchRevision'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/home/BusinessOwnerHomeDashboard.tsx
+114:6  Warning: React Hook useCallback has an unnecessary dependency: 'contextEpoch'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/layout/agent/useAgentThemeSync.ts
+89:6  Warning: React Hook useEffect has a missing dependency: 'queuePersist'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/notifications/ProfNotificationCenter.tsx
+15:6  Warning: React Hook useEffect has a missing dependency: 'notifications'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/partners/PartnersHub.tsx
+340:6  Warning: React Hook useMemo has an unnecessary dependency: 'listArchiveView'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/profile/ProfileEditor.tsx
+346:7  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./src/components/profile/ProfileTeamMemberEditor.tsx
+38:5  Warning: React Hook useMemo has missing dependencies: 'member' and 'overview'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+41:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+42:7  Warning: React Hook useMemo has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./src/components/profile/agent/AgentProfileSection.tsx
+60:19  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/13) ...
+   Generating static pages (3/13) 
+   Generating static pages (6/13) 
+   Generating static pages (9/13) 
+ ✓ Generating static pages (13/13)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                  Size  First Load JS
+┌ ƒ /                                     13.6 kB         156 kB
+├ ○ /_not-found                              1 kB         104 kB
+├ ƒ /account/signed-out                     705 B         107 kB
+├ ƒ /admin/moderation                     2.54 kB         122 kB
+├ ƒ /admin/moderation/organizations/[id]  10.8 kB         141 kB
+├ ƒ /admin/moderation/partners/[id]       8.42 kB         139 kB
+├ ƒ /admin/password                       2.57 kB         105 kB
+├ ƒ /admin/test-users                     4.76 kB         107 kB
+├ ƒ /api/csrf                               152 B         103 kB
+├ ƒ /api/remcard/[...path]                  152 B         103 kB
+├ ƒ /certificates                           858 B         178 kB
+├ ƒ /certificates/[id]                    4.37 kB         163 kB
+├ ƒ /certificates/new                     3.62 kB         164 kB
+├ ƒ /clients                              6.36 kB         152 kB
+├ ƒ /clients/[id]                         4.42 kB         150 kB
+├ ○ /dev-fixtures/account-session         3.11 kB         111 kB
+├ ○ /dev/business-home-preview             2.4 kB         113 kB
+├ ○ /dev/r01-agent-shell                  1.99 kB         121 kB
+├ ƒ /dev/r02-agent-profile                1.99 kB         115 kB
+├ ○ /dev/specialist-home-preview          4.95 kB         111 kB
+├ ƒ /history                              3.71 kB         145 kB
+├ ƒ /history/accruals/[id]                4.21 kB         146 kB
+├ ƒ /history/purchases/[id]               8.67 kB         150 kB
+├ ƒ /invite/[token]                       13.6 kB         124 kB
+├ ƒ /invite/accept                        2.87 kB         113 kB
+├ ƒ /invite/discussion/[token]             2.2 kB         112 kB
+├ ○ /invite/opengraph-image                 152 B         103 kB
+├ ƒ /join                                 9.54 kB         125 kB
+├ ƒ /login                                4.08 kB         119 kB
+├ ƒ /notifications                          321 B         137 kB
+├ ƒ /onboarding                           10.4 kB         116 kB
+├ ○ /opengraph-image                        152 B         103 kB
+├ ƒ /partners                             2.78 kB         171 kB
+├ ○ /partners/dev-fixture                 1.83 kB         139 kB
+├ ƒ /profile                                293 B         243 kB
+├ ○ /profile/dev-fixture                  5.34 kB         226 kB
+├ ƒ /profile/staff-access-scope-fixture   1.48 kB         218 kB
+├ ƒ /recommendations                        225 B         181 kB
+├ ƒ /recommendations/[id]                   225 B         181 kB
+├ ƒ /recommendations/new                    224 B         181 kB
+├ ƒ /scanner                              9.32 kB         146 kB
+├ ƒ /settlements                          8.07 kB         160 kB
+└ ○ /settlements/dev-fixture              2.02 kB         123 kB
++ First Load JS shared by all              103 kB
+  ├ chunks/1255-8dc91b756d944555.js       46.2 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js   54.2 kB
+  └ other shared chunks (total)           2.21 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

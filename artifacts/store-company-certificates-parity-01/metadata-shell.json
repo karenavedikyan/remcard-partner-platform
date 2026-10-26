@@ -2,20 +2,22 @@
   "ok": true,
   "failures": [],
   "application": {
-    "frontendSha": "4eb3e95b69ced4f99663ed7b1f021470a0f120ee",
+    "frontendSha": "188c86bf955d9c198f12426f30576f87f05e7b62",
     "backendSha": "0152db578de69c387e73536214ebec940aebda27",
-    "captureStartedAt": "2026-10-26T07:13:25.000Z",
-    "captureCompletedAt": "2026-10-26T07:13:35.418Z"
+    "captureStartedAt": "2026-10-26T07:23:38.000Z",
+    "captureCompletedAt": "2026-10-26T07:23:52.670Z"
   },
   "flow": {
     "store": {
       "parityChecks": true,
       "populatedCapture": true,
+      "populatedTotalCount": 1,
       "filteredEmptyCapture": true
     },
     "company": {
       "parityChecks": true,
       "populatedCapture": true,
+      "populatedTotalCount": 1,
       "filteredEmptyCapture": true
     }
   }
