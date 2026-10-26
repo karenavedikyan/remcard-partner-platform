@@ -4,36 +4,53 @@
 READY FOR REVIEW
 
 ## Runtime SHAs
-- Frontend: `1b04a9a647bba5c5a2950608076ba490f0643bb2`
-- Backend: `ba0e2f09aed404923c7815351d014a991b6154f5`
-- Capture: `2026-10-26T08:51:38.000Z`
+- Frontend: `9d54e58a9b25dc83282781bffb8820b83e6f845d`
+- Backend: `1267da4274826e06b7358f1a785fe275c9cec836`
+- Capture: `2026-10-26T09:23:48.000Z`
 
-## Closure
-1. UI: Playwright click-through + editor captures (see visual-clickthrough/)
-2. Server: accept_pending legacy vs strict empty-request, prof-test limits guard (integration)
-3. Shell API gate: org limit POST/GET/DELETE + certificate builder 11.5% stability
+## Closure (this run)
+1. UI: Playwright R04 agent click-through + editor save/reload 13% (visual-clickthrough/)
+2. Server: accept_pending + prof-test org limits guard (vitest integration in gate log)
+3. Shell API gate: org limit POST/GET/DELETE + available-partners 11.5% (same gate run as log)
+
+## Actor vs target UI
+- `shouldShowAgentPublishedTermsForSearch`: agents always see published terms via `isAgentActivityInviter`; target filter `agent` kept for non-agent viewers.
+
+## Honest limitations (not claimed verified)
+- Historical certificate snapshot lifecycle was not re-verified in this bounded closure.
+- Concurrency guarantees for every partnership offer write path were not re-audited; only the scripted shell/API gate steps apply.
 
 ## Failures
 - none
 
-## Extra
+## Presentation (clickthrough)
 {
-  "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
-  "storeUserId": "cmvozxki00000jsxvah2n66q7",
-  "version11": "2026-10-26T08:51:40.082Z",
-  "version115": "2026-10-26T08:51:40.565Z",
+  "agentR04Api": {
+    "featureEnabled": true,
+    "eligible": true
+  },
+  "agentHub": "shared-r04",
+  "storeHub": "shared-r04-business-store"
+}
+
+## Extra (shell)
+{
+  "partnershipId": "cmvp1y6py0001js6tor4d9u3x",
+  "storeUserId": "cmvp1vtqu0000jswdifl128gh",
+  "version11": "2026-10-26T09:26:31.646Z",
+  "version115": "2026-10-26T09:26:31.786Z",
   "termBeforeAccept": {
-    "id": "cmvp0pdat002ojs8nky40d75n",
-    "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
+    "id": "cmvp1y6wa000ajs6t53ywzqvr",
+    "partnershipId": "cmvp1y6py0001js6tor4d9u3x",
     "category": "doors",
     "categoryLabel": "Двери",
     "storePercent": 11.5,
     "minMargin": null,
     "isExcluded": false,
-    "validFrom": "2026-10-26T08:51:40.565Z",
+    "validFrom": "2026-10-26T09:26:31.786Z",
     "validUntil": null,
-    "createdAt": "2026-10-26T08:51:40.565Z",
-    "updatedAt": "2026-10-26T08:51:40.565Z"
+    "createdAt": "2026-10-26T09:26:31.786Z",
+    "updatedAt": "2026-10-26T09:26:31.786Z"
   },
   "evidence": {
     "steps": [

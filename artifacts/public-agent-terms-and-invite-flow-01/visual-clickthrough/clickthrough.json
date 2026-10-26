@@ -1,12 +1,22 @@
 {
   "failures": [],
   "runtime": {
-    "frontendSha": "1b04a9a647bba5c5a2950608076ba490f0643bb2",
-    "backendSha": "ba0e2f09aed404923c7815351d014a991b6154f5",
-    "captureStartedAt": "2026-10-26T08:51:38.000Z"
+    "frontendSha": "9d54e58a9b25dc83282781bffb8820b83e6f845d",
+    "backendSha": "1267da4274826e06b7358f1a785fe275c9cec836",
+    "captureStartedAt": "2026-10-26T09:23:48.000Z"
   },
   "evidenceSteps": [
-    "ui-read-12.5",
-    "discussion-public-link"
-  ]
+    "ui-read-12.5-pro-search-store",
+    "discussion-public-link",
+    "editor-save-13-reload",
+    "agent-accept-11.5-ui"
+  ],
+  "presentation": {
+    "agentR04Api": {
+      "featureEnabled": true,
+      "eligible": true
+    },
+    "agentHub": "shared-r04",
+    "storeHub": "shared-r04-business-store"
+  }
 }

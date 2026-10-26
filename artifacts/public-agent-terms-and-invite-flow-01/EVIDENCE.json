@@ -1,27 +1,27 @@
 {
   "failures": [],
   "runtime": {
-    "frontendSha": "1b04a9a647bba5c5a2950608076ba490f0643bb2",
-    "backendSha": "ba0e2f09aed404923c7815351d014a991b6154f5",
-    "captureStartedAt": "2026-10-26T08:51:38.000Z"
+    "frontendSha": "9d54e58a9b25dc83282781bffb8820b83e6f845d",
+    "backendSha": "1267da4274826e06b7358f1a785fe275c9cec836",
+    "captureStartedAt": "2026-10-26T09:23:48.000Z"
   },
-  "extra": {
-    "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
-    "storeUserId": "cmvozxki00000jsxvah2n66q7",
-    "version11": "2026-10-26T08:51:40.082Z",
-    "version115": "2026-10-26T08:51:40.565Z",
+  "shell": {
+    "partnershipId": "cmvp1y6py0001js6tor4d9u3x",
+    "storeUserId": "cmvp1vtqu0000jswdifl128gh",
+    "version11": "2026-10-26T09:26:31.646Z",
+    "version115": "2026-10-26T09:26:31.786Z",
     "termBeforeAccept": {
-      "id": "cmvp0pdat002ojs8nky40d75n",
-      "partnershipId": "cmvp0pcpx002fjs8nurpqo5n4",
+      "id": "cmvp1y6wa000ajs6t53ywzqvr",
+      "partnershipId": "cmvp1y6py0001js6tor4d9u3x",
       "category": "doors",
       "categoryLabel": "Двери",
       "storePercent": 11.5,
       "minMargin": null,
       "isExcluded": false,
-      "validFrom": "2026-10-26T08:51:40.565Z",
+      "validFrom": "2026-10-26T09:26:31.786Z",
       "validUntil": null,
-      "createdAt": "2026-10-26T08:51:40.565Z",
-      "updatedAt": "2026-10-26T08:51:40.565Z"
+      "createdAt": "2026-10-26T09:26:31.786Z",
+      "updatedAt": "2026-10-26T09:26:31.786Z"
     },
     "evidence": {
       "steps": [
@@ -36,16 +36,23 @@
     }
   },
   "clickthrough": {
-    "failures": [],
     "evidenceSteps": [
-      "ui-read-12.5",
-      "discussion-public-link"
+      "ui-read-12.5-pro-search-store",
+      "discussion-public-link",
+      "editor-save-13-reload",
+      "agent-accept-11.5-ui"
     ],
-    "screenshots": [
-      "visual-clickthrough/agent-request-dialog-light-1440.png",
-      "visual-clickthrough/store-counter-offer-dark-390.png",
-      "visual-clickthrough/store-agent-terms-editor-dark-390.png",
-      "visual-clickthrough/agent-accept-dark-390.png"
-    ]
-  }
+    "presentation": {
+      "agentR04Api": {
+        "featureEnabled": true,
+        "eligible": true
+      },
+      "agentHub": "shared-r04",
+      "storeHub": "shared-r04-business-store"
+    }
+  },
+  "limitations": [
+    "Historical certificate snapshot lifecycle was not re-verified in this bounded closure.",
+    "Concurrency guarantees for every partnership offer write path were not re-audited; only the scripted shell/API gate steps apply."
+  ]
 }
