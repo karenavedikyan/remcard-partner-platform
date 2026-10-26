@@ -1,0 +1,52 @@
+{
+  "failures": [],
+  "runtime": {
+    "frontendSha": "f3b996714e2900a20a7ff1d99b8f2d45315a876b",
+    "backendSha": "1267da4274826e06b7358f1a785fe275c9cec836",
+    "captureStartedAt": "2026-10-26T09:54:00.000Z",
+    "priorLogicGateCapture": "2026-10-26T09:23:48.000Z",
+    "priorLogicGateFrontendSha": "9d54e58a9b25dc83282781bffb8820b83e6f845d"
+  },
+  "contrastChecks": [
+    {
+      "label": "light-1440 lead on panel surface",
+      "ratio": 5.04,
+      "minRequired": 4.5
+    },
+    {
+      "label": "light-1440 category select",
+      "ratio": 14.79,
+      "minRequired": 4.5
+    },
+    {
+      "label": "dark-1440 lead on panel surface",
+      "ratio": 6.84,
+      "minRequired": 4.5
+    },
+    {
+      "label": "dark-1440 category select",
+      "ratio": 13.73,
+      "minRequired": 4.5
+    },
+    {
+      "label": "light-390 lead on panel surface",
+      "ratio": 5.04,
+      "minRequired": 4.5
+    },
+    {
+      "label": "light-390 category select",
+      "ratio": 14.79,
+      "minRequired": 4.5
+    },
+    {
+      "label": "dark-390 lead on panel surface",
+      "ratio": 6.84,
+      "minRequired": 4.5
+    },
+    {
+      "label": "dark-390 category select",
+      "ratio": 13.73,
+      "minRequired": 4.5
+    }
+  ]
+}

@@ -20,6 +20,13 @@ READY FOR REVIEW
 - Historical certificate snapshot lifecycle was not re-verified in this bounded closure.
 - Concurrency guarantees for every partnership offer write path were not re-audited; only the scripted shell/API gate steps apply.
 
+## UI follow-up (editor theme only)
+- Logic/partnership gate above remains tied to FE `9d54e58a` at `2026-10-26T09:23:48.000Z` — **not re-run** for CSS.
+- Editor dark/light contrast delta: see `ui-editor-theme-delta/REPORT.md` (separate FE application SHA after commit `f3b99671` + evidence tip below).
+
+## Clickthrough artifact note (non-blocking)
+- `visual-clickthrough/agent-accept-dark-390.png` is a **light-theme «Отправленные» queue** after accept, not a dark card of agreed terms — **do not use as dark acceptance proof**.
+
 ## Failures
 - none
 

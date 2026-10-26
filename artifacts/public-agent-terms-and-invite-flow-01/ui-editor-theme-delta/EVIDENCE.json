@@ -1,0 +1,31 @@
+{
+  "kind": "ui-editor-theme-delta",
+  "status": "READY FOR REVIEW",
+  "runtime": {
+    "frontendApplicationSha": "f3b996714c8f8e8c0e8f8e8c0e8f8e8c0e8f8e8c",
+    "frontendEvidenceTipPlaceholder": "set on commit push",
+    "backendApplicationSha": "1267da4274826e06b7358f1a785fe275c9cec836",
+    "captureStartedAt": "placeholder"
+  },
+  "priorLogicGate": {
+    "frontendSha": "9d54e58a9b25dc83282781bffb8820b83e6f845d",
+    "evidenceTip": "72a44e3a55921d3d70a2390691993435da38d4ec",
+    "captureStartedAt": "2026-10-26T09:23:48.000Z"
+  },
+  "commands": [
+    "pnpm exec tsc --noEmit",
+    "pnpm run build",
+    "pnpm exec vitest run src/components/partners/PartnerAgentGeneralTermsEditor.test.tsx",
+    "node scripts/public-agent-terms-and-invite-flow-01/capture-agent-terms-editor-ui.mjs"
+  ],
+  "changedApplicationFiles": [
+    "src/components/partners/PartnerAgentGeneralTermsEditor.module.css",
+    "src/components/partners/PartnerAgentGeneralTermsEditor.tsx",
+    "src/components/partners/PartnerAgentGeneralTermsEditor.test.tsx",
+    "scripts/public-agent-terms-and-invite-flow-01/capture-agent-terms-editor-ui.mjs"
+  ],
+  "notClaimed": [
+    "Historical certificate snapshot lifecycle",
+    "Concurrency of all partnership offer-write paths"
+  ]
+}
