@@ -35,6 +35,7 @@ export default defineConfig({
       "src/lib/branch-catalog-preview.test.ts",
       "src/lib/profile-branch-save.test.ts",
       "src/lib/prof-i-team-ui.test.ts",
+      "src/lib/auth-config.test.ts",
       "src/lib/api-client.errors.test.ts",
       "src/lib/contact-phone-display.test.ts",
       "src/lib/profile-cabinet-access.test.ts",
