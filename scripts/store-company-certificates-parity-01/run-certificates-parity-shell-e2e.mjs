@@ -127,10 +127,7 @@ async function exerciseRole(page, label, eyebrow, { populatedPrefix, filteredEmp
   );
   await assertPrototypeParity(page, label);
 
-  const tableVisible = (await root.locator("table").count()) > 0;
-  if (tableVisible) {
-    await captureMatrix(page, populatedPrefix);
-  }
+  await captureMatrix(page, populatedPrefix);
 
   await page.getByTestId("agent-r03-search").fill("zz-parity-no-match-xyzzy");
   await page.waitForTimeout(500);
