@@ -37,6 +37,10 @@ function loadHarness() {
   return JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
 }
 
+function proxyHeaders() {
+  return { Origin: PROF_URL };
+}
+
 async function setTheme(page, theme) {
   await page.evaluate((t) => {
     document.documentElement.setAttribute("data-theme", t);
@@ -118,6 +122,48 @@ async function assertPrototypeParity(page, label) {
   assert((await scan.getAttribute("href")) === "/scanner", `${label}: scanner href`);
 }
 
+async function assertCompactCreateCta(page, label) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.waitForTimeout(100);
+  const root = page.getByTestId("business-certificates-root");
+  const body = page.getByTestId("agent-r03-capture-body");
+  const cta = root.getByTestId("business-certificates-create-cta");
+  const { ctaWidth, contentWidth } = await cta.evaluate((el) => {
+    const ctaRect = el.getBoundingClientRect();
+    const content = document.querySelector('[data-testid="agent-r03-capture-body"]');
+    const contentRect = content?.getBoundingClientRect();
+    return {
+      ctaWidth: ctaRect.width,
+      contentWidth: contentRect?.width ?? ctaRect.width,
+    };
+  });
+  assert(ctaWidth > 0, `${label}: CTA measurable width`);
+  assert(
+    ctaWidth < contentWidth * 0.75,
+    `${label}: create CTA must not span full content width (${Math.round(ctaWidth)}px vs ${Math.round(contentWidth)}px)`,
+  );
+  const wrap = root.getByTestId("business-certificates-create-cta-wrap");
+  const wrapWidth = await wrap.evaluate((el) => el.getBoundingClientRect().width);
+  assert(
+    Math.abs(wrapWidth - ctaWidth) < 4,
+    `${label}: CTA wrap fits intrinsic button width`,
+  );
+}
+
+async function assertPopulatedList(page, label) {
+  const listResp = await page.request.get(
+    `${PROF_URL}/api/remcard/api/pro/business-owner-certificates?limit=10`,
+    { headers: proxyHeaders() },
+  );
+  assert(listResp.status() === 200, `${label}: list API ${listResp.status()}`);
+  const json = await listResp.json();
+  const total = json.totalCount ?? 0;
+  assert(total > 0, `${label}: populated prep totalCount > 0 (got ${total})`);
+  const rowCount = await page.locator('[data-testid="agent-r03-capture-body"] table tbody tr').count();
+  assert(rowCount > 0, `${label}: visible table row (got ${rowCount})`);
+  return { total, rowCount };
+}
+
 async function exerciseRole(page, label, eyebrow, { populatedPrefix, filteredEmptyPrefix }) {
   const root = await waitForBusinessList(page);
   const body = await page.locator("body").innerText();
@@ -126,7 +172,8 @@ async function exerciseRole(page, label, eyebrow, { populatedPrefix, filteredEmp
     `${label}: eyebrow ${eyebrow}`,
   );
   await assertPrototypeParity(page, label);
-
+  const populated = await assertPopulatedList(page, label);
+  await assertCompactCreateCta(page, label);
   await captureMatrix(page, populatedPrefix);
 
   await page.getByTestId("agent-r03-search").fill("zz-parity-no-match-xyzzy");
@@ -146,6 +193,8 @@ async function exerciseRole(page, label, eyebrow, { populatedPrefix, filteredEmp
   await page.getByTestId("specialist-certificate-create-dialog").waitFor({ timeout: 60_000 });
   assert((await root.getByTestId("business-certificates-create-cta").count()) === 1, `${label}: dialog open, one list CTA`);
   await page.keyboard.press("Escape");
+
+  return populated;
 }
 
 function writeArtifacts(flow) {
@@ -179,21 +228,31 @@ async function main() {
 
   {
     const { context, page } = await withSession(browser, storeToken, { width: 1440, height: 900 });
-    await exerciseRole(page, "store", "Магазин", {
+    const populated = await exerciseRole(page, "store", "Магазин", {
       populatedPrefix: "store-certificates-populated",
       filteredEmptyPrefix: "store-certificates-filtered-empty",
     });
-    flow.store = { parityChecks: true, populatedCapture: true, filteredEmptyCapture: true };
+    flow.store = {
+      parityChecks: true,
+      populatedCapture: true,
+      populatedTotalCount: populated.total,
+      filteredEmptyCapture: true,
+    };
     await context.close();
   }
 
   {
     const { context, page } = await withSession(browser, companyToken, { width: 1440, height: 900 });
-    await exerciseRole(page, "company", "Компания", {
+    const populated = await exerciseRole(page, "company", "Компания", {
       populatedPrefix: "company-certificates-populated",
       filteredEmptyPrefix: "company-certificates-filtered-empty",
     });
-    flow.company = { parityChecks: true, populatedCapture: true, filteredEmptyCapture: true };
+    flow.company = {
+      parityChecks: true,
+      populatedCapture: true,
+      populatedTotalCount: populated.total,
+      filteredEmptyCapture: true,
+    };
     await context.close();
   }
 

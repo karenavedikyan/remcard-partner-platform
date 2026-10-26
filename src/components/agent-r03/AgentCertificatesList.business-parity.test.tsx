@@ -89,6 +89,7 @@ describe.each(["STORE", "COMPANY"] as const)("AgentCertificatesList business par
     });
 
     expect(createButtons()).toHaveLength(1);
+    expect(screen.getByTestId("business-certificates-create-cta-wrap")).toBeInTheDocument();
     expect(screen.getByTestId("business-certificates-empty")).toHaveTextContent(copy.emptyCollection);
     expect(screen.queryByRole("button", { name: copy.createCta, hidden: false })).toBe(
       screen.getByTestId("business-certificates-create-cta"),

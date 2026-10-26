@@ -10,6 +10,13 @@ mkdir -p "$ART"
 PINNED_BE="0152db578de69c387e73536214ebec940aebda27"
 git -C "$NAV_ROOT" fetch origin "$PINNED_BE" 2>/dev/null || true
 git -C "$NAV_ROOT" checkout "$PINNED_BE"
+# Harness-only seed overlay (backend runtime API remains PINNED_BE).
+SEED_OVERLAY="$NAV_ROOT/scripts/prof-admin-moderation-isolated/seed-business-certificates-shell.ts"
+if git -C "$NAV_ROOT" fetch origin fix/store-company-certificates-prototype-parity-01 2>/dev/null; then
+  git -C "$NAV_ROOT" checkout FETCH_HEAD -- scripts/prof-admin-moderation-isolated/seed-business-certificates-shell.ts 2>/dev/null || true
+elif [[ -f "$SEED_OVERLAY" ]] && git -C "$NAV_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  : # use working-tree seed already at SEED_OVERLAY
+fi
 
 export E2E_APPLICATION_FRONTEND_SHA="$(git -C "$PLATFORM_ROOT" rev-parse HEAD)"
 export E2E_APPLICATION_BACKEND_SHA="$PINNED_BE"
@@ -34,8 +41,8 @@ cd "$NAV_ROOT"
 source "$ISO/lib.sh"
 catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts
-pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-certificates-shell.ts
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-owner-real-sessions.ts
+pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-business-certificates-shell.ts
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3443 CATALOG_QA_FRONTEND_PORT=3442 bash "$ISO/stop.sh" || true
 CATALOG_QA_BACKEND_PORT=3443 CATALOG_QA_FRONTEND_PORT=3442 bash "$ISO/start.sh"

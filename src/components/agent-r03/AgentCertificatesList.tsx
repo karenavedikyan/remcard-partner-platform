@@ -458,13 +458,15 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       {isBusiness ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
-          <Button
-            className={styles.heroCtaInline}
-            data-testid="business-certificates-create-cta"
-            onClick={openCreateDialog}
-          >
-            {businessPageCopy!.createCta}
-          </Button>
+          <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
+            <Button
+              className={`${styles.heroCtaInline} ${styles.businessCertPrimaryCta}`}
+              data-testid="business-certificates-create-cta"
+              onClick={openCreateDialog}
+            >
+              {businessPageCopy!.createCta}
+            </Button>
+          </div>
           <details className={styles.businessCertOptional} data-testid="business-certificates-client-arrived">
             <summary>{businessPageCopy!.clientArrivedSummary}</summary>
             <p className={styles.businessCertOptionalHint}>{businessPageCopy!.clientArrivedHint}</p>
