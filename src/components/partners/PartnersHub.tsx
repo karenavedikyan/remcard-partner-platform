@@ -17,6 +17,7 @@ import {
   partnershipAgentSegment,
   partnershipNeedsMyResponse,
   profileUserToPartnerSide,
+  shouldShowAgentPublishedTermsForSearch,
   type SearchRole,
 } from "@/lib/partnership-rules";
 import {
@@ -148,7 +149,10 @@ export function PartnersHub({
     partnership: Partnership;
     action: "counter_offer" | "counter_offer_back";
   } | null>(null);
-  const showAgentPublishedTerms = isAgentR04 || searchRole === "agent";
+  const showAgentPublishedTerms = shouldShowAgentPublishedTermsForSearch(
+    meProfile.user,
+    searchRole,
+  );
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);

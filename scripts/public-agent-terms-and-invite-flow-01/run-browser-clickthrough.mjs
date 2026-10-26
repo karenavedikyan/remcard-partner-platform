@@ -13,6 +13,7 @@ const STATE_PATH =
 const ART_DIR = path.resolve("artifacts/public-agent-terms-and-invite-flow-01/visual-clickthrough");
 const failures = [];
 const evidenceSteps = [];
+const presentation = {};
 
 const RUNTIME = {
   frontendSha: execSync("git -C /agent/repos/remcard-partner-platform rev-parse HEAD", {
@@ -96,33 +97,55 @@ async function main() {
       }
     });
 
-    await agentPage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
-    await agentPage.getByRole("tab", { name: "Найти в RemCard" }).click();
     const storeHeading =
       flow.storeOwner.organizationName?.trim() ||
       flow.storeOwner.displayName?.trim() ||
       "Agent terms store";
     const searchQuery = flow.storeOwner.displayName?.trim() || storeHeading;
 
-    await agentPage.getByLabel("Кого ищем").selectOption("agent");
-    await agentPage.getByLabel("Поиск").fill(searchQuery);
+    const r04StatusRes = await agentPage.request.get(`${PROF_URL}/api/remcard/api/pro/r04/status`, {
+      headers: { Origin: PROF_URL, Cookie: `remcard-token=${agentToken}` },
+    });
+    assert(r04StatusRes.ok(), `agent r04 status ${r04StatusRes.status()}`);
+    const r04Status = await r04StatusRes.json();
+    presentation.agentR04Api = {
+      featureEnabled: Boolean(r04Status.featureEnabled),
+      eligible: Boolean(r04Status.eligible),
+    };
+    assert(r04Status.featureEnabled && r04Status.eligible, "principal agent must be R04-eligible in gate");
+
+    await agentPage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
+    assert(
+      (await agentPage.getByTestId("agent-r04-partners").count()) > 0,
+      "agent partners shell must be shared-r04 (not legacy store/specialist nav)",
+    );
+    presentation.agentHub = "shared-r04";
+
+    await agentPage.getByRole("button", { name: "Найти или пригласить партнёра" }).click();
+    const findModal = agentPage.getByTestId("agent-r04-modal-find");
+    await findModal.waitFor({ timeout: 60_000 });
+    const partnerType = findModal.getByTestId("active-partner-type");
+    if (await partnerType.count()) {
+      await partnerType.selectOption("store");
+    }
+    await findModal.getByPlaceholder("Название, товар, услуга, этап или ID").fill(searchQuery);
     const searchWait = agentPage.waitForResponse(
       (res) => res.url().includes("/partnership/search") && res.status() === 200,
       { timeout: 60_000 },
     );
-    await agentPage.getByRole("button", { name: "Найти" }).click();
+    await findModal.getByRole("button", { name: "Найти" }).click();
     await searchWait;
 
-    await agentPage.getByRole("heading", { level: 3, name: storeHeading }).waitFor({ timeout: 60_000 });
-    await agentPage
-      .locator("details")
-      .filter({ hasText: "Общие условия для агентов" })
-      .first()
-      .click();
-    await agentPage.getByText(/12\.5%/).waitFor({ timeout: 30_000 });
-    step("ui-read-12.5");
+    const storeResult = findModal
+      .locator("article")
+      .filter({ hasText: storeHeading })
+      .first();
+    await storeResult.waitFor({ timeout: 60_000 });
+    await storeResult.locator("details").filter({ hasText: "Общие условия для агентов" }).click();
+    await storeResult.getByText(/12\.5%/).waitFor({ timeout: 30_000 });
+    step("ui-read-12.5-pro-search-store");
 
-    await agentPage.getByRole("button", { name: "Пригласить" }).first().click();
+    await storeResult.getByRole("button", { name: "Пригласить" }).click();
     const inviteDialog = agentPage.locator('[aria-labelledby="invite-title"]');
     await inviteDialog.waitFor({ timeout: 30_000 });
     await inviteDialog
@@ -173,6 +196,7 @@ async function main() {
     });
     await storePage.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
     await storePage.getByTestId("agent-r04-partners").waitFor({ timeout: 60_000 });
+    presentation.storeHub = "shared-r04-business-store";
     await storePage.getByRole("tab", { name: "Приглашения" }).click();
     await storePage.getByTestId("agent-invites-incoming").click();
     const listRes = await storePage.request.get(`${PROF_URL}/api/remcard/api/partnership/list`, {
@@ -214,17 +238,51 @@ async function main() {
     await storePage.setViewportSize({ width: 390, height: 844 });
     await capture(storePage, "store-counter-offer-dark-390");
 
-    await storePage.setViewportSize({ width: 1440, height: 900 });
-    await storePage.goto(`${PROF_URL}/partners/agent-terms`, { waitUntil: "networkidle", timeout: 120_000 });
-    const poolInput = storePage.getByLabel(/Общий %|poolPercent/i).first();
-    if (await poolInput.count()) {
-      await poolInput.fill("13");
-      const saveBtn = storePage.getByRole("button", { name: /Сохранить/i }).first();
-      if (await saveBtn.count()) {
-        await saveBtn.click();
-      }
-    }
     await storePage.setViewportSize({ width: 390, height: 844 });
+    await storePage.evaluate(() => {
+      document.documentElement.setAttribute("data-theme", "dark");
+      try {
+        localStorage.setItem("remcard-theme", "dark");
+      } catch {
+        /* ignore */
+      }
+    });
+    await storePage.goto(`${PROF_URL}/partners/agent-terms`, { waitUntil: "networkidle", timeout: 120_000 });
+    const themeBeforeSave = await storePage.evaluate(() =>
+      document.documentElement.getAttribute("data-theme"),
+    );
+    assert(themeBeforeSave === "dark", `editor theme before save (${themeBeforeSave})`);
+    const doorsRow = storePage.locator("tr").filter({ hasText: "Двери" });
+    await doorsRow.waitFor({ timeout: 60_000 });
+    const poolInput = doorsRow.getByLabel("Общий %");
+    await poolInput.fill("13");
+    const saveWait = storePage.waitForResponse(
+      (res) =>
+        res.url().includes("/api/pro/limits/org") &&
+        res.request().method() === "POST" &&
+        res.status() === 200,
+      { timeout: 60_000 },
+    );
+    await doorsRow.getByRole("button", { name: "Сохранить" }).click();
+    await saveWait;
+    await storePage.reload({ waitUntil: "networkidle" });
+    const limitsGet = await storePage.request.get(`${PROF_URL}/api/remcard/api/pro/limits/org`, {
+      headers: { Origin: PROF_URL, Cookie: `remcard-token=${storeToken}` },
+    });
+    assert(limitsGet.ok(), `limits GET after save ${limitsGet.status()}`);
+    const limitsBody = await limitsGet.json();
+    const doorsLimit = (limitsBody.limits ?? []).find((l) => l.category === "doors");
+    assert(
+      doorsLimit && Math.abs(Number(doorsLimit.poolPercent) - 13) < 0.01,
+      "saved general limit 13% persisted",
+    );
+    await doorsRow.getByLabel("Общий %").waitFor({ timeout: 30_000 });
+    assert((await doorsRow.getByLabel("Общий %").inputValue()) === "13", "editor shows 13 after reload");
+    step("editor-save-13-reload");
+    const themeAfterReload = await storePage.evaluate(() =>
+      document.documentElement.getAttribute("data-theme"),
+    );
+    assert(themeAfterReload === "dark", `editor theme after reload (${themeAfterReload})`);
     await capture(storePage, "store-agent-terms-editor-dark-390");
     await storeCtx.close();
 
@@ -241,18 +299,12 @@ async function main() {
       }
     });
     await agentPage2.goto(`${PROF_URL}/partners`, { waitUntil: "networkidle", timeout: 120_000 });
-    const agentHub = agentPage2.getByTestId("agent-r04-partners");
-    if (await agentHub.count()) {
-      await agentPage2.getByRole("tab", { name: "Приглашения" }).click();
-      await agentPage2.getByTestId("agent-invites-incoming").click();
-      const storeRowAgent = agentPage2
-        .getByTestId("agent-r04-partners-table-row")
-        .filter({ hasText: storeHeading })
-        .first();
-      await storeRowAgent.getByRole("button", { name: "Детали" }).click();
-    } else {
-      await agentPage2.getByRole("tab", { name: "Мои партнёры" }).click();
-    }
+    await agentPage2.getByTestId("agent-r04-partners").waitFor({ timeout: 60_000 });
+    await agentPage2.getByRole("tab", { name: "Приглашения" }).click();
+    await agentPage2.getByTestId("agent-invites-incoming").click();
+    const incomingRow = agentPage2.getByTestId("agent-r04-partners-table-row").first();
+    await incomingRow.waitFor({ timeout: 60_000 });
+    await incomingRow.getByRole("button", { name: "Детали" }).click();
     const acceptBtn = agentPage2.getByRole("button", { name: "Принять условия" }).first();
     await acceptBtn.waitFor({ timeout: 60_000 });
     const acceptWait = agentPage2.waitForResponse(
@@ -275,7 +327,7 @@ async function main() {
 }
 
 function finish() {
-  const payload = { failures, runtime: RUNTIME, evidenceSteps };
+  const payload = { failures, runtime: RUNTIME, evidenceSteps, presentation };
   fs.mkdirSync(ART_DIR, { recursive: true });
   fs.writeFileSync(path.join(ART_DIR, "clickthrough.json"), JSON.stringify(payload, null, 2), "utf8");
   if (failures.length) {

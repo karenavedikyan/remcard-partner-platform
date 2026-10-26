@@ -11,12 +11,19 @@ export E2E_APPLICATION_FRONTEND_SHA="$(git -C "$PLATFORM_ROOT" rev-parse HEAD)"
 export E2E_APPLICATION_BACKEND_SHA="$(git -C "$NAV_ROOT" rev-parse HEAD)"
 export E2E_CAPTURE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
 echo "[agent-terms-flow] FE=${E2E_APPLICATION_FRONTEND_SHA} BE=${E2E_APPLICATION_BACKEND_SHA}" | tee "$LOG"
+echo "[agent-terms-flow] capture=${E2E_CAPTURE_STARTED_AT}" | tee -a "$LOG"
 
 cd "$PLATFORM_ROOT"
 pnpm run test:proxy >>"$LOG" 2>&1
 pnpm exec vitest run src/lib/partner-certificate-program.test.ts 2>/dev/null || true
 pnpm exec tsc --noEmit >>"$LOG" 2>&1
 pnpm run build >>"$LOG" 2>&1
+
+bash "$ISO/bootstrap.sh" >>"$LOG" 2>&1
+# shellcheck source=lib.sh
+source "$ISO/lib.sh"
+catalog_qa_export_test_env
+export PROF_R04_AGENT_PARTNERS_ENABLED=1
 
 cd "$NAV_ROOT"
 pnpm exec vitest run \
@@ -32,10 +39,6 @@ pnpm exec vitest run \
   src/app/api/partner/\[id\]/certificate-program-summary/__tests__/route.test.ts \
   >>"$LOG" 2>&1
 
-bash "$ISO/bootstrap.sh" >>"$LOG" 2>&1
-# shellcheck source=lib.sh
-source "$ISO/lib.sh"
-catalog_qa_export_test_env
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-ui-harness.ts >>"$LOG" 2>&1
 pnpm exec tsx scripts/prof-admin-moderation-isolated/seed-agent-terms-invite-flow.ts >>"$LOG" 2>&1
 
@@ -45,8 +48,23 @@ CATALOG_QA_BACKEND_PORT=3453 CATALOG_QA_FRONTEND_PORT=3452 PLATFORM_ROOT="$PLATF
 
 export PROF_E2E_URL="http://127.0.0.1:${CATALOG_QA_FRONTEND_PORT:-3452}"
 export CATALOG_QA_UI_STATE="$NAV_ROOT/.catalog-qa-isolated/ui-harness-state.json"
+export PROF_R04_AGENT_PARTNERS_ENABLED=1
+export NAV_ROOT PLATFORM_ROOT ART LOG E2E_CAPTURE_STARTED_AT E2E_APPLICATION_FRONTEND_SHA E2E_APPLICATION_BACKEND_SHA
+
+run_node_step() {
+  local script="$1"
+  node "$script" 2>&1 | tee -a "$LOG"
+  local ec="${PIPESTATUS[0]}"
+  if [[ "$ec" -ne 0 ]]; then
+    echo "[agent-terms-flow] FAILED exit=${ec} script=${script}" | tee -a "$LOG"
+    exit "$ec"
+  fi
+}
+
 cd "$PLATFORM_ROOT"
-node scripts/public-agent-terms-and-invite-flow-01/run-shell-e2e.mjs 2>&1 | tee -a "$LOG"
-node scripts/public-agent-terms-and-invite-flow-01/run-browser-clickthrough.mjs 2>&1 | tee -a "$LOG"
+run_node_step scripts/public-agent-terms-and-invite-flow-01/run-shell-e2e.mjs
+run_node_step scripts/public-agent-terms-and-invite-flow-01/run-browser-clickthrough.mjs
+
+node scripts/public-agent-terms-and-invite-flow-01/finalize-gate-report.mjs >>"$LOG" 2>&1
 
 echo "[agent-terms-flow] OK" | tee -a "$LOG"

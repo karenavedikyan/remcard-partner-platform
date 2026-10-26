@@ -383,6 +383,15 @@ export function defaultSearchRoleForUser(user: PartnerSideProfile): SearchRole {
   return isStoreSide(user) ? "store" : "pro";
 }
 
+/** Whether search result cards should show published general terms for agents (actor-based, not target filter). */
+export function shouldShowAgentPublishedTermsForSearch(
+  actor: Pick<ProProfileUser, "partnerType" | "partnerActivities">,
+  searchRole: SearchRole,
+): boolean {
+  if (isAgentActivityInviter(actor)) return true;
+  return searchRole === "agent";
+}
+
 /** Категории для создания ссылки-приглашения (без известного получателя). */
 export function resolveLinkInviteCreateCategories(
   inviter: PartnerSideProfile,

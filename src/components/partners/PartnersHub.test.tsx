@@ -17,6 +17,12 @@ vi.mock("@/lib/partner-taxonomy", () => ({
   }),
 }));
 
+vi.mock("@/components/partners/PartnerGeneralTermsDetails", () => ({
+  PartnerGeneralTermsDetails: ({ partnerUserId }: { partnerUserId: string }) => (
+    <div data-testid="agent-published-terms">{partnerUserId}</div>
+  ),
+}));
+
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: vi.fn(),
   RemcardApiError: class RemcardApiError extends Error {
@@ -27,6 +33,39 @@ vi.mock("@/lib/api-client", () => ({
     }
   },
 }));
+
+const agentProfile: ProProfileResponse = {
+  organization: null,
+  programs: [],
+  user: {
+    id: "agent-me",
+    publicId: "RC-AGENT",
+    displayName: "Agent User",
+    city: "Краснодар",
+    specializations: ["doors"],
+    role: "PRO",
+    partnerType: "COMPANY",
+    partnerActivities: ["AGENT"],
+    description: null,
+    catalogStatus: "APPROVED",
+    isPublic: true,
+    rejectionReason: null,
+    badges: [],
+    photoUrl: null,
+    storeCategories: [],
+    areas: [],
+    website: null,
+    telegram: null,
+    whatsapp: null,
+    instagram: null,
+    vk: null,
+    max: null,
+    yandex: null,
+    publicEmail: null,
+    publicPhone: null,
+    showFullName: false,
+  },
+};
 
 const storeProfile: ProProfileResponse = {
   organization: {
@@ -254,5 +293,45 @@ describe("PartnersHub search empty state", () => {
     });
     expect(call).toBe(1);
     expect(screen.queryByRole("button", { name: /Показать ещё/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("PartnersHub agent published terms on search", () => {
+  beforeEach(() => {
+    vi.mocked(remcardFetch).mockReset();
+  });
+
+  it("shows general terms when agent searches for a store (default role pro)", async () => {
+    mockListAndSearch(async () => ({
+      partners: [{ ...searchPartner("store-1"), organizationName: "Store Org" }],
+      nextCursor: null,
+    }));
+    render(<PartnersHub meId="agent-me" initialProfile={agentProfile} />);
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^Найти$/i })).toBeInTheDocument();
+    });
+    await userEvent.type(screen.getByPlaceholderText("Название магазина или имя"), "Store");
+    await userEvent.click(screen.getByRole("button", { name: /^Найти$/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-published-terms")).toHaveTextContent("store-1");
+    });
+  });
+
+  it("still shows general terms after agent changes target search filter", async () => {
+    mockListAndSearch(async () => ({
+      partners: [searchPartner("store-2")],
+      nextCursor: null,
+    }));
+    render(<PartnersHub meId="agent-me" initialProfile={agentProfile} />);
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Кого ищем")).toBeInTheDocument();
+    });
+    await userEvent.selectOptions(screen.getByLabelText("Кого ищем"), "store");
+    await userEvent.click(screen.getByRole("button", { name: /^Найти$/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-published-terms")).toHaveTextContent("store-2");
+    });
   });
 });

@@ -12,6 +12,7 @@ import {
   inviteTargetStoreOwnershipUnknown,
   resolveInviteTradeSideCategories,
   searchResultToPartnerSide,
+  shouldShowAgentPublishedTermsForSearch,
   validateInviteRows,
 } from "./partnership-rules.ts";
 import type { PartnerSearchResult } from "./types.ts";
@@ -261,6 +262,30 @@ describe("partnership search semantics", () => {
   it("defaults store owners to role=store search", () => {
     assert.equal(defaultSearchRoleForUser(storeInviter), "store");
     assert.equal(defaultSearchRoleForUser(masterInviter), "pro");
+  });
+});
+
+describe("shouldShowAgentPublishedTermsForSearch", () => {
+  const agentActor = {
+    partnerType: "COMPANY",
+    partnerActivities: ["AGENT"],
+  };
+  const storeActor = {
+    partnerType: "STORE",
+    partnerActivities: ["STORE"],
+  };
+
+  it("shows published terms when agent searches stores (role pro)", () => {
+    assert.equal(shouldShowAgentPublishedTermsForSearch(agentActor, "pro"), true);
+  });
+
+  it("keeps published terms visible when agent changes target search filter", () => {
+    assert.equal(shouldShowAgentPublishedTermsForSearch(agentActor, "store"), true);
+    assert.equal(shouldShowAgentPublishedTermsForSearch(agentActor, "agent"), true);
+  });
+
+  it("hides for non-agent searching stores", () => {
+    assert.equal(shouldShowAgentPublishedTermsForSearch(storeActor, "pro"), false);
   });
 });
 
