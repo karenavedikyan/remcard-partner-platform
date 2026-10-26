@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "failures": [],
+  "application": {
+    "frontendSha": "4eb3e95b69ced4f99663ed7b1f021470a0f120ee",
+    "backendSha": "0152db578de69c387e73536214ebec940aebda27",
+    "captureStartedAt": "2026-10-26T07:13:25.000Z",
+    "captureCompletedAt": "2026-10-26T07:13:35.418Z"
+  },
+  "flow": {
+    "store": {
+      "parityChecks": true,
+      "populatedCapture": true,
+      "filteredEmptyCapture": true
+    },
+    "company": {
+      "parityChecks": true,
+      "populatedCapture": true,
+      "filteredEmptyCapture": true
+    }
+  }
+}

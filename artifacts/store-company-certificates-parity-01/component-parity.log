@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/agent-r03/AgentCertificatesList.business-parity.test.tsx (14 tests) 1265ms
+   ✓ AgentCertificatesList business parity (STORE) > filtered-empty: no create CTA inside empty panel  462ms
+   ✓ AgentCertificatesList business parity (COMPANY) > filtered-empty: no create CTA inside empty panel  449ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  07:13:39
+   Duration  2.12s (transform 275ms, setup 108ms, collect 342ms, tests 1.27s, environment 221ms, prepare 38ms)
+
