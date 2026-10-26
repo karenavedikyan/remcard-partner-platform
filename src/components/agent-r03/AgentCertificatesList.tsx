@@ -72,10 +72,13 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   const isBusiness = accessMode === "business";
   const isIssuerShell = isSpecialist || isBusiness;
   const ownerMode = useOwnerIssuerModeValue();
-  const issuerPageCopy = isBusiness
+  const businessPageCopy = isBusiness
     ? businessCertificatesPageCopy({
         partnerType: ownerMode?.businessPartnerType ?? "STORE",
       })
+    : null;
+  const issuerPageCopy = isBusiness
+    ? businessPageCopy!
     : SPECIALIST_CERTIFICATES_PAGE;
   const issuerListApi = isBusiness ? "business" : "specialist";
   const patchIssuerCertificate = isBusiness
@@ -454,19 +457,19 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     >
       {isBusiness ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
-          <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
+          <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
           <Button
             className={styles.heroCtaInline}
             data-testid="business-certificates-create-cta"
             onClick={openCreateDialog}
           >
-            {issuerPageCopy.createCta}
+            {businessPageCopy!.createCta}
           </Button>
           <details className={styles.businessCertOptional} data-testid="business-certificates-client-arrived">
-            <summary>{issuerPageCopy.clientArrivedSummary}</summary>
-            <p className={styles.businessCertOptionalHint}>{issuerPageCopy.clientArrivedHint}</p>
+            <summary>{businessPageCopy!.clientArrivedSummary}</summary>
+            <p className={styles.businessCertOptionalHint}>{businessPageCopy!.clientArrivedHint}</p>
             <Link href="/scanner" className={styles.businessCertGhostLink}>
-              {issuerPageCopy.verifyCertificateCta}
+              {businessPageCopy!.verifyCertificateCta}
             </Link>
           </details>
         </section>
@@ -545,7 +548,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       {loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
-            <p className={styles.muted}>{issuerPageCopy.emptyCollection}</p>
+            <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>
           ) : isSpecialist && !archived ? (
             <>
               <p>{issuerPageCopy.emptyTitle}</p>
