@@ -9,7 +9,7 @@ READY FOR REVIEW (not DEPLOYED / not READY FOR RELEASE)
 | Backend | `9fa5f03d763925a88f0583438cb41e266d739af9` |
 | Frontend | `c3b34af2f7c8c403fd78190234611db27945cdc6` |
 
-Evidence tip (artifacts-only follow-up): see latest `chore(evidence)` on branch.
+| Evidence tip | `3b2c37cf7ed4ed66bde978018626548f963e576f` |
 
 Baselines: backend `1267da4274826e06b7358f1a785fe275c9cec836`, frontend `f3b996714e2900a20a7ff1d99b8f2d45315a876b`.
 
