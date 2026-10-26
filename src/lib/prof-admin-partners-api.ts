@@ -35,3 +35,21 @@ export async function applyPartnerLifecycle(userId: string, action: string, reas
     body: { action, reason },
   });
 }
+
+export async function previewDemoSupersession(liveUserId: string, demoUserId: string) {
+  return remcardFetch<{
+    blocked: boolean;
+    blockReason?: string;
+    effects: string[];
+    warnings: string[];
+  }>(
+    `/api/pro/admin/partners/${encodeURIComponent(liveUserId)}/demo-supersession/preview?demoUserId=${encodeURIComponent(demoUserId)}`,
+  );
+}
+
+export async function applyDemoSupersession(liveUserId: string, demoUserId: string, reason: string) {
+  return remcardFetch(`/api/pro/admin/partners/${encodeURIComponent(liveUserId)}/demo-supersession`, {
+    method: "POST",
+    body: { demoUserId, reason },
+  });
+}

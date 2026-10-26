@@ -57,6 +57,14 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["POST"]),
       pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/lifecycle$/,
     },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/demo-supersession\/preview$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/demo-supersession$/,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/moderation$/ },
     {
       methods: new Set(["GET"]),
@@ -157,6 +165,8 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/registration\/capabilities$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/registration\/agent\/finish$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/registration\/join\/finish$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/registration\/live\/acknowledge$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/agent-profile\/status$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-profile\/enable-activity$/ },
     { methods: new Set(["GET", "PATCH", "DELETE"]), pattern: /^\/api\/pro\/agent-profile\/draft$/ },

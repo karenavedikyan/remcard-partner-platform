@@ -10,6 +10,8 @@ export type RegistrationCapabilities = {
   contractVersion: string;
   welcomeEnabled: boolean;
   agentRegistrationPathEnabled: boolean;
+  joinRegistrationPathEnabled?: boolean;
+  joinKinds?: Partial<Record<RegistrationKind, boolean>>;
   legacyLoginPathEnabled: boolean;
 };
 

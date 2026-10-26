@@ -14,7 +14,6 @@ import {
   clearAllRegistrationDrafts,
   clearDraftOnOwnerMismatch,
   getRegistrationDraftOwner,
-  loadAgentDraftForUser,
   loadRegistrationDraft,
   loadRegistrationWizardState,
   maybeStorageRecoveryNotice,
@@ -31,10 +30,11 @@ import {
 } from "@/lib/registration/routing";
 import { fetchAuthMeSafe } from "@/lib/auth-session";
 import {
-  mapAgentFinishError,
-  postAgentRegistrationFinish,
+  isJoinRegistrationKind,
+  mapJoinFinishError,
+  postRegistrationJoinFinish,
   waitForRegistrationReady,
-} from "@/lib/registration/agent-finish";
+} from "@/lib/registration/join-finish";
 import type { RegistrationCapabilities, RegistrationKind } from "@/lib/registration/types";
 import { REGISTRATION_KIND_LABELS } from "@/lib/registration/types";
 import { JoinProgress } from "./JoinProgress";
@@ -84,7 +84,7 @@ export function RegistrationJoinFlow() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const finishLock = useRef(false);
-  const idempotencyKey = useRef(`agent-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const idempotencyKey = useRef(`join-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const finishHref = buildJoinFinishHref(joinContext);
   const authReturnTo = buildJoinAuthReturnTo(joinContext);
@@ -128,9 +128,12 @@ export function RegistrationJoinFlow() {
   }, [kind]);
 
   const agentPathActive = Boolean(caps?.agentRegistrationPathEnabled);
+  const joinPathActive = Boolean(caps?.joinRegistrationPathEnabled ?? caps?.agentRegistrationPathEnabled);
   const welcomeActive = Boolean(caps?.welcomeEnabled);
-  const isAgentNewPath =
-    agentPathActive && (kind === "agent" || (phase === "finish" && step === "finish"));
+  const activeJoinKind: RegistrationKind | "" =
+    phase === "finish" && step === "finish" ? "agent" : kind;
+  const isJoinNewPath =
+    joinPathActive && isJoinRegistrationKind(activeJoinKind);
 
   useEffect(() => {
     if (phase === "finish" || step === "finish") return;
@@ -140,7 +143,7 @@ export function RegistrationJoinFlow() {
   const onContinueFromTypes = () => {
     if (!kind) return;
     setError("");
-    if (kind === "agent" && agentPathActive) {
+    if (isJoinRegistrationKind(kind) && joinPathActive) {
       setStep("name");
       return;
     }
@@ -158,7 +161,8 @@ export function RegistrationJoinFlow() {
       return;
     }
     setError("");
-    mergeRegistrationDraftFields("agent", { displayName: trimmed });
+    if (!isJoinRegistrationKind(kind)) return;
+    mergeRegistrationDraftFields(kind, { displayName: trimmed });
     setStep("city");
   };
 
@@ -169,11 +173,12 @@ export function RegistrationJoinFlow() {
       return;
     }
     setError("");
-    mergeRegistrationDraftFields("agent", { city: trimmedCity });
+    if (!isJoinRegistrationKind(kind)) return;
+    mergeRegistrationDraftFields(kind, { city: trimmedCity });
     setStep("auth");
   };
 
-  const runAgentFinish = useCallback(async () => {
+  const runJoinFinish = useCallback(async () => {
     if (finishLock.current) return;
     finishLock.current = true;
     setBusy(true);
@@ -209,7 +214,8 @@ export function RegistrationJoinFlow() {
         bindRegistrationDraftOwner(userId);
       }
 
-      const draft = loadAgentDraftForUser(userId);
+      const finishKind = isJoinRegistrationKind(activeJoinKind) ? activeJoinKind : "agent";
+      const draft = loadRegistrationDraft(finishKind, userId);
       const name = draft?.fields.displayName?.trim() ?? displayName.trim();
       const cityValue = draft?.fields.city?.trim() ?? city.trim();
       if (!name || !cityValue) {
@@ -220,7 +226,8 @@ export function RegistrationJoinFlow() {
         return;
       }
 
-      await postAgentRegistrationFinish({
+      await postRegistrationJoinFinish({
+        kind: finishKind,
         displayName: name,
         city: cityValue,
         idempotencyKey: idempotencyKey.current,
@@ -236,17 +243,17 @@ export function RegistrationJoinFlow() {
       router.replace(resolveAgentRegistrationCompleteHref(joinContext));
       router.refresh();
     } catch (e) {
-      setError(mapAgentFinishError(e));
+      setError(mapJoinFinishError(e));
       finishLock.current = false;
     } finally {
       setBusy(false);
     }
-  }, [city, displayName, joinContext, router]);
+  }, [activeJoinKind, city, displayName, joinContext, router]);
 
   useEffect(() => {
-    if (step !== "finish" || !isAgentNewPath || !capsLoaded || !agentPathActive) return;
-    void runAgentFinish();
-  }, [step, isAgentNewPath, capsLoaded, agentPathActive, runAgentFinish]);
+    if (step !== "finish" || !isJoinNewPath || !capsLoaded || !joinPathActive) return;
+    void runJoinFinish();
+  }, [step, isJoinNewPath, capsLoaded, joinPathActive, runJoinFinish]);
 
   const handleAuthenticated = useCallback(
     (userId: string) => {
@@ -299,7 +306,7 @@ export function RegistrationJoinFlow() {
     );
   }
 
-  if (step === "auth" && isAgentNewPath) {
+  if (step === "auth" && isJoinNewPath) {
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
         <div className={styles.joinPage}>
@@ -321,20 +328,20 @@ export function RegistrationJoinFlow() {
     );
   }
 
-  if (step === "finish" && isAgentNewPath) {
+  if (step === "finish" && isJoinNewPath) {
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
         <div className={styles.finishWrap}>
           <JoinProgress current="done" />
           <h1>Завершение регистрации</h1>
           {error ? <p className={styles.error}>{error}</p> : null}
-          {busy && !error ? <p className={styles.status}>Сохраняем профиль агента…</p> : null}
+          {busy && !error ? <p className={styles.status}>Сохраняем профиль…</p> : null}
           {!busy && error ? (
             <div className={styles.footerActions}>
               <Link href={loginRecovery} className={styles.secondaryLink}>
                 Войти снова
               </Link>
-              <Button type="button" onClick={() => void runAgentFinish()}>
+              <Button type="button" onClick={() => void runJoinFinish()}>
                 Повторить
               </Button>
             </div>
@@ -438,7 +445,7 @@ export function RegistrationJoinFlow() {
 
       {step !== "types" ? (
       <div className={styles.joinPage}>
-        {step === "name" && isAgentNewPath ? (
+        {step === "name" && isJoinNewPath ? (
           <>
             <JoinProgress current="data" />
             <h1>Ваши данные</h1>
@@ -462,7 +469,7 @@ export function RegistrationJoinFlow() {
           </>
         ) : null}
 
-        {step === "city" && isAgentNewPath ? (
+        {step === "city" && isJoinNewPath ? (
           <>
             <JoinProgress current="data" />
             <h1>Ваши данные</h1>
