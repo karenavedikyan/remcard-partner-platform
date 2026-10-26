@@ -452,7 +452,25 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             : undefined
       }
     >
-      {isIssuerShell ? (
+      {isBusiness ? (
+        <section className={styles.businessCertStack} data-testid="business-certificates-intro">
+          <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
+          <Button
+            className={styles.heroCtaInline}
+            data-testid="business-certificates-create-cta"
+            onClick={openCreateDialog}
+          >
+            {issuerPageCopy.createCta}
+          </Button>
+          <details className={styles.businessCertOptional} data-testid="business-certificates-client-arrived">
+            <summary>{issuerPageCopy.clientArrivedSummary}</summary>
+            <p className={styles.businessCertOptionalHint}>{issuerPageCopy.clientArrivedHint}</p>
+            <Link href="/scanner" className={styles.businessCertGhostLink}>
+              {issuerPageCopy.verifyCertificateCta}
+            </Link>
+          </details>
+        </section>
+      ) : isIssuerShell ? (
         <section className={styles.pageIntroBlock}>
           <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
@@ -525,8 +543,10 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       ) : null}
 
       {loadState === "loaded" && items.length === 0 ? (
-        <div className={styles.empty}>
-          {isIssuerShell && !archived ? (
+        <div className={styles.empty} data-testid="business-certificates-empty">
+          {isBusiness && !archived ? (
+            <p className={styles.muted}>{issuerPageCopy.emptyCollection}</p>
+          ) : isSpecialist && !archived ? (
             <>
               <p>{issuerPageCopy.emptyTitle}</p>
               <p className={styles.muted}>{issuerPageCopy.emptyHint}</p>

@@ -1400,6 +1400,45 @@
   text-decoration: none;
 }
 
+.businessCertStack {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.businessCertOptional {
+  border: 1px solid var(--r03-line);
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.businessCertOptionalHint {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--r03-muted, var(--muted));
+  line-height: 1.45;
+}
+
+.businessCertGhostLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: inherit;
+}
+
+.businessCertGhostLink:hover {
+  background: var(--r03-surface-alt, rgba(0, 0, 0, 0.04));
+}
+
 .collectionCardBody {
   padding: 1rem 1.1rem;
   display: grid;
