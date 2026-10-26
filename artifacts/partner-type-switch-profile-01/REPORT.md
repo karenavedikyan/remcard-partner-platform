@@ -6,8 +6,8 @@ READY FOR REVIEW (not DEPLOYED)
 ## Runtime SHAs
 | Role | SHA |
 |------|-----|
-| Backend application | see latest commit on `fix/partner-type-switch-profile-01` in remcard-navigator |
-| Frontend application | see latest commit on `fix/partner-type-switch-profile-01` in remcard-partner-platform |
+| Backend application | `e2e295f4d937d425f27a23b56cb3cc403423177b` |
+| Frontend application | `892d64f6ba88efacd7776409877b3e9013810082` |
 | Evidence tip | commit updating `artifacts/` after browser gate |
 
 Baselines unchanged: backend `1267da4274826e06b7358f1a785fe275c9cec836`, frontend `f3b996714e2900a20a7ff1d99b8f2d45315a876b`.

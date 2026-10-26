@@ -25,8 +25,13 @@ pnpm exec vitest run \
   src/lib/__tests__/partnerKindUi.test.ts \
   src/lib/__tests__/partnerTypeSwitchGuard.test.ts \
   src/lib/__tests__/partnerTypeSwitch.integration.test.ts \
+  src/lib/__tests__/partnerTypeSwitchProfTest.integration.test.ts \
   src/lib/__tests__/proWalletPartnerKind.test.ts \
+  src/app/api/pro/partner-type/switch/__tests__/route.post.prof-test-fail-closed.test.ts \
   >>"$LOG" 2>&1
+
+cd "$PLATFORM_ROOT"
+pnpm exec vitest run src/components/profile/PartnerTypeSettings.test.tsx >>"$LOG" 2>&1
 
 CATALOG_QA_STOP_PG=0 CATALOG_QA_BACKEND_PORT=3453 CATALOG_QA_FRONTEND_PORT=3452 bash "$ISO/stop.sh" >>"$LOG" 2>&1 || true
 CATALOG_QA_BACKEND_PORT=3453 CATALOG_QA_FRONTEND_PORT=3452 bash "$ISO/start.sh" >>"$LOG" 2>&1
