@@ -72,6 +72,12 @@
   font-weight: 600;
 }
 
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .select {
   min-height: 2.5rem;
   padding: 0.35rem 0.5rem;

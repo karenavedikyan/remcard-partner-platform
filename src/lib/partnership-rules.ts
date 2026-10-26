@@ -6,20 +6,23 @@ import type {
 } from "@/lib/types";
 import { categoryLabel } from "@/lib/partnership-labels";
 import { STORE_CATEGORY_CHIP_KEYS } from "@/lib/store-categories";
+import { isAgentCooperationInviter } from "@/lib/partnership-agent-inviter";
 
 export const GENERAL_PARTNERSHIP_CATEGORY = "general";
 export const DEFAULT_GENERAL_PERCENT = 10;
 export const INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE =
   "Не удалось определить условия партнёра. Приглашение пока недоступно";
 
+/** @deprecated Use isAgentCooperationInviter */
 export function isAgentActivityInviter(user: {
   partnerType: string | null;
   partnerActivities?: string[];
   isStoreOwner?: boolean;
 }): boolean {
-  if (user.isStoreOwner || user.partnerType === "STORE") return false;
-  return (user.partnerActivities ?? []).includes("AGENT");
+  return isAgentCooperationInviter(user);
 }
+
+export { isAgentCooperationInviter };
 
 export function partnershipInviteTermsEmpty(partnership: Partnership): boolean {
   return !partnership.terms?.some((t) => !t.isExcluded);
@@ -53,6 +56,7 @@ export type PartnershipActionKind =
   | "cancel"
   | "accept_pending"
   | "counter_offer"
+  | "counter_offer_back"
   | "withdraw_counter"
   | "pause"
   | "resume";
@@ -135,7 +139,7 @@ export function resolveInviteTradeSideCategories(
     return { categories: tradeSideTermCategories(inviter), mode: "store" };
   }
 
-  if (isAgentActivityInviter(inviter)) {
+  if (isAgentCooperationInviter(inviter)) {
     if (isStoreSide(target)) {
       return { categories: tradeSideTermCategories(target), mode: "pro" };
     }
@@ -340,9 +344,16 @@ export function getPartnershipUiActions(
     }
 
     if (authorId && !iAmAuthor) {
+      const requestChangesKind: PartnershipActionKind = iAmInitiator
+        ? "counter_offer_back"
+        : "counter_offer";
       return [
         { kind: "accept_pending", label: "Принять условия", variant: "primary" },
-        { kind: "counter_offer", label: "Запросить другие условия", variant: "secondary" },
+        {
+          kind: requestChangesKind,
+          label: "Запросить другие условия",
+          variant: "secondary",
+        },
         { kind: "reject", label: "Отклонить", variant: "secondary" },
       ];
     }

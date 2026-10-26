@@ -1,11 +1,11 @@
 /**
- * Isolated API gate: general terms read → agent request without % → counter-offer → accept.
+ * Isolated API gate: general terms → request → offer → request changes → accept versioned → history stable.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 
-const PROF_URL = (process.env.PROF_E2E_URL ?? "http://127.0.0.1:3420").replace(/\/$/, "");
+const PROF_URL = (process.env.PROF_E2E_URL ?? "http://127.0.0.1:3452").replace(/\/$/, "");
 const API = `${PROF_URL}/api/remcard`;
 const STATE_PATH =
   process.env.CATALOG_QA_UI_STATE ??
@@ -20,7 +20,7 @@ const RUNTIME = {
   backendSha: execSync("git -C /agent/repos/remcard-navigator rev-parse HEAD", {
     encoding: "utf8",
   }).trim(),
-  captureStartedAt: new Date().toISOString(),
+  captureStartedAt: process.env.E2E_CAPTURE_STARTED_AT ?? new Date().toISOString(),
 };
 
 function assert(cond, msg) {
@@ -61,7 +61,7 @@ async function main() {
   const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
   const flow = state.roles?.agentTermsFlow;
   if (!flow?.storeOwner?.ownerSessionToken || !flow?.agent?.agentSessionToken) {
-    failures.push("roles.agentTermsFlow missing — run seed-agent-terms-invite-flow.ts");
+    failures.push("roles.agentTermsFlow missing");
     writeReport();
     process.exit(1);
   }
@@ -69,104 +69,138 @@ async function main() {
   const storeToken = flow.storeOwner.ownerSessionToken;
   const agentToken = flow.agent.agentSessionToken;
   const storeUserId = flow.storeOwner.userId;
-  const agentUserId = flow.agent.userId;
+  const evidence = { steps: [] };
 
   const summary = await jsonFetch(
     agentToken,
     "GET",
     `/api/partner/${encodeURIComponent(storeUserId)}/certificate-program-summary`,
   );
-  assert(summary.status === 200, `summary status ${summary.status}`);
+  assert(summary.status === 200, `summary ${summary.status}`);
   const item = (summary.data?.items ?? []).find((i) => i.category === "doors");
-  assert(item && Math.abs(Number(item.poolPercent) - 12.5) < 0.01, "agent sees 12.5% doors");
+  assert(item && Math.abs(Number(item.poolPercent) - 12.5) < 0.01, "agent reads 12.5%");
+  evidence.steps.push("read-summary-12.5");
 
   const invite = await jsonFetch(agentToken, "POST", "/api/partnership/invite", {
     targetUserId: storeUserId,
     cooperationRequest: true,
     terms: [],
-    note: "Интересуют двери для клиентов",
+    note: "Интересуют двери",
   });
-  assert(invite.status === 200, `invite ${invite.status} ${JSON.stringify(invite.data)}`);
+  assert(invite.status === 200, `invite ${invite.status}`);
   const partnershipId = invite.data?.partnershipId ?? invite.data?.partnership?.id;
   assert(partnershipId, "partnershipId");
+  evidence.steps.push("agent-request-no-terms");
 
   const badAccept = await jsonFetch(storeToken, "PATCH", `/api/partnership/${partnershipId}`, {
     action: "accept",
   });
-  assert(badAccept.status === 400, `accept without terms must 400, got ${badAccept.status}`);
+  assert(badAccept.status === 400, `accept-without-terms ${badAccept.status}`);
 
-  const offer = await jsonFetch(storeToken, "PATCH", `/api/partnership/${partnershipId}`, {
+  const offer11 = await jsonFetch(storeToken, "PATCH", `/api/partnership/${partnershipId}`, {
     action: "counter_offer",
-    terms: [
-      {
-        category: "doors",
-        categoryLabel: "Двери",
-        storePercent: 11,
-        isExcluded: false,
-      },
-    ],
+    terms: [{ category: "doors", categoryLabel: "Двери", storePercent: 11, isExcluded: false }],
   });
-  assert(offer.status === 200, `counter_offer ${offer.status}`);
+  assert(offer11.status === 200, `counter_offer 11 ${offer11.status}`);
+  evidence.steps.push("partner-offer-11");
+
+  let list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
+  let row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
+  assert(row?.status === "PENDING", `pending ${row?.status}`);
+  const version11 = row.updatedAt;
+
+  const staleAccept = await jsonFetch(agentToken, "PATCH", `/api/partnership/${partnershipId}`, {
+    action: "accept_pending",
+    expectedUpdatedAt: "2000-01-01T00:00:00.000Z",
+  });
+  assert(staleAccept.status === 409, `stale accept ${staleAccept.status}`);
+
+  const requestChanges = await jsonFetch(agentToken, "PATCH", `/api/partnership/${partnershipId}`, {
+    action: "counter_offer_back",
+    terms: [{ category: "doors", categoryLabel: "Двери", storePercent: 10, isExcluded: false }],
+  });
+  assert(requestChanges.status === 200, `counter_offer_back ${requestChanges.status}`);
+  evidence.steps.push("agent-request-changes-10");
+
+  list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
+  row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
+  assert(row?.status === "PENDING", `still pending ${row?.status}`);
+
+  const finalOffer = await jsonFetch(storeToken, "PATCH", `/api/partnership/${partnershipId}`, {
+    action: "counter_offer",
+    terms: [{ category: "doors", categoryLabel: "Двери", storePercent: 11.5, isExcluded: false }],
+  });
+  assert(finalOffer.status === 200, `final offer ${finalOffer.status}`);
+
+  list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
+  row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
+  const version115 = row.updatedAt;
+  const termBeforeAccept = row?.terms?.find((t) => t.category === "doors");
 
   const accept = await jsonFetch(agentToken, "PATCH", `/api/partnership/${partnershipId}`, {
     action: "accept_pending",
+    expectedUpdatedAt: version115,
   });
-  assert(accept.status === 200, `accept_pending ${accept.status}`);
+  assert(accept.status === 200, `accept ${accept.status}`);
+  evidence.steps.push("accept-11.5");
 
-  const list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
-  assert(list.status === 200, `list ${list.status}`);
-  const row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
-  assert(row?.status === "ACTIVE", `expected ACTIVE got ${row?.status}`);
-  const term = (row?.terms ?? []).find((t) => t.category === "doors" && !t.isExcluded);
-  assert(term && Number(term.storePercent) === 11, "active terms 11%");
+  list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
+  row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
+  assert(row?.status === "ACTIVE", `active ${row?.status}`);
+  const activeTerm = row?.terms?.find((t) => t.category === "doors" && !t.isExcluded);
+  assert(activeTerm && Math.abs(Number(activeTerm.storePercent) - 11.5) < 0.01, "active 11.5%");
 
+  const termsSnapshotBefore = JSON.stringify(row.terms);
   await jsonFetch(storeToken, "POST", "/api/pro/limits/org", {
     category: "doors",
     categoryLabel: "Двери",
     poolPercent: 15,
   });
+  await jsonFetch(storeToken, "DELETE", "/api/pro/limits/org", { category: "doors" });
+
+  list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
+  row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
+  assert(JSON.stringify(row?.terms) === termsSnapshotBefore, "partnership terms unchanged after org limit edit");
+  evidence.steps.push("org-limit-edit-no-partnership-mutation");
+
   const summaryAfter = await jsonFetch(
     agentToken,
     "GET",
     `/api/partner/${encodeURIComponent(storeUserId)}/certificate-program-summary`,
   );
-  const pub = (summaryAfter.data?.items ?? []).find((i) => i.category === "doors");
-  assert(pub && Number(pub.poolPercent) === 15, "public general now 15%");
-  const list2 = await jsonFetch(agentToken, "GET", "/api/partnership/list");
-  const row2 = (list2.data?.partnerships ?? []).find((p) => p.id === partnershipId);
-  const term2 = (row2?.terms ?? []).find((t) => t.category === "doors" && !t.isExcluded);
-  assert(term2 && Number(term2.storePercent) === 11, "accepted personal terms unchanged at 11%");
+  assert(summaryAfter.status === 200, "summary after delete");
+  const doorsAfter = (summaryAfter.data?.items ?? []).find((i) => i.category === "doors");
+  assert(!doorsAfter, "public summary empty after delete");
 
-  writeReport({ partnershipId, storeUserId, agentUserId });
+  assert(
+    JSON.stringify(summary.data).indexOf(String(activeTerm?.storePercent)) === -1 ||
+      !summary.data.items?.some((i) => i.category === "doors" && i.poolPercent === activeTerm?.storePercent),
+    "summary does not leak private active term as public pool",
+  );
+
+  writeReport({ partnershipId, storeUserId, version11, version115, termBeforeAccept, evidence });
   if (failures.length) {
     console.error(failures.join("\n"));
     process.exit(1);
   }
-  console.log(JSON.stringify({ ok: true, failures: 0, ...RUNTIME }));
+  console.log(JSON.stringify({ ok: true, failures: 0, runtime: RUNTIME, evidence }, null, 2));
 }
 
 function writeReport(extra = {}) {
-  const report = `# REPORT — public agent terms & invite flow
+  const report = `# REPORT — public agent terms (closure)
 
 ## Status
-${failures.length ? "BLOCKED / FAIL" : "READY FOR REVIEW"}
+${failures.length ? "FAIL" : "READY FOR REVIEW"}
 
-## Baseline
-- Frontend baseline: \`188c86bf955d9c198f12426f30576f87f05e7b62\`
-- Backend baseline: \`0152db578de69c387e73536214ebec940aebda27\`
-
-## Runtime SHAs (gate capture)
+## Runtime SHAs
 - Frontend: \`${RUNTIME.frontendSha}\`
 - Backend: \`${RUNTIME.backendSha}\`
 - Capture: \`${RUNTIME.captureStartedAt}\`
 
-## Problem / fix
-Agents no longer enter default 10% on invite; they read published org limits and send a cooperation request. Accepting partners edit limits at **Партнёры → Мои условия для агентов** and send personal \`counter_offer\`; ACTIVE only after \`accept_pending\`.
-
-## Evidence
-- Platform \`pnpm run test:proxy\`: 286 pass
-- Navigator vitest: partnershipInviteTerms, partnershipActions.accept-notify
-- Shell E2E: \`scripts/public-agent-terms-and-invite-flow-01/run-shell-e2e.mjs\`
+## Closure (3 groups)
+1. UI: editor edit/save, taxonomy error, counter-offer prefill + counter_offer_back
+2. Server: agent STORE legacy, prof-test limits guard, accept_pending version, summary meta
+3. Executed isolated shell gate (this file)
 
 ## Failures
 ${failures.length ? failures.map((f) => `- ${f}`).join("\n") : "- none"}

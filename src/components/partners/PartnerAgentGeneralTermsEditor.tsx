@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { categoryLabel } from "@/lib/partnership-labels";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
+import { parsePoolPercentInput } from "@/lib/parse-pool-percent";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextField } from "@/components/ui/FormField";
@@ -29,8 +30,11 @@ export function PartnerAgentGeneralTermsEditor({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [categoryKeys, setCategoryKeys] = useState<string[]>([]);
+  const [taxonomyState, setTaxonomyState] = useState<"loading" | "ready" | "error">("loading");
+  const [taxonomyError, setTaxonomyError] = useState("");
   const [pickCategory, setPickCategory] = useState("");
   const [pickPercent, setPickPercent] = useState("");
+  const [editPercents, setEditPercents] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   const reload = useCallback(async () => {
@@ -38,7 +42,16 @@ export function PartnerAgentGeneralTermsEditor({
     setError("");
     try {
       const data = await remcardFetch<{ limits?: OrgLimitRow[] }>("/api/pro/limits/org");
-      setLimits(data.limits ?? []);
+      const next = data.limits ?? [];
+      setLimits(next);
+      setEditPercents(
+        Object.fromEntries(
+          next.map((row) => [
+            row.category,
+            row.poolPercent == null ? "" : String(row.poolPercent),
+          ]),
+        ),
+      );
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить условия");
     } finally {
@@ -46,52 +59,87 @@ export function PartnerAgentGeneralTermsEditor({
     }
   }, []);
 
-  useEffect(() => {
-    void reload();
+  const reloadTaxonomy = useCallback(() => {
+    setTaxonomyState("loading");
+    setTaxonomyError("");
     void fetchPartnerTaxonomy()
       .then((tax) => {
         const keys = [
           ...tax.products.map((p) => p.id),
           ...tax.services.map((s) => s.id),
-          ...tax.stages.map((s) => s.id),
         ];
         setCategoryKeys([...new Set(keys.filter(Boolean))].sort());
+        setTaxonomyState("ready");
       })
-      .catch(() => {
-        /* taxonomy optional for display */
+      .catch((caught) => {
+        setTaxonomyError(
+          caught instanceof Error ? caught.message : "Не удалось загрузить справочник категорий",
+        );
+        setTaxonomyState("error");
       });
-  }, [reload]);
+  }, []);
+
+  useEffect(() => {
+    void reload();
+    reloadTaxonomy();
+  }, [reload, reloadTaxonomy]);
 
   const unusedCategories = useMemo(() => {
     const used = new Set(limits.map((l) => l.category));
     return categoryKeys.filter((k) => !used.has(k));
   }, [categoryKeys, limits]);
 
+  async function saveCategory(category: string, categoryLabelText: string, percentRaw: string) {
+    const parsed = parsePoolPercentInput(percentRaw);
+    if (!parsed.ok) {
+      setError(parsed.error);
+      return false;
+    }
+    await remcardFetch("/api/pro/limits/org", {
+      method: "POST",
+      body: {
+        category,
+        categoryLabel: categoryLabelText,
+        poolPercent: parsed.value,
+      },
+    });
+    return true;
+  }
+
   async function saveNew() {
     if (!canEdit || saving) return;
     const category = pickCategory.trim();
-    const value = Number(pickPercent);
     if (!category) {
       setError("Выберите категорию");
-      return;
-    }
-    if (!Number.isFinite(value) || value < 0 || value > 100) {
-      setError("Общий процент должен быть от 0 до 100");
       return;
     }
     setSaving(true);
     setError("");
     try {
-      await remcardFetch("/api/pro/limits/org", {
-        method: "POST",
-        body: {
-          category,
-          categoryLabel: categoryLabel(category),
-          poolPercent: value,
-        },
-      });
+      const ok = await saveCategory(category, categoryLabel(category), pickPercent);
+      if (!ok) return;
       setPickCategory("");
       setPickPercent("");
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveExisting(category: string) {
+    if (!canEdit || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const row = limits.find((l) => l.category === category);
+      const ok = await saveCategory(
+        category,
+        row?.categoryLabel || categoryLabel(category),
+        editPercents[category] ?? "",
+      );
+      if (!ok) return;
       await reload();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить");
@@ -117,6 +165,8 @@ export function PartnerAgentGeneralTermsEditor({
     }
   }
 
+  const formBlocked = taxonomyState === "error" && categoryKeys.length === 0;
+
   return (
     <div className={styles.root}>
       <Panel compact>
@@ -132,6 +182,14 @@ export function PartnerAgentGeneralTermsEditor({
           <p className={styles.error} role="alert">
             {error}{" "}
             <button type="button" className={styles.retry} onClick={() => void reload()}>
+              Повторить
+            </button>
+          </p>
+        ) : null}
+        {taxonomyState === "error" ? (
+          <p className={styles.error} role="alert">
+            {taxonomyError}{" "}
+            <button type="button" className={styles.retry} onClick={() => reloadTaxonomy()}>
               Повторить
             </button>
           </p>
@@ -152,9 +210,34 @@ export function PartnerAgentGeneralTermsEditor({
               {limits.map((row) => (
                 <tr key={row.id}>
                   <td>{row.categoryLabel || categoryLabel(row.category)}</td>
-                  <td>{row.poolPercent ?? "—"}%</td>
+                  <td>
+                    {canEdit ? (
+                      <TextField
+                        label="Общий %"
+                        type="text"
+                        inputMode="decimal"
+                        value={editPercents[row.category] ?? ""}
+                        onChange={(event) =>
+                          setEditPercents((prev) => ({
+                            ...prev,
+                            [row.category]: event.target.value,
+                          }))
+                        }
+                      />
+                    ) : (
+                      `${row.poolPercent ?? "—"}%`
+                    )}
+                  </td>
                   {canEdit ? (
-                    <td>
+                    <td className={styles.rowActions}>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={saving}
+                        onClick={() => void saveExisting(row.category)}
+                      >
+                        Сохранить
+                      </Button>
                       <Button
                         type="button"
                         variant="secondary"
@@ -174,39 +257,44 @@ export function PartnerAgentGeneralTermsEditor({
 
       {canEdit ? (
         <Panel compact>
-          <h3 className={styles.subheading}>Добавить или обновить категорию</h3>
-          <div className={styles.formRow}>
-            <label className={styles.selectLabel}>
-              Категория
-              <select
-                className={styles.select}
-                value={pickCategory}
-                onChange={(event) => setPickCategory(event.target.value)}
-              >
-                <option value="">—</option>
-                {unusedCategories.map((key) => (
-                  <option key={key} value={key}>
-                    {categoryLabel(key)}
-                  </option>
-                ))}
-                {pickCategory && !unusedCategories.includes(pickCategory) ? (
-                  <option value={pickCategory}>{categoryLabel(pickCategory)}</option>
-                ) : null}
-              </select>
-            </label>
-            <TextField
-              label="Общий процент"
-              type="number"
-              min={0}
-              max={100}
-              value={pickPercent}
-              onChange={(event) => setPickPercent(event.target.value)}
-              hint="Скидка клиенту + бонус агенту в пределах этого пула"
-            />
-          </div>
-          <Button type="button" disabled={saving} onClick={() => void saveNew()}>
-            {saving ? "Сохранение…" : "Сохранить"}
-          </Button>
+          <h3 className={styles.subheading}>Добавить категорию</h3>
+          {formBlocked ? (
+            <p className={styles.muted}>
+              Справочник категорий недоступен — добавление временно заблокировано.
+            </p>
+          ) : (
+            <>
+              <div className={styles.formRow}>
+                <label className={styles.selectLabel}>
+                  Категория
+                  <select
+                    className={styles.select}
+                    value={pickCategory}
+                    disabled={taxonomyState !== "ready"}
+                    onChange={(event) => setPickCategory(event.target.value)}
+                  >
+                    <option value="">—</option>
+                    {unusedCategories.map((key) => (
+                      <option key={key} value={key}>
+                        {categoryLabel(key)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <TextField
+                  label="Общий процент"
+                  type="text"
+                  inputMode="decimal"
+                  value={pickPercent}
+                  onChange={(event) => setPickPercent(event.target.value)}
+                  hint="Допустима запись 12,5"
+                />
+              </div>
+              <Button type="button" disabled={saving || formBlocked} onClick={() => void saveNew()}>
+                {saving ? "Сохранение…" : "Добавить"}
+              </Button>
+            </>
+          )}
         </Panel>
       ) : null}
     </div>

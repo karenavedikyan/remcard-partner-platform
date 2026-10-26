@@ -59,9 +59,13 @@ export function PartnerGeneralTermsDetails({
             {state.items.map((item) => (
               <li key={item.category}>
                 {item.categoryLabel}: общий процент {item.poolPercent}%
+                {item.poolPercent === 0 ? " (участие без вознаграждения)" : null}
               </li>
             ))}
           </ul>
+          {state.truncated ? (
+            <p className={styles.muted}>Показаны первые категории; полный список у партнёра в кабинете.</p>
+          ) : null}
           <p className={styles.disclaimer}>
             Это общий процент на скидку клиенту и бонус агенту, не гарантированный доход. Итоговые
             условия партнёр предложит после приглашения.

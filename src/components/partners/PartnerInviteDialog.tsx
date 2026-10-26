@@ -20,7 +20,7 @@ import {
   DEFAULT_GENERAL_PERCENT,
   GENERAL_PARTNERSHIP_CATEGORY,
   inviteRowsToTerms,
-  isAgentActivityInviter,
+  isAgentCooperationInviter,
   profileUserToPartnerSide,
   resolveInviteTradeSideCategories,
   searchResultToPartnerSide,
@@ -79,7 +79,7 @@ export function PartnerInviteDialog({
 }: PartnerInviteDialogProps) {
   const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const targetSide = searchResultToPartnerSide(target);
-  const agentCooperationRequest = isAgentActivityInviter(inviterSide);
+  const agentCooperationRequest = isAgentCooperationInviter(inviterSide);
   const resolved = resolveInviteTradeSideCategories(inviterSide, targetSide);
   const resetKey = buildInviteFormResetKey(target.id, resolved.categories);
 

@@ -13,6 +13,7 @@ import {
   countNeedsMyResponse,
   defaultSearchRoleForUser,
   getPartnershipUiActions,
+  isAgentCooperationInviter,
   partnershipAgentSegment,
   partnershipNeedsMyResponse,
   profileUserToPartnerSide,
@@ -143,7 +144,10 @@ export function PartnersHub({
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
-  const [counterOfferPartnership, setCounterOfferPartnership] = useState<Partnership | null>(null);
+  const [counterOfferTarget, setCounterOfferTarget] = useState<{
+    partnership: Partnership;
+    action: "counter_offer" | "counter_offer_back";
+  } | null>(null);
   const showAgentPublishedTerms = isAgentR04 || searchRole === "agent";
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
@@ -568,13 +572,20 @@ export function PartnersHub({
     onAttentionCountChange?.(attentionCount);
   }, [attentionCount, onAttentionCountChange]);
 
-  async function runPartnershipAction(partnershipId: string, action: string) {
-    setBusyId(partnershipId);
+  async function runPartnershipAction(
+    partnership: Partnership,
+    action: string,
+  ) {
+    setBusyId(partnership.id);
     setActionError("");
     try {
-      await remcardFetch(`/api/partnership/${partnershipId}`, {
+      const body: Record<string, unknown> = { action };
+      if (action === "accept_pending") {
+        body.expectedUpdatedAt = partnership.updatedAt;
+      }
+      await remcardFetch(`/api/partnership/${partnership.id}`, {
         method: "PATCH",
-        body: { action },
+        body,
       });
       await loadList();
     } catch (caught) {
@@ -585,11 +596,14 @@ export function PartnersHub({
   }
 
   function handlePartnershipUiAction(partnership: Partnership, actionKind: string) {
-    if (actionKind === "counter_offer") {
-      setCounterOfferPartnership(partnership);
+    if (actionKind === "counter_offer" || actionKind === "counter_offer_back") {
+      setCounterOfferTarget({
+        partnership,
+        action: actionKind,
+      });
       return;
     }
-    void runPartnershipAction(partnership.id, actionKind);
+    void runPartnershipAction(partnership, actionKind);
   }
 
   async function loadTermRequests(partnershipId: string) {
@@ -757,32 +771,44 @@ export function PartnersHub({
       <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
         {agentModalSurface === "link" ? (
           <>
-            {partnersAudience === "specialist-r04" ? (
-              <div className={styles.linkModeTabs} role="tablist" aria-label="Тип ссылки">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={linkInviteMode === "discussion"}
-                  data-active={linkInviteMode === "discussion"}
-                  onClick={() => setLinkInviteMode("discussion")}
-                >
-                  К обсуждению
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={linkInviteMode === "terms"}
-                  data-active={linkInviteMode === "terms"}
-                  onClick={() => setLinkInviteMode("terms")}
-                >
-                  С условиями
-                </button>
-              </div>
-            ) : null}
-            {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
-              <PartnerDiscussionInvitePanel showSectionTitle={false} />
+            {isAgentCooperationInviter(inviterSide) ? (
+              <>
+                <p className={styles.partnerMeta}>
+                  Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
+                  запроса.
+                </p>
+                <PartnerDiscussionInvitePanel showSectionTitle={false} />
+              </>
             ) : (
-              <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
+              <>
+                {partnersAudience === "specialist-r04" ? (
+                  <div className={styles.linkModeTabs} role="tablist" aria-label="Тип ссылки">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={linkInviteMode === "discussion"}
+                      data-active={linkInviteMode === "discussion"}
+                      onClick={() => setLinkInviteMode("discussion")}
+                    >
+                      К обсуждению
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={linkInviteMode === "terms"}
+                      data-active={linkInviteMode === "terms"}
+                      onClick={() => setLinkInviteMode("terms")}
+                    >
+                      С условиями
+                    </button>
+                  </div>
+                ) : null}
+                {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
+                  <PartnerDiscussionInvitePanel showSectionTitle={false} />
+                ) : (
+                  <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
+                )}
+              </>
             )}
           </>
         ) : (
@@ -1003,12 +1029,9 @@ export function PartnersHub({
               viewMode={listViewMode}
               busyId={busyId}
               onRunAction={(id, action) => {
-                if (action === "counter_offer") {
-                  const partnership = partnerships.find((item) => item.id === id);
-                  if (partnership) setCounterOfferPartnership(partnership);
-                  return;
-                }
-                void runPartnershipAction(id, action);
+                const partnership = partnerships.find((item) => item.id === id);
+                if (!partnership) return;
+                handlePartnershipUiAction(partnership, action);
               }}
               onUpdated={() => void loadList()}
               termRequests={termRequests}
@@ -1417,13 +1440,14 @@ export function PartnersHub({
         />
       ) : null}
 
-      {counterOfferPartnership ? (
+      {counterOfferTarget ? (
         <PartnerCounterOfferDialog
-          partnership={counterOfferPartnership}
-          busy={busyId === counterOfferPartnership.id}
-          onClose={() => setCounterOfferPartnership(null)}
+          partnership={counterOfferTarget.partnership}
+          patchAction={counterOfferTarget.action}
+          busy={busyId === counterOfferTarget.partnership.id}
+          onClose={() => setCounterOfferTarget(null)}
           onSent={() => {
-            setCounterOfferPartnership(null);
+            setCounterOfferTarget(null);
             void loadList();
           }}
         />
