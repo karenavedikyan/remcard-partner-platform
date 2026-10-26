@@ -26,7 +26,7 @@ Duplicate «Создать сертификат» on empty business list: intro 
 | **Branch** | `fix/store-company-certificates-prototype-parity-01` (from `1a0fbf32…`) |
 | **Capture UTC** | `2026-10-26T07:23:38.000Z` → `2026-10-26T07:23:52.670Z` |
 | **Prior evidence tip** | `a642121ef7586a3f87ac178baea4e3936db88cbe` |
-| **This evidence tip** | Docs/artifacts commit on this branch after `188c86bf…` (see `git show` for this file) |
+| **This evidence tip** | `e65f9ab5` (amended: `git show e65f9ab5:artifacts/store-company-certificates-parity-01/REPORT.md`) |
 
 ## Commands / exit
 
