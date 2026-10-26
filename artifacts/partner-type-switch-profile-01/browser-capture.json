@@ -1,9 +1,9 @@
 {
   "failures": [],
   "runtime": {
-    "frontendSha": "892d64f6ba88efacd7776409877b3e9013810082",
-    "backendSha": "e2e295f4d937d425f27a23b56cb3cc403423177b",
-    "captureStartedAt": "2026-10-26T12:09:10.000Z"
+    "frontendSha": "c3b34af2f7c8c403fd78190234611db27945cdc6",
+    "backendSha": "9fa5f03d763925a88f0583438cb41e266d739af9",
+    "captureStartedAt": "2026-10-26T12:23:58.000Z"
   },
   "steps": [
     "switch-agent-to-specialist",
