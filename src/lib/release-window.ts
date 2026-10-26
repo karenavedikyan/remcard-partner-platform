@@ -17,7 +17,6 @@ export async function fetchReleaseWindowStatus(): Promise<ReleaseWindowStatus | 
   try {
     const data = await remcardFetch<ReleaseWindowStatus>("/api/release-window/status", {
       method: "GET",
-      credentials: "omit",
     });
     if (!data?.phase) return null;
     return data;
