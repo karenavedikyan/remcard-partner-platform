@@ -21,11 +21,14 @@ pnpm run build >>"$LOG" 2>&1
 cd "$NAV_ROOT"
 pnpm exec vitest run \
   src/lib/__tests__/partnershipInviteTerms.test.ts \
+  src/lib/__tests__/partnershipPendingAccept.test.ts \
   src/lib/__tests__/partnershipActions.accept-notify.test.ts \
   src/lib/__tests__/partnershipAgentInviter.test.ts \
   src/lib/__tests__/parsePoolPercentInput.test.ts \
+  src/lib/__tests__/orgLimitsMutatingAccess.integration.test.ts \
   src/app/api/partnership/invite/__tests__/route.empty-terms.test.ts \
   src/app/api/partnership/\[id\]/__tests__/route.accept-pending-notify.test.ts \
+  src/app/api/partnership/\[id\]/__tests__/route.accept-pending-version.test.ts \
   src/app/api/partner/\[id\]/certificate-program-summary/__tests__/route.test.ts \
   >>"$LOG" 2>&1
 
@@ -44,5 +47,6 @@ export PROF_E2E_URL="http://127.0.0.1:${CATALOG_QA_FRONTEND_PORT:-3452}"
 export CATALOG_QA_UI_STATE="$NAV_ROOT/.catalog-qa-isolated/ui-harness-state.json"
 cd "$PLATFORM_ROOT"
 node scripts/public-agent-terms-and-invite-flow-01/run-shell-e2e.mjs 2>&1 | tee -a "$LOG"
+node scripts/public-agent-terms-and-invite-flow-01/run-browser-clickthrough.mjs 2>&1 | tee -a "$LOG"
 
 echo "[agent-terms-flow] OK" | tee -a "$LOG"

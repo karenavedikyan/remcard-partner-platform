@@ -13,7 +13,6 @@ import {
 } from "@/lib/partnership-rules";
 import type { Partnership } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
-import { TextAreaField } from "@/components/ui/FormField";
 import { TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
 
@@ -63,7 +62,6 @@ export function PartnerCounterOfferDialog({
   const [rows, setRows] = useState<InviteTermRow[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [loadError, setLoadError] = useState("");
-  const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -131,7 +129,6 @@ export function PartnerCounterOfferDialog({
         method: "PATCH",
         body: {
           action: patchAction,
-          note: message.trim() || undefined,
           terms: inviteRowsToTerms(rows).map((term) => ({
             ...term,
             categoryLabel: categoryLabel(term.category),
@@ -153,7 +150,7 @@ export function PartnerCounterOfferDialog({
         <h3 id="counter-offer-title">{title}</h3>
         <p className={styles.hint}>
           {patchAction === "counter_offer_back"
-            ? "Скорректируйте предложенные категории и общий процент или добавьте комментарий партнёру."
+            ? "Скорректируйте предложенные категории и общий процент."
             : "Укажите персональные категории и общий процент. Это не меняет опубликованные общие условия для агентов."}
         </p>
         {partnership.status === "PENDING" && !partnershipInviteTermsEmpty(partnership) ? (
@@ -193,12 +190,6 @@ export function PartnerCounterOfferDialog({
             ))}
           </div>
         ) : null}
-        <TextAreaField
-          label="Комментарий"
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          hint="Необязательно"
-        />
         {error ? (
           <p className={styles.error} role="alert">
             {error}

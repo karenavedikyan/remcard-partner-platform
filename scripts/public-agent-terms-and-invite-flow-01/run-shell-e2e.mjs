@@ -166,17 +166,62 @@ async function main() {
   const activeTerm = row?.terms?.find((t) => t.category === "doors" && !t.isExcluded);
   assert(activeTerm && Math.abs(Number(activeTerm.storePercent) - 11.5) < 0.01, "active 11.5%");
 
+  const partnersBefore = await jsonFetch(
+    storeToken,
+    "GET",
+    "/api/store/certificate/available-partners",
+  );
+  assert(partnersBefore.status === 200, `available-partners ${partnersBefore.status}`);
+  const agentPartner = (partnersBefore.data?.partners ?? []).find(
+    (p) => p.storeUserId === flow.agent.userId,
+  );
+  assert(agentPartner, "builder lists active agent partner");
+  const agentDoors = (agentPartner.categories ?? []).find((c) => c.category === "doors");
+  assert(
+    agentDoors && Math.abs(Number(agentDoors.poolPercent) - 11.5) < 0.01,
+    "builder shows agreed 11.5%",
+  );
+  evidence.steps.push("certificate-builder-11.5");
+
   const termsSnapshotBefore = JSON.stringify(row.terms);
-  await jsonFetch(storeToken, "POST", "/api/pro/limits/org", {
+  const postLimit = await jsonFetch(storeToken, "POST", "/api/pro/limits/org", {
     category: "doors",
     categoryLabel: "Двери",
     poolPercent: 15,
   });
-  await jsonFetch(storeToken, "DELETE", "/api/pro/limits/org", { category: "doors" });
+  assert(postLimit.status === 200, `org limit POST ${postLimit.status}`);
+  const limitsMid = await jsonFetch(storeToken, "GET", "/api/pro/limits/org");
+  assert(limitsMid.status === 200, `org limits GET ${limitsMid.status}`);
+  const doorsMid = (limitsMid.data?.limits ?? []).find((l) => l.category === "doors");
+  assert(doorsMid && Math.abs(Number(doorsMid.poolPercent) - 15) < 0.01, "org limit read 15%");
+
+  const delLimit = await jsonFetch(storeToken, "DELETE", "/api/pro/limits/org", {
+    category: "doors",
+  });
+  assert(delLimit.status === 200, `org limit DELETE ${delLimit.status}`);
+  const limitsAfterDel = await jsonFetch(storeToken, "GET", "/api/pro/limits/org");
+  assert(
+    !(limitsAfterDel.data?.limits ?? []).some((l) => l.category === "doors"),
+    "doors limit removed",
+  );
 
   list = await jsonFetch(agentToken, "GET", "/api/partnership/list");
   row = (list.data?.partnerships ?? []).find((p) => p.id === partnershipId);
   assert(JSON.stringify(row?.terms) === termsSnapshotBefore, "partnership terms unchanged after org limit edit");
+
+  const partnersAfter = await jsonFetch(
+    storeToken,
+    "GET",
+    "/api/store/certificate/available-partners",
+  );
+  const agentAfter = (partnersAfter.data?.partners ?? []).find(
+    (p) => p.storeUserId === flow.agent.userId,
+  );
+  const doorsAfterPartner = (agentAfter?.categories ?? []).find((c) => c.category === "doors");
+  assert(
+    doorsAfterPartner && Math.abs(Number(doorsAfterPartner.poolPercent) - 11.5) < 0.01,
+    "builder still 11.5% after general limits change",
+  );
   evidence.steps.push("org-limit-edit-no-partnership-mutation");
 
   const summaryAfter = await jsonFetch(
@@ -213,10 +258,10 @@ ${failures.length ? "FAIL" : "READY FOR REVIEW"}
 - Backend: \`${RUNTIME.backendSha}\`
 - Capture: \`${RUNTIME.captureStartedAt}\`
 
-## Closure (3 groups)
-1. UI: editor edit/save, taxonomy error, counter-offer prefill + counter_offer_back
-2. Server: agent STORE legacy, prof-test limits guard, accept_pending version, summary meta
-3. Executed isolated shell gate (this file)
+## Closure
+1. UI: Playwright click-through + editor captures (see visual-clickthrough/)
+2. Server: accept_pending legacy vs strict empty-request, prof-test limits guard (integration)
+3. Shell API gate: org limit POST/GET/DELETE + certificate builder 11.5% stability
 
 ## Failures
 ${failures.length ? failures.map((f) => `- ${f}`).join("\n") : "- none"}
