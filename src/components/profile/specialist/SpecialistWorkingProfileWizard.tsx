@@ -65,9 +65,17 @@ const WORK_MODES = [
 
 type Props = {
   onWorkingProfileSaved?: (next: ProProfileResponse) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
-export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props) {
+function specialistDraftDirty(
+  draft: SpecialistProfileDraftPayload,
+  saved: SpecialistProfileDraftPayload,
+): boolean {
+  return JSON.stringify(draft) !== JSON.stringify(saved);
+}
+
+export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved, onDirtyChange }: Props) {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [version, setVersion] = useState(0);
@@ -107,6 +115,11 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved }: Props)
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    if (!onDirtyChange) return;
+    onDirtyChange(editing && specialistDraftDirty(draft, savedProfile));
+  }, [draft, savedProfile, editing, onDirtyChange]);
 
   const persist = async (
     nextStep: number,

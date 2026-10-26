@@ -259,6 +259,7 @@ function ProfileEditorInner({
     parseCatalogTouched(catalogTouchedFromProfile(initial)),
   );
   const [businessWizardDirty, setBusinessWizardDirty] = useState(false);
+  const [specialistWizardDirty, setSpecialistWizardDirty] = useState(false);
   const catalogPrefillAppliedKeyRef = useRef<string | null>(null);
 
   const touchCatalogField = useCallback((field: CatalogPrefillField) => {
@@ -664,7 +665,9 @@ function ProfileEditorInner({
   draftRef.current = currentDraft;
   const hasUnsavedBasicsChanges = businessProfileWizardUi
     ? businessWizardDirty
-    : isWorkingProfileDirty(savedSnapshotRef.current, currentDraft);
+    : specialistR06Ui
+      ? specialistWizardDirty
+      : isWorkingProfileDirty(savedSnapshotRef.current, currentDraft);
 
   useEffect(() => {
     if (!businessProfileWizardUi) return;
@@ -884,7 +887,10 @@ function ProfileEditorInner({
         <>
         {specialistR06Ui ? (
           <>
-            <SpecialistProfileSection onWorkingProfileSaved={applyProfile} />
+            <SpecialistProfileSection
+              onWorkingProfileSaved={applyProfile}
+              onDirtyChange={setSpecialistWizardDirty}
+            />
             {partnerActivities.includes("AGENT") ? (
               <AgentProfileSection
                 userId={profile.user.id}

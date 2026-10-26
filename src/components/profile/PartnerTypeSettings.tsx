@@ -102,23 +102,37 @@ export function PartnerTypeSettings({
           expectedSourceKind: currentKind,
         },
       });
-      const nextProfile = await remcardFetch<ProProfileResponse>("/api/pro/profile");
-      onProfileUpdated(nextProfile);
-      onRequestRefresh();
-      await loadState();
-      setSuccess(
-        `Тип изменён на «${PARTNER_KIND_UI_LABELS[selected]}». Аккаунт сохранён; проверьте профиль нового типа.`,
-      );
-      closeDialog();
     } catch (caught) {
       setError(
         caught instanceof RemcardApiError
           ? caught.message
           : "Не удалось сменить тип. Попробуйте ещё раз.",
       );
-    } finally {
       setPending(false);
+      return;
     }
+
+    try {
+      const nextProfile = await remcardFetch<ProProfileResponse>("/api/pro/profile");
+      onProfileUpdated(nextProfile);
+    } catch {
+      setError(
+        "Тип партнёрства уже изменён на сервере, но полный профиль не загрузился. Обновите страницу — повторная смена не нужна.",
+      );
+      onRequestRefresh();
+      await loadState().catch(() => {});
+      setPending(false);
+      closeDialog();
+      return;
+    }
+
+    onRequestRefresh();
+    await loadState();
+    setSuccess(
+      `Тип изменён на «${PARTNER_KIND_UI_LABELS[selected]}». Аккаунт сохранён; проверьте профиль нового типа.`,
+    );
+    closeDialog();
+    setPending(false);
   }
 
   if (state?.isEmployee) {

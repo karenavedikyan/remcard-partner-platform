@@ -1,63 +1,49 @@
-# REPORT — partner type switch in profile
+# REPORT — partner type switch in profile (audit pass 2)
 
 ## Status
 READY FOR REVIEW (not DEPLOYED)
 
-## Runtime bases (explicit)
-- **Backend baseline (branch root):** `1267da4274826e06b7358f1a785fe275c9cec836`
-- **Frontend baseline (branch root):** `f3b996714e2900a20a7ff1d99b8f2d45315a876b`
+## Runtime SHAs
+| Role | SHA |
+|------|-----|
+| Backend application | see latest commit on `fix/partner-type-switch-profile-01` in remcard-navigator |
+| Frontend application | see latest commit on `fix/partner-type-switch-profile-01` in remcard-partner-platform |
+| Evidence tip | commit updating `artifacts/` after browser gate |
 
-## Application SHAs (audit follow-up)
-- **Backend (runtime):** `a81ded226fcdd823896d8a12792426a3981052b2`
-- **Frontend (runtime):** `8e2bec34a2b23cf6147f4703208ac4bbcb73c8ac`
-- **Frontend evidence tip:** `c53eb22a0457101d0f6eb7ccf0c3bf0a72f808ee` (`artifacts/` only delta on `8e2bec34`)
-- **Browser evidence:** `browser-capture.json` — failures `[]`, runtime SHAs above
-- **Prior blocked candidates (superseded):** backend `8072fe4e`, frontend `a7982c7f`
+Baselines unchanged: backend `1267da4274826e06b7358f1a785fe275c9cec836`, frontend `f3b996714e2900a20a7ff1d99b8f2d45315a876b`.
 
-## Audit blockers addressed in `a81ded22` / frontend follow-up
-1. **Atomicity & auth:** `SELECT … FOR UPDATE`, CAS `updateMany` on `updatedAt` + type/activities; in-tx role/blocked/employee checks; prof-test delegation + slot revalidation before write.
-2. **Commercial context:** `resolveWalletContext` prefers UI kind over legacy `companyKind`; switch clears `companyKind` when leaving agent principal; profile PATCH guard allows compatible activity adds when UI kind unchanged.
-3. **Catalog & prefill:** org `partnerType` not mutated when published / pending / approved; no default «Краснодар»; branch created only when real city exists; working display name/city from working profile helpers.
-4. **Tests & UX evidence:** integration adds race (409), idempotent org count, suspended employment, published org immutability, wallet fixture; browser chain asserts `partner-type-current` (+ overview role when section visible), dialog choose/review captures light/dark 1440/390.
+## Pass-2 blockers — closure matrix
 
-## UI ↔ server mapping
-| UI kind | `partnerType` | `partnerActivities` |
-|---------|---------------|---------------------|
-| agent | COMPANY | AGENT |
-| specialist | MASTER | SERVICE |
-| store | STORE | STORE |
-| company | COMPANY | STORE + SERVICE |
+| Blocker | Fix | Verified by (command / exit) |
+|---------|-----|------------------------------|
+| Prof-test POST fail-open when second `resolveProfTestContext` null | Reject test-marked tokens without valid ctx before mutation; delegation `FOR UPDATE` + pre/post in-tx revalidation | `vitest run …/route.post.prof-test-fail-closed.test.ts` → 403, 0 switch calls; `partnerTypeSwitchProfTest.integration.test.ts` → revoked delegation, 0 user writes |
+| Wallet: specialist + retained agent org → AGENT | Own-principal resolution returns MASTER before org companyKind fallback | `proWalletPartnerKind.test.ts` specialist+org OTHER_AGENT → MASTER |
+| Wallet: legacy COMPANY [] + companyKind → STORE regression | `isLegacyCompanyAgentWallet` before UI company kind | same file legacy fixture → AGENT |
+| Wallet: branch staff overrides own store principal | Own principal resolved before branch staff; staff wallet only if owner ≠ user | same file owner+staff → STORE self |
+| POST ok / profile GET fail UX | Separate catch; recovery copy + refresh without second POST | `PartnerTypeSettings.test.tsx` recovery case |
+| Specialist wizard dirty not wired | `onDirtyChange` from R06 wizard → `hasUnsavedBasicsChanges` | `PartnerTypeSettings.test.tsx` unsaved guard (no POST) |
 
-Active employment on another principal blocks switch; suspended / historical rows do not.
+## Preserved from pass 1 (not reimplemented)
+Row lock + CAS, compatible-activity PATCH guard, catalog org immutability, working-profile prefill, 12/12 matrix integration, choose/review browser captures.
 
-## API
-- `GET /api/pro/partner-type/switch` — current kind, options, optional `?target=` preview
-- `POST /api/pro/partner-type/switch` — `{ targetKind, expectedSourceKind }` (409 on stale / concurrent loss)
-- Generic `PATCH /api/pro/profile` → **403** only when UI kind would change (`PARTNER_TYPE_USE_SWITCH_ENDPOINT`)
-
-## Tests (commands / exit 0 on isolated PostgreSQL)
+## Commands (isolated PostgreSQL where noted)
 ```bash
 # Backend
-pnpm exec vitest run src/lib/__tests__/partnerKindUi.test.ts
-pnpm exec vitest run src/lib/__tests__/partnerTypeSwitchGuard.test.ts
+pnpm exec vitest run src/app/api/pro/partner-type/switch/__tests__/route.post.prof-test-fail-closed.test.ts
 pnpm exec vitest run src/lib/__tests__/partnerTypeSwitch.integration.test.ts
+pnpm exec vitest run src/lib/__tests__/partnerTypeSwitchProfTest.integration.test.ts
 pnpm exec vitest run src/lib/__tests__/proWalletPartnerKind.test.ts
+pnpm exec vitest run src/lib/__tests__/partnerTypeSwitchGuard.test.ts
 
 # Frontend
-pnpm exec tsc --noEmit
-pnpm run build
 pnpm exec vitest run src/components/profile/PartnerTypeSettings.test.tsx
+pnpm exec tsc --noEmit
 
-# Browser (isolated harness)
+# Narrow browser (after servers up)
 bash scripts/partner-type-switch-profile-01/run-browser-gate.sh
 ```
 
-## Honest limitations (not claimed closed)
-- Prof-test delegation revoked **between** HTTP read and write: covered in-tx for POST; not a full middleware re-audit of all pro routes.
-- Staff-negative browser path and combining-owner principal edge cases: API/unit/integration only where noted.
-- Full financial / catalog-wide regression gate — out of scope.
-- Pure-agent compact overview hides `profile-overview-role`; browser asserts overview role only when that block is rendered.
-
-## Changed files (summary)
-- **Navigator:** `partnerTypeSwitch.ts`, `partnerTypeSwitchGuard.ts`, `proWallet.ts`, switch route, integration + guard + wallet tests
-- **Platform:** `partner-kind-ui.ts`, `profile-overview-display.ts`, `ProfileOverviewSection.tsx`, `PartnerTypeSettings.tsx`, browser gate script + artifacts
+## Honest limitations
+- Mid-transaction cross-session revoke race: delegation row lock + double assert; not a full prof-test middleware audit.
+- Staff-negative and every cancel/back/stale path: covered by targeted unit tests above, not full Playwright matrix.
+- Wallet/browser end-to-end on real payout rows: resolver + API read only, no financial replay.
