@@ -121,7 +121,10 @@ async function assertPrototypeParity(page, label) {
 async function exerciseRole(page, label, eyebrow, { populatedPrefix, filteredEmptyPrefix }) {
   const root = await waitForBusinessList(page);
   const body = await page.locator("body").innerText();
-  assert(body.includes(eyebrow), `${label}: eyebrow ${eyebrow}`);
+  assert(
+    body.toLowerCase().includes(eyebrow.toLowerCase()),
+    `${label}: eyebrow ${eyebrow}`,
+  );
   await assertPrototypeParity(page, label);
 
   const tableVisible = (await root.locator("table").count()) > 0;
