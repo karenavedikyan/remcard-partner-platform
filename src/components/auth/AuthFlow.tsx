@@ -245,7 +245,9 @@ export function AuthFlow({
   const resendCode = useCallback(() => {
     setError("");
     openMessengerForLogin(messengerLoginUrl(provider, maxBotUrl, telegramBotUrl));
-    setResendStatus("Откройте бота и запросите новый код командой /login, если сообщение не пришло.");
+    setResendStatus(
+      "Откройте бота и запросите новый код командой /login prof, если сообщение не пришло.",
+    );
   }, [maxBotUrl, provider, telegramBotUrl]);
 
   const submitCode = useCallback(
@@ -561,7 +563,7 @@ export function AuthFlow({
       <h1 className={styles.title}>Введите одноразовый код</h1>
       <p className={styles.lead}>
         Код приходит от бота {provider === "MAX" ? "MAX" : "Telegram"}. Откройте мессенджер, если
-        ещё не запросили код командой /login.
+        ещё не запросили код командой /login prof.
       </p>
       <form onSubmit={(event) => void submitCode(event)}>
         <OtpInput
