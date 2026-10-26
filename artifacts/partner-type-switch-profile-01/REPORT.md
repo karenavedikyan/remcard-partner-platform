@@ -7,10 +7,16 @@ READY FOR REVIEW (not DEPLOYED)
 - **Backend baseline (branch root):** `1267da4274826e06b7358f1a785fe275c9cec836`
 - **Frontend baseline (branch root):** `f3b996714e2900a20a7ff1d99b8f2d45315a876b`
 
-## Application SHAs (deployable; browser-tested)
-- **Backend:** `8072fe4eff0975a138878a1fb223843849778d94`
-- **Frontend:** `a7982c7f07a9876feae10156b75e1dd3276f5841` (application); evidence tip updates on `artifacts/` commit
-- **Browser capture:** see `browser-capture.json` (`runtime.frontendSha` / `runtime.backendSha` must match commits used for `start-frontend.sh` / `start.sh`)
+## Application SHAs (audit follow-up)
+- **Backend (runtime):** `a81ded226fcdd823896d8a12792426a3981052b2`
+- **Frontend (runtime):** see evidence tip commit below (application + `artifacts/`)
+- **Prior blocked candidates (superseded):** backend `8072fe4e`, frontend `a7982c7f`
+
+## Audit blockers addressed in `a81ded22` / frontend follow-up
+1. **Atomicity & auth:** `SELECT … FOR UPDATE`, CAS `updateMany` on `updatedAt` + type/activities; in-tx role/blocked/employee checks; prof-test delegation + slot revalidation before write.
+2. **Commercial context:** `resolveWalletContext` prefers UI kind over legacy `companyKind`; switch clears `companyKind` when leaving agent principal; profile PATCH guard allows compatible activity adds when UI kind unchanged.
+3. **Catalog & prefill:** org `partnerType` not mutated when published / pending / approved; no default «Краснодар»; branch created only when real city exists; working display name/city from working profile helpers.
+4. **Tests & UX evidence:** integration adds race (409), idempotent org count, suspended employment, published org immutability, wallet fixture; browser chain asserts `partner-type-current` (+ overview role when section visible), dialog choose/review captures light/dark 1440/390.
 
 ## UI ↔ server mapping
 | UI kind | `partnerType` | `partnerActivities` |
@@ -20,39 +26,36 @@ READY FOR REVIEW (not DEPLOYED)
 | store | STORE | STORE |
 | company | COMPANY | STORE + SERVICE |
 
-Employee (branch/partner employee) cannot switch. Staff is not a fifth selectable type.
+Active employment on another principal blocks switch; suspended / historical rows do not.
 
 ## API
 - `GET /api/pro/partner-type/switch` — current kind, options, optional `?target=` preview
-- `POST /api/pro/partner-type/switch` — `{ targetKind, expectedSourceKind }` (409 on stale source)
-- Generic `PATCH /api/pro/profile` with `partnerType` / `partnerActivities` changes → **403** `PARTNER_TYPE_USE_SWITCH_ENDPOINT` when principal kind is established
+- `POST /api/pro/partner-type/switch` — `{ targetKind, expectedSourceKind }` (409 on stale / concurrent loss)
+- Generic `PATCH /api/pro/profile` → **403** only when UI kind would change (`PARTNER_TYPE_USE_SWITCH_ENDPOINT`)
 
-## Side effects (intentional)
-- Updates user `partnerType` + `partnerActivities` atomically
-- STORE/COMPANY targets sync/create owned org + default branch if missing; existing org not deleted
-- Does **not** auto publish/unpublish catalog or change moderation status
-
-## Tests (commands / exit 0)
+## Tests (commands / exit 0 on isolated PostgreSQL)
 ```bash
 # Backend
 pnpm exec vitest run src/lib/__tests__/partnerKindUi.test.ts
-pnpm exec vitest run src/lib/__tests__/partnerTypeSwitch.integration.test.ts  # PostgreSQL, 12/12 matrix
+pnpm exec vitest run src/lib/__tests__/partnerTypeSwitchGuard.test.ts
+pnpm exec vitest run src/lib/__tests__/partnerTypeSwitch.integration.test.ts
+pnpm exec vitest run src/lib/__tests__/proWalletPartnerKind.test.ts
 
 # Frontend
 pnpm exec tsc --noEmit
 pnpm run build
 pnpm exec vitest run src/components/profile/PartnerTypeSettings.test.tsx
-node --test src/lib/remcard-proxy.test.ts  # includes partner-type/switch allowlist
 
 # Browser (isolated harness)
-node scripts/partner-type-switch-profile-01/run-browser-partner-type-switch.mjs
+bash scripts/partner-type-switch-profile-01/run-browser-gate.sh
 ```
 
 ## Honest limitations (not claimed closed)
-- Historical certificate snapshot lifecycle — not re-audited in this task
-- Concurrency guarantees for all partnership offer-write paths — not re-audited
-- Full financial / catalog-wide regression gate — out of scope (targeted tests only)
+- Prof-test delegation revoked **between** HTTP read and write: covered in-tx for POST; not a full middleware re-audit of all pro routes.
+- Staff-negative browser path and combining-owner principal edge cases: API/unit/integration only where noted.
+- Full financial / catalog-wide regression gate — out of scope.
+- Pure-agent compact overview hides `profile-overview-role`; browser asserts overview role only when that block is rendered.
 
 ## Changed files (summary)
-- **Navigator:** `partnerKindUi.ts`, `partnerTypeSwitch.ts`, `partnerTypeSwitchGuard.ts`, `api/pro/partner-type/switch/route.ts`, profile PATCH guard, `profTestRoutePolicy.ts`, integration tests, seed harness
-- **Platform:** `PartnerTypeSettings.tsx`, `ProfileEditor.tsx`, `remcard-proxy.ts`, `partner-kind-ui.ts`, browser script, component test
+- **Navigator:** `partnerTypeSwitch.ts`, `partnerTypeSwitchGuard.ts`, `proWallet.ts`, switch route, integration + guard + wallet tests
+- **Platform:** `partner-kind-ui.ts`, `profile-overview-display.ts`, `ProfileOverviewSection.tsx`, `PartnerTypeSettings.tsx`, browser gate script + artifacts

@@ -1,3 +1,4 @@
+import { resolvePartnerKindUi, PARTNER_KIND_UI_LABELS } from "@/lib/partner-kind-ui";
 import { displayCategoryLabel } from "@/lib/category-display";
 import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
@@ -17,6 +18,17 @@ export function partnerTypeLabel(partnerType: string | null | undefined): string
   return PARTNER_TYPE_LABELS[partnerType] ?? partnerType;
 }
 
+export function principalPartnerKindLabel(
+  profile: Pick<ProProfileResponse, "user">,
+): string {
+  const kind = resolvePartnerKindUi({
+    partnerType: profile.user.partnerType,
+    partnerActivities: profile.user.partnerActivities,
+  });
+  if (kind) return PARTNER_KIND_UI_LABELS[kind];
+  return partnerTypeLabel(profile.user.partnerType);
+}
+
 export function overviewRoleLabel(
   profile: ProProfileResponse,
   proContext: ProContextSnapshot | null,
@@ -24,7 +36,7 @@ export function overviewRoleLabel(
   if (isOrganizationStaffEmployee(profile, proContext)) {
     return staffAccessScopeLabel(proContext) ?? "Сотрудник организации";
   }
-  return partnerTypeLabel(profile.user.partnerType);
+  return principalPartnerKindLabel(profile);
 }
 
 /** Primary working entity title from saved profile only. */
@@ -35,8 +47,11 @@ export function savedWorkingProfileTitle(
   if (isOrganizationStaffEmployee(profile, proContext)) {
     return profile.organization?.name?.trim() || proContext?.organization?.name?.trim() || "—";
   }
-  const partnerType = profile.user.partnerType;
-  if (!partnerType || partnerType === "MASTER" || !profile.organization) {
+  const kind = resolvePartnerKindUi({
+    partnerType: profile.user.partnerType,
+    partnerActivities: profile.user.partnerActivities,
+  });
+  if (!kind || kind === "agent" || kind === "specialist" || !profile.organization) {
     const name = profile.user.displayName?.trim();
     return name || "—";
   }

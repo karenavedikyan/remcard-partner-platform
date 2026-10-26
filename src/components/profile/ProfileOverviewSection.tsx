@@ -268,7 +268,10 @@ export function ProfileOverviewSection({
           <div className={styles.titleBlock}>
             <h2>{title}</h2>
             <p className={styles.subline}>
-              {overviewRoleLabel(profile, proContext)} · {savedCity(profile)}
+              <span data-testid="profile-overview-role">
+                {overviewRoleLabel(profile, proContext)}
+              </span>{" "}
+              · {savedCity(profile)}
             </p>
           </div>
         </div>

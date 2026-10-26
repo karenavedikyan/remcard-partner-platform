@@ -5,6 +5,7 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { ProProfileResponse } from "@/lib/types";
 import {
   PARTNER_KIND_UI_LABELS,
+  resolvePartnerKindUi,
   type PartnerKindUi,
   type PartnerTypeSwitchStateResponse,
 } from "@/lib/partner-kind-ui";
@@ -54,15 +55,14 @@ export function PartnerTypeSettings({
   }, [loadState, profile.user.id, profile.user.partnerType, profile.user.partnerActivities]);
 
   const currentKind = state?.currentKind ?? null;
+  const profileKind = resolvePartnerKindUi({
+    partnerType: profile.user.partnerType,
+    partnerActivities: profile.user.partnerActivities,
+  });
   const currentLabel =
     (currentKind && PARTNER_KIND_UI_LABELS[currentKind]) ||
-    (profile.user.partnerType === "MASTER"
-      ? "Специалист"
-      : profile.user.partnerType === "STORE"
-        ? "Магазин"
-        : profile.user.partnerType === "COMPANY"
-          ? "Компания"
-          : "Партнёр");
+    (profileKind && PARTNER_KIND_UI_LABELS[profileKind]) ||
+    "Партнёр";
 
   function closeDialog() {
     setStep("closed");

@@ -1,3 +1,5 @@
+import { isPureAgentActivities } from "@/lib/agent-profile/mode";
+
 export type PartnerKindUi = "agent" | "specialist" | "store" | "company";
 
 export const PARTNER_KIND_UI_ORDER: PartnerKindUi[] = [
@@ -39,6 +41,26 @@ export const PARTNER_KIND_UI_COPY: Record<
       "Кабинет компании: партнёры, клиенты, команда и филиалы. Потребуются данные организации.",
   },
 };
+
+export function resolvePartnerKindUi(input: {
+  partnerType: string | null | undefined;
+  partnerActivities: string[] | null | undefined;
+}): PartnerKindUi | null {
+  const activities = input.partnerActivities ?? [];
+  if (isPureAgentActivities(activities)) return "agent";
+
+  const type = input.partnerType;
+  if (type === "MASTER" && activities.includes("SERVICE")) return "specialist";
+  if (type === "STORE" && activities.includes("STORE")) return "store";
+  if (type === "COMPANY") {
+    if (activities.includes("STORE") && activities.includes("SERVICE")) return "company";
+    if (activities.includes("STORE") && !activities.includes("AGENT")) return "store";
+    return "company";
+  }
+  if (type === "MASTER") return "specialist";
+  if (type === "STORE") return "store";
+  return null;
+}
 
 export type PartnerTypeSwitchStateResponse = {
   currentKind: PartnerKindUi | null;
