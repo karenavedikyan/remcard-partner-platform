@@ -14,7 +14,7 @@ import {
   type AccountExitScope,
 } from "@/lib/account-session-exit";
 
-export function useAccountSessionExit() {
+export function useAccountSessionExit({ signInMode }: { signInMode?: "admin" } = {}) {
   const router = useRouter();
   const [pending, setPending] = useState<AccountExitScope | null>(null);
   const [error, setError] = useState("");
@@ -25,10 +25,10 @@ export function useAccountSessionExit() {
     async (scope: AccountExitScope) => {
       await clearLocalSessionArtifacts();
       notifyAccountSessionExit(scope);
-      router.push(`/account/signed-out?scope=${scope}`);
+      router.push(`/account/signed-out?scope=${scope}${signInMode === "admin" ? "&mode=admin" : ""}`);
       router.refresh();
     },
-    [router],
+    [router, signInMode],
   );
 
   const exitCurrent = useCallback(async () => {
@@ -87,7 +87,7 @@ export function useAccountSessionExit() {
       try {
         const parsed = JSON.parse(event.newValue) as { scope?: AccountExitScope };
         if (parsed.scope === "all" || parsed.scope === "current") {
-          router.push(`/account/signed-out?scope=${parsed.scope}`);
+          router.push(`/account/signed-out?scope=${parsed.scope}${signInMode === "admin" ? "&mode=admin" : ""}`);
           router.refresh();
         }
       } catch {
@@ -96,7 +96,7 @@ export function useAccountSessionExit() {
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [router]);
+  }, [router, signInMode]);
 
   const clearError = useCallback(() => setError(""), []);
 

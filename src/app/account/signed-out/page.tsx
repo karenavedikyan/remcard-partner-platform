@@ -6,12 +6,13 @@ import styles from "@/components/account-session/account-session.module.css";
 export const dynamic = "force-dynamic";
 
 type SignedOutPageProps = {
-  searchParams?: Promise<{ scope?: string }>;
+  searchParams?: Promise<{ scope?: string; mode?: string }>;
 };
 
 export default async function AccountSignedOutPage(props: SignedOutPageProps) {
   const searchParams = await props.searchParams;
   const all = searchParams?.scope === "all";
+  const admin = searchParams?.mode === "admin";
 
   return (
     <main id="main" className={styles.signedOut} tabIndex={-1} data-testid="signed-out">
@@ -26,11 +27,11 @@ export default async function AccountSignedOutPage(props: SignedOutPageProps) {
             : "На этом устройстве сеанс завершён. На остальных устройствах вход сохранён."}
         </p>
         <Link
-          href="/login"
+          href={admin ? "/login?mode=admin&returnTo=%2Fadmin%2Fpartners" : "/login"}
           className={`${buttonStyles.button} ${buttonStyles.primary} ${styles.profileBtn}`}
           data-testid="account-sign-in"
         >
-          Войти в аккаунт <IconArrowRight width={18} height={18} />
+          {admin ? "Войти в кабинет администратора" : "Войти в аккаунт"} <IconArrowRight width={18} height={18} />
         </Link>
       </section>
     </main>

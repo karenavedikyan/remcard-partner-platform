@@ -23,9 +23,10 @@ function initialsFromName(name: string): string {
 type AccountSessionMenuProps = {
   displayName: string;
   roleLabel: string;
+  signInMode?: "admin";
 };
 
-export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMenuProps) {
+export function AccountSessionMenu({ displayName, roleLabel, signInMode }: AccountSessionMenuProps) {
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -39,7 +40,7 @@ export function AccountSessionMenu({ displayName, roleLabel }: AccountSessionMen
     closeConfirmAll,
     confirmExitAll,
     clearError,
-  } = useAccountSessionExit();
+  } = useAccountSessionExit({ signInMode });
 
   const closeMenu = useCallback(
     (restoreFocus = false) => {
