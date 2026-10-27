@@ -24,15 +24,27 @@ export async function fetchPartnerRegistry(params: URLSearchParams): Promise<Par
 }
 
 export async function previewPartnerLifecycle(userId: string, action: string) {
-  return remcardFetch<{ preview: { effects: string[]; warnings: string[]; displayName: string | null } }>(
+  return remcardFetch<{
+    preview: {
+      effects: string[];
+      warnings: string[];
+      displayName: string | null;
+      confirmToken: string;
+    };
+  }>(
     `/api/pro/admin/partners/${encodeURIComponent(userId)}/lifecycle/preview?action=${encodeURIComponent(action)}`,
   );
 }
 
-export async function applyPartnerLifecycle(userId: string, action: string, reason: string) {
+export async function applyPartnerLifecycle(
+  userId: string,
+  action: string,
+  reason: string,
+  confirmToken: string,
+) {
   return remcardFetch(`/api/pro/admin/partners/${encodeURIComponent(userId)}/lifecycle`, {
     method: "POST",
-    body: { action, reason },
+    body: { action, reason, confirmToken },
   });
 }
 
@@ -47,9 +59,14 @@ export async function previewDemoSupersession(liveUserId: string, demoUserId: st
   );
 }
 
-export async function applyDemoSupersession(liveUserId: string, demoUserId: string, reason: string) {
+export async function applyDemoSupersession(
+  liveUserId: string,
+  demoUserId: string,
+  reason: string,
+  confirmToken: string,
+) {
   return remcardFetch(`/api/pro/admin/partners/${encodeURIComponent(liveUserId)}/demo-supersession`, {
     method: "POST",
-    body: { demoUserId, reason },
+    body: { demoUserId, reason, confirmToken },
   });
 }
