@@ -27,6 +27,7 @@ export function AdminPartnersClient() {
   const [selected, setSelected] = useState<PartnerRegistryItem | null>(null);
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
   const [reason, setReason] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
 
   const loadPage = useCallback(
     async (cursor: string | null, append: boolean) => {
@@ -74,18 +75,25 @@ export function AdminPartnersClient() {
   }
 
   async function confirmApply() {
-    if (!selected || !pendingPreview) return;
+    if (!selected || !pendingPreview || isApplying) return;
     setError(null);
-    await applyPartnerLifecycle(
-      selected.id,
-      pendingPreview.action,
-      reason.trim(),
-      pendingPreview.confirmToken,
-    );
-    setPendingPreview(null);
-    setReason("");
-    setSelected(null);
-    await loadPage(null, false);
+    setIsApplying(true);
+    try {
+      await applyPartnerLifecycle(
+        selected.id,
+        pendingPreview.action,
+        reason.trim(),
+        pendingPreview.confirmToken,
+      );
+      setPendingPreview(null);
+      setReason("");
+      setSelected(null);
+      await loadPage(null, false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка применения");
+    } finally {
+      setIsApplying(false);
+    }
   }
 
   function cancelPreview() {
@@ -190,8 +198,8 @@ export function AdminPartnersClient() {
               </>
             ) : (
               <>
-                <button type="button" onClick={() => void confirmApply()}>
-                  Подтвердить
+                <button type="button" disabled={isApplying} onClick={() => void confirmApply()}>
+                  {isApplying ? "Применение…" : "Подтвердить"}
                 </button>
                 <button type="button" onClick={cancelPreview}>
                   Отмена
