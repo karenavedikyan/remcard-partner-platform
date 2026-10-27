@@ -1,24 +1,29 @@
-# ADMIN-MANAGEMENT-METRICS-20261027-R3 (PROF)
+# ADMIN-MANAGEMENT-METRICS-20261027-R4 (PROF)
 
-**Кандidat для повторной независимой приёмки. Не публикация.**
+**Кандидат для независимой приёмки. Не публикация.**
 
 ## Refs
 
 | | SHA / ref |
 |---|---|
-| Проверенный R2 tip | `56463c492287ba884cd24c2ec8dd8d5c53d99450` |
-| Backend R3 | `feat/admin-management-metrics-20261027` в `remcard-navigator` |
-| Итоговый R3 tip | `feat/admin-management-metrics-20261027` (см. последний commit) |
+| Проверенный R3 tip | `a419bdfa8b57d3094a4a70b65e8a6c40df47b672` |
+| Backend R3/R4 | `feat/admin-management-metrics-20261027` в `remcard-navigator` |
+| Итоговый R4 tip | `feat/admin-management-metrics-20261027` (последний commit) |
 
-## Три остатка R2 → R3
+## Два пункта R4
 
-| Блок | Статус | Доказательство |
+| Пункт | Статус | Доказательство |
 |---|---|---|
-| 1. Реестр / URL | **unchanged (R2 closed)** | Регрессия 47 PROF-тестов |
-| 2. BFF → consent | **closed** | `remcard-proxy`: `cookie-consent` только для `POST /api/pro/activity/session-visit`; `remcard-proxy.test.ts` (27 pass incl. consent forward) |
-| 3. Сотрудник в кабинете | **closed** | `AppShell` монтирует `ProfPartnerSessionVisit` для CLIENT без staffRole; запись на backend привязана к employer PRO |
+| 1. Получение analytics consent пользователем | **closed** | `CookieConsentProvider` + `ProfAnalyticsConsentBanner` («Разрешить» / «Не сейчас») + `ProfAnalyticsConsentManage` (вкл/выкл); host-only `cookie-consent`; `ProfPartnerSessionVisit` реагирует на `state.analytics`/`decidedAt`, не one-shot при mount |
+| 2. Штаб live-reg ссылка | **closed в backend** | Карточка в navigator admin → `/admin/partners?registration=active` (см. backend REPORT) |
 
-**Периоды/overview (R2):** без изменений; `AdminMetricsIndependentAcceptance` в регрессии.
+### Поведение согласия (PROF)
+
+- До выбора: баннер, `recordProfSessionVisit` не вызывается.
+- «Не сейчас»: analytics=false, кабинет работает, записи нет.
+- «Разрешить аналитику»: localStorage + `cookie-consent` cookie, BFF пробрасывает на session-visit, вызов `recordProfSessionVisit`.
+- Смена через manage «Включить/Отключить» повторно триггерит/прекращает сигнал.
+- Marketing opt-in не добавлялся; регистрационные согласия не считаются analytics.
 
 ## Тесты
 
@@ -31,27 +36,19 @@ npx vitest run \
   src/app/admin/partners/AdminPartnersIndependentR3.test.tsx \
   src/app/admin/partners/AdminPartnersIndependentR4.test.tsx \
   src/components/auth/LoginExperience.admin-session.test.tsx \
-  src/app/admin/overview/AdminMetricsIndependentAcceptance.test.tsx
+  src/app/admin/overview/AdminMetricsIndependentAcceptance.test.tsx \
+  src/components/consent/ProfAnalyticsConsentUserPath.test.tsx \
+  src/components/layout/AppShell.test.tsx
 ```
 
 | Набор | Passed | Failed | Skipped |
 |---|---:|---:|---:|
-| PROF регрессия + 3 independent UI | **47** | **0** | **0** |
+| R3 регрессия + R4 consent UI (53) | **53** | **0** | **0** |
 
-BFF consent (node transport):
-
-```bash
-npx tsx --test src/lib/remcard-proxy.test.ts
-```
-
-**27 passed**, 0 failed.
+BFF: `npx tsx --test src/lib/remcard-proxy.test.ts` — **27 passed**.
 
 `npm run build` — exit **0**.
 
-## Согласие analytics в PROF
-
-Браузер хранит `cookie-consent` (JSON, поле `analytics`). BFF пробрасывает **только** эту cookie на session-visit вместе с `remcard-token`; произвольные cookies не пересылаются. Без согласия backend возвращает `recorded: false`.
-
 ## Browser QA
 
-Не подтверждена в этом прогоне (ограничение окружения).
+Не подтверждена (ограничение окружения). User-path покрыт component-тестами с реальными кнопками баннера/manage.

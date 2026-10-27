@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { buildSiteLinkMetadata } from "@/lib/site-opengraph";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import {
+  ProfAnalyticsConsentBanner,
+  ProfAnalyticsConsentManage,
+} from "@/components/consent/ProfAnalyticsConsentUi";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme-preference";
 import "./globals.css";
 
@@ -33,7 +38,13 @@ export default function RootLayout({
         />
       </head>
       <body className={manrope.className}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <CookieConsentProvider>
+            {children}
+            <ProfAnalyticsConsentBanner />
+            <ProfAnalyticsConsentManage />
+          </CookieConsentProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

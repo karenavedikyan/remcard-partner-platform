@@ -1,7 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppShell } from "./AppShell";
+
+vi.mock("@/lib/prof-admin-management-api", () => ({
+  recordProfSessionVisit: vi.fn().mockResolvedValue({ ok: true, recorded: false }),
+  fetchManagementOverview: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
@@ -20,9 +26,11 @@ vi.mock("@/components/account-session/AccountSessionMenu", () => ({
 function renderShell() {
   return render(
     <ThemeProvider>
-      <AppShell user={{ id: "user-1", displayName: "Тестовый партнёр", role: "PRO" }}>
-        <div>content</div>
-      </AppShell>
+      <CookieConsentProvider>
+        <AppShell user={{ id: "user-1", displayName: "Тестовый партнёр", role: "PRO" }}>
+          <div>content</div>
+        </AppShell>
+      </CookieConsentProvider>
     </ThemeProvider>,
   );
 }
