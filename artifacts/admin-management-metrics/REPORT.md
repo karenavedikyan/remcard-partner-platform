@@ -1,30 +1,24 @@
-# ADMIN-MANAGEMENT-METRICS-20261027-R2 (PROF)
+# ADMIN-MANAGEMENT-METRICS-20261027-R3 (PROF)
 
-**Кандидат для повторной независимой приёмки. Не публикация.**
+**Кандidat для повторной независимой приёмки. Не публикация.**
 
 ## Refs
 
 | | SHA / ref |
 |---|---|
-| Проверенный кандидат R1 | `1ad78052718ef31dfc3b336676264be560fd86b7` |
-| Итоговый tip R2 | `fb08a319` (`feat/admin-management-metrics-20261027`) |
-| Backend-зависимость | `feat/admin-management-metrics-20261027` в `remcard-navigator` |
-| Release PROF | **не изменялся** (`e7ca0b92b9cc51b01ae596f40124ee3dd777c65b`) |
+| Проверенный R2 tip | `56463c492287ba884cd24c2ec8dd8d5c53d99450` |
+| Backend R3 | `feat/admin-management-metrics-20261027` в `remcard-navigator` |
+| Итоговый R3 tip | `feat/admin-management-metrics-20261027` (см. последний commit) |
 
-## Четыре блока приёмки
+## Три остатка R2 → R3
 
 | Блок | Статус | Доказательство |
 |---|---|---|
-| 1. Счётчики / переходы | **closed** | `AdminPartnersClient` читает `registration`/`partnerType` из URL при первом рендере; independent test `registration=active` |
-| 2. Периоды и графики | **closed** | Карточка «Завершённые регистрации» использует `selectedPeriod`; `MiniBars` + `seriesDaily.total`; подписи типов через `PARTNER_KIND_UI_LABELS` |
-| 3. Активность кабинета | **closed** | `ProfPartnerSessionVisit` в `AppShell` для `user.role === "PRO"`; убран вызов из `/admin` layout |
-| 4. «Штаб» | **closed (частично)** | UI не дублирует legacy stats; подписи coverage/historical demo; aligned counts приходят с backend overview/BFF |
+| 1. Реестр / URL | **unchanged (R2 closed)** | Регрессия 47 PROF-тестов |
+| 2. BFF → consent | **closed** | `remcard-proxy`: `cookie-consent` только для `POST /api/pro/activity/session-visit`; `remcard-proxy.test.ts` (27 pass incl. consent forward) |
+| 3. Сотрудник в кабинете | **closed** | `AppShell` монтирует `ProfPartnerSessionVisit` для CLIENT без staffRole; запись на backend привязана к employer PRO |
 
-## UI R2
-
-- `/admin/overview` — период 1d/7d/30d, дневные мини-графики регистраций и PROF-активности, карточка публичного remcard.ru с честным статусом «нет учёта».
-- `/admin/partners?registration=active` — фильтр применяется к первому запросу реестра.
-- Account controls / admin header — без изменений относительно `8ed8ac3e`.
+**Периоды/overview (R2):** без изменений; `AdminMetricsIndependentAcceptance` в регрессии.
 
 ## Тесты
 
@@ -42,14 +36,22 @@ npx vitest run \
 
 | Набор | Passed | Failed | Skipped |
 |---|---:|---:|---:|
-| Релевантные PROF + 3 independent UI | **47** | **0** | **0** |
+| PROF регрессия + 3 independent UI | **47** | **0** | **0** |
 
-`npm run build` — exit **0** (2026-10-27, cloud agent).
+BFF consent (node transport):
+
+```bash
+npx tsx --test src/lib/remcard-proxy.test.ts
+```
+
+**27 passed**, 0 failed.
+
+`npm run build` — exit **0**.
+
+## Согласие analytics в PROF
+
+Браузер хранит `cookie-consent` (JSON, поле `analytics`). BFF пробрасывает **только** эту cookie на session-visit вместе с `remcard-token`; произвольные cookies не пересылаются. Без согласия backend возвращает `recorded: false`.
 
 ## Browser QA
 
-Playwright/Comet 1440/375, две темы на поднятом локальном stack — **не подтверждено** в этом прогоне (ограничение sandbox → loopback). Не заменялось DOM-тестами за полную визуальную приёмку.
-
-## Запреты
-
-Deploy, Timeweb, production env, PR — **нет**.
+Не подтверждена в этом прогоне (ограничение окружения).

@@ -169,7 +169,9 @@ export function AppShell({
 
   return (
     <div className={styles.shell}>
-      {user.role === "PRO" ? <ProfPartnerSessionVisit /> : null}
+      {user.role === "PRO" || (user.role === "CLIENT" && !user.staffRole) ? (
+        <ProfPartnerSessionVisit />
+      ) : null}
       {mobileMenuOpen ? (
         <button
           type="button"

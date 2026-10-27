@@ -100,6 +100,12 @@ const stubServer = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/api/pro/activity/session-visit" && request.method === "POST") {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ ok: true, recorded: true }));
+    return;
+  }
+
   if (url.pathname === "/api/auth/me" && request.method === "HEAD") {
     response.writeHead(204);
     response.end();
@@ -377,6 +383,14 @@ describe("remcard proxy transport checks", () => {
       filterAllowedCookies("remcard-token=abc; remcard-pro-branch=br_1; evil=1"),
       "remcard-token=abc; remcard-pro-branch=br_1",
     );
+    const consent = encodeURIComponent(JSON.stringify({ analytics: true }));
+    assert.equal(
+      filterAllowedCookies(
+        `remcard-token=abc; cookie-consent=${consent}; unrelated-private-cookie=must-not-leak`,
+        new Set(["cookie-consent"]),
+      ),
+      `remcard-token=abc; cookie-consent=${consent}`,
+    );
   });
 
   it("rejects missing or foreign origins for mutating requests", () => {
@@ -511,6 +525,22 @@ describe("remcard proxy transport checks", () => {
     assert.equal(result.contentType, "application/pdf");
     assert.equal(Buffer.from(result.body!).toString("utf8"), "%PDF-1.4 stub");
     assert.equal(stubState.lastCookie, "remcard-token=abc");
+  });
+
+  it("forwards analytics consent cookie only for session-visit upstream", async () => {
+    const consent = encodeURIComponent(JSON.stringify({ analytics: true }));
+    const result = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/pro/activity/session-visit",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: `remcard-token=abc; cookie-consent=${consent}; unrelated-private-cookie=must-not-leak`,
+      bodyText: "{}",
+      origin: "http://localhost:3000",
+    });
+    assert.equal(result.ok, true);
+    assert.match(stubState.lastCookie ?? "", /cookie-consent=/);
+    assert.doesNotMatch(stubState.lastCookie ?? "", /unrelated-private-cookie/);
   });
 
   it("preserves query strings on upstream requests", async () => {

@@ -19,6 +19,8 @@ export const UPSTREAM_TIMEOUT_MS = 15_000;
 const SESSION_COOKIE = "remcard-token";
 const PRO_BRANCH_CONTEXT_COOKIE = "remcard-pro-branch";
 const ADMIN_RETURN_COOKIE = "remcard-admin-return";
+const ANALYTICS_CONSENT_COOKIE = "cookie-consent";
+
 const ALLOWED_COOKIE_NAMES = new Set([
   SESSION_COOKIE,
   PRO_BRANCH_CONTEXT_COOKIE,
@@ -473,17 +475,24 @@ export function getCookieHeaderName(cookiePart: string): string | null {
   return name || null;
 }
 
-export function filterAllowedCookies(cookieHeader: string | null): string | null {
+export function filterAllowedCookies(
+  cookieHeader: string | null,
+  extraAllowedNames?: ReadonlySet<string>,
+): string | null {
   if (!cookieHeader) {
     return null;
   }
+
+  const allowed = extraAllowedNames
+    ? new Set<string>([...ALLOWED_COOKIE_NAMES, ...extraAllowedNames])
+    : ALLOWED_COOKIE_NAMES;
 
   const filtered = cookieHeader
     .split(";")
     .map((part) => part.trim())
     .filter((part) => {
       const name = getCookieHeaderName(part);
-      return Boolean(name && ALLOWED_COOKIE_NAMES.has(name));
+      return Boolean(name && allowed.has(name));
     });
 
   return filtered.length > 0 ? filtered.join("; ") : null;
@@ -720,7 +729,11 @@ export async function proxyRemcardRequest(
     headers.set("content-type", input.contentType);
   }
 
-  const cookie = filterAllowedCookies(input.cookieHeader);
+  const extraCookies =
+    pathname === "/api/pro/activity/session-visit"
+      ? new Set<string>([ANALYTICS_CONSENT_COOKIE])
+      : undefined;
+  const cookie = filterAllowedCookies(input.cookieHeader, extraCookies);
   if (cookie) {
     headers.set("cookie", cookie);
   }
