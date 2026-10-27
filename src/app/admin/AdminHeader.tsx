@@ -10,6 +10,7 @@ export function AdminHeader({ identity }: { identity: AdminAccountIdentity | nul
         <AdminAccountControls identity={identity} />
       </div>
       <nav className={styles.nav} aria-label="Администрирование">
+        <Link href="/admin/overview">Обзор</Link>
         <Link href="/admin/moderation">Модерация</Link>
         <Link href="/admin/partners">Партнёры</Link>
         <Link href="/admin/test-users">Тестовые пользователи</Link>

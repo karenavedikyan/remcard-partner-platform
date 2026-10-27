@@ -1,4 +1,18 @@
 .registry { display: grid; gap: var(--space-5); min-width: 0; }
+.metrics { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); min-width: 0; }
+.metricsLead { font-size: var(--text-sm); color: var(--ink); font-variant-numeric: tabular-nums; }
+.metricsHint { color: var(--muted); font-weight: 400; }
+.metricsRow, .metricsCompact { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+.metricChip, .metricChipSmall, .metricChipStatic {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--offset);
+  color: var(--ink); font-size: var(--text-sm); cursor: pointer; max-width: 100%;
+}
+.metricChipStatic { cursor: default; }
+.metricChip strong, .metricChipSmall strong, .metricChipStatic strong { font-variant-numeric: tabular-nums; }
+.metricChipActive { border-color: var(--primary); background: var(--soft); }
+.metricChipSmall { font-size: 0.8125rem; }
+.metricChip:focus-visible, .metricChipSmall:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
 .heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
 .heading h1 { font-size: 1.5rem; }
 .heading p { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }

@@ -3,12 +3,14 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import styles from "./AdminPartners.module.css";
+import type { PartnerRegistryFacets } from "@/lib/prof-admin-management-api";
 import {
   applyPartnerLifecycle,
   fetchPartnerRegistry,
   previewPartnerLifecycle,
   type PartnerRegistryItem,
 } from "@/lib/prof-admin-partners-api";
+import { AdminPartnersMetricsBar } from "./AdminPartnersMetricsBar";
 
 type PendingPreview = {
   action: string;
@@ -20,6 +22,7 @@ type PendingPreview = {
 export function AdminPartnersClient() {
   const [items, setItems] = useState<PartnerRegistryItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [facets, setFacets] = useState<PartnerRegistryFacets | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [registration, setRegistration] = useState("");
@@ -57,6 +60,7 @@ export function AdminPartnersClient() {
         if (version !== loadVersion.current) return;
         setItems((prev) => (append ? [...prev, ...data.items] : data.items));
         setTotal(data.total);
+        setFacets(data.facets ?? null);
         setNextCursor(data.nextCursor);
       } catch (e) {
         if (version === loadVersion.current) setError(e instanceof Error ? e.message : "Ошибка загрузки");
@@ -124,10 +128,20 @@ export function AdminPartnersClient() {
     <div className={styles.registry}>
       <div className={styles.heading}>
       <h1>Партнёры (реестр)</h1>
-      <p>
-        Всего по фильтру: {total}. Показано: {items.length}
-      </p>
+      <p>Показано на странице: {items.length}</p>
       </div>
+      <AdminPartnersMetricsBar
+        facets={facets}
+        matchedTotal={total}
+        partnerType={partnerType}
+        registration={registration}
+        catalog={catalog}
+        archived={archived}
+        onPartnerType={setPartnerType}
+        onRegistration={setRegistration}
+        onCatalog={setCatalog}
+        onArchived={setArchived}
+      />
       <div className={styles.filters}>
         <label className={styles.field}>Поиск партнёров
         <input

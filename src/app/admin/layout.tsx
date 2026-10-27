@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getAuthMeServer } from "@/lib/remcard-server";
 import { AdminHeader } from "./AdminHeader";
+import { ProfAdminSessionVisit } from "./ProfAdminSessionVisit";
 import type { AdminAccountIdentity } from "./AdminAccountControls";
 import styles from "./Admin.module.css";
 
@@ -18,6 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className={styles.shell}>
       <AdminHeader identity={identity} />
+      <ProfAdminSessionVisit />
       <main>{children}</main>
     </div>
   );

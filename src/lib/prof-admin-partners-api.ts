@@ -18,8 +18,11 @@ export type PartnerRegistryItem = {
   } | null;
 };
 
+export type PartnerRegistryFacets = import("@/lib/prof-admin-management-api").PartnerRegistryFacets;
+
 export type PartnerRegistryResponse = {
   total: number;
+  facets: PartnerRegistryFacets | null;
   items: PartnerRegistryItem[];
   nextCursor: string | null;
 };

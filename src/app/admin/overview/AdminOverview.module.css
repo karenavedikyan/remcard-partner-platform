@@ -1,0 +1,24 @@
+.wrap { display: grid; gap: var(--space-5); min-width: 0; }
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); align-items: flex-end; }
+.header h1 { font-size: 1.5rem; }
+.meta { font-size: var(--text-sm); color: var(--muted); }
+.periods { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.period, .periodActive {
+  min-height: 44px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font-size: var(--text-sm);
+}
+.periodActive { border-color: var(--primary); background: var(--soft); }
+.grid {
+  display: grid; gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+.card {
+  display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--line);
+  border-radius: var(--radius-md); background: var(--surface); min-width: 0;
+}
+.card h2 { font-size: 1rem; line-height: 1.35; }
+.value { font-size: 1.75rem; font-variant-numeric: tabular-nums; font-weight: 700; }
+.sub { font-size: var(--text-sm); color: var(--muted); line-height: 1.45; }
+.card a { color: var(--primary); font-size: var(--text-sm); font-weight: 650; }
+.error { padding: var(--space-3); border: 1px solid var(--primary); border-radius: var(--radius-sm); background: var(--soft); }
+.definitions { font-size: var(--text-sm); color: var(--muted); max-width: 70ch; }
