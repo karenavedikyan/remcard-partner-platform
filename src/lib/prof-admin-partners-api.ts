@@ -5,6 +5,11 @@ export type PartnerRegistryItem = {
   publicId: string | null;
   displayName: string | null;
   partnerType: string | null;
+  partnerKind?: "agent" | "specialist" | "store" | "company" | null;
+  catalogVisibility?: "VISIBLE" | "HIDDEN" | "NOT_PUBLISHED" | "ARCHIVED";
+  publicCatalogLinks?: { label: string; path: string }[];
+  organizationName?: string | null;
+  organizations?: { id: string; name: string }[];
   city: string | null;
   registrationLabel: "ACTIVE" | "DEMO";
   lifecycle: {
