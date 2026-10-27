@@ -46,6 +46,8 @@ type AuthFlowProps = {
   initialStep?: AuthFlowStep;
   /** Agent registration via /join uses finish step instead of legacy onboarding. */
   registrationAgentJoin?: boolean;
+  /** Admin entry must not automatically reuse a partner session. */
+  checkSessionOnMount?: boolean;
   layout?: "full" | "embedded";
   onAuthenticated?: (userId: string) => void;
 };
@@ -66,6 +68,7 @@ export function AuthFlow({
   returnTo,
   reason,
   registrationAgentJoin,
+  checkSessionOnMount = true,
   layout = "full",
   onAuthenticated,
 }: AuthFlowProps) {
@@ -73,12 +76,12 @@ export function AuthFlow({
   const submitLock = useRef(false);
   const codeConsumedRef = useRef(false);
   const flowActiveRef = useRef(true);
-  const [step, setStep] = useState<AuthFlowStep>("checking_session");
+  const [step, setStep] = useState<AuthFlowStep>(checkSessionOnMount ? "checking_session" : "provider");
   const [provider, setProvider] = useState<AuthLoginProvider>("MAX");
   const [code, setCode] = useState("");
   const [readiness, setReadiness] = useState<CabinetReadiness | null>(null);
   const [error, setError] = useState("");
-  const [booting, setBooting] = useState(true);
+  const [booting, setBooting] = useState(checkSessionOnMount);
   const [loading, setLoading] = useState(false);
   const [retryKind, setRetryKind] = useState<RetryKind>("network");
   const [consentResetToken, setConsentResetToken] = useState(0);
@@ -201,12 +204,18 @@ export function AuthFlow({
     flowActiveRef.current = true;
     let active = true;
     const isActive = () => active && flowActiveRef.current;
-    void runSessionCheckRef.current(isActive);
+    if (checkSessionOnMount) {
+      setBooting(true);
+      void runSessionCheckRef.current(isActive);
+    } else {
+      setStep("provider");
+      setBooting(false);
+    }
     return () => {
       active = false;
       flowActiveRef.current = false;
     };
-  }, []);
+  }, [checkSessionOnMount]);
 
   const retrySessionCheck = useCallback(async () => {
     if (submitLock.current || loading || booting) return;

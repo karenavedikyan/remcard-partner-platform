@@ -76,6 +76,16 @@ describe("AuthFlow", () => {
     expect(screen.getByRole("button", { name: /продолжить с max/i })).toBeInTheDocument();
   });
 
+  it("does not automatically check or redirect a partner session during admin entry", async () => {
+    render(<AuthFlow checkSessionOnMount={false} />);
+
+    expect(await screen.findByRole("heading", { name: /с возвращением/i })).toBeInTheDocument();
+    expect(getAuthMe).not.toHaveBeenCalled();
+    expect(remcardFetch).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it("does not redirect after unmount during delayed readiness", async () => {
     vi.mocked(getAuthMe).mockResolvedValue({
       user: { id: "store-1", role: "PRO" },

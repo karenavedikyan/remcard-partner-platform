@@ -25,10 +25,11 @@ export function LoginExperience({
   return (
     <div className={styles.loginEntryShell}>
       <AuthFlow
-        returnTo={returnTo}
+        returnTo={initialMode === "admin" ? null : returnTo}
         reason={reason}
         initialStep={initialStep}
         registrationAgentJoin={registrationAgentJoin}
+        checkSessionOnMount={initialMode !== "admin"}
         layout="full"
       />
       <AdminLoginAccessory returnTo={returnTo} autoOpen={initialMode === "admin"} />
