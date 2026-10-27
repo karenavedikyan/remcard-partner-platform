@@ -8,7 +8,7 @@
 |---|---|
 | Проверенный исходный кандидат | `4c577650626f722a55c4ca4894f65a7cfe744d8f` |
 | Опубликованный PROF до кандидата (родитель) | `e7ca0b92b9cc51b01ae596f40124ee3dd777c65b` |
-| Итоговый HEAD после review | `4c577650626f722a55c4ca4894f65a7cfe744d8f` (продуктовый код без изменений) |
+| Итоговый HEAD после review | `a68dc21cb34f3319be4710801e1ad8588ccfab64` (только `REVIEW.md`; продуктовый код = `4c577650…`) |
 
 Ветка: `fix/admin-account-controls-20261027` (`karenavedikyan/remcard-partner-platform`).
 
