@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import styles from "./AdminPartners.module.css";
 import {
   applyPartnerLifecycle,
   fetchPartnerRegistry,
@@ -119,18 +121,23 @@ export function AdminPartnersClient() {
   }
 
   return (
-    <div>
+    <div className={styles.registry}>
+      <div className={styles.heading}>
       <h1>Партнёры (реестр)</h1>
       <p>
         Всего по фильтру: {total}. Показано: {items.length}
       </p>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+      </div>
+      <div className={styles.filters}>
+        <label className={styles.field}>Поиск партнёров
         <input
           placeholder="Поиск"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           aria-label="Поиск партнёров"
         />
+        </label>
+        <label className={styles.field}>Регистрация
         <select
           value={registration}
           onChange={(e) => setRegistration(e.target.value)}
@@ -140,23 +147,30 @@ export function AdminPartnersClient() {
           <option value="active">Активный</option>
           <option value="demo">Демо</option>
         </select>
+        </label>
+        <label className={styles.field}>Тип партнёра
         <select aria-label="Тип партнёра" value={partnerType} onChange={e => setPartnerType(e.target.value)}>
           <option value="">Все типы партнёров</option><option value="AGENT">Агент</option><option value="MASTER">Специалист</option><option value="STORE">Магазин</option><option value="COMPANY">Компания</option>
         </select>
-        <input aria-label="Город" placeholder="Город" value={city} onChange={e => setCity(e.target.value)} />
+        </label>
+        <label className={styles.field}>Город<input aria-label="Город" placeholder="Например, Краснодар" value={city} onChange={e => setCity(e.target.value)} /></label>
+        <label className={styles.field}>Видимость в каталоге
         <select aria-label="Видимость в каталоге" value={catalog} onChange={e => setCatalog(e.target.value)}>
           <option value="">Вся видимость</option><option value="visible">Виден в каталоге</option><option value="hidden">Скрыт администратором</option><option value="not_public">Не виден в каталоге</option>
         </select>
+        </label>
+        <label className={styles.field}>Архив
         <select aria-label="Архив" value={archived} onChange={e => setArchived(e.target.value)}>
           <option value="">Все профили</option><option value="false">Не архивные</option><option value="true">В архиве</option>
         </select>
-        <button type="button" onClick={() => void loadPage(null, false)}>
+        </label>
+        <div className={styles.filterActions}><Button variant="secondary" onClick={() => void loadPage(null, false)}>
           Обновить
-        </button>
+        </Button></div>
       </div>
-      {error ? <p role="alert">{error}</p> : null}
-      {loading ? <p>Загрузка…</p> : null}
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+      {loading ? <p role="status">Загрузка…</p> : null}
+      <div className={styles.tableWrap}><table className={styles.table} aria-label="Реестр партнёров" aria-busy={loading}>
         <thead>
           <tr>
             <th>Имя</th>
@@ -168,54 +182,60 @@ export function AdminPartnersClient() {
           </tr>
         </thead>
         <tbody>
-          {items.map((row) => (
+          {items.map((row) => {
+            const publicLinks = (row.publicCatalogLinks ?? []).filter(link => /^\/(partner\/|catalog\/org\/|catalog\/branch\/)/.test(link.path));
+            return (
             <Fragment key={row.id}><tr>
-              <td>{row.displayName ?? row.id}</td>
-              <td>{row.partnerKind ? ({agent:"Агент",specialist:"Специалист",store:"Магазин",company:"Компания"}[row.partnerKind]) : ({MASTER:"Специалист",STORE:"Магазин",COMPANY:"Компания",AGENT:"Агент"}[row.partnerType ?? ""] ?? "Не указан")}</td>
-              <td>{row.city ?? "—"}<br />{row.organizationName}</td>
-              <td>{row.registrationLabel === "ACTIVE" ? "Активный" : "Демо"}</td>
-              <td>{row.lifecycle?.projectArchivedAt ? "В архиве" : row.lifecycle?.catalogHiddenAt ? "Скрыт" : row.catalogVisibility === "VISIBLE" ? "Виден в каталоге" : "Не опубликован"}
-                {row.publicCatalogLinks?.map(link => /^\/(partner\/|catalog\/org\/|catalog\/branch\/)/.test(link.path) && <div key={link.path}><a href={`https://remcard.ru${link.path}`} target="_blank" rel="noopener noreferrer">На remcard.ru: {link.label}</a></div>)}
+              <td data-label="Имя">{row.displayName ?? row.id}</td>
+              <td data-label="Тип">{row.partnerKind ? ({agent:"Агент",specialist:"Специалист",store:"Магазин",company:"Компания"}[row.partnerKind]) : ({MASTER:"Специалист",STORE:"Магазин",COMPANY:"Компания",AGENT:"Агент"}[row.partnerType ?? ""] ?? "Не указан")}</td>
+              <td data-label="Город / организация">{row.city ?? "—"}<br />{row.organizationName}</td>
+              <td data-label="Регистрация"><span className={`${styles.badge} ${row.registrationLabel === "ACTIVE" ? styles.visible : ""}`}>{row.registrationLabel === "ACTIVE" ? "Активный" : "Демо"}</span></td>
+              <td data-label="Видимость на remcard.ru"><span className={`${styles.badge} ${!row.lifecycle?.projectArchivedAt && !row.lifecycle?.catalogHiddenAt && row.catalogVisibility === "VISIBLE" ? styles.visible : styles.inactive}`}>{row.lifecycle?.projectArchivedAt ? "В архиве" : row.lifecycle?.catalogHiddenAt ? "Скрыт" : row.catalogVisibility === "VISIBLE" ? "Виден в каталоге" : "Не опубликован"}</span>
+                <div className={styles.publicLinks}>{publicLinks.slice(0,1).map(link => <a key={link.path} href={`https://remcard.ru${link.path}`} target="_blank" rel="noopener noreferrer">На remcard.ru: {link.label}</a>)}
+                  {publicLinks.length > 1 && <details className={styles.moreLinks}><summary>Ещё карточки: {publicLinks.length - 1}</summary><div className={styles.publicLinks}>{publicLinks.slice(1).map(link => <a key={link.path} href={`https://remcard.ru${link.path}`} target="_blank" rel="noopener noreferrer">На remcard.ru: {link.label}</a>)}</div></details>}
+                </div>
               </td>
-              <td>
+              <td data-label="Профиль и действия">
+                <div className={styles.profileLinks}>
                 <a href={`/admin/moderation/partners/${encodeURIComponent(row.id)}`} target="_blank" rel="noopener noreferrer">Открыть профиль</a>
                 {row.organizations?.map(org => <div key={org.id}><a href={`/admin/moderation/organizations/${encodeURIComponent(org.id)}`} target="_blank" rel="noopener noreferrer">Профиль организации: {org.name}</a></div>)}
-                <div style={{display:"flex",gap:8,marginTop:8}}><button type="button" aria-expanded={selected?.id === row.id} onClick={() => selectPartner(row)}>
+                </div>
+                <div className={styles.actions}><Button variant="secondary" aria-expanded={selected?.id === row.id} onClick={() => selectPartner(row)}>
                   Действия
-                </button><button type="button" onClick={() => selectPartner(row)} style={{color:"var(--danger, #b91c1c)"}}>Удалить</button></div>
+                </Button><Button variant="secondary" onClick={() => selectPartner(row)} className={styles.danger}>Удалить</Button></div>
               </td>
-            </tr>{selected?.id === row.id && <tr><td colSpan={6}>
-              <div role="region" aria-label={`Управление партнёром ${row.displayName ?? row.id}`} style={{padding:"1rem",border:"1px solid var(--border)"}}>
+            </tr>{selected?.id === row.id && <tr className={styles.managementRow}><td colSpan={6}>
+              <div role="region" aria-label={`Управление партнёром ${row.displayName ?? row.id}`} className={styles.management}>
                 <h2>{selected.displayName}</h2>
                 <p>Удаление обратимое: можно убрать карточки из каталога или архивировать профиль. История сохраняется, клиентский аккаунт не удаляется.</p>
-                <textarea aria-label="Причина" rows={3} placeholder="Причина" value={reason} onChange={e => {setReason(e.target.value);cancelPreview();}} style={{width:"100%"}} />
-                {pendingPreview && <div role="dialog" aria-label="Подтверждение изменения">
+                <label className={styles.field}>Причина изменения<textarea aria-label="Причина" rows={3} placeholder="Причина" value={reason} onChange={e => {setReason(e.target.value);cancelPreview();}} /></label>
+                {pendingPreview && <div role="dialog" aria-label="Подтверждение изменения" className={styles.confirmation}>
                   <p>{[...pendingPreview.effects,...pendingPreview.warnings].join(" ")}</p>
-                  <button type="button" disabled={isApplying} onClick={() => void confirmApply()}>{isApplying ? "Применение…" : "Подтвердить"}</button>
-                  <button type="button" disabled={isApplying} onClick={cancelPreview}>Отмена</button>
+                  <div className={styles.actions}><Button disabled={isApplying} onClick={() => void confirmApply()}>{isApplying ? "Применение…" : "Подтвердить"}</Button>
+                  <Button variant="secondary" disabled={isApplying} onClick={cancelPreview}>Отмена</Button></div>
                 </div>}
-                {!pendingPreview && <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <button type="button" onClick={() => void requestPreview("hide_catalog")}>Убрать из каталога</button>
-                  <button type="button" onClick={() => void requestPreview("publish_catalog")}>Вернуть в каталог</button>
-                  <button type="button" onClick={() => void requestPreview("archive_project")}>В архив проекта</button>
-                  <button type="button" onClick={() => void requestPreview("restore_project")}>Восстановить профиль</button>
+                {!pendingPreview && <div className={styles.actions}>
+                  <Button variant="secondary" className={styles.danger} onClick={() => void requestPreview("hide_catalog")}>Убрать из каталога</Button>
+                  <Button variant="secondary" onClick={() => void requestPreview("publish_catalog")}>Вернуть в каталог</Button>
+                  <Button variant="secondary" className={styles.danger} onClick={() => void requestPreview("archive_project")}>В архив проекта</Button>
+                  <Button variant="secondary" onClick={() => void requestPreview("restore_project")}>Восстановить профиль</Button>
                 </div>}
-                <button type="button" disabled={isApplying} onClick={() => {setSelected(null);cancelPreview();}}>Закрыть</button>
+                <Button variant="text" className={styles.close} disabled={isApplying} onClick={() => {setSelected(null);cancelPreview();}}>Закрыть</Button>
               </div>
             </td></tr>}</Fragment>
-          ))}
+          );})}
         </tbody>
-      </table>
+      </table>{!loading && !error && items.length === 0 && <p className={styles.empty}>Партнёры не найдены. Измените условия поиска.</p>}</div>
       {nextCursor ? (
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           aria-label="Загрузить ещё"
           disabled={loadingMore}
           onClick={() => void loadPage(nextCursor, true)}
-          style={{ marginTop: "1rem" }}
+          className={styles.loadMore}
         >
           {loadingMore ? "Загрузка…" : "Загрузить ещё"}
-        </button>
+        </Button>
       ) : null}
     </div>
   );

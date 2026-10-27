@@ -1,0 +1,91 @@
+.shell {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-6);
+  color: var(--ink);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.brand {
+  display: grid;
+  flex-shrink: 0;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.brand strong {
+  font-size: 1.25rem;
+  letter-spacing: -0.05em;
+}
+
+.brand span { color: var(--primary); }
+.brand small { color: var(--muted); font-size: 0.75rem; }
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.nav a:hover { background: var(--soft); color: var(--primary); }
+.shell :where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* Other admin pages still use native controls. Never leave their dark-mode
+   foreground on a browser-default button background. Shared Button stays intact. */
+.shell :where(button:not([class])) {
+  min-height: 44px;
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.shell :where(input, select, textarea) {
+  max-width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.shell :where(option) { color: var(--ink); background: var(--surface); }
+.shell :where(button:disabled) { opacity: 0.55; cursor: not-allowed; }
+
+@media (max-width: 720px) {
+  .shell { padding: var(--space-4); }
+  .header { align-items: flex-start; flex-direction: column; padding: var(--space-4); }
+  .nav { width: 100%; gap: 4px; }
+  .nav a { padding-inline: 10px; }
+}

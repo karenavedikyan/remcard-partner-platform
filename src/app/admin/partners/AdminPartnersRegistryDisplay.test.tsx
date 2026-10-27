@@ -22,6 +22,28 @@ beforeEach(() => {
 async function open() { render(<AdminPartnersClient />); await screen.findByText(row.displayName); }
 
 describe("PROF admin partner registry display", () => {
+  it("keeps additional public cards in an expandable list without dropping their links",async()=>{
+    api.fetchPartnerRegistry.mockResolvedValue({items:[{...row,publicCatalogLinks:[
+      {label:"Основная карточка",path:"/partner/display-partner"},
+      {label:"Филиал 1",path:"/catalog/branch/one"},
+      {label:"Филиал 2",path:"/catalog/branch/two"},
+    ]}],total:1,nextCursor:null});
+    await open();
+    const details=screen.getByText("Ещё карточки: 2").closest("details")!;
+    expect(details.hasAttribute("open")).toBe(false);
+    expect(details.querySelectorAll("a")).toHaveLength(2);
+    expect(details.querySelector("a")?.getAttribute("href")).toBe("https://remcard.ru/catalog/branch/one");
+  });
+  it("keeps visible filter labels, table name and mobile card field labels",async()=>{
+    render(<AdminPartnersClient/>);
+    await screen.findByText("Агент");
+    for(const label of ["Поиск партнёров","Регистрация","Тип партнёра","Город","Видимость в каталоге","Архив"]){
+      expect(screen.getByLabelText(label).closest("label")).not.toBeNull();
+    }
+    expect(screen.getByRole("table",{name:"Реестр партнёров"})).toBeTruthy();
+    const cells=screen.getByText(row.displayName).closest("tr")!.querySelectorAll("td");
+    expect([...cells].map(cell=>cell.getAttribute("data-label"))).toEqual(["Имя","Тип","Город / организация","Регистрация","Видимость на remcard.ru","Профиль и действия"]);
+  });
   it.each(["AGENT", "MASTER", "STORE", "COMPANY"])("forwards the %s type filter to the real registry contract", async kind => {
     await open();
     fireEvent.change(screen.getByLabelText("Тип партнёра"), { target: { value: kind } });
