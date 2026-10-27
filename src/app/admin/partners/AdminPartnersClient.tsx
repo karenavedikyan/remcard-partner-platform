@@ -25,8 +25,15 @@ export function AdminPartnersClient() {
   const [facets, setFacets] = useState<PartnerRegistryFacets | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [registration, setRegistration] = useState("");
-  const [partnerType, setPartnerType] = useState("");
+  const [registration, setRegistration] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const reg = new URLSearchParams(window.location.search).get("registration");
+    return reg === "active" || reg === "demo" ? reg : "";
+  });
+  const [partnerType, setPartnerType] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("partnerType")?.trim() ?? "";
+  });
   const [city, setCity] = useState("");
   const [catalog, setCatalog] = useState("");
   const [archived, setArchived] = useState("");

@@ -33,7 +33,18 @@ export type ManagementOverview = {
     days7: { current: number; comparisonNote: string | null };
     days30: { current: number; comparisonNote: string | null };
     byKindInPeriod: Record<string, number>;
+    seriesDaily: {
+      date: string;
+      agent: number;
+      specialist: number;
+      store: number;
+      company: number;
+      total: number;
+    }[];
+    selectedPeriod?: { current: number; comparisonNote: string | null };
+    selectedPeriodLabel?: string;
   };
+  activitySeriesDaily?: { date: string; profPartnerProfiles: number }[];
   clients: {
     accountedTotal: number;
     createdInPeriod: { current: number; comparisonNote: string | null };
@@ -51,6 +62,7 @@ export type ManagementOverview = {
       distinctInPeriod: number | null;
       coverageNote: string;
     };
+    publicSiteAuthenticatedPartners: { distinctInPeriod: number | null; coverageNote: string };
     publicPartnerCardViews: { viewsInPeriod: number; coverageNote: string };
   };
   incompleteLiveRegistration: { available: boolean; count: number | null; note: string };

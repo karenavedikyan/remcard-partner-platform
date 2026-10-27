@@ -1,26 +1,30 @@
-# ADMIN-MANAGEMENT-METRICS-20261027 (PROF)
+# ADMIN-MANAGEMENT-METRICS-20261027-R2 (PROF)
 
-**Кандидат для независимой приёмки. Не публикация.**
+**Кандидат для повторной независимой приёмки. Не публикация.**
 
 ## Refs
 
 | | SHA / ref |
 |---|---|
-| База задачи | `8ed8ac3e79af912f81653b777c20dc6d5880fa3d` (`fix/admin-account-controls-20261027`, admin account controls сохранены) |
-| Опубликованный PROF до задачи | `e7ca0b92b9cc51b01ae596f40124ee3dd777c65b` |
-| Backend-зависимость | ветка `feat/admin-management-metrics-20261027` в `remcard-navigator` (overview + facets + session-visit) |
-| Итоговая ветка | `feat/admin-management-metrics-20261027` (tip после push) |
+| Проверенный кандидат R1 | `1ad78052718ef31dfc3b336676264be560fd86b7` |
+| Итоговый tip R2 | `feat/admin-management-metrics-20261027` (cec9b2a393ab90a2d163e2372d8033930b137551) |
+| Backend-зависимость | `feat/admin-management-metrics-20261027` в `remcard-navigator` |
+| Release PROF | **не изменялся** (`e7ca0b92b9cc51b01ae596f40124ee3dd777c65b`) |
 
-## UI
+## Четыре блока приёмки
 
-- `/admin/partners` — `AdminPartnersMetricsBar`: типы (все/агент/…/unknown), компактные LIVE/демо/каталог/архив; «Найдено по фильтрам: N»; клик = фильтр.
-- `/admin/overview` — 8 карточек + период 1d/7d/30d, MSK timestamp, ссылки в реестр/модерацию.
-- `AdminHeader` — пункт «Обзор»; account controls **без изменений** (кандидат `4c577650`).
-- `ProfAdminSessionVisit` — один POST session-visit при входе в `/admin/*` (mock в тестах через API client).
+| Блок | Статус | Доказательство |
+|---|---|---|
+| 1. Счётчики / переходы | **closed** | `AdminPartnersClient` читает `registration`/`partnerType` из URL при первом рендере; independent test `registration=active` |
+| 2. Периоды и графики | **closed** | Карточка «Завершённые регистрации» использует `selectedPeriod`; `MiniBars` + `seriesDaily.total`; подписи типов через `PARTNER_KIND_UI_LABELS` |
+| 3. Активность кабинета | **closed** | `ProfPartnerSessionVisit` в `AppShell` для `user.role === "PRO"`; убран вызов из `/admin` layout |
+| 4. «Штаб» | **closed (частично)** | UI не дублирует legacy stats; подписи coverage/historical demo; aligned counts приходят с backend overview/BFF |
 
-## Proxy
+## UI R2
 
-Добавлены: `GET /api/pro/admin/management/overview`, `POST /api/pro/activity/session-visit`.
+- `/admin/overview` — период 1d/7d/30d, дневные мини-графики регистраций и PROF-активности, карточка публичного remcard.ru с честным статусом «нет учёта».
+- `/admin/partners?registration=active` — фильтр применяется к первому запросу реестра.
+- Account controls / admin header — без изменений относительно `8ed8ac3e`.
 
 ## Тесты
 
@@ -32,16 +36,19 @@ npx vitest run \
   src/app/admin/partners/AdminPartnersRegistryDisplay.test.tsx \
   src/app/admin/partners/AdminPartnersIndependentR3.test.tsx \
   src/app/admin/partners/AdminPartnersIndependentR4.test.tsx \
-  src/components/auth/LoginExperience.admin-session.test.tsx
+  src/components/auth/LoginExperience.admin-session.test.tsx \
+  src/app/admin/overview/AdminMetricsIndependentAcceptance.test.tsx
 ```
 
-**44 passed**, 0 failed, 0 skipped.
+| Набор | Passed | Failed | Skipped |
+|---|---:|---:|---:|
+| Релевантные PROF + 3 independent UI | **47** | **0** | **0** |
 
-`npm run build` — exit 0.
+`npm run build` — exit **0** (2026-10-27, cloud agent).
 
-## Не проверялось здесь
+## Browser QA
 
-Playwright 1440/375, две темы, ручной logout. Browser E2E overview с live backend — только через BFF к тестовому navigator.
+Playwright/Comet 1440/375, две темы на поднятом локальном stack — **не подтверждено** в этом прогоне (ограничение sandbox → loopback). Не заменялось DOM-тестами за полную визуальную приёмку.
 
 ## Запреты
 
