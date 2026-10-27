@@ -7,7 +7,7 @@
 | | SHA / ref |
 |---|---|
 | Проверенный кандидат R1 | `1ad78052718ef31dfc3b336676264be560fd86b7` |
-| Итоговый tip R2 | `feat/admin-management-metrics-20261027` (cec9b2a393ab90a2d163e2372d8033930b137551) |
+| Итоговый tip R2 | `fb08a319` (`feat/admin-management-metrics-20261027`) |
 | Backend-зависимость | `feat/admin-management-metrics-20261027` в `remcard-navigator` |
 | Release PROF | **не изменялся** (`e7ca0b92b9cc51b01ae596f40124ee3dd777c65b`) |
 
