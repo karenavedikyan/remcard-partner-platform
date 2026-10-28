@@ -3,10 +3,6 @@ import { Manrope } from "next/font/google";
 import { buildSiteLinkMetadata } from "@/lib/site-opengraph";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import {
-  ProfAnalyticsConsentBanner,
-  ProfAnalyticsConsentManage,
-} from "@/components/consent/ProfAnalyticsConsentUi";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme-preference";
 import "./globals.css";
 
@@ -39,11 +35,7 @@ export default function RootLayout({
       </head>
       <body className={manrope.className}>
         <ThemeProvider>
-          <CookieConsentProvider>
-            {children}
-            <ProfAnalyticsConsentBanner />
-            <ProfAnalyticsConsentManage />
-          </CookieConsentProvider>
+          <CookieConsentProvider>{children}</CookieConsentProvider>
         </ThemeProvider>
       </body>
     </html>

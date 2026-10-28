@@ -47,6 +47,7 @@ import { Panel } from "@/components/ui/Panel";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/FormField";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
+import { ProfAnalyticsConsentProfileSetting } from "@/components/consent/ProfAnalyticsConsentUi";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
 import { PartnerTypeSettings } from "./PartnerTypeSettings";
 import { ProfileBranchContextSwitcher } from "./ProfileBranchContextSwitcher";
@@ -1433,6 +1434,7 @@ function ProfileEditorInner({
           />
         ) : null}
 
+        <ProfAnalyticsConsentProfileSetting />
         <ProfileSessionActions />
       </div>
 

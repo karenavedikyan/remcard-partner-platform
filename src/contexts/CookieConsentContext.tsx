@@ -21,6 +21,8 @@ import {
 interface Ctx {
   state: CookieConsentState | null;
   needsDecision: boolean;
+  /** Explicit user confirmation only — never call from render or passive effects. */
+  confirmAnalyticsChoice: (enabled: boolean) => void;
   acceptAnalytics: () => void;
   rejectAnalytics: () => void;
   setAnalyticsEnabled: (enabled: boolean) => void;
@@ -60,18 +62,32 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     persist(makeRejectAllConsent());
   }, [persist]);
 
-  const setAnalyticsEnabled = useCallback(
+  const confirmAnalyticsChoice = useCallback(
     (enabled: boolean) => {
       persist(makeCustomConsent(enabled));
     },
     [persist],
   );
 
+  const setAnalyticsEnabled = useCallback(
+    (enabled: boolean) => {
+      confirmAnalyticsChoice(enabled);
+    },
+    [confirmAnalyticsChoice],
+  );
+
   const needsDecision = hydrated && state === null;
 
   return (
     <CookieConsentContext.Provider
-      value={{ state, needsDecision, acceptAnalytics, rejectAnalytics, setAnalyticsEnabled }}
+      value={{
+        state,
+        needsDecision,
+        confirmAnalyticsChoice,
+        acceptAnalytics,
+        rejectAnalytics,
+        setAnalyticsEnabled,
+      }}
     >
       {children}
     </CookieConsentContext.Provider>

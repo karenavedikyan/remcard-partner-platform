@@ -37,6 +37,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { OtpInput } from "./OtpInput";
 import { ConsentStep } from "./ConsentStep";
+import { ProfAnalyticsConsentLoginBlock } from "@/components/consent/ProfAnalyticsConsentUi";
 import styles from "./auth.module.css";
 
 type AuthFlowProps = {
@@ -644,6 +645,7 @@ export function AuthFlow({
             {step === "provider" ? "Выбор способа входа" : "Ввод кода"}
           </div>
           {stepBody}
+          {checkSessionOnMount ? <ProfAnalyticsConsentLoginBlock /> : null}
         </section>
       </div>
     </main>

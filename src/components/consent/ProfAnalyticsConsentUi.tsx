@@ -1,61 +1,141 @@
 "use client";
 
+import { useEffect, useId, useState } from "react";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import styles from "./ProfAnalyticsConsentUi.module.css";
 
-export function ProfAnalyticsConsentBanner() {
-  const { needsDecision, acceptAnalytics, rejectAnalytics } = useCookieConsent();
+const CHECKBOX_LABEL =
+  "Разрешить учёт посещений кабинета для статистики сервиса";
+
+function AnalyticsConsentCopy({ idPrefix }: { idPrefix: string }) {
+  return (
+    <p id={`${idPrefix}-desc`} className={styles.desc}>
+      Учитываются входы в кабинет партнёра RemCard PROF для внутренней статистики сервиса. Это не
+      маркетинговая рассылка. Выбор сохраняется в этом браузере и не синхронизируется между
+      устройствами. Изменить можно в разделе «Профиль».
+    </p>
+  );
+}
+
+function AnalyticsConsentControls({
+  draftEnabled,
+  onDraftChange,
+  onConfirm,
+  confirmLabel,
+  statusNote,
+}: {
+  draftEnabled: boolean;
+  onDraftChange: (next: boolean) => void;
+  onConfirm: () => void;
+  confirmLabel: string;
+  statusNote?: string | null;
+}) {
+  const checkboxId = useId();
+  return (
+    <>
+      <label className={styles.checkboxRow} htmlFor={checkboxId}>
+        <input
+          id={checkboxId}
+          type="checkbox"
+          className={styles.checkboxInput}
+          checked={draftEnabled}
+          onChange={(e) => onDraftChange(e.target.checked)}
+        />
+        <span className={styles.checkboxLabel}>{CHECKBOX_LABEL}</span>
+      </label>
+      {statusNote ? (
+        <p className={styles.statusNote} role="status">
+          {statusNote}
+        </p>
+      ) : null}
+      <div className={styles.actions}>
+        <button type="button" className={styles.primary} onClick={onConfirm}>
+          {confirmLabel}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** Compact choice on partner login; no fixed overlay. */
+export function ProfAnalyticsConsentLoginBlock() {
+  const { needsDecision, confirmAnalyticsChoice } = useCookieConsent();
+  const [draftEnabled, setDraftEnabled] = useState(true);
+
+  useEffect(() => {
+    if (needsDecision) setDraftEnabled(true);
+  }, [needsDecision]);
 
   if (!needsDecision) return null;
 
   return (
-    <div
-      className={styles.banner}
-      role="dialog"
-      aria-labelledby="prof-analytics-consent-title"
-      aria-describedby="prof-analytics-consent-desc"
+    <section
+      className={styles.loginBlock}
+      aria-labelledby="prof-analytics-login-title"
+      aria-describedby="prof-analytics-login-desc"
+      data-testid="analytics-consent-login"
     >
-      <div className={styles.bannerInner}>
-        <div>
-          <h2 id="prof-analytics-consent-title" className={styles.title}>
-            Аналитика кабинета
-          </h2>
-          <p id="prof-analytics-consent-desc" className={styles.desc}>
-            Можно разрешить анонимный учёт посещений кабинета партнёра для управленческих
-            показателей. Это не обязательно для работы кабинета и не включается автоматически.
-          </p>
-        </div>
-        <div className={styles.actions}>
-          <button type="button" className={styles.secondary} onClick={rejectAnalytics}>
-            Не сейчас
-          </button>
-          <button type="button" className={styles.primary} onClick={acceptAnalytics}>
-            Разрешить аналитику
-          </button>
-        </div>
-      </div>
-    </div>
+      <h2 id="prof-analytics-login-title" className={styles.title}>
+        Аналитика кабинета
+      </h2>
+      <AnalyticsConsentCopy idPrefix="prof-analytics-login" />
+      <AnalyticsConsentControls
+        draftEnabled={draftEnabled}
+        onDraftChange={setDraftEnabled}
+        onConfirm={() => confirmAnalyticsChoice(draftEnabled)}
+        confirmLabel="Подтвердить выбор"
+      />
+    </section>
   );
 }
 
-/** Change analytics choice after the initial banner (account footer control). */
-export function ProfAnalyticsConsentManage() {
-  const { state, needsDecision, setAnalyticsEnabled } = useCookieConsent();
+/** Profile setting for all partner types (incl. compact agent). */
+export function ProfAnalyticsConsentProfileSetting() {
+  const { state, needsDecision, confirmAnalyticsChoice } = useCookieConsent();
+  const savedEnabled = state?.analytics;
+  const [draftEnabled, setDraftEnabled] = useState(savedEnabled ?? true);
+  const [savedFlash, setSavedFlash] = useState(false);
 
-  if (needsDecision || !state) return null;
+  useEffect(() => {
+    setDraftEnabled(savedEnabled ?? true);
+  }, [savedEnabled, state?.decidedAt]);
+
+  const statusNote = needsDecision
+    ? "Решение ещё не сохранено в этом браузере."
+    : state?.analytics
+      ? "Учёт посещений включён."
+      : "Учёт посещений выключен.";
+
+  function save() {
+    confirmAnalyticsChoice(draftEnabled);
+    setSavedFlash(true);
+  }
 
   return (
-    <div className={styles.manage} data-testid="analytics-consent-manage">
-      <span className={styles.manageLabel}>
-        Аналитика кабинета: {state.analytics ? "включена" : "выключена"}
-      </span>
-      <button
-        type="button"
-        className={styles.manageBtn}
-        onClick={() => setAnalyticsEnabled(!state.analytics)}
-      >
-        {state.analytics ? "Отключить" : "Включить"}
-      </button>
-    </div>
+    <section
+      className={styles.profileBlock}
+      aria-labelledby="prof-analytics-profile-title"
+      data-testid="analytics-consent-profile"
+    >
+      <h2 id="prof-analytics-profile-title" className={styles.title}>
+        Аналитика кабинета
+      </h2>
+      <AnalyticsConsentCopy idPrefix="prof-analytics-profile" />
+      <AnalyticsConsentControls
+        draftEnabled={draftEnabled}
+        onDraftChange={(next) => {
+          setDraftEnabled(next);
+          setSavedFlash(false);
+        }}
+        onConfirm={save}
+        confirmLabel="Сохранить настройку"
+        statusNote={statusNote}
+      />
+      {savedFlash && !needsDecision ? (
+        <p className={styles.savedOk} role="status">
+          Настройка сохранена.
+        </p>
+      ) : null}
+    </section>
   );
 }

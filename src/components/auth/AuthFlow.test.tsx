@@ -14,6 +14,10 @@ vi.mock("@/components/layout/ThemeToggle", () => ({
   ThemeToggle: () => null,
 }));
 
+vi.mock("@/components/consent/ProfAnalyticsConsentUi", () => ({
+  ProfAnalyticsConsentLoginBlock: () => null,
+}));
+
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: vi.fn(),
   getAuthMe: vi.fn(),
