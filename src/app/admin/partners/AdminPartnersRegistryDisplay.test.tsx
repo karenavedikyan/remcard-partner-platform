@@ -6,6 +6,9 @@ const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(), previewPartnerLifecycle: vi.fn(), applyPartnerLifecycle: vi.fn(),
 }));
 vi.mock("@/lib/prof-admin-partners-api", () => api);
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
 const row = {
   id: "display-partner", publicId: "RC-DISPLAY", displayName: "Проверочный партнёр",
   partnerType: "COMPANY", partnerKind: "agent", city: "Краснодар",

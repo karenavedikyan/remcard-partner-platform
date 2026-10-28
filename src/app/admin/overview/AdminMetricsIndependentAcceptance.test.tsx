@@ -20,6 +20,10 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
+
 import { AdminOverviewClient } from "./AdminOverviewClient";
 import { AdminPartnersClient } from "../partners/AdminPartnersClient";
 

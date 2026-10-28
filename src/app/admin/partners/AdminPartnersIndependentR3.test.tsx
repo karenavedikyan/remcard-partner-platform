@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 import { AdminPartnersClient } from "./AdminPartnersClient";
 
 const api = vi.hoisted(() => ({

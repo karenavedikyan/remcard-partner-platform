@@ -1,6 +1,11 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  registryFiltersFromSearchParams,
+  urlRegistryFilterKey,
+} from "@/app/admin/partners/adminPartnersUrlFilters";
 import { Button } from "@/components/ui/Button";
 import styles from "./AdminPartners.module.css";
 import type { PartnerRegistryFacets } from "@/lib/prof-admin-management-api";
@@ -20,20 +25,18 @@ type PendingPreview = {
 };
 
 export function AdminPartnersClient() {
+  const searchParams = useSearchParams();
+  const initialUrlFilters = registryFiltersFromSearchParams(searchParams);
+  const urlFilterKey = urlRegistryFilterKey(searchParams);
+  const lastSyncedUrlKeyRef = useRef(urlFilterKey);
+
   const [items, setItems] = useState<PartnerRegistryItem[]>([]);
   const [total, setTotal] = useState(0);
   const [facets, setFacets] = useState<PartnerRegistryFacets | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [registration, setRegistration] = useState(() => {
-    if (typeof window === "undefined") return "";
-    const reg = new URLSearchParams(window.location.search).get("registration");
-    return reg === "active" || reg === "demo" ? reg : "";
-  });
-  const [partnerType, setPartnerType] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("partnerType")?.trim() ?? "";
-  });
+  const [registration, setRegistration] = useState(initialUrlFilters.registration);
+  const [partnerType, setPartnerType] = useState(initialUrlFilters.partnerType);
   const [city, setCity] = useState("");
   const [catalog, setCatalog] = useState("");
   const [archived, setArchived] = useState("");
@@ -45,6 +48,14 @@ export function AdminPartnersClient() {
   const [reason, setReason] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const loadVersion = useRef(0);
+
+  useLayoutEffect(() => {
+    if (lastSyncedUrlKeyRef.current === urlFilterKey) return;
+    lastSyncedUrlKeyRef.current = urlFilterKey;
+    const next = registryFiltersFromSearchParams(searchParams);
+    setRegistration(next.registration);
+    setPartnerType(next.partnerType);
+  }, [urlFilterKey, searchParams]);
 
   const loadPage = useCallback(
     async (cursor: string | null, append: boolean) => {
