@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { VIEW_MODE_STORAGE_KEY } from "./adminPartnersRegistryConstants";
 import { AdminPartnersClient } from "./AdminPartnersClient";
 
 vi.mock("next/navigation", () => ({
@@ -31,6 +32,23 @@ const demoAdminVisible = {
   partnershipCounts: { active: 0, invited: 0, pending: 0, paused: 0, ended: 0, total: 0 },
 };
 
+const demoHiddenAuto = {
+  id: "demo-hidden",
+  displayName: "Demo Hidden Search",
+  partnerType: "MASTER",
+  registrationLabel: "DEMO" as const,
+  catalogVisibility: "VISIBLE" as const,
+  city: "SPB",
+  lifecycle: null,
+  partnerSearchVisibility: {
+    visible: false,
+    reasonCode: "demo_account",
+    reasonLabel: "Демо-аккаунт",
+    adminOverride: "AUTO" as const,
+  },
+  partnershipCounts: { active: 0, invited: 0, pending: 0, paused: 0, ended: 0, total: 0 },
+};
+
 const archivedBlocked = {
   id: "archived",
   displayName: "Archived Partner",
@@ -48,6 +66,7 @@ const archivedBlocked = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.removeItem(VIEW_MODE_STORAGE_KEY);
   api.fetchPartnerRegistry.mockResolvedValue({
     items: [demoAdminVisible, archivedBlocked],
     total: 2,
@@ -115,6 +134,104 @@ describe("Admin partner search visibility controls", () => {
     await ui.click(screen.getAllByRole("button", { name: "Действия" })[0]!);
     const panel = screen.getByRole("region", { name: /Legacy Demo Visible/ });
     expect(within(panel).getByRole("button", { name: "Показывать партнёрам" })).toBeTruthy();
+  });
+
+  it("keeps apply rejection visible after registry reload and busy state settles", async () => {
+    api.fetchPartnerRegistry.mockResolvedValue({
+      items: [demoHiddenAuto],
+      total: 1,
+      nextCursor: null,
+      facets: null,
+    });
+    api.previewPartnerLifecycle.mockResolvedValue({
+      preview: {
+        action: "show_partner_search",
+        effects: ["Партнёр будет показан в поиске сотрудничества"],
+        warnings: [],
+        confirmToken: "token",
+      },
+    });
+    api.applyPartnerLifecycle.mockRejectedValue(new Error("Профиль был архивирован"));
+
+    render(<AdminPartnersClient />);
+    await screen.findByRole("table", { name: "Реестр партнёров" });
+    const nameCell = await screen.findByText("Demo Hidden Search", { selector: "td" });
+    const row = nameCell.closest("tr")!;
+    fireEvent.click(within(row).getByRole("button", { name: "Действия" }));
+    const panel = screen.getByRole("region", { name: /Demo Hidden Search/ });
+    fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
+    await screen.findByRole("button", { name: "Подтвердить" });
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Подтвердить" })).toBeEnabled();
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Загрузка…")).toBeNull();
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Профиль был архивирован");
+    expect(screen.queryByText("Профиль был архивирован")).not.toBeNull();
+    expect(within(panel).getByText("Решение администратора").nextElementSibling).toHaveTextContent(
+      "По правилам регистрации",
+    );
+    expect(screen.queryByText("Виден партнёрам по решению администратора")).toBeNull();
+  });
+
+  it("clears a stale apply error after a successful retry", async () => {
+    const updatedRow = {
+      ...demoHiddenAuto,
+      partnerSearchVisibility: {
+        visible: true,
+        reasonCode: "admin_show",
+        reasonLabel: "",
+        adminOverride: "SHOW" as const,
+      },
+    };
+    let registryFetch = 0;
+    api.fetchPartnerRegistry.mockImplementation(async () => {
+      registryFetch += 1;
+      return {
+        items: registryFetch === 1 ? [demoHiddenAuto] : [updatedRow],
+        total: 1,
+        nextCursor: null,
+        facets: null,
+      };
+    });
+    api.previewPartnerLifecycle.mockResolvedValue({
+      preview: {
+        action: "show_partner_search",
+        effects: ["Показ в поиске"],
+        warnings: [],
+        confirmToken: "token",
+      },
+    });
+    api.applyPartnerLifecycle
+      .mockRejectedValueOnce(new Error("Профиль был архивирован"))
+      .mockResolvedValueOnce({ ok: true });
+
+    render(<AdminPartnersClient />);
+    await screen.findByRole("table", { name: "Реестр партнёров" });
+    const nameCell = await screen.findByText("Demo Hidden Search", { selector: "td" });
+    const row = nameCell.closest("tr")!;
+    fireEvent.click(within(row).getByRole("button", { name: "Действия" }));
+    const panel = screen.getByRole("region", { name: /Demo Hidden Search/ });
+    fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
+    await screen.findByRole("button", { name: "Подтвердить" });
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Профиль был архивирован"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(2));
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Виден партнёрам по решению администратора")).toBeTruthy();
+    });
   });
 
   it("does not add partner search actions to bulk lifecycle map", async () => {

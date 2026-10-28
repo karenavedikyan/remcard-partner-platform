@@ -76,7 +76,9 @@ export function AdminPartnersClient() {
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([null]);
   const [stackIndex, setStackIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [registryError, setRegistryError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const error = actionError ?? registryError;
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [viewModeReady, setViewModeReady] = useState(false);
 
@@ -172,7 +174,7 @@ export function AdminPartnersClient() {
     async (cursor: string | null) => {
       const version = ++loadVersion.current;
       setLoading(true);
-      setError(null);
+      setRegistryError(null);
       try {
         const params = new URLSearchParams();
         params.set("limit", String(pageLimit));
@@ -193,7 +195,7 @@ export function AdminPartnersClient() {
         setNextCursor(data.nextCursor);
       } catch (e) {
         if (version === loadVersion.current) {
-          setError(e instanceof Error ? e.message : "Ошибка загрузки");
+          setRegistryError(e instanceof Error ? e.message : "Ошибка загрузки");
         }
       } finally {
         if (version === loadVersion.current) setLoading(false);
@@ -219,7 +221,7 @@ export function AdminPartnersClient() {
       }
     }
     void loadPage(cursorToLoad);
-  }, [filterSignature, stackIndex, loadPage, interactionsDisabled]);
+  }, [filterSignature, stackIndex, loadPage]);
 
   const pageIds = useMemo(() => items.map((i) => i.id), [items]);
   const pageSelect = pageSelectionState(selectedIds, pageIds);
@@ -259,9 +261,9 @@ export function AdminPartnersClient() {
 
   async function requestPreview(action: string) {
     if (!singleSelected) return;
-    setError(null);
+    setActionError(null);
     if (!reason.trim()) {
-      setError("Укажите причину перед получением preview");
+      setActionError("Укажите причину перед получением preview");
       return;
     }
     try {
@@ -273,13 +275,13 @@ export function AdminPartnersClient() {
         confirmToken: preview.preview.confirmToken,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка проверки");
+      setActionError(e instanceof Error ? e.message : "Ошибка проверки");
     }
   }
 
   async function confirmApply() {
     if (!singleSelected || !pendingPreview || isApplyingSingle || bulkApplying) return;
-    setError(null);
+    setActionError(null);
     setIsApplyingSingle(true);
     try {
       await applyPartnerLifecycle(
@@ -291,9 +293,10 @@ export function AdminPartnersClient() {
       setPendingPreview(null);
       setReason("");
       setSingleSelected(null);
+      setActionError(null);
       await loadPage(currentCursor);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка применения");
+      setActionError(e instanceof Error ? e.message : "Ошибка применения");
     } finally {
       setIsApplyingSingle(false);
     }
@@ -304,7 +307,7 @@ export function AdminPartnersClient() {
     const gen = ++previewRequestGen.current;
     setBulkPreviewLoading(true);
     setBulkPreviewFailures(null);
-    setError(null);
+    setActionError(null);
     const result = await fetchBulkPreviews(
       members.map((m) => ({ userId: m.id, displayName: m.displayName })),
       bulkAction,
@@ -337,7 +340,7 @@ export function AdminPartnersClient() {
       bulkPreview.members.length !== memberIds.length ||
       !bulkSnapshotMatches(bulkPreview, bulkAction as BulkLifecycleAction, bulkReason, memberIds)
     ) {
-      setError("Группа или причина изменились — получите preview заново");
+      setActionError("Группа или причина изменились — получите preview заново");
       invalidateBulkPreview();
       return;
     }
@@ -600,11 +603,12 @@ export function AdminPartnersClient() {
             setSingleSelected(row);
             setPendingPreview(null);
             setReason("");
-            setError(null);
+            setActionError(null);
           }}
           onCloseSingle={() => {
             setSingleSelected(null);
             setPendingPreview(null);
+            setActionError(null);
           }}
           reason={reason}
           onReasonChange={setReason}
