@@ -74,6 +74,7 @@
   position: sticky; top: 0; z-index: 2; display: grid; gap: var(--space-3);
   padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md);
   background: var(--surface); box-shadow: 0 1px 0 var(--line);
+  max-height: min(70vh, 640px); overflow: auto;
 }
 .bulkPanelHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .bulkHint { color: var(--muted); font-size: var(--text-sm); font-weight: 400; }
@@ -88,14 +89,21 @@
 .tableHeadSticky { position: sticky; top: 0; z-index: 1; }
 .tableHeadSticky th { box-shadow: 0 1px 0 var(--line); }
 .checkCol { width: 44px; text-align: center; vertical-align: middle; }
-.checkCol input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+.headerCheckLabel, .pageSelectBar, .rowCheck {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; cursor: pointer; margin: -8px; padding: 8px;
+}
+.pageSelectBar { width: fit-content; margin: 0 0 var(--space-2); gap: 10px; font-size: var(--text-sm); font-weight: 650; }
+.cardGridWrap { padding: var(--space-3); }
+.rowCheckInput { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
 .compactRowActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .compactRowActions button { padding-inline: 10px; min-height: 36px; font-size: 0.8125rem; }
 .rowMenu { margin-top: 4px; }
 .rowMenu summary {
-  width: fit-content; min-height: 36px; padding-block: 6px; cursor: pointer; color: var(--primary);
-  font-weight: 650; font-size: 0.8125rem;
+  width: fit-content; min-height: 44px; padding: 10px 12px; cursor: pointer; color: var(--primary);
+  font-weight: 650; font-size: 0.8125rem; border-radius: var(--radius-sm);
 }
+.rowMenu summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
 .rowMenuBody { display: grid; gap: 8px; padding: 8px 0 4px; font-weight: 500; }
 .mutedInline { color: var(--muted); font-size: 0.8125rem; }
 .cardGrid { display: grid; gap: var(--space-3); padding: var(--space-3); }
@@ -109,7 +117,7 @@
 .cardMeta { margin: 4px 0 0; color: var(--muted); font-size: 0.8125rem; font-weight: 400; }
 .cardBadges { display: flex; flex-wrap: wrap; gap: 8px; }
 .cardActions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.rowCheck { display: flex; align-items: flex-start; padding-top: 2px; }
+.cardHead .rowCheck { align-items: flex-start; justify-content: flex-start; margin: 0; }
 
 @media (max-width: 1000px) {
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }

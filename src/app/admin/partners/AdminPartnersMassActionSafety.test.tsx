@@ -1,0 +1,171 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+const api = vi.hoisted(() => ({
+  fetchPartnerRegistry: vi.fn(),
+  previewPartnerLifecycle: vi.fn(),
+  applyPartnerLifecycle: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+vi.mock("@/lib/prof-admin-partners-api", () => api);
+
+import { AdminPartnersClient } from "./AdminPartnersClient";
+import { AdminPartnersBulkPanel } from "./AdminPartnersBulkPanel";
+import { runBulkApplyQueue } from "./adminPartnersBulkLifecycle";
+import { RemcardApiError } from "@/lib/api-client";
+
+const rows = Array.from({ length: 6 }, (_, i) => ({
+  id: `p${i + 1}`,
+  displayName: `Partner ${i + 1}`,
+  partnerType: "STORE",
+  registrationLabel: "DEMO" as const,
+  city: "City",
+  lifecycle: null,
+}));
+const facets = {
+  matchedTotal: 6,
+  partnerKind: { all: 6, agent: 0, specialist: 0, store: 6, company: 0, unknown: 0 },
+  registration: { active: 0, demo: 6 },
+  catalog: { visible: 6, hidden: 0, notPublic: 0 },
+  archive: { archived: 0, notArchived: 6 },
+};
+const snapshot = {
+  action: "hide_catalog" as const,
+  reason: "Review",
+  revision: 1,
+  members: [{ userId: "p1", displayName: "Partner 1", confirmToken: "t1", effects: [], warnings: [] }],
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  window.localStorage.clear();
+  api.fetchPartnerRegistry.mockResolvedValue({ items: rows, total: 6, nextCursor: null, facets });
+  api.previewPartnerLifecycle.mockImplementation(async (id: string) => ({
+    preview: { displayName: id, effects: ["effect"], warnings: [], confirmToken: `t-${id}` },
+  }));
+  api.applyPartnerLifecycle.mockResolvedValue({ ok: true });
+});
+
+async function open() {
+  const view = render(<AdminPartnersClient />);
+  await screen.findByText("Partner 1");
+  return view;
+}
+
+async function confirm() {
+  fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+  fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+  await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+  fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+  await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
+  fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+}
+
+describe("Independent mass-action safety", () => {
+  it("network loss is unknown, not definite rejection", async () => {
+    const result = await runBulkApplyQueue({
+      snapshot,
+      applyFn: async () => {
+        throw new RemcardApiError(0, "Сетевая ошибка");
+      },
+      shouldStop: () => false,
+      onRowStart: () => {},
+      onRowDone: () => {},
+    });
+    expect(result[0].outcome).toBe("unknown");
+  });
+
+  it("a pre-stopped queue settles without issuing any request", async () => {
+    const apply = vi.fn();
+    const result = await Promise.race([
+      runBulkApplyQueue({
+        snapshot,
+        applyFn: apply,
+        shouldStop: () => true,
+        onRowStart: () => {},
+        onRowDone: () => {},
+      }),
+      new Promise((resolve) => setTimeout(() => resolve("stuck"), 80)),
+    ]);
+    expect(result).not.toBe("stuck");
+    expect(apply).not.toHaveBeenCalled();
+  });
+
+  it("keeps stop control visible after the first completed member", () => {
+    render(
+      <AdminPartnersBulkPanel
+        selectedCount={2}
+        otherPagesCount={0}
+        onClearSelection={() => {}}
+        bulkReason="Review"
+        onBulkReasonChange={() => {}}
+        bulkAction="hide_catalog"
+        onBulkActionChange={() => {}}
+        onRequestBulkPreview={() => {}}
+        bulkPreview={snapshot}
+        onConfirmBulk={() => {}}
+        onCancelBulkPreview={() => {}}
+        previewLoading={false}
+        applying
+        applyProgress={{ done: 1, total: 2 }}
+        applyResults={[{ userId: "p1", displayName: "P1", outcome: "success" }]}
+        onStopApply={() => {}}
+        onExcludeFailedAndRetryPreview={() => {}}
+        previewFailures={null}
+        disabled
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Остановить оставшиеся" })).toBeInTheDocument();
+  });
+
+  it("locks metric filter chips while applying", async () => {
+    api.applyPartnerLifecycle.mockImplementation(() => new Promise(() => {}));
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await confirm();
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Демо 6" })).toBeDisabled();
+  });
+
+  it("allows starting a second group after retaining the first report", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await confirm();
+    await screen.findByText("Итог групповой операции");
+    await waitFor(() => expect(screen.getByLabelText("Выбрать Partner 1")).not.toBeChecked());
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    expect(screen.getByLabelText("Причина группового изменения")).toBeInTheDocument();
+  });
+
+  it("offers page-wide selection in cards, not just table", async () => {
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "Карточки", exact: true }));
+    expect(screen.getByRole("checkbox", { name: "Выбрать на странице" })).toBeInTheDocument();
+  });
+
+  it("cannot select old rows while a new filtered list is loading", async () => {
+    await open();
+    api.fetchPartnerRegistry.mockImplementation(() => new Promise(() => {}));
+    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
+    await waitFor(() => expect(api.fetchPartnerRegistry).toHaveBeenCalledTimes(2));
+    const old = screen.queryByLabelText("Выбрать Partner 1");
+    if (old) expect(old).toBeDisabled();
+  });
+
+  it("unmount stops all not-yet-started mutations", async () => {
+    const finishes = new Map<string, () => void>();
+    api.applyPartnerLifecycle.mockImplementation(
+      (id: string) => new Promise((resolve) => finishes.set(id, () => resolve({ ok: true }))),
+    );
+    const view = await open();
+    fireEvent.click(screen.getByLabelText("Выбрать на странице"));
+    await confirm();
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(3));
+    view.unmount();
+    for (const finish of [...finishes.values()]) finish();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(3);
+  });
+});

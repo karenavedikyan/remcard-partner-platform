@@ -31,6 +31,13 @@ type Props = {
   disabled: boolean;
 };
 
+function outcomeLabel(row: BulkApplyRowResult): string {
+  if (row.outcome === "success") return "успешно";
+  if (row.outcome === "error") return `ошибка${row.message ? ` — ${row.message}` : ""}`;
+  if (row.outcome === "stopped") return `не отправлено${row.message ? ` — ${row.message}` : ""}`;
+  return `исход неизвестен${row.message ? ` — ${row.message}` : ""}`;
+}
+
 export function AdminPartnersBulkPanel({
   selectedCount,
   otherPagesCount,
@@ -52,46 +59,74 @@ export function AdminPartnersBulkPanel({
   previewFailures,
   disabled,
 }: Props) {
-  if (selectedCount === 0 && !applyResults) return null;
+  if (selectedCount === 0 && !applyResults && !applying) return null;
+
+  const showSelectionHead = selectedCount > 0 || applying;
+  const showNewGroupForm = selectedCount > 0 && !applying && !bulkPreview;
+  const reportTitle = applying ? "Ход групповой операции" : "Итог групповой операции";
 
   return (
     <div className={styles.bulkPanel} role="region" aria-label="Групповые действия">
-      <div className={styles.bulkPanelHead}>
-        <p>
-          Выбрано: <strong>{selectedCount}</strong> (не более {MAX_BULK_SELECTION})
-          {otherPagesCount > 0 ? (
-            <span className={styles.bulkHint}>
-              {" "}
-              · на других страницах: {otherPagesCount}
-            </span>
-          ) : null}
-        </p>
-        <Button variant="secondary" disabled={disabled || applying} onClick={onClearSelection}>
-          Снять выбор
-        </Button>
-      </div>
+      {showSelectionHead ? (
+        <div className={styles.bulkPanelHead}>
+          <p>
+            Выбрано: <strong>{selectedCount}</strong> (не более {MAX_BULK_SELECTION})
+            {otherPagesCount > 0 ? (
+              <span className={styles.bulkHint}>
+                {" "}
+                · на других страницах: {otherPagesCount}
+              </span>
+            ) : null}
+          </p>
+          <Button variant="secondary" disabled={disabled || applying} onClick={onClearSelection}>
+            Снять выбор
+          </Button>
+        </div>
+      ) : null}
 
-      {applyResults ? (
+      {applyResults && applyResults.length > 0 ? (
         <div className={styles.bulkReport} aria-live="polite">
-          <h3>Итог групповой операции</h3>
+          <h3>{reportTitle}</h3>
+          {applying ? (
+            <p className={styles.bulkHint} role="status">
+              Применено {applyProgress.done} из {applyProgress.total}…
+            </p>
+          ) : null}
           <ul className={styles.bulkReportList}>
             {applyResults.map((row) => (
               <li key={row.userId} data-outcome={row.outcome}>
-                {row.displayName ?? row.userId}:{" "}
-                {row.outcome === "success"
-                  ? "успешно"
-                  : row.outcome === "error"
-                    ? `ошибка${row.message ? ` — ${row.message}` : ""}`
-                    : `исход неизвестен${row.message ? ` — ${row.message}` : ""}`}
+                {row.displayName ?? row.userId}: {outcomeLabel(row)}
               </li>
             ))}
           </ul>
-          <p className={styles.bulkHint}>
-            Для повторной попытки по ошибкам нужны свежий preview и подтверждение; успешные записи
-            повторно не отправляются автоматически.
-          </p>
+          {!applying ? (
+            <p className={styles.bulkHint}>
+              Для повторной попытки по ошибкам нужны свежий preview и подтверждение; успешные записи
+              повторно не отправляются автоматически. Выберите участников ниже для новой операции.
+            </p>
+          ) : null}
         </div>
-      ) : (
+      ) : null}
+
+      {applying && bulkPreview ? (
+        <div role="dialog" aria-label="Подтверждение группового изменения" className={styles.confirmation}>
+          <p>
+            Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}
+            {bulkPreview.members.length}
+          </p>
+          <p className={styles.bulkHint} role="status">
+            Применение {applyProgress.done}/{applyProgress.total}…
+          </p>
+          <div className={styles.actions}>
+            <Button disabled>{`Применение ${applyProgress.done}/${applyProgress.total}…`}</Button>
+            <Button variant="secondary" onClick={onStopApply}>
+              Остановить оставшиеся
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {showNewGroupForm ? (
         <>
           <p className={styles.bulkHint}>
             Групповое «удаление» — обратимое скрытие из каталога или архивирование профилей, без
@@ -103,7 +138,7 @@ export function AdminPartnersBulkPanel({
               aria-label="Причина группового изменения"
               rows={2}
               value={bulkReason}
-              disabled={disabled || applying || previewLoading || !!bulkPreview}
+              disabled={disabled || previewLoading}
               onChange={(e) => onBulkReasonChange(e.target.value)}
             />
           </label>
@@ -112,7 +147,7 @@ export function AdminPartnersBulkPanel({
             <select
               aria-label="Групповое действие"
               value={bulkAction}
-              disabled={disabled || applying || previewLoading || !!bulkPreview}
+              disabled={disabled || previewLoading}
               onChange={(e) => onBulkActionChange(e.target.value as BulkLifecycleAction | "")}
             >
               <option value="">Выберите действие</option>
@@ -148,48 +183,38 @@ export function AdminPartnersBulkPanel({
             </div>
           ) : null}
 
-          {bulkPreview ? (
-            <div role="dialog" aria-label="Подтверждение группового изменения" className={styles.confirmation}>
-              <p>
-                Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}
-                {bulkPreview.members.length}
-              </p>
-              <ul className={styles.bulkPreviewList}>
-                {bulkPreview.members.map((m) => (
-                  <li key={m.userId}>
-                    <strong>{m.displayName ?? m.userId}</strong>
-                    <span>{[...m.effects, ...m.warnings].join(" ")}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className={styles.actions}>
-                <Button disabled={applying} onClick={() => void onConfirmBulk()}>
-                  {applying
-                    ? `Применение ${applyProgress.done}/${applyProgress.total}…`
-                    : "Подтвердить группу"}
-                </Button>
-                {applying ? (
-                  <Button variant="secondary" onClick={onStopApply}>
-                    Остановить оставшиеся
-                  </Button>
-                ) : (
-                  <Button variant="secondary" onClick={onCancelBulkPreview}>
-                    Отмена
-                  </Button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="secondary"
-              disabled={disabled || previewLoading || !bulkReason.trim() || !bulkAction}
-              onClick={() => void onRequestBulkPreview()}
-            >
-              {previewLoading ? "Проверка…" : "Получить preview группы"}
-            </Button>
-          )}
+          <Button
+            variant="secondary"
+            disabled={disabled || previewLoading || !bulkReason.trim() || !bulkAction}
+            onClick={() => void onRequestBulkPreview()}
+          >
+            {previewLoading ? "Проверка…" : "Получить preview группы"}
+          </Button>
         </>
-      )}
+      ) : null}
+
+      {!applying && bulkPreview ? (
+        <div role="dialog" aria-label="Подтверждение группового изменения" className={styles.confirmation}>
+          <p>
+            Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}
+            {bulkPreview.members.length}
+          </p>
+          <ul className={styles.bulkPreviewList}>
+            {bulkPreview.members.map((m) => (
+              <li key={m.userId}>
+                <strong>{m.displayName ?? m.userId}</strong>
+                <span>{[...m.effects, ...m.warnings].join(" ")}</span>
+              </li>
+            ))}
+          </ul>
+          <div className={styles.actions}>
+            <Button onClick={() => void onConfirmBulk()}>Подтвердить группу</Button>
+            <Button variant="secondary" onClick={onCancelBulkPreview}>
+              Отмена
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

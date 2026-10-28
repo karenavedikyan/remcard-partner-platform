@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import { RemcardApiError } from "@/lib/api-client";
 import {
   bulkSnapshotMatches,
+  classifyBulkApplyError,
   fetchBulkPreviews,
   runBulkApplyQueue,
 } from "./adminPartnersBulkLifecycle";
@@ -59,7 +61,12 @@ describe("adminPartnersBulkLifecycle", () => {
     expect(applyFn).toHaveBeenCalledWith("u2", "archive_project", "Bulk reason", "t2");
   });
 
-  it("marks queued rows as unknown when stopped before send", async () => {
+  it("classifies network loss as unknown", () => {
+    expect(classifyBulkApplyError(new RemcardApiError(0, "Сетевая ошибка"))).toBe("unknown");
+    expect(classifyBulkApplyError(new RemcardApiError(403, "Forbidden"))).toBe("error");
+  });
+
+  it("marks queued rows as stopped when stopped before send", async () => {
     let sent = 0;
     const applyFn = vi.fn(async () => {
       sent += 1;
@@ -89,7 +96,7 @@ describe("adminPartnersBulkLifecycle", () => {
       onRowDone: () => {},
     });
     expect(applyFn).toHaveBeenCalledTimes(1);
-    expect(results.filter((r) => r.outcome === "unknown").length).toBeGreaterThan(0);
+    expect(results.filter((r) => r.outcome === "stopped").length).toBeGreaterThan(0);
   });
 
   it("detects snapshot drift", () => {

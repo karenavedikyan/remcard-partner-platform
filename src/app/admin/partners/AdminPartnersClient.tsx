@@ -100,9 +100,12 @@ export function AdminPartnersClient() {
   const [bulkApplyResults, setBulkApplyResults] = useState<BulkApplyRowResult[] | null>(null);
   const bulkStopRef = useRef(false);
   const bulkRevisionRef = useRef(0);
+  const previewRequestGen = useRef(0);
+  const mountedRef = useRef(true);
 
   const loadVersion = useRef(0);
   const headerSelectRef = useRef<HTMLInputElement>(null);
+  const cardsPageSelectRef = useRef<HTMLInputElement>(null);
 
   const currentCursor = cursorStack[stackIndex] ?? null;
 
@@ -113,6 +116,22 @@ export function AdminPartnersClient() {
   );
 
   const interactionsDisabled = bulkApplying || isApplyingSingle || bulkPreviewLoading;
+  const listInteractionsDisabled = interactionsDisabled || loading;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      bulkStopRef.current = true;
+      loadVersion.current += 1;
+      previewRequestGen.current += 1;
+    };
+  }, []);
+
+  function guardFilterChange<T>(setter: (value: T) => void, value: T) {
+    if (interactionsDisabled) return;
+    setter(value);
+  }
 
   useLayoutEffect(() => {
     if (lastSyncedUrlKeyRef.current === urlFilterKey) return;
@@ -120,9 +139,10 @@ export function AdminPartnersClient() {
     const next = registryFiltersFromSearchParams(searchParams);
     setRegistration(next.registration);
     setPartnerType(next.partnerType);
+    if (interactionsDisabled) return;
     resetPagination();
-    resetSelectionAndBulk();
-  }, [urlFilterKey, searchParams]);
+    resetWorkflowForFilterChange();
+  }, [urlFilterKey, searchParams, interactionsDisabled]);
 
   useEffect(() => {
     setViewMode(defaultViewMode());
@@ -134,7 +154,7 @@ export function AdminPartnersClient() {
     window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
   }, [viewMode, viewModeReady]);
 
-  function resetSelectionAndBulk() {
+  function resetWorkflowForFilterChange() {
     setSelectedIds(clearAllSelection());
     setSelectionLimitHit(false);
     setBulkPreview(null);
@@ -166,7 +186,7 @@ export function AdminPartnersClient() {
         if (archived) params.set("projectArchived", archived);
         if (cursor) params.set("cursor", cursor);
         const data = await fetchPartnerRegistry(params);
-        if (version !== loadVersion.current) return;
+        if (version !== loadVersion.current || !mountedRef.current) return;
         setItems(data.items);
         setTotal(data.total);
         setFacets(data.facets ?? null);
@@ -186,23 +206,27 @@ export function AdminPartnersClient() {
   useEffect(() => {
     if (prevFilterSignature.current !== filterSignature) {
       prevFilterSignature.current = filterSignature;
+      setItems([]);
       resetPagination();
-      resetSelectionAndBulk();
-      setSingleSelected(null);
-      setPendingPreview(null);
-      setReason("");
+      if (!interactionsDisabled) {
+        resetWorkflowForFilterChange();
+        setSingleSelected(null);
+        setPendingPreview(null);
+        setReason("");
+      }
     }
     void loadPage(currentCursor);
-  }, [filterSignature, currentCursor, loadPage]);
+  }, [filterSignature, currentCursor, loadPage, interactionsDisabled]);
 
   const pageIds = useMemo(() => items.map((i) => i.id), [items]);
   const pageSelect = pageSelectionState(selectedIds, pageIds);
   const otherPagesSelected = selectedOnOtherPagesCount(selectedIds, pageIds);
 
   useLayoutEffect(() => {
-    const el = headerSelectRef.current;
-    if (!el) return;
-    el.indeterminate = pageSelect === "partial";
+    for (const el of [headerSelectRef.current, cardsPageSelectRef.current]) {
+      if (!el) continue;
+      el.indeterminate = pageSelect === "partial";
+    }
   }, [pageSelect, viewMode]);
 
   function invalidateBulkPreview() {
@@ -274,6 +298,7 @@ export function AdminPartnersClient() {
 
   async function requestBulkPreviewForMembers(members: SelectedPartnerRef[]) {
     if (members.length === 0 || !bulkAction || !bulkReason.trim()) return;
+    const gen = ++previewRequestGen.current;
     setBulkPreviewLoading(true);
     setBulkPreviewFailures(null);
     setError(null);
@@ -282,6 +307,7 @@ export function AdminPartnersClient() {
       bulkAction,
       previewPartnerLifecycle,
     );
+    if (gen !== previewRequestGen.current || !mountedRef.current) return;
     setBulkPreviewLoading(false);
     if ("failures" in result) {
       setBulkPreviewFailures(result.failures);
@@ -320,19 +346,22 @@ export function AdminPartnersClient() {
     setBulkApplying(true);
     bulkStopRef.current = false;
     setBulkApplyProgress({ done: 0, total: bulkPreview.members.length });
+    setBulkApplyResults([]);
     const liveResults: BulkApplyRowResult[] = [];
     try {
       await runBulkApplyQueue({
         snapshot: bulkPreview,
         applyFn: applyPartnerLifecycle,
-        shouldStop: () => bulkStopRef.current,
+        shouldStop: () => bulkStopRef.current || !mountedRef.current,
         onRowStart: () => {},
         onRowDone: (row) => {
+          if (!mountedRef.current) return;
           liveResults.push(row);
           setBulkApplyProgress((p) => ({ ...p, done: p.done + 1 }));
           setBulkApplyResults([...liveResults]);
         },
       });
+      if (!mountedRef.current) return;
       setBulkPreview(null);
       setSelectedIds(clearAllSelection());
       try {
@@ -341,7 +370,7 @@ export function AdminPartnersClient() {
         /* keep apply report */
       }
     } finally {
-      setBulkApplying(false);
+      if (mountedRef.current) setBulkApplying(false);
     }
   }
 
@@ -378,10 +407,11 @@ export function AdminPartnersClient() {
         registration={registration}
         catalog={catalog}
         archived={archived}
-        onPartnerType={setPartnerType}
-        onRegistration={setRegistration}
-        onCatalog={setCatalog}
-        onArchived={setArchived}
+        filtersDisabled={interactionsDisabled}
+        onPartnerType={(v) => guardFilterChange(setPartnerType, v)}
+        onRegistration={(v) => guardFilterChange(setRegistration, v)}
+        onCatalog={(v) => guardFilterChange(setCatalog, v)}
+        onArchived={(v) => guardFilterChange(setArchived, v)}
       />
       <div className={styles.filters}>
         <label className={styles.field}>
@@ -389,7 +419,7 @@ export function AdminPartnersClient() {
           <input
             placeholder="Поиск"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => guardFilterChange(setQ, e.target.value)}
             aria-label="Поиск партнёров"
             disabled={interactionsDisabled}
           />
@@ -398,7 +428,7 @@ export function AdminPartnersClient() {
           Регистрация
           <select
             value={registration}
-            onChange={(e) => setRegistration(e.target.value)}
+            onChange={(e) => guardFilterChange(setRegistration, e.target.value)}
             aria-label="Регистрация"
             disabled={interactionsDisabled}
           >
@@ -412,7 +442,7 @@ export function AdminPartnersClient() {
           <select
             aria-label="Тип партнёра"
             value={partnerType}
-            onChange={(e) => setPartnerType(e.target.value)}
+            onChange={(e) => guardFilterChange(setPartnerType, e.target.value)}
             disabled={interactionsDisabled}
           >
             <option value="">Все типы партнёров</option>
@@ -428,7 +458,7 @@ export function AdminPartnersClient() {
             aria-label="Город"
             placeholder="Например, Краснодар"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={(e) => guardFilterChange(setCity, e.target.value)}
             disabled={interactionsDisabled}
           />
         </label>
@@ -437,7 +467,7 @@ export function AdminPartnersClient() {
           <select
             aria-label="Видимость в каталоге"
             value={catalog}
-            onChange={(e) => setCatalog(e.target.value)}
+            onChange={(e) => guardFilterChange(setCatalog, e.target.value)}
             disabled={interactionsDisabled}
           >
             <option value="">Вся видимость</option>
@@ -448,7 +478,7 @@ export function AdminPartnersClient() {
         </label>
         <label className={styles.field}>
           Архив
-          <select aria-label="Архив" value={archived} onChange={(e) => setArchived(e.target.value)} disabled={interactionsDisabled}>
+          <select aria-label="Архив" value={archived} onChange={(e) => guardFilterChange(setArchived, e.target.value)} disabled={interactionsDisabled}>
             <option value="">Все профили</option>
             <option value="false">Не архивные</option>
             <option value="true">В архиве</option>
@@ -460,7 +490,9 @@ export function AdminPartnersClient() {
             aria-label="Записей на странице"
             value={pageLimit}
             disabled={interactionsDisabled}
-            onChange={(e) => setPageLimit(Number(e.target.value) as RegistryPageSize)}
+            onChange={(e) =>
+              guardFilterChange(setPageLimit, Number(e.target.value) as RegistryPageSize)
+            }
           >
             {REGISTRY_PAGE_SIZES.map((n) => (
               <option key={n} value={n}>
@@ -581,8 +613,9 @@ export function AdminPartnersClient() {
           onRequestPreview={(action) => void requestPreview(action)}
           onConfirmApply={() => void confirmApply()}
           isApplyingSingle={isApplyingSingle}
-          interactionsDisabled={interactionsDisabled}
+          interactionsDisabled={listInteractionsDisabled}
           headerSelectRef={headerSelectRef}
+          cardsPageSelectRef={cardsPageSelectRef}
         />
         {!loading && !error && items.length === 0 ? (
           <p className={styles.empty}>Партнёры не найдены. Измените условия поиска.</p>

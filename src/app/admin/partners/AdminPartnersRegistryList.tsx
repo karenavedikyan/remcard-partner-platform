@@ -42,6 +42,7 @@ type ListProps = {
   isApplyingSingle: boolean;
   interactionsDisabled: boolean;
   headerSelectRef: React.RefObject<HTMLInputElement>;
+  cardsPageSelectRef: React.RefObject<HTMLInputElement>;
 };
 
 function RowLinksMenu({ row }: { row: PartnerRegistryItem }) {
@@ -95,11 +96,24 @@ export function AdminPartnersRegistryList(props: ListProps) {
     isApplyingSingle,
     interactionsDisabled,
     headerSelectRef,
+    cardsPageSelectRef,
   } = props;
 
   if (viewMode === "cards") {
     return (
-      <div className={styles.cardGrid} aria-label="Реестр партнёров" aria-busy={loading}>
+      <div className={styles.cardGridWrap}>
+        <label className={styles.pageSelectBar}>
+          <input
+            ref={cardsPageSelectRef}
+            type="checkbox"
+            aria-label="Выбрать на странице"
+            checked={pageSelectState === "all"}
+            disabled={interactionsDisabled || items.length === 0}
+            onChange={onTogglePageSelect}
+          />
+          <span>Выбрать на странице</span>
+        </label>
+        <div className={styles.cardGrid} aria-label="Реестр партнёров" aria-busy={loading}>
         {items.map((row) => {
           const checked = selectedIds.has(row.id);
           const expanded = singleSelected?.id === row.id;
@@ -109,6 +123,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
                 <label className={styles.rowCheck}>
                   <input
                     type="checkbox"
+                    className={styles.rowCheckInput}
                     aria-label={`Выбрать ${row.displayName ?? row.id}`}
                     checked={checked}
                     disabled={interactionsDisabled}
@@ -167,6 +182,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
             </article>
           );
         })}
+        </div>
       </div>
     );
   }
@@ -176,14 +192,17 @@ export function AdminPartnersRegistryList(props: ListProps) {
       <thead className={styles.tableHeadSticky}>
         <tr>
           <th className={styles.checkCol}>
-            <input
-              ref={headerSelectRef}
-              type="checkbox"
-              aria-label="Выбрать на странице"
-              checked={pageSelectState === "all"}
-              disabled={interactionsDisabled || items.length === 0}
-              onChange={onTogglePageSelect}
-            />
+            <label className={styles.headerCheckLabel}>
+              <input
+                ref={headerSelectRef}
+                type="checkbox"
+                className={styles.rowCheckInput}
+                aria-label="Выбрать на странице"
+                checked={pageSelectState === "all"}
+                disabled={interactionsDisabled || items.length === 0}
+                onChange={onTogglePageSelect}
+              />
+            </label>
           </th>
           <th>Имя</th>
           <th>Тип</th>
@@ -201,13 +220,16 @@ export function AdminPartnersRegistryList(props: ListProps) {
             <Fragment key={row.id}>
               <tr className={styles.compactRow}>
                 <td data-label="Выбор" className={styles.checkCol}>
-                  <input
-                    type="checkbox"
-                    aria-label={`Выбрать ${row.displayName ?? row.id}`}
-                    checked={selectedIds.has(row.id)}
-                    disabled={interactionsDisabled}
-                    onChange={() => onToggleRow(row)}
-                  />
+                  <label className={styles.rowCheck}>
+                    <input
+                      type="checkbox"
+                      className={styles.rowCheckInput}
+                      aria-label={`Выбрать ${row.displayName ?? row.id}`}
+                      checked={selectedIds.has(row.id)}
+                      disabled={interactionsDisabled}
+                      onChange={() => onToggleRow(row)}
+                    />
+                  </label>
                 </td>
                 <td data-label="Имя">{row.displayName ?? row.id}</td>
                 <td data-label="Тип">{partnerTypeLabel(row)}</td>

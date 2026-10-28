@@ -14,6 +14,7 @@ type Props = {
   onRegistration: (value: string) => void;
   onCatalog: (value: string) => void;
   onArchived: (value: string) => void;
+  filtersDisabled?: boolean;
 };
 
 const KIND_BUTTONS: { label: string; param: string; key: keyof PartnerRegistryFacets["partnerKind"] }[] = [
@@ -25,7 +26,7 @@ const KIND_BUTTONS: { label: string; param: string; key: keyof PartnerRegistryFa
 ];
 
 export function AdminPartnersMetricsBar(props: Props) {
-  const { facets, matchedTotal, partnerType } = props;
+  const { facets, matchedTotal, partnerType, filtersDisabled = false } = props;
   const unknown = facets?.partnerKind.unknown ?? 0;
 
   return (
@@ -46,6 +47,7 @@ export function AdminPartnersMetricsBar(props: Props) {
             type="button"
             className={`${styles.metricChip} ${partnerType === param ? styles.metricChipActive : ""}`}
             aria-pressed={partnerType === param}
+            disabled={filtersDisabled}
             onClick={() => props.onPartnerType(param)}
           >
             <span>{label}</span>
@@ -60,19 +62,19 @@ export function AdminPartnersMetricsBar(props: Props) {
       </div>
       {facets ? (
         <div className={styles.metricsCompact} role="group" aria-label="Дополнительные показатели">
-          <button type="button" className={styles.metricChipSmall} aria-pressed={props.registration === "active"} onClick={() => props.onRegistration(props.registration === "active" ? "" : "active")}>
+          <button type="button" className={styles.metricChipSmall} disabled={filtersDisabled} aria-pressed={props.registration === "active"} onClick={() => props.onRegistration(props.registration === "active" ? "" : "active")}>
             Новая регистрация <strong>{facets.registration.active}</strong>
           </button>
-          <button type="button" className={styles.metricChipSmall} aria-pressed={props.registration === "demo"} onClick={() => props.onRegistration(props.registration === "demo" ? "" : "demo")}>
+          <button type="button" className={styles.metricChipSmall} disabled={filtersDisabled} aria-pressed={props.registration === "demo"} onClick={() => props.onRegistration(props.registration === "demo" ? "" : "demo")}>
             Демо <strong>{facets.registration.demo}</strong>
           </button>
-          <button type="button" className={styles.metricChipSmall} aria-pressed={props.catalog === "visible"} onClick={() => props.onCatalog(props.catalog === "visible" ? "" : "visible")}>
+          <button type="button" className={styles.metricChipSmall} disabled={filtersDisabled} aria-pressed={props.catalog === "visible"} onClick={() => props.onCatalog(props.catalog === "visible" ? "" : "visible")}>
             В каталоге <strong>{facets.catalog.visible}</strong>
           </button>
-          <button type="button" className={styles.metricChipSmall} aria-pressed={props.catalog === "hidden"} onClick={() => props.onCatalog(props.catalog === "hidden" ? "" : "hidden")}>
+          <button type="button" className={styles.metricChipSmall} disabled={filtersDisabled} aria-pressed={props.catalog === "hidden"} onClick={() => props.onCatalog(props.catalog === "hidden" ? "" : "hidden")}>
             Скрыты <strong>{facets.catalog.hidden}</strong>
           </button>
-          <button type="button" className={styles.metricChipSmall} aria-pressed={props.archived === "true"} onClick={() => props.onArchived(props.archived === "true" ? "" : "true")}>
+          <button type="button" className={styles.metricChipSmall} disabled={filtersDisabled} aria-pressed={props.archived === "true"} onClick={() => props.onArchived(props.archived === "true" ? "" : "true")}>
             Архив <strong>{facets.archive.archived}</strong>
           </button>
         </div>

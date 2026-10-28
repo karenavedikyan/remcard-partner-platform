@@ -1,5 +1,6 @@
 import type { BulkLifecycleAction } from "@/app/admin/partners/adminPartnersRegistryConstants";
 import { BULK_APPLY_CONCURRENCY } from "@/app/admin/partners/adminPartnersRegistryConstants";
+import { RemcardApiError } from "@/lib/api-client";
 
 export type BulkPreviewMember = {
   userId: string;
@@ -23,7 +24,7 @@ export type BulkPreviewFailure = {
   message: string;
 };
 
-export type BulkApplyOutcome = "success" | "error" | "unknown";
+export type BulkApplyOutcome = "success" | "error" | "unknown" | "stopped";
 
 export type BulkApplyRowResult = {
   userId: string;
@@ -31,6 +32,17 @@ export type BulkApplyRowResult = {
   outcome: BulkApplyOutcome;
   message?: string;
 };
+
+export function classifyBulkApplyError(error: unknown): BulkApplyOutcome {
+  if (error instanceof RemcardApiError) {
+    if (error.status === 0) return "unknown";
+    if (error.status >= 500) return "unknown";
+    if (error.message === "Некорректный ответ сервера") return "unknown";
+    if (error.status >= 400 && error.status < 500) return "error";
+    return "unknown";
+  }
+  return "unknown";
+}
 
 export async function fetchBulkPreviews(
   members: readonly { userId: string; displayName: string | null }[],
@@ -118,9 +130,38 @@ export async function runBulkApplyQueue(options: {
   const queue = [...snapshot.members];
   let inFlight = 0;
   let index = 0;
+  let settled = false;
 
   return new Promise((resolve) => {
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve(results);
+    };
+
+    const markStoppedRemaining = () => {
+      while (index < queue.length) {
+        const member = queue[index++];
+        const row: BulkApplyRowResult = {
+          userId: member.userId,
+          displayName: member.displayName,
+          outcome: "stopped",
+          message: "Остановлено до отправки",
+        };
+        results.push(row);
+        onRowDone(row);
+      }
+    };
+
     const pump = () => {
+      if (settled) return;
+
+      if (shouldStop() && inFlight === 0) {
+        markStoppedRemaining();
+        finish();
+        return;
+      }
+
       while (!shouldStop() && inFlight < concurrency && index < queue.length) {
         const member = queue[index++];
         inFlight += 1;
@@ -136,10 +177,11 @@ export async function runBulkApplyQueue(options: {
             onRowDone(row);
           })
           .catch((e) => {
+            const outcome = classifyBulkApplyError(e);
             const row: BulkApplyRowResult = {
               userId: member.userId,
               displayName: member.displayName,
-              outcome: "error",
+              outcome,
               message: e instanceof Error ? e.message : "Ошибка применения",
             };
             results.push(row);
@@ -147,29 +189,19 @@ export async function runBulkApplyQueue(options: {
           })
           .finally(() => {
             inFlight -= 1;
-            if (inFlight === 0 && shouldStop() && index < queue.length) {
-              while (index < queue.length) {
-                const member = queue[index++];
-                const row: BulkApplyRowResult = {
-                  userId: member.userId,
-                  displayName: member.displayName,
-                  outcome: "unknown",
-                  message: "Остановлено до отправки",
-                };
-                results.push(row);
-                onRowDone(row);
-              }
-              resolve(results);
+            if (index >= queue.length && inFlight === 0) {
+              finish();
               return;
             }
-            if (index >= queue.length && inFlight === 0) {
-              resolve(results);
-            } else {
-              pump();
-            }
+            pump();
           });
       }
+
+      if (index >= queue.length && inFlight === 0) {
+        finish();
+      }
     };
+
     pump();
   });
 }
