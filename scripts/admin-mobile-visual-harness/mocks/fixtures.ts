@@ -47,47 +47,61 @@ export function managementOverview(period: string): ManagementOverview {
 const longPartnerName =
   "ООО «Строительно-монтажное объединение Южный берег с очень длинным названием для мобильной вёрстки»";
 
-export const registryRows = [
-  {
-    id: "partner-a",
-    publicId: "RC-MOB-A",
-    displayName: longPartnerName,
-    partnerType: "COMPANY",
-    partnerKind: "company",
-    city: "Краснодар",
-    registrationLabel: "LIVE",
-    lifecycle: null,
-    catalogVisibility: "VISIBLE",
-    publicCatalogLinks: [{ label: "Карточка партнёра", path: "/partner/partner-a" }],
-    organizations: [{ id: "org-a", name: "Филиал с длинным юридическим наименованием для проверки переносов" }],
-  },
-  {
-    id: "partner-b",
-    publicId: "RC-MOB-B",
-    displayName: "Демо агент Сочи",
-    partnerType: "AGENT",
-    partnerKind: "agent",
-    city: "Сочи",
-    registrationLabel: "DEMO",
-    lifecycle: { catalogHiddenAt: "2026-10-20T00:00:00.000Z", projectArchivedAt: null },
-    catalogVisibility: "HIDDEN",
-    publicCatalogLinks: [],
-    organizations: [],
-  },
-  {
-    id: "partner-c",
-    publicId: "RC-MOB-C",
-    displayName: "Магазин обоев",
-    partnerType: "STORE",
-    partnerKind: "store",
-    city: "Москва",
-    registrationLabel: "LIVE",
-    lifecycle: null,
-    catalogVisibility: "VISIBLE",
-    publicCatalogLinks: [{ label: "Витрина", path: "/store/partner-c" }],
-    organizations: [{ id: "org-c", name: "Обои и декор" }],
-  },
-];
+const REGISTRY_KINDS = [
+  { partnerType: "COMPANY", partnerKind: "company", city: "Краснодар" },
+  { partnerType: "AGENT", partnerKind: "agent", city: "Сочи" },
+  { partnerType: "STORE", partnerKind: "store", city: "Москва" },
+  { partnerType: "MASTER", partnerKind: "specialist", city: "Санкт-Петербург" },
+] as const;
+
+function syntheticRegistryRow(index: number) {
+  const kind = REGISTRY_KINDS[index % REGISTRY_KINDS.length];
+  const isDemo = index % 5 === 1;
+  const isHidden = index % 7 === 3;
+  const hasCounts = index % 4 !== 0;
+  const hasSearchVisibility = index % 6 !== 2;
+  return {
+    id: `partner-${index}`,
+    publicId: `RC-SYN-${index}`,
+    displayName:
+      index === 0
+        ? longPartnerName
+        : `Синтетический партнёр ${index} · ${kind.partnerType}`,
+    partnerType: kind.partnerType,
+    partnerKind: kind.partnerKind,
+    city: kind.city,
+    registrationLabel: isDemo ? "DEMO" : "LIVE",
+    lifecycle: isHidden
+      ? { catalogHiddenAt: "2026-10-20T00:00:00.000Z", projectArchivedAt: null }
+      : null,
+    catalogVisibility: isHidden ? "HIDDEN" : "VISIBLE",
+    publicCatalogLinks:
+      index % 3 === 0 ? [] : [{ label: "Карточка", path: `/partner/partner-${index}` }],
+    organizations:
+      index % 2 === 0
+        ? [{ id: `org-${index}`, name: `Организация ${index} с длинным названием` }]
+        : [],
+    partnershipCounts: hasCounts
+      ? {
+          active: index % 9,
+          invited: index % 3,
+          pending: index % 2,
+          paused: 0,
+          ended: index % 4,
+          total: index % 11,
+        }
+      : undefined,
+    partnerSearchVisibility: hasSearchVisibility
+      ? {
+          visible: index % 8 !== 0,
+          adminOverride: index % 10 === 0 ? "force_hidden" : null,
+          reasonLabel: index % 9 === 0 ? "Скрыт администратором" : null,
+        }
+      : undefined,
+  };
+}
+
+export const registryRows = Array.from({ length: 28 }, (_, i) => syntheticRegistryRow(i));
 
 export const moderationQueue: ModerationQueueResponse = {
   items: [

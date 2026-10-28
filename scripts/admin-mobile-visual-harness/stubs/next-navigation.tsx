@@ -39,9 +39,10 @@ export function useRouter() {
 
 export function useSearchParams() {
   const hash = window.location.hash.replace(/^#/, "");
+  const pathPart = hash.split("?")[0] ?? hash;
   const qIdx = hash.indexOf("?");
   if (qIdx >= 0) return new URLSearchParams(hash.slice(qIdx + 1));
-  if (hash.includes("partners/partnerships")) {
+  if (pathPart.includes("partners/partnerships")) {
     return new URLSearchParams("status=ACTIVE&contextName=Owner+Partner");
   }
   return new URLSearchParams(window.location.search);
