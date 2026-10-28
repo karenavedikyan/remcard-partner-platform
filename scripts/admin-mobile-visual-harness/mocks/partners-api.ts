@@ -19,10 +19,20 @@ export async function fetchPartnerRegistry(params?: URLSearchParams) {
   if (q) items = items.filter((row) => (row.displayName ?? "").toLowerCase().includes(q));
   const limit = Math.min(Number(params?.get("limit") ?? "25") || 25, 100);
   const total = items.length;
+  const cursor = params?.get("cursor");
+  let offset = 0;
+  if (cursor?.startsWith("off:")) {
+    offset = Math.min(Math.max(0, Number.parseInt(cursor.slice(4), 10) || 0), total);
+  } else if (cursor === "page-2") {
+    offset = limit;
+  }
+  const pageItems = items.slice(offset, offset + limit);
+  const nextOffset = offset + limit;
+  const nextCursor = nextOffset < total ? `off:${nextOffset}` : null;
   return {
-    items: items.slice(0, limit),
+    items: pageItems,
     total,
-    nextCursor: total > limit ? "page-2" : null,
+    nextCursor,
     facets: {
       matchedTotal: total,
       partnerKind: {

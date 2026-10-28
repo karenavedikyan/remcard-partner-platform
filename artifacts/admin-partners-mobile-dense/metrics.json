@@ -1,0 +1,130 @@
+{
+  "capturedAt": "2026-10-28T16:24:25.479Z",
+  "browser": "playwright-chromium",
+  "scenes": [
+    {
+      "file": "partners-375-light-viewport.png",
+      "theme": "light",
+      "viewport": "375",
+      "pageOverflow": false,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "denseList": true,
+      "rowCount": 22,
+      "fullyVisibleRows": 2,
+      "firstRowTop": 607.1,
+      "firstRowHeight": 85.4,
+      "statusSample": "Каталог: Виден в каталоге. Поиск сотрудничества: Не виден партнёрам. Связей: нет данных"
+    },
+    {
+      "file": "partners-430-light-viewport.png",
+      "theme": "light",
+      "viewport": "430",
+      "pageOverflow": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "denseList": true,
+      "rowCount": 22,
+      "fullyVisibleRows": 6,
+      "firstRowTop": 468.4,
+      "firstRowHeight": 85.4,
+      "statusSample": "Каталог: Виден в каталоге. Поиск сотрудничества: Не виден партнёрам. Связей: нет данных"
+    },
+    {
+      "file": "partners-320-light-viewport.png",
+      "theme": "light",
+      "viewport": "320",
+      "pageOverflow": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "denseList": true,
+      "rowCount": 22,
+      "fullyVisibleRows": 0,
+      "firstRowTop": 607.1,
+      "firstRowHeight": 85.4,
+      "statusSample": "Каталог: Виден в каталоге. Поиск сотрудничества: Не виден партнёрам. Связей: нет данных"
+    },
+    {
+      "file": "partners-1440-light-viewport.png",
+      "theme": "light",
+      "viewport": "1440",
+      "pageOverflow": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "denseList": false,
+      "rowCount": 25,
+      "fullyVisibleRows": 0,
+      "firstRowTop": 896.4,
+      "firstRowHeight": 198.6,
+      "statusSample": null
+    },
+    {
+      "file": "partners-375-dark-viewport.png",
+      "theme": "dark",
+      "viewport": "375",
+      "pageOverflow": false,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "denseList": true,
+      "rowCount": 22,
+      "fullyVisibleRows": 2,
+      "firstRowTop": 607.1,
+      "firstRowHeight": 85.4,
+      "statusSample": "Каталог: Виден в каталоге. Поиск сотрудничества: Не виден партнёрам. Связей: нет данных"
+    },
+    {
+      "file": "partners-430-dark-viewport.png",
+      "theme": "dark",
+      "viewport": "430",
+      "pageOverflow": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "denseList": true,
+      "rowCount": 22,
+      "fullyVisibleRows": 6,
+      "firstRowTop": 468.4,
+      "firstRowHeight": 85.4,
+      "statusSample": "Каталог: Виден в каталоге. Поиск сотрудничества: Не виден партнёрам. Связей: нет данных"
+    },
+    {
+      "file": "partners-320-dark-viewport.png",
+      "theme": "dark",
+      "viewport": "320",
+      "pageOverflow": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "denseList": true,
+      "rowCount": 22,
+      "fullyVisibleRows": 0,
+      "firstRowTop": 607.1,
+      "firstRowHeight": 85.4,
+      "statusSample": "Каталог: Виден в каталоге. Поиск сотрудничества: Не виден партнёрам. Связей: нет данных"
+    }
+  ],
+  "interactions": [
+    {
+      "step": "checkbox-no-expand",
+      "expanded": 0
+    },
+    {
+      "step": "expand-long-name",
+      "details": 1
+    },
+    {
+      "step": "switch-expand",
+      "openRegions": 5
+    },
+    {
+      "step": "pagination-page2",
+      "page1Rows": 25,
+      "page2Rows": 3,
+      "nextEnabled": true,
+      "firstRowChanged": true,
+      "harnessNote": "Harness-only: fetchPartnerRegistry cursor off:N; production API not exercised"
+    },
+    {
+      "step": "filters",
+      "ok": true
+    }
+  ]
+}
