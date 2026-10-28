@@ -64,6 +64,16 @@ function openMessengerForLogin(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+function messengerWaitHint(provider: AuthLoginProvider): string {
+  const name = provider === "MAX" ? "MAX" : "Telegram";
+  return `Откройте ${name}, дождитесь кода и вернитесь к этой форме.`;
+}
+
+function messengerResendHint(provider: AuthLoginProvider): string {
+  const name = provider === "MAX" ? "MAX" : "Telegram";
+  return `Снова открыли ${name} с входом для кабинета партнёра. Дождитесь кода и введите его здесь.`;
+}
+
 export function AuthFlow({
   returnTo,
   reason,
@@ -244,7 +254,7 @@ export function AuthFlow({
     (next: AuthLoginProvider) => {
       setProvider(next);
       setError("");
-      setResendStatus("");
+      setResendStatus(messengerWaitHint(next));
       setStep("code");
       openMessengerForLogin(messengerLoginUrl(next, maxBotUrl, telegramBotUrl));
     },
@@ -254,9 +264,7 @@ export function AuthFlow({
   const resendCode = useCallback(() => {
     setError("");
     openMessengerForLogin(messengerLoginUrl(provider, maxBotUrl, telegramBotUrl));
-    setResendStatus(
-      "Откройте бота и запросите новый код командой /login prof, если сообщение не пришло.",
-    );
+    setResendStatus(messengerResendHint(provider));
   }, [maxBotUrl, provider, telegramBotUrl]);
 
   const submitCode = useCallback(
@@ -571,8 +579,9 @@ export function AuthFlow({
       </span>
       <h1 className={styles.title}>Введите одноразовый код</h1>
       <p className={styles.lead}>
-        Код приходит от бота {provider === "MAX" ? "MAX" : "Telegram"}. Откройте мессенджер, если
-        ещё не запросили код командой /login prof.
+        Одноразовый код приходит от бота RemCard в {provider === "MAX" ? "MAX" : "Telegram"} после
+        входа через кнопку на этом сайте. Сайт не подтверждает доставку — дождитесь сообщения в
+        мессенджере и введите код ниже.
       </p>
       <form onSubmit={(event) => void submitCode(event)}>
         <OtpInput

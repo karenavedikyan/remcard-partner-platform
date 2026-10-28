@@ -320,7 +320,7 @@ describe("AuthFlow", () => {
     await ui.click(screen.getByRole("button", { name: /получить код повторно/i }));
     expect(openSpy).toHaveBeenCalledTimes(2);
     await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(/\/login prof/i);
+      expect(screen.getByRole("status")).toHaveTextContent(/дождитесь кода/i);
     });
   });
 });
