@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
+import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import styles from "./Admin.module.css";
 
@@ -13,6 +14,7 @@ export type AdminAccountIdentity = {
 export function AdminAccountControls({ identity }: { identity: AdminAccountIdentity | null }) {
   return (
     <div className={styles.accountControls} role="group" aria-label="Аккаунт и внешний вид">
+      <AdminNotificationBell enabled={Boolean(identity)} />
       <ThemeToggle />
       {identity ? (
         <AccountSessionMenu
