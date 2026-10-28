@@ -4,19 +4,16 @@ import Link from "next/link";
 import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
 import { AdminPartnersSingleManagementPanel } from "./AdminPartnersSingleManagementPanel";
 import styles from "./AdminPartners.module.css";
-import {
-  catalogStatusClass,
-  catalogStatusLabel,
-  filteredPublicLinks,
-  partnerTypeLabel,
-} from "./partnerRegistryDisplay";
+import { filteredPublicLinks, partnerTypeLabel } from "./partnerRegistryDisplay";
 import { PartnerCollaborationBlock } from "./PartnerCollaborationBlock";
 import type { PageSelectionState } from "./adminPartnersSelection";
-import {
-  collaborationVisibilityPresentation,
-  collaborationVisibilityPrimaryLabel,
-  partnershipCountsSummary,
-} from "./partnerCollaborationDisplay";
+import { denseRegistryRowStatusParts } from "./partnerCollaborationDisplay";
+
+function statusTokenClass(token: "да" | "нет" | "н/д", styles: Record<string, string>): string {
+  if (token === "да") return styles.denseStatYes;
+  if (token === "нет") return styles.denseStatNo;
+  return styles.denseStatNd;
+}
 
 type PendingPreview = {
   action: string;
@@ -121,10 +118,7 @@ export function AdminPartnersDenseRegistryList(props: Props) {
           const checked = selectedIds.has(row.id);
           const expanded = singleSelected?.id === row.id;
           const displayName = row.displayName ?? row.id;
-          const collabPresentation = collaborationVisibilityPresentation(row);
-          const collabPrimary = collaborationVisibilityPrimaryLabel(collabPresentation);
-          const counts = partnershipCountsSummary(row);
-          const catalogLabel = catalogStatusLabel(row);
+          const statusParts = denseRegistryRowStatusParts(row);
 
           return (
             <li
@@ -157,14 +151,37 @@ export function AdminPartnersDenseRegistryList(props: Props) {
                   <span className={styles.denseMeta}>
                     {partnerTypeLabel(row)} · {row.city ?? "—"} · {registrationShort(row)}
                   </span>
-                  <span
-                    className={`${styles.denseStatusLine} ${catalogStatusClass(row, styles.denseStatusCatalogVisible, styles.denseStatusCatalogMuted)}`}
-                    title={`${catalogLabel} · ${collabPrimary}`}
-                  >
-                    {catalogLabel} · {collabPrimary}
-                    {counts.hasData
-                      ? ` · связей ${counts.total}${counts.active !== "—" ? ` (акт. ${counts.active})` : ""}`
-                      : " · связей: нет данных"}
+                  <span className={styles.denseStatusLine} aria-label={statusParts.ariaLabel}>
+                    <span className={styles.denseStatusSegment}>
+                      Каталог:
+                      <span className={statusTokenClass(statusParts.catalog, styles)}>
+                        {statusParts.catalog}
+                      </span>
+                    </span>
+                    <span className={styles.denseStatusSep} aria-hidden>
+                      {" "}
+                      ·{" "}
+                    </span>
+                    <span className={styles.denseStatusSegment}>
+                      Поиск:
+                      <span className={statusTokenClass(statusParts.search, styles)}>
+                        {statusParts.search}
+                      </span>
+                    </span>
+                    <span className={styles.denseStatusSep} aria-hidden>
+                      {" "}
+                      ·{" "}
+                    </span>
+                    <span className={styles.denseStatusSegment}>
+                      Связей:
+                      <span
+                        className={
+                          statusParts.links === "н/д" ? styles.denseStatNd : styles.denseStatNeutral
+                        }
+                      >
+                        {statusParts.links}
+                      </span>
+                    </span>
                   </span>
                 </button>
               </div>

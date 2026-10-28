@@ -339,13 +339,13 @@
 }
 .denseStatusLine {
   display: block;
-  margin-top: 1px;
+  margin-top: 2px;
   font-size: 0.8125rem;
-  line-height: 1.25;
+  line-height: 1.35;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  max-width: 100%;
 }
 .denseDetail {
   padding: 0 var(--space-3) var(--space-3);
@@ -447,8 +447,12 @@
   cursor: pointer;
   color: var(--muted);
 }
-.denseStatusCatalogVisible { color: var(--green); font-weight: 600; }
-.denseStatusCatalogMuted { color: var(--muted); font-weight: 500; }
+.denseStatYes { color: var(--green); font-weight: 650; }
+.denseStatNo { color: var(--ink); font-weight: 650; }
+.denseStatNd { color: var(--muted); font-weight: 500; }
+.denseStatNeutral { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.denseStatusSegment { white-space: nowrap; }
+.denseStatusSep { white-space: pre-wrap; }
 
 .registry[data-mobile-dense] {
   gap: var(--space-2);
@@ -499,7 +503,7 @@
 }
 .registry[data-mobile-dense] .denseStatusLine {
   font-size: 0.8125rem;
-  line-height: 1.25;
+  line-height: 1.35;
   margin-top: 2px;
 }
 .registry[data-mobile-dense] .denseCheck {

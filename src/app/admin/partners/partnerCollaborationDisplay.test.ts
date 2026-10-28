@@ -3,10 +3,12 @@ import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
 import {
   collaborationVisibilityPresentation,
   collaborationVisibilityPrimaryLabel,
+  denseRegistryRowStatusParts,
+  denseSearchStatusToken,
   formatRegistryCount,
   partnershipCountsSummary,
 } from "./partnerCollaborationDisplay";
-import { catalogStatusLabel } from "./partnerRegistryDisplay";
+import { catalogStatusLabel, denseCatalogStatusToken } from "./partnerRegistryDisplay";
 
 function baseRow(overrides: Partial<PartnerRegistryItem> = {}): PartnerRegistryItem {
   return {
@@ -90,5 +92,23 @@ describe("partnerCollaborationDisplay", () => {
       },
     });
     expect(partnershipCountsSummary(partial).total).toBe("—");
+  });
+
+  it("dense row status uses short catalog/search/links tokens without conflating visibility", () => {
+    const row = baseRow({
+      catalogVisibility: "VISIBLE",
+      partnerSearchVisibility: undefined,
+      partnershipCounts: { active: 2, invited: 0, pending: 0, paused: 0, ended: 0, total: 5 },
+    });
+    expect(denseCatalogStatusToken(row)).toBe("да");
+    expect(denseSearchStatusToken(row)).toBe("н/д");
+    const parts = denseRegistryRowStatusParts(row);
+    expect(parts).toEqual({
+      catalog: "да",
+      search: "н/д",
+      links: "5",
+      ariaLabel: expect.stringContaining("Каталог:"),
+    });
+    expect(parts.ariaLabel).toContain("Нет данных");
   });
 });

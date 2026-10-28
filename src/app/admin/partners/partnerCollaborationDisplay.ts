@@ -6,6 +6,7 @@ import {
   adminSearchOverrideSettingLabel,
   effectivePartnerSearchPrimaryLabel,
 } from "./partnerSearchControl";
+import { catalogStatusLabel, denseCatalogStatusToken } from "./partnerRegistryDisplay";
 
 export const COLLABORATION_SCOPE_HINT =
   "Показывает, может ли партнёр попадать в общий живой поиск сотрудничества между партнёрами. Фактический список у просматривающего зависит от его фильтров.";
@@ -67,6 +68,37 @@ const COUNT_LABELS: Record<PartnershipCountKey, string> = {
 
 export function partnershipCountLabel(key: PartnershipCountKey): string {
   return COUNT_LABELS[key];
+}
+
+/** Compact mobile row token from effective partner search visibility. */
+export function denseSearchStatusToken(row: PartnerRegistryItem): "да" | "нет" | "н/д" {
+  const v = row.partnerSearchVisibility;
+  if (v == null || typeof v.visible !== "boolean") return "н/д";
+  return v.visible ? "да" : "нет";
+}
+
+export function densePartnershipCountToken(row: PartnerRegistryItem): string {
+  if (!hasPartnershipCounts(row)) return "н/д";
+  return formatRegistryCount(row.partnershipCounts.total);
+}
+
+export function denseRegistryRowStatusParts(row: PartnerRegistryItem): {
+  catalog: "да" | "нет" | "н/д";
+  search: "да" | "нет" | "н/д";
+  links: string;
+  ariaLabel: string;
+} {
+  const catalog = denseCatalogStatusToken(row);
+  const search = denseSearchStatusToken(row);
+  const links = densePartnershipCountToken(row);
+  const searchLong = collaborationVisibilityPrimaryLabel(collaborationVisibilityPresentation(row));
+  const linksLong = links === "н/д" ? "нет данных" : links;
+  return {
+    catalog,
+    search,
+    links,
+    ariaLabel: `Каталог: ${catalogStatusLabel(row)}. Поиск сотрудничества: ${searchLong}. Связей: ${linksLong}`,
+  };
 }
 
 export function partnershipCountsSummary(row: PartnerRegistryItem): {

@@ -22,6 +22,15 @@ export function catalogStatusLabel(row: PartnerRegistryItem): string {
   return "Не опубликован";
 }
 
+/** Compact mobile row token derived from {@link catalogStatusLabel} rules. */
+export function denseCatalogStatusToken(row: PartnerRegistryItem): "да" | "нет" | "н/д" {
+  if (row.lifecycle?.projectArchivedAt) return "нет";
+  if (row.lifecycle?.catalogHiddenAt) return "нет";
+  if (row.catalogVisibility === "VISIBLE") return "да";
+  if (row.catalogVisibility != null && String(row.catalogVisibility).length > 0) return "нет";
+  return "н/д";
+}
+
 export function catalogStatusClass(
   row: PartnerRegistryItem,
   visibleClass: string,
