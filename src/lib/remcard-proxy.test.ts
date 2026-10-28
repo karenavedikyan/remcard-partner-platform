@@ -262,6 +262,17 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/partners/partner-1/partnerships"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/partners/partner-1/partnerships"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/partners/partner-1/partnerships/extra"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notification-settings"), true);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/admin/notification-settings"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notification-bind/status"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/notification-bind/start"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/notification-bind/start"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/notification-bind/start/extra"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notifications/unread-count"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notifications"), true);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/admin/notifications/n1/read"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/notifications/mark-all-read"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notifications/extra"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/partner-taxonomy"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/partner-type/switch"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/partner-type/switch"), true);

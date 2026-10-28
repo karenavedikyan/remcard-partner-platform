@@ -13,6 +13,7 @@ export function AdminHeader({ identity }: { identity: AdminAccountIdentity | nul
         <Link href="/admin/overview">Обзор</Link>
         <Link href="/admin/moderation">Модерация</Link>
         <Link href="/admin/partners">Партнёры</Link>
+        <Link href="/admin/notifications">Уведомления</Link>
         <Link href="/admin/test-users">Тестовые пользователи</Link>
         <Link href="/admin/password">Пароль</Link>
         <Link href="/profile">Кабинет</Link>

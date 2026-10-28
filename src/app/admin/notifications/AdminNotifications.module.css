@@ -1,0 +1,40 @@
+.page { display: grid; gap: var(--space-6); min-width: 0; }
+.pageHeader h1 { margin: 0 0 8px; font-size: 1.5rem; }
+.pageLead { margin: 0; color: var(--muted); max-width: 62ch; }
+.inboxSection, .settingsSection {
+  padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface);
+}
+.inboxToolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: var(--space-4); }
+.inboxToolbar h2 { margin: 0; flex: 1 1 100%; font-size: 1.125rem; }
+.unreadToggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.inboxList { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.inboxItem { padding: 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--offset); }
+.inboxItem[data-unread] { border-color: color-mix(in srgb, var(--primary) 35%, var(--line)); }
+.inboxMeta { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; font-size: 0.8125rem; color: var(--muted); }
+.categoryBadge { font-weight: 700; color: var(--ink); }
+.inboxTitle { margin: 0 0 6px; font-size: 1rem; }
+.inboxBody { margin: 0 0 10px; color: var(--ink); line-height: 1.45; }
+.inboxActions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.inboxActions a, .markRead, .retryButton {
+  min-height: 44px; display: inline-flex; align-items: center; padding: 8px 12px; font-weight: 650;
+}
+.inboxActions a { color: var(--primary); }
+.markRead, .retryButton {
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.untrustedLink { color: var(--muted); font-size: 0.8125rem; }
+.stateBox { padding: 14px; border-radius: 8px; background: var(--offset); color: var(--ink); margin: 0; }
+.pagination { display: flex; gap: 12px; align-items: center; margin-top: var(--space-4); flex-wrap: wrap; }
+.pagination button { min-height: 44px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.settingsSection h2 { margin: 0 0 8px; font-size: 1.125rem; }
+.settingsLead { margin: 0 0 var(--space-4); color: var(--muted); max-width: 62ch; }
+.fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 0 0 var(--space-4); }
+.fieldset legend { font-weight: 700; padding: 0 6px; }
+.checkRow { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.checkRowDisabled { opacity: 0.85; cursor: not-allowed; }
+.checkRowDisabled input { cursor: not-allowed; }
+.channelWarn { margin: 4px 0 10px; font-size: 0.8125rem; color: var(--danger, #b42318); max-width: 62ch; line-height: 1.4; }
+.hint { margin: 8px 0 0; font-size: 0.8125rem; color: var(--muted); max-width: 62ch; line-height: 1.4; }
+.bindActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.error { color: var(--danger, #b42318); margin: 8px 0; }
+.success { color: var(--ink); margin: 8px 0; font-weight: 650; }
