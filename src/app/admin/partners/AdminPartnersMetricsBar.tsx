@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { PartnerRegistryFacets } from "@/lib/prof-admin-management-api";
 import styles from "./AdminPartners.module.css";
 
@@ -15,6 +16,8 @@ type Props = {
   onCatalog: (value: string) => void;
   onArchived: (value: string) => void;
   filtersDisabled?: boolean;
+  /** Mobile dense layout: chips hidden until expanded. */
+  compact?: boolean;
 };
 
 const KIND_BUTTONS: { label: string; param: string; key: keyof PartnerRegistryFacets["partnerKind"] }[] = [
@@ -25,15 +28,15 @@ const KIND_BUTTONS: { label: string; param: string; key: keyof PartnerRegistryFa
   { label: "Компании", param: "COMPANY", key: "company" },
 ];
 
-export function AdminPartnersMetricsBar(props: Props) {
-  const { facets, matchedTotal, partnerType, filtersDisabled = false } = props;
+function MetricsBody(props: Props) {
+  const { facets, matchedTotal, partnerType, filtersDisabled = false, compact = false } = props;
   const unknown = facets?.partnerKind.unknown ?? 0;
 
   return (
-    <section className={styles.metrics} aria-label="Показатели реестра партнёров">
+    <>
       <p className={styles.metricsLead}>
         Найдено по выбранным фильтрам: <strong>{matchedTotal}</strong>
-        {facets ? (
+        {!compact && facets ? (
           <span className={styles.metricsHint}>
             {" "}
             Счётчики типов учитывают остальные фильтры, но не фильтр типа.
@@ -79,6 +82,60 @@ export function AdminPartnersMetricsBar(props: Props) {
           </button>
         </div>
       ) : null}
+    </>
+  );
+}
+
+export function AdminPartnersMetricsBar(props: Props) {
+  const { compact = false } = props;
+  const [metricsOpen, setMetricsOpen] = useState(false);
+
+  if (compact && !metricsOpen) {
+    return (
+      <section
+        className={`${styles.metrics} ${styles.metricsShellCompact}`}
+        aria-label="Показатели реестра партнёров"
+      >
+        <div className={styles.metricsCompactHead}>
+          <span className={styles.metricsLeadCompact}>
+            Найдено: <strong>{props.matchedTotal}</strong>
+          </span>
+          <button
+            type="button"
+            className={styles.metricsExpandBtn}
+            aria-expanded={false}
+            disabled={props.filtersDisabled}
+            onClick={() => setMetricsOpen(true)}
+          >
+            Показатели
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      className={`${styles.metrics} ${compact ? styles.metricsShellCompact : ""}`}
+      aria-label="Показатели реестра партнёров"
+    >
+      {compact ? (
+        <div className={styles.metricsCompactHead}>
+          <span className={styles.metricsLeadCompact}>
+            Найдено: <strong>{props.matchedTotal}</strong>
+          </span>
+          <button
+            type="button"
+            className={styles.metricsExpandBtn}
+            aria-expanded
+            disabled={props.filtersDisabled}
+            onClick={() => setMetricsOpen(false)}
+          >
+            Свернуть
+          </button>
+        </div>
+      ) : null}
+      <MetricsBody {...props} compact={compact} />
     </section>
   );
 }

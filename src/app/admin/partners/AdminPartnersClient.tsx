@@ -402,15 +402,25 @@ export function AdminPartnersClient() {
   const pageTo = Math.min(total, (stackIndex + 1) * pageLimit);
 
   return (
-    <div className={styles.registry}>
+    <div className={styles.registry} data-mobile-dense={mobileDense || undefined}>
       <div className={styles.heading}>
         <h1>Партнёры (реестр)</h1>
-        <p>
-          В выборке: {total} · на странице: {items.length}
-          {total > 0 ? ` · показаны ${pageFrom}–${pageTo}` : null}
+        <p className={styles.headingMeta}>
+          {mobileDense ? (
+            <>
+              {total} в выборке · {items.length} на стр.
+              {total > 0 ? ` · ${pageFrom}–${pageTo}` : null}
+            </>
+          ) : (
+            <>
+              В выборке: {total} · на странице: {items.length}
+              {total > 0 ? ` · показаны ${pageFrom}–${pageTo}` : null}
+            </>
+          )}
         </p>
       </div>
       <AdminPartnersMetricsBar
+        compact={mobileDense}
         facets={facets}
         matchedTotal={total}
         partnerType={partnerType}
@@ -425,7 +435,7 @@ export function AdminPartnersClient() {
       />
       <div className={styles.filters}>
         <label className={`${styles.field} ${styles.filtersSearchField}`}>
-          Поиск партнёров
+          <span className={styles.fieldLabelMobileHidden}>Поиск партнёров</span>
           <input
             placeholder="Поиск"
             value={q}

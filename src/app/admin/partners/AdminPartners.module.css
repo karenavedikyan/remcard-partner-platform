@@ -271,15 +271,6 @@
 .bulkCompactActions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .tableWrapDense { overflow: clip; border: 0; background: transparent; }
 .denseListWrap { padding: var(--space-2) var(--space-3) var(--space-3); min-width: 0; }
-.densePageSelect {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  margin-bottom: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: 650;
-}
 .denseList {
   list-style: none;
   margin: 0;
@@ -316,8 +307,8 @@
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 2px;
-  padding: 10px 12px 10px 0;
+  gap: 1px;
+  padding: 6px 8px 6px 0;
   border: 0;
   background: transparent;
   text-align: left;
@@ -347,31 +338,14 @@
   font-weight: 500;
 }
 .denseStatusLine {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-top: 2px;
+  display: block;
+  margin-top: 1px;
   font-size: 0.8125rem;
-  line-height: 1.35;
-}
-.densePill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--offset);
-  font-weight: 650;
-  max-width: 100%;
-}
-.densePillMuted {
+  line-height: 1.25;
   color: var(--muted);
-  font-weight: 500;
-}
-.densePillMuted strong {
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .denseDetail {
   padding: 0 var(--space-3) var(--space-3);
@@ -408,7 +382,150 @@
   align-items: center;
 }
 
+.metricsShellCompact {
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+}
+.metricsCompactHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+.metricsLeadCompact {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.metricsExpandBtn {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--offset);
+  color: var(--primary);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.metricsExpandBtn:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.metricsShellCompact .metricsLead {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.metricsShellCompact .metricsRow {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.metricsShellCompact .metricChip,
+.metricsShellCompact .metricChipSmall {
+  flex-shrink: 0;
+}
+.fieldLabelMobileHidden { display: block; }
+.denseListToolbar {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.densePageSelectInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+}
+.denseStatusCatalogVisible { color: var(--green); font-weight: 600; }
+.denseStatusCatalogMuted { color: var(--muted); font-weight: 500; }
+
+.registry[data-mobile-dense] {
+  gap: var(--space-2);
+}
+.registry[data-mobile-dense] .heading {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0;
+}
+.registry[data-mobile-dense] .heading h1 {
+  font-size: 1.125rem;
+  margin: 0;
+  line-height: 1.25;
+}
+.registry[data-mobile-dense] .headingMeta {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.registry[data-mobile-dense] .filters {
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+}
+.registry[data-mobile-dense] .filtersSearchField {
+  gap: 4px;
+}
+.registry[data-mobile-dense] .filtersSearchField input {
+  min-height: 44px;
+  font-size: 1rem;
+}
+.registry[data-mobile-dense] .denseListWrap {
+  padding: 0 var(--space-2) var(--space-2);
+}
+.registry[data-mobile-dense] .denseMain {
+  padding: 4px 6px 4px 0;
+  gap: 0;
+}
+.registry[data-mobile-dense] .denseName {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.registry[data-mobile-dense] .denseMeta {
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+.registry[data-mobile-dense] .denseStatusLine {
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  margin-top: 2px;
+}
+.registry[data-mobile-dense] .denseCheck {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+.registry[data-mobile-dense] .denseList {
+  gap: 4px;
+}
+.registry[data-mobile-dense] .denseItem {
+  border-radius: 6px;
+}
+
 @media (max-width: 720px) {
+  .fieldLabelMobileHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .filtersMobileBar { display: flex; }
   .filtersExpandable[data-open="false"] { display: none; }
   .filtersExpandable[data-open="true"] {
@@ -417,13 +534,6 @@
   }
   .refreshDesktop { display: none; }
   .viewToggleDesktop { display: none; }
-  .metrics { padding: var(--space-3); gap: var(--space-2); }
-  .metricsLead { font-size: 0.8125rem; }
-  .metricChip, .metricChipSmall {
-    min-height: 40px;
-    padding: 6px 10px;
-    font-size: 0.8125rem;
-  }
   .tableWrapDense {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);

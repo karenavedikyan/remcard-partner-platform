@@ -103,17 +103,19 @@ export function AdminPartnersDenseRegistryList(props: Props) {
 
   return (
     <div className={styles.denseListWrap}>
-      <label className={styles.densePageSelect}>
-        <input
-          ref={pageSelectRef}
-          type="checkbox"
-          aria-label="Выбрать на странице"
-          checked={pageSelectState === "all"}
-          disabled={interactionsDisabled || items.length === 0}
-          onChange={onTogglePageSelect}
-        />
-        <span>Выбрать на странице</span>
-      </label>
+      <div className={styles.denseListToolbar}>
+        <label className={styles.densePageSelectInline}>
+          <input
+            ref={pageSelectRef}
+            type="checkbox"
+            aria-label="Выбрать на странице"
+            checked={pageSelectState === "all"}
+            disabled={interactionsDisabled || items.length === 0}
+            onChange={onTogglePageSelect}
+          />
+          <span>Все на стр.</span>
+        </label>
+      </div>
       <ul className={styles.denseList} aria-label="Реестр партнёров" aria-busy={loading}>
         {items.map((row) => {
           const checked = selectedIds.has(row.id);
@@ -155,30 +157,19 @@ export function AdminPartnersDenseRegistryList(props: Props) {
                   <span className={styles.denseMeta}>
                     {partnerTypeLabel(row)} · {row.city ?? "—"} · {registrationShort(row)}
                   </span>
-                  <span className={styles.denseStatusLine}>
-                    <span className={`${styles.densePill} ${catalogStatusClass(row, styles.visible, styles.inactive)}`}>
-                      {catalogLabel}
-                    </span>
-                    <span className={styles.densePill}>{collabPrimary}</span>
-                    {counts.hasData ? (
-                      <span className={styles.densePillMuted}>
-                        связей: <strong>{counts.total}</strong>
-                        {counts.active !== "—" ? (
-                          <>
-                            {" "}
-                            · активных: <strong>{counts.active}</strong>
-                          </>
-                        ) : null}
-                      </span>
-                    ) : (
-                      <span className={styles.densePillMuted}>связей: нет данных</span>
-                    )}
+                  <span
+                    className={`${styles.denseStatusLine} ${catalogStatusClass(row, styles.denseStatusCatalogVisible, styles.denseStatusCatalogMuted)}`}
+                    title={`${catalogLabel} · ${collabPrimary}`}
+                  >
+                    {catalogLabel} · {collabPrimary}
+                    {counts.hasData
+                      ? ` · связей ${counts.total}${counts.active !== "—" ? ` (акт. ${counts.active})` : ""}`
+                      : " · связей: нет данных"}
                   </span>
                 </button>
               </div>
               {expanded ? (
                 <div className={styles.denseDetail}>
-                  <p className={styles.denseFullName}>{displayName}</p>
                   {row.organizationName ? (
                     <p className={styles.denseOrgLine}>{row.organizationName}</p>
                   ) : null}
