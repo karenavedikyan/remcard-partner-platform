@@ -1,0 +1,1112 @@
+{
+  "capturedAt": "2026-10-28T15:16:14.443Z",
+  "results": [
+    {
+      "scene": "overview",
+      "theme": "light",
+      "viewport": "375",
+      "file": "overview-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "overview",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "overview-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "overview",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "overview-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "overview",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "overview-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "overview",
+      "theme": "light",
+      "viewport": "320",
+      "file": "overview-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "overview",
+      "theme": "light",
+      "viewport": "430",
+      "file": "overview-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "overview",
+      "theme": "light",
+      "viewport": "768",
+      "file": "overview-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "light",
+      "viewport": "375",
+      "file": "partners-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "partners-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "partners-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "partners-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "light",
+      "viewport": "320",
+      "file": "partners-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "light",
+      "viewport": "430",
+      "file": "partners-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partners",
+      "theme": "light",
+      "viewport": "768",
+      "file": "partners-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "light",
+      "viewport": "375",
+      "file": "partnerships-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "partnerships-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "partnerships-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "partnerships-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "light",
+      "viewport": "320",
+      "file": "partnerships-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "light",
+      "viewport": "430",
+      "file": "partnerships-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "partnerships",
+      "theme": "light",
+      "viewport": "768",
+      "file": "partnerships-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "light",
+      "viewport": "375",
+      "file": "moderation-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "moderation-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "moderation-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "moderation-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "light",
+      "viewport": "320",
+      "file": "moderation-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "light",
+      "viewport": "430",
+      "file": "moderation-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation",
+      "theme": "light",
+      "viewport": "768",
+      "file": "moderation-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "light",
+      "viewport": "375",
+      "file": "moderation-partner-detail-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "moderation-partner-detail-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "moderation-partner-detail-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "moderation-partner-detail-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "light",
+      "viewport": "320",
+      "file": "moderation-partner-detail-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "light",
+      "viewport": "430",
+      "file": "moderation-partner-detail-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-detail",
+      "theme": "light",
+      "viewport": "768",
+      "file": "moderation-partner-detail-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "light",
+      "viewport": "375",
+      "file": "moderation-org-detail-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "moderation-org-detail-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "moderation-org-detail-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "moderation-org-detail-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "light",
+      "viewport": "320",
+      "file": "moderation-org-detail-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "light",
+      "viewport": "430",
+      "file": "moderation-org-detail-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-detail",
+      "theme": "light",
+      "viewport": "768",
+      "file": "moderation-org-detail-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "light",
+      "viewport": "375",
+      "file": "moderation-org-preview-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "moderation-org-preview-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "moderation-org-preview-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "moderation-org-preview-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "light",
+      "viewport": "320",
+      "file": "moderation-org-preview-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "light",
+      "viewport": "430",
+      "file": "moderation-org-preview-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-org-preview",
+      "theme": "light",
+      "viewport": "768",
+      "file": "moderation-org-preview-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "light",
+      "viewport": "375",
+      "file": "moderation-partner-preview-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "moderation-partner-preview-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "moderation-partner-preview-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "moderation-partner-preview-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "light",
+      "viewport": "320",
+      "file": "moderation-partner-preview-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "light",
+      "viewport": "430",
+      "file": "moderation-partner-preview-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "moderation-partner-preview",
+      "theme": "light",
+      "viewport": "768",
+      "file": "moderation-partner-preview-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "light",
+      "viewport": "375",
+      "file": "notifications-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "notifications-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "notifications-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "notifications-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "light",
+      "viewport": "320",
+      "file": "notifications-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "light",
+      "viewport": "430",
+      "file": "notifications-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "notifications",
+      "theme": "light",
+      "viewport": "768",
+      "file": "notifications-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "light",
+      "viewport": "375",
+      "file": "test-users-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "test-users-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "test-users-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "test-users-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "light",
+      "viewport": "320",
+      "file": "test-users-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "light",
+      "viewport": "430",
+      "file": "test-users-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "test-users",
+      "theme": "light",
+      "viewport": "768",
+      "file": "test-users-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "light",
+      "viewport": "375",
+      "file": "password-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "password-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "password-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "password-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "light",
+      "viewport": "320",
+      "file": "password-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "light",
+      "viewport": "430",
+      "file": "password-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "password",
+      "theme": "light",
+      "viewport": "768",
+      "file": "password-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "light",
+      "viewport": "375",
+      "file": "shell-375-light.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "light",
+      "viewport": "1440",
+      "file": "shell-1440-light.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "dark",
+      "viewport": "375",
+      "file": "shell-375-dark.png",
+      "metrics": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "dark",
+      "viewport": "1440",
+      "file": "shell-1440-dark.png",
+      "metrics": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "light",
+      "viewport": "320",
+      "file": "shell-320-light.png",
+      "metrics": {
+        "scrollWidth": 320,
+        "clientWidth": 320,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "light",
+      "viewport": "430",
+      "file": "shell-430-light.png",
+      "metrics": {
+        "scrollWidth": 430,
+        "clientWidth": 430,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    },
+    {
+      "scene": "shell",
+      "theme": "light",
+      "viewport": "768",
+      "file": "shell-768-light.png",
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "pageOverflow": false,
+        "openDialogs": 0
+      },
+      "errors": []
+    }
+  ],
+  "navResizeRegression": [
+    {
+      "step": "after-resize-1440",
+      "openDialogs": 0,
+      "bodyPointerEvents": "auto"
+    },
+    {
+      "step": "desktop-content-click",
+      "clickable": true
+    },
+    {
+      "step": "escape-focus",
+      "focusOnMenu": true
+    }
+  ]
+}
