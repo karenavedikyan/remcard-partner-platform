@@ -29,16 +29,29 @@
 .field input, .field select { width: 100%; font-weight: 400; }
 .filterActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
 .tableWrap { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); overflow: clip; }
+.tableWrapCompact { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
 .table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--text-sm); line-height: 1.55; text-align: left; }
 .table th { padding: 16px; background: var(--offset); color: var(--ink); font-size: 0.75rem; font-weight: 700; vertical-align: top; }
 .table td { padding: 20px 16px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
-.table th:nth-child(1) { width: 17%; }
-.table th:nth-child(2) { width: 11%; }
-.table th:nth-child(3) { width: 16%; }
-.table th:nth-child(4) { width: 12%; }
-.table th:nth-child(5) { width: 24%; }
-.table th:nth-child(6) { width: 20%; }
-.table td:first-child { font-weight: 700; }
+.tableCompact {
+  width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
+}
+.tableCompact .colCheck { width: 52px; }
+.tableCompact .colName { width: 16%; }
+.tableCompact .colType { width: 10%; }
+.tableCompact .colCity { width: 14%; }
+.tableCompact .colReg { width: 10%; }
+.tableCompact .colCatalog { width: 11%; }
+.tableCompact .colAccess { width: 180px; min-width: 180px; }
+.tableCompact th { padding: 10px 12px; vertical-align: middle; }
+.tableCompact td { padding: 10px 12px; vertical-align: middle; overflow-wrap: break-word; }
+.tableCompact .compactRow td:nth-child(2) { font-weight: 700; }
+.tableCompact .accessCol { min-width: 180px; }
+.tableCompact .accessCol .rowMenu { margin-top: 0; }
+.tableCompact .compactRowActions { margin-top: 6px; flex-wrap: wrap; gap: 6px; }
+.tableCompact .moreLinks { margin-top: 6px; }
 .table td a { color: var(--primary); text-underline-offset: 3px; }
 .table td a:hover { text-decoration-thickness: 2px; }
 .publicLinks { display: grid; gap: 10px; margin-top: 12px; font-weight: 500; }
@@ -83,9 +96,7 @@
 .bulkReport h3 { font-size: 1rem; }
 .pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-4); }
 .paginationMeta { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
-.tableCompact { font-size: 0.8125rem; }
-.tableCompact th, .tableCompact td.compactRow td { padding: 10px 12px; }
-.tableCompact .compactRow td { padding: 10px 12px; vertical-align: middle; }
+.tableCompact { font-size: 0.8125rem; line-height: 1.45; }
 .tableHeadSticky { position: sticky; top: 0; z-index: 1; }
 .tableHeadSticky th { box-shadow: 0 1px 0 var(--line); }
 .checkCol { width: 44px; text-align: center; vertical-align: middle; }

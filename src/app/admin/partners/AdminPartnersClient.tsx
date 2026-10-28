@@ -583,7 +583,9 @@ export function AdminPartnersClient() {
       ) : null}
       {loading ? <p role="status">Загрузка…</p> : null}
 
-      <div className={styles.tableWrap}>
+      <div
+        className={`${styles.tableWrap} ${viewMode === "table" ? styles.tableWrapCompact : ""}`}
+      >
         <AdminPartnersRegistryList
           viewMode={viewMode}
           items={items}

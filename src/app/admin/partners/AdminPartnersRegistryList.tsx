@@ -189,6 +189,15 @@ export function AdminPartnersRegistryList(props: ListProps) {
 
   return (
     <table className={`${styles.table} ${styles.tableCompact}`} aria-label="Реестр партнёров" aria-busy={loading}>
+      <colgroup>
+        <col className={styles.colCheck} />
+        <col className={styles.colName} />
+        <col className={styles.colType} />
+        <col className={styles.colCity} />
+        <col className={styles.colReg} />
+        <col className={styles.colCatalog} />
+        <col className={styles.colAccess} />
+      </colgroup>
       <thead className={styles.tableHeadSticky}>
         <tr>
           <th className={styles.checkCol}>
@@ -252,7 +261,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     {catalogStatusLabel(row)}
                   </span>
                 </td>
-                <td data-label="Доступ">
+                <td data-label="Доступ" className={styles.accessCol}>
                   <RowLinksMenu row={row} />
                   <div className={styles.compactRowActions}>
                     <Button
