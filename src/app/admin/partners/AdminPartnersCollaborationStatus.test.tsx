@@ -89,6 +89,27 @@ describe("Admin partners collaboration status UI", () => {
     expect(screen.getAllByText("Активное сотрудничество").length).toBeGreaterThan(0);
   });
 
+  it("links active and status counts to admin partnerships drilldown routes", async () => {
+    render(<AdminPartnersClient />);
+    await screen.findByText("Visible Collab Partner");
+    const activeLinks = screen.getAllByRole("link", {
+      name: /Активное сотрудничество: 2\. Открыть список контрагентов/i,
+    });
+    expect(
+      activeLinks.some(
+        (el) =>
+          el.getAttribute("href") ===
+          "/admin/partners/visible-partner/partnerships?status=ACTIVE&contextName=Visible+Collab+Partner",
+      ),
+    ).toBe(true);
+    const zeroActiveLinks = screen.getAllByRole("link", {
+      name: /Активное сотрудничество: 0\. Открыть список контрагентов/i,
+    });
+    expect(zeroActiveLinks.some((el) => el.getAttribute("href")?.includes("hidden-partner"))).toBe(true);
+    expect(screen.queryByRole("link", { name: /Missing Collab Data/i })).toBeNull();
+    expect(screen.getAllByText("Нет данных").length).toBeGreaterThan(0);
+  });
+
   it("shows the same collaboration block in cards view", async () => {
     const ui = userEvent.setup();
     render(<AdminPartnersClient />);

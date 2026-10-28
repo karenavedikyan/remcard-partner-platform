@@ -7,8 +7,8 @@ import {
   collaborationVisibilityPresentation,
   collaborationVisibilityPrimaryLabel,
   partnershipCountsBreakdown,
-  partnershipCountsSummary,
 } from "./partnerCollaborationDisplay";
+import { PartnerCollaborationCountLink } from "./PartnerCollaborationCountLink";
 
 type Props = {
   row: PartnerRegistryItem;
@@ -18,7 +18,6 @@ type Props = {
 export function PartnerCollaborationBlock({ row, variant = "table" }: Props) {
   const visibility = collaborationVisibilityPresentation(row);
   const primary = collaborationVisibilityPrimaryLabel(visibility);
-  const summary = partnershipCountsSummary(row);
   const breakdown = partnershipCountsBreakdown(row);
   const rootClass =
     variant === "card" ? `${styles.collaborationBlock} ${styles.collaborationBlockCard}` : styles.collaborationBlock;
@@ -41,19 +40,13 @@ export function PartnerCollaborationBlock({ row, variant = "table" }: Props) {
       </div>
       <p className={styles.collaborationCountsLine}>
         <span>
-          Активных:{" "}
-          <strong className={styles.collaborationCountValue} aria-label="Число активных партнёрств">
-            {summary.active}
-          </strong>
+          Активных: <PartnerCollaborationCountLink row={row} countKey="active" />
         </span>
         <span className={styles.collaborationCountsSep} aria-hidden="true">
           ·
         </span>
         <span>
-          Всего связей:{" "}
-          <strong className={styles.collaborationCountValue} aria-label="Всего партнёрств">
-            {summary.total}
-          </strong>
+          Всего связей: <PartnerCollaborationCountLink row={row} countKey="total" />
         </span>
       </p>
       <details className={styles.collaborationDetails}>
@@ -66,7 +59,9 @@ export function PartnerCollaborationBlock({ row, variant = "table" }: Props) {
             {breakdown.map((item) => (
               <div key={item.key} className={styles.collaborationBreakdownRow}>
                 <dt>{item.label}</dt>
-                <dd>{item.formatted}</dd>
+                <dd>
+                  <PartnerCollaborationCountLink row={row} countKey={item.key} />
+                </dd>
               </div>
             ))}
           </dl>

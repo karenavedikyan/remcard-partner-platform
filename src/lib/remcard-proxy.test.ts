@@ -259,6 +259,9 @@ describe("remcard proxy transport checks", () => {
     );
     assert.equal(isAllowedProxyRoute("POST", "/api/store/certificate"), true);
     assert.equal(isAllowedProxyRoute("DELETE", "/api/auth/me"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/partners/partner-1/partnerships"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/partners/partner-1/partnerships"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/partners/partner-1/partnerships/extra"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/partner-taxonomy"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/partner-type/switch"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/partner-type/switch"), true);

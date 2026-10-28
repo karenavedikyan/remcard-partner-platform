@@ -51,6 +51,53 @@ export async function fetchPartnerRegistry(params: URLSearchParams): Promise<Par
   return remcardFetch<PartnerRegistryResponse>(`/api/pro/admin/partners/registry?${params.toString()}`);
 }
 
+export type AdminPartnershipStatusFilter =
+  | "ALL"
+  | "ACTIVE"
+  | "INVITED"
+  | "PENDING"
+  | "PAUSED"
+  | "ENDED";
+
+export type AdminPartnershipCounterparty = {
+  id: string;
+  publicId: string | null;
+  displayName: string | null;
+  partnerKind: "agent" | "specialist" | "store" | "company" | null;
+  city: string | null;
+};
+
+export type AdminPartnershipListItem = {
+  id: string;
+  status: AdminPartnershipStatusFilter | string;
+  createdAt: string;
+  updatedAt: string;
+  partner: AdminPartnershipCounterparty;
+};
+
+export type AdminPartnershipListResponse = {
+  items: AdminPartnershipListItem[];
+  total: number;
+  nextCursor: string | null;
+};
+
+export async function fetchAdminPartnerPartnerships(
+  partnerUserId: string,
+  options: {
+    status?: AdminPartnershipStatusFilter;
+    limit?: number;
+    cursor?: string | null;
+  } = {},
+): Promise<AdminPartnershipListResponse> {
+  const params = new URLSearchParams();
+  params.set("status", options.status ?? "ALL");
+  params.set("limit", String(options.limit ?? 25));
+  if (options.cursor) params.set("cursor", options.cursor);
+  return remcardFetch<AdminPartnershipListResponse>(
+    `/api/pro/admin/partners/${encodeURIComponent(partnerUserId)}/partnerships?${params.toString()}`,
+  );
+}
+
 export async function previewPartnerLifecycle(userId: string, action: string) {
   return remcardFetch<{
     preview: {
