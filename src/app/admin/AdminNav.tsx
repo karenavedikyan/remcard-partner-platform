@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import styles from "./Admin.module.css";
 
+/** Keep in sync with Admin.module.css desktop nav breakpoint. */
+export const ADMIN_DESKTOP_NAV_MEDIA = "(min-width: 721px)";
+
 const NAV_ITEMS = [
   { href: "/admin/overview", label: "Обзор" },
   { href: "/admin/moderation", label: "Модерация" },
@@ -67,6 +70,7 @@ export function AdminNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogWasOpenRef = useRef(false);
 
   const currentLabel =
     NAV_ITEMS.find((item) => !("external" in item) && navActive(pathname, item.href))?.label ??
@@ -77,9 +81,24 @@ export function AdminNav() {
   }, [pathname]);
 
   useEffect(() => {
+    const mq = window.matchMedia(ADMIN_DESKTOP_NAV_MEDIA);
+    const syncForViewport = () => {
+      if (mq.matches) setMenuOpen(false);
+    };
+    syncForViewport();
+    mq.addEventListener("change", syncForViewport);
+    return () => mq.removeEventListener("change", syncForViewport);
+  }, []);
+
+  useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (menuOpen && !dialog.open) {
+      if (window.matchMedia(ADMIN_DESKTOP_NAV_MEDIA).matches) {
+        setMenuOpen(false);
+        return;
+      }
+      dialogWasOpenRef.current = true;
       dialog.showModal();
       const first = dialog.querySelector<HTMLElement>("a, button");
       first?.focus();
@@ -89,9 +108,14 @@ export function AdminNav() {
     }
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (menuOpen || !dialogWasOpenRef.current) return;
+    dialogWasOpenRef.current = false;
+    queueMicrotask(() => menuButtonRef.current?.focus());
+  }, [menuOpen]);
+
   function closeMenu() {
     setMenuOpen(false);
-    menuButtonRef.current?.focus();
   }
 
   return (
@@ -125,7 +149,7 @@ export function AdminNav() {
           e.preventDefault();
           closeMenu();
         }}
-        onClose={closeMenu}
+        onClose={() => setMenuOpen(false)}
       >
         <div className={styles.navDialogInner}>
           <header className={styles.navDialogHeader}>
