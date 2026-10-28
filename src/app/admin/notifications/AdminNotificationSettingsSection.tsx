@@ -188,14 +188,16 @@ export function AdminNotificationSettingsSection() {
       <fieldset className={styles.fieldset}>
         <legend>Каналы доставки</legend>
         <p className={styles.hint}>
-          Переключатель канала доступен только после привязки. Включённый, но не привязанный канал не доставляет
-          уведомления.
+          Новый канал можно включить только после подтверждения доставки. Уже включённый канал без привязки можно
+          снять и сохранить.
         </p>
-        <label className={`${styles.checkRow} ${!tgLinked ? styles.checkRowDisabled : ""}`}>
+        <label
+          className={`${styles.checkRow} ${!tgLinked && !tgChecked ? styles.checkRowDisabled : ""}`}
+        >
           <input
             type="checkbox"
             checked={tgChecked}
-            disabled={!tgLinked}
+            disabled={!tgLinked && !tgChecked}
             aria-describedby={!tgLinked ? "admin-tg-bind-hint" : undefined}
             onChange={(e) => setForm(setAdminChannelEnabled(form, "telegram", e.target.checked))}
           />
@@ -206,11 +208,13 @@ export function AdminNotificationSettingsSection() {
             Подтвердите доставку в Telegram для админского кабинета — это отдельно от входа в партнёрский профиль через тот же мессенджер.
           </p>
         ) : null}
-        <label className={`${styles.checkRow} ${!maxLinked ? styles.checkRowDisabled : ""}`}>
+        <label
+          className={`${styles.checkRow} ${!maxLinked && !maxChecked ? styles.checkRowDisabled : ""}`}
+        >
           <input
             type="checkbox"
             checked={maxChecked}
-            disabled={!maxLinked}
+            disabled={!maxLinked && !maxChecked}
             aria-describedby={!maxLinked ? "admin-max-bind-hint" : undefined}
             onChange={(e) => setForm(setAdminChannelEnabled(form, "max", e.target.checked))}
           />

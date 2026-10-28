@@ -82,6 +82,34 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
     expect(await screen.findByRole("alert")).toHaveTextContent("bind status down");
   });
 
+  it("reviewer: permits disabling a previously enabled channel whose new delivery binding is absent", async () => {
+    const settings = {
+      newClients: true,
+      newPartners: true,
+      partnerActivity: true,
+      channels: ["max" as const],
+      activityFrequency: "daily" as const,
+    };
+    const bindings = { telegramLinked: false, maxLinked: false };
+    api.fetchAdminNotificationSettings.mockResolvedValue({ settings, bindings });
+    api.patchAdminNotificationSettings.mockResolvedValue({
+      settings: { ...settings, channels: [] },
+      bindings,
+    });
+    const user = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    const max = await screen.findByRole("checkbox", { name: /MAX/ });
+    expect(max).toBeChecked();
+    await user.click(max);
+    expect(max).not.toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() =>
+      expect(api.patchAdminNotificationSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ channels: [] }),
+      ),
+    );
+  });
+
   it("does not link to partner profile notification settings", async () => {
     render(<AdminNotificationSettingsSection />);
     await screen.findByText("Настройки уведомлений");
