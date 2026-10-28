@@ -7,7 +7,6 @@ import { RemcardApiError } from "@/lib/api-client";
 import {
   fetchAdminPartnerPartnerships,
   type AdminPartnershipListItem,
-  type AdminPartnershipStatusFilter,
 } from "@/lib/prof-admin-partners-api";
 import styles from "../../AdminPartners.module.css";
 import {
@@ -33,6 +32,13 @@ function formatPartnershipDate(iso: string): string {
   return d.toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 }
 
+function formatSummaryCount(loading: boolean, error: string | null, value: number | null): string {
+  if (loading) return "…";
+  if (error) return "—";
+  if (value === null) return "—";
+  return String(value);
+}
+
 type Props = {
   partnerUserId: string;
 };
@@ -43,64 +49,73 @@ export function AdminPartnerPartnershipsClient({ partnerUserId }: Props) {
   const contextName = searchParams.get("contextName")?.trim() || null;
 
   const [items, setItems] = useState<AdminPartnershipListItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState<number | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([null]);
   const [stackIndex, setStackIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const requestSeqRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      requestSeqRef.current += 1;
     };
   }, []);
 
   useEffect(() => {
+    requestSeqRef.current += 1;
     setCursorStack([null]);
     setStackIndex(0);
   }, [partnerUserId, status]);
 
   const currentCursor = cursorStack[stackIndex] ?? null;
 
-  const loadPage = useCallback(async () => {
+  const runFetch = useCallback(() => {
+    const requestId = ++requestSeqRef.current;
     setLoading(true);
     setError(null);
-    try {
-      const data = await fetchAdminPartnerPartnerships(partnerUserId, {
-        status,
-        limit: PAGE_LIMIT,
-        cursor: currentCursor,
-      });
-      if (!mountedRef.current) return;
-      setItems(data.items);
-      setTotal(data.total);
-      setNextCursor(data.nextCursor);
-    } catch (caught) {
-      if (!mountedRef.current) return;
-      if (caught instanceof RemcardApiError) {
-        setError(caught.message || `Ошибка ${caught.status}`);
-      } else if (caught instanceof Error) {
-        setError(caught.message);
-      } else {
-        setError("Не удалось загрузить список партнёрств.");
+
+    void (async () => {
+      try {
+        const data = await fetchAdminPartnerPartnerships(partnerUserId, {
+          status,
+          limit: PAGE_LIMIT,
+          cursor: currentCursor,
+        });
+        if (requestId !== requestSeqRef.current || !mountedRef.current) return;
+        setItems(data.items);
+        setTotal(data.total);
+        setNextCursor(data.nextCursor);
+      } catch (caught) {
+        if (requestId !== requestSeqRef.current || !mountedRef.current) return;
+        if (caught instanceof RemcardApiError) {
+          setError(caught.message || `Ошибка ${caught.status}`);
+        } else if (caught instanceof Error) {
+          setError(caught.message);
+        } else {
+          setError("Не удалось загрузить список партнёрств.");
+        }
+        setItems([]);
+        setTotal(null);
+        setNextCursor(null);
+      } finally {
+        if (requestId === requestSeqRef.current && mountedRef.current) {
+          setLoading(false);
+        }
       }
-      setItems([]);
-      setTotal(0);
-      setNextCursor(null);
-    } finally {
-      if (mountedRef.current) setLoading(false);
-    }
+    })();
   }, [currentCursor, partnerUserId, status]);
 
   useEffect(() => {
-    void loadPage();
-  }, [loadPage]);
+    runFetch();
+  }, [runFetch]);
 
-  const pageFrom = total === 0 ? 0 : stackIndex * PAGE_LIMIT + 1;
-  const pageTo = Math.min(total, (stackIndex + 1) * PAGE_LIMIT);
+  const pageFrom = total === 0 || total === null ? 0 : stackIndex * PAGE_LIMIT + 1;
+  const pageTo = total === null ? 0 : Math.min(total, (stackIndex + 1) * PAGE_LIMIT);
 
   const statusTabs = useMemo(
     () =>
@@ -127,6 +142,8 @@ export function AdminPartnerPartnershipsClient({ partnerUserId }: Props) {
   }
 
   const subjectTitle = contextName ?? partnerUserId;
+  const selectionTotalLabel = formatSummaryCount(loading, error, total);
+  const pageCountLabel = formatSummaryCount(loading, error, loading ? null : items.length);
 
   return (
     <div className={styles.registry}>
@@ -139,9 +156,9 @@ export function AdminPartnerPartnershipsClient({ partnerUserId }: Props) {
           Контрагенты по выбранному статусу договора. Счётчик в реестре сверяется с фильтром{" "}
           <strong>{adminPartnershipStatusFilterLabel(status)}</strong>.
         </p>
-        <p>
-          В выборке: {loading ? "…" : total} · на странице: {loading ? "…" : items.length}
-          {total > 0 && !loading ? ` · показаны ${pageFrom}–${pageTo}` : null}
+        <p data-testid="partnerships-selection-summary">
+          В выборке: {selectionTotalLabel} · на странице: {pageCountLabel}
+          {total !== null && total > 0 && !loading && !error ? ` · показаны ${pageFrom}–${pageTo}` : null}
         </p>
       </div>
 
@@ -162,7 +179,7 @@ export function AdminPartnerPartnershipsClient({ partnerUserId }: Props) {
       {error ? (
         <div className={styles.partnershipsState} role="alert">
           <p>{error}</p>
-          <button type="button" className={styles.partnershipsRetry} onClick={() => void loadPage()}>
+          <button type="button" className={styles.partnershipsRetry} onClick={runFetch}>
             Повторить
           </button>
         </div>
