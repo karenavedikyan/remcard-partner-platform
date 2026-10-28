@@ -4,6 +4,37 @@ export type {
   AdminPartnershipStatusFilter,
 } from "../../../src/lib/prof-admin-partners-api";
 import { registryRows } from "./fixtures";
+import {
+  autoPartnerSearchLifecycleReason,
+  isPartnerSearchLifecycleAction,
+} from "../../../src/app/admin/partners/partnerSearchControl";
+
+function applySearchVisibilityHarness(
+  row: (typeof registryRows)[number],
+  action: string,
+): void {
+  if (!row.partnerSearchVisibility || !isPartnerSearchLifecycleAction(action)) return;
+  if (action === "hide_partner_search") {
+    row.partnerSearchVisibility = {
+      ...row.partnerSearchVisibility,
+      visible: false,
+      adminOverride: "HIDE",
+      reasonLabel: "Скрыт администратором (harness)",
+    };
+  } else if (action === "show_partner_search") {
+    row.partnerSearchVisibility = {
+      ...row.partnerSearchVisibility,
+      visible: true,
+      adminOverride: "SHOW",
+      reasonLabel: "",
+    };
+  } else if (action === "reset_partner_search") {
+    row.partnerSearchVisibility = {
+      ...row.partnerSearchVisibility,
+      adminOverride: "AUTO",
+    };
+  }
+}
 
 export async function fetchPartnerRegistry(params?: URLSearchParams) {
   let items = [...registryRows];
@@ -71,17 +102,36 @@ export async function fetchAdminPartnerPartnerships(
   };
 }
 
-export async function previewPartnerLifecycle(_userId: string, _action: string) {
+export async function previewPartnerLifecycle(_userId: string, action: string) {
+  const effects = isPartnerSearchLifecycleAction(action)
+    ? [`Harness preview: ${action}`]
+    : ["Harness preview: изменение каталога или архива"];
   return {
     preview: {
-      effects: ["Карточка будет скрыта из поиска"],
+      effects,
       warnings: [],
       confirmToken: "harness-preview-token",
     },
   };
 }
 
-export async function applyPartnerLifecycle() {
+export async function applyPartnerLifecycle(
+  userId: string,
+  action: string,
+  reason: string,
+  confirmToken: string,
+) {
+  if (!confirmToken?.trim()) throw new Error("Нет confirmToken");
+  if (isPartnerSearchLifecycleAction(action)) {
+    const expected = autoPartnerSearchLifecycleReason(action);
+    if (reason.trim() !== expected) {
+      throw new Error("Неверная audit-причина для поиска");
+    }
+    const row = registryRows.find((r) => r.id === userId);
+    if (row) applySearchVisibilityHarness(row, action);
+  } else if (!reason.trim()) {
+    throw new Error("Требуется причина для каталога/архива");
+  }
   return { ok: true };
 }
 

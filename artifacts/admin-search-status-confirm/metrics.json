@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-10-28T20:47:20.430Z",
+  "browser": "playwright-chromium",
+  "scenes": [
+    {
+      "filePreview": "search-status-1440-light-preview.png",
+      "fileApplied": "search-status-1440-light-applied.png",
+      "theme": "light",
+      "viewport": "1440"
+    },
+    {
+      "filePreview": "search-status-375-light-preview.png",
+      "fileApplied": "search-status-375-light-applied.png",
+      "theme": "light",
+      "viewport": "375"
+    },
+    {
+      "filePreview": "search-status-1440-dark-preview.png",
+      "fileApplied": "search-status-1440-dark-applied.png",
+      "theme": "dark",
+      "viewport": "1440"
+    },
+    {
+      "filePreview": "search-status-375-dark-preview.png",
+      "fileApplied": "search-status-375-dark-applied.png",
+      "theme": "dark",
+      "viewport": "375"
+    }
+  ],
+  "flow": [
+    {
+      "step": "catalog-without-reason-blocked",
+      "ok": true
+    }
+  ]
+}

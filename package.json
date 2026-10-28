@@ -11,7 +11,8 @@
     "test:component": "vitest run",
     "test": "npm run test:proxy && npm run test:component",
     "harness:admin-mobile": "vite --config scripts/admin-mobile-visual-harness/vite.config.ts",
-    "harness:admin-mobile:capture": "node scripts/admin-mobile-visual-capture.mjs"
+    "harness:admin-mobile:capture": "node scripts/admin-mobile-visual-capture.mjs",
+    "harness:search-status-confirm:capture": "node scripts/admin-search-status-confirm-capture.mjs"
   },
   "dependencies": {
     "html5-qrcode": "^2.3.8",
