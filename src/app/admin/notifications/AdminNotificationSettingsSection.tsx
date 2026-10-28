@@ -148,8 +148,8 @@ export function AdminNotificationSettingsSection() {
     <section className={styles.settingsSection} aria-labelledby="admin-notify-settings-title">
       <h2 id="admin-notify-settings-title">Настройки уведомлений</h2>
       <p className={styles.settingsLead}>
-        Категории включены на сервере по умолчанию; каналы Telegram и MAX остаются выключенными, пока вы явно не
-        включите их после привязки мессенджера и не сохраните. Это настройки администратора платформы — отдельно от
+        Категории включены на сервере по умолчанию; каналы Telegram и MAX остаются выключенными, пока вы не
+        подтвердите доставку в мессенджере, не включите канал и не сохраните. Это настройки администратора платформы — отдельно от
         партнёрского кабинета и клиентского профиля.
       </p>
 
@@ -203,7 +203,7 @@ export function AdminNotificationSettingsSection() {
         </label>
         {!tgLinked ? (
           <p id="admin-tg-bind-hint" className={styles.channelWarn}>
-            Привяжите Telegram к вашему администраторскому аккаунту (staff ADMIN/OWNER, в том числе при User.role=CLIENT).
+            Подтвердите доставку в Telegram для админского кабинета — это отдельно от входа в партнёрский профиль через тот же мессенджер.
           </p>
         ) : null}
         <label className={`${styles.checkRow} ${!maxLinked ? styles.checkRowDisabled : ""}`}>
@@ -218,7 +218,7 @@ export function AdminNotificationSettingsSection() {
         </label>
         {!maxLinked ? (
           <p id="admin-max-bind-hint" className={styles.channelWarn}>
-            Привяжите MAX через бота уведомлений — только для текущего администратора платформы.
+            Подтвердите доставку в MAX для админского кабинета через бота — без переноса login-привязки партнёра.
           </p>
         ) : null}
         <div className={styles.bindActions}>

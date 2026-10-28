@@ -51,8 +51,8 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
   it("disables channel toggles until binding and calls admin bind API on user click", async () => {
     const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
     api.startAdminNotificationBind.mockResolvedValue({
-      deepLink: "https://t.me/RemCardBot?start=nbind_admin",
-      startPayload: "nbind_admin",
+      deepLink: "https://t.me/RemCardBot?start=nbind_admin_tok",
+      startPayload: "nbind_admin_tok",
       hint: "Подтвердите в Telegram",
     });
     const ui = userEvent.setup();
@@ -64,7 +64,7 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
       expect(api.startAdminNotificationBind).toHaveBeenCalledWith("TELEGRAM"),
     );
     expect(openSpy).toHaveBeenCalledWith(
-      "https://t.me/RemCardBot?start=nbind_admin",
+      "https://t.me/RemCardBot?start=nbind_admin_tok",
       "_blank",
       "noopener,noreferrer",
     );
