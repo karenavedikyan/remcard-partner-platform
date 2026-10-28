@@ -2,7 +2,13 @@
   max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--space-6);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
   color: var(--ink);
+  min-width: 0;
+}
+
+.shell main {
+  min-width: 0;
 }
 
 .header {
@@ -48,13 +54,14 @@
 .brand span { color: var(--primary); }
 .brand small { color: var(--muted); font-size: 0.75rem; }
 
-.nav {
+.navDesktop {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.nav a {
+.navLink,
+.navLinkActive {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -67,7 +74,135 @@
   text-decoration: none;
 }
 
-.nav a:hover { background: var(--soft); color: var(--primary); }
+.navLink:hover {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.navLinkActive {
+  background: var(--soft);
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--line));
+}
+
+.navMobileBar {
+  display: none;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.navMenuButton {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.navMobileCurrent {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.navDialog {
+  border: none;
+  padding: 0;
+  max-width: min(100vw - 24px, 24rem);
+  width: 100%;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.navDialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+.navDialogInner {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  max-height: min(85dvh, 640px);
+  overflow: auto;
+}
+
+.navDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.navDialogTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.navDialogClose {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--offset);
+  color: var(--ink);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.navDialogLinks {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.navDialogLink,
+.navDialogLinkActive {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.navDialogLink:hover {
+  background: var(--soft);
+}
+
+.navDialogLinkActive {
+  background: var(--soft);
+  color: var(--primary);
+}
+
+.adminPage {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  max-width: 40rem;
+}
+
+.adminPage h1 {
+  font-size: 1.35rem;
+  margin: 0;
+}
 .shell :where(button, a, input, select, textarea):focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 3px;
@@ -100,10 +235,15 @@
 .shell :where(button:disabled) { opacity: 0.55; cursor: not-allowed; }
 
 @media (max-width: 720px) {
-  .shell { padding: var(--space-4); }
+  .shell { padding: var(--space-4); padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
   .header { align-items: flex-start; flex-direction: column; padding: var(--space-4); }
   .headerTop { width: 100%; flex-wrap: wrap; }
   .accountControls { margin-left: auto; max-width: 100%; }
-  .nav { width: 100%; gap: 4px; }
-  .nav a { padding-inline: 10px; }
+  .navDesktop { display: none; }
+  .navMobileBar { display: flex; }
+}
+
+@media (min-width: 721px) {
+  .navMobileBar { display: none; }
+  .navDialog { display: none; }
 }

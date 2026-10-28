@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
+  usePathname: () => "/admin/overview",
 }));
 vi.mock("next/headers", () => ({
   headers: async () => new Headers({cookie:"qa-cookie-not-a-real-session"}),

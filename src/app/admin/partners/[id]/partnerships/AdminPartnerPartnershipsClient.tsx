@@ -200,7 +200,7 @@ export function AdminPartnerPartnershipsClient({ partnerUserId }: Props) {
 
       {!error && !loading && items.length > 0 ? (
         <>
-          <div className={styles.tableWrap}>
+          <div className={`${styles.tableWrap} ${styles.partnershipsTableWrap}`}>
             <table className={styles.table} aria-label="Список партнёрств">
               <thead>
                 <tr>

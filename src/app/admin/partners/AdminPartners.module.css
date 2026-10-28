@@ -163,7 +163,13 @@
 .cardGridWrap { padding: var(--space-3); }
 .rowCheckInput { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
 .compactRowActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.compactRowActions button { padding-inline: 10px; min-height: 36px; font-size: 0.8125rem; }
+.compactRowActions button { padding-inline: 10px; min-height: 44px; font-size: 0.8125rem; }
+.partnershipsTableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.partnershipsTableWrap .table { min-width: 560px; }
 .rowMenu { margin-top: 4px; }
 .rowMenu summary {
   width: fit-content; min-height: 44px; padding: 10px 12px; cursor: pointer; color: var(--primary);
@@ -192,6 +198,8 @@
     z-index: auto;
     max-height: none;
     overflow: visible;
+    margin-bottom: var(--space-4);
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .table, .table tbody { display: block; }

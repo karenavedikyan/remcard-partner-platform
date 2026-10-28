@@ -38,3 +38,23 @@
 .bindActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .error { color: var(--danger, #b42318); margin: 8px 0; }
 .success { color: var(--ink); margin: 8px 0; font-weight: 650; }
+
+@media (max-width: 480px) {
+  .pageHeader h1 { font-size: 1.25rem; }
+  .inboxSection,
+  .settingsSection { padding: var(--space-4); }
+  .inboxToolbar { flex-direction: column; align-items: stretch; }
+  .inboxToolbar h2 { flex: none; }
+  .unreadToggle { align-self: flex-start; }
+  .inboxMeta { flex-direction: column; align-items: flex-start; }
+  .pagination { justify-content: stretch; }
+  .pagination button { flex: 1 1 auto; min-width: 44px; }
+  .field input,
+  .field select,
+  .field textarea { font-size: 16px; }
+}
+
+@media (max-width: 375px) {
+  .inboxItem { padding: 12px; }
+  .bindActions button { width: 100%; justify-content: center; }
+}
