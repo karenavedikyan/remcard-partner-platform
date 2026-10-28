@@ -50,7 +50,7 @@
 .collaborationBlock { display: flex; flex-direction: column; gap: 6px; max-width: 22rem; }
 .collaborationBlockCard { max-width: none; margin-top: 4px; }
 .collaborationPrimary { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-.collaborationVisible { background: color-mix(in srgb, var(--accent) 18%, var(--offset)); color: var(--ink); }
+.collaborationVisible { background: var(--green-soft); color: var(--green); }
 .collaborationHidden { background: color-mix(in srgb, var(--danger, #c0392b) 12%, var(--offset)); color: var(--ink); }
 .collaborationUnknown { background: var(--offset); color: var(--muted); }
 .collaborationReason { font-size: 0.75rem; line-height: 1.35; color: var(--muted); font-weight: 500; }
@@ -60,7 +60,7 @@
 .collaborationScopeHint { margin: 0 0 8px; font-size: 0.6875rem; line-height: 1.4; color: var(--muted); font-weight: 400; max-width: 42ch; }
 .collaborationDetails { margin-top: 2px; font-size: 0.75rem; }
 .collaborationDetails summary { cursor: pointer; color: var(--ink); font-weight: 600; list-style-position: outside; }
-.collaborationDetails summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.collaborationDetails summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .collaborationBreakdown { margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
 .collaborationBreakdownRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: baseline; }
 .collaborationBreakdownRow dt { margin: 0; font-weight: 500; color: var(--muted); }
@@ -71,11 +71,11 @@
   font-weight: 700; font-variant-numeric: tabular-nums; color: var(--primary);
   text-decoration: underline; text-underline-offset: 2px; min-height: 44px; display: inline-flex; align-items: center;
 }
-.collaborationCountLink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.collaborationCountLink:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .collaborationCountStatic { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
 .partnershipsBack { margin: 0 0 8px; }
 .partnershipsBack a { color: var(--primary); font-weight: 650; min-height: 44px; display: inline-flex; align-items: center; }
-.partnershipsBack a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.partnershipsBack a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .partnershipsLead { max-width: 62ch; color: var(--muted); font-weight: 400; }
 .partnershipsStatusNav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-4); }
 .partnershipsStatusLink, .partnershipsStatusActive {
@@ -83,14 +83,16 @@
   border: 1px solid var(--line); font-size: var(--text-sm); font-weight: 650; text-decoration: none;
 }
 .partnershipsStatusLink { color: var(--primary); background: var(--surface); }
-.partnershipsStatusLink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.partnershipsStatusActive { color: var(--onaccent, var(--ink)); background: var(--accent); border-color: transparent; }
+.partnershipsStatusLink:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.partnershipsStatusActive {
+  color: var(--tab-active-fg); background: var(--tab-active-bg); border-color: var(--tab-active-bg);
+}
 .partnershipsState { padding: 16px; border-radius: 8px; background: var(--offset); color: var(--ink); }
 .partnershipsRetry {
   margin-top: 10px; min-height: 44px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink); font-weight: 650; cursor: pointer;
 }
-.partnershipsRetry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.partnershipsRetry:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .tableCompact th { padding: 10px 12px; vertical-align: middle; }
 .tableCompact td { padding: 10px 12px; vertical-align: middle; overflow-wrap: break-word; }
 .tableCompact .compactRow td:nth-child(2) { font-weight: 700; }
