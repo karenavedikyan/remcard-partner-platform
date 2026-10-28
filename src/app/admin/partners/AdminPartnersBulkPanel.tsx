@@ -61,8 +61,11 @@ export function AdminPartnersBulkPanel({
 }: Props) {
   if (selectedCount === 0 && !applyResults && !applying) return null;
 
+  const hasPreviewFailures = Boolean(previewFailures && previewFailures.length > 0);
   const showSelectionHead = selectedCount > 0 || applying;
-  const showNewGroupForm = selectedCount > 0 && !applying && !bulkPreview;
+  const showNewGroupForm =
+    selectedCount > 0 && !applying && (!bulkPreview || hasPreviewFailures);
+  const showConfirmDialog = !applying && bulkPreview && !hasPreviewFailures;
   const reportTitle = applying ? "Ход групповой операции" : "Итог групповой операции";
 
   return (
@@ -193,7 +196,7 @@ export function AdminPartnersBulkPanel({
         </>
       ) : null}
 
-      {!applying && bulkPreview ? (
+      {showConfirmDialog ? (
         <div role="dialog" aria-label="Подтверждение группового изменения" className={styles.confirmation}>
           <p>
             Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}

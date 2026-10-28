@@ -120,6 +120,13 @@
 .cardHead .rowCheck { align-items: flex-start; justify-content: flex-start; margin: 0; }
 
 @media (max-width: 1000px) {
+  .bulkPanel {
+    position: static;
+    top: auto;
+    z-index: auto;
+    max-height: none;
+    overflow: visible;
+  }
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .table, .table tbody { display: block; }
   .table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

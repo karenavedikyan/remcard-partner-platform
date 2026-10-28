@@ -204,10 +204,13 @@ export function AdminPartnersClient() {
 
   const prevFilterSignature = useRef(filterSignature);
   useEffect(() => {
+    let cursorToLoad = cursorStack[stackIndex] ?? null;
     if (prevFilterSignature.current !== filterSignature) {
       prevFilterSignature.current = filterSignature;
+      cursorToLoad = null;
       setItems([]);
-      resetPagination();
+      setCursorStack([null]);
+      setStackIndex(0);
       if (!interactionsDisabled) {
         resetWorkflowForFilterChange();
         setSingleSelected(null);
@@ -215,8 +218,8 @@ export function AdminPartnersClient() {
         setReason("");
       }
     }
-    void loadPage(currentCursor);
-  }, [filterSignature, currentCursor, loadPage, interactionsDisabled]);
+    void loadPage(cursorToLoad);
+  }, [filterSignature, stackIndex, loadPage, interactionsDisabled]);
 
   const pageIds = useMemo(() => items.map((i) => i.id), [items]);
   const pageSelect = pageSelectionState(selectedIds, pageIds);
@@ -310,19 +313,11 @@ export function AdminPartnersClient() {
     if (gen !== previewRequestGen.current || !mountedRef.current) return;
     setBulkPreviewLoading(false);
     if ("failures" in result) {
+      setBulkPreview(null);
       setBulkPreviewFailures(result.failures);
-      if (result.partial.length > 0) {
-        setBulkPreview({
-          action: bulkAction,
-          reason: bulkReason,
-          members: result.partial,
-          revision: bulkRevisionRef.current,
-        });
-      } else {
-        setBulkPreview(null);
-      }
       return;
     }
+    setBulkPreviewFailures(null);
     setBulkPreview({
       action: bulkAction,
       reason: bulkReason,
@@ -336,9 +331,12 @@ export function AdminPartnersClient() {
   }
 
   async function confirmBulkApply() {
-    if (!bulkPreview || bulkApplying) return;
+    if (!bulkPreview || bulkApplying || (bulkPreviewFailures && bulkPreviewFailures.length > 0)) return;
     const memberIds = [...selectedIds.keys()];
-    if (!bulkSnapshotMatches(bulkPreview, bulkAction as BulkLifecycleAction, bulkReason, memberIds)) {
+    if (
+      bulkPreview.members.length !== memberIds.length ||
+      !bulkSnapshotMatches(bulkPreview, bulkAction as BulkLifecycleAction, bulkReason, memberIds)
+    ) {
       setError("Группа или причина изменились — получите preview заново");
       invalidateBulkPreview();
       return;

@@ -147,11 +147,51 @@ describe("Independent mass-action safety", () => {
 
   it("cannot select old rows while a new filtered list is loading", async () => {
     await open();
+    const before = api.fetchPartnerRegistry.mock.calls.length;
     api.fetchPartnerRegistry.mockImplementation(() => new Promise(() => {}));
     fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
-    await waitFor(() => expect(api.fetchPartnerRegistry).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue("demo"));
+    await waitFor(() => expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(before));
     const old = screen.queryByLabelText("Выбрать Partner 1");
     if (old) expect(old).toBeDisabled();
+  });
+
+  it("keeps failed-preview recovery visible and cannot confirm an incomplete group", async () => {
+    api.previewPartnerLifecycle.mockImplementation(async (id: string) => {
+      if (id === "p2") throw new RemcardApiError(409, "Denied");
+      return {
+        preview: { displayName: id, effects: ["effect"], warnings: [], confirmToken: `t-${id}` },
+      };
+    });
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    const exclude = await screen.findByRole("button", { name: "Исключить проблемные и обновить preview" });
+    expect(screen.queryByRole("button", { name: "Подтвердить группу" })).not.toBeInTheDocument();
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+    fireEvent.click(exclude);
+    await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+    await screen.findByText("Итог групповой операции");
+    expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(1);
+    expect(api.applyPartnerLifecycle.mock.calls[0][0]).toBe("p1");
+  });
+
+  it("the first request after a filter change does not reuse the previous page cursor", async () => {
+    api.fetchPartnerRegistry.mockResolvedValue({ items: rows, total: 60, nextCursor: "p6", facets });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "Следующая страница" }));
+    await waitFor(() =>
+      expect(api.fetchPartnerRegistry.mock.calls.some(([p]) => p.get("cursor") === "p6")).toBe(true),
+    );
+    const before = api.fetchPartnerRegistry.mock.calls.length;
+    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
+    await waitFor(() => expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(before));
+    expect(api.fetchPartnerRegistry.mock.calls[before][0].get("cursor")).toBeNull();
   });
 
   it("unmount stops all not-yet-started mutations", async () => {
