@@ -30,16 +30,18 @@ beforeEach(() => {
 });
 
 describe("Compact registry table column layout", () => {
-  it("uses seven explicit columns with access width and horizontal scroll wrapper", async () => {
+  it("uses eight explicit columns with collaboration and access width", async () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Layout Partner");
     const table = screen.getByRole("table", { name: "Реестр партнёров" });
     expect(table.className).toContain(styles.tableCompact);
-    expect(table.querySelectorAll("colgroup col")).toHaveLength(7);
+    expect(table.querySelectorAll("colgroup col")).toHaveLength(8);
+    expect(table.querySelector(`.${styles.colCollaboration}`)).not.toBeNull();
     expect(table.querySelector(`.${styles.colAccess}`)).not.toBeNull();
     const headers = table.querySelectorAll("thead th");
-    expect(headers).toHaveLength(7);
-    expect(headers[6]?.textContent).toBe("Доступ");
+    expect(headers).toHaveLength(8);
+    expect(headers[6]?.textContent).toBe("Сотрудничество");
+    expect(headers[7]?.textContent).toBe("Доступ");
     const accessCell = screen.getByRole("button", { name: "Действия" }).closest("td");
     expect(accessCell?.className).toContain(styles.accessCol);
     expect(accessCell?.getAttribute("data-label")).toBe("Доступ");

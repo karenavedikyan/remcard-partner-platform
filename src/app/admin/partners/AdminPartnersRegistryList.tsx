@@ -12,6 +12,7 @@ import {
   partnerTypeLabel,
   selectedPartnerRef,
 } from "./partnerRegistryDisplay";
+import { PartnerCollaborationBlock } from "./PartnerCollaborationBlock";
 import type { PageSelectionState } from "./adminPartnersSelection";
 
 type PendingPreview = {
@@ -146,6 +147,10 @@ export function AdminPartnersRegistryList(props: ListProps) {
                   {catalogStatusLabel(row)}
                 </span>
               </div>
+              <section className={styles.cardCollaboration} aria-label="Сотрудничество">
+                <h4 className={styles.cardCollaborationTitle}>Сотрудничество</h4>
+                <PartnerCollaborationBlock row={row} variant="card" />
+              </section>
               <RowLinksMenu row={row} />
               <div className={styles.cardActions}>
                 <Button
@@ -196,6 +201,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
         <col className={styles.colCity} />
         <col className={styles.colReg} />
         <col className={styles.colCatalog} />
+        <col className={styles.colCollaboration} />
         <col className={styles.colAccess} />
       </colgroup>
       <thead className={styles.tableHeadSticky}>
@@ -218,6 +224,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
           <th>Город / организация</th>
           <th>Регистрация</th>
           <th>Каталог</th>
+          <th>Сотрудничество</th>
           <th>Доступ</th>
         </tr>
       </thead>
@@ -261,6 +268,9 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     {catalogStatusLabel(row)}
                   </span>
                 </td>
+                <td data-label="Сотрудничество" className={styles.collaborationCol}>
+                  <PartnerCollaborationBlock row={row} variant="table" />
+                </td>
                 <td data-label="Доступ" className={styles.accessCol}>
                   <RowLinksMenu row={row} />
                   <div className={styles.compactRowActions}>
@@ -302,7 +312,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
               </tr>
               {expanded ? (
                 <tr className={styles.managementRow}>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <AdminPartnersSingleManagementPanel
                       row={row}
                       reason={reason}

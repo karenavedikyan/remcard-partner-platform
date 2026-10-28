@@ -1,5 +1,22 @@
 import { remcardFetch } from "@/lib/api-client";
 
+/** Server-authoritative collaboration search eligibility (not public catalog visibility). */
+export type PartnerSearchVisibility = {
+  visible: boolean;
+  reasonCode: string;
+  reasonLabel: string;
+};
+
+/** Server-authoritative partnership lifecycle counts for admin registry. */
+export type PartnerRegistryPartnershipCounts = {
+  active: number;
+  invited: number;
+  pending: number;
+  paused: number;
+  ended: number;
+  total: number;
+};
+
 export type PartnerRegistryItem = {
   id: string;
   publicId: string | null;
@@ -16,6 +33,9 @@ export type PartnerRegistryItem = {
     catalogHiddenAt: string | null;
     projectArchivedAt: string | null;
   } | null;
+  /** Optional until backend rollout; never infer from catalog/registration fields. */
+  partnerSearchVisibility?: PartnerSearchVisibility | null;
+  partnershipCounts?: PartnerRegistryPartnershipCounts | null;
 };
 
 export type PartnerRegistryFacets = import("@/lib/prof-admin-management-api").PartnerRegistryFacets;
