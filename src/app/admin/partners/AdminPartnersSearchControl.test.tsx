@@ -99,28 +99,43 @@ describe("Admin partner search visibility controls", () => {
     expect(screen.getAllByText("Виден в каталоге").length).toBeGreaterThan(0);
   });
 
-  it("runs preview and apply for hide_partner_search with reason and refreshes registry", async () => {
+  it("runs preview and apply for hide_partner_search without manual reason and sends auto audit text", async () => {
     const panel = await openManagement("Legacy Demo Visible");
-    fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Скрыть из поиска" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Скрыть от партнёров" }));
     await waitFor(() =>
       expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("demo-show", "hide_partner_search"),
     );
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() =>
       expect(api.applyPartnerLifecycle).toHaveBeenCalledWith(
         "demo-show",
         "hide_partner_search",
-        "Скрыть из поиска",
+        "Администратор выбрал скрытие партнёра от поиска сотрудничества",
         "tok-show",
       ),
     );
     expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(1);
   });
 
+  it("does not call apply when search preview is cancelled", async () => {
+    const panel = await openManagement("Legacy Demo Visible");
+    fireEvent.click(within(panel).getByRole("button", { name: "Скрыть от партнёров" }));
+    await screen.findByRole("button", { name: "Подтвердить" });
+    fireEvent.click(screen.getByRole("button", { name: "Отмена" }));
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+    expect(within(panel).getByRole("button", { name: "Скрыть от партнёров" })).toBeTruthy();
+  });
+
+  it("still requires manual reason before catalog hide preview", async () => {
+    const panel = await openManagement("Legacy Demo Visible");
+    fireEvent.click(within(panel).getByRole("button", { name: "Убрать из каталога" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Укажите причину");
+    expect(api.previewPartnerLifecycle).not.toHaveBeenCalled();
+  });
+
   it("disables show for hard-gated archived partner without calling preview", async () => {
     const panel = await openManagement("Archived Partner");
-    fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Попытка" } });
     expect(within(panel).getByRole("button", { name: "Показывать партнёрам" })).toBeDisabled();
     expect(api.previewPartnerLifecycle).not.toHaveBeenCalled();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
@@ -159,12 +174,17 @@ describe("Admin partner search visibility controls", () => {
     const row = nameCell.closest("tr")!;
     fireEvent.click(within(row).getByRole("button", { name: "Действия" }));
     const panel = screen.getByRole("region", { name: /Demo Hidden Search/ });
-    fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
     await screen.findByRole("button", { name: "Подтвердить" });
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
 
     await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
+    expect(api.applyPartnerLifecycle).toHaveBeenCalledWith(
+      "demo-hidden",
+      "show_partner_search",
+      "Администратор выбрал показ партнёра в поиске сотрудничества",
+      "token",
+    );
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Подтвердить" })).toBeEnabled();
     });
@@ -218,7 +238,6 @@ describe("Admin partner search visibility controls", () => {
     const row = nameCell.closest("tr")!;
     fireEvent.click(within(row).getByRole("button", { name: "Действия" }));
     const panel = screen.getByRole("region", { name: /Demo Hidden Search/ });
-    fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
     await screen.findByRole("button", { name: "Подтвердить" });
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));

@@ -3,7 +3,9 @@ import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
 import {
   PARTNER_SEARCH_LIFECYCLE_ACTION,
   adminSearchOverrideSettingLabel,
+  autoPartnerSearchLifecycleReason,
   effectivePartnerSearchPrimaryLabel,
+  isPartnerSearchLifecycleAction,
   partnerSearchActionControl,
 } from "./partnerSearchControl";
 
@@ -64,5 +66,19 @@ describe("partnerSearchControl", () => {
   it("falls back when visibility DTO is absent", () => {
     expect(effectivePartnerSearchPrimaryLabel(row())).toBeNull();
     expect(adminSearchOverrideSettingLabel(undefined)).toBe("По правилам регистрации");
+  });
+
+  it("recognizes search lifecycle actions and builds audit reasons", () => {
+    expect(isPartnerSearchLifecycleAction("hide_partner_search")).toBe(true);
+    expect(isPartnerSearchLifecycleAction("hide_catalog")).toBe(false);
+    expect(autoPartnerSearchLifecycleReason(PARTNER_SEARCH_LIFECYCLE_ACTION.show)).toContain(
+      "показ",
+    );
+    expect(autoPartnerSearchLifecycleReason(PARTNER_SEARCH_LIFECYCLE_ACTION.hide)).toContain(
+      "скрытие",
+    );
+    expect(autoPartnerSearchLifecycleReason(PARTNER_SEARCH_LIFECYCLE_ACTION.reset)).toContain(
+      "правилам регистрации",
+    );
   });
 });

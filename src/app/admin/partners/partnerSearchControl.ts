@@ -13,6 +13,43 @@ export const PARTNER_SEARCH_LIFECYCLE_ACTION = {
 export type PartnerSearchLifecycleAction =
   (typeof PARTNER_SEARCH_LIFECYCLE_ACTION)[keyof typeof PARTNER_SEARCH_LIFECYCLE_ACTION];
 
+const SEARCH_LIFECYCLE_ACTIONS: readonly PartnerSearchLifecycleAction[] = [
+  PARTNER_SEARCH_LIFECYCLE_ACTION.show,
+  PARTNER_SEARCH_LIFECYCLE_ACTION.hide,
+  PARTNER_SEARCH_LIFECYCLE_ACTION.reset,
+];
+
+export function isPartnerSearchLifecycleAction(
+  action: string,
+): action is PartnerSearchLifecycleAction {
+  return (SEARCH_LIFECYCLE_ACTIONS as readonly string[]).includes(action);
+}
+
+/** Audit reason sent on apply after admin confirms a search-visibility change. */
+export function autoPartnerSearchLifecycleReason(action: PartnerSearchLifecycleAction): string {
+  switch (action) {
+    case PARTNER_SEARCH_LIFECYCLE_ACTION.show:
+      return "Администратор выбрал показ партнёра в поиске сотрудничества";
+    case PARTNER_SEARCH_LIFECYCLE_ACTION.hide:
+      return "Администратор выбрал скрытие партнёра от поиска сотрудничества";
+    default:
+      return "Администратор сбросил видимость в поиске к правилам регистрации";
+  }
+}
+
+export function partnerSearchLifecycleActionShortLabel(
+  action: PartnerSearchLifecycleAction,
+): string {
+  switch (action) {
+    case PARTNER_SEARCH_LIFECYCLE_ACTION.show:
+      return "Показывать партнёрам";
+    case PARTNER_SEARCH_LIFECYCLE_ACTION.hide:
+      return "Скрыть от партнёров";
+    default:
+      return "По правилам регистрации";
+  }
+}
+
 const HARD_GATE_CODE_FRAGMENTS = [
   "archived",
   "archive",

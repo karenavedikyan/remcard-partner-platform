@@ -42,6 +42,10 @@ import {
   previewPartnerLifecycle,
 } from "@/lib/prof-admin-partners-api";
 import { AdminPartnersMetricsBar } from "./AdminPartnersMetricsBar";
+import {
+  autoPartnerSearchLifecycleReason,
+  isPartnerSearchLifecycleAction,
+} from "./partnerSearchControl";
 
 type PendingPreview = {
   action: string;
@@ -271,7 +275,7 @@ export function AdminPartnersClient() {
   async function requestPreview(action: string) {
     if (!singleSelected) return;
     setActionError(null);
-    if (!reason.trim()) {
+    if (!isPartnerSearchLifecycleAction(action) && !reason.trim()) {
       setActionError("Укажите причину перед получением preview");
       return;
     }
@@ -293,10 +297,13 @@ export function AdminPartnersClient() {
     setActionError(null);
     setIsApplyingSingle(true);
     try {
+      const applyReason = isPartnerSearchLifecycleAction(pendingPreview.action)
+        ? autoPartnerSearchLifecycleReason(pendingPreview.action)
+        : reason.trim();
       await applyPartnerLifecycle(
         singleSelected.id,
         pendingPreview.action,
-        reason.trim(),
+        applyReason,
         pendingPreview.confirmToken,
       );
       setPendingPreview(null);
