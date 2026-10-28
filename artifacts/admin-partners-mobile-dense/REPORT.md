@@ -11,7 +11,7 @@
 | Header/row compression | `a0d63b95` |
 | Compact status tokens (product) | `3c0c28a0` |
 | **Accepted product tip** | `7443ac29ce8bab27b318f4dccb83ff011abaa531` |
-| Harness cursor mock + capture + report | tip after QA commit (see git log) |
+| Harness cursor mock + capture + report | `ef106411` |
 
 No production deploy, no PR, no changes to published PROF.
 
