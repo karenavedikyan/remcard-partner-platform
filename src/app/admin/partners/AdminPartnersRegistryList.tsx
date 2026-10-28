@@ -14,6 +14,8 @@ import {
 } from "./partnerRegistryDisplay";
 import { PartnerCollaborationBlock } from "./PartnerCollaborationBlock";
 import type { PageSelectionState } from "./adminPartnersSelection";
+import { AdminPartnersDenseRegistryList } from "./AdminPartnersDenseRegistryList";
+import type { PartnersEffectiveViewMode } from "./adminPartnersViewMode";
 
 type PendingPreview = {
   action: string;
@@ -23,7 +25,7 @@ type PendingPreview = {
 };
 
 type ListProps = {
-  viewMode: "table" | "cards";
+  viewMode: PartnersEffectiveViewMode;
   items: PartnerRegistryItem[];
   loading: boolean;
   selectedIds: ReadonlyMap<string, { id: string; displayName: string | null }>;
@@ -33,6 +35,7 @@ type ListProps = {
   selectionBlocked: boolean;
   singleSelected: PartnerRegistryItem | null;
   onSelectSingle: (row: PartnerRegistryItem) => void;
+  onToggleExpand: (row: PartnerRegistryItem) => void;
   onCloseSingle: () => void;
   reason: string;
   onReasonChange: (v: string) => void;
@@ -87,6 +90,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
     onToggleRow,
     singleSelected,
     onSelectSingle,
+    onToggleExpand,
     onCloseSingle,
     reason,
     onReasonChange,
@@ -99,6 +103,31 @@ export function AdminPartnersRegistryList(props: ListProps) {
     headerSelectRef,
     cardsPageSelectRef,
   } = props;
+
+  if (viewMode === "dense") {
+    return (
+      <AdminPartnersDenseRegistryList
+        items={items}
+        loading={loading}
+        selectedIds={selectedIds}
+        pageSelectState={pageSelectState}
+        onTogglePageSelect={onTogglePageSelect}
+        onToggleRow={onToggleRow}
+        singleSelected={singleSelected}
+        onToggleExpand={onToggleExpand}
+        onCloseSingle={onCloseSingle}
+        reason={reason}
+        onReasonChange={onReasonChange}
+        pendingPreview={pendingPreview}
+        onCancelPreview={onCancelPreview}
+        onRequestPreview={onRequestPreview}
+        onConfirmApply={onConfirmApply}
+        isApplyingSingle={isApplyingSingle}
+        interactionsDisabled={interactionsDisabled}
+        pageSelectRef={cardsPageSelectRef}
+      />
+    );
+  }
 
   if (viewMode === "cards") {
     return (

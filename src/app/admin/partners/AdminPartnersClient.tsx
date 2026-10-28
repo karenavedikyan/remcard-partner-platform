@@ -17,10 +17,12 @@ import {
 } from "@/app/admin/partners/adminPartnersBulkLifecycle";
 import {
   REGISTRY_PAGE_SIZES,
-  VIEW_MODE_STORAGE_KEY,
   type BulkLifecycleAction,
   type RegistryPageSize,
 } from "@/app/admin/partners/adminPartnersRegistryConstants";
+import { countActiveRegistryFilters } from "@/app/admin/partners/adminPartnersFilterHelpers";
+import { usePartnersRegistryViewMode } from "@/app/admin/partners/adminPartnersViewMode";
+import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
 import {
   clearAllSelection,
   clearPageSelection,
@@ -38,7 +40,6 @@ import {
   applyPartnerLifecycle,
   fetchPartnerRegistry,
   previewPartnerLifecycle,
-  type PartnerRegistryItem,
 } from "@/lib/prof-admin-partners-api";
 import { AdminPartnersMetricsBar } from "./AdminPartnersMetricsBar";
 
@@ -48,13 +49,6 @@ type PendingPreview = {
   warnings: string[];
   confirmToken: string;
 };
-
-function defaultViewMode(): "table" | "cards" {
-  if (typeof window === "undefined") return "table";
-  const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-  if (stored === "table" || stored === "cards") return stored;
-  return window.matchMedia("(max-width: 1000px)").matches ? "cards" : "table";
-}
 
 export function AdminPartnersClient() {
   const searchParams = useSearchParams();
@@ -79,8 +73,10 @@ export function AdminPartnersClient() {
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const error = actionError ?? registryError;
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
-  const [viewModeReady, setViewModeReady] = useState(false);
+  const { storedViewMode, setStoredViewMode, effectiveViewMode, mobileDense } =
+    usePartnersRegistryViewMode();
+  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
+  const [bulkFormExpanded, setBulkFormExpanded] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<Map<string, SelectedPartnerRef>>(() => new Map());
   const [selectionLimitHit, setSelectionLimitHit] = useState(false);
@@ -147,14 +143,27 @@ export function AdminPartnersClient() {
   }, [urlFilterKey, searchParams, interactionsDisabled]);
 
   useEffect(() => {
-    setViewMode(defaultViewMode());
-    setViewModeReady(true);
-  }, []);
+    if (selectedIds.size === 0) setBulkFormExpanded(false);
+  }, [selectedIds.size]);
 
-  useEffect(() => {
-    if (!viewModeReady) return;
-    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
-  }, [viewMode, viewModeReady]);
+  const activeFilterCount = countActiveRegistryFilters({
+    registration,
+    partnerType,
+    city,
+    catalog,
+    archived,
+  });
+
+  function resetOptionalFilters() {
+    if (interactionsDisabled) return;
+    setRegistration("");
+    setPartnerType("");
+    setCity("");
+    setCatalog("");
+    setArchived("");
+    resetPagination();
+    resetWorkflowForFilterChange();
+  }
 
   function resetWorkflowForFilterChange() {
     setSelectedIds(clearAllSelection());
@@ -232,7 +241,7 @@ export function AdminPartnersClient() {
       if (!el) continue;
       el.indeterminate = pageSelect === "partial";
     }
-  }, [pageSelect, viewMode]);
+  }, [pageSelect, effectiveViewMode]);
 
   function invalidateBulkPreview() {
     setBulkPreview(null);
@@ -415,7 +424,7 @@ export function AdminPartnersClient() {
         onArchived={(v) => guardFilterChange(setArchived, v)}
       />
       <div className={styles.filters}>
-        <label className={styles.field}>
+        <label className={`${styles.field} ${styles.filtersSearchField}`}>
           Поиск партнёров
           <input
             placeholder="Поиск"
@@ -425,6 +434,38 @@ export function AdminPartnersClient() {
             disabled={interactionsDisabled}
           />
         </label>
+        <div className={styles.filtersMobileBar}>
+          <button
+            type="button"
+            className={styles.filtersToggle}
+            aria-expanded={filtersPanelOpen}
+            disabled={interactionsDisabled}
+            onClick={() => setFiltersPanelOpen((v) => !v)}
+          >
+            Фильтры{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </button>
+          {activeFilterCount > 0 ? (
+            <button
+              type="button"
+              className={styles.filtersReset}
+              disabled={interactionsDisabled}
+              onClick={resetOptionalFilters}
+            >
+              Сбросить
+            </button>
+          ) : null}
+          <Button
+            variant="secondary"
+            disabled={interactionsDisabled || loading}
+            onClick={() => void loadPage(currentCursor)}
+          >
+            Обновить
+          </Button>
+        </div>
+        <div
+          className={styles.filtersExpandable}
+          data-open={filtersPanelOpen || !mobileDense ? "true" : "false"}
+        >
         <label className={styles.field}>
           Регистрация
           <select
@@ -503,29 +544,39 @@ export function AdminPartnersClient() {
           </select>
         </label>
         <div className={styles.toolbarRow}>
-          <div className={styles.viewToggle} role="group" aria-label="Вид реестра">
+          <div
+            className={`${styles.viewToggle} ${styles.viewToggleDesktop}`}
+            role="group"
+            aria-label="Вид реестра"
+          >
             <button
               type="button"
-              className={viewMode === "table" ? styles.viewToggleActive : undefined}
-              aria-pressed={viewMode === "table"}
-              disabled={interactionsDisabled}
-              onClick={() => setViewMode("table")}
+              className={storedViewMode === "table" ? styles.viewToggleActive : undefined}
+              aria-pressed={storedViewMode === "table"}
+              disabled={interactionsDisabled || mobileDense}
+              onClick={() => setStoredViewMode("table")}
             >
               Компактная таблица
             </button>
             <button
               type="button"
-              className={viewMode === "cards" ? styles.viewToggleActive : undefined}
-              aria-pressed={viewMode === "cards"}
-              disabled={interactionsDisabled}
-              onClick={() => setViewMode("cards")}
+              className={storedViewMode === "cards" ? styles.viewToggleActive : undefined}
+              aria-pressed={storedViewMode === "cards"}
+              disabled={interactionsDisabled || mobileDense}
+              onClick={() => setStoredViewMode("cards")}
             >
               Карточки
             </button>
           </div>
-          <Button variant="secondary" disabled={interactionsDisabled || loading} onClick={() => void loadPage(currentCursor)}>
+          <Button
+            variant="secondary"
+            className={styles.refreshDesktop}
+            disabled={interactionsDisabled || loading}
+            onClick={() => void loadPage(currentCursor)}
+          >
             Обновить
           </Button>
+        </div>
         </div>
       </div>
 
@@ -577,6 +628,9 @@ export function AdminPartnersClient() {
         }}
         previewFailures={bulkPreviewFailures}
         disabled={interactionsDisabled}
+        compactSelectionBar={mobileDense}
+        selectionFormExpanded={bulkFormExpanded}
+        onOpenSelectionForm={() => setBulkFormExpanded(true)}
       />
 
       {error ? (
@@ -587,10 +641,10 @@ export function AdminPartnersClient() {
       {loading ? <p role="status">Загрузка…</p> : null}
 
       <div
-        className={`${styles.tableWrap} ${viewMode === "table" ? styles.tableWrapCompact : ""}`}
+        className={`${styles.tableWrap} ${effectiveViewMode === "table" ? styles.tableWrapCompact : ""} ${effectiveViewMode === "dense" ? styles.tableWrapDense : ""}`}
       >
         <AdminPartnersRegistryList
-          viewMode={viewMode}
+          viewMode={effectiveViewMode}
           items={items}
           loading={loading}
           selectedIds={selectedIds}
@@ -600,6 +654,18 @@ export function AdminPartnersClient() {
           selectionBlocked={selectionLimitHit}
           singleSelected={singleSelected}
           onSelectSingle={(row) => {
+            setSingleSelected(row);
+            setPendingPreview(null);
+            setReason("");
+            setActionError(null);
+          }}
+          onToggleExpand={(row) => {
+            if (singleSelected?.id === row.id) {
+              setSingleSelected(null);
+              setPendingPreview(null);
+              setActionError(null);
+              return;
+            }
             setSingleSelected(row);
             setPendingPreview(null);
             setReason("");

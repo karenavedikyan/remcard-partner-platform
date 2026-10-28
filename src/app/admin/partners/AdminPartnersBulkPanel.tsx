@@ -29,6 +29,10 @@ type Props = {
   onExcludeFailedAndRetryPreview: (userIds: string[]) => void;
   previewFailures: { userId: string; displayName: string | null; message: string }[] | null;
   disabled: boolean;
+  /** Mobile: short bar until user opens the full bulk form. */
+  compactSelectionBar?: boolean;
+  selectionFormExpanded?: boolean;
+  onOpenSelectionForm?: () => void;
 };
 
 function outcomeLabel(row: BulkApplyRowResult): string {
@@ -58,6 +62,9 @@ export function AdminPartnersBulkPanel({
   onExcludeFailedAndRetryPreview,
   previewFailures,
   disabled,
+  compactSelectionBar = false,
+  selectionFormExpanded = true,
+  onOpenSelectionForm,
 }: Props) {
   if (selectedCount === 0 && !applyResults && !applying) return null;
 
@@ -67,6 +74,34 @@ export function AdminPartnersBulkPanel({
     selectedCount > 0 && !applying && (!bulkPreview || hasPreviewFailures);
   const showConfirmDialog = !applying && bulkPreview && !hasPreviewFailures;
   const reportTitle = applying ? "Ход групповой операции" : "Итог групповой операции";
+  const showCompactBarOnly =
+    compactSelectionBar &&
+    !selectionFormExpanded &&
+    selectedCount > 0 &&
+    !applying &&
+    !bulkPreview &&
+    !applyResults;
+
+  if (showCompactBarOnly) {
+    return (
+      <div className={styles.bulkCompactBar} role="region" aria-label="Групповые действия">
+        <span className={styles.bulkCompactCount}>
+          Выбрано: <strong>{selectedCount}</strong>
+          {otherPagesCount > 0 ? (
+            <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
+          ) : null}
+        </span>
+        <div className={styles.bulkCompactActions}>
+          <Button variant="secondary" disabled={disabled} onClick={() => onOpenSelectionForm?.()}>
+            Действия
+          </Button>
+          <Button variant="secondary" disabled={disabled} onClick={onClearSelection}>
+            Снять выбор
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.bulkPanel} role="region" aria-label="Групповые действия">
