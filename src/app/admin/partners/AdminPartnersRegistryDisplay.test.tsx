@@ -45,7 +45,7 @@ describe("PROF admin partner registry display", () => {
     }
     expect(screen.getByRole("table",{name:"Реестр партнёров"})).toBeTruthy();
     const cells=screen.getByText(row.displayName).closest("tr")!.querySelectorAll("td");
-    expect([...cells].map(cell=>cell.getAttribute("data-label"))).toEqual(["Имя","Тип","Город / организация","Регистрация","Видимость на remcard.ru","Профиль и действия"]);
+    expect([...cells].map(cell=>cell.getAttribute("data-label"))).toEqual(["Выбор","Имя","Тип","Город / организация","Регистрация","Каталог","Доступ"]);
   });
   it.each(["AGENT", "MASTER", "STORE", "COMPANY"])("forwards the %s type filter to the real registry contract", async kind => {
     await open();

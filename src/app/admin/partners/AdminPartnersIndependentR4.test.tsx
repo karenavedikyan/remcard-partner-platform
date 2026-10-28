@@ -59,7 +59,7 @@ describe("Independent round-four admin positive and concurrency controls", () =>
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Подтвердить" })).toBeNull();
   });
-  it("actually sends nextCursor and appends the next page", async () => {
+  it("sends nextCursor when advancing to the next registry page", async () => {
     api.fetchPartnerRegistry
       .mockResolvedValueOnce({ items: [row], total: 2, nextCursor: "cursor-r4" })
       .mockResolvedValueOnce({
@@ -69,11 +69,12 @@ describe("Independent round-four admin positive and concurrency controls", () =>
       });
     render(<AdminPartnersClient />);
     await screen.findByText(row.displayName);
-    fireEvent.click(screen.getByRole("button", { name: "Загрузить ещё" }));
+    fireEvent.click(screen.getByRole("button", { name: "Следующая страница" }));
     await screen.findByText("Second R4 partner");
     expect(api.fetchPartnerRegistry.mock.calls[1][0].get("cursor")).toBe("cursor-r4");
-    expect(screen.getByText(row.displayName)).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Загрузить ещё" })).toBeNull();
+    expect(api.fetchPartnerRegistry.mock.calls[1][0].get("limit")).toBe("25");
+    expect(screen.queryByText(row.displayName)).toBeNull();
+    expect(screen.getByRole("button", { name: "Предыдущая страница" })).toBeEnabled();
   });
   it("does not send a second mutation while the first confirmation is pending", async () => {
     const finishes: Array<(value: unknown) => void> = [];

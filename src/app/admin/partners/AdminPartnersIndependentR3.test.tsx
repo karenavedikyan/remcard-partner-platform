@@ -59,6 +59,6 @@ describe("Independent admin registry acceptance round three", () => {
     seed();
     render(<AdminPartnersClient />);
     await screen.findByText("Synthetic partner");
-    expect(screen.queryByRole("button", { name: /загрузить ещё/i })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Следующая страница" })).toBeEnabled();
   });
 });

@@ -17,6 +17,7 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: [
       "src/**/*.test.tsx",
+      "src/app/admin/partners/**/*.test.ts",
       "src/lib/profile-sections.test.ts",
       "src/lib/profile-draft-sync.test.ts",
       "src/lib/profile-catalog-stages-hydration.test.ts",

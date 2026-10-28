@@ -62,6 +62,54 @@
 .empty { padding: var(--space-8); text-align: center; }
 .loadMore { justify-self: center; }
 .close { justify-self: start; }
+.toolbarRow { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.viewToggle { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.viewToggle button {
+  min-height: 44px; padding: 8px 14px; border: 0; background: var(--offset); color: var(--ink);
+  font-size: var(--text-sm); font-weight: 650; cursor: pointer;
+}
+.viewToggle button:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+.viewToggleActive { background: var(--soft); color: var(--primary); }
+.bulkPanel {
+  position: sticky; top: 0; z-index: 2; display: grid; gap: var(--space-3);
+  padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--surface); box-shadow: 0 1px 0 var(--line);
+}
+.bulkPanelHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.bulkHint { color: var(--muted); font-size: var(--text-sm); font-weight: 400; }
+.bulkPreviewList, .bulkReportList { display: grid; gap: var(--space-2); margin: 0; padding-left: 1.25rem; max-height: 240px; overflow: auto; }
+.bulkPreviewList li, .bulkReportList li { display: grid; gap: 4px; }
+.bulkReport h3 { font-size: 1rem; }
+.pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-4); }
+.paginationMeta { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.tableCompact { font-size: 0.8125rem; }
+.tableCompact th, .tableCompact td.compactRow td { padding: 10px 12px; }
+.tableCompact .compactRow td { padding: 10px 12px; vertical-align: middle; }
+.tableHeadSticky { position: sticky; top: 0; z-index: 1; }
+.tableHeadSticky th { box-shadow: 0 1px 0 var(--line); }
+.checkCol { width: 44px; text-align: center; vertical-align: middle; }
+.checkCol input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+.compactRowActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.compactRowActions button { padding-inline: 10px; min-height: 36px; font-size: 0.8125rem; }
+.rowMenu { margin-top: 4px; }
+.rowMenu summary {
+  width: fit-content; min-height: 36px; padding-block: 6px; cursor: pointer; color: var(--primary);
+  font-weight: 650; font-size: 0.8125rem;
+}
+.rowMenuBody { display: grid; gap: 8px; padding: 8px 0 4px; font-weight: 500; }
+.mutedInline { color: var(--muted); font-size: 0.8125rem; }
+.cardGrid { display: grid; gap: var(--space-3); padding: var(--space-3); }
+.partnerCard {
+  display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line);
+  border-radius: var(--radius-md); background: var(--offset);
+}
+.partnerCard[data-selected] { border-color: color-mix(in srgb, var(--primary) 40%, var(--line)); }
+.cardHead { display: flex; gap: var(--space-3); align-items: flex-start; }
+.cardTitleBlock h3 { font-size: 1rem; margin: 0; }
+.cardMeta { margin: 4px 0 0; color: var(--muted); font-size: 0.8125rem; font-weight: 400; }
+.cardBadges { display: flex; flex-wrap: wrap; gap: 8px; }
+.cardActions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rowCheck { display: flex; align-items: flex-start; padding-top: 2px; }
 
 @media (max-width: 1000px) {
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
