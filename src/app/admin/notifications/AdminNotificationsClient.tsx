@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
+import { adminNotificationCategoryLabel } from "@/lib/admin-notification-display";
 import { adminNotificationActionHref } from "@/lib/admin-notification-url";
 import {
   fetchAdminNotifications,
@@ -22,18 +23,6 @@ function formatWhen(iso: string): string {
   return d.toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 }
 
-function categoryLabel(type: string): string {
-  const map: Record<string, string> = {
-    NEW_CLIENT: "Новый клиент",
-    NEW_PARTNER: "Новый партнёр",
-    PARTNER_ACTIVITY: "Активность партнёра",
-    new_client: "Новый клиент",
-    new_partner: "Новый партнёр",
-    partner_activity: "Активность партнёра",
-  };
-  return map[type] ?? type;
-}
-
 export function AdminNotificationsClient() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [items, setItems] = useState<AdminNotificationItem[]>([]);
@@ -43,84 +32,181 @@ export function AdminNotificationsClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [inboxMessage, setInboxMessage] = useState("");
+  const [markBusy, setMarkBusy] = useState(false);
   const mountedRef = useRef(true);
+  const requestSeqRef = useRef(0);
+  const mutationSeqRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      requestSeqRef.current += 1;
     };
   }, []);
 
   useEffect(() => {
+    requestSeqRef.current += 1;
     setCursorStack([null]);
     setStackIndex(0);
   }, [unreadOnly]);
 
   const currentCursor = cursorStack[stackIndex] ?? null;
 
-  const loadInbox = useCallback(async () => {
+  const applyInboxResult = useCallback(
+    (requestId: number, data: { items: AdminNotificationItem[]; nextCursor: string | null }) => {
+      if (requestId !== requestSeqRef.current || !mountedRef.current) return;
+      setItems(data.items);
+      setNextCursor(data.nextCursor);
+    },
+    [],
+  );
+
+  const fetchUnreadSkippingEmptyPages = useCallback(
+    async (requestId: number, startCursor: string | null) => {
+      let cursor = startCursor;
+      while (true) {
+        if (requestId !== requestSeqRef.current) return null;
+        const data = await fetchAdminNotifications({
+          unread: true,
+          limit: PAGE_LIMIT,
+          cursor,
+        });
+        if (requestId !== requestSeqRef.current) return null;
+        if (data.items.length > 0 || !data.nextCursor) {
+          return { data, resolvedCursor: cursor };
+        }
+        cursor = data.nextCursor;
+      }
+    },
+    [],
+  );
+
+  const runFetch = useCallback(() => {
+    const requestId = ++requestSeqRef.current;
     setLoading(true);
     setError("");
     setInboxMessage("");
+
+    void (async () => {
+      try {
+        const data = await fetchAdminNotifications({
+          unread: unreadOnly,
+          limit: PAGE_LIMIT,
+          cursor: currentCursor,
+        });
+        applyInboxResult(requestId, data);
+      } catch (caught) {
+        if (requestId !== requestSeqRef.current || !mountedRef.current) return;
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить уведомления");
+        setItems([]);
+        setNextCursor(null);
+      } finally {
+        if (requestId === requestSeqRef.current && mountedRef.current) {
+          setLoading(false);
+        }
+      }
+    })();
+  }, [applyInboxResult, currentCursor, unreadOnly]);
+
+  useEffect(() => {
+    runFetch();
+  }, [runFetch]);
+
+  const refreshAfterMutation = useCallback(async () => {
+    const requestId = requestSeqRef.current;
+    const mutationId = mutationSeqRef.current;
+    setLoading(true);
+    setError("");
     try {
+      if (unreadOnly) {
+        const resolved = await fetchUnreadSkippingEmptyPages(requestId, currentCursor);
+        if (!resolved || requestId !== requestSeqRef.current || mutationId !== mutationSeqRef.current) return;
+        applyInboxResult(requestId, resolved.data);
+        if (resolved.resolvedCursor !== currentCursor) {
+          setCursorStack([null, resolved.resolvedCursor]);
+          setStackIndex(resolved.resolvedCursor ? 1 : 0);
+        }
+        return;
+      }
       const data = await fetchAdminNotifications({
-        unread: unreadOnly,
+        unread: false,
         limit: PAGE_LIMIT,
         cursor: currentCursor,
       });
-      if (!mountedRef.current) return;
-      setItems(data.items);
-      setNextCursor(data.nextCursor);
+      if (requestId !== requestSeqRef.current || mutationId !== mutationSeqRef.current) return;
+      applyInboxResult(requestId, data);
     } catch (caught) {
-      if (!mountedRef.current) return;
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить уведомления");
-      setItems([]);
-      setNextCursor(null);
+      if (requestId !== requestSeqRef.current || mutationId !== mutationSeqRef.current) return;
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось обновить список");
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (requestId === requestSeqRef.current && mutationId === mutationSeqRef.current && mountedRef.current) {
+        setLoading(false);
+      }
     }
-  }, [currentCursor, unreadOnly]);
-
-  useEffect(() => {
-    void loadInbox();
-  }, [loadInbox]);
+  }, [applyInboxResult, currentCursor, fetchUnreadSkippingEmptyPages, unreadOnly]);
 
   async function onMarkRead(id: string) {
+    if (markBusy) return;
+    const mutationId = ++mutationSeqRef.current;
+    const scopeRequestId = requestSeqRef.current;
+    setMarkBusy(true);
     setInboxMessage("");
-    const previous = items;
-    setItems((list) =>
-      list.map((it) => (it.id === id ? { ...it, readAt: it.readAt ?? new Date().toISOString() } : it)),
-    );
+    setError("");
     try {
       await markAdminNotificationRead(id);
-      if (unreadOnly) {
-        setItems((list) => list.filter((it) => it.id !== id));
-      }
+      if (mutationId !== mutationSeqRef.current || scopeRequestId !== requestSeqRef.current) return;
       window.dispatchEvent(new CustomEvent("admin-notifications-changed"));
+      await refreshAfterMutation();
     } catch {
-      setItems(previous);
+      if (mutationId !== mutationSeqRef.current || scopeRequestId !== requestSeqRef.current) return;
+      await refreshAfterMutation();
+      if (mutationId !== mutationSeqRef.current || scopeRequestId !== requestSeqRef.current) return;
       setError("Не удалось отметить прочитанным — непрочитанные сохранены");
+    } finally {
+      if (mutationId === mutationSeqRef.current) setMarkBusy(false);
     }
   }
 
   async function onMarkAllRead() {
+    if (markBusy) return;
+    const mutationId = ++mutationSeqRef.current;
+    const scopeRequestId = requestSeqRef.current;
+    setMarkBusy(true);
     setInboxMessage("");
-    const previous = items;
+    setError("");
     try {
       await markAllAdminNotificationsRead();
-      setItems((list) => list.map((it) => ({ ...it, readAt: it.readAt ?? new Date().toISOString() })));
-      if (unreadOnly) setItems([]);
-      setInboxMessage("Все уведомления отмечены прочитанными");
+      if (mutationId !== mutationSeqRef.current || scopeRequestId !== requestSeqRef.current) return;
+      requestSeqRef.current += 1;
+      setCursorStack([null]);
+      setStackIndex(0);
       window.dispatchEvent(new CustomEvent("admin-notifications-changed"));
+      setInboxMessage("Все уведомления отмечены прочитанными");
+      if (unreadOnly) {
+        const requestId = ++requestSeqRef.current;
+        setLoading(true);
+        try {
+          const resolved = await fetchUnreadSkippingEmptyPages(requestId, null);
+          if (resolved && requestId === requestSeqRef.current && mutationId === mutationSeqRef.current) {
+            applyInboxResult(requestId, resolved.data);
+          }
+        } finally {
+          if (requestId === requestSeqRef.current) setLoading(false);
+        }
+      } else {
+        runFetch();
+      }
     } catch {
-      setItems(previous);
+      if (mutationId !== mutationSeqRef.current) return;
       setError("Не удалось отметить все прочитанными");
+    } finally {
+      if (mutationId === mutationSeqRef.current) setMarkBusy(false);
     }
   }
 
   function goNextPage() {
-    if (!nextCursor) return;
+    if (!nextCursor || markBusy) return;
     setCursorStack((prev) => {
       const trimmed = prev.slice(0, stackIndex + 1);
       return [...trimmed, nextCursor];
@@ -129,9 +215,11 @@ export function AdminNotificationsClient() {
   }
 
   function goPrevPage() {
-    if (stackIndex <= 0) return;
+    if (stackIndex <= 0 || markBusy) return;
     setStackIndex((i) => i - 1);
   }
+
+  const inboxEmpty = !loading && !error && items.length === 0 && !nextCursor;
 
   return (
     <div className={styles.page}>
@@ -147,11 +235,17 @@ export function AdminNotificationsClient() {
             <input
               type="checkbox"
               checked={unreadOnly}
+              disabled={markBusy}
               onChange={(e) => setUnreadOnly(e.target.checked)}
             />
             <span>Только непрочитанные</span>
           </label>
-          <Button type="button" variant="secondary" disabled={loading || items.length === 0} onClick={() => void onMarkAllRead()}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={loading || markBusy || items.length === 0}
+            onClick={() => void onMarkAllRead()}
+          >
             Прочитать все
           </Button>
         </div>
@@ -159,7 +253,7 @@ export function AdminNotificationsClient() {
         {error ? (
           <div className={styles.stateBox} role="alert">
             <p>{error}</p>
-            <button type="button" className={styles.retryButton} onClick={() => void loadInbox()}>
+            <button type="button" className={styles.retryButton} onClick={runFetch}>
               Повторить
             </button>
           </div>
@@ -173,7 +267,7 @@ export function AdminNotificationsClient() {
 
         {loading ? <p className={styles.stateBox}>Загрузка…</p> : null}
 
-        {!loading && !error && items.length === 0 ? (
+        {inboxEmpty ? (
           <p className={styles.stateBox} role="status">
             {unreadOnly ? "Непрочитанных уведомлений нет." : "Уведомлений пока нет."}
           </p>
@@ -187,7 +281,7 @@ export function AdminNotificationsClient() {
               return (
                 <li key={item.id} className={styles.inboxItem} data-unread={unread || undefined}>
                   <div className={styles.inboxMeta}>
-                    <span className={styles.categoryBadge}>{categoryLabel(item.type)}</span>
+                    <span className={styles.categoryBadge}>{adminNotificationCategoryLabel(item)}</span>
                     <time dateTime={item.createdAt}>{formatWhen(item.createdAt)}</time>
                   </div>
                   <h3 className={styles.inboxTitle}>{item.title}</h3>
@@ -205,7 +299,12 @@ export function AdminNotificationsClient() {
                       <span className={styles.untrustedLink}>Ссылка недоступна (не доверенный маршрут)</span>
                     ) : null}
                     {unread ? (
-                      <button type="button" className={styles.markRead} onClick={() => void onMarkRead(item.id)}>
+                      <button
+                        type="button"
+                        className={styles.markRead}
+                        disabled={markBusy}
+                        onClick={() => void onMarkRead(item.id)}
+                      >
                         Прочитано
                       </button>
                     ) : null}
@@ -216,13 +315,13 @@ export function AdminNotificationsClient() {
           </ul>
         ) : null}
 
-        {!loading && items.length > 0 ? (
+        {!loading && !error && (items.length > 0 || nextCursor) ? (
           <div className={styles.pagination}>
-            <button type="button" disabled={stackIndex <= 0} onClick={goPrevPage}>
+            <button type="button" disabled={stackIndex <= 0 || markBusy} onClick={goPrevPage}>
               Назад
             </button>
             <span>Страница {stackIndex + 1}</span>
-            <button type="button" disabled={!nextCursor} onClick={goNextPage}>
+            <button type="button" disabled={!nextCursor || markBusy} onClick={goNextPage}>
               Дальше
             </button>
           </div>
