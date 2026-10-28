@@ -34,7 +34,12 @@ export function PartnerCollaborationBlock({ row, variant = "table" }: Props) {
       {variant === "card" ? <p className={styles.collaborationScopeHint}>{COLLABORATION_SCOPE_HINT}</p> : null}
       <div className={styles.collaborationPrimary}>
         <span className={visibilityBadgeClass}>{primary}</span>
-        {visibility.kind === "hidden" ? (
+        {visibility.kind !== "missing" ? (
+          <span className={styles.collaborationAdminSetting}>
+            Настройка: {visibility.adminSettingLabel}
+          </span>
+        ) : null}
+        {visibility.kind === "hidden" && visibility.reasonLabel && primary !== visibility.reasonLabel ? (
           <span className={styles.collaborationReason}>{visibility.reasonLabel}</span>
         ) : null}
       </div>

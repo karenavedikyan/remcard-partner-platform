@@ -1,10 +1,15 @@
 import { remcardFetch } from "@/lib/api-client";
 
 /** Server-authoritative collaboration search eligibility (not public catalog visibility). */
+export type PartnerSearchAdminOverride = "AUTO" | "SHOW" | "HIDE";
+
+/** Server-authoritative collaboration search eligibility (not public catalog visibility). */
 export type PartnerSearchVisibility = {
   visible: boolean;
   reasonCode: string;
   reasonLabel: string;
+  /** Admin override for live partner search; AUTO keeps registration/catalog policy. */
+  adminOverride?: PartnerSearchAdminOverride | null;
 };
 
 /** Server-authoritative partnership lifecycle counts for admin registry. */

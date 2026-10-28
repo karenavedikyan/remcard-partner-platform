@@ -2,14 +2,22 @@ import type {
   PartnerRegistryItem,
   PartnerRegistryPartnershipCounts,
 } from "@/lib/prof-admin-partners-api";
+import {
+  adminSearchOverrideSettingLabel,
+  effectivePartnerSearchPrimaryLabel,
+} from "./partnerSearchControl";
 
 export const COLLABORATION_SCOPE_HINT =
   "Показывает, может ли партнёр попадать в общий живой поиск сотрудничества между партнёрами. Фактический список у просматривающего зависит от его фильтров.";
 
 export type CollaborationVisibilityPresentation =
   | { kind: "missing" }
-  | { kind: "visible" }
-  | { kind: "hidden"; reasonLabel: string };
+  | {
+      kind: "visible" | "hidden";
+      primaryLabel: string;
+      adminSettingLabel: string;
+      reasonLabel: string | null;
+    };
 
 export function collaborationVisibilityPresentation(
   row: PartnerRegistryItem,
@@ -18,17 +26,21 @@ export function collaborationVisibilityPresentation(
   if (v == null || typeof v.visible !== "boolean") {
     return { kind: "missing" };
   }
-  if (v.visible) {
-    return { kind: "visible" };
-  }
-  const reasonLabel = typeof v.reasonLabel === "string" && v.reasonLabel.trim() ? v.reasonLabel.trim() : "—";
-  return { kind: "hidden", reasonLabel };
+  const adminSettingLabel = adminSearchOverrideSettingLabel(v);
+  const primaryLabel = effectivePartnerSearchPrimaryLabel(row) ?? "—";
+  const reasonLabel =
+    typeof v.reasonLabel === "string" && v.reasonLabel.trim() ? v.reasonLabel.trim() : null;
+  return {
+    kind: v.visible ? "visible" : "hidden",
+    primaryLabel,
+    adminSettingLabel,
+    reasonLabel,
+  };
 }
 
 export function collaborationVisibilityPrimaryLabel(presentation: CollaborationVisibilityPresentation): string {
   if (presentation.kind === "missing") return "Нет данных";
-  if (presentation.kind === "visible") return "Виден партнёрам";
-  return "Не виден партнёрам";
+  return presentation.primaryLabel;
 }
 
 export function formatRegistryCount(value: unknown): string {

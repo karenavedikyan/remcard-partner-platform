@@ -2,6 +2,12 @@
 
 import { Button } from "@/components/ui/Button";
 import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
+import {
+  PARTNER_SEARCH_LIFECYCLE_ACTION,
+  adminSearchOverrideSettingLabel,
+  effectivePartnerSearchPrimaryLabel,
+  partnerSearchActionControl,
+} from "./partnerSearchControl";
 import styles from "./AdminPartners.module.css";
 
 type PendingPreview = {
@@ -36,6 +42,12 @@ export function AdminPartnersSingleManagementPanel({
   isApplying,
   disabled,
 }: Props) {
+  const searchPrimary = effectivePartnerSearchPrimaryLabel(row);
+  const searchSetting = adminSearchOverrideSettingLabel(row.partnerSearchVisibility);
+  const showControl = partnerSearchActionControl(row, PARTNER_SEARCH_LIFECYCLE_ACTION.show);
+  const hideControl = partnerSearchActionControl(row, PARTNER_SEARCH_LIFECYCLE_ACTION.hide);
+  const resetControl = partnerSearchActionControl(row, PARTNER_SEARCH_LIFECYCLE_ACTION.reset);
+
   return (
     <div
       role="region"
@@ -48,6 +60,23 @@ export function AdminPartnersSingleManagementPanel({
         сохраняется, клиентский аккаунт не удаляется. Восстановление не гарантирует прежнюю
         публикацию в каталоге или права.
       </p>
+      <section className={styles.searchControlSection} aria-label="Видимость в поиске сотрудничества">
+        <h3>Поиск сотрудничества между партнёрами</h3>
+        <p className={styles.searchControlLead}>
+          Не меняет регистрацию и публичный каталог. Фактическая видимость в списках у других партнёров
+          зависит также от их фильтров (город, тип).
+        </p>
+        <dl className={styles.searchControlStatus}>
+          <div>
+            <dt>Фактически в поиске</dt>
+            <dd>{searchPrimary ?? "Нет данных с сервера"}</dd>
+          </div>
+          <div>
+            <dt>Решение администратора</dt>
+            <dd>{searchSetting}</dd>
+          </div>
+        </dl>
+      </section>
       <label className={styles.field}>
         Причина изменения
         <textarea
@@ -76,6 +105,30 @@ export function AdminPartnersSingleManagementPanel({
         </div>
       ) : (
         <div className={styles.actions}>
+          <Button
+            variant="secondary"
+            disabled={disabled || showControl.disabled}
+            title={showControl.hint ?? undefined}
+            onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.show)}
+          >
+            Показывать партнёрам
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={disabled || hideControl.disabled}
+            title={hideControl.hint ?? undefined}
+            onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.hide)}
+          >
+            Скрыть от партнёров
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={disabled || resetControl.disabled}
+            title={resetControl.hint ?? undefined}
+            onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.reset)}
+          >
+            По правилам регистрации
+          </Button>
           <Button
             variant="secondary"
             className={styles.danger}

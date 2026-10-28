@@ -47,6 +47,7 @@ describe("partnerCollaborationDisplay", () => {
     const vis = collaborationVisibilityPresentation(row);
     expect(collaborationVisibilityPrimaryLabel(vis)).toBe("Не виден партнёрам");
     expect(vis.kind === "hidden" && vis.reasonLabel).toBe("Демо-аккаунт не участвует в поиске");
+    expect(vis.kind === "hidden" && vis.adminSettingLabel).toBe("По правилам регистрации");
     expect(catalogStatusLabel(row)).toBe("Виден в каталоге");
   });
 
