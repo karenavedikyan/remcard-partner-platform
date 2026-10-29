@@ -29,6 +29,8 @@ export function AdminR1ReviewsClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<AdminR1ReviewItem[]>([]);
+  /** Status the current `reviews` rows were loaded for — blocks stale actions. */
+  const [listStatus, setListStatus] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
@@ -65,15 +67,16 @@ export function AdminR1ReviewsClient() {
       const nextTotal = data.total;
       const maxPage = Math.max(1, Math.ceil(nextTotal / pageSize));
       if (reqPage > maxPage) {
-        // Last row on this page was removed — clamp without painting a false empty page.
         setCounts(data.counts);
         setTotal(nextTotal);
         setReviews([]);
+        setListStatus(reqStatus);
         setPage(maxPage);
         return;
       }
 
       setReviews(data.reviews);
+      setListStatus(reqStatus);
       setCounts(data.counts);
       setTotal(nextTotal);
     } catch (e) {
@@ -81,6 +84,7 @@ export function AdminR1ReviewsClient() {
       if (reqStatus !== statusRef.current) return;
       setError(e instanceof Error ? e.message : "Очередь недоступна");
       setReviews([]);
+      setListStatus(null);
       setTotal(0);
       setCounts(null);
     } finally {
@@ -92,12 +96,31 @@ export function AdminR1ReviewsClient() {
     void load();
   }, [load, status, page]);
 
+  // Close an open confirm when the filter/page changes (unless a command is in flight).
+  useEffect(() => {
+    if (actionPending) return;
+    setConfirm(null);
+    setRejectReason("");
+    setActionError(null);
+  }, [status, page, actionPending]);
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (confirm && !dialog.open) dialog.showModal();
     if (!confirm && dialog.open) dialog.close();
   }, [confirm]);
+
+  function changeStatus(next: string) {
+    // Hide previous queue immediately so pending rows are not actionable under a new filter.
+    setReviews([]);
+    setListStatus(null);
+    setCounts(null);
+    setTotal(0);
+    setError(null);
+    setPage(1);
+    setStatus(next);
+  }
 
   function openConfirm(type: "approve" | "reject", review: AdminR1ReviewItem) {
     setActionError(null);
@@ -126,12 +149,19 @@ export function AdminR1ReviewsClient() {
         await approveAdminR1Review(confirm.review.id);
         setActionSuccess("Отзыв опубликован");
       } else {
-        await rejectAdminR1Review(confirm.review.id, rejectReason.trim());
-        setActionSuccess("Отзыв отклонён");
+        const result = await rejectAdminR1Review(confirm.review.id, rejectReason.trim());
+        if (result.reasonPersisted === false) {
+          setActionSuccess(
+            "Отзыв отклонён, но причина не сохранена в аудите. Проверьте ответ сервера.",
+          );
+        } else {
+          setActionSuccess(
+            "Отзыв отклонён. Причина сохранена в аудите партнёра и доступна в очереди «Отклонены».",
+          );
+        }
       }
       setConfirm(null);
       setRejectReason("");
-      // Refresh current page; load() clamps if this was the last row on page N.
       await load({ pageOverride: pageRef.current });
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Не удалось выполнить действие");
@@ -146,6 +176,9 @@ export function AdminR1ReviewsClient() {
     if (counts == null) return loading ? "…" : "—";
     return String(value ?? "—");
   };
+  const listIsCurrent = listStatus === status && !loading;
+  const canActOnPending = (r: AdminR1ReviewItem) =>
+    listIsCurrent && r.status === "PENDING" && !actionPending;
 
   return (
     <div data-testid="admin-r1-reviews">
@@ -175,10 +208,7 @@ export function AdminR1ReviewsClient() {
         <select
           aria-label="Статус отзывов"
           value={status}
-          onChange={(e) => {
-            setPage(1);
-            setStatus(e.target.value);
-          }}
+          onChange={(e) => changeStatus(e.target.value)}
         >
           <option value="PENDING">На модерации</option>
           <option value="PUBLISHED">Опубликованы</option>
@@ -218,6 +248,16 @@ export function AdminR1ReviewsClient() {
               <span className="r1Pill warn">{r.status}</span>
             </div>
             <p style={{ margin: "8px 0" }}>{r.text}</p>
+            {r.status === "REJECTED" && r.rejectionReason ? (
+              <p className="r1Help" style={{ margin: "0 0 8px" }}>
+                Причина отклонения: {r.rejectionReason}
+              </p>
+            ) : null}
+            {r.status === "REJECTED" && !r.rejectionReason ? (
+              <p className="r1Help" style={{ margin: "0 0 8px" }}>
+                Причина отклонения в аудите не найдена.
+              </p>
+            ) : null}
             <small className="r1Muted">
               {r.author.displayName || "Клиент"} ·{" "}
               <Link href={`/admin/partners/${r.partner.id}`}>
@@ -225,7 +265,7 @@ export function AdminR1ReviewsClient() {
               </Link>{" "}
               · {formatAdminR1Date(r.createdAt)}
             </small>
-            {r.status === "PENDING" ? (
+            {canActOnPending(r) ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                 <button
                   type="button"
@@ -290,17 +330,23 @@ export function AdminR1ReviewsClient() {
                   Публикация начисляет бонус автору, если он ещё не был начислен.
                 </p>
               ) : (
-                <label className="r1FormField">
-                  Причина отклонения
-                  <textarea
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    maxLength={500}
-                    required
-                    aria-required="true"
-                    placeholder="Кратко опишите причину"
-                  />
-                </label>
+                <>
+                  <p className="r1Help" role="note">
+                    Причина будет сохранена в аудите партнёра (PartnerAdminAuditEvent) и
+                    отобразится в очереди «Отклонены». Без причины отклонение невозможно.
+                  </p>
+                  <label className="r1FormField">
+                    Причина отклонения
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      maxLength={500}
+                      required
+                      aria-required="true"
+                      placeholder="Кратко опишите причину"
+                    />
+                  </label>
+                </>
               )}
               {actionError ? (
                 <div className="r1StateErr" role="alert" style={{ marginTop: 12 }}>

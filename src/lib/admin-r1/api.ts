@@ -172,6 +172,8 @@ export type AdminR1ReviewItem = {
   createdAt: string;
   author: { id: string; displayName: string | null };
   partner: { id: string; displayName: string | null };
+  /** Present for REJECTED rows when PartnerAdminAuditEvent reason was found. */
+  rejectionReason?: string | null;
 };
 
 export async function fetchAdminR1Reviews(params: URLSearchParams) {
@@ -180,6 +182,7 @@ export async function fetchAdminR1Reviews(params: URLSearchParams) {
     page: number;
     pageSize: number;
     counts: { pending: number; published: number; rejected: number };
+    rejectionReasonSource?: string;
     reviews: AdminR1ReviewItem[];
   }>(`/api/pro/admin/moderation/reviews?${params.toString()}`);
 }
@@ -191,8 +194,17 @@ export async function approveAdminR1Review(reviewId: string) {
   );
 }
 
+export type AdminR1RejectReviewResult = {
+  success?: boolean;
+  reasonAccepted?: boolean;
+  reasonPersisted?: boolean;
+  reasonLength?: number;
+  auditAction?: string;
+  auditTargetUserId?: string;
+};
+
 export async function rejectAdminR1Review(reviewId: string, reason: string) {
-  return remcardFetch<{ success?: boolean }>(
+  return remcardFetch<AdminR1RejectReviewResult>(
     `/api/pro/admin/moderation/reviews/${encodeURIComponent(reviewId)}/reject`,
     { method: "POST", body: { reason } },
   );
