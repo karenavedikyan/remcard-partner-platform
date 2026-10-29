@@ -72,7 +72,14 @@ import {
   createSearchRequestGate,
   hasCustomPartnershipSearchFilters,
 } from "@/lib/partnership-search-ui";
+import { resolvePartnershipDeepLinkNav } from "@/lib/partners-prototype-v1/deep-link-nav";
 import styles from "./PartnersHub.module.css";
+
+export type PartnershipDeepLinkNavigate = {
+  partnershipId: string;
+  segment: "active" | "invitations";
+  invitationFlow?: "incoming" | "outgoing";
+};
 
 export type PartnersHubProps = {
   meId: string;
@@ -83,6 +90,8 @@ export type PartnersHubProps = {
   agentInvitationFlow?: "incoming" | "outgoing";
   agentModalSurface?: "find" | "link";
   onCloseAgentModal?: () => void;
+  /** Shell: apply segment/flow for an authorized deep-linked partnership. */
+  onDeepLinkNavigate?: (nav: PartnershipDeepLinkNavigate) => void;
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
   partnersAudience?: PartnersHubAudience;
@@ -111,6 +120,7 @@ export function PartnersHub({
   agentInvitationFlow,
   agentModalSurface,
   onCloseAgentModal,
+  onDeepLinkNavigate,
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
   partnersAudience,
@@ -167,8 +177,10 @@ export function PartnersHub({
   const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
   const [listPage, setListPage] = useState(0);
   const [listPageSize, setListPageSize] = useState(25);
-  /** Deep-link partnership to open in collection detail (must be in visible list). */
+  /** One-shot deep-link open request; cleared after collection consumes it. */
   const [focusPartnershipId, setFocusPartnershipId] = useState<string | null>(null);
+  /** URL id for which we already requested focus once (refresh/page-size must not re-open). */
+  const deepLinkFocusAppliedRef = useRef<string | null>(null);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
@@ -216,7 +228,8 @@ export function PartnersHub({
     setListError("");
     try {
       const params = new URLSearchParams();
-      if (isAgentR04 && agentSegment === "active") {
+      // Deep-link lookup needs the authorized collection, not only the active-visibility slice.
+      if (isAgentR04 && agentSegment === "active" && !termsPartnershipId) {
         params.set("listVisibility", listArchiveView);
       }
       const qs = params.toString();
@@ -230,7 +243,7 @@ export function PartnersHub({
     } finally {
       setLoadingList(false);
     }
-  }, [agentSegment, isAgentR04, listArchiveView]);
+  }, [agentSegment, isAgentR04, listArchiveView, termsPartnershipId]);
 
   const loadDiscussionContext = useCallback(async (inviteId: string) => {
     setDiscussionContextError("");
@@ -670,27 +683,62 @@ export function PartnersHub({
   useEffect(() => {
     if (!termsPartnershipId) {
       setFocusPartnershipId(null);
+      deepLinkFocusAppliedRef.current = null;
       return;
     }
     setTab("list");
     void loadTermRequests(termsPartnershipId);
   }, [termsPartnershipId]);
 
-  // Page to the deep-linked invite and open its detail — only if it is in the
-  // authorized visible list (not merely by calling term-change).
+  // 1) Find authorized row in the full collection, then ask shell for the right segment/flow.
+  useEffect(() => {
+    if (!termsPartnershipId || loadingList || !isAgentR04) {
+      return;
+    }
+    const match = partnerships.find((p) => p.id === termsPartnershipId);
+    if (!match) {
+      // Unknown / unauthorized id: do not invent a record from the query string.
+      if (deepLinkFocusAppliedRef.current !== termsPartnershipId) {
+        setFocusPartnershipId(null);
+      }
+      return;
+    }
+    const nav = resolvePartnershipDeepLinkNav(match, meId);
+    onDeepLinkNavigate?.({
+      partnershipId: match.id,
+      segment: nav.segment,
+      invitationFlow: nav.invitationFlow,
+    });
+  }, [
+    termsPartnershipId,
+    loadingList,
+    isAgentR04,
+    partnerships,
+    meId,
+    onDeepLinkNavigate,
+  ]);
+
+  // 2) Once the shell filter shows the row, page to it and request a one-shot detail open.
   useEffect(() => {
     if (!termsPartnershipId || loadingList) {
       return;
     }
+    if (deepLinkFocusAppliedRef.current === termsPartnershipId) {
+      return;
+    }
     const idx = visiblePartnerships.findIndex((p) => p.id === termsPartnershipId);
     if (idx < 0) {
-      setFocusPartnershipId(null);
       return;
     }
     const pageForTarget = Math.floor(idx / listPageSize);
     setListPage(pageForTarget);
     setFocusPartnershipId(termsPartnershipId);
+    deepLinkFocusAppliedRef.current = termsPartnershipId;
   }, [termsPartnershipId, visiblePartnerships, listPageSize, loadingList]);
+
+  const consumeFocusPartnership = useCallback((id: string) => {
+    setFocusPartnershipId((current) => (current === id ? null : current));
+  }, []);
 
   async function refreshProfile() {
     try {
@@ -998,6 +1046,7 @@ export function PartnersHub({
               onLoadTermRequests={(id) => void loadTermRequests(id)}
               expandedTermPartnershipId={expandedTermPartnershipId}
               focusPartnershipId={focusPartnershipId}
+              onFocusPartnershipConsumed={consumeFocusPartnership}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
               onToggleSelectAll={togglePartnerSelectAll}
