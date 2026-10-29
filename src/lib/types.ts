@@ -206,6 +206,9 @@ export type PartnerSearchResult = {
   badges: string[];
   storeCategories: string[];
   partnerType?: string | null;
+  partnerActivities?: string[];
+  partnerKind?: "agent" | "specialist" | "store" | "company" | null;
+  partnerKindLabel?: string | null;
   partnerTypeLabel?: string | null;
   /** Подтверждённый partnerType организации владельца (если API поиска когда‑либо вернёт). */
   organizationPartnerType?: string | null;

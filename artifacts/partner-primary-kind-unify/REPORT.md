@@ -1,84 +1,98 @@
-# Partner primary kind unification (2026-10-29)
+# Partner primary kind unification (2026-10-29) — review pass 2
 
 ## Branches and SHAs
 
-| Repo | Branch | Base release | Implementation tip |
-|------|--------|--------------|-------------------|
-| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | `1d9bbeb6332b68ba4421a299c1b6b5e3dfe8dd1e` | _(after push)_ |
-| remcard-navigator | `feat/partner-primary-kind-unify-20261029` | `4b4c1244f8ed838508e7d4a99796092ebd2cb7ed` | _(after push)_ |
+| Repo | Branch | Notes |
+|------|--------|--------|
+| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | See git tip after push |
+| remcard-navigator | `feat/partner-primary-kind-unify-20261029` | See git tip after push |
 
-## Problem
+Prior review tips (superseded by this pass): frontend `62c11e581074fc2d273f0e4142e48a4a183e910a`, backend `4610cdbfb112e2661436a12782d78a6f03b088c0`.
 
-`resolvePublicPartnerType` (partner lists/cards/share) treated any `AGENT` activity as primary type **agent**, ignoring `partnerType` COMPANY/STORE. Admin registry and profile already use `resolvePartnerKindUi` (pure agent vs mixed activities).
+## Scope
 
-Confirmed production examples (read-only, 2026-10-29):
+One **canonical primary kind** (`resolvePartnerKindUi`) across list/card/share, **partnership search** filters + DTO, **registration join finish** writes, and **dry-run registry audit**. No partnership side swaps for Seda/ОПТОВИК, no deploy, no production writes.
 
-| publicId | partnerType | partnerActivities | Canonical kind |
-|----------|-------------|-------------------|----------------|
-| ОПТОВИК (`cmn6imq…`) | COMPANY | STORE, AGENT | **company** |
-| Seda Rallis (`cmp6ruv…`) | COMPANY (technical) | AGENT | **agent** |
-
-Partnership storeUser/proUser sides for Seda↔ОПТОВИК are **not** modified.
-
-## Canonical model (no new schema)
+## Model (unchanged)
 
 Primary kind = `resolvePartnerKindUi({ partnerType, partnerActivities })`:
 
-1. Pure agent: `AGENT` without `STORE`/`SERVICE` → **agent** (legacy technical COMPANY/STORE allowed).
-2. Else derive from `partnerType` + activities (see `src/lib/partner-kind-ui.ts` / backend `partnerKindUi.ts`).
+| Case | partnerType | partnerActivities | Kind |
+|------|-------------|-------------------|------|
+| Seda | COMPANY | AGENT | agent |
+| ОПТОВИК | COMPANY | STORE, AGENT | company |
+| Legacy pure agent | STORE | AGENT | agent |
+| Specialist | MASTER | SERVICE | specialist |
+| Store | STORE | STORE | store |
+| Company | COMPANY | STORE, SERVICE | company |
 
-Distinct from `UserRole` (PRO/STAFF/ADMIN) and from extra capabilities (recommendation/agent inviter helpers still use activity checks).
+Additive DB field **not applied**; storage remains `partnerType` + `partnerActivities` when finish/search/audit agree on target state.
 
-**Schema:** additive migration **not required** — existing `partnerType` + `partnerActivities` suffice when classification is unified.
+## Changes by area
 
-## Code changes (frontend)
+### 1. Search (backend)
 
-| File | Rationale |
-|------|-----------|
-| `src/lib/agent-r04/partner-filters.ts` | Delegate `resolvePublicPartnerType` → `resolvePartnerKindUi` |
-| `src/lib/partner-kind-ui.test.ts` | Acceptance cases (Seda, OPTOVIK, four kinds) |
-| `src/lib/agent-r04/partner-filters.test.ts` | List/share alignment + inverted partnership perspectives |
-| `vitest.config.ts` | Include `partner-kind-ui.test.ts` |
+| File | Change |
+|------|--------|
+| `src/lib/partnershipSearchQuery.ts` | `agentPartnerTypeWhere` → `registryListFilterForPartnerTypeParam` (non-overlapping; pure agent ≠ company) |
+| `src/lib/partnershipSearchResultDto.ts` | `partnerKind`, `partnerKindLabel`, `partnerActivities`, canonical `partnerTypeLabel` |
+| `src/app/api/partnership/search/route.ts` | Select `partnerActivities`; expose kind fields + `organizationPartnerType` |
 
-Unchanged on purpose: registration/switch (`partnerTypeSwitch.ts` backend), admin API `partnerKind` field, `principalPartnerKindLabel` in profile overview.
+Frontend: `PartnerSearchResult` extended; `PartnersHub` continues to show `partnerTypeLabel` (now canonical from API).
 
-## Code changes (backend)
+Tests: `partnershipSearchQuery.filters.test.ts`, `partnershipSearchResultDto.test.ts`, `partnership-search-kind.test.ts` (platform).
 
-| File | Rationale |
-|------|-----------|
-| `src/lib/partnerPrimaryKindAudit.ts` | Dry-run audit row builder |
-| `src/lib/__tests__/partnerPrimaryKindAudit.test.ts` | Fixture tests (Seda/OPTOVIK/staff/incomplete) |
-| `src/lib/__tests__/partnerKindUi.test.ts` | STORE+AGENT company regression |
-| `scripts/partner-primary-kind-audit.ts` | Paginated full-registry **read-only** JSON audit |
+### 2. Registration finish (backend)
 
-## Registry audit (dry-run)
+| File | Change |
+|------|--------|
+| `src/lib/profRegistrationJoinFinish.ts` | Finish writes **replace** activities via `freshPartnerActivitiesForJoinKind`; `completedJoinState` requires resolved kind + exact activity set + target `partnerType`; `decideRegistrationJoinFinish` exported for tests |
+
+Tests: `profRegistrationJoinFinish.kind.test.ts` (STORE→agent legacy re-reg, AGENT already_ready, COMPANY mixed vs agent finish, non-overlapping already_ready).
+
+Does **not** clear capabilities blindly; PRO/STAFF role rules unchanged.
+
+### 3. Registry audit (backend, dry-run)
+
+| File | Change |
+|------|--------|
+| `src/lib/partnerPrimaryKindAudit.ts` | Issues: finished kind mismatch, multi-org types, storage vs target, employee context; segments blocked/deleted |
+| `scripts/partner-primary-kind-audit.ts` | Requires `--i-acknowledge-read-only`; `SET TRANSACTION READ ONLY` inside transaction; full user scan (incl. deleted); all org `partnerType`s; totals `userTotalAll` / `userTotalNotDeleted` |
+
+Tests: `partnerPrimaryKindAudit.test.ts`.
+
+**Production full registry: BLOCKED** on this cloud agent (no authorized live read DSN / admin runner). Staging/local:
 
 ```bash
-# Local/staging DATABASE_URL only — NOT production write path
 cd remcard-navigator
-pnpm tsx scripts/partner-primary-kind-audit.ts --json-out=artifacts/partner-primary-kind-audit/dry-run.json
+pnpm tsx scripts/partner-primary-kind-audit.ts --i-acknowledge-read-only --json-out=artifacts/partner-primary-kind-audit/dry-run.json
 ```
 
-- Paginates all `User` with `deletedAt=null` (cursor, page 200).
-- Output: `userId`, `publicId`, `displayName`, segment, types, `canonicalKind`, `reason`, `ambiguous`, `conflict`, `proposedChange`.
-- **`--apply` exits 2** — normalization not implemented; manual review first.
+Do **not** treat fixture/unit tests as proof of production coverage.
 
-### Normalization plan (if needed later, guarded)
+### 4. Lists/cards (frontend, prior pass)
 
-1. Run dry-run JSON on staging clone; review `ambiguous` / `conflict` rows.
-2. Allowlist only `proposedChange=align_display_with_kind:*` with compare-and-set on `updatedAt`.
-3. **Do not** strip `AGENT` from COMPANY partners with STORE activity.
-4. Transaction + idempotency key per user; default remain dry-run.
+`resolvePublicPartnerType` → `resolvePartnerKindUi` in `src/lib/agent-r04/partner-filters.ts` + acceptance tests.
 
-**Production registry:** not scanned in this cloud run (no production DB access). Computer can run the script against an approved read-only replica.
+## API / write path matrix
 
-## Tests run (agent)
+| Path | Read kind | Write primary kind |
+|------|-----------|-------------------|
+| Admin registry API | `partnerKind` (existing) | unchanged |
+| GET `/api/partnership/search` | `partnerKind` + activities | n/a |
+| Registration join finish | n/a | `freshPartnerActivitiesForJoinKind` + `targetStateForPartnerKind` |
+| Partner list/card (R04) | `resolvePartnerKindUi` | n/a |
+| Audit script | `analyzePartnerPrimaryKind` | none (`--apply` disabled) |
 
-- Frontend: `partner-kind-ui.test.ts`, `partner-filters.test.ts`, `tsc`, `build`
-- Backend: `partnerKindUi.test.ts`, `partnerPrimaryKindAudit.test.ts`, `pnpm test` subset
+## Tests run (this pass)
 
-## Known ambiguities
+Document exact commands and results in commit message / CI. Expected subset:
 
-- Empty `partnerActivities` + legacy `partnerType` only → `null` kind (unknown); admin facets count as `unknown`.
-- Raw enum `partnerType` on API remains technical storage; UI labels must use `partnerKind` / `resolvePartnerKindUi`.
-- Inverted partnership sides (agent as `storeUserId`) affect labels per counterparty view only; no side swap.
+- Navigator: `pnpm vitest run src/lib/__tests__/partnershipSearchResultDto.test.ts src/lib/__tests__/partnershipSearchQuery*.test.ts src/lib/__tests__/partnerPrimaryKindAudit.test.ts src/lib/__tests__/profRegistrationJoinFinish.kind.test.ts src/lib/__tests__/partnerKindUi.test.ts`
+- Platform: `pnpm vitest run src/lib/partner-kind-ui.test.ts src/lib/agent-r04/partner-filters.test.ts src/lib/partnership-search-kind.test.ts` + `pnpm exec tsc --noEmit` + build if configured
+
+## Known limits
+
+- Empty activities + legacy `partnerType` only → unknown kind.
+- Inverted partnership graph labels remain counterparty-relative; sides not mutated.
+- Normalization/migration of historical rows is **out of scope** until dry-run on an approved read-only DB.

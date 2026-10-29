@@ -3,6 +3,7 @@ import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
 } from "./partnership-search-ui";
+import { searchResultToPartnerSide } from "./partnership-rules";
 import type { PartnerSearchResult } from "./types";
 
 const partner = (id: string): PartnerSearchResult => ({
@@ -79,5 +80,31 @@ describe("partnership-search-ui", () => {
     const prev = [partner("a")];
     const batch = [partner("a"), partner("b")];
     expect(mergeSearchResultPages(prev, batch, "append")).toEqual([partner("a"), partner("b")]);
+  });
+});
+
+describe("partnership search canonical kind DTO", () => {
+  it("passes partnerActivities from search API for invite/agent rules", () => {
+    const side = searchResultToPartnerSide({
+      ...partner("opt"),
+      partnerType: "COMPANY",
+      partnerActivities: ["STORE", "AGENT"],
+      partnerKind: "company",
+      partnerKindLabel: "Компания",
+      partnerTypeLabel: "Компания",
+    });
+    expect(side.partnerActivities).toEqual(["STORE", "AGENT"]);
+  });
+
+  it("exposes Seda-like agent label on search rows", () => {
+    const row: PartnerSearchResult = {
+      ...partner("seda"),
+      partnerType: "COMPANY",
+      partnerActivities: ["AGENT"],
+      partnerKind: "agent",
+      partnerKindLabel: "Агент",
+      partnerTypeLabel: "Агент",
+    };
+    expect(row.partnerKindLabel).toBe("Агент");
   });
 });

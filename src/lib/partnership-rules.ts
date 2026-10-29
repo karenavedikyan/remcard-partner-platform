@@ -238,6 +238,15 @@ export function profileUserToPartnerSide(
 /** Карточка из GET /api/partnership/search — без эвристик по organizationName. */
 export function searchResultToPartnerSide(target: PartnerSearchResult): PartnerSideProfile {
   const orgType = target.organizationPartnerType;
+  const partnerActivities =
+    target.partnerActivities ??
+    (target.partnerKind === "agent"
+      ? ["AGENT"]
+      : target.partnerKind === "store"
+        ? ["STORE"]
+        : target.partnerKind === "specialist"
+          ? ["SERVICE"]
+          : undefined);
   let isStoreOwner: boolean | undefined;
   if (orgType === "STORE") {
     isStoreOwner = true;
@@ -250,6 +259,7 @@ export function searchResultToPartnerSide(target: PartnerSearchResult): PartnerS
   return {
     id: target.id,
     partnerType: target.partnerType ?? null,
+    partnerActivities,
     storeCategories: target.storeCategories ?? [],
     specializations: target.specializations ?? [],
     isStoreOwner,
