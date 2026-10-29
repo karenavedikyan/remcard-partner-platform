@@ -1,0 +1,4 @@
+AgentPartnerCollection.test.tsx + PartnersHub.test.tsx: exit 0 (13 tests)
+npm run build (pipefail): exit 0
+node scripts/partner-row-actions-visual-capture.mjs: exit 0 (16 screenshots)
+npm run test:proxy: exit 0

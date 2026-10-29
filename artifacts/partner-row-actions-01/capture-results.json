@@ -1,0 +1,101 @@
+{
+  "baseUrl": "http://127.0.0.1:5201",
+  "results": [
+    {
+      "scene": "incoming-agent",
+      "viewport": "375",
+      "theme": "light",
+      "file": "incoming-agent-375-light.png"
+    },
+    {
+      "scene": "pending",
+      "viewport": "375",
+      "theme": "light",
+      "file": "pending-375-light.png"
+    },
+    {
+      "scene": "active",
+      "viewport": "375",
+      "theme": "light",
+      "file": "active-375-light.png"
+    },
+    {
+      "scene": "cards",
+      "viewport": "375",
+      "theme": "light",
+      "file": "cards-375-light.png"
+    },
+    {
+      "scene": "incoming-agent",
+      "viewport": "1440",
+      "theme": "light",
+      "file": "incoming-agent-1440-light.png"
+    },
+    {
+      "scene": "pending",
+      "viewport": "1440",
+      "theme": "light",
+      "file": "pending-1440-light.png"
+    },
+    {
+      "scene": "active",
+      "viewport": "1440",
+      "theme": "light",
+      "file": "active-1440-light.png"
+    },
+    {
+      "scene": "cards",
+      "viewport": "1440",
+      "theme": "light",
+      "file": "cards-1440-light.png"
+    },
+    {
+      "scene": "incoming-agent",
+      "viewport": "375",
+      "theme": "dark",
+      "file": "incoming-agent-375-dark.png"
+    },
+    {
+      "scene": "pending",
+      "viewport": "375",
+      "theme": "dark",
+      "file": "pending-375-dark.png"
+    },
+    {
+      "scene": "active",
+      "viewport": "375",
+      "theme": "dark",
+      "file": "active-375-dark.png"
+    },
+    {
+      "scene": "cards",
+      "viewport": "375",
+      "theme": "dark",
+      "file": "cards-375-dark.png"
+    },
+    {
+      "scene": "incoming-agent",
+      "viewport": "1440",
+      "theme": "dark",
+      "file": "incoming-agent-1440-dark.png"
+    },
+    {
+      "scene": "pending",
+      "viewport": "1440",
+      "theme": "dark",
+      "file": "pending-1440-dark.png"
+    },
+    {
+      "scene": "active",
+      "viewport": "1440",
+      "theme": "dark",
+      "file": "active-1440-dark.png"
+    },
+    {
+      "scene": "cards",
+      "viewport": "1440",
+      "theme": "dark",
+      "file": "cards-1440-dark.png"
+    }
+  ]
+}

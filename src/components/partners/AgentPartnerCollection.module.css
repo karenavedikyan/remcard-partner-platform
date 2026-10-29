@@ -85,7 +85,7 @@
 }
 
 .dataTable col.colActions {
-  width: 120px;
+  width: 96px;
 }
 
 .dataTable th,
@@ -112,10 +112,51 @@
   background: rgb(0 0 0 / 0.02);
 }
 
-.titleCell strong {
+.nameButton {
   display: block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
   font-weight: 700;
   line-height: 1.35;
+  color: var(--accent, var(--primary));
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nameButton:hover {
+  color: var(--ink);
+}
+
+.cardTitle.nameButton {
+  font-size: var(--text-md, 1rem);
+}
+
+.inlineWorkflow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+}
+
+.workflowRow td {
+  border-bottom: 1px solid var(--line);
+  padding-top: 0;
+}
+
+.workflowCell {
+  padding: 0 0.75rem 0.65rem !important;
+  background: rgb(0 0 0 / 0.015);
+}
+
+.workflowRow:last-child td,
+.dataTable tbody tr:has(+ tr.workflowRow:last-child) td {
+  border-bottom: 1px solid var(--line);
 }
 
 .caption {

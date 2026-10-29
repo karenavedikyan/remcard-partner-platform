@@ -29,7 +29,7 @@ function labelSpecializationId(id: string): string {
   return fromCategory && fromCategory !== "Категория" ? fromCategory : "";
 }
 
-export function partnerSpecializationHint(user: PartnershipPartnerProfile): string {
+function partnerSpecializationLabels(user: PartnershipPartnerProfile): string[] {
   const products = user.workingProductCategoryIds?.length
     ? user.workingProductCategoryIds
     : user.storeCategories;
@@ -45,7 +45,16 @@ export function partnerSpecializationHint(user: PartnershipPartnerProfile): stri
     const label = labelSpecializationId(id);
     if (label) labels.push(label);
   }
-  return [...new Set(labels)].slice(0, 3).join(", ");
+  return [...new Set(labels)];
+}
+
+export function partnerSpecializationHint(user: PartnershipPartnerProfile): string {
+  return partnerSpecializationLabels(user).slice(0, 3).join(", ");
+}
+
+export function partnerSpecializationFull(user: PartnershipPartnerProfile): string {
+  const labels = partnerSpecializationLabels(user);
+  return labels.length ? labels.join(", ") : "";
 }
 
 export function partnerListSubtitle(partner: PartnershipPartnerProfile): string {
@@ -69,13 +78,23 @@ export function partnerListDetail(partnership: Partnership, meId: string): strin
   return "Специализация не указана";
 }
 
+export function partnerActiveTerms(partnership: Partnership) {
+  return partnership.terms.filter((t) => !t.isExcluded);
+}
+
 export function partnerTermsDetail(partnership: Partnership): string {
-  const activeTerms = partnership.terms.filter((t) => !t.isExcluded);
+  const activeTerms = partnerActiveTerms(partnership);
   if (!activeTerms.length) return "";
   return activeTerms
     .slice(0, 3)
     .map((t) => `${displayCategoryLabel(t.category, t.categoryLabel)} ${t.storePercent}%`)
     .join(" · ");
+}
+
+export function partnerTermsFullDetail(partnership: Partnership): string[] {
+  return partnerActiveTerms(partnership).map(
+    (t) => `${displayCategoryLabel(t.category, t.categoryLabel)} — ${t.storePercent}%`,
+  );
 }
 
 export function partnerRowTitle(partnership: Partnership, meId: string): string {
