@@ -56,8 +56,9 @@ describe("invite-wizard-state", () => {
     const next = applyInviteTemplate(state, "short", "Иван");
     expect("needsConfirm" in next).toBe(false);
     if (!("needsConfirm" in next)) {
-      expect(next.message).toContain("Магазин А");
-      expect(next.message).toContain("Двери");
+      // Exact reference short template: mutual proposal + RemCard registration CTA.
+      expect(next.message).toContain("Давайте рекомендовать товары и услуги друг друга");
+      expect(next.message).toContain("RemCard");
       expect(next.lastTemplateId).toBe("short");
     }
   });
@@ -128,11 +129,11 @@ describe("invite-wizard-state", () => {
         { category: "paint", categoryLabel: "Краска", storePercent: 5, selected: false },
       ],
     });
-    const share = buildInviteShareText(state, "/partners?hub=find");
+    const share = buildInviteShareText(state, "/invite/tok-abc");
     expect(share.message).toBe("Текст приглашения");
-    expect(share.conditions).toContain("Двери — 8%");
+    expect(share.conditions).toContain("Двери: общий процент 8%");
     expect(share.conditions).not.toContain("Краска");
-    expect(share.path).toBe("/partners?hub=find");
+    expect(share.path).toBe("/invite/tok-abc");
   });
 
   it("toggles categories without inventing percents", () => {

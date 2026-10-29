@@ -10,6 +10,7 @@ import type { PartnerTaxonomyItem } from "@/lib/types";
 export type RepairPathStage = {
   id: string;
   label: string;
+  index: number;
   /** Full matching count when known; null = unknown (do not fake). */
   matchCount: number | null;
   /** Explicitly unavailable (known zero from full set). */
@@ -58,27 +59,31 @@ export function buildRepairPathStages(
   taxonomyStages: PartnerTaxonomyItem[],
   facets: DiscoveryFacetCounts | null,
 ): RepairPathStage[] {
-  return taxonomyStages.map((stage) => {
+  return taxonomyStages.map((stage, index) => {
     if (!facets) {
       return {
         id: stage.id,
         label: stage.label,
+        index,
         matchCount: null,
         unavailable: false,
       };
     }
     const count = facets.byStage[stage.id];
     if (typeof count !== "number") {
+      // Facets present but key missing → treat as zero (full set known).
       return {
         id: stage.id,
         label: stage.label,
-        matchCount: null,
-        unavailable: false,
+        index,
+        matchCount: 0,
+        unavailable: true,
       };
     }
     return {
       id: stage.id,
       label: stage.label,
+      index,
       matchCount: count,
       unavailable: count === 0,
     };
@@ -87,7 +92,7 @@ export function buildRepairPathStages(
 
 /**
  * Direction counters for products/services — only from full matching facets.
- * Returns null when facets unavailable (UI must not invent page counts).
+ * When facets exist, missing keys are zero (unavailable). Hide empty chips in UI.
  */
 export function buildDirectionCounters(
   items: PartnerTaxonomyItem[],
@@ -104,7 +109,7 @@ export function buildDirectionCounters(
   return items.map((item) => {
     const count = counts[item.id];
     if (typeof count !== "number") {
-      return { id: item.id, label: item.label, count: null, unavailable: false };
+      return { id: item.id, label: item.label, count: 0, unavailable: true };
     }
     return {
       id: item.id,
@@ -124,5 +129,27 @@ export function stageSelectionResetsDirection<T extends { specialization: string
   return { ...prev, stageId: nextStageId, specialization: "" };
 }
 
-export const DISCOVERY_FACETS_GAP =
-  "GET /api/partnership/search does not yet return full-set facets (stages/products/services/total). Navigator counters stay unknown until backend adds PartnerSearchResponse.facets; do not use page length as totals.";
+export function repairPathProgressPercent(input: {
+  totalStages: number;
+  selectedIndex: number | null;
+  coveredStages: number;
+}): number {
+  const { totalStages, selectedIndex, coveredStages } = input;
+  if (totalStages <= 0) return 0;
+  if (selectedIndex != null && selectedIndex >= 0) {
+    return Math.round(((selectedIndex + 1) / totalStages) * 100);
+  }
+  return Math.round((coveredStages / totalStages) * 100);
+}
+
+export function pluralRu(n: number, one: string, few: string, many: string): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+/** User-facing copy when facets are temporarily unavailable — not developer API gap. */
+export const DISCOVERY_FACETS_UNAVAILABLE =
+  "Полные счётчики по этапам пока недоступны. Числа с текущей страницы не показываем.";

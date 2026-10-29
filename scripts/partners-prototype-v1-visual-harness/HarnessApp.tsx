@@ -56,6 +56,10 @@ const target: PartnerSearchResult = {
   partnershipStatus: null,
   workingProductLabels: ["Двери", "Краска"],
   workingStageLabels: ["Черновая отделка", "Чистовая отделка"],
+  publishedTerms: [
+    { category: "doors", categoryLabel: "Двери", poolPercent: 12, storePercent: 12 },
+    { category: "paint", categoryLabel: "Краска", poolPercent: 8, storePercent: 8 },
+  ],
 };
 
 const stages = Array.from({ length: 12 }, (_, i) => ({

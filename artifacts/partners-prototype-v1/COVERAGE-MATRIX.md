@@ -1,23 +1,20 @@
 # Coverage matrix: прототип → компонент → API → проверка
 
-| Прототип / сценарий | Компонент / модуль | API | Проверка | Статус |
-| --- | --- | --- | --- | --- |
-| Компактная строка поиска + Фильтры + list/cards | `AgentR04ListToolbar` | list client filters | `AgentR04ListToolbar.compact.test.tsx` | DONE |
-| Тип / специализация / архив / сортировка | toolbar details + `AgentPartnerDiscoveryFilters` list-extra | list + prefs | unit + existing PartnersHub | DONE |
-| Действующие / ожидающие / архив | `AgentPartnersHub` + `status-presentation` | `GET /api/partnership/list` | existing + helper | DONE (labels) |
-| Имя → детали; actions без «глаза» | `AgentPartnerCollection` (base) | PATCH partnership | existing row-actions tests | REUSE |
-| Найти: витрина + путь ремонта | `PartnerFindVitrine` + `PartnerRepairPathNav` | search + taxonomy | unit repair-path; component LOCAL FIXTURE | DONE / facets GAP |
-| Счётчики этапов/направлений full set | `adaptDiscoveryFacets` | **нужны** `PartnerSearchResponse.facets` | repair-path.test | BLOCKED API |
-| Этап сбрасывает направление | `stageSelectionResetsDirection` | — | repair-path.test | DONE |
-| Честная недоступность этапа (count=0) | RepairPathNav disabled | facets | repair-path.test | DONE when facets |
-| Приглашение 3 шага + шаблоны | `PartnerInviteWizard` | `POST /api/partnership/invite` | wizard tests (disableSubmit) | DONE |
-| Взаимность vs agent one-way | `planPublishedInviteTerms` + wizard copy | invite rules | published-terms + wizard tests | DONE |
-| Реальные категории / без выдуманных % | `published-terms` | search DTO (+ optional publishedTerms) | published-terms.test | PARTIAL (percents gap) |
-| Idempotency финальной кнопки | wizard `idempotencyKey` | invite POST | wizard-state.test | DONE |
-| Ссылка «Пригласить по ссылке» | existing link/discussion panels | link-invite / discussion-invite | regression reuse | REUSE |
-| 4 типа партнёра | `partner-kind-adapter` | — | partner-kind-adapter.test | DONE |
-| XSS/whitespace/1000 chars | `setInviteWizardMessage` | — | invite-wizard-state.test | DONE |
-| 375/1440 light/dark | visual harness (planned) | LOCAL FIXTURE | screenshots folder | PENDING capture |
-| Exact partners-redesign.js/css parity | — | reference worktree | — | BLOCKED no navigator access |
+| Прототип | Компонент / lib | API | Проверка |
+| --- | --- | --- | --- |
+| Компактная строка поиска/фильтров/вида | AgentR04ListToolbar | partnership/list | unit + prior harness |
+| Путь ремонта vertical quest | PartnerRepairPathNav | partnership/search `facets` | unit repair-path; visual harness |
+| Витрина карточки + Подробнее | PartnerFindVitrine, PartnerVitrineDetails | search + certificate-program-summary | unit wizard; component wiring |
+| Шаблоны Коротко/По-деловому/По-дружески | invite-message-templates | — | exact reference text unit |
+| Wizard 3 шага existing target | PartnerInviteWizard | partnership/invite (+ requestPartnerTerms) | PartnerInviteWizard.test |
+| Free-name link invite | PartnerLinkInviteWizard | discussion-invite | wiring PartnersHub |
+| Опубликованные условия / poolPercent | published-terms + cert program | certificate-program-summary / search publishedTerms | published-terms.test |
+| Канонический тип | partner-kind-adapter → resolvePartnerKindUi | search partnerActivities | partner-kind-adapter.test |
+| Facets full set | adaptDiscoveryFacets | GET search facets | backend facets test + FE adapter |
+| Idempotent replay | markInviteSubmitPending + backend unique pair | invite replayed | backend request-partner-terms.test |
+| Share recipient path | buildInviteShareText + created.previewPath | invite / discussion previewPath | wizard share step |
+| Staff invite | не менялся | — | out of scope |
 
-Reference SHA `4ba2f9e…` / `docs/prototype-reference/current/partner/*` — не прочитаны (repo 404).
+## Не выдаём за live
+- Isolated component screenshots = LOCAL FIXTURE / reference static, не whole PROF auth session.
+- Full 4-type integrated browser against production — запрещён; локальные unit/component + reference render.

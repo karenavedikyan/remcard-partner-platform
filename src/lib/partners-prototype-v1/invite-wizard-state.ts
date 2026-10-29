@@ -212,24 +212,29 @@ export function markInviteSubmitFailed(
   return { ...state, submitPending: false, error };
 }
 
-/** Build share text for review step — exact message + separate conditions. */
+/** Build share text for review step — exact message + separate conditions (reference wording). */
 export function buildInviteShareText(state: InviteWizardSnapshot, recipientPath: string): {
   message: string;
   conditions: string;
   path: string;
 } {
   const selected = state.categories.filter((c) => c.selected);
-  const conditions = state.requestTerms
-    ? "Условия: запрос у получателя (опубликованных процентов нет)."
-    : selected.length === 0
-      ? "Условия: не выбраны категории."
-      : `Условия: ${selected
-          .map((c) =>
-            c.storePercent == null
-              ? c.categoryLabel
-              : `${c.categoryLabel} — ${c.storePercent}%`,
-          )
-          .join("; ")}.`;
+  let conditions: string;
+  if (state.requestTerms || selected.every((c) => c.storePercent == null)) {
+    conditions = "Прошу предложить условия сотрудничества.";
+  } else if (selected.length === 0) {
+    conditions = "Условия пока не указаны.";
+  } else {
+    conditions = [
+      "Хочу сотрудничать по вашим опубликованным условиям:",
+      ...selected.map((c) =>
+        c.storePercent == null
+          ? c.categoryLabel
+          : `${c.categoryLabel}: общий процент ${c.storePercent}%`,
+      ),
+      "Общий процент включает скидку клиенту и бонус агенту. Это не размер гарантированного вознаграждения.",
+    ].join("\n");
+  }
   return {
     message: state.message.trim(),
     conditions,

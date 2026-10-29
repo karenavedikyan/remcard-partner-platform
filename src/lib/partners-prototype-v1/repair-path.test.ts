@@ -29,11 +29,11 @@ describe("repair-path", () => {
     expect(rows[1]).toMatchObject({ matchCount: 0, unavailable: true });
   });
 
-  it("does not treat missing stage key as zero", () => {
+  it("treats missing stage key as zero when facets are present", () => {
     const facets = adaptDiscoveryFacets({ total: 1, stages: { "L1-1": 1 } });
     const rows = buildRepairPathStages(stages, facets);
-    expect(rows[1].matchCount).toBeNull();
-    expect(rows[1].unavailable).toBe(false);
+    expect(rows[1].matchCount).toBe(0);
+    expect(rows[1].unavailable).toBe(true);
   });
 
   it("resets specialization when stage changes", () => {

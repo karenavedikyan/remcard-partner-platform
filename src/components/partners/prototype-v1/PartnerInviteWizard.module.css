@@ -155,6 +155,19 @@
   background: color-mix(in srgb, var(--accent, var(--primary)) 6%, var(--surface));
 }
 
+.linkBtn {
+  border: 0;
+  background: none;
+  color: var(--accent, var(--primary));
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  min-height: 32px;
+}
+
 @media (max-width: 480px) {
   .dialog {
     padding: var(--space-3);

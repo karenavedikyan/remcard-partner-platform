@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import { mergeSearchResultPages } from "@/lib/partnership-search-ui";
 import {
   adaptDiscoveryFacets,
-  DISCOVERY_FACETS_GAP,
+  DISCOVERY_FACETS_UNAVAILABLE,
   stageSelectionResetsDirection,
 } from "@/lib/partners-prototype-v1/repair-path";
 import { buildVitrineCard } from "@/lib/partners-prototype-v1/vitrine-card";
@@ -16,6 +16,7 @@ import type { AgentPartnerTypeFilter } from "@/lib/agent-r04/partner-filters";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { PartnerRepairPathNav } from "./PartnerRepairPathNav";
+import { PartnerVitrineDetails } from "./PartnerVitrineDetails";
 import styles from "./PartnerFindVitrine.module.css";
 
 type Props = {
@@ -43,29 +44,48 @@ export function PartnerFindVitrine({
     services: PartnerTaxonomyItem[];
     stages: PartnerTaxonomyItem[];
   } | null>(null);
+  const [taxonomyError, setTaxonomyError] = useState("");
   const [results, setResults] = useState<PartnerSearchResult[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [facets, setFacets] = useState<ReturnType<typeof adaptDiscoveryFacets>>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [facetsGap, setFacetsGap] = useState<string | null>(DISCOVERY_FACETS_GAP);
+  const [facetsGap, setFacetsGap] = useState<string | null>(null);
+  const [detailsPartner, setDetailsPartner] = useState<PartnerSearchResult | null>(null);
+  const searchSeq = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     void fetchPartnerTaxonomy()
       .then((data) => {
+        if (cancelled) return;
+        setTaxonomyError("");
         setTaxonomy({
           products: data.products ?? [],
           services: data.services ?? [],
           stages: data.stages ?? [],
         });
       })
-      .catch(() => {
-        setTaxonomy({ products: [], services: [], stages: [] });
+      .catch((caught) => {
+        if (cancelled) return;
+        setTaxonomy(null);
+        setTaxonomyError(
+          caught instanceof Error ? caught.message : "Не удалось загрузить путь ремонта",
+        );
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loadSearch = useCallback(
     async (mode: "reset" | "append", cursor: string | null = null) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const seq = ++searchSeq.current;
+
       setLoading(true);
       if (mode === "reset") {
         setError("");
@@ -95,173 +115,238 @@ export function PartnerFindVitrine({
             products?: Record<string, number> | null;
             services?: Record<string, number> | null;
           };
-        }>(`/api/partnership/search?${params.toString()}`);
+        }>(`/api/partnership/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (seq !== searchSeq.current) return;
 
         const batch = data.partners ?? [];
         setResults((prev) => mergeSearchResultPages(prev, batch, mode));
         setNextCursor(data.nextCursor ?? null);
         const adapted = adaptDiscoveryFacets(data.facets);
         setFacets(adapted);
-        setFacetsGap(adapted ? null : DISCOVERY_FACETS_GAP);
+        setFacetsGap(adapted ? null : DISCOVERY_FACETS_UNAVAILABLE);
       } catch (caught) {
+        if (controller.signal.aborted || seq !== searchSeq.current) return;
         if (mode === "reset") setResults([]);
         setError(
           caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
         );
       } finally {
-        setLoading(false);
+        if (seq === searchSeq.current) setLoading(false);
       }
     },
     [city, partnerType, query, searchRole, specialization, stageId],
   );
 
   useEffect(() => {
-    void loadSearch("reset");
+    const handle = window.setTimeout(() => {
+      void loadSearch("reset");
+    }, 200);
+    return () => window.clearTimeout(handle);
   }, [loadSearch]);
 
   const cards = results.map(buildVitrineCard);
 
+  function openDetails(partner: PartnerSearchResult) {
+    if (onOpenDetails) onOpenDetails(partner);
+    else setDetailsPartner(partner);
+  }
+
   return (
     <div className={styles.root} data-testid="partner-find-vitrine">
-      {taxonomy ? (
-        <PartnerRepairPathNav
-          stages={taxonomy.stages}
-          products={taxonomy.products}
-          services={taxonomy.services}
-          facets={facets}
-          selectedStageId={stageId}
-          selectedSpecialization={specialization}
-          countsUnavailableReason={facetsGap}
-          onStageChange={(next) => {
-            const nextState = stageSelectionResetsDirection(
-              { specialization, stageId },
-              next,
-            );
-            setStageId(nextState.stageId);
-            setSpecialization(nextState.specialization);
-          }}
-          onSpecializationChange={setSpecialization}
-        />
-      ) : null}
-
-      <TextField
-        label="Поиск по словам"
-        hint="необязательно"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Название, товар, услуга, этап или ID"
-        data-testid="vitrine-query"
-      />
-
-      <details
-        open={filtersOpen}
-        onToggle={(e) => setFiltersOpen((e.target as HTMLDetailsElement).open)}
-      >
-        <summary data-testid="vitrine-filters-summary">Уточнить: город и тип партнёра</summary>
-        <div style={{ display: "grid", gap: "0.75rem", marginTop: "0.75rem" }}>
-          <label>
-            <span>Город</span>
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Любой"
-              data-testid="vitrine-city"
-            />
-          </label>
-          <label>
-            <span>Тип партнёра</span>
-            <select
-              value={partnerType}
-              onChange={(e) =>
-                onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)
-              }
-              data-testid="vitrine-partner-type"
-            >
-              <option value="">Все типы</option>
-              <option value="agent">Агент</option>
-              <option value="specialist">Специалист</option>
-              <option value="store">Магазин</option>
-              <option value="company">Компания</option>
-            </select>
-          </label>
-        </div>
-      </details>
-
-      <div className={styles.meta}>
-        {loading ? <span className={styles.loading}>Ищем…</span> : null}
-        {!loading && facets?.total != null ? (
-          <strong data-testid="vitrine-total">Найдено: {facets.total}</strong>
-        ) : !loading ? (
-          <span data-testid="vitrine-page-count">
-            На экране: {results.length}
-            {nextCursor ? " · есть ещё" : ""}
-            {facetsGap ? " · полный счётчик недоступен" : ""}
-          </span>
+      <div className={styles.layout}>
+        {taxonomyError ? (
+          <p className={styles.error} role="alert" data-testid="vitrine-taxonomy-error">
+            {taxonomyError}
+          </p>
         ) : null}
-      </div>
+        {taxonomy ? (
+          <PartnerRepairPathNav
+            stages={taxonomy.stages}
+            products={taxonomy.products}
+            services={taxonomy.services}
+            facets={facets}
+            selectedStageId={stageId}
+            selectedSpecialization={specialization}
+            countsUnavailableReason={facetsGap}
+            onStageChange={(next) => {
+              const nextState = stageSelectionResetsDirection(
+                { specialization, stageId },
+                next,
+              );
+              setStageId(nextState.stageId);
+              setSpecialization(nextState.specialization);
+            }}
+            onSpecializationChange={setSpecialization}
+          />
+        ) : null}
 
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
+        <section className={styles.main} aria-label="Карточки партнёров">
+          <TextField
+            label="Поиск по словам"
+            hint="необязательно"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Название, товар, услуга, этап или ID"
+            data-testid="vitrine-query"
+          />
 
-      {!loading && !error && results.length === 0 ? (
-        <p className={styles.empty} data-testid="vitrine-empty">
-          По этим условиям партнёров нет. Смените этап, направление или сбросьте уточнения.
-        </p>
-      ) : null}
+          <details
+            open={filtersOpen}
+            onToggle={(e) => setFiltersOpen((e.target as HTMLDetailsElement).open)}
+          >
+            <summary data-testid="vitrine-filters-summary">Уточнить: город и тип партнёра</summary>
+            <div className={styles.filtersBody}>
+              <label>
+                <span>Город</span>
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Любой"
+                  data-testid="vitrine-city"
+                />
+              </label>
+              <label>
+                <span>Тип партнёра</span>
+                <select
+                  value={partnerType}
+                  onChange={(e) =>
+                    onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)
+                  }
+                  data-testid="vitrine-partner-type"
+                >
+                  <option value="">Все типы</option>
+                  <option value="agent">Агент</option>
+                  <option value="specialist">Специалист</option>
+                  <option value="store">Магазин</option>
+                  <option value="company">Компания</option>
+                </select>
+              </label>
+            </div>
+          </details>
 
-      <div className={styles.grid}>
-        {cards.map((card, index) => {
-          const partner = results[index];
-          return (
-            <article key={card.id} className={styles.card} data-testid="vitrine-card">
-              <div className={styles.cardHeader}>
-                <div>
-                  <h4 className={styles.title}>
-                    <button
+          <div className={styles.meta}>
+            {loading ? <span className={styles.loading}>Ищем…</span> : null}
+            {!loading && facets?.total != null ? (
+              <strong data-testid="vitrine-total">Найдено: {facets.total}</strong>
+            ) : !loading ? (
+              <span data-testid="vitrine-page-count">
+                На экране: {results.length}
+                {nextCursor ? " · есть ещё" : ""}
+                {facetsGap ? " · полный счётчик временно недоступен" : ""}
+              </span>
+            ) : null}
+          </div>
+
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          {!loading && !error && results.length === 0 ? (
+            <p className={styles.empty} data-testid="vitrine-empty">
+              По этим условиям партнёров нет. Смените этап, направление или сбросьте уточнения.
+            </p>
+          ) : null}
+
+          <div className={styles.grid}>
+            {cards.map((card, index) => {
+              const partner = results[index];
+              const terms = partner.publishedTerms ?? [];
+              const percents = terms
+                .map((t) => t.poolPercent)
+                .filter((n) => typeof n === "number");
+              const percentLabel =
+                percents.length === 0
+                  ? ""
+                  : Math.min(...percents) === Math.max(...percents)
+                    ? `${Math.min(...percents)}%`
+                    : `от ${Math.min(...percents)} до ${Math.max(...percents)}%`;
+              return (
+                <article key={card.id} className={styles.card} data-testid="vitrine-card">
+                  <div className={styles.cardCover} data-kind={card.kind ?? "company"}>
+                    <span>{card.kindLabel}</span>
+                    {!partner.partnershipStatus ? (
+                      <span className={styles.openBadge}>Открыт к партнёрству</span>
+                    ) : null}
+                  </div>
+                  <div className={styles.cardHeader}>
+                    <div>
+                      <h4 className={styles.title}>
+                        <button
+                          type="button"
+                          onClick={() => openDetails(partner)}
+                          className={styles.nameBtn}
+                          data-testid="vitrine-card-name"
+                        >
+                          {card.title}
+                        </button>
+                      </h4>
+                      <p className={styles.sub}>{card.city}</p>
+                    </div>
+                  </div>
+                  <p className={styles.sub}>{card.specializationLine}</p>
+                  {card.stagesLine ? <p className={styles.sub}>{card.stagesLine}</p> : null}
+                  {card.description ? <p className={styles.desc}>{card.description}</p> : null}
+                  <div className={styles.termsBlock}>
+                    <span className={styles.termsTitle}>Условия для агентов</span>
+                    {percentLabel ? <strong>{percentLabel}</strong> : null}
+                    {terms.length > 0 ? (
+                      <ul>
+                        {terms.slice(0, 3).map((t) => (
+                          <li key={t.category}>
+                            <span>{t.categoryLabel || t.category}</span>
+                            <b>{t.poolPercent}%</b>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <small>
+                        Общие условия пока не опубликованы. Можно запросить персональное предложение.
+                      </small>
+                    )}
+                  </div>
+                  <div className={styles.actions}>
+                    <Button
                       type="button"
-                      onClick={() => onOpenDetails?.(partner)}
-                      style={{
-                        all: "unset",
-                        cursor: onOpenDetails ? "pointer" : "default",
-                        font: "inherit",
-                        fontWeight: 750,
-                      }}
-                      data-testid="vitrine-card-name"
+                      variant="secondary"
+                      onClick={() => openDetails(partner)}
+                      data-testid="vitrine-card-details"
                     >
-                      {card.title}
-                    </button>
-                  </h4>
-                  <p className={styles.sub}>
-                    {card.kindLabel} · {card.city}
-                  </p>
-                </div>
-              </div>
-              <p className={styles.sub}>{card.specializationLine}</p>
-              {card.stagesLine ? <p className={styles.sub}>{card.stagesLine}</p> : null}
-              {card.description ? <p className={styles.desc}>{card.description}</p> : null}
-              <div className={styles.actions}>
-                <Button type="button" onClick={() => onInvite(partner)}>
-                  Пригласить
-                </Button>
-              </div>
-            </article>
-          );
-        })}
+                      Подробнее
+                    </Button>
+                    <Button type="button" onClick={() => onInvite(partner)}>
+                      Пригласить
+                    </Button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {nextCursor ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loading}
+              onClick={() => void loadSearch("append", nextCursor)}
+              data-testid="vitrine-load-more"
+            >
+              Показать ещё
+            </Button>
+          ) : null}
+        </section>
       </div>
 
-      {nextCursor ? (
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={loading}
-          onClick={() => void loadSearch("append", nextCursor)}
-          data-testid="vitrine-load-more"
-        >
-          Показать ещё
-        </Button>
+      {detailsPartner ? (
+        <PartnerVitrineDetails
+          partner={detailsPartner}
+          onClose={() => setDetailsPartner(null)}
+          onInvite={onInvite}
+        />
       ) : null}
     </div>
   );

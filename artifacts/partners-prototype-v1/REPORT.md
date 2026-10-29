@@ -1,50 +1,41 @@
-# Отчёт: RemCard — раздел «Партнёры» (prototype-v1)
+# Отчёт: RemCard — раздел «Партнёры» (prototype-v1 continuation)
 
-**Область:** Партнёры (не админка).  
-**Live-выпуск:** не утверждается.
+**Область:** Партнёры (не админка). Live-выпуск не утверждается.
 
 ## Branches / SHA
 
 | Repo | Branch | SHA | Примечание |
 | --- | --- | --- | --- |
-| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | `858c7394436117d1006dac33fb828d57040eb3ec` | base `1d9bbeb6332b68ba4421a299c1b6b5e3dfe8dd1e` |
-| remcard-navigator | — | — | **нет доступа** (404); backend task branch не создавалась |
+| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | *(см. tip после commit; prerequisite `253ff59ec0c9a32b0b00c6f544486deae2942119`)* | continuation поверх partial tip |
+| remcard-navigator | `feat/partners-prototype-v1-20261029` | `fb36d1ce8823b5e1050769938211e12599e4a300` | base `4b4c1244f8ed838508e7d4a99796092ebd2cb7ed` |
+| reference (read-only) | `reference/prototype-20261029` | `4ba2f9e764b412e956e2ccb619ebbcab7d76a006` | worktree only |
 
-Reference snapshot `4ba2f9e…` / `docs/prototype-reference/current/partner/*` — не прочитаны.
+Если frontend push недоступен: `artifacts/partners-prototype-v1/frontend-implementation.bundle`.
 
-## Changed files (основные)
+## Closed review items
 
-- `src/lib/partners-prototype-v1/**` — adapters, wizard state, repair-path, published terms, tests
-- `src/components/partners/prototype-v1/**` — FindVitrine, RepairPathNav, InviteWizard
-- `src/components/partners/AgentR04ListToolbar.tsx` — компактная строка
-- `src/components/partners/AgentPartnerDiscoveryFilters.tsx` — specialization в list-extra
-- `src/components/partners/PartnersHub.tsx` — wiring vitrine + wizard (agent-r04)
-- `vitest.config.ts` — include owned tests
-- `scripts/partners-prototype-v1-visual-*`
-- `artifacts/partners-prototype-v1/**` — FLOWS, matrix, SHARED-CHANGE-REQUEST, BLOCKERS, screenshots (LOCAL FIXTURE)
-
-## Coverage
-
-См. `COVERAGE-MATRIX.md`. Кратко: toolbar/wizard/repair-path helpers — зелёные тесты; facets/published percents/exact redesign CSS — blockers.
+- **P0** invite: non-agent без % → `requestPartnerTerms` (не `cooperationRequest`); agent guard сохранён.
+- **P1** published terms: search `publishedTerms` + certificate-program-summary; poolPercent disclaimer.
+- **P1** agent selected categories остаются в `terms`.
+- **P1** vitrine details + Подробнее (`PartnerVitrineDetails`).
+- **P1** exact reference read; vertical «Путь ремонта»; шаблоны exact copy; meta-copy убран из UI.
+- **P1** wizard для всех presentation paths; free-name `PartnerLinkInviteWizard` → discussion-invite; share recipient path.
+- **P1** facets full matching set на backend search; abort/sequence на FE; taxonomy error явный.
+- **P1** recipient reset по `target.id`; invite INVITED unique-pair replay.
+- **P1** kind via `resolvePartnerKindUi` adapter.
 
 ## Verification
 
 | Check | Result |
 | --- | --- |
-| vitest targeted (37) | pass |
-| `tsc --noEmit` | 0 |
-| `npm run build` | 0 |
-| Playwright LOCAL FIXTURE 375/1440 × light/dark | 12 PNG → `screenshots/` |
-| Real invite POST against production | **не выполнялся** (`disableSubmit` в QA) |
+| FE vitest partners-prototype-v1 + wizard | 26 pass |
+| FE `tsc --noEmit` | 0 |
+| BE targeted invite/facets tests | pass |
+| BE pre-existing tsc noise | outside owned files |
+| Screenshots LOCAL FIXTURE harness | `screenshots/*` |
+| Screenshots exact reference | `screenshots-reference/*` provenance 4ba2f9e |
+| Real invite POST production | **не выполнялся** |
 
-## Shared-change requests / blockers
+## Coverage
 
-- `SHARED-CHANGE-REQUEST.md` — facets + optional publishedTerms + vitest include
-- `BLOCKERS.md` — navigator access, facets, type-unify not merged
-
-## Не реализовано / честно
-
-- Pixel/copy parity с `partners-redesign.js/css` без reference
-- Full-set stage counters на live API без facets
-- Backend partnership routes (нет repo)
-- Merge type-unify / staff invites / global nav — вне ownership
+См. `COVERAGE-MATRIX.md`, `FLOWS.md`, `BLOCKERS.md`, `SHARED-CHANGE-REQUEST.md`.

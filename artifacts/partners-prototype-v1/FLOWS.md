@@ -1,47 +1,33 @@
-# Partners prototype-v1 — FLOWS (вне deployed assets)
+# FLOWS — Партнёры prototype-v1 (после reference-led продолжения)
 
-База frontend: `release/prof-v1-20261007` @ `1d9bbeb6332b68ba4421a299c1b6b5e3dfe8dd1e`  
-Task branch: `feat/partners-prototype-v1-20261029`  
-Reference snapshot (запрошен): `reference/prototype-20261029` @ `4ba2f9e764b412e956e2ccb619ebbcab7d76a006` — **недоступен** (нет read к `remcard-navigator`).
+Проверено локально на task-ветках. Production writes / real invites — не выполнялись.
 
-## Baseline существующих flows (до правок)
+## Список своих партнёров
+1. Компактная строка: поиск / Фильтры / список|карточки.
+2. Тип, специализация, архив, сортировка — в раскрываемых фильтрах.
+3. Имя открывает детали; основные действия видны без «глаза».
+4. Статусы: действующие / ожидающие / обсуждаемые / архивные — по backend status + list preferences.
 
-1. `/partners` → `resolvePartnersHubPresentation` → shared-r04 shell (`AgentPartnersHub`) или legacy `PartnersHub`.
-2. Список партнёрств: `GET /api/partnership/list` (+ listVisibility archive/hidden).
-3. Поиск: `GET /api/partnership/search?role=&q=&city=&product=&service=&stage=&partnerType=&cursor=`.
-4. Приглашение: `POST /api/partnership/invite` (terms / cooperationRequest).
-5. Ссылка: `GET/POST /api/partnership/link-invite`, discussion: `GET/POST/DELETE /api/partnership/discussion-invite`.
-6. Действия: `PATCH /api/partnership/:id`, term-change routes.
-7. Справочник: `GET /api/pro/partner-taxonomy`.
+## Витрина «Найти партнёра»
+1. Боковой «Путь ремонта» (вертикальный маршрут + прогресс); на ≤760px — collapse summary.
+2. Выбор этапа сбрасывает направление.
+3. Счётчики — из `facets` полного matching set; page length не выдаётся за «Найдено».
+4. Карточка: тип, направления, этапы, опубликованные условия (search DTO или certificate-program), «Подробнее», «Пригласить».
+5. Stale/out-of-order: abort + sequence на поиск; taxonomy error не маскируется пустым успехом.
 
-Staff invites / employee form — вне scope (не менялись).
+## Приглашение существующего партнёра (wizard 3 шага)
+1. Партнёр → Сообщение (3 шаблона exact reference) → Проверка.
+2. Опубликованные условия: search `publishedTerms` или GET certificate-program-summary; poolPercent = общий процент.
+3. Агент: one-way; выбранные категории с % уходят в `terms`. Без % — `cooperationRequest`.
+4. Неагент без % — `requestPartnerTerms` (не `cooperationRequest`).
+5. Создание только финальной кнопкой; share-экран с recipient path (`/invite/...` или partnership deep-link).
+6. Recipient reset только по `target.id`.
 
-## Целевые сценарии (reference-led contract)
+## Приглашение по ссылке (свободное имя)
+1. PartnerLinkInviteWizard → discussion-invite API.
+2. Share URL = previewPath получателя; staff invite не затронут.
 
-### A. Мои партнёры — компактный toolbar
-- Одна строка: поиск своих партнёров · «Фильтры» · неброский список/карточки.
-- В «Фильтры»: тип, специализация, город, этап, архив, сортировка.
-- Одинаковая семантика фильтров в list и cards.
-- Имя → детали; основные workflow-действия inline (уже на базе partner-row-actions).
-- Состояния: действующие / ожидающие / обсуждаемые / архив / скрытые.
-
-### B. Найти партнёра — витрина
-- Модалка: «Найти в RemCard» | «Пригласить по ссылке».
-- Путь ремонта из этапов taxonomy (ожидается 12 в live справочнике).
-- Выбор этапа сбрасывает направление/специализацию.
-- Счётчики только из full matching facets; иначе честный gap (не page length, не demo 7/5/7).
-- Карточки с содержанием + «Пригласить».
-
-### C. Приглашение — wizard 3 шага
-1. Партнёр — получатель, взаимность vs agent one-way, категории/запрос условий.
-2. Сообщение — одно поле + шаблоны «Коротко» / «По-деловому» / «По-дружески»; свой текст при возврате; замена dirty — confirm; смена получателя чистит условия.
-3. Проверка — текст, условия отдельно, путь; отправка только финальной кнопкой + Idempotency-Key.
-
-### D. Regression (затронутые)
-- Accept/reject/cancel/counter/term-change/list preferences — без изменения контракта.
-- Link/discussion invite panels — без staff invites.
-
-## QA запреты
-- Не отправлять реальные приглашения (wizard `disableSubmit` в тестах; live QA — только read / fixtures).
-- Не трогать Седа/ОПТОВИК partnership данные.
-- Нет DB writes / deploy / merge release.
+## Регрессия / QA
+- 4 типа через resolvePartnerKindUi adapter.
+- Whitespace / XSS-like / 1000 chars / back / template confirm — unit tests.
+- disableSubmit в QA; реальных POST в production нет.

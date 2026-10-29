@@ -6,8 +6,20 @@ import {
   tradeSideTermCategories,
 } from "@/lib/partnership-rules";
 import { categoryLabel } from "@/lib/partnership-labels";
-import type { PartnerSearchResult, ProProfileResponse } from "@/lib/types";
+import type {
+  PartnerCertProgramItem,
+  PartnerCertProgramState,
+} from "@/lib/partner-certificate-program";
+import type { PartnerPublishedTerm, PartnerSearchResult, ProProfileResponse } from "@/lib/types";
 import type { InviteWizardCategory } from "./invite-wizard-state";
+
+export type PublishedTermsLoadState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "loaded"; items: PartnerPublishedTerm[] }
+  | { status: "empty" }
+  | { status: "error"; message: string }
+  | { status: "unavailable"; message: string };
 
 export type PublishedInviteTermsPlan = {
   agentOneWay: boolean;
@@ -16,15 +28,61 @@ export type PublishedInviteTermsPlan = {
   requestTerms: boolean;
   categories: InviteWizardCategory[];
   blockedReason?: string;
+  /** poolPercent disclaimer for UI */
+  poolPercentDisclaimer: string;
 };
 
+export const POOL_PERCENT_DISCLAIMER =
+  "Общий процент: скидка клиенту + бонус агенту. Не гарантированный доход.";
+
 /**
- * Build invite term plan from real published categories only.
- * Never invent percents/bonus. No published terms → honest requestTerms.
+ * Map certificate-program items (poolPercent) into published term rows.
+ * poolPercent is the general pool — not a guaranteed bonus and not an arbitrary storePercent invent.
+ */
+export function certProgramItemsToPublishedTerms(
+  items: PartnerCertProgramItem[],
+): PartnerPublishedTerm[] {
+  return items.map((item) => ({
+    category: item.category,
+    categoryLabel: item.categoryLabel,
+    poolPercent: item.poolPercent,
+    storePercent: item.poolPercent,
+  }));
+}
+
+export function publishedTermsFromCertState(
+  state: PartnerCertProgramState,
+): PublishedTermsLoadState {
+  if (state.status === "loading") return { status: "loading" };
+  if (state.status === "error") return { status: "error", message: state.message };
+  if (state.status === "empty") return { status: "empty" };
+  return {
+    status: "loaded",
+    items: certProgramItemsToPublishedTerms(state.items),
+  };
+}
+
+export function publishedTermsFromSearchResult(
+  target: PartnerSearchResult,
+): PartnerPublishedTerm[] | null {
+  if (!Array.isArray(target.publishedTerms)) return null;
+  return target.publishedTerms.filter(
+    (row) =>
+      row &&
+      !row.isExcluded &&
+      typeof row.category === "string" &&
+      typeof row.poolPercent === "number",
+  );
+}
+
+/**
+ * Build invite term plan from real published categories/percents only.
+ * Prefer search DTO publishedTerms; callers should merge certificate-program when DTO empty/loading.
  */
 export function planPublishedInviteTerms(
   meProfile: ProProfileResponse,
   target: PartnerSearchResult,
+  publishedOverride?: PartnerPublishedTerm[] | null,
 ): PublishedInviteTermsPlan {
   const inviter = profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const targetSide = searchResultToPartnerSide(target);
@@ -39,32 +97,45 @@ export function planPublishedInviteTerms(
       requestTerms: true,
       categories: [],
       blockedReason: resolved.blockedReason,
+      poolPercentDisclaimer: POOL_PERCENT_DISCLAIMER,
     };
   }
 
+  const published =
+    publishedOverride ?? publishedTermsFromSearchResult(target) ?? [];
+  const publishedByCategory = new Map(
+    published.map((row) => [row.category, row] as const),
+  );
+
   const categoryIds = resolved.categories.length
     ? resolved.categories
-    : tradeSideTermCategories(targetSide);
+    : published.length
+      ? published.map((p) => p.category)
+      : tradeSideTermCategories(targetSide);
 
-  if (categoryIds.length === 0) {
+  if (categoryIds.length === 0 && published.length === 0) {
     return {
       agentOneWay,
       mutualDefault,
       requestTerms: true,
       categories: [],
+      poolPercentDisclaimer: POOL_PERCENT_DISCLAIMER,
     };
   }
 
-  // Percents: only when target exposes them on search card terms-like fields.
-  // PartnerSearchResult currently has categories but not published percents —
-  // treat as requestTerms for numeric rates while still listing real categories.
-  const publishedPercents = extractPublishedPercents(target);
+  const ids = categoryIds.length ? categoryIds : published.map((p) => p.category);
 
-  const categories: InviteWizardCategory[] = categoryIds.map((id) => {
-    const percent = publishedPercents[id];
+  const categories: InviteWizardCategory[] = ids.map((id) => {
+    const row = publishedByCategory.get(id);
+    const percent =
+      row != null
+        ? typeof row.storePercent === "number"
+          ? row.storePercent
+          : row.poolPercent
+        : null;
     return {
       category: id,
-      categoryLabel: categoryLabel(id),
+      categoryLabel: row?.categoryLabel?.trim() || categoryLabel(id),
       storePercent: typeof percent === "number" ? percent : null,
       selected: true,
     };
@@ -77,28 +148,6 @@ export function planPublishedInviteTerms(
     mutualDefault,
     requestTerms: !anyPercent,
     categories,
+    poolPercentDisclaimer: POOL_PERCENT_DISCLAIMER,
   };
 }
-
-/** Optional extension fields if search DTO ever includes published terms. */
-function extractPublishedPercents(target: PartnerSearchResult): Record<string, number> {
-  const raw = (target as PartnerSearchResult & {
-    publishedTerms?: Array<{ category: string; storePercent: number; isExcluded?: boolean }>;
-    generalTerms?: Array<{ category: string; storePercent: number; isExcluded?: boolean }>;
-  }).publishedTerms ??
-    (target as PartnerSearchResult & {
-      generalTerms?: Array<{ category: string; storePercent: number; isExcluded?: boolean }>;
-    }).generalTerms;
-  if (!Array.isArray(raw)) return {};
-  const out: Record<string, number> = {};
-  for (const row of raw) {
-    if (!row || row.isExcluded) continue;
-    if (typeof row.category === "string" && typeof row.storePercent === "number") {
-      out[row.category] = row.storePercent;
-    }
-  }
-  return out;
-}
-
-export const PUBLISHED_PERCENTS_GAP =
-  "PartnerSearchResult does not expose published per-category percents. Wizard lists real category IDs from trade-side resolution and marks requestTerms until search/profile DTO includes publishedTerms.";

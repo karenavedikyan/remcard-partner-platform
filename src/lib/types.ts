@@ -196,6 +196,23 @@ export type PartnershipListResponse = {
   listVisibility?: "active" | "archive" | "hidden" | "all";
 };
 
+export type PartnerPublishedTerm = {
+  category: string;
+  categoryLabel?: string;
+  /** Общий процент (pool): скидка клиенту + бонус; не гарантированный доход. */
+  poolPercent: number;
+  /** Alias for invite mapping — same as poolPercent when provided by search. */
+  storePercent?: number;
+  isExcluded?: boolean;
+};
+
+export type PartnerSearchFacets = {
+  total: number;
+  stages: Record<string, number>;
+  products: Record<string, number>;
+  services: Record<string, number>;
+};
+
 export type PartnerSearchResult = {
   id: string;
   displayName: string;
@@ -207,6 +224,7 @@ export type PartnerSearchResult = {
   storeCategories: string[];
   partnerType?: string | null;
   partnerTypeLabel?: string | null;
+  partnerActivities?: string[] | null;
   /** Подтверждённый partnerType организации владельца (если API поиска когда‑либо вернёт). */
   organizationPartnerType?: string | null;
   organizationName?: string | null;
@@ -227,12 +245,16 @@ export type PartnerSearchResult = {
     phone: string | null;
     email: string | null;
   };
+  /** Additive: published certificate-program terms when search includes them. */
+  publishedTerms?: PartnerPublishedTerm[];
 };
 
 export type PartnerSearchResponse = {
   partners: PartnerSearchResult[];
   nextCursor?: string | null;
   hasMore?: boolean;
+  /** Additive full matching-set facets (absent ≠ zeros). */
+  facets?: PartnerSearchFacets | null;
 };
 
 export type TermChangeRequest = {

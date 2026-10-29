@@ -22,7 +22,7 @@ export type PartnerVitrineCardModel = {
 export function buildVitrineCard(partner: PartnerSearchResult): PartnerVitrineCardModel {
   const kind = adaptPartnerPrimaryKind({
     partnerType: partner.partnerType,
-    partnerActivities: undefined,
+    partnerActivities: partner.partnerActivities,
     organizationPartnerType: partner.organizationPartnerType,
   });
 

@@ -1,7 +1,7 @@
 {
   "kind": "LOCAL FIXTURE",
   "note": "Synthetic harness screenshots — not live PROF",
-  "capturedAt": "2026-10-29T14:50:42.236Z",
+  "capturedAt": "2026-10-29T15:16:19.600Z",
   "results": [
     {
       "file": "toolbar-375-light.png",
@@ -41,7 +41,7 @@
     },
     {
       "file": "repair-path-375-light.png",
-      "sha256": "3740fa86936443355d8e7ab03d73eb82580882aa07af7194b8264bcafed46a4a",
+      "sha256": "b20ddeab18d4056e54ad120722ff10373831056d15d27d2ab98c0f4c4f735d45",
       "scene": "repair-path",
       "theme": "light",
       "w": 375,
@@ -50,7 +50,7 @@
     },
     {
       "file": "repair-path-1440-light.png",
-      "sha256": "127c054c23be67e675a2812980e905a7cbcc55f1cc32b333174637664bf3e4db",
+      "sha256": "1d6140a370e61c6ee71ab1f9029a265e50eb1abaebe8a7b0e805d400ccd84120",
       "scene": "repair-path",
       "theme": "light",
       "w": 1440,
@@ -59,7 +59,7 @@
     },
     {
       "file": "repair-path-375-dark.png",
-      "sha256": "8c86dd173f8f977488a05c2f1bad5dba6a832144f69d01a11d54f54ba940b0dc",
+      "sha256": "ee92f7116d4460c3c4dcf6854343ffe47825bdb484a12b346a3615c6c3c7e59f",
       "scene": "repair-path",
       "theme": "dark",
       "w": 375,
@@ -68,7 +68,7 @@
     },
     {
       "file": "repair-path-1440-dark.png",
-      "sha256": "fa9666697358622b3d651871ec74b23b55149120e96e8e7ec7b7ea0be8bff3fe",
+      "sha256": "ed2d96d3e8480d5770fd63025c28cf0c5a41ca2e86b671f891d13015f3a67dc6",
       "scene": "repair-path",
       "theme": "dark",
       "w": 1440,
@@ -77,7 +77,7 @@
     },
     {
       "file": "wizard-375-light.png",
-      "sha256": "e0e976c8fe19d27018f3ced1f86dc3087c7f1917b6e73efa2bb97e5c6200c505",
+      "sha256": "7f247b43c45eee63833c92a32e5a2bb32f3399ea451df7c2e94038c0ec0cbb27",
       "scene": "wizard",
       "theme": "light",
       "w": 375,
@@ -86,7 +86,7 @@
     },
     {
       "file": "wizard-1440-light.png",
-      "sha256": "ce9714cdf65b5104d4e620ec40f7bf816f04272e3e8359d6cd4bc055e0b9296f",
+      "sha256": "25e6baa34709c1710097d56df57bc5b802ba1e75ec5b5e193738163212feb01f",
       "scene": "wizard",
       "theme": "light",
       "w": 1440,
@@ -95,7 +95,7 @@
     },
     {
       "file": "wizard-375-dark.png",
-      "sha256": "c0d69494ecf5c8f8aa4301f016bd67370bfd3343e206ff924e2c8192eee2db39",
+      "sha256": "f44d46a81833615557438409677e73ebae249b49a49f32d6fe68d2785a90faf4",
       "scene": "wizard",
       "theme": "dark",
       "w": 375,
@@ -104,7 +104,7 @@
     },
     {
       "file": "wizard-1440-dark.png",
-      "sha256": "00ad70208b205d6551bba2c5b381f5d6cfc5fb3415282f5142f9e316df5ecd5f",
+      "sha256": "67e8345b05a59ba0abfab2dac74acfb0a5a689465fc44e8977baeb432ff97443",
       "scene": "wizard",
       "theme": "dark",
       "w": 1440,

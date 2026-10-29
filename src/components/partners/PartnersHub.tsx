@@ -36,7 +36,6 @@ import {
   type BulkOutcome,
 } from "@/components/partners/AgentPartnerBulkBar";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
-import { PartnerDiscussionInvitePanel } from "@/components/partners/PartnerDiscussionInvitePanel";
 import {
   discussionContextToInviteTarget,
   type DiscussionInviteContextDto,
@@ -60,7 +59,6 @@ import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
-import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
 import { PartnerGeneralTermsDetails } from "@/components/partners/PartnerGeneralTermsDetails";
 import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterOfferDialog";
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
@@ -70,6 +68,7 @@ import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
 import { PartnerFindVitrine } from "@/components/partners/prototype-v1/PartnerFindVitrine";
 import { PartnerInviteWizard } from "@/components/partners/prototype-v1/PartnerInviteWizard";
+import { PartnerLinkInviteWizard } from "@/components/partners/prototype-v1/PartnerLinkInviteWizard";
 import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
@@ -716,7 +715,7 @@ export function PartnersHub({
                   Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
                   запроса.
                 </p>
-                <PartnerDiscussionInvitePanel showSectionTitle={false} />
+                <PartnerLinkInviteWizard meProfile={meProfile} />
               </>
             ) : (
               <>
@@ -743,7 +742,7 @@ export function PartnersHub({
                   </div>
                 ) : null}
                 {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
-                  <PartnerDiscussionInvitePanel showSectionTitle={false} />
+                  <PartnerLinkInviteWizard meProfile={meProfile} />
                 ) : (
                   <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
                 )}
@@ -769,10 +768,11 @@ export function PartnersHub({
               <PartnerInviteWizard
                 target={inviteTarget}
                 meProfile={meProfile}
-                onClose={() => setInviteTarget(null)}
-                onSent={() => {
+                onClose={() => {
                   setInviteTarget(null);
                   onCloseAgentModal?.();
+                }}
+                onSent={() => {
                   void loadList();
                 }}
               />
@@ -1167,7 +1167,10 @@ export function PartnersHub({
           )}
         </>
       ) : tab === "link" ? (
-        <PartnerLinkInvitePanel meProfile={meProfile} />
+        <>
+          <PartnerLinkInviteWizard meProfile={meProfile} />
+          <PartnerLinkInvitePanel meProfile={meProfile} />
+        </>
       ) : (
         <>
           <Panel compact>
@@ -1377,28 +1380,14 @@ export function PartnersHub({
       )}
 
       {inviteTarget ? (
-        isAgentR04 ? (
-          <PartnerInviteWizard
-            target={inviteTarget}
-            meProfile={meProfile}
-            onClose={() => setInviteTarget(null)}
-            onSent={() => {
-              setTab(forcedTab ?? "list");
-              void loadList();
-            }}
-          />
-        ) : (
-          <PartnerInviteDialog
-            target={inviteTarget}
-            meProfile={meProfile}
-            busy={busyId === inviteTarget.id}
-            onClose={() => setInviteTarget(null)}
-            onSent={() => {
-              setTab("list");
-              void loadList();
-            }}
-          />
-        )
+        <PartnerInviteWizard
+          target={inviteTarget}
+          meProfile={meProfile}
+          onClose={() => setInviteTarget(null)}
+          onSent={() => {
+            void loadList();
+          }}
+        />
       ) : null}
 
       {counterOfferTarget ? (

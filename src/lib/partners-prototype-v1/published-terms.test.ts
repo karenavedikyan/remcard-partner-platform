@@ -66,17 +66,25 @@ describe("planPublishedInviteTerms", () => {
     expect(plan.categories.every((c) => c.storePercent == null)).toBe(true);
   });
 
-  it("uses publishedTerms percents when present on search DTO", () => {
+  it("uses publishedTerms poolPercent when present on search DTO", () => {
     const withTerms = {
       ...target(),
       publishedTerms: [
-        { category: "doors", storePercent: 12, isExcluded: false },
-        { category: "paint", storePercent: 8, isExcluded: false },
+        { category: "doors", poolPercent: 12, storePercent: 12, isExcluded: false },
+        { category: "paint", poolPercent: 8, storePercent: 8, isExcluded: false },
       ],
     } as PartnerSearchResult;
     const plan = planPublishedInviteTerms(profile(), withTerms);
     expect(plan.requestTerms).toBe(false);
     expect(plan.categories.find((c) => c.category === "doors")?.storePercent).toBe(12);
+  });
+
+  it("accepts certificate-program override without inventing percents", () => {
+    const plan = planPublishedInviteTerms(profile(), target(), [
+      { category: "doors", categoryLabel: "Двери", poolPercent: 15, storePercent: 15 },
+    ]);
+    expect(plan.requestTerms).toBe(false);
+    expect(plan.categories.find((c) => c.category === "doors")?.storePercent).toBe(15);
   });
 
   it("agent inviter is one-way (no mutual promise)", () => {
