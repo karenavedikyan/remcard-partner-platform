@@ -168,6 +168,37 @@
   min-height: 32px;
 }
 
+.termsDetails {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+  background: var(--surface);
+}
+
+.termsDetails > summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.termsDetails > summary::-webkit-details-marker {
+  display: none;
+}
+
+.termModes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.termFields {
+  display: grid;
+  gap: var(--space-2);
+}
+
 @media (max-width: 480px) {
   .dialog {
     padding: var(--space-3);

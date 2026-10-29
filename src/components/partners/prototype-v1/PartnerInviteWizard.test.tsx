@@ -95,7 +95,7 @@ describe("PartnerInviteWizard", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("invite-request-terms")).toBeInTheDocument();
+      expect(screen.getByTestId("invite-wizard-step-partner")).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
@@ -106,8 +106,9 @@ describe("PartnerInviteWizard", () => {
     const message = screen.getByTestId("invite-wizard-message") as HTMLTextAreaElement;
     expect(message.value.length).toBeGreaterThan(10);
 
-    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
     expect(screen.getByTestId("invite-wizard-step-review")).toBeInTheDocument();
+    expect(screen.getByTestId("invite-terms-editor")).toBeInTheDocument();
     expect(remcardFetch).not.toHaveBeenCalled();
 
     await user.click(screen.getByTestId("invite-wizard-submit"));
@@ -130,10 +131,11 @@ describe("PartnerInviteWizard", () => {
         onSent={() => undefined}
       />,
     );
-    await waitFor(() => screen.getByTestId("invite-request-terms"));
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
     await user.click(screen.getByTestId("invite-template-short"));
-    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await waitFor(() => screen.getByTestId("invite-request-terms"));
+    expect(screen.getByTestId("invite-own-terms")).toBeInTheDocument();
     await user.click(screen.getByTestId("invite-wizard-submit"));
     await waitFor(() => expect(remcardFetch).toHaveBeenCalled());
     const [, opts] = remcardFetch.mock.calls[0];
@@ -166,10 +168,11 @@ describe("PartnerInviteWizard", () => {
         onSent={() => undefined}
       />,
     );
-    await waitFor(() => screen.getByText(/Двери/));
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
     await user.click(screen.getByTestId("invite-template-short"));
-    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await waitFor(() => screen.getByTestId("invite-published-terms"));
+    expect(screen.queryByTestId("invite-own-terms")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("invite-wizard-submit"));
     await waitFor(() => expect(remcardFetch).toHaveBeenCalled());
     const [, opts] = remcardFetch.mock.calls[0];
@@ -178,7 +181,7 @@ describe("PartnerInviteWizard", () => {
     expect(opts.body.terms?.[0]?.storePercent).toBe(12);
   });
 
-  it("confirms template replace after custom edit; Escape closes", async () => {
+  it("replaces custom text with template immediately; Escape closes", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(
@@ -191,16 +194,15 @@ describe("PartnerInviteWizard", () => {
       />,
     );
 
-    await waitFor(() => screen.getByTestId("invite-request-terms"));
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
     await user.click(screen.getByTestId("invite-template-business"));
     const field = screen.getByTestId("invite-wizard-message") as HTMLTextAreaElement;
     await user.clear(field);
     await user.type(field, "мой собственный текст");
     await user.click(screen.getByTestId("invite-template-friendly"));
-    expect(screen.getByTestId("invite-template-confirm")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Оставить свой/i }));
-    expect(field.value).toContain("мой собственный текст");
+    expect(screen.queryByTestId("invite-template-confirm")).not.toBeInTheDocument();
+    expect(field.value).toContain("Привет!");
+    expect(field.value).not.toContain("мой собственный текст");
 
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
@@ -222,5 +224,27 @@ describe("PartnerInviteWizard", () => {
     await waitFor(() => screen.getByTestId("invite-wizard-step-partner"));
     const step = screen.getByTestId("invite-wizard-step-partner");
     expect(within(step).getByText(/рекомендовать товары или услуги получателя/i)).toBeInTheDocument();
+  });
+
+  it("exposes partner/custom terms modes on review for non-agent", async () => {
+    const user = userEvent.setup();
+    render(
+      <PartnerInviteWizard
+        target={storeTarget()}
+        meProfile={meProfile()}
+        onClose={() => undefined}
+        onSent={() => undefined}
+        disableSubmit
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
+    await user.type(screen.getByTestId("invite-wizard-message"), "Текст");
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await user.click(screen.getByTestId("invite-terms-mode-custom"));
+    expect(screen.getByTestId("invite-terms-custom")).toBeInTheDocument();
+    await user.type(screen.getByTestId("invite-partner-action"), "Рекомендовать двери");
+    expect(screen.getByTestId("invite-review-conditions").textContent).toContain(
+      "Моё предложение: Рекомендовать двери",
+    );
   });
 });

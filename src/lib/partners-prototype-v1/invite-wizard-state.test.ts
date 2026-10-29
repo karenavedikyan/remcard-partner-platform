@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  agentInviteProposal,
   applyInviteTemplate,
+  buildInviteConditionsText,
   buildInviteShareText,
   createInviteWizardState,
   goInviteWizardStep,
   markInviteSubmitPending,
+  selectedPublishedTermsForSubmit,
+  setInviteTermField,
+  setInviteTermsMode,
   setInviteWizardMessage,
   setInviteWizardRecipient,
   syncInviteWizardPublishedTerms,
@@ -28,7 +33,7 @@ describe("invite-wizard-state", () => {
     expect(state.message).toBe("мой текст");
   });
 
-  it("requires confirm when replacing dirty custom text with template", () => {
+  it("replaces dirty custom text with template immediately (no confirmation)", () => {
     const state = createInviteWizardState({
       recipientId: "u1",
       recipientName: "Магазин А",
@@ -39,12 +44,14 @@ describe("invite-wizard-state", () => {
         { category: "doors", categoryLabel: "Двери", storePercent: 10, selected: true },
       ],
     });
-    expect(templateReplaceNeedsConfirm(state)).toBe(true);
-    const result = applyInviteTemplate(state, "short", "Иван");
-    expect("needsConfirm" in result).toBe(true);
+    expect(templateReplaceNeedsConfirm(state)).toBe(false);
+    const next = applyInviteTemplate(state, "short", "Иван");
+    expect(next.message).toContain("Давайте рекомендовать товары и услуги друг друга");
+    expect(next.lastTemplateId).toBe("short");
+    expect(next.customMessageDirty).toBe(false);
   });
 
-  it("applies template when force or clean", () => {
+  it("applies template when clean", () => {
     const state = createInviteWizardState({
       recipientId: "u1",
       recipientName: "Магазин А",
@@ -55,13 +62,9 @@ describe("invite-wizard-state", () => {
       ],
     });
     const next = applyInviteTemplate(state, "short", "Иван");
-    expect("needsConfirm" in next).toBe(false);
-    if (!("needsConfirm" in next)) {
-      // Exact reference short template: mutual proposal + RemCard registration CTA.
-      expect(next.message).toContain("Давайте рекомендовать товары и услуги друг друга");
-      expect(next.message).toContain("RemCard");
-      expect(next.lastTemplateId).toBe("short");
-    }
+    expect(next.message).toContain("Давайте рекомендовать товары и услуги друг друга");
+    expect(next.message).toContain("RemCard");
+    expect(next.lastTemplateId).toBe("short");
   });
 
   it("clears conditions and message when recipient changes", () => {
@@ -70,6 +73,10 @@ describe("invite-wizard-state", () => {
       recipientId: "old",
       recipientName: "Старый",
       message: "старое",
+      partnerAction: "действие",
+      partnerBenefit: "выгода",
+      ownTerms: "мои",
+      termsMode: "custom",
       categories: [
         { category: "doors", categoryLabel: "Двери", storePercent: 10, selected: true },
       ],
@@ -89,6 +96,9 @@ describe("invite-wizard-state", () => {
     expect(next.categories).toEqual([]);
     expect(next.requestTerms).toBe(true);
     expect(next.agentOneWay).toBe(true);
+    expect(next.termsMode).toBe("published");
+    expect(next.partnerAction).toBe("");
+    expect(next.ownTerms).toBe("");
     expect(next.submitIdempotencyKey).toBeNull();
   });
 
@@ -98,6 +108,7 @@ describe("invite-wizard-state", () => {
       recipientId: "same",
       recipientName: "Магазин",
       message: "Сохранить мой текст",
+      partnerAction: "оставить",
       categories: [],
       requestTerms: true,
     });
@@ -112,6 +123,7 @@ describe("invite-wizard-state", () => {
     });
     expect(next.step).toBe("message");
     expect(next.message).toBe("Сохранить мой текст");
+    expect(next.partnerAction).toBe("оставить");
     expect(next.requestTerms).toBe(false);
     expect(next.categories[0]?.storePercent).toBe(12);
   });
@@ -123,7 +135,7 @@ describe("invite-wizard-state", () => {
 
     const xss = setInviteWizardMessage(
       createInviteWizardState(),
-      '  <script>alert(1)</script>  ',
+      "  <script>alert(1)</script>  ",
     );
     expect(xss.message).toContain("<script>");
     expect(xss.message.startsWith("  ")).toBe(true);
@@ -146,20 +158,56 @@ describe("invite-wizard-state", () => {
     expect(again.submitIdempotencyKey).toBe(state.submitIdempotencyKey);
   });
 
-  it("keeps message and conditions separate in share payload", () => {
-    const state = createInviteWizardState({
+  it("builds reference conditions for published pool and custom mode", () => {
+    const published = createInviteWizardState({
       message: "Текст приглашения",
       requestTerms: false,
+      termsMode: "published",
       categories: [
         { category: "doors", categoryLabel: "Двери", storePercent: 8, selected: true },
         { category: "paint", categoryLabel: "Краска", storePercent: 5, selected: false },
       ],
     });
-    const share = buildInviteShareText(state, "/invite/tok-abc");
+    const share = buildInviteShareText(published, "/invite/tok-abc");
     expect(share.message).toBe("Текст приглашения");
     expect(share.conditions).toContain("Двери: общий процент 8%");
     expect(share.conditions).not.toContain("Краска");
+    expect(share.conditions).toContain("не размер гарантированного вознаграждения");
     expect(share.path).toBe("/invite/tok-abc");
+
+    const custom = createInviteWizardState({
+      agentOneWay: false,
+      termsMode: "custom",
+      partnerAction: "Рекомендовать двери",
+      partnerBenefit: "10% бонус",
+      ownTerms: "Взаимный обмен",
+    });
+    const text = buildInviteConditionsText(custom);
+    expect(text).toContain("Моё предложение: Рекомендовать двери");
+    expect(text).toContain("Желаемые условия: 10% бонус");
+    expect(text).toContain("Мои условия за рекомендации: Взаимный обмен");
+    expect(selectedPublishedTermsForSubmit(custom)).toEqual([]);
+  });
+
+  it("caps custom term fields at 250 and ignores ownTerms for agents", () => {
+    const long = "x".repeat(300);
+    let state = setInviteTermField(createInviteWizardState(), "partnerAction", long);
+    expect(state.partnerAction).toHaveLength(250);
+
+    state = setInviteTermField(
+      createInviteWizardState({ agentOneWay: true }),
+      "ownTerms",
+      "не должно сохраниться",
+    );
+    expect(state.ownTerms).toBe("");
+
+    state = setInviteTermsMode(
+      createInviteWizardState({ agentOneWay: true }),
+      "custom",
+      { agentDefaultAction: agentInviteProposal() },
+    );
+    expect(state.termsMode).toBe("custom");
+    expect(state.partnerAction).toContain("Предлагаю рекомендовать");
   });
 
   it("toggles categories without inventing percents", () => {

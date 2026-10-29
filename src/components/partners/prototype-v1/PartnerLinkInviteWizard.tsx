@@ -70,10 +70,6 @@ export function PartnerLinkInviteWizard({
     }),
   );
   const [nameDraft, setNameDraft] = useState("");
-  const [pendingTemplate, setPendingTemplate] = useState<{
-    templateId: InviteMessageTemplateId;
-    nextMessage: string;
-  } | null>(null);
   const [shareUrl, setShareUrl] = useState("");
   const [shareHint, setShareHint] = useState("");
   const lastRecipientKey = useRef("");
@@ -115,14 +111,12 @@ export function PartnerLinkInviteWizard({
     });
   }
 
-  function applyTemplate(id: InviteMessageTemplateId, force = false) {
-    const result = applyInviteTemplate(state, id, inviterName, { force });
-    if ("needsConfirm" in result) {
-      setPendingTemplate({ templateId: result.templateId, nextMessage: result.nextMessage });
-      return;
-    }
-    setPendingTemplate(null);
-    dispatch({ type: "patch", state: result });
+  /** Exact reference: template click replaces message immediately — no confirmation. */
+  function applyTemplate(id: InviteMessageTemplateId) {
+    dispatch({
+      type: "patch",
+      state: applyInviteTemplate(state, id, inviterName),
+    });
   }
 
   async function submitFinal() {
@@ -254,32 +248,21 @@ export function PartnerLinkInviteWizard({
 
       {!shareUrl && state.step === "message" ? (
         <div data-testid="link-invite-step-message">
-          <div className={styles.templates}>
+          <div className={styles.templates} role="group" aria-label="Варианты приглашения">
             {INVITE_MESSAGE_TEMPLATES.map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"
                 className={styles.templateBtn}
                 data-active={state.lastTemplateId === tpl.id && !state.customMessageDirty}
+                aria-pressed={state.lastTemplateId === tpl.id && !state.customMessageDirty}
+                data-testid={`link-invite-template-${tpl.id}`}
                 onClick={() => applyTemplate(tpl.id)}
               >
                 {tpl.label}
               </button>
             ))}
           </div>
-          {pendingTemplate ? (
-            <div className={styles.notice}>
-              <p>Заменить изменённый текст шаблоном?</p>
-              <div className={styles.actions}>
-                <Button type="button" variant="secondary" onClick={() => setPendingTemplate(null)}>
-                  Оставить свой
-                </Button>
-                <Button type="button" onClick={() => applyTemplate(pendingTemplate.templateId, true)}>
-                  Заменить
-                </Button>
-              </div>
-            </div>
-          ) : null}
           <TextAreaField
             label="Текст приглашения"
             value={state.message}
@@ -288,6 +271,7 @@ export function PartnerLinkInviteWizard({
             }
             maxLength={1000}
             rows={6}
+            placeholder="Напишите своё приглашение"
           />
           <div className={styles.actions}>
             <Button type="button" variant="secondary" onClick={() => go("partner")}>

@@ -23,6 +23,7 @@ import {
 } from "@/lib/partners-prototype-v1/invite-message-templates";
 import {
   INVITE_WIZARD_STEPS,
+  agentInviteProposal,
   applyInviteTemplate,
   buildInviteShareText,
   createInviteWizardState,
@@ -30,6 +31,9 @@ import {
   markInviteSubmitDone,
   markInviteSubmitFailed,
   markInviteSubmitPending,
+  selectedPublishedTermsForSubmit,
+  setInviteTermField,
+  setInviteTermsMode,
   setInviteWizardMessage,
   setInviteWizardRecipient,
   syncInviteWizardPublishedTerms,
@@ -86,6 +90,9 @@ export function PartnerInviteWizard({
     meProfile.user.catalogDisplayName?.trim() ||
     meProfile.user.displayName?.trim() ||
     "Партнёр RemCard";
+  const agentProposal = agentInviteProposal({
+    recipientPartnerType: target.partnerType,
+  });
 
   const [state, dispatch] = useReducer(
     reducer,
@@ -104,10 +111,6 @@ export function PartnerInviteWizard({
     "loading" | "loaded" | "empty" | "error" | "unavailable"
   >("loading");
   const [termsError, setTermsError] = useState("");
-  const [pendingTemplate, setPendingTemplate] = useState<{
-    templateId: InviteMessageTemplateId;
-    nextMessage: string;
-  } | null>(null);
   const [created, setCreated] = useState<CreatedInvite | null>(null);
   const [shareHint, setShareHint] = useState("");
 
@@ -144,7 +147,6 @@ export function PartnerInviteWizard({
         categories: plan.categories,
         requestTerms: plan.requestTerms,
       };
-      // Soft-sync against latest state so late cert responses cannot wipe typed message.
       dispatch({
         type: "patch",
         state: syncInviteWizardPublishedTerms(stateRef.current, input),
@@ -221,14 +223,12 @@ export function PartnerInviteWizard({
     dispatch({ type: "patch", state: goInviteWizardStep(state, step) });
   }
 
-  function applyTemplate(id: InviteMessageTemplateId, force = false) {
-    const result = applyInviteTemplate(state, id, inviterName, { force });
-    if ("needsConfirm" in result) {
-      setPendingTemplate({ templateId: result.templateId, nextMessage: result.nextMessage });
-      return;
-    }
-    setPendingTemplate(null);
-    dispatch({ type: "patch", state: result });
+  /** Exact reference: template click replaces message immediately — no confirmation. */
+  function applyTemplate(id: InviteMessageTemplateId) {
+    dispatch({
+      type: "patch",
+      state: applyInviteTemplate(state, id, inviterName),
+    });
   }
 
   async function submitFinal() {
@@ -248,7 +248,7 @@ export function PartnerInviteWizard({
     dispatch({ type: "patch", state: next });
 
     try {
-      const selected = next.categories.filter((c) => c.selected && c.storePercent != null);
+      const selected = selectedPublishedTermsForSubmit(next);
       const note = next.message.trim() || null;
       const idempotencyKey = next.submitIdempotencyKey ?? undefined;
 
@@ -261,7 +261,7 @@ export function PartnerInviteWizard({
       };
 
       if (selected.length > 0) {
-        // Agent or business: keep explicitly selected published categories in payload.
+        // Published numeric categories only — never invent percents for custom mode.
         response = await remcardFetch("/api/partnership/invite", {
           method: "POST",
           idempotencyKey,
@@ -283,6 +283,7 @@ export function PartnerInviteWizard({
           },
         });
       } else if (agentCooperation) {
+        // Release guard: cooperationRequest remains agent-only.
         response = await remcardFetch("/api/partnership/invite", {
           method: "POST",
           idempotencyKey,
@@ -294,7 +295,7 @@ export function PartnerInviteWizard({
           },
         });
       } else {
-        // Non-agent without published numeric terms — requestPartnerTerms (not cooperationRequest).
+        // Extended contract: non-agent empty terms → requestPartnerTerms (not cooperationRequest).
         response = await remcardFetch("/api/partnership/invite", {
           method: "POST",
           idempotencyKey,
@@ -335,8 +336,10 @@ export function PartnerInviteWizard({
   }
 
   const sharePath = created?.previewPath ?? "";
-  const share = buildInviteShareText(state, sharePath);
+  const share = buildInviteShareText(state, sharePath, { agentProposal });
   const stepIndex = INVITE_WIZARD_STEPS.findIndex((s) => s.id === state.step);
+  const customTerms = state.termsMode === "custom";
+  const publishedWithPercent = state.categories.filter((c) => c.storePercent != null);
 
   async function copyShare() {
     const text = [share.message, share.conditions, created?.shareUrl]
@@ -442,44 +445,13 @@ export function PartnerInviteWizard({
             ) : null}
             {termsStatus === "error" ? (
               <div className={styles.notice} role="alert" data-testid="invite-terms-error">
-                Не удалось загрузить условия: {termsError || "ошибка сети"}. Можно запросить условия у
-                партнёра без выдуманных процентов.
-              </div>
-            ) : null}
-            {termsStatus === "empty" || state.requestTerms ? (
-              <div className={styles.notice} data-testid="invite-request-terms">
-                {state.agentOneWay
-                  ? `У «${state.recipientName}» нет опубликованных условий. В приглашении попросим партнёра предложить условия.`
-                  : `У «${state.recipientName}» нет опубликованных условий. Можно согласовать условия позже.`}
+                Не удалось загрузить условия: {termsError || "ошибка сети"}. На шаге проверки можно
+                запросить условия у партнёра без выдуманных процентов.
               </div>
             ) : (
-              <>
-                <ul className={styles.categories}>
-                  {state.categories.map((cat) => (
-                    <li key={cat.category} className={styles.categoryRow}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={cat.selected}
-                          onChange={(e) =>
-                            dispatch({
-                              type: "patch",
-                              state: toggleInviteWizardCategory(
-                                state,
-                                cat.category,
-                                e.target.checked,
-                              ),
-                            })
-                          }
-                        />{" "}
-                        {cat.categoryLabel}
-                        {cat.storePercent != null ? ` — ${cat.storePercent}%` : ""}
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-                <p className={styles.hint}>{POOL_PERCENT_DISCLAIMER}</p>
-              </>
+              <p className={styles.hint}>
+                Условия сотрудничества выберете на шаге проверки.
+              </p>
             )}
             <div className={styles.actions}>
               <Button type="button" variant="secondary" onClick={onClose}>
@@ -494,7 +466,8 @@ export function PartnerInviteWizard({
 
         {!created && state.step === "message" ? (
           <div data-testid="invite-wizard-step-message">
-            <div className={styles.templates}>
+            {/* Exact reference simplified step 2: three templates + one field; no «Свой текст», no confirm. */}
+            <div className={styles.templates} role="group" aria-label="Варианты приглашения">
               {INVITE_MESSAGE_TEMPLATES.map((tpl) => (
                 <button
                   key={tpl.id}
@@ -502,32 +475,13 @@ export function PartnerInviteWizard({
                   className={styles.templateBtn}
                   data-active={state.lastTemplateId === tpl.id && !state.customMessageDirty}
                   data-testid={`invite-template-${tpl.id}`}
+                  aria-pressed={state.lastTemplateId === tpl.id && !state.customMessageDirty}
                   onClick={() => applyTemplate(tpl.id)}
                 >
                   {tpl.label}
                 </button>
               ))}
             </div>
-            {pendingTemplate ? (
-              <div className={styles.notice} data-testid="invite-template-confirm">
-                <p>
-                  Заменить изменённый текст шаблоном «
-                  {INVITE_MESSAGE_TEMPLATES.find((t) => t.id === pendingTemplate.templateId)?.label}
-                  »?
-                </p>
-                <div className={styles.actions}>
-                  <Button type="button" variant="secondary" onClick={() => setPendingTemplate(null)}>
-                    Оставить свой
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => applyTemplate(pendingTemplate.templateId, true)}
-                  >
-                    Заменить
-                  </Button>
-                </div>
-              </div>
-            ) : null}
             <TextAreaField
               label="Текст приглашения"
               value={state.message}
@@ -539,14 +493,15 @@ export function PartnerInviteWizard({
               }
               maxLength={1000}
               rows={6}
+              placeholder="Напишите своё приглашение"
               data-testid="invite-wizard-message"
             />
             <div className={styles.actions}>
               <Button type="button" variant="secondary" onClick={() => go("partner")}>
                 Назад
               </Button>
-                  <Button type="button" onClick={() => go("review")}>
-                Далее: проверка
+              <Button type="button" onClick={() => go("review")}>
+                Далее: проверить
               </Button>
             </div>
           </div>
@@ -565,9 +520,158 @@ export function PartnerInviteWizard({
               <button type="button" className={styles.linkBtn} onClick={() => go("message")}>
                 Изменить
               </button>
-              <p className={styles.hint}>Условия сотрудничества</p>
-              <pre data-testid="invite-review-conditions">{share.conditions}</pre>
             </div>
+
+            <details className={styles.termsDetails} open data-testid="invite-terms-editor">
+              <summary>Условия сотрудничества</summary>
+
+              {state.agentOneWay && !customTerms ? (
+                <div className={styles.notice} data-testid="invite-agent-proposal">
+                  <p className={styles.hint}>Что я предлагаю</p>
+                  <p>{agentProposal}</p>
+                </div>
+              ) : null}
+
+              <div className={styles.termModes} role="group" aria-label="Источник условий">
+                <button
+                  type="button"
+                  className={styles.templateBtn}
+                  data-active={!customTerms}
+                  aria-pressed={!customTerms}
+                  data-testid="invite-terms-mode-published"
+                  onClick={() =>
+                    dispatch({
+                      type: "patch",
+                      state: setInviteTermsMode(state, "published"),
+                    })
+                  }
+                >
+                  Условия партнёра
+                </button>
+                <button
+                  type="button"
+                  className={styles.templateBtn}
+                  data-active={customTerms}
+                  aria-pressed={customTerms}
+                  data-testid="invite-terms-mode-custom"
+                  onClick={() =>
+                    dispatch({
+                      type: "patch",
+                      state: setInviteTermsMode(state, "custom", {
+                        agentDefaultAction: agentProposal,
+                      }),
+                    })
+                  }
+                >
+                  Свой вариант
+                </button>
+              </div>
+
+              {customTerms ? (
+                <div className={styles.termFields} data-testid="invite-terms-custom">
+                  <TextAreaField
+                    label={
+                      state.agentOneWay
+                        ? "Что я предлагаю партнёру"
+                        : "Как предлагаю рекомендовать партнёра"
+                    }
+                    value={state.partnerAction}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "patch",
+                        state: setInviteTermField(state, "partnerAction", e.target.value),
+                      })
+                    }
+                    maxLength={250}
+                    rows={2}
+                    placeholder="Например, рекомендовать ваши товары своим клиентам"
+                    data-testid="invite-partner-action"
+                  />
+                  <TextAreaField
+                    label={
+                      state.agentOneWay
+                        ? "На каких условиях хочу работать"
+                        : "На каких условиях хочу рекомендовать партнёра"
+                    }
+                    value={state.partnerBenefit}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "patch",
+                        state: setInviteTermField(state, "partnerBenefit", e.target.value),
+                      })
+                    }
+                    maxLength={250}
+                    rows={2}
+                    placeholder="Напишите пожелания или оставьте пустым"
+                    data-testid="invite-partner-benefit"
+                  />
+                </div>
+              ) : publishedWithPercent.length > 0 ? (
+                <>
+                  <p className={styles.hint}>
+                    Опубликованные условия «{state.recipientName}». Выберите подходящие категории.
+                  </p>
+                  <ul className={styles.categories} data-testid="invite-published-terms">
+                    {state.categories.map((cat) =>
+                      cat.storePercent == null ? null : (
+                        <li key={cat.category} className={styles.categoryRow}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={cat.selected}
+                              onChange={(e) =>
+                                dispatch({
+                                  type: "patch",
+                                  state: toggleInviteWizardCategory(
+                                    state,
+                                    cat.category,
+                                    e.target.checked,
+                                  ),
+                                })
+                              }
+                            />{" "}
+                            <span>{cat.categoryLabel}</span>
+                            <b> {cat.storePercent}%</b>
+                          </label>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                  <p className={styles.hint}>{POOL_PERCENT_DISCLAIMER}</p>
+                </>
+              ) : (
+                <div className={styles.notice} data-testid="invite-request-terms">
+                  {`У «${state.recipientName}» нет опубликованных условий. ${
+                    state.agentOneWay
+                      ? "В приглашении попросим партнёра предложить условия."
+                      : "Можно написать свой вариант или согласовать условия позже."
+                  }`}
+                </div>
+              )}
+
+              {!state.agentOneWay ? (
+                <TextAreaField
+                  label="Что предлагаю партнёру за рекомендации"
+                  value={state.ownTerms}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "patch",
+                      state: setInviteTermField(state, "ownTerms", e.target.value),
+                    })
+                  }
+                  maxLength={250}
+                  rows={2}
+                  placeholder="Напишите свои условия или согласуйте их позже"
+                  data-testid="invite-own-terms"
+                />
+              ) : null}
+
+              <div className={styles.reviewBlock}>
+                <p className={styles.hint}>Предпросмотр условий</p>
+                <pre data-testid="invite-review-conditions">{share.conditions}</pre>
+              </div>
+            </details>
+
             <p className={styles.hint}>
               Это приглашение к обсуждению. Сотрудничество начнётся только после согласования и
               принятия условий обеими сторонами.

@@ -106,11 +106,10 @@ describe("Independent reviewer: invitation safety and continuity", () => {
 
   it("does not submit a specialist request as an agent-only cooperationRequest", async () => {
     const user = userEvent.setup();
-    api.fetch.mockImplementation(async (path: string, options?: { method?: string }) => {
+    api.fetch.mockImplementation(async (_path: string, options?: { method?: string }) => {
       if (options?.method === "POST") {
         return { partnershipId: "local-only-invite", success: true };
       }
-      // GET certificate-program-summary
       return { items: [], truncated: false, totalPublished: 0 };
     });
     render(
@@ -123,13 +122,14 @@ describe("Independent reviewer: invitation safety and continuity", () => {
     );
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
     await user.type(screen.getByTestId("invite-wizard-message"), "Предлагаю сотрудничество");
-    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
     await user.click(screen.getByTestId("invite-wizard-submit"));
     await waitFor(() => {
       const writes = api.fetch.mock.calls.filter(([, options]) => options?.method === "POST");
       expect(writes.length).toBe(1);
+      // Release guard preserved: non-agent must not send cooperationRequest:true.
       expect(writes[0][1].body.cooperationRequest).not.toBe(true);
-      // New contract: business may request terms without inventing agent role.
+      // Task-branch extended contract for business empty terms.
       expect(writes[0][1].body.requestPartnerTerms).toBe(true);
       expect(writes[0][1].body.terms).toEqual([]);
     });
