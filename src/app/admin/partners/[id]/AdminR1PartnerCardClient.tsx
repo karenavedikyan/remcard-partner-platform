@@ -125,8 +125,8 @@ export function AdminR1PartnerCardClient({ partnerId }: { partnerId: string }) {
           </Link>
         </div>
         <p className="r1Help">
-          Consequential lifecycle-действия выполняются только через существующие preview+confirm
-          токены на сервере; в LOCAL QA запись в production не делается.
+          Действия жизненного цикла выполняются только через существующее подтверждение на
+          сервере.
         </p>
       </section>
     </div>

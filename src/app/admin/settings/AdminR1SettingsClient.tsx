@@ -19,9 +19,12 @@ const ENABLED_TYPES = [
 
 export function AdminR1SettingsClient() {
   const [tab, setTab] = useState<Tab>("types");
+  const [page, setPage] = useState(1);
+  const pageSize = 40;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AdminR1JournalItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -31,12 +34,19 @@ export function AdminR1SettingsClient() {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchAdminR1Journal(new URLSearchParams({ page: "1", pageSize: "40" }));
+        const data = await fetchAdminR1Journal(
+          new URLSearchParams({ page: String(page), pageSize: String(pageSize) }),
+        );
         if (cancelled) return;
         setItems(data.items);
+        setTotal(data.total);
         setNote(data.definitions.note);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Журнал недоступен");
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Журнал недоступен");
+          setItems([]);
+          setTotal(0);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -45,7 +55,9 @@ export function AdminR1SettingsClient() {
     return () => {
       cancelled = true;
     };
-  }, [tab]);
+  }, [tab, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div data-testid="admin-r1-settings">
@@ -161,6 +173,29 @@ export function AdminR1SettingsClient() {
               <span>{a.actorDisplayName || "—"}</span>
             </div>
           ))}
+          {total > 0 ? (
+            <div className="r1Pager">
+              <span className="r1Muted">
+                Стр. {page} из {totalPages} · всего {total}
+              </span>
+              <button
+                type="button"
+                className="r1Btn small"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Назад
+              </button>
+              <button
+                type="button"
+                className="r1Btn small"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Далее
+              </button>
+            </div>
+          ) : null}
         </section>
       ) : null}
     </div>

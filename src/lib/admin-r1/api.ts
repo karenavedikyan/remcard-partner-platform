@@ -184,6 +184,20 @@ export async function fetchAdminR1Reviews(params: URLSearchParams) {
   }>(`/api/pro/admin/moderation/reviews?${params.toString()}`);
 }
 
+export async function approveAdminR1Review(reviewId: string) {
+  return remcardFetch<{ success?: boolean }>(
+    `/api/pro/admin/moderation/reviews/${encodeURIComponent(reviewId)}/approve`,
+    { method: "POST", body: {} },
+  );
+}
+
+export async function rejectAdminR1Review(reviewId: string, reason: string) {
+  return remcardFetch<{ success?: boolean }>(
+    `/api/pro/admin/moderation/reviews/${encodeURIComponent(reviewId)}/reject`,
+    { method: "POST", body: { reason } },
+  );
+}
+
 export type AdminR1CertificateList = {
   certificates: Array<{
     id: string;
@@ -195,7 +209,9 @@ export type AdminR1CertificateList = {
   }>;
   total: number;
   page: number;
+  pageSize?: number;
   totalPages: number;
+  periodDays?: number | null;
 };
 
 export async function fetchAdminR1Certificates(params: URLSearchParams) {
@@ -204,10 +220,33 @@ export async function fetchAdminR1Certificates(params: URLSearchParams) {
   );
 }
 
-export async function fetchAdminR1Analytics(period = "30d") {
-  return remcardFetch<Record<string, unknown>>(
-    `/api/pro/admin/analytics?period=${encodeURIComponent(period)}`,
-  );
+export type AdminR1AnalyticsPayload = {
+  tab?: string;
+  period?: string;
+  visitors?: { current: number; previous: number; changePercent: number };
+  registrations?: { current: number; previous: number; changePercent: number };
+  requests?: { current: number; previous: number; changePercent: number };
+  conversionPercent?: number;
+  catalogViews?: number;
+  profileViews?: number;
+  approvedPartners?: number;
+  activeServices?: number;
+  alignedPartnerMetrics?: {
+    liveRegistered?: number;
+    visibleInCatalog?: number;
+    demoRegistered?: number;
+    catalogCardSurfaces?: number;
+  };
+  partnersByType?: Record<string, number>;
+  visitsBySection?: unknown[];
+  registrationsByDay?: unknown[];
+  requestsByDay?: unknown[];
+  [key: string]: unknown;
+};
+
+export async function fetchAdminR1Analytics(period = "30d", tab = "overview") {
+  const q = new URLSearchParams({ period, tab });
+  return remcardFetch<AdminR1AnalyticsPayload>(`/api/pro/admin/analytics?${q.toString()}`);
 }
 
 /** Adapter: prefer registry partnerKind; never invent includes("AGENT") classifier. */

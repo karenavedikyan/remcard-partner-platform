@@ -22,15 +22,6 @@ function resolveNavId(pathname: string): AdminR1NavId {
   return match?.id ?? "overview";
 }
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0] || "")
-    .join("")
-    .toUpperCase() || "АД";
-}
-
 export function AdminR1Shell({
   children,
   identity,
@@ -40,7 +31,6 @@ export function AdminR1Shell({
 }) {
   const pathname = usePathname() || "/admin/overview";
   const [navOpen, setNavOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const navId = resolveNavId(pathname);
   const navItems = useMemo(() => adminR1NavForRelease(ADMIN_R1_RELEASE), []);
@@ -51,24 +41,10 @@ export function AdminR1Shell({
     setNavOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem("remcard-admin-r1-theme");
-    const next = stored === "dark" ? "dark" : "light";
-    setTheme(next);
-    document.documentElement.dataset.theme = next === "dark" ? "dark" : "";
-  }, []);
-
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    window.localStorage.setItem("remcard-admin-r1-theme", next);
-    document.documentElement.dataset.theme = next === "dark" ? "dark" : "";
-  }
-
   // Guard: R2 tasks route must not appear in R1 nav.
   if (ADMIN_R1_HIDDEN_VIEWS.some((v) => pathname.includes(`/admin/${v}`))) {
     return (
-      <div className="adminR1Root" data-theme={theme}>
+      <div className="adminR1Root">
         <div className="r1Main">
           <div className="r1Unavailable">Раздел доступен только в релизе 2 и скрыт в R1.</div>
         </div>
@@ -77,7 +53,7 @@ export function AdminR1Shell({
   }
 
   return (
-    <div className="adminR1Root" data-theme={theme}>
+    <div className="adminR1Root">
       <div className={`r1Shell ${navOpen ? "navOpen" : ""}`}>
         <button
           type="button"
@@ -119,27 +95,15 @@ export function AdminR1Shell({
             <div className="r1ReleaseNote">
               <strong>Релиз 1 · сейчас</strong>
               Базовый кабинет на данных PROF. Задачи, кураторы и R2/R3 скрыты.
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                <Link href="/admin/test-users" className="r1Muted" onClick={() => setNavOpen(false)}>
+              <div className="r1UtilityLinks">
+                <Link href="/admin/test-users" onClick={() => setNavOpen(false)}>
                   Тестовые пользователи
                 </Link>
-                <Link href="/admin/password" className="r1Muted" onClick={() => setNavOpen(false)}>
+                <Link href="/admin/password" onClick={() => setNavOpen(false)}>
                   Пароль администратора
                 </Link>
               </div>
             </div>
-            {identity ? (
-              <div className="r1Account">
-                <span className="r1Avatar" aria-hidden>
-                  {initials(identity.displayName)}
-                </span>
-                <span>
-                  <strong>{identity.displayName}</strong>
-                  <br />
-                  <small className="r1Muted">{identity.staffRole}</small>
-                </span>
-              </div>
-            ) : null}
           </div>
         </aside>
 
@@ -154,7 +118,7 @@ export function AdminR1Shell({
               ☰
             </button>
             <span className="r1MobileWordmark">
-              remcard<span style={{ color: "#c12b2f" }}>.</span>
+              remcard<span className="r1WordmarkDot">.</span>
             </span>
             <div className="r1Breadcrumb">
               <span>Кабинет администратора</span>
@@ -165,24 +129,8 @@ export function AdminR1Shell({
               <span className="r1Pill good" title="Объём кабинета зафиксирован на релизе 1">
                 Релиз 1
               </span>
-              <button
-                type="button"
-                className="r1IconBtn"
-                aria-label="Переключить тему"
-                title="День / ночь"
-                onClick={toggleTheme}
-              >
-                {theme === "dark" ? "☀" : "☾"}
-              </button>
-              <Link
-                href="/admin/notifications"
-                className="r1IconBtn"
-                aria-label="Уведомления"
-                title="Уведомления"
-              >
-                🔔
-              </Link>
-              {identity ? <AdminAccountControls identity={identity} /> : null}
+              {/* Single shared theme + notifications + session — do not duplicate here. */}
+              <AdminAccountControls identity={identity} />
             </div>
           </header>
           <main className="r1Main">
@@ -203,7 +151,6 @@ export function AdminR1Shell({
           </main>
         </div>
       </div>
-      {/* Keep nav catalog enumerable for tests */}
       <span hidden data-testid="admin-r1-nav-ids">
         {ADMIN_R1_NAV.map((i) => i.id).join(",")}
       </span>
