@@ -119,9 +119,24 @@ export function PartnerInviteWizard({
   // clear step/message. Async terms load uses soft sync for the same recipient.
   const stateRef = useRef(state);
   stateRef.current = state;
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  const meProfileRef = useRef(meProfile);
+  meProfileRef.current = meProfile;
+  const agentCooperationRef = useRef(agentCooperation);
+  agentCooperationRef.current = agentCooperation;
+  /** Shared sequence for initial cert load and review retry — stale responses must not apply. */
+  const certRequestSeqRef = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const requestSeq = ++certRequestSeqRef.current;
+    const recipientId = target.id;
+    const actorId = meProfile.user.id;
+    const isCurrent = () =>
+      certRequestSeqRef.current === requestSeq &&
+      targetRef.current.id === recipientId &&
+      meProfileRef.current.user.id === actorId;
+
     setTermsStatus("loading");
     setTermsError("");
     setCreated(null);
@@ -137,16 +152,17 @@ export function PartnerInviteWizard({
       }),
     });
 
-    const fromSearch = publishedTermsFromSearchResult(target);
     const applyPlan = (
       published: Parameters<typeof planPublishedInviteTerms>[2],
       statusOverride?: "error" | "unavailable",
     ) => {
-      if (cancelled) return;
-      const plan = planPublishedInviteTerms(meProfile, target, published);
+      if (!isCurrent()) return;
+      const liveTarget = targetRef.current;
+      const liveMe = meProfileRef.current;
+      const plan = planPublishedInviteTerms(liveMe, liveTarget, published);
       const input = {
-        recipientId: target.id,
-        recipientName: partnerTitle(target),
+        recipientId: liveTarget.id,
+        recipientName: partnerTitle(liveTarget),
         agentOneWay: plan.agentOneWay,
         categories: plan.categories,
         requestTerms: plan.requestTerms,
@@ -168,15 +184,18 @@ export function PartnerInviteWizard({
       else setTermsStatus("loaded");
     };
 
+    const fromSearch = publishedTermsFromSearchResult(target);
     if (fromSearch && fromSearch.length > 0) {
       applyPlan(fromSearch);
       return () => {
-        cancelled = true;
+        if (certRequestSeqRef.current === requestSeq) {
+          certRequestSeqRef.current += 1;
+        }
       };
     }
 
-    void fetchPartnerCertificateProgram(target.id).then((cert) => {
-      if (cancelled) return;
+    void fetchPartnerCertificateProgram(recipientId).then((cert) => {
+      if (!isCurrent()) return;
       const mapped = publishedTermsFromCertState(cert);
       if (mapped.status === "error") {
         setTermsError(mapped.message);
@@ -198,7 +217,9 @@ export function PartnerInviteWizard({
     });
 
     return () => {
-      cancelled = true;
+      if (certRequestSeqRef.current === requestSeq) {
+        certRequestSeqRef.current += 1;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only recipient id; meProfile refresh must not reset
   }, [target.id]);
@@ -265,10 +286,12 @@ export function PartnerInviteWizard({
     try {
       const selected = selectedPublishedTermsForSubmit(next);
       const idempotencyKey = next.submitIdempotencyKey ?? undefined;
-      // Empty/custom path: persist review conditions via existing `note` (no invented %).
+      // Empty/custom: full review conditions in note. Published numeric → terms[];
+      // still keep explicit reciprocal ownTerms in note when the sender typed them.
       const note = buildInvitePersistNote(next, {
         agentProposal,
         includeConditions: selected.length === 0,
+        includeOwnTermsAlongsidePublished: selected.length > 0,
       });
 
       let response: {
@@ -636,9 +659,17 @@ export function PartnerInviteWizard({
                       variant="secondary"
                       data-testid="invite-terms-retry"
                       onClick={() => {
+                        const requestSeq = ++certRequestSeqRef.current;
+                        const recipientId = targetRef.current.id;
+                        const actorId = meProfileRef.current.user.id;
+                        const isCurrent = () =>
+                          certRequestSeqRef.current === requestSeq &&
+                          targetRef.current.id === recipientId &&
+                          meProfileRef.current.user.id === actorId;
                         setTermsStatus("loading");
                         setTermsError("");
-                        void fetchPartnerCertificateProgram(target.id).then((cert) => {
+                        void fetchPartnerCertificateProgram(recipientId).then((cert) => {
+                          if (!isCurrent()) return;
                           const mapped = publishedTermsFromCertState(cert);
                           if (mapped.status === "error") {
                             setTermsError(mapped.message);
@@ -646,18 +677,27 @@ export function PartnerInviteWizard({
                             return;
                           }
                           if (mapped.status === "loaded") {
-                            const plan = planPublishedInviteTerms(meProfile, target, mapped.items);
+                            const liveTarget = targetRef.current;
+                            const liveMe = meProfileRef.current;
+                            const plan = planPublishedInviteTerms(
+                              liveMe,
+                              liveTarget,
+                              mapped.items,
+                            );
                             dispatch({
                               type: "patch",
                               state: syncInviteWizardPublishedTerms(stateRef.current, {
-                                recipientId: target.id,
-                                recipientName: partnerTitle(target),
+                                recipientId: liveTarget.id,
+                                recipientName: partnerTitle(liveTarget),
                                 agentOneWay: plan.agentOneWay,
                                 categories: plan.categories,
                                 requestTerms: plan.requestTerms,
                               }),
                             });
                             setTermsStatus(plan.requestTerms ? "empty" : "loaded");
+                            return;
+                          }
+                          if (mapped.status === "loading" || mapped.status === "idle") {
                             return;
                           }
                           setTermsStatus(
@@ -669,6 +709,11 @@ export function PartnerInviteWizard({
                       Повторить загрузку
                     </Button>
                   </div>
+                </div>
+              ) : termsStatus === "loading" ? (
+                <div className={styles.notice} data-testid="invite-terms-loading">
+                  Загружаем опубликованные условия… Пока загрузка не завершена, отсутствие условий
+                  не подтверждено. Можно выбрать «Свой вариант».
                 </div>
               ) : publishedWithPercent.length > 0 ? (
                 <>
@@ -746,7 +791,12 @@ export function PartnerInviteWizard({
               </Button>
               <Button
                 type="button"
-                disabled={state.submitPending || state.submitDone || !state.message.trim()}
+                disabled={
+                  state.submitPending ||
+                  state.submitDone ||
+                  !state.message.trim() ||
+                  (termsStatus === "loading" && state.termsMode !== "custom")
+                }
                 onClick={() => void submitFinal()}
                 data-testid="invite-wizard-submit"
               >

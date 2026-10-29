@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -40,6 +40,8 @@ type Props = {
   termRequests: Record<string, TermRequestState>;
   onLoadTermRequests: (partnershipId: string) => void;
   expandedTermPartnershipId: string | null;
+  /** Deep-link target already paged into `partnerships` — open its detail dialog. */
+  focusPartnershipId?: string | null;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: (ids: string[], checked: boolean) => void;
@@ -196,6 +198,7 @@ export function AgentPartnerCollection(props: Props) {
     termRequests,
     onLoadTermRequests,
     expandedTermPartnershipId,
+    focusPartnershipId = null,
     selectedIds,
     onToggleSelect,
     onToggleSelectAll,
@@ -218,6 +221,13 @@ export function AgentPartnerCollection(props: Props) {
     setDetailPartnershipId(partnershipId);
   }, []);
   const closeDetails = useCallback(() => setDetailPartnershipId(null), []);
+
+  // Registered deep-link: open the exact partnership once it is on the current page.
+  useEffect(() => {
+    if (!focusPartnershipId) return;
+    if (!partnerships.some((p) => p.id === focusPartnershipId)) return;
+    setDetailPartnershipId(focusPartnershipId);
+  }, [focusPartnershipId, partnerships]);
 
   const pageIds = useMemo(() => partnerships.map((p) => p.id), [partnerships]);
   const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));

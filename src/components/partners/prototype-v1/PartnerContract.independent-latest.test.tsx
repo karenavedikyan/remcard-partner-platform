@@ -179,4 +179,89 @@ describe("PartnerContract independent-latest", () => {
       new RegExp(`${DISCUSSION_SUBJECT_MAX}`),
     );
   });
+
+  it("keeps selected published categories and message after same-actor profile refresh", async () => {
+    const user = userEvent.setup();
+    const target: PartnerSearchResult = {
+      ...storeTarget(),
+      publishedTerms: [
+        {
+          category: "doors",
+          categoryLabel: "Двери",
+          poolPercent: 12,
+          storePercent: 12,
+        },
+      ],
+    };
+    const onClose = vi.fn();
+    const view = render(
+      <PartnerInviteWizard
+        target={target}
+        meProfile={specialistProfile()}
+        onClose={onClose}
+        onSent={() => undefined}
+        disableSubmit
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
+    await user.type(screen.getByTestId("invite-wizard-message"), "Сохранить мой текст");
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await waitFor(() => expect(screen.getByTestId("invite-published-terms")).toBeInTheDocument());
+    const doors = screen.getByRole("checkbox", { name: /Двери/i }) as HTMLInputElement;
+    expect(doors.checked).toBe(true);
+    await user.click(doors);
+    expect(doors.checked).toBe(false);
+
+    view.rerender(
+      <PartnerInviteWizard
+        target={target}
+        meProfile={{
+          ...specialistProfile(),
+          user: { ...specialistProfile().user, displayName: "Специалист refreshed" },
+        }}
+        onClose={onClose}
+        onSent={() => undefined}
+        disableSubmit
+      />,
+    );
+    expect(screen.getByTestId("invite-wizard-step-review")).toBeInTheDocument();
+    // Message field lives on the message step; go back to assert continuity.
+    await user.click(screen.getByRole("button", { name: /Назад/i }));
+    expect(screen.getByTestId("invite-wizard-message")).toHaveValue("Сохранить мой текст");
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    expect(
+      (screen.getByRole("checkbox", { name: /Двери/i }) as HTMLInputElement).checked,
+    ).toBe(false);
+  });
+
+  it("uses real previewPath from discussion-invite response for share/copy without delivery", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    remcardFetch.mockResolvedValue({
+      token: "disc-token-local",
+      previewPath: "/invite/discussion/disc-token-local",
+    });
+    render(<PartnerLinkInviteWizard meProfile={specialistProfile()} />);
+    await user.type(screen.getByTestId("link-invite-name"), "Дом материалов");
+    await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
+    await user.type(screen.getByTestId("link-invite-message"), "Приглашаю к обсуждению");
+    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    expect(remcardFetch.mock.calls.every(([, opts]) => opts?.method !== "POST")).toBe(true);
+    await user.click(screen.getByTestId("link-invite-submit"));
+    await waitFor(() => expect(screen.getByTestId("link-invite-share")).toBeInTheDocument());
+    const post = remcardFetch.mock.calls.find(([, opts]) => opts?.method === "POST");
+    expect(String(post![0])).toContain("/api/partnership/discussion-invite");
+    expect(screen.getByTestId("link-invite-share-url").textContent).toContain(
+      "/invite/discussion/disc-token-local",
+    );
+    await user.click(screen.getByRole("button", { name: /Поделиться|Копировать/i }));
+    if (writeText.mock.calls.length) {
+      expect(String(writeText.mock.calls[0][0])).toContain("/invite/discussion/disc-token-local");
+    }
+    expect(document.body.textContent).not.toMatch(/доставлено|отправлено получателю/i);
+  });
 });

@@ -167,6 +167,8 @@ export function PartnersHub({
   const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
   const [listPage, setListPage] = useState(0);
   const [listPageSize, setListPageSize] = useState(25);
+  /** Deep-link partnership to open in collection detail (must be in visible list). */
+  const [focusPartnershipId, setFocusPartnershipId] = useState<string | null>(null);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
@@ -667,11 +669,28 @@ export function PartnersHub({
 
   useEffect(() => {
     if (!termsPartnershipId) {
+      setFocusPartnershipId(null);
       return;
     }
     setTab("list");
     void loadTermRequests(termsPartnershipId);
   }, [termsPartnershipId]);
+
+  // Page to the deep-linked invite and open its detail — only if it is in the
+  // authorized visible list (not merely by calling term-change).
+  useEffect(() => {
+    if (!termsPartnershipId || loadingList) {
+      return;
+    }
+    const idx = visiblePartnerships.findIndex((p) => p.id === termsPartnershipId);
+    if (idx < 0) {
+      setFocusPartnershipId(null);
+      return;
+    }
+    const pageForTarget = Math.floor(idx / listPageSize);
+    setListPage(pageForTarget);
+    setFocusPartnershipId(termsPartnershipId);
+  }, [termsPartnershipId, visiblePartnerships, listPageSize, loadingList]);
 
   async function refreshProfile() {
     try {
@@ -978,6 +997,7 @@ export function PartnersHub({
               termRequests={termRequests}
               onLoadTermRequests={(id) => void loadTermRequests(id)}
               expandedTermPartnershipId={expandedTermPartnershipId}
+              focusPartnershipId={focusPartnershipId}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
               onToggleSelectAll={togglePartnerSelectAll}
