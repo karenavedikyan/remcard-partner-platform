@@ -1,58 +1,75 @@
 # RemCard — кабинет администратора, РЕЛИЗ 1
 
-**Статус: HARD BLOCKED — нет эталона и нет backend repo. Код R1 не начат (контракт запрещает mock/приблизительный UI).**
+**Статус: implementation on task branches (не live-выпуск).**  
+Время: 2026-10-29. Visual signoff без полного browser QA на авторизованном PROF не утверждается.
 
-Время фиксации: 2026-10-29T14:39:53Z. Live-выпуск не утверждается.
+## Доступы (setup)
 
-## Задача
-
-Админка R1 по `reference/current/admin/` (DEMO.releases id=1) в рабочем PROF на task-ветках.
+| Ресурс | Статус |
+|--------|--------|
+| Backend remcard-navigator PRIMARY | OK @ `4b4c1244…` base; task branch ниже |
+| Reference `reference/prototype-20261029` | OK exact `4ba2f9e764b412e956e2ccb619ebbcab7d76a006` (read-only worktree) |
+| Frontend remcard-partner-platform | OK public clone; task branch ниже |
+| lkdemo.pplx.app | 404 — не блокер; использован локальный эталон |
 
 ## Branches + SHA
 
-| Repo | Branch | SHA | Доступ |
-|------|--------|-----|--------|
-| remcard-partner-platform (frontend) | `feat/admin-release1-prototype-20261029` | `1d9bbeb6332b68ba4421a299c1b6b5e3dfe8dd1e` (= base `release/prof-v1-20261007`) | OK |
-| remcard-navigator (backend) | ожидался `release/prof-backend-v1-20261007` = `4b4c1244…` / task `feat/admin-release1-prototype-20261029` | — | **НЕТ** (`gh`/`git` → Repository not found, HTTP 404) |
-| Reference worktree | `reference/prototype-20261029` @ `4ba2f9e764b412e956e2ccb619ebbcab7d76a006` | — | **НЕТ** (лежит в navigator) |
-| Публичный эталон | https://lkdemo.pplx.app | — | **404 App not found** |
+| Repo | Branch | SHA |
+|------|--------|-----|
+| remcard-navigator (backend) | `feat/admin-release1-prototype-20261029` | _(после commit — см. git log)_ |
+| remcard-partner-platform (frontend) | `feat/admin-release1-prototype-20261029` | _(после commit/bundle)_ |
+| Reference (read-only) | `reference/prototype-20261029` | `4ba2f9e764b412e956e2ccb619ebbcab7d76a006` |
+| Type dependency (не merge) | `feat/partner-primary-kind-unify-20261029` | fe `a140bc8c…` / be `af8959ee…` |
 
-Environment repos: только `github.com/karenavedikyan/remcard-partner-platform`.
+## Changed (backend)
 
-Запрос координатору/владельцу: `cursor-cloud/request-environment-setup-actions` — `navigator-repo-access`, `lkdemo-or-reference-pack`.
+- `src/lib/adminR1*.ts` helpers (clients/deals/journal/partner card/remscore/results/auth)
+- `/api/pro/admin/{clients,deals,journal,team,certificates,analytics,results/*,partners/:id/card,moderation/reviews*}`
+- Tests: `adminR1Routes.permissions.test.ts`, `adminR1Deals.definition.test.ts`
+- Artifacts: coverage matrix, FLOWS, REPORT
 
-## Changed files (этот проход)
+## Changed (frontend)
 
-Только артефакты blockers/baseline (нет UI/API кода):
+- `src/components/admin-r1/**` shell + CSS + nav tests
+- `src/lib/admin-r1/**` adapters
+- Pages: clients, team, analytics, results, settings, partners/[id] card, moderation/reviews
+- `src/app/admin/layout.tsx` → AdminR1Shell
+- Registry links → card
+- **Separate commit:** `src/lib/remcard-proxy.ts` + tests (BFF allowlist Admin R1 exact routes)
+- LOCAL FIXTURE screenshots under `artifacts/admin-r1-20261029/screenshots/`
 
-- `artifacts/admin-r1-20261029/REPORT.md`
-- `artifacts/admin-r1-20261029/FLOWS.md`
-- `artifacts/admin-r1-20261029/COVERAGE-MATRIX.md`
-- `artifacts/admin-r1-20261029/BASELINE-EXISTING-ADMIN.md`
-- `SHARED-CHANGE-REQUEST.md` (заготовки; shared patch не коммитился)
+## Tests / build
 
-## Dependency: единый тип партнёра
+### Backend
+- `vitest` adminR1 permission + deals contract: PASS
+- `tsc --noEmit`: **pre-existing** errors in unrelated tests (~80 lines); **0** in admin R1 paths
+- No Prisma/migrations
 
-Чужая ветка `feat/partner-primary-kind-unify-20261029` (frontend tip seen `a140bc8c…`, backend `af8959ee…`) **не merge / не cherry-pick**. Admin R1 будет читать `partnerKind` из registry DTO / adapter поверх `resolvePartnerKindUi`, без локального `includes("AGENT")` classifier. Пока не принята Computer — риск рассинхрона фильтров/facet по 4 типам.
+### Frontend
+- `tsc --noEmit`: PASS
+- `vitest` AdminR1Nav + AdminShellIsolation: PASS
+- `tsx --test remcard-proxy.test.ts` (full proxy suite): PASS (295)
+- `npm run build`: PASS (admin routes present)
 
-## Что уже есть в PROF (не R1-перенос)
+## Screenshots
 
-Существующий `/admin/*` (overview, partners registry+partnerships, moderation profiles, notifications, test-users, password) на BFF `/api/pro/admin/**`. Это baseline, не visual parity с эталоном R1. Подробности: `BASELINE-EXISTING-ADMIN.md`.
+LOCAL FIXTURE only: `shell-overview-{1440,375}-{light,dark}.png` (+ meta.json). Not live PROF.
+
+## Shared-change requests
+
+- BFF allowlist: **реализован** в отдельном frontend commit (координатор разрешил exact admin R1 patterns).
+- Partner primary kind: dependency only; adapter labels; no shared classifier edit.
+- Global CSS/providers/Prisma: не запрошены.
 
 ## Не реализовано / blockers
 
-1. **Нет read-доступа к remcard-navigator** → нет reference HTML/CSS/JS, нет backend task-ветки, нет точных API contracts для clients/certs/deals/analytics/team/journal/reviews.
-2. **lkdemo.pplx.app 404** → нельзя снять visual baseline.
-3. Без эталона **запрещено** приблизительное dashboard/template; без API **запрещены** mock-данные и fullstack-готовность.
-4. В BFF allowlist (`src/lib/remcard-proxy.ts`) **нет** маршрутов: partner card detail (кроме partnerships/lifecycle), reviews moderation actions, clients/certs/deals lists, team/StaffRole CRUD, audit journal, RemScore analytics beyond management overview. Любые additions → `SHARED-CHANGE-REQUEST.md` + backend в admin области.
+1. Полный visual signoff vs эталон на каждом экране без staff browser QA.
+2. Client stages прототипа отсутствуют в модели.
+3. Certificate period filter server-side incomplete.
+4. RemScore in-memory kind filter limit 500.
+5. Type-unify не принят Computer — риск facet labels до merge.
+6. Frontend push может требовать bundle (см. artifacts).
 
-## Tests / build / screenshots
+## Запреты соблюдены
 
-Не запускались для R1 (нет изменений кода продукта). После разблокировки: `npm ci --include=dev`, targeted vitest/playwright, `tsc --noEmit`, `npm run build`; screenshots LOCAL FIXTURE / harness.
-
-## Next (после доступа)
-
-1. Read-only worktree `reference/prototype-20261029` @ `4ba2f9e…`, прочитать весь `docs/prototype-reference/current/admin/` + gating R1 в `app.js`/`data.js`.
-2. Обновить FLOWS.md и coverage matrix «прототип → компонент → API → проверка».
-3. Реализовать `src/components/admin-r1/**`, `src/lib/admin-r1/**`, расширить `src/app/admin/**` без shared edits; backend `feat/admin-release1-prototype-20261029` только `/api/pro/admin/**` + `adminR1*` helpers.
-4. Не активировать R2/R3; без кураторов/задач/миграций/production writes.
+Нет deploy/merge release/main, миграций, production writes, send notifications, partnership mutations Седа/ОПТОВИК.

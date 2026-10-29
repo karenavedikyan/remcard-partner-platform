@@ -1,8 +1,7 @@
 import { headers } from "next/headers";
 import { getAuthMeServer } from "@/lib/remcard-server";
-import { AdminHeader } from "./AdminHeader";
 import type { AdminAccountIdentity } from "./AdminAccountControls";
-import styles from "./Admin.module.css";
+import { AdminR1Shell } from "@/components/admin-r1/AdminR1Shell";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +14,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     user && (user.staffRole === "ADMIN" || user.staffRole === "OWNER")
       ? { displayName: user.displayName?.trim() || "Администратор RemCard", staffRole: user.staffRole }
       : null;
-  return (
-    <div className={styles.shell}>
-      <AdminHeader identity={identity} />
-      <main>{children}</main>
-    </div>
-  );
+  return <AdminR1Shell identity={identity}>{children}</AdminR1Shell>;
 }

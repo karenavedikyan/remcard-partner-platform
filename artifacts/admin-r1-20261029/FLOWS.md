@@ -1,37 +1,33 @@
-# Admin R1 — FLOWS (черновик до эталона)
+# Admin R1 — flows (вне deployed assets)
 
-**Источник состава эталона недоступен.** Этот файл — каркас из задания + существующего PROF admin. После worktree `docs/prototype-reference/current/admin/` (SHA `4ba2f9e…`) заменить на точные подписи/шаги/диалоги из HTML/JS.
+## Вход
+1. `/login?mode=admin` → staff session → `/admin/overview`.
+2. Partner/org context не получает admin API (401/403 server-side).
 
-## Release gating
+## Навигация R1
+- Видны: Обзор, Партнёры, Клиенты, Команда, Модерация, Аналитика, Результативность, Уведомления, Настройки.
+- Скрыты: Задачи (R2), кураторы, global search, geography, success-coefficient, factories/builders.
+- Переключатель релизов прототипа **не** активирует R2/R3 в production; UI фиксирован на Релиз 1.
 
-| Release | Scope promise (из задания) | Статус в production PROF |
-|---------|----------------------------|--------------------------|
-| R1 | Базовый кабинет: реестр/карточка, модерация профилей+отзывов, уведомления, обзор, клиенты, сертификаты, сделки, базовая аналитика, команда (StaffRole), журнал; RemScore | **Не перенесено** (blockers) |
-| R2/R3 | Кураторы, задачи, новые расчёты и пр. | **Не активировать**; переключатель релизов эталона ≠ production feature flag |
+## Реестр и карточка
+1. `/admin/partners` — registry + facets/paging (existing).
+2. «Карточка R1» → `/admin/partners/:id` — факты + RemScore + независимые статусы.
+3. Партнёрства / модерация / lifecycle — через существующие preview+confirm.
 
-## Requested flows (R1) — expected verification
+## Клиенты / команда / журнал
+- `/admin/clients` — User CLIENT list; без синтетических stage.
+- `/admin/team` — StaffRole only.
+- `/admin/settings` → Журнал — AuditLog без meta/PII dump.
 
-| ID | Flow | Precondition | Steps (ожидаемые) | Success | Regression |
-|----|------|--------------|-------------------|---------|------------|
-| F01 | Staff login `?mode=admin` | Platform staff credentials | Login → admin shell | Staff session; partner/org не видят admin data | Partner login isolation |
-| F02 | Nav shell R1 | Staff session | Desktop 1440 + mobile 375; light/dark; Escape/focus trap в меню | Только R1 разделы; плотность как эталон | R2/R3 hidden |
-| F03 | Реестр партнёров | Staff | 4 типа facets, search, pagination, независимые registration/catalog/collaboration/archive | Counts согласованы; пусто/ошибка честно | Type-unify dependency |
-| F04 | Карточка партнёра | Staff + partner id | Сведения, связанные сущности, доступные actions + confirm | Server 401/403; no wallet в staff context | Lifecycle independence |
-| F05 | Модерация профилей/каталога | Pending submitted | Preview submitted snapshot → approve/reject/revise + confirm | Approve публикует submitted, не draft | Existing moderation routes |
-| F06 | Модерация отзывов | Pending reviews | Queue + decision | Auth-protected; no live QA writes | counts.reviews в queue |
-| F07 | Уведомления | Staff messenger bindings | Inbox, settings, bind status | Link-check ≠ delivery; send не в QA | Existing notify APIs |
-| F08 | Обзор | Staff | Period filters, metrics from real fields | Unavailable → explicit, не 0 | management/overview |
-| F09 | Клиенты | Staff | List/filters mapped to backend clients | Honest empty/unavailable | — |
-| F10 | Сертификаты | Staff | Не каждый сертификат = сделка | Mapping from existing model | — |
-| F11 | Сделки | Staff | Только если модель подтверждает | Unavailable иначе | — |
-| F12 | Аналитика / RemScore | Staff | Existing RemScore only | No synthetic trends | — |
-| F13 | Команда | StaffRole existing | List/roles per current auth model | No new memberships/impersonation | — |
-| F14 | Журнал | Audit source | Allowed fields, no secrets/excess PII | GET no side effects | — |
+## Результативность
+- RemScore tab / certificates / deals(=Order) / reviews queue (read in QA).
+- Certificate без Order ≠ сделка.
 
-## Touched regression (existing PROF admin)
+## QA запреты
+- Не approve/reject/send/team-change/lifecycle apply против production.
+- Screenshots: LOCAL FIXTURE.
 
-После реализации R1 проверить неломаемость: partners registry filters/bulk confirm, moderation preview/confirm dialogs, notifications bind UI, overview period chips, admin mobile nav dialog, login admin mode.
-
-## Out of scope
-
-Deploy, merge release/main, DB migrations, production moderation/send/team changes, Seda/ОПТОВИК partnership mutation, R2/R3, partner routes/components.
+## Regression touched
+- Existing overview/partners/moderation/notifications pages render inside AdminR1Shell.
+- AdminShellIsolation: no partner notification hook in admin layout.
+- BFF allowlist exact admin R1 routes only.

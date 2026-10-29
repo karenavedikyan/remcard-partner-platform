@@ -13,5 +13,7 @@ describe("Admin shell isolation", () => {
     expect(controls).not.toContain("ProfNotificationBell");
     expect(controls).toContain("AdminNotificationBell");
     expect(nav).toContain("/admin/notifications");
+    expect(layout).toContain("AdminR1Shell");
+    expect(layout).not.toContain("useProfNotifications");
   });
 });
