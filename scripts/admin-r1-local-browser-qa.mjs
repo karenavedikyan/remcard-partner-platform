@@ -36,6 +36,12 @@ async function shot(page, name) {
 async function gotoAdmin(page, route) {
   await page.goto(`${APP}${route}`, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForTimeout(400);
+  // Wait past initial loading skeletons when present.
+  await page
+    .locator(".r1StateLoading")
+    .waitFor({ state: "detached", timeout: 15000 })
+    .catch(() => undefined);
+  await page.waitForTimeout(200);
 }
 
 async function main() {
