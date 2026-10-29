@@ -24,4 +24,12 @@ describe("Admin shell isolation", () => {
     expect(css).toMatch(/\.navMobileBar[\s\S]*min-width:\s*0/);
     expect(css).toMatch(/\.navMobileCurrent[\s\S]*text-overflow:\s*ellipsis/);
   });
+
+  it("does not clip the mobile sidebar so the account error panel can paint below the header", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/admin/Admin.module.css"), "utf8");
+    const mobile = css.split("@media (max-width: 720px)")[1] ?? "";
+    const sidebarBlock = mobile.split(".brand")[0] ?? "";
+    expect(sidebarBlock).toMatch(/\.sidebar\s*\{[^}]*overflow:\s*visible/s);
+    expect(mobile).toMatch(/\.navMobileCurrent\s*\{[^}]*overflow:\s*hidden/s);
+  });
 });

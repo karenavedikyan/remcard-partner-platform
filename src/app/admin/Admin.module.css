@@ -348,7 +348,9 @@
     padding: 0 0.75rem;
     border-right: none;
     border-bottom: 1px solid var(--admin-line);
-    overflow: hidden;
+    /* Do not clip the account-menu error panel (absolute below the trigger).
+       Label ellipsis stays on .navMobileBar / .navMobileCurrent only. */
+    overflow: visible;
     box-sizing: border-box;
   }
 
