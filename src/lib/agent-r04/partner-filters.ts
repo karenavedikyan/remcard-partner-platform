@@ -1,9 +1,9 @@
 import { resolvePartnerKindUi } from "@/lib/partner-kind-ui";
-import type { Partnership, PartnershipUser } from "@/lib/types";
+import type { PartnerActivitiesList, Partnership, PartnershipUser } from "@/lib/types";
 export type AgentPartnerTypeFilter = "" | "agent" | "specialist" | "store" | "company";
 
 export type PartnershipPartnerProfile = PartnershipUser & {
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   workingProductCategoryIds?: string[];
   workingServiceSpecializationIds?: string[];
   workingNavigatorStageIds?: string[];
