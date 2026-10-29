@@ -68,7 +68,8 @@ export function AdminR1AnalyticsClient() {
   const [period, setPeriod] = useState("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [payload, setPayload] = useState<AdminR1AnalyticsPayload | null>(null);
+  const [overview, setOverview] = useState<AdminR1AnalyticsPayload | null>(null);
+  const [catalog, setCatalog] = useState<AdminR1AnalyticsPayload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,12 +77,18 @@ export function AdminR1AnalyticsClient() {
       setLoading(true);
       setError(null);
       try {
-        // Overview carries growth KPIs; catalog fields are used for quality when present.
-        const data = await fetchAdminR1Analytics(period, "overview");
-        if (!cancelled) setPayload(data);
+        const apiTab = tab === "quality" ? "catalog" : "overview";
+        const data = await fetchAdminR1Analytics(period, apiTab);
+        if (cancelled) return;
+        if (tab === "quality") {
+          setCatalog(data);
+        } else {
+          setOverview(data);
+        }
       } catch (e) {
         if (!cancelled) {
-          setPayload(null);
+          if (tab === "quality") setCatalog(null);
+          else setOverview(null);
           setError(e instanceof Error ? e.message : "Аналитика недоступна");
         }
       } finally {
@@ -92,21 +99,23 @@ export function AdminR1AnalyticsClient() {
     return () => {
       cancelled = true;
     };
-  }, [period]);
+  }, [period, tab]);
 
-  const visitors = isMetricChange(payload?.visitors) ? payload.visitors : undefined;
-  const registrations = isMetricChange(payload?.registrations)
-    ? payload.registrations
+  const visitors = isMetricChange(overview?.visitors) ? overview.visitors : undefined;
+  const registrations = isMetricChange(overview?.registrations)
+    ? overview.registrations
     : undefined;
-  const requests = isMetricChange(payload?.requests) ? payload.requests : undefined;
+  const requests = isMetricChange(overview?.requests) ? overview.requests : undefined;
   const conversion =
-    typeof payload?.conversionPercent === "number" ? payload.conversionPercent : null;
-  const aligned = payload?.alignedPartnerMetrics;
+    typeof overview?.conversionPercent === "number" ? overview.conversionPercent : null;
+
+  const qualityPayload = catalog;
+  const aligned = qualityPayload?.alignedPartnerMetrics;
   const hasQualityMetrics =
-    typeof payload?.catalogViews === "number" ||
-    typeof payload?.profileViews === "number" ||
-    typeof payload?.approvedPartners === "number" ||
-    typeof payload?.activeServices === "number" ||
+    typeof qualityPayload?.catalogViews === "number" ||
+    typeof qualityPayload?.profileViews === "number" ||
+    typeof qualityPayload?.approvedPartners === "number" ||
+    typeof qualityPayload?.activeServices === "number" ||
     (aligned && typeof aligned === "object");
 
   return (
@@ -194,75 +203,58 @@ export function AdminR1AnalyticsClient() {
       {!loading && !error && tab === "quality" ? (
         <section>
           {hasQualityMetrics ? (
-            <div className="r1Kpis">
-              <MetricCard
-                label="Просмотры каталога"
-                value={metricValue(payload?.catalogViews)}
-              />
-              <MetricCard
-                label="Просмотры профилей"
-                value={metricValue(payload?.profileViews)}
-              />
-              <MetricCard
-                label="Партнёры APPROVED"
-                value={metricValue(payload?.approvedPartners)}
-                href="/admin/moderation"
-              />
-              <MetricCard
-                label="Активные услуги"
-                value={metricValue(payload?.activeServices)}
-              />
-              {aligned && typeof aligned.liveRegistered === "number" ? (
+            <>
+              <div className="r1Kpis">
                 <MetricCard
-                  label="Live-регистрации партнёров"
-                  value={String(aligned.liveRegistered)}
-                  href="/admin/partners"
+                  label="Просмотры каталога"
+                  value={metricValue(qualityPayload?.catalogViews)}
                 />
-              ) : null}
-              {aligned && typeof aligned.visibleInCatalog === "number" ? (
                 <MetricCard
-                  label="Видимы в каталоге"
-                  value={String(aligned.visibleInCatalog)}
-                  href="/admin/partners"
+                  label="Просмотры профилей"
+                  value={metricValue(qualityPayload?.profileViews)}
                 />
-              ) : null}
-              {aligned && typeof aligned.demoRegistered === "number" ? (
                 <MetricCard
-                  label="Демо-регистрации"
-                  value={String(aligned.demoRegistered)}
+                  label="Партнёры APPROVED"
+                  value={metricValue(qualityPayload?.approvedPartners)}
+                  href="/admin/moderation"
                 />
-              ) : null}
-            </div>
-          ) : (
-            <div className="r1Panel r1PanelPad">
-              <h2>Качество базы</h2>
+                <MetricCard
+                  label="Активные услуги"
+                  value={metricValue(qualityPayload?.activeServices)}
+                />
+                {aligned && typeof aligned.liveRegistered === "number" ? (
+                  <MetricCard
+                    label="Live-регистрации партнёров"
+                    value={String(aligned.liveRegistered)}
+                    href="/admin/partners"
+                  />
+                ) : null}
+                {aligned && typeof aligned.visibleInCatalog === "number" ? (
+                  <MetricCard
+                    label="Видимы в каталоге"
+                    value={String(aligned.visibleInCatalog)}
+                    href="/admin/partners"
+                  />
+                ) : null}
+                {aligned && typeof aligned.demoRegistered === "number" ? (
+                  <MetricCard
+                    label="Демо-регистрации"
+                    value={String(aligned.demoRegistered)}
+                  />
+                ) : null}
+              </div>
               <p className="r1Help">
-                В ответе за период нет отдельных показателей наполнения каталога. Доступны
-                связанные разделы и общая конверсия.
+                Переходы:{" "}
+                <Link href="/admin/moderation">модерация</Link>
+                {" · "}
+                <Link href="/admin/partners">партнёры</Link>
+                {" · "}
+                <Link href="/admin/results">результативность</Link>
               </p>
-              <div className="r1Kpis" style={{ marginTop: 16, marginBottom: 0 }}>
-                <MetricCard
-                  label="Конверсия посетитель → регистрация"
-                  value={conversion == null ? "—" : `${conversion}%`}
-                />
-                <MetricCard
-                  label="Регистрации за период"
-                  value={metricValue(registrations)}
-                  bottom={formatChange(registrations)}
-                  href="/admin/clients"
-                />
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-                <Link className="r1Btn small" href="/admin/moderation">
-                  Модерация профилей
-                </Link>
-                <Link className="r1Btn small" href="/admin/partners">
-                  Реестр партнёров
-                </Link>
-                <Link className="r1Btn small" href="/admin/results">
-                  RemScore и отзывы
-                </Link>
-              </div>
+            </>
+          ) : (
+            <div className="r1Unavailable">
+              Показатели качества каталога за период недоступны.
             </div>
           )}
         </section>
