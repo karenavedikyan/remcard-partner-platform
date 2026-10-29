@@ -338,6 +338,99 @@ describe("Admin R1 P1 edge acceptance", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(/не сохранен/i);
   });
 
+  it("does not infer successful persistence from a legacy response with no persistence flag", async () => {
+    const user = userEvent.setup();
+    api.reject.mockResolvedValue({ success: true });
+    api.reviews.mockResolvedValue({
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      counts: { pending: 1, published: 0, rejected: 0 },
+      reviews: [
+        {
+          id: "pend-legacy",
+          rating: 1,
+          text: "Legacy ответ",
+          status: "PENDING",
+          createdAt: "2026-10-29T08:00:00.000Z",
+          author: { id: "c1", displayName: "Клиент" },
+          partner: { id: "p1", displayName: "Партнёр" },
+        },
+      ],
+    });
+    render(<AdminR1ReviewsClient />);
+    expect(await screen.findByText("Legacy ответ")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /отклонить/i }));
+    const dialog = await screen.findByRole("dialog");
+    await user.type(dialog.querySelector("textarea")!, "Причина legacy");
+    await user.click(within(dialog).getByRole("button", { name: /^Отклонить$/ }));
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent(/не подтвердил сохранение/i);
+    expect(status).not.toHaveTextContent(/Причина сохранена/);
+  });
+
+  it("approve failure keeps its dialog, error and retry without losing selected context", async () => {
+    const user = userEvent.setup();
+    api.approve.mockRejectedValueOnce(new Error("Отказано локально"));
+    api.reviews.mockResolvedValue({
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      counts: { pending: 1, published: 0, rejected: 0 },
+      reviews: [
+        {
+          id: "pend-fail-a",
+          rating: 4,
+          text: "Approve retry",
+          status: "PENDING",
+          createdAt: "2026-10-29T08:00:00.000Z",
+          author: { id: "c1", displayName: "Клиент" },
+          partner: { id: "p1", displayName: "Партнёр" },
+        },
+      ],
+    });
+    render(<AdminR1ReviewsClient />);
+    expect(await screen.findByText("Approve retry")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /опубликовать/i }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: /^Опубликовать$/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Отказано локально/);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: /^Опубликовать$/ })).toBeTruthy();
+  });
+
+  it("reject failure keeps its dialog, error, input and retry without losing selected context", async () => {
+    const user = userEvent.setup();
+    api.reject.mockRejectedValueOnce(new Error("Отказано локально"));
+    api.reviews.mockResolvedValue({
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      counts: { pending: 1, published: 0, rejected: 0 },
+      reviews: [
+        {
+          id: "pend-fail-r",
+          rating: 2,
+          text: "Reject retry",
+          status: "PENDING",
+          createdAt: "2026-10-29T08:00:00.000Z",
+          author: { id: "c1", displayName: "Клиент" },
+          partner: { id: "p1", displayName: "Партнёр" },
+        },
+      ],
+    });
+    render(<AdminR1ReviewsClient />);
+    expect(await screen.findByText("Reject retry")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /отклонить/i }));
+    let dialog = await screen.findByRole("dialog");
+    await user.type(dialog.querySelector("textarea")!, "Сохранить причину");
+    await user.click(within(dialog).getByRole("button", { name: /^Отклонить$/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Отказано локально/);
+    dialog = screen.getByRole("dialog");
+    expect(dialog.querySelector("textarea")).toHaveValue("Сохранить причину");
+    expect(within(dialog).getByRole("button", { name: /^Отклонить$/ })).toBeTruthy();
+  });
+
   it("does not expose actionable old pending rows while a new PUBLISHED filter is loading", async () => {
     const user = userEvent.setup();
     let resolvePublished: (value: unknown) => void = () => undefined;
