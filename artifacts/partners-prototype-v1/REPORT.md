@@ -1,41 +1,45 @@
-# Отчёт: RemCard — раздел «Партнёры» (prototype-v1 continuation)
+# Отчёт: RemCard — раздел «Партнёры» (post independent review)
 
-**Область:** Партнёры (не админка). Live-выпуск не утверждается.
+**Область:** Партнёры. Live-выпуск / deploy / SQL / production writes — **не выполнялись**.
 
 ## Branches / SHA
 
 | Repo | Branch | SHA | Примечание |
 | --- | --- | --- | --- |
-| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | *(см. tip после commit; prerequisite `253ff59ec0c9a32b0b00c6f544486deae2942119`)* | continuation поверх partial tip |
-| remcard-navigator | `feat/partners-prototype-v1-20261029` | `fb36d1ce8823b5e1050769938211e12599e4a300` | base `4b4c1244f8ed838508e7d4a99796092ebd2cb7ed` |
-| reference (read-only) | `reference/prototype-20261029` | `4ba2f9e764b412e956e2ccb619ebbcab7d76a006` | worktree only |
+| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | `59c0f43dad9b6fa821b5719e6c4c31749df98a2b` | push **403**; prerequisite `253ff59ec0c9a32b0b00c6f544486deae2942119`; incremental bundle ниже |
+| remcard-navigator | `feat/partners-prototype-v1-20261029` | `8e421fcb6c39a420fd84019b04251e007920c5ac` | prior tip `c77d15e2a996c80ecc0b9cf766997ae8a2f476b3` + docs/bundle; replay/labels P1 сохранены |
+| reference | `reference/prototype-20261029` | `4ba2f9e…` | JS source приоритетнее исторических FLOWS |
 
-Если frontend push недоступен: `artifacts/partners-prototype-v1/frontend-implementation.bundle`.
+Bundle: `artifacts/partners-prototype-v1/frontend-implementation.bundle` (`253ff59ec0c9a32b0b00c6f544486deae2942119..59c0f43dad9b6fa821b5719e6c4c31749df98a2b`).
 
-## Closed review items
+## Closed in this pass (mandatory)
 
-- **P0** invite: non-agent без % → `requestPartnerTerms` (не `cooperationRequest`); agent guard сохранён.
-- **P1** published terms: search `publishedTerms` + certificate-program-summary; poolPercent disclaimer.
-- **P1** agent selected categories остаются в `terms`.
-- **P1** vitrine details + Подробнее (`PartnerVitrineDetails`).
-- **P1** exact reference read; vertical «Путь ремонта»; шаблоны exact copy; meta-copy убран из UI.
-- **P1** wizard для всех presentation paths; free-name `PartnerLinkInviteWizard` → discussion-invite; share recipient path.
-- **P1** facets full matching set на backend search; abort/sequence на FE; taxonomy error явный.
-- **P1** recipient reset по `target.id`; invite INVITED unique-pair replay.
-- **P1** kind via `resolvePartnerKindUi` adapter.
+1. **Custom conditions → POST `note`:** review/share conditions (`partnerAction`/`partnerBenefit`/`ownTerms` + composition) persist via existing `note` when empty/custom path (no invented %). Published numeric terms still go in `terms[]`; note stays message-only then.
+2. **Link wizard all four audiences:** modal `hub=link` always `PartnerLinkInviteWizard`; legacy dual `Wizard+Panel` removed from modal and legacy `tab=link`.
+3. **Own-list canonical kind:** `resolvePublicPartnerType` → `adaptPartnerPrimaryKind` / `resolvePartnerKindUi` (COMPANY+[STORE,AGENT] → company, not agent). Shared BE search predicates **not** edited — see SHARED-CHANGE-REQUEST.
+4. **Certificate error:** `applyPlan([], "error")` keeps `termsStatus=error`; no false «нет опубликованных условий»; retry on review.
+5. **Discussion subject ≤500:** FE mirrors `DISCUSSION_SUBJECT_MAX` (clamp/paste/validator/counter/submit).
+6. **Registered receiver URL:** `partnershipId`/`terms` → AgentPartnersHub `invitations`+`incoming`; PartnersHub reads `partnershipId` as terms deep-link.
 
-## Verification
+**Preserved:** replay different payload → 409; non-agent empty label «Предложить условия»; `cooperationRequest` agent-only; `acceptPartnership` `terms_required`.
+
+## Shared ownership / gaps
+
+- Type agent owns `search/route.ts`, canonical helpers, FE `types.ts` — **not changed here**.
+- Patch proposal: `artifacts/partners-prototype-v1/SHARED-CHANGE-REQUEST.md` (canonical search/facets predicates; types merge).
+- Gates: BE type `af8959ee` ↔ partners search conflict; FE duplicate `partnerActivities` — shared owner must resolve without dropping full-set facets/pagination.
+
+## Verification (local, mocked)
 
 | Check | Result |
 | --- | --- |
-| FE vitest partners-prototype-v1 + wizard | 26 pass |
+| PartnerContract independent-latest (payload/error/500) | 3 pass |
+| PartnerFlow independent-latest (4 entries + partnershipId) | 5 pass |
+| Invite wizard + reviewer + hub + filters + discussion-subject | pass |
 | FE `tsc --noEmit` | 0 |
-| BE targeted invite/facets tests | pass |
-| BE pre-existing tsc noise | outside owned files |
-| Screenshots LOCAL FIXTURE harness | `screenshots/*` |
-| Screenshots exact reference | `screenshots-reference/*` provenance 4ba2f9e |
-| Real invite POST production | **не выполнялся** |
+| BE replay identity + requestPartnerTerms | pass |
+| Real invite / notify / production | **не выполнялись** |
 
-## Coverage
+## Honest path note
 
-См. `COVERAGE-MATRIX.md`, `FLOWS.md`, `BLOCKERS.md`, `SHARED-CHANGE-REQUEST.md`.
+Reference listing «Сотрудничать» still has old `directory-invite-form`; FE vitrine 3-step remains integration unification. Copy «Далее: проверить» matches current reference (not a product defect vs old «проверка» selector).
