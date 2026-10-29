@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       ? { displayName: user.displayName?.trim() || "Администратор RemCard", staffRole: user.staffRole }
       : null;
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-admin-shell="a1">
       <AdminHeader identity={identity} />
       <main>{children}</main>
     </div>
