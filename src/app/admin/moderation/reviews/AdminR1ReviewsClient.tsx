@@ -96,13 +96,13 @@ export function AdminR1ReviewsClient() {
     void load();
   }, [load, status, page]);
 
-  // Close an open confirm when the filter/page changes (unless a command is in flight).
+  // Close an open confirm only when the selected list context (status/page) changes.
+  // Do not depend on actionPending — a failed command must keep dialog + error + reason for retry.
   useEffect(() => {
-    if (actionPending) return;
     setConfirm(null);
     setRejectReason("");
     setActionError(null);
-  }, [status, page, actionPending]);
+  }, [status, page]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -150,13 +150,17 @@ export function AdminR1ReviewsClient() {
         setActionSuccess("Отзыв опубликован");
       } else {
         const result = await rejectAdminR1Review(confirm.review.id, rejectReason.trim());
-        if (result.reasonPersisted === false) {
+        if (result.reasonPersisted === true) {
+          setActionSuccess(
+            "Отзыв отклонён. Причина сохранена в аудите партнёра и доступна в очереди «Отклонены».",
+          );
+        } else if (result.reasonPersisted === false) {
           setActionSuccess(
             "Отзыв отклонён, но причина не сохранена в аудите. Проверьте ответ сервера.",
           );
         } else {
           setActionSuccess(
-            "Отзыв отклонён. Причина сохранена в аудите партнёра и доступна в очереди «Отклонены».",
+            "Отзыв отклонён. Сервер не подтвердил сохранение причины в аудите.",
           );
         }
       }
