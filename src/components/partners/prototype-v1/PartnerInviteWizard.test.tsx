@@ -106,7 +106,7 @@ describe("PartnerInviteWizard", () => {
     const message = screen.getByTestId("invite-wizard-message") as HTMLTextAreaElement;
     expect(message.value.length).toBeGreaterThan(10);
 
-    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
     expect(screen.getByTestId("invite-wizard-step-review")).toBeInTheDocument();
     expect(remcardFetch).not.toHaveBeenCalled();
 
@@ -133,7 +133,7 @@ describe("PartnerInviteWizard", () => {
     await waitFor(() => screen.getByTestId("invite-request-terms"));
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
     await user.click(screen.getByTestId("invite-template-short"));
-    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
     await user.click(screen.getByTestId("invite-wizard-submit"));
     await waitFor(() => expect(remcardFetch).toHaveBeenCalled());
     const [, opts] = remcardFetch.mock.calls[0];
@@ -169,7 +169,7 @@ describe("PartnerInviteWizard", () => {
     await waitFor(() => screen.getByText(/Двери/));
     await user.click(screen.getByRole("button", { name: /Далее: сообщение/i }));
     await user.click(screen.getByTestId("invite-template-short"));
-    await user.click(screen.getByRole("button", { name: /Далее: проверить/i }));
+    await user.click(screen.getByRole("button", { name: /Далее: проверка/i }));
     await user.click(screen.getByTestId("invite-wizard-submit"));
     await waitFor(() => expect(remcardFetch).toHaveBeenCalled());
     const [, opts] = remcardFetch.mock.calls[0];

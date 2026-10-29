@@ -7,6 +7,7 @@ import {
   markInviteSubmitPending,
   setInviteWizardMessage,
   setInviteWizardRecipient,
+  syncInviteWizardPublishedTerms,
   templateReplaceNeedsConfirm,
   toggleInviteWizardCategory,
 } from "./invite-wizard-state";
@@ -83,11 +84,36 @@ describe("invite-wizard-state", () => {
     });
     expect(next.recipientId).toBe("new");
     expect(next.recipientName).toBe("Новый");
+    expect(next.step).toBe("partner");
     expect(next.message).toBe("");
     expect(next.categories).toEqual([]);
     expect(next.requestTerms).toBe(true);
     expect(next.agentOneWay).toBe(true);
     expect(next.submitIdempotencyKey).toBeNull();
+  });
+
+  it("soft-syncs published terms for same recipient without clearing message/step", () => {
+    const prev = createInviteWizardState({
+      step: "message",
+      recipientId: "same",
+      recipientName: "Магазин",
+      message: "Сохранить мой текст",
+      categories: [],
+      requestTerms: true,
+    });
+    const next = syncInviteWizardPublishedTerms(prev, {
+      recipientId: "same",
+      recipientName: "Магазин",
+      agentOneWay: false,
+      categories: [
+        { category: "doors", categoryLabel: "Двери", storePercent: 12, selected: true },
+      ],
+      requestTerms: false,
+    });
+    expect(next.step).toBe("message");
+    expect(next.message).toBe("Сохранить мой текст");
+    expect(next.requestTerms).toBe(false);
+    expect(next.categories[0]?.storePercent).toBe(12);
   });
 
   it("caps message at 1000 chars and tracks XSS-like / whitespace", () => {

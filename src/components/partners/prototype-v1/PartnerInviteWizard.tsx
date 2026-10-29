@@ -32,6 +32,7 @@ import {
   markInviteSubmitPending,
   setInviteWizardMessage,
   setInviteWizardRecipient,
+  syncInviteWizardPublishedTerms,
   toggleInviteWizardCategory,
   type InviteWizardSnapshot,
   type InviteWizardStep,
@@ -110,26 +111,43 @@ export function PartnerInviteWizard({
   const [created, setCreated] = useState<CreatedInvite | null>(null);
   const [shareHint, setShareHint] = useState("");
 
-  // Reset only when recipient id changes — profile refresh of same partner must keep message.
+  // Hard-reset only when recipient id changes. Same-user profile refresh must NOT
+  // clear step/message. Async terms load uses soft sync for the same recipient.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   useEffect(() => {
     let cancelled = false;
     setTermsStatus("loading");
     setTermsError("");
     setCreated(null);
 
+    dispatch({
+      type: "replace",
+      state: setInviteWizardRecipient(createInviteWizardState({ step: "partner" }), {
+        recipientId: target.id,
+        recipientName: partnerTitle(target),
+        agentOneWay: agentCooperation,
+        categories: [],
+        requestTerms: true,
+      }),
+    });
+
     const fromSearch = publishedTermsFromSearchResult(target);
     const applyPlan = (published: Parameters<typeof planPublishedInviteTerms>[2]) => {
       if (cancelled) return;
       const plan = planPublishedInviteTerms(meProfile, target, published);
+      const input = {
+        recipientId: target.id,
+        recipientName: partnerTitle(target),
+        agentOneWay: plan.agentOneWay,
+        categories: plan.categories,
+        requestTerms: plan.requestTerms,
+      };
+      // Soft-sync against latest state so late cert responses cannot wipe typed message.
       dispatch({
-        type: "replace",
-        state: setInviteWizardRecipient(createInviteWizardState({ step: "partner" }), {
-          recipientId: target.id,
-          recipientName: partnerTitle(target),
-          agentOneWay: plan.agentOneWay,
-          categories: plan.categories,
-          requestTerms: plan.requestTerms,
-        }),
+        type: "patch",
+        state: syncInviteWizardPublishedTerms(stateRef.current, input),
       });
       if (plan.blockedReason) setTermsStatus("unavailable");
       else if (plan.requestTerms) setTermsStatus("empty");
@@ -165,7 +183,7 @@ export function PartnerInviteWizard({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only recipient id
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only recipient id; meProfile refresh must not reset
   }, [target.id]);
 
   useEffect(() => {
@@ -527,8 +545,8 @@ export function PartnerInviteWizard({
               <Button type="button" variant="secondary" onClick={() => go("partner")}>
                 Назад
               </Button>
-              <Button type="button" onClick={() => go("review")}>
-                Далее: проверить
+                  <Button type="button" onClick={() => go("review")}>
+                Далее: проверка
               </Button>
             </div>
           </div>

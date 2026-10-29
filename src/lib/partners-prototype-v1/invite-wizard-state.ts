@@ -123,23 +123,25 @@ export function setInviteWizardMessage(
   };
 }
 
+export type InviteWizardRecipientInput = {
+  recipientId: string;
+  recipientName: string;
+  agentOneWay: boolean;
+  categories: InviteWizardCategory[];
+  requestTerms: boolean;
+};
+
 /**
  * Changing recipient clears prior conditions/categories and does not silently
  * keep the previous addressee.
  */
 export function setInviteWizardRecipient(
   state: InviteWizardSnapshot,
-  input: {
-    recipientId: string;
-    recipientName: string;
-    agentOneWay: boolean;
-    categories: InviteWizardCategory[];
-    requestTerms: boolean;
-  },
+  input: InviteWizardRecipientInput,
 ): InviteWizardSnapshot {
   return {
     ...createInviteWizardState({
-      step: state.step === "partner" ? "partner" : "message",
+      step: "partner",
       recipientId: input.recipientId,
       recipientName: input.recipientName,
       agentOneWay: input.agentOneWay,
@@ -155,6 +157,26 @@ export function setInviteWizardRecipient(
       submitDone: false,
       error: "",
     }),
+  };
+}
+
+/**
+ * Same recipient: refresh published terms/categories without wiping step/message.
+ * Different recipient: hard reset via setInviteWizardRecipient.
+ */
+export function syncInviteWizardPublishedTerms(
+  state: InviteWizardSnapshot,
+  input: InviteWizardRecipientInput,
+): InviteWizardSnapshot {
+  if (state.recipientId !== input.recipientId) {
+    return setInviteWizardRecipient(state, input);
+  }
+  return {
+    ...state,
+    recipientName: input.recipientName,
+    agentOneWay: input.agentOneWay,
+    categories: input.categories,
+    requestTerms: input.requestTerms,
   };
 }
 
