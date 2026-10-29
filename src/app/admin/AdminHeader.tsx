@@ -17,9 +17,9 @@ export function AdminHeader({ identity }: { identity: AdminAccountIdentity | nul
           </strong>
           <small>Администрирование PROF</small>
         </div>
+        <AdminNav />
       </aside>
       <div className={styles.topbar}>
-        <AdminNav />
         <div className={styles.topbarActions}>
           <AdminAccountControls identity={identity} />
         </div>
