@@ -7,13 +7,13 @@
 | Repo | Branch | SHA | Примечание |
 | --- | --- | --- | --- |
 | remcard-partner-platform | `feat/partners-prototype-v1-20261029` | `59c0f43dad9b6fa821b5719e6c4c31749df98a2b` | product tip (mandatory fixes); push **403**; prerequisite `253ff59ec0c9a32b0b00c6f544486deae2942119` |
-| remcard-partner-platform (docs+bundle tip) | same | see bundle HEAD | incremental bundle below includes docs after product tip |
-| remcard-navigator | `feat/partners-prototype-v1-20261029` | `8e421fcb6c39a420fd84019b04251e007920c5ac` | prior tip `c77d15e2a996c80ecc0b9cf766997ae8a2f476b3` + docs/bundle; replay/labels P1 сохранены |
+| remcard-partner-platform (docs+bundle tip) | same | `002390e2832b6b3e05d9af9ebd62d76e308da68f` | bundle contains `ea181aab32f23c8f7429ffc4d8052d0becce86b6`; push 403 |
+| remcard-navigator | `feat/partners-prototype-v1-20261029` | `0244924724cb67c3a8a79c0314a24b5053f7631e` | prior tip `c77d15e2a996c80ecc0b9cf766997ae8a2f476b3`; replay/labels P1 сохранены; docs+bundle sync |
 | reference | `reference/prototype-20261029` | `4ba2f9e…` | JS source приоритетнее исторических FLOWS |
 
 Bundle: `artifacts/partners-prototype-v1/frontend-implementation.bundle`  
 - requires: `253ff59ec0c9a32b0b00c6f544486deae2942119`  
-- contains HEAD: local tip after docs (verify with `git bundle list-heads`)
+- contains HEAD: `ea181aab32f23c8f7429ffc4d8052d0becce86b6` (docs tip; repo tip after bundle blob commit `002390e2832b6b3e05d9af9ebd62d76e308da68f`)
 
 ## Closed in this pass (mandatory)
 
