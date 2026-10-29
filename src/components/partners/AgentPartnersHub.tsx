@@ -38,6 +38,15 @@ export function AgentPartnersHub({
     }
   }, [openHub]);
 
+  // Registered-recipient deep link: open incoming invitations, not the active list.
+  const deepInviteId =
+    searchParams.get("terms")?.trim() || searchParams.get("partnershipId")?.trim() || "";
+  useEffect(() => {
+    if (!deepInviteId) return;
+    setSegment("invitations");
+    setInvitationFlow("incoming");
+  }, [deepInviteId]);
+
   const openModal = useCallback((tab: HubModalTab) => {
     setModalTab(tab);
     setModalOpen(true);

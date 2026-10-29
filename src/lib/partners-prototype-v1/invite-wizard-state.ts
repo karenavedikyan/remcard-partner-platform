@@ -350,6 +350,24 @@ export function selectedPublishedTermsForSubmit(state: InviteWizardSnapshot) {
   return state.categories.filter((c) => c.selected && c.storePercent != null);
 }
 
+/**
+ * Persist note for empty-terms / custom paths via existing `note` field —
+ * same composition the sender sees at review/share (message + conditions).
+ * When numeric published terms are POSTed separately, note stays message-only.
+ */
+export function buildInvitePersistNote(
+  state: InviteWizardSnapshot,
+  opts?: { agentProposal?: string; includeConditions: boolean },
+): string | null {
+  const message = state.message.trim();
+  if (!opts?.includeConditions) {
+    return message || null;
+  }
+  const conditions = buildInviteConditionsText(state, opts).trim();
+  const parts = [message, conditions].filter(Boolean);
+  return parts.length ? parts.join("\n\n") : null;
+}
+
 /** Build share text for review step — exact message + separate conditions. */
 export function buildInviteShareText(
   state: InviteWizardSnapshot,

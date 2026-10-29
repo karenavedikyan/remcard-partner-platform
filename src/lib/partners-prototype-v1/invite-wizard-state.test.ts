@@ -3,6 +3,7 @@ import {
   agentInviteProposal,
   applyInviteTemplate,
   buildInviteConditionsText,
+  buildInvitePersistNote,
   buildInviteShareText,
   createInviteWizardState,
   goInviteWizardStep,
@@ -187,6 +188,22 @@ describe("invite-wizard-state", () => {
     expect(text).toContain("Желаемые условия: 10% бонус");
     expect(text).toContain("Мои условия за рекомендации: Взаимный обмен");
     expect(selectedPublishedTermsForSubmit(custom)).toEqual([]);
+  });
+
+  it("persists custom review conditions into note for empty-terms submit path", () => {
+    const state = createInviteWizardState({
+      message: "Личное сообщение",
+      termsMode: "custom",
+      partnerAction: "Рекомендовать двери",
+      partnerBenefit: "Бонус",
+      ownTerms: "Взаимный обмен",
+    });
+    const note = buildInvitePersistNote(state, { includeConditions: true });
+    expect(note).toContain("Личное сообщение");
+    expect(note).toContain("Рекомендовать двери");
+    expect(note).toContain("Бонус");
+    expect(note).toContain("Взаимный обмен");
+    expect(buildInvitePersistNote(state, { includeConditions: false })).toBe("Личное сообщение");
   });
 
   it("caps custom term fields at 250 and ignores ownTerms for agents", () => {

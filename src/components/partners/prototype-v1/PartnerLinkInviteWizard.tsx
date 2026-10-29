@@ -26,6 +26,11 @@ import {
   type InviteWizardSnapshot,
   type InviteWizardStep,
 } from "@/lib/partners-prototype-v1/invite-wizard-state";
+import {
+  DISCUSSION_SUBJECT_MAX,
+  clampDiscussionSubject,
+  discussionSubjectError,
+} from "@/lib/partners-prototype-v1/discussion-subject";
 import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
@@ -98,6 +103,13 @@ export function PartnerLinkInviteWizard({
       });
       return;
     }
+    if (step === "review") {
+      const subjectErr = discussionSubjectError(state.message);
+      if (subjectErr) {
+        dispatch({ type: "patch", state: { ...state, error: subjectErr } });
+        return;
+      }
+    }
     dispatch({
       type: "patch",
       state: goInviteWizardStep(
@@ -121,6 +133,11 @@ export function PartnerLinkInviteWizard({
 
   async function submitFinal() {
     if (state.submitDone || state.submitPending || shareUrl) return;
+    const subjectErr = discussionSubjectError(state.message);
+    if (subjectErr) {
+      dispatch({ type: "patch", state: { ...state, error: subjectErr } });
+      return;
+    }
     if (disableSubmit) {
       dispatch({
         type: "patch",
@@ -139,7 +156,7 @@ export function PartnerLinkInviteWizard({
         idempotencyKey: next.submitIdempotencyKey ?? undefined,
         body: {
           recipientLabel: nameDraft.trim(),
-          cooperationSubject: next.message.trim(),
+          cooperationSubject: next.message.trim().slice(0, DISCUSSION_SUBJECT_MAX),
         },
       });
       setShareUrl(`${getAppUrl()}${result.previewPath}`);
@@ -267,12 +284,19 @@ export function PartnerLinkInviteWizard({
             label="Текст приглашения"
             value={state.message}
             onChange={(e) =>
-              dispatch({ type: "patch", state: setInviteWizardMessage(state, e.target.value) })
+              dispatch({
+                type: "patch",
+                state: setInviteWizardMessage(state, clampDiscussionSubject(e.target.value)),
+              })
             }
-            maxLength={1000}
+            maxLength={DISCUSSION_SUBJECT_MAX}
             rows={6}
             placeholder="Напишите своё приглашение"
+            data-testid="link-invite-message"
           />
+          <p className={styles.hint} data-testid="link-invite-message-count">
+            {state.message.length} / {DISCUSSION_SUBJECT_MAX}
+          </p>
           <div className={styles.actions}>
             <Button type="button" variant="secondary" onClick={() => go("partner")}>
               Назад

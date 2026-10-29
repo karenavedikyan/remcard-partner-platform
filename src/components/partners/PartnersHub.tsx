@@ -13,7 +13,6 @@ import {
   countNeedsMyResponse,
   defaultSearchRoleForUser,
   getPartnershipUiActions,
-  isAgentCooperationInviter,
   partnershipAgentSegment,
   partnershipNeedsMyResponse,
   profileUserToPartnerSide,
@@ -63,7 +62,6 @@ import { PartnerGeneralTermsDetails } from "@/components/partners/PartnerGeneral
 import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterOfferDialog";
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
-import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
 import { PartnerFindVitrine } from "@/components/partners/prototype-v1/PartnerFindVitrine";
@@ -120,7 +118,9 @@ export function PartnersHub({
   const isAgentR04 = variant === "agent-r04";
   const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
   const searchParams = useSearchParams();
-  const termsPartnershipId = searchParams.get("terms")?.trim() || null;
+  // Authed deep-link: both `terms` and registered `partnershipId` open the invite.
+  const termsPartnershipId =
+    searchParams.get("terms")?.trim() || searchParams.get("partnershipId")?.trim() || null;
   const discussionInviteId = searchParams.get("discussion")?.trim() || null;
   const [discussionContext, setDiscussionContext] = useState<DiscussionInviteContextDto | null>(null);
   const [discussionContextError, setDiscussionContextError] = useState("");
@@ -158,7 +158,6 @@ export function PartnersHub({
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
   const [listArchiveView, setListArchiveView] = useState<"active" | "archive" | "hidden">("active");
-  const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
   const [listPartnerType, setListPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [listSpecialization, setListSpecialization] = useState("");
   const [listCity, setListCity] = useState("");
@@ -736,45 +735,11 @@ export function PartnersHub({
       <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
         {agentModalSurface === "link" ? (
           <>
-            {isAgentCooperationInviter(inviterSide) ? (
-              <>
-                <p className={styles.partnerMeta}>
-                  Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
-                  запроса.
-                </p>
-                <PartnerLinkInviteWizard meProfile={meProfile} />
-              </>
-            ) : (
-              <>
-                {partnersAudience === "specialist-r04" ? (
-                  <div className={styles.linkModeTabs} role="tablist" aria-label="Тип ссылки">
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={linkInviteMode === "discussion"}
-                      data-active={linkInviteMode === "discussion"}
-                      onClick={() => setLinkInviteMode("discussion")}
-                    >
-                      К обсуждению
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={linkInviteMode === "terms"}
-                      data-active={linkInviteMode === "terms"}
-                      onClick={() => setLinkInviteMode("terms")}
-                    >
-                      С условиями
-                    </button>
-                  </div>
-                ) : null}
-                {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
-                  <PartnerLinkInviteWizard meProfile={meProfile} />
-                ) : (
-                  <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
-                )}
-              </>
-            )}
+            <p className={styles.partnerMeta}>
+              Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
+              запроса. Один трёхшаговый сценарий для всех типов кабинета.
+            </p>
+            <PartnerLinkInviteWizard meProfile={meProfile} />
           </>
         ) : (
           <>
@@ -1194,10 +1159,7 @@ export function PartnersHub({
           )}
         </>
       ) : tab === "link" ? (
-        <>
-          <PartnerLinkInviteWizard meProfile={meProfile} />
-          <PartnerLinkInvitePanel meProfile={meProfile} />
-        </>
+        <PartnerLinkInviteWizard meProfile={meProfile} />
       ) : (
         <>
           <Panel compact>

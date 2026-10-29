@@ -1,4 +1,8 @@
 import type { Partnership, PartnershipUser } from "@/lib/types";
+import {
+  adaptPartnerPrimaryKind,
+  partnerKindToListFilter,
+} from "@/lib/partners-prototype-v1/partner-kind-adapter";
 
 export type AgentPartnerTypeFilter = "" | "agent" | "specialist" | "store" | "company";
 
@@ -13,12 +17,18 @@ export function partnershipPartnerUser(partnership: Partnership, meId: string): 
   return (partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser) as PartnershipPartnerProfile;
 }
 
+/**
+ * Own-list type filter uses the same canonical primary kind as vitrine cards
+ * (resolvePartnerKindUi via adapter). Any AGENT activity alone is NOT enough —
+ * e.g. COMPANY+[STORE,AGENT] → company, not agent.
+ */
 export function resolvePublicPartnerType(user: PartnershipPartnerProfile): AgentPartnerTypeFilter {
-  if ((user.partnerActivities ?? []).includes("AGENT")) return "agent";
-  if (user.partnerType === "STORE") return "store";
-  if (user.partnerType === "COMPANY") return "company";
-  if (user.partnerType === "MASTER") return "specialist";
-  return "";
+  return partnerKindToListFilter(
+    adaptPartnerPrimaryKind({
+      partnerType: user.partnerType,
+      partnerActivities: user.partnerActivities,
+    }),
+  );
 }
 
 export function partnerDisplayTitle(

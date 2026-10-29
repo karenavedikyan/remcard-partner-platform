@@ -25,6 +25,7 @@ import {
   INVITE_WIZARD_STEPS,
   agentInviteProposal,
   applyInviteTemplate,
+  buildInvitePersistNote,
   buildInviteShareText,
   createInviteWizardState,
   goInviteWizardStep,
@@ -137,7 +138,10 @@ export function PartnerInviteWizard({
     });
 
     const fromSearch = publishedTermsFromSearchResult(target);
-    const applyPlan = (published: Parameters<typeof planPublishedInviteTerms>[2]) => {
+    const applyPlan = (
+      published: Parameters<typeof planPublishedInviteTerms>[2],
+      statusOverride?: "error" | "unavailable",
+    ) => {
       if (cancelled) return;
       const plan = planPublishedInviteTerms(meProfile, target, published);
       const input = {
@@ -151,8 +155,16 @@ export function PartnerInviteWizard({
         type: "patch",
         state: syncInviteWizardPublishedTerms(stateRef.current, input),
       });
-      if (plan.blockedReason) setTermsStatus("unavailable");
-      else if (plan.requestTerms) setTermsStatus("empty");
+      // Error/unavailable must not be overwritten into a false «условий нет».
+      if (statusOverride === "error") {
+        setTermsStatus("error");
+        return;
+      }
+      if (statusOverride === "unavailable" || plan.blockedReason) {
+        setTermsStatus("unavailable");
+        return;
+      }
+      if (plan.requestTerms) setTermsStatus("empty");
       else setTermsStatus("loaded");
     };
 
@@ -167,14 +179,17 @@ export function PartnerInviteWizard({
       if (cancelled) return;
       const mapped = publishedTermsFromCertState(cert);
       if (mapped.status === "error") {
-        setTermsStatus("error");
         setTermsError(mapped.message);
-        applyPlan([]);
+        applyPlan([], "error");
         return;
       }
       if (mapped.status === "loading" || mapped.status === "idle") return;
-      if (mapped.status === "empty" || mapped.status === "unavailable") {
+      if (mapped.status === "empty") {
         applyPlan([]);
+        return;
+      }
+      if (mapped.status === "unavailable") {
+        applyPlan([], "unavailable");
         return;
       }
       if (mapped.status === "loaded") {
@@ -249,8 +264,12 @@ export function PartnerInviteWizard({
 
     try {
       const selected = selectedPublishedTermsForSubmit(next);
-      const note = next.message.trim() || null;
       const idempotencyKey = next.submitIdempotencyKey ?? undefined;
+      // Empty/custom path: persist review conditions via existing `note` (no invented %).
+      const note = buildInvitePersistNote(next, {
+        agentProposal,
+        includeConditions: selected.length === 0,
+      });
 
       let response: {
         partnershipId?: string;
@@ -605,6 +624,51 @@ export function PartnerInviteWizard({
                     placeholder="Напишите пожелания или оставьте пустым"
                     data-testid="invite-partner-benefit"
                   />
+                </div>
+              ) : termsStatus === "error" ? (
+                <div className={styles.notice} role="alert" data-testid="invite-terms-error">
+                  Не удалось загрузить опубликованные условия
+                  {termsError ? `: ${termsError}` : ""}. Можно выбрать «Свой вариант» или повторить
+                  позже — отсутствие условий не подтверждено.
+                  <div className={styles.actions}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      data-testid="invite-terms-retry"
+                      onClick={() => {
+                        setTermsStatus("loading");
+                        setTermsError("");
+                        void fetchPartnerCertificateProgram(target.id).then((cert) => {
+                          const mapped = publishedTermsFromCertState(cert);
+                          if (mapped.status === "error") {
+                            setTermsError(mapped.message);
+                            setTermsStatus("error");
+                            return;
+                          }
+                          if (mapped.status === "loaded") {
+                            const plan = planPublishedInviteTerms(meProfile, target, mapped.items);
+                            dispatch({
+                              type: "patch",
+                              state: syncInviteWizardPublishedTerms(stateRef.current, {
+                                recipientId: target.id,
+                                recipientName: partnerTitle(target),
+                                agentOneWay: plan.agentOneWay,
+                                categories: plan.categories,
+                                requestTerms: plan.requestTerms,
+                              }),
+                            });
+                            setTermsStatus(plan.requestTerms ? "empty" : "loaded");
+                            return;
+                          }
+                          setTermsStatus(
+                            mapped.status === "unavailable" ? "unavailable" : "empty",
+                          );
+                        });
+                      }}
+                    >
+                      Повторить загрузку
+                    </Button>
+                  </div>
                 </div>
               ) : publishedWithPercent.length > 0 ? (
                 <>

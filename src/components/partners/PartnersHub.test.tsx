@@ -200,7 +200,8 @@ describe("PartnersHub search empty state", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("heading", { name: /Пригласить партнёра/i })).toBeInTheDocument();
+    expect(screen.getByTestId("partner-link-invite-wizard")).toBeInTheDocument();
+    expect(screen.queryByTestId("partner-link-invite-panel")).not.toBeInTheDocument();
 
     const postCalls = vi
       .mocked(remcardFetch)
