@@ -1,101 +1,229 @@
 {
   "baseUrl": "http://127.0.0.1:5201",
+  "themeSamples": {
+    "375-light": {
+      "dataTheme": "light",
+      "cssBgToken": "",
+      "bodyBackground": "rgba(0, 0, 0, 0)"
+    },
+    "1440-light": {
+      "dataTheme": "light",
+      "cssBgToken": "",
+      "bodyBackground": "rgba(0, 0, 0, 0)"
+    },
+    "375x500-light": {
+      "dataTheme": "light",
+      "cssBgToken": "",
+      "bodyBackground": "rgba(0, 0, 0, 0)"
+    },
+    "375-dark": {
+      "dataTheme": "dark",
+      "cssBgToken": "",
+      "bodyBackground": "rgba(0, 0, 0, 0)"
+    },
+    "1440-dark": {
+      "dataTheme": "dark",
+      "cssBgToken": "",
+      "bodyBackground": "rgba(0, 0, 0, 0)"
+    },
+    "375x500-dark": {
+      "dataTheme": "dark",
+      "cssBgToken": "",
+      "bodyBackground": "rgba(0, 0, 0, 0)"
+    }
+  },
+  "themeDiff": [
+    {
+      "light": "incoming-agent-1440-light.png",
+      "dark": "incoming-agent-1440-dark.png",
+      "sha256Match": false
+    },
+    {
+      "light": "detail-long-open-375x500-light.png",
+      "dark": "detail-long-open-375x500-dark.png",
+      "sha256Match": false
+    }
+  ],
   "results": [
     {
       "scene": "incoming-agent",
       "viewport": "375",
       "theme": "light",
-      "file": "incoming-agent-375-light.png"
+      "file": "incoming-agent-375-light.png",
+      "sha256": "21fcb05494007aca64fe07070ced4c20f17f4600696b15c5c629904dfe50a93b"
     },
     {
       "scene": "pending",
       "viewport": "375",
       "theme": "light",
-      "file": "pending-375-light.png"
+      "file": "pending-375-light.png",
+      "sha256": "01f3ed35b3d192189c14052f3621b6c89b838b46f9971dfe1fa289a9b2f79e32"
     },
     {
       "scene": "active",
       "viewport": "375",
       "theme": "light",
-      "file": "active-375-light.png"
+      "file": "active-375-light.png",
+      "sha256": "e8fe569644257bb3d09502b45298fabe93e22707a8695b8d9c3ab2292a2985e8"
     },
     {
       "scene": "cards",
       "viewport": "375",
       "theme": "light",
-      "file": "cards-375-light.png"
+      "file": "cards-375-light.png",
+      "sha256": "207f14ae6c056c300a1c4cfb55bb6c042313e2f99044610ff05755a27d65b676"
     },
     {
       "scene": "incoming-agent",
       "viewport": "1440",
       "theme": "light",
-      "file": "incoming-agent-1440-light.png"
+      "file": "incoming-agent-1440-light.png",
+      "sha256": "99acb2028af3ab2f7ef286941fe82f625fe8bedac567351cf1f8074cbcc71704"
     },
     {
       "scene": "pending",
       "viewport": "1440",
       "theme": "light",
-      "file": "pending-1440-light.png"
+      "file": "pending-1440-light.png",
+      "sha256": "bfd84f499e4206708371dc7cc95938ebb017b776eace937efba83c2b555dccba"
     },
     {
       "scene": "active",
       "viewport": "1440",
       "theme": "light",
-      "file": "active-1440-light.png"
+      "file": "active-1440-light.png",
+      "sha256": "125f4536fc7bf5b2beda114e67943fd91babf64c76e3f8febc9b1470adcb3159"
     },
     {
       "scene": "cards",
       "viewport": "1440",
       "theme": "light",
-      "file": "cards-1440-light.png"
+      "file": "cards-1440-light.png",
+      "sha256": "9966e7e45300f8948db1a4e35ae028b08dec62e8b470a59364dfac96daea671f"
+    },
+    {
+      "scene": "incoming-agent",
+      "viewport": "375x500",
+      "theme": "light",
+      "file": "incoming-agent-375x500-light.png",
+      "sha256": "b760b05852dc6d29e7b8ba9d7d5720799ef8e84d2794ba7d3b4f13257805271b"
+    },
+    {
+      "scene": "pending",
+      "viewport": "375x500",
+      "theme": "light",
+      "file": "pending-375x500-light.png",
+      "sha256": "b001bc5e261b7ddf46f6774ae71c10eb30d2d4447839b8e27471e8d377b0666b"
+    },
+    {
+      "scene": "active",
+      "viewport": "375x500",
+      "theme": "light",
+      "file": "active-375x500-light.png",
+      "sha256": "5a1c47c009acf6dab1f6157783f2f0b04d7ee1b71ace07de91ada9c5280d2246"
+    },
+    {
+      "scene": "detail-long-open",
+      "viewport": "375x500",
+      "theme": "light",
+      "file": "detail-long-open-375x500-light.png",
+      "sha256": "57b9727bcfb9c8bde49dc0a2c96ff1f7daabadad2bee0ac74f61721c1ede6318",
+      "dialogBox": {
+        "x": 16,
+        "y": 25,
+        "width": 343,
+        "height": 450
+      }
     },
     {
       "scene": "incoming-agent",
       "viewport": "375",
       "theme": "dark",
-      "file": "incoming-agent-375-dark.png"
+      "file": "incoming-agent-375-dark.png",
+      "sha256": "a45083c7cb6fc8405c9c7fd6324fca35f5e8b73997f743d0981b92a979db02fa"
     },
     {
       "scene": "pending",
       "viewport": "375",
       "theme": "dark",
-      "file": "pending-375-dark.png"
+      "file": "pending-375-dark.png",
+      "sha256": "7862fc698208502734070723d4df614dbd82f6510b5ccbf8c0c687d87b97b79b"
     },
     {
       "scene": "active",
       "viewport": "375",
       "theme": "dark",
-      "file": "active-375-dark.png"
+      "file": "active-375-dark.png",
+      "sha256": "32d1add2fdd1946fb3187709465e0a0cc2db436eae5d22411c8ec32259c709b4"
     },
     {
       "scene": "cards",
       "viewport": "375",
       "theme": "dark",
-      "file": "cards-375-dark.png"
+      "file": "cards-375-dark.png",
+      "sha256": "d938f446d6e4b0693f8e7be57d306323c5fe22faa804a042430334b8d32f28e9"
     },
     {
       "scene": "incoming-agent",
       "viewport": "1440",
       "theme": "dark",
-      "file": "incoming-agent-1440-dark.png"
+      "file": "incoming-agent-1440-dark.png",
+      "sha256": "799620639bb0abebf8ea4c14ce22b625e9e3e4ec7baec376b1f7708fd9f470e4"
     },
     {
       "scene": "pending",
       "viewport": "1440",
       "theme": "dark",
-      "file": "pending-1440-dark.png"
+      "file": "pending-1440-dark.png",
+      "sha256": "14694a4d5b8cf2629608e68c0914459e07a91e2364b543f6359da13012d2de1a"
     },
     {
       "scene": "active",
       "viewport": "1440",
       "theme": "dark",
-      "file": "active-1440-dark.png"
+      "file": "active-1440-dark.png",
+      "sha256": "9565d45fa5b931201a1517fcb8d7d4d43604a239d02759c10bbad2674c35b79d"
     },
     {
       "scene": "cards",
       "viewport": "1440",
       "theme": "dark",
-      "file": "cards-1440-dark.png"
+      "file": "cards-1440-dark.png",
+      "sha256": "336808aec06c31fffae91e377ac454be532a63e25d2f3a5bc4afeb4537323f3e"
+    },
+    {
+      "scene": "incoming-agent",
+      "viewport": "375x500",
+      "theme": "dark",
+      "file": "incoming-agent-375x500-dark.png",
+      "sha256": "26ca6ee09b5c9c41d2954763b1aa8346e010c7854166da5cb54904ff3a37b3f2"
+    },
+    {
+      "scene": "pending",
+      "viewport": "375x500",
+      "theme": "dark",
+      "file": "pending-375x500-dark.png",
+      "sha256": "6a42719f056a4d7924e0761ac17cb36e61c55d084a9269e6725955b427a54acf"
+    },
+    {
+      "scene": "active",
+      "viewport": "375x500",
+      "theme": "dark",
+      "file": "active-375x500-dark.png",
+      "sha256": "6aa8b1937b77f050a891a775494d451018edb8b8bc7fcf61f422e7aa3216ad23"
+    },
+    {
+      "scene": "detail-long-open",
+      "viewport": "375x500",
+      "theme": "dark",
+      "file": "detail-long-open-375x500-dark.png",
+      "sha256": "f6ad28749cc5f747ca9cdc995b8d0e367be11bb5c0eee2cdcbdd328455aac76a",
+      "dialogBox": {
+        "x": 16,
+        "y": 25,
+        "width": 343,
+        "height": 450
+      }
     }
   ]
 }
