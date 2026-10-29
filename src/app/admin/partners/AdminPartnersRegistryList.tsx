@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
 import { AdminPartnersSingleManagementPanel } from "./AdminPartnersSingleManagementPanel";
@@ -55,6 +56,7 @@ function RowLinksMenu({ row }: { row: PartnerRegistryItem }) {
     <details className={styles.rowMenu}>
       <summary>Профиль и ссылки</summary>
       <div className={styles.rowMenuBody}>
+        <Link href={`/admin/partners/${encodeURIComponent(row.id)}`}>Карточка R1</Link>
         <a href={`/admin/moderation/partners/${encodeURIComponent(row.id)}`} target="_blank" rel="noopener noreferrer">
           Открыть профиль
         </a>

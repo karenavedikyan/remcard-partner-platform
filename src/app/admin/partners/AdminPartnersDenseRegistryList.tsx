@@ -53,6 +53,7 @@ function DenseRowLinks({ row }: { row: PartnerRegistryItem }) {
   const publicLinks = filteredPublicLinks(row);
   return (
     <div className={styles.denseDetailLinks}>
+      <Link href={`/admin/partners/${encodeURIComponent(row.id)}`}>Карточка R1</Link>
       <a href={`/admin/moderation/partners/${encodeURIComponent(row.id)}`} target="_blank" rel="noopener noreferrer">
         Открыть профиль
       </a>

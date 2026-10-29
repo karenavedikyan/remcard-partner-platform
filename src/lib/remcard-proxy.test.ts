@@ -273,6 +273,23 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/admin/notifications/n1/read"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/notifications/mark-all-read"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notifications/extra"), false);
+    // Admin R1 allowlist
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/clients"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/clients"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/deals"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/journal"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/team"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/certificates"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/analytics"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/results/summary"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/results/remscore"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/partners/u1/card"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/partners/u1/card"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/moderation/reviews"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/moderation/reviews/r1/approve"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/moderation/reviews/r1/reject"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/moderation/reviews/r1/revise"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/clients/extra"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/partner-taxonomy"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/partner-type/switch"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/partner-type/switch"), true);
