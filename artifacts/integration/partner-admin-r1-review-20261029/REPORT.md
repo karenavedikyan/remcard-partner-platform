@@ -33,4 +33,4 @@ Neighbor REPORTs are not substituted for this gate; refresh is for shared QA onl
 
 ## Integration tip
 
-See latest commit on branch after push.
+**`1da2ea091e2850fba4242ffbd79274b7d6a7597b`**
