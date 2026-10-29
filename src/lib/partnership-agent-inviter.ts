@@ -1,13 +1,15 @@
 /** Mirrors navigator isAgentCooperationInviter / businessWalletAdmission. */
 
-export function isPureAgentActivities(activities: string[] | null | undefined): boolean {
+import type { PartnerActivitiesList } from "@/lib/types";
+
+export function isPureAgentActivities(activities: PartnerActivitiesList): boolean {
   const list = activities ?? [];
   return list.includes("AGENT") && !list.includes("STORE") && !list.includes("SERVICE");
 }
 
 export function isBusinessStoreCompanyPartner(user: {
   partnerType: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
 }): boolean {
   if (isPureAgentActivities(user.partnerActivities)) return false;
   return user.partnerType === "STORE" || user.partnerType === "COMPANY";
@@ -15,7 +17,7 @@ export function isBusinessStoreCompanyPartner(user: {
 
 export function isAgentCooperationInviter(user: {
   partnerType: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   isStoreOwner?: boolean;
 }): boolean {
   if (!(user.partnerActivities ?? []).includes("AGENT")) return false;

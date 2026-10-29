@@ -1,5 +1,6 @@
 import type {
   InviteTermInput,
+  PartnerActivitiesList,
   PartnerSearchResult,
   Partnership,
   ProProfileUser,
@@ -16,7 +17,7 @@ export const INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE =
 /** @deprecated Use isAgentCooperationInviter */
 export function isAgentActivityInviter(user: {
   partnerType: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   isStoreOwner?: boolean;
 }): boolean {
   return isAgentCooperationInviter(user);
@@ -31,7 +32,7 @@ export function partnershipInviteTermsEmpty(partnership: Partnership): boolean {
 export type PartnerSideProfile = {
   id: string;
   partnerType: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   storeCategories: string[];
   specializations: string[];
   /**

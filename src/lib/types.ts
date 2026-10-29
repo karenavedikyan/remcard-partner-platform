@@ -1,3 +1,6 @@
+/** Single shared shape for partner activity flags across search, profile, and partnership sides. */
+export type PartnerActivitiesList = string[] | null | undefined;
+
 export type AuthUser = {
   id: string;
   publicId?: string;
@@ -5,7 +8,7 @@ export type AuthUser = {
   role?: string;
   city?: string | null;
   partnerType?: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   catalogStatus?: string | null;
   isBlocked?: boolean;
   staffRole?: string | null;
@@ -16,7 +19,7 @@ export type ProfTestSessionInfo = {
   active: boolean;
   displayName: string;
   partnerType?: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
 };
 
 export type AuthMeResponse = {
@@ -29,7 +32,7 @@ export type ProProfileUser = {
   publicId: string;
   displayName: string | null;
   city: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   catalogDisplayName?: string | null;
   catalogDisplayNameSource?: "staged_draft" | "live_public" | "working_profile";
   catalogCity?: string | null;
@@ -158,7 +161,7 @@ export type PartnershipUser = {
   specializations: string[];
   storeCategories: string[];
   partnerType: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   workingProductCategoryIds?: string[];
   workingServiceSpecializationIds?: string[];
   workingNavigatorStageIds?: string[];
@@ -206,7 +209,7 @@ export type PartnerSearchResult = {
   badges: string[];
   storeCategories: string[];
   partnerType?: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: PartnerActivitiesList;
   partnerKind?: "agent" | "specialist" | "store" | "company" | null;
   partnerKindLabel?: string | null;
   partnerTypeLabel?: string | null;

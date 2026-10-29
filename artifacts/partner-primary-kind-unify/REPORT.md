@@ -1,13 +1,15 @@
-# Partner primary kind unification (2026-10-29) — review pass 2
+# Partner primary kind unification (2026-10-29) — review pass 3
 
 ## Branches and SHAs
 
 | Repo | Branch | Notes |
 |------|--------|--------|
-| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | **`f1ae1fc8679f56f0d344bde61e549be75fad7bc2`** |
+| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | **`a140bc8c9014af4ac922bd05e635344b02d94fb7`** |
 | remcard-navigator | `feat/partner-primary-kind-unify-20261029` | **`af8959ee7da7f3046a8ff88177e5f05adc6f7587`** |
 
-Prior review tips (superseded): frontend `62c11e581074fc2d273f0e4142e48a4a183e910a`, backend `4610cdbfb112e2661436a12782d78a6f03b088c0`.
+Prior review tips (superseded): pass2 FE `a140bc8c…`, BE `af8959ee…`; pass1 FE `62c11e58…`, BE `4610cdbf…`.
+
+Pass 3 highlights: search org `partnerType` select + route DTO test; registration finish preserves AGENT on store re-finish; audit employee/prof_test segments, working org id, unknown empty storage; live audit CLI blocked by default; integration patch doc `INTEGRATION-PATCH.md`.
 
 ## Scope
 

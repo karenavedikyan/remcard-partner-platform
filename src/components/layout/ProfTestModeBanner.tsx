@@ -3,13 +3,9 @@
 import { useRouter } from "next/navigation";
 import { remcardFetch } from "@/lib/api-client";
 import styles from "./ProfTestModeBanner.module.css";
+import type { ProfTestSessionInfo } from "@/lib/types";
 
-export type ProfTestSessionInfo = {
-  active: boolean;
-  displayName: string;
-  partnerType?: string | null;
-  partnerActivities?: string[];
-};
+export type { ProfTestSessionInfo };
 
 type Props = {
   session: ProfTestSessionInfo;
