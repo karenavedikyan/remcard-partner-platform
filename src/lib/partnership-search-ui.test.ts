@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  applySearchPageIfCurrent,
+  createSearchRequestGate,
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
 } from "./partnership-search-ui";
@@ -79,5 +81,65 @@ describe("partnership-search-ui", () => {
     const prev = [partner("a")];
     const batch = [partner("a"), partner("b")];
     expect(mergeSearchResultPages(prev, batch, "append")).toEqual([partner("a"), partner("b")]);
+  });
+
+  it("sequence gates replace and append so older q cannot overwrite newer cards/cursor", () => {
+    const gate = createSearchRequestGate();
+    const oldSeq = gate.begin(); // q=old
+    const newSeq = gate.begin(); // q=new
+
+    const afterNew = applySearchPageIfCurrent({
+      requestSeq: newSeq,
+      latestSeq: gate.latest.current,
+      mode: "reset",
+      prev: { items: [], nextCursor: null },
+      batch: [partner("new")],
+      nextCursor: "cursor-new",
+    });
+    expect(afterNew).toEqual({
+      items: [partner("new")],
+      nextCursor: "cursor-new",
+    });
+
+    // Older q resolves later — must not replace cards or cursor.
+    expect(
+      applySearchPageIfCurrent({
+        requestSeq: oldSeq,
+        latestSeq: gate.latest.current,
+        mode: "reset",
+        prev: afterNew!,
+        batch: [partner("old")],
+        nextCursor: "cursor-old-stale",
+      }),
+    ).toBeNull();
+
+    // Stale append from older generation also blocked (abort alone is insufficient).
+    const staleAppendSeq = oldSeq;
+    expect(
+      applySearchPageIfCurrent({
+        requestSeq: staleAppendSeq,
+        latestSeq: gate.latest.current,
+        mode: "append",
+        prev: afterNew!,
+        batch: [partner("old-page2")],
+        nextCursor: "cursor-old-page2",
+      }),
+    ).toBeNull();
+
+    // Fresh append for current generation still applies.
+    const appendSeq = gate.begin();
+    expect(
+      applySearchPageIfCurrent({
+        requestSeq: appendSeq,
+        latestSeq: gate.latest.current,
+        mode: "append",
+        prev: afterNew!,
+        batch: [partner("new-page2")],
+        nextCursor: "cursor-new-page2",
+      }),
+    ).toEqual({
+      items: [partner("new"), partner("new-page2")],
+      nextCursor: "cursor-new-page2",
+    });
   });
 });

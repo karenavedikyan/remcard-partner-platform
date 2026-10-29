@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
-import { mergeSearchResultPages } from "@/lib/partnership-search-ui";
+import {
+  applySearchPageIfCurrent,
+  createSearchRequestGate,
+} from "@/lib/partnership-search-ui";
 import {
   adaptDiscoveryFacets,
   DISCOVERY_FACETS_UNAVAILABLE,
@@ -52,8 +55,12 @@ export function PartnerFindVitrine({
   const [error, setError] = useState("");
   const [facetsGap, setFacetsGap] = useState<string | null>(null);
   const [detailsPartner, setDetailsPartner] = useState<PartnerSearchResult | null>(null);
-  const searchSeq = useRef(0);
+  const searchGate = useRef(createSearchRequestGate());
   const abortRef = useRef<AbortController | null>(null);
+  const pageRef = useRef<{ items: PartnerSearchResult[]; nextCursor: string | null }>({
+    items: [],
+    nextCursor: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -81,14 +88,17 @@ export function PartnerFindVitrine({
 
   const loadSearch = useCallback(
     async (mode: "reset" | "append", cursor: string | null = null) => {
+      // Abort prior in-flight fetch (optimization). Sequence still required: a
+      // late resolve can ignore abort and must not overwrite replace OR append.
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-      const seq = ++searchSeq.current;
+      const seq = searchGate.current.begin();
 
       setLoading(true);
       if (mode === "reset") {
         setError("");
+        pageRef.current = { items: [], nextCursor: null };
         setResults([]);
         setNextCursor(null);
       }
@@ -119,22 +129,34 @@ export function PartnerFindVitrine({
           signal: controller.signal,
         });
 
-        if (seq !== searchSeq.current) return;
+        const applied = applySearchPageIfCurrent({
+          requestSeq: seq,
+          latestSeq: searchGate.current.latest.current,
+          mode,
+          prev: pageRef.current,
+          batch: data.partners ?? [],
+          nextCursor: data.nextCursor,
+        });
+        if (!applied) return;
 
-        const batch = data.partners ?? [];
-        setResults((prev) => mergeSearchResultPages(prev, batch, mode));
-        setNextCursor(data.nextCursor ?? null);
+        pageRef.current = applied;
+        setResults(applied.items);
+        setNextCursor(applied.nextCursor);
         const adapted = adaptDiscoveryFacets(data.facets);
         setFacets(adapted);
         setFacetsGap(adapted ? null : DISCOVERY_FACETS_UNAVAILABLE);
       } catch (caught) {
-        if (controller.signal.aborted || seq !== searchSeq.current) return;
-        if (mode === "reset") setResults([]);
+        if (controller.signal.aborted || !searchGate.current.isCurrent(seq)) return;
+        if (mode === "reset") {
+          pageRef.current = { items: [], nextCursor: null };
+          setResults([]);
+          setNextCursor(null);
+        }
         setError(
           caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
         );
       } finally {
-        if (seq === searchSeq.current) setLoading(false);
+        if (searchGate.current.isCurrent(seq)) setLoading(false);
       }
     },
     [city, partnerType, query, searchRole, specialization, stageId],
