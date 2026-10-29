@@ -15,6 +15,8 @@ type ConfirmAction = {
   review: AdminR1ReviewItem;
 };
 
+type Counts = { pending: number; published: number; rejected: number };
+
 /**
  * Reviews moderation for R1.
  * Buttons call existing server approve/reject routes after confirmation.
@@ -28,40 +30,67 @@ export function AdminR1ReviewsClient() {
   const [error, setError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<AdminR1ReviewItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [counts, setCounts] = useState({ pending: 0, published: 0, rejected: 0 });
+  const [counts, setCounts] = useState<Counts | null>(null);
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actionPending, setActionPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const requestSeq = useRef(0);
+  const statusRef = useRef(status);
+  const pageRef = useRef(page);
 
-  const load = useCallback(async () => {
+  statusRef.current = status;
+  pageRef.current = page;
+
+  const load = useCallback(async (opts?: { pageOverride?: number; statusOverride?: string }) => {
+    const reqStatus = opts?.statusOverride ?? statusRef.current;
+    const reqPage = opts?.pageOverride ?? pageRef.current;
+    const seq = ++requestSeq.current;
     setLoading(true);
     setError(null);
     try {
       const data = await fetchAdminR1Reviews(
         new URLSearchParams({
-          status,
-          page: String(page),
+          status: reqStatus,
+          page: String(reqPage),
           pageSize: String(pageSize),
         }),
       );
+      // Drop stale responses (filter change or overlapping refresh).
+      if (seq !== requestSeq.current) return;
+      if (reqStatus !== statusRef.current) return;
+
+      const nextTotal = data.total;
+      const maxPage = Math.max(1, Math.ceil(nextTotal / pageSize));
+      if (reqPage > maxPage) {
+        // Last row on this page was removed — clamp without painting a false empty page.
+        setCounts(data.counts);
+        setTotal(nextTotal);
+        setReviews([]);
+        setPage(maxPage);
+        return;
+      }
+
       setReviews(data.reviews);
       setCounts(data.counts);
-      setTotal(data.total);
+      setTotal(nextTotal);
     } catch (e) {
+      if (seq !== requestSeq.current) return;
+      if (reqStatus !== statusRef.current) return;
       setError(e instanceof Error ? e.message : "Очередь недоступна");
       setReviews([]);
       setTotal(0);
+      setCounts(null);
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
-  }, [status, page]);
+  }, []);
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, status, page]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -102,7 +131,8 @@ export function AdminR1ReviewsClient() {
       }
       setConfirm(null);
       setRejectReason("");
-      await load();
+      // Refresh current page; load() clamps if this was the last row on page N.
+      await load({ pageOverride: pageRef.current });
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Не удалось выполнить действие");
     } finally {
@@ -111,25 +141,32 @@ export function AdminR1ReviewsClient() {
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const kpiValue = (value: number | undefined) => {
+    if (error) return "—";
+    if (counts == null) return loading ? "…" : "—";
+    return String(value ?? "—");
+  };
 
   return (
     <div data-testid="admin-r1-reviews">
       <div className="r1Kpis">
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">Ожидают</span>
-          <strong className="r1KpiValue">{loading && !reviews.length ? "…" : counts.pending}</strong>
+          <strong className="r1KpiValue">{kpiValue(counts?.pending)}</strong>
         </div>
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">Опубликовано</span>
-          <strong className="r1KpiValue">{loading && !reviews.length ? "…" : counts.published}</strong>
+          <strong className="r1KpiValue">{kpiValue(counts?.published)}</strong>
         </div>
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">Отклонено</span>
-          <strong className="r1KpiValue">{loading && !reviews.length ? "…" : counts.rejected}</strong>
+          <strong className="r1KpiValue">{kpiValue(counts?.rejected)}</strong>
         </div>
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">В списке</span>
-          <strong className="r1KpiValue">{loading ? "…" : total}</strong>
+          <strong className="r1KpiValue">
+            {error ? "—" : loading && counts == null ? "…" : total}
+          </strong>
           <span className="r1KpiBottom">С учётом фильтра статуса</span>
         </div>
       </div>
@@ -208,7 +245,7 @@ export function AdminR1ReviewsClient() {
             ) : null}
           </article>
         ))}
-        {!loading && total > 0 ? (
+        {!loading && !error && total > 0 ? (
           <div className="r1Pager">
             <span className="r1Muted">
               Стр. {page} из {totalPages} · всего {total}

@@ -456,7 +456,7 @@ function DealsPanel({ periodDays }: { periodDays: number }) {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AdminR1DealItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [sum, setSum] = useState(0);
+  const [sum, setSum] = useState<number | null>(null);
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -485,6 +485,8 @@ function DealsPanel({ periodDays }: { periodDays: number }) {
           setError(e instanceof Error ? e.message : "Сделки недоступны");
           setItems([]);
           setTotal(0);
+          setSum(null);
+          setNote("");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -496,14 +498,17 @@ function DealsPanel({ periodDays }: { periodDays: number }) {
     };
   }, [periodDays, page]);
 
+  const sumLabel =
+    error || sum == null ? "сумма недоступна" : `сумма ${formatAdminR1Money(sum)}`;
+
   return (
     <section className="r1Panel">
       <div className="r1PanelHead">
         <div>
           <h2>Сделки = заказы по сертификатам</h2>
           <small className="r1Muted">
-            {note || "Заказы по сертификатам"} · сумма {formatAdminR1Money(sum)}
-            {total > 0 ? ` · всего ${total}` : ""}
+            {error ? "Сделки" : note || "Заказы по сертификатам"} · {sumLabel}
+            {!error && total > 0 ? ` · всего ${total}` : ""}
           </small>
         </div>
       </div>
@@ -577,7 +582,11 @@ function ReviewsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<AdminR1ReviewItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [counts, setCounts] = useState({ pending: 0, published: 0, rejected: 0 });
+  const [counts, setCounts] = useState<{
+    pending: number;
+    published: number;
+    rejected: number;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -601,6 +610,7 @@ function ReviewsPanel() {
           setError(e instanceof Error ? e.message : "Отзывы недоступны");
           setReviews([]);
           setTotal(0);
+          setCounts(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -612,15 +622,17 @@ function ReviewsPanel() {
     };
   }, [page]);
 
+  const countsLabel =
+    error || counts == null
+      ? "Счётчики недоступны"
+      : `Ожидают ${counts.pending} · опубликовано ${counts.published} · отклонено ${counts.rejected}`;
+
   return (
     <section className="r1Panel">
       <div className="r1PanelHead">
         <div>
           <h2>Очередь модерации отзывов</h2>
-          <small className="r1Muted">
-            Ожидают {counts.pending} · опубликовано {counts.published} · отклонено{" "}
-            {counts.rejected}
-          </small>
+          <small className="r1Muted">{countsLabel}</small>
         </div>
         <Link className="r1Btn small" href="/admin/moderation/reviews">
           Полный экран
