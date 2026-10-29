@@ -317,14 +317,63 @@ describe("partnership action rules", () => {
     const actions = getPartnershipUiActions(
       basePartnership({
         status: "INVITED",
-        initiatedBy: "master-1",
+        initiatedBy: "agent-1",
         storeUserId: "store-1",
-        proUserId: "master-1",
+        proUserId: "agent-1",
         terms: [],
+        proUser: {
+          id: "agent-1",
+          displayName: "Agent",
+          city: null,
+          specializations: [],
+          storeCategories: [],
+          partnerType: "COMPANY",
+          partnerActivities: ["AGENT"],
+        },
       }),
       "store-1",
     );
     assert.deepEqual(actions.map((item) => item.kind), ["counter_offer", "reject"]);
+    const counter = actions.find((item) => item.kind === "counter_offer");
+    assert.equal(counter && "label" in counter ? counter.label : null, "Предложение агенту");
+  });
+
+  it("does not identify a specialist sender as an agent in the empty-invite action label", () => {
+    const invitation = basePartnership({
+      id: "reviewer-p",
+      status: "INVITED",
+      initiatedBy: "specialist",
+      proUserId: "specialist",
+      storeUserId: "store",
+      terms: [],
+      proUser: {
+        id: "specialist",
+        displayName: "Специалист",
+        city: null,
+        specializations: ["painting"],
+        storeCategories: [],
+        partnerType: "MASTER",
+        partnerActivities: ["SERVICE"],
+      },
+      storeUser: {
+        id: "store",
+        displayName: "Магазин",
+        city: null,
+        specializations: [],
+        storeCategories: ["doors"],
+        partnerType: "STORE",
+        partnerActivities: ["STORE"],
+      },
+    });
+    const action = getPartnershipUiActions(invitation, "store").find(
+      (item) => item.kind === "counter_offer",
+    );
+    assert.ok(action);
+    assert.equal(action && "label" in action ? action.label : null, "Предложить условия");
+    assert.equal(
+      action && "label" in action ? /агент/i.test(action.label) : true,
+      false,
+    );
   });
 
   it("shows waiting to agent initiator for empty invite", () => {

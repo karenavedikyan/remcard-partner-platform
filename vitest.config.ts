@@ -139,6 +139,7 @@ export default defineConfig({
       "src/lib/partners-prototype-v1/partner-kind-adapter.test.ts",
       "src/lib/partners-prototype-v1/published-terms.test.ts",
       "src/lib/partners-shared-ui-copy.test.ts",
+      "src/lib/partnership-rules.reviewer.test.ts",
     ],
     testTimeout: 30_000,
   },

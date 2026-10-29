@@ -6,7 +6,10 @@ import { categoryLabel } from "@/lib/partnership-labels";
 import { parsePoolPercentInput } from "@/lib/parse-pool-percent";
 import {
   GENERAL_PARTNERSHIP_CATEGORY,
+  emptyInvitedCounterOfferLabel,
   inviteRowsToTerms,
+  isAgentCooperationInviter,
+  partnershipInitiatorSide,
   partnershipInviteTermsEmpty,
   type InviteTermRow,
   type PartnershipActionKind,
@@ -65,8 +68,12 @@ export function PartnerCounterOfferDialog({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
+  const initiator = partnershipInitiatorSide(partnership);
+  const initiatorIsAgent = Boolean(initiator && isAgentCooperationInviter(initiator));
   const title =
-    patchAction === "counter_offer_back" ? "Запросить другие условия" : "Предложение агенту";
+    patchAction === "counter_offer_back"
+      ? "Запросить другие условия"
+      : emptyInvitedCounterOfferLabel(partnership);
 
   const pendingTerms = useMemo(() => rowsFromPartnershipTerms(partnership), [partnership]);
 
@@ -151,7 +158,9 @@ export function PartnerCounterOfferDialog({
         <p className={styles.hint}>
           {patchAction === "counter_offer_back"
             ? "Скорректируйте предложенные категории и общий процент."
-            : "Укажите персональные категории и общий процент. Это не меняет опубликованные общие условия для агентов."}
+            : initiatorIsAgent
+              ? "Укажите персональные категории и общий процент. Это не меняет опубликованные общие условия для агентов."
+              : "Укажите категории и общий процент для этого сотрудничества. Сотрудничество начнётся только после согласия обеих сторон."}
         </p>
         {partnership.status === "PENDING" && !partnershipInviteTermsEmpty(partnership) ? (
           <p className={styles.hint}>Текущее предложение предзаполнено из персональных условий.</p>

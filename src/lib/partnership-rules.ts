@@ -290,6 +290,39 @@ export function countNeedsMyResponse(partnerships: Partnership[], meId: string):
   return partnerships.filter((item) => partnershipNeedsMyResponse(item, meId)).length;
 }
 
+/** Initiator side for empty-invite receiver labels (agent vs non-agent). */
+export function partnershipInitiatorSide(
+  partnership: Partnership,
+): PartnerSideProfile | null {
+  const initiatorId = partnership.initiatedBy;
+  const sideUser =
+    partnership.storeUserId === initiatorId
+      ? partnership.storeUser
+      : partnership.proUserId === initiatorId
+        ? partnership.proUser
+        : null;
+  if (!sideUser) return null;
+  return {
+    id: sideUser.id,
+    partnerType: sideUser.partnerType ?? null,
+    partnerActivities: sideUser.partnerActivities,
+    storeCategories: sideUser.storeCategories ?? [],
+    specializations: sideUser.specializations ?? [],
+  };
+}
+
+/**
+ * Empty INVITED counter-offer label: agent initiator keeps «Предложение агенту»;
+ * specialist/store/company see neutral «Предложить условия» (never false agent role).
+ */
+export function emptyInvitedCounterOfferLabel(partnership: Partnership): string {
+  const initiator = partnershipInitiatorSide(partnership);
+  if (initiator && isAgentCooperationInviter(initiator)) {
+    return "Предложение агенту";
+  }
+  return "Предложить условия";
+}
+
 export function getPartnershipUiActions(
   partnership: Partnership,
   meId: string,
@@ -319,7 +352,11 @@ export function getPartnershipUiActions(
     }
     if (partnershipInviteTermsEmpty(partnership)) {
       return [
-        { kind: "counter_offer", label: "Предложение агенту", variant: "primary" },
+        {
+          kind: "counter_offer",
+          label: emptyInvitedCounterOfferLabel(partnership),
+          variant: "primary",
+        },
         { kind: "reject", label: "Отклонить", variant: "secondary" },
       ];
     }
