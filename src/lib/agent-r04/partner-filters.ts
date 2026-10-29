@@ -1,3 +1,4 @@
+import { resolvePartnerKindUi } from "@/lib/partner-kind-ui";
 import type { Partnership, PartnershipUser } from "@/lib/types";
 
 export type AgentPartnerTypeFilter = "" | "agent" | "specialist" | "store" | "company";
@@ -13,12 +14,13 @@ export function partnershipPartnerUser(partnership: Partnership, meId: string): 
   return (partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser) as PartnershipPartnerProfile;
 }
 
+/** Canonical primary business kind (same rules as profile/admin registry). */
 export function resolvePublicPartnerType(user: PartnershipPartnerProfile): AgentPartnerTypeFilter {
-  if ((user.partnerActivities ?? []).includes("AGENT")) return "agent";
-  if (user.partnerType === "STORE") return "store";
-  if (user.partnerType === "COMPANY") return "company";
-  if (user.partnerType === "MASTER") return "specialist";
-  return "";
+  const kind = resolvePartnerKindUi({
+    partnerType: user.partnerType,
+    partnerActivities: user.partnerActivities,
+  });
+  return kind ?? "";
 }
 
 export function partnerDisplayTitle(

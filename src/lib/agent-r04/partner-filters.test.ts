@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPartnerShareText } from "./partner-filters";
+import { buildPartnerShareText, resolvePublicPartnerType } from "./partner-filters";
 import type { Partnership } from "@/lib/types";
 
 function samplePartnership(overrides: Partial<Partnership> = {}): Partnership {
@@ -43,6 +43,30 @@ function samplePartnership(overrides: Partial<Partnership> = {}): Partnership {
     ...overrides,
   };
 }
+
+describe("resolvePublicPartnerType", () => {
+  it("matches list filter for inverted partnership sides (agent vs company)", () => {
+    const seda = {
+      partnerType: "COMPANY",
+      partnerActivities: ["AGENT"],
+      displayName: "Seda",
+      city: "Krasnodar",
+      specializations: [],
+      storeCategories: [],
+    };
+    const optovik = {
+      partnerType: "COMPANY",
+      partnerActivities: ["STORE", "AGENT"],
+      organizationName: "ОПТОВИК",
+      displayName: "ОПТОВИК",
+      city: "Krasnodar",
+      specializations: [],
+      storeCategories: [],
+    };
+    expect(resolvePublicPartnerType(seda)).toBe("agent");
+    expect(resolvePublicPartnerType(optovik)).toBe("company");
+  });
+});
 
 describe("buildPartnerShareText", () => {
   it("excludes contract percents, notes, and personal alias", () => {

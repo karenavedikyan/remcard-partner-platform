@@ -29,6 +29,7 @@ export default defineConfig({
       "src/lib/partners-return-path.test.ts",
       "src/lib/partners-hub-presentation.test.ts",
       "src/lib/dialog-focus.test.ts",
+      "src/lib/partner-kind-ui.test.ts",
       "src/lib/master-direction-label.test.ts",
       "src/lib/profile-overview-display.test.tsx",
       "src/lib/profile-working-save.test.ts",
