@@ -136,71 +136,89 @@ export function AdminOverviewClient() {
       {loading && !data ? <p role="status">Загрузка показателей…</p> : null}
       {data ? (
         <>
-          <div className={styles.grid}>
-            <article className={styles.card}>
-              <h2>Партнёры с новой регистрацией</h2>
-              <p className={styles.value}>{data.partners.liveRegistered}</p>
-              <p className={styles.sub}>Демо-база (историческая): {data.partners.demoRegistered}</p>
-              <Link href="/admin/partners?registration=active">Открыть реестр</Link>
+          <div className={styles.kpis}>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Партнёры с новой регистрацией</h2>
+              <p className={styles.kpiValue}>{data.partners.liveRegistered}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>Демо-база (историческая): {data.partners.demoRegistered}</p>
+                <Link href="/admin/partners?registration=active">Открыть реестр</Link>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Завершённые регистрации</h2>
-              <p className={styles.value}>{regCard.value}</p>
-              <p className={styles.sub}>{regCard.note}</p>
-              <ul className={styles.kindList}>
-                {regKindRows.map((row) => (
-                  <li key={row.label}>
-                    {row.label}: {row.value}
-                  </li>
-                ))}
-              </ul>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Завершённые регистрации</h2>
+              <p className={styles.kpiValue}>{regCard.value}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>{regCard.note}</p>
+                <ul className={styles.kindList}>
+                  {regKindRows.map((row) => (
+                    <li key={row.label}>
+                      {row.label}: {row.value}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Учтённые клиентские аккаунты</h2>
-              <p className={styles.value}>{data.clients.accountedTotal}</p>
-              <p className={styles.sub}>{data.clients.historicalDemoWarning}</p>
-              <p className={styles.sub}>Новых за период: {data.clients.createdInPeriod.current}</p>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Учтённые клиентские аккаунты</h2>
+              <p className={styles.kpiValue}>{data.clients.accountedTotal}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>{data.clients.historicalDemoWarning}</p>
+                <p className={styles.sub}>Новых за период: {data.clients.createdInPeriod.current}</p>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Активность PROF (партнёрские профили)</h2>
-              <p className={styles.value}>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Активность PROF (партнёрские профили)</h2>
+              <p className={styles.kpiValue}>
                 {data.activity.profPartnerProfilesUsed.distinctInPeriod ?? "—"}
               </p>
-              <p className={styles.sub}>{data.activity.profPartnerProfilesUsed.coverageNote}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>{data.activity.profPartnerProfilesUsed.coverageNote}</p>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Видны в каталоге</h2>
-              <p className={styles.value}>{data.partners.visibleInCatalog}</p>
-              <p className={styles.sub}>
-                Опубликованных карточек (user/org/branch): {data.partners.catalogCardSurfaces}
-              </p>
-              <Link href="/admin/partners">Реестр партнёров</Link>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Видны в каталоге</h2>
+              <p className={styles.kpiValue}>{data.partners.visibleInCatalog}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>
+                  Опубликованных карточек (user/org/branch): {data.partners.catalogCardSurfaces}
+                </p>
+                <Link href="/admin/partners">Реестр партнёров</Link>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Требуют модерации</h2>
-              <p className={styles.value}>{data.moderation.pendingPartners}</p>
-              <p className={styles.sub}>
-                Старейшая заявка:{" "}
-                {data.moderation.oldestPendingPartnerAt
-                  ? new Date(data.moderation.oldestPendingPartnerAt).toLocaleString("ru-RU")
-                  : "—"}
-              </p>
-              <Link href="/admin/moderation">Очередь модерации</Link>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Требуют модерации</h2>
+              <p className={styles.kpiValue}>{data.moderation.pendingPartners}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>
+                  Старейшая заявка:{" "}
+                  {data.moderation.oldestPendingPartnerAt
+                    ? new Date(data.moderation.oldestPendingPartnerAt).toLocaleString("ru-RU")
+                    : "—"}
+                </p>
+                <Link href="/admin/moderation">Очередь модерации</Link>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Заявки и лиды</h2>
-              <p className={styles.value}>{data.leadsAndRequests.leadsNew}</p>
-              <p className={styles.sub}>Открытых лидов: {data.leadsAndRequests.leadsOpen}</p>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Заявки и лиды</h2>
+              <p className={styles.kpiValue}>{data.leadsAndRequests.leadsNew}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>Открытых лидов: {data.leadsAndRequests.leadsOpen}</p>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Публичный remcard.ru (партнёры)</h2>
-              <p className={styles.value}>—</p>
-              <p className={styles.sub}>{data.activity.publicSiteAuthenticatedPartners.coverageNote}</p>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Публичный remcard.ru (партнёры)</h2>
+              <p className={styles.kpiValue}>—</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>{data.activity.publicSiteAuthenticatedPartners.coverageNote}</p>
+              </div>
             </article>
-            <article className={styles.card}>
-              <h2>Просмотры публичных карточек</h2>
-              <p className={styles.value}>{data.activity.publicPartnerCardViews.viewsInPeriod}</p>
-              <p className={styles.sub}>{data.activity.publicPartnerCardViews.coverageNote}</p>
+            <article className={styles.kpi}>
+              <h2 className={styles.kpiLabel}>Просмотры публичных карточек</h2>
+              <p className={styles.kpiValue}>{data.activity.publicPartnerCardViews.viewsInPeriod}</p>
+              <div className={styles.kpiBottom}>
+                <p className={styles.sub}>{data.activity.publicPartnerCardViews.coverageNote}</p>
+              </div>
             </article>
           </div>
           <div className={styles.chartsRow}>
