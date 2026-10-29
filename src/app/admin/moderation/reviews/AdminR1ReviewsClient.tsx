@@ -1,76 +1,147 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  approveAdminR1Review,
   fetchAdminR1Reviews,
   formatAdminR1Date,
+  rejectAdminR1Review,
   type AdminR1ReviewItem,
 } from "@/lib/admin-r1/api";
 
+type ConfirmAction = {
+  type: "approve" | "reject";
+  review: AdminR1ReviewItem;
+};
+
 /**
- * Reviews moderation UI for R1.
- * Approve/reject endpoints exist but are NOT auto-invoked during LOCAL QA.
+ * Reviews moderation for R1.
+ * Buttons call existing server approve/reject routes after confirmation.
+ * Automated QA should mock these commands and not hit production.
  */
 export function AdminR1ReviewsClient() {
   const [status, setStatus] = useState("PENDING");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<AdminR1ReviewItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState({ pending: 0, published: 0, rejected: 0 });
+  const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [actionPending, setActionPending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchAdminR1Reviews(
+        new URLSearchParams({
+          status,
+          page: String(page),
+          pageSize: String(pageSize),
+        }),
+      );
+      setReviews(data.reviews);
+      setCounts(data.counts);
+      setTotal(data.total);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Очередь недоступна");
+      setReviews([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [status, page]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchAdminR1Reviews(
-          new URLSearchParams({ status, page: "1", pageSize: "40" }),
-        );
-        if (cancelled) return;
-        setReviews(data.reviews);
-        setCounts(data.counts);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Очередь недоступна");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
     void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [status]);
+  }, [load]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (confirm && !dialog.open) dialog.showModal();
+    if (!confirm && dialog.open) dialog.close();
+  }, [confirm]);
+
+  function openConfirm(type: "approve" | "reject", review: AdminR1ReviewItem) {
+    setActionError(null);
+    setRejectReason("");
+    setConfirm({ type, review });
+  }
+
+  function closeConfirm() {
+    if (actionPending) return;
+    setConfirm(null);
+    setRejectReason("");
+    setActionError(null);
+  }
+
+  async function submitConfirm() {
+    if (!confirm) return;
+    if (confirm.type === "reject" && !rejectReason.trim()) {
+      setActionError("Укажите причину отклонения");
+      return;
+    }
+    setActionPending(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      if (confirm.type === "approve") {
+        await approveAdminR1Review(confirm.review.id);
+        setActionSuccess("Отзыв опубликован");
+      } else {
+        await rejectAdminR1Review(confirm.review.id, rejectReason.trim());
+        setActionSuccess("Отзыв отклонён");
+      }
+      setConfirm(null);
+      setRejectReason("");
+      await load();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Не удалось выполнить действие");
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div data-testid="admin-r1-reviews">
       <div className="r1Kpis">
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">Ожидают</span>
-          <strong className="r1KpiValue">{counts.pending}</strong>
+          <strong className="r1KpiValue">{loading && !reviews.length ? "…" : counts.pending}</strong>
         </div>
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">Опубликовано</span>
-          <strong className="r1KpiValue">{counts.published}</strong>
+          <strong className="r1KpiValue">{loading && !reviews.length ? "…" : counts.published}</strong>
         </div>
         <div className="r1Panel r1Kpi">
           <span className="r1KpiLabel">Отклонено</span>
-          <strong className="r1KpiValue">{counts.rejected}</strong>
+          <strong className="r1KpiValue">{loading && !reviews.length ? "…" : counts.rejected}</strong>
         </div>
         <div className="r1Panel r1Kpi">
-          <span className="r1KpiLabel">Действия QA</span>
-          <strong className="r1KpiValue" style={{ fontSize: "1rem" }}>
-            только просмотр
-          </strong>
-          <span className="r1KpiBottom">без approve/reject в LOCAL QA</span>
+          <span className="r1KpiLabel">В списке</span>
+          <strong className="r1KpiValue">{loading ? "…" : total}</strong>
+          <span className="r1KpiBottom">С учётом фильтра статуса</span>
         </div>
       </div>
+
       <div className="r1Toolbar r1Panel">
         <select
           aria-label="Статус отзывов"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => {
+            setPage(1);
+            setStatus(e.target.value);
+          }}
         >
           <option value="PENDING">На модерации</option>
           <option value="PUBLISHED">Опубликованы</option>
@@ -81,8 +152,15 @@ export function AdminR1ReviewsClient() {
           Профили / каталог
         </Link>
       </div>
+
+      {actionSuccess ? (
+        <div className="r1Panel r1PanelPad" role="status" style={{ marginBottom: 12 }}>
+          {actionSuccess}
+        </div>
+      ) : null}
       {loading ? <div className="r1StateLoading">Загрузка…</div> : null}
-      {error ? <div className="r1StateErr">{error}</div> : null}
+      {error ? <div className="r1StateErr" role="alert">{error}</div> : null}
+
       <section className="r1Panel">
         {!loading && !error && reviews.length === 0 ? (
           <div className="r1Empty">
@@ -91,8 +169,11 @@ export function AdminR1ReviewsClient() {
           </div>
         ) : null}
         {reviews.map((r) => (
-          <article key={r.id} style={{ padding: "16px 24px", borderBottom: "1px solid var(--r1-line)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <article
+            key={r.id}
+            style={{ padding: "16px 24px", borderBottom: "1px solid var(--r1-line)" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <span>
                 {"★".repeat(r.rating)}
                 <span className="r1Muted">{"★".repeat(Math.max(0, 5 - r.rating))}</span>
@@ -107,13 +188,114 @@ export function AdminR1ReviewsClient() {
               </Link>{" "}
               · {formatAdminR1Date(r.createdAt)}
             </small>
-            <p className="r1Help">
-              Серверные команды POST …/approve|reject доступны staff; UI R1 не вызывает их в
-              автоматическом QA.
-            </p>
+            {r.status === "PENDING" ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                <button
+                  type="button"
+                  className="r1Btn small primary"
+                  onClick={() => openConfirm("approve", r)}
+                >
+                  Опубликовать
+                </button>
+                <button
+                  type="button"
+                  className="r1Btn small"
+                  onClick={() => openConfirm("reject", r)}
+                >
+                  Отклонить
+                </button>
+              </div>
+            ) : null}
           </article>
         ))}
+        {!loading && total > 0 ? (
+          <div className="r1Pager">
+            <span className="r1Muted">
+              Стр. {page} из {totalPages} · всего {total}
+            </span>
+            <button
+              type="button"
+              className="r1Btn small"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Назад
+            </button>
+            <button
+              type="button"
+              className="r1Btn small"
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Далее
+            </button>
+          </div>
+        ) : null}
       </section>
+
+      <dialog
+        ref={dialogRef}
+        className="r1Dialog"
+        onClose={closeConfirm}
+        aria-labelledby="review-confirm-title"
+      >
+        {confirm ? (
+          <>
+            <div className="r1DialogBody">
+              <h2 id="review-confirm-title">
+                {confirm.type === "approve" ? "Опубликовать отзыв?" : "Отклонить отзыв?"}
+              </h2>
+              <p className="r1Help" style={{ marginTop: 8 }}>
+                {confirm.review.text}
+              </p>
+              {confirm.type === "approve" ? (
+                <p className="r1Help">
+                  Публикация начисляет бонус автору, если он ещё не был начислен.
+                </p>
+              ) : (
+                <label className="r1FormField">
+                  Причина отклонения
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    maxLength={500}
+                    required
+                    aria-required="true"
+                    placeholder="Кратко опишите причину"
+                  />
+                </label>
+              )}
+              {actionError ? (
+                <div className="r1StateErr" role="alert" style={{ marginTop: 12 }}>
+                  {actionError}
+                </div>
+              ) : null}
+            </div>
+            <div className="r1DialogFooter">
+              <button
+                type="button"
+                className="r1Btn small"
+                onClick={closeConfirm}
+                disabled={actionPending}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={`r1Btn small ${confirm.type === "approve" ? "primary" : ""}`}
+                onClick={() => void submitConfirm()}
+                disabled={actionPending}
+              >
+                {actionPending
+                  ? "Отправка…"
+                  : confirm.type === "approve"
+                    ? "Опубликовать"
+                    : "Отклонить"}
+              </button>
+            </div>
+          </>
+        ) : null}
+      </dialog>
     </div>
   );
 }
