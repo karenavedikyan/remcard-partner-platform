@@ -82,3 +82,48 @@ export const activePartnership: Partnership = {
     },
   ],
 };
+
+export const longActivePartnership: Partnership = {
+  ...activePartnership,
+  id: "p-long-active",
+  note: "Комментарий_с_очень_длинным_непрерывным_текстом_для_проверки_горизонтального_переноса_в_модальном_окне",
+  listPreference: {
+    personalAlias: "Мой поставщик с очень длинным названием для проверки переноса текста",
+    archivedAt: null,
+    hiddenAt: null,
+  },
+  terms: [
+    {
+      id: "t1",
+      category: "doors",
+      categoryLabel: "Двери",
+      storePercent: 12,
+      isExcluded: false,
+      minMargin: null,
+    },
+    {
+      id: "t2",
+      category: "tiles",
+      categoryLabel: "Плитка",
+      storePercent: 9,
+      isExcluded: false,
+      minMargin: null,
+    },
+    {
+      id: "t3",
+      category: "plumbing",
+      categoryLabel: "Сантехника",
+      storePercent: 11,
+      isExcluded: false,
+      minMargin: null,
+    },
+    {
+      id: "t4",
+      category: "flooring",
+      categoryLabel: "Напольные покрытия",
+      storePercent: 8,
+      isExcluded: false,
+      minMargin: null,
+    },
+  ],
+};

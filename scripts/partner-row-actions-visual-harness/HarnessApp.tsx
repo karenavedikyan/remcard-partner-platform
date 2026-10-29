@@ -2,10 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
+import type { AgentListViewMode } from "@/components/partners/AgentR04ListToolbar";
 import {
   activePartnership,
   incomingEmptyAgent,
   incomingWithTerms,
+  longActivePartnership,
   pendingResponder,
   storeMeId,
 } from "./fixtures";
@@ -21,27 +23,32 @@ function readScene(): string {
 
 const SCENES: Record<
   string,
-  { title: string; partnerships: typeof incomingEmptyAgent[]; viewMode: "table" | "cards" }
+  { title: string; partnerships: typeof incomingEmptyAgent[]; viewMode: AgentListViewMode }
 > = {
   "incoming-agent": {
     title: "Входящий пустой запрос агента",
     partnerships: [incomingEmptyAgent],
-    viewMode: "table",
+    viewMode: "list",
   },
   "incoming-invite": {
     title: "Входящее приглашение с условиями",
     partnerships: [{ ...incomingWithTerms, initiatedBy: "agent-harness", proUserId: "agent-harness" }],
-    viewMode: "table",
+    viewMode: "list",
   },
   pending: {
     title: "Ожидание условий (ответ store)",
     partnerships: [pendingResponder],
-    viewMode: "table",
+    viewMode: "list",
   },
   active: {
     title: "Активное партнёрство",
     partnerships: [activePartnership],
-    viewMode: "table",
+    viewMode: "list",
+  },
+  "detail-long": {
+    title: "Длинное имя и условия (ACTIVE)",
+    partnerships: [longActivePartnership],
+    viewMode: "list",
   },
   cards: {
     title: "Карточки",

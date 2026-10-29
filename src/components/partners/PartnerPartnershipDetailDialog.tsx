@@ -16,6 +16,12 @@ import {
 } from "@/lib/agent-r04/partner-list-row";
 import { resolvePublicPartnerType } from "@/lib/agent-r04/partner-filters";
 import type { Partnership } from "@/lib/types";
+import {
+  getFocusableElements,
+  handleDialogTabKey,
+  lockBodyScroll,
+  unlockBodyScroll,
+} from "@/lib/dialog-focus";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import sheetStyles from "./PartnerPersonalAliasDialog.module.css";
@@ -47,24 +53,61 @@ export function PartnerPartnershipDetailDialog({
 }: Props) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const focusStartRef = useRef<HTMLSpanElement>(null);
+  const focusEndRef = useRef<HTMLSpanElement>(null);
+  const onCloseRef = useRef(onClose);
+  const wasOpenRef = useRef(false);
+
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (wasOpenRef.current && !open) {
+      returnFocusRef?.current?.focus();
+    }
+    wasOpenRef.current = open;
+  }, [open, returnFocusRef]);
 
   useEffect(() => {
     if (!open) return;
+
+    lockBodyScroll();
     closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
+
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
+        return;
       }
+      const sheet = sheetRef.current;
+      if (sheet) handleDialogTabKey(event, sheet);
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
 
-  useEffect(() => {
-    if (open) return;
-    returnFocusRef?.current?.focus();
-  }, [open, returnFocusRef]);
+    const redirectFocusIntoDialog = () => {
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const focusable = getFocusableElements(sheet);
+      focusable[0]?.focus();
+    };
+
+    const onFocusIn = (event: FocusEvent) => {
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const target = event.target;
+      if (target instanceof Node && sheet.contains(target)) return;
+      event.stopPropagation();
+      redirectFocusIntoDialog();
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("focusin", onFocusIn, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("focusin", onFocusIn, true);
+      unlockBodyScroll();
+    };
+  }, [open]);
 
   if (!open || !partnership) return null;
 
@@ -81,15 +124,31 @@ export function PartnerPartnershipDetailDialog({
   const showAgentEmptyExplain = isEmptyAgentInviteRequest(partnership, meId);
 
   return (
-    <div className={sheetStyles.backdrop} role="presentation" onClick={onClose}>
+    <div
+      className={`${sheetStyles.backdrop} ${styles.backdropAlign}`}
+      role="presentation"
+      onClick={() => onCloseRef.current()}
+    >
       <div
-        className={`${sheetStyles.sheet} ${styles.sheetWide}`}
+        ref={sheetRef}
+        className={`${sheetStyles.sheet} ${styles.sheetLayout}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid="partner-partnership-detail-dialog"
         onClick={(e) => e.stopPropagation()}
       >
+        <span
+          ref={focusStartRef}
+          tabIndex={0}
+          aria-hidden="true"
+          className={styles.focusSentinel}
+          data-testid="partner-detail-focus-start"
+          onFocus={() => {
+            const focusable = sheetRef.current ? getFocusableElements(sheetRef.current) : [];
+            focusable[focusable.length - 1]?.focus();
+          }}
+        />
         <div className={styles.headerRow}>
           <h2 id={titleId}>{partnerRowTitle(partnership, meId)}</h2>
           <Button
@@ -97,7 +156,7 @@ export function PartnerPartnershipDetailDialog({
             type="button"
             variant="secondary"
             className={styles.closeTop}
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             data-testid="partner-detail-close"
           >
             Закрыть
@@ -156,6 +215,14 @@ export function PartnerPartnershipDetailDialog({
             </>
           ) : null}
         </div>
+        <span
+          ref={focusEndRef}
+          tabIndex={0}
+          aria-hidden="true"
+          className={styles.focusSentinel}
+          data-testid="partner-detail-focus-end"
+          onFocus={() => closeRef.current?.focus()}
+        />
       </div>
     </div>
   );

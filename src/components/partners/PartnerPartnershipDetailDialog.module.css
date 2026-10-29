@@ -1,6 +1,56 @@
+.backdropAlign {
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: max(var(--space-4), env(safe-area-inset-top, 0px));
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+}
+
+.sheetLayout {
+  width: min(520px, 100%);
+  max-height: min(90dvh, 90vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  box-sizing: border-box;
+  margin: auto 0;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.headerRow h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.closeTop {
+  flex-shrink: 0;
+}
+
 .body {
   display: grid;
   gap: var(--space-3);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4) var(--space-5) var(--space-5);
   font-size: var(--text-sm);
   line-height: 1.5;
   color: var(--ink);
@@ -9,6 +59,8 @@
 .metaBlock {
   margin: 0;
   color: var(--muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .metaBlock strong {
@@ -28,6 +80,7 @@
 .list {
   margin: 0;
   padding-left: 1.15rem;
+  overflow-wrap: anywhere;
 }
 
 .list li {
@@ -50,17 +103,14 @@
   color: var(--ink);
 }
 
-.sheetWide {
-  width: min(520px, 100%);
-}
-
-.headerRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.closeTop {
-  flex-shrink: 0;
+.focusSentinel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

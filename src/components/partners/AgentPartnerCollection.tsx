@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -213,11 +213,11 @@ export function AgentPartnerCollection(props: Props) {
     [partnerships, detailPartnershipId],
   );
 
-  const openDetails = (partnershipId: string, trigger: HTMLButtonElement) => {
+  const openDetails = useCallback((partnershipId: string, trigger: HTMLButtonElement) => {
     detailNameButtonRef.current = trigger;
     setDetailPartnershipId(partnershipId);
-  };
-  const closeDetails = () => setDetailPartnershipId(null);
+  }, []);
+  const closeDetails = useCallback(() => setDetailPartnershipId(null), []);
 
   const pageIds = useMemo(() => partnerships.map((p) => p.id), [partnerships]);
   const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));

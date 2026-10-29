@@ -73,19 +73,19 @@
 }
 
 .dataTable col.colName {
-  width: 32%;
+  width: 26%;
 }
 
 .dataTable col.colDetail {
-  width: 34%;
+  width: 28%;
 }
 
 .dataTable col.colStatus {
-  width: 14%;
+  width: 12%;
 }
 
 .dataTable col.colActions {
-  width: 96px;
+  width: 196px;
 }
 
 .dataTable th,
@@ -174,7 +174,14 @@
 
 .actionCell {
   text-align: right;
-  white-space: nowrap;
+  white-space: normal;
+  vertical-align: middle;
+}
+
+.actionCell :global([class*="certificateListActions"]) {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
 .selectCell {
