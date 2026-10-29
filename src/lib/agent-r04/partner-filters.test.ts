@@ -79,3 +79,44 @@ describe("buildPartnerShareText", () => {
     expect(text).not.toContain("Двери");
   });
 });
+
+describe("resolvePublicPartnerType canonical", () => {
+  it("does not treat COMPANY+[STORE,AGENT] as agent", () => {
+    expect(
+      resolvePublicPartnerType({
+        id: "u1",
+        displayName: "Опт",
+        city: null,
+        specializations: [],
+        storeCategories: [],
+        partnerType: "COMPANY",
+        partnerActivities: ["STORE", "AGENT"],
+      }),
+    ).toBe("company");
+  });
+
+  it("maps COMPANY+[STORE] to store and pure AGENT to agent", () => {
+    expect(
+      resolvePublicPartnerType({
+        id: "u2",
+        displayName: "Shop",
+        city: null,
+        specializations: [],
+        storeCategories: [],
+        partnerType: "COMPANY",
+        partnerActivities: ["STORE"],
+      }),
+    ).toBe("store");
+    expect(
+      resolvePublicPartnerType({
+        id: "u3",
+        displayName: "Agent",
+        city: null,
+        specializations: [],
+        storeCategories: [],
+        partnerType: "COMPANY",
+        partnerActivities: ["AGENT"],
+      }),
+    ).toBe("agent");
+  });
+});

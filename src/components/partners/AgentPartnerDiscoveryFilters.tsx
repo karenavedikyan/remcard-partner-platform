@@ -116,6 +116,30 @@ export function AgentPartnerDiscoveryFilters({
     return (
       <>
         <label className={styles.field}>
+          <span>Специализация</span>
+          <select
+            value={specialization}
+            onChange={(e) => onSpecializationChange(e.target.value)}
+            data-testid="discovery-specialization"
+          >
+            <option value="">Все специализации</option>
+            <optgroup label="Работы и услуги">
+              {(taxonomy?.services ?? []).map((item) => (
+                <option key={`services:${item.id}`} value={`services:${item.id}`}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Товары и материалы">
+              {(taxonomy?.products ?? []).map((item) => (
+                <option key={`products:${item.id}`} value={`products:${item.id}`}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        </label>
+        <label className={styles.field}>
           <span>Город</span>
           <input value={city} onChange={(e) => onCityChange(e.target.value)} placeholder="Любой" />
         </label>

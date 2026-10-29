@@ -200,7 +200,8 @@ describe("PartnersHub search empty state", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("heading", { name: /Пригласить партнёра/i })).toBeInTheDocument();
+    expect(screen.getByTestId("partner-link-invite-wizard")).toBeInTheDocument();
+    expect(screen.queryByTestId("partner-link-invite-panel")).not.toBeInTheDocument();
 
     const postCalls = vi
       .mocked(remcardFetch)
@@ -266,6 +267,42 @@ describe("PartnersHub search empty state", () => {
     resolveSlow({ partners: [searchPartner("stale")], nextCursor: null });
     await waitFor(() => {
       expect(screen.queryByText(/Partner stale/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not let a stale append overwrite newer reset cards/cursor", async () => {
+    let resolveAppend: (value: unknown) => void = () => {};
+    const appendPromise = new Promise((resolve) => {
+      resolveAppend = resolve;
+    });
+    mockListAndSearch(async (path) => {
+      if (path.includes("q=fresh")) {
+        return { partners: [searchPartner("fresh")], nextCursor: "cursor-fresh" };
+      }
+      if (path.includes("cursor=cursor-stale-page")) {
+        await appendPromise;
+        return { partners: [searchPartner("stale-page")], nextCursor: "cursor-stale-next" };
+      }
+      return { partners: [searchPartner("base")], nextCursor: "cursor-stale-page" };
+    });
+
+    render(<PartnersHub meId="me-1" initialProfile={storeProfile} />);
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Partner base/i)).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Показать ещё/i }));
+    await userEvent.type(screen.getByPlaceholderText(/Имя мастера или компании/i), "fresh");
+    await waitFor(() => {
+      expect(screen.getByText(/Partner fresh/i)).toBeInTheDocument();
+    });
+
+    resolveAppend({ partners: [searchPartner("stale-page")], nextCursor: "cursor-stale-next" });
+    await waitFor(() => {
+      expect(screen.getByText(/Partner fresh/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Partner stale-page/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Partner base/i)).not.toBeInTheDocument();
     });
   });
 

@@ -1,0 +1,298 @@
+.navigator {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+}
+
+.summary {
+  display: none;
+}
+
+.body {
+  display: grid !important;
+  gap: var(--space-4, 1rem);
+}
+
+.questHead {
+  display: grid;
+  gap: 6px;
+  padding: var(--space-4, 1rem);
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #8e1f23 0, var(--accent, #b33) 55%, #d9574f 100%);
+}
+
+.questEyebrow {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.questHead strong {
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.questBar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+
+.questBar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #fff;
+  transition: width 0.35s ease;
+}
+
+.questHead small {
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.92;
+}
+
+.path {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  position: relative;
+}
+
+.pathStep {
+  position: relative;
+}
+
+.pathStep::before {
+  content: "";
+  position: absolute;
+  left: calc(0.5rem + 17px);
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+
+.pathStep:first-child::before {
+  top: 50%;
+}
+
+.pathStep:last-child::before {
+  bottom: 50%;
+}
+
+.pathStep[data-passed="true"]::before,
+.pathStep[data-current="true"]::before {
+  background: var(--accent, #b33);
+}
+
+.step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  padding: 7px 0.5rem;
+  font: inherit;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.step[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent, #b33) 10%, var(--surface));
+  color: var(--accent, #b33);
+}
+
+.step[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.stepNode {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.step[aria-pressed="true"] .stepNode {
+  background: var(--accent, #b33);
+  border-color: var(--accent, #b33);
+  color: #fff;
+}
+
+.stepNode i {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--offset, #f3f3f3);
+  border: 1px solid var(--surface);
+  color: var(--muted);
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
+}
+
+.stepText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.stepText b {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.stepText em {
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.step small {
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--offset, #f3f3f3);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.pathStep[data-empty="true"] .stepNode {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+.skills {
+  display: grid;
+  gap: 6px;
+}
+
+.skillsTitle {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.skillGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skillChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.skillChip[aria-pressed="true"] {
+  background: var(--accent, #b33);
+  border-color: var(--accent, #b33);
+  color: #fff;
+}
+
+.skillChip small {
+  font-size: 10px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--offset, #f3f3f3);
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.skillChip[aria-pressed="true"] small {
+  background: rgba(255, 255, 255, 0.25);
+  color: inherit;
+}
+
+@media (max-width: 760px) {
+  .navigator {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0 var(--space-3, 0.75rem);
+  }
+
+  .summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-height: 44px;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .navigator:not([open]) > .body {
+    display: none !important;
+  }
+
+  .body {
+    padding-bottom: var(--space-3);
+  }
+}
+
+@media (min-width: 761px) {
+  .navigator[open] > .body,
+  .navigator > .body {
+    display: grid;
+  }
+}
