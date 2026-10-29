@@ -7,14 +7,14 @@
 | Repo | Branch | SHA | Примечание |
 | --- | --- | --- | --- |
 | remcard-partner-platform (product) | feat/partners-prototype-v1-20261029 | 59c0f43dad9b6fa821b5719e6c4c31749df98a2b | mandatory FE fixes; push 403 |
-| remcard-partner-platform (tip) | feat/partners-prototype-v1-20261029 | 8640dc8f43759a3d683af80fb283884942135347 | docs + bundle commits after product; push 403 |
-| remcard-navigator | feat/partners-prototype-v1-20261029 | 187328dae2bdc1840b5763ef1e70d376402e3fb4 | prior product tip c77d15e2a996c80ecc0b9cf766997ae8a2f476b3; replay/labels P1 сохранены |
+| remcard-partner-platform (tip) | feat/partners-prototype-v1-20261029 | db32d60e6e61e6258fdd4b4faaa77cf06ea830b7 | docs + bundle after product; push 403 |
+| remcard-navigator | feat/partners-prototype-v1-20261029 | 91d8b9cc8d6e079075751238ed0436fe5df99342 | prior product tip c77d15e2a996c80ecc0b9cf766997ae8a2f476b3; replay/labels P1 сохранены |
 | reference | reference/prototype-20261029 | 4ba2f9e… | JS source приоритетнее исторических FLOWS |
 
 Incremental FE bundle: artifacts/partners-prototype-v1/frontend-implementation.bundle
 
 - prerequisite: 253ff59ec0c9a32b0b00c6f544486deae2942119
-- contains HEAD: bad785ad3c4e358ea0e33dbfe314602a60d2087c (verify: git bundle list-heads)
+- contains HEAD: 2829147c0eea33183ac5ef1a6904ba02f4ada4f1 (clean REPORT; tip after bundle blob is db32d60e6e61e6258fdd4b4faaa77cf06ea830b7)
 - apply on FE clone that already has the prerequisite: git fetch frontend-implementation.bundle HEAD:feat/partners-prototype-v1-20261029
 
 ## Closed in this pass (mandatory)
