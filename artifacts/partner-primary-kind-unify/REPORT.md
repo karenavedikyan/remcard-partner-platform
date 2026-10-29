@@ -48,7 +48,8 @@ Tests: `partnershipSearchQuery.filters.test.ts`, `partnershipSearchResultDto.tes
 
 | File | Change |
 |------|--------|
-| `src/lib/profRegistrationJoinFinish.ts` | Finish writes **replace** activities via `freshPartnerActivitiesForJoinKind`; `completedJoinState` requires resolved kind + exact activity set + target `partnerType`; `decideRegistrationJoinFinish` exported for tests |
+| `src/lib/partnerJoinActivities.ts` | `mergePartnerActivitiesForJoinFinish`: primary flags + **preserve** STORE/SERVICE/AGENT extras while `resolvePartnerKindUi` stays on chosen kind; agent finish remains pure |
+| `src/lib/profRegistrationJoinFinish.ts` | Finish writes merged activities (not blind replace); `completedJoinState` uses resolver-aware satisfaction; `decideRegistrationJoinFinish` exported for tests |
 
 Tests: `profRegistrationJoinFinish.kind.test.ts` (STORE→agent legacy re-reg, AGENT already_ready, COMPANY mixed vs agent finish, non-overlapping already_ready).
 
@@ -59,7 +60,8 @@ Does **not** clear capabilities blindly; PRO/STAFF role rules unchanged.
 | File | Change |
 |------|--------|
 | `src/lib/partnerPrimaryKindAudit.ts` | Issues: finished kind mismatch, multi-org types, storage vs target, employee context; segments blocked/deleted |
-| `scripts/partner-primary-kind-audit.ts` | Requires `--i-acknowledge-read-only`; `SET TRANSACTION READ ONLY` inside transaction; full user scan (incl. deleted); all org `partnerType`s; totals `userTotalAll` / `userTotalNotDeleted` |
+| `src/lib/partnerPrimaryKindAuditScan.ts` | RepeatableRead + READ ONLY; **byKindPrincipal** (registered_partner only); working org lookup via `organization.findMany` (order-independent); unresolved working org → manual review |
+| `scripts/partner-primary-kind-audit.ts` | Blocked by default; live DB requires `--i-acknowledge-read-only` **and** `--allow-live-database-scan`; prefer vitest `partnerPrimaryKindAuditScan.test.ts` |
 
 Tests: `partnerPrimaryKindAudit.test.ts`.
 
@@ -67,7 +69,8 @@ Tests: `partnerPrimaryKindAudit.test.ts`.
 
 ```bash
 cd remcard-navigator
-pnpm tsx scripts/partner-primary-kind-audit.ts --i-acknowledge-read-only --json-out=artifacts/partner-primary-kind-audit/dry-run.json
+pnpm vitest run src/lib/__tests__/partnerPrimaryKindAuditScan.test.ts
+# Live (staging only): --i-acknowledge-read-only --allow-live-database-scan
 ```
 
 Do **not** treat fixture/unit tests as proof of production coverage.
@@ -82,7 +85,7 @@ Do **not** treat fixture/unit tests as proof of production coverage.
 |------|-----------|-------------------|
 | Admin registry API | `partnerKind` (existing) | unchanged |
 | GET `/api/partnership/search` | `partnerKind` + activities | n/a |
-| Registration join finish | n/a | `freshPartnerActivitiesForJoinKind` + `targetStateForPartnerKind` |
+| Registration join finish | n/a | `mergePartnerActivitiesForJoinFinish` + `targetStateForPartnerKind` |
 | Partner list/card (R04) | `resolvePartnerKindUi` | n/a |
 | Audit script | `analyzePartnerPrimaryKind` | none (`--apply` disabled) |
 
@@ -96,6 +99,7 @@ Do **not** treat fixture/unit tests as proof of production coverage.
 
 ## Known limits
 
-- Empty activities + legacy `partnerType` only → unknown kind.
+- Completed live registration with null type + empty activities → **`registered_unknown_empty_storage`** (manual review), not legacy `unresolved_canonical_kind`.
+- Empty activities + legacy `partnerType` only (no completed marker) → resolver may still infer kind from technical type.
 - Inverted partnership graph labels remain counterparty-relative; sides not mutated.
 - Normalization/migration of historical rows is **out of scope** until dry-run on an approved read-only DB.
