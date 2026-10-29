@@ -4,10 +4,10 @@
 
 | Repo | Branch | Notes |
 |------|--------|--------|
-| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | See git tip after push |
-| remcard-navigator | `feat/partner-primary-kind-unify-20261029` | See git tip after push |
+| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | **`f1ae1fc8679f56f0d344bde61e549be75fad7bc2`** |
+| remcard-navigator | `feat/partner-primary-kind-unify-20261029` | **`af8959ee7da7f3046a8ff88177e5f05adc6f7587`** |
 
-Prior review tips (superseded by this pass): frontend `62c11e581074fc2d273f0e4142e48a4a183e910a`, backend `4610cdbfb112e2661436a12782d78a6f03b088c0`.
+Prior review tips (superseded): frontend `62c11e581074fc2d273f0e4142e48a4a183e910a`, backend `4610cdbfb112e2661436a12782d78a6f03b088c0`.
 
 ## Scope
 
@@ -86,10 +86,11 @@ Do **not** treat fixture/unit tests as proof of production coverage.
 
 ## Tests run (this pass)
 
-Document exact commands and results in commit message / CI. Expected subset:
-
-- Navigator: `pnpm vitest run src/lib/__tests__/partnershipSearchResultDto.test.ts src/lib/__tests__/partnershipSearchQuery*.test.ts src/lib/__tests__/partnerPrimaryKindAudit.test.ts src/lib/__tests__/profRegistrationJoinFinish.kind.test.ts src/lib/__tests__/partnerKindUi.test.ts`
-- Platform: `pnpm vitest run src/lib/partner-kind-ui.test.ts src/lib/agent-r04/partner-filters.test.ts src/lib/partnership-search-kind.test.ts` + `pnpm exec tsc --noEmit` + build if configured
+- Navigator vitest (26 tests, pass): `partnershipSearchResultDto`, `partnershipSearchQuery` (+ filters), `partnerPrimaryKindAudit`, `profRegistrationJoinFinish.kind`, `partnerKindUi`
+- Navigator `tsc --noEmit`: **blocked by pre-existing** `src/lib/bots/__tests__/maxBotStartedLogin.pipeline.test.ts` TS2345 (unrelated to this branch); changed partner-kind files typecheck clean
+- Platform vitest (13 tests in kind/search subset, pass): `partner-kind-ui`, `partner-filters`, `partnership-search-ui` (includes canonical DTO cases)
+- Platform `tsc --noEmit`: pass
+- Platform `pnpm run build`: pass
 
 ## Known limits
 
