@@ -351,21 +351,36 @@ export function selectedPublishedTermsForSubmit(state: InviteWizardSnapshot) {
 }
 
 /**
- * Persist note for empty-terms / custom paths via existing `note` field —
- * same composition the sender sees at review/share (message + conditions).
- * When numeric published terms are POSTed separately, note stays message-only.
+ * Persist note via existing `note` field.
+ * - Empty/custom: message + full review conditions (no invented %).
+ * - Published numeric in terms[]: note stays message-only unless the sender
+ *   typed reciprocal ownTerms — then append that line only (do not duplicate
+ *   the numeric DTO into note).
  */
 export function buildInvitePersistNote(
   state: InviteWizardSnapshot,
-  opts?: { agentProposal?: string; includeConditions: boolean },
+  opts?: {
+    agentProposal?: string;
+    includeConditions: boolean;
+    includeOwnTermsAlongsidePublished?: boolean;
+  },
 ): string | null {
   const message = state.message.trim();
-  if (!opts?.includeConditions) {
-    return message || null;
+  if (opts?.includeConditions) {
+    const conditions = buildInviteConditionsText(state, opts).trim();
+    const parts = [message, conditions].filter(Boolean);
+    return parts.length ? parts.join("\n\n") : null;
   }
-  const conditions = buildInviteConditionsText(state, opts).trim();
-  const parts = [message, conditions].filter(Boolean);
-  return parts.length ? parts.join("\n\n") : null;
+  if (
+    opts?.includeOwnTermsAlongsidePublished &&
+    !state.agentOneWay &&
+    state.ownTerms.trim()
+  ) {
+    const own = `Мои условия за рекомендации: ${state.ownTerms.trim()}`;
+    const parts = [message, own].filter(Boolean);
+    return parts.length ? parts.join("\n\n") : null;
+  }
+  return message || null;
 }
 
 /** Build share text for review step — exact message + separate conditions. */

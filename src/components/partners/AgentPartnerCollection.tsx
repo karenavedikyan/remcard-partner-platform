@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -40,6 +40,10 @@ type Props = {
   termRequests: Record<string, TermRequestState>;
   onLoadTermRequests: (partnershipId: string) => void;
   expandedTermPartnershipId: string | null;
+  /** Deep-link target already paged into `partnerships` — open its detail dialog once. */
+  focusPartnershipId?: string | null;
+  /** Acknowledge one-shot focus so list refresh / page-size cannot re-open after close. */
+  onFocusPartnershipConsumed?: (partnershipId: string) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: (ids: string[], checked: boolean) => void;
@@ -196,6 +200,8 @@ export function AgentPartnerCollection(props: Props) {
     termRequests,
     onLoadTermRequests,
     expandedTermPartnershipId,
+    focusPartnershipId = null,
+    onFocusPartnershipConsumed,
     selectedIds,
     onToggleSelect,
     onToggleSelectAll,
@@ -208,6 +214,7 @@ export function AgentPartnerCollection(props: Props) {
 
   const [detailPartnershipId, setDetailPartnershipId] = useState<string | null>(null);
   const detailNameButtonRef = useRef<HTMLButtonElement | null>(null);
+  const consumedFocusIdRef = useRef<string | null>(null);
   const detailPartnership = useMemo(
     () => partnerships.find((p) => p.id === detailPartnershipId) ?? null,
     [partnerships, detailPartnershipId],
@@ -218,6 +225,20 @@ export function AgentPartnerCollection(props: Props) {
     setDetailPartnershipId(partnershipId);
   }, []);
   const closeDetails = useCallback(() => setDetailPartnershipId(null), []);
+
+  // One-shot deep-link open: apply once per focus id, then acknowledge so page-size/refresh
+  // cannot reopen after the user explicitly closes.
+  useEffect(() => {
+    if (!focusPartnershipId) {
+      consumedFocusIdRef.current = null;
+      return;
+    }
+    if (consumedFocusIdRef.current === focusPartnershipId) return;
+    if (!partnerships.some((p) => p.id === focusPartnershipId)) return;
+    setDetailPartnershipId(focusPartnershipId);
+    consumedFocusIdRef.current = focusPartnershipId;
+    onFocusPartnershipConsumed?.(focusPartnershipId);
+  }, [focusPartnershipId, partnerships, onFocusPartnershipConsumed]);
 
   const pageIds = useMemo(() => partnerships.map((p) => p.id), [partnerships]);
   const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));

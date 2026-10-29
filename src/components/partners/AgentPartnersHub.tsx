@@ -38,14 +38,21 @@ export function AgentPartnersHub({
     }
   }, [openHub]);
 
-  // Registered-recipient deep link: open incoming invitations, not the active list.
-  const deepInviteId =
-    searchParams.get("terms")?.trim() || searchParams.get("partnershipId")?.trim() || "";
-  useEffect(() => {
-    if (!deepInviteId) return;
-    setSegment("invitations");
-    setInvitationFlow("incoming");
-  }, [deepInviteId]);
+  // Deep-link segment/flow comes from the authorized partnership row (ACTIVE / incoming /
+  // outgoing), not from assuming every terms/partnershipId is an incoming invite.
+  const onDeepLinkNavigate = useCallback(
+    (nav: {
+      partnershipId: string;
+      segment: Segment;
+      invitationFlow?: InvitationFlow;
+    }) => {
+      setSegment(nav.segment);
+      if (nav.segment === "invitations") {
+        setInvitationFlow(nav.invitationFlow ?? "incoming");
+      }
+    },
+    [],
+  );
 
   const openModal = useCallback((tab: HubModalTab) => {
     setModalTab(tab);
@@ -123,6 +130,7 @@ export function AgentPartnersHub({
         partnersAudience={presentationAudience}
         agentSegment={segment}
         agentInvitationFlow={segment === "invitations" ? invitationFlow : undefined}
+        onDeepLinkNavigate={onDeepLinkNavigate}
         forcedTab="list"
         {...hubSearchRoleProps}
       />

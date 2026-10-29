@@ -206,6 +206,25 @@ describe("invite-wizard-state", () => {
     expect(buildInvitePersistNote(state, { includeConditions: false })).toBe("Личное сообщение");
   });
 
+  it("keeps reciprocal ownTerms in note alongside published numeric terms without duplicating them", () => {
+    const state = createInviteWizardState({
+      message: "Моё сообщение",
+      termsMode: "published",
+      ownTerms: "Ответная скидка семь процентов",
+      categories: [
+        { category: "doors", categoryLabel: "Двери", storePercent: 12, selected: true },
+      ],
+    });
+    const note = buildInvitePersistNote(state, {
+      includeConditions: false,
+      includeOwnTermsAlongsidePublished: true,
+    });
+    expect(note).toContain("Моё сообщение");
+    expect(note).toContain("Ответная скидка семь процентов");
+    expect(note).not.toContain("общий процент 12%");
+    expect(note).not.toContain("Двери");
+  });
+
   it("caps custom term fields at 250 and ignores ownTerms for agents", () => {
     const long = "x".repeat(300);
     let state = setInviteTermField(createInviteWizardState(), "partnerAction", long);

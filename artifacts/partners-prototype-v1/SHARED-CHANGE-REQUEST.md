@@ -28,7 +28,11 @@ Auth/registration/nav/Prisma migrations/admin — out of scope.
 
 ## Local partners-branch additive (already done, non-shared)
 - Invite `note` carries review conditions for empty/custom paths
+- Published numeric + reciprocal `ownTerms` also persist in `note` (without duplicating terms[])
 - Link wizard unified for all four audiences
-- Certificate error status not overwritten to empty
-- Discussion subject max 500
-- `partnershipId` / `terms` deep-link opens invitations segment
+- Certificate error status not overwritten to empty; loading ≠ confirmed empty; retry sequence-guarded
+- Discussion subject max 500 UTF-16 without lone surrogates
+- `partnershipId` / `terms` deep-link opens invitations segment **and** the authorized detail row (paged)
+
+## Integration base refresh
+After partners FE product HEAD `00520dd3b0fe57b2d89efe822d54b540717fbfb1` (tip/docs may follow), type agent must refresh the three-head integration bases to include this tip. Do not cherry-pick into foreign branches without a separate command.
