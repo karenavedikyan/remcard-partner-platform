@@ -6,7 +6,7 @@
 |---|---|
 | **Base** | `6f8542927c67e12dcb89d1c128fc22ca78186d55` (`release/prof-v1-20261007`) |
 | **Branch** | `fix/partner-row-actions-20261029` |
-| **Tip** | _(filled after push)_ |
+| **Tip** | `a813ef4c9c4b264fd6edfc8382183d78a9df000d` |
 
 Backend unchanged (expected `4b4c1244f8ed838508e7d4a99796092ebd2cb7ed`).
 
