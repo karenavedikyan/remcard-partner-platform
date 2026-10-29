@@ -6,11 +6,14 @@
 
 | Repo | Branch | SHA | Примечание |
 | --- | --- | --- | --- |
-| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | `59c0f43dad9b6fa821b5719e6c4c31749df98a2b` | push **403**; prerequisite `253ff59ec0c9a32b0b00c6f544486deae2942119`; incremental bundle ниже |
+| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | `59c0f43dad9b6fa821b5719e6c4c31749df98a2b` | product tip (mandatory fixes); push **403**; prerequisite `253ff59ec0c9a32b0b00c6f544486deae2942119` |
+| remcard-partner-platform (docs+bundle tip) | same | see bundle HEAD | incremental bundle below includes docs after product tip |
 | remcard-navigator | `feat/partners-prototype-v1-20261029` | `8e421fcb6c39a420fd84019b04251e007920c5ac` | prior tip `c77d15e2a996c80ecc0b9cf766997ae8a2f476b3` + docs/bundle; replay/labels P1 сохранены |
 | reference | `reference/prototype-20261029` | `4ba2f9e…` | JS source приоритетнее исторических FLOWS |
 
-Bundle: `artifacts/partners-prototype-v1/frontend-implementation.bundle` (`253ff59ec0c9a32b0b00c6f544486deae2942119..59c0f43dad9b6fa821b5719e6c4c31749df98a2b`).
+Bundle: `artifacts/partners-prototype-v1/frontend-implementation.bundle`  
+- requires: `253ff59ec0c9a32b0b00c6f544486deae2942119`  
+- contains HEAD: local tip after docs (verify with `git bundle list-heads`)
 
 ## Closed in this pass (mandatory)
 
@@ -35,9 +38,9 @@ Bundle: `artifacts/partners-prototype-v1/frontend-implementation.bundle` (`253ff
 | --- | --- |
 | PartnerContract independent-latest (payload/error/500) | 3 pass |
 | PartnerFlow independent-latest (4 entries + partnershipId) | 5 pass |
-| Invite wizard + reviewer + hub + filters + discussion-subject | pass |
+| Partners hub/wizard/filters/discussion-subject (+ related) | 69 pass / 18 files |
 | FE `tsc --noEmit` | 0 |
-| BE replay identity + requestPartnerTerms | pass |
+| BE invite + replay + search facets/query/pagination | 53 pass / 14 files |
 | Real invite / notify / production | **не выполнялись** |
 
 ## Honest path note
