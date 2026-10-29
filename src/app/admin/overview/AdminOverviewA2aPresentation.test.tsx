@@ -199,4 +199,23 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     expect(src).not.toMatch(/(^|\n)\.grid\s*\{/);
     expect(src).not.toMatch(/(^|\n)\.value\s*\{/);
   });
+
+  it("scopes h1 and KPI value type scale to prototype --text-xl clamp, not PROF globals", () => {
+    const cssPath = path.join(__dirname, "AdminOverview.module.css");
+    const src = readFileSync(cssPath, "utf8");
+    // Prototype admin scale: clamp(1.5rem, 1.3rem + .45vw, 1.875rem)
+    expect(src).toMatch(
+      /--overview-proto-text-xl:\s*clamp\(\s*1\.5rem\s*,\s*1\.3rem\s*\+\s*0?\.45vw\s*,\s*1\.875rem\s*\)/,
+    );
+    const h1Block = src.match(/\.header h1\s*\{([^}]*)\}/)?.[1] ?? "";
+    const valueBlock = src.match(/\.kpiValue\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(h1Block).toMatch(/font-size:\s*var\(--overview-proto-text-xl\)/);
+    expect(h1Block).toMatch(/line-height:\s*1\.25/);
+    expect(h1Block).not.toMatch(/font-size:\s*var\(--text-xl\)/);
+    expect(valueBlock).toMatch(/font-size:\s*var\(--overview-proto-text-xl\)/);
+    expect(valueBlock).toMatch(/line-height:\s*1\.5/);
+    expect(valueBlock).not.toMatch(/font-size:\s*var\(--text-xl\)/);
+    // Global PROF --text-xl must stay untouched by this module
+    expect(src).not.toMatch(/--text-xl\s*:/);
+  });
 });

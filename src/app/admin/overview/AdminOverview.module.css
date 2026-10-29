@@ -2,6 +2,9 @@
    Chart/definition rules below are unchanged from the A1 tip — keep isolated. */
 
 .wrap {
+  /* Prototype admin --text-xl scale (scoped). Do not use PROF globals --text-xl here —
+     that token is a larger display scale and overshoots R1 overview h1/KPI values. */
+  --overview-proto-text-xl: clamp(1.5rem, 1.3rem + 0.45vw, 1.875rem);
   display: grid;
   gap: var(--space-5);
   min-width: 0;
@@ -19,7 +22,7 @@
 
 .header h1 {
   margin: 0;
-  font-size: var(--text-xl);
+  font-size: var(--overview-proto-text-xl);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.25;
@@ -109,11 +112,11 @@
 
 .kpiValue {
   margin: var(--space-3) 0 var(--space-2);
-  font-size: var(--text-xl);
+  font-size: var(--overview-proto-text-xl);
   font-weight: 800;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1.5;
   color: var(--ink);
   display: block;
 }
