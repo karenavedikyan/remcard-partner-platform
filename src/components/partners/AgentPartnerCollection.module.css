@@ -73,15 +73,15 @@
 }
 
 .dataTable col.colName {
-  width: 26%;
+  width: 25%;
 }
 
 .dataTable col.colDetail {
-  width: 28%;
+  width: 26%;
 }
 
 .dataTable col.colStatus {
-  width: 12%;
+  width: 15%;
 }
 
 .dataTable col.colActions {
@@ -170,6 +170,18 @@
 .detailCell {
   color: var(--muted);
   line-height: 1.45;
+}
+
+.statusCell {
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.statusCell :global([class*="badge"]) {
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .actionCell {

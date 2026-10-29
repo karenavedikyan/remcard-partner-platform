@@ -461,7 +461,7 @@ export function AgentPartnerCollection(props: Props) {
                       <small className={styles.caption}>{partnerListSubtitle(partner)}</small>
                     </td>
                     <td className={styles.detailCell}>{partnerListSpecOnly(partner)}</td>
-                    <td>
+                    <td className={styles.statusCell}>
                       <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
                     </td>
                     <td className={styles.actionCell}>

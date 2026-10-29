@@ -68,6 +68,18 @@ async function startHarness() {
   return server;
 }
 
+async function waitForThemePaint(page) {
+  await page.evaluate(async () => {
+    const animations = document.getAnimations();
+    if (animations.length > 0) {
+      await Promise.all(animations.map((anim) => anim.finished.catch(() => undefined)));
+    }
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+  });
+}
+
 async function applyTheme(page, theme) {
   const sample = await page.evaluate((t) => {
     document.documentElement.setAttribute("data-theme", t);
@@ -82,6 +94,7 @@ async function applyTheme(page, theme) {
   if (sample.dataTheme !== theme) {
     throw new Error(`Failed to set data-theme=${theme}, got ${sample.dataTheme}`);
   }
+  await waitForThemePaint(page);
   return sample;
 }
 
