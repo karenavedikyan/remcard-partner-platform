@@ -28,4 +28,4 @@ Bundle copies + sha256: remcard-navigator `artifacts/integration/partner-admin-r
 
 ## Integration tip
 
-See git `HEAD` on this branch after push.
+`653044aa3e1b45d7d92e13694c7232850ded776b` (merge commit `6de085f7…` includes Admin P1 bundle content at `9f942455…`)
