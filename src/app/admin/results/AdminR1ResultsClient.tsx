@@ -62,11 +62,15 @@ export function AdminR1ResultsClient() {
   const [tab, setTab] = useState<Tab>("rating");
   const [periodDays, setPeriodDays] = useState(30);
   const [summary, setSummary] = useState<AdminR1ResultsSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      // Do not keep the previous period's KPIs under the newly selected period.
+      setSummary(null);
+      setSummaryLoading(true);
       setSummaryError(null);
       try {
         const data = await fetchAdminR1ResultsSummary(periodDays);
@@ -76,6 +80,8 @@ export function AdminR1ResultsClient() {
           setSummary(null);
           setSummaryError(e instanceof Error ? e.message : "Сводка недоступна");
         }
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
       }
     }
     void load();
@@ -117,13 +123,14 @@ export function AdminR1ResultsClient() {
           Сводка результативности недоступна: {summaryError}
         </div>
       ) : null}
-      {summary ? (
+      {summaryLoading ? <div className="r1StateLoading">Загрузка сводки…</div> : null}
+      {!summaryLoading && summary ? (
         <div className="r1Kpis">
           <div className="r1Panel r1Kpi">
             <span className="r1KpiLabel">Сертификатов выпущено</span>
             <strong className="r1KpiValue">{summary.certificatesIssued}</strong>
             <span className="r1KpiBottom">
-              {summary.certificatesUsedFully} использовано полностью
+              {summary.certificatesUsedFully} использовано полностью · {periodDays} дн.
             </span>
           </div>
           <div className="r1Panel r1Kpi">
@@ -147,7 +154,9 @@ export function AdminR1ResultsClient() {
           </div>
         </div>
       ) : null}
-      {summary ? <p className="r1Help">{summary.definitions.note}</p> : null}
+      {!summaryLoading && summary ? (
+        <p className="r1Help">{summary.definitions.note}</p>
+      ) : null}
 
       <div className="r1Subtabs" role="tablist">
         {tabs.map((t) => (
@@ -468,6 +477,11 @@ function DealsPanel({ periodDays }: { periodDays: number }) {
     async function load() {
       setLoading(true);
       setError(null);
+      // Clear previous-period figures immediately so they are not shown as current.
+      setItems([]);
+      setTotal(0);
+      setSum(null);
+      setNote("");
       try {
         const params = new URLSearchParams({
           page: String(page),
@@ -498,8 +512,11 @@ function DealsPanel({ periodDays }: { periodDays: number }) {
     };
   }, [periodDays, page]);
 
-  const sumLabel =
-    error || sum == null ? "сумма недоступна" : `сумма ${formatAdminR1Money(sum)}`;
+  const sumLabel = loading
+    ? "сумма загружается…"
+    : error || sum == null
+      ? "сумма недоступна"
+      : `сумма ${formatAdminR1Money(sum)}`;
 
   return (
     <section className="r1Panel">

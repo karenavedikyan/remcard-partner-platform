@@ -1,6 +1,6 @@
 /** Local edge-case acceptance for remaining P1 defects. Synthetic mocks only. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AdminR1ReviewsClient } from "@/app/admin/moderation/reviews/AdminR1ReviewsClient";
 import { AdminR1AnalyticsClient } from "@/app/admin/analytics/AdminR1AnalyticsClient";
@@ -273,5 +273,203 @@ describe("Admin R1 P1 edge acceptance", () => {
     expect(screen.queryByText(/Стр\. 2 из 1/)).not.toBeInTheDocument();
     expect(screen.getByText(/Стр\. 1 из 1 · всего 25/)).toBeTruthy();
     expect(approveCalls).toBeGreaterThan(0);
+  });
+
+  it("discloses reject-reason persistence BEFORE accepting the moderator's reason", async () => {
+    const user = userEvent.setup();
+    api.reviews.mockResolvedValue({
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      counts: { pending: 1, published: 0, rejected: 0 },
+      reviews: [
+        {
+          id: "pend-reason",
+          rating: 2,
+          text: "Нужна причина",
+          status: "PENDING",
+          createdAt: "2026-10-29T08:00:00.000Z",
+          author: { id: "c1", displayName: "Клиент" },
+          partner: { id: "p1", displayName: "Партнёр" },
+        },
+      ],
+    });
+    render(<AdminR1ReviewsClient />);
+    expect(await screen.findByText("Нужна причина")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /отклонить/i }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.textContent).toMatch(/сохранен/i);
+    expect(dialog.querySelector("textarea")).toBeTruthy();
+  });
+
+  it("does not silently discard reasonPersisted:false in the success feedback", async () => {
+    const user = userEvent.setup();
+    api.reject.mockResolvedValue({
+      success: true,
+      reasonAccepted: true,
+      reasonPersisted: false,
+      reasonLength: 12,
+    });
+    api.reviews.mockResolvedValue({
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      counts: { pending: 1, published: 0, rejected: 0 },
+      reviews: [
+        {
+          id: "pend-np",
+          rating: 1,
+          text: "Без persistence",
+          status: "PENDING",
+          createdAt: "2026-10-29T08:00:00.000Z",
+          author: { id: "c1", displayName: "Клиент" },
+          partner: { id: "p1", displayName: "Партнёр" },
+        },
+      ],
+    });
+    render(<AdminR1ReviewsClient />);
+    expect(await screen.findByText("Без persistence")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /отклонить/i }));
+    const dialog = await screen.findByRole("dialog");
+    await user.type(dialog.querySelector("textarea")!, "Причина теста");
+    await user.click(
+      within(dialog).getByRole("button", { name: /^Отклонить$/ }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(/не сохранен/i);
+  });
+
+  it("does not expose actionable old pending rows while a new PUBLISHED filter is loading", async () => {
+    const user = userEvent.setup();
+    let resolvePublished: (value: unknown) => void = () => undefined;
+    const publishedPromise = new Promise((resolve) => {
+      resolvePublished = resolve;
+    });
+    api.reviews.mockImplementation(async (params: URLSearchParams) => {
+      const status = params.get("status");
+      if (status === "PUBLISHED") return publishedPromise;
+      return {
+        total: 1,
+        page: 1,
+        pageSize: 25,
+        counts: { pending: 1, published: 0, rejected: 0 },
+        reviews: [
+          {
+            id: "pend-stale",
+            rating: 3,
+            text: "Старый pending",
+            status: "PENDING",
+            createdAt: "2026-10-29T09:00:00.000Z",
+            author: { id: "c1", displayName: "Клиент" },
+            partner: { id: "p1", displayName: "Партнёр" },
+          },
+        ],
+      };
+    });
+
+    render(<AdminR1ReviewsClient />);
+    expect(await screen.findByText("Старый pending")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /отклонить/i })).toBeTruthy();
+
+    await user.selectOptions(screen.getByLabelText("Статус отзывов"), "PUBLISHED");
+    expect(screen.queryByText("Старый pending")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /опубликовать/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /отклонить/i })).toBeNull();
+
+    await act(async () => {
+      resolvePublished({
+        total: 0,
+        page: 1,
+        pageSize: 25,
+        counts: { pending: 1, published: 0, rejected: 0 },
+        reviews: [],
+      });
+      await Promise.resolve();
+    });
+  });
+
+  it("hides the old deals sum until the selected period has loaded", async () => {
+    const user = userEvent.setup();
+    let resolveSeven: (value: unknown) => void = () => undefined;
+    const sevenPromise = new Promise((resolve) => {
+      resolveSeven = resolve;
+    });
+    api.deals.mockImplementation(async (params: URLSearchParams) => {
+      const days = params.get("periodDays");
+      if (days === "7") return sevenPromise;
+      return {
+        items: [],
+        total: 2,
+        page: 1,
+        pageSize: 25,
+        sumAmount: 8321,
+        definitions: { entity: "order", note: "30 дней" },
+      };
+    });
+
+    render(<AdminR1ResultsClient />);
+    await user.click(screen.getByRole("tab", { name: "Сделки" }));
+    expect(await screen.findByText(/сумма 8321/i)).toBeTruthy();
+
+    await user.selectOptions(screen.getByLabelText("Период"), "7");
+    expect(screen.queryByText(/сумма 8321/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/сумма загружается/i)).toBeTruthy();
+
+    await act(async () => {
+      resolveSeven({
+        items: [],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+        sumAmount: 100,
+        definitions: { entity: "order", note: "7 дней" },
+      });
+      await Promise.resolve();
+    });
+    expect(await screen.findByText(/сумма 100/i)).toBeTruthy();
+  });
+
+  it("does not show the previous period summary as the newly selected period", async () => {
+    const user = userEvent.setup();
+    let resolveSeven: (value: unknown) => void = () => undefined;
+    const sevenPromise = new Promise((resolve) => {
+      resolveSeven = resolve;
+    });
+    api.summary.mockImplementation(async (days: number) => {
+      if (days === 7) return sevenPromise;
+      return {
+        periodDays: 30,
+        certificatesIssued: 731,
+        certificatesUsedFully: 10,
+        ordersCount: 5,
+        ordersSum: 1000,
+        reviewsPublished: 2,
+        reviewsPending: 1,
+        averagePublishedRating: 4.5,
+        definitions: { note: "30d stub", certificate: "", order: "" },
+      };
+    });
+
+    render(<AdminR1ResultsClient />);
+    expect(await screen.findByText("731")).toBeTruthy();
+
+    await user.selectOptions(screen.getByLabelText(/период/i), "7");
+    expect(screen.queryByText("731")).not.toBeInTheDocument();
+    expect(screen.getByText(/Загрузка сводки/i)).toBeTruthy();
+
+    await act(async () => {
+      resolveSeven({
+        periodDays: 7,
+        certificatesIssued: 12,
+        certificatesUsedFully: 1,
+        ordersCount: 1,
+        ordersSum: 50,
+        reviewsPublished: 0,
+        reviewsPending: 0,
+        averagePublishedRating: null,
+        definitions: { note: "7d stub", certificate: "", order: "" },
+      });
+      await Promise.resolve();
+    });
+    expect(await screen.findByText("12")).toBeTruthy();
   });
 });
