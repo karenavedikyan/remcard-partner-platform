@@ -24,11 +24,11 @@ export function hasCustomPartnershipSearchFilters(
   );
 }
 
-export function mergeSearchResultPages(
-  prev: PartnerSearchResult[],
-  batch: PartnerSearchResult[],
+export function mergeSearchResultPages<T extends { id: string }>(
+  prev: T[],
+  batch: T[],
   mode: "reset" | "append",
-): PartnerSearchResult[] {
+): T[] {
   if (mode === "reset") return batch;
   const seen = new Set(prev.map((p) => p.id));
   return [...prev, ...batch.filter((p) => !seen.has(p.id))];
