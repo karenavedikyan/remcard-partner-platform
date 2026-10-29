@@ -7,7 +7,7 @@
 
 | Repo | Branch | SHA | Примечание |
 | --- | --- | --- | --- |
-| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | *(см. tip после push)* | base `1d9bbeb6332b68ba4421a299c1b6b5e3dfe8dd1e` |
+| remcard-partner-platform | `feat/partners-prototype-v1-20261029` | `858c7394436117d1006dac33fb828d57040eb3ec` | base `1d9bbeb6332b68ba4421a299c1b6b5e3dfe8dd1e` |
 | remcard-navigator | — | — | **нет доступа** (404); backend task branch не создавалась |
 
 Reference snapshot `4ba2f9e…` / `docs/prototype-reference/current/partner/*` — не прочитаны.
