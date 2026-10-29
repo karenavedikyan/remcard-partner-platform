@@ -1,0 +1,115 @@
+{
+  "kind": "LOCAL FIXTURE",
+  "note": "Synthetic harness screenshots — not live PROF",
+  "capturedAt": "2026-10-29T14:50:42.236Z",
+  "results": [
+    {
+      "file": "toolbar-375-light.png",
+      "sha256": "6919feabf7ce24532efe6c63fc7c18e7bc583ae11873ab1dff32956289e629c1",
+      "scene": "toolbar",
+      "theme": "light",
+      "w": 375,
+      "h": 812,
+      "tag": "375"
+    },
+    {
+      "file": "toolbar-1440-light.png",
+      "sha256": "35b5dfe76c0d6bf326345ec7244c024800ba5beadbeee3acf41448cec3df810f",
+      "scene": "toolbar",
+      "theme": "light",
+      "w": 1440,
+      "h": 900,
+      "tag": "1440"
+    },
+    {
+      "file": "toolbar-375-dark.png",
+      "sha256": "c0dfb0cb49ea7d48713a5248b1b7e48c91402cf1d4a8df571161d036ecdefe76",
+      "scene": "toolbar",
+      "theme": "dark",
+      "w": 375,
+      "h": 812,
+      "tag": "375"
+    },
+    {
+      "file": "toolbar-1440-dark.png",
+      "sha256": "eb03fdf70a6059b88451db0875aeb20d75ff5d649b605f5423df1fb81771efc3",
+      "scene": "toolbar",
+      "theme": "dark",
+      "w": 1440,
+      "h": 900,
+      "tag": "1440"
+    },
+    {
+      "file": "repair-path-375-light.png",
+      "sha256": "3740fa86936443355d8e7ab03d73eb82580882aa07af7194b8264bcafed46a4a",
+      "scene": "repair-path",
+      "theme": "light",
+      "w": 375,
+      "h": 812,
+      "tag": "375"
+    },
+    {
+      "file": "repair-path-1440-light.png",
+      "sha256": "127c054c23be67e675a2812980e905a7cbcc55f1cc32b333174637664bf3e4db",
+      "scene": "repair-path",
+      "theme": "light",
+      "w": 1440,
+      "h": 900,
+      "tag": "1440"
+    },
+    {
+      "file": "repair-path-375-dark.png",
+      "sha256": "8c86dd173f8f977488a05c2f1bad5dba6a832144f69d01a11d54f54ba940b0dc",
+      "scene": "repair-path",
+      "theme": "dark",
+      "w": 375,
+      "h": 812,
+      "tag": "375"
+    },
+    {
+      "file": "repair-path-1440-dark.png",
+      "sha256": "fa9666697358622b3d651871ec74b23b55149120e96e8e7ec7b7ea0be8bff3fe",
+      "scene": "repair-path",
+      "theme": "dark",
+      "w": 1440,
+      "h": 900,
+      "tag": "1440"
+    },
+    {
+      "file": "wizard-375-light.png",
+      "sha256": "e0e976c8fe19d27018f3ced1f86dc3087c7f1917b6e73efa2bb97e5c6200c505",
+      "scene": "wizard",
+      "theme": "light",
+      "w": 375,
+      "h": 812,
+      "tag": "375"
+    },
+    {
+      "file": "wizard-1440-light.png",
+      "sha256": "ce9714cdf65b5104d4e620ec40f7bf816f04272e3e8359d6cd4bc055e0b9296f",
+      "scene": "wizard",
+      "theme": "light",
+      "w": 1440,
+      "h": 900,
+      "tag": "1440"
+    },
+    {
+      "file": "wizard-375-dark.png",
+      "sha256": "c0d69494ecf5c8f8aa4301f016bd67370bfd3343e206ff924e2c8192eee2db39",
+      "scene": "wizard",
+      "theme": "dark",
+      "w": 375,
+      "h": 812,
+      "tag": "375"
+    },
+    {
+      "file": "wizard-1440-dark.png",
+      "sha256": "00ad70208b205d6551bba2c5b381f5d6cfc5fb3415282f5142f9e316df5ecd5f",
+      "scene": "wizard",
+      "theme": "dark",
+      "w": 1440,
+      "h": 900,
+      "tag": "1440"
+    }
+  ]
+}

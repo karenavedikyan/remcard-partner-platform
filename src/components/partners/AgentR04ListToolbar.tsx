@@ -35,106 +35,124 @@ type Props = {
   chips: Chip[];
 };
 
+/**
+ * Compact single toolbar row (prototype-v1):
+ * search own partners · «Фильтры» · subtle list/cards toggle.
+ * Type / specialization / archive / sort expand inside Filters — same semantics for list and cards.
+ */
 export function AgentR04ListToolbar(props: Props) {
   const invitations = props.listMode === "invitations";
   const hasFilters =
     props.chips.length > 0 ||
     props.archiveView !== "active" ||
     props.sort !== "updated_desc" ||
-    props.searchQuery.trim().length > 0;
+    props.searchQuery.trim().length > 0 ||
+    Boolean(props.partnerType) ||
+    Boolean(props.specialization) ||
+    Boolean(props.stageId) ||
+    Boolean(props.city.trim());
 
   return (
-    <div className={styles.root} data-testid="agent-r04-list-toolbar">
-      {!invitations ? (
-      <AgentPartnerDiscoveryFilters
-        layout="list-main"
-        specialization={props.specialization}
-        stageId={props.stageId}
-        city={props.city}
-        partnerType={props.partnerType}
-        onSpecializationChange={props.onSpecializationChange}
-        onStageChange={props.onStageChange}
-        onCityChange={props.onCityChange}
-        onPartnerTypeChange={props.onPartnerTypeChange}
-        resetKey={props.taxonomyResetKey}
-      />
-      ) : null}
-
-      <div className={styles.toolsRow}>
+    <div className={styles.root} data-testid="agent-r04-list-toolbar" data-partners-proto="v1">
+      <div className={styles.toolsRow} data-testid="partners-compact-toolbar">
         <label className={styles.searchField}>
-          <span className={styles.fieldLabel}>Поиск</span>
+          <span className={styles.srOnly}>Поиск своих партнёров</span>
           <input
             value={props.searchQuery}
             onChange={(e) => props.onSearchQueryChange(e.target.value)}
-            placeholder={props.searchPlaceholder ?? "Название, партнёр или категория"}
+            placeholder={props.searchPlaceholder ?? "Поиск своих партнёров"}
             data-testid="agent-r04-list-search"
+            aria-label="Поиск своих партнёров"
           />
         </label>
+
         {!invitations ? (
-        <label className={styles.compactSelect}>
-          <span className={styles.fieldLabel}>Показывать</span>
-          <select
-            value={props.archiveView}
-            onChange={(e) =>
-              props.onArchiveViewChange(e.target.value as "active" | "archive" | "hidden")
-            }
-            data-testid="list-archive-view"
-            aria-label="Показывать"
-          >
-            <option value="active">Активные</option>
-            <option value="archive">Архив</option>
-            <option value="hidden">Скрытые</option>
-          </select>
-        </label>
+          <details className={styles.moreFilters} data-testid="partners-filters-details">
+            <summary>Фильтры</summary>
+            <div className={styles.moreGrid}>
+              <AgentPartnerDiscoveryFilters
+                layout="list-extra"
+                specialization={props.specialization}
+                stageId={props.stageId}
+                city={props.city}
+                partnerType={props.partnerType}
+                onSpecializationChange={props.onSpecializationChange}
+                onStageChange={props.onStageChange}
+                onCityChange={props.onCityChange}
+                onPartnerTypeChange={props.onPartnerTypeChange}
+                resetKey={props.taxonomyResetKey}
+              />
+              <label className={styles.field}>
+                Тип партнёра
+                <select
+                  value={props.partnerType}
+                  onChange={(e) =>
+                    props.onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)
+                  }
+                  data-testid="active-partner-type"
+                >
+                  <option value="">Все типы</option>
+                  <option value="agent">Агент</option>
+                  <option value="specialist">Специалист</option>
+                  <option value="store">Магазин</option>
+                  <option value="company">Компания</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                Архив
+                <select
+                  value={props.archiveView}
+                  onChange={(e) =>
+                    props.onArchiveViewChange(
+                      e.target.value as "active" | "archive" | "hidden",
+                    )
+                  }
+                  data-testid="list-archive-view"
+                  aria-label="Архив"
+                >
+                  <option value="active">Действующие</option>
+                  <option value="archive">Архив</option>
+                  <option value="hidden">Скрытые</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                Сортировка
+                <select
+                  value={props.sort}
+                  onChange={(e) => props.onSortChange(e.target.value as AgentListSort)}
+                  data-testid="list-sort"
+                >
+                  <option value="updated_desc">Сначала недавние</option>
+                  <option value="name_asc">По названию</option>
+                </select>
+              </label>
+            </div>
+          </details>
         ) : null}
+
         {!invitations ? (
-        <details className={styles.moreFilters}>
-          <summary>Ещё фильтры и сортировка</summary>
-          <div className={styles.moreGrid}>
-            <AgentPartnerDiscoveryFilters
-              layout="list-extra"
-              specialization={props.specialization}
-              stageId={props.stageId}
-              city={props.city}
-              partnerType={props.partnerType}
-              onSpecializationChange={props.onSpecializationChange}
-              onStageChange={props.onStageChange}
-              onCityChange={props.onCityChange}
-              onPartnerTypeChange={props.onPartnerTypeChange}
-              resetKey={props.taxonomyResetKey}
-            />
-            <label className={styles.field}>
-              Порядок
-              <select
-                value={props.sort}
-                onChange={(e) => props.onSortChange(e.target.value as AgentListSort)}
-              >
-                <option value="updated_desc">Сначала недавние</option>
-                <option value="name_asc">По названию</option>
-              </select>
-            </label>
+          <div className={styles.viewToggle} data-testid="agent-r04-view-toggle" aria-label="Вид">
+            <button
+              type="button"
+              data-active={props.viewMode === "list"}
+              aria-pressed={props.viewMode === "list"}
+              aria-label="Список"
+              title="Список"
+              onClick={() => props.onViewModeChange("list")}
+            >
+              ≡
+            </button>
+            <button
+              type="button"
+              data-active={props.viewMode === "cards"}
+              aria-pressed={props.viewMode === "cards"}
+              aria-label="Карточки"
+              title="Карточки"
+              onClick={() => props.onViewModeChange("cards")}
+            >
+              ⊞
+            </button>
           </div>
-        </details>
-        ) : null}
-        {!invitations ? (
-        <div className={styles.viewToggle} data-testid="agent-r04-view-toggle">
-          <button
-            type="button"
-            data-active={props.viewMode === "list"}
-            aria-pressed={props.viewMode === "list"}
-            onClick={() => props.onViewModeChange("list")}
-          >
-            Список
-          </button>
-          <button
-            type="button"
-            data-active={props.viewMode === "cards"}
-            aria-pressed={props.viewMode === "cards"}
-            onClick={() => props.onViewModeChange("cards")}
-          >
-            Карточки
-          </button>
-        </div>
         ) : null}
       </div>
 

@@ -68,11 +68,12 @@ import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
+import { PartnerFindVitrine } from "@/components/partners/prototype-v1/PartnerFindVitrine";
+import { PartnerInviteWizard } from "@/components/partners/prototype-v1/PartnerInviteWizard";
 import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
 } from "@/lib/partnership-search-ui";
-import { partnerSearchResultMeta } from "@/lib/agent-r04/partner-search-meta";
 import styles from "./PartnersHub.module.css";
 
 export type PartnersHubProps = {
@@ -91,7 +92,7 @@ export type PartnersHubProps = {
 
 type TabId = "list" | "find" | "link";
 
-const AGENT_R04_LIST_SEARCH_PLACEHOLDER = "Название партнёра или город";
+const AGENT_R04_LIST_SEARCH_PLACEHOLDER = "Поиск своих партнёров";
 
 type TermRequestState = {
   state: "idle" | "loading" | "loaded" | "error";
@@ -704,72 +705,6 @@ export function PartnersHub({
     </>
   );
 
-  const agentFindResultsBlock = (
-    <>
-      {searchError ? (
-        <div className={styles.error} role="alert">
-          <p>{searchError}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={loadingSearch}
-            onClick={() => {
-              setSearchNextCursor(null);
-              void loadSearch("reset");
-            }}
-          >
-            Повторить
-          </Button>
-        </div>
-      ) : null}
-      {searchResults.length > 0 || loadingSearch ? (
-        <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
-          Найдено: {searchResults.length}
-          {searchNextCursor ? "+" : ""}
-        </p>
-      ) : null}
-      <div
-        className={styles.modalResults}
-        data-testid="agent-partner-search-results"
-        data-loading={loadingSearch ? "true" : "false"}
-      >
-        {loadingSearch && searchResults.length === 0 ? (
-          <p className={styles.partnerMeta}>Загружаем результаты…</p>
-        ) : null}
-        {!loadingSearch &&
-          searchResults.slice(0, 12).map((partner) => {
-            const metaLines = partnerSearchResultMeta(partner);
-            return (
-              <article key={partner.id} className={styles.modalResultRow}>
-                <div>
-                  <strong>{partnerTitle(partner)}</strong>
-                  {metaLines.map((line) => (
-                    <p key={line} className={styles.partnerMeta}>
-                      {line}
-                    </p>
-                  ))}
-                  {showAgentPublishedTerms ? (
-                    <PartnerGeneralTermsDetails partnerUserId={partner.id} />
-                  ) : null}
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={Boolean(inviteTarget)}
-                  onClick={() => setInviteTarget(partner)}
-                >
-                  Пригласить
-                </Button>
-              </article>
-            );
-          })}
-        {!loadingSearch && searchResults.length === 0 ? (
-          <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
-        ) : null}
-      </div>
-    </>
-  );
-
   if (isModalSurface) {
     return (
       <div className={styles.modalSurface} data-testid={`agent-r04-modal-${agentModalSurface}`}>
@@ -817,13 +752,23 @@ export function PartnersHub({
           </>
         ) : (
           <>
-            {agentFindSearchControls}
-            {agentFindResultsBlock}
+            <p className={styles.partnerMeta}>
+              Поиск по всем партнёрам RemCard: выберите этап пути ремонта или направление. Название
+              знать не нужно.
+            </p>
+            <PartnerFindVitrine
+              searchRole={searchRole}
+              partnerType={searchPartnerType}
+              onPartnerTypeChange={setSearchPartnerType}
+              onInvite={(partner) => {
+                void refreshProfile();
+                setInviteTarget(partner);
+              }}
+            />
             {inviteTarget ? (
-              <PartnerInviteDialog
+              <PartnerInviteWizard
                 target={inviteTarget}
                 meProfile={meProfile}
-                busy={Boolean(busyId)}
                 onClose={() => setInviteTarget(null)}
                 onSent={() => {
                   setInviteTarget(null);
@@ -1432,16 +1377,28 @@ export function PartnersHub({
       )}
 
       {inviteTarget ? (
-        <PartnerInviteDialog
-          target={inviteTarget}
-          meProfile={meProfile}
-          busy={busyId === inviteTarget.id}
-          onClose={() => setInviteTarget(null)}
-          onSent={() => {
-            setTab(isAgentR04 ? (forcedTab ?? "list") : "list");
-            void loadList();
-          }}
-        />
+        isAgentR04 ? (
+          <PartnerInviteWizard
+            target={inviteTarget}
+            meProfile={meProfile}
+            onClose={() => setInviteTarget(null)}
+            onSent={() => {
+              setTab(forcedTab ?? "list");
+              void loadList();
+            }}
+          />
+        ) : (
+          <PartnerInviteDialog
+            target={inviteTarget}
+            meProfile={meProfile}
+            busy={busyId === inviteTarget.id}
+            onClose={() => setInviteTarget(null)}
+            onSent={() => {
+              setTab("list");
+              void loadList();
+            }}
+          />
+        )
       ) : null}
 
       {counterOfferTarget ? (
