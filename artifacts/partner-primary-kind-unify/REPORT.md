@@ -4,8 +4,8 @@
 
 | Repo | Branch | Notes |
 |------|--------|--------|
-| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | **`a140bc8c9014af4ac922bd05e635344b02d94fb7`** |
-| remcard-navigator | `feat/partner-primary-kind-unify-20261029` | **`af8959ee7da7f3046a8ff88177e5f05adc6f7587`** |
+| remcard-partner-platform | `feat/partner-primary-kind-unify-20261029` | **`e2d71d6373bfcfd5988e11d95df16731952ecff7`** |
+| remcard-navigator | `feat/partner-primary-kind-unify-20261029` | **`ef8be53949ba048d0e20ab8fb76b9fe347919957`** |
 
 Prior review tips (superseded): pass2 FE `a140bc8c…`, BE `af8959ee…`; pass1 FE `62c11e58…`, BE `4610cdbf…`.
 
@@ -88,7 +88,7 @@ Do **not** treat fixture/unit tests as proof of production coverage.
 
 ## Tests run (this pass)
 
-- Navigator vitest (26 tests, pass): `partnershipSearchResultDto`, `partnershipSearchQuery` (+ filters), `partnerPrimaryKindAudit`, `profRegistrationJoinFinish.kind`, `partnerKindUi`
+- Navigator vitest (37 tests, pass): `partnershipSearchResultDto`, `partnershipSearchQuery` (+ filters), `partnerPrimaryKindAudit`, `profRegistrationJoinFinish.kind`, `partnerKindUi`
 - Navigator `tsc --noEmit`: **blocked by pre-existing** `src/lib/bots/__tests__/maxBotStartedLogin.pipeline.test.ts` TS2345 (unrelated to this branch); changed partner-kind files typecheck clean
 - Platform vitest (13 tests in kind/search subset, pass): `partner-kind-ui`, `partner-filters`, `partnership-search-ui` (includes canonical DTO cases)
 - Platform `tsc --noEmit`: pass
