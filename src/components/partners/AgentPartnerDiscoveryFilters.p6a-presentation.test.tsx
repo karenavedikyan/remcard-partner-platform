@@ -37,9 +37,9 @@ describe("AgentPartnerDiscoveryFilters P6a presentation", () => {
     expect(prefix.toString("utf8")).toContain(".fieldHint {\n  font-size: var(--text-xs);");
     expect(prefix.toString("utf8").endsWith("}\n")).toBe(true);
 
-    const idx = css.indexOf(MARKER);
-    expect(idx).toBeGreaterThanOrEqual(PREFIX_BYTES);
-    const appendix = css.slice(PREFIX_BYTES);
+    const markerByteIdx = cssBytes.indexOf(Buffer.from(MARKER, "utf8"));
+    expect(markerByteIdx).toBeGreaterThanOrEqual(PREFIX_BYTES);
+    const appendix = cssBytes.subarray(PREFIX_BYTES).toString("utf8");
     expect(appendix).toContain(MARKER);
     expect(appendix).not.toContain("!important");
     // No bare standalone selectors outside the .modalPrimary > .primaryRow chain
