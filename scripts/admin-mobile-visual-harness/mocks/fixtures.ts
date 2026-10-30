@@ -70,7 +70,7 @@ function syntheticRegistryRow(index: number) {
     partnerType: kind.partnerType,
     partnerKind: kind.partnerKind,
     city: kind.city,
-    registrationLabel: isDemo ? "DEMO" : "LIVE",
+    registrationLabel: isDemo ? "DEMO" : "ACTIVE",
     lifecycle: isHidden
       ? { catalogHiddenAt: "2026-10-20T00:00:00.000Z", projectArchivedAt: null }
       : null,
