@@ -21,15 +21,19 @@ import {
   type SearchRole,
 } from "@/lib/partnership-rules";
 import {
-  matchesListPartnerType,
-  matchesListSpecialization,
-  matchesListStage,
   partnerDisplayTitle,
-  partnershipPartnerUser,
-  sortPartnershipsDeterministic,
   type AgentPartnerTypeFilter,
 } from "@/lib/agent-r04/partner-filters";
 import { patchPartnershipListPreference } from "@/lib/agent-r04/api";
+import {
+  collectActiveListCityOptions,
+  filterActivePartnershipRows,
+  partnerTypeChipLabel,
+  specializationChipLabel,
+  stageChipLabel,
+  type ActiveListStatusFilter,
+  type ActiveListTaxonomyLabels,
+} from "@/lib/partners-prototype-v1/active-list-filters";
 import {
   AgentPartnerBulkBar,
   type BulkListOperation,
@@ -101,7 +105,7 @@ export type PartnersHubProps = {
 
 type TabId = "list" | "find" | "link";
 
-const AGENT_R04_LIST_SEARCH_PLACEHOLDER = "Название партнёра или город";
+const AGENT_R04_LIST_SEARCH_PLACEHOLDER = "Найти среди своих партнёров";
 
 type TermRequestState = {
   state: "idle" | "loading" | "loaded" | "error";
@@ -175,11 +179,15 @@ export function PartnersHub({
   const [listSpecialization, setListSpecialization] = useState("");
   const [listCity, setListCity] = useState("");
   const [listStage, setListStage] = useState("");
+  const [listStatus, setListStatus] = useState<ActiveListStatusFilter>("");
   const [listSort, setListSort] = useState<AgentListSort>("updated_desc");
   const [listSearch, setListSearch] = useState("");
   const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
   const [listPage, setListPage] = useState(0);
   const [listPageSize, setListPageSize] = useState(25);
+  const [listTaxonomyLabels, setListTaxonomyLabels] = useState<ActiveListTaxonomyLabels | null>(
+    null,
+  );
   const [waitingOpen, setWaitingOpen] = useState(false);
   const [decideZeroHint, setDecideZeroHint] = useState(false);
   const [waitingPage, setWaitingPage] = useState(0);
@@ -329,65 +337,60 @@ export function PartnersHub({
   );
 
   const applyActiveListFilters = useCallback(
-    (source: Partnership[]): Partnership[] => {
-      let rows = source;
-      const q = listSearch.trim().toLowerCase();
-      if (q) {
-        rows = rows.filter((p) => {
-          const titles = partnerDisplayTitle(p, meId);
-          const partner = partnershipPartnerUser(p, meId);
-          const haystack = [
-            titles.official,
-            titles.alias ?? "",
-            partner.city ?? "",
-            partner.displayName ?? "",
-            partner.organizationName ?? "",
-          ]
-            .join(" ")
-            .toLowerCase();
-          return haystack.includes(q);
-        });
-      }
-      if (listPartnerType || listSpecialization || listCity.trim() || listStage) {
-        rows = rows.filter((p) => {
-          const partner = partnershipPartnerUser(p, meId);
-          if (listCity.trim() && (partner.city ?? "").toLowerCase() !== listCity.trim().toLowerCase()) {
-            return false;
-          }
-          if (!matchesListPartnerType(partner, listPartnerType)) return false;
-          if (!matchesListSpecialization(partner, listSpecialization)) return false;
-          if (!matchesListStage(partner, listStage)) return false;
-          return true;
-        });
-      }
-      rows = sortPartnershipsDeterministic(rows);
-      if (listSort === "name_asc") {
-        rows = [...rows].sort((a, b) => {
-          const ta = partnerDisplayTitle(a, meId).alias ?? partnerDisplayTitle(a, meId).official;
-          const tb = partnerDisplayTitle(b, meId).alias ?? partnerDisplayTitle(b, meId).official;
-          return ta.localeCompare(tb, "ru");
-        });
-      }
-      return rows;
-    },
-    [listCity, listPartnerType, listSearch, listSort, listSpecialization, listStage, meId],
+    (rows: Partnership[]): Partnership[] =>
+      filterActivePartnershipRows(rows, meId, {
+        searchQuery: listSearch,
+        partnerType: listPartnerType,
+        specialization: listSpecialization,
+        city: listCity,
+        stageId: listStage,
+        status: listStatus,
+        sort: listSort,
+        taxonomy: listTaxonomyLabels,
+      }),
+    [
+      listCity,
+      listPartnerType,
+      listSearch,
+      listSort,
+      listSpecialization,
+      listStage,
+      listStatus,
+      listTaxonomyLabels,
+      meId,
+    ],
+  );
+
+  /** Full available active collection for the current visibility bucket, before any list filter. */
+  const activeVisibilityRows = useMemo(() => {
+    if (!isAgentR04) return [];
+    if (listArchiveView === "archive") {
+      return partnerships.filter(
+        (p) =>
+          partnershipAgentSegment(p.status) === "active" && Boolean(p.listPreference?.archivedAt),
+      );
+    }
+    if (listArchiveView === "hidden") {
+      return partnerships.filter((p) => Boolean(p.listPreference?.hiddenAt));
+    }
+    if (overviewGroups) return overviewGroups.active;
+    return partnerships.filter(
+      (p) =>
+        partnershipAgentSegment(p.status) === "active" &&
+        !p.listPreference?.archivedAt &&
+        !p.listPreference?.hiddenAt,
+    );
+  }, [isAgentR04, listArchiveView, overviewGroups, partnerships]);
+
+  const activeListCityOptions = useMemo(
+    () => collectActiveListCityOptions(activeVisibilityRows, meId),
+    [activeVisibilityRows, meId],
   );
 
   const overviewActiveRows = useMemo(() => {
     if (!overviewGroups) return [];
-    let rows: Partnership[];
-    if (listArchiveView === "archive") {
-      rows = partnerships.filter(
-        (p) =>
-          partnershipAgentSegment(p.status) === "active" && Boolean(p.listPreference?.archivedAt),
-      );
-    } else if (listArchiveView === "hidden") {
-      rows = partnerships.filter((p) => Boolean(p.listPreference?.hiddenAt));
-    } else {
-      rows = overviewGroups.active;
-    }
-    return applyActiveListFilters(rows);
-  }, [applyActiveListFilters, listArchiveView, overviewGroups, partnerships]);
+    return applyActiveListFilters(activeVisibilityRows);
+  }, [activeVisibilityRows, applyActiveListFilters, overviewGroups]);
 
   const visiblePartnerships = useMemo(() => {
     if (isOverview) {
@@ -431,6 +434,7 @@ export function PartnersHub({
     listSort,
     listSpecialization,
     listStage,
+    listStatus,
   ]);
 
   const pagedPartnerships = useMemo(() => {
@@ -543,6 +547,7 @@ export function PartnersHub({
     listSort,
     listSpecialization,
     listStage,
+    listStatus,
   ]);
 
   useEffect(() => {
@@ -573,19 +578,16 @@ export function PartnersHub({
     if (listPartnerType) {
       chips.push({
         key: "type",
-        label: `Тип: ${listPartnerType}`,
+        label: partnerTypeChipLabel(listPartnerType),
         onClear: () => setListPartnerType(""),
       });
     }
     if (listSpecialization) {
       chips.push({
         key: "spec",
-        label: `Специализация`,
+        label: specializationChipLabel(listSpecialization, listTaxonomyLabels),
         onClear: () => setListSpecialization(""),
       });
-    }
-    if (listStage) {
-      chips.push({ key: "stage", label: `Этап`, onClear: () => setListStage("") });
     }
     if (listCity.trim()) {
       chips.push({
@@ -594,17 +596,27 @@ export function PartnersHub({
         onClear: () => setListCity(""),
       });
     }
+    if (listStage) {
+      chips.push({
+        key: "stage",
+        label: stageChipLabel(listStage, listTaxonomyLabels),
+        onClear: () => setListStage(""),
+      });
+    }
     return chips;
-  }, [isAgentR04, listCity, listPartnerType, listSpecialization, listStage]);
+  }, [isAgentR04, listCity, listPartnerType, listSpecialization, listStage, listTaxonomyLabels]);
 
   const resetListFilters = useCallback(() => {
+    // Clears query + restrictions; preserves selected sort and list/cards view.
     setListArchiveView("active");
     setListPartnerType("");
     setListSpecialization("");
     setListCity("");
     setListStage("");
-    setListSort("updated_desc");
+    setListStatus("");
     setListSearch("");
+    setListPage(0);
+    setSelectedPartnerIds(new Set());
     setTaxonomyFilterResetKey((k) => k + 1);
   }, []);
 
@@ -1146,6 +1158,9 @@ export function PartnersHub({
                   specialization={listSpecialization}
                   stageId={listStage}
                   city={listCity}
+                  cityOptions={activeListCityOptions}
+                  status={listStatus}
+                  onStatusChange={setListStatus}
                   sort={listSort}
                   onPartnerTypeChange={setListPartnerType}
                   onSpecializationChange={setListSpecialization}
@@ -1155,6 +1170,7 @@ export function PartnersHub({
                   onResetFilters={resetListFilters}
                   taxonomyResetKey={taxonomyFilterResetKey}
                   chips={listFilterChips}
+                  onTaxonomyLabelsChange={setListTaxonomyLabels}
                 />
               </div>
               <AgentPartnerBulkBar
@@ -1276,6 +1292,9 @@ export function PartnersHub({
                 specialization={listSpecialization}
                 stageId={listStage}
                 city={listCity}
+                cityOptions={activeListCityOptions}
+                status={listStatus}
+                onStatusChange={setListStatus}
                 sort={listSort}
                 onPartnerTypeChange={setListPartnerType}
                 onSpecializationChange={setListSpecialization}
@@ -1285,6 +1304,7 @@ export function PartnersHub({
                 onResetFilters={resetListFilters}
                 taxonomyResetKey={taxonomyFilterResetKey}
                 chips={listFilterChips}
+                onTaxonomyLabelsChange={setListTaxonomyLabels}
               />
             </div>
           ) : null}
