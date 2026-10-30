@@ -126,7 +126,7 @@ describe("Independent mass-action safety", () => {
     fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
     await confirm();
     await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
-    expect(screen.getByRole("button", { name: "Демо 6" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Магазины/ })).toBeDisabled();
   });
 
   it("allows starting a second group after retaining the first report", async () => {
@@ -149,8 +149,8 @@ describe("Independent mass-action safety", () => {
     await open();
     const before = api.fetchPartnerRegistry.mock.calls.length;
     api.fetchPartnerRegistry.mockImplementation(() => new Promise(() => {}));
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
-    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue("demo"));
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "demo" } });
+    await waitFor(() => expect(screen.getByLabelText("Статус регистрации")).toHaveValue("demo"));
     await waitFor(() => expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(before));
     const old = screen.queryByLabelText("Выбрать Partner 1");
     if (old) expect(old).toBeDisabled();
@@ -189,7 +189,7 @@ describe("Independent mass-action safety", () => {
       expect(api.fetchPartnerRegistry.mock.calls.some(([p]) => p.get("cursor") === "p6")).toBe(true),
     );
     const before = api.fetchPartnerRegistry.mock.calls.length;
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "demo" } });
     await waitFor(() => expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(before));
     expect(api.fetchPartnerRegistry.mock.calls[before][0].get("cursor")).toBeNull();
   });

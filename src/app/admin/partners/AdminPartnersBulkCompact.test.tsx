@@ -69,7 +69,7 @@ describe("Admin partners bulk selection and compact registry", () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Partner One");
     fireEvent.click(screen.getByLabelText("Выбрать Partner One"));
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "demo" } });
     await waitFor(() => expect(screen.queryByText(/Выбрано:/)).toBeNull());
   });
 

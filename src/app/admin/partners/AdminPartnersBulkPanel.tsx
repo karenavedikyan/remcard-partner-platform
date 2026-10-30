@@ -82,23 +82,37 @@ export function AdminPartnersBulkPanel({
     !bulkPreview &&
     !applyResults;
 
+  function pickQuickAction(action: BulkLifecycleAction) {
+    onBulkActionChange(action);
+    onOpenSelectionForm?.();
+  }
+
   if (showCompactBarOnly) {
     return (
-      <div className={styles.bulkCompactBar} role="region" aria-label="Групповые действия">
-        <span className={styles.bulkCompactCount}>
-          Выбрано: <strong>{selectedCount}</strong>
-          {otherPagesCount > 0 ? (
-            <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
-          ) : null}
-        </span>
-        <div className={styles.bulkCompactActions}>
-          <Button variant="secondary" disabled={disabled} onClick={() => onOpenSelectionForm?.()}>
-            Действия
-          </Button>
-          <Button variant="secondary" disabled={disabled} onClick={onClearSelection}>
-            Снять выбор
-          </Button>
-        </div>
+      <div className={styles.bulkBar} role="region" aria-label="Групповые действия">
+        <strong>
+          Выбрано: <span data-testid="selected-count">{selectedCount}</span>
+        </strong>
+        <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("hide_catalog")}>
+          Каталог
+        </button>
+        <button
+          type="button"
+          className={styles.bulkBarBtn}
+          disabled
+          title="Массовое изменение поиска сотрудничества в API нет — используйте карточку партнёра"
+        >
+          Сотрудничество
+        </button>
+        <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("archive_project")}>
+          В архив
+        </button>
+        <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("hide_catalog")}>
+          Удалить
+        </button>
+        <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={onClearSelection}>
+          Отменить
+        </button>
       </div>
     );
   }
@@ -106,19 +120,55 @@ export function AdminPartnersBulkPanel({
   return (
     <div className={styles.bulkPanel} role="region" aria-label="Групповые действия">
       {showSelectionHead ? (
-        <div className={styles.bulkPanelHead}>
-          <p>
-            Выбрано: <strong>{selectedCount}</strong> (не более {MAX_BULK_SELECTION})
+        <div className={styles.bulkBar} data-embedded="true">
+          <strong>
+            Выбрано: <span data-testid="selected-count">{selectedCount}</span>
+            <span className={styles.bulkHint}> (не более {MAX_BULK_SELECTION})</span>
             {otherPagesCount > 0 ? (
-              <span className={styles.bulkHint}>
-                {" "}
-                · на других страницах: {otherPagesCount}
-              </span>
+              <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
             ) : null}
-          </p>
-          <Button variant="secondary" disabled={disabled || applying} onClick={onClearSelection}>
-            Снять выбор
-          </Button>
+          </strong>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={() => pickQuickAction("hide_catalog")}
+          >
+            Каталог
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled
+            title="Массовое изменение поиска сотрудничества в API нет — используйте карточку партнёра"
+          >
+            Сотрудничество
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={() => pickQuickAction("archive_project")}
+          >
+            В архив
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={() => pickQuickAction("hide_catalog")}
+            title="Удаление = скрытие из каталога / архив через preview; аккаунт не удаляется"
+          >
+            Удалить
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={onClearSelection}
+          >
+            Отменить
+          </button>
         </div>
       ) : null}
 

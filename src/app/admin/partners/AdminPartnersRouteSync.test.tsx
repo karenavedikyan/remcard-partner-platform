@@ -37,39 +37,39 @@ describe("AdminPartnersClient URL sync (client navigation)", () => {
     const { rerender } = render(<AdminPartnersClient />);
     await waitFor(() => expect(api.fetchPartnerRegistry).toHaveBeenCalled());
     expect(lastRegistryRegistration()).toBeNull();
-    expect(screen.getByLabelText("Регистрация")).toHaveValue("");
+    expect(screen.getByLabelText("Статус регистрации")).toHaveValue("all");
 
     nav.params = new URLSearchParams("registration=active");
     rerender(<AdminPartnersClient />);
 
-    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue("active"));
+    await waitFor(() => expect(screen.getByLabelText("Статус регистрации")).toHaveValue("active"));
     await waitFor(() => expect(lastRegistryRegistration()).toBe("active"));
   });
 
   it("does not revert manual filter when URL query is unchanged", async () => {
     nav.params = new URLSearchParams("registration=active");
     const { rerender } = render(<AdminPartnersClient />);
-    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue("active"));
+    await waitFor(() => expect(screen.getByLabelText("Статус регистрации")).toHaveValue("active"));
 
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "all" } });
     await waitFor(() => expect(lastRegistryRegistration()).toBeNull());
 
     api.fetchPartnerRegistry.mockClear();
     rerender(<AdminPartnersClient />);
     await new Promise((r) => setTimeout(r, 30));
-    expect(screen.getByLabelText("Регистрация")).toHaveValue("");
+    expect(screen.getByLabelText("Статус регистрации")).toHaveValue("all");
     expect(api.fetchPartnerRegistry).not.toHaveBeenCalled();
   });
 
   it("clears active filter when navigating to registry without registration param", async () => {
     nav.params = new URLSearchParams("registration=active");
     const { rerender } = render(<AdminPartnersClient />);
-    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue("active"));
+    await waitFor(() => expect(screen.getByLabelText("Статус регистрации")).toHaveValue("active"));
 
     nav.params = new URLSearchParams();
     rerender(<AdminPartnersClient />);
 
-    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue(""));
+    await waitFor(() => expect(screen.getByLabelText("Статус регистрации")).toHaveValue("all"));
     await waitFor(() => expect(lastRegistryRegistration()).toBeNull());
   });
 });

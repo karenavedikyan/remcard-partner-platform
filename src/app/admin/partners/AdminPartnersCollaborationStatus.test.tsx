@@ -1,82 +1,97 @@
+/** @vitest-environment jsdom */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
-}));
 
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock("@/lib/prof-admin-partners-api", () => api);
 
 import { AdminPartnersClient } from "./AdminPartnersClient";
 
-const visibleRow = {
+const visible = {
   id: "visible-partner",
   displayName: "Visible Collab Partner",
-  partnerType: "MASTER",
-  registrationLabel: "ACTIVE" as const,
-  catalogVisibility: "NOT_PUBLISHED" as const,
-  city: "SPB",
+  partnerType: "AGENT",
+  partnerKind: "agent",
+  city: "Москва",
+  registrationLabel: "ACTIVE",
   lifecycle: null,
-  partnerSearchVisibility: { visible: true, reasonCode: "eligible", reasonLabel: "" },
-  partnershipCounts: { active: 2, invited: 1, pending: 0, paused: 0, ended: 3, total: 6 },
+  catalogVisibility: "VISIBLE",
+  partnerSearchVisibility: {
+    visible: true,
+    reasonCode: "OK",
+    reasonLabel: "Доступен",
+    adminOverride: "AUTO",
+  },
+  partnershipCounts: { active: 2, invited: 1, pending: 0, paused: 0, ended: 0, total: 3 },
+  publicCatalogLinks: [],
 };
 
-const hiddenRow = {
+const hidden = {
   id: "hidden-partner",
   displayName: "Hidden Collab Partner",
   partnerType: "STORE",
-  registrationLabel: "DEMO" as const,
-  catalogVisibility: "VISIBLE" as const,
-  city: "Kazan",
+  partnerKind: "store",
+  city: "Сочи",
+  registrationLabel: "DEMO",
   lifecycle: null,
+  catalogVisibility: "NOT_PUBLISHED",
   partnerSearchVisibility: {
     visible: false,
-    reasonCode: "demo",
+    reasonCode: "HIDDEN",
     reasonLabel: "Причина скрытия из поиска",
+    adminOverride: "HIDE",
   },
-  partnershipCounts: { active: 0, invited: 4, pending: 0, paused: 0, ended: 0, total: 4 },
+  partnershipCounts: { active: 0, invited: 0, pending: 0, paused: 0, ended: 0, total: 0 },
+  publicCatalogLinks: [],
 };
 
-const missingRow = {
+const missing = {
   id: "missing-partner",
   displayName: "Missing Collab Data",
-  partnerType: "AGENT",
-  registrationLabel: "ACTIVE" as const,
-  city: "Omsk",
+  partnerType: "COMPANY",
+  partnerKind: "company",
+  city: "Тула",
+  registrationLabel: "ACTIVE",
   lifecycle: null,
+  catalogVisibility: "VISIBLE",
+  publicCatalogLinks: [],
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
   api.fetchPartnerRegistry.mockResolvedValue({
-    items: [visibleRow, hiddenRow, missingRow],
+    items: [visible, hidden, missing],
     total: 3,
     nextCursor: null,
     facets: null,
   });
 });
 
-describe("Admin partners collaboration status UI", () => {
-  it("renders collaboration column in compact table without conflating catalog badges", async () => {
+describe("Admin partners collaboration status UI (R1)", () => {
+  it("renders collaboration column without conflating catalog badges", async () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Visible Collab Partner");
     const table = screen.getByRole("table", { name: "Реестр партнёров" });
-    expect(table.querySelectorAll("colgroup col")).toHaveLength(8);
     expect(within(table).getByRole("columnheader", { name: "Сотрудничество" })).toBeTruthy();
+    expect(within(table).getByRole("columnheader", { name: "Каталог" })).toBeTruthy();
     expect(screen.getAllByText("Виден партнёрам").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Не виден партнёрам").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Не виден партнёрам|Скрыт от партнёров/).length).toBeGreaterThan(0);
     expect(screen.getByText("Причина скрытия из поиска")).toBeTruthy();
     expect(screen.getAllByText("Нет данных").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Виден в каталоге").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Не опубликован").length).toBeGreaterThan(0);
-    const activeZeros = screen.getAllByText("0", { exact: true });
-    expect(activeZeros.length).toBeGreaterThan(0);
+    // Catalog tokens are compact Виден/Скрыт (not long catalogStatusLabel in the catalog column)
+    expect(within(table).getAllByText("Виден").length).toBeGreaterThan(0);
+    expect(within(table).getAllByText("Скрыт").length).toBeGreaterThan(0);
   });
 
   it("expands keyboard-accessible breakdown and labels invitations separately from active", async () => {
@@ -115,7 +130,7 @@ describe("Admin partners collaboration status UI", () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Visible Collab Partner");
     await ui.click(screen.getByRole("button", { name: "Карточки" }));
-    expect(await screen.findAllByRole("heading", { name: "Сотрудничество" })).toHaveLength(3);
+    expect(await screen.findAllByRole("region", { name: "Сотрудничество" })).toHaveLength(3);
     expect(screen.getAllByText("Visible Collab Partner").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Виден партнёрам").length).toBeGreaterThan(0);
   });

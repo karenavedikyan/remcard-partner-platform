@@ -83,9 +83,8 @@ async function openManagement(name: string) {
   render(<AdminPartnersClient />);
   await screen.findByText(name);
   const row = screen.getByText(name).closest("tr") ?? screen.getByText(name).closest("article");
-  const deleteBtn = within(row!).getByRole("button", { name: "Удалить" });
-  fireEvent.click(deleteBtn);
-  return screen.getByRole("region", { name: new RegExp(name) });
+  fireEvent.click(within(row!).getByRole("button", { name: new RegExp(`Открыть карточку ${name}`) }));
+  return screen.getByRole("region", { name: new RegExp(`Управление партнёром ${name}`) });
 }
 
 describe("Admin partner search visibility controls", () => {
@@ -96,7 +95,7 @@ describe("Admin partner search visibility controls", () => {
     expect(within(panel).getByRole("button", { name: "По правилам регистрации" })).toBeTruthy();
     expect(screen.getAllByText("Демо").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Виден партнёрам по решению администратора").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Виден в каталоге").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Виден").length).toBeGreaterThan(0);
   });
 
   it("runs preview and apply for hide_partner_search with reason and refreshes registry", async () => {
@@ -131,8 +130,8 @@ describe("Admin partner search visibility controls", () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Legacy Demo Visible");
     await ui.click(screen.getByRole("button", { name: "Карточки" }));
-    await ui.click(screen.getAllByRole("button", { name: "Действия" })[0]!);
-    const panel = screen.getByRole("region", { name: /Legacy Demo Visible/ });
+    await ui.click(screen.getAllByRole("button", { name: /Открыть карточку/ })[0]!);
+    const panel = screen.getByRole("region", { name: /Управление партнёром Legacy Demo Visible/ });
     expect(within(panel).getByRole("button", { name: "Показывать партнёрам" })).toBeTruthy();
   });
 
@@ -155,10 +154,10 @@ describe("Admin partner search visibility controls", () => {
 
     render(<AdminPartnersClient />);
     await screen.findByRole("table", { name: "Реестр партнёров" });
-    const nameCell = await screen.findByText("Demo Hidden Search", { selector: "td" });
+    const nameCell = await screen.findByText("Demo Hidden Search");
     const row = nameCell.closest("tr")!;
-    fireEvent.click(within(row).getByRole("button", { name: "Действия" }));
-    const panel = screen.getByRole("region", { name: /Demo Hidden Search/ });
+    fireEvent.click(within(row).getByRole("button", { name: /Открыть карточку/ }));
+    const panel = screen.getByRole("region", { name: /Управление партнёром Demo Hidden Search/ });
     fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
     await screen.findByRole("button", { name: "Подтвердить" });
@@ -214,10 +213,10 @@ describe("Admin partner search visibility controls", () => {
 
     render(<AdminPartnersClient />);
     await screen.findByRole("table", { name: "Реестр партнёров" });
-    const nameCell = await screen.findByText("Demo Hidden Search", { selector: "td" });
+    const nameCell = await screen.findByText("Demo Hidden Search");
     const row = nameCell.closest("tr")!;
-    fireEvent.click(within(row).getByRole("button", { name: "Действия" }));
-    const panel = screen.getByRole("region", { name: /Demo Hidden Search/ });
+    fireEvent.click(within(row).getByRole("button", { name: /Открыть карточку/ }));
+    const panel = screen.getByRole("region", { name: /Управление партнёром Demo Hidden Search/ });
     fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
     await screen.findByRole("button", { name: "Подтвердить" });
