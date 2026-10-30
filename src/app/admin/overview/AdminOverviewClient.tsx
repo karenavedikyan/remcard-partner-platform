@@ -46,7 +46,11 @@ function MiniBars({
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const apply = () => {
-      const w = Math.floor(el.getBoundingClientRect().width);
+      // SVG is width:100% of the content box; exclude wrap padding so viewBox
+      // user units match rendered CSS px (screen CTM ≈ 1 for axis text).
+      const cs = getComputedStyle(el);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const w = Math.floor(el.clientWidth - padX);
       if (w > 0) setPlotW(w);
     };
     apply();
