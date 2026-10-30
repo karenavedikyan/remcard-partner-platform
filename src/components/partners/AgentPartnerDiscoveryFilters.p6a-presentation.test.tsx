@@ -23,9 +23,9 @@ const { fetchPartnerTaxonomy } = await import("@/lib/partner-taxonomy");
 describe("AgentPartnerDiscoveryFilters P6a presentation", () => {
   beforeEach(() => {
     vi.mocked(fetchPartnerTaxonomy).mockResolvedValue({
-      products: [{ id: "p1", label: "Плитка и керамогранит длинная подпись" }],
-      services: [{ id: "s1", label: "Электромонтаж длинная подпись опции" }],
-      stages: [{ id: "st1", label: "Черновая отделка длинная подпись этапа" }],
+      products: [{ kind: "product", id: "p1", label: "Плитка и керамогранит длинная подпись" }],
+      services: [{ kind: "service", id: "s1", label: "Электромонтаж длинная подпись опции" }],
+      stages: [{ kind: "stage", id: "st1", label: "Черновая отделка длинная подпись этапа" }],
     });
   });
 
