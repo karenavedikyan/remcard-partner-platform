@@ -54,6 +54,10 @@
   color: var(--ink);
   cursor: pointer;
   min-height: 44px;
+  /* Grid items default min-width:auto; unbroken titles must be allowed to shrink. */
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .tile:hover,
@@ -83,6 +87,10 @@
 .tileTitle {
   font-size: var(--text-sm);
   font-weight: 700;
+  /* Keep ≥14px (--text-sm); wrap unbroken labels inside the tile instead of clipping. */
+  overflow-wrap: anywhere;
+  word-break: normal;
+  max-width: 100%;
 }
 
 .tileNote {
@@ -331,6 +339,10 @@
     align-items: flex-start;
     gap: var(--space-2);
     padding: var(--space-4) var(--space-3);
+  }
+
+  .tileBody {
+    width: 100%;
   }
 
   .tileNote,
