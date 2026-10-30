@@ -322,18 +322,24 @@ export function AgentPartnerCollection(props: Props) {
   if (viewMode === "cards") {
     return (
       <>
+        {selectPageRow}
         <div className={styles.cardGrid} data-testid="agent-r04-partners-cards">
           {partnerships.map((partnership) => {
             const partner = partnershipPartnerProfile(partnership, meId);
             const officialLine = partnerCollectionOfficialLine(partnership, meId);
             const typeCaption = partnerTypeLabel(partner);
             const detail = partnerCollectionListDetail(partnership, meId);
+            const isSelected = selectedIds.has(partnership.id);
             return (
-              <article key={partnership.id} className={styles.partnerCard}>
+              <article
+                key={partnership.id}
+                className={`${styles.partnerCard}${isSelected ? ` ${styles.partnerCardSelected}` : ""}`}
+                data-selected={isSelected ? "true" : "false"}
+              >
                 <div className={styles.cardSelectRow}>
                   <input
                     type="checkbox"
-                    checked={selectedIds.has(partnership.id)}
+                    checked={isSelected}
                     onChange={() => onToggleSelect(partnership.id)}
                     aria-label="Выбрать карточку"
                   />

@@ -14,6 +14,19 @@
   overflow: hidden;
 }
 
+/**
+ * Prototype `.collection-card-shell.selected`: accent border + tint.
+ * Checkbox in `.cardSelectRow` stays visible; whole card is not a click target.
+ */
+.partnerCardSelected {
+  border-color: var(--accent, var(--primary));
+  background: var(--soft, color-mix(in srgb, var(--accent, var(--primary)) 10%, var(--surface)));
+}
+
+.partnerCardSelected .cardSelectRow {
+  border-bottom-color: color-mix(in srgb, var(--accent, var(--primary)) 28%, var(--line));
+}
+
 .cardSelectRow {
   display: flex;
   align-items: center;
@@ -269,6 +282,8 @@
   margin: var(--space-2) 0 var(--space-2);
   padding: 0 var(--space-1);
   font-size: var(--text-sm);
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .selectPageLabel {

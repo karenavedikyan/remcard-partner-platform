@@ -589,4 +589,124 @@ describe("AgentPartnerCollection P3a display hierarchy", () => {
   });
 });
 
+describe("AgentPartnerCollection P3b cards selection", () => {
+  function activeCard(id: string): Partnership {
+    return basePartnership({
+      id,
+      status: "ACTIVE",
+      listPreference: { personalAlias: `Партнёр ${id}`, archivedAt: null, hiddenAt: null },
+    });
+  }
+
+  it("shows the same select-page row in cards and toggles page selection", async () => {
+    const user = userEvent.setup();
+    const onToggleSelectAll = vi.fn();
+    const partnerships = [activeCard("c1"), activeCard("c2")];
+
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={partnerships}
+        totalCount={2}
+        onToggleSelectAll={onToggleSelectAll}
+      />,
+    );
+
+    const pageRow = screen.getByTestId("agent-r04-select-page-row");
+    expect(pageRow).toHaveTextContent("Выбрать страницу (2)");
+    const pageCheckbox = within(pageRow).getByRole("checkbox", {
+      name: "Выбрать страницу (2)",
+    });
+    expect(pageCheckbox).not.toBeChecked();
+
+    await user.click(pageCheckbox);
+    expect(onToggleSelectAll).toHaveBeenCalledWith(["c1", "c2"], true);
+  });
+
+  it("marks selected cards with local selected class while checkbox stays visible", async () => {
+    const user = userEvent.setup();
+    const onToggleSelect = vi.fn();
+    const partnerships = [activeCard("sel-1"), activeCard("sel-2")];
+
+    const { rerender } = render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={partnerships}
+        totalCount={2}
+        selectedIds={new Set(["sel-1"])}
+        onToggleSelect={onToggleSelect}
+      />,
+    );
+
+    const cards = screen.getByTestId("agent-r04-partners-cards");
+    const articles = within(cards).getAllByRole("article");
+    expect(articles[0]).toHaveAttribute("data-selected", "true");
+    expect(articles[1]).toHaveAttribute("data-selected", "false");
+    expect(articles[0]!.className).toMatch(/partnerCardSelected/);
+    expect(articles[1]!.className).not.toMatch(/partnerCardSelected/);
+
+    const selectedCheckbox = within(articles[0]!).getByRole("checkbox", {
+      name: "Выбрать карточку",
+    });
+    expect(selectedCheckbox).toBeChecked();
+    expect(selectedCheckbox).toBeVisible();
+
+    await user.click(selectedCheckbox);
+    expect(onToggleSelect).toHaveBeenCalledWith("sel-1");
+
+    rerender(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={partnerships}
+        totalCount={2}
+        selectedIds={new Set()}
+        onToggleSelect={onToggleSelect}
+      />,
+    );
+    expect(within(cards).getAllByRole("article")[0]).toHaveAttribute("data-selected", "false");
+    expect(within(cards).getAllByRole("article")[0]!.className).not.toMatch(/partnerCardSelected/);
+  });
+
+  it("does not make the card name control toggle selection", async () => {
+    const user = userEvent.setup();
+    const onToggleSelect = vi.fn();
+    const partnership = activeCard("name-only");
+
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={[partnership]}
+        totalCount={1}
+        onToggleSelect={onToggleSelect}
+      />,
+    );
+
+    await user.click(screen.getByTestId("partner-row-name-button"));
+    expect(onToggleSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("keeps allSelected false when only part of the page is selected", () => {
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={[activeCard("p-a"), activeCard("p-b"), activeCard("p-c")]}
+        totalCount={3}
+        selectedIds={new Set(["p-a", "p-b"])}
+      />,
+    );
+
+    const pageCheckbox = within(screen.getByTestId("agent-r04-select-page-row")).getByRole(
+      "checkbox",
+      { name: "Выбрать страницу (3)" },
+    );
+    expect(pageCheckbox).not.toBeChecked();
+  });
+});
+
 
