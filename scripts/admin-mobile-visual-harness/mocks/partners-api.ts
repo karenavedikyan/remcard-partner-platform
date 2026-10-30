@@ -9,7 +9,7 @@ export async function fetchPartnerRegistry(params?: URLSearchParams) {
   let items = [...registryRows];
   const registration = params?.get("registration");
   if (registration === "active") {
-    items = items.filter((row) => row.registrationLabel === "ACTIVE");
+    items = items.filter((row) => row.registrationLabel === "LIVE");
   } else if (registration === "demo") {
     items = items.filter((row) => row.registrationLabel === "DEMO");
   }
@@ -35,7 +35,7 @@ export async function fetchPartnerRegistry(params?: URLSearchParams) {
         facetRule: "harness",
       },
       registration: {
-        active: items.filter((r) => r.registrationLabel === "ACTIVE").length,
+        active: items.filter((r) => r.registrationLabel === "LIVE").length,
         demo: items.filter((r) => r.registrationLabel === "DEMO").length,
         facetRule: "harness",
       },
