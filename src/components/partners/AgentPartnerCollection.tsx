@@ -21,6 +21,11 @@ import { PartnerPartnershipDetailDialog } from "@/components/partners/PartnerPar
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import {
+  cooperationActionLabel,
+  cooperationPartnerTitle,
+  termChangeActionLabel,
+} from "@/components/partners/partner-cooperation-c1";
 import r03 from "@/components/agent-r03/agent-r03.module.css";
 import styles from "./AgentPartnerCollection.module.css";
 
@@ -38,7 +43,9 @@ type Props = {
   onRunAction: (partnershipId: string, action: string) => void;
   onUpdated: () => void;
   termRequests: Record<string, TermRequestState>;
-  onLoadTermRequests: (partnershipId: string) => void;
+  onLoadTermRequests: (partnershipId: string, trigger?: HTMLElement | null) => void;
+  onCloseTermChange?: () => void;
+  onTermDirtyChange?: (dirty: boolean) => void;
   expandedTermPartnershipId: string | null;
   /** Deep-link target already paged into `partnerships` — open its detail dialog once. */
   focusPartnershipId?: string | null;
@@ -114,7 +121,7 @@ function PartnerRowInlineWorkflow({
   meId: string;
   busyId: string | null;
   onRunAction: (partnershipId: string, action: string) => void;
-  onLoadTermRequests: (partnershipId: string) => void;
+  onLoadTermRequests: (partnershipId: string, trigger?: HTMLElement | null) => void;
 }) {
   const actions = getPartnershipUiActions(partnership, meId);
   const waiting = actions.filter((a) => a.kind === "waiting");
@@ -132,15 +139,21 @@ function PartnerRowInlineWorkflow({
           key={action.kind}
           variant={action.variant ?? "secondary"}
           disabled={disabled}
+          data-testid={`partner-action-${action.kind}`}
           onClick={() => onRunAction(partnership.id, action.kind)}
         >
-          {action.label}
+          {cooperationActionLabel(action.kind) ?? action.label}
         </Button>
       ))}
       {partnership.status === "ACTIVE" ? (
         <>
-          <Button variant="secondary" disabled={disabled} onClick={() => onLoadTermRequests(partnership.id)}>
-            Изменение условий
+          <Button
+            variant="secondary"
+            disabled={disabled}
+            data-testid={`partner-term-change-${partnership.id}`}
+            onClick={(event) => onLoadTermRequests(partnership.id, event.currentTarget)}
+          >
+            {termChangeActionLabel()}
           </Button>
           <Link href="/certificates" className={styles.certLink}>
             Создать сертификат
@@ -161,13 +174,17 @@ function TermChangeRow({
   meId,
   termState,
   onLoadTermRequests,
+  onCloseTermChange,
+  onTermDirtyChange,
   onUpdated,
   colSpan,
 }: {
   partnership: Partnership;
   meId: string;
   termState: TermRequestState | undefined;
-  onLoadTermRequests: (id: string) => void;
+  onLoadTermRequests: (id: string, trigger?: HTMLElement | null) => void;
+  onCloseTermChange?: () => void;
+  onTermDirtyChange?: (dirty: boolean) => void;
   onUpdated: () => void;
   colSpan?: number;
 }) {
@@ -176,6 +193,7 @@ function TermChangeRow({
     <TermChangePanel
       partnership={partnership}
       meId={meId}
+      partnerTitle={cooperationPartnerTitle(partnership, meId)}
       requests={termState.state === "loaded" ? termState.requests : null}
       loadState={
         termState.state === "idle"
@@ -190,6 +208,8 @@ function TermChangeRow({
         onUpdated();
         onLoadTermRequests(partnership.id);
       }}
+      onDirtyChange={onTermDirtyChange}
+      onCloseRequest={onCloseTermChange}
     />
   );
   if (colSpan) {
@@ -214,6 +234,8 @@ export function AgentPartnerCollection(props: Props) {
     onUpdated,
     termRequests,
     onLoadTermRequests,
+    onCloseTermChange,
+    onTermDirtyChange,
     expandedTermPartnershipId,
     focusPartnershipId = null,
     onFocusPartnershipConsumed,
@@ -316,6 +338,23 @@ export function AgentPartnerCollection(props: Props) {
       open={detailPartnershipId !== null}
       onClose={closeDetails}
       returnFocusRef={detailNameButtonRef}
+      busy={Boolean(detailPartnership && busyId === detailPartnership.id)}
+      onRunAction={
+        detailPartnership
+          ? (action) => {
+              onRunAction(detailPartnership.id, action);
+            }
+          : undefined
+      }
+      onOpenTermChange={
+        detailPartnership
+          ? () => {
+              const id = detailPartnership.id;
+              closeDetails();
+              onLoadTermRequests(id, detailNameButtonRef.current);
+            }
+          : undefined
+      }
     />
   );
 
@@ -386,6 +425,8 @@ export function AgentPartnerCollection(props: Props) {
                     meId={meId}
                     termState={termRequests[partnership.id]}
                     onLoadTermRequests={onLoadTermRequests}
+                    onCloseTermChange={onCloseTermChange}
+                    onTermDirtyChange={onTermDirtyChange}
                     onUpdated={onUpdated}
                   />
                 ) : null}
@@ -461,6 +502,8 @@ export function AgentPartnerCollection(props: Props) {
                   meId={meId}
                   termState={termRequests[partnership.id]}
                   onLoadTermRequests={onLoadTermRequests}
+                  onCloseTermChange={onCloseTermChange}
+                  onTermDirtyChange={onTermDirtyChange}
                   onUpdated={onUpdated}
                 />
               ) : null}
@@ -562,6 +605,8 @@ export function AgentPartnerCollection(props: Props) {
                       meId={meId}
                       termState={termState}
                       onLoadTermRequests={onLoadTermRequests}
+                      onCloseTermChange={onCloseTermChange}
+                      onTermDirtyChange={onTermDirtyChange}
                       onUpdated={onUpdated}
                       colSpan={5}
                     />

@@ -24,6 +24,10 @@ import {
 } from "@/lib/dialog-focus";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  cooperationActionLabel,
+  termChangeActionLabel,
+} from "@/components/partners/partner-cooperation-c1";
 import sheetStyles from "./PartnerPersonalAliasDialog.module.css";
 import styles from "./PartnerPartnershipDetailDialog.module.css";
 
@@ -33,6 +37,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   returnFocusRef?: React.RefObject<HTMLElement | null>;
+  busy?: boolean;
+  /** Existing hub handler (pause/resume/invite actions). */
+  onRunAction?: (action: string) => void;
+  /** Opens the shared term-change host for this partnership. */
+  onOpenTermChange?: () => void;
 };
 
 function isEmptyAgentInviteRequest(partnership: Partnership, meId: string): boolean {
@@ -50,6 +59,9 @@ export function PartnerPartnershipDetailDialog({
   open,
   onClose,
   returnFocusRef,
+  busy = false,
+  onRunAction,
+  onOpenTermChange,
 }: Props) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -115,9 +127,8 @@ export function PartnerPartnershipDetailDialog({
   const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
   const actions = getPartnershipUiActions(partnership, meId);
   const waiting = actions.filter((a) => a.kind === "waiting");
-  const actionLabels = actions
-    .filter((a) => a.kind !== "waiting")
-    .map((a) => a.label);
+  const runnable = actions.filter((a) => a.kind !== "waiting");
+  const hasActionCallbacks = Boolean(onRunAction || onOpenTermChange);
   const termsLines = partnerTermsFullDetail(partnership);
   const specFull = partnerSpecializationFull(partner);
   const official = partnerRowOfficialLine(partnership, meId);
@@ -201,10 +212,43 @@ export function PartnerPartnershipDetailDialog({
             </p>
           ))}
 
-          {actionLabels.length ? (
+          {hasActionCallbacks && (runnable.length || partnership.status === "ACTIVE") ? (
+            <div className={styles.actionsBlock} data-testid="partner-detail-actions">
+              <p className={styles.sectionTitle}>Действия</p>
+              <div className={styles.actionRow}>
+                {runnable.map((action) => (
+                  <Button
+                    key={action.kind}
+                    type="button"
+                    variant={action.variant ?? "secondary"}
+                    disabled={busy || !onRunAction}
+                    data-testid={`partner-detail-action-${action.kind}`}
+                    onClick={() => onRunAction?.(action.kind)}
+                  >
+                    {cooperationActionLabel(action.kind) ?? action.label}
+                  </Button>
+                ))}
+                {partnership.status === "ACTIVE" && onOpenTermChange ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={busy}
+                    data-testid="partner-detail-term-change"
+                    onClick={onOpenTermChange}
+                  >
+                    {termChangeActionLabel()}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : runnable.length ? (
             <>
               <p className={styles.sectionTitle}>Доступные действия в списке</p>
-              <p className={styles.metaBlock}>{actionLabels.join(" · ")}</p>
+              <p className={styles.metaBlock}>
+                {runnable
+                  .map((a) => cooperationActionLabel(a.kind) ?? a.label)
+                  .join(" · ")}
+              </p>
             </>
           ) : null}
 

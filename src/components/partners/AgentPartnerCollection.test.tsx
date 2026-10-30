@@ -707,6 +707,43 @@ describe("AgentPartnerCollection P3b cards selection", () => {
     );
     expect(pageCheckbox).not.toBeChecked();
   });
+
+  it("C1: ACTIVE row shows Изменить условия and pause label override", () => {
+    const onLoadTermRequests = vi.fn();
+    const onRunAction = vi.fn();
+    const partnership = basePartnership({
+      id: "active-1",
+      status: "ACTIVE",
+      terms: [
+        {
+          id: "t1",
+          category: "doors",
+          categoryLabel: "Двери",
+          storePercent: 10,
+          isExcluded: false,
+          minMargin: null,
+        },
+      ],
+    });
+
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        partnerships={[partnership]}
+        onLoadTermRequests={onLoadTermRequests}
+        onRunAction={onRunAction}
+      />,
+    );
+
+    const table = screen.getByTestId("agent-r04-partners-table");
+    const workflow = within(table).getByTestId("partner-row-inline-workflow");
+    expect(within(workflow).getByTestId("partner-term-change-active-1")).toHaveTextContent(
+      "Изменить условия",
+    );
+    expect(within(workflow).getByTestId("partner-action-pause")).toHaveTextContent(
+      "Приостановить сотрудничество",
+    );
+  });
 });
 
 

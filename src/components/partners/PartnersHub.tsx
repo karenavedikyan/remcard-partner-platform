@@ -71,6 +71,19 @@ import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDial
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
+import {
+  cooperationActionLabel,
+  cooperationPartnerTitle,
+  discardTermDraftCopy,
+  findPartnershipById,
+  isPartnershipParticipant,
+  partnerProfileName,
+  partnershipAllowsUiAction,
+  pauseConfirmCopy,
+  resumeConfirmCopy,
+  termChangeActionLabel,
+} from "@/components/partners/partner-cooperation-c1";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
 import {
   hasCustomPartnershipSearchFilters,
@@ -172,6 +185,22 @@ export function PartnersHub({
   );
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
+  const [termDraftDirty, setTermDraftDirty] = useState(false);
+  const termDraftDirtyRef = useRef(false);
+  const [termDiscardOpen, setTermDiscardOpen] = useState(false);
+  const [pendingTermOpenId, setPendingTermOpenId] = useState<string | null>(null);
+  const [lifecycleConfirm, setLifecycleConfirm] = useState<{
+    partnershipId: string;
+    action: "pause" | "resume";
+  } | null>(null);
+  const termLoadGenRef = useRef(0);
+  const termOpenIdRef = useRef<string | null>(null);
+  const termTriggerRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  const updateTermDraftDirty = useCallback((dirty: boolean) => {
+    termDraftDirtyRef.current = dirty;
+    setTermDraftDirty(dirty);
+  }, []);
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
   const [listArchiveView, setListArchiveView] = useState<"active" | "archive" | "hidden">("active");
   const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
@@ -667,6 +696,7 @@ export function PartnersHub({
     partnership: Partnership,
     action: string,
   ) {
+    if (busyId) return;
     setBusyId(partnership.id);
     setActionError("");
     try {
@@ -694,11 +724,130 @@ export function PartnersHub({
       });
       return;
     }
+    if (actionKind === "pause" || actionKind === "resume") {
+      if (!partnershipAllowsUiAction(partnership, meId, actionKind)) {
+        setActionError("Действие недоступно для текущего контекста");
+        return;
+      }
+      setLifecycleConfirm({ partnershipId: partnership.id, action: actionKind });
+      return;
+    }
     void runPartnershipAction(partnership, actionKind);
   }
 
-  async function loadTermRequests(partnershipId: string) {
+  async function confirmLifecycleAction() {
+    if (!lifecycleConfirm || busyId) return;
+    const current = findPartnershipById(partnerships, lifecycleConfirm.partnershipId);
+    if (
+      !current ||
+      !partnershipAllowsUiAction(current, meId, lifecycleConfirm.action)
+    ) {
+      setLifecycleConfirm(null);
+      setActionError("Действие недоступно: партнёр или права изменились");
+      return;
+    }
+    const action = lifecycleConfirm.action;
+    setLifecycleConfirm(null);
+    await runPartnershipAction(current, action);
+  }
+
+  function rememberTermTrigger(partnershipId: string, el?: HTMLElement | null) {
+    if (!el) return;
+    termTriggerRefs.current.set(partnershipId, el);
+  }
+
+  function restoreTermTriggerFocus(partnershipId: string | null) {
+    if (!partnershipId) return;
+    const el = termTriggerRefs.current.get(partnershipId);
+    if (el?.isConnected) {
+      el.focus({ preventScroll: true });
+    }
+  }
+
+  function forceOpenTermChange(partnershipId: string) {
+    const current = findPartnershipById(partnerships, partnershipId);
+    if (!current || !isPartnershipParticipant(current, meId)) {
+      setActionError("Нельзя открыть условия: партнёр недоступен в текущем контексте");
+      return;
+    }
+    termDraftDirtyRef.current = false;
+    setTermDraftDirty(false);
+    setTermDiscardOpen(false);
+    setPendingTermOpenId(null);
+    termOpenIdRef.current = partnershipId;
     setExpandedTermPartnershipId(partnershipId);
+    void loadTermRequests(partnershipId, { expand: false });
+  }
+
+  function requestOpenTermChange(partnershipId: string, trigger?: HTMLElement | null) {
+    rememberTermTrigger(partnershipId, trigger);
+    if (
+      expandedTermPartnershipId &&
+      expandedTermPartnershipId !== partnershipId &&
+      termDraftDirtyRef.current
+    ) {
+      setPendingTermOpenId(partnershipId);
+      setTermDiscardOpen(true);
+      return;
+    }
+    if (expandedTermPartnershipId === partnershipId) {
+      requestCloseTermChange();
+      return;
+    }
+    forceOpenTermChange(partnershipId);
+  }
+
+  function requestCloseTermChange() {
+    if (!expandedTermPartnershipId && !termOpenIdRef.current) return;
+    if (termDraftDirtyRef.current) {
+      setPendingTermOpenId(null);
+      setTermDiscardOpen(true);
+      return;
+    }
+    const closedId = expandedTermPartnershipId;
+    termOpenIdRef.current = null;
+    setExpandedTermPartnershipId(null);
+    termDraftDirtyRef.current = false;
+    setTermDraftDirty(false);
+    restoreTermTriggerFocus(closedId);
+  }
+
+  function keepTermDraftEditing() {
+    setTermDiscardOpen(false);
+    setPendingTermOpenId(null);
+  }
+
+  function discardTermDraftAndContinue() {
+    const nextId = pendingTermOpenId;
+    const closedId = expandedTermPartnershipId;
+    setTermDiscardOpen(false);
+    setPendingTermOpenId(null);
+    termDraftDirtyRef.current = false;
+    setTermDraftDirty(false);
+    termOpenIdRef.current = null;
+    setExpandedTermPartnershipId(null);
+    if (nextId) {
+      forceOpenTermChange(nextId);
+      return;
+    }
+    restoreTermTriggerFocus(closedId);
+  }
+
+  async function loadTermRequests(
+    partnershipId: string,
+    options: { expand?: boolean } = {},
+  ) {
+    const { expand = true } = options;
+    const current = findPartnershipById(partnerships, partnershipId);
+    if (current && !isPartnershipParticipant(current, meId)) {
+      setActionError("Запросы условий недоступны вне участия в партнёрстве");
+      return;
+    }
+    if (expand) {
+      termOpenIdRef.current = partnershipId;
+      setExpandedTermPartnershipId(partnershipId);
+    }
+    const gen = ++termLoadGenRef.current;
     setTermRequests((prev) => ({
       ...prev,
       [partnershipId]: { state: "loading", requests: [], error: "" },
@@ -707,11 +856,19 @@ export function PartnersHub({
       const data = await remcardFetch<{ requests: TermChangeRequest[] }>(
         `/api/partnerships/${partnershipId}/term-change`,
       );
+      if (gen !== termLoadGenRef.current) return;
+      if (termOpenIdRef.current && termOpenIdRef.current !== partnershipId) {
+        return;
+      }
       setTermRequests((prev) => ({
         ...prev,
         [partnershipId]: { state: "loaded", requests: data.requests ?? [], error: "" },
       }));
     } catch (caught) {
+      if (gen !== termLoadGenRef.current) return;
+      if (termOpenIdRef.current && termOpenIdRef.current !== partnershipId) {
+        return;
+      }
       setTermRequests((prev) => ({
         ...prev,
         [partnershipId]: {
@@ -1126,7 +1283,9 @@ export function PartnersHub({
               }}
               onUpdated={() => void loadList()}
               termRequests={termRequests}
-              onLoadTermRequests={(id) => void loadTermRequests(id)}
+              onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
+              onCloseTermChange={requestCloseTermChange}
+              onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
@@ -1224,7 +1383,9 @@ export function PartnersHub({
                   }}
                   onUpdated={() => void loadList()}
                   termRequests={termRequests}
-                  onLoadTermRequests={(id) => void loadTermRequests(id)}
+                  onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
+                  onCloseTermChange={requestCloseTermChange}
+                  onTermDirtyChange={updateTermDraftDirty}
                   expandedTermPartnershipId={expandedTermPartnershipId}
                   selectedIds={selectedPartnerIds}
                   onToggleSelect={togglePartnerSelect}
@@ -1257,7 +1418,9 @@ export function PartnersHub({
                 }}
                 onUpdated={() => void loadList()}
                 termRequests={termRequests}
-                onLoadTermRequests={(id) => void loadTermRequests(id)}
+                onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
+                onCloseTermChange={requestCloseTermChange}
+                onTermDirtyChange={updateTermDraftDirty}
                 expandedTermPartnershipId={expandedTermPartnershipId}
                 selectedIds={selectedPartnerIds}
                 onToggleSelect={togglePartnerSelect}
@@ -1379,7 +1542,9 @@ export function PartnersHub({
               }}
               onUpdated={() => void loadList()}
               termRequests={termRequests}
-              onLoadTermRequests={(id) => void loadTermRequests(id)}
+              onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
+              onCloseTermChange={requestCloseTermChange}
+              onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
@@ -1511,9 +1676,10 @@ export function PartnersHub({
                           key={action.kind}
                           variant={action.variant ?? "primary"}
                           disabled={busyId === partnership.id}
+                          data-testid={`partner-action-${action.kind}`}
                           onClick={() => handlePartnershipUiAction(partnership, action.kind)}
                         >
-                          {action.label}
+                          {cooperationActionLabel(action.kind) ?? action.label}
                         </Button>
                       ),
                     )}
@@ -1522,9 +1688,12 @@ export function PartnersHub({
                         <Button
                           variant="secondary"
                           disabled={busyId === partnership.id}
-                          onClick={() => void loadTermRequests(partnership.id)}
+                          data-testid={`partner-term-change-${partnership.id}`}
+                          onClick={(event) =>
+                            requestOpenTermChange(partnership.id, event.currentTarget)
+                          }
                         >
-                          Изменение условий
+                          {termChangeActionLabel()}
                         </Button>
                         {isAgentR04 ? (
                           <Link href="/certificates" className={styles.certLink}>
@@ -1539,6 +1708,7 @@ export function PartnersHub({
                     <TermChangePanel
                       partnership={partnership}
                       meId={meId}
+                      partnerTitle={cooperationPartnerTitle(partnership, meId)}
                       requests={termState.state === "loaded" ? termState.requests : null}
                       loadState={
                         termState.state === "idle"
@@ -1548,11 +1718,13 @@ export function PartnersHub({
                             : termState.state
                       }
                       loadError={termState.error}
-                      onReload={() => void loadTermRequests(partnership.id)}
+                      onReload={() => void loadTermRequests(partnership.id, { expand: false })}
                       onChanged={() => {
                         void loadList();
-                        void loadTermRequests(partnership.id);
+                        void loadTermRequests(partnership.id, { expand: false });
                       }}
+                      onDirtyChange={updateTermDraftDirty}
+                      onCloseRequest={requestCloseTermChange}
                     />
                   ) : null}
                 </Panel>
@@ -1794,6 +1966,59 @@ export function PartnersHub({
             setCounterOfferTarget(null);
             void loadList();
           }}
+        />
+      ) : null}
+
+      {lifecycleConfirm ? (
+        <PartnerCooperationConfirmDialog
+          open
+          testId={`partner-${lifecycleConfirm.action}-confirm`}
+          title={
+            (lifecycleConfirm.action === "pause" ? pauseConfirmCopy : resumeConfirmCopy)(
+              (() => {
+                const row = findPartnershipById(
+                  partnerships,
+                  lifecycleConfirm.partnershipId,
+                );
+                return row ? partnerProfileName(row, meId) : "партнёром";
+              })(),
+            ).title
+          }
+          body={
+            (lifecycleConfirm.action === "pause" ? pauseConfirmCopy : resumeConfirmCopy)(
+              (() => {
+                const row = findPartnershipById(
+                  partnerships,
+                  lifecycleConfirm.partnershipId,
+                );
+                return row ? partnerProfileName(row, meId) : "партнёром";
+              })(),
+            ).body
+          }
+          confirmLabel={
+            lifecycleConfirm.action === "pause"
+              ? "Приостановить"
+              : "Возобновить сотрудничество"
+          }
+          dismissLabel="Отмена"
+          safeAction="dismiss"
+          busy={busyId === lifecycleConfirm.partnershipId}
+          onConfirm={() => void confirmLifecycleAction()}
+          onDismiss={() => setLifecycleConfirm(null)}
+        />
+      ) : null}
+
+      {termDiscardOpen ? (
+        <PartnerCooperationConfirmDialog
+          open
+          testId="partner-term-discard-confirm"
+          title={discardTermDraftCopy().title}
+          body={discardTermDraftCopy().body}
+          confirmLabel={discardTermDraftCopy().keep}
+          dismissLabel={discardTermDraftCopy().discard}
+          safeAction="confirm"
+          onConfirm={keepTermDraftEditing}
+          onDismiss={discardTermDraftAndContinue}
         />
       ) : null}
     </div>

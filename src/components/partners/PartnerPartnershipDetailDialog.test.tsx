@@ -122,4 +122,28 @@ describe("PartnerPartnershipDetailDialog a11y", () => {
     expect(closeBtn).toHaveFocus();
     expect(document.body.style.overflow).toBe("hidden");
   });
+
+  it("C1: wires real pause and term-change buttons when callbacks are provided", async () => {
+    const onRunAction = vi.fn();
+    const onOpenTermChange = vi.fn();
+    render(
+      <PartnerPartnershipDetailDialog
+        partnership={partnership}
+        meId="store-1"
+        open
+        onClose={() => {}}
+        onRunAction={onRunAction}
+        onOpenTermChange={onOpenTermChange}
+      />,
+    );
+
+    expect(screen.getByTestId("partner-detail-actions")).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("partner-detail-action-pause"));
+    expect(onRunAction).toHaveBeenCalledWith("pause");
+    await userEvent.click(screen.getByTestId("partner-detail-term-change"));
+    expect(onOpenTermChange).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("partner-detail-term-change")).toHaveTextContent(
+      "Изменить условия",
+    );
+  });
 });
