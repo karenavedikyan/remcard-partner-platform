@@ -78,6 +78,17 @@ export function partnerListDetail(partnership: Partnership, meId: string): strin
   return "Специализация не указана";
 }
 
+/**
+ * Collection-only details line: always city (or existing city fallback) and
+ * specialization (or existing spec fallback). Does not change `partnerListDetail`.
+ */
+export function partnerCollectionListDetail(partnership: Partnership, meId: string): string {
+  const partner = partnershipPartnerUser(partnership, meId);
+  const city = partner.city?.trim() || "Город не указан";
+  const spec = partnerSpecializationHint(partner) || "Специализация не указана";
+  return `${city} · ${spec}`;
+}
+
 export function partnerActiveTerms(partnership: Partnership) {
   return partnership.terms.filter((t) => !t.isExcluded);
 }
@@ -105,6 +116,19 @@ export function partnerRowTitle(partnership: Partnership, meId: string): string 
 export function partnerRowOfficialLine(partnership: Partnership, meId: string): string | null {
   const { alias, official } = partnerDisplayTitle(partnership, meId);
   return alias ? official : null;
+}
+
+/**
+ * Collection-only: hide the official secondary line when it would duplicate the
+ * primary title. Shared `partnerRowOfficialLine` keeps returning official for any alias.
+ */
+export function partnerCollectionOfficialLine(
+  partnership: Partnership,
+  meId: string,
+): string | null {
+  const { alias, official } = partnerDisplayTitle(partnership, meId);
+  if (!alias || alias === official) return null;
+  return official;
 }
 
 export function partnershipPartnerProfile(partnership: Partnership, meId: string) {

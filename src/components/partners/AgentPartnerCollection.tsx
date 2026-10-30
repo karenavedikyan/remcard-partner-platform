@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -9,10 +9,10 @@ import {
 import { getPartnershipUiActions, partnershipNeedsMyResponse } from "@/lib/partnership-rules";
 import type { AgentListViewMode } from "@/components/partners/AgentR04ListToolbar";
 import {
-  partnerListSpecOnly,
-  partnerListSubtitle,
-  partnerRowOfficialLine,
+  partnerCollectionListDetail,
+  partnerCollectionOfficialLine,
   partnerRowTitle,
+  partnerTypeLabel,
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
 import type { Partnership } from "@/lib/types";
@@ -40,6 +40,10 @@ type Props = {
   termRequests: Record<string, TermRequestState>;
   onLoadTermRequests: (partnershipId: string) => void;
   expandedTermPartnershipId: string | null;
+  /** Deep-link target already paged into `partnerships` — open its detail dialog once. */
+  focusPartnershipId?: string | null;
+  /** Acknowledge one-shot focus so list refresh / page-size cannot re-open after close. */
+  onFocusPartnershipConsumed?: (partnershipId: string) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: (ids: string[], checked: boolean) => void;
@@ -72,6 +76,21 @@ function PartnerRowNameButton({
     >
       {title}
     </button>
+  );
+}
+
+/** Collection-local host so muted/paused badge FG can meet WCAG without changing StatusBadge. */
+function PartnerCollectionStatusBadge({ status }: { status: string }) {
+  const tone = partnershipStatusTone(status);
+  const label = PARTNERSHIP_STATUS_LABELS[status] ?? status;
+  return (
+    <span
+      className={tone === "neutral" ? styles.statusNeutral : undefined}
+      data-testid="partner-row-status"
+      data-status-tone={tone}
+    >
+      <StatusBadge label={label} tone={tone} />
+    </span>
   );
 }
 
@@ -196,6 +215,8 @@ export function AgentPartnerCollection(props: Props) {
     termRequests,
     onLoadTermRequests,
     expandedTermPartnershipId,
+    focusPartnershipId = null,
+    onFocusPartnershipConsumed,
     selectedIds,
     onToggleSelect,
     onToggleSelectAll,
@@ -208,6 +229,7 @@ export function AgentPartnerCollection(props: Props) {
 
   const [detailPartnershipId, setDetailPartnershipId] = useState<string | null>(null);
   const detailNameButtonRef = useRef<HTMLButtonElement | null>(null);
+  const consumedFocusIdRef = useRef<string | null>(null);
   const detailPartnership = useMemo(
     () => partnerships.find((p) => p.id === detailPartnershipId) ?? null,
     [partnerships, detailPartnershipId],
@@ -218,6 +240,20 @@ export function AgentPartnerCollection(props: Props) {
     setDetailPartnershipId(partnershipId);
   }, []);
   const closeDetails = useCallback(() => setDetailPartnershipId(null), []);
+
+  // One-shot deep-link open: apply once per focus id, then acknowledge so page-size/refresh
+  // cannot reopen after the user explicitly closes.
+  useEffect(() => {
+    if (!focusPartnershipId) {
+      consumedFocusIdRef.current = null;
+      return;
+    }
+    if (consumedFocusIdRef.current === focusPartnershipId) return;
+    if (!partnerships.some((p) => p.id === focusPartnershipId)) return;
+    setDetailPartnershipId(focusPartnershipId);
+    consumedFocusIdRef.current = focusPartnershipId;
+    onFocusPartnershipConsumed?.(focusPartnershipId);
+  }, [focusPartnershipId, partnerships, onFocusPartnershipConsumed]);
 
   const pageIds = useMemo(() => partnerships.map((p) => p.id), [partnerships]);
   const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
@@ -289,7 +325,9 @@ export function AgentPartnerCollection(props: Props) {
         <div className={styles.cardGrid} data-testid="agent-r04-partners-cards">
           {partnerships.map((partnership) => {
             const partner = partnershipPartnerProfile(partnership, meId);
-            const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
+            const officialLine = partnerCollectionOfficialLine(partnership, meId);
+            const typeCaption = partnerTypeLabel(partner);
+            const detail = partnerCollectionListDetail(partnership, meId);
             return (
               <article key={partnership.id} className={styles.partnerCard}>
                 <div className={styles.cardSelectRow}>
@@ -299,7 +337,7 @@ export function AgentPartnerCollection(props: Props) {
                     onChange={() => onToggleSelect(partnership.id)}
                     aria-label="Выбрать карточку"
                   />
-                  <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
+                  <PartnerCollectionStatusBadge status={partnership.status} />
                 </div>
                 <div className={styles.cardBody}>
                   <PartnerRowNameButton
@@ -308,11 +346,17 @@ export function AgentPartnerCollection(props: Props) {
                     onOpenDetails={(el) => openDetails(partnership.id, el)}
                     className={styles.cardTitle}
                   />
-                  {partnerRowOfficialLine(partnership, meId) ? (
-                    <p className={styles.cardMeta}>Официально: {partnerRowOfficialLine(partnership, meId)}</p>
+                  {officialLine ? (
+                    <p className={styles.cardMeta} data-testid="partner-row-official-line">
+                      Официально: {officialLine}
+                    </p>
                   ) : null}
-                  <p className={styles.cardMeta}>{partnerListSubtitle(partner)}</p>
-                  <p className={styles.cardMeta}>{partnerListSpecOnly(partner)}</p>
+                  <p className={styles.cardMeta} data-testid="partner-row-type-caption">
+                    {typeCaption}
+                  </p>
+                  <p className={styles.cardMeta} data-testid="partner-row-detail">
+                    {detail}
+                  </p>
                   <PartnerRowInlineWorkflow
                     partnership={partnership}
                     meId={meId}
@@ -354,8 +398,10 @@ export function AgentPartnerCollection(props: Props) {
       <div className={`${r03.collectionPanel} ${styles.mobileOnly}`}>
         {partnerships.map((partnership) => {
           const partner = partnershipPartnerProfile(partnership, meId);
-          const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
           const needsResponse = partnershipNeedsMyResponse(partnership, meId);
+          const officialLine = partnerCollectionOfficialLine(partnership, meId);
+          const typeCaption = partnerTypeLabel(partner);
+          const detail = partnerCollectionListDetail(partnership, meId);
           return (
             <article key={partnership.id} className={r03.mobileRecord} data-testid="agent-partner-mobile-row">
               <div className={r03.mobileRecordTop}>
@@ -372,8 +418,17 @@ export function AgentPartnerCollection(props: Props) {
                     onOpenDetails={(el) => openDetails(partnership.id, el)}
                     className={r03.mobileRecordTitle}
                   />
-                  <p className={r03.meta}>{partnerListSubtitle(partner)}</p>
-                  <p className={r03.meta}>{partnerListSpecOnly(partner)}</p>
+                  {officialLine ? (
+                    <p className={r03.meta} data-testid="partner-row-official-line">
+                      Официально: {officialLine}
+                    </p>
+                  ) : null}
+                  <p className={r03.meta} data-testid="partner-row-type-caption">
+                    {typeCaption}
+                  </p>
+                  <p className={r03.meta} data-testid="partner-row-detail">
+                    {detail}
+                  </p>
                   {needsResponse ? <p className={r03.meta}>Ожидает вашего решения</p> : null}
                 </div>
               </div>
@@ -385,7 +440,7 @@ export function AgentPartnerCollection(props: Props) {
                 onLoadTermRequests={onLoadTermRequests}
               />
               <div className={r03.mobileRecordFooter}>
-                <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
+                <PartnerCollectionStatusBadge status={partnership.status} />
                 <AgentPartnerWorkspaceActions
                   partnership={partnership}
                   meId={meId}
@@ -436,8 +491,10 @@ export function AgentPartnerCollection(props: Props) {
           <tbody>
             {partnerships.map((partnership) => {
               const partner = partnershipPartnerProfile(partnership, meId);
-              const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
               const termState = termRequests[partnership.id];
+              const officialLine = partnerCollectionOfficialLine(partnership, meId);
+              const typeCaption = partnerTypeLabel(partner);
+              const detail = partnerCollectionListDetail(partnership, meId);
               return (
                 <Fragment key={partnership.id}>
                   <tr data-testid="agent-r04-partners-table-row">
@@ -455,14 +512,20 @@ export function AgentPartnerCollection(props: Props) {
                         meId={meId}
                         onOpenDetails={(el) => openDetails(partnership.id, el)}
                       />
-                      {partnerRowOfficialLine(partnership, meId) ? (
-                        <small className={styles.caption}>{partnerRowOfficialLine(partnership, meId)}</small>
+                      {officialLine ? (
+                        <small className={styles.caption} data-testid="partner-row-official-line">
+                          Официально: {officialLine}
+                        </small>
                       ) : null}
-                      <small className={styles.caption}>{partnerListSubtitle(partner)}</small>
+                      <small className={styles.caption} data-testid="partner-row-type-caption">
+                        {typeCaption}
+                      </small>
                     </td>
-                    <td className={styles.detailCell}>{partnerListSpecOnly(partner)}</td>
+                    <td className={styles.detailCell} data-testid="partner-row-detail">
+                      {detail}
+                    </td>
                     <td className={styles.statusCell}>
-                      <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
+                      <PartnerCollectionStatusBadge status={partnership.status} />
                     </td>
                     <td className={styles.actionCell}>
                       <AgentPartnerWorkspaceActions

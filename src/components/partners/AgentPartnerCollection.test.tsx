@@ -220,3 +220,373 @@ describe("AgentPartnerCollection row actions", () => {
     expect(within(card).getByTestId("partner-row-name-button")).toBeInTheDocument();
   });
 });
+
+describe("AgentPartnerCollection P3a display hierarchy", () => {
+  const longCity =
+    "Краснодарский край, муниципальное образование город Краснодар, микрорайон Центральный";
+  const longSpecIds = ["doors", "flooring", "tiles"] as const;
+
+  function activePartner(overrides: Partial<Partnership> = {}): Partnership {
+    const proOverrides = overrides.proUser ?? {};
+    return basePartnership({
+      id: "active-1",
+      status: "ACTIVE",
+      ...overrides,
+      proUser: {
+        id: "agent-1",
+        displayName: "Seda Rallis",
+        organizationName: "Seda Rallis Agency",
+        city: "Краснодар",
+        specializations: ["painting"],
+        workingServiceSpecializationIds: ["painting"],
+        storeCategories: [],
+        partnerType: "COMPANY",
+        // STORE+AGENT keeps company (not pure-agent); activities alone do not become a second type.
+        partnerActivities: ["STORE", "AGENT"],
+        ...proOverrides,
+      },
+    });
+  }
+
+  const paintingLabel = "Покраска и штукатурка";
+
+  function assertHierarchy(
+    root: HTMLElement,
+    expected: {
+      title: string;
+      type: string;
+      detail: string;
+      official?: string | null;
+      status: string;
+    },
+  ) {
+    expect(within(root).getByTestId("partner-row-name-button")).toHaveTextContent(expected.title);
+    expect(within(root).getByTestId("partner-row-type-caption")).toHaveTextContent(expected.type);
+    expect(within(root).getByTestId("partner-row-detail")).toHaveTextContent(expected.detail);
+    expect(within(root).getByTestId("partner-row-type-caption").textContent).not.toMatch(/Краснодар/);
+    expect(within(root).getByTestId("partner-row-type-caption").textContent).not.toContain("·");
+    if (expected.official) {
+      expect(within(root).getByTestId("partner-row-official-line")).toHaveTextContent(
+        `Официально: ${expected.official}`,
+      );
+    } else {
+      expect(within(root).queryByTestId("partner-row-official-line")).toBeNull();
+    }
+    expect(within(root).getByText(expected.status)).toBeInTheDocument();
+    expect(within(root).queryByText("Условия согласованы")).toBeNull();
+  }
+
+  it("desktop list: type caption, city+spec details, alias + official, real status", () => {
+    const partnership = activePartner({
+      listPreference: { personalAlias: "Мой агент", archivedAt: null, hiddenAt: null },
+    });
+
+    render(
+      <AgentPartnerCollection {...defaultProps} partnerships={[partnership]} />,
+    );
+
+    const row = screen.getByTestId("agent-r04-partners-table-row");
+    assertHierarchy(row, {
+      title: "Мой агент",
+      type: "Компания",
+      detail: `Краснодар · ${paintingLabel}`,
+      official: "Seda Rallis Agency",
+      status: "Активно",
+    });
+    expect(within(row).getByTestId("partner-row-detail").textContent).toMatch(/Краснодар/);
+    expect(within(row).getByTestId("partner-row-detail").textContent).toMatch(/Покраска/);
+  });
+
+  it("cards and mobile repeat the same hierarchy including official line", () => {
+    const partnership = activePartner({
+      id: "cards-mobile",
+      listPreference: { personalAlias: "Мой агент", archivedAt: null, hiddenAt: null },
+    });
+
+    const { rerender } = render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={[partnership]}
+      />,
+    );
+
+    assertHierarchy(screen.getByTestId("agent-r04-partners-cards"), {
+      title: "Мой агент",
+      type: "Компания",
+      detail: `Краснодар · ${paintingLabel}`,
+      official: "Seda Rallis Agency",
+      status: "Активно",
+    });
+
+    rerender(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="table"
+        partnerships={[partnership]}
+      />,
+    );
+
+    assertHierarchy(screen.getByTestId("agent-partner-mobile-row"), {
+      title: "Мой агент",
+      type: "Компания",
+      detail: `Краснодар · ${paintingLabel}`,
+      official: "Seda Rallis Agency",
+      status: "Активно",
+    });
+  });
+
+  it("collection suppresses duplicate official when alias equals official; still hides when absent", () => {
+    const noAlias = activePartner({ id: "no-alias", listPreference: undefined });
+    const { rerender } = render(
+      <AgentPartnerCollection {...defaultProps} partnerships={[noAlias]} />,
+    );
+    assertHierarchy(screen.getByTestId("agent-r04-partners-table-row"), {
+      title: "Seda Rallis Agency",
+      type: "Компания",
+      detail: `Краснодар · ${paintingLabel}`,
+      official: null,
+      status: "Активно",
+    });
+
+    const sameAlias = activePartner({
+      id: "same-alias",
+      listPreference: {
+        personalAlias: "Seda Rallis Agency",
+        archivedAt: null,
+        hiddenAt: null,
+      },
+    });
+    rerender(<AgentPartnerCollection {...defaultProps} partnerships={[sameAlias]} />);
+    assertHierarchy(screen.getByTestId("agent-r04-partners-table-row"), {
+      title: "Seda Rallis Agency",
+      type: "Компания",
+      detail: `Краснодар · ${paintingLabel}`,
+      official: null,
+      status: "Активно",
+    });
+  });
+
+  it("keeps city and specialization fallbacks together in all three views", () => {
+    const cityMissingSpecPresent = activePartner({
+      id: "city-miss",
+      proUser: {
+        id: "agent-1",
+        displayName: "Spec Only Co",
+        city: "",
+        partnerType: "COMPANY",
+        partnerActivities: ["STORE", "AGENT"],
+        storeCategories: ["doors"],
+        specializations: [],
+        workingServiceSpecializationIds: [],
+        workingProductCategoryIds: [],
+      },
+    });
+    const cityPresentSpecMissing = activePartner({
+      id: "spec-miss",
+      proUser: {
+        id: "agent-1",
+        displayName: "City Only Co",
+        city: "Анапа",
+        partnerType: "COMPANY",
+        partnerActivities: ["STORE", "AGENT"],
+        storeCategories: [],
+        specializations: [],
+        workingServiceSpecializationIds: [],
+        workingProductCategoryIds: [],
+      },
+    });
+    const bothMissing = activePartner({
+      id: "both-miss",
+      proUser: {
+        id: "agent-1",
+        displayName: "Bare Co",
+        city: "",
+        partnerType: "COMPANY",
+        partnerActivities: ["STORE", "AGENT"],
+        storeCategories: [],
+        specializations: [],
+        workingServiceSpecializationIds: [],
+        workingProductCategoryIds: [],
+      },
+    });
+
+    const { rerender } = render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        partnerships={[cityMissingSpecPresent, cityPresentSpecMissing, bothMissing]}
+        totalCount={3}
+      />,
+    );
+
+    const expectDetailTrio = (details: HTMLElement[]) => {
+      expect(details).toHaveLength(3);
+      expect(details[0]).toHaveTextContent("Город не указан · Двери");
+      expect(details[1]).toHaveTextContent("Анапа · Специализация не указана");
+      expect(details[2]).toHaveTextContent("Город не указан · Специализация не указана");
+    };
+
+    expectDetailTrio(
+      within(screen.getByTestId("agent-r04-partners-table")).getAllByTestId("partner-row-detail"),
+    );
+    expectDetailTrio(
+      screen.getAllByTestId("agent-partner-mobile-row").map(
+        (row) => within(row).getByTestId("partner-row-detail"),
+      ),
+    );
+
+    rerender(
+      <AgentPartnerCollection
+        {...defaultProps}
+        viewMode="cards"
+        partnerships={[cityMissingSpecPresent, cityPresentSpecMissing, bothMissing]}
+        totalCount={3}
+      />,
+    );
+    expectDetailTrio(
+      within(screen.getByTestId("agent-r04-partners-cards")).getAllByTestId("partner-row-detail"),
+    );
+  });
+
+  it("covers four canonical kinds and mixed AGENT activity stays company/store", () => {
+    const rows: Partnership[] = [
+      activePartner({
+        id: "k-agent",
+        proUser: {
+          id: "agent-1",
+          displayName: "Agent Only",
+          city: "Сочи",
+          partnerType: "COMPANY",
+          partnerActivities: ["AGENT"],
+          specializations: [],
+          storeCategories: [],
+        },
+      }),
+      activePartner({
+        id: "k-store",
+        status: "PAUSED",
+        proUser: {
+          id: "agent-1",
+          displayName: "Store Partner",
+          city: "Анапа",
+          partnerType: "STORE",
+          partnerActivities: ["STORE", "AGENT"],
+          storeCategories: ["doors"],
+          specializations: [],
+        },
+      }),
+      activePartner({
+        id: "k-company",
+        proUser: {
+          id: "agent-1",
+          displayName: "Company Partner",
+          city: "Новороссийск",
+          partnerType: "COMPANY",
+          partnerActivities: ["STORE", "AGENT"],
+          specializations: ["painting"],
+          workingServiceSpecializationIds: ["painting"],
+          storeCategories: [],
+        },
+      }),
+      activePartner({
+        id: "k-specialist",
+        proUser: {
+          id: "agent-1",
+          displayName: "Specialist Partner",
+          city: "Геленджик",
+          partnerType: "MASTER",
+          partnerActivities: ["SERVICE"],
+          specializations: ["painting"],
+          workingServiceSpecializationIds: ["painting"],
+          storeCategories: [],
+        },
+      }),
+    ];
+
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        partnerships={rows}
+        totalCount={rows.length}
+      />,
+    );
+
+    const tableRows = screen.getAllByTestId("agent-r04-partners-table-row");
+    expect(within(tableRows[0]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Агент");
+    expect(within(tableRows[0]!).getByTestId("partner-row-detail")).toHaveTextContent("Сочи");
+    expect(within(tableRows[1]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Магазин");
+    expect(within(tableRows[1]!).getByText("Приостановлено")).toBeInTheDocument();
+    expect(within(tableRows[1]!).getByTestId("partner-row-detail").textContent).toMatch(/Анапа/);
+    expect(within(tableRows[1]!).getByTestId("partner-row-detail").textContent).toMatch(/Двери/);
+    expect(within(tableRows[2]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Компания");
+    expect(within(tableRows[3]!).getByTestId("partner-row-type-caption")).toHaveTextContent(
+      "Специалист",
+    );
+  });
+
+  it("uses fallbacks for empty optionals and wraps long name/city/spec without inventing data", () => {
+    const partnership = activePartner({
+      id: "long-empty",
+      status: "PAUSED",
+      listPreference: {
+        personalAlias:
+          "Очень длинный личный псевдоним партнёра для проверки переноса строки без столкновения со статусом",
+        archivedAt: null,
+        hiddenAt: null,
+      },
+      proUser: {
+        id: "agent-1",
+        displayName: "Short",
+        organizationName:
+          "Официальное юридическое наименование организации с чрезмерно длинной строкой для desktop/cards",
+        city: longCity,
+        partnerType: "STORE",
+        partnerActivities: ["STORE"],
+        storeCategories: [...longSpecIds],
+        specializations: [],
+      },
+    });
+
+    const emptyOptionals = activePartner({
+      id: "empty-opt",
+      proUser: {
+        id: "agent-1",
+        displayName: "Bare Partner",
+        organizationName: undefined,
+        city: "",
+        partnerType: "UNKNOWN_KIND" as never,
+        partnerActivities: [],
+        storeCategories: [],
+        specializations: [],
+        workingServiceSpecializationIds: [],
+        workingProductCategoryIds: [],
+      },
+    });
+
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        partnerships={[partnership, emptyOptionals]}
+        totalCount={2}
+      />,
+    );
+
+    const [longRow, emptyRow] = screen.getAllByTestId("agent-r04-partners-table-row");
+    expect(within(longRow!).getByTestId("partner-row-name-button").textContent).toMatch(/длинный личный/);
+    expect(within(longRow!).getByTestId("partner-row-official-line").textContent).toMatch(
+      /Официально:.*юридическое/,
+    );
+    expect(within(longRow!).getByTestId("partner-row-detail").textContent).toContain(longCity);
+    expect(within(longRow!).getByTestId("partner-row-detail").textContent).not.toMatch(/\bdoors\b/);
+    expect(within(longRow!).getByText("Приостановлено")).toBeInTheDocument();
+
+    expect(within(emptyRow!).getByTestId("partner-row-type-caption")).toHaveTextContent("Партнёр");
+    expect(within(emptyRow!).getByTestId("partner-row-detail")).toHaveTextContent(
+      "Город не указан · Специализация не указана",
+    );
+    expect(within(emptyRow!).queryByText("undefined")).toBeNull();
+    expect(within(emptyRow!).queryByTestId("partner-row-official-line")).toBeNull();
+  });
+});
+
+

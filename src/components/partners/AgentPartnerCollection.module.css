@@ -42,6 +42,8 @@
   font-size: var(--text-sm);
   color: var(--muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .cardFooter {
@@ -126,6 +128,9 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  max-width: 100%;
 }
 
 .nameButton:hover {
@@ -165,11 +170,16 @@
   font-size: var(--text-xs);
   color: var(--muted);
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .detailCell {
   color: var(--muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
 }
 
 .statusCell {
@@ -182,6 +192,19 @@
 .statusCell :global([class*="badge"]) {
   white-space: nowrap;
   max-width: 100%;
+}
+
+/**
+ * PAUSED/neutral StatusBadge uses --muted on --offset (~4.47:1 light).
+ * Collection-local FG only — StatusBadge / global tokens / tone map unchanged.
+ * #5c605a on #f2f1ee ≈ 5.68:1; dark keeps badge --muted (~5.84:1 on --offset).
+ */
+.statusNeutral :global([class*="badge"]) {
+  color: #5c605a;
+}
+
+:global([data-theme="dark"]) .statusNeutral :global([class*="badge"]) {
+  color: var(--muted);
 }
 
 .actionCell {
