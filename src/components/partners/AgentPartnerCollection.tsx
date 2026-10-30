@@ -48,6 +48,8 @@ type Props = {
   expandedTermPartnershipId: string | null;
   /** When true, detail dialog yields focus/Escape to an overlying confirm. */
   suspendDetailFocusTrap?: boolean;
+  /** Surface hub action errors inside the open detail sheet (not under the modal). */
+  detailActionError?: string;
   /** Deep-link target already paged into `partnerships` — open its detail dialog once. */
   focusPartnershipId?: string | null;
   /** Acknowledge one-shot focus so list refresh / page-size cannot re-open after close. */
@@ -80,6 +82,7 @@ function PartnerRowNameButton({
       className={`${styles.nameButton} ${className ?? ""}`}
       onClick={(e) => onOpenDetails(e.currentTarget)}
       data-testid="partner-row-name-button"
+      data-partnership-id={partnership.id}
       aria-label={`Подробнее о партнёре ${title}`}
     >
       {title}
@@ -143,6 +146,7 @@ function PartnerRowInlineWorkflow({
           variant={action.variant ?? "secondary"}
           disabled={disabled}
           data-testid={`partner-action-${action.kind}`}
+          data-partnership-id={partnership.id}
           onClick={() => onRunAction(partnership.id, action.kind)}
         >
           {cooperationActionLabel(action.kind) ?? action.label}
@@ -155,6 +159,7 @@ function PartnerRowInlineWorkflow({
             disabled={disabled}
             aria-expanded={termExpanded}
             data-testid={`partner-term-change-${partnership.id}`}
+            data-partnership-id={partnership.id}
             onClick={(event) => onLoadTermRequests(partnership.id, event.currentTarget)}
           >
             {termChangeActionLabel()}
@@ -184,6 +189,7 @@ export function AgentPartnerCollection(props: Props) {
     onLoadTermRequests,
     expandedTermPartnershipId,
     suspendDetailFocusTrap = false,
+    detailActionError = "",
     focusPartnershipId = null,
     onFocusPartnershipConsumed,
     selectedIds,
@@ -287,6 +293,7 @@ export function AgentPartnerCollection(props: Props) {
       returnFocusRef={detailNameButtonRef}
       busy={Boolean(detailPartnership && busyId === detailPartnership.id)}
       suspendFocusTrap={suspendDetailFocusTrap}
+      actionError={detailActionError}
       onRunAction={
         detailPartnership
           ? (action) => {

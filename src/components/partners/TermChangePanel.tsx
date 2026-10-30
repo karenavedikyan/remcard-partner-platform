@@ -21,6 +21,8 @@ type TermChangePanelProps = {
   onChanged: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   onCloseRequest?: () => void;
+  /** Increments when host should scroll into view and focus (open / Keep). */
+  revealSignal?: number;
 };
 
 function activeTerms(terms: PartnershipTerm[]): PartnershipTerm[] {
@@ -40,11 +42,31 @@ function isDraftDirty(
   });
 }
 
-function termContextKey(partnership: Partnership, meId: string): string {
+export function termContextKey(partnership: Partnership, meId: string): string {
   const terms = activeTerms(partnership.terms)
     .map((term) => `${term.category}:${term.storePercent}`)
     .join(",");
   return `${meId}|${partnership.id}|${partnership.status}|${terms}`;
+}
+
+function focusDraftField(panel: HTMLElement | null, category: string | null) {
+  if (!panel) return;
+  const preferred = category
+    ? panel.querySelector<HTMLElement>(`[data-testid="term-draft-${category}"]`)
+    : null;
+  const fallback = panel.querySelector<HTMLElement>(
+    'input[data-testid^="term-draft-"]:not([disabled])',
+  );
+  const target = preferred && !preferred.hasAttribute("disabled") ? preferred : fallback;
+  if (target) {
+    target.focus({ preventScroll: true });
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    return;
+  }
+  const closeBtn = panel.querySelector<HTMLElement>('[data-testid="term-change-close"]');
+  closeBtn?.focus({ preventScroll: true });
 }
 
 export function TermChangePanel({
@@ -58,6 +80,7 @@ export function TermChangePanel({
   onChanged,
   onDirtyChange,
   onCloseRequest,
+  revealSignal = 0,
 }: TermChangePanelProps) {
   const [draftPercents, setDraftPercents] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
@@ -70,6 +93,9 @@ export function TermChangePanel({
   const partnershipRef = useRef(partnership);
   const contextKey = termContextKey(partnership, meId);
   const contextKeyRef = useRef(contextKey);
+  /** Bumped on context invalidate and each mutation start — stale Promise must not apply. */
+  const mutationGenRef = useRef(0);
+  const lastEditedCategoryRef = useRef<string | null>(null);
 
   meIdRef.current = meId;
   partnershipRef.current = partnership;
@@ -92,18 +118,35 @@ export function TermChangePanel({
   useEffect(() => {
     if (contextKeyRef.current === contextKey) return;
     contextKeyRef.current = contextKey;
+    mutationGenRef.current += 1;
     setDraftPercents({});
     setSubmitError("");
     setSubmitting(false);
     setRespondingId(null);
     submitLockRef.current = false;
     respondLockRef.current = false;
+    lastEditedCategoryRef.current = null;
     onDirtyChange?.(false);
   }, [contextKey, onDirtyChange]);
 
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (!revealSignal) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (typeof panel.scrollIntoView === "function") {
+      // Prefer center so the workflow is inside the viewport after list open (host may sit below fold).
+      panel.scrollIntoView({ block: "center", inline: "nearest" });
+    }
+    // Re-run when requests become ready so we focus an enabled draft, not only the trigger.
+    const frame = window.requestAnimationFrame(() => {
+      focusDraftField(panelRef.current, lastEditedCategoryRef.current);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [revealSignal, partnership.status, requestsReady, loadState]);
 
   useEffect(() => {
     if (!onCloseRequest) return;
@@ -115,6 +158,10 @@ export function TermChangePanel({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onCloseRequest]);
+
+  function isMutationCurrent(gen: number, submittedKey: string): boolean {
+    return mutationGenRef.current === gen && contextKeyRef.current === submittedKey;
+  }
 
   function guardMutationContext(kind: "propose" | "respond"): string | null {
     const current = partnershipRef.current;
@@ -147,7 +194,6 @@ export function TermChangePanel({
     }
 
     const snapshot = partnershipRef.current;
-    const snapshotMe = meIdRef.current;
     const snapshotTerms = activeTerms(snapshot.terms);
 
     const changes = snapshotTerms
@@ -183,40 +229,39 @@ export function TermChangePanel({
       return;
     }
 
-    // Synchronous re-check immediately before network (stale draft after rerender)
     const preflight = guardMutationContext("propose");
     if (preflight) {
       setSubmitError(preflight);
       return;
     }
 
+    const submittedKey = contextKeyRef.current;
+    const gen = ++mutationGenRef.current;
     submitLockRef.current = true;
     setSubmitting(true);
     const submittedId = snapshot.id;
-    const submittedMe = snapshotMe;
     try {
       await remcardFetch(`/api/partnerships/${submittedId}/term-change`, {
         method: "POST",
         body: { changes: payload },
       });
-      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+      if (!isMutationCurrent(gen, submittedKey)) {
         return;
       }
       setDraftPercents({});
+      lastEditedCategoryRef.current = null;
       onDirtyChange?.(false);
       onChanged();
     } catch (caught) {
-      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+      if (!isMutationCurrent(gen, submittedKey)) {
         return;
       }
       setSubmitError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось отправить запрос",
       );
     } finally {
-      submitLockRef.current = false;
-      if (meIdRef.current === submittedMe && partnershipRef.current.id === submittedId) {
-        setSubmitting(false);
-      } else {
+      if (isMutationCurrent(gen, submittedKey)) {
+        submitLockRef.current = false;
         setSubmitting(false);
       }
     }
@@ -233,7 +278,8 @@ export function TermChangePanel({
     }
 
     const submittedId = partnershipRef.current.id;
-    const submittedMe = meIdRef.current;
+    const submittedKey = contextKeyRef.current;
+    const gen = ++mutationGenRef.current;
 
     respondLockRef.current = true;
     setRespondingId(requestId);
@@ -242,20 +288,22 @@ export function TermChangePanel({
         `/api/partnerships/${submittedId}/term-change/${requestId}/respond`,
         { method: "POST", body: { action } },
       );
-      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+      if (!isMutationCurrent(gen, submittedKey)) {
         return;
       }
       onChanged();
     } catch (caught) {
-      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+      if (!isMutationCurrent(gen, submittedKey)) {
         return;
       }
       setSubmitError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось обработать запрос",
       );
     } finally {
-      respondLockRef.current = false;
-      setRespondingId(null);
+      if (isMutationCurrent(gen, submittedKey)) {
+        respondLockRef.current = false;
+        setRespondingId(null);
+      }
     }
   }
 
@@ -266,6 +314,7 @@ export function TermChangePanel({
       data-testid="partner-term-change-panel"
       data-dirty={dirty ? "true" : "false"}
       data-participant={isParticipant ? "true" : "false"}
+      data-context-key={contextKey}
     >
       <div className={styles.headerRow}>
         <div>
@@ -374,7 +423,6 @@ export function TermChangePanel({
         </div>
       ) : null}
 
-      {/* Shared alert — visible for ACTIVE propose errors and PAUSED respond errors */}
       {submitError ? (
         <p className={styles.errorText} role="alert" data-testid="term-change-error">
           {submitError}
@@ -402,13 +450,16 @@ export function TermChangePanel({
               </div>
               <TextField
                 label={`Предлагаете, %`}
+                id={`term-draft-${partnership.id}-${term.category}`}
                 type="number"
                 min={0}
                 max={100}
                 placeholder={String(term.storePercent)}
                 value={draftPercents[term.category] ?? ""}
+                data-testid={`term-draft-${term.category}`}
                 onChange={(event) => {
                   const nextValue = event.target.value;
+                  lastEditedCategoryRef.current = term.category;
                   setDraftPercents((prev) => {
                     const next = { ...prev, [term.category]: nextValue };
                     onDirtyChange?.(isDraftDirty(terms, next));

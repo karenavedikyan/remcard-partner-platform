@@ -16,6 +16,8 @@ type Props = {
   /** Which control is the safe default focus and Escape target. */
   safeAction: "confirm" | "dismiss";
   busy?: boolean;
+  /** Visible in-dialog error (e.g. PATCH failure) — not behind an overlay. */
+  error?: string;
   testId?: string;
   onConfirm: () => void;
   onDismiss: () => void;
@@ -34,6 +36,7 @@ export function PartnerCooperationConfirmDialog({
   dismissLabel,
   safeAction,
   busy,
+  error = "",
   testId = "partner-cooperation-confirm",
   onConfirm,
   onDismiss,
@@ -57,7 +60,12 @@ export function PartnerCooperationConfirmDialog({
     };
     scrollNearest(sheetRef.current);
     scrollNearest(safeRef.current);
-    safeRef.current?.focus({ preventScroll: true });
+    // After an error appears while still open, keep focus on a usable control.
+    if (error) {
+      (busy ? dismissRef.current : confirmRef.current)?.focus({ preventScroll: true });
+    } else {
+      safeRef.current?.focus({ preventScroll: true });
+    }
 
     const activateSafe = () => {
       if (busy) return;
@@ -84,7 +92,12 @@ export function PartnerCooperationConfirmDialog({
       if (target instanceof Node && sheet.contains(target)) return;
       event.stopPropagation();
       const focusable = getFocusableElements(sheet);
-      const preferred = safeAction === "confirm" ? confirmRef.current : dismissRef.current;
+      const preferred =
+        error && !busy
+          ? confirmRef.current
+          : safeAction === "confirm"
+            ? confirmRef.current
+            : dismissRef.current;
       (preferred ?? focusable[0])?.focus({ preventScroll: true });
     };
 
@@ -94,7 +107,7 @@ export function PartnerCooperationConfirmDialog({
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("focusin", onFocusIn, true);
     };
-  }, [open, safeAction, busy]);
+  }, [open, safeAction, busy, error]);
 
   if (!open) return null;
 
@@ -120,6 +133,11 @@ export function PartnerCooperationConfirmDialog({
       >
         <h2 id={titleId}>{title}</h2>
         <p className={styles.body}>{body}</p>
+        {error ? (
+          <p className={styles.error} role="alert" data-testid={`${testId}-error`}>
+            {error}
+          </p>
+        ) : null}
         <div className={styles.actions}>
           <Button
             ref={confirmRef}

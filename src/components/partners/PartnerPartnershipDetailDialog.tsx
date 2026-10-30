@@ -43,6 +43,8 @@ type Props = {
    * suspend Escape + focus trap so only the top workflow is active.
    */
   suspendFocusTrap?: boolean;
+  /** Action error owned by the open detail workflow (visible above the sheet body). */
+  actionError?: string;
   /** Existing hub handler (pause/resume/invite actions). */
   onRunAction?: (action: string) => void;
   /** Opens the shared term-change host for this partnership. */
@@ -66,6 +68,7 @@ export function PartnerPartnershipDetailDialog({
   returnFocusRef,
   busy = false,
   suspendFocusTrap = false,
+  actionError = "",
   onRunAction,
   onOpenTermChange,
 }: Props) {
@@ -229,6 +232,11 @@ export function PartnerPartnershipDetailDialog({
           {hasActionCallbacks && (runnable.length || partnership.status === "ACTIVE") ? (
             <div className={styles.actionsBlock} data-testid="partner-detail-actions">
               <p className={styles.sectionTitle}>Действия</p>
+              {actionError ? (
+                <p className={styles.actionError} role="alert" data-testid="partner-detail-action-error">
+                  {actionError}
+                </p>
+              ) : null}
               <div className={styles.actionRow}>
                 {runnable.map((action) => (
                   <Button
@@ -237,6 +245,7 @@ export function PartnerPartnershipDetailDialog({
                     variant={action.variant ?? "secondary"}
                     disabled={busy || !onRunAction}
                     data-testid={`partner-detail-action-${action.kind}`}
+                    data-partnership-id={partnership.id}
                     onClick={() => onRunAction?.(action.kind)}
                   >
                     {cooperationActionLabel(action.kind) ?? action.label}
@@ -248,6 +257,7 @@ export function PartnerPartnershipDetailDialog({
                     variant="secondary"
                     disabled={busy}
                     data-testid="partner-detail-term-change"
+                    data-partnership-id={partnership.id}
                     onClick={onOpenTermChange}
                   >
                     {termChangeActionLabel()}

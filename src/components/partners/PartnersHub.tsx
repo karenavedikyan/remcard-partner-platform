@@ -193,14 +193,46 @@ export function PartnersHub({
     partnershipId: string;
     action: "pause" | "resume";
   } | null>(null);
+  const [lifecycleConfirmError, setLifecycleConfirmError] = useState("");
+  const [termRevealSignal, setTermRevealSignal] = useState(0);
+  const [pendingPartnerFocusId, setPendingPartnerFocusId] = useState<string | null>(null);
   const termLoadGenRef = useRef(0);
   const termOpenIdRef = useRef<string | null>(null);
   const termTriggerRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const termHostRef = useRef<HTMLDivElement | null>(null);
 
   const updateTermDraftDirty = useCallback((dirty: boolean) => {
     termDraftDirtyRef.current = dirty;
     setTermDraftDirty(dirty);
   }, []);
+
+  const bumpTermReveal = useCallback(() => {
+    setTermRevealSignal((n) => n + 1);
+  }, []);
+
+  function focusPartnerInList(partnershipId: string): boolean {
+    const selectors = [
+      `[data-testid="partner-action-resume"][data-partnership-id="${partnershipId}"]`,
+      `[data-testid="partner-action-pause"][data-partnership-id="${partnershipId}"]`,
+      `[data-testid="partner-detail-action-resume"]`,
+      `[data-testid="partner-detail-action-pause"]`,
+      `[data-testid="partner-term-change-${partnershipId}"]`,
+      `[data-testid="partner-row-name-button"][data-partnership-id="${partnershipId}"]`,
+      `[data-testid="partner-detail-close"]`,
+    ];
+    for (const selector of selectors) {
+      const el = document.querySelector<HTMLElement>(selector);
+      if (!el?.isConnected) continue;
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      el.focus({ preventScroll: true });
+      if (document.activeElement === el || el.contains(document.activeElement)) {
+        return true;
+      }
+    }
+    return false;
+  }
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
   const [listArchiveView, setListArchiveView] = useState<"active" | "archive" | "hidden">("active");
   const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
@@ -729,6 +761,7 @@ export function PartnersHub({
         setActionError("Действие недоступно для текущего контекста");
         return;
       }
+      setLifecycleConfirmError("");
       setLifecycleConfirm({ partnershipId: partnership.id, action: actionKind });
       return;
     }
@@ -737,18 +770,36 @@ export function PartnersHub({
 
   async function confirmLifecycleAction() {
     if (!lifecycleConfirm || busyId) return;
-    const current = findPartnershipById(partnerships, lifecycleConfirm.partnershipId);
+    const partnershipId = lifecycleConfirm.partnershipId;
+    const action = lifecycleConfirm.action;
+    const current = findPartnershipById(partnerships, partnershipId);
     if (
       !current ||
-      !partnershipAllowsUiAction(current, meId, lifecycleConfirm.action)
+      !partnershipAllowsUiAction(current, meId, action)
     ) {
-      setLifecycleConfirm(null);
-      setActionError("Действие недоступно: партнёр или права изменились");
+      // Keep confirm open — surface error inside the active workflow, not under the modal.
+      setLifecycleConfirmError("Действие недоступно: партнёр или права изменились");
       return;
     }
-    const action = lifecycleConfirm.action;
-    setLifecycleConfirm(null);
-    await runPartnershipAction(current, action);
+    setLifecycleConfirmError("");
+    setBusyId(current.id);
+    setActionError("");
+    try {
+      await remcardFetch(`/api/partnership/${current.id}`, {
+        method: "PATCH",
+        body: { action },
+      });
+      setLifecycleConfirm(null);
+      setLifecycleConfirmError("");
+      await loadList();
+      setPendingPartnerFocusId(partnershipId);
+    } catch (caught) {
+      setLifecycleConfirmError(
+        caught instanceof RemcardApiError ? caught.message : "Действие не выполнено",
+      );
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function rememberTermTrigger(partnershipId: string, el?: HTMLElement | null) {
@@ -758,10 +809,16 @@ export function PartnersHub({
 
   function restoreTermTriggerFocus(partnershipId: string | null) {
     if (!partnershipId) return;
-    const el = termTriggerRefs.current.get(partnershipId);
-    if (el?.isConnected) {
-      el.focus({ preventScroll: true });
+    const remembered = termTriggerRefs.current.get(partnershipId);
+    if (remembered?.isConnected) {
+      if (typeof remembered.scrollIntoView === "function") {
+        remembered.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      remembered.focus({ preventScroll: true });
+      return;
     }
+    // Reload / remount may disconnect the original trigger — resolve a fresh node.
+    focusPartnerInList(partnershipId);
   }
 
   function forceOpenTermChange(partnershipId: string) {
@@ -776,6 +833,7 @@ export function PartnersHub({
     setPendingTermOpenId(null);
     termOpenIdRef.current = partnershipId;
     setExpandedTermPartnershipId(partnershipId);
+    bumpTermReveal();
     void loadTermRequests(partnershipId, { expand: false });
   }
 
@@ -815,6 +873,8 @@ export function PartnersHub({
   function keepTermDraftEditing() {
     setTermDiscardOpen(false);
     setPendingTermOpenId(null);
+    // Return focus to the last meaningful draft field (not the list row trigger).
+    bumpTermReveal();
   }
 
   function discardTermDraftAndContinue() {
@@ -899,7 +959,11 @@ export function PartnersHub({
       error: "",
     };
     return (
-      <div className={styles.termChangeHost} data-testid="partner-term-change-host">
+      <div
+        ref={termHostRef}
+        className={styles.termChangeHost}
+        data-testid="partner-term-change-host"
+      >
         <TermChangePanel
           partnership={partnership}
           meId={meId}
@@ -920,10 +984,52 @@ export function PartnersHub({
           }}
           onDirtyChange={updateTermDraftDirty}
           onCloseRequest={requestCloseTermChange}
+          revealSignal={termRevealSignal}
         />
       </div>
     );
   }
+
+  useEffect(() => {
+    if (!pendingPartnerFocusId || busyId) return;
+    const id = pendingPartnerFocusId;
+    let cancelled = false;
+    let attempts = 0;
+    const tick = () => {
+      if (cancelled) return;
+      if (focusPartnerInList(id) || attempts++ >= 20) {
+        setPendingPartnerFocusId(null);
+        return;
+      }
+      window.requestAnimationFrame(tick);
+    };
+    const frame = window.requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [pendingPartnerFocusId, partnerships, busyId]);
+
+  useEffect(() => {
+    if (!expandedTermPartnershipId || !termRevealSignal) return;
+    const host = termHostRef.current;
+    if (!host) return;
+    if (typeof host.scrollIntoView === "function") {
+      host.scrollIntoView({ block: "center", inline: "nearest" });
+    }
+  }, [expandedTermPartnershipId, termRevealSignal]);
+
+  const expandedTermLoadState = expandedTermPartnershipId
+    ? termRequests[expandedTermPartnershipId]?.state
+    : undefined;
+
+  // After term-change GET settles, re-reveal so focus lands on an enabled field.
+  useEffect(() => {
+    if (!expandedTermPartnershipId) return;
+    if (expandedTermLoadState === "loaded" || expandedTermLoadState === "error") {
+      bumpTermReveal();
+    }
+  }, [expandedTermPartnershipId, expandedTermLoadState, bumpTermReveal]);
 
   useEffect(() => {
     if (!termsPartnershipId) {
@@ -1230,8 +1336,8 @@ export function PartnersHub({
           {listError}
         </p>
       ) : null}
-      {actionError ? (
-        <p className={styles.error} role="alert">
+      {actionError && !lifecycleConfirm ? (
+        <p className={styles.error} role="alert" data-testid="partners-hub-action-error">
           {actionError}
         </p>
       ) : null}
@@ -1330,6 +1436,7 @@ export function PartnersHub({
               onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
               suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+              detailActionError={actionError}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
               onToggleSelectAll={togglePartnerSelectAll}
@@ -1431,6 +1538,7 @@ export function PartnersHub({
                   onTermDirtyChange={updateTermDraftDirty}
                   expandedTermPartnershipId={expandedTermPartnershipId}
                   suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                  detailActionError={actionError}
                   selectedIds={selectedPartnerIds}
                   onToggleSelect={togglePartnerSelect}
                   onToggleSelectAll={togglePartnerSelectAll}
@@ -1467,6 +1575,7 @@ export function PartnersHub({
                 onTermDirtyChange={updateTermDraftDirty}
                 expandedTermPartnershipId={expandedTermPartnershipId}
                 suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                detailActionError={actionError}
                 selectedIds={selectedPartnerIds}
                 onToggleSelect={togglePartnerSelect}
                 onToggleSelectAll={togglePartnerSelectAll}
@@ -1592,6 +1701,7 @@ export function PartnersHub({
               onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
               suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+              detailActionError={actionError}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
               onToggleSelectAll={togglePartnerSelectAll}
@@ -1771,6 +1881,7 @@ export function PartnersHub({
                       }}
                       onDirtyChange={updateTermDraftDirty}
                       onCloseRequest={requestCloseTermChange}
+                      revealSignal={termRevealSignal}
                     />
                   ) : null}
                 </Panel>
@@ -2051,8 +2162,13 @@ export function PartnersHub({
           dismissLabel="Отмена"
           safeAction="dismiss"
           busy={busyId === lifecycleConfirm.partnershipId}
+          error={lifecycleConfirmError}
           onConfirm={() => void confirmLifecycleAction()}
-          onDismiss={() => setLifecycleConfirm(null)}
+          onDismiss={() => {
+            if (busyId === lifecycleConfirm.partnershipId) return;
+            setLifecycleConfirm(null);
+            setLifecycleConfirmError("");
+          }}
         />
       ) : null}
 

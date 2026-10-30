@@ -171,6 +171,16 @@
   border: 0;
 }
 
+.actionError {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  color: var(--primary);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
 .actionsBlock {
   display: grid;
   gap: var(--space-2);
