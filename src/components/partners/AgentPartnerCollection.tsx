@@ -317,7 +317,11 @@ export function AgentPartnerCollection(props: Props) {
     viewMode === "cards" ? (
       <>
         {selectPageRow}
-        <div className={styles.cardGrid} data-testid="agent-r04-partners-cards">
+        <div
+          className={styles.cardGrid}
+          data-testid="agent-r04-partners-cards"
+          data-partner-surface="cards"
+        >
           {partnerships.map((partnership) => {
             const partner = partnershipPartnerProfile(partnership, meId);
             const officialLine = partnerCollectionOfficialLine(partnership, meId);
@@ -383,7 +387,10 @@ export function AgentPartnerCollection(props: Props) {
       </>
     ) : (
       <div data-testid="agent-r04-partners-list">
-        <div className={`${r03.collectionPanel} ${styles.mobileOnly}`}>
+        <div
+          className={`${r03.collectionPanel} ${styles.mobileOnly}`}
+          data-partner-surface="mobile"
+        >
           {partnerships.map((partnership) => {
             const partner = partnershipPartnerProfile(partnership, meId);
             const needsResponse = partnershipNeedsMyResponse(partnership, meId);
@@ -443,7 +450,10 @@ export function AgentPartnerCollection(props: Props) {
           })}
         </div>
         {selectPageRow}
-        <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
+        <div
+          className={`${styles.tableWrap} ${styles.desktopOnly}`}
+          data-partner-surface="desktop"
+        >
           <table className={styles.dataTable} data-testid="agent-r04-partners-table">
             <colgroup>
               <col className={styles.colSelect} />

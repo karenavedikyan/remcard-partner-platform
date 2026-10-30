@@ -4,6 +4,9 @@
   border-top: 1px solid var(--line);
   display: grid;
   gap: var(--space-3);
+  /* Keep focused long-form fields clear of fixed mobile bottom chrome on reveal/Keep. */
+  scroll-margin-top: var(--space-6, 1.5rem);
+  scroll-margin-bottom: 6rem;
 }
 
 .headerRow {
@@ -54,6 +57,8 @@
   display: grid;
   gap: var(--space-2);
   grid-template-columns: minmax(0, 1fr);
+  scroll-margin-top: var(--space-4, 1rem);
+  scroll-margin-bottom: 6rem;
 }
 
 @media (min-width: 640px) {

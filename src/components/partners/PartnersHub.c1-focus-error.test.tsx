@@ -256,6 +256,61 @@ describe("PartnersHub C1 focus + confirm error", () => {
     void partnerships;
   });
 
+  it("confirmLifecycleAction uses shared runPartnershipAction (single PATCH transport)", async () => {
+    let partnerships = [makePartnership("ACTIVE")];
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      const method = init?.method ?? "GET";
+      if (typeof path === "string" && path.startsWith("/api/partnership/list")) {
+        return { partnerships };
+      }
+      if (typeof path === "string" && path.includes("/term-change")) {
+        return { requests: [] };
+      }
+      if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
+        return { invites: [] };
+      }
+      if (
+        typeof path === "string" &&
+        path.startsWith("/api/partnership/qa-p1") &&
+        method === "PATCH"
+      ) {
+        partnerships = [makePartnership("PAUSED")];
+        return { ok: true };
+      }
+      throw new RemcardApiError(500, `fail-closed ${String(path)}`);
+    });
+
+    render(
+      <PartnersHub
+        meId="agent-me"
+        initialProfile={agentProfile}
+        variant="agent-r04"
+        agentPresentation="overview"
+        forcedTab="list"
+      />,
+    );
+
+    const nameButtons = await screen.findAllByTestId("partner-row-name-button");
+    await userEvent.click(nameButtons[0]!);
+    await userEvent.click(await screen.findByTestId("partner-detail-action-pause"));
+    await userEvent.click(await screen.findByTestId("partner-pause-confirm-confirm"));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("partner-pause-confirm")).not.toBeInTheDocument();
+    });
+
+    const patchCalls = vi
+      .mocked(remcardFetch)
+      .mock.calls.filter(
+        ([path, init]) =>
+          typeof path === "string" &&
+          path === "/api/partnership/qa-p1" &&
+          init?.method === "PATCH",
+      );
+    expect(patchCalls).toHaveLength(1);
+    expect(patchCalls[0]?.[1]?.body).toEqual({ action: "pause" });
+  });
+
   it("successful pause restores focus to a live partner control after reload", async () => {
     let partnerships = [makePartnership("ACTIVE")];
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {

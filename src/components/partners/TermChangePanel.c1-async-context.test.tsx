@@ -267,4 +267,78 @@ describe("TermChangePanel full async context binding", () => {
       expect(screen.getByTestId("term-draft-doors")).toHaveFocus();
     });
   });
+
+  it("unmount invalidates deferred propose — onChanged must not fire", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    vi.mocked(remcardFetch).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const onChanged = vi.fn();
+    const { unmount } = render(
+      <TermChangePanel
+        partnership={partnership()}
+        meId="agent-me"
+        partnerTitle="Store"
+        requests={[]}
+        loadState="loaded"
+        loadError=""
+        onReload={() => {}}
+        onChanged={onChanged}
+      />,
+    );
+
+    await userEvent.type(screen.getByTestId("term-draft-doors"), "15");
+    await userEvent.click(screen.getByTestId("term-change-submit"));
+    expect(remcardFetch).toHaveBeenCalledTimes(1);
+
+    unmount();
+    resolveFetch({});
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it("unmount invalidates deferred respond — onChanged must not fire", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    vi.mocked(remcardFetch).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const onChanged = vi.fn();
+    const pending = {
+      id: "qa-req1",
+      requestedBy: "store-1",
+      status: "PENDING" as const,
+      changes: [{ category: "doors", newPercent: 15 }],
+      expiresAt: "2099-01-01T00:00:00Z",
+      createdAt: "2026-10-30T00:00:00Z",
+      rejectionReason: null,
+    };
+    const { unmount } = render(
+      <TermChangePanel
+        partnership={partnership({ status: "PAUSED" })}
+        meId="agent-me"
+        partnerTitle="Store"
+        requests={[pending]}
+        loadState="loaded"
+        loadError=""
+        onReload={() => {}}
+        onChanged={onChanged}
+      />,
+    );
+
+    await userEvent.click(screen.getByTestId("term-change-approve-qa-req1"));
+    expect(remcardFetch).toHaveBeenCalledTimes(1);
+
+    unmount();
+    resolveFetch({});
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
 });

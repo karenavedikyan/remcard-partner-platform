@@ -49,6 +49,24 @@ export function termContextKey(partnership: Partnership, meId: string): string {
   return `${meId}|${partnership.id}|${partnership.status}|${terms}`;
 }
 
+/** Leave room for fixed/sticky bottom chrome (e.g. AppShell mobile nav) without editing AppShell. */
+const BOTTOM_CHROME_CLEARANCE_PX = 96;
+
+function clearFixedChromeOverlap(el: HTMLElement) {
+  if (typeof window === "undefined" || typeof window.scrollBy !== "function") return;
+  // jsdom exposes scrollBy but throws Not implemented — skip stub, keep real-browser nudge.
+  if (typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent)) return;
+  const rect = el.getBoundingClientRect();
+  const limit = window.innerHeight - BOTTOM_CHROME_CLEARANCE_PX;
+  if (rect.bottom > limit) {
+    window.scrollBy({ top: rect.bottom - limit + 12, left: 0, behavior: "auto" });
+  }
+  const top = el.getBoundingClientRect().top;
+  if (top < 8) {
+    window.scrollBy({ top: top - 16, left: 0, behavior: "auto" });
+  }
+}
+
 function focusDraftField(panel: HTMLElement | null, category: string | null) {
   if (!panel) return;
   const preferred = category
@@ -61,8 +79,10 @@ function focusDraftField(panel: HTMLElement | null, category: string | null) {
   if (target) {
     target.focus({ preventScroll: true });
     if (typeof target.scrollIntoView === "function") {
-      target.scrollIntoView({ block: "nearest", inline: "nearest" });
+      // Center first, then nudge above fixed bottom chrome so hit-tests reach the input.
+      target.scrollIntoView({ block: "center", inline: "nearest" });
     }
+    clearFixedChromeOverlap(target);
     return;
   }
   const closeBtn = panel.querySelector<HTMLElement>('[data-testid="term-change-close"]');
@@ -128,6 +148,16 @@ export function TermChangePanel({
     lastEditedCategoryRef.current = null;
     onDirtyChange?.(false);
   }, [contextKey, onDirtyChange]);
+
+  // Invalidate in-flight propose/respond when the panel unmounts — stale resolve must not
+  // call onChanged / clear drafts / setState on a dead or replaced workflow.
+  useEffect(() => {
+    return () => {
+      mutationGenRef.current += 1;
+      submitLockRef.current = false;
+      respondLockRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     onDirtyChange?.(dirty);

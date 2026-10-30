@@ -210,6 +210,29 @@ export function PartnersHub({
     setTermRevealSignal((n) => n + 1);
   }, []);
 
+  function isVisiblyInteractable(el: HTMLElement): boolean {
+    if (!el.isConnected) return false;
+    if ("disabled" in el && Boolean((el as HTMLButtonElement).disabled)) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+    let ancestor: HTMLElement | null = el.parentElement;
+    while (ancestor) {
+      const ancestorStyle = window.getComputedStyle(ancestor);
+      if (ancestorStyle.display === "none" || ancestorStyle.visibility === "hidden") {
+        return false;
+      }
+      ancestor = ancestor.parentElement;
+    }
+    const rect = el.getBoundingClientRect();
+    // Real layout: hidden mobile/desktop copies collapse to 0×0. jsdom often reports 0 —
+    // treat zero-size as visible only when no ancestor is display:none (already checked).
+    if (rect.width === 0 && rect.height === 0) {
+      // Prefer a non-zero sibling match when available; caller iterates all matches.
+      return style.display !== "none";
+    }
+    return rect.width > 0 && rect.height > 0;
+  }
+
   function focusPartnerInList(partnershipId: string): boolean {
     const selectors = [
       `[data-testid="partner-action-resume"][data-partnership-id="${partnershipId}"]`,
@@ -220,15 +243,34 @@ export function PartnersHub({
       `[data-testid="partner-row-name-button"][data-partnership-id="${partnershipId}"]`,
       `[data-testid="partner-detail-close"]`,
     ];
+    const width = typeof window !== "undefined" ? window.innerWidth : 1024;
+    const preferredSurface = width <= 680 ? "mobile" : "desktop";
+
+    const rank = (el: HTMLElement): number => {
+      const surface = el.closest("[data-partner-surface]")?.getAttribute("data-partner-surface");
+      if (surface === preferredSurface || surface === "cards") return 0;
+      if (surface == null) return 1; // detail dialog / host outside list surfaces
+      return 2; // opposite viewport copy (hidden via CSS in real layout)
+    };
+
     for (const selector of selectors) {
-      const el = document.querySelector<HTMLElement>(selector);
-      if (!el?.isConnected) continue;
-      if (typeof el.scrollIntoView === "function") {
-        el.scrollIntoView({ block: "nearest", inline: "nearest" });
-      }
-      el.focus({ preventScroll: true });
-      if (document.activeElement === el || el.contains(document.activeElement)) {
-        return true;
+      const matches = Array.from(document.querySelectorAll<HTMLElement>(selector)).filter(
+        isVisiblyInteractable,
+      );
+      const sized = matches.filter((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+      // Prefer laid-out (visible) nodes when the browser reports geometry; else CSS-visible pool.
+      const pool = (sized.length > 0 ? sized : matches).sort((a, b) => rank(a) - rank(b));
+      for (const el of pool) {
+        if (typeof el.scrollIntoView === "function") {
+          el.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+        el.focus({ preventScroll: true });
+        if (document.activeElement === el || el.contains(document.activeElement)) {
+          return true;
+        }
       }
     }
     return false;
@@ -724,13 +766,21 @@ export function PartnersHub({
     onAttentionCountChange?.(attentionCount);
   }, [attentionCount, onAttentionCountChange]);
 
+  type PartnershipActionResult =
+    | { ok: true }
+    | { ok: false; error: string; reason: "busy" | "failed" };
+
+  /** Sole PATCH transport for partnership UI actions (incl. pause/resume confirm). */
   async function runPartnershipAction(
     partnership: Partnership,
     action: string,
-  ) {
-    if (busyId) return;
+    options?: { suppressHubError?: boolean },
+  ): Promise<PartnershipActionResult> {
+    if (busyId) return { ok: false, error: "", reason: "busy" };
     setBusyId(partnership.id);
-    setActionError("");
+    if (!options?.suppressHubError) {
+      setActionError("");
+    }
     try {
       const body: Record<string, unknown> = { action };
       if (action === "accept_pending") {
@@ -741,8 +791,14 @@ export function PartnersHub({
         body,
       });
       await loadList();
+      return { ok: true };
     } catch (caught) {
-      setActionError(caught instanceof RemcardApiError ? caught.message : "Действие не выполнено");
+      const error =
+        caught instanceof RemcardApiError ? caught.message : "Действие не выполнено";
+      if (!options?.suppressHubError) {
+        setActionError(error);
+      }
+      return { ok: false, error, reason: "failed" };
     } finally {
       setBusyId(null);
     }
@@ -782,23 +838,15 @@ export function PartnersHub({
       return;
     }
     setLifecycleConfirmError("");
-    setBusyId(current.id);
-    setActionError("");
-    try {
-      await remcardFetch(`/api/partnership/${current.id}`, {
-        method: "PATCH",
-        body: { action },
-      });
+    const result = await runPartnershipAction(current, action, { suppressHubError: true });
+    if (result.ok) {
       setLifecycleConfirm(null);
       setLifecycleConfirmError("");
-      await loadList();
       setPendingPartnerFocusId(partnershipId);
-    } catch (caught) {
-      setLifecycleConfirmError(
-        caught instanceof RemcardApiError ? caught.message : "Действие не выполнено",
-      );
-    } finally {
-      setBusyId(null);
+      return;
+    }
+    if (result.reason === "failed") {
+      setLifecycleConfirmError(result.error);
     }
   }
 

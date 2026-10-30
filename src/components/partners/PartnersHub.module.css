@@ -308,9 +308,9 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg, 12px);
   background: var(--offset, var(--surface-muted, #f8f9fa));
-  /* Keep reveal/scroll targets clear of sticky chrome / fold edges. */
+  /* Keep reveal/scroll targets clear of sticky chrome / fixed mobile bottom nav. */
   scroll-margin-top: var(--space-6, 1.5rem);
-  scroll-margin-bottom: var(--space-6, 1.5rem);
+  scroll-margin-bottom: 6rem;
 }
 
 @media (max-width: 680px) {
