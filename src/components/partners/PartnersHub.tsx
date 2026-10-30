@@ -73,6 +73,12 @@ import {
   mergeSearchResultPages,
 } from "@/lib/partnership-search-ui";
 import { partnerSearchResultMeta } from "@/lib/agent-r04/partner-search-meta";
+import {
+  overviewZoneForPartnership,
+  partitionPartnerOverview,
+  type PartnerOverviewZone,
+} from "@/lib/partners-prototype-v1/overview-groups";
+import { PartnersOverviewLayout } from "@/components/partners/PartnersOverviewLayout";
 import styles from "./PartnersHub.module.css";
 
 export type PartnersHubProps = {
@@ -82,8 +88,12 @@ export type PartnersHubProps = {
   variant?: "legacy" | "agent-r04";
   agentSegment?: "active" | "invitations";
   agentInvitationFlow?: "incoming" | "outgoing";
+  /** P1 overview composition (prototype tiles/zones) instead of two top tabs. */
+  agentPresentation?: "tabs" | "overview";
   agentModalSurface?: "find" | "link";
   onCloseAgentModal?: () => void;
+  /** Overview CTA / empty scenarios — open existing find/link modal. */
+  onOpenPartnerHub?: (tab: "find" | "link") => void;
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
   partnersAudience?: PartnersHubAudience;
@@ -110,14 +120,17 @@ export function PartnersHub({
   variant = "legacy",
   agentSegment,
   agentInvitationFlow,
+  agentPresentation = "tabs",
   agentModalSurface,
   onCloseAgentModal,
+  onOpenPartnerHub,
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
   partnersAudience,
 }: PartnersHubProps) {
   const isAgentR04 = variant === "agent-r04";
   const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
+  const isOverview = isAgentR04 && agentPresentation === "overview" && !agentModalSurface;
   const searchParams = useSearchParams();
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
   const discussionInviteId = searchParams.get("discussion")?.trim() || null;
@@ -167,6 +180,15 @@ export function PartnersHub({
   const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
   const [listPage, setListPage] = useState(0);
   const [listPageSize, setListPageSize] = useState(25);
+  const [waitingOpen, setWaitingOpen] = useState(false);
+  const [decideZeroHint, setDecideZeroHint] = useState(false);
+  const [waitingPage, setWaitingPage] = useState(0);
+  const [decidePage, setDecidePage] = useState(0);
+  const overviewZoneActiveRef = useRef<HTMLDivElement>(null);
+  const overviewZoneDecideRef = useRef<HTMLDivElement>(null);
+  const overviewZoneWaitingRef = useRef<HTMLDetailsElement>(null);
+  /** terms= id already paged into its overview zone (refresh/page-size must not re-page). */
+  const overviewDeepLinkAppliedRef = useRef<string | null>(null);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
@@ -204,13 +226,17 @@ export function PartnersHub({
     defaultSearchRole,
   );
 
+  const listVisibilityParam =
+    isAgentR04 && !isOverview && agentSegment === "active" ? listArchiveView : null;
+
   const loadList = useCallback(async () => {
     setLoadingList(true);
     setListError("");
     try {
       const params = new URLSearchParams();
-      if (isAgentR04 && agentSegment === "active") {
-        params.set("listVisibility", listArchiveView);
+      // Overview: one full authorized collection; archive/hidden are client filters.
+      if (listVisibilityParam) {
+        params.set("listVisibility", listVisibilityParam);
       }
       const qs = params.toString();
       const data = await remcardFetch<{ partnerships: Partnership[] }>(
@@ -223,7 +249,7 @@ export function PartnersHub({
     } finally {
       setLoadingList(false);
     }
-  }, [agentSegment, isAgentR04, listArchiveView]);
+  }, [listVisibilityParam]);
 
   const loadDiscussionContext = useCallback(async (inviteId: string) => {
     setDiscussionContextError("");
@@ -297,19 +323,14 @@ export function PartnersHub({
     [city, filterProducts, filterServices, filterStages, isAgentR04, query, searchPartnerType, searchRole],
   );
 
-  const visiblePartnerships = useMemo(() => {
-    let rows = partnerships;
-    if (isAgentR04 && agentSegment) {
-      rows = rows.filter((p) => partnershipAgentSegment(p.status) === agentSegment);
-    }
-    if (isAgentR04 && agentSegment === "invitations" && agentInvitationFlow) {
-      rows = rows.filter((p) => {
-        const outgoing = p.initiatedBy === meId;
-        return agentInvitationFlow === "outgoing" ? outgoing : !outgoing;
-      });
-    }
-    if (isAgentR04 && agentSegment === "active") {
-      // Archive/hidden segmentation is applied on the server via listVisibility; invitations keep full list.
+  const overviewGroups = useMemo(
+    () => (isOverview ? partitionPartnerOverview(partnerships, meId) : null),
+    [isOverview, partnerships, meId],
+  );
+
+  const applyActiveListFilters = useCallback(
+    (source: Partnership[]): Partnership[] => {
+      let rows = source;
       const q = listSearch.trim().toLowerCase();
       if (q) {
         rows = rows.filter((p) => {
@@ -347,20 +368,54 @@ export function PartnersHub({
           return ta.localeCompare(tb, "ru");
         });
       }
+      return rows;
+    },
+    [listCity, listPartnerType, listSearch, listSort, listSpecialization, listStage, meId],
+  );
+
+  const overviewActiveRows = useMemo(() => {
+    if (!overviewGroups) return [];
+    let rows: Partnership[];
+    if (listArchiveView === "archive") {
+      rows = partnerships.filter(
+        (p) =>
+          partnershipAgentSegment(p.status) === "active" && Boolean(p.listPreference?.archivedAt),
+      );
+    } else if (listArchiveView === "hidden") {
+      rows = partnerships.filter((p) => Boolean(p.listPreference?.hiddenAt));
+    } else {
+      rows = overviewGroups.active;
+    }
+    return applyActiveListFilters(rows);
+  }, [applyActiveListFilters, listArchiveView, overviewGroups, partnerships]);
+
+  const visiblePartnerships = useMemo(() => {
+    if (isOverview) {
+      return overviewActiveRows;
+    }
+    let rows = partnerships;
+    if (isAgentR04 && agentSegment) {
+      rows = rows.filter((p) => partnershipAgentSegment(p.status) === agentSegment);
+    }
+    if (isAgentR04 && agentSegment === "invitations" && agentInvitationFlow) {
+      rows = rows.filter((p) => {
+        const outgoing = p.initiatedBy === meId;
+        return agentInvitationFlow === "outgoing" ? outgoing : !outgoing;
+      });
+    }
+    if (isAgentR04 && agentSegment === "active") {
+      // Archive/hidden segmentation is applied on the server via listVisibility; invitations keep full list.
+      rows = applyActiveListFilters(rows);
     }
     return rows;
   }, [
     agentInvitationFlow,
     agentSegment,
+    applyActiveListFilters,
     isAgentR04,
-    listArchiveView,
-    listCity,
-    listPartnerType,
-    listSpecialization,
-    listSearch,
-    listSort,
-    listStage,
+    isOverview,
     meId,
+    overviewActiveRows,
     partnerships,
   ]);
 
@@ -382,6 +437,26 @@ export function PartnersHub({
     const start = listPage * listPageSize;
     return visiblePartnerships.slice(start, start + listPageSize);
   }, [listPage, listPageSize, visiblePartnerships]);
+
+  const pagedOverviewDecisions = useMemo(() => {
+    const rows = overviewGroups?.decisions ?? [];
+    const start = decidePage * listPageSize;
+    return rows.slice(start, start + listPageSize);
+  }, [overviewGroups, decidePage, listPageSize]);
+
+  const pagedOverviewWaiting = useMemo(() => {
+    const rows = overviewGroups?.outgoing ?? [];
+    const start = waitingPage * listPageSize;
+    return rows.slice(start, start + listPageSize);
+  }, [overviewGroups, waitingPage, listPageSize]);
+
+  useEffect(() => {
+    if (!overviewGroups || loadingList) return;
+    // Prototype: open outgoing when there are no actives but there are waiting rows.
+    if (overviewGroups.counts.active === 0 && overviewGroups.counts.outgoing > 0) {
+      setWaitingOpen(true);
+    }
+  }, [overviewGroups, loadingList]);
 
   const togglePartnerSelect = useCallback((id: string) => {
     setSelectedPartnerIds((prev) => {
@@ -647,6 +722,76 @@ export function PartnersHub({
     void loadTermRequests(termsPartnershipId);
   }, [termsPartnershipId]);
 
+  useEffect(() => {
+    if (!termsPartnershipId) {
+      overviewDeepLinkAppliedRef.current = null;
+      return;
+    }
+    if (!overviewGroups || loadingList) return;
+    if (overviewDeepLinkAppliedRef.current === termsPartnershipId) return;
+    const match = partnerships.find((p) => p.id === termsPartnershipId);
+    if (!match) return;
+    const zone = overviewZoneForPartnership(match, meId);
+    if (zone === "active") {
+      const idx = overviewActiveRows.findIndex((p) => p.id === termsPartnershipId);
+      if (idx < 0) return;
+      setListPage(Math.floor(idx / listPageSize));
+    } else if (zone === "decide") {
+      const idx = overviewGroups.decisions.findIndex((p) => p.id === termsPartnershipId);
+      if (idx < 0) return;
+      setDecidePage(Math.floor(idx / listPageSize));
+    } else if (zone === "waiting") {
+      const idx = overviewGroups.outgoing.findIndex((p) => p.id === termsPartnershipId);
+      if (idx < 0) return;
+      setWaitingOpen(true);
+      setWaitingPage(Math.floor(idx / listPageSize));
+    } else {
+      return;
+    }
+    overviewDeepLinkAppliedRef.current = termsPartnershipId;
+  }, [
+    termsPartnershipId,
+    overviewGroups,
+    overviewActiveRows,
+    loadingList,
+    partnerships,
+    meId,
+    listPageSize,
+  ]);
+
+  const scrollToOverviewZone = useCallback(
+    (zone: PartnerOverviewZone) => {
+      if (zone === "waiting") {
+        setWaitingOpen(true);
+      }
+      if (zone === "decide" && overviewGroups && overviewGroups.counts.decisions === 0) {
+        // Zero-state target mounts on next paint; scroll after decideZeroHint effect.
+        setDecideZeroHint(true);
+        return;
+      }
+      if (zone === "decide") {
+        setDecideZeroHint(false);
+      }
+      const node =
+        zone === "active"
+          ? overviewZoneActiveRef.current
+          : zone === "decide"
+            ? overviewZoneDecideRef.current
+            : overviewZoneWaitingRef.current;
+      window.requestAnimationFrame(() => {
+        node?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      });
+    },
+    [overviewGroups],
+  );
+
+  useEffect(() => {
+    if (!decideZeroHint) return;
+    window.requestAnimationFrame(() => {
+      overviewZoneDecideRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    });
+  }, [decideZeroHint]);
+
   async function refreshProfile() {
     try {
       const profile = await remcardFetch<ProProfileResponse>("/api/pro/profile");
@@ -852,7 +997,7 @@ export function PartnersHub({
         />
       ) : null}
 
-      {attentionCount > 0 ? (
+      {!isOverview && attentionCount > 0 ? (
         <Panel compact>
           <p className={styles.attention}>
             Требует внимания: {attentionCount}{" "}
@@ -869,7 +1014,7 @@ export function PartnersHub({
         </p>
       ) : null}
 
-      {listError && tab === "list" ? (
+      {listError && tab === "list" && !isOverview ? (
         <p className={styles.error} role="alert">
           {listError}
         </p>
@@ -938,7 +1083,182 @@ export function PartnersHub({
         </p>
       ) : null}
 
-      {tab === "list" ? (
+      {tab === "list" && isOverview && overviewGroups ? (
+        <PartnersOverviewLayout
+          lead="Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке."
+          counts={overviewGroups.counts}
+          loading={loadingList}
+          error={listError}
+          onRetry={() => void loadList()}
+          onOpenFind={() => onOpenPartnerHub?.("find")}
+          onOpenLink={() => onOpenPartnerHub?.("link")}
+          onTileNavigate={scrollToOverviewZone}
+          waitingOpen={waitingOpen}
+          onWaitingOpenChange={setWaitingOpen}
+          decideZeroHint={decideZeroHint}
+          zoneRefs={{
+            active: overviewZoneActiveRef,
+            decide: overviewZoneDecideRef,
+            waiting: overviewZoneWaitingRef,
+          }}
+          decisionSlot={
+            <AgentPartnerCollection
+              partnerships={pagedOverviewDecisions}
+              meId={meId}
+              viewMode={listViewMode}
+              busyId={busyId}
+              onRunAction={(id, action) => {
+                const partnership = partnerships.find((item) => item.id === id);
+                if (!partnership) return;
+                handlePartnershipUiAction(partnership, action);
+              }}
+              onUpdated={() => void loadList()}
+              termRequests={termRequests}
+              onLoadTermRequests={(id) => void loadTermRequests(id)}
+              expandedTermPartnershipId={expandedTermPartnershipId}
+              selectedIds={selectedPartnerIds}
+              onToggleSelect={togglePartnerSelect}
+              onToggleSelectAll={togglePartnerSelectAll}
+              page={decidePage}
+              pageSize={listPageSize}
+              totalCount={overviewGroups.decisions.length}
+              onPageChange={setDecidePage}
+              onPageSizeChange={(size) => {
+                setListPageSize(size);
+                setDecidePage(0);
+              }}
+            />
+          }
+          activeSlot={
+            <>
+              <div className={styles.agentToolbarShell}>
+                <AgentR04ListToolbar
+                  listMode="active"
+                  count={overviewActiveRows.length}
+                  searchQuery={listSearch}
+                  searchPlaceholder={AGENT_R04_LIST_SEARCH_PLACEHOLDER}
+                  onSearchQueryChange={setListSearch}
+                  viewMode={listViewMode}
+                  onViewModeChange={setListViewMode}
+                  archiveView={listArchiveView}
+                  onArchiveViewChange={setListArchiveView}
+                  partnerType={listPartnerType}
+                  specialization={listSpecialization}
+                  stageId={listStage}
+                  city={listCity}
+                  sort={listSort}
+                  onPartnerTypeChange={setListPartnerType}
+                  onSpecializationChange={setListSpecialization}
+                  onStageChange={setListStage}
+                  onCityChange={setListCity}
+                  onSortChange={setListSort}
+                  onResetFilters={resetListFilters}
+                  taxonomyResetKey={taxonomyFilterResetKey}
+                  chips={listFilterChips}
+                />
+              </div>
+              <AgentPartnerBulkBar
+                selectedCount={selectedPartnerIds.size}
+                busy={bulkBusy}
+                listVisibility={listArchiveView}
+                outcome={bulkOutcome}
+                onArchive={() => void runBulkListPreference("archive", true)}
+                onRestoreArchive={() => void runBulkListPreference("archive", false)}
+                onHide={() => {
+                  const ids = [...selectedPartnerIds];
+                  if (ids.length === 0) return;
+                  setBulkHidePendingIds(ids);
+                  setBulkHideConfirmOpen(true);
+                }}
+                onRestoreHidden={() => void runBulkListPreference("hidden", false)}
+                onClearSelection={() => setSelectedPartnerIds(new Set())}
+                onRetryFailed={() => {
+                  if (bulkOutcome) {
+                    void runBulkListPreference(
+                      bulkOutcome.operation,
+                      !bulkOutcome.undo,
+                      true,
+                    );
+                  }
+                }}
+                onDismissOutcome={() => setBulkOutcome(null)}
+              />
+              {overviewActiveRows.length === 0 ? (
+                <Panel
+                  title={
+                    listArchiveView === "archive"
+                      ? "В архиве пока нет записей"
+                      : listArchiveView === "hidden"
+                        ? "Скрытых записей пока нет"
+                        : listFilterChips.length || listSearch.trim()
+                          ? "Записей не найдено"
+                          : "Действующих партнёров пока нет"
+                  }
+                />
+              ) : (
+                <AgentPartnerCollection
+                  partnerships={pagedPartnerships}
+                  meId={meId}
+                  viewMode={listViewMode}
+                  busyId={busyId}
+                  onRunAction={(id, action) => {
+                    const partnership = partnerships.find((item) => item.id === id);
+                    if (!partnership) return;
+                    handlePartnershipUiAction(partnership, action);
+                  }}
+                  onUpdated={() => void loadList()}
+                  termRequests={termRequests}
+                  onLoadTermRequests={(id) => void loadTermRequests(id)}
+                  expandedTermPartnershipId={expandedTermPartnershipId}
+                  selectedIds={selectedPartnerIds}
+                  onToggleSelect={togglePartnerSelect}
+                  onToggleSelectAll={togglePartnerSelectAll}
+                  page={listPage}
+                  pageSize={listPageSize}
+                  totalCount={overviewActiveRows.length}
+                  onPageChange={setListPage}
+                  onPageSizeChange={(size) => {
+                    setListPageSize(size);
+                    setListPage(0);
+                  }}
+                />
+              )}
+            </>
+          }
+          waitingSlot={
+            overviewGroups.outgoing.length === 0 ? (
+              <p className={styles.partnerMeta}>Отправленных приглашений пока нет.</p>
+            ) : (
+              <AgentPartnerCollection
+                partnerships={pagedOverviewWaiting}
+                meId={meId}
+                viewMode={listViewMode}
+                busyId={busyId}
+                onRunAction={(id, action) => {
+                  const partnership = partnerships.find((item) => item.id === id);
+                  if (!partnership) return;
+                  handlePartnershipUiAction(partnership, action);
+                }}
+                onUpdated={() => void loadList()}
+                termRequests={termRequests}
+                onLoadTermRequests={(id) => void loadTermRequests(id)}
+                expandedTermPartnershipId={expandedTermPartnershipId}
+                selectedIds={selectedPartnerIds}
+                onToggleSelect={togglePartnerSelect}
+                onToggleSelectAll={togglePartnerSelectAll}
+                page={waitingPage}
+                pageSize={listPageSize}
+                totalCount={overviewGroups.outgoing.length}
+                onPageChange={setWaitingPage}
+                onPageSizeChange={(size) => {
+                  setListPageSize(size);
+                  setWaitingPage(0);
+                }}
+              />
+            )
+          }
+        />
+      ) : tab === "list" ? (
         <>
           {isAgentR04 ? (
             <div className={styles.agentToolbarShell}>

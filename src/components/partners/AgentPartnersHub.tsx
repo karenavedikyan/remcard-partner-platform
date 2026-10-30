@@ -9,22 +9,21 @@ import { PartnersHub, type PartnersHubProps } from "./PartnersHub";
 import { AgentPartnerHubModal, type HubModalTab } from "./AgentPartnerHubModal";
 import styles from "./AgentPartnersHub.module.css";
 
-type Segment = "active" | "invitations";
-type InvitationFlow = "incoming" | "outgoing";
-
 export type AgentPartnersHubProps = Omit<PartnersHubProps, "variant" | "defaultSearchRole"> & {
   defaultSearchRole?: SearchRole;
   presentationAudience?: PartnersHubAudience;
 };
 
+/**
+ * P1 overview shell: prototype composition (lead / tiles / zones / empty scenarios)
+ * via PartnersHub agentPresentation=overview. Find/link modal reused as-is.
+ */
 export function AgentPartnersHub({
   defaultSearchRole,
   presentationAudience,
   ...props
 }: AgentPartnersHubProps) {
   const searchParams = useSearchParams();
-  const [segment, setSegment] = useState<Segment>("active");
-  const [invitationFlow, setInvitationFlow] = useState<InvitationFlow>("incoming");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<HubModalTab>("find");
 
@@ -43,8 +42,6 @@ export function AgentPartnersHub({
     setModalOpen(true);
   }, []);
 
-  const lead = segment === "active" ? copy.activeLead : copy.invitationsLead;
-
   const hubSearchRoleProps =
     defaultSearchRole !== undefined ? { defaultSearchRole } : {};
 
@@ -53,67 +50,14 @@ export function AgentPartnersHub({
       className={styles.shell}
       data-testid="agent-r04-partners"
       data-partners-audience={presentationAudience}
+      data-partners-presentation="overview"
     >
-      <div className={styles.segmentRow} role="tablist" aria-label="Раздел партнёров">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={segment === "active"}
-          className={segment === "active" ? styles.segmentActive : styles.segment}
-          onClick={() => setSegment("active")}
-        >
-          Мои партнёры
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={segment === "invitations"}
-          className={segment === "invitations" ? styles.segmentActive : styles.segment}
-          onClick={() => setSegment("invitations")}
-        >
-          Приглашения
-        </button>
-      </div>
-
-      <p className={styles.lead}>{lead}</p>
-
-      {segment === "invitations" ? (
-        <div className={styles.inviteFlowRow} role="tablist" aria-label="Направление приглашений">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={invitationFlow === "incoming"}
-            className={invitationFlow === "incoming" ? styles.inviteFlowActive : styles.inviteFlow}
-            onClick={() => setInvitationFlow("incoming")}
-            data-testid="agent-invites-incoming"
-          >
-            Входящие
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={invitationFlow === "outgoing"}
-            className={invitationFlow === "outgoing" ? styles.inviteFlowActive : styles.inviteFlow}
-            onClick={() => setInvitationFlow("outgoing")}
-            data-testid="agent-invites-outgoing"
-          >
-            Отправленные
-          </button>
-        </div>
-      ) : (
-        <div className={styles.hubEntryRow}>
-          <button type="button" className={styles.hubPrimary} onClick={() => openModal("find")}>
-            Найти или пригласить партнёра
-          </button>
-        </div>
-      )}
-
       <PartnersHub
         {...props}
         variant="agent-r04"
         partnersAudience={presentationAudience}
-        agentSegment={segment}
-        agentInvitationFlow={segment === "invitations" ? invitationFlow : undefined}
+        agentPresentation="overview"
+        onOpenPartnerHub={openModal}
         forcedTab="list"
         {...hubSearchRoleProps}
       />
