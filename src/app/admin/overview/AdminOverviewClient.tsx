@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { PARTNER_KIND_UI_LABELS } from "@/lib/partner-kind-ui";
 import { fetchManagementOverview, type ManagementOverview } from "@/lib/prof-admin-management-api";
+import { buildLineGeometry } from "./overviewLineChartGeometry";
 import styles from "./AdminOverview.module.css";
 
 const PERIODS = [
@@ -21,6 +22,11 @@ function kindLabel(key: string): string {
   return key;
 }
 
+type SeriesRow = { date: string; [k: string]: number | string };
+
+/** User-unit chart height; matches CSS height via meet without shrinking text when width tracks. */
+const CHART_VIEW_H = 204;
+
 function MiniBars({
   title,
   series,
@@ -28,31 +34,126 @@ function MiniBars({
   emptyLabel,
 }: {
   title: string;
-  series: { date: string; [k: string]: number | string }[];
+  series: SeriesRow[];
   valueKey: string;
   emptyLabel: string;
 }) {
-  const max = Math.max(1, ...series.map((row) => Number(row[valueKey] ?? 0)));
+  const gradId = `ov-area-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [plotW, setPlotW] = useState(320);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const apply = () => {
+      // SVG is width:100% of the content box; exclude wrap padding so viewBox
+      // user units match rendered CSS px (screen CTM ≈ 1 for axis text).
+      const cs = getComputedStyle(el);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const w = Math.floor(el.clientWidth - padX);
+      if (w > 0) setPlotW(w);
+    };
+    apply();
+    const ro = new ResizeObserver(() => apply());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const plotted = useMemo(() => {
+    const values = series.map((row) => Number(row[valueKey] ?? 0));
+    return { values, geo: buildLineGeometry(values, plotW, CHART_VIEW_H) };
+  }, [series, valueKey, plotW]);
+
   if (series.length === 0) {
     return (
       <div className={styles.chartBlock}>
-        <h3>{title}</h3>
-        <p className={styles.chartEmpty}>{emptyLabel}</p>
+        <div className={styles.chartHead}>
+          <h3>{title}</h3>
+        </div>
+        <div className={styles.chartWrap} ref={wrapRef}>
+          <p className={styles.chartEmpty}>{emptyLabel}</p>
+        </div>
       </div>
     );
   }
+
+  const { values, geo } = plotted;
+  const labelX = Math.max(4, geo.padL - 6);
+
   return (
     <div className={styles.chartBlock}>
-      <h3>{title}</h3>
+      <div className={styles.chartHead}>
+        <h3>{title}</h3>
+      </div>
+      <div className={styles.chartWrap} ref={wrapRef}>
+        <svg
+          className={styles.lineChart}
+          viewBox={`0 0 ${plotW} ${CHART_VIEW_H}`}
+          width={plotW}
+          role="img"
+          aria-label={`${title}: ${values.length} точек`}
+        >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="currentColor" stopOpacity="0.14" />
+              <stop offset="1" stopColor="currentColor" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+          {geo.guides.map((g, gi) => (
+            <g key={`g-${gi}`}>
+              <line
+                x1={geo.padL}
+                y1={g.y}
+                x2={plotW - 8}
+                y2={g.y}
+                className={styles.chartGuide}
+              />
+              <text x={labelX} y={g.y + 4} textAnchor="end" className={styles.chartAxisText}>
+                {g.label}
+              </text>
+            </g>
+          ))}
+          <path d={geo.areaPath} fill={`url(#${gradId})`} />
+          <path
+            d={geo.linePath}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {values.map((v, i) => (
+            <circle
+              key={series[i].date}
+              cx={geo.xAt(i)}
+              cy={geo.yAt(v)}
+              r="4"
+              className={styles.chartDot}
+            >
+              <title>
+                {series[i].date}: {v}
+              </title>
+            </circle>
+          ))}
+          {geo.axisIdx.map((i) => (
+            <text
+              key={`ax-${series[i].date}`}
+              x={geo.xAt(i)}
+              y={CHART_VIEW_H - 2}
+              textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"}
+              className={styles.chartAxisText}
+            >
+              {String(series[i].date).slice(5)}
+            </text>
+          ))}
+        </svg>
+      </div>
       <ul className={styles.chartBars} aria-label={title}>
         {series.map((row) => {
           const v = Number(row[valueKey] ?? 0);
           return (
             <li key={row.date}>
-              <span className={styles.chartDate}>{row.date.slice(5)}</span>
-              <span className={styles.chartTrack} aria-hidden>
-                <span className={styles.chartFill} style={{ width: `${(v / max) * 100}%` }} />
-              </span>
+              <span className={styles.chartDate}>{row.date}</span>
               <span className={styles.chartVal}>{v}</span>
             </li>
           );
