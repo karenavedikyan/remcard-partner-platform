@@ -11,6 +11,7 @@ import {
   partnerSearchActionControl,
 } from "./partnerSearchControl";
 import {
+  catalogDetailCopy,
   catalogVisibilityToken,
   partnerIdentitySubtitle,
   partnerInitials,
@@ -21,9 +22,11 @@ import {
 } from "./partnerRegistryPresentation";
 import { filteredPublicLinks } from "./partnerRegistryDisplay";
 import { formatRegistryCount, hasPartnershipCounts } from "./partnerCollaborationDisplay";
+import { PartnerCollaborationBlock } from "./PartnerCollaborationBlock";
 import styles from "./AdminPartners.module.css";
 
 type PendingPreview = {
+  partnerId: string;
   action: string;
   effects: string[];
   warnings: string[];
@@ -42,6 +45,7 @@ type Props = {
   onClose: () => void;
   isApplying: boolean;
   disabled: boolean;
+  dialogError: string | null;
 };
 
 export function AdminPartnersPartnerDetailDialog({
@@ -56,11 +60,11 @@ export function AdminPartnersPartnerDetailDialog({
   onClose,
   isApplying,
   disabled,
+  dialogError,
 }: Props) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const returnFocusRef = useRef<Element | null>(null);
 
   const catalog = catalogVisibilityToken(row);
   const searchPrimary = effectivePartnerSearchPrimaryLabel(row);
@@ -78,7 +82,6 @@ export function AdminPartnersPartnerDetailDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open) {
-      returnFocusRef.current = document.activeElement;
       if (!dialog.open) dialog.showModal();
       queueMicrotask(() => closeBtnRef.current?.focus());
     } else if (dialog.open) {
@@ -90,9 +93,8 @@ export function AdminPartnersPartnerDetailDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
     const onCloseEvent = () => {
+      // Escape / backdrop native close — parent may already have handled X button.
       onClose();
-      const prev = returnFocusRef.current;
-      if (prev instanceof HTMLElement) prev.focus();
     };
     dialog.addEventListener("close", onCloseEvent);
     return () => dialog.removeEventListener("close", onCloseEvent);
@@ -100,10 +102,18 @@ export function AdminPartnersPartnerDetailDialog({
 
   if (!open) return null;
 
+  function requestClose() {
+    if (isApplying) return;
+    onCancelPreview();
+    // Always notify parent (jsdom may not emit `close` after dialog.close()).
+    onClose();
+    dialogRef.current?.close();
+  }
+
   return (
     <dialog
       ref={dialogRef}
-      className={styles.partnerDetailDialog}
+      className={`${styles.partnerDetailDialog} ${styles.partnerDetailDrawer}`}
       aria-labelledby={titleId}
       onCancel={(e) => {
         if (isApplying) {
@@ -121,10 +131,7 @@ export function AdminPartnersPartnerDetailDialog({
           className={styles.partnerDetailClose}
           aria-label="Закрыть карточку"
           disabled={isApplying}
-          onClick={() => {
-            onCancelPreview();
-            onClose();
-          }}
+          onClick={requestClose}
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -179,13 +186,7 @@ export function AdminPartnersPartnerDetailDialog({
           <div className={styles.detailSettingsRow}>
             <div>
               <h3>Публичный каталог</h3>
-              <p>
-                {catalog.visible === true
-                  ? "Виден посетителям remcard.ru"
-                  : catalog.visible === false
-                    ? "Не отображается на сайте"
-                    : "Нет данных с сервера"}
-              </p>
+              <p>{catalogDetailCopy(catalog)}</p>
             </div>
             <div className={styles.detailToggleActions} role="group" aria-label="Действия каталога">
               <Button
@@ -208,10 +209,6 @@ export function AdminPartnersPartnerDetailDialog({
           <div className={styles.detailSettingsRow}>
             <div>
               <h3>Поиск сотрудничества</h3>
-              <p>
-                {searchPrimary ?? "Нет данных с сервера"}
-                {row.partnerSearchVisibility ? ` · ${searchSetting}` : ""}
-              </p>
               <dl className={styles.searchControlStatus}>
                 <div>
                   <dt>Фактически в поиске</dt>
@@ -223,7 +220,11 @@ export function AdminPartnersPartnerDetailDialog({
                 </div>
               </dl>
             </div>
-            <div className={styles.detailToggleActions} role="group" aria-label="Действия поиска сотрудничества">
+            <div
+              className={styles.detailToggleActions}
+              role="group"
+              aria-label="Действия поиска сотрудничества"
+            >
               <Button
                 variant="secondary"
                 disabled={disabled || isApplying || showControl.disabled}
@@ -252,15 +253,16 @@ export function AdminPartnersPartnerDetailDialog({
           </div>
         </div>
 
+        <details className={styles.detailDisclosure}>
+          <summary>Пояснение поиска и статусы связей</summary>
+          <PartnerCollaborationBlock row={row} variant="card" />
+        </details>
+
         <section className={styles.detailSection}>
           <h3>
             Партнёрства{" "}
             <span className={styles.mutedInline}>{partnershipTotalLabel(row)}</span>
           </h3>
-          <p className={styles.detailSectionLead}>
-            Readonly drilldown по существующим связям. Счётчики не выводятся из регистрации или
-            каталога.
-          </p>
           <Link
             className={styles.detailPartnershipsLink}
             href={`/admin/partners/${encodeURIComponent(row.id)}/partnerships`}
@@ -295,9 +297,9 @@ export function AdminPartnersPartnerDetailDialog({
         </section>
 
         <p className={styles.helpTip}>
-          RemScore, процент заполненности, визиты и журнал управления в этом экране не
-          подставляются: соответствующих полей API нет. Действия ниже идут через preview /
-          confirmToken.
+          RemScore, процент заполненности, визиты и журнал управления: нет данных API. Действия —
+          только через preview / confirmToken. «Удалить из проекта» = архив профиля, не удаление
+          аккаунта.
         </p>
 
         <label className={styles.field}>
@@ -314,6 +316,12 @@ export function AdminPartnersPartnerDetailDialog({
             }}
           />
         </label>
+
+        {dialogError ? (
+          <p role="alert" className={styles.error}>
+            {dialogError}
+          </p>
+        ) : null}
 
         {pendingPreview ? (
           <div role="dialog" aria-label="Подтверждение изменения" className={styles.confirmation}>
@@ -349,7 +357,7 @@ export function AdminPartnersPartnerDetailDialog({
               className={styles.danger}
               disabled={disabled || isApplying}
               onClick={() => void onRequestPreview("archive_project")}
-              title="Удаление из проекта = архив профиля с сохранением истории; аккаунт не удаляется"
+              title="Архив профиля с сохранением истории; аккаунт и покупки не удаляются"
             >
               Удалить из проекта
             </Button>

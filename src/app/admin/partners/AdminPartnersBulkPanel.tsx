@@ -107,8 +107,14 @@ export function AdminPartnersBulkPanel({
         <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("archive_project")}>
           В архив
         </button>
-        <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("hide_catalog")}>
-          Удалить
+        <button
+          type="button"
+          className={styles.bulkBarBtn}
+          disabled={disabled}
+          onClick={() => pickQuickAction("archive_project")}
+          title="Архив профилей в проекте (не удаление аккаунта). Нужны причина и preview."
+        >
+          Удалить из проекта
         </button>
         <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={onClearSelection}>
           Отменить
@@ -156,10 +162,10 @@ export function AdminPartnersBulkPanel({
             type="button"
             className={styles.bulkBarBtn}
             disabled={disabled || applying}
-            onClick={() => pickQuickAction("hide_catalog")}
-            title="Удаление = скрытие из каталога / архив через preview; аккаунт не удаляется"
+            onClick={() => pickQuickAction("archive_project")}
+            title="Архив профилей в проекте (не удаление аккаунта). Нужны причина и preview."
           >
-            Удалить
+            Удалить из проекта
           </button>
           <button
             type="button"

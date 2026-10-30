@@ -45,7 +45,9 @@ import { AdminPartnersMetricsBar } from "./AdminPartnersMetricsBar";
 import { AdminPartnersPartnerDetailDialog } from "./AdminPartnersPartnerDetailDialog";
 
 type PendingPreview = {
+  partnerId: string;
   action: string;
+  reason: string;
   effects: string[];
   warnings: string[];
   confirmToken: string;
@@ -73,7 +75,9 @@ export function AdminPartnersClient() {
   const [loading, setLoading] = useState(true);
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const error = actionError ?? registryError;
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  /** Page-level errors only (registry / bulk) — never dialog workflow errors behind backdrop. */
+  const pageError = actionError ?? registryError;
   const { storedViewMode, setStoredViewMode, effectiveViewMode, mobileDense } =
     usePartnersRegistryViewMode();
   const [bulkFormExpanded, setBulkFormExpanded] = useState(false);
@@ -85,6 +89,10 @@ export function AdminPartnersClient() {
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
   const [reason, setReason] = useState("");
   const [isApplyingSingle, setIsApplyingSingle] = useState(false);
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null);
+  const singlePreviewGen = useRef(0);
+  const singleSelectedIdRef = useRef<string | null>(null);
+  const reasonRef = useRef("");
 
   const [bulkReason, setBulkReason] = useState("");
   const [bulkAction, setBulkAction] = useState<BulkLifecycleAction | "">("");
@@ -100,6 +108,50 @@ export function AdminPartnersClient() {
   const bulkRevisionRef = useRef(0);
   const previewRequestGen = useRef(0);
   const mountedRef = useRef(true);
+
+  singleSelectedIdRef.current = singleSelected?.id ?? null;
+  reasonRef.current = reason;
+
+  function invalidateSinglePreviewContext() {
+    singlePreviewGen.current += 1;
+    setPendingPreview(null);
+    setDialogError(null);
+  }
+
+  function restoreDetailFocus(partnerId: string | null | undefined) {
+    const tryFocus = () => {
+      const preferred = detailReturnFocusRef.current;
+      if (preferred instanceof HTMLElement && preferred.isConnected) {
+        preferred.focus();
+        return true;
+      }
+      if (!partnerId) return false;
+      const fallback = document.querySelector<HTMLElement>(
+        `[data-partner-open-trigger="${CSS.escape(partnerId)}"]`,
+      );
+      if (fallback && fallback.isConnected) {
+        fallback.focus();
+        return true;
+      }
+      return false;
+    };
+    queueMicrotask(() => {
+      if (tryFocus()) return;
+      // After reload/list remount the trigger may appear one frame later.
+      requestAnimationFrame(() => {
+        tryFocus();
+      });
+    });
+  }
+
+  function closePartnerDetail() {
+    const partnerId = singleSelectedIdRef.current;
+    invalidateSinglePreviewContext();
+    setSingleSelected(null);
+    setReason("");
+    reasonRef.current = "";
+    restoreDetailFocus(partnerId);
+  }
 
   const loadVersion = useRef(0);
   const headerSelectRef = useRef<HTMLInputElement>(null);
@@ -123,6 +175,7 @@ export function AdminPartnersClient() {
       bulkStopRef.current = true;
       loadVersion.current += 1;
       previewRequestGen.current += 1;
+      singlePreviewGen.current += 1;
     };
   }, []);
 
@@ -172,6 +225,7 @@ export function AdminPartnersClient() {
     setBulkPreviewFailures(null);
     setBulkApplyResults(null);
     bulkRevisionRef.current += 1;
+    invalidateSinglePreviewContext();
   }
 
   function resetPagination() {
@@ -197,15 +251,17 @@ export function AdminPartnersClient() {
         if (archived) params.set("projectArchived", archived);
         if (cursor) params.set("cursor", cursor);
         const data = await fetchPartnerRegistry(params);
-        if (version !== loadVersion.current || !mountedRef.current) return;
+        if (version !== loadVersion.current || !mountedRef.current) return null;
         setItems(data.items);
         setTotal(data.total);
         setFacets(data.facets ?? null);
         setNextCursor(data.nextCursor);
+        return data;
       } catch (e) {
         if (version === loadVersion.current) {
           setRegistryError(e instanceof Error ? e.message : "Ошибка загрузки");
         }
+        return null;
       } finally {
         if (version === loadVersion.current) setLoading(false);
       }
@@ -225,7 +281,6 @@ export function AdminPartnersClient() {
       if (!interactionsDisabled) {
         resetWorkflowForFilterChange();
         setSingleSelected(null);
-        setPendingPreview(null);
         setReason("");
       }
     }
@@ -269,45 +324,76 @@ export function AdminPartnersClient() {
   }
 
   async function requestPreview(action: string) {
-    if (!singleSelected) return;
-    setActionError(null);
-    if (!reason.trim()) {
-      setActionError("Укажите причину перед получением preview");
+    const partnerId = singleSelectedIdRef.current;
+    if (!partnerId) return;
+    const reasonAtRequest = reasonRef.current.trim();
+    if (!reasonAtRequest) {
+      setDialogError("Укажите причину перед получением preview");
       return;
     }
+    const gen = ++singlePreviewGen.current;
+    const actionAtRequest = action;
+    setDialogError(null);
     try {
-      const preview = await previewPartnerLifecycle(singleSelected.id, action);
+      const preview = await previewPartnerLifecycle(partnerId, actionAtRequest);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      if (reasonRef.current.trim() !== reasonAtRequest) return;
       setPendingPreview({
-        action,
+        partnerId,
+        action: actionAtRequest,
+        reason: reasonAtRequest,
         effects: preview.preview.effects,
         warnings: preview.preview.warnings,
         confirmToken: preview.preview.confirmToken,
       });
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Ошибка проверки");
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      setPendingPreview(null);
+      setDialogError(e instanceof Error ? e.message : "Ошибка проверки");
     }
   }
 
   async function confirmApply() {
-    if (!singleSelected || !pendingPreview || isApplyingSingle || bulkApplying) return;
-    setActionError(null);
+    if (!pendingPreview || isApplyingSingle || bulkApplying) return;
+    const partnerId = singleSelectedIdRef.current;
+    const reasonNow = reasonRef.current.trim();
+    if (
+      !partnerId ||
+      pendingPreview.partnerId !== partnerId ||
+      pendingPreview.reason !== reasonNow
+    ) {
+      setDialogError("Контекст изменился — получите preview заново");
+      setPendingPreview(null);
+      return;
+    }
+    const gen = singlePreviewGen.current;
+    const actionAtConfirm = pendingPreview.action;
+    const tokenAtConfirm = pendingPreview.confirmToken;
+    setDialogError(null);
     setIsApplyingSingle(true);
     try {
-      await applyPartnerLifecycle(
-        singleSelected.id,
-        pendingPreview.action,
-        reason.trim(),
-        pendingPreview.confirmToken,
-      );
+      await applyPartnerLifecycle(partnerId, actionAtConfirm, reasonNow, tokenAtConfirm);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
       setPendingPreview(null);
       setReason("");
-      setSingleSelected(null);
-      setActionError(null);
-      await loadPage(currentCursor);
+      reasonRef.current = "";
+      setDialogError(null);
+      // Keep dialog open with refreshed row (existing search-control / apply UX);
+      // focus return is for explicit close, not successful apply.
+      const refreshed = await loadPage(currentCursor);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      const nextRow = refreshed?.items.find((item) => item.id === partnerId);
+      if (nextRow) setSingleSelected(nextRow);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Ошибка применения");
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      setDialogError(e instanceof Error ? e.message : "Ошибка применения");
     } finally {
-      setIsApplyingSingle(false);
+      if (mountedRef.current) setIsApplyingSingle(false);
     }
   }
 
@@ -413,7 +499,7 @@ export function AdminPartnersClient() {
         <div className={styles.headActions}>
           <Button
             variant="secondary"
-            disabled={interactionsDisabled || loading}
+            disabled={interactionsDisabled || (loading && !registryError)}
             onClick={() => void loadPage(currentCursor)}
           >
             Обновить
@@ -630,10 +716,20 @@ export function AdminPartnersClient() {
           onOpenSelectionForm={() => setBulkFormExpanded(true)}
         />
 
-        {error ? (
-          <p role="alert" className={styles.error}>
-            {error}
-          </p>
+        {pageError ? (
+          <div className={styles.registryErrorBlock} role="alert">
+            <p className={styles.error}>{pageError}</p>
+            {registryError ? (
+              <button
+                type="button"
+                className={styles.toolbarSmallBtn}
+                disabled={interactionsDisabled || loading}
+                onClick={() => void loadPage(currentCursor)}
+              >
+                Повторить загрузку
+              </button>
+            ) : null}
+          </div>
         ) : null}
         {loading ? (
           <p role="status" className={styles.panelStatus}>
@@ -652,17 +748,20 @@ export function AdminPartnersClient() {
             onToggleRow={onToggleRow}
             selectionBlocked={selectionLimitHit}
             singleSelected={singleSelected}
-            onOpenPartner={(row) => {
+            onOpenPartner={(row, trigger) => {
+              invalidateSinglePreviewContext();
+              detailReturnFocusRef.current = trigger;
+              singleSelectedIdRef.current = row.id;
               setSingleSelected(row);
-              setPendingPreview(null);
               setReason("");
+              reasonRef.current = "";
               setActionError(null);
             }}
             interactionsDisabled={listInteractionsDisabled}
             headerSelectRef={headerSelectRef}
             cardsPageSelectRef={cardsPageSelectRef}
           />
-          {!loading && !error && items.length === 0 ? (
+          {!loading && !pageError && items.length === 0 ? (
             <div className={styles.emptyState}>
               <strong>Ничего не найдено</strong>
               <p>Попробуйте изменить условия поиска.</p>
@@ -712,18 +811,25 @@ export function AdminPartnersClient() {
           open
           row={singleSelected}
           reason={reason}
-          onReasonChange={setReason}
-          pendingPreview={pendingPreview}
-          onCancelPreview={() => setPendingPreview(null)}
+          onReasonChange={(v) => {
+            reasonRef.current = v;
+            setReason(v);
+            invalidateSinglePreviewContext();
+          }}
+          pendingPreview={
+            pendingPreview && pendingPreview.partnerId === singleSelected.id
+              ? pendingPreview
+              : null
+          }
+          onCancelPreview={() => {
+            invalidateSinglePreviewContext();
+          }}
           onRequestPreview={(action) => void requestPreview(action)}
           onConfirmApply={() => void confirmApply()}
-          onClose={() => {
-            setSingleSelected(null);
-            setPendingPreview(null);
-            setActionError(null);
-          }}
+          onClose={closePartnerDetail}
           isApplying={isApplyingSingle}
           disabled={interactionsDisabled}
+          dialogError={dialogError}
         />
       ) : null}
     </div>
