@@ -229,7 +229,9 @@ describe("Admin partner search visibility controls", () => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
     await waitFor(() => {
-      expect(screen.getByText("Виден партнёрам по решению администратора")).toBeTruthy();
+      expect(
+        screen.getAllByText("Виден партнёрам по решению администратора").length,
+      ).toBeGreaterThan(0);
     });
   });
 

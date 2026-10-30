@@ -142,7 +142,12 @@ describe("Independent mass-action safety", () => {
   it("offers page-wide selection in cards, not just table", async () => {
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Карточки", exact: true }));
-    expect(screen.getByRole("checkbox", { name: "Выбрать на странице" })).toBeInTheDocument();
+    // Compact cards omit a duplicate page-select checkbox; toolbar keeps the action.
+    const selectPage = screen.getByRole("button", { name: "Выбрать страницу" });
+    expect(selectPage).toBeInTheDocument();
+    fireEvent.click(selectPage);
+    expect(screen.getByLabelText("Выбрать Partner 1")).toBeChecked();
+    expect(screen.getByLabelText("Выбрать Partner 2")).toBeChecked();
   });
 
   it("cannot select old rows while a new filtered list is loading", async () => {

@@ -118,7 +118,13 @@ describe("Admin Partners R1 parity presentation", () => {
     expect(css).toContain(".filterChip");
     expect(css).toContain(".bulkBar");
     expect(css).toContain(".partnerDetailDialog");
+    expect(css).toContain(".partnerDetailDrawer");
     expect(css).toContain(".partnersTable");
+    expect(client).toContain("invalidateSinglePreviewContext");
+    expect(client).toContain("dialogError");
+    expect(client).toContain("Повторить загрузку");
+    expect(client).toContain("data-partner-open-trigger");
+    expect(detail).toContain("dialogError");
     // No fabricated RemScore / visit API fields
     expect(detail).toContain("RemScore"); // named only as GAP/LIMIT, not as computed metric
     expect(client).not.toMatch(/fetchAdminPartnerDetail|profileFill|lastVisit/);
@@ -197,5 +203,127 @@ describe("Admin Partners R1 parity presentation", () => {
     await waitFor(() => screen.getByLabelText("Групповое действие"));
     expect(screen.getByLabelText("Групповое действие")).toHaveValue("archive_project");
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+  });
+
+  it("maps bulk «Удалить из проекта» to archive_project, not hide_catalog", async () => {
+    render(<AdminPartnersClient />);
+    await waitFor(() => screen.getByText("Тест Партнёр"));
+    fireEvent.click(screen.getByLabelText("Выбрать Тест Партнёр"));
+    await waitFor(() => screen.getByTestId("selected-count"));
+    fireEvent.click(screen.getByRole("button", { name: "Удалить из проекта" }));
+    await waitFor(() => screen.getByLabelText("Групповое действие"));
+    expect(screen.getByLabelText("Групповое действие")).toHaveValue("archive_project");
+  });
+
+  it("drops deferred preview when opening another partner before resolve", async () => {
+    let resolvePreview!: (value: unknown) => void;
+    api.previewPartnerLifecycle.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePreview = resolve;
+        }),
+    );
+    api.fetchPartnerRegistry.mockResolvedValue(
+      registryPayload({
+        items: [
+          registryPayload().items[0],
+          {
+            ...registryPayload().items[0],
+            id: "p2",
+            publicId: "P049",
+            displayName: "Другой Партнёр",
+          },
+        ],
+        total: 2,
+      }),
+    );
+
+    render(<AdminPartnersClient />);
+    await waitFor(() => screen.getByText("Тест Партнёр"));
+    fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ }));
+    await waitFor(() => screen.getByLabelText("Причина"));
+    fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Причина A" } });
+    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    await waitFor(() => expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("p1", "hide_catalog"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Закрыть карточку" }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Карточка партнёра" })).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Другой Партнёр/ }));
+    await waitFor(() => screen.getByLabelText("Причина"));
+    fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Причина B" } });
+
+    resolvePreview({
+      preview: {
+        effects: ["Скроет A"],
+        warnings: [],
+        displayName: "Тест Партнёр",
+        confirmToken: "QA:P001:hide_catalog",
+      },
+    });
+    await waitFor(() => expect(screen.queryByText("Скроет A")).toBeNull());
+    expect(screen.queryByRole("button", { name: "Подтвердить" })).toBeNull();
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+  });
+
+  it("shows preview and apply errors inside the open dialog", async () => {
+    api.previewPartnerLifecycle.mockRejectedValue(new Error("preview boom 500"));
+    render(<AdminPartnersClient />);
+    await waitFor(() => screen.getByText("Тест Партнёр"));
+    fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ }));
+    await waitFor(() => screen.getByLabelText("Причина"));
+    fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Причина" } });
+    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    const dialog = (await screen.findByRole("heading", { name: "Карточка партнёра" })).closest(
+      "dialog",
+    )!;
+    await waitFor(() => expect(within(dialog).getByRole("alert").textContent).toContain("preview boom 500"));
+    expect(screen.queryByText("preview boom 500")).toBeTruthy();
+
+    api.previewPartnerLifecycle.mockResolvedValue({
+      preview: {
+        effects: ["ok"],
+        warnings: [],
+        displayName: "Тест Партнёр",
+        confirmToken: "tok-err",
+      },
+    });
+    api.applyPartnerLifecycle.mockRejectedValue(new Error("apply boom 500"));
+    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    await waitFor(() => screen.getByRole("button", { name: "Подтвердить" }));
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+    await waitFor(() =>
+      expect(within(dialog).getByRole("alert").textContent).toContain("apply boom 500"),
+    );
+    expect(screen.getByLabelText("Причина")).toHaveValue("Причина");
+  });
+
+  it("offers explicit registry retry that reloads with same filters", async () => {
+    api.fetchPartnerRegistry
+      .mockRejectedValueOnce(new Error("registry boom 500"))
+      .mockResolvedValueOnce(registryPayload());
+    render(<AdminPartnersClient />);
+    await waitFor(() => screen.getByRole("alert"));
+    expect(screen.getByText("registry boom 500")).toBeTruthy();
+    const retry = screen.getByRole("button", { name: "Повторить загрузку" });
+    expect(retry).not.toBeDisabled();
+    fireEvent.click(retry);
+    await waitFor(() => screen.getByText("Тест Партнёр"));
+    expect(api.fetchPartnerRegistry).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores focus to the row name trigger after closing the dialog", async () => {
+    render(<AdminPartnersClient />);
+    await waitFor(() => screen.getByText("Тест Партнёр"));
+    const openBtn = screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ });
+    openBtn.focus();
+    fireEvent.click(openBtn);
+    await waitFor(() => screen.getByRole("heading", { name: "Карточка партнёра" }));
+    fireEvent.click(screen.getByRole("button", { name: "Закрыть карточку" }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Карточка партнёра" })).toBeNull());
+    await waitFor(() => {
+      const trigger = screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ });
+      expect(trigger).toHaveAttribute("data-partner-open-trigger", "p1");
+      expect(document.activeElement).toBe(trigger);
+    });
   });
 });
