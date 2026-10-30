@@ -41,9 +41,21 @@ const CLIENT_SHA =
 const CSS_PREFIX_SHA =
   "1455e6ffd90a4e48b96d74b88a5f965d91a2c9ec710891065c43d3f3eefba75a";
 const CSS_PREFIX_BYTES = 2375;
+/** Accepted A4a tip (ffbc/652) complete CSS before any later A4b appendix */
+const A4A_COMPLETE_PREFIX_BYTES = 8112;
+const A4A_COMPLETE_PREFIX_SHA =
+  "633ac78ae95a8bf423d7f455f72073e20714aeaa8a13ebb9396883c4ae7c91cc";
 
 function sha256(text: string | Buffer) {
   return createHash("sha256").update(text).digest("hex");
+}
+
+/** A4a region only: from A4a marker up to unique A4b marker, else EOF. */
+function a4aAppendixRegion(cssText: string): string {
+  const start = cssText.indexOf("A4a:");
+  expect(start).toBeGreaterThanOrEqual(0);
+  const end = cssText.indexOf("A4b:");
+  return end === -1 ? cssText.slice(start) : cssText.slice(start, end);
 }
 
 const queuePayload = {
@@ -75,10 +87,19 @@ describe("A4a source preservation (7c7d whitelist)", () => {
     expect(css.includes("A4a:")).toBe(true);
   });
 
-  it("scopes appendix to title/summary/toolbar direct controls only", () => {
-    const appendix = readFileSync(CSS, "utf8").slice(
-      readFileSync(CSS, "utf8").indexOf("A4a:"),
+  it("keeps the full accepted A4a CSS tip as an unchanged 8112-byte prefix", () => {
+    const css = readFileSync(CSS);
+    expect(css.byteLength).toBeGreaterThanOrEqual(A4A_COMPLETE_PREFIX_BYTES);
+    expect(css.subarray(0, A4A_COMPLETE_PREFIX_BYTES).byteLength).toBe(
+      A4A_COMPLETE_PREFIX_BYTES,
     );
+    expect(sha256(css.subarray(0, A4A_COMPLETE_PREFIX_BYTES))).toBe(
+      A4A_COMPLETE_PREFIX_SHA,
+    );
+  });
+
+  it("scopes appendix to title/summary/toolbar direct controls only", () => {
+    const appendix = a4aAppendixRegion(readFileSync(CSS, "utf8"));
     expect(appendix).toMatch(/\.title\s*\{/);
     expect(appendix).toMatch(
       /--moderation-a4a-text-xl:\s*clamp\(1\.5rem,\s*1\.3rem \+ 0\.45vw,\s*1\.875rem\)/,
@@ -95,7 +116,7 @@ describe("A4a source preservation (7c7d whitelist)", () => {
     expect(appendix).toMatch(/min-height:\s*44px/);
     expect(appendix).toMatch(/font-size:\s*var\(--text-sm/);
     expect(appendix).toMatch(/:focus-visible/);
-    // Must not restyle queue/detail surfaces in the appendix
+    // Must not restyle queue/detail surfaces in the A4a region
     expect(appendix).not.toMatch(/\.tableWrap\s*\{/);
     expect(appendix).not.toMatch(/\.table\s*\{/);
     expect(appendix).not.toMatch(/\.cards\s*\{/);
@@ -104,6 +125,8 @@ describe("A4a source preservation (7c7d whitelist)", () => {
     expect(appendix).not.toMatch(/\.empty\s*\{/);
     expect(appendix).not.toMatch(/\.page\s*\{/);
     expect(appendix).not.toMatch(/!important/);
+    // Boundary: later A4b appendix (if present) is excluded from this region
+    expect(appendix.includes("A4b:")).toBe(false);
   });
 });
 
