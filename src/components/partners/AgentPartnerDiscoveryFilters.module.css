@@ -114,3 +114,43 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* === P6a: modal-primary specialization/stage filters (prefix above immutable) === */
+
+.modalPrimary > .primaryRow {
+  align-items: start;
+}
+
+.modalPrimary > .primaryRow > .field > select {
+  min-height: 46px;
+  height: 46px;
+  font-size: 16px;
+  line-height: 1.25;
+  padding: 0.65rem 0.75rem;
+}
+
+.modalPrimary > .primaryRow > .field > select:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
+}
+
+.modalPrimary > .primaryRow > .field > .fieldHint {
+  font-size: 14px;
+  line-height: 1.45;
+  /* Light muted on offset ~4.47:1; local FG clears 4.5 on surface and offset */
+  color: #5c605a;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+:global([data-theme="dark"]) .modalPrimary > .primaryRow > .field > .fieldHint {
+  color: var(--muted);
+}
+
+@media (max-width: 680px) {
+  .modalPrimary > .primaryRow > .field > select {
+    min-height: 46px;
+    height: 46px;
+    font-size: 16px;
+  }
+}
