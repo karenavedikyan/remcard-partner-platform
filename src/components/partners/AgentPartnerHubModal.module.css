@@ -128,3 +128,71 @@
     margin-right: var(--space-4);
   }
 }
+
+/* === P5a hub shell appendix (presentation only; prefix above is immutable) === */
+
+.header {
+  align-items: flex-start;
+}
+
+.header > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.header h2 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.closeBtn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.closeBtn:hover {
+  color: var(--ink);
+  background: var(--offset, var(--surface-muted));
+}
+
+.pathTabs > button {
+  min-height: 44px;
+  min-width: 44px;
+  /* Inactive FG on --offset: shared --muted is ~4.47:1 light; local #5c605a ~5.68:1 */
+  color: #5c605a;
+}
+
+.pathTabs > button:hover {
+  color: #454943;
+}
+
+.pathTabs > button[data-active="true"] {
+  color: var(--ink);
+}
+
+.pathTabs > button[data-active="true"]:hover {
+  color: var(--ink);
+}
+
+:global([data-theme="dark"]) .pathTabs > button {
+  color: var(--muted);
+}
+
+:global([data-theme="dark"]) .pathTabs > button:hover {
+  color: var(--ink);
+}
+
+:global([data-theme="dark"]) .pathTabs > button[data-active="true"] {
+  color: var(--ink);
+}
+
+@media (max-width: 680px) {
+  .pathTabs {
+    /* Match mobile header/body horizontal inset (space-4); keep width in sync with margins */
+    margin-left: var(--space-4);
+    margin-right: var(--space-4);
+    width: calc(100% - 2 * var(--space-4));
+  }
+}
