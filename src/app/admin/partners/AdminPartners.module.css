@@ -1,30 +1,167 @@
-.registry { display: grid; gap: var(--space-5); min-width: 0; }
-.metrics { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); min-width: 0; }
-.metricsLead { font-size: var(--text-sm); color: var(--ink); font-variant-numeric: tabular-nums; }
-.metricsHint { color: var(--muted); font-weight: 400; }
-.metricsRow, .metricsCompact { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
-.metricChip, .metricChipSmall, .metricChipStatic {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px;
-  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--offset);
-  color: var(--ink); font-size: var(--text-sm); cursor: pointer; max-width: 100%;
+.registry {
+  /* Prototype admin --text-xl scale (scoped). Same clamp as accepted A2a overview H1. */
+  --registry-proto-text-xl: clamp(1.5rem, 1.3rem + 0.45vw, 1.875rem);
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
 }
-.metricChipStatic { cursor: default; }
-.metricChip strong, .metricChipSmall strong, .metricChipStatic strong { font-variant-numeric: tabular-nums; }
-.metricChipActive { border-color: var(--primary); background: var(--soft); }
-.metricChipSmall { font-size: 0.8125rem; }
-.metricChip:focus-visible, .metricChipSmall:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+/* Prototype .page-head — registry page only (shared .heading stays for partnerships). */
+.registryPageHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-6);
+  margin: 0;
+  min-width: 0;
+}
+.registryPageHead h1 {
+  margin: 0;
+  font-size: var(--registry-proto-text-xl);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.registryPageHeadMeta {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  max-width: 42rem;
+}
+
+/* Shared by partnerships child route — leave baseline intact. */
 .heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
 .heading h1 { font-size: 1.5rem; }
 .heading p { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+
+/* Prototype .filter-chips — existing MetricsBar markup, local appearance only. */
+.metrics {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  min-width: 0;
+}
+.metricsLead {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.metricsHint { color: var(--muted); font-weight: 400; }
+.metricsRow, .metricsCompact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+  margin-bottom: 0;
+}
+.metricChip, .metricChipSmall, .metricChipStatic {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  cursor: pointer;
+  max-width: 100%;
+}
+.metricChipStatic { cursor: default; }
+.metricChip strong, .metricChipSmall strong, .metricChipStatic strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--muted);
+}
+.metricChipActive {
+  border-color: var(--primary);
+  background: var(--soft);
+  color: var(--primary);
+}
+.metricChipActive strong { color: var(--primary); }
+.metricChipSmall { font-size: var(--text-sm); }
+.metricChipSmall[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--soft);
+  color: var(--primary);
+}
+.metricChipSmall[aria-pressed="true"] strong { color: var(--primary); }
+.metricChip:hover:not(:disabled),
+.metricChipSmall:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface) 88%, var(--ink));
+}
+.metricChipActive:hover:not(:disabled),
+.metricChipSmall[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--soft);
+}
+.metricChip:focus-visible,
+.metricChipSmall:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.metricChip:disabled,
+.metricChipSmall:disabled,
+.metricsExpandBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Prototype .panel + .toolbar — existing filter controls, local wrappers only. */
 .filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: 0;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
+  min-width: 0;
+  overflow: clip;
 }
+.filters .field {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+.filters .field input,
+.filters .field select {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.filters .field input:focus-visible,
+.filters .field select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.filters .field input:disabled,
+.filters .field select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* Shared .field baseline for Bulk/Single/Partnerships forms — unchanged contract. */
 .field { display: grid; align-content: start; gap: 6px; min-width: 0; color: var(--ink); font-size: var(--text-sm); font-weight: 650; }
 .field input, .field select { width: 100%; font-weight: 400; }
 .filterActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
@@ -201,7 +338,7 @@
     margin-bottom: var(--space-4);
     padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
-  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filtersExpandable { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .table, .table tbody { display: block; }
   .table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .table tbody > tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-5); border-top: 1px solid var(--line); }
@@ -213,37 +350,55 @@
 }
 @media (max-width: 480px) {
   .heading { align-items: flex-start; flex-direction: column; }
-  .filters { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); }
+  .registryPageHead { align-items: flex-start; flex-direction: column; gap: var(--space-2); }
+  .filtersExpandable { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); }
   .filterActions button { width: 100%; }
   .table tbody > tr { grid-template-columns: minmax(0, 1fr); padding: var(--space-4); }
   .management { padding: var(--space-4); }
 }
 
-/* Mobile dense registry (≤720px effective view) */
-.filtersSearchField { grid-column: 1 / -1; }
+/* Mobile dense registry (≤720px effective view) — filter panel chrome only */
+.filtersSearchField {
+  grid-column: 1 / -1;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--line);
+  margin: 0;
+  position: relative;
+}
 .filtersMobileBar {
   display: none;
   grid-column: 1 / -1;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
 }
 .filtersToggle,
 .filtersReset {
   min-height: 44px;
-  padding: 8px 14px;
+  padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: var(--offset);
+  background: var(--surface);
   color: var(--ink);
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
 }
+.filtersToggle:hover:not(:disabled),
+.filtersReset:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface) 88%, var(--ink));
+}
 .filtersToggle:focus-visible,
 .filtersReset:focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
+}
+.filtersToggle:disabled,
+.filtersReset:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .filtersReset { color: var(--primary); background: var(--surface); }
 .filtersExpandable {
@@ -251,6 +406,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 .refreshDesktop { margin-left: auto; }
 .bulkCompactBar {
@@ -383,8 +539,11 @@
 }
 
 .metricsShellCompact {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   gap: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
 .metricsCompactHead {
   display: flex;
@@ -397,18 +556,22 @@
   margin: 0;
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 .metricsExpandBtn {
   min-height: 44px;
-  padding: 6px 12px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--offset);
+  background: var(--surface);
   color: var(--primary);
   font-size: var(--text-sm);
   font-weight: 650;
   cursor: pointer;
   flex-shrink: 0;
+}
+.metricsExpandBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface) 88%, var(--ink));
 }
 .metricsExpandBtn:focus-visible {
   outline: 3px solid var(--primary);
@@ -421,8 +584,9 @@
 .metricsShellCompact .metricsRow {
   flex-wrap: nowrap;
   overflow-x: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
+  padding-bottom: var(--space-2);
 }
 .metricsShellCompact .metricChip,
 .metricsShellCompact .metricChipSmall {
@@ -457,34 +621,42 @@
 .registry[data-mobile-dense] {
   gap: var(--space-2);
 }
-.registry[data-mobile-dense] .heading {
-  flex-direction: row;
+.registry[data-mobile-dense] .registryPageHead {
+  flex-direction: column;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
+  align-items: flex-start;
+  gap: var(--space-2);
   margin: 0;
 }
-.registry[data-mobile-dense] .heading h1 {
-  font-size: 1.125rem;
+.registry[data-mobile-dense] .registryPageHead h1 {
+  font-size: var(--registry-proto-text-xl);
   margin: 0;
   line-height: 1.25;
 }
-.registry[data-mobile-dense] .headingMeta {
-  font-size: 0.8125rem;
+.registry[data-mobile-dense] .registryPageHeadMeta {
+  font-size: var(--text-sm);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   margin: 0;
+  line-height: 1.5;
 }
 .registry[data-mobile-dense] .filters {
-  padding: var(--space-2) var(--space-3);
-  gap: var(--space-2);
+  gap: 0;
 }
 .registry[data-mobile-dense] .filtersSearchField {
-  gap: 4px;
+  gap: var(--space-2);
+  padding: var(--space-3);
 }
 .registry[data-mobile-dense] .filtersSearchField input {
   min-height: 44px;
-  font-size: 1rem;
+  font-size: var(--text-sm);
+}
+.registry[data-mobile-dense] .filtersMobileBar {
+  padding: var(--space-2) var(--space-3);
+}
+.registry[data-mobile-dense] .filtersExpandable[data-open="true"] {
+  padding: var(--space-3);
+  gap: var(--space-3);
 }
 .registry[data-mobile-dense] .denseListWrap {
   padding: 0 var(--space-2) var(--space-2);
