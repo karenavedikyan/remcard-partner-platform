@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { PARTNER_KIND_UI_LABELS } from "@/lib/partner-kind-ui";
 import { fetchManagementOverview, type ManagementOverview } from "@/lib/prof-admin-management-api";
 import styles from "./AdminOverview.module.css";
@@ -21,6 +21,40 @@ function kindLabel(key: string): string {
   return key;
 }
 
+type SeriesRow = { date: string; [k: string]: number | string };
+
+/** Local single-series line chart geometry — presentation only; does not alter source order/values. */
+function buildLineGeometry(values: number[], width: number, height: number) {
+  const n = values.length;
+  const padL = 42;
+  const padR = 12;
+  const padT = 16;
+  const padB = 28;
+  const max = Math.max(4, ...values) + 2;
+  const xAt = (i: number) =>
+    n <= 1 ? padL + (width - padL - padR) / 2 : padL + (i * (width - padL - padR)) / (n - 1);
+  const yAt = (v: number) => height - padB - (v / max) * (height - padT - padB);
+  const linePath =
+    n === 0
+      ? ""
+      : values.map((v, i) => `${i ? "L" : "M"}${xAt(i)},${yAt(v)}`).join(" ");
+  const areaPath =
+    n === 0
+      ? ""
+      : `${linePath} L${xAt(n - 1)},${height - padB} L${xAt(0)},${height - padB} Z`;
+  const guides = [0, 1, 2, 3].map((i) => {
+    const v = Math.round((i * max) / 3);
+    return { v, y: yAt(v) };
+  });
+  const axisIdx =
+    n <= 1
+      ? [0]
+      : n <= 3
+        ? values.map((_, i) => i)
+        : [0, Math.floor((n - 1) / 3), Math.floor(((n - 1) * 2) / 3), n - 1];
+  return { max, xAt, yAt, linePath, areaPath, guides, axisIdx, padL, width, height };
+}
+
 function MiniBars({
   title,
   series,
@@ -28,31 +62,106 @@ function MiniBars({
   emptyLabel,
 }: {
   title: string;
-  series: { date: string; [k: string]: number | string }[];
+  series: SeriesRow[];
   valueKey: string;
   emptyLabel: string;
 }) {
-  const max = Math.max(1, ...series.map((row) => Number(row[valueKey] ?? 0)));
+  const gradId = `ov-area-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const svgW = 650;
+  const svgH = 204;
+  const plotted = useMemo(() => {
+    const values = series.map((row) => Number(row[valueKey] ?? 0));
+    return { values, geo: buildLineGeometry(values, svgW, svgH) };
+  }, [series, valueKey]);
+
   if (series.length === 0) {
     return (
       <div className={styles.chartBlock}>
-        <h3>{title}</h3>
-        <p className={styles.chartEmpty}>{emptyLabel}</p>
+        <div className={styles.chartHead}>
+          <h3>{title}</h3>
+        </div>
+        <div className={styles.chartWrap}>
+          <p className={styles.chartEmpty}>{emptyLabel}</p>
+        </div>
       </div>
     );
   }
+
+  const { values, geo } = plotted;
+
   return (
     <div className={styles.chartBlock}>
-      <h3>{title}</h3>
+      <div className={styles.chartHead}>
+        <h3>{title}</h3>
+      </div>
+      <div className={styles.chartWrap}>
+        <svg
+          className={styles.lineChart}
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          role="img"
+          aria-label={`${title}: ${values.length} точек`}
+        >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="currentColor" stopOpacity="0.14" />
+              <stop offset="1" stopColor="currentColor" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+          {geo.guides.map((g, gi) => (
+            <g key={`g-${gi}`}>
+              <line
+                x1={geo.padL}
+                y1={g.y}
+                x2={svgW - 8}
+                y2={g.y}
+                className={styles.chartGuide}
+              />
+              <text x={28} y={g.y + 4} textAnchor="end" className={styles.chartAxisText}>
+                {g.v}
+              </text>
+            </g>
+          ))}
+          <path d={geo.areaPath} fill={`url(#${gradId})`} />
+          <path
+            d={geo.linePath}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {values.map((v, i) => (
+            <circle
+              key={series[i].date}
+              cx={geo.xAt(i)}
+              cy={geo.yAt(v)}
+              r="4"
+              className={styles.chartDot}
+            >
+              <title>
+                {series[i].date}: {v}
+              </title>
+            </circle>
+          ))}
+          {geo.axisIdx.map((i) => (
+            <text
+              key={`ax-${series[i].date}`}
+              x={geo.xAt(i)}
+              y={svgH - 2}
+              textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"}
+              className={styles.chartAxisText}
+            >
+              {String(series[i].date).slice(5)}
+            </text>
+          ))}
+        </svg>
+      </div>
       <ul className={styles.chartBars} aria-label={title}>
         {series.map((row) => {
           const v = Number(row[valueKey] ?? 0);
           return (
             <li key={row.date}>
-              <span className={styles.chartDate}>{row.date.slice(5)}</span>
-              <span className={styles.chartTrack} aria-hidden>
-                <span className={styles.chartFill} style={{ width: `${(v / max) * 100}%` }} />
-              </span>
+              <span className={styles.chartDate}>{row.date}</span>
               <span className={styles.chartVal}>{v}</span>
             </li>
           );

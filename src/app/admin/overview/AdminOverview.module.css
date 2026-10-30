@@ -183,74 +183,119 @@
   max-width: 70ch;
 }
 
-/* Charts — unchanged presentation from A1 tip */
+/* A2b charts — local panel + line system (prototype chartPanel/lineChart).
+   Equal two panels; do not use asymmetric 1.7fr/1fr dashboard grid.
+   Local type sizes (not PROF global token names). */
 .chartsRow {
+  --overview-chart-title: 1rem; /* prototype panel-head h2 16px */
+  --overview-chart-title-mobile: 0.875rem; /* 14px ≤760 */
+  --overview-chart-axis: 0.875rem; /* SVG text 14px (final prototype rule) */
+  --overview-chart-radius: 0.875rem; /* 14px */
   display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-}
-
-.chartBlock {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   min-width: 0;
 }
 
-.chartBlock h3 {
-  font-size: var(--text-sm);
-  font-weight: 650;
+.chartBlock {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--overview-chart-radius);
+  background: var(--surface);
+}
+
+.chartHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem; /* 20px 24px */
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.chartBlock h3,
+.chartHead h3 {
+  margin: 0;
+  font-size: var(--overview-chart-title);
+  font-weight: 750;
+  line-height: 1.25;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.chartWrap {
+  padding: 1.25rem 1.5rem 0.75rem; /* 20px 24px 12px */
+  min-width: 0;
+}
+
+.lineChart {
+  width: 100%;
+  height: 238px;
+  display: block;
+  overflow: visible;
+  color: var(--primary);
+}
+
+.chartGuide {
+  stroke: var(--line);
+  stroke-dasharray: 3 4;
+  stroke-width: 1;
+}
+
+.chartAxisText {
+  fill: var(--muted);
+  font-size: var(--overview-chart-axis);
+  font-family: inherit;
+}
+
+.chartDot {
+  fill: var(--surface);
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .chartEmpty {
-  font-size: var(--text-sm);
+  font-size: 0.875rem;
+  line-height: 1.45;
   color: var(--muted);
   margin: 0;
 }
 
+/* Full semantic date/value list — not hover-only; all source points */
 .chartBars {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.5rem 1.5rem 1.25rem;
   display: grid;
-  gap: 6px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .chartBars li {
   display: grid;
-  grid-template-columns: 2.5rem 1fr 1.5rem;
-  gap: var(--space-2);
-  align-items: center;
-  font-size: var(--text-xs);
+  grid-template-columns: minmax(0, 1fr) minmax(3ch, max-content);
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.8125rem;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
+  min-width: 0;
 }
 
 .chartDate {
   color: var(--muted);
-}
-
-.chartTrack {
-  display: block;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--soft);
-  overflow: hidden;
-}
-
-.chartFill {
-  display: block;
-  height: 100%;
-  background: var(--primary);
-  border-radius: 4px;
-  min-width: 2px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .chartVal {
   text-align: right;
   font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
 }
 
 @media (max-width: 1250px) {
@@ -294,5 +339,31 @@
 
   .periods {
     gap: var(--space-2);
+  }
+
+  .chartsRow {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .chartHead {
+    padding: 1rem; /* 16px */
+  }
+
+  .chartBlock h3,
+  .chartHead h3 {
+    font-size: var(--overview-chart-title-mobile);
+  }
+
+  .chartWrap {
+    padding: 1rem 0.75rem; /* 16px 12px */
+  }
+
+  .lineChart {
+    height: 210px;
+  }
+
+  .chartBars {
+    padding: 0.5rem 0.75rem 1rem;
   }
 }
