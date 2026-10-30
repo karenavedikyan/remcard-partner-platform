@@ -3,7 +3,6 @@
 import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
 import styles from "./AdminPartners.module.css";
 import { PartnerCollaborationCountLink } from "./PartnerCollaborationCountLink";
-import { PartnerCollaborationBlock } from "./PartnerCollaborationBlock";
 import type { PageSelectionState } from "./adminPartnersSelection";
 import type { PartnersEffectiveViewMode } from "./adminPartnersViewMode";
 import {
@@ -27,23 +26,15 @@ type ListProps = {
   onToggleRow: (row: PartnerRegistryItem) => void;
   selectionBlocked: boolean;
   singleSelected: PartnerRegistryItem | null;
-  onOpenPartner: (row: PartnerRegistryItem) => void;
+  onOpenPartner: (row: PartnerRegistryItem, trigger: HTMLElement | null) => void;
   interactionsDisabled: boolean;
   headerSelectRef: React.RefObject<HTMLInputElement>;
+  /** Kept for layout effect indeterminate sync; page select lives in toolbar only. */
   cardsPageSelectRef: React.RefObject<HTMLInputElement>;
 };
 
 function EyeIcon({ on }: { on: boolean | null }) {
-  if (on === null) {
-    return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="2" />
-        <path d="M4 4l16 16" stroke="currentColor" strokeWidth="2" />
-      </svg>
-    );
-  }
-  if (on) {
+  if (on === true) {
     return (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="2" />
@@ -95,7 +86,7 @@ function PartnerNameButton({
   disabled,
 }: {
   row: PartnerRegistryItem;
-  onOpen: () => void;
+  onOpen: (trigger: HTMLElement) => void;
   disabled: boolean;
 }) {
   return (
@@ -103,7 +94,8 @@ function PartnerNameButton({
       type="button"
       className={styles.partnerName}
       disabled={disabled}
-      onClick={onOpen}
+      data-partner-open-trigger={row.id}
+      onClick={(e) => onOpen(e.currentTarget)}
       aria-label={`Открыть карточку ${row.displayName ?? row.id}`}
     >
       <span className={styles.partnerAvatar} aria-hidden="true">
@@ -142,7 +134,7 @@ function MobilePartnerCard({
   checked: boolean;
   interactionsDisabled: boolean;
   onToggleRow: (row: PartnerRegistryItem) => void;
-  onOpenPartner: (row: PartnerRegistryItem) => void;
+  onOpenPartner: (row: PartnerRegistryItem, trigger: HTMLElement | null) => void;
 }) {
   const catalog = catalogVisibilityToken(row);
   const coop = cooperationVisibilityToken(row);
@@ -162,7 +154,7 @@ function MobilePartnerCard({
         <PartnerNameButton
           row={row}
           disabled={interactionsDisabled}
-          onOpen={() => onOpenPartner(row)}
+          onOpen={(trigger) => onOpenPartner(row, trigger)}
         />
         <RegistrationPill row={row} />
       </div>
@@ -196,8 +188,7 @@ function MobilePartnerCard({
         <span>
           {hasPartnershipCounts(row) ? (
             <>
-              Партнёрств:{" "}
-              <PartnerCollaborationCountLink row={row} countKey="total" />
+              Партнёрств: <PartnerCollaborationCountLink row={row} countKey="total" />
             </>
           ) : (
             partnershipTotalLabel(row)
@@ -205,9 +196,6 @@ function MobilePartnerCard({
         </span>
         <span>Визит: нет данных</span>
       </div>
-      <section className={styles.cardCollaboration} aria-label="Сотрудничество">
-        <PartnerCollaborationBlock row={row} variant="card" />
-      </section>
     </article>
   );
 }
@@ -224,23 +212,12 @@ export function AdminPartnersRegistryList(props: ListProps) {
     onOpenPartner,
     interactionsDisabled,
     headerSelectRef,
-    cardsPageSelectRef,
   } = props;
 
   if (viewMode === "dense" || viewMode === "cards") {
     return (
       <div className={styles.partnerCardsWrap} aria-label="Реестр партнёров" aria-busy={loading}>
-        <label className={styles.pageSelectBar}>
-          <input
-            ref={cardsPageSelectRef}
-            type="checkbox"
-            aria-label="Выбрать на странице"
-            checked={pageSelectState === "all"}
-            disabled={interactionsDisabled || items.length === 0}
-            onChange={onTogglePageSelect}
-          />
-          <span>Выбрать на странице</span>
-        </label>
+        {/* Page select stays in toolbar — avoid duplicate compact-card chrome. */}
         <div className={styles.partnerCards}>
           {items.map((row) => (
             <MobilePartnerCard
@@ -307,7 +284,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
                   <PartnerNameButton
                     row={row}
                     disabled={interactionsDisabled}
-                    onOpen={() => onOpenPartner(row)}
+                    onOpen={(trigger) => onOpenPartner(row, trigger)}
                   />
                 </td>
                 <td>
@@ -335,7 +312,6 @@ export function AdminPartnersRegistryList(props: ListProps) {
                         partnershipTotalLabel(row)
                       )}
                     </small>
-                    <PartnerCollaborationBlock row={row} variant="table" />
                   </div>
                 </td>
                 <td>
@@ -347,7 +323,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     className={styles.rowChevron}
                     aria-label={`Открыть строку ${row.displayName ?? row.id}`}
                     disabled={interactionsDisabled}
-                    onClick={() => onOpenPartner(row)}
+                    onClick={(e) => onOpenPartner(row, e.currentTarget)}
                   >
                     <ChevronIcon />
                   </button>

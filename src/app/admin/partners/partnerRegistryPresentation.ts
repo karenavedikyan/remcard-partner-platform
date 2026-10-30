@@ -4,7 +4,7 @@ import {
   formatRegistryCount,
   hasPartnershipCounts,
 } from "./partnerCollaborationDisplay";
-import { catalogStatusLabel, partnerTypeLabel } from "./partnerRegistryDisplay";
+import { partnerTypeLabel } from "./partnerRegistryDisplay";
 
 /** Initials for prototype-style avatar (first letters of up to two words). */
 export function partnerInitials(name: string | null | undefined, fallbackId: string): string {
@@ -28,7 +28,10 @@ export function registrationPillTone(
   return row.registrationLabel === "ACTIVE" ? "good" : "neutral";
 }
 
-/** Compact catalog cell: Виден / Скрыт / Нет данных — no fabricated false. */
+/**
+ * Compact catalog cell: Виден / Скрыт / Нет данных.
+ * Optional catalogVisibility + lifecycle both absent → unknown (never fabricate false/hidden).
+ */
 export function catalogVisibilityToken(row: PartnerRegistryItem): {
   label: string;
   visible: boolean | null;
@@ -36,19 +39,21 @@ export function catalogVisibilityToken(row: PartnerRegistryItem): {
   if (row.lifecycle?.projectArchivedAt) return { label: "Скрыт", visible: false };
   if (row.lifecycle?.catalogHiddenAt) return { label: "Скрыт", visible: false };
   if (row.catalogVisibility === "VISIBLE") return { label: "Виден", visible: true };
-  if (row.catalogVisibility === "HIDDEN" || row.catalogVisibility === "NOT_PUBLISHED" || row.catalogVisibility === "ARCHIVED") {
+  if (
+    row.catalogVisibility === "HIDDEN" ||
+    row.catalogVisibility === "NOT_PUBLISHED" ||
+    row.catalogVisibility === "ARCHIVED"
+  ) {
     return { label: "Скрыт", visible: false };
   }
-  if (row.catalogVisibility == null) {
-    // Fall back to longer label helper only when enum absent but other signals exist.
-    const full = catalogStatusLabel(row);
-    if (full === "Виден в каталоге") return { label: "Виден", visible: true };
-    if (full === "В архиве" || full === "Скрыт" || full === "Не опубликован") {
-      return { label: "Скрыт", visible: false };
-    }
-    return { label: "Нет данных", visible: null };
-  }
+  // Missing optional field — honest unknown (do not map via catalogStatusLabel → «Не опубликован»).
   return { label: "Нет данных", visible: null };
+}
+
+export function catalogDetailCopy(token: { visible: boolean | null }): string {
+  if (token.visible === true) return "Виден посетителям remcard.ru";
+  if (token.visible === false) return "Не отображается на сайте";
+  return "Нет данных с сервера";
 }
 
 export function cooperationVisibilityToken(row: PartnerRegistryItem): {
