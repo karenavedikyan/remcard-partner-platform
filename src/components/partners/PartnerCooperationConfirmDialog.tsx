@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { getFocusableElements, handleDialogTabKey } from "@/lib/dialog-focus";
 import { Button } from "@/components/ui/Button";
 import styles from "./PartnerCooperationConfirmDialog.module.css";
 
@@ -23,6 +24,7 @@ type Props = {
 /**
  * In-page confirm for C1 pause/resume and dirty term-draft discard.
  * Escape always activates the safe action (Keep / Cancel), never silent discard.
+ * Owns the single active focus trap while open (detail must suspend underneath).
  */
 export function PartnerCooperationConfirmDialog({
   open,
@@ -48,7 +50,6 @@ export function PartnerCooperationConfirmDialog({
   useEffect(() => {
     if (!open) return;
     const safeRef = safeAction === "confirm" ? confirmRef : dismissRef;
-    // Reveal question + safe control in viewport, then focus without relying on scroll-on-focus alone
     const scrollNearest = (el: HTMLElement | null) => {
       if (el && typeof el.scrollIntoView === "function") {
         el.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -58,17 +59,41 @@ export function PartnerCooperationConfirmDialog({
     scrollNearest(safeRef.current);
     safeRef.current?.focus({ preventScroll: true });
 
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+    const activateSafe = () => {
       if (busy) return;
       if (safeAction === "confirm") onConfirmRef.current();
       else onDismissRef.current();
     };
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        activateSafe();
+        return;
+      }
+      const sheet = sheetRef.current;
+      if (sheet) handleDialogTabKey(event, sheet);
+    };
+
+    const onFocusIn = (event: FocusEvent) => {
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const target = event.target;
+      if (target instanceof Node && sheet.contains(target)) return;
+      event.stopPropagation();
+      const focusable = getFocusableElements(sheet);
+      const preferred = safeAction === "confirm" ? confirmRef.current : dismissRef.current;
+      (preferred ?? focusable[0])?.focus({ preventScroll: true });
+    };
+
     window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    window.addEventListener("focusin", onFocusIn, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("focusin", onFocusIn, true);
+    };
   }, [open, safeAction, busy]);
 
   if (!open) return null;

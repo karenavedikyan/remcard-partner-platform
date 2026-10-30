@@ -20,10 +20,8 @@ import { AgentPartnerWorkspaceActions } from "@/components/partners/AgentPartner
 import { PartnerPartnershipDetailDialog } from "@/components/partners/PartnerPartnershipDetailDialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
-import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import {
   cooperationActionLabel,
-  cooperationPartnerTitle,
   termChangeActionLabel,
 } from "@/components/partners/partner-cooperation-c1";
 import r03 from "@/components/agent-r03/agent-r03.module.css";
@@ -42,11 +40,14 @@ type Props = {
   busyId: string | null;
   onRunAction: (partnershipId: string, action: string) => void;
   onUpdated: () => void;
+  /** Kept for hub wiring / tests; editor host lives on PartnersHub (single instance). */
   termRequests: Record<string, TermRequestState>;
   onLoadTermRequests: (partnershipId: string, trigger?: HTMLElement | null) => void;
   onCloseTermChange?: () => void;
   onTermDirtyChange?: (dirty: boolean) => void;
   expandedTermPartnershipId: string | null;
+  /** When true, detail dialog yields focus/Escape to an overlying confirm. */
+  suspendDetailFocusTrap?: boolean;
   /** Deep-link target already paged into `partnerships` — open its detail dialog once. */
   focusPartnershipId?: string | null;
   /** Acknowledge one-shot focus so list refresh / page-size cannot re-open after close. */
@@ -116,12 +117,14 @@ function PartnerRowInlineWorkflow({
   busyId,
   onRunAction,
   onLoadTermRequests,
+  termExpanded,
 }: {
   partnership: Partnership;
   meId: string;
   busyId: string | null;
   onRunAction: (partnershipId: string, action: string) => void;
   onLoadTermRequests: (partnershipId: string, trigger?: HTMLElement | null) => void;
+  termExpanded: boolean;
 }) {
   const actions = getPartnershipUiActions(partnership, meId);
   const waiting = actions.filter((a) => a.kind === "waiting");
@@ -150,6 +153,7 @@ function PartnerRowInlineWorkflow({
           <Button
             variant="secondary"
             disabled={disabled}
+            aria-expanded={termExpanded}
             data-testid={`partner-term-change-${partnership.id}`}
             onClick={(event) => onLoadTermRequests(partnership.id, event.currentTarget)}
           >
@@ -169,61 +173,6 @@ function PartnerRowInlineWorkflow({
   );
 }
 
-function TermChangeRow({
-  partnership,
-  meId,
-  termState,
-  onLoadTermRequests,
-  onCloseTermChange,
-  onTermDirtyChange,
-  onUpdated,
-  colSpan,
-}: {
-  partnership: Partnership;
-  meId: string;
-  termState: TermRequestState | undefined;
-  onLoadTermRequests: (id: string, trigger?: HTMLElement | null) => void;
-  onCloseTermChange?: () => void;
-  onTermDirtyChange?: (dirty: boolean) => void;
-  onUpdated: () => void;
-  colSpan?: number;
-}) {
-  if (!termState) return null;
-  const inner = (
-    <TermChangePanel
-      partnership={partnership}
-      meId={meId}
-      partnerTitle={cooperationPartnerTitle(partnership, meId)}
-      requests={termState.state === "loaded" ? termState.requests : null}
-      loadState={
-        termState.state === "idle"
-          ? "loading"
-          : termState.state === "loaded"
-            ? "loaded"
-            : termState.state
-      }
-      loadError={termState.error}
-      onReload={() => onLoadTermRequests(partnership.id)}
-      onChanged={() => {
-        onUpdated();
-        onLoadTermRequests(partnership.id);
-      }}
-      onDirtyChange={onTermDirtyChange}
-      onCloseRequest={onCloseTermChange}
-    />
-  );
-  if (colSpan) {
-    return (
-      <tr data-testid="partner-term-change-row">
-        <td colSpan={colSpan} className={styles.expandedRow}>
-          {inner}
-        </td>
-      </tr>
-    );
-  }
-  return <div className={styles.mobileMore}>{inner}</div>;
-}
-
 export function AgentPartnerCollection(props: Props) {
   const {
     partnerships,
@@ -232,11 +181,9 @@ export function AgentPartnerCollection(props: Props) {
     busyId,
     onRunAction,
     onUpdated,
-    termRequests,
     onLoadTermRequests,
-    onCloseTermChange,
-    onTermDirtyChange,
     expandedTermPartnershipId,
+    suspendDetailFocusTrap = false,
     focusPartnershipId = null,
     onFocusPartnershipConsumed,
     selectedIds,
@@ -339,6 +286,7 @@ export function AgentPartnerCollection(props: Props) {
       onClose={closeDetails}
       returnFocusRef={detailNameButtonRef}
       busy={Boolean(detailPartnership && busyId === detailPartnership.id)}
+      suspendFocusTrap={suspendDetailFocusTrap}
       onRunAction={
         detailPartnership
           ? (action) => {
@@ -358,8 +306,8 @@ export function AgentPartnerCollection(props: Props) {
     />
   );
 
-  if (viewMode === "cards") {
-    return (
+  const listBody =
+    viewMode === "cards" ? (
       <>
         {selectPageRow}
         <div className={styles.cardGrid} data-testid="agent-r04-partners-cards">
@@ -408,6 +356,7 @@ export function AgentPartnerCollection(props: Props) {
                     busyId={busyId}
                     onRunAction={onRunAction}
                     onLoadTermRequests={onLoadTermRequests}
+                    termExpanded={expandedTermPartnershipId === partnership.id}
                   />
                 </div>
                 <div className={styles.cardFooter}>
@@ -419,206 +368,176 @@ export function AgentPartnerCollection(props: Props) {
                     ariaLabel="Действия с партнёром"
                   />
                 </div>
-                {expandedTermPartnershipId === partnership.id ? (
-                  <TermChangeRow
-                    partnership={partnership}
-                    meId={meId}
-                    termState={termRequests[partnership.id]}
-                    onLoadTermRequests={onLoadTermRequests}
-                    onCloseTermChange={onCloseTermChange}
-                    onTermDirtyChange={onTermDirtyChange}
-                    onUpdated={onUpdated}
-                  />
-                ) : null}
               </article>
             );
           })}
         </div>
         {footer}
-        {detailDialog}
       </>
-    );
-  }
-
-  return (
-    <div data-testid="agent-r04-partners-list">
-      <div className={`${r03.collectionPanel} ${styles.mobileOnly}`}>
-        {partnerships.map((partnership) => {
-          const partner = partnershipPartnerProfile(partnership, meId);
-          const needsResponse = partnershipNeedsMyResponse(partnership, meId);
-          const officialLine = partnerCollectionOfficialLine(partnership, meId);
-          const typeCaption = partnerTypeLabel(partner);
-          const detail = partnerCollectionListDetail(partnership, meId);
-          return (
-            <article key={partnership.id} className={r03.mobileRecord} data-testid="agent-partner-mobile-row">
-              <div className={r03.mobileRecordTop}>
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(partnership.id)}
-                  onChange={() => onToggleSelect(partnership.id)}
-                  aria-label="Выбрать партнёра"
+    ) : (
+      <div data-testid="agent-r04-partners-list">
+        <div className={`${r03.collectionPanel} ${styles.mobileOnly}`}>
+          {partnerships.map((partnership) => {
+            const partner = partnershipPartnerProfile(partnership, meId);
+            const needsResponse = partnershipNeedsMyResponse(partnership, meId);
+            const officialLine = partnerCollectionOfficialLine(partnership, meId);
+            const typeCaption = partnerTypeLabel(partner);
+            const detail = partnerCollectionListDetail(partnership, meId);
+            return (
+              <article key={partnership.id} className={r03.mobileRecord} data-testid="agent-partner-mobile-row">
+                <div className={r03.mobileRecordTop}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(partnership.id)}
+                    onChange={() => onToggleSelect(partnership.id)}
+                    aria-label="Выбрать партнёра"
+                  />
+                  <div className={r03.mobileRecordMain}>
+                    <PartnerRowNameButton
+                      partnership={partnership}
+                      meId={meId}
+                      onOpenDetails={(el) => openDetails(partnership.id, el)}
+                      className={r03.mobileRecordTitle}
+                    />
+                    {officialLine ? (
+                      <p className={r03.meta} data-testid="partner-row-official-line">
+                        Официально: {officialLine}
+                      </p>
+                    ) : null}
+                    <p className={r03.meta} data-testid="partner-row-type-caption">
+                      {typeCaption}
+                    </p>
+                    <p className={r03.meta} data-testid="partner-row-detail">
+                      {detail}
+                    </p>
+                    {needsResponse ? <p className={r03.meta}>Ожидает вашего решения</p> : null}
+                  </div>
+                </div>
+                <PartnerRowInlineWorkflow
+                  partnership={partnership}
+                  meId={meId}
+                  busyId={busyId}
+                  onRunAction={onRunAction}
+                  onLoadTermRequests={onLoadTermRequests}
+                  termExpanded={expandedTermPartnershipId === partnership.id}
                 />
-                <div className={r03.mobileRecordMain}>
-                  <PartnerRowNameButton
+                <div className={r03.mobileRecordFooter}>
+                  <PartnerCollectionStatusBadge status={partnership.status} />
+                  <AgentPartnerWorkspaceActions
                     partnership={partnership}
                     meId={meId}
-                    onOpenDetails={(el) => openDetails(partnership.id, el)}
-                    className={r03.mobileRecordTitle}
+                    onUpdated={onUpdated}
+                    variant="mobileFooter"
+                    ariaLabel="Действия с партнёром"
                   />
-                  {officialLine ? (
-                    <p className={r03.meta} data-testid="partner-row-official-line">
-                      Официально: {officialLine}
-                    </p>
-                  ) : null}
-                  <p className={r03.meta} data-testid="partner-row-type-caption">
-                    {typeCaption}
-                  </p>
-                  <p className={r03.meta} data-testid="partner-row-detail">
-                    {detail}
-                  </p>
-                  {needsResponse ? <p className={r03.meta}>Ожидает вашего решения</p> : null}
                 </div>
-              </div>
-              <PartnerRowInlineWorkflow
-                partnership={partnership}
-                meId={meId}
-                busyId={busyId}
-                onRunAction={onRunAction}
-                onLoadTermRequests={onLoadTermRequests}
-              />
-              <div className={r03.mobileRecordFooter}>
-                <PartnerCollectionStatusBadge status={partnership.status} />
-                <AgentPartnerWorkspaceActions
-                  partnership={partnership}
-                  meId={meId}
-                  onUpdated={onUpdated}
-                  variant="mobileFooter"
-                  ariaLabel="Действия с партнёром"
-                />
-              </div>
-              {expandedTermPartnershipId === partnership.id ? (
-                <TermChangeRow
-                  partnership={partnership}
-                  meId={meId}
-                  termState={termRequests[partnership.id]}
-                  onLoadTermRequests={onLoadTermRequests}
-                  onCloseTermChange={onCloseTermChange}
-                  onTermDirtyChange={onTermDirtyChange}
-                  onUpdated={onUpdated}
-                />
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
-      {selectPageRow}
-      <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
-        <table className={styles.dataTable} data-testid="agent-r04-partners-table">
-          <colgroup>
-            <col className={styles.colSelect} />
-            <col className={styles.colName} />
-            <col className={styles.colDetail} />
-            <col className={styles.colStatus} />
-            <col className={styles.colActions} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className={styles.selectCell}>
-                <input
-                  type="checkbox"
-                  aria-label="Выбрать все на странице"
-                  checked={allSelected}
-                  onChange={(e) => onToggleSelectAll(pageIds, e.target.checked)}
-                />
-              </th>
-              <th>Название</th>
-              <th>Подробности</th>
-              <th>Статус</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {partnerships.map((partnership) => {
-              const partner = partnershipPartnerProfile(partnership, meId);
-              const termState = termRequests[partnership.id];
-              const officialLine = partnerCollectionOfficialLine(partnership, meId);
-              const typeCaption = partnerTypeLabel(partner);
-              const detail = partnerCollectionListDetail(partnership, meId);
-              return (
-                <Fragment key={partnership.id}>
-                  <tr data-testid="agent-r04-partners-table-row">
-                    <td className={styles.selectCell}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(partnership.id)}
-                        onChange={() => onToggleSelect(partnership.id)}
-                        aria-label={`Выбрать ${partnerRowTitle(partnership, meId)}`}
-                      />
-                    </td>
-                    <td className={styles.titleCell}>
-                      <PartnerRowNameButton
-                        partnership={partnership}
-                        meId={meId}
-                        onOpenDetails={(el) => openDetails(partnership.id, el)}
-                      />
-                      {officialLine ? (
-                        <small className={styles.caption} data-testid="partner-row-official-line">
-                          Официально: {officialLine}
-                        </small>
-                      ) : null}
-                      <small className={styles.caption} data-testid="partner-row-type-caption">
-                        {typeCaption}
-                      </small>
-                    </td>
-                    <td className={styles.detailCell} data-testid="partner-row-detail">
-                      {detail}
-                    </td>
-                    <td className={styles.statusCell}>
-                      <PartnerCollectionStatusBadge status={partnership.status} />
-                    </td>
-                    <td className={styles.actionCell}>
-                      <AgentPartnerWorkspaceActions
-                        partnership={partnership}
-                        meId={meId}
-                        onUpdated={onUpdated}
-                        variant="listRow"
-                        ariaLabel="Действия"
-                      />
-                    </td>
-                  </tr>
-                  {rowShowsInlineWorkflow(partnership, meId) ? (
-                    <tr className={styles.workflowRow}>
-                      <td colSpan={5} className={styles.workflowCell}>
-                        <PartnerRowInlineWorkflow
+              </article>
+            );
+          })}
+        </div>
+        {selectPageRow}
+        <div className={`${styles.tableWrap} ${styles.desktopOnly}`}>
+          <table className={styles.dataTable} data-testid="agent-r04-partners-table">
+            <colgroup>
+              <col className={styles.colSelect} />
+              <col className={styles.colName} />
+              <col className={styles.colDetail} />
+              <col className={styles.colStatus} />
+              <col className={styles.colActions} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th className={styles.selectCell}>
+                  <input
+                    type="checkbox"
+                    aria-label="Выбрать все на странице"
+                    checked={allSelected}
+                    onChange={(e) => onToggleSelectAll(pageIds, e.target.checked)}
+                  />
+                </th>
+                <th>Название</th>
+                <th>Подробности</th>
+                <th>Статус</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {partnerships.map((partnership) => {
+                const partner = partnershipPartnerProfile(partnership, meId);
+                const officialLine = partnerCollectionOfficialLine(partnership, meId);
+                const typeCaption = partnerTypeLabel(partner);
+                const detail = partnerCollectionListDetail(partnership, meId);
+                return (
+                  <Fragment key={partnership.id}>
+                    <tr data-testid="agent-r04-partners-table-row">
+                      <td className={styles.selectCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(partnership.id)}
+                          onChange={() => onToggleSelect(partnership.id)}
+                          aria-label={`Выбрать ${partnerRowTitle(partnership, meId)}`}
+                        />
+                      </td>
+                      <td className={styles.titleCell}>
+                        <PartnerRowNameButton
                           partnership={partnership}
                           meId={meId}
-                          busyId={busyId}
-                          onRunAction={onRunAction}
-                          onLoadTermRequests={onLoadTermRequests}
+                          onOpenDetails={(el) => openDetails(partnership.id, el)}
+                        />
+                        {officialLine ? (
+                          <small className={styles.caption} data-testid="partner-row-official-line">
+                            Официально: {officialLine}
+                          </small>
+                        ) : null}
+                        <small className={styles.caption} data-testid="partner-row-type-caption">
+                          {typeCaption}
+                        </small>
+                      </td>
+                      <td className={styles.detailCell} data-testid="partner-row-detail">
+                        {detail}
+                      </td>
+                      <td className={styles.statusCell}>
+                        <PartnerCollectionStatusBadge status={partnership.status} />
+                      </td>
+                      <td className={styles.actionCell}>
+                        <AgentPartnerWorkspaceActions
+                          partnership={partnership}
+                          meId={meId}
+                          onUpdated={onUpdated}
+                          variant="listRow"
+                          ariaLabel="Действия"
                         />
                       </td>
                     </tr>
-                  ) : null}
-                  {expandedTermPartnershipId === partnership.id ? (
-                    <TermChangeRow
-                      partnership={partnership}
-                      meId={meId}
-                      termState={termState}
-                      onLoadTermRequests={onLoadTermRequests}
-                      onCloseTermChange={onCloseTermChange}
-                      onTermDirtyChange={onTermDirtyChange}
-                      onUpdated={onUpdated}
-                      colSpan={5}
-                    />
-                  ) : null}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    {rowShowsInlineWorkflow(partnership, meId) ? (
+                      <tr className={styles.workflowRow}>
+                        <td colSpan={5} className={styles.workflowCell}>
+                          <PartnerRowInlineWorkflow
+                            partnership={partnership}
+                            meId={meId}
+                            busyId={busyId}
+                            onRunAction={onRunAction}
+                            onLoadTermRequests={onLoadTermRequests}
+                            termExpanded={expandedTermPartnershipId === partnership.id}
+                          />
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {footer}
       </div>
-      {footer}
+    );
+
+  // Single composition: list/cards body + one detail dialog. Term-change editor is owned by PartnersHub.
+  return (
+    <>
+      {listBody}
       {detailDialog}
-    </div>
+    </>
   );
 }

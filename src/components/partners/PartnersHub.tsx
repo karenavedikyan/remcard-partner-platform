@@ -848,6 +848,7 @@ export function PartnersHub({
       setExpandedTermPartnershipId(partnershipId);
     }
     const gen = ++termLoadGenRef.current;
+    // Clear prior requests on every fetch — error/loading must not keep stale "loaded" data.
     setTermRequests((prev) => ({
       ...prev,
       [partnershipId]: { state: "loading", requests: [], error: "" },
@@ -881,6 +882,47 @@ export function PartnersHub({
         },
       }));
     }
+  }
+
+  /** Refresh only — never toggles open/close (Retry / post-submit). */
+  function refreshTermRequests(partnershipId: string) {
+    void loadTermRequests(partnershipId, { expand: false });
+  }
+
+  function renderAgentTermChangeHost() {
+    if (!expandedTermPartnershipId) return null;
+    const partnership = findPartnershipById(partnerships, expandedTermPartnershipId);
+    if (!partnership) return null;
+    const termState = termRequests[partnership.id] ?? {
+      state: "idle" as const,
+      requests: [],
+      error: "",
+    };
+    return (
+      <div className={styles.termChangeHost} data-testid="partner-term-change-host">
+        <TermChangePanel
+          partnership={partnership}
+          meId={meId}
+          partnerTitle={cooperationPartnerTitle(partnership, meId)}
+          requests={termState.state === "loaded" ? termState.requests : null}
+          loadState={
+            termState.state === "idle"
+              ? "loading"
+              : termState.state === "loaded"
+                ? "loaded"
+                : termState.state
+          }
+          loadError={termState.error}
+          onReload={() => refreshTermRequests(partnership.id)}
+          onChanged={() => {
+            void loadList();
+            refreshTermRequests(partnership.id);
+          }}
+          onDirtyChange={updateTermDraftDirty}
+          onCloseRequest={requestCloseTermChange}
+        />
+      </div>
+    );
   }
 
   useEffect(() => {
@@ -1287,6 +1329,7 @@ export function PartnersHub({
               onCloseTermChange={requestCloseTermChange}
               onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
+              suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
               onToggleSelectAll={togglePartnerSelectAll}
@@ -1387,6 +1430,7 @@ export function PartnersHub({
                   onCloseTermChange={requestCloseTermChange}
                   onTermDirtyChange={updateTermDraftDirty}
                   expandedTermPartnershipId={expandedTermPartnershipId}
+                  suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
                   selectedIds={selectedPartnerIds}
                   onToggleSelect={togglePartnerSelect}
                   onToggleSelectAll={togglePartnerSelectAll}
@@ -1422,6 +1466,7 @@ export function PartnersHub({
                 onCloseTermChange={requestCloseTermChange}
                 onTermDirtyChange={updateTermDraftDirty}
                 expandedTermPartnershipId={expandedTermPartnershipId}
+                suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
                 selectedIds={selectedPartnerIds}
                 onToggleSelect={togglePartnerSelect}
                 onToggleSelectAll={togglePartnerSelectAll}
@@ -1546,6 +1591,7 @@ export function PartnersHub({
               onCloseTermChange={requestCloseTermChange}
               onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
+              suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
               onToggleSelectAll={togglePartnerSelectAll}
@@ -1718,10 +1764,10 @@ export function PartnersHub({
                             : termState.state
                       }
                       loadError={termState.error}
-                      onReload={() => void loadTermRequests(partnership.id, { expand: false })}
+                      onReload={() => refreshTermRequests(partnership.id)}
                       onChanged={() => {
                         void loadList();
-                        void loadTermRequests(partnership.id, { expand: false });
+                        refreshTermRequests(partnership.id);
                       }}
                       onDirtyChange={updateTermDraftDirty}
                       onCloseRequest={requestCloseTermChange}
@@ -1968,6 +2014,8 @@ export function PartnersHub({
           }}
         />
       ) : null}
+
+      {isAgentR04 ? renderAgentTermChangeHost() : null}
 
       {lifecycleConfirm ? (
         <PartnerCooperationConfirmDialog

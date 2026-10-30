@@ -38,6 +38,11 @@ type Props = {
   onClose: () => void;
   returnFocusRef?: React.RefObject<HTMLElement | null>;
   busy?: boolean;
+  /**
+   * When an overlying confirm owns focus (pause/resume / dirty discard),
+   * suspend Escape + focus trap so only the top workflow is active.
+   */
+  suspendFocusTrap?: boolean;
   /** Existing hub handler (pause/resume/invite actions). */
   onRunAction?: (action: string) => void;
   /** Opens the shared term-change host for this partnership. */
@@ -60,6 +65,7 @@ export function PartnerPartnershipDetailDialog({
   onClose,
   returnFocusRef,
   busy = false,
+  suspendFocusTrap = false,
   onRunAction,
   onOpenTermChange,
 }: Props) {
@@ -84,6 +90,14 @@ export function PartnerPartnershipDetailDialog({
     if (!open) return;
 
     lockBodyScroll();
+
+    // Overlying confirm owns Escape/focus — do not steal or close detail underneath.
+    if (suspendFocusTrap) {
+      return () => {
+        unlockBodyScroll();
+      };
+    }
+
     closeRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -119,7 +133,7 @@ export function PartnerPartnershipDetailDialog({
       window.removeEventListener("focusin", onFocusIn, true);
       unlockBodyScroll();
     };
-  }, [open]);
+  }, [open, suspendFocusTrap]);
 
   if (!open || !partnership) return null;
 

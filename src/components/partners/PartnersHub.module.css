@@ -301,6 +301,15 @@
   text-decoration: none;
 }
 
+/** Single agent term-change editing host (not duplicated in mobile+table collection rows). */
+.termChangeHost {
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--offset, var(--surface-muted, #f8f9fa));
+}
+
 @media (max-width: 680px) {
   .filterGrid {
     grid-template-columns: 1fr;

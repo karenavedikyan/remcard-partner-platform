@@ -7,6 +7,7 @@ import { describePendingTermChange } from "@/lib/term-change-labels";
 import type { Partnership, PartnershipTerm, TermChangeRequest } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
+import { isPartnershipParticipant } from "@/components/partners/partner-cooperation-c1";
 import styles from "./TermChangePanel.module.css";
 
 type TermChangePanelProps = {
@@ -39,6 +40,13 @@ function isDraftDirty(
   });
 }
 
+function termContextKey(partnership: Partnership, meId: string): string {
+  const terms = activeTerms(partnership.terms)
+    .map((term) => `${term.category}:${term.storePercent}`)
+    .join(",");
+  return `${meId}|${partnership.id}|${partnership.status}|${terms}`;
+}
+
 export function TermChangePanel({
   partnership,
   meId,
@@ -58,6 +66,13 @@ export function TermChangePanel({
   const submitLockRef = useRef(false);
   const respondLockRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const meIdRef = useRef(meId);
+  const partnershipRef = useRef(partnership);
+  const contextKey = termContextKey(partnership, meId);
+  const contextKeyRef = useRef(contextKey);
+
+  meIdRef.current = meId;
+  partnershipRef.current = partnership;
 
   const terms = activeTerms(partnership.terms);
   const pendingRequest = requests?.find(
@@ -66,8 +81,25 @@ export function TermChangePanel({
   const dirty = useMemo(() => isDraftDirty(terms, draftPercents), [terms, draftPercents]);
   const requestsReady = loadState === "loaded";
   const busy = submitting || respondingId !== null;
+  const isParticipant = isPartnershipParticipant(partnership, meId);
   const canPropose =
-    partnership.status === "ACTIVE" && requestsReady && !pendingRequest && !busy;
+    isParticipant &&
+    partnership.status === "ACTIVE" &&
+    requestsReady &&
+    !pendingRequest &&
+    !busy;
+
+  useEffect(() => {
+    if (contextKeyRef.current === contextKey) return;
+    contextKeyRef.current = contextKey;
+    setDraftPercents({});
+    setSubmitError("");
+    setSubmitting(false);
+    setRespondingId(null);
+    submitLockRef.current = false;
+    respondLockRef.current = false;
+    onDirtyChange?.(false);
+  }, [contextKey, onDirtyChange]);
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -77,25 +109,36 @@ export function TermChangePanel({
     if (!onCloseRequest) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      // Nested confirm dialogs handle Escape themselves (capture, stopPropagation)
       event.preventDefault();
       onCloseRequest();
     };
-    // Bubble only — confirm dialog listens in capture and stops when open
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onCloseRequest]);
+
+  function guardMutationContext(kind: "propose" | "respond"): string | null {
+    const current = partnershipRef.current;
+    const currentMe = meIdRef.current;
+    if (!isPartnershipParticipant(current, currentMe)) {
+      return "Действие недоступно: вы больше не участник этого партнёрства";
+    }
+    if (kind === "propose" && current.status !== "ACTIVE") {
+      return "Новое предложение доступно только при действующем сотрудничестве";
+    }
+    return null;
+  }
 
   async function submitProposal() {
     if (submitLockRef.current || busy) return;
     setSubmitError("");
 
-    if (!requestsReady) {
-      setSubmitError("Дождитесь загрузки актуальных запросов");
+    const guardError = guardMutationContext("propose");
+    if (guardError) {
+      setSubmitError(guardError);
       return;
     }
-    if (partnership.status !== "ACTIVE") {
-      setSubmitError("Новое предложение доступно только при действующем сотрудничестве");
+    if (!requestsReady) {
+      setSubmitError("Дождитесь загрузки актуальных запросов");
       return;
     }
     if (pendingRequest) {
@@ -103,7 +146,11 @@ export function TermChangePanel({
       return;
     }
 
-    const changes = terms
+    const snapshot = partnershipRef.current;
+    const snapshotMe = meIdRef.current;
+    const snapshotTerms = activeTerms(snapshot.terms);
+
+    const changes = snapshotTerms
       .map((term) => {
         const raw = draftPercents[term.category]?.trim();
         if (!raw) {
@@ -136,37 +183,73 @@ export function TermChangePanel({
       return;
     }
 
+    // Synchronous re-check immediately before network (stale draft after rerender)
+    const preflight = guardMutationContext("propose");
+    if (preflight) {
+      setSubmitError(preflight);
+      return;
+    }
+
     submitLockRef.current = true;
     setSubmitting(true);
+    const submittedId = snapshot.id;
+    const submittedMe = snapshotMe;
     try {
-      await remcardFetch(`/api/partnerships/${partnership.id}/term-change`, {
+      await remcardFetch(`/api/partnerships/${submittedId}/term-change`, {
         method: "POST",
         body: { changes: payload },
       });
+      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+        return;
+      }
       setDraftPercents({});
+      onDirtyChange?.(false);
       onChanged();
     } catch (caught) {
+      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+        return;
+      }
       setSubmitError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось отправить запрос",
       );
     } finally {
       submitLockRef.current = false;
-      setSubmitting(false);
+      if (meIdRef.current === submittedMe && partnershipRef.current.id === submittedId) {
+        setSubmitting(false);
+      } else {
+        setSubmitting(false);
+      }
     }
   }
 
   async function respond(requestId: string, action: "approve" | "reject") {
     if (respondLockRef.current || busy) return;
+    setSubmitError("");
+
+    const guardError = guardMutationContext("respond");
+    if (guardError) {
+      setSubmitError(guardError);
+      return;
+    }
+
+    const submittedId = partnershipRef.current.id;
+    const submittedMe = meIdRef.current;
+
     respondLockRef.current = true;
     setRespondingId(requestId);
-    setSubmitError("");
     try {
       await remcardFetch(
-        `/api/partnerships/${partnership.id}/term-change/${requestId}/respond`,
+        `/api/partnerships/${submittedId}/term-change/${requestId}/respond`,
         { method: "POST", body: { action } },
       );
+      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+        return;
+      }
       onChanged();
     } catch (caught) {
+      if (meIdRef.current !== submittedMe || partnershipRef.current.id !== submittedId) {
+        return;
+      }
       setSubmitError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось обработать запрос",
       );
@@ -182,6 +265,7 @@ export function TermChangePanel({
       className={styles.panel}
       data-testid="partner-term-change-panel"
       data-dirty={dirty ? "true" : "false"}
+      data-participant={isParticipant ? "true" : "false"}
     >
       <div className={styles.headerRow}>
         <div>
@@ -215,7 +299,7 @@ export function TermChangePanel({
       {loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{loadError || "Не удалось загрузить запросы"}</p>
-          <Button variant="secondary" onClick={onReload}>
+          <Button variant="secondary" data-testid="term-change-retry" onClick={onReload}>
             Повторить
           </Button>
         </div>
@@ -268,14 +352,16 @@ export function TermChangePanel({
                 {request.status === "PENDING" && pendingCopy?.canRespond ? (
                   <div className={styles.actions}>
                     <Button
-                      disabled={busy}
+                      disabled={busy || !isParticipant}
+                      data-testid={`term-change-approve-${request.id}`}
                       onClick={() => void respond(request.id, "approve")}
                     >
                       {respondingId === request.id ? "Отправка…" : "Согласовать"}
                     </Button>
                     <Button
                       variant="secondary"
-                      disabled={busy}
+                      disabled={busy || !isParticipant}
+                      data-testid={`term-change-reject-${request.id}`}
                       onClick={() => void respond(request.id, "reject")}
                     >
                       Отклонить
@@ -288,6 +374,13 @@ export function TermChangePanel({
         </div>
       ) : null}
 
+      {/* Shared alert — visible for ACTIVE propose errors and PAUSED respond errors */}
+      {submitError ? (
+        <p className={styles.errorText} role="alert" data-testid="term-change-error">
+          {submitError}
+        </p>
+      ) : null}
+
       {partnership.status === "ACTIVE" ? (
         <div className={styles.proposal}>
           <h5 className={styles.subheading}>Предложить новое изменение</h5>
@@ -296,7 +389,11 @@ export function TermChangePanel({
             допустимое значение.
           </p>
           {terms.map((term) => (
-            <div key={term.id} className={styles.termCompare} data-testid={`term-compare-${term.category}`}>
+            <div
+              key={term.id}
+              className={styles.termCompare}
+              data-testid={`term-compare-${term.category}`}
+            >
               <div className={styles.currentBox}>
                 <span className={styles.currentLabel}>{categoryLabel(term.category)}</span>
                 <span className={styles.currentValue}>
@@ -310,23 +407,18 @@ export function TermChangePanel({
                 max={100}
                 placeholder={String(term.storePercent)}
                 value={draftPercents[term.category] ?? ""}
-              onChange={(event) => {
-                const nextValue = event.target.value;
-                setDraftPercents((prev) => {
-                  const next = { ...prev, [term.category]: nextValue };
-                  onDirtyChange?.(isDraftDirty(terms, next));
-                  return next;
-                });
-              }}
-                disabled={Boolean(pendingRequest) || busy || !requestsReady}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setDraftPercents((prev) => {
+                    const next = { ...prev, [term.category]: nextValue };
+                    onDirtyChange?.(isDraftDirty(terms, next));
+                    return next;
+                  });
+                }}
+                disabled={Boolean(pendingRequest) || busy || !requestsReady || !isParticipant}
               />
             </div>
           ))}
-          {submitError ? (
-            <p className={styles.errorText} role="alert">
-              {submitError}
-            </p>
-          ) : null}
           <div className={styles.actions}>
             <Button
               disabled={!canPropose}
