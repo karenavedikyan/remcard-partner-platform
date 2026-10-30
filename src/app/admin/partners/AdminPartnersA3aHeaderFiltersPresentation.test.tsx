@@ -150,6 +150,18 @@ describe("A3a source freeze (05027b0 whitelist)", () => {
     expect(src).toMatch(/\.bulkCompactBar \{/);
     expect(src).toMatch(/\.pagination \{/);
   });
+
+  it("keeps baseline050 .registry[data-mobile-dense] root gap at --space-2 (8px), not A3a --space-3", () => {
+    // A3a briefly widened the whole-registry mobile gap to --space-3 (12px); that is outside
+    // the header/metrics/filters whitelist — restore 050's --space-2 (0.5rem = 8px).
+    const src = readFileSync(CSS, "utf8");
+    const block = src.match(/\.registry\[data-mobile-dense\]\s*\{[^}]*\}/);
+    expect(block?.[0]).toMatch(/gap:\s*var\(--space-2\)\s*;/);
+    expect(block?.[0]).not.toMatch(/gap:\s*var\(--space-3\)\s*;/);
+    const globals = readFileSync(path.join(ROOT, "../../globals.css"), "utf8");
+    expect(globals).toMatch(/--space-2:\s*0\.5rem/);
+    expect(globals).toMatch(/--space-3:\s*0\.75rem/);
+  });
 });
 
 describe("A3a header + filters presentation (behavior preserved)", () => {

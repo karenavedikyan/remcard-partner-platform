@@ -619,7 +619,7 @@
 .denseStatusSep { white-space: pre-wrap; }
 
 .registry[data-mobile-dense] {
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 .registry[data-mobile-dense] .registryPageHead {
   flex-direction: column;
