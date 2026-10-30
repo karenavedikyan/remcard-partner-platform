@@ -403,9 +403,9 @@ export function AdminPartnersClient() {
 
   return (
     <div className={styles.registry} data-mobile-dense={mobileDense || undefined}>
-      <div className={styles.heading}>
+      <header className={styles.registryPageHead}>
         <h1>Партнёры (реестр)</h1>
-        <p className={styles.headingMeta}>
+        <p className={styles.registryPageHeadMeta}>
           {mobileDense ? (
             <>
               {total} в выборке · {items.length} на стр.
@@ -418,7 +418,7 @@ export function AdminPartnersClient() {
             </>
           )}
         </p>
-      </div>
+      </header>
       <AdminPartnersMetricsBar
         compact={mobileDense}
         facets={facets}
@@ -433,7 +433,7 @@ export function AdminPartnersClient() {
         onCatalog={(v) => guardFilterChange(setCatalog, v)}
         onArchived={(v) => guardFilterChange(setArchived, v)}
       />
-      <div className={styles.filters}>
+      <section className={styles.filters} aria-label="Поиск и фильтры реестра">
         <label className={`${styles.field} ${styles.filtersSearchField}`}>
           <span className={styles.fieldLabelMobileHidden}>Поиск партнёров</span>
           <input
@@ -588,7 +588,7 @@ export function AdminPartnersClient() {
           </Button>
         </div>
         </div>
-      </div>
+      </section>
 
       {selectionLimitHit ? (
         <p role="status" className={styles.bulkHint}>
