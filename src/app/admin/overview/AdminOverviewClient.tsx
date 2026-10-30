@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { PARTNER_KIND_UI_LABELS } from "@/lib/partner-kind-ui";
 import { fetchManagementOverview, type ManagementOverview } from "@/lib/prof-admin-management-api";
+import { buildLineGeometry } from "./overviewLineChartGeometry";
 import styles from "./AdminOverview.module.css";
 
 const PERIODS = [
@@ -23,37 +24,8 @@ function kindLabel(key: string): string {
 
 type SeriesRow = { date: string; [k: string]: number | string };
 
-/** Local single-series line chart geometry — presentation only; does not alter source order/values. */
-function buildLineGeometry(values: number[], width: number, height: number) {
-  const n = values.length;
-  const padL = 42;
-  const padR = 12;
-  const padT = 16;
-  const padB = 28;
-  const max = Math.max(4, ...values) + 2;
-  const xAt = (i: number) =>
-    n <= 1 ? padL + (width - padL - padR) / 2 : padL + (i * (width - padL - padR)) / (n - 1);
-  const yAt = (v: number) => height - padB - (v / max) * (height - padT - padB);
-  const linePath =
-    n === 0
-      ? ""
-      : values.map((v, i) => `${i ? "L" : "M"}${xAt(i)},${yAt(v)}`).join(" ");
-  const areaPath =
-    n === 0
-      ? ""
-      : `${linePath} L${xAt(n - 1)},${height - padB} L${xAt(0)},${height - padB} Z`;
-  const guides = [0, 1, 2, 3].map((i) => {
-    const v = Math.round((i * max) / 3);
-    return { v, y: yAt(v) };
-  });
-  const axisIdx =
-    n <= 1
-      ? [0]
-      : n <= 3
-        ? values.map((_, i) => i)
-        : [0, Math.floor((n - 1) / 3), Math.floor(((n - 1) * 2) / 3), n - 1];
-  return { max, xAt, yAt, linePath, areaPath, guides, axisIdx, padL, width, height };
-}
+/** User-unit chart height; matches CSS height via meet without shrinking text when width tracks. */
+const CHART_VIEW_H = 204;
 
 function MiniBars({
   title,
@@ -67,12 +39,26 @@ function MiniBars({
   emptyLabel: string;
 }) {
   const gradId = `ov-area-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const svgW = 650;
-  const svgH = 204;
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [plotW, setPlotW] = useState(320);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const apply = () => {
+      const w = Math.floor(el.getBoundingClientRect().width);
+      if (w > 0) setPlotW(w);
+    };
+    apply();
+    const ro = new ResizeObserver(() => apply());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const plotted = useMemo(() => {
     const values = series.map((row) => Number(row[valueKey] ?? 0));
-    return { values, geo: buildLineGeometry(values, svgW, svgH) };
-  }, [series, valueKey]);
+    return { values, geo: buildLineGeometry(values, plotW, CHART_VIEW_H) };
+  }, [series, valueKey, plotW]);
 
   if (series.length === 0) {
     return (
@@ -80,7 +66,7 @@ function MiniBars({
         <div className={styles.chartHead}>
           <h3>{title}</h3>
         </div>
-        <div className={styles.chartWrap}>
+        <div className={styles.chartWrap} ref={wrapRef}>
           <p className={styles.chartEmpty}>{emptyLabel}</p>
         </div>
       </div>
@@ -88,16 +74,18 @@ function MiniBars({
   }
 
   const { values, geo } = plotted;
+  const labelX = Math.max(4, geo.padL - 6);
 
   return (
     <div className={styles.chartBlock}>
       <div className={styles.chartHead}>
         <h3>{title}</h3>
       </div>
-      <div className={styles.chartWrap}>
+      <div className={styles.chartWrap} ref={wrapRef}>
         <svg
           className={styles.lineChart}
-          viewBox={`0 0 ${svgW} ${svgH}`}
+          viewBox={`0 0 ${plotW} ${CHART_VIEW_H}`}
+          width={plotW}
           role="img"
           aria-label={`${title}: ${values.length} точек`}
         >
@@ -112,12 +100,12 @@ function MiniBars({
               <line
                 x1={geo.padL}
                 y1={g.y}
-                x2={svgW - 8}
+                x2={plotW - 8}
                 y2={g.y}
                 className={styles.chartGuide}
               />
-              <text x={28} y={g.y + 4} textAnchor="end" className={styles.chartAxisText}>
-                {g.v}
+              <text x={labelX} y={g.y + 4} textAnchor="end" className={styles.chartAxisText}>
+                {g.label}
               </text>
             </g>
           ))}
@@ -147,7 +135,7 @@ function MiniBars({
             <text
               key={`ax-${series[i].date}`}
               x={geo.xAt(i)}
-              y={svgH - 2}
+              y={CHART_VIEW_H - 2}
               textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"}
               className={styles.chartAxisText}
             >

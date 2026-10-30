@@ -17,6 +17,7 @@ vi.mock("next/link", () => ({
 }));
 
 import { AdminOverviewClient } from "./AdminOverviewClient";
+import { buildLineGeometry, formatAxisTick } from "./overviewLineChartGeometry";
 
 function basePayload(period: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -245,5 +246,46 @@ describe("A2b overview charts (data + empty branches preserved)", () => {
     expect(src).toMatch(/--overview-proto-text-xl:\s*clamp\(\s*1\.5rem/);
     expect(src).toMatch(/--overview-chart-title:\s*1rem/);
     expect(src).toMatch(/height:\s*238px/);
+  });
+
+  it("compacts only Y-axis ticks for huge values while semantic list keeps raw numbers", async () => {
+    const seriesDaily = Array.from({ length: 30 }, (_, i) => {
+      const day = String(i + 1).padStart(2, "0");
+      const total = 10_000_000_000 * (i + 1);
+      return {
+        date: `2026-09-${day}`,
+        agent: 0,
+        specialist: 0,
+        store: 0,
+        company: 0,
+        total,
+      };
+    });
+    mocks.fetch.mockResolvedValueOnce(
+      basePayload("30d", {
+        registrationsCompleted: {
+          ...basePayload("30d").registrationsCompleted,
+          seriesDaily,
+        },
+      }),
+    );
+    render(<AdminOverviewClient />);
+    const reg = await screen.findByRole("list", { name: "Регистрации по дням" });
+    expect(within(reg).getByText("300000000000")).toBeTruthy();
+    expect(within(reg).getAllByRole("listitem")).toHaveLength(30);
+
+    const svg = screen.getByRole("img", { name: /Регистрации по дням/ });
+    const tickTexts = Array.from(svg.querySelectorAll("text")).map((t) => t.textContent || "");
+    // Compact axis ticks present; raw 12-digit tick strings must not appear on the axis
+    expect(tickTexts.some((t) => /[KMGT]/.test(t) || t === "0")).toBe(true);
+    expect(tickTexts.every((t) => t.length <= 8 || /^\d{2}-\d{2}$/.test(t))).toBe(true);
+
+    const geo = buildLineGeometry(
+      seriesDaily.map((r) => r.total),
+      270,
+      204,
+    );
+    expect(geo.guides.every((g) => g.label === formatAxisTick(g.v))).toBe(true);
+    expect(geo.padL - 6).toBeGreaterThan(0);
   });
 });

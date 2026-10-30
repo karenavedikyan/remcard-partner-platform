@@ -229,6 +229,7 @@
 .chartWrap {
   padding: 1.25rem 1.5rem 0.75rem; /* 20px 24px 12px */
   min-width: 0;
+  overflow: visible;
 }
 
 .lineChart {
@@ -237,6 +238,7 @@
   display: block;
   overflow: visible;
   color: var(--primary);
+  /* viewBox width tracks measured CSS px → screen CTM ≈ 1 for 14px axis text */
 }
 
 .chartGuide {
