@@ -99,7 +99,7 @@ export function AdminPartnersDenseRegistryList(props: Props) {
   } = props;
 
   return (
-    <div className={styles.denseListWrap}>
+    <div className={`${styles.denseListWrap} ${styles.registryDenseSkin}`}>
       <div className={styles.denseListToolbar}>
         <label className={styles.densePageSelectInline}>
           <input
@@ -145,13 +145,15 @@ export function AdminPartnersDenseRegistryList(props: Props) {
                   disabled={interactionsDisabled}
                   onClick={() => onToggleExpand(row)}
                 >
-                  <span className={styles.denseName} title={displayName}>
-                    {displayName}
+                  <span className={styles.registryDenseIdentity}>
+                    <span className={styles.denseName} title={displayName}>
+                      {displayName}
+                    </span>
+                    <span className={styles.denseMeta}>
+                      {partnerTypeLabel(row)} · {row.city ?? "—"} · {registrationShort(row)}
+                    </span>
                   </span>
-                  <span className={styles.denseMeta}>
-                    {partnerTypeLabel(row)} · {row.city ?? "—"} · {registrationShort(row)}
-                  </span>
-                  <span className={styles.denseStatusLine} aria-label={statusParts.ariaLabel}>
+                  <span className={`${styles.denseStatusLine} ${styles.registryDenseStatus}`} aria-label={statusParts.ariaLabel}>
                     <span className={styles.denseStatusSegment}>
                       Каталог:
                       <span className={statusTokenClass(statusParts.catalog, styles)}>

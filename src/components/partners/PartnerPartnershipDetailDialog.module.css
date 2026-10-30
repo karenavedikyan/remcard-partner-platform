@@ -4,10 +4,13 @@
   overscroll-behavior: contain;
   padding-top: max(var(--space-4), env(safe-area-inset-top, 0px));
   padding-bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
 }
 
 .sheetLayout {
-  width: min(520px, 100%);
+  width: min(620px, 100%);
+  max-width: 100%;
   max-height: min(90dvh, 90vh);
   display: flex;
   flex-direction: column;
@@ -15,6 +18,7 @@
   padding: 0;
   box-sizing: border-box;
   margin: auto 0;
+  min-width: 0;
 }
 
 .headerRow {
@@ -42,23 +46,51 @@
   flex-shrink: 0;
 }
 
+.closeTop:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
+}
+
 .body {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--space-4) var(--space-5) var(--space-5);
-  font-size: var(--text-sm);
+  font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
+}
+
+/**
+ * Direct StatusBadge span in .body only (not nested note/terms spans).
+ * Shared badge uses --text-xs (<14px); detail requires readable ≥14px status.
+ */
+.body > :global(span[class*="badge"]) {
+  font-size: 14px;
+}
+
+/**
+ * PAUSED/neutral StatusBadge: shared --muted on --offset is ~4.47:1 in light.
+ * Detail-local FG only — StatusBadge CSS / global tokens / tone map unchanged.
+ * #5c605a on #f2f1ee ≈ 5.68:1; dark keeps badge --muted (~5.84:1 on --offset).
+ */
+.body > :global(span[class*="neutral"]) {
+  color: #5c605a;
+}
+
+:global([data-theme="dark"]) .body > :global(span[class*="neutral"]) {
+  color: var(--muted);
 }
 
 .metaBlock {
   margin: 0;
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -69,38 +101,62 @@
 }
 
 .sectionTitle {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-xs);
+  margin: var(--space-1) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .list {
   margin: 0;
-  padding-left: 1.15rem;
+  padding: 0;
+  list-style: none;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .list li {
-  margin: 0.15rem 0;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .waiting {
   margin: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
   background: var(--offset, var(--surface-muted));
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .explain {
   margin: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
   background: var(--offset, var(--surface-muted));
   color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .focusSentinel {

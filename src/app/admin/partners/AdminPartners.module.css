@@ -721,3 +721,408 @@
   .filtersMobileBar { display: none; }
   .filtersExpandable { display: grid; }
 }
+
+
+/* ==========================================================================
+   A3b: additive registry list skins (table / cards / dense).
+   Baseline rules above stay byte-identical. Overrides apply only under the
+   new root markers and only to named row/card identity/status nodes —
+   frozen management/detail areas stay on the baseline prefix only.
+   Followup: no inherited font/line-height on skin roots; no management-row or
+   dense-detail frame overrides; primary-row td only via compactRow children;
+   dense name wraps fully without line-clamp.
+   Readability: upper collaboration nodes >=14px; soft hover/focus/selected
+   backgrounds for >=4.5:1; dense top grids constrained so long name/city wrap
+   inside the visible clip (not detail/forms).
+   ========================================================================== */
+
+/* --- Desktop table skin (R1 partners-table light header / even pads / hover) --- */
+.registryTableSkin > thead > tr > th,
+.registryTableSkin.tableCompact > thead > tr > th {
+  background: var(--offset);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.registryTableSkin.tableCompact > tbody > tr.compactRow > td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: break-word;
+}
+
+.registryTableSkin.tableCompact > tbody > tr.compactRow:last-child > td {
+  border-bottom: 0;
+}
+
+.registryTableSkin > tbody > tr.compactRow:hover {
+  /* Soft mix so muted metadata + primary count links keep >=4.5:1 in both themes */
+  background: color-mix(in srgb, var(--surface) 94%, var(--ink));
+}
+
+.registryTableSkin > tbody > tr.compactRow:focus-within {
+  background: color-mix(in srgb, var(--surface) 94%, var(--primary));
+}
+
+.registryTableSkin .registryRowIdentity {
+  font-weight: 650;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.registryTableSkin .registryRowStatus .badge {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  padding: 4px 10px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Upper collaboration (ordinary compactRow only — not management / details) */
+.registryTableSkin > tbody > tr.compactRow .collaborationPrimary .badge {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  padding: 4px 10px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.registryTableSkin > tbody > tr.compactRow .collaborationAdminSetting {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.registryTableSkin > tbody > tr.compactRow .collaborationReason {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.registryTableSkin > tbody > tr.compactRow .collaborationCountsLine {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.registryTableSkin > tbody > tr.compactRow .collaborationCountLink,
+.registryTableSkin > tbody > tr.compactRow .collaborationCountStatic {
+  font-size: var(--text-sm);
+}
+
+/* --- Cards skin (lighter surface, identity / status hierarchy) --- */
+.registryCardsSkin .cardGrid {
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.registryCardsSkin .partnerCard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  gap: var(--space-3);
+  box-shadow: none;
+}
+
+.registryCardsSkin .partnerCard[data-selected] {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--line));
+  background: color-mix(in srgb, var(--surface) 94%, var(--primary));
+}
+
+.registryCardsSkin .registryCardIdentity {
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.registryCardsSkin .registryCardIdentity .cardTitleBlock h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.registryCardsSkin .registryCardIdentity .cardMeta {
+  margin: var(--space-1, 4px) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--muted);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.registryCardsSkin .registryCardStatus {
+  gap: var(--space-2);
+}
+
+.registryCardsSkin .registryCardStatus .badge {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  padding: 4px 10px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration {
+  margin-top: var(--space-1, 4px);
+  padding-top: var(--space-3);
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration > .cardCollaborationTitle {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration .collaborationPrimary .badge {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  padding: 4px 10px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration .collaborationAdminSetting {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration .collaborationReason {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration .collaborationCountsLine {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.registryCardsSkin .partnerCard > .cardCollaboration .collaborationCountLink,
+.registryCardsSkin .partnerCard > .cardCollaboration .collaborationCountStatic {
+  font-size: var(--text-sm);
+}
+
+.registryCardsSkin .partnerCard > .cardActions {
+  gap: var(--space-2);
+  margin-top: 0;
+}
+
+/* --- Dense / mobile card skin (R1 mobile-card: 16px pads, readable meta >=14px) --- */
+.registryDenseSkin {
+  padding: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registryDenseSkin .denseList {
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registryDenseSkin .denseItem {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registryDenseSkin .denseItem:last-child {
+  border-bottom: 0;
+}
+
+.registryDenseSkin .denseItem[data-selected] {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, var(--primary));
+  border-radius: var(--radius-sm);
+}
+
+/* Expanded wins over selected so protected detail is not recolored by selection tint */
+.registryDenseSkin .denseItem[data-expanded] {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  margin-bottom: var(--space-2);
+}
+
+.registryDenseSkin .denseRow {
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registryDenseSkin .denseCheck {
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.registryDenseSkin .denseMain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: 0;
+  border-radius: var(--radius-sm);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.registryDenseSkin .denseMain:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.registryDenseSkin .denseMain:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.registryDenseSkin .registryDenseIdentity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1, 4px);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Full wrap — override baseline -webkit-box / line-clamp / overflow:hidden */
+.registryDenseSkin .denseName {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--ink);
+  display: block;
+  -webkit-box-orient: initial;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registryDenseSkin .denseMeta {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--muted);
+  font-weight: 500;
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registryDenseSkin .registryDenseStatus,
+.registryDenseSkin .denseStatusLine {
+  margin-top: 0;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  padding-left: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.registryDenseSkin .denseStatusSegment {
+  white-space: normal;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Beat baseline .registry[data-mobile-dense] dense tightness without editing those rules */
+.registry[data-mobile-dense] .registryDenseSkin {
+  padding: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseMain {
+  padding: 0;
+  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseName {
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseMeta {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseStatusLine,
+.registry[data-mobile-dense] .registryDenseSkin .registryDenseStatus {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  margin-top: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseItem {
+  padding: var(--space-4);
+  border-radius: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseList {
+  gap: 0;
+}
+
+.registry[data-mobile-dense] .registryDenseSkin .denseCheck {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}

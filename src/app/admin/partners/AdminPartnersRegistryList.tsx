@@ -131,7 +131,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
 
   if (viewMode === "cards") {
     return (
-      <div className={styles.cardGridWrap}>
+      <div className={`${styles.cardGridWrap} ${styles.registryCardsSkin}`}>
         <label className={styles.pageSelectBar}>
           <input
             ref={cardsPageSelectRef}
@@ -149,7 +149,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
           const expanded = singleSelected?.id === row.id;
           return (
             <article key={row.id} className={styles.partnerCard} data-selected={checked || undefined}>
-              <div className={styles.cardHead}>
+              <div className={`${styles.cardHead} ${styles.registryCardIdentity}`}>
                 <label className={styles.rowCheck}>
                   <input
                     type="checkbox"
@@ -168,7 +168,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
                   </p>
                 </div>
               </div>
-              <div className={styles.cardBadges}>
+              <div className={`${styles.cardBadges} ${styles.registryCardStatus}`}>
                 <span className={`${styles.badge} ${row.registrationLabel === "ACTIVE" ? styles.visible : ""}`}>
                   {row.registrationLabel === "ACTIVE" ? "Активный" : "Демо"}
                 </span>
@@ -222,7 +222,11 @@ export function AdminPartnersRegistryList(props: ListProps) {
   }
 
   return (
-    <table className={`${styles.table} ${styles.tableCompact}`} aria-label="Реестр партнёров" aria-busy={loading}>
+    <table
+      className={`${styles.table} ${styles.tableCompact} ${styles.registryTableSkin}`}
+      aria-label="Реестр партнёров"
+      aria-busy={loading}
+    >
       <colgroup>
         <col className={styles.colCheck} />
         <col className={styles.colName} />
@@ -276,7 +280,9 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     />
                   </label>
                 </td>
-                <td data-label="Имя">{row.displayName ?? row.id}</td>
+                <td data-label="Имя" className={styles.registryRowIdentity}>
+                  {row.displayName ?? row.id}
+                </td>
                 <td data-label="Тип">{partnerTypeLabel(row)}</td>
                 <td data-label="Город / организация">
                   {row.city ?? "—"}
@@ -287,12 +293,12 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     </>
                   ) : null}
                 </td>
-                <td data-label="Регистрация">
+                <td data-label="Регистрация" className={styles.registryRowStatus}>
                   <span className={`${styles.badge} ${row.registrationLabel === "ACTIVE" ? styles.visible : ""}`}>
                     {row.registrationLabel === "ACTIVE" ? "Активный" : "Демо"}
                   </span>
                 </td>
-                <td data-label="Каталог">
+                <td data-label="Каталог" className={styles.registryRowStatus}>
                   <span className={`${styles.badge} ${catalogStatusClass(row, styles.visible, styles.inactive)}`}>
                     {catalogStatusLabel(row)}
                   </span>
