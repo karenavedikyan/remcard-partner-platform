@@ -249,7 +249,7 @@ export function AdminPartnersPartnerDetailDialog({
         </div>
 
         <span
-          className={`${styles.regPill} ${
+          className={`${styles.regPill} ${styles.detailRegBadge} ${
             pillTone === "good"
               ? styles.regPillGood
               : pillTone === "archived"

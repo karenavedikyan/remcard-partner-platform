@@ -315,6 +315,34 @@ describe("Admin Partners R1 parity presentation", () => {
     expect(css).not.toMatch(/\.detailToggleActions\s*\{[^}]*flex-shrink:\s*0/s);
   });
 
+  it("resets mobile settings flex-basis so short copy/actions are not 14rem tall", () => {
+    const css = readFileSync(CSS, "utf8");
+    const detail = readFileSync(DETAIL, "utf8");
+    const list = readFileSync(LIST, "utf8");
+    expect(css).toMatch(/\.detailSettingsCopy\s*\{[^}]*flex:\s*1\s+1\s+14rem/s);
+    expect(css).toMatch(/\.detailToggleActions\s*\{[^}]*flex:\s*0\s+1\s+auto/s);
+    // Mobile column axis must not inherit the 14rem height basis.
+    expect(css).toMatch(
+      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.detailSettingsCopy,\s*\n\s*\.detailToggleActions\s*\{[^}]*flex-basis:\s*auto/s,
+    );
+    expect(css).toMatch(
+      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.detailSettingsCopy,\s*\n\s*\.detailToggleActions\s*\{[^}]*flex:\s*0\s+0\s+auto/s,
+    );
+    expect(css).not.toMatch(/\.detailSettingsCopy[^{]*\{[^}]*max-height:\s*\d/s);
+    expect(css).not.toMatch(/\.detailToggleActions[^{]*\{[^}]*overflow:\s*hidden/s);
+    expect(detail).toContain("detailRegBadge");
+    expect(css).toMatch(/\.detailRegBadge\s*\{[^}]*width:\s*fit-content/s);
+    expect(css).toMatch(
+      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.detailStats\s*>\s*div:last-child\s*\{[^}]*display:\s*flex/s,
+    );
+    expect(list).toContain("colPartner");
+    expect(css).toMatch(/\.colPartner\s*\{[^}]*width:\s*298px/s);
+    expect(css).toMatch(/\.colReg\s*\{[^}]*width:\s*161px/s);
+    expect(css).toMatch(/\.colCatalog\s*\{[^}]*width:\s*122px/s);
+    expect(css).toMatch(/\.colCoop\s*\{[^}]*width:\s*179px/s);
+    expect(css).toMatch(/\.partnerName\s*\{[^}]*max-width:\s*290px/s);
+  });
+
   it("focuses the reason field after successful apply while keeping the dialog open", async () => {
     api.previewPartnerLifecycle.mockResolvedValue({
       preview: {

@@ -237,9 +237,18 @@ export function AdminPartnersRegistryList(props: ListProps) {
   return (
     <div className={styles.partnersTableWrap}>
       <table className={styles.partnersTable} aria-label="Реестр партнёров" aria-busy={loading}>
+        <colgroup>
+          <col className={styles.colCheck} />
+          <col className={styles.colPartner} />
+          <col className={styles.colReg} />
+          <col className={styles.colCatalog} />
+          <col className={styles.colCoop} />
+          <col className={styles.colVisit} />
+          <col className={styles.colAction} />
+        </colgroup>
         <thead>
           <tr>
-            <th className={styles.checkCell}>
+            <th className={`${styles.checkCell} ${styles.colCheck}`}>
               <label className={styles.headerCheckLabel}>
                 <input
                   ref={headerSelectRef}
@@ -252,12 +261,12 @@ export function AdminPartnersRegistryList(props: ListProps) {
                 />
               </label>
             </th>
-            <th>Партнёр</th>
-            <th>Регистрация</th>
-            <th>Каталог</th>
-            <th>Сотрудничество</th>
-            <th>Визит*</th>
-            <th className={styles.rowActionCol}>
+            <th className={styles.colPartner}>Партнёр</th>
+            <th className={styles.colReg}>Регистрация</th>
+            <th className={styles.colCatalog}>Каталог</th>
+            <th className={styles.colCoop}>Сотрудничество</th>
+            <th className={styles.colVisit}>Визит*</th>
+            <th className={`${styles.rowActionCol} ${styles.colAction}`}>
               <span className={styles.srOnly}>Карточка</span>
             </th>
           </tr>
@@ -268,7 +277,7 @@ export function AdminPartnersRegistryList(props: ListProps) {
             const coop = cooperationVisibilityToken(row);
             return (
               <tr key={row.id} data-testid={`partner-row-${row.id}`}>
-                <td className={styles.checkCell}>
+                <td className={`${styles.checkCell} ${styles.colCheck}`}>
                   <label className={styles.rowCheck}>
                     <input
                       type="checkbox"
@@ -280,23 +289,23 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     />
                   </label>
                 </td>
-                <td>
+                <td className={styles.colPartner}>
                   <PartnerNameButton
                     row={row}
                     disabled={interactionsDisabled}
                     onOpen={(trigger) => onOpenPartner(row, trigger)}
                   />
                 </td>
-                <td>
+                <td className={styles.colReg}>
                   <RegistrationPill row={row} />
                 </td>
-                <td>
+                <td className={styles.colCatalog}>
                   <VisibilityCell
                     token={catalog}
                     ariaLabel={`Каталог: ${row.displayName ?? row.id}, ${catalog.label}`}
                   />
                 </td>
-                <td className={styles.collaborationCol}>
+                <td className={`${styles.collaborationCol} ${styles.colCoop}`}>
                   <div className={styles.cooperationCell}>
                     <VisibilityCell
                       token={coop}
@@ -314,10 +323,10 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     </small>
                   </div>
                 </td>
-                <td>
+                <td className={styles.colVisit}>
                   <span className={styles.mutedInline}>Нет данных</span>
                 </td>
-                <td className={styles.rowActionCol}>
+                <td className={`${styles.rowActionCol} ${styles.colAction}`}>
                   <button
                     type="button"
                     className={styles.rowChevron}
