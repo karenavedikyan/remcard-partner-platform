@@ -1,9 +1,24 @@
-/* P16b: ready composition vs frozen .pr-invite-wizard (partners-redesign.css?v=coop2) */
+/* P16c: ready composition vs frozen .pr-invite-wizard (partners-redesign.css?v=coop2)
+ * Scoped tokens — do not change global theme palette.
+ */
 
 .result {
+  /* Light R1 roles.css :root */
+  --ready-muted: #61645f; /* rgb(97,100,95) */
+  --ready-accent: #bb3035; /* rgb(187,48,53) */
+  --ready-onaccent: #fff;
+  --ready-good: #30684c;
   display: grid;
   gap: 20px; /* --s5 */
   min-width: 0;
+}
+
+:global([data-theme="dark"]) .result {
+  /* Dark R1 [data-theme=dark] */
+  --ready-muted: #b5b9b2; /* rgb(181,185,178) */
+  --ready-accent: #f49391; /* rgb(244,147,145) */
+  --ready-onaccent: #271b1a; /* rgb(39,27,26) */
+  --ready-good: #9ad4b3;
 }
 
 .icon {
@@ -13,9 +28,13 @@
   height: 48px;
   border-radius: 50%;
   background: var(--offset, var(--surface-muted, #efeeeb));
-  color: var(--good, #30684c);
-  font-size: 1.25rem;
-  font-weight: 700;
+  color: var(--ready-good, var(--good, #30684c));
+}
+
+.icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .head {
@@ -24,13 +43,14 @@
   min-width: 0;
 }
 
+/* R1 .pr-invite-message .eyebrow + base .eyebrow weight/spacing */
 .eyebrow {
   margin: 0;
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  letter-spacing: 0.1em; /* → 1px at 10px */
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ready-muted);
 }
 
 /* R1 .pr-invite-step-head h2: 26px / 800 / -0.035em */
@@ -49,16 +69,16 @@
 }
 
 .title:focus-visible {
-  outline: 2px solid var(--primary, var(--accent, #bb3035));
+  outline: 2px solid var(--ready-accent, var(--primary, var(--accent, #bb3035)));
   outline-offset: 3px;
 }
 
 .intro,
 .expiry {
   margin: 0;
-  font-size: var(--text-sm, 0.875rem);
+  font-size: 14px;
   line-height: 1.5;
-  color: var(--muted);
+  color: var(--ready-muted);
   overflow-wrap: anywhere;
 }
 
@@ -75,7 +95,7 @@
 
 .message {
   margin: 0;
-  font-size: var(--text-sm, 0.875rem);
+  font-size: 14px;
   line-height: 1.55;
   color: var(--ink);
   white-space: pre-wrap;
@@ -91,15 +111,37 @@
 .actions :global(button) {
   min-height: 44px;
   width: 100%;
-}
-
-.actions :global(button[data-testid="agent-discussion-invite-share"]) {
-  width: 100%;
+  box-sizing: border-box;
 }
 
 /*
- * R1 link-open: .btn.ghost stretched to content width, font-weight 700.
- * Measured: 1440 → 570×48.39; 375 → 303×48.39 (transparent 1px border OK).
+ * R1 .btn.primary on ready share — theme accent/onaccent, exact 14px / 1.6
+ * (roles.css body line-height 1.6 → measured open/primary height 48.390625).
+ * Attribute selector beats Button.module.css .primary without global theme edits.
+ */
+.actions :global(button[data-testid="agent-discussion-invite-share"]),
+.sharePrimary {
+  width: 100%;
+  background: var(--ready-accent);
+  color: var(--ready-onaccent);
+  border: 1px solid var(--ready-accent);
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 10px;
+}
+
+.actions :global(button[data-testid="agent-discussion-invite-share"]:hover:not(:disabled)),
+.sharePrimary:hover:not(:disabled) {
+  filter: brightness(0.94);
+  background: var(--ready-accent);
+  color: var(--ready-onaccent);
+}
+
+/*
+ * R1 link-open: .btn.ghost stretched, font-weight 700, font 14px / lh 1.6.
+ * Measured: 1440 → 570×48.390625; 375 → 303×48.390625.
  */
 .openCard {
   justify-self: stretch;
@@ -108,9 +150,12 @@
   box-sizing: border-box;
   border: 1px solid transparent;
   background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
   font-weight: 700;
-  font-size: var(--text-sm, 0.875rem);
   padding: 12px 20px;
+  min-height: 44px;
   border-radius: 10px;
   text-decoration: none;
 }
@@ -119,6 +164,7 @@
   background: var(--offset, transparent);
   color: var(--ink);
   text-decoration: none;
+  filter: none;
 }
 
 .shareActions {
@@ -143,7 +189,7 @@
 }
 
 .shareLabel {
-  font-size: var(--text-sm, 0.875rem);
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
 }
@@ -158,7 +204,7 @@
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: var(--text-sm, 0.875rem);
+  font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -166,17 +212,21 @@
 }
 
 .shareTextarea:focus-visible {
-  outline: 2px solid var(--primary, var(--accent, #bb3035));
+  outline: 2px solid var(--ready-accent, var(--primary, var(--accent, #bb3035)));
   outline-offset: 2px;
 }
 
 .shareNote {
   margin: 0;
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--ready-muted);
 }
 
+/*
+ * R1 .pr-invite-after summary: text-xs (12px), weight 700 (details summary),
+ * native list-item disclosure marker — not flex without arrow.
+ */
 .after {
   border-top: 0;
   padding-top: 0;
@@ -184,15 +234,25 @@
 
 .after summary {
   cursor: pointer;
-  font-size: var(--text-xs, 0.75rem);
-  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ready-muted);
+  display: list-item;
+  list-style: disclosure-closed;
+  list-style-position: outside;
+  margin-left: 1.1em;
+  padding: 10px 0;
   min-height: 44px;
-  display: flex;
-  align-items: center;
+  box-sizing: border-box;
+}
+
+.after[open] > summary {
+  list-style: disclosure-open;
 }
 
 .after summary:focus-visible {
-  outline: 2px solid var(--primary, var(--accent, #bb3035));
+  outline: 2px solid var(--ready-accent, var(--primary, var(--accent, #bb3035)));
   outline-offset: 2px;
 }
 
@@ -206,14 +266,14 @@
 
 .afterList p {
   margin: 0.25rem 0 0;
-  font-size: var(--text-xs, 0.75rem);
-  color: var(--muted);
+  font-size: 12px;
+  color: var(--ready-muted);
   line-height: 1.45;
 }
 
 .status {
   margin: 0;
-  font-size: var(--text-sm, 0.875rem);
+  font-size: 14px;
   color: var(--ink);
 }
 
