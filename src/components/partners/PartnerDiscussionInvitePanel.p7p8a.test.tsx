@@ -100,6 +100,8 @@ describe("PartnerDiscussionInvitePanel P7/P8a wiring", () => {
     expect(posts).toHaveLength(1);
 
     await waitFor(() => {
+      expect(screen.getByTestId("agent-discussion-invite-ready")).toBeInTheDocument();
+      expect(screen.queryByTestId("agent-discussion-invite-wizard")).not.toBeInTheDocument();
       expect(screen.getByTestId("discussion-invite-created-url")).toHaveValue(
         "https://app.test/invite/discussion/tok-1",
       );

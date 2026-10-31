@@ -9,6 +9,11 @@ import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import { AgentDiscussionInviteWizard } from "@/components/partners/AgentDiscussionInviteWizard";
+import {
+  AgentDiscussionInviteResult,
+  type AgentDiscussionInviteCreatedSnapshot,
+  buildDiscussionInviteShareText,
+} from "@/components/partners/AgentDiscussionInviteResult";
 import styles from "./PartnerInviteDialog.module.css";
 
 type DiscussionInviteRow = {
@@ -55,6 +60,10 @@ export function PartnerDiscussionInvitePanel({
   const [createdUrl, setCreatedUrl] = useState("");
   const [createdExpires, setCreatedExpires] = useState("");
   const [shareHint, setShareHint] = useState("");
+  const [createdSnapshot, setCreatedSnapshot] = useState<AgentDiscussionInviteCreatedSnapshot | null>(
+    null,
+  );
+  const [shareOpen, setShareOpen] = useState(false);
   const [invites, setInvites] = useState<DiscussionInviteRow[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -81,6 +90,8 @@ export function PartnerDiscussionInvitePanel({
     setError("");
     setShareHint("");
     setCreating(true);
+    const trimmedRecipient = recipientLabel.trim();
+    const trimmedSubject = cooperationSubject.trim();
     try {
       const result = await remcardFetch<{
         token: string;
@@ -89,19 +100,31 @@ export function PartnerDiscussionInvitePanel({
       }>("/api/partnership/discussion-invite", {
         method: "POST",
         body: {
-          recipientLabel: recipientLabel.trim(),
-          cooperationSubject: cooperationSubject.trim(),
+          recipientLabel: trimmedRecipient,
+          cooperationSubject: trimmedSubject,
         },
       });
-      setCreatedUrl(`${getAppUrl()}${result.previewPath}`);
+      const url = `${getAppUrl()}${result.previewPath}`;
+      setCreatedUrl(url);
       setCreatedExpires(result.expiresAt);
+      if (presentationWizard) {
+        // Snapshot the successful request payload — not a later editable draft.
+        setCreatedSnapshot({
+          recipientLabel: trimmedRecipient,
+          cooperationSubject: trimmedSubject,
+          url,
+          expiresAt: result.expiresAt,
+        });
+        setShareOpen(false);
+      }
       await loadInvites();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать ссылку");
+      // Keep review/wizard; never show fake ready on error.
     } finally {
       setCreating(false);
     }
-  }, [cooperationSubject, loadInvites, recipientLabel]);
+  }, [cooperationSubject, loadInvites, presentationWizard, recipientLabel]);
 
   async function copyUrl(url: string) {
     try {
@@ -110,6 +133,24 @@ export function PartnerDiscussionInvitePanel({
     } catch {
       setShareHint("Скопируйте ссылку вручную из поля ниже");
     }
+  }
+
+  async function copyMessageAndUrl(snapshot: AgentDiscussionInviteCreatedSnapshot) {
+    try {
+      await navigator.clipboard.writeText(buildDiscussionInviteShareText(snapshot));
+      setShareHint("Текст и ссылка скопированы");
+    } catch {
+      setShareHint("Скопируйте текст вручную из поля ниже");
+    }
+  }
+
+  function resetReadyForAnother() {
+    setCreatedSnapshot(null);
+    setShareOpen(false);
+    setShareHint("");
+    setCreatedUrl("");
+    setCreatedExpires("");
+    setError("");
   }
 
   async function revokeInvite(id: string) {
@@ -135,6 +176,8 @@ export function PartnerDiscussionInvitePanel({
     }
   }
 
+  const showWizardReady = presentationWizard && createdSnapshot;
+
   return (
     <div className={styles.linkPanel} data-testid="agent-r04-modal-discussion-link">
       <Panel
@@ -151,7 +194,18 @@ export function PartnerDiscussionInvitePanel({
             : "Для знакомого партнёра. Ссылка не подключает программу и не согласует проценты — только приглашение обсудить сотрудничество."
         }
       >
-        {presentationWizard ? (
+        {showWizardReady ? (
+          <AgentDiscussionInviteResult
+            snapshot={createdSnapshot}
+            shareOpen={shareOpen}
+            status={shareHint}
+            onToggleShare={() => setShareOpen((open) => !open)}
+            onCopyUrl={() => void copyUrl(createdSnapshot.url)}
+            onCopyMessageAndUrl={() => void copyMessageAndUrl(createdSnapshot)}
+            onCreateAnother={resetReadyForAnother}
+            formatExpiry={formatExpiry}
+          />
+        ) : presentationWizard ? (
           <AgentDiscussionInviteWizard
             recipientLabel={recipientLabel}
             cooperationSubject={cooperationSubject}
@@ -198,7 +252,7 @@ export function PartnerDiscussionInvitePanel({
             </div>
           </>
         )}
-        {createdUrl ? (
+        {!presentationWizard && createdUrl ? (
           <div className={styles.notice} data-testid="discussion-invite-created">
             <p>
               <strong>Ссылка создана</strong>
