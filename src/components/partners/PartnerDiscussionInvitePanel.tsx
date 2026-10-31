@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
@@ -125,6 +126,11 @@ export function PartnerDiscussionInvitePanel({
       setCreatedUrl(url);
       setCreatedExpires(result.expiresAt);
       if (presentationWizard) {
+        // Apply R1 ready chrome (title/tabs) before mounting the ready section so
+        // heading focus is not stolen by a later hub re-render.
+        flushSync(() => {
+          onReadyChange?.(true);
+        });
         // Snapshot the successful request payload — not a later editable draft.
         setCreatedSnapshot({
           recipientLabel: trimmedRecipient,
@@ -143,7 +149,7 @@ export function PartnerDiscussionInvitePanel({
     } finally {
       setCreating(false);
     }
-  }, [cooperationSubject, loadInvites, presentationWizard, recipientLabel]);
+  }, [cooperationSubject, loadInvites, onReadyChange, presentationWizard, recipientLabel]);
 
   // Resolve inviteId from list when create response omitted it (existing API shape).
   useEffect(() => {

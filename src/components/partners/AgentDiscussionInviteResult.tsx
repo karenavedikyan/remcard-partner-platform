@@ -55,28 +55,34 @@ export function AgentDiscussionInviteResult({
   const terms = proposedTerms?.trim() || "";
 
   useEffect(() => {
-    const heading = headingRef.current;
-    heading?.focus({ preventScroll: true });
-    // Wizard create leaves the hub modal body mid-scroll; without a reset the
-    // ready hero stays clipped above the scrollport.
-    const root = heading?.closest(
-      '[data-testid="agent-discussion-invite-ready"]',
-    ) as HTMLElement | null;
-    if (!root?.isConnected) return;
-    let port: HTMLElement | null = root.parentElement;
-    while (port && port !== document.body) {
-      const style = window.getComputedStyle(port);
-      if (
-        /(auto|scroll|overlay)/.test(style.overflowY) &&
-        port.scrollHeight > port.clientHeight + 1
-      ) {
-        const rootOffset =
-          root.getBoundingClientRect().top - port.getBoundingClientRect().top + port.scrollTop;
-        port.scrollTop = Math.max(0, rootOffset - 8);
-        break;
+    const reveal = () => {
+      const heading = headingRef.current;
+      heading?.focus({ preventScroll: true });
+      // Wizard create leaves the hub modal body mid-scroll; without a reset the
+      // ready hero stays clipped above the scrollport.
+      const root = heading?.closest(
+        '[data-testid="agent-discussion-invite-ready"]',
+      ) as HTMLElement | null;
+      if (!root?.isConnected) return;
+      let port: HTMLElement | null = root.parentElement;
+      while (port && port !== document.body) {
+        const style = window.getComputedStyle(port);
+        if (
+          /(auto|scroll|overlay)/.test(style.overflowY) &&
+          port.scrollHeight > port.clientHeight + 1
+        ) {
+          const rootOffset =
+            root.getBoundingClientRect().top - port.getBoundingClientRect().top + port.scrollTop;
+          port.scrollTop = Math.max(0, rootOffset - 8);
+          break;
+        }
+        port = port.parentElement;
       }
-      port = port.parentElement;
-    }
+    };
+    reveal();
+    // Hub readyMode chrome can commit in the same turn; re-assert focus/scroll.
+    const t = window.setTimeout(reveal, 0);
+    return () => window.clearTimeout(t);
   }, [snapshot.url]);
 
   return (
