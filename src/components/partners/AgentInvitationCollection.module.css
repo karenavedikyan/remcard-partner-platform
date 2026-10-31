@@ -46,6 +46,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
   gap: var(--space-4);
+  /* Cards surface only — never pair with list mobile/desktop in the same mode */
+  min-width: 0;
 }
 
 .partnerCard {
@@ -58,6 +60,11 @@
   border-radius: 12px;
   background: var(--surface);
   overflow: hidden;
+}
+
+/* Keep card name hit ≥44×44 without covering footer actions */
+.partnerCard :global([data-testid="partner-row-name-button"]) {
+  max-width: 100%;
 }
 
 .partnerCardSelected {
