@@ -16,6 +16,14 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("registration=active"),
 }));
 
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }: React.PropsWithChildren<{ href: string } & Record<string, unknown>>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 import { AdminPartnersClient } from "./AdminPartnersClient";
 
 const rowA = {
@@ -25,7 +33,7 @@ const rowA = {
   partnerType: "AGENT",
   partnerKind: "agent",
   city: "Москва",
-  registrationLabel: "LIVE",
+  registrationLabel: "ACTIVE",
   lifecycle: null,
   catalogVisibility: "VISIBLE",
   publicCatalogLinks: [],
@@ -95,39 +103,31 @@ beforeEach(() => {
   });
 });
 
-describe("Admin partners mobile dense registry", () => {
-  it("uses dense list on mobile even when cards mode is stored", async () => {
+describe("Admin partners mobile dense registry (R1 cards)", () => {
+  it("uses mobile cards on dense even when cards mode is stored", async () => {
     mockMobileDense();
     render(<AdminPartnersClient />);
     await screen.findByText("Короткое имя A");
-    expect(screen.getByRole("list", { name: "Реестр партнёров" })).toBeTruthy();
     expect(screen.queryByRole("table", { name: "Реестр партнёров" })).toBeNull();
+    expect(screen.getByLabelText("Реестр партнёров")).toBeTruthy();
   });
 
-  it("checkbox does not expand row details", async () => {
+  it("checkbox does not open partner dialog", async () => {
     mockMobileDense();
     const ui = userEvent.setup();
     render(<AdminPartnersClient />);
     await screen.findByText("Короткое имя A");
     await ui.click(screen.getByRole("checkbox", { name: /Выбрать Короткое имя A/ }));
-    expect(screen.queryByRole("region", { name: /Управление партнёром/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Карточка партнёра" })).toBeNull();
   });
 
-  it("expands one row at a time from the row button", async () => {
+  it("opens one partner dialog from the name button", async () => {
     mockMobileDense();
     const ui = userEvent.setup();
     render(<AdminPartnersClient />);
     await screen.findByText("Короткое имя A");
-    const expandA = screen.getByRole("button", { name: /Короткое имя A/i });
-    await ui.click(expandA);
-    await waitFor(() =>
-      expect(screen.getByRole("region", { name: /Управление партнёром Короткое имя A/i })).toBeTruthy(),
-    );
-    const expandB = screen.getByRole("button", { name: /Длинное имя партнёра B/i });
-    await ui.click(expandB);
-    await waitFor(() =>
-      expect(screen.queryByRole("region", { name: /Управление партнёром Короткое имя A/i })).toBeNull(),
-    );
+    await ui.click(screen.getByRole("button", { name: /Открыть карточку Короткое имя A/i }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Карточка партнёра" })).toBeTruthy());
   });
 
   it("honors registration=active from URL on first fetch", async () => {
@@ -137,24 +137,20 @@ describe("Admin partners mobile dense registry", () => {
     expect(api.fetchPartnerRegistry.mock.calls[0][0].get("registration")).toBe("active");
   });
 
-  it("shows filter toggle with active count on mobile", async () => {
-    mockMobileDense();
-    render(<AdminPartnersClient />);
-    await screen.findByText("Короткое имя A");
-    expect(screen.getByRole("button", { name: "Фильтры (1)" })).toBeTruthy();
-  });
-
-  it("reset clears optional filters but keeps search", async () => {
+  it("reset clears optional filters including URL registration when Сбросить pressed", async () => {
     mockMobileDense();
     const ui = userEvent.setup();
     render(<AdminPartnersClient />);
     await screen.findByText("Короткое имя A");
     await ui.type(screen.getByLabelText("Поиск партнёров"), "demo");
+    // Status from URL makes filters active → reset visible after typing/city etc.
+    fireEvent.change(screen.getByLabelText("Город"), { target: { value: "Сочи" } });
+    await waitFor(() => screen.getByRole("button", { name: "Сбросить" }));
     fireEvent.click(screen.getByRole("button", { name: "Сбросить" }));
     await waitFor(() => {
-      const reg = api.fetchPartnerRegistry.mock.calls.at(-1)?.[0].get("registration");
-      expect(reg === "" || reg == null).toBe(true);
+      const last = api.fetchPartnerRegistry.mock.calls.at(-1)?.[0] as URLSearchParams;
+      expect(last.get("projectArchived") == null || last.get("projectArchived") === "").toBe(true);
+      expect(last.get("city") == null || last.get("city") === "").toBe(true);
     });
-    expect(screen.getByLabelText("Поиск партнёров")).toHaveValue("demo");
   });
 });

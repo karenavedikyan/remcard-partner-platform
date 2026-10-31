@@ -42,9 +42,12 @@ import {
   previewPartnerLifecycle,
 } from "@/lib/prof-admin-partners-api";
 import { AdminPartnersMetricsBar } from "./AdminPartnersMetricsBar";
+import { AdminPartnersPartnerDetailDialog } from "./AdminPartnersPartnerDetailDialog";
 
 type PendingPreview = {
+  partnerId: string;
   action: string;
+  reason: string;
   effects: string[];
   warnings: string[];
   confirmToken: string;
@@ -72,10 +75,11 @@ export function AdminPartnersClient() {
   const [loading, setLoading] = useState(true);
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const error = actionError ?? registryError;
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  /** Page-level errors only (registry / bulk) — never dialog workflow errors behind backdrop. */
+  const pageError = actionError ?? registryError;
   const { storedViewMode, setStoredViewMode, effectiveViewMode, mobileDense } =
     usePartnersRegistryViewMode();
-  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
   const [bulkFormExpanded, setBulkFormExpanded] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<Map<string, SelectedPartnerRef>>(() => new Map());
@@ -85,6 +89,12 @@ export function AdminPartnersClient() {
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
   const [reason, setReason] = useState("");
   const [isApplyingSingle, setIsApplyingSingle] = useState(false);
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null);
+  const singlePreviewGen = useRef(0);
+  const singleSelectedIdRef = useRef<string | null>(null);
+  const reasonRef = useRef("");
+  const lastDialogActionRef = useRef<string | null>(null);
+  const [postApplyFocusKey, setPostApplyFocusKey] = useState(0);
 
   const [bulkReason, setBulkReason] = useState("");
   const [bulkAction, setBulkAction] = useState<BulkLifecycleAction | "">("");
@@ -100,6 +110,50 @@ export function AdminPartnersClient() {
   const bulkRevisionRef = useRef(0);
   const previewRequestGen = useRef(0);
   const mountedRef = useRef(true);
+
+  singleSelectedIdRef.current = singleSelected?.id ?? null;
+  reasonRef.current = reason;
+
+  function invalidateSinglePreviewContext() {
+    singlePreviewGen.current += 1;
+    setPendingPreview(null);
+    setDialogError(null);
+  }
+
+  function restoreDetailFocus(partnerId: string | null | undefined) {
+    const tryFocus = () => {
+      const preferred = detailReturnFocusRef.current;
+      if (preferred instanceof HTMLElement && preferred.isConnected) {
+        preferred.focus();
+        return true;
+      }
+      if (!partnerId) return false;
+      const fallback = document.querySelector<HTMLElement>(
+        `[data-partner-open-trigger="${CSS.escape(partnerId)}"]`,
+      );
+      if (fallback && fallback.isConnected) {
+        fallback.focus();
+        return true;
+      }
+      return false;
+    };
+    queueMicrotask(() => {
+      if (tryFocus()) return;
+      // After reload/list remount the trigger may appear one frame later.
+      requestAnimationFrame(() => {
+        tryFocus();
+      });
+    });
+  }
+
+  function closePartnerDetail() {
+    const partnerId = singleSelectedIdRef.current;
+    invalidateSinglePreviewContext();
+    setSingleSelected(null);
+    setReason("");
+    reasonRef.current = "";
+    restoreDetailFocus(partnerId);
+  }
 
   const loadVersion = useRef(0);
   const headerSelectRef = useRef<HTMLInputElement>(null);
@@ -123,6 +177,7 @@ export function AdminPartnersClient() {
       bulkStopRef.current = true;
       loadVersion.current += 1;
       previewRequestGen.current += 1;
+      singlePreviewGen.current += 1;
     };
   }, []);
 
@@ -172,6 +227,7 @@ export function AdminPartnersClient() {
     setBulkPreviewFailures(null);
     setBulkApplyResults(null);
     bulkRevisionRef.current += 1;
+    invalidateSinglePreviewContext();
   }
 
   function resetPagination() {
@@ -197,15 +253,17 @@ export function AdminPartnersClient() {
         if (archived) params.set("projectArchived", archived);
         if (cursor) params.set("cursor", cursor);
         const data = await fetchPartnerRegistry(params);
-        if (version !== loadVersion.current || !mountedRef.current) return;
+        if (version !== loadVersion.current || !mountedRef.current) return null;
         setItems(data.items);
         setTotal(data.total);
         setFacets(data.facets ?? null);
         setNextCursor(data.nextCursor);
+        return data;
       } catch (e) {
         if (version === loadVersion.current) {
           setRegistryError(e instanceof Error ? e.message : "Ошибка загрузки");
         }
+        return null;
       } finally {
         if (version === loadVersion.current) setLoading(false);
       }
@@ -225,7 +283,6 @@ export function AdminPartnersClient() {
       if (!interactionsDisabled) {
         resetWorkflowForFilterChange();
         setSingleSelected(null);
-        setPendingPreview(null);
         setReason("");
       }
     }
@@ -269,45 +326,88 @@ export function AdminPartnersClient() {
   }
 
   async function requestPreview(action: string) {
-    if (!singleSelected) return;
-    setActionError(null);
-    if (!reason.trim()) {
-      setActionError("Укажите причину перед получением preview");
+    const partnerId = singleSelectedIdRef.current;
+    if (!partnerId) return;
+    const reasonAtRequest = reasonRef.current.trim();
+    if (!reasonAtRequest) {
+      setDialogError("Укажите причину перед получением preview");
       return;
     }
+    const gen = ++singlePreviewGen.current;
+    const actionAtRequest = action;
+    lastDialogActionRef.current = actionAtRequest;
+    setDialogError(null);
     try {
-      const preview = await previewPartnerLifecycle(singleSelected.id, action);
+      const preview = await previewPartnerLifecycle(partnerId, actionAtRequest);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      if (reasonRef.current.trim() !== reasonAtRequest) return;
       setPendingPreview({
-        action,
+        partnerId,
+        action: actionAtRequest,
+        reason: reasonAtRequest,
         effects: preview.preview.effects,
         warnings: preview.preview.warnings,
         confirmToken: preview.preview.confirmToken,
       });
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Ошибка проверки");
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      setPendingPreview(null);
+      setDialogError(e instanceof Error ? e.message : "Ошибка проверки");
     }
   }
 
+  function retryDialogWorkflow() {
+    if (isApplyingSingle || bulkApplying) return;
+    if (pendingPreview && pendingPreview.partnerId === singleSelectedIdRef.current) {
+      void confirmApply();
+      return;
+    }
+    const action = lastDialogActionRef.current;
+    if (action) void requestPreview(action);
+  }
+
   async function confirmApply() {
-    if (!singleSelected || !pendingPreview || isApplyingSingle || bulkApplying) return;
-    setActionError(null);
+    if (!pendingPreview || isApplyingSingle || bulkApplying) return;
+    const partnerId = singleSelectedIdRef.current;
+    const reasonNow = reasonRef.current.trim();
+    if (
+      !partnerId ||
+      pendingPreview.partnerId !== partnerId ||
+      pendingPreview.reason !== reasonNow
+    ) {
+      setDialogError("Контекст изменился — получите preview заново");
+      setPendingPreview(null);
+      return;
+    }
+    const gen = singlePreviewGen.current;
+    const actionAtConfirm = pendingPreview.action;
+    const tokenAtConfirm = pendingPreview.confirmToken;
+    lastDialogActionRef.current = actionAtConfirm;
+    setDialogError(null);
     setIsApplyingSingle(true);
     try {
-      await applyPartnerLifecycle(
-        singleSelected.id,
-        pendingPreview.action,
-        reason.trim(),
-        pendingPreview.confirmToken,
-      );
+      await applyPartnerLifecycle(partnerId, actionAtConfirm, reasonNow, tokenAtConfirm);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
       setPendingPreview(null);
       setReason("");
-      setSingleSelected(null);
-      setActionError(null);
-      await loadPage(currentCursor);
+      reasonRef.current = "";
+      setDialogError(null);
+      // Keep dialog open with refreshed row; focus a live in-dialog control after reload.
+      const refreshed = await loadPage(currentCursor);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      const nextRow = refreshed?.items.find((item) => item.id === partnerId);
+      if (nextRow) setSingleSelected(nextRow);
+      setPostApplyFocusKey((k) => k + 1);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Ошибка применения");
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      setDialogError(e instanceof Error ? e.message : "Ошибка применения");
     } finally {
-      setIsApplyingSingle(false);
+      if (mountedRef.current) setIsApplyingSingle(false);
     }
   }
 
@@ -401,144 +501,108 @@ export function AdminPartnersClient() {
   const pageFrom = total === 0 ? 0 : stackIndex * pageLimit + 1;
   const pageTo = Math.min(total, (stackIndex + 1) * pageLimit);
 
+  const pageChosen = pageSelect === "all" && items.length > 0;
+
   return (
     <div className={styles.registry} data-mobile-dense={mobileDense || undefined}>
       <header className={styles.registryPageHead}>
-        <h1>Партнёры (реестр)</h1>
-        <p className={styles.registryPageHeadMeta}>
-          {mobileDense ? (
-            <>
-              {total} в выборке · {items.length} на стр.
-              {total > 0 ? ` · ${pageFrom}–${pageTo}` : null}
-            </>
-          ) : (
-            <>
-              В выборке: {total} · на странице: {items.length}
-              {total > 0 ? ` · показаны ${pageFrom}–${pageTo}` : null}
-            </>
-          )}
-        </p>
-      </header>
-      <AdminPartnersMetricsBar
-        compact={mobileDense}
-        facets={facets}
-        matchedTotal={total}
-        partnerType={partnerType}
-        registration={registration}
-        catalog={catalog}
-        archived={archived}
-        filtersDisabled={interactionsDisabled}
-        onPartnerType={(v) => guardFilterChange(setPartnerType, v)}
-        onRegistration={(v) => guardFilterChange(setRegistration, v)}
-        onCatalog={(v) => guardFilterChange(setCatalog, v)}
-        onArchived={(v) => guardFilterChange(setArchived, v)}
-      />
-      <section className={styles.filters} aria-label="Поиск и фильтры реестра">
-        <label className={`${styles.field} ${styles.filtersSearchField}`}>
-          <span className={styles.fieldLabelMobileHidden}>Поиск партнёров</span>
-          <input
-            placeholder="Поиск"
-            value={q}
-            onChange={(e) => guardFilterChange(setQ, e.target.value)}
-            aria-label="Поиск партнёров"
-            disabled={interactionsDisabled}
-          />
-        </label>
-        <div className={styles.filtersMobileBar}>
-          <button
-            type="button"
-            className={styles.filtersToggle}
-            aria-expanded={filtersPanelOpen}
-            disabled={interactionsDisabled}
-            onClick={() => setFiltersPanelOpen((v) => !v)}
-          >
-            Фильтры{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-          </button>
-          {activeFilterCount > 0 ? (
-            <button
-              type="button"
-              className={styles.filtersReset}
-              disabled={interactionsDisabled}
-              onClick={resetOptionalFilters}
-            >
-              Сбросить
-            </button>
-          ) : null}
+        <div>
+          <h1>Партнёры</h1>
+          <p className={styles.registryPageHeadMeta}>Регистрация и видимость</p>
+        </div>
+        <div className={styles.headActions}>
           <Button
             variant="secondary"
-            disabled={interactionsDisabled || loading}
+            disabled={interactionsDisabled || (loading && !registryError)}
             onClick={() => void loadPage(currentCursor)}
           >
             Обновить
           </Button>
         </div>
-        <div
-          className={styles.filtersExpandable}
-          data-open={filtersPanelOpen || !mobileDense ? "true" : "false"}
-        >
-        <label className={styles.field}>
-          Регистрация
+      </header>
+
+      <AdminPartnersMetricsBar
+        compact={mobileDense}
+        facets={facets}
+        matchedTotal={total}
+        partnerType={partnerType}
+        filtersDisabled={interactionsDisabled}
+        onPartnerType={(v) => guardFilterChange(setPartnerType, v)}
+      />
+
+      <section className={styles.panel} aria-label="Поиск и фильтры реестра">
+        <div className={styles.toolbar}>
+          <div className={styles.searchField}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              data-testid="partner-search"
+              placeholder="Имя, компания, город, ID"
+              value={q}
+              onChange={(e) => guardFilterChange(setQ, e.target.value)}
+              aria-label="Поиск партнёров"
+              disabled={interactionsDisabled}
+            />
+          </div>
           <select
-            value={registration}
-            onChange={(e) => guardFilterChange(setRegistration, e.target.value)}
-            aria-label="Регистрация"
+            className={styles.filterSelect}
+            aria-label="Статус регистрации"
+            value={
+              archived === "true" ? "archive" : registration === "active" ? "active" : registration === "demo" ? "demo" : "all"
+            }
             disabled={interactionsDisabled}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (interactionsDisabled) return;
+              if (v === "archive") {
+                setArchived("true");
+                setRegistration("");
+              } else if (v === "active" || v === "demo") {
+                setArchived("");
+                setRegistration(v);
+              } else {
+                setArchived("");
+                setRegistration("");
+              }
+              resetPagination();
+              resetWorkflowForFilterChange();
+            }}
           >
-            <option value="">Все</option>
-            <option value="active">Активный</option>
+            <option value="all">Все статусы</option>
+            <option value="active">Активные</option>
             <option value="demo">Демо</option>
+            <option value="archive">Архив</option>
           </select>
-        </label>
-        <label className={styles.field}>
-          Тип партнёра
           <select
-            aria-label="Тип партнёра"
-            value={partnerType}
-            onChange={(e) => guardFilterChange(setPartnerType, e.target.value)}
+            className={styles.filterSelect}
+            aria-label="Видимость"
+            value={catalog || "all"}
             disabled={interactionsDisabled}
+            onChange={(e) => {
+              const v = e.target.value;
+              guardFilterChange(setCatalog, v === "all" ? "" : v);
+            }}
           >
-            <option value="">Все типы партнёров</option>
-            <option value="AGENT">Агент</option>
-            <option value="MASTER">Специалист</option>
-            <option value="STORE">Магазин</option>
-            <option value="COMPANY">Компания</option>
-          </select>
-        </label>
-        <label className={styles.field}>
-          Город
-          <input
-            aria-label="Город"
-            placeholder="Например, Краснодар"
-            value={city}
-            onChange={(e) => guardFilterChange(setCity, e.target.value)}
-            disabled={interactionsDisabled}
-          />
-        </label>
-        <label className={styles.field}>
-          Видимость в каталоге
-          <select
-            aria-label="Видимость в каталоге"
-            value={catalog}
-            onChange={(e) => guardFilterChange(setCatalog, e.target.value)}
-            disabled={interactionsDisabled}
-          >
-            <option value="">Вся видимость</option>
-            <option value="visible">Виден в каталоге</option>
-            <option value="hidden">Скрыт администратором</option>
+            <option value="all">Любая видимость</option>
+            <option value="visible">В каталоге</option>
+            <option value="hidden">Скрыты в каталоге</option>
             <option value="not_public">Не виден в каталоге</option>
           </select>
-        </label>
-        <label className={styles.field}>
-          Архив
-          <select aria-label="Архив" value={archived} onChange={(e) => guardFilterChange(setArchived, e.target.value)} disabled={interactionsDisabled}>
-            <option value="">Все профили</option>
-            <option value="false">Не архивные</option>
-            <option value="true">В архиве</option>
-          </select>
-        </label>
-        <label className={styles.field}>
-          Записей на странице
+          <label className={styles.cityField}>
+            <span className={styles.srOnly}>Город</span>
+            <input
+              className={styles.filterSelect}
+              aria-label="Город"
+              placeholder="Город"
+              value={city}
+              onChange={(e) => guardFilterChange(setCity, e.target.value)}
+              disabled={interactionsDisabled}
+            />
+          </label>
           <select
+            className={styles.filterSelect}
             aria-label="Записей на странице"
             value={pageLimit}
             disabled={interactionsDisabled}
@@ -548,176 +612,242 @@ export function AdminPartnersClient() {
           >
             {REGISTRY_PAGE_SIZES.map((n) => (
               <option key={n} value={n}>
-                {n}
+                {n} на стр.
               </option>
             ))}
           </select>
-        </label>
-        <div className={styles.toolbarRow}>
-          <div
-            className={`${styles.viewToggle} ${styles.viewToggleDesktop}`}
-            role="group"
-            aria-label="Вид реестра"
+        </div>
+
+        <div className={styles.toolbar}>
+          <button
+            type="button"
+            className={styles.toolbarSmallBtn}
+            disabled={listInteractionsDisabled || items.length === 0}
+            onClick={onTogglePageSelect}
           >
+            {pageChosen ? "Снять выбор" : "Выбрать страницу"}
+          </button>
+          <span className={styles.toolbarFound}>
+            Найдено: <strong data-testid="partner-result-count">{total}</strong>
+            {total > 0 ? (
+              <span className={styles.bulkHint}>
+                {" "}
+                · {pageFrom}–{pageTo}
+              </span>
+            ) : null}
+          </span>
+          {activeFilterCount > 0 || q.trim() || partnerType ? (
             <button
               type="button"
-              className={storedViewMode === "table" ? styles.viewToggleActive : undefined}
-              aria-pressed={storedViewMode === "table"}
-              disabled={interactionsDisabled || mobileDense}
-              onClick={() => setStoredViewMode("table")}
+              className={styles.toolbarSmallBtn}
+              style={{ marginLeft: "auto" }}
+              disabled={interactionsDisabled}
+              onClick={() => {
+                resetOptionalFilters();
+                setQ("");
+              }}
             >
-              Компактная таблица
+              Сбросить
             </button>
+          ) : (
+            <span style={{ marginLeft: "auto" }} />
+          )}
+          {!mobileDense ? (
+            <div className={styles.viewToggle} role="group" aria-label="Вид реестра">
+              <button
+                type="button"
+                className={storedViewMode === "table" ? styles.viewToggleActive : undefined}
+                aria-pressed={storedViewMode === "table"}
+                disabled={interactionsDisabled}
+                onClick={() => setStoredViewMode("table")}
+              >
+                Таблица
+              </button>
+              <button
+                type="button"
+                className={storedViewMode === "cards" ? styles.viewToggleActive : undefined}
+                aria-pressed={storedViewMode === "cards"}
+                disabled={interactionsDisabled}
+                onClick={() => setStoredViewMode("cards")}
+              >
+                Карточки
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        {selectionLimitHit ? (
+          <p role="status" className={styles.bulkHintInline}>
+            Достигнут лимит выбора ({selectedIds.size} из 100). Снимите часть выбора, чтобы добавить
+            других.
+          </p>
+        ) : null}
+
+        <AdminPartnersBulkPanel
+          selectedCount={selectedIds.size}
+          otherPagesCount={otherPagesSelected}
+          onClearSelection={() => {
+            setSelectedIds(clearAllSelection());
+            invalidateBulkPreview();
+          }}
+          bulkReason={bulkReason}
+          onBulkReasonChange={(v) => {
+            setBulkReason(v);
+            invalidateBulkPreview();
+          }}
+          bulkAction={bulkAction}
+          onBulkActionChange={(a) => {
+            setBulkAction(a);
+            invalidateBulkPreview();
+          }}
+          onRequestBulkPreview={() => void requestBulkPreview()}
+          bulkPreview={bulkPreview}
+          onConfirmBulk={() => void confirmBulkApply()}
+          onCancelBulkPreview={invalidateBulkPreview}
+          previewLoading={bulkPreviewLoading}
+          applying={bulkApplying}
+          applyProgress={bulkApplyProgress}
+          applyResults={bulkApplyResults}
+          onStopApply={() => {
+            bulkStopRef.current = true;
+          }}
+          onExcludeFailedAndRetryPreview={(ids) => {
+            setSelectedIds((prev) => {
+              const next = new Map(prev);
+              for (const id of ids) next.delete(id);
+              queueMicrotask(() => {
+                if (next.size === 0) return;
+                void requestBulkPreviewForMembers([...next.values()]);
+              });
+              return next;
+            });
+            invalidateBulkPreview();
+          }}
+          previewFailures={bulkPreviewFailures}
+          disabled={interactionsDisabled}
+          compactSelectionBar
+          selectionFormExpanded={bulkFormExpanded}
+          onOpenSelectionForm={() => setBulkFormExpanded(true)}
+        />
+
+        {pageError ? (
+          <div className={styles.registryErrorBlock} role="alert">
+            <p className={styles.error}>{pageError}</p>
+            {registryError ? (
+              <button
+                type="button"
+                className={styles.toolbarSmallBtn}
+                disabled={interactionsDisabled || loading}
+                onClick={() => void loadPage(currentCursor)}
+              >
+                Повторить загрузку
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {loading ? (
+          <p role="status" className={styles.panelStatus}>
+            Загрузка…
+          </p>
+        ) : null}
+
+        <div className={styles.tableWrapR1}>
+          <AdminPartnersRegistryList
+            viewMode={effectiveViewMode}
+            items={items}
+            loading={loading}
+            selectedIds={selectedIds}
+            pageSelectState={pageSelect}
+            onTogglePageSelect={onTogglePageSelect}
+            onToggleRow={onToggleRow}
+            selectionBlocked={selectionLimitHit}
+            singleSelected={singleSelected}
+            onOpenPartner={(row, trigger) => {
+              invalidateSinglePreviewContext();
+              detailReturnFocusRef.current = trigger;
+              singleSelectedIdRef.current = row.id;
+              setSingleSelected(row);
+              setReason("");
+              reasonRef.current = "";
+              setActionError(null);
+            }}
+            interactionsDisabled={listInteractionsDisabled}
+            headerSelectRef={headerSelectRef}
+            cardsPageSelectRef={cardsPageSelectRef}
+          />
+          {!loading && !pageError && items.length === 0 ? (
+            <div className={styles.emptyState}>
+              <strong>Ничего не найдено</strong>
+              <p>Попробуйте изменить условия поиска.</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className={styles.tableFooter}>
+          <span>
+            {total === 0 ? "0 партнёров" : `${pageFrom}–${pageTo} из ${total} партнёров`}
+          </span>
+          <div className={styles.pagination}>
             <button
               type="button"
-              className={storedViewMode === "cards" ? styles.viewToggleActive : undefined}
-              aria-pressed={storedViewMode === "cards"}
-              disabled={interactionsDisabled || mobileDense}
-              onClick={() => setStoredViewMode("cards")}
+              className={styles.iconButton}
+              aria-label="Предыдущая страница"
+              disabled={stackIndex === 0 || loading || interactionsDisabled}
+              onClick={goPrevPage}
             >
-              Карточки
+              ‹
+            </button>
+            <span>
+              {stackIndex + 1}
+              {nextCursor ? " · …" : ""}
+            </span>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="Следующая страница"
+              disabled={!nextCursor || loading || interactionsDisabled}
+              onClick={goNextPage}
+            >
+              ›
             </button>
           </div>
-          <Button
-            variant="secondary"
-            className={styles.refreshDesktop}
-            disabled={interactionsDisabled || loading}
-            onClick={() => void loadPage(currentCursor)}
-          >
-            Обновить
-          </Button>
-        </div>
         </div>
       </section>
 
-      {selectionLimitHit ? (
-        <p role="status" className={styles.bulkHint}>
-          Достигнут лимит выбора ({selectedIds.size} из 100). Снимите часть выбора, чтобы добавить других.
-        </p>
-      ) : null}
+      <p className={styles.helpTip}>
+        Активный = новая регистрация. Демо видно только администратору. * Визиты: нет данных API — не
+        подставляем синтетические значения. Глобальная сортировка прототипа не перенесена: пагинация
+        курсорная, серверная.
+      </p>
 
-      <AdminPartnersBulkPanel
-        selectedCount={selectedIds.size}
-        otherPagesCount={otherPagesSelected}
-        onClearSelection={() => {
-          setSelectedIds(clearAllSelection());
-          invalidateBulkPreview();
-        }}
-        bulkReason={bulkReason}
-        onBulkReasonChange={(v) => {
-          setBulkReason(v);
-          invalidateBulkPreview();
-        }}
-        bulkAction={bulkAction}
-        onBulkActionChange={(a) => {
-          setBulkAction(a);
-          invalidateBulkPreview();
-        }}
-        onRequestBulkPreview={() => void requestBulkPreview()}
-        bulkPreview={bulkPreview}
-        onConfirmBulk={() => void confirmBulkApply()}
-        onCancelBulkPreview={invalidateBulkPreview}
-        previewLoading={bulkPreviewLoading}
-        applying={bulkApplying}
-        applyProgress={bulkApplyProgress}
-        applyResults={bulkApplyResults}
-        onStopApply={() => {
-          bulkStopRef.current = true;
-        }}
-        onExcludeFailedAndRetryPreview={(ids) => {
-          setSelectedIds((prev) => {
-            const next = new Map(prev);
-            for (const id of ids) next.delete(id);
-            queueMicrotask(() => {
-              if (next.size === 0) return;
-              void requestBulkPreviewForMembers([...next.values()]);
-            });
-            return next;
-          });
-          invalidateBulkPreview();
-        }}
-        previewFailures={bulkPreviewFailures}
-        disabled={interactionsDisabled}
-        compactSelectionBar={mobileDense}
-        selectionFormExpanded={bulkFormExpanded}
-        onOpenSelectionForm={() => setBulkFormExpanded(true)}
-      />
-
-      {error ? (
-        <p role="alert" className={styles.error}>
-          {error}
-        </p>
-      ) : null}
-      {loading ? <p role="status">Загрузка…</p> : null}
-
-      <div
-        className={`${styles.tableWrap} ${effectiveViewMode === "table" ? styles.tableWrapCompact : ""} ${effectiveViewMode === "dense" ? styles.tableWrapDense : ""}`}
-      >
-        <AdminPartnersRegistryList
-          viewMode={effectiveViewMode}
-          items={items}
-          loading={loading}
-          selectedIds={selectedIds}
-          pageSelectState={pageSelect}
-          onTogglePageSelect={onTogglePageSelect}
-          onToggleRow={onToggleRow}
-          selectionBlocked={selectionLimitHit}
-          singleSelected={singleSelected}
-          onSelectSingle={(row) => {
-            setSingleSelected(row);
-            setPendingPreview(null);
-            setReason("");
-            setActionError(null);
-          }}
-          onToggleExpand={(row) => {
-            if (singleSelected?.id === row.id) {
-              setSingleSelected(null);
-              setPendingPreview(null);
-              setActionError(null);
-              return;
-            }
-            setSingleSelected(row);
-            setPendingPreview(null);
-            setReason("");
-            setActionError(null);
-          }}
-          onCloseSingle={() => {
-            setSingleSelected(null);
-            setPendingPreview(null);
-            setActionError(null);
-          }}
+      {singleSelected ? (
+        <AdminPartnersPartnerDetailDialog
+          open
+          row={singleSelected}
           reason={reason}
-          onReasonChange={setReason}
-          pendingPreview={pendingPreview}
-          onCancelPreview={() => setPendingPreview(null)}
+          onReasonChange={(v) => {
+            reasonRef.current = v;
+            setReason(v);
+            invalidateSinglePreviewContext();
+          }}
+          pendingPreview={
+            pendingPreview && pendingPreview.partnerId === singleSelected.id
+              ? pendingPreview
+              : null
+          }
+          onCancelPreview={() => {
+            invalidateSinglePreviewContext();
+          }}
           onRequestPreview={(action) => void requestPreview(action)}
           onConfirmApply={() => void confirmApply()}
-          isApplyingSingle={isApplyingSingle}
-          interactionsDisabled={listInteractionsDisabled}
-          headerSelectRef={headerSelectRef}
-          cardsPageSelectRef={cardsPageSelectRef}
+          onRetryDialogError={retryDialogWorkflow}
+          onClose={closePartnerDetail}
+          isApplying={isApplyingSingle}
+          disabled={interactionsDisabled}
+          dialogError={dialogError}
+          postApplyFocusKey={postApplyFocusKey}
         />
-        {!loading && !error && items.length === 0 ? (
-          <p className={styles.empty}>Партнёры не найдены. Измените условия поиска.</p>
-        ) : null}
-      </div>
-
-      <div className={styles.pagination}>
-        <Button variant="secondary" disabled={stackIndex === 0 || loading || interactionsDisabled} onClick={goPrevPage}>
-          Предыдущая страница
-        </Button>
-        <span className={styles.paginationMeta}>
-          Страница {stackIndex + 1}
-          {nextCursor ? " · есть следующая" : stackIndex > 0 ? " · последняя" : ""}
-        </span>
-        <Button
-          variant="secondary"
-          disabled={!nextCursor || loading || interactionsDisabled}
-          onClick={goNextPage}
-        >
-          Следующая страница
-        </Button>
-      </div>
+      ) : null}
     </div>
   );
 }

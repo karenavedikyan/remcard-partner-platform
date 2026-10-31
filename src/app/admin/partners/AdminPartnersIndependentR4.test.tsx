@@ -35,7 +35,7 @@ beforeEach(() => {
 async function openPreview() {
   render(<AdminPartnersClient />);
   await screen.findByText(row.displayName);
-  fireEvent.click(screen.getByRole("button", { name: "Действия" }));
+  fireEvent.click(screen.getByRole("button", { name: /Открыть карточку/ }));
   fireEvent.change(screen.getByPlaceholderText("Причина"), { target: { value: "Synthetic R4 reason" } });
   fireEvent.click(screen.getByRole("button", { name: "В архив проекта" }));
   await screen.findByText("Review archive consequences");

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -29,23 +29,18 @@ beforeEach(() => {
   api.fetchPartnerRegistry.mockResolvedValue({ items: [row], total: 1, nextCursor: null, facets: null });
 });
 
-describe("Compact registry table column layout", () => {
-  it("uses eight explicit columns with collaboration and access width", async () => {
+describe("R1 registry table column layout", () => {
+  it("uses partners table with partner/registration/catalog/cooperation/visit columns", async () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Layout Partner");
     const table = screen.getByRole("table", { name: "Реестр партнёров" });
-    expect(table.className).toContain(styles.tableCompact);
-    expect(table.querySelectorAll("colgroup col")).toHaveLength(8);
-    expect(table.querySelector(`.${styles.colCollaboration}`)).not.toBeNull();
-    expect(table.querySelector(`.${styles.colAccess}`)).not.toBeNull();
-    const headers = table.querySelectorAll("thead th");
-    expect(headers).toHaveLength(8);
-    expect(headers[6]?.textContent).toBe("Сотрудничество");
-    expect(headers[7]?.textContent).toBe("Доступ");
-    const accessCell = screen.getByRole("button", { name: "Действия" }).closest("td");
-    expect(accessCell?.className).toContain(styles.accessCol);
-    expect(accessCell?.getAttribute("data-label")).toBe("Доступ");
-    const wrap = table.closest(`.${styles.tableWrapCompact}`);
-    expect(wrap).not.toBeNull();
+    expect(table.className).toContain(styles.partnersTable);
+    expect(within(table).getByRole("columnheader", { name: "Партнёр" })).toBeTruthy();
+    expect(within(table).getByRole("columnheader", { name: "Регистрация" })).toBeTruthy();
+    expect(within(table).getByRole("columnheader", { name: "Каталог" })).toBeTruthy();
+    expect(within(table).getByRole("columnheader", { name: "Сотрудничество" })).toBeTruthy();
+    expect(within(table).getByRole("columnheader", { name: "Визит*" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Открыть карточку Layout Partner/ })).toBeTruthy();
+    expect(table.closest(`.${styles.tableWrapR1}`)).not.toBeNull();
   });
 });

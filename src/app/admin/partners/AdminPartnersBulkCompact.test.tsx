@@ -69,7 +69,7 @@ describe("Admin partners bulk selection and compact registry", () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Partner One");
     fireEvent.click(screen.getByLabelText("Выбрать Partner One"));
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "demo" } });
     await waitFor(() => expect(screen.queryByText(/Выбрано:/)).toBeNull());
   });
 
@@ -78,6 +78,9 @@ describe("Admin partners bulk selection and compact registry", () => {
     await screen.findByText("Partner One");
     fireEvent.click(screen.getByRole("checkbox", { name: "Выбрать Partner One" }));
     await waitFor(() => expect(screen.getByText(/Выбрано:/)).toBeInTheDocument());
+    // Compact R1 bar first — expand via catalog action before reason/preview.
+    fireEvent.click(screen.getByRole("button", { name: "Каталог" }));
+    await waitFor(() => screen.getByLabelText("Причина группового изменения"));
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), {
       target: { value: "Group reason" },
     });
@@ -91,10 +94,12 @@ describe("Admin partners bulk selection and compact registry", () => {
     await waitFor(() => expect(previewBtn).toBeEnabled());
     fireEvent.click(previewBtn);
     await waitFor(() => expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("p1", "hide_catalog"));
-    await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
+    const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.tagName).toBe("DIALOG");
     expect(screen.getByText(/effect-p1/)).toBeInTheDocument();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(1));
     expect(api.applyPartnerLifecycle).toHaveBeenCalledWith(
       "p1",

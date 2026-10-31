@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   BULK_LIFECYCLE_ACTIONS,
@@ -42,6 +43,31 @@ function outcomeLabel(row: BulkApplyRowResult): string {
   return `исход неизвестен${row.message ? ` — ${row.message}` : ""}`;
 }
 
+function confirmTitle(action: BulkLifecycleAction): string {
+  if (action === "hide_catalog") return "Скрыть выбранных партнёров?";
+  if (action === "publish_catalog") return "Показать выбранных партнёров?";
+  if (action === "archive_project") return "Переместить в архив?";
+  if (action === "restore_project") return "Восстановить партнёров?";
+  return "Подтвердить групповое изменение?";
+}
+
+function confirmLead(action: BulkLifecycleAction, count: number): string {
+  const who = count === 1 ? "1 партнёр" : `Количество: ${count}`;
+  if (action === "hide_catalog") {
+    return `${who}. Поиск сотрудничества не изменится.`;
+  }
+  if (action === "publish_catalog") {
+    return `${who}. Поиск сотрудничества не изменится.`;
+  }
+  if (action === "archive_project") {
+    return `${who}. Скроем из каталога и поиска сотрудничества. Данные и история останутся; восстановление доступно в архиве.`;
+  }
+  if (action === "restore_project") {
+    return `${who}. Вернём в рабочий реестр и восстановим прежние настройки видимости.`;
+  }
+  return `${who}.`;
+}
+
 export function AdminPartnersBulkPanel({
   selectedCount,
   otherPagesCount,
@@ -66,14 +92,22 @@ export function AdminPartnersBulkPanel({
   selectionFormExpanded = true,
   onOpenSelectionForm,
 }: Props) {
-  if (selectedCount === 0 && !applyResults && !applying) return null;
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const previewBtnRef = useRef<HTMLButtonElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const needReturnFocusRef = useRef(false);
 
   const hasPreviewFailures = Boolean(previewFailures && previewFailures.length > 0);
   const showSelectionHead = selectedCount > 0 || applying;
   const showNewGroupForm =
     selectedCount > 0 && !applying && (!bulkPreview || hasPreviewFailures);
-  const showConfirmDialog = !applying && bulkPreview && !hasPreviewFailures;
+  const modalOpen = Boolean(bulkPreview) && !hasPreviewFailures;
   const reportTitle = applying ? "Ход групповой операции" : "Итог групповой операции";
+  const hasApplyReport = Boolean(applyResults && applyResults.length > 0);
   const showCompactBarOnly =
     compactSelectionBar &&
     !selectionFormExpanded &&
@@ -81,49 +115,304 @@ export function AdminPartnersBulkPanel({
     !applying &&
     !bulkPreview &&
     !applyResults;
+  const wasModalOpenRef = useRef(false);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (modalOpen) {
+      wasModalOpenRef.current = true;
+      if (!dialog) return;
+      if (!dialog.open) {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement) returnFocusRef.current = active;
+        dialog.showModal();
+      }
+      queueMicrotask(() => {
+        if (applying) {
+          cancelBtnRef.current?.focus();
+        } else {
+          (confirmBtnRef.current ?? cancelBtnRef.current)?.focus();
+        }
+      });
+      return;
+    }
+    if (wasModalOpenRef.current) {
+      wasModalOpenRef.current = false;
+      if (dialog?.open) dialog.close();
+      // Restore after form remount (Cancel/Escape) or final apply report.
+      needReturnFocusRef.current = true;
+    }
+  }, [modalOpen, applying]);
+
+  useEffect(() => {
+    if (modalOpen || !needReturnFocusRef.current) return;
+    // Apply clears preview before applying=false — wait for the final report.
+    if (applying) return;
+
+    needReturnFocusRef.current = false;
+    const saved = returnFocusRef.current;
+    returnFocusRef.current = null;
+
+    function isFocusableControl(el: HTMLElement): boolean {
+      if (!el.isConnected) return false;
+      if (el.closest('[aria-hidden="true"], [hidden], [inert]')) return false;
+      if (
+        el instanceof HTMLButtonElement ||
+        el instanceof HTMLTextAreaElement ||
+        el instanceof HTMLSelectElement ||
+        el instanceof HTMLInputElement
+      ) {
+        if (el.disabled) return false;
+      }
+      return true;
+    }
+
+    function tryFocus(el: HTMLElement | null | undefined): boolean {
+      if (!el || !isFocusableControl(el)) return false;
+      try {
+        el.focus({ preventScroll: true });
+      } catch {
+        el.focus();
+      }
+      return document.activeElement === el;
+    }
+
+    const focusTarget = () => {
+      // Cancel/Escape: selection + preview form remount — return to opener.
+      if (showNewGroupForm || selectedCount > 0) {
+        if (tryFocus(previewBtnRef.current)) return true;
+        if (tryFocus(saved)) return true;
+        const reason = document.querySelector<HTMLTextAreaElement>(
+          'textarea[aria-label="Причина группового изменения"]',
+        );
+        if (tryFocus(reason)) return true;
+      }
+
+      // Successful / partial / stop apply: selection cleared, report stays.
+      if (hasApplyReport && tryFocus(reportRef.current)) return true;
+
+      // Stable nearby control if report is not yet mountable.
+      const registrySearch = document.querySelector<HTMLElement>(
+        '[data-testid="partner-search"]',
+      );
+      if (tryFocus(registrySearch)) return true;
+      return false;
+    };
+
+    queueMicrotask(() => {
+      if (focusTarget()) return;
+      requestAnimationFrame(() => {
+        focusTarget();
+      });
+    });
+  }, [modalOpen, showNewGroupForm, selectedCount, applying, hasApplyReport]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const onCancel = (event: Event) => {
+      // Escape — never mutate; cancel closes preview only.
+      event.preventDefault();
+      if (applying) return;
+      onCancelBulkPreview();
+    };
+    dialog.addEventListener("cancel", onCancel);
+    return () => dialog.removeEventListener("cancel", onCancel);
+  }, [applying, onCancelBulkPreview]);
+
+  if (selectedCount === 0 && !applyResults && !applying) return null;
+
+  function pickQuickAction(action: BulkLifecycleAction) {
+    onBulkActionChange(action);
+    onOpenSelectionForm?.();
+  }
+
+  function requestCancelConfirm() {
+    if (applying) return;
+    onCancelBulkPreview();
+  }
+
+  const confirmDialog =
+    bulkPreview && !hasPreviewFailures ? (
+      <dialog
+        ref={dialogRef}
+        className={styles.bulkConfirmDialog}
+        aria-modal="true"
+        aria-labelledby={titleId}
+        data-bulk-confirm-modal="true"
+      >
+        <div className={styles.bulkConfirmHead}>
+          <h2 id={titleId}>{confirmTitle(bulkPreview.action)}</h2>
+          <button
+            type="button"
+            className={styles.bulkConfirmClose}
+            aria-label="Закрыть окно"
+            disabled={disabled || applying}
+            onClick={requestCancelConfirm}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div className={styles.bulkConfirmBody}>
+          <p className={styles.bulkConfirmLead}>
+            {confirmLead(bulkPreview.action, bulkPreview.members.length)}
+          </p>
+          <p className={styles.bulkHint}>
+            Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}
+            {bulkPreview.members.length}
+          </p>
+          <ul className={styles.bulkPreviewList}>
+            {bulkPreview.members.map((m) => (
+              <li key={m.userId}>
+                <strong>{m.displayName ?? m.userId}</strong>
+                <span>{[...m.effects, ...m.warnings].join(" ")}</span>
+              </li>
+            ))}
+          </ul>
+          {applying ? (
+            <p className={styles.bulkHint} role="status">
+              Применение {applyProgress.done}/{applyProgress.total}…
+            </p>
+          ) : null}
+        </div>
+        <div className={styles.bulkConfirmFooter}>
+          {applying ? (
+            <>
+              <Button disabled>{`Применение ${applyProgress.done}/${applyProgress.total}…`}</Button>
+              <Button ref={cancelBtnRef} variant="secondary" onClick={onStopApply}>
+                Остановить оставшиеся
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                ref={cancelBtnRef}
+                variant="secondary"
+                disabled={disabled}
+                onClick={requestCancelConfirm}
+              >
+                Отмена
+              </Button>
+              <Button
+                ref={confirmBtnRef}
+                disabled={disabled}
+                onClick={() => void onConfirmBulk()}
+              >
+                Подтвердить
+              </Button>
+            </>
+          )}
+        </div>
+      </dialog>
+    ) : null;
 
   if (showCompactBarOnly) {
     return (
-      <div className={styles.bulkCompactBar} role="region" aria-label="Групповые действия">
-        <span className={styles.bulkCompactCount}>
-          Выбрано: <strong>{selectedCount}</strong>
-          {otherPagesCount > 0 ? (
-            <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
-          ) : null}
-        </span>
-        <div className={styles.bulkCompactActions}>
-          <Button variant="secondary" disabled={disabled} onClick={() => onOpenSelectionForm?.()}>
-            Действия
-          </Button>
-          <Button variant="secondary" disabled={disabled} onClick={onClearSelection}>
-            Снять выбор
-          </Button>
+      <>
+        <div className={styles.bulkBar} role="region" aria-label="Групповые действия">
+          <strong>
+            Выбрано: <span data-testid="selected-count">{selectedCount}</span>
+            {otherPagesCount > 0 ? (
+              <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
+            ) : null}
+          </strong>
+          <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("hide_catalog")}>
+            Каталог
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled
+            title="Массовое изменение поиска сотрудничества в API нет — используйте карточку партнёра"
+          >
+            Сотрудничество
+          </button>
+          <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("archive_project")}>
+            В архив
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled}
+            onClick={() => pickQuickAction("archive_project")}
+            title="Архив профилей в проекте (не удаление аккаунта). Нужны причина и preview."
+          >
+            Удалить из проекта
+          </button>
+          <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={onClearSelection}>
+            Отменить
+          </button>
         </div>
-      </div>
+        {confirmDialog}
+      </>
     );
   }
 
   return (
     <div className={styles.bulkPanel} role="region" aria-label="Групповые действия">
       {showSelectionHead ? (
-        <div className={styles.bulkPanelHead}>
-          <p>
-            Выбрано: <strong>{selectedCount}</strong> (не более {MAX_BULK_SELECTION})
+        <div className={styles.bulkBar} data-embedded="true">
+          <strong>
+            Выбрано: <span data-testid="selected-count">{selectedCount}</span>
+            <span className={styles.bulkHint}> (не более {MAX_BULK_SELECTION})</span>
             {otherPagesCount > 0 ? (
-              <span className={styles.bulkHint}>
-                {" "}
-                · на других страницах: {otherPagesCount}
-              </span>
+              <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
             ) : null}
-          </p>
-          <Button variant="secondary" disabled={disabled || applying} onClick={onClearSelection}>
-            Снять выбор
-          </Button>
+          </strong>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={() => pickQuickAction("hide_catalog")}
+          >
+            Каталог
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled
+            title="Массовое изменение поиска сотрудничества в API нет — используйте карточку партнёра"
+          >
+            Сотрудничество
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={() => pickQuickAction("archive_project")}
+          >
+            В архив
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={() => pickQuickAction("archive_project")}
+            title="Архив профилей в проекте (не удаление аккаунта). Нужны причина и preview."
+          >
+            Удалить из проекта
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled || applying}
+            onClick={onClearSelection}
+          >
+            Отменить
+          </button>
         </div>
       ) : null}
 
       {applyResults && applyResults.length > 0 ? (
-        <div className={styles.bulkReport} aria-live="polite">
+        <div
+          ref={reportRef}
+          className={styles.bulkReport}
+          role="region"
+          aria-live="polite"
+          aria-label={reportTitle}
+          tabIndex={-1}
+          data-bulk-apply-report="true"
+        >
           <h3>{reportTitle}</h3>
           {applying ? (
             <p className={styles.bulkHint} role="status">
@@ -143,24 +432,6 @@ export function AdminPartnersBulkPanel({
               повторно не отправляются автоматически. Выберите участников ниже для новой операции.
             </p>
           ) : null}
-        </div>
-      ) : null}
-
-      {applying && bulkPreview ? (
-        <div role="dialog" aria-label="Подтверждение группового изменения" className={styles.confirmation}>
-          <p>
-            Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}
-            {bulkPreview.members.length}
-          </p>
-          <p className={styles.bulkHint} role="status">
-            Применение {applyProgress.done}/{applyProgress.total}…
-          </p>
-          <div className={styles.actions}>
-            <Button disabled>{`Применение ${applyProgress.done}/${applyProgress.total}…`}</Button>
-            <Button variant="secondary" onClick={onStopApply}>
-              Остановить оставшиеся
-            </Button>
-          </div>
         </div>
       ) : null}
 
@@ -222,6 +493,7 @@ export function AdminPartnersBulkPanel({
           ) : null}
 
           <Button
+            ref={previewBtnRef}
             variant="secondary"
             disabled={disabled || previewLoading || !bulkReason.trim() || !bulkAction}
             onClick={() => void onRequestBulkPreview()}
@@ -231,28 +503,7 @@ export function AdminPartnersBulkPanel({
         </>
       ) : null}
 
-      {showConfirmDialog ? (
-        <div role="dialog" aria-label="Подтверждение группового изменения" className={styles.confirmation}>
-          <p>
-            Действие: <strong>{BULK_LIFECYCLE_ACTIONS[bulkPreview.action]}</strong> · участников:{" "}
-            {bulkPreview.members.length}
-          </p>
-          <ul className={styles.bulkPreviewList}>
-            {bulkPreview.members.map((m) => (
-              <li key={m.userId}>
-                <strong>{m.displayName ?? m.userId}</strong>
-                <span>{[...m.effects, ...m.warnings].join(" ")}</span>
-              </li>
-            ))}
-          </ul>
-          <div className={styles.actions}>
-            <Button onClick={() => void onConfirmBulk()}>Подтвердить группу</Button>
-            <Button variant="secondary" onClick={onCancelBulkPreview}>
-              Отмена
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      {confirmDialog}
     </div>
   );
 }

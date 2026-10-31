@@ -416,3 +416,77 @@
     animation: none !important;
   }
 }
+
+/* ===== Partners route-scoped shell (data-partners-shell) — other pages unchanged ===== */
+
+.topbar[data-partners-shell="true"] {
+  pointer-events: auto;
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
+.partnersBreadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--admin-muted);
+  pointer-events: auto;
+}
+
+.partnersBreadcrumb strong {
+  color: var(--admin-ink);
+  font-weight: 700;
+}
+
+.partnersBreadcrumbSep {
+  opacity: 0.7;
+}
+
+.sidebar[data-partners-shell="true"] .navLink,
+.sidebar[data-partners-shell="true"] .navLinkActive,
+.sidebar[data-partners-shell="true"] .navDialogLink,
+.sidebar[data-partners-shell="true"] .navDialogLinkActive {
+  gap: 0.75rem;
+}
+
+.sidebar[data-partners-shell="true"] .navLinkActive {
+  box-shadow: inset 3px 0 0 var(--admin-brand);
+}
+
+.navMenuIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--admin-ink);
+  cursor: pointer;
+}
+
+.navMenuIconButton:hover {
+  background: var(--admin-surface-2);
+}
+
+.mobileWordmark {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--admin-ink);
+  min-width: 0;
+}
+
+.mobileWordmark span {
+  color: #c12b2f;
+}
+
+@media (max-width: 720px) {
+  .sidebar[data-partners-shell="true"] .brand {
+    display: none;
+  }
+}

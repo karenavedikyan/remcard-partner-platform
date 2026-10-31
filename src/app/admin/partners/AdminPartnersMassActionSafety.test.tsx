@@ -54,13 +54,21 @@ async function open() {
   return view;
 }
 
+async function expandBulkForm(actionName = "Каталог") {
+  fireEvent.click(screen.getByRole("button", { name: actionName }));
+  await waitFor(() => screen.getByLabelText("Причина группового изменения"));
+}
+
 async function confirm() {
+  await expandBulkForm("Каталог");
   fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
   fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
   await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
   fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
-  await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
-  fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+  const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+  expect(dialog).toHaveAttribute("aria-modal", "true");
+  expect(dialog.tagName).toBe("DIALOG");
+  fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
 }
 
 describe("Independent mass-action safety", () => {
@@ -120,13 +128,84 @@ describe("Independent mass-action safety", () => {
     expect(screen.getByRole("button", { name: "Остановить оставшиеся" })).toBeInTheDocument();
   });
 
+  it("Cancel on modal confirmation does not POST apply", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await expandBulkForm("Каталог");
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Отмена" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Скрыть выбранных партнёров?" })).not.toBeInTheDocument());
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Получить preview группы" }),
+      ),
+    );
+  });
+
+  it("header close X cancels confirm without POST and returns focus to preview", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await expandBulkForm("Каталог");
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    const close = screen.getByRole("button", { name: "Закрыть окно" });
+    expect(close).toBeEnabled();
+    fireEvent.click(close);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Скрыть выбранных партнёров?" })).not.toBeInTheDocument(),
+    );
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Получить preview группы" }),
+      ),
+    );
+  });
+
+  it("header close X stays disabled while applying", async () => {
+    api.applyPartnerLifecycle.mockImplementation(() => new Promise(() => {}));
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await confirm();
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Закрыть окно" })).toBeDisabled();
+  });
+
+  it("after successful bulk apply focuses the visible operation report, not BODY", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    await expandBulkForm("Каталог");
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+    const report = await screen.findByRole("region", { name: "Итог групповой операции" });
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByTestId("selected-count")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(report));
+    expect(document.activeElement?.tagName).not.toBe("BODY");
+    expect(report).toHaveAttribute("data-bulk-apply-report", "true");
+  });
+
   it("locks metric filter chips while applying", async () => {
     api.applyPartnerLifecycle.mockImplementation(() => new Promise(() => {}));
     await open();
     fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
     await confirm();
     await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
-    expect(screen.getByRole("button", { name: "Демо 6" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Магазины/ })).toBeDisabled();
   });
 
   it("allows starting a second group after retaining the first report", async () => {
@@ -136,21 +215,28 @@ describe("Independent mass-action safety", () => {
     await screen.findByText("Итог групповой операции");
     await waitFor(() => expect(screen.getByLabelText("Выбрать Partner 1")).not.toBeChecked());
     fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    // After a prior report, compact bar returns until an action expands the form.
+    await expandBulkForm("Каталог");
     expect(screen.getByLabelText("Причина группового изменения")).toBeInTheDocument();
   });
 
   it("offers page-wide selection in cards, not just table", async () => {
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Карточки", exact: true }));
-    expect(screen.getByRole("checkbox", { name: "Выбрать на странице" })).toBeInTheDocument();
+    // Compact cards omit a duplicate page-select checkbox; toolbar keeps the action.
+    const selectPage = screen.getByRole("button", { name: "Выбрать страницу" });
+    expect(selectPage).toBeInTheDocument();
+    fireEvent.click(selectPage);
+    expect(screen.getByLabelText("Выбрать Partner 1")).toBeChecked();
+    expect(screen.getByLabelText("Выбрать Partner 2")).toBeChecked();
   });
 
   it("cannot select old rows while a new filtered list is loading", async () => {
     await open();
     const before = api.fetchPartnerRegistry.mock.calls.length;
     api.fetchPartnerRegistry.mockImplementation(() => new Promise(() => {}));
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
-    await waitFor(() => expect(screen.getByLabelText("Регистрация")).toHaveValue("demo"));
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "demo" } });
+    await waitFor(() => expect(screen.getByLabelText("Статус регистрации")).toHaveValue("demo"));
     await waitFor(() => expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(before));
     const old = screen.queryByLabelText("Выбрать Partner 1");
     if (old) expect(old).toBeDisabled();
@@ -166,16 +252,18 @@ describe("Independent mass-action safety", () => {
     await open();
     fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
     fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    await expandBulkForm("Каталог");
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
     fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
     const exclude = await screen.findByRole("button", { name: "Исключить проблемные и обновить preview" });
-    expect(screen.queryByRole("button", { name: "Подтвердить группу" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Подтвердить" })).not.toBeInTheDocument();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     fireEvent.click(exclude);
-    await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
-    fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+    const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await screen.findByText("Итог групповой операции");
     expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(1);
     expect(api.applyPartnerLifecycle.mock.calls[0][0]).toBe("p1");
@@ -189,7 +277,7 @@ describe("Independent mass-action safety", () => {
       expect(api.fetchPartnerRegistry.mock.calls.some(([p]) => p.get("cursor") === "p6")).toBe(true),
     );
     const before = api.fetchPartnerRegistry.mock.calls.length;
-    fireEvent.change(screen.getByLabelText("Регистрация"), { target: { value: "demo" } });
+    fireEvent.change(screen.getByLabelText("Статус регистрации"), { target: { value: "demo" } });
     await waitFor(() => expect(api.fetchPartnerRegistry.mock.calls.length).toBeGreaterThan(before));
     expect(api.fetchPartnerRegistry.mock.calls[before][0].get("cursor")).toBeNull();
   });

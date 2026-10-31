@@ -1,28 +1,20 @@
 "use client";
 
-import { Fragment } from "react";
-import { Button } from "@/components/ui/Button";
 import type { PartnerRegistryItem } from "@/lib/prof-admin-partners-api";
-import { AdminPartnersSingleManagementPanel } from "./AdminPartnersSingleManagementPanel";
 import styles from "./AdminPartners.module.css";
-import {
-  catalogStatusClass,
-  catalogStatusLabel,
-  filteredPublicLinks,
-  partnerTypeLabel,
-  selectedPartnerRef,
-} from "./partnerRegistryDisplay";
-import { PartnerCollaborationBlock } from "./PartnerCollaborationBlock";
+import { PartnerCollaborationCountLink } from "./PartnerCollaborationCountLink";
 import type { PageSelectionState } from "./adminPartnersSelection";
-import { AdminPartnersDenseRegistryList } from "./AdminPartnersDenseRegistryList";
 import type { PartnersEffectiveViewMode } from "./adminPartnersViewMode";
-
-type PendingPreview = {
-  action: string;
-  effects: string[];
-  warnings: string[];
-  confirmToken: string;
-};
+import {
+  catalogVisibilityToken,
+  cooperationVisibilityToken,
+  partnerIdentitySubtitle,
+  partnerInitials,
+  partnershipTotalLabel,
+  registrationPillLabel,
+  registrationPillTone,
+} from "./partnerRegistryPresentation";
+import { hasPartnershipCounts } from "./partnerCollaborationDisplay";
 
 type ListProps = {
   viewMode: PartnersEffectiveViewMode;
@@ -34,48 +26,177 @@ type ListProps = {
   onToggleRow: (row: PartnerRegistryItem) => void;
   selectionBlocked: boolean;
   singleSelected: PartnerRegistryItem | null;
-  onSelectSingle: (row: PartnerRegistryItem) => void;
-  onToggleExpand: (row: PartnerRegistryItem) => void;
-  onCloseSingle: () => void;
-  reason: string;
-  onReasonChange: (v: string) => void;
-  pendingPreview: PendingPreview | null;
-  onCancelPreview: () => void;
-  onRequestPreview: (action: string) => void;
-  onConfirmApply: () => void;
-  isApplyingSingle: boolean;
+  onOpenPartner: (row: PartnerRegistryItem, trigger: HTMLElement | null) => void;
   interactionsDisabled: boolean;
   headerSelectRef: React.RefObject<HTMLInputElement>;
+  /** Kept for layout effect indeterminate sync; page select lives in toolbar only. */
   cardsPageSelectRef: React.RefObject<HTMLInputElement>;
 };
 
-function RowLinksMenu({ row }: { row: PartnerRegistryItem }) {
-  const publicLinks = filteredPublicLinks(row);
+function EyeIcon({ on }: { on: boolean | null }) {
+  if (on === true) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="2" />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    );
+  }
   return (
-    <details className={styles.rowMenu}>
-      <summary>Профиль и ссылки</summary>
-      <div className={styles.rowMenuBody}>
-        <a href={`/admin/moderation/partners/${encodeURIComponent(row.id)}`} target="_blank" rel="noopener noreferrer">
-          Открыть профиль
-        </a>
-        {row.organizations?.map((org) => (
-          <a
-            key={org.id}
-            href={`/admin/moderation/organizations/${encodeURIComponent(org.id)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Профиль организации: {org.name}
-          </a>
-        ))}
-        {publicLinks.map((link) => (
-          <a key={link.path} href={`https://remcard.ru${link.path}`} target="_blank" rel="noopener noreferrer">
-            На remcard.ru: {link.label}
-          </a>
-        ))}
-        {publicLinks.length === 0 ? <span className={styles.mutedInline}>Публичных карточек нет</span> : null}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+      <path d="M4 4l16 16" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function VisibilityCell({
+  token,
+  ariaLabel,
+}: {
+  token: { label: string; visible: boolean | null };
+  ariaLabel: string;
+}) {
+  const cls =
+    token.visible === true
+      ? `${styles.visibility} ${styles.visibilityYes}`
+      : token.visible === false
+        ? `${styles.visibility} ${styles.visibilityNo}`
+        : `${styles.visibility} ${styles.visibilityUnknown}`;
+  return (
+    <span className={cls} aria-label={ariaLabel}>
+      <EyeIcon on={token.visible} />
+      <span>{token.label}</span>
+    </span>
+  );
+}
+
+function PartnerNameButton({
+  row,
+  onOpen,
+  disabled,
+}: {
+  row: PartnerRegistryItem;
+  onOpen: (trigger: HTMLElement) => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className={styles.partnerName}
+      disabled={disabled}
+      data-partner-open-trigger={row.id}
+      onClick={(e) => onOpen(e.currentTarget)}
+      aria-label={`Открыть карточку ${row.displayName ?? row.id}`}
+    >
+      <span className={styles.partnerAvatar} aria-hidden="true">
+        {partnerInitials(row.displayName, row.id)}
+      </span>
+      <span className={styles.partnerNameText}>
+        <strong>{row.displayName ?? row.id}</strong>
+        <small>{partnerIdentitySubtitle(row)}</small>
+      </span>
+    </button>
+  );
+}
+
+function RegistrationPill({ row }: { row: PartnerRegistryItem }) {
+  const tone = registrationPillTone(row);
+  return (
+    <span
+      className={`${styles.regPill} ${
+        tone === "good" ? styles.regPillGood : tone === "archived" ? styles.regPillArchived : ""
+      }`}
+    >
+      <span className={styles.regPillDot} aria-hidden="true" />
+      {registrationPillLabel(row)}
+    </span>
+  );
+}
+
+function MobilePartnerCard({
+  row,
+  checked,
+  interactionsDisabled,
+  onToggleRow,
+  onOpenPartner,
+}: {
+  row: PartnerRegistryItem;
+  checked: boolean;
+  interactionsDisabled: boolean;
+  onToggleRow: (row: PartnerRegistryItem) => void;
+  onOpenPartner: (row: PartnerRegistryItem, trigger: HTMLElement | null) => void;
+}) {
+  const catalog = catalogVisibilityToken(row);
+  const coop = cooperationVisibilityToken(row);
+  return (
+    <article className={styles.mobileCard} data-selected={checked || undefined}>
+      <div className={styles.mobileCardTop}>
+        <label className={styles.rowCheck}>
+          <input
+            type="checkbox"
+            className={styles.rowCheckInput}
+            aria-label={`Выбрать ${row.displayName ?? row.id}`}
+            checked={checked}
+            disabled={interactionsDisabled}
+            onChange={() => onToggleRow(row)}
+          />
+        </label>
+        <PartnerNameButton
+          row={row}
+          disabled={interactionsDisabled}
+          onOpen={(trigger) => onOpenPartner(row, trigger)}
+        />
+        <RegistrationPill row={row} />
       </div>
-    </details>
+      <div className={styles.mobileMeta}>
+        <span
+          className={`${styles.visibility} ${
+            catalog.visible === true
+              ? styles.visibilityYes
+              : catalog.visible === false
+                ? styles.visibilityNo
+                : styles.visibilityUnknown
+          }`}
+        >
+          <EyeIcon on={catalog.visible} />
+          Каталог: {catalog.visible === true ? "да" : catalog.visible === false ? "нет" : "н/д"}
+        </span>
+        <span
+          className={`${styles.visibility} ${
+            coop.visible === true
+              ? styles.visibilityYes
+              : coop.visible === false
+                ? styles.visibilityNo
+                : styles.visibilityUnknown
+          }`}
+        >
+          <EyeIcon on={coop.visible} />
+          Поиск: {coop.visible === true ? "да" : coop.visible === false ? "нет" : "н/д"}
+        </span>
+      </div>
+      <div className={styles.mobileCardBottom}>
+        <span>
+          {hasPartnershipCounts(row) ? (
+            <>
+              Партнёрств: <PartnerCollaborationCountLink row={row} countKey="total" />
+            </>
+          ) : (
+            partnershipTotalLabel(row)
+          )}
+        </span>
+        <span>Визит: нет данных</span>
+      </div>
+    </article>
   );
 }
 
@@ -88,187 +209,75 @@ export function AdminPartnersRegistryList(props: ListProps) {
     pageSelectState,
     onTogglePageSelect,
     onToggleRow,
-    singleSelected,
-    onSelectSingle,
-    onToggleExpand,
-    onCloseSingle,
-    reason,
-    onReasonChange,
-    pendingPreview,
-    onCancelPreview,
-    onRequestPreview,
-    onConfirmApply,
-    isApplyingSingle,
+    onOpenPartner,
     interactionsDisabled,
     headerSelectRef,
-    cardsPageSelectRef,
   } = props;
 
-  if (viewMode === "dense") {
+  if (viewMode === "dense" || viewMode === "cards") {
     return (
-      <AdminPartnersDenseRegistryList
-        items={items}
-        loading={loading}
-        selectedIds={selectedIds}
-        pageSelectState={pageSelectState}
-        onTogglePageSelect={onTogglePageSelect}
-        onToggleRow={onToggleRow}
-        singleSelected={singleSelected}
-        onToggleExpand={onToggleExpand}
-        onCloseSingle={onCloseSingle}
-        reason={reason}
-        onReasonChange={onReasonChange}
-        pendingPreview={pendingPreview}
-        onCancelPreview={onCancelPreview}
-        onRequestPreview={onRequestPreview}
-        onConfirmApply={onConfirmApply}
-        isApplyingSingle={isApplyingSingle}
-        interactionsDisabled={interactionsDisabled}
-        pageSelectRef={cardsPageSelectRef}
-      />
-    );
-  }
-
-  if (viewMode === "cards") {
-    return (
-      <div className={`${styles.cardGridWrap} ${styles.registryCardsSkin}`}>
-        <label className={styles.pageSelectBar}>
-          <input
-            ref={cardsPageSelectRef}
-            type="checkbox"
-            aria-label="Выбрать на странице"
-            checked={pageSelectState === "all"}
-            disabled={interactionsDisabled || items.length === 0}
-            onChange={onTogglePageSelect}
-          />
-          <span>Выбрать на странице</span>
-        </label>
-        <div className={styles.cardGrid} aria-label="Реестр партнёров" aria-busy={loading}>
-        {items.map((row) => {
-          const checked = selectedIds.has(row.id);
-          const expanded = singleSelected?.id === row.id;
-          return (
-            <article key={row.id} className={styles.partnerCard} data-selected={checked || undefined}>
-              <div className={`${styles.cardHead} ${styles.registryCardIdentity}`}>
-                <label className={styles.rowCheck}>
-                  <input
-                    type="checkbox"
-                    className={styles.rowCheckInput}
-                    aria-label={`Выбрать ${row.displayName ?? row.id}`}
-                    checked={checked}
-                    disabled={interactionsDisabled}
-                    onChange={() => onToggleRow(row)}
-                  />
-                </label>
-                <div className={styles.cardTitleBlock}>
-                  <h3>{row.displayName ?? row.id}</h3>
-                  <p className={styles.cardMeta}>
-                    {partnerTypeLabel(row)} · {row.city ?? "—"}
-                    {row.organizationName ? ` · ${row.organizationName}` : ""}
-                  </p>
-                </div>
-              </div>
-              <div className={`${styles.cardBadges} ${styles.registryCardStatus}`}>
-                <span className={`${styles.badge} ${row.registrationLabel === "ACTIVE" ? styles.visible : ""}`}>
-                  {row.registrationLabel === "ACTIVE" ? "Активный" : "Демо"}
-                </span>
-                <span className={`${styles.badge} ${catalogStatusClass(row, styles.visible, styles.inactive)}`}>
-                  {catalogStatusLabel(row)}
-                </span>
-              </div>
-              <section className={styles.cardCollaboration} aria-label="Сотрудничество">
-                <h4 className={styles.cardCollaborationTitle}>Сотрудничество</h4>
-                <PartnerCollaborationBlock row={row} variant="card" />
-              </section>
-              <RowLinksMenu row={row} />
-              <div className={styles.cardActions}>
-                <Button
-                  variant="secondary"
-                  aria-expanded={expanded}
-                  disabled={interactionsDisabled}
-                  onClick={() => onSelectSingle(row)}
-                >
-                  Действия
-                </Button>
-                <Button
-                  variant="secondary"
-                  className={styles.danger}
-                  disabled={interactionsDisabled}
-                  onClick={() => onSelectSingle(row)}
-                >
-                  Удалить
-                </Button>
-              </div>
-              {expanded ? (
-                <AdminPartnersSingleManagementPanel
-                  row={row}
-                  reason={reason}
-                  onReasonChange={onReasonChange}
-                  pendingPreview={pendingPreview}
-                  onCancelPreview={onCancelPreview}
-                  onRequestPreview={onRequestPreview}
-                  onConfirmApply={onConfirmApply}
-                  onClose={onCloseSingle}
-                  isApplying={isApplyingSingle}
-                  disabled={interactionsDisabled}
-                />
-              ) : null}
-            </article>
-          );
-        })}
+      <div className={styles.partnerCardsWrap} aria-label="Реестр партнёров" aria-busy={loading}>
+        {/* Page select stays in toolbar — avoid duplicate compact-card chrome. */}
+        <div className={styles.partnerCards}>
+          {items.map((row) => (
+            <MobilePartnerCard
+              key={row.id}
+              row={row}
+              checked={selectedIds.has(row.id)}
+              interactionsDisabled={interactionsDisabled}
+              onToggleRow={onToggleRow}
+              onOpenPartner={onOpenPartner}
+            />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <table
-      className={`${styles.table} ${styles.tableCompact} ${styles.registryTableSkin}`}
-      aria-label="Реестр партнёров"
-      aria-busy={loading}
-    >
-      <colgroup>
-        <col className={styles.colCheck} />
-        <col className={styles.colName} />
-        <col className={styles.colType} />
-        <col className={styles.colCity} />
-        <col className={styles.colReg} />
-        <col className={styles.colCatalog} />
-        <col className={styles.colCollaboration} />
-        <col className={styles.colAccess} />
-      </colgroup>
-      <thead className={styles.tableHeadSticky}>
-        <tr>
-          <th className={styles.checkCol}>
-            <label className={styles.headerCheckLabel}>
-              <input
-                ref={headerSelectRef}
-                type="checkbox"
-                className={styles.rowCheckInput}
-                aria-label="Выбрать на странице"
-                checked={pageSelectState === "all"}
-                disabled={interactionsDisabled || items.length === 0}
-                onChange={onTogglePageSelect}
-              />
-            </label>
-          </th>
-          <th>Имя</th>
-          <th>Тип</th>
-          <th>Город / организация</th>
-          <th>Регистрация</th>
-          <th>Каталог</th>
-          <th>Сотрудничество</th>
-          <th>Доступ</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map((row) => {
-          const publicLinks = filteredPublicLinks(row);
-          const expanded = singleSelected?.id === row.id;
-          return (
-            <Fragment key={row.id}>
-              <tr className={styles.compactRow}>
-                <td data-label="Выбор" className={styles.checkCol}>
+    <div className={styles.partnersTableWrap}>
+      <table className={styles.partnersTable} aria-label="Реестр партнёров" aria-busy={loading}>
+        <colgroup>
+          <col className={styles.colCheck} />
+          <col className={styles.colPartner} />
+          <col className={styles.colReg} />
+          <col className={styles.colCatalog} />
+          <col className={styles.colCoop} />
+          <col className={styles.colVisit} />
+          <col className={styles.colAction} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th className={`${styles.checkCell} ${styles.colCheck}`}>
+              <label className={styles.headerCheckLabel}>
+                <input
+                  ref={headerSelectRef}
+                  type="checkbox"
+                  className={styles.rowCheckInput}
+                  aria-label="Выбрать на странице"
+                  checked={pageSelectState === "all"}
+                  disabled={interactionsDisabled || items.length === 0}
+                  onChange={onTogglePageSelect}
+                />
+              </label>
+            </th>
+            <th className={styles.colPartner}>Партнёр</th>
+            <th className={styles.colReg}>Регистрация</th>
+            <th className={styles.colCatalog}>Каталог</th>
+            <th className={styles.colCoop}>Сотрудничество</th>
+            <th className={styles.colVisit}>Визит*</th>
+            <th className={`${styles.rowActionCol} ${styles.colAction}`}>
+              <span className={styles.srOnly}>Карточка</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((row) => {
+            const catalog = catalogVisibilityToken(row);
+            const coop = cooperationVisibilityToken(row);
+            return (
+              <tr key={row.id} data-testid={`partner-row-${row.id}`}>
+                <td className={`${styles.checkCell} ${styles.colCheck}`}>
                   <label className={styles.rowCheck}>
                     <input
                       type="checkbox"
@@ -280,95 +289,59 @@ export function AdminPartnersRegistryList(props: ListProps) {
                     />
                   </label>
                 </td>
-                <td data-label="Имя" className={styles.registryRowIdentity}>
-                  {row.displayName ?? row.id}
+                <td className={styles.colPartner}>
+                  <PartnerNameButton
+                    row={row}
+                    disabled={interactionsDisabled}
+                    onOpen={(trigger) => onOpenPartner(row, trigger)}
+                  />
                 </td>
-                <td data-label="Тип">{partnerTypeLabel(row)}</td>
-                <td data-label="Город / организация">
-                  {row.city ?? "—"}
-                  {row.organizationName ? (
-                    <>
-                      <br />
-                      {row.organizationName}
-                    </>
-                  ) : null}
+                <td className={styles.colReg}>
+                  <RegistrationPill row={row} />
                 </td>
-                <td data-label="Регистрация" className={styles.registryRowStatus}>
-                  <span className={`${styles.badge} ${row.registrationLabel === "ACTIVE" ? styles.visible : ""}`}>
-                    {row.registrationLabel === "ACTIVE" ? "Активный" : "Демо"}
-                  </span>
+                <td className={styles.colCatalog}>
+                  <VisibilityCell
+                    token={catalog}
+                    ariaLabel={`Каталог: ${row.displayName ?? row.id}, ${catalog.label}`}
+                  />
                 </td>
-                <td data-label="Каталог" className={styles.registryRowStatus}>
-                  <span className={`${styles.badge} ${catalogStatusClass(row, styles.visible, styles.inactive)}`}>
-                    {catalogStatusLabel(row)}
-                  </span>
-                </td>
-                <td data-label="Сотрудничество" className={styles.collaborationCol}>
-                  <PartnerCollaborationBlock row={row} variant="table" />
-                </td>
-                <td data-label="Доступ" className={styles.accessCol}>
-                  <RowLinksMenu row={row} />
-                  <div className={styles.compactRowActions}>
-                    <Button
-                      variant="secondary"
-                      aria-expanded={expanded}
-                      disabled={interactionsDisabled}
-                      onClick={() => onSelectSingle(row)}
-                    >
-                      Действия
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      className={styles.danger}
-                      disabled={interactionsDisabled}
-                      onClick={() => onSelectSingle(row)}
-                    >
-                      Удалить
-                    </Button>
+                <td className={`${styles.collaborationCol} ${styles.colCoop}`}>
+                  <div className={styles.cooperationCell}>
+                    <VisibilityCell
+                      token={coop}
+                      ariaLabel={`Поиск сотрудничества: ${row.displayName ?? row.id}, ${coop.label}`}
+                    />
+                    <small>
+                      {hasPartnershipCounts(row) ? (
+                        <>
+                          Партнёрств:{" "}
+                          <PartnerCollaborationCountLink row={row} countKey="total" />
+                        </>
+                      ) : (
+                        partnershipTotalLabel(row)
+                      )}
+                    </small>
                   </div>
-                  {publicLinks.length > 1 ? (
-                    <details className={styles.moreLinks}>
-                      <summary>Ещё карточки: {publicLinks.length - 1}</summary>
-                      <div className={styles.publicLinks}>
-                        {publicLinks.slice(1).map((link) => (
-                          <a
-                            key={link.path}
-                            href={`https://remcard.ru${link.path}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            На remcard.ru: {link.label}
-                          </a>
-                        ))}
-                      </div>
-                    </details>
-                  ) : null}
+                </td>
+                <td className={styles.colVisit}>
+                  <span className={styles.mutedInline}>Нет данных</span>
+                </td>
+                <td className={`${styles.rowActionCol} ${styles.colAction}`}>
+                  <button
+                    type="button"
+                    className={styles.rowChevron}
+                    aria-label={`Открыть строку ${row.displayName ?? row.id}`}
+                    disabled={interactionsDisabled}
+                    onClick={(e) => onOpenPartner(row, e.currentTarget)}
+                  >
+                    <ChevronIcon />
+                  </button>
                 </td>
               </tr>
-              {expanded ? (
-                <tr className={styles.managementRow}>
-                  <td colSpan={8}>
-                    <AdminPartnersSingleManagementPanel
-                      row={row}
-                      reason={reason}
-                      onReasonChange={onReasonChange}
-                      pendingPreview={pendingPreview}
-                      onCancelPreview={onCancelPreview}
-                      onRequestPreview={onRequestPreview}
-                      onConfirmApply={onConfirmApply}
-                      onClose={onCloseSingle}
-                      isApplying={isApplyingSingle}
-                      disabled={interactionsDisabled}
-                    />
-                  </td>
-                </tr>
-              ) : null}
-            </Fragment>
-          );
-        })}
-      </tbody>
-    </table>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
-
-export { selectedPartnerRef };

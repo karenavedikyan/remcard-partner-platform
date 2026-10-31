@@ -45,7 +45,7 @@ describe("Independent admin registry acceptance round three", () => {
     seed();
     render(<AdminPartnersClient />);
     await screen.findByText("Synthetic partner");
-    fireEvent.click(screen.getByRole("button", { name: "Действия" }));
+    fireEvent.click(screen.getByRole("button", { name: /Открыть карточку/ }));
     fireEvent.change(screen.getByPlaceholderText("Причина"), {
       target: { value: "Synthetic archive reason" },
     });
