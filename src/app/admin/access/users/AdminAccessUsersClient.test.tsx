@@ -96,9 +96,47 @@ describe("AdminAccessUsersClient", () => {
   it("403 is not masked as empty table", async () => {
     fetchMock.mockRejectedValue(new RemcardApiError(403, "Forbidden", { error: "Forbidden" }));
     render(<AdminAccessUsersClient />);
-    expect(await screen.findByText(/Доступ только для владельца/)).toBeTruthy();
+    expect(await screen.findByText(/Доступ только для OWNER или ADMIN/)).toBeTruthy();
     expect(screen.queryByText(/Пока нет второго администратора/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Создать администратора" })).toBeNull();
+  });
+
+  it("ADMIN viewer can create and revoke another ADMIN; OWNER row has no revoke", async () => {
+    fetchMock.mockResolvedValue({
+      viewer: {
+        id: "admin-1",
+        publicId: "RC-ADM-1",
+        displayName: "Admin A",
+        staffRole: "ADMIN" as const,
+      },
+      items: ownerList.items,
+    });
+    createMock.mockResolvedValue({
+      item: {
+        id: "admin-2",
+        publicId: "RC-ADM-2",
+        displayName: "Peer",
+        staffRole: "ADMIN",
+        accessState: "active",
+        loginNormalized: "peer.admin",
+        credentialDisabledAt: null,
+        isBlocked: false,
+        createdAt: "2026-10-31T00:00:00.000Z",
+      },
+    });
+    render(<AdminAccessUsersClient />);
+    expect(await screen.findByTestId("access-users-viewer")).toBeTruthy();
+    expect(screen.getAllByText("Admin A").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Отключить доступ" })).toBeTruthy();
+    expect(screen.getByText(/Владелец: удаление и понижение недоступны/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Имя"), { target: { value: "Peer" } });
+    fireEvent.change(screen.getByLabelText("Логин"), { target: { value: "peer.admin" } });
+    fireEvent.change(screen.getByLabelText("Новый пароль"), {
+      target: { value: "abcdefghijkl" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Создать администратора" }));
+    expect(await screen.findByText(/Администратор «Peer» создан/)).toBeTruthy();
+    expect(createMock).toHaveBeenCalledTimes(1);
   });
 
   it("network error shows retry; empty state after reload", async () => {

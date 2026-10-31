@@ -5,9 +5,9 @@ import { AdminAccessUsersClient } from "./AdminAccessUsersClient";
 export const dynamic = "force-dynamic";
 
 /**
- * OWNER admin provisioning UI (A10/A10c). Shell requires staff login via
- * requireProfPlatformAdmin; create/list/revoke authorization is enforced by
- * backend OWNER guards on /api/pro/admin/access/users (403 for ADMIN).
+ * OWNER/ADMIN access provisioning UI (A10g). Shell requires staff login via
+ * requireProfPlatformAdmin; create/list/revoke authorized for OWNER and ADMIN.
+ * OWNER targets remain non-revocable on the server (not a hidden-button check).
  *
  * No production fixture/mock-success path — always uses the real API.
  * Entry: link from /admin/test-users — not added to frozen R1 primary nav.

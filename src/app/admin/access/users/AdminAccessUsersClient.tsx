@@ -66,7 +66,8 @@ export function AdminAccessUsersClient() {
   const cancelConfirmRef = useRef<HTMLButtonElement | null>(null);
   const cancelOpenerRef = useRef<HTMLElement | null>(null);
 
-  const isOwner = viewer?.staffRole === "OWNER";
+  /** OWNER and ADMIN share access work rights; OWNER rows stay non-revocable. */
+  const canManageAccess = viewer?.staffRole === "OWNER" || viewer?.staffRole === "ADMIN";
   const revokeBusyRef = useRef(false);
   revokeBusyRef.current = revokeBusy;
 
@@ -192,8 +193,8 @@ export function AdminAccessUsersClient() {
 
   const submitCreate = async () => {
     if (createBusy || createFlightRef.current) return;
-    if (!isOwner) {
-      setCreateError("Создание доступно только владельцу (OWNER). Самоназначение роли недоступно.");
+    if (!canManageAccess) {
+      setCreateError("Создание доступно OWNER или ADMIN. Самоназначение роли OWNER недоступно.");
       return;
     }
     setCreateBusy(true);
@@ -224,7 +225,7 @@ export function AdminAccessUsersClient() {
       if (kind === "conflict") {
         setCreateError("Такой логин уже занят. Второй аккаунт не создан.");
       } else if (kind === "forbidden") {
-        setCreateError("Недостаточно прав: требуется роль владельца (OWNER).");
+        setCreateError("Недостаточно прав: требуется OWNER или ADMIN.");
       } else if (kind === "validation") {
         setCreateError(
           caught instanceof RemcardApiError
@@ -249,8 +250,8 @@ export function AdminAccessUsersClient() {
 
   const confirmRevoke = async () => {
     if (!revokeTarget || revokeBusy) return;
-    if (!isOwner) {
-      setRevokeError("Отключение доступно только владельцу (OWNER).");
+    if (!canManageAccess) {
+      setRevokeError("Отключение доступно OWNER или ADMIN. Цель OWNER запрещена.");
       return;
     }
     setRevokeBusy(true);
@@ -319,7 +320,7 @@ export function AdminAccessUsersClient() {
       {loadState.kind === "forbidden" ? (
         <div className={styles.statusBox} data-tone="forbidden" role="alert">
           <p>
-            Доступ только для владельца (OWNER). Данные списка скрыты — это не пустая таблица.
+            Доступ только для OWNER или ADMIN. Данные списка скрыты — это не пустая таблица.
             Автоматическое повышение роли недоступно.
           </p>
         </div>
@@ -344,10 +345,10 @@ export function AdminAccessUsersClient() {
 
       {loadState.kind === "ready" || loadState.kind === "empty" ? (
         <>
-          {!isOwner ? (
+          {!canManageAccess ? (
             <div className={styles.statusBox} data-tone="forbidden" role="alert">
               Ваша фактическая роль — {labelStaffRole(viewer?.staffRole)}. Создание и отключение
-              администраторов доступны только владельцу. Самоназначение OWNER недоступно.
+              администраторов доступны OWNER или ADMIN. Самоназначение OWNER недоступно.
             </div>
           ) : null}
 
@@ -380,7 +381,7 @@ export function AdminAccessUsersClient() {
                   className={styles.input}
                   autoComplete="name"
                   value={form.displayName}
-                  disabled={createBusy || !isOwner}
+                  disabled={createBusy || !canManageAccess}
                   onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
                 />
               </label>
@@ -391,7 +392,7 @@ export function AdminAccessUsersClient() {
                   className={styles.input}
                   autoComplete="username"
                   value={form.login}
-                  disabled={createBusy || !isOwner}
+                  disabled={createBusy || !canManageAccess}
                   onChange={(e) => setForm((f) => ({ ...f, login: e.target.value }))}
                 />
               </label>
@@ -407,7 +408,7 @@ export function AdminAccessUsersClient() {
                   autoComplete="new-password"
                   aria-describedby="access-users-password-hint"
                   value={form.newPassword}
-                  disabled={createBusy || !isOwner}
+                  disabled={createBusy || !canManageAccess}
                   onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))}
                 />
               </div>
@@ -417,7 +418,7 @@ export function AdminAccessUsersClient() {
                   type="button"
                   disabled={
                     createBusy ||
-                    !isOwner ||
+                    !canManageAccess ||
                     form.displayName.trim().length < 2 ||
                     form.login.trim().length < 3 ||
                     form.newPassword.length < 12
@@ -437,8 +438,8 @@ export function AdminAccessUsersClient() {
             <div className={styles.panelHead}>
               <h2 className={styles.panelTitle}>Сотрудники с административным доступом</h2>
               <p className={styles.panelHint}>
-                Владелец без кнопок удаления. Отключение доступно только для ADMIN и сохраняет историю
-                действий.
+                Цель OWNER без кнопок удаления. OWNER или ADMIN могут отключить другого ADMIN;
+                история действий и actor id сохраняются.
               </p>
             </div>
             {loadState.kind === "empty" ? (
@@ -449,7 +450,7 @@ export function AdminAccessUsersClient() {
               <ul className={styles.list}>
                 {items.map((row) => {
                   const canRevoke =
-                    isOwner && row.staffRole === "ADMIN" && row.accessState === "active";
+                    canManageAccess && row.staffRole === "ADMIN" && row.accessState === "active";
                   return (
                     <li key={row.id} className={styles.listItem}>
                       <div className={styles.listName}>{row.displayName}</div>
