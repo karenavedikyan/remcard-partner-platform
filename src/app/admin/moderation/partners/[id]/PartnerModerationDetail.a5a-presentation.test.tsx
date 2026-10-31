@@ -125,7 +125,8 @@ describe("Partner moderation detail A5a presentation", () => {
     render(<PartnerModerationDetailClient partnerId="u1" />);
     fireEvent.click(await screen.findByRole("button", { name: "Карточка в списке" }));
     const dialog = await screen.findByRole("dialog", { name: "Карточка в списке каталога" });
-    fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+    // Native dialog listeners use addEventListener — dispatchEvent, not React fireEvent.
+    dialog.dispatchEvent(new Event("cancel", { bubbles: true, cancelable: true }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "Карточка в списке каталога" })).not.toBeInTheDocument(),
     );
