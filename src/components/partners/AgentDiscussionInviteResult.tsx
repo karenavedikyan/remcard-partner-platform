@@ -44,7 +44,30 @@ export function AgentDiscussionInviteResult({
   const shareText = buildDiscussionInviteShareText(snapshot);
 
   useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true });
+    const heading = headingRef.current;
+    heading?.focus({ preventScroll: true });
+    // Wizard create leaves the hub modal body mid-scroll; without a reset the
+    // ready hero (check + «Теперь передайте приглашение») stays clipped above
+    // the scrollport while share/history fill the visible area — R1 ready is a
+    // top-anchored success composition.
+    const root = heading?.closest(
+      '[data-testid="agent-discussion-invite-ready"]',
+    ) as HTMLElement | null;
+    if (!root?.isConnected) return;
+    let port: HTMLElement | null = root.parentElement;
+    while (port && port !== document.body) {
+      const style = window.getComputedStyle(port);
+      if (
+        /(auto|scroll|overlay)/.test(style.overflowY) &&
+        port.scrollHeight > port.clientHeight + 1
+      ) {
+        const rootOffset =
+          root.getBoundingClientRect().top - port.getBoundingClientRect().top + port.scrollTop;
+        port.scrollTop = Math.max(0, rootOffset - 8);
+        break;
+      }
+      port = port.parentElement;
+    }
   }, [snapshot.url]);
 
   return (

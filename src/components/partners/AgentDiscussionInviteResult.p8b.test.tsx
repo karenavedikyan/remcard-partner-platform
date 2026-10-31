@@ -56,6 +56,34 @@ describe("AgentDiscussionInviteResult P8b", () => {
     expect(onToggleShare).toHaveBeenCalled();
   });
 
+  it("resets hub modal scrollport so ready hero is not clipped after wizard create", () => {
+    const port = document.createElement("div");
+    Object.defineProperty(port, "scrollHeight", { configurable: true, get: () => 2000 });
+    Object.defineProperty(port, "clientHeight", { configurable: true, get: () => 400 });
+    port.style.overflowY = "auto";
+    port.scrollTop = 480;
+    document.body.appendChild(port);
+
+    const { unmount } = render(
+      <AgentDiscussionInviteResult
+        snapshot={snapshot}
+        shareOpen={false}
+        status=""
+        onToggleShare={vi.fn()}
+        onCopyUrl={vi.fn()}
+        onCopyMessageAndUrl={vi.fn()}
+        onCreateAnother={vi.fn()}
+        formatExpiry={() => "1 декабря 2026 г."}
+      />,
+      { container: port },
+    );
+
+    expect(port.scrollTop).toBeLessThan(480);
+    expect(screen.getByRole("heading", { name: /Теперь передайте приглашение/i })).toBeVisible();
+    unmount();
+    port.remove();
+  });
+
   it("shows share textarea with actual URL when open", async () => {
     const onCopyMessageAndUrl = vi.fn();
     render(
