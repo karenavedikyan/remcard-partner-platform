@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
+import { AgentDiscussionInviteWizard } from "@/components/partners/AgentDiscussionInviteWizard";
 import styles from "./PartnerInviteDialog.module.css";
 
 type DiscussionInviteRow = {
@@ -25,6 +26,8 @@ type DiscussionInviteRow = {
 type Props = {
   showSectionTitle?: boolean;
   onOpenDiscussion?: (inviteId: string) => void;
+  /** Agent-only presentation: 3-step discussion invite wizard. Default keeps flat form. */
+  presentationWizard?: boolean;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -34,7 +37,11 @@ const STATUS_LABEL: Record<string, string> = {
   EXPIRED: "Истекло",
 };
 
-export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDiscussion }: Props) {
+export function PartnerDiscussionInvitePanel({
+  showSectionTitle = true,
+  onOpenDiscussion,
+  presentationWizard = false,
+}: Props) {
   const router = useRouter();
   const openDiscussion =
     onOpenDiscussion ??
@@ -131,44 +138,66 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
   return (
     <div className={styles.linkPanel} data-testid="agent-r04-modal-discussion-link">
       <Panel
-        title={showSectionTitle ? "Приглашение к обсуждению" : undefined}
-        hint="Для знакомого партнёра. Ссылка не подключает программу и не согласует проценты — только приглашение обсудить сотрудничество."
+        title={
+          presentationWizard
+            ? undefined
+            : showSectionTitle
+              ? "Приглашение к обсуждению"
+              : undefined
+        }
+        hint={
+          presentationWizard
+            ? undefined
+            : "Для знакомого партнёра. Ссылка не подключает программу и не согласует проценты — только приглашение обсудить сотрудничество."
+        }
       >
-        <p className={styles.hint}>
-          Имя или название — подсказка для вас и получателя, а не поиск пользователя на платформе.
-          После входа получатель явно присоединится к обсуждению; условия согласуются отдельно, если
-          потребуется.
-        </p>
-        <TextField
-          label="Имя или название партнёра"
-          value={recipientLabel}
-          onChange={(e) => setRecipientLabel(e.target.value)}
-          required
-          maxLength={120}
-        />
-        <TextAreaField
-          label="Предмет сотрудничества"
-          value={cooperationSubject}
-          onChange={(e) => setCooperationSubject(e.target.value)}
-          required
-          maxLength={500}
-          hint="Кратко: о чём хотите договориться. Получатель увидит этот текст на странице ссылки."
-        />
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-        <div className={styles.actions}>
-          <Button
-            disabled={
-              creating || !recipientLabel.trim() || !cooperationSubject.trim()
-            }
-            onClick={() => void createLink()}
-          >
-            {creating ? "Создаём…" : "Создать ссылку"}
-          </Button>
-        </div>
+        {presentationWizard ? (
+          <AgentDiscussionInviteWizard
+            recipientLabel={recipientLabel}
+            cooperationSubject={cooperationSubject}
+            onRecipientLabelChange={setRecipientLabel}
+            onCooperationSubjectChange={setCooperationSubject}
+            creating={creating}
+            error={error}
+            onCreate={() => void createLink()}
+          />
+        ) : (
+          <>
+            <p className={styles.hint}>
+              Имя или название — подсказка для вас и получателя, а не поиск пользователя на
+              платформе. После входа получатель явно присоединится к обсуждению; условия
+              согласуются отдельно, если потребуется.
+            </p>
+            <TextField
+              label="Имя или название партнёра"
+              value={recipientLabel}
+              onChange={(e) => setRecipientLabel(e.target.value)}
+              required
+              maxLength={120}
+            />
+            <TextAreaField
+              label="Предмет сотрудничества"
+              value={cooperationSubject}
+              onChange={(e) => setCooperationSubject(e.target.value)}
+              required
+              maxLength={500}
+              hint="Кратко: о чём хотите договориться. Получатель увидит этот текст на странице ссылки."
+            />
+            {error ? (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            ) : null}
+            <div className={styles.actions}>
+              <Button
+                disabled={creating || !recipientLabel.trim() || !cooperationSubject.trim()}
+                onClick={() => void createLink()}
+              >
+                {creating ? "Создаём…" : "Создать ссылку"}
+              </Button>
+            </div>
+          </>
+        )}
         {createdUrl ? (
           <div className={styles.notice} data-testid="discussion-invite-created">
             <p>

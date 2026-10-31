@@ -1279,7 +1279,7 @@ export function PartnersHub({
                   Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
                   запроса.
                 </p>
-                <PartnerDiscussionInvitePanel showSectionTitle={false} />
+                <PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />
               </>
             ) : (
               <>
