@@ -10,6 +10,12 @@ type Props = {
   tab: HubModalTab;
   titleFind: string;
   titleLink: string;
+  /**
+   * Frozen R1 ready chrome: dialog title «Приглашение создано», no find/link tabs.
+   * Presentation only — does not change create/share/revoke routes.
+   */
+  readyMode?: boolean;
+  titleReady?: string;
   onTabChange: (tab: HubModalTab) => void;
   onClose: () => void;
   children: ReactNode;
@@ -20,11 +26,13 @@ export function AgentPartnerHubModal({
   tab,
   titleFind,
   titleLink,
+  readyMode = false,
+  titleReady = "Приглашение создано",
   onTabChange,
   onClose,
   children,
 }: Props) {
-  const modalTitle = tab === "link" ? titleLink : titleFind;
+  const modalTitle = readyMode ? titleReady : tab === "link" ? titleLink : titleFind;
   const sheetRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -83,6 +91,7 @@ export function AgentPartnerHubModal({
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid="agent-partner-hub-modal"
+        data-ready-mode={readyMode ? "true" : "false"}
         onClick={(e) => e.stopPropagation()}
       >
         <header className={styles.header}>
@@ -99,26 +108,33 @@ export function AgentPartnerHubModal({
             ×
           </button>
         </header>
-        <div className={styles.pathTabs} role="tablist" aria-label="Способ приглашения">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "find"}
-            data-active={tab === "find"}
-            onClick={() => onTabChange("find")}
+        {readyMode ? null : (
+          <div
+            className={styles.pathTabs}
+            role="tablist"
+            aria-label="Способ приглашения"
+            data-testid="agent-partner-hub-modal-tabs"
           >
-            Найти в RemCard
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "link"}
-            data-active={tab === "link"}
-            onClick={() => onTabChange("link")}
-          >
-            Пригласить по ссылке
-          </button>
-        </div>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "find"}
+              data-active={tab === "find"}
+              onClick={() => onTabChange("find")}
+            >
+              Найти в RemCard
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "link"}
+              data-active={tab === "link"}
+              onClick={() => onTabChange("link")}
+            >
+              Пригласить по ссылке
+            </button>
+          </div>
+        )}
         <div className={styles.body}>{children}</div>
       </div>
     </div>

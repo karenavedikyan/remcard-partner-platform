@@ -81,10 +81,9 @@
 }
 
 .actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-3, 0.75rem);
-  align-items: center;
+  align-items: stretch;
 }
 
 .actions :global(button) {
@@ -93,6 +92,32 @@
 
 .actions :global(button[data-testid="agent-discussion-invite-share"]) {
   width: 100%;
+}
+
+.actions :global(button[data-testid="agent-discussion-invite-open-card"]) {
+  width: 100%;
+}
+
+.shareActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 0.75rem);
+  align-items: center;
+}
+
+.shareActions :global(button) {
+  min-height: 44px;
+}
+
+.secondaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 0.75rem);
+  align-items: center;
+}
+
+.secondaryRow :global(button) {
+  min-height: 44px;
 }
 
 .sharePanel {

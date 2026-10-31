@@ -70,7 +70,14 @@ describe("PartnerDiscussionInvitePanel P8b ready / hand-off", () => {
   });
 
   it("replaces wizard with ready snapshot after one trimmed create POST", async () => {
-    render(<PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />);
+    const onReadyChange = vi.fn();
+    render(
+      <PartnerDiscussionInvitePanel
+        showSectionTitle={false}
+        presentationWizard
+        onReadyChange={onReadyChange}
+      />,
+    );
     await walkToCreate();
 
     await waitFor(() => {
@@ -81,9 +88,16 @@ describe("PartnerDiscussionInvitePanel P8b ready / hand-off", () => {
     expect(screen.getByTestId("agent-discussion-invite-ready-message")).toHaveTextContent(
       "Обсудим свет для клиентов",
     );
+    // R1 ready: history + raw URL are not in the success composition until share/open-card.
+    expect(screen.queryByTestId("discussion-invite-list")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("discussion-invite-created-url")).not.toBeInTheDocument();
+    expect(onReadyChange).toHaveBeenCalledWith(true);
+
+    await userEvent.click(screen.getByTestId("agent-discussion-invite-share"));
     expect(screen.getByTestId("discussion-invite-created-url")).toHaveValue(
       "https://app.test/invite/discussion/tok-1",
     );
+    await userEvent.click(screen.getByTestId("agent-discussion-invite-open-card"));
     expect(screen.getByTestId("discussion-invite-list")).toBeInTheDocument();
 
     const posts = remcardFetch.mock.calls.filter(
@@ -178,6 +192,7 @@ describe("PartnerDiscussionInvitePanel P8b ready / hand-off", () => {
     render(<PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />);
     await walkToCreate();
     await waitFor(() => expect(screen.getByTestId("agent-discussion-invite-ready")).toBeInTheDocument());
+    await userEvent.click(screen.getByTestId("agent-discussion-invite-share"));
     await userEvent.click(screen.getByTestId("agent-discussion-invite-copy-url"));
     await waitFor(() => {
       expect(screen.getByTestId("agent-discussion-invite-share-status")).toHaveTextContent(
@@ -215,10 +230,11 @@ describe("PartnerDiscussionInvitePanel P8b ready / hand-off", () => {
     expect(screen.queryByTestId("agent-discussion-invite-wizard")).not.toBeInTheDocument();
   });
 
-  it("still allows revoke from list after ready", async () => {
+  it("still allows revoke from list after ready via open-card", async () => {
     render(<PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />);
     await walkToCreate();
     await waitFor(() => expect(screen.getByTestId("agent-discussion-invite-ready")).toBeInTheDocument());
+    await userEvent.click(screen.getByTestId("agent-discussion-invite-open-card"));
     await userEvent.click(screen.getByRole("button", { name: /^Отозвать$/i }));
     await waitFor(() => {
       expect(

@@ -113,6 +113,9 @@ export type PartnersHubProps = {
   onCloseAgentModal?: () => void;
   /** Overview CTA / empty scenarios — open existing find/link modal. */
   onOpenPartnerHub?: (tab: "find" | "link") => void;
+  /** P12: discussion-invite ready → hub chrome «Приглашение создано» / no tabs. */
+  onDiscussionInviteReadyChange?: (ready: boolean) => void;
+  discussionInviteReady?: boolean;
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
   partnersAudience?: PartnersHubAudience;
@@ -143,6 +146,8 @@ export function PartnersHub({
   agentModalSurface,
   onCloseAgentModal,
   onOpenPartnerHub,
+  onDiscussionInviteReadyChange,
+  discussionInviteReady = false,
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
   partnersAudience,
@@ -1282,11 +1287,17 @@ export function PartnersHub({
           <>
             {isAgentCooperationInviter(inviterSide) ? (
               <>
-                <p className={styles.partnerMeta}>
-                  Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
-                  запроса.
-                </p>
-                <PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />
+                {discussionInviteReady ? null : (
+                  <p className={styles.partnerMeta}>
+                    Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
+                    запроса.
+                  </p>
+                )}
+                <PartnerDiscussionInvitePanel
+                  showSectionTitle={false}
+                  presentationWizard
+                  onReadyChange={onDiscussionInviteReadyChange}
+                />
               </>
             ) : (
               <>

@@ -26,6 +26,8 @@ export function AgentPartnersHub({
   const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<HubModalTab>("find");
+  /** P12: frozen R1 ready chrome — hide find/link tabs, title «Приглашение создано». */
+  const [discussionInviteReady, setDiscussionInviteReady] = useState(false);
 
   const copy = partnersSharedUiCopy(presentationAudience);
 
@@ -37,8 +39,17 @@ export function AgentPartnersHub({
     }
   }, [openHub]);
 
+  useEffect(() => {
+    if (!modalOpen) setDiscussionInviteReady(false);
+  }, [modalOpen]);
+
+  useEffect(() => {
+    setDiscussionInviteReady(false);
+  }, [modalTab]);
+
   const openModal = useCallback((tab: HubModalTab) => {
     setModalTab(tab);
+    setDiscussionInviteReady(false);
     setModalOpen(true);
   }, []);
 
@@ -67,6 +78,8 @@ export function AgentPartnersHub({
         tab={modalTab}
         titleFind={copy.hubModalTitleFind}
         titleLink={copy.hubModalTitleLink}
+        readyMode={discussionInviteReady}
+        titleReady="Приглашение создано"
         onTabChange={setModalTab}
         onClose={() => setModalOpen(false)}
       >
@@ -78,6 +91,8 @@ export function AgentPartnersHub({
           forcedTab={modalTab}
           {...hubSearchRoleProps}
           onCloseAgentModal={() => setModalOpen(false)}
+          onDiscussionInviteReadyChange={setDiscussionInviteReady}
+          discussionInviteReady={discussionInviteReady}
         />
       </AgentPartnerHubModal>
 

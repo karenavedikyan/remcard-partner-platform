@@ -91,4 +91,26 @@ describe("AgentPartnerHubModal P5a presentation", () => {
     await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("P12 readyMode uses «Приглашение создано» and hides find/link tabs", () => {
+    render(
+      <AgentPartnerHubModal
+        open
+        tab="link"
+        titleFind="Найти партнёра"
+        titleLink="Пригласить партнёра"
+        readyMode
+        titleReady="Приглашение создано"
+        onTabChange={vi.fn()}
+        onClose={vi.fn()}
+      >
+        <p>ready body</p>
+      </AgentPartnerHubModal>,
+    );
+
+    expect(screen.getByTestId("agent-partner-hub-modal")).toHaveAttribute("data-ready-mode", "true");
+    expect(screen.getByRole("heading", { name: "Приглашение создано" })).toBeInTheDocument();
+    expect(screen.queryByTestId("agent-partner-hub-modal-tabs")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Найти в RemCard" })).not.toBeInTheDocument();
+  });
 });

@@ -102,10 +102,13 @@ describe("PartnerDiscussionInvitePanel P7/P8a wiring", () => {
     await waitFor(() => {
       expect(screen.getByTestId("agent-discussion-invite-ready")).toBeInTheDocument();
       expect(screen.queryByTestId("agent-discussion-invite-wizard")).not.toBeInTheDocument();
-      expect(screen.getByTestId("discussion-invite-created-url")).toHaveValue(
-        "https://app.test/invite/discussion/tok-1",
-      );
     });
+    // Raw URL lives inside share panel (R1 ready composition — not in primary success flow).
+    expect(screen.queryByTestId("discussion-invite-created-url")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("agent-discussion-invite-share"));
+    expect(screen.getByTestId("discussion-invite-created-url")).toHaveValue(
+      "https://app.test/invite/discussion/tok-1",
+    );
   });
 
   it("does not POST on Next/Back navigation", async () => {

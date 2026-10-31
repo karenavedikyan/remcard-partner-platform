@@ -10,16 +10,24 @@ export type AgentDiscussionInviteCreatedSnapshot = {
   cooperationSubject: string;
   url: string;
   expiresAt: string;
+  /** Discussion-invite list id when resolved after create — used for «Открыть карточку». */
+  inviteId?: string;
 };
 
 export type AgentDiscussionInviteResultProps = {
   snapshot: AgentDiscussionInviteCreatedSnapshot;
   shareOpen: boolean;
   status: string;
+  /**
+   * Optional proposed-terms copy from a supported API field.
+   * Discussion-invite create has no proposedTerms — omit (matches frozen R1 when empty).
+   */
+  proposedTerms?: string | null;
   onToggleShare: () => void;
   onCopyUrl: () => void;
   onCopyMessageAndUrl: () => void;
   onCreateAnother: () => void;
+  onOpenInviteCard: () => void;
   formatExpiry: (iso: string) => string;
 };
 
@@ -33,23 +41,24 @@ export function AgentDiscussionInviteResult({
   snapshot,
   shareOpen,
   status,
+  proposedTerms = null,
   onToggleShare,
   onCopyUrl,
   onCopyMessageAndUrl,
   onCreateAnother,
+  onOpenInviteCard,
   formatExpiry,
 }: AgentDiscussionInviteResultProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shareTextId = useId();
   const shareText = buildDiscussionInviteShareText(snapshot);
+  const terms = proposedTerms?.trim() || "";
 
   useEffect(() => {
     const heading = headingRef.current;
     heading?.focus({ preventScroll: true });
     // Wizard create leaves the hub modal body mid-scroll; without a reset the
-    // ready hero (check + «Теперь передайте приглашение») stays clipped above
-    // the scrollport while share/history fill the visible area — R1 ready is a
-    // top-anchored success composition.
+    // ready hero stays clipped above the scrollport.
     const root = heading?.closest(
       '[data-testid="agent-discussion-invite-ready"]',
     ) as HTMLElement | null;
@@ -74,13 +83,13 @@ export function AgentDiscussionInviteResult({
     <section
       className={styles.result}
       data-testid="agent-discussion-invite-ready"
+      data-ready-composition="r1"
       aria-labelledby="agent-discussion-invite-ready-title"
     >
       <div className={styles.icon} aria-hidden="true">
         ✓
       </div>
       <div className={styles.head}>
-        <p className={styles.eyebrow}>Приглашение создано</p>
         <h2
           id="agent-discussion-invite-ready-title"
           ref={headingRef}
@@ -90,10 +99,9 @@ export function AgentDiscussionInviteResult({
           Теперь передайте приглашение
         </h2>
         <p className={styles.intro}>
-          Для «{snapshot.recipientLabel}» всё подготовлено. Нажмите «Поделиться», скопируйте текст со
-          ссылкой и передайте знакомому. Автоматической отправки нет.
+          Для «{snapshot.recipientLabel}» всё подготовлено. Нажмите «Поделиться», скопируйте текст и
+          передайте знакомому.
         </p>
-        <p className={styles.expiry}>Действует до {formatExpiry(snapshot.expiresAt)}</p>
       </div>
 
       <div className={styles.messageBlock}>
@@ -103,12 +111,12 @@ export function AgentDiscussionInviteResult({
         </p>
       </div>
 
-      <TextField
-        label="Ссылка"
-        value={snapshot.url}
-        readOnly
-        data-testid="discussion-invite-created-url"
-      />
+      {terms ? (
+        <div className={styles.messageBlock} data-testid="agent-discussion-invite-ready-terms">
+          <span className={styles.eyebrow}>Предлагаемые условия</span>
+          <p className={styles.message}>{terms}</p>
+        </div>
+      ) : null}
 
       <div className={styles.actions}>
         <Button
@@ -123,18 +131,10 @@ export function AgentDiscussionInviteResult({
         <Button
           type="button"
           variant="secondary"
-          onClick={onCopyUrl}
-          data-testid="agent-discussion-invite-copy-url"
+          onClick={onOpenInviteCard}
+          data-testid="agent-discussion-invite-open-card"
         >
-          Скопировать ссылку
-        </Button>
-        <Button
-          type="button"
-          variant="text"
-          onClick={onCreateAnother}
-          data-testid="agent-discussion-invite-create-another"
-        >
-          Создать ещё
+          Открыть карточку приглашения
         </Button>
       </div>
 
@@ -155,13 +155,30 @@ export function AgentDiscussionInviteResult({
             value={shareText}
             data-testid="agent-discussion-invite-share-text"
           />
-          <Button
-            type="button"
-            onClick={onCopyMessageAndUrl}
-            data-testid="agent-discussion-invite-copy-message"
-          >
-            Скопировать текст
-          </Button>
+          <TextField
+            label="Ссылка"
+            value={snapshot.url}
+            readOnly
+            data-testid="discussion-invite-created-url"
+          />
+          <p className={styles.expiry}>Действует до {formatExpiry(snapshot.expiresAt)}</p>
+          <div className={styles.shareActions}>
+            <Button
+              type="button"
+              onClick={onCopyMessageAndUrl}
+              data-testid="agent-discussion-invite-copy-message"
+            >
+              Скопировать текст
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCopyUrl}
+              data-testid="agent-discussion-invite-copy-url"
+            >
+              Скопировать ссылку
+            </Button>
+          </div>
           <p className={styles.shareNote}>
             Скопируйте текст со ссылкой и передайте партнёру удобным способом. Сообщение само не
             отправляется.
@@ -173,18 +190,28 @@ export function AgentDiscussionInviteResult({
         <summary>Что будет после передачи приглашения</summary>
         <ol className={styles.afterList}>
           <li>
-            <strong>Партнёр откроет ссылку</strong>
-            <p>После входа или регистрации он вернётся к вашему приглашению к обсуждению.</p>
+            <strong>Партнёр зарегистрируется</strong>
+            <p>После обычного входа или регистрации он вернётся к вашему приглашению.</p>
           </li>
           <li>
-            <strong>Вы согласуете условия отдельно</strong>
+            <strong>Вы согласуете условия</strong>
             <p>
-              Само приглашение не активирует сотрудничество и не устанавливает проценты — только
-              обсуждение.
+              Само приглашение не активирует сотрудничество и не устанавливает проценты.
             </p>
           </li>
         </ol>
       </details>
+
+      <div className={styles.secondaryRow}>
+        <Button
+          type="button"
+          variant="text"
+          onClick={onCreateAnother}
+          data-testid="agent-discussion-invite-create-another"
+        >
+          Создать ещё
+        </Button>
+      </div>
 
       {status ? (
         <p className={styles.status} role="status" data-testid="agent-discussion-invite-share-status">
