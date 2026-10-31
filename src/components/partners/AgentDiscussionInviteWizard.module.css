@@ -1,0 +1,301 @@
+/* P7/P8a: agent discussion-invite presentation wizard (Партнёр / Сообщение / Проверка) */
+
+.wizard {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  min-width: 0;
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3, 0.75rem);
+}
+
+.progressItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+  border-top: 2px solid var(--line);
+  padding-top: var(--space-3, 0.75rem);
+  min-width: 0;
+}
+
+.progressItem b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--offset, var(--surface-muted, #efeeeb));
+  flex-shrink: 0;
+}
+
+.progressCurrent {
+  border-color: var(--primary, var(--accent, #bb3035));
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.progressCurrent b {
+  background: var(--primary, var(--accent, #bb3035));
+  color: var(--on-primary, #fff);
+}
+
+.progressComplete {
+  color: var(--good, #30684c);
+}
+
+.stepHead {
+  display: grid;
+  gap: var(--space-2, 0.5rem);
+  min-width: 0;
+}
+
+.eyebrow {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.intro {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3, 0.75rem);
+  min-width: 0;
+}
+
+.formSimple {
+  gap: var(--space-5, 1.25rem);
+}
+
+.example {
+  border-left: 2px solid var(--line);
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  margin: var(--space-2, 0.5rem) 0 var(--space-3, 0.75rem);
+}
+
+.example p {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.templates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--offset, var(--surface-muted, #efeeeb));
+}
+
+@media (min-width: 480px) {
+  .templates {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.templateBtn {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  padding: 9px 5px;
+  min-height: 44px;
+  min-width: 44px;
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  cursor: pointer;
+}
+
+.templateBtn[aria-pressed="true"] {
+  background: var(--tint, #fae9e8);
+  border-color: var(--primary, var(--accent, #bb3035));
+  color: var(--primary, var(--accent, #bb3035));
+  font-weight: 700;
+}
+
+.templateBtn:focus-visible {
+  outline: 2px solid var(--primary, var(--accent, #bb3035));
+  outline-offset: 3px;
+}
+
+.templateBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-5, 1.25rem);
+  flex-wrap: wrap;
+}
+
+.footer :global(button) {
+  min-height: 44px;
+}
+
+.footerSpacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.review {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+  min-width: 0;
+}
+
+.reviewBlock {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding: 0 80px var(--space-5, 1.25rem) 0;
+  min-width: 0;
+}
+
+.reviewLabel {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+}
+
+.reviewValue {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.reviewMessage {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.editLink {
+  position: absolute;
+  right: 0;
+  top: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px;
+  text-align: right;
+}
+
+.editLink:focus-visible {
+  outline: 2px solid var(--primary, var(--accent, #bb3035));
+  outline-offset: 2px;
+}
+
+.editLink:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.safety {
+  margin: 0;
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.error {
+  margin: 0;
+  color: var(--primary, var(--accent, #bb3035));
+  font-size: var(--text-sm, 0.875rem);
+}
+
+@media (max-width: 680px) {
+  .progress {
+    gap: var(--space-2, 0.5rem);
+    /* Sticky progress only — never sticky footer (it painted over the message textarea). */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface, #fff);
+    padding-bottom: var(--space-2, 0.5rem);
+  }
+
+  .progressItem {
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .title {
+    font-size: 1.375rem;
+  }
+
+  .review {
+    gap: var(--space-4, 1rem);
+  }
+
+  /*
+   * Footer stays in normal flow on narrow viewports. Sticky bottom previously
+   * overlapped the step-2 textarea (Next/Back hit targets covering the field).
+   * Predictable modal-body scroll is preferred over geometric occlusion.
+   */
+  .footer {
+    position: static;
+    z-index: auto;
+    margin-top: var(--space-2, 0.5rem);
+    padding-bottom: max(var(--space-3, 0.75rem), env(safe-area-inset-bottom, 0px));
+  }
+
+  .footer :global(button[data-testid="agent-discussion-invite-next"]),
+  .footer :global(button[data-testid="agent-discussion-invite-create"]) {
+    width: 100%;
+    order: -1;
+  }
+
+  .reviewBlock {
+    padding-right: 0;
+    padding-bottom: var(--space-4, 1rem);
+  }
+
+  .editLink {
+    position: static;
+    justify-self: start;
+    margin-top: var(--space-1, 0.25rem);
+    text-align: left;
+    padding-left: 0;
+  }
+}

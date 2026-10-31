@@ -1,0 +1,266 @@
+/**
+ * Invitations-only presentation (P9a / P9a-fix).
+ * Scoped to AgentPartnerCollection presentationVariant="invitations".
+ * Does not alter default/active collection styles.
+ */
+
+.root {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/**
+ * All real interactive controls in invitations surfaces must meet 44×44.
+ * Width alone does not compensate for short height (name buttons included).
+ */
+.root :global([data-testid="partner-row-name-button"]),
+.root :global([data-testid="partner-row-inline-workflow"]) :global(button),
+.root :global([data-testid="partner-row-inline-workflow"]) :global(a),
+.root :global(button[data-testid^="partner-action-"]) {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.root :global([data-testid="partner-row-name-button"]) {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  max-width: 100%;
+  /* Grow hit box without painting over adjacent actions */
+  padding-block: 0.55rem;
+  padding-inline: 0.15rem;
+  margin-inline: -0.15rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.root :global([data-testid="partner-row-status"]) {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-4);
+  /* Cards surface only — never pair with list mobile/desktop in the same mode */
+  min-width: 0;
+}
+
+.partnerCard {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* Keep card name hit ≥44×44 without covering footer actions */
+.partnerCard :global([data-testid="partner-row-name-button"]) {
+  max-width: 100%;
+}
+
+.partnerCardSelected {
+  border-color: var(--accent, var(--primary));
+  background: var(--soft, color-mix(in srgb, var(--accent, var(--primary)) 10%, var(--surface)));
+}
+
+.cardSelectRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-base, 1rem);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.cardMeta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--text-sm);
+}
+
+.dataTable th,
+.dataTable td {
+  padding: 0.75rem 0.85rem;
+  vertical-align: top;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.dataTable th {
+  font-weight: 650;
+  color: var(--muted);
+  background: var(--surface-muted, var(--offset));
+}
+
+.titleCell {
+  min-width: 0;
+}
+
+.detailCell {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+}
+
+.statusCell {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.actionCell {
+  text-align: right;
+  white-space: normal;
+  vertical-align: middle;
+}
+
+.workflowCell {
+  padding: 0 0.85rem 0.75rem !important;
+  background: color-mix(in srgb, var(--accent, var(--primary)) 4%, var(--surface));
+}
+
+.caption {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.inlineWorkflow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+}
+
+.waiting {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.mobileRecord {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+/**
+ * Do NOT set display here. Unconditional display:grid previously overrode
+ * AgentPartnerCollection .mobileOnly { display:none } at desktop ≥681px
+ * (invite CSS loads after collection CSS → both surfaces visible).
+ * Gap only; display:grid applies under max-width:680px below.
+ */
+.mobileStack {
+  gap: var(--space-3);
+}
+
+.mobileTitle {
+  font-size: var(--text-base, 1rem);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.flowHint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.45;
+  max-width: 72ch;
+}
+
+/* Desktop: only desktop/cards surfaces — belt over .mobileOnly */
+@media (min-width: 681px) {
+  .root :global([data-partner-surface="mobile"]) {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .partnerCard,
+  .mobileRecord {
+    padding: var(--space-4);
+  }
+
+  .mobileStack {
+    display: grid;
+  }
+
+  /* Mobile: only mobile surface — belt over .desktopOnly */
+  .root :global([data-partner-surface="desktop"]) {
+    display: none;
+  }
+
+  .root :global([data-testid="partner-row-inline-workflow"]) :global(button) {
+    flex: 1 1 auto;
+  }
+}

@@ -26,12 +26,15 @@ import {
 } from "@/components/partners/partner-cooperation-c1";
 import r03 from "@/components/agent-r03/agent-r03.module.css";
 import styles from "./AgentPartnerCollection.module.css";
+import inviteStyles from "./AgentInvitationCollection.module.css";
 
 type TermRequestState = {
   state: "idle" | "loading" | "loaded" | "error";
   requests: import("@/lib/types").TermChangeRequest[];
   error: string;
 };
+
+export type AgentPartnerCollectionPresentation = "default" | "invitations";
 
 type Props = {
   partnerships: Partnership[];
@@ -62,6 +65,13 @@ type Props = {
   totalCount: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  /**
+   * Additive presentation only. Default keeps active/overview/non-agent look.
+   * `invitations` applies scoped invitation CSS — no filter/action/state changes.
+   */
+  presentationVariant?: AgentPartnerCollectionPresentation;
+  /** Presentation hint for invitations surfaces (incoming/outgoing). Does not filter. */
+  invitationFlowHint?: "incoming" | "outgoing" | null;
 };
 
 function PartnerRowNameButton({
@@ -200,7 +210,11 @@ export function AgentPartnerCollection(props: Props) {
     totalCount,
     onPageChange,
     onPageSizeChange,
+    presentationVariant = "default",
+    invitationFlowHint = null,
   } = props;
+
+  const isInvitations = presentationVariant === "invitations";
 
   const [detailPartnershipId, setDetailPartnershipId] = useState<string | null>(null);
   const detailNameButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -313,12 +327,33 @@ export function AgentPartnerCollection(props: Props) {
     />
   );
 
+  const cardGridClass = isInvitations ? inviteStyles.cardGrid : styles.cardGrid;
+  const partnerCardClass = (selected: boolean) =>
+    isInvitations
+      ? `${inviteStyles.partnerCard}${selected ? ` ${inviteStyles.partnerCardSelected}` : ""}`
+      : `${styles.partnerCard}${selected ? ` ${styles.partnerCardSelected}` : ""}`;
+  const cardSelectClass = isInvitations ? inviteStyles.cardSelectRow : styles.cardSelectRow;
+  const cardBodyClass = isInvitations ? inviteStyles.cardBody : styles.cardBody;
+  const cardTitleClass = isInvitations ? inviteStyles.cardTitle : styles.cardTitle;
+  const cardMetaClass = isInvitations ? inviteStyles.cardMeta : styles.cardMeta;
+  const cardFooterClass = isInvitations ? inviteStyles.cardFooter : styles.cardFooter;
+  const tableWrapClass = isInvitations
+    ? `${inviteStyles.tableWrap} ${styles.desktopOnly}`
+    : `${styles.tableWrap} ${styles.desktopOnly}`;
+  const dataTableClass = isInvitations ? inviteStyles.dataTable : styles.dataTable;
+  const titleCellClass = isInvitations ? inviteStyles.titleCell : styles.titleCell;
+  const detailCellClass = isInvitations ? inviteStyles.detailCell : styles.detailCell;
+  const statusCellClass = isInvitations ? inviteStyles.statusCell : styles.statusCell;
+  const actionCellClass = isInvitations ? inviteStyles.actionCell : styles.actionCell;
+  const captionClass = isInvitations ? inviteStyles.caption : styles.caption;
+  const workflowCellClass = isInvitations ? inviteStyles.workflowCell : styles.workflowCell;
+
   const listBody =
     viewMode === "cards" ? (
       <>
         {selectPageRow}
         <div
-          className={styles.cardGrid}
+          className={cardGridClass}
           data-testid="agent-r04-partners-cards"
           data-partner-surface="cards"
         >
@@ -331,10 +366,11 @@ export function AgentPartnerCollection(props: Props) {
             return (
               <article
                 key={partnership.id}
-                className={`${styles.partnerCard}${isSelected ? ` ${styles.partnerCardSelected}` : ""}`}
+                className={partnerCardClass(isSelected)}
                 data-selected={isSelected ? "true" : "false"}
+                data-testid={isInvitations ? "agent-invitation-card" : undefined}
               >
-                <div className={styles.cardSelectRow}>
+                <div className={cardSelectClass}>
                   <input
                     type="checkbox"
                     checked={isSelected}
@@ -343,22 +379,22 @@ export function AgentPartnerCollection(props: Props) {
                   />
                   <PartnerCollectionStatusBadge status={partnership.status} />
                 </div>
-                <div className={styles.cardBody}>
+                <div className={cardBodyClass}>
                   <PartnerRowNameButton
                     partnership={partnership}
                     meId={meId}
                     onOpenDetails={(el) => openDetails(partnership.id, el)}
-                    className={styles.cardTitle}
+                    className={cardTitleClass}
                   />
                   {officialLine ? (
-                    <p className={styles.cardMeta} data-testid="partner-row-official-line">
+                    <p className={cardMetaClass} data-testid="partner-row-official-line">
                       Официально: {officialLine}
                     </p>
                   ) : null}
-                  <p className={styles.cardMeta} data-testid="partner-row-type-caption">
+                  <p className={cardMetaClass} data-testid="partner-row-type-caption">
                     {typeCaption}
                   </p>
-                  <p className={styles.cardMeta} data-testid="partner-row-detail">
+                  <p className={cardMetaClass} data-testid="partner-row-detail">
                     {detail}
                   </p>
                   <PartnerRowInlineWorkflow
@@ -370,7 +406,7 @@ export function AgentPartnerCollection(props: Props) {
                     termExpanded={expandedTermPartnershipId === partnership.id}
                   />
                 </div>
-                <div className={styles.cardFooter}>
+                <div className={cardFooterClass}>
                   <AgentPartnerWorkspaceActions
                     partnership={partnership}
                     meId={meId}
@@ -388,7 +424,7 @@ export function AgentPartnerCollection(props: Props) {
     ) : (
       <div data-testid="agent-r04-partners-list">
         <div
-          className={`${r03.collectionPanel} ${styles.mobileOnly}`}
+          className={`${r03.collectionPanel} ${styles.mobileOnly}${isInvitations ? ` ${inviteStyles.mobileStack}` : ""}`}
           data-partner-surface="mobile"
         >
           {partnerships.map((partnership) => {
@@ -398,7 +434,11 @@ export function AgentPartnerCollection(props: Props) {
             const typeCaption = partnerTypeLabel(partner);
             const detail = partnerCollectionListDetail(partnership, meId);
             return (
-              <article key={partnership.id} className={r03.mobileRecord} data-testid="agent-partner-mobile-row">
+              <article
+                key={partnership.id}
+                className={isInvitations ? inviteStyles.mobileRecord : r03.mobileRecord}
+                data-testid="agent-partner-mobile-row"
+              >
                 <div className={r03.mobileRecordTop}>
                   <input
                     type="checkbox"
@@ -411,7 +451,9 @@ export function AgentPartnerCollection(props: Props) {
                       partnership={partnership}
                       meId={meId}
                       onOpenDetails={(el) => openDetails(partnership.id, el)}
-                      className={r03.mobileRecordTitle}
+                      className={
+                        isInvitations ? inviteStyles.mobileTitle : r03.mobileRecordTitle
+                      }
                     />
                     {officialLine ? (
                       <p className={r03.meta} data-testid="partner-row-official-line">
@@ -450,11 +492,8 @@ export function AgentPartnerCollection(props: Props) {
           })}
         </div>
         {selectPageRow}
-        <div
-          className={`${styles.tableWrap} ${styles.desktopOnly}`}
-          data-partner-surface="desktop"
-        >
-          <table className={styles.dataTable} data-testid="agent-r04-partners-table">
+        <div className={tableWrapClass} data-partner-surface="desktop">
+          <table className={dataTableClass} data-testid="agent-r04-partners-table">
             <colgroup>
               <col className={styles.colSelect} />
               <col className={styles.colName} />
@@ -486,7 +525,10 @@ export function AgentPartnerCollection(props: Props) {
                 const detail = partnerCollectionListDetail(partnership, meId);
                 return (
                   <Fragment key={partnership.id}>
-                    <tr data-testid="agent-r04-partners-table-row">
+                    <tr
+                      data-testid="agent-r04-partners-table-row"
+                      data-invitation-row={isInvitations ? "true" : undefined}
+                    >
                       <td className={styles.selectCell}>
                         <input
                           type="checkbox"
@@ -495,28 +537,28 @@ export function AgentPartnerCollection(props: Props) {
                           aria-label={`Выбрать ${partnerRowTitle(partnership, meId)}`}
                         />
                       </td>
-                      <td className={styles.titleCell}>
+                      <td className={titleCellClass}>
                         <PartnerRowNameButton
                           partnership={partnership}
                           meId={meId}
                           onOpenDetails={(el) => openDetails(partnership.id, el)}
                         />
                         {officialLine ? (
-                          <small className={styles.caption} data-testid="partner-row-official-line">
+                          <small className={captionClass} data-testid="partner-row-official-line">
                             Официально: {officialLine}
                           </small>
                         ) : null}
-                        <small className={styles.caption} data-testid="partner-row-type-caption">
+                        <small className={captionClass} data-testid="partner-row-type-caption">
                           {typeCaption}
                         </small>
                       </td>
-                      <td className={styles.detailCell} data-testid="partner-row-detail">
+                      <td className={detailCellClass} data-testid="partner-row-detail">
                         {detail}
                       </td>
-                      <td className={styles.statusCell}>
+                      <td className={statusCellClass}>
                         <PartnerCollectionStatusBadge status={partnership.status} />
                       </td>
-                      <td className={styles.actionCell}>
+                      <td className={actionCellClass}>
                         <AgentPartnerWorkspaceActions
                           partnership={partnership}
                           meId={meId}
@@ -528,7 +570,7 @@ export function AgentPartnerCollection(props: Props) {
                     </tr>
                     {rowShowsInlineWorkflow(partnership, meId) ? (
                       <tr className={styles.workflowRow}>
-                        <td colSpan={5} className={styles.workflowCell}>
+                        <td colSpan={5} className={workflowCellClass}>
                           <PartnerRowInlineWorkflow
                             partnership={partnership}
                             meId={meId}
@@ -552,9 +594,14 @@ export function AgentPartnerCollection(props: Props) {
 
   // Single composition: list/cards body + one detail dialog. Term-change editor is owned by PartnersHub.
   return (
-    <>
+    <div
+      className={isInvitations ? inviteStyles.root : undefined}
+      data-testid={isInvitations ? "agent-invitation-collection" : undefined}
+      data-presentation={presentationVariant}
+      data-invitation-flow={isInvitations ? invitationFlowHint ?? undefined : undefined}
+    >
       {listBody}
       {detailDialog}
-    </>
+    </div>
   );
 }

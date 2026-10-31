@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
+import { AgentDiscussionInviteWizard } from "@/components/partners/AgentDiscussionInviteWizard";
+import {
+  AgentDiscussionInviteResult,
+  type AgentDiscussionInviteCreatedSnapshot,
+  buildDiscussionInviteShareText,
+} from "@/components/partners/AgentDiscussionInviteResult";
 import styles from "./PartnerInviteDialog.module.css";
 
 type DiscussionInviteRow = {
@@ -25,6 +31,8 @@ type DiscussionInviteRow = {
 type Props = {
   showSectionTitle?: boolean;
   onOpenDiscussion?: (inviteId: string) => void;
+  /** Agent-only presentation: 3-step discussion invite wizard. Default keeps flat form. */
+  presentationWizard?: boolean;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -34,7 +42,11 @@ const STATUS_LABEL: Record<string, string> = {
   EXPIRED: "Истекло",
 };
 
-export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDiscussion }: Props) {
+export function PartnerDiscussionInvitePanel({
+  showSectionTitle = true,
+  onOpenDiscussion,
+  presentationWizard = false,
+}: Props) {
   const router = useRouter();
   const openDiscussion =
     onOpenDiscussion ??
@@ -48,6 +60,10 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
   const [createdUrl, setCreatedUrl] = useState("");
   const [createdExpires, setCreatedExpires] = useState("");
   const [shareHint, setShareHint] = useState("");
+  const [createdSnapshot, setCreatedSnapshot] = useState<AgentDiscussionInviteCreatedSnapshot | null>(
+    null,
+  );
+  const [shareOpen, setShareOpen] = useState(false);
   const [invites, setInvites] = useState<DiscussionInviteRow[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -74,6 +90,8 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
     setError("");
     setShareHint("");
     setCreating(true);
+    const trimmedRecipient = recipientLabel.trim();
+    const trimmedSubject = cooperationSubject.trim();
     try {
       const result = await remcardFetch<{
         token: string;
@@ -82,19 +100,31 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
       }>("/api/partnership/discussion-invite", {
         method: "POST",
         body: {
-          recipientLabel: recipientLabel.trim(),
-          cooperationSubject: cooperationSubject.trim(),
+          recipientLabel: trimmedRecipient,
+          cooperationSubject: trimmedSubject,
         },
       });
-      setCreatedUrl(`${getAppUrl()}${result.previewPath}`);
+      const url = `${getAppUrl()}${result.previewPath}`;
+      setCreatedUrl(url);
       setCreatedExpires(result.expiresAt);
+      if (presentationWizard) {
+        // Snapshot the successful request payload — not a later editable draft.
+        setCreatedSnapshot({
+          recipientLabel: trimmedRecipient,
+          cooperationSubject: trimmedSubject,
+          url,
+          expiresAt: result.expiresAt,
+        });
+        setShareOpen(false);
+      }
       await loadInvites();
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать ссылку");
+      // Keep review/wizard; never show fake ready on error.
     } finally {
       setCreating(false);
     }
-  }, [cooperationSubject, loadInvites, recipientLabel]);
+  }, [cooperationSubject, loadInvites, presentationWizard, recipientLabel]);
 
   async function copyUrl(url: string) {
     try {
@@ -103,6 +133,24 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
     } catch {
       setShareHint("Скопируйте ссылку вручную из поля ниже");
     }
+  }
+
+  async function copyMessageAndUrl(snapshot: AgentDiscussionInviteCreatedSnapshot) {
+    try {
+      await navigator.clipboard.writeText(buildDiscussionInviteShareText(snapshot));
+      setShareHint("Текст и ссылка скопированы");
+    } catch {
+      setShareHint("Скопируйте текст вручную из поля ниже");
+    }
+  }
+
+  function resetReadyForAnother() {
+    setCreatedSnapshot(null);
+    setShareOpen(false);
+    setShareHint("");
+    setCreatedUrl("");
+    setCreatedExpires("");
+    setError("");
   }
 
   async function revokeInvite(id: string) {
@@ -128,48 +176,83 @@ export function PartnerDiscussionInvitePanel({ showSectionTitle = true, onOpenDi
     }
   }
 
+  const showWizardReady = presentationWizard && createdSnapshot;
+
   return (
     <div className={styles.linkPanel} data-testid="agent-r04-modal-discussion-link">
       <Panel
-        title={showSectionTitle ? "Приглашение к обсуждению" : undefined}
-        hint="Для знакомого партнёра. Ссылка не подключает программу и не согласует проценты — только приглашение обсудить сотрудничество."
+        title={
+          presentationWizard
+            ? undefined
+            : showSectionTitle
+              ? "Приглашение к обсуждению"
+              : undefined
+        }
+        hint={
+          presentationWizard
+            ? undefined
+            : "Для знакомого партнёра. Ссылка не подключает программу и не согласует проценты — только приглашение обсудить сотрудничество."
+        }
       >
-        <p className={styles.hint}>
-          Имя или название — подсказка для вас и получателя, а не поиск пользователя на платформе.
-          После входа получатель явно присоединится к обсуждению; условия согласуются отдельно, если
-          потребуется.
-        </p>
-        <TextField
-          label="Имя или название партнёра"
-          value={recipientLabel}
-          onChange={(e) => setRecipientLabel(e.target.value)}
-          required
-          maxLength={120}
-        />
-        <TextAreaField
-          label="Предмет сотрудничества"
-          value={cooperationSubject}
-          onChange={(e) => setCooperationSubject(e.target.value)}
-          required
-          maxLength={500}
-          hint="Кратко: о чём хотите договориться. Получатель увидит этот текст на странице ссылки."
-        />
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-        <div className={styles.actions}>
-          <Button
-            disabled={
-              creating || !recipientLabel.trim() || !cooperationSubject.trim()
-            }
-            onClick={() => void createLink()}
-          >
-            {creating ? "Создаём…" : "Создать ссылку"}
-          </Button>
-        </div>
-        {createdUrl ? (
+        {showWizardReady ? (
+          <AgentDiscussionInviteResult
+            snapshot={createdSnapshot}
+            shareOpen={shareOpen}
+            status={shareHint}
+            onToggleShare={() => setShareOpen((open) => !open)}
+            onCopyUrl={() => void copyUrl(createdSnapshot.url)}
+            onCopyMessageAndUrl={() => void copyMessageAndUrl(createdSnapshot)}
+            onCreateAnother={resetReadyForAnother}
+            formatExpiry={formatExpiry}
+          />
+        ) : presentationWizard ? (
+          <AgentDiscussionInviteWizard
+            recipientLabel={recipientLabel}
+            cooperationSubject={cooperationSubject}
+            onRecipientLabelChange={setRecipientLabel}
+            onCooperationSubjectChange={setCooperationSubject}
+            creating={creating}
+            error={error}
+            onCreate={() => void createLink()}
+          />
+        ) : (
+          <>
+            <p className={styles.hint}>
+              Имя или название — подсказка для вас и получателя, а не поиск пользователя на
+              платформе. После входа получатель явно присоединится к обсуждению; условия
+              согласуются отдельно, если потребуется.
+            </p>
+            <TextField
+              label="Имя или название партнёра"
+              value={recipientLabel}
+              onChange={(e) => setRecipientLabel(e.target.value)}
+              required
+              maxLength={120}
+            />
+            <TextAreaField
+              label="Предмет сотрудничества"
+              value={cooperationSubject}
+              onChange={(e) => setCooperationSubject(e.target.value)}
+              required
+              maxLength={500}
+              hint="Кратко: о чём хотите договориться. Получатель увидит этот текст на странице ссылки."
+            />
+            {error ? (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            ) : null}
+            <div className={styles.actions}>
+              <Button
+                disabled={creating || !recipientLabel.trim() || !cooperationSubject.trim()}
+                onClick={() => void createLink()}
+              >
+                {creating ? "Создаём…" : "Создать ссылку"}
+              </Button>
+            </div>
+          </>
+        )}
+        {!presentationWizard && createdUrl ? (
           <div className={styles.notice} data-testid="discussion-invite-created">
             <p>
               <strong>Ссылка создана</strong>

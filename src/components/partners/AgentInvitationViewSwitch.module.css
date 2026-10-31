@@ -1,0 +1,44 @@
+/**
+ * Invitations-only list/cards switch (P9b).
+ * Visual system aligned with collection-view / AgentR04 view toggle.
+ */
+
+.root {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  margin: 0 0 var(--space-3);
+  min-width: 0;
+}
+
+.button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.button[data-active="true"] {
+  background: var(--offset, var(--surface-muted, #f3f4f6));
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
+}
+
+.button:hover {
+  color: var(--ink);
+}

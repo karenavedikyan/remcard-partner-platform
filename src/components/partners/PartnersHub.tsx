@@ -40,6 +40,7 @@ import {
   type BulkOutcome,
 } from "@/components/partners/AgentPartnerBulkBar";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import { partnersSharedUiCopy } from "@/lib/partners-shared-ui-copy";
 import { PartnerDiscussionInvitePanel } from "@/components/partners/PartnerDiscussionInvitePanel";
 import {
   discussionContextToInviteTarget,
@@ -86,6 +87,7 @@ import {
   termChangeActionLabel,
 } from "@/components/partners/partner-cooperation-c1";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
+import { AgentInvitationViewSwitch } from "@/components/partners/AgentInvitationViewSwitch";
 import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
@@ -286,6 +288,11 @@ export function PartnersHub({
   const [listSort, setListSort] = useState<AgentListSort>("updated_desc");
   const [listSearch, setListSearch] = useState("");
   const [listViewMode, setListViewMode] = useState<AgentListViewMode>("list");
+  /** P9b: independent invitation overview presentation — not coupled to active listViewMode. */
+  const [decideInvitationViewMode, setDecideInvitationViewMode] =
+    useState<AgentListViewMode>("list");
+  const [waitingInvitationViewMode, setWaitingInvitationViewMode] =
+    useState<AgentListViewMode>("list");
   const [listPage, setListPage] = useState(0);
   const [listPageSize, setListPageSize] = useState(25);
   const [listTaxonomyLabels, setListTaxonomyLabels] = useState<ActiveListTaxonomyLabels | null>(
@@ -1279,7 +1286,7 @@ export function PartnersHub({
                   Ссылка «к обсуждению» — без процентов. Персональные условия партнёр предложит после
                   запроса.
                 </p>
-                <PartnerDiscussionInvitePanel showSectionTitle={false} />
+                <PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />
               </>
             ) : (
               <>
@@ -1455,36 +1462,45 @@ export function PartnersHub({
             waiting: overviewZoneWaitingRef,
           }}
           decisionSlot={
-            <AgentPartnerCollection
-              partnerships={pagedOverviewDecisions}
-              meId={meId}
-              viewMode={listViewMode}
-              busyId={busyId}
-              onRunAction={(id, action) => {
-                const partnership = partnerships.find((item) => item.id === id);
-                if (!partnership) return;
-                handlePartnershipUiAction(partnership, action);
-              }}
-              onUpdated={() => void loadList()}
-              termRequests={termRequests}
-              onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
-              onCloseTermChange={requestCloseTermChange}
-              onTermDirtyChange={updateTermDraftDirty}
-              expandedTermPartnershipId={expandedTermPartnershipId}
-              suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
-              detailActionError={actionError}
-              selectedIds={selectedPartnerIds}
-              onToggleSelect={togglePartnerSelect}
-              onToggleSelectAll={togglePartnerSelectAll}
-              page={decidePage}
-              pageSize={listPageSize}
-              totalCount={overviewGroups.decisions.length}
-              onPageChange={setDecidePage}
-              onPageSizeChange={(size) => {
-                setListPageSize(size);
-                setDecidePage(0);
-              }}
-            />
+            <>
+              <AgentInvitationViewSwitch
+                flow="incoming"
+                viewMode={decideInvitationViewMode}
+                onViewModeChange={setDecideInvitationViewMode}
+              />
+              <AgentPartnerCollection
+                partnerships={pagedOverviewDecisions}
+                meId={meId}
+                viewMode={decideInvitationViewMode}
+                busyId={busyId}
+                onRunAction={(id, action) => {
+                  const partnership = partnerships.find((item) => item.id === id);
+                  if (!partnership) return;
+                  handlePartnershipUiAction(partnership, action);
+                }}
+                onUpdated={() => void loadList()}
+                termRequests={termRequests}
+                onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
+                onCloseTermChange={requestCloseTermChange}
+                onTermDirtyChange={updateTermDraftDirty}
+                expandedTermPartnershipId={expandedTermPartnershipId}
+                suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                detailActionError={actionError}
+                selectedIds={selectedPartnerIds}
+                onToggleSelect={togglePartnerSelect}
+                onToggleSelectAll={togglePartnerSelectAll}
+                page={decidePage}
+                pageSize={listPageSize}
+                totalCount={overviewGroups.decisions.length}
+                onPageChange={setDecidePage}
+                onPageSizeChange={(size) => {
+                  setListPageSize(size);
+                  setDecidePage(0);
+                }}
+                presentationVariant="invitations"
+                invitationFlowHint="incoming"
+              />
+            </>
           }
           activeSlot={
             <>
@@ -1592,43 +1608,60 @@ export function PartnersHub({
           }
           waitingSlot={
             overviewGroups.outgoing.length === 0 ? (
-              <p className={styles.partnerMeta}>Отправленных приглашений пока нет.</p>
+              <p className={styles.partnerMeta} data-testid="agent-invitations-outgoing-empty">
+                Отправленных приглашений пока нет. Здесь будут предложения, которые вы отправили и
+                которые ждут ответа партнёра.
+              </p>
             ) : (
-              <AgentPartnerCollection
-                partnerships={pagedOverviewWaiting}
-                meId={meId}
-                viewMode={listViewMode}
-                busyId={busyId}
-                onRunAction={(id, action) => {
-                  const partnership = partnerships.find((item) => item.id === id);
-                  if (!partnership) return;
-                  handlePartnershipUiAction(partnership, action);
-                }}
-                onUpdated={() => void loadList()}
-                termRequests={termRequests}
-                onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
-                onCloseTermChange={requestCloseTermChange}
-                onTermDirtyChange={updateTermDraftDirty}
-                expandedTermPartnershipId={expandedTermPartnershipId}
-                suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
-                detailActionError={actionError}
-                selectedIds={selectedPartnerIds}
-                onToggleSelect={togglePartnerSelect}
-                onToggleSelectAll={togglePartnerSelectAll}
-                page={waitingPage}
-                pageSize={listPageSize}
-                totalCount={overviewGroups.outgoing.length}
-                onPageChange={setWaitingPage}
-                onPageSizeChange={(size) => {
-                  setListPageSize(size);
-                  setWaitingPage(0);
-                }}
-              />
+              <>
+                <AgentInvitationViewSwitch
+                  flow="outgoing"
+                  viewMode={waitingInvitationViewMode}
+                  onViewModeChange={setWaitingInvitationViewMode}
+                />
+                <AgentPartnerCollection
+                  partnerships={pagedOverviewWaiting}
+                  meId={meId}
+                  viewMode={waitingInvitationViewMode}
+                  busyId={busyId}
+                  onRunAction={(id, action) => {
+                    const partnership = partnerships.find((item) => item.id === id);
+                    if (!partnership) return;
+                    handlePartnershipUiAction(partnership, action);
+                  }}
+                  onUpdated={() => void loadList()}
+                  termRequests={termRequests}
+                  onLoadTermRequests={(id, trigger) => requestOpenTermChange(id, trigger)}
+                  onCloseTermChange={requestCloseTermChange}
+                  onTermDirtyChange={updateTermDraftDirty}
+                  expandedTermPartnershipId={expandedTermPartnershipId}
+                  suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                  detailActionError={actionError}
+                  selectedIds={selectedPartnerIds}
+                  onToggleSelect={togglePartnerSelect}
+                  onToggleSelectAll={togglePartnerSelectAll}
+                  page={waitingPage}
+                  pageSize={listPageSize}
+                  totalCount={overviewGroups.outgoing.length}
+                  onPageChange={setWaitingPage}
+                  onPageSizeChange={(size) => {
+                    setListPageSize(size);
+                    setWaitingPage(0);
+                  }}
+                  presentationVariant="invitations"
+                  invitationFlowHint="outgoing"
+                />
+              </>
             )
           }
         />
       ) : tab === "list" ? (
         <>
+          {isAgentR04 && agentSegment === "invitations" ? (
+            <p className={styles.partnerMeta} data-testid="agent-invitations-lead">
+              {partnersSharedUiCopy(partnersAudience).invitationsLead}
+            </p>
+          ) : null}
           {isAgentR04 ? (
             <div className={styles.agentToolbarShell}>
               <AgentR04ListToolbar
@@ -1749,6 +1782,12 @@ export function PartnersHub({
                 setListPageSize(size);
                 setListPage(0);
               }}
+              presentationVariant={
+                agentSegment === "invitations" ? "invitations" : "default"
+              }
+              invitationFlowHint={
+                agentSegment === "invitations" ? agentInvitationFlow ?? null : null
+              }
             />
             </>
           ) : (
