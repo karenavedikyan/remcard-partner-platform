@@ -725,8 +725,8 @@ export function AdminPartnersClient() {
           }}
           previewFailures={bulkPreviewFailures}
           disabled={interactionsDisabled}
-          compactSelectionBar={mobileDense}
-          selectionFormExpanded={bulkFormExpanded || !mobileDense}
+          compactSelectionBar
+          selectionFormExpanded={bulkFormExpanded}
           onOpenSelectionForm={() => setBulkFormExpanded(true)}
         />
 

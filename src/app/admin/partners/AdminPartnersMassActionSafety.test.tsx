@@ -54,7 +54,13 @@ async function open() {
   return view;
 }
 
+async function expandBulkForm(actionName = "Каталог") {
+  fireEvent.click(screen.getByRole("button", { name: actionName }));
+  await waitFor(() => screen.getByLabelText("Причина группового изменения"));
+}
+
 async function confirm() {
+  await expandBulkForm("Каталог");
   fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
   fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
   await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
@@ -136,6 +142,8 @@ describe("Independent mass-action safety", () => {
     await screen.findByText("Итог групповой операции");
     await waitFor(() => expect(screen.getByLabelText("Выбрать Partner 1")).not.toBeChecked());
     fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    // After a prior report, compact bar returns until an action expands the form.
+    await expandBulkForm("Каталог");
     expect(screen.getByLabelText("Причина группового изменения")).toBeInTheDocument();
   });
 
@@ -171,6 +179,7 @@ describe("Independent mass-action safety", () => {
     await open();
     fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
     fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    await expandBulkForm("Каталог");
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));

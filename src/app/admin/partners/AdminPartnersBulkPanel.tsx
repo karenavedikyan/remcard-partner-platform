@@ -92,6 +92,9 @@ export function AdminPartnersBulkPanel({
       <div className={styles.bulkBar} role="region" aria-label="Групповые действия">
         <strong>
           Выбрано: <span data-testid="selected-count">{selectedCount}</span>
+          {otherPagesCount > 0 ? (
+            <span className={styles.bulkHint}> · на других страницах: {otherPagesCount}</span>
+          ) : null}
         </strong>
         <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("hide_catalog")}>
           Каталог

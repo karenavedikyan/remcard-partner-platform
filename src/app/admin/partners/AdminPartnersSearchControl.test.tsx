@@ -239,6 +239,9 @@ describe("Admin partner search visibility controls", () => {
     render(<AdminPartnersClient />);
     await screen.findByText("Legacy Demo Visible");
     fireEvent.click(screen.getByRole("checkbox", { name: /Legacy Demo Visible/i }));
+    await screen.findByTestId("selected-count");
+    fireEvent.click(screen.getByRole("button", { name: "Каталог" }));
+    await waitFor(() => screen.getByLabelText("Групповое действие"));
     expect(screen.queryByRole("option", { name: /Показывать партнёрам/i })).toBeNull();
     expect(screen.getByLabelText("Групповое действие")).toBeTruthy();
   });

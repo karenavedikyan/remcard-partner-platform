@@ -198,10 +198,15 @@ describe("Admin Partners R1 parity presentation", () => {
     await waitFor(() => screen.getByText("Тест Партнёр"));
     fireEvent.click(screen.getByLabelText("Выбрать Тест Партнёр"));
     await waitFor(() => screen.getByTestId("selected-count"));
+    // Release1-style compact bar: no long form until an action is chosen.
+    expect(screen.queryByLabelText("Причина группового изменения")).toBeNull();
+    expect(screen.getByRole("button", { name: "Каталог" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Сотрудничество" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "В архив" }));
     await waitFor(() => screen.getByLabelText("Групповое действие"));
     expect(screen.getByLabelText("Групповое действие")).toHaveValue("archive_project");
+    expect(screen.getByLabelText("Причина группового изменения")).toBeTruthy();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
   });
 

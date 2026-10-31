@@ -78,6 +78,9 @@ describe("Admin partners bulk selection and compact registry", () => {
     await screen.findByText("Partner One");
     fireEvent.click(screen.getByRole("checkbox", { name: "Выбрать Partner One" }));
     await waitFor(() => expect(screen.getByText(/Выбрано:/)).toBeInTheDocument());
+    // Compact R1 bar first — expand via catalog action before reason/preview.
+    fireEvent.click(screen.getByRole("button", { name: "Каталог" }));
+    await waitFor(() => screen.getByLabelText("Причина группового изменения"));
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), {
       target: { value: "Group reason" },
     });
