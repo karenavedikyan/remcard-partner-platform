@@ -523,7 +523,10 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
             каталоге само по себе. Закрытие окна подтверждения без подтверждения ничего не отправляет.
           </p>
           <p className={styles.metaLine}>{moderationOrgCanPublishLabel(org)}</p>
-          {decisionButtons}
+          <p className={styles.metaLine}>
+            Действия по организации — в блоке «Решение по организации» ниже. По филиалам — в карточке
+            каждого филиала.
+          </p>
         </section>
       ) : null}
 

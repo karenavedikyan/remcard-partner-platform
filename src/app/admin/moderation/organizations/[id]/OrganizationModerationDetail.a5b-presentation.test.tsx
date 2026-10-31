@@ -160,7 +160,8 @@ describe("Organization moderation detail A5b presentation", () => {
 
   it("keeps branch-level actions and approve-all for pending branches", async () => {
     render(<OrganizationModerationDetailClient organizationId="org1" />);
-    await screen.findByText(/Филиал Север/);
+    await screen.findByRole("heading", { name: "Адреса и филиалы" });
+    expect(screen.getAllByText(/Филиал Север с очень длинным названием/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Одобрить филиал" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Одобрить организацию и 1 филиал/ })).toBeInTheDocument();
   });
