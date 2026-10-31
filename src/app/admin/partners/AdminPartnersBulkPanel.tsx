@@ -160,7 +160,7 @@ export function AdminPartnersBulkPanel({
         }
         if (document.activeElement === el) return true;
       }
-      const reason = document.querySelector<HTMLElement>(
+      const reason = document.querySelector<HTMLTextAreaElement>(
         'textarea[aria-label="Причина группового изменения"]',
       );
       if (reason && !reason.disabled) {
