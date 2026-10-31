@@ -179,11 +179,49 @@
 
 .modalResults {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   max-height: min(52vh, 420px);
   overflow: auto;
+  min-width: 0;
+  padding-right: 2px;
 }
 
+.modalResultsState {
+  margin: 0;
+  padding: var(--space-5) var(--space-3);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--offset, var(--surface-muted, #f6f5f3));
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.modalResultsError {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--ink);
+}
+
+.modalResultsError p {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.modalResultsError :global(button) {
+  min-height: 44px;
+  justify-self: start;
+}
+
+/* Legacy flat row kept only if referenced elsewhere; P5b cards own layout. */
 .modalResultRow {
   display: flex;
   justify-content: space-between;
@@ -191,19 +229,24 @@
   align-items: flex-start;
   padding: var(--space-4);
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 10px);
+  border-radius: 12px;
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
 }
 
 .modalResultRow strong {
   font-size: var(--text-md, 1rem);
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 680px) {
   .modalSearchRow {
     grid-template-columns: 1fr;
+  }
+
+  .modalResults {
+    gap: var(--space-2);
+    max-height: min(48vh, 380px);
   }
 
   .modalResultRow {

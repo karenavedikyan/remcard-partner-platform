@@ -70,6 +70,7 @@ import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterO
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
+import { PartnerSearchResultCard } from "@/components/partners/PartnerSearchResultCard";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
 import {
@@ -89,7 +90,6 @@ import {
   hasCustomPartnershipSearchFilters,
   mergeSearchResultPages,
 } from "@/lib/partnership-search-ui";
-import { partnerSearchResultMeta } from "@/lib/agent-r04/partner-search-meta";
 import {
   overviewZoneForPartnership,
   partitionPartnerOverview,
@@ -1217,7 +1217,7 @@ export function PartnersHub({
   const agentFindResultsBlock = (
     <>
       {searchError ? (
-        <div className={styles.error} role="alert">
+        <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
           <p>{searchError}</p>
           <Button
             type="button"
@@ -1234,8 +1234,9 @@ export function PartnersHub({
       ) : null}
       {searchResults.length > 0 || loadingSearch ? (
         <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
-          Найдено: {searchResults.length}
+          Показано: {searchResults.length}
           {searchNextCursor ? "+" : ""}
+          {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
         </p>
       ) : null}
       <div
@@ -1244,37 +1245,24 @@ export function PartnersHub({
         data-loading={loadingSearch ? "true" : "false"}
       >
         {loadingSearch && searchResults.length === 0 ? (
-          <p className={styles.partnerMeta}>Загружаем результаты…</p>
+          <p className={styles.modalResultsState} data-testid="agent-partner-search-loading">
+            Загружаем результаты…
+          </p>
         ) : null}
-        {!loadingSearch &&
-          searchResults.slice(0, 12).map((partner) => {
-            const metaLines = partnerSearchResultMeta(partner);
-            return (
-              <article key={partner.id} className={styles.modalResultRow}>
-                <div>
-                  <strong>{partnerTitle(partner)}</strong>
-                  {metaLines.map((line) => (
-                    <p key={line} className={styles.partnerMeta}>
-                      {line}
-                    </p>
-                  ))}
-                  {showAgentPublishedTerms ? (
-                    <PartnerGeneralTermsDetails partnerUserId={partner.id} />
-                  ) : null}
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={Boolean(inviteTarget)}
-                  onClick={() => setInviteTarget(partner)}
-                >
-                  Пригласить
-                </Button>
-              </article>
-            );
-          })}
-        {!loadingSearch && searchResults.length === 0 ? (
-          <p className={styles.partnerMeta}>По этому запросу партнёров не найдено.</p>
+        {searchResults.map((partner) => (
+          <PartnerSearchResultCard
+            key={partner.id}
+            partner={partner}
+            title={partnerTitle(partner)}
+            showPublishedTerms={showAgentPublishedTerms}
+            inviteDisabled={Boolean(inviteTarget) || loadingSearch}
+            onInvite={() => setInviteTarget(partner)}
+          />
+        ))}
+        {!loadingSearch && !searchError && searchResults.length === 0 ? (
+          <p className={styles.modalResultsState} data-testid="agent-partner-search-empty">
+            По этому запросу партнёров не найдено.
+          </p>
         ) : null}
       </div>
     </>
