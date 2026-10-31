@@ -3,9 +3,10 @@
  * Native Chromium QA against ACTUAL compiled Next.js /admin/access/users
  * + loopback synthetic upstream (not standalone HTML).
  *
- * Asserts OWNER create/dup/revoke, ADMIN/401/403/network, empty/busy,
- * password cleared, secrets absent, no horizontal overflow, mutation HTTP
- * method/path/payload counts via upstream /__qa/log.
+ * Asserts OWNER+ADMIN create/dup/revoke peer, OWNER target protected,
+ * OPERATOR/lower 403, 401/network/error/retry/empty/busy, password cleared,
+ * secrets absent, no horizontal overflow, mutation HTTP via /__qa/log.
+ * Actual compiled production Next (not DEV / not standalone HTML).
  */
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -423,23 +424,59 @@ async function run() {
         await context.close();
       }
 
-      // —— ADMIN denied (auth ok, list 403) ——
+      // —— ADMIN peer manage (list/create/revoke); OWNER control absent ——
       {
         await resetQa(upstream.baseUrl);
-        await setScenario(upstream.baseUrl, { mode: "admin", resetLog: true });
+        await setScenario(upstream.baseUrl, { mode: "admin", empty: false, resetLog: true });
         const context = await newStaffContext(browser, { width: 1440, height: 900 });
         const page = await context.newPage();
         await openUsers(page);
-        await page.waitForSelector("text=Доступ только для владельца");
+        await page.waitForSelector("text=Администратор А");
         assert(
-          "admin-denied-not-empty",
+          "admin-list-ready",
+          (await page.getByRole("button", { name: "Создать администратора" }).count()) === 1,
+        );
+        assert(
+          "admin-owner-row-no-revoke-control",
+          (await page.getByText(/Владелец: удаление и понижение недоступны/).count()) >= 1,
+        );
+        await page.fill("#access-users-display-name", "Peer From Admin");
+        await page.fill("#access-users-login", "peer.from.admin");
+        await page.fill("#access-users-password", "abcdefghijkl");
+        await page.getByRole("button", { name: "Создать администратора" }).click();
+        await page.waitForSelector(/Администратор «Peer From Admin» создан/);
+        const adminLog = await getLog(upstream.baseUrl);
+        const adminCreates = adminLog.filter((e) => e.kind === "create");
+        assert("admin-create-post", adminCreates.length === 1 && adminCreates[0]?.method === "POST");
+
+        // Direct OWNER revoke must stay forbidden (server), no OWNER-control UI.
+        const ownerRevoke = await qaFetch(
+          upstream.baseUrl,
+          `/api/pro/admin/access/users/${"qa-owner-1"}/revoke`,
+          { method: "POST", body: "{}" },
+        );
+        assert("admin-direct-owner-revoke-403", ownerRevoke.status === 403);
+        await shot(page, "users-admin-peer-light-1440.png");
+        await context.close();
+      }
+
+      // —— OPERATOR / lower denied ——
+      {
+        await resetQa(upstream.baseUrl);
+        await setScenario(upstream.baseUrl, { mode: "operator", resetLog: true });
+        const context = await newStaffContext(browser, { width: 1440, height: 900 });
+        const page = await context.newPage();
+        await openUsers(page);
+        await page.waitForSelector("text=Доступ только для OWNER или ADMIN");
+        assert(
+          "operator-denied-not-empty",
           (await page.getByText("Пока нет второго администратора").count()) === 0,
         );
         assert(
-          "admin-denied-no-create",
+          "operator-denied-no-create",
           (await page.getByRole("button", { name: "Создать администратора" }).count()) === 0,
         );
-        await shot(page, "users-403-admin-light-1440.png");
+        await shot(page, "users-403-operator-light-1440.png");
         await context.close();
       }
 

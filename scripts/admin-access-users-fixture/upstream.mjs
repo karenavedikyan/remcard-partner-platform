@@ -102,8 +102,16 @@ function viewerForMode() {
     return {
       id: "qa-admin-viewer",
       publicId: "RC-ADM-VIEW",
-      displayName: "Админ без OWNER",
+      displayName: "Админ стенда",
       staffRole: "ADMIN",
+    };
+  }
+  if (state.mode === "operator") {
+    return {
+      id: "qa-op-viewer",
+      publicId: "RC-OP-VIEW",
+      displayName: "Оператор стенда",
+      staffRole: "OPERATOR",
     };
   }
   return {
@@ -112,6 +120,11 @@ function viewerForMode() {
     displayName: OWNER.displayName,
     staffRole: "OWNER",
   };
+}
+
+/** OWNER and ADMIN may manage access; OPERATOR/lower denied. */
+function actorMayManageAccess() {
+  return state.mode === "owner" || state.mode === "admin";
 }
 
 function resetOwnerList(empty) {
@@ -174,7 +187,7 @@ export function createUpstreamServer() {
         return;
       }
       if (state.mode === "error") return json(res, 503, { error: "Upstream temporarily unavailable" });
-      if (state.mode === "admin") return json(res, 403, { error: "Forbidden" });
+      if (!actorMayManageAccess()) return json(res, 403, { error: "Forbidden" });
       return json(res, 200, { viewer: viewerForMode(), items: state.items.map((i) => ({ ...i })) });
     }
 
@@ -192,8 +205,8 @@ export function createUpstreamServer() {
         body: sanitizeBody(body),
         passwordLen: typeof body.newPassword === "string" ? body.newPassword.length : null,
       });
-      if (state.mode === "admin") return json(res, 403, { error: "Forbidden" });
       if (state.mode === "unauth") return json(res, 401, { error: "Unauthorized" });
+      if (!actorMayManageAccess()) return json(res, 403, { error: "Forbidden" });
 
       const login = typeof body.login === "string" ? body.login.trim().toLowerCase() : "";
       const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
@@ -233,8 +246,8 @@ export function createUpstreamServer() {
     if (revokeMatch && method === "POST") {
       const targetId = revokeMatch[1];
       pushLog({ method, path, kind: "revoke", targetId });
-      if (state.mode === "admin") return json(res, 403, { error: "Forbidden" });
       if (state.mode === "unauth") return json(res, 401, { error: "Unauthorized" });
+      if (!actorMayManageAccess()) return json(res, 403, { error: "Forbidden" });
       const idx = state.items.findIndex((i) => i.id === targetId);
       if (idx < 0) {
         // Idempotent soft revoke of already-missing/revoked
