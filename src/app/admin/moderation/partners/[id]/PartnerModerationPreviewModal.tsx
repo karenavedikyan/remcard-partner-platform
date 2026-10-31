@@ -30,6 +30,8 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const closingRef = useRef(false);
   const [fullPayload, setFullPayload] = useState<ModerationPartnerPublicPreviewPayload | null>(null);
   const [fullError, setFullError] = useState<string | null>(null);
   const [fullLoading, setFullLoading] = useState(false);
@@ -41,10 +43,24 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
 
   const revisionFetchKey = moderationPartnerPreviewRevisionFetchKey(partner);
 
+  const requestClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    const restore = restoreFocusRef.current;
+    onCloseRef.current();
+    queueMicrotask(() => {
+      restore?.focus?.();
+      closingRef.current = false;
+    });
+  };
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open) {
+      closingRef.current = false;
+      const active = document.activeElement;
+      restoreFocusRef.current = active instanceof HTMLElement ? active : null;
       if (!dialog.open) dialog.showModal();
       queueMicrotask(() => closeRef.current?.focus());
     } else if (dialog.open) {
@@ -60,7 +76,7 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
     // effect runs on the open=false first paint when ref is still null and never
     // rebinds — Escape would close the native dialog without syncing React state.
     const syncClosed = () => {
-      onCloseRef.current();
+      requestClose();
     };
     dialog.addEventListener("cancel", syncClosed);
     dialog.addEventListener("close", syncClosed);
@@ -144,7 +160,7 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
           type="button"
           className={styles.previewClose}
           aria-label="Закрыть окно"
-          onClick={onClose}
+          onClick={requestClose}
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -171,7 +187,7 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
         ) : null}
       </div>
       <div className={styles.previewFooter}>
-        <Button type="button" variant="primary" onClick={onClose}>
+        <Button type="button" variant="primary" onClick={requestClose}>
           Закрыть
         </Button>
       </div>

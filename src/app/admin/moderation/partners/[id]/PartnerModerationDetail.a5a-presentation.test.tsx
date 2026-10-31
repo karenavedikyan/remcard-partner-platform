@@ -130,6 +130,9 @@ describe("Partner moderation detail A5a presentation", () => {
     expect(src).toContain('addEventListener("close"');
     expect(src).not.toMatch(/preventDefault\(\)/);
     expect(src).toMatch(/addEventListener\("close", syncClosed\)[\s\S]*\}, \[open\]\)/);
+    expect(src).toContain("restoreFocusRef");
+    expect(src).toContain("requestClose");
+    expect(src).toContain("loadGenRef");
   });
 });
 
