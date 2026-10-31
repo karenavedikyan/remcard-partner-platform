@@ -98,6 +98,7 @@ export function AdminPartnersBulkPanel({
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const previewBtnRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const needReturnFocusRef = useRef(false);
 
   const hasPreviewFailures = Boolean(previewFailures && previewFailures.length > 0);
   const showSelectionHead = selectedCount > 0 || applying;
@@ -113,22 +114,6 @@ export function AdminPartnersBulkPanel({
     !bulkPreview &&
     !applyResults;
   const wasModalOpenRef = useRef(false);
-
-  function restoreReturnFocus() {
-    const target = returnFocusRef.current;
-    returnFocusRef.current = null;
-    queueMicrotask(() => {
-      if (target && target.isConnected && typeof target.focus === "function") {
-        try {
-          target.focus({ preventScroll: true });
-        } catch {
-          target.focus();
-        }
-        return;
-      }
-      previewBtnRef.current?.focus();
-    });
-  }
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -152,9 +137,45 @@ export function AdminPartnersBulkPanel({
     if (wasModalOpenRef.current) {
       wasModalOpenRef.current = false;
       if (dialog?.open) dialog.close();
-      restoreReturnFocus();
+      // Preview form unmounts while the modal is open — restore after it remounts.
+      needReturnFocusRef.current = true;
     }
   }, [modalOpen, applying]);
+
+  useEffect(() => {
+    if (modalOpen || !needReturnFocusRef.current) return;
+    if (!showNewGroupForm && selectedCount === 0) return;
+    needReturnFocusRef.current = false;
+    const saved = returnFocusRef.current;
+    returnFocusRef.current = null;
+    const focusTarget = () => {
+      const candidates = [previewBtnRef.current, saved].filter(
+        (el): el is HTMLElement => Boolean(el && el.isConnected),
+      );
+      for (const el of candidates) {
+        try {
+          el.focus({ preventScroll: true });
+        } catch {
+          el.focus();
+        }
+        if (document.activeElement === el) return true;
+      }
+      const reason = document.querySelector<HTMLElement>(
+        'textarea[aria-label="Причина группового изменения"]',
+      );
+      if (reason && !reason.disabled) {
+        reason.focus();
+        return document.activeElement === reason;
+      }
+      return false;
+    };
+    queueMicrotask(() => {
+      if (focusTarget()) return;
+      requestAnimationFrame(() => {
+        focusTarget();
+      });
+    });
+  }, [modalOpen, showNewGroupForm, selectedCount]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
