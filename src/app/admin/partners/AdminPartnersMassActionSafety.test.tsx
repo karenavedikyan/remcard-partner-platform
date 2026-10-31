@@ -148,6 +148,38 @@ describe("Independent mass-action safety", () => {
     );
   });
 
+  it("header close X cancels confirm without POST and returns focus to preview", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await expandBulkForm("Каталог");
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    const close = screen.getByRole("button", { name: "Закрыть окно" });
+    expect(close).toBeEnabled();
+    fireEvent.click(close);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Скрыть выбранных партнёров?" })).not.toBeInTheDocument(),
+    );
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Получить preview группы" }),
+      ),
+    );
+  });
+
+  it("header close X stays disabled while applying", async () => {
+    api.applyPartnerLifecycle.mockImplementation(() => new Promise(() => {}));
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await confirm();
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Закрыть окно" })).toBeDisabled();
+  });
+
   it("after successful bulk apply focuses the visible operation report, not BODY", async () => {
     await open();
     fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));

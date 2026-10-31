@@ -243,6 +243,15 @@ export function AdminPartnersBulkPanel({
       >
         <div className={styles.bulkConfirmHead}>
           <h2 id={titleId}>{confirmTitle(bulkPreview.action)}</h2>
+          <button
+            type="button"
+            className={styles.bulkConfirmClose}
+            aria-label="Закрыть окно"
+            disabled={disabled || applying}
+            onClick={requestCancelConfirm}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
         </div>
         <div className={styles.bulkConfirmBody}>
           <p className={styles.bulkConfirmLead}>
