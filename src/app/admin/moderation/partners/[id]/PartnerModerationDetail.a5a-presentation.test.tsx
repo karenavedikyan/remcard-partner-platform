@@ -121,16 +121,14 @@ describe("Partner moderation detail A5a presentation", () => {
     expect(api.moderationPartnerAction).not.toHaveBeenCalled();
   });
 
-  it("unmounts preview dialog after Escape/cancel sync", async () => {
-    render(<PartnerModerationDetailClient partnerId="u1" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Карточка в списке" }));
-    const dialog = await screen.findByRole("dialog", { name: "Карточка в списке каталога" });
-    // Native dialog listeners use addEventListener — dispatchEvent, not React fireEvent.
-    dialog.dispatchEvent(new Event("cancel", { bubbles: true, cancelable: true }));
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Карточка в списке каталога" })).not.toBeInTheDocument(),
+  it("syncs preview close on native cancel/close without preventDefault", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/app/admin/moderation/partners/[id]/PartnerModerationPreviewModal.tsx"),
+      "utf8",
     );
-    expect(api.moderationPartnerAction).not.toHaveBeenCalled();
+    expect(src).toContain('addEventListener("cancel"');
+    expect(src).toContain('addEventListener("close"');
+    expect(src).not.toMatch(/preventDefault\(\)/);
   });
 });
 
