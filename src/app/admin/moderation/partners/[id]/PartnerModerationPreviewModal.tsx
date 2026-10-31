@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CatalogPublicationPreview } from "@/components/profile/CatalogPublicationPreview";
 import { Button } from "@/components/ui/Button";
 import { RemcardApiError } from "@/lib/api-client";
@@ -17,8 +17,7 @@ import {
   ModerationPartnerCatalogFullPreview,
   type ModerationPartnerPublicPreviewPayload,
 } from "./ModerationPartnerCatalogFullPreview";
-import { useModerationModalFocusTrap } from "../../organizations/[id]/useModerationModalFocusTrap";
-import styles from "../../organizations/[id]/OrganizationModerationDetail.module.css";
+import styles from "./PartnerModerationDetail.module.css";
 
 type Props = {
   open: boolean;
@@ -28,7 +27,8 @@ type Props = {
 };
 
 export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: Props) {
-  const trapRef = useModerationModalFocusTrap(open);
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [fullPayload, setFullPayload] = useState<ModerationPartnerPublicPreviewPayload | null>(null);
   const [fullError, setFullError] = useState<string | null>(null);
@@ -36,8 +36,32 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
   const loadGenRef = useRef(0);
   const partnerRef = useRef(partner);
   partnerRef.current = partner;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const revisionFetchKey = moderationPartnerPreviewRevisionFetchKey(partner);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open) {
+      if (!dialog.open) dialog.showModal();
+      queueMicrotask(() => closeRef.current?.focus());
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const onCancel = (event: Event) => {
+      event.preventDefault();
+      onCloseRef.current();
+    };
+    dialog.addEventListener("cancel", onCancel);
+    return () => dialog.removeEventListener("cancel", onCancel);
+  }, []);
 
   useEffect(() => {
     if (!open || mode !== "full") return;
@@ -97,22 +121,32 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
   const variant = partner.partnerType === "MASTER" ? "specialist" : "default";
 
   return (
-    <div className={styles.overlay} role="presentation" onClick={onClose}>
-      <div
-        ref={trapRef}
-        className={styles.previewDialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="partner-preview-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="partner-preview-title" className={styles.dialogTitle}>
+    <dialog
+      ref={dialogRef}
+      className={styles.previewDialog}
+      aria-modal="true"
+      aria-labelledby={titleId}
+      data-partner-moderation-preview="true"
+    >
+      <div className={styles.previewHead}>
+        <h2 id={titleId}>
           {mode === "list" ? "Карточка в списке каталога" : "Полная карточка партнёра"}
         </h2>
+        <button
+          ref={closeRef}
+          type="button"
+          className={styles.previewClose}
+          aria-label="Закрыть окно"
+          onClick={onClose}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div className={styles.previewBody}>
         <p className={styles.metaLine}>
           {mode === "list"
             ? "Компактный вид результата поиска (отправленная заявка)."
-            : "Структура публичной карточки /partner (отправленная заявка)."}
+            : "Структура публичной карточки /partner по серверным данным отправленной заявки."}
         </p>
 
         {mode === "list" ? (
@@ -120,7 +154,7 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
             <CatalogPublicationPreview variant={variant} profile={profile} draft={draft} />
           </div>
         ) : fullLoading ? (
-          <p>Загрузка предпросмотра…</p>
+          <p role="status">Загрузка предпросмотра…</p>
         ) : fullError ? (
           <p role="alert" className={styles.statusError}>
             {fullError}
@@ -128,13 +162,12 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
         ) : fullPayload ? (
           <ModerationPartnerCatalogFullPreview data={fullPayload} />
         ) : null}
-
-        <div className={styles.dialogActions}>
-          <Button ref={closeRef} type="button" variant="primary" onClick={onClose}>
-            Закрыть
-          </Button>
-        </div>
       </div>
-    </div>
+      <div className={styles.previewFooter}>
+        <Button type="button" variant="primary" onClick={onClose}>
+          Закрыть
+        </Button>
+      </div>
+    </dialog>
   );
 }

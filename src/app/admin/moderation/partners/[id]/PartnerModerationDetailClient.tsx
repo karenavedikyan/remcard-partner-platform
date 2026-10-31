@@ -30,11 +30,10 @@ import {
   staleRevisionUserMessage,
   type PartnerModerationAction,
 } from "@/lib/prof-admin-moderation-partner-actions";
-import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { ModerationConfirmDialog } from "../../organizations/[id]/ModerationConfirmDialog";
 import { PartnerModerationPreviewModal } from "./PartnerModerationPreviewModal";
-import styles from "../../organizations/[id]/OrganizationModerationDetail.module.css";
+import styles from "./PartnerModerationDetail.module.css";
 
 type PreviewState = { mode: "list" | "full" } | null;
 
@@ -44,6 +43,16 @@ type PartnerDialog = {
   revisionAtOpen: string;
   fieldError: string | null;
 } | null;
+
+function initialsFromName(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (parts.length === 0) return "?";
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+}
 
 function SafePhoto({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
@@ -77,6 +86,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
   const [testDialog, setTestDialog] = useState<boolean | null>(null);
 
   const backQs = searchParams.toString();
+  const backHref = `/admin/moderation${backQs ? `?${backQs}` : ""}`;
 
   const load = useCallback(
     async (opts?: { keepExistingOnError?: boolean }) => {
@@ -207,52 +217,127 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
     setBusy(false);
   };
 
-  if (loading) return <p className={styles.page}>Загрузка…</p>;
-  if (error) {
+  if (loading) {
     return (
-      <p className={styles.page} role="alert">
-        {error}
-      </p>
+      <div className={styles.page} role="status" aria-live="polite">
+        <div className={styles.stateBlock}>
+          <strong>Загрузка карточки</strong>
+          <p>Получаем отправленную заявку и текущую опубликованную версию…</p>
+        </div>
+      </div>
     );
   }
-  if (!partner) return <p className={styles.page}>Не найдено</p>;
+
+  if (error) {
+    const forbidden = /403|forbidden|доступ|прав/i.test(error);
+    const notFound = /404|not found|не найден/i.test(error);
+    return (
+      <div className={styles.page}>
+        <Link className={styles.backLink} href={backHref}>
+          ← Очередь модерации
+        </Link>
+        <div className={styles.stateBlock} role="alert">
+          <strong>{forbidden ? "Недостаточно прав" : notFound ? "Карточка не найдена" : "Не удалось загрузить"}</strong>
+          <p>{error}</p>
+          <div className={styles.toolbar} style={{ justifyContent: "center", marginTop: "1rem" }}>
+            <Button type="button" variant="secondary" onClick={() => void load()}>
+              Повторить
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!partner) {
+    return (
+      <div className={styles.page}>
+        <Link className={styles.backLink} href={backHref}>
+          ← Очередь модерации
+        </Link>
+        <div className={styles.stateBlock}>
+          <strong>Не найдено</strong>
+          <p>Партнёр с таким идентификатором недоступен в очереди модерации.</p>
+        </div>
+      </div>
+    );
+  }
 
   const sub = partner.submitted;
   const visibility = moderationPartnerPublicVisibility(partner);
   const changeBlock = moderationPartnerChangeBlock(partner);
   const pending = partner.catalogStatus === "PENDING";
   const title = moderationSubmittedString(sub.displayName) || partner.publicId;
+  const city = moderationSubmittedString(sub.city);
+  const typeLabel = partnerTypeLabel(partner.partnerType ?? "");
+  const metaBits = [typeLabel, city || null, partner.publicId].filter(Boolean);
+
+  const decisionButtons = (
+    <div className={styles.actionsRow}>
+      <Button
+        className={styles.actionPrimary}
+        type="button"
+        disabled={busy || !pending}
+        onClick={() => openDialog("approve")}
+      >
+        Одобрить заявку
+      </Button>
+      <Button type="button" variant="secondary" disabled={busy || !pending} onClick={() => openDialog("revise")}>
+        Вернуть на доработку
+      </Button>
+      <Button type="button" variant="text" disabled={busy || !pending} onClick={() => openDialog("reject")}>
+        Отклонить заявку
+      </Button>
+    </div>
+  );
 
   return (
-    <div className={styles.page}>
-      <Link className={styles.backLink} href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>
+    <div className={styles.page} data-partner-moderation-detail="true">
+      <Link className={styles.backLink} href={backHref}>
         ← Очередь модерации
       </Link>
 
       <header className={styles.header}>
-        <div className={styles.titleRow}>
-          <h1 className={styles.title}>{title}</h1>
-          <div className={styles.badges}>
-            <span
-              className={
-                partner.catalogStatus === "PENDING" ? styles.badgePending : styles.badge
-              }
-            >
-              {moderationCatalogStatusLabel(partner.catalogStatus)}
-            </span>
-            <span className={styles.badge}>{partnerTypeLabel(partner.partnerType ?? "")}</span>
-            {partner.isTestPartner ? <span className={styles.badgeTest}>TEST</span> : null}
+        <div className={styles.detailTop}>
+          <div className={styles.avatar} aria-hidden>
+            {sub.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={sub.photoUrl} alt="" />
+            ) : (
+              initialsFromName(title)
+            )}
+          </div>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>{title}</h1>
+            <p className={styles.metaLine}>{metaBits.join(" · ")}</p>
+            <div className={styles.badges}>
+              <span
+                className={
+                  partner.catalogStatus === "PENDING" ? styles.badgePending : styles.badge
+                }
+              >
+                {moderationCatalogStatusLabel(partner.catalogStatus)}
+              </span>
+              <span className={styles.badge}>{typeLabel}</span>
+              {partner.isTestPartner ? <span className={styles.badgeTest}>TEST</span> : null}
+            </div>
           </div>
         </div>
-        <p className={styles.metaLine}>Публичный ID: {partner.publicId}</p>
-        <p className={styles.metaLine} data-testid="partner-catalog-visibility">
-          <strong>Видимость в каталоге:</strong> {visibility.catalogVisibilityHeadline} —{" "}
-          {visibility.catalogVisibilityDetail}
-        </p>
-        {changeBlock ? <p className={styles.metaLine}>{changeBlock}</p> : null}
       </header>
 
-      <div className={styles.actionsRow}>
+      <section className={styles.visibilityCard} aria-label="Видимость в каталоге">
+        <div className={styles.visibilityRow}>
+          <div>
+            <h2>Публичный каталог</h2>
+            <p data-testid="partner-catalog-visibility">
+              <strong>{visibility.catalogVisibilityHeadline}</strong> — {visibility.catalogVisibilityDetail}
+            </p>
+            {changeBlock ? <p>{changeBlock}</p> : null}
+          </div>
+        </div>
+      </section>
+
+      <div className={styles.toolbar}>
         <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "list" })}>
           Карточка в списке
         </Button>
@@ -264,100 +349,111 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
         </Button>
       </div>
 
-      <div className={styles.sectionGrid}>
-        <Panel title="Отправленная заявка">
-          {sub.photoUrl ? (
-            <SafePhoto src={sub.photoUrl} alt="" />
-          ) : (
-            <p className={styles.metaLine}>Фото не заполнено</p>
-          )}
-          <p>Город: {moderationSubmittedString(sub.city) || "—"}</p>
-          <p>{moderationSubmittedString(sub.description) || "Описание не заполнено"}</p>
-          <p>Категории: {moderationPartnerSubmittedCategoryLabels(partner).join(", ") || "—"}</p>
-          <p>
-            Этапы: {moderationPartnerSubmittedStageLabels(sub.navigatorStageIds).join(", ") || "—"}
+      {pending ? (
+        <section className={styles.reviewSection} aria-label="Ожидает проверки">
+          <h2>Ожидает проверки</h2>
+          <p className={styles.reviewLead}>
+            Решение применяется к отправленной заявке. Подтверждение запросит причину или комментарий там,
+            где это требуется контрактом; Cancel / Escape / крестик диалога не отправляют решение.
           </p>
-          <p>Сайт: {moderationSubmittedString(sub.website) || "—"}</p>
-          <p>Telegram: {moderationSubmittedString(sub.telegram) || "—"}</p>
-          <p>WhatsApp: {moderationSubmittedString(sub.whatsapp) || "—"}</p>
-        </Panel>
+          {decisionButtons}
+        </section>
+      ) : null}
 
-        <Panel title="Опубликовано сейчас (live)">
-          <p data-testid="partner-live-snapshot">
-            Сохранённая live-версия:{" "}
-            {visibility.liveSnapshotPublished ? "опубликована (isPublic)" : "не опубликована"}
-          </p>
-          <p data-testid="partner-catalog-public-line">
-            В публичном каталоге: {visibility.catalogPubliclyVisible ? "видна" : "скрыта"}
-          </p>
-          <p>Название: {partner.live.displayName ?? "—"}</p>
-          <p>Город: {partner.live.city ?? "—"}</p>
-          <p>{partner.live.description ?? "—"}</p>
-        </Panel>
+      <section className={styles.section} aria-label="Отправленная заявка">
+        <h2>Отправленная заявка</h2>
+        {sub.photoUrl ? <SafePhoto src={sub.photoUrl} alt="" /> : <p className={styles.metaLine}>Фото не заполнено</p>}
+        <p className={styles.prose}>{moderationSubmittedString(sub.description) || "Описание не заполнено"}</p>
+        <dl className={styles.dataGrid}>
+          <dt>Город</dt>
+          <dd>{city || "—"}</dd>
+          <dt>Категории</dt>
+          <dd>{moderationPartnerSubmittedCategoryLabels(partner).join(", ") || "—"}</dd>
+          <dt>Этапы</dt>
+          <dd>{moderationPartnerSubmittedStageLabels(sub.navigatorStageIds).join(", ") || "—"}</dd>
+          <dt>Сайт</dt>
+          <dd>{moderationSubmittedString(sub.website) || "—"}</dd>
+          <dt>Telegram</dt>
+          <dd>{moderationSubmittedString(sub.telegram) || "—"}</dd>
+          <dt>WhatsApp</dt>
+          <dd>{moderationSubmittedString(sub.whatsapp) || "—"}</dd>
+          <dt>Email</dt>
+          <dd>{moderationSubmittedString(sub.publicEmail) || "—"}</dd>
+          <dt>Телефон</dt>
+          <dd>{moderationSubmittedString(sub.publicPhone) || "—"}</dd>
+        </dl>
+      </section>
 
-        {partner.isTestPartner ? (
-          <Panel title="Публикация тестового партнёра">
-            <p className={styles.metaLine}>
-              Opt-in:{" "}
-              {visibility.testOptIn
-                ? "разрешён показ в каталоге"
-                : "не разрешён — одобренные test-карточки скрыты"}
-            </p>
-            <p className={styles.metaLine}>
-              Обновление CDN-кэша каталога может занять до ~360 с после изменения.
-            </p>
-            <div className={styles.actionsRow}>
-              <Button type="button" variant="secondary" disabled={busy} onClick={() => setTestDialog(true)}>
-                Разрешить показ в каталоге
-              </Button>
-              <Button type="button" variant="text" disabled={busy} onClick={() => setTestDialog(false)}>
-                Скрыть из каталога
-              </Button>
-            </div>
-          </Panel>
-        ) : null}
-      </div>
+      <section className={styles.section} aria-label="Опубликовано сейчас">
+        <h2>Опубликовано сейчас (live)</h2>
+        <dl className={styles.dataGrid}>
+          <dt>Live-снимок</dt>
+          <dd data-testid="partner-live-snapshot">
+            {visibility.liveSnapshotPublished ? "опубликован (isPublic)" : "не опубликован"}
+          </dd>
+          <dt>В каталоге</dt>
+          <dd data-testid="partner-catalog-public-line">
+            {visibility.catalogPubliclyVisible ? "видна" : "скрыта"}
+          </dd>
+          <dt>Название</dt>
+          <dd>{partner.live.displayName ?? "—"}</dd>
+          <dt>Город</dt>
+          <dd>{partner.live.city ?? "—"}</dd>
+          <dt>Описание</dt>
+          <dd>{partner.live.description ?? "—"}</dd>
+        </dl>
+      </section>
+
+      {partner.isTestPartner ? (
+        <section className={styles.section} aria-label="Публикация тестового партнёра">
+          <h2>Публикация тестового партнёра</h2>
+          <p className={styles.prose}>
+            Opt-in:{" "}
+            {visibility.testOptIn
+              ? "разрешён показ в каталоге"
+              : "не разрешён — одобренные test-карточки скрыты"}
+          </p>
+          <p className={styles.metaLine}>
+            Обновление CDN-кэша каталога может занять до ~360 с после изменения.
+          </p>
+          <div className={styles.actionsRow}>
+            <Button type="button" variant="secondary" disabled={busy} onClick={() => setTestDialog(true)}>
+              Разрешить показ в каталоге
+            </Button>
+            <Button type="button" variant="text" disabled={busy} onClick={() => setTestDialog(false)}>
+              Скрыть из каталога
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       {partner.services.length ? (
-        <Panel title="Услуги и товары в заявке">
-          <ul>
+        <section className={styles.section} aria-label="Услуги и товары в заявке">
+          <h2>Услуги и товары в заявке</h2>
+          <ul className={styles.list}>
             {partner.services.map((s) => (
               <li key={s.id}>
                 {s.title} ({s.itemKind}) · {s.city}
               </li>
             ))}
           </ul>
-        </Panel>
+        </section>
       ) : null}
 
       {partner.portfolioItems.length ? (
-        <Panel title="Портфолио">
-          <ul>
+        <section className={styles.section} aria-label="Портфолио">
+          <h2>Портфолио</h2>
+          <ul className={styles.list}>
             {partner.portfolioItems.map((p) => (
               <li key={p.id}>{p.title ?? "Без названия"}</li>
             ))}
           </ul>
-        </Panel>
+        </section>
       ) : null}
 
       <section className={styles.actionsPanel} aria-label="Решение по партнёру">
-        <h2 className={styles.dialogTitle}>Решение по партнёру</h2>
-        <div className={styles.actionsRow}>
-          <Button
-            className={styles.actionPrimary}
-            type="button"
-            disabled={busy || !pending}
-            onClick={() => openDialog("approve")}
-          >
-            Одобрить заявку
-          </Button>
-          <Button type="button" variant="secondary" disabled={busy || !pending} onClick={() => openDialog("revise")}>
-            Вернуть на доработку
-          </Button>
-          <Button type="button" variant="text" disabled={busy || !pending} onClick={() => openDialog("reject")}>
-            Отклонить заявку
-          </Button>
-        </div>
+        <h2>Решение по партнёру</h2>
+        {decisionButtons}
       </section>
 
       {message ? (
