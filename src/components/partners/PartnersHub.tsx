@@ -40,6 +40,7 @@ import {
   type BulkOutcome,
 } from "@/components/partners/AgentPartnerBulkBar";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import { partnersSharedUiCopy } from "@/lib/partners-shared-ui-copy";
 import { PartnerDiscussionInvitePanel } from "@/components/partners/PartnerDiscussionInvitePanel";
 import {
   discussionContextToInviteTarget,
@@ -1484,6 +1485,8 @@ export function PartnersHub({
                 setListPageSize(size);
                 setDecidePage(0);
               }}
+              presentationVariant="invitations"
+              invitationFlowHint="incoming"
             />
           }
           activeSlot={
@@ -1592,7 +1595,10 @@ export function PartnersHub({
           }
           waitingSlot={
             overviewGroups.outgoing.length === 0 ? (
-              <p className={styles.partnerMeta}>Отправленных приглашений пока нет.</p>
+              <p className={styles.partnerMeta} data-testid="agent-invitations-outgoing-empty">
+                Отправленных приглашений пока нет. Здесь будут предложения, которые вы отправили и
+                которые ждут ответа партнёра.
+              </p>
             ) : (
               <AgentPartnerCollection
                 partnerships={pagedOverviewWaiting}
@@ -1623,12 +1629,19 @@ export function PartnersHub({
                   setListPageSize(size);
                   setWaitingPage(0);
                 }}
+                presentationVariant="invitations"
+                invitationFlowHint="outgoing"
               />
             )
           }
         />
       ) : tab === "list" ? (
         <>
+          {isAgentR04 && agentSegment === "invitations" ? (
+            <p className={styles.partnerMeta} data-testid="agent-invitations-lead">
+              {partnersSharedUiCopy(partnersAudience).invitationsLead}
+            </p>
+          ) : null}
           {isAgentR04 ? (
             <div className={styles.agentToolbarShell}>
               <AgentR04ListToolbar
@@ -1749,6 +1762,12 @@ export function PartnersHub({
                 setListPageSize(size);
                 setListPage(0);
               }}
+              presentationVariant={
+                agentSegment === "invitations" ? "invitations" : "default"
+              }
+              invitationFlowHint={
+                agentSegment === "invitations" ? agentInvitationFlow ?? null : null
+              }
             />
             </>
           ) : (
