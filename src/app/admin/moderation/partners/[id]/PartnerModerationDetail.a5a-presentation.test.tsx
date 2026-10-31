@@ -90,6 +90,9 @@ describe("Partner moderation detail A5a presentation", () => {
     expect(screen.getByRole("heading", { name: "Ожидает проверки" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Отправленная заявка" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Опубликовано сейчас (live)" })).toBeInTheDocument();
+    const reviewLead = screen.getByRole("heading", { name: "Ожидает проверки" }).parentElement;
+    expect(reviewLead?.textContent || "").toMatch(/не меняет видимость в каталоге/);
+    expect(reviewLead?.textContent || "").not.toMatch(/Cancel|Escape|контракт/i);
   });
 
   it("does not POST when canceling approve confirmation", async () => {

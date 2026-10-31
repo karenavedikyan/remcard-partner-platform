@@ -353,8 +353,8 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
         <section className={styles.reviewSection} aria-label="Ожидает проверки">
           <h2>Ожидает проверки</h2>
           <p className={styles.reviewLead}>
-            Решение применяется к отправленной заявке. Подтверждение запросит причину или комментарий там,
-            где это требуется контрактом; Cancel / Escape / крестик диалога не отправляют решение.
+            Проверяется отправленная заявка. Одобрение не меняет видимость в каталоге и поиске сотрудничества.
+            Закрытие окна подтверждения без подтверждения ничего не отправляет.
           </p>
           {decisionButtons}
         </section>
