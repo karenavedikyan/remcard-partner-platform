@@ -94,10 +94,12 @@ describe("Admin partners bulk selection and compact registry", () => {
     await waitFor(() => expect(previewBtn).toBeEnabled());
     fireEvent.click(previewBtn);
     await waitFor(() => expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("p1", "hide_catalog"));
-    await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
+    const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.tagName).toBe("DIALOG");
     expect(screen.getByText(/effect-p1/)).toBeInTheDocument();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(1));
     expect(api.applyPartnerLifecycle).toHaveBeenCalledWith(
       "p1",

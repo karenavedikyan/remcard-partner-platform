@@ -65,8 +65,10 @@ async function confirm() {
   fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
   await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
   fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
-  await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
-  fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+  const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+  expect(dialog).toHaveAttribute("aria-modal", "true");
+  expect(dialog.tagName).toBe("DIALOG");
+  fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
 }
 
 describe("Independent mass-action safety", () => {
@@ -185,11 +187,12 @@ describe("Independent mass-action safety", () => {
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
     fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
     const exclude = await screen.findByRole("button", { name: "Исключить проблемные и обновить preview" });
-    expect(screen.queryByRole("button", { name: "Подтвердить группу" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Подтвердить" })).not.toBeInTheDocument();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     fireEvent.click(exclude);
-    await screen.findByRole("dialog", { name: "Подтверждение группового изменения" });
-    fireEvent.click(screen.getByRole("button", { name: "Подтвердить группу" }));
+    const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await screen.findByText("Итог групповой операции");
     expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(1);
     expect(api.applyPartnerLifecycle.mock.calls[0][0]).toBe("p1");
