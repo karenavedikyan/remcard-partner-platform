@@ -50,7 +50,14 @@ export function ModerationConfirmDialog({
   const isR1 = presentationVariant === "r1";
   const styles = isR1 ? r1Styles : legacyStyles;
 
+  // R1-only: when open=false the dialog unmounts its DOM, so the shared trap
+  // cleanup may miss the opener. Legacy/default keeps trap-only restoration.
   useEffect(() => {
+    if (!isR1) {
+      restoreFocusRef.current = null;
+      wasOpenRef.current = false;
+      return;
+    }
     if (open) {
       if (!wasOpenRef.current) {
         const active = document.activeElement;
@@ -59,13 +66,18 @@ export function ModerationConfirmDialog({
       wasOpenRef.current = true;
       return;
     }
-    if (wasOpenRef.current) {
-      const restore = restoreFocusRef.current;
-      restoreFocusRef.current = null;
-      wasOpenRef.current = false;
-      queueMicrotask(() => restore?.focus?.());
-    }
-  }, [open]);
+    if (!wasOpenRef.current) return;
+    const restore = restoreFocusRef.current;
+    restoreFocusRef.current = null;
+    wasOpenRef.current = false;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) restore?.focus?.();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isR1]);
 
   useEffect(() => {
     if (!open) {
