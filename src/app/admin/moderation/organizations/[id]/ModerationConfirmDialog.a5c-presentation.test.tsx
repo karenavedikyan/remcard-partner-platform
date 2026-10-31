@@ -151,6 +151,43 @@ describe("ModerationConfirmDialog A5c presentationVariant", () => {
     expect(existingTest).not.toContain("presentationVariant");
   });
 
+  it("restores focus to opener after cancel", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/app/admin/moderation/organizations/[id]/ModerationConfirmDialog.tsx"),
+      "utf8",
+    );
+    expect(src).toContain("restoreFocusRef");
+    expect(src).toContain("queueMicrotask");
+
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Открыть подтверждение
+          </button>
+          <ModerationConfirmDialog
+            presentationVariant="r1"
+            open={open}
+            title="Одобрить"
+            description="D"
+            confirmLabel="OK"
+            textValue=""
+            onTextChange={() => {}}
+            onConfirm={() => {}}
+            onCancel={() => setOpen(false)}
+          />
+        </>
+      );
+    }
+    render(<Harness />);
+    const opener = screen.getByRole("button", { name: "Открыть подтверждение" });
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole("button", { name: "Отмена" }));
+    expect(document.activeElement).toBe(opener);
+  });
+
   it("does not edit shared org CSS module or focus trap", () => {
     const sharedCss = readFileSync(
       join(
