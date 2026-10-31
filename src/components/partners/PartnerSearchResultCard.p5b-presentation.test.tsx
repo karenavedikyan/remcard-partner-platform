@@ -5,7 +5,9 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import {
   PartnerSearchResultCard,
+  searchResultCoverTone,
   searchResultDirectionLabels,
+  searchResultMonogram,
   searchResultTypeLabel,
 } from "./PartnerSearchResultCard";
 import type { PartnerSearchResult } from "@/lib/types";
@@ -21,7 +23,7 @@ const css = readFileSync(cssPath, "utf8");
 
 const partner = (overrides: Partial<PartnerSearchResult> = {}): PartnerSearchResult => ({
   id: "p-1",
-  displayName: "Витрина Свет",
+  displayName: "Студия света",
   city: "Краснодар",
   photoUrl: null,
   description: null,
@@ -41,11 +43,17 @@ const partner = (overrides: Partial<PartnerSearchResult> = {}): PartnerSearchRes
 });
 
 describe("PartnerSearchResultCard P5b presentation", () => {
-  it("scopes modalResult* CSS with wrap-safe name/city/chips and ≥44px invite hit", () => {
+  it("scopes modalResult* CSS with cover/identity/terms/foot and ≥44px invite hit", () => {
     expect(css).toContain(".modalResultCard");
+    expect(css).toContain("min-height: min-content");
+    expect(css).toContain(".modalResultCover");
+    expect(css).toContain(".modalResultTop");
+    expect(css).toContain(".modalResultLogo");
     expect(css).toContain(".modalResultName");
     expect(css).toContain(".modalResultCity");
-    expect(css).toContain(".modalResultDirections");
+    expect(css).toContain(".modalResultDirectionsPrimary");
+    expect(css).toContain(".modalResultTerms");
+    expect(css).toContain(".modalResultFoot");
     expect(css).toContain("overflow-wrap: anywhere");
     expect(css).toMatch(
       /\.modalResultFoot\s*:global\(button\)\s*\{[^}]*min-height:\s*44px;[^}]*min-width:\s*44px;/s,
@@ -55,11 +63,13 @@ describe("PartnerSearchResultCard P5b presentation", () => {
     expect(css).not.toContain("!important");
   });
 
-  it("maps canonical type and real direction labels without inventing chips", () => {
+  it("maps canonical type, cover tone, monogram and real direction labels", () => {
     expect(searchResultTypeLabel(partner())).toBe("Магазин");
-    expect(searchResultTypeLabel(partner({ partnerTypeLabel: null, partnerType: "MASTER" }))).toBe(
-      "Специалист",
+    expect(searchResultCoverTone(partner())).toBe("store");
+    expect(searchResultCoverTone(partner({ partnerTypeLabel: null, partnerType: "MASTER" }))).toBe(
+      "specialist",
     );
+    expect(searchResultMonogram("Студия света")).toBe("СС");
     expect(searchResultDirectionLabels(partner())).toEqual([
       "Свет",
       "Розетки",
@@ -79,7 +89,7 @@ describe("PartnerSearchResultCard P5b presentation", () => {
     ).toEqual([]);
   });
 
-  it("renders name → type → city → directions hierarchy and invites with the same partner", async () => {
+  it("renders cover → monogram/name/city → directions → terms → primary invite", async () => {
     const onInvite = vi.fn();
     const long = partner({
       displayName:
@@ -103,15 +113,27 @@ describe("PartnerSearchResultCard P5b presentation", () => {
 
     const card = screen.getByTestId("agent-partner-search-result-card");
     expect(card).toHaveAttribute("data-partner-id", "p-1");
+    expect(card).toHaveAttribute("data-cover-tone", "store");
     expect(screen.getByTestId("agent-partner-search-result-type")).toHaveTextContent("Магазин");
+    expect(screen.getByTestId("agent-partner-search-result-monogram")).toHaveTextContent(
+      searchResultMonogram(long.displayName),
+    );
     expect(screen.getByTestId("agent-partner-search-result-name")).toHaveTextContent(
       long.displayName,
     );
     expect(screen.getByTestId("agent-partner-search-result-city")).toHaveTextContent(long.city!);
-    expect(screen.getByTestId("agent-partner-search-result-directions")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-partner-search-result-directions")).toHaveTextContent(
+      "Светильники потолочные встраиваемые длинная подпись · Кабель и проводка",
+    );
+    expect(screen.getByTestId("agent-partner-search-result-stages")).toHaveTextContent(
+      "Чистовая отделка",
+    );
     expect(screen.getByTestId("agent-published-terms")).toHaveTextContent("p-1");
+    expect(screen.getByTestId("agent-partner-search-result-terms")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Пригласить" }));
+    const invite = screen.getByRole("button", { name: "Пригласить" });
+    expect(invite).toHaveAttribute("data-testid", "agent-partner-search-result-invite");
+    await userEvent.click(invite);
     expect(onInvite).toHaveBeenCalledTimes(1);
   });
 
@@ -119,7 +141,7 @@ describe("PartnerSearchResultCard P5b presentation", () => {
     render(
       <PartnerSearchResultCard
         partner={partner({ partnershipStatus: "ACTIVE" })}
-        title="Витрина Свет"
+        title="Студия света"
         showPublishedTerms={false}
         inviteDisabled={false}
         onInvite={() => undefined}

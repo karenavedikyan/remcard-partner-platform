@@ -184,6 +184,7 @@
   overflow: auto;
   min-width: 0;
   padding-right: 2px;
+  align-content: start;
 }
 
 .modalResultsState {
