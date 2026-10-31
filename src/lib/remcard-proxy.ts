@@ -88,6 +88,14 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["POST"]),
       pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/demo-supersession$/,
     },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/account-delete\/preview$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/account-delete$/,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/moderation$/ },
     {
       methods: new Set(["GET"]),
