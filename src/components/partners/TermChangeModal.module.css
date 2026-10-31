@@ -1,5 +1,9 @@
-/* P14: centered C1 term-change shell — frozen R1 dialog geometry
- * roles.css: dialog { width: min(620px, calc(100% - 32px)); } + centered backdrop
+/* P15: C1 term-change shell — match frozen R1 rendered dialog box
+ * Independent R1 geometry (border-box of #role-dialog):
+ *   1440 → width 620, centered
+ *   375  → x 19, width 337  (= viewport − 38)
+ *   320  → x 19, width 282
+ * Backdrop gutters 19px; sheet fills the padded area (no double-subtract).
  */
 
 .backdrop {
@@ -9,13 +13,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 19px;
+  box-sizing: border-box;
   background: rgb(17 17 17 / 0.5);
   backdrop-filter: blur(3px);
 }
 
 .sheet {
-  /* Backdrop already provides 16px gutters; width 100% of that area ≈ R1 calc(100% - 32px). */
+  box-sizing: border-box;
   width: min(620px, 100%);
   max-height: min(94dvh, 85dvh);
   display: flex;
@@ -99,9 +104,8 @@
 
 @media (max-width: 680px) {
   .backdrop {
-    /* Keep centered dialog with 16px gutters — not a bottom sheet (frozen R1). */
     align-items: center;
-    padding: 16px;
+    padding: 19px;
   }
 
   .sheet {
@@ -114,5 +118,17 @@
   .body {
     padding-left: var(--space-4);
     padding-right: var(--space-4);
+  }
+}
+
+/* Short viewports (e.g. 320×600): keep centered, scroll body, do not bottom-dock. */
+@media (max-height: 640px) {
+  .backdrop {
+    align-items: center;
+    padding: 19px;
+  }
+
+  .sheet {
+    max-height: calc(100dvh - 38px);
   }
 }
