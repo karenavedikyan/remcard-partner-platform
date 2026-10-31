@@ -184,16 +184,6 @@ export function PartnerDiscussionInvitePanel({
     }
   }
 
-  function resetReadyForAnother() {
-    setCreatedSnapshot(null);
-    setShareOpen(false);
-    setShareHint("");
-    setCreatedUrl("");
-    setCreatedExpires("");
-    setError("");
-    setHistoryRevealed(false);
-  }
-
   function openInviteCard() {
     setHistoryRevealed(true);
     requestAnimationFrame(() => {
@@ -258,7 +248,6 @@ export function PartnerDiscussionInvitePanel({
             onToggleShare={() => setShareOpen((open) => !open)}
             onCopyUrl={() => void copyUrl(createdSnapshot.url)}
             onCopyMessageAndUrl={() => void copyMessageAndUrl(createdSnapshot)}
-            onCreateAnother={resetReadyForAnother}
             onOpenInviteCard={openInviteCard}
             formatExpiry={formatExpiry}
           />

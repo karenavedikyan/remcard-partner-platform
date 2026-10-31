@@ -83,7 +83,7 @@
 .actions {
   display: grid;
   gap: var(--space-3, 0.75rem);
-  align-items: stretch;
+  justify-items: stretch;
 }
 
 .actions :global(button) {
@@ -94,8 +94,22 @@
   width: 100%;
 }
 
-.actions :global(button[data-testid="agent-discussion-invite-open-card"]) {
-  width: 100%;
+/* P16: R1 open-card is ghost/text (not full-width outline secondary). */
+.openCard {
+  justify-self: start;
+  width: auto;
+  max-width: 100%;
+  padding-inline: 0;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 500;
+}
+
+.openCard:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .shareActions {
@@ -106,17 +120,6 @@
 }
 
 .shareActions :global(button) {
-  min-height: 44px;
-}
-
-.secondaryRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3, 0.75rem);
-  align-items: center;
-}
-
-.secondaryRow :global(button) {
   min-height: 44px;
 }
 
@@ -211,5 +214,10 @@
 
   .actions :global(button[data-testid="agent-discussion-invite-copy-url"]) {
     width: 100%;
+  }
+
+  /* R1 mobile: ghost open-card centered under primary share. */
+  .openCard {
+    justify-self: center;
   }
 }

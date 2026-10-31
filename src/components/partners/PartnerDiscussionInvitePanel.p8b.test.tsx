@@ -201,20 +201,32 @@ describe("PartnerDiscussionInvitePanel P8b ready / hand-off", () => {
     });
   });
 
-  it("create-another restores wizard without a new POST", async () => {
-    render(<PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />);
+  it("P16 ready has no create-another; remount restores wizard with 0 POST until Submit", async () => {
+    const { unmount } = render(
+      <PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />,
+    );
     await walkToCreate();
     await waitFor(() => expect(screen.getByTestId("agent-discussion-invite-ready")).toBeInTheDocument());
+    expect(screen.queryByTestId("agent-discussion-invite-create-another")).not.toBeInTheDocument();
     remcardFetch.mockClear();
 
-    await userEvent.click(screen.getByTestId("agent-discussion-invite-create-another"));
-    expect(screen.getByTestId("agent-discussion-invite-wizard")).toBeInTheDocument();
+    // Hub modal unmounts children on close — same remount path as reopen invite entry.
+    unmount();
+    render(<PartnerDiscussionInvitePanel showSectionTitle={false} presentationWizard />);
+    await waitFor(() => expect(screen.getByTestId("agent-discussion-invite-wizard")).toBeInTheDocument());
     expect(screen.queryByTestId("agent-discussion-invite-ready")).not.toBeInTheDocument();
     expect(
       remcardFetch.mock.calls.some(
         (call) => call[1] && (call[1] as { method?: string }).method === "POST",
       ),
     ).toBe(false);
+
+    await walkToCreate();
+    await waitFor(() => expect(screen.getByTestId("agent-discussion-invite-ready")).toBeInTheDocument());
+    const posts = remcardFetch.mock.calls.filter(
+      (call) => call[1] && (call[1] as { method?: string }).method === "POST",
+    );
+    expect(posts).toHaveLength(1);
   });
 
   it("leaves non-agent flat UI with notice, not ready composition", async () => {

@@ -21,7 +21,6 @@ const requiredHandlers = {
   onToggleShare: vi.fn(),
   onCopyUrl: vi.fn(),
   onCopyMessageAndUrl: vi.fn(),
-  onCreateAnother: vi.fn(),
   onOpenInviteCard: vi.fn(),
   formatExpiry: () => "1 декабря 2026 г.",
 };
@@ -67,7 +66,8 @@ describe("AgentDiscussionInviteResult P8b / P12 ready composition", () => {
     expect(onToggleShare).toHaveBeenCalled();
     await userEvent.click(screen.getByTestId("agent-discussion-invite-open-card"));
     expect(onOpenInviteCard).toHaveBeenCalled();
-    expect(screen.getByTestId("agent-discussion-invite-create-another")).toBeInTheDocument();
+    // P16: frozen R1 ready has no «Создать ещё» on this surface.
+    expect(screen.queryByTestId("agent-discussion-invite-create-another")).not.toBeInTheDocument();
   });
 
   it("omits proposed-terms card when API provides none (no invented terms)", () => {

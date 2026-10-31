@@ -26,7 +26,11 @@ export type AgentDiscussionInviteResultProps = {
   onToggleShare: () => void;
   onCopyUrl: () => void;
   onCopyMessageAndUrl: () => void;
-  onCreateAnother: () => void;
+  /**
+   * Optional. Frozen R1 ready surface has no «Создать ещё».
+   * New invite remains available via hub close/reopen wizard (not on this ready chrome).
+   */
+  onCreateAnother?: () => void;
   onOpenInviteCard: () => void;
   formatExpiry: (iso: string) => string;
 };
@@ -45,7 +49,6 @@ export function AgentDiscussionInviteResult({
   onToggleShare,
   onCopyUrl,
   onCopyMessageAndUrl,
-  onCreateAnother,
   onOpenInviteCard,
   formatExpiry,
 }: AgentDiscussionInviteResultProps) {
@@ -136,7 +139,8 @@ export function AgentDiscussionInviteResult({
         </Button>
         <Button
           type="button"
-          variant="secondary"
+          variant="text"
+          className={styles.openCard}
           onClick={onOpenInviteCard}
           data-testid="agent-discussion-invite-open-card"
         >
@@ -207,17 +211,6 @@ export function AgentDiscussionInviteResult({
           </li>
         </ol>
       </details>
-
-      <div className={styles.secondaryRow}>
-        <Button
-          type="button"
-          variant="text"
-          onClick={onCreateAnother}
-          data-testid="agent-discussion-invite-create-another"
-        >
-          Создать ещё
-        </Button>
-      </div>
 
       {status ? (
         <p className={styles.status} role="status" data-testid="agent-discussion-invite-share-status">
