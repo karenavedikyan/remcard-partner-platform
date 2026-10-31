@@ -134,6 +134,23 @@ describe("PartnersHub P5b modal search results", () => {
     expect(css).not.toMatch(/\.modalResults[\s\S]*!important/);
   });
 
+  it("lays out multi-card results as a column flex list (no collapsing grid tracks)", () => {
+    const css = readFileSync(path.join(__dirname, "PartnersHub.module.css"), "utf8");
+    expect(css).toMatch(
+      /\.modalResults\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;/s,
+    );
+    expect(css).not.toMatch(/\.modalResults\s*\{[^}]*display:\s*grid;/s);
+    expect(css).not.toMatch(/\.modalResults\s*\{[^}]*align-content:\s*start;/s);
+
+    const cardCss = readFileSync(
+      path.join(__dirname, "PartnerSearchResultCard.module.css"),
+      "utf8",
+    );
+    expect(cardCss).toMatch(/\.modalResultCard\s*\{[^}]*flex:\s*0\s+0\s+auto;/s);
+    expect(cardCss).not.toContain("align-self: start");
+    expect(cardCss).not.toContain("min-height: min-content");
+  });
+
   it("renders every loaded result (no silent 12-cap), honest count, and opens invite", async () => {
     const partners = Array.from({ length: 14 }, (_, i) => searchPartner(`id-${i + 1}`));
     mockApis(partners, "cursor-more");

@@ -178,13 +178,16 @@
 }
 
 .modalResults {
-  display: grid;
+  /* Column flex: variable-height cards must own independent block rows.
+     CSS grid + overflow:hidden on cards collapses auto tracks and stacks covers. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-3);
   max-height: min(52vh, 420px);
   overflow: auto;
   min-width: 0;
   padding-right: 2px;
-  align-content: start;
 }
 
 .modalResultsState {

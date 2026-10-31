@@ -45,7 +45,11 @@ const partner = (overrides: Partial<PartnerSearchResult> = {}): PartnerSearchRes
 describe("PartnerSearchResultCard P5b presentation", () => {
   it("scopes modalResult* CSS with cover/identity/terms/foot and ≥44px invite hit", () => {
     expect(css).toContain(".modalResultCard");
-    expect(css).toContain("min-height: min-content");
+    expect(css).toMatch(
+      /\.modalResultCard\s*\{[^}]*flex:\s*0\s+0\s+auto;[^}]*overflow:\s*hidden;/s,
+    );
+    expect(css).not.toContain("align-self: start");
+    expect(css).not.toContain("min-height: min-content");
     expect(css).toContain(".modalResultCover");
     expect(css).toContain(".modalResultTop");
     expect(css).toContain(".modalResultLogo");

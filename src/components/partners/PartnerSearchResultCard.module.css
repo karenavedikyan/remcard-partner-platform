@@ -9,9 +9,8 @@
   border-radius: 12px;
   background: var(--surface);
   min-width: 0;
-  /* overflow:hidden + CSS grid would otherwise shrink items below content */
-  min-height: min-content;
-  align-self: start;
+  /* Independent block size in .modalResults column flex — do not shrink into neighbors */
+  flex: 0 0 auto;
   overflow: hidden;
 }
 
