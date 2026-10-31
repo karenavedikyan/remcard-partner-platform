@@ -10,6 +10,8 @@ import { AdminPartnersClient } from "./AdminPartnersClient";
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 vi.mock("@/lib/prof-admin-partners-api", () => api);
@@ -37,7 +39,7 @@ async function openPreview() {
   await screen.findByText(row.displayName);
   fireEvent.click(screen.getByRole("button", { name: /Открыть карточку/ }));
   fireEvent.change(screen.getByPlaceholderText("Причина"), { target: { value: "Synthetic R4 reason" } });
-  fireEvent.click(screen.getByRole("button", { name: "В архив проекта" }));
+  fireEvent.click(screen.getByRole("button", { name: "Архивировать профиль" }));
   await screen.findByText("Review archive consequences");
 }
 describe("Independent round-four admin positive and concurrency controls", () => {

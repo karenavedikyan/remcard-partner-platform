@@ -46,8 +46,8 @@ function outcomeLabel(row: BulkApplyRowResult): string {
 function confirmTitle(action: BulkLifecycleAction): string {
   if (action === "hide_catalog") return "Скрыть выбранных партнёров?";
   if (action === "publish_catalog") return "Показать выбранных партнёров?";
-  if (action === "archive_project") return "Переместить в архив?";
-  if (action === "restore_project") return "Восстановить партнёров?";
+  if (action === "archive_project") return "Архивировать профили?";
+  if (action === "restore_project") return "Восстановить профили из архива?";
   return "Подтвердить групповое изменение?";
 }
 
@@ -60,10 +60,10 @@ function confirmLead(action: BulkLifecycleAction, count: number): string {
     return `${who}. Поиск сотрудничества не изменится.`;
   }
   if (action === "archive_project") {
-    return `${who}. Скроем из каталога и поиска сотрудничества. Данные и история останутся; восстановление доступно в архиве.`;
+    return `${who}. Профили перестанут участвовать в работе проекта. Аккаунты и история сохранятся. Это не удаление аккаунтов и не новая регистрация.`;
   }
   if (action === "restore_project") {
-    return `${who}. Вернём в рабочий реестр и восстановим прежние настройки видимости.`;
+    return `${who}. Вернём существующие профили из архива. Новые аккаунты не создаются.`;
   }
   return `${who}.`;
 }
@@ -327,17 +327,23 @@ export function AdminPartnersBulkPanel({
           >
             Сотрудничество
           </button>
-          <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={() => pickQuickAction("archive_project")}>
-            В архив
-          </button>
           <button
             type="button"
             className={styles.bulkBarBtn}
             disabled={disabled}
             onClick={() => pickQuickAction("archive_project")}
-            title="Архив профилей в проекте (не удаление аккаунта). Нужны причина и preview."
+            title="Архивировать профили — аккаунты сохраняются"
           >
-            Удалить из проекта
+            Архивировать профили
+          </button>
+          <button
+            type="button"
+            className={styles.bulkBarBtn}
+            disabled={disabled}
+            onClick={() => pickQuickAction("restore_project")}
+            title="Восстановить профили из архива"
+          >
+            Восстановить из архива
           </button>
           <button type="button" className={styles.bulkBarBtn} disabled={disabled} onClick={onClearSelection}>
             Отменить
@@ -380,17 +386,18 @@ export function AdminPartnersBulkPanel({
             className={styles.bulkBarBtn}
             disabled={disabled || applying}
             onClick={() => pickQuickAction("archive_project")}
+            title="Архивировать профили — аккаунты сохраняются"
           >
-            В архив
+            Архивировать профили
           </button>
           <button
             type="button"
             className={styles.bulkBarBtn}
             disabled={disabled || applying}
-            onClick={() => pickQuickAction("archive_project")}
-            title="Архив профилей в проекте (не удаление аккаунта). Нужны причина и preview."
+            onClick={() => pickQuickAction("restore_project")}
+            title="Восстановить профили из архива"
           >
-            Удалить из проекта
+            Восстановить из архива
           </button>
           <button
             type="button"
@@ -498,7 +505,7 @@ export function AdminPartnersBulkPanel({
             disabled={disabled || previewLoading || !bulkReason.trim() || !bulkAction}
             onClick={() => void onRequestBulkPreview()}
           >
-            {previewLoading ? "Проверка…" : "Получить preview группы"}
+            {previewLoading ? "Проверка…" : "Проверить последствия для группы"}
           </Button>
         </>
       ) : null}

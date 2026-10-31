@@ -150,14 +150,14 @@ export function AdminPartnersSingleManagementPanel({
             disabled={disabled}
             onClick={() => void onRequestPreview("archive_project")}
           >
-            В архив проекта
+            Архивировать профиль
           </Button>
           <Button
             variant="secondary"
             disabled={disabled}
             onClick={() => void onRequestPreview("restore_project")}
           >
-            Восстановить профиль
+            Восстановить профиль из архива
           </Button>
         </div>
       )}

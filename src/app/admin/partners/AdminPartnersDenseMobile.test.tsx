@@ -7,6 +7,8 @@ import { PARTNERS_MOBILE_DENSE_MQ } from "./adminPartnersViewMode";
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 

@@ -6,6 +6,8 @@ import userEvent from "@testing-library/user-event";
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 

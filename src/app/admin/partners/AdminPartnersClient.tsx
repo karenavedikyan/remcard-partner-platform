@@ -37,9 +37,12 @@ import { Button } from "@/components/ui/Button";
 import styles from "./AdminPartners.module.css";
 import type { PartnerRegistryFacets } from "@/lib/prof-admin-management-api";
 import {
+  applyPartnerAccountDelete,
   applyPartnerLifecycle,
   fetchPartnerRegistry,
+  previewPartnerAccountDelete,
   previewPartnerLifecycle,
+  type PartnerAccountDeletePreview,
 } from "@/lib/prof-admin-partners-api";
 import { AdminPartnersMetricsBar } from "./AdminPartnersMetricsBar";
 import { AdminPartnersPartnerDetailDialog } from "./AdminPartnersPartnerDetailDialog";
@@ -51,6 +54,11 @@ type PendingPreview = {
   effects: string[];
   warnings: string[];
   confirmToken: string;
+};
+
+type PendingAccountDelete = PartnerAccountDeletePreview & {
+  partnerId: string;
+  reason: string;
 };
 
 export function AdminPartnersClient() {
@@ -87,6 +95,11 @@ export function AdminPartnersClient() {
 
   const [singleSelected, setSingleSelected] = useState<PartnerRegistryItem | null>(null);
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
+  const [pendingAccountDelete, setPendingAccountDelete] = useState<PendingAccountDelete | null>(
+    null,
+  );
+  const [publicIdConfirm, setPublicIdConfirm] = useState("");
+  const [accountDeleteSuccess, setAccountDeleteSuccess] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [isApplyingSingle, setIsApplyingSingle] = useState(false);
   const detailReturnFocusRef = useRef<HTMLElement | null>(null);
@@ -117,6 +130,9 @@ export function AdminPartnersClient() {
   function invalidateSinglePreviewContext() {
     singlePreviewGen.current += 1;
     setPendingPreview(null);
+    setPendingAccountDelete(null);
+    setPublicIdConfirm("");
+    setAccountDeleteSuccess(null);
     setDialogError(null);
   }
 
@@ -330,13 +346,16 @@ export function AdminPartnersClient() {
     if (!partnerId) return;
     const reasonAtRequest = reasonRef.current.trim();
     if (!reasonAtRequest) {
-      setDialogError("Укажите причину перед получением preview");
+      setDialogError("Укажите причину перед проверкой последствий");
       return;
     }
     const gen = ++singlePreviewGen.current;
     const actionAtRequest = action;
     lastDialogActionRef.current = actionAtRequest;
     setDialogError(null);
+    setPendingAccountDelete(null);
+    setPublicIdConfirm("");
+    setAccountDeleteSuccess(null);
     try {
       const preview = await previewPartnerLifecycle(partnerId, actionAtRequest);
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
@@ -354,7 +373,92 @@ export function AdminPartnersClient() {
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
       if (singleSelectedIdRef.current !== partnerId) return;
       setPendingPreview(null);
-      setDialogError(e instanceof Error ? e.message : "Ошибка проверки");
+      setDialogError(e instanceof Error ? e.message : "Не удалось проверить последствия");
+    }
+  }
+
+  async function requestAccountDeletePreview() {
+    const partnerId = singleSelectedIdRef.current;
+    if (!partnerId) return;
+    const reasonAtRequest = reasonRef.current.trim();
+    if (!reasonAtRequest) {
+      setDialogError("Укажите причину перед проверкой последствий удаления");
+      return;
+    }
+    const gen = ++singlePreviewGen.current;
+    lastDialogActionRef.current = "delete_partner_account";
+    setDialogError(null);
+    setPendingPreview(null);
+    setAccountDeleteSuccess(null);
+    setPublicIdConfirm("");
+    try {
+      const preview = await previewPartnerAccountDelete(partnerId, reasonAtRequest);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      if (reasonRef.current.trim() !== reasonAtRequest) return;
+      setPendingAccountDelete({
+        partnerId,
+        reason: reasonAtRequest,
+        ...preview.preview,
+      });
+    } catch (e) {
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      setPendingAccountDelete(null);
+      setDialogError(e instanceof Error ? e.message : "Не удалось проверить последствия удаления");
+    }
+  }
+
+  async function confirmAccountDelete() {
+    if (!pendingAccountDelete || isApplyingSingle || bulkApplying) return;
+    const partnerId = singleSelectedIdRef.current;
+    const reasonNow = reasonRef.current.trim();
+    if (
+      !partnerId ||
+      pendingAccountDelete.partnerId !== partnerId ||
+      pendingAccountDelete.reason !== reasonNow
+    ) {
+      setDialogError("Контекст изменился — снова проверьте последствия удаления");
+      setPendingAccountDelete(null);
+      return;
+    }
+    if (publicIdConfirm.trim() !== pendingAccountDelete.publicId) {
+      setDialogError("Публичный ID не совпадает — удаление не выполнено");
+      return;
+    }
+    const gen = singlePreviewGen.current;
+    const tokenAtConfirm = pendingAccountDelete.confirmToken;
+    const publicIdAtConfirm = pendingAccountDelete.publicId;
+    setDialogError(null);
+    setIsApplyingSingle(true);
+    try {
+      const result = await applyPartnerAccountDelete(
+        partnerId,
+        reasonNow,
+        tokenAtConfirm,
+        publicIdAtConfirm,
+      );
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      setPendingAccountDelete(null);
+      setPublicIdConfirm("");
+      setReason("");
+      reasonRef.current = "";
+      const successMessage =
+        result.message ||
+        "Аккаунт удалён. Партнёр может зарегистрироваться заново через прежний сервис входа. Новый аккаунт не связан со старой историей.";
+      setAccountDeleteSuccess(successMessage);
+      setActionError(null);
+      await loadPage(currentCursor);
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      // Close detail (row gone); surface success on the registry page.
+      setSingleSelected(null);
+      setActionError(successMessage);
+    } catch (e) {
+      if (!mountedRef.current || gen !== singlePreviewGen.current) return;
+      if (singleSelectedIdRef.current !== partnerId) return;
+      setDialogError(e instanceof Error ? e.message : "Не удалось удалить аккаунт");
+    } finally {
+      if (mountedRef.current) setIsApplyingSingle(false);
     }
   }
 
@@ -377,7 +481,7 @@ export function AdminPartnersClient() {
       pendingPreview.partnerId !== partnerId ||
       pendingPreview.reason !== reasonNow
     ) {
-      setDialogError("Контекст изменился — получите preview заново");
+      setDialogError("Контекст изменился — снова проверьте последствия");
       setPendingPreview(null);
       return;
     }
@@ -405,7 +509,7 @@ export function AdminPartnersClient() {
     } catch (e) {
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
       if (singleSelectedIdRef.current !== partnerId) return;
-      setDialogError(e instanceof Error ? e.message : "Ошибка применения");
+      setDialogError(e instanceof Error ? e.message : "Не удалось применить изменение");
     } finally {
       if (mountedRef.current) setIsApplyingSingle(false);
     }
@@ -835,16 +939,26 @@ export function AdminPartnersClient() {
               ? pendingPreview
               : null
           }
+          pendingAccountDelete={
+            pendingAccountDelete && pendingAccountDelete.partnerId === singleSelected.id
+              ? pendingAccountDelete
+              : null
+          }
+          publicIdConfirm={publicIdConfirm}
+          onPublicIdConfirmChange={setPublicIdConfirm}
           onCancelPreview={() => {
             invalidateSinglePreviewContext();
           }}
           onRequestPreview={(action) => void requestPreview(action)}
+          onRequestAccountDeletePreview={() => void requestAccountDeletePreview()}
           onConfirmApply={() => void confirmApply()}
+          onConfirmAccountDelete={() => void confirmAccountDelete()}
           onRetryDialogError={retryDialogWorkflow}
           onClose={closePartnerDetail}
           isApplying={isApplyingSingle}
           disabled={interactionsDisabled}
           dialogError={dialogError}
+          accountDeleteSuccess={accountDeleteSuccess}
           postApplyFocusKey={postApplyFocusKey}
         />
       ) : null}

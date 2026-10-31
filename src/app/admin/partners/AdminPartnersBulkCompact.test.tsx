@@ -12,6 +12,8 @@ const nav = vi.hoisted(() => ({
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 
@@ -90,7 +92,7 @@ describe("Admin partners bulk selection and compact registry", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"),
     );
-    const previewBtn = screen.getByRole("button", { name: "Получить preview группы" });
+    const previewBtn = screen.getByRole("button", { name: "Проверить последствия для группы" });
     await waitFor(() => expect(previewBtn).toBeEnabled());
     fireEvent.click(previewBtn);
     await waitFor(() => expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("p1", "hide_catalog"));

@@ -20,6 +20,8 @@ vi.mock("next/navigation", () => ({
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 
@@ -113,7 +115,7 @@ describe("Admin Partners R1 parity presentation", () => {
     expect(list).toContain("Визит*");
     expect(list).toContain("Нет данных");
     expect(detail).toContain("Карточка партнёра");
-    expect(detail).toContain("Удалить из проекта");
+    expect(detail).toContain("Удалить аккаунт партнёра");
     expect(detail).toContain("archive_project");
     expect(css).toContain(".filterChip");
     expect(css).toContain(".bulkBar");
@@ -203,19 +205,19 @@ describe("Admin Partners R1 parity presentation", () => {
     expect(screen.getByRole("button", { name: "Каталог" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Сотрудничество" })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "В архив" }));
+    fireEvent.click(screen.getByRole("button", { name: "Архивировать профили" }));
     await waitFor(() => screen.getByLabelText("Групповое действие"));
     expect(screen.getByLabelText("Групповое действие")).toHaveValue("archive_project");
     expect(screen.getByLabelText("Причина группового изменения")).toBeTruthy();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
   });
 
-  it("maps bulk «Удалить из проекта» to archive_project, not hide_catalog", async () => {
+  it("maps bulk «Архивировать профили» to archive_project, not hide_catalog", async () => {
     render(<AdminPartnersClient />);
     await waitFor(() => screen.getByText("Тест Партнёр"));
     fireEvent.click(screen.getByLabelText("Выбрать Тест Партнёр"));
     await waitFor(() => screen.getByTestId("selected-count"));
-    fireEvent.click(screen.getByRole("button", { name: "Удалить из проекта" }));
+    fireEvent.click(screen.getByRole("button", { name: "Архивировать профили" }));
     await waitFor(() => screen.getByLabelText("Групповое действие"));
     expect(screen.getByLabelText("Групповое действие")).toHaveValue("archive_project");
   });

@@ -4,6 +4,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
@@ -64,7 +66,7 @@ async function confirm() {
   fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
   fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
   await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
-  fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+  fireEvent.click(screen.getByRole("button", { name: "Проверить последствия для группы" }));
   const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
   expect(dialog).toHaveAttribute("aria-modal", "true");
   expect(dialog.tagName).toBe("DIALOG");
@@ -135,7 +137,7 @@ describe("Independent mass-action safety", () => {
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
-    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    fireEvent.click(screen.getByRole("button", { name: "Проверить последствия для группы" }));
     const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     fireEvent.click(screen.getByRole("button", { name: "Отмена" }));
@@ -143,7 +145,7 @@ describe("Independent mass-action safety", () => {
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(document.activeElement).toBe(
-        screen.getByRole("button", { name: "Получить preview группы" }),
+        screen.getByRole("button", { name: "Проверить последствия для группы" }),
       ),
     );
   });
@@ -155,7 +157,7 @@ describe("Independent mass-action safety", () => {
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
-    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    fireEvent.click(screen.getByRole("button", { name: "Проверить последствия для группы" }));
     await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
     const close = screen.getByRole("button", { name: "Закрыть окно" });
     expect(close).toBeEnabled();
@@ -166,7 +168,7 @@ describe("Independent mass-action safety", () => {
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(document.activeElement).toBe(
-        screen.getByRole("button", { name: "Получить preview группы" }),
+        screen.getByRole("button", { name: "Проверить последствия для группы" }),
       ),
     );
   });
@@ -188,7 +190,7 @@ describe("Independent mass-action safety", () => {
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
-    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    fireEvent.click(screen.getByRole("button", { name: "Проверить последствия для группы" }));
     await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     const report = await screen.findByRole("region", { name: "Итог групповой операции" });
@@ -256,7 +258,7 @@ describe("Independent mass-action safety", () => {
     fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
-    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    fireEvent.click(screen.getByRole("button", { name: "Проверить последствия для группы" }));
     const exclude = await screen.findByRole("button", { name: "Исключить проблемные и обновить preview" });
     expect(screen.queryByRole("button", { name: "Подтвердить" })).not.toBeInTheDocument();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();

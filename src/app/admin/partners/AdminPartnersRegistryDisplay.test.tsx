@@ -6,6 +6,8 @@ import { AdminPartnersClient } from "./AdminPartnersClient";
 const api = vi.hoisted(() => ({
   fetchPartnerRegistry: vi.fn(),
   previewPartnerLifecycle: vi.fn(),
+  previewPartnerAccountDelete: vi.fn(),
+  applyPartnerAccountDelete: vi.fn(),
   applyPartnerLifecycle: vi.fn(),
 }));
 vi.mock("@/lib/prof-admin-partners-api", () => api);
@@ -79,8 +81,9 @@ describe("PROF admin partner registry display (R1)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Проверочный партнёр/ }));
     const dialog = await screen.findByRole("heading", { name: "Карточка партнёра" });
     const root = dialog.closest("dialog")!;
-    expect(within(root).getByRole("button", { name: "В архив проекта" })).toBeInTheDocument();
-    expect(within(root).getByRole("button", { name: "Удалить из проекта" })).toBeInTheDocument();
+    expect(within(root).getByRole("button", { name: "Архивировать профиль" })).toBeInTheDocument();
+    expect(within(root).getByRole("button", { name: "Восстановить профиль из архива" })).toBeInTheDocument();
+    expect(within(root).getByRole("button", { name: "Удалить аккаунт партнёра" })).toBeInTheDocument();
     expect(api.previewPartnerLifecycle).not.toHaveBeenCalled();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
   });

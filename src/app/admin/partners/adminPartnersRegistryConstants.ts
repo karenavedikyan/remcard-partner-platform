@@ -7,7 +7,7 @@ export const BULK_LIFECYCLE_ACTIONS = {
   hide_catalog: "Убрать из каталога",
   publish_catalog: "Вернуть в каталог",
   archive_project: "Архивировать профили",
-  restore_project: "Восстановить профили",
+  restore_project: "Восстановить профили из архива",
 } as const;
 
 export type BulkLifecycleAction = keyof typeof BULK_LIFECYCLE_ACTIONS;

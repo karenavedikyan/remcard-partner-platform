@@ -128,6 +128,41 @@ export async function applyPartnerLifecycle(
   });
 }
 
+export type PartnerAccountDeletePreview = {
+  publicId: string;
+  displayName: string | null;
+  partnerType: string | null;
+  effects: string[];
+  warnings: string[];
+  loginServices: string[];
+  counts: { partnerships: number; orders: number; certificates: number };
+  hasClientCabinet: boolean;
+  confirmToken: string;
+};
+
+/** Server-side consequence review before irreversible partner account deletion. */
+export async function previewPartnerAccountDelete(userId: string, reason: string) {
+  return remcardFetch<{ preview: PartnerAccountDeletePreview }>(
+    `/api/pro/admin/partners/${encodeURIComponent(userId)}/account-delete/preview`,
+    { method: "POST", body: { reason } },
+  );
+}
+
+export async function applyPartnerAccountDelete(
+  userId: string,
+  reason: string,
+  confirmToken: string,
+  publicIdConfirm: string,
+) {
+  return remcardFetch<{ ok: true; message: string }>(
+    `/api/pro/admin/partners/${encodeURIComponent(userId)}/account-delete`,
+    {
+      method: "POST",
+      body: { reason, confirmToken, publicIdConfirm },
+    },
+  );
+}
+
 export async function previewDemoSupersession(liveUserId: string, demoUserId: string) {
   return remcardFetch<{
     blocked: boolean;

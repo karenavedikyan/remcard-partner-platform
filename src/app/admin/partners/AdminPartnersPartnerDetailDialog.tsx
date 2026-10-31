@@ -33,20 +33,38 @@ type PendingPreview = {
   confirmToken: string;
 };
 
+type PendingAccountDelete = {
+  partnerId: string;
+  publicId: string;
+  displayName: string | null;
+  effects: string[];
+  warnings: string[];
+  loginServices: string[];
+  counts: { partnerships: number; orders: number; certificates: number };
+  hasClientCabinet: boolean;
+  confirmToken: string;
+};
+
 type Props = {
   row: PartnerRegistryItem;
   open: boolean;
   reason: string;
   onReasonChange: (value: string) => void;
   pendingPreview: PendingPreview | null;
+  pendingAccountDelete?: PendingAccountDelete | null;
+  publicIdConfirm?: string;
+  onPublicIdConfirmChange?: (value: string) => void;
   onCancelPreview: () => void;
   onRequestPreview: (action: string) => void;
+  onRequestAccountDeletePreview?: () => void;
   onConfirmApply: () => void;
+  onConfirmAccountDelete?: () => void;
   onRetryDialogError: () => void;
   onClose: () => void;
   isApplying: boolean;
   disabled: boolean;
   dialogError: string | null;
+  accountDeleteSuccess?: string | null;
   /** Bumps after successful apply+reload so focus lands on a live in-dialog control. */
   postApplyFocusKey?: number;
 };
@@ -57,14 +75,20 @@ export function AdminPartnersPartnerDetailDialog({
   reason,
   onReasonChange,
   pendingPreview,
+  pendingAccountDelete = null,
+  publicIdConfirm = "",
+  onPublicIdConfirmChange,
   onCancelPreview,
   onRequestPreview,
+  onRequestAccountDeletePreview,
   onConfirmApply,
+  onConfirmAccountDelete,
   onRetryDialogError,
   onClose,
   isApplying,
   disabled,
   dialogError,
+  accountDeleteSuccess = null,
   postApplyFocusKey = 0,
 }: Props) {
   const titleId = useId();
@@ -391,9 +415,9 @@ export function AdminPartnersPartnerDetailDialog({
         </section>
 
         <p className={styles.helpTip}>
-          RemScore, процент заполненности, визиты и журнал управления: нет данных API. Действия —
-          только через preview / confirmToken. «Удалить из проекта» = архив профиля, не удаление
-          аккаунта.
+          RemScore, процент заполненности, визиты и журнал управления: нет данных API. Архив
+          сохраняет аккаунт. Удаление аккаунта необратимо закрывает учётную запись и освобождает
+          вход для новой регистрации.
         </p>
 
         <label className={styles.field}>
@@ -412,7 +436,63 @@ export function AdminPartnersPartnerDetailDialog({
           />
         </label>
 
-        {pendingPreview ? (
+        {accountDeleteSuccess ? (
+          <div role="status" className={styles.confirmation}>
+            <p>{accountDeleteSuccess}</p>
+          </div>
+        ) : null}
+
+        {pendingAccountDelete ? (
+          <div
+            role="dialog"
+            aria-label="Подтверждение удаления аккаунта"
+            className={styles.confirmation}
+            data-account-delete-confirm="true"
+          >
+            <p>
+              <strong>
+                {pendingAccountDelete.displayName ?? "Партнёр"} · {pendingAccountDelete.publicId}
+              </strong>
+            </p>
+            <p>{[...pendingAccountDelete.effects, ...pendingAccountDelete.warnings].join(" ")}</p>
+            <p className={styles.helpTip}>
+              Связано: партнёрств {pendingAccountDelete.counts.partnerships}, заказов{" "}
+              {pendingAccountDelete.counts.orders}, сертификатов{" "}
+              {pendingAccountDelete.counts.certificates}
+              {pendingAccountDelete.loginServices.length > 0
+                ? `. Сервисы входа: ${pendingAccountDelete.loginServices.join(", ")}`
+                : ""}
+              .
+            </p>
+            <label className={styles.field}>
+              Введите публичный ID для подтверждения
+              <input
+                aria-label="Публичный ID для подтверждения удаления"
+                value={publicIdConfirm}
+                disabled={disabled || isApplying}
+                onChange={(e) => onPublicIdConfirmChange?.(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+            <div className={styles.actions}>
+              <Button variant="secondary" disabled={isApplying} onClick={onCancelPreview}>
+                Отмена
+              </Button>
+              <Button
+                className={styles.danger}
+                disabled={
+                  disabled ||
+                  isApplying ||
+                  publicIdConfirm.trim() !== pendingAccountDelete.publicId
+                }
+                onClick={() => void onConfirmAccountDelete?.()}
+              >
+                {isApplying ? "Удаление…" : "Удалить аккаунт без возможности восстановления"}
+              </Button>
+            </div>
+          </div>
+        ) : pendingPreview ? (
           <div role="dialog" aria-label="Подтверждение изменения" className={styles.confirmation}>
             <p>{[...pendingPreview.effects, ...pendingPreview.warnings].join(" ")}</p>
             <div className={styles.actions}>
@@ -430,25 +510,27 @@ export function AdminPartnersPartnerDetailDialog({
               variant="secondary"
               className={styles.danger}
               disabled={disabled || isApplying}
+              title="Профиль перестанет участвовать в работе проекта. Аккаунт и история сохранятся. Это не удаление аккаунта и не новая регистрация"
               onClick={() => void onRequestPreview("archive_project")}
             >
-              В архив проекта
+              Архивировать профиль
             </Button>
             <Button
               variant="secondary"
               disabled={disabled || isApplying}
+              title="Возвращает существующий профиль. Не создаёт новый аккаунт и не отменяет другие ограничения"
               onClick={() => void onRequestPreview("restore_project")}
             >
-              Восстановить профиль
+              Восстановить профиль из архива
             </Button>
             <Button
               variant="secondary"
               className={styles.danger}
-              disabled={disabled || isApplying}
-              onClick={() => void onRequestPreview("archive_project")}
-              title="Архив профиля с сохранением истории; аккаунт и покупки не удаляются"
+              disabled={disabled || isApplying || !onRequestAccountDeletePreview}
+              title="Старый аккаунт будет закрыт. Новый аккаунт не получит старые партнёрства, историю, роли и бонусы"
+              onClick={() => void onRequestAccountDeletePreview?.()}
             >
-              Удалить из проекта
+              Удалить аккаунт партнёра
             </Button>
           </div>
         )}
