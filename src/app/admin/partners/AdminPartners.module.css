@@ -365,6 +365,14 @@
 .bulkHint { color: var(--muted); font-size: var(--text-sm); font-weight: 400; }
 .bulkPreviewList, .bulkReportList { display: grid; gap: var(--space-2); margin: 0; padding-left: 1.25rem; max-height: 240px; overflow: auto; }
 .bulkPreviewList li, .bulkReportList li { display: grid; gap: 4px; }
+.bulkReport {
+  outline: none;
+}
+.bulkReport:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
 .bulkReport h3 { font-size: 1rem; }
 .pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-4); }
 .paginationMeta { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }

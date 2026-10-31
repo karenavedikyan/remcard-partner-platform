@@ -97,6 +97,7 @@ export function AdminPartnersBulkPanel({
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const previewBtnRef = useRef<HTMLButtonElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const needReturnFocusRef = useRef(false);
 
@@ -106,6 +107,7 @@ export function AdminPartnersBulkPanel({
     selectedCount > 0 && !applying && (!bulkPreview || hasPreviewFailures);
   const modalOpen = Boolean(bulkPreview) && !hasPreviewFailures;
   const reportTitle = applying ? "Ход групповой операции" : "Итог групповой операции";
+  const hasApplyReport = Boolean(applyResults && applyResults.length > 0);
   const showCompactBarOnly =
     compactSelectionBar &&
     !selectionFormExpanded &&
@@ -137,45 +139,73 @@ export function AdminPartnersBulkPanel({
     if (wasModalOpenRef.current) {
       wasModalOpenRef.current = false;
       if (dialog?.open) dialog.close();
-      // Preview form unmounts while the modal is open — restore after it remounts.
+      // Restore after form remount (Cancel/Escape) or final apply report.
       needReturnFocusRef.current = true;
     }
   }, [modalOpen, applying]);
 
   useEffect(() => {
     if (modalOpen || !needReturnFocusRef.current) return;
-    if (!showNewGroupForm && selectedCount === 0) return;
+    // Apply clears preview before applying=false — wait for the final report.
+    if (applying) return;
+
     needReturnFocusRef.current = false;
     const saved = returnFocusRef.current;
     returnFocusRef.current = null;
+
+    function isFocusableControl(el: HTMLElement): boolean {
+      if (!el.isConnected) return false;
+      if (el.closest('[aria-hidden="true"], [hidden], [inert]')) return false;
+      if (
+        el instanceof HTMLButtonElement ||
+        el instanceof HTMLTextAreaElement ||
+        el instanceof HTMLSelectElement ||
+        el instanceof HTMLInputElement
+      ) {
+        if (el.disabled) return false;
+      }
+      return true;
+    }
+
+    function tryFocus(el: HTMLElement | null | undefined): boolean {
+      if (!el || !isFocusableControl(el)) return false;
+      try {
+        el.focus({ preventScroll: true });
+      } catch {
+        el.focus();
+      }
+      return document.activeElement === el;
+    }
+
     const focusTarget = () => {
-      const candidates = [previewBtnRef.current, saved].filter(
-        (el): el is HTMLElement => Boolean(el && el.isConnected),
-      );
-      for (const el of candidates) {
-        try {
-          el.focus({ preventScroll: true });
-        } catch {
-          el.focus();
-        }
-        if (document.activeElement === el) return true;
+      // Cancel/Escape: selection + preview form remount — return to opener.
+      if (showNewGroupForm || selectedCount > 0) {
+        if (tryFocus(previewBtnRef.current)) return true;
+        if (tryFocus(saved)) return true;
+        const reason = document.querySelector<HTMLTextAreaElement>(
+          'textarea[aria-label="Причина группового изменения"]',
+        );
+        if (tryFocus(reason)) return true;
       }
-      const reason = document.querySelector<HTMLTextAreaElement>(
-        'textarea[aria-label="Причина группового изменения"]',
+
+      // Successful / partial / stop apply: selection cleared, report stays.
+      if (hasApplyReport && tryFocus(reportRef.current)) return true;
+
+      // Stable nearby control if report is not yet mountable.
+      const registrySearch = document.querySelector<HTMLElement>(
+        '[data-testid="partner-search"]',
       );
-      if (reason && !reason.disabled) {
-        reason.focus();
-        return document.activeElement === reason;
-      }
+      if (tryFocus(registrySearch)) return true;
       return false;
     };
+
     queueMicrotask(() => {
       if (focusTarget()) return;
       requestAnimationFrame(() => {
         focusTarget();
       });
     });
-  }, [modalOpen, showNewGroupForm, selectedCount]);
+  }, [modalOpen, showNewGroupForm, selectedCount, applying, hasApplyReport]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -365,7 +395,15 @@ export function AdminPartnersBulkPanel({
       ) : null}
 
       {applyResults && applyResults.length > 0 ? (
-        <div className={styles.bulkReport} aria-live="polite">
+        <div
+          ref={reportRef}
+          className={styles.bulkReport}
+          role="region"
+          aria-live="polite"
+          aria-label={reportTitle}
+          tabIndex={-1}
+          data-bulk-apply-report="true"
+        >
           <h3>{reportTitle}</h3>
           {applying ? (
             <p className={styles.bulkHint} role="status">

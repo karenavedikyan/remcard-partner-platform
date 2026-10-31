@@ -141,6 +141,30 @@ describe("Independent mass-action safety", () => {
     fireEvent.click(screen.getByRole("button", { name: "Отмена" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Скрыть выбранных партнёров?" })).not.toBeInTheDocument());
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Получить preview группы" }),
+      ),
+    );
+  });
+
+  it("after successful bulk apply focuses the visible operation report, not BODY", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 2"));
+    await expandBulkForm("Каталог");
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+    const report = await screen.findByRole("region", { name: "Итог групповой операции" });
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByTestId("selected-count")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(report));
+    expect(document.activeElement?.tagName).not.toBe("BODY");
+    expect(report).toHaveAttribute("data-bulk-apply-report", "true");
   });
 
   it("locks metric filter chips while applying", async () => {
