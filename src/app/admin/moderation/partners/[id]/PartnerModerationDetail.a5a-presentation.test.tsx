@@ -121,7 +121,7 @@ describe("Partner moderation detail A5a presentation", () => {
     expect(api.moderationPartnerAction).not.toHaveBeenCalled();
   });
 
-  it("syncs preview close on native cancel/close without preventDefault", () => {
+  it("syncs preview close on native cancel/close while dialog is open", () => {
     const src = readFileSync(
       join(process.cwd(), "src/app/admin/moderation/partners/[id]/PartnerModerationPreviewModal.tsx"),
       "utf8",
@@ -129,6 +129,7 @@ describe("Partner moderation detail A5a presentation", () => {
     expect(src).toContain('addEventListener("cancel"');
     expect(src).toContain('addEventListener("close"');
     expect(src).not.toMatch(/preventDefault\(\)/);
+    expect(src).toMatch(/addEventListener\("close", syncClosed\)[\s\S]*\}, \[open\]\)/);
   });
 });
 
