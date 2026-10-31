@@ -159,7 +159,7 @@ describe("PartnersHub C1 centered term modal", () => {
     ).toBe(mutationsBefore);
   });
 
-  it("dirty Escape opens discard; Keep restores draft; Discard closes without POST", async () => {
+  it("dirty Escape opens discard; Keep restores draft; Discard restores trigger focus, 0 POST", async () => {
     installMocks();
     render(
       <PartnersHub
@@ -172,7 +172,8 @@ describe("PartnersHub C1 centered term modal", () => {
     );
 
     const openButtons = await screen.findAllByTestId("partner-term-change-qa-p1");
-    await userEvent.click(openButtons[0]!);
+    const trigger = openButtons[0]!;
+    await userEvent.click(trigger);
     await waitFor(() => expect(screen.getByTestId("term-draft-doors")).toBeInTheDocument());
 
     await userEvent.type(screen.getByTestId("term-draft-doors"), "15");
@@ -202,6 +203,10 @@ describe("PartnersHub C1 centered term modal", () => {
     expect(
       vi.mocked(remcardFetch).mock.calls.filter(([, init]) => init?.method === "POST").length,
     ).toBe(postsBefore);
+    await waitFor(() => {
+      const focused = document.activeElement as HTMLElement | null;
+      expect(focused?.getAttribute("data-testid")).toBe("partner-term-change-qa-p1");
+    });
   });
 
   it("busy submit blocks Escape close (no discard, modal stays)", async () => {

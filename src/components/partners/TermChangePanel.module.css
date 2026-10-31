@@ -123,7 +123,23 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cancelGhost {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--muted);
+  font-weight: 650;
+  padding-inline: 0;
+  min-height: 44px;
+  justify-content: flex-start;
+}
+
+.cancelGhost:hover:not(:disabled) {
+  color: var(--ink);
+  background: transparent !important;
 }
 
 .proposal {
@@ -286,6 +302,10 @@
 
   .actionsModal > * {
     width: 100%;
+    justify-content: center;
+  }
+
+  .cancelGhost {
     justify-content: center;
   }
 }

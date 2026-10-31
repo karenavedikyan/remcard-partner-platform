@@ -420,7 +420,8 @@ export function TermChangePanel({
         </div>
       ) : null}
 
-      {loadState === "loaded" && requests && requests.length === 0 ? (
+      {/* Inline empty copy only — R1 modal omits this line (partner → notice → table). */}
+      {!isModal && loadState === "loaded" && requests && requests.length === 0 ? (
         <p className={styles.meta}>Активных запросов на изменение пока нет.</p>
       ) : null}
 
@@ -500,11 +501,12 @@ export function TermChangePanel({
           {isModal ? null : (
             <h5 className={styles.subheading}>Предложить новое изменение</h5>
           )}
-          <p className={styles.meta}>
-            {isModal
-              ? "Общий процент «скидка клиенту + бонус», а не обещание дохода. Редактируются только уже согласованные категории."
-              : "Укажите предлагаемый процент рядом с текущим. Пустые поля не отправляются; 0 — допустимое значение."}
-          </p>
+          {isModal ? null : (
+            <p className={styles.meta}>
+              Укажите предлагаемый процент рядом с текущим. Пустые поля не отправляются; 0 —
+              допустимое значение.
+            </p>
+          )}
           {isModal ? (
             <div className={styles.termTableWrap}>
               <table className={styles.termTable} data-testid="term-change-table">
@@ -615,11 +617,19 @@ export function TermChangePanel({
               </div>
             ))
           )}
+          {/* R1 order: disclaimer / live-compare after the percent table */}
+          {isModal ? (
+            <p className={styles.meta} data-testid="term-change-disclaimer">
+              Общий процент «скидка клиенту + бонус», а не обещание дохода. Редактируются только
+              уже согласованные категории.
+            </p>
+          ) : null}
           <div className={isModal ? styles.actionsModal : styles.actions}>
             {isModal && onCloseRequest ? (
               <Button
                 type="button"
-                variant="secondary"
+                variant="text"
+                className={styles.cancelGhost}
                 disabled={busy}
                 data-testid="term-change-cancel"
                 onClick={onCloseRequest}

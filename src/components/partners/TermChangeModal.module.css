@@ -1,4 +1,6 @@
-/* P13: centered C1 term-change shell — frozen R1 coop modal geometry */
+/* P14: centered C1 term-change shell — frozen R1 dialog geometry
+ * roles.css: dialog { width: min(620px, calc(100% - 32px)); } + centered backdrop
+ */
 
 .backdrop {
   position: fixed;
@@ -7,16 +9,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-4);
-  background: rgb(0 0 0 / 0.45);
+  padding: 16px;
+  background: rgb(17 17 17 / 0.5);
+  backdrop-filter: blur(3px);
 }
 
 .sheet {
-  width: min(600px, 100%);
-  max-height: min(88vh, 820px);
+  width: min(620px, calc(100% - 32px));
+  max-height: min(94dvh, 85dvh);
   display: flex;
   flex-direction: column;
   background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
   overflow: hidden;
@@ -94,14 +98,15 @@
 
 @media (max-width: 680px) {
   .backdrop {
-    align-items: flex-end;
-    padding: 0;
+    /* Keep centered dialog with 16px gutters — not a bottom sheet (frozen R1). */
+    align-items: center;
+    padding: 16px;
   }
 
   .sheet {
-    width: 100%;
-    max-height: 94vh;
-    border-radius: 16px 16px 0 0;
+    width: min(620px, calc(100% - 32px));
+    max-height: 94dvh;
+    border-radius: 16px;
   }
 
   .header,

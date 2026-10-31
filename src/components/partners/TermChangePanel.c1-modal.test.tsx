@@ -90,6 +90,8 @@ describe("TermChangePanel modal presentation (R1)", () => {
     );
     expect(screen.getByTestId("term-change-table")).toBeInTheDocument();
     expect(screen.getByText(/Новые условия начнут действовать только после согласия/)).toBeInTheDocument();
+    expect(screen.getByTestId("term-change-disclaimer")).toBeInTheDocument();
+    expect(screen.queryByText(/Активных запросов на изменение пока нет/)).not.toBeInTheDocument();
     expect(screen.getByTestId("term-change-submit")).toHaveTextContent(
       "Отправить на согласование",
     );
@@ -97,6 +99,12 @@ describe("TermChangePanel modal presentation (R1)", () => {
     // Close lives on TermChangeModal, not the panel body
     expect(screen.queryByTestId("term-change-close")).not.toBeInTheDocument();
     expect(onBusyChange).toHaveBeenCalledWith(false);
+    // R1 order: partner → notice → table → disclaimer (disclaimer after table in DOM)
+    const panel = screen.getByTestId("partner-term-change-panel");
+    const tableIdx = panel.innerHTML.indexOf('data-testid="term-change-table"');
+    const discIdx = panel.innerHTML.indexOf('data-testid="term-change-disclaimer"');
+    expect(tableIdx).toBeGreaterThan(-1);
+    expect(discIdx).toBeGreaterThan(tableIdx);
 
     await userEvent.keyboard("{Escape}");
     expect(onCloseRequest).not.toHaveBeenCalled();

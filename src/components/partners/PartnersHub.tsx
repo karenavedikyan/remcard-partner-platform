@@ -209,6 +209,10 @@ export function PartnersHub({
   const termOpenIdRef = useRef<string | null>(null);
   const termTriggerRefs = useRef<Map<string, HTMLElement>>(new Map());
   const termHostRef = useRef<HTMLDivElement | null>(null);
+  /** Partnership id awaiting trigger focus after discard/term traps unmount. */
+  const pendingTermFocusRestoreRef = useRef<string | null>(null);
+  /** Keep-editing: bump reveal only after discard confirm trap is gone. */
+  const pendingTermKeepRevealRef = useRef(false);
 
   const updateTermDraftDirty = useCallback((dirty: boolean) => {
     termDraftDirtyRef.current = dirty;
@@ -869,17 +873,43 @@ export function PartnersHub({
     termTriggerRefs.current.set(partnershipId, el);
   }
 
+  function scheduleTermTriggerFocusRestore(partnershipId: string | null) {
+    if (!partnershipId) return;
+    // Must run after confirm/term focus traps unmount — sync restore is stolen back to BODY.
+    pendingTermFocusRestoreRef.current = partnershipId;
+  }
+
   function restoreTermTriggerFocus(partnershipId: string | null) {
     if (!partnershipId) return;
-    const remembered = termTriggerRefs.current.get(partnershipId);
-    if (remembered?.isConnected) {
-      if (typeof remembered.scrollIntoView === "function") {
-        remembered.scrollIntoView({ block: "nearest", inline: "nearest" });
+
+    const tryFocus = (el: HTMLElement | null | undefined): boolean => {
+      if (!el || !isVisiblyInteractable(el)) return false;
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
       }
-      remembered.focus({ preventScroll: true });
-      return;
+      el.focus({ preventScroll: true });
+      return document.activeElement === el || el.contains(document.activeElement);
+    };
+
+    // 1) Exact remembered trigger from open (same node the user activated).
+    if (tryFocus(termTriggerRefs.current.get(partnershipId))) return;
+
+    // 2) Visible term-change CTA for this partnership (prefer laid-out copies).
+    const termMatches = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        `[data-testid="partner-term-change-${partnershipId}"]`,
+      ),
+    );
+    const sized = termMatches.filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && isVisiblyInteractable(el);
+    });
+    const pool = sized.length > 0 ? sized : termMatches.filter(isVisiblyInteractable);
+    for (const el of pool) {
+      if (tryFocus(el)) return;
     }
-    // Reload / remount may disconnect the original trigger — resolve a fresh node.
+
+    // 3) Broader list/detail fallback (pause/resume/name) if term CTA is gone.
     focusPartnerInList(partnershipId);
   }
 
@@ -931,14 +961,14 @@ export function PartnersHub({
     termDraftDirtyRef.current = false;
     setTermDraftDirty(false);
     setTermPanelBusy(false);
-    restoreTermTriggerFocus(closedId);
+    scheduleTermTriggerFocusRestore(closedId);
   }
 
   function keepTermDraftEditing() {
     setTermDiscardOpen(false);
     setPendingTermOpenId(null);
-    // Return focus to the last meaningful draft field (not the list row trigger).
-    bumpTermReveal();
+    // Defer reveal until discard confirm trap unmounts (otherwise focusin steals back).
+    pendingTermKeepRevealRef.current = true;
   }
 
   function discardTermDraftAndContinue() {
@@ -955,7 +985,7 @@ export function PartnersHub({
       forceOpenTermChange(nextId);
       return;
     }
-    restoreTermTriggerFocus(closedId);
+    scheduleTermTriggerFocusRestore(closedId);
   }
 
   async function loadTermRequests(
@@ -1064,6 +1094,27 @@ export function PartnersHub({
       </TermChangeModal>
     );
   }
+
+  // After discard + term modal traps unmount, restore the original visible trigger.
+  useEffect(() => {
+    if (termDiscardOpen || expandedTermPartnershipId) return;
+    const id = pendingTermFocusRestoreRef.current;
+    if (!id) return;
+    pendingTermFocusRestoreRef.current = null;
+    restoreTermTriggerFocus(id);
+  }, [termDiscardOpen, expandedTermPartnershipId, partnerships]);
+
+  // Keep editing: refocus draft only once the overlying discard trap is gone.
+  useEffect(() => {
+    if (termDiscardOpen) return;
+    if (!pendingTermKeepRevealRef.current) return;
+    if (!expandedTermPartnershipId) {
+      pendingTermKeepRevealRef.current = false;
+      return;
+    }
+    pendingTermKeepRevealRef.current = false;
+    bumpTermReveal();
+  }, [termDiscardOpen, expandedTermPartnershipId, bumpTermReveal]);
 
   useEffect(() => {
     if (!pendingPartnerFocusId || busyId) return;
