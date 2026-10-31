@@ -53,10 +53,12 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
   }, [open]);
 
   useEffect(() => {
+    if (!open) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
-    // Escape fires cancel then close. Sync React state on both — do not
-    // preventDefault(cancel), or the dialog can end up closed while still mounted.
+    // Register only while the dialog node is mounted (open=true). An empty-deps
+    // effect runs on the open=false first paint when ref is still null and never
+    // rebinds — Escape would close the native dialog without syncing React state.
     const syncClosed = () => {
       onCloseRef.current();
     };
@@ -66,7 +68,7 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
       dialog.removeEventListener("cancel", syncClosed);
       dialog.removeEventListener("close", syncClosed);
     };
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (!open || mode !== "full") return;
