@@ -93,6 +93,8 @@ export function AdminPartnersClient() {
   const singlePreviewGen = useRef(0);
   const singleSelectedIdRef = useRef<string | null>(null);
   const reasonRef = useRef("");
+  const lastDialogActionRef = useRef<string | null>(null);
+  const [postApplyFocusKey, setPostApplyFocusKey] = useState(0);
 
   const [bulkReason, setBulkReason] = useState("");
   const [bulkAction, setBulkAction] = useState<BulkLifecycleAction | "">("");
@@ -333,6 +335,7 @@ export function AdminPartnersClient() {
     }
     const gen = ++singlePreviewGen.current;
     const actionAtRequest = action;
+    lastDialogActionRef.current = actionAtRequest;
     setDialogError(null);
     try {
       const preview = await previewPartnerLifecycle(partnerId, actionAtRequest);
@@ -355,6 +358,16 @@ export function AdminPartnersClient() {
     }
   }
 
+  function retryDialogWorkflow() {
+    if (isApplyingSingle || bulkApplying) return;
+    if (pendingPreview && pendingPreview.partnerId === singleSelectedIdRef.current) {
+      void confirmApply();
+      return;
+    }
+    const action = lastDialogActionRef.current;
+    if (action) void requestPreview(action);
+  }
+
   async function confirmApply() {
     if (!pendingPreview || isApplyingSingle || bulkApplying) return;
     const partnerId = singleSelectedIdRef.current;
@@ -371,6 +384,7 @@ export function AdminPartnersClient() {
     const gen = singlePreviewGen.current;
     const actionAtConfirm = pendingPreview.action;
     const tokenAtConfirm = pendingPreview.confirmToken;
+    lastDialogActionRef.current = actionAtConfirm;
     setDialogError(null);
     setIsApplyingSingle(true);
     try {
@@ -381,13 +395,13 @@ export function AdminPartnersClient() {
       setReason("");
       reasonRef.current = "";
       setDialogError(null);
-      // Keep dialog open with refreshed row (existing search-control / apply UX);
-      // focus return is for explicit close, not successful apply.
+      // Keep dialog open with refreshed row; focus a live in-dialog control after reload.
       const refreshed = await loadPage(currentCursor);
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
       if (singleSelectedIdRef.current !== partnerId) return;
       const nextRow = refreshed?.items.find((item) => item.id === partnerId);
       if (nextRow) setSingleSelected(nextRow);
+      setPostApplyFocusKey((k) => k + 1);
     } catch (e) {
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
       if (singleSelectedIdRef.current !== partnerId) return;
@@ -826,10 +840,12 @@ export function AdminPartnersClient() {
           }}
           onRequestPreview={(action) => void requestPreview(action)}
           onConfirmApply={() => void confirmApply()}
+          onRetryDialogError={retryDialogWorkflow}
           onClose={closePartnerDetail}
           isApplying={isApplyingSingle}
           disabled={interactionsDisabled}
           dialogError={dialogError}
+          postApplyFocusKey={postApplyFocusKey}
         />
       ) : null}
     </div>

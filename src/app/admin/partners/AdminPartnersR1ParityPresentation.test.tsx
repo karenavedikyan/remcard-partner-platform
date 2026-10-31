@@ -277,7 +277,10 @@ describe("Admin Partners R1 parity presentation", () => {
       "dialog",
     )!;
     await waitFor(() => expect(within(dialog).getByRole("alert").textContent).toContain("preview boom 500"));
-    expect(screen.queryByText("preview boom 500")).toBeTruthy();
+    const errorZone = within(dialog).getByRole("alert");
+    expect(errorZone).toHaveAttribute("data-dialog-error-zone", "true");
+    expect(within(errorZone).getByRole("button", { name: "Повторить" })).toBeTruthy();
+    expect(screen.getByLabelText("Причина")).toHaveValue("Причина");
 
     api.previewPartnerLifecycle.mockResolvedValue({
       preview: {
@@ -288,13 +291,58 @@ describe("Admin Partners R1 parity presentation", () => {
       },
     });
     api.applyPartnerLifecycle.mockRejectedValue(new Error("apply boom 500"));
-    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    fireEvent.click(within(errorZone).getByRole("button", { name: "Повторить" }));
     await waitFor(() => screen.getByRole("button", { name: "Подтвердить" }));
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() =>
       expect(within(dialog).getByRole("alert").textContent).toContain("apply boom 500"),
     );
     expect(screen.getByLabelText("Причина")).toHaveValue("Причина");
+    expect(within(dialog).getByRole("button", { name: "Повторить" })).toBeTruthy();
+  });
+
+  it("reveals dialog error zone as an early sticky child of the scroll body", () => {
+    const detail = readFileSync(DETAIL, "utf8");
+    const css = readFileSync(CSS, "utf8");
+    expect(detail).toContain("dialogErrorZone");
+    expect(detail).toContain("data-dialog-error-zone");
+    expect(detail).toContain("onRetryDialogError");
+    expect(detail).toContain("postApplyFocusKey");
+    expect(css).toContain(".dialogErrorZone");
+    expect(css).toMatch(/\.dialogErrorZone\s*\{[^}]*position:\s*sticky/s);
+    expect(css).toMatch(/\.detailToggleActions\s*\{[^}]*min-width:\s*0/s);
+    expect(css).toMatch(/\.detailSettingsRow\s*\{[^}]*flex-wrap:\s*wrap/s);
+    expect(css).not.toMatch(/\.detailToggleActions\s*\{[^}]*flex-shrink:\s*0/s);
+  });
+
+  it("focuses the reason field after successful apply while keeping the dialog open", async () => {
+    api.previewPartnerLifecycle.mockResolvedValue({
+      preview: {
+        effects: ["Скроет из каталога"],
+        warnings: [],
+        displayName: "Тест Партнёр",
+        confirmToken: "tok-focus",
+      },
+    });
+    api.applyPartnerLifecycle.mockResolvedValue({});
+    api.fetchPartnerRegistry
+      .mockResolvedValueOnce(registryPayload())
+      .mockResolvedValueOnce(registryPayload());
+
+    render(<AdminPartnersClient />);
+    await waitFor(() => screen.getByText("Тест Партнёр"));
+    fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ }));
+    await waitFor(() => screen.getByLabelText("Причина"));
+    fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Тест причины" } });
+    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    await waitFor(() => screen.getByRole("button", { name: "Подтвердить" }));
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
+    await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Подтвердить" })).toBeNull());
+    expect(screen.getByRole("heading", { name: "Карточка партнёра" })).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Причина")));
+    expect(screen.getByLabelText("Причина")).toHaveValue("");
+    expect(screen.getByLabelText("Причина")).not.toBeDisabled();
   });
 
   it("offers explicit registry retry that reloads with same filters", async () => {

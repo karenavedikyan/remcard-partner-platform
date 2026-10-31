@@ -42,10 +42,13 @@ type Props = {
   onCancelPreview: () => void;
   onRequestPreview: (action: string) => void;
   onConfirmApply: () => void;
+  onRetryDialogError: () => void;
   onClose: () => void;
   isApplying: boolean;
   disabled: boolean;
   dialogError: string | null;
+  /** Bumps after successful apply+reload so focus lands on a live in-dialog control. */
+  postApplyFocusKey?: number;
 };
 
 export function AdminPartnersPartnerDetailDialog({
@@ -57,14 +60,22 @@ export function AdminPartnersPartnerDetailDialog({
   onCancelPreview,
   onRequestPreview,
   onConfirmApply,
+  onRetryDialogError,
   onClose,
   isApplying,
   disabled,
   dialogError,
+  postApplyFocusKey = 0,
 }: Props) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const errorZoneRef = useRef<HTMLDivElement>(null);
+  const retryBtnRef = useRef<HTMLButtonElement>(null);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const lastErrorRef = useRef<string | null>(null);
+  const lastPostApplyKeyRef = useRef(0);
 
   const catalog = catalogVisibilityToken(row);
   const searchPrimary = effectivePartnerSearchPrimaryLabel(row);
@@ -93,19 +104,80 @@ export function AdminPartnersPartnerDetailDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
     const onCloseEvent = () => {
-      // Escape / backdrop native close — parent may already have handled X button.
       onClose();
     };
     dialog.addEventListener("close", onCloseEvent);
     return () => dialog.removeEventListener("close", onCloseEvent);
   }, [onClose]);
 
+  // Reveal + focus workflow error inside the dialog scroll container (product behavior).
+  useEffect(() => {
+    if (!open || !dialogError) {
+      lastErrorRef.current = dialogError;
+      return;
+    }
+    if (lastErrorRef.current === dialogError) return;
+    lastErrorRef.current = dialogError;
+    const reveal = () => {
+      const zone = errorZoneRef.current;
+      if (!zone || !zone.isConnected) return;
+      if (typeof zone.scrollIntoView === "function") {
+        zone.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      const body = bodyRef.current;
+      if (body) {
+        const zoneTop = zone.offsetTop;
+        const zoneBottom = zoneTop + zone.offsetHeight;
+        if (zoneTop < body.scrollTop) {
+          body.scrollTop = Math.max(0, zoneTop - 8);
+        } else if (zoneBottom > body.scrollTop + body.clientHeight) {
+          body.scrollTop = Math.max(0, zoneBottom - body.clientHeight + 8);
+        }
+      }
+      const target = retryBtnRef.current ?? zone;
+      if (target instanceof HTMLElement && target.isConnected && typeof target.focus === "function") {
+        try {
+          target.focus({ preventScroll: true });
+        } catch {
+          target.focus();
+        }
+      }
+    };
+    queueMicrotask(reveal);
+    requestAnimationFrame(reveal);
+  }, [open, dialogError]);
+
+  // After successful apply/reload, focus a live enabled control inside the open card.
+  useEffect(() => {
+    if (!open || !postApplyFocusKey || isApplying || disabled) return;
+    if (postApplyFocusKey === lastPostApplyKeyRef.current) return;
+    lastPostApplyKeyRef.current = postApplyFocusKey;
+    const focusReason = () => {
+      const el = reasonRef.current;
+      if (!el || !el.isConnected || el.disabled) return false;
+      try {
+        el.focus({ preventScroll: true });
+      } catch {
+        el.focus();
+      }
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      return document.activeElement === el;
+    };
+    queueMicrotask(() => {
+      if (focusReason()) return;
+      requestAnimationFrame(() => {
+        focusReason();
+      });
+    });
+  }, [open, postApplyFocusKey, row.id, isApplying, disabled]);
+
   if (!open) return null;
 
   function requestClose() {
     if (isApplying) return;
     onCancelPreview();
-    // Always notify parent (jsdom may not emit `close` after dialog.close()).
     onClose();
     dialogRef.current?.close();
   }
@@ -138,10 +210,32 @@ export function AdminPartnersPartnerDetailDialog({
       </div>
 
       <div
+        ref={bodyRef}
         className={styles.partnerDetailBody}
         role="region"
         aria-label={`Управление партнёром ${row.displayName ?? row.id}`}
       >
+        {dialogError ? (
+          <div
+            ref={errorZoneRef}
+            className={styles.dialogErrorZone}
+            role="alert"
+            tabIndex={-1}
+            data-dialog-error-zone="true"
+          >
+            <p className={styles.error}>{dialogError}</p>
+            <Button
+              ref={retryBtnRef}
+              type="button"
+              variant="secondary"
+              disabled={disabled || isApplying}
+              onClick={() => void onRetryDialogError()}
+            >
+              Повторить
+            </Button>
+          </div>
+        ) : null}
+
         <div className={styles.detailTop}>
           <span className={styles.detailAvatar} aria-hidden="true">
             {partnerInitials(row.displayName, row.id)}
@@ -184,7 +278,7 @@ export function AdminPartnersPartnerDetailDialog({
 
         <div className={styles.detailList}>
           <div className={styles.detailSettingsRow}>
-            <div>
+            <div className={styles.detailSettingsCopy}>
               <h3>Публичный каталог</h3>
               <p>{catalogDetailCopy(catalog)}</p>
             </div>
@@ -207,7 +301,7 @@ export function AdminPartnersPartnerDetailDialog({
             </div>
           </div>
           <div className={styles.detailSettingsRow}>
-            <div>
+            <div className={styles.detailSettingsCopy}>
               <h3>Поиск сотрудничества</h3>
               <dl className={styles.searchControlStatus}>
                 <div>
@@ -305,6 +399,7 @@ export function AdminPartnersPartnerDetailDialog({
         <label className={styles.field}>
           Причина изменения
           <textarea
+            ref={reasonRef}
             aria-label="Причина"
             rows={3}
             placeholder="Причина"
@@ -316,12 +411,6 @@ export function AdminPartnersPartnerDetailDialog({
             }}
           />
         </label>
-
-        {dialogError ? (
-          <p role="alert" className={styles.error}>
-            {dialogError}
-          </p>
-        ) : null}
 
         {pendingPreview ? (
           <div role="dialog" aria-label="Подтверждение изменения" className={styles.confirmation}>
