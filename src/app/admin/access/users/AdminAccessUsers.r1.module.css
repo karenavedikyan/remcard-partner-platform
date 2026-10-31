@@ -1,0 +1,262 @@
+/* R1 presentation for OWNER admin provisioning (A10). Isolated tokens; AdminNav untouched. */
+
+.page {
+  --au-line: var(--line, #e8e7e4);
+  --au-ink: var(--ink, #252525);
+  --au-muted: var(--muted, #626665);
+  --au-surface: var(--surface, #ffffff);
+  --au-surface-2: var(--surface-2, #f8f8f7);
+  --au-bg: var(--bg, #f6f5f3);
+  --au-brand: var(--brand, #c12b2f);
+  --au-green: var(--green, #3d7254);
+  --au-green-soft: var(--green-soft, #edf4ee);
+  --au-brand-soft: var(--brand-soft, #fbeeee);
+  --au-radius: 0.875rem;
+  --au-space-2: 0.5rem;
+  --au-space-3: 0.75rem;
+  --au-space-4: 1rem;
+  --au-space-5: 1.25rem;
+  --au-space-6: 1.5rem;
+  display: grid;
+  gap: var(--au-space-5);
+  min-width: 0;
+  max-width: 48rem;
+  color: var(--au-ink);
+}
+
+:global(html[data-theme="dark"]) .page {
+  --au-line: #3d4144;
+  --au-ink: #f0efeb;
+  --au-muted: #b0b3b4;
+  --au-surface: #24272a;
+  --au-surface-2: #2b2e31;
+  --au-bg: #1c1e20;
+  --au-brand: #f5acaa;
+  --au-green: #a4c9ae;
+  --au-green-soft: #293b30;
+  --au-brand-soft: #372b2c;
+}
+
+.pageHead {
+  min-width: 0;
+  display: grid;
+  gap: var(--au-space-2);
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.3rem + 0.45vw, 1.875rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pageLead {
+  margin: 0;
+  color: var(--au-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  max-width: 72ch;
+}
+
+.backLink {
+  justify-self: start;
+  color: var(--au-brand);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.viewerBox {
+  display: grid;
+  gap: 0.25rem;
+  padding: var(--au-space-4) var(--au-space-5);
+  border: 1px solid var(--au-line);
+  border-radius: var(--au-radius);
+  background: var(--au-surface-2);
+  font-size: 0.875rem;
+}
+
+.viewerMeta {
+  color: var(--au-muted);
+  font-size: 0.75rem;
+}
+
+.panel {
+  background: var(--au-surface);
+  border: 1px solid var(--au-line);
+  border-radius: var(--au-radius);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.panelHead {
+  display: grid;
+  gap: var(--au-space-2);
+  padding: var(--au-space-5) var(--au-space-6);
+  border-bottom: 1px solid var(--au-line);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.panelHint {
+  margin: 0;
+  color: var(--au-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.panelBody {
+  padding: var(--au-space-5) var(--au-space-6);
+  display: grid;
+  gap: var(--au-space-4);
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--au-muted);
+  font-weight: 600;
+}
+
+.fieldHint {
+  margin: 0;
+  font-weight: 500;
+  color: var(--au-muted);
+}
+
+.input {
+  min-width: 0;
+  border: 1px solid var(--au-line);
+  border-radius: 0.5rem;
+  background: var(--au-surface);
+  color: var(--au-ink);
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--au-space-3);
+}
+
+.submit {
+  min-height: 2.5rem;
+}
+
+.statusBox {
+  padding: var(--au-space-5) var(--au-space-6);
+  display: grid;
+  gap: var(--au-space-3);
+  color: var(--au-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.statusBox[data-tone="error"],
+.statusBox[data-tone="forbidden"] {
+  color: var(--au-ink);
+  background: var(--au-brand-soft);
+}
+
+.statusBox[data-tone="ok"] {
+  background: var(--au-green-soft);
+  color: var(--au-ink);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.listItem {
+  display: grid;
+  gap: 0.35rem;
+  padding: var(--au-space-4) var(--au-space-6);
+  border-top: 1px solid var(--au-line);
+  min-width: 0;
+}
+
+.listItem:first-child {
+  border-top: none;
+}
+
+.listName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.listMeta {
+  color: var(--au-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.listActions {
+  margin-top: 0.35rem;
+}
+
+.revokeBtn {
+  min-height: 2.25rem;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 40;
+}
+
+.dialog {
+  width: min(100%, 26rem);
+  background: var(--au-surface);
+  color: var(--au-ink);
+  border: 1px solid var(--au-line);
+  border-radius: var(--au-radius);
+  padding: var(--au-space-5);
+  display: grid;
+  gap: var(--au-space-4);
+}
+
+.dialogTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.dialogBody {
+  margin: 0;
+  color: var(--au-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .panelBody,
+  .panelHead,
+  .listItem,
+  .statusBox {
+    padding-left: var(--au-space-4);
+    padding-right: var(--au-space-4);
+  }
+}

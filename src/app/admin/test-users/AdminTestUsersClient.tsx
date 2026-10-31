@@ -137,6 +137,11 @@ export function AdminTestUsersClient() {
         Создайте партнёра для изучения ЛК на prof.remcard.ru. Тестовые аккаунты не входят по паролю и не
         привязаны к мессенджерам.
       </p>
+      <p>
+        <a href="/admin/access/users">Управление администраторами</a>
+        {" — "}
+        создание и отключение второго ADMIN (только владелец; не пункт главной навигации).
+      </p>
       {error ? (
         <p role="alert" className={styles.adminError}>
           {error}

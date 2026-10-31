@@ -1,0 +1,30 @@
+PASS owner-list-visible:1440
+PASS owner-admin-row:1440
+PASS no-secrets:owner-1440 — clean
+PASS no-h-overflow:owner-1440 — {"scrollWidth":1440,"clientWidth":1440,"innerWidth":1440}
+PASS owner-list-visible:390
+PASS owner-admin-row:390
+PASS no-secrets:owner-390 — clean
+PASS no-h-overflow:owner-390 — {"scrollWidth":390,"clientWidth":390,"innerWidth":390}
+PASS create-success-password-cleared — value=""
+PASS create-success-row
+PASS create-success-no-plaintext-password
+PASS create-mutation-count — count=1
+PASS create-mutation-method-path — {"method":"POST","path":"/api/pro/admin/access/users","kind":"create","body":{"displayName":"Синтетический админ","login":"synth.admin","newPassword":"[len=17]"},"passwordLen":17,"at":"2026-10-31T16:02:19.646Z"}
+PASS create-mutation-payload — {"displayName":"Синтетический админ","login":"synth.admin","newPassword":"[len=17]"}
+PASS duplicate-password-cleared
+PASS duplicate-single-create
+PASS busy-single-flight-create — count=1
+PASS revoke-escape-cancel
+PASS revoke-tab-containment
+PASS revoke-confirmed-state
+PASS revoke-mutation-count — count=1
+PASS revoke-mutation-path — {"method":"POST","path":"/api/pro/admin/access/users/qa-admin-1/revoke","kind":"revoke","targetId":"qa-admin-1","at":"2026-10-31T16:02:25.459Z"}
+PASS revoke-idempotent-no-button
+PASS empty-list
+PASS admin-denied-not-empty
+PASS admin-denied-no-create
+PASS unauth-redirect-login — http://127.0.0.1:18435/login?mode=admin&returnTo=%2Fadmin%2Faccess%2Fusers
+PASS error-retry-recovers
+PASS confirm-cancel-initial-focus — focus=Очистить
+PASS confirm-cancel-escape-keeps-draft

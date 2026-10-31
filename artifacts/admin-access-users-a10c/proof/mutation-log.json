@@ -1,0 +1,26 @@
+{
+  "creates": [
+    {
+      "method": "POST",
+      "path": "/api/pro/admin/access/users",
+      "kind": "create",
+      "body": {
+        "displayName": "Синтетический админ",
+        "login": "synth.admin",
+        "newPassword": "[len=17]"
+      },
+      "passwordLen": 17,
+      "at": "2026-10-31T16:02:19.646Z"
+    }
+  ],
+  "revokes": [
+    {
+      "method": "POST",
+      "path": "/api/pro/admin/access/users/qa-admin-1/revoke",
+      "kind": "revoke",
+      "targetId": "qa-admin-1",
+      "at": "2026-10-31T16:02:25.459Z"
+    }
+  ],
+  "lists": []
+}
