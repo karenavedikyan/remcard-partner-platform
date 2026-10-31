@@ -83,6 +83,7 @@ export function AdminPartnersClient() {
   const [loading, setLoading] = useState(true);
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pageSuccess, setPageSuccess] = useState<string | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
   /** Page-level errors only (registry / bulk) — never dialog workflow errors behind backdrop. */
   const pageError = actionError ?? registryError;
@@ -353,6 +354,7 @@ export function AdminPartnersClient() {
     const actionAtRequest = action;
     lastDialogActionRef.current = actionAtRequest;
     setDialogError(null);
+    setPageSuccess(null);
     setPendingAccountDelete(null);
     setPublicIdConfirm("");
     setAccountDeleteSuccess(null);
@@ -388,6 +390,7 @@ export function AdminPartnersClient() {
     const gen = ++singlePreviewGen.current;
     lastDialogActionRef.current = "delete_partner_account";
     setDialogError(null);
+    setPageSuccess(null);
     setPendingPreview(null);
     setAccountDeleteSuccess(null);
     setPublicIdConfirm("");
@@ -448,11 +451,11 @@ export function AdminPartnersClient() {
         "Аккаунт удалён. Партнёр может зарегистрироваться заново через прежний сервис входа. Новый аккаунт не связан со старой историей.";
       setAccountDeleteSuccess(successMessage);
       setActionError(null);
+      setPageSuccess(successMessage);
       await loadPage(currentCursor);
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
       // Close detail (row gone); surface success on the registry page.
       setSingleSelected(null);
-      setActionError(successMessage);
     } catch (e) {
       if (!mountedRef.current || gen !== singlePreviewGen.current) return;
       if (singleSelectedIdRef.current !== partnerId) return;
