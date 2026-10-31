@@ -55,12 +55,17 @@ export function PartnerModerationPreviewModal({ open, mode, onClose, partner }: 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    const onCancel = (event: Event) => {
-      event.preventDefault();
+    // Escape fires cancel then close. Sync React state on both — do not
+    // preventDefault(cancel), or the dialog can end up closed while still mounted.
+    const syncClosed = () => {
       onCloseRef.current();
     };
-    dialog.addEventListener("cancel", onCancel);
-    return () => dialog.removeEventListener("cancel", onCancel);
+    dialog.addEventListener("cancel", syncClosed);
+    dialog.addEventListener("close", syncClosed);
+    return () => {
+      dialog.removeEventListener("cancel", syncClosed);
+      dialog.removeEventListener("close", syncClosed);
+    };
   }, []);
 
   useEffect(() => {

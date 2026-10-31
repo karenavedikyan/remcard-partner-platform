@@ -120,6 +120,17 @@ describe("Partner moderation detail A5a presentation", () => {
     );
     expect(api.moderationPartnerAction).not.toHaveBeenCalled();
   });
+
+  it("unmounts preview dialog after Escape/cancel sync", async () => {
+    render(<PartnerModerationDetailClient partnerId="u1" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Карточка в списке" }));
+    const dialog = await screen.findByRole("dialog", { name: "Карточка в списке каталога" });
+    fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Карточка в списке каталога" })).not.toBeInTheDocument(),
+    );
+    expect(api.moderationPartnerAction).not.toHaveBeenCalled();
+  });
 });
 
 describe("A5a route-scoped chrome isolation (source)", () => {
