@@ -72,7 +72,7 @@ describe("ModerationConfirmDialog A5c presentationVariant", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it("busy blocks cancel/Escape/X/backdrop but keeps confirm available only via button", () => {
+  it("busy blocks cancel/Escape/X/backdrop and disables confirm (no second decision)", () => {
     const onCancel = vi.fn();
     const onConfirm = vi.fn();
     render(
@@ -91,11 +91,12 @@ describe("ModerationConfirmDialog A5c presentationVariant", () => {
     );
     expect(screen.getByRole("button", { name: "Закрыть окно" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Отмена" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Подтвердить" })).toBeDisabled();
     fireEvent.keyDown(window, { key: "Escape" });
     fireEvent.click(document.querySelector('[data-moderation-confirm-variant="r1"]')!);
-    expect(onCancel).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
-    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it("shows required reason error and keeps typing focus for r1", () => {
