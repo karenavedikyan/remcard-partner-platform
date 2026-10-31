@@ -58,7 +58,12 @@ async function openDeleteConfirm(page) {
   await page.getByRole("heading", { name: "Карточка партнёра" }).waitFor();
   await page.getByLabel("Причина").fill("Синтетическая причина удаления A12");
   await page.getByRole("button", { name: "Удалить аккаунт партнёра" }).click();
-  await page.getByLabel("Публичный ID для подтверждения удаления").waitFor({ timeout: 15_000 });
+  const publicIdField = page.getByLabel("Публичный ID для подтверждения удаления");
+  await publicIdField.waitFor({ timeout: 15_000 });
+  await publicIdField.scrollIntoViewIfNeeded();
+  await page
+    .getByRole("button", { name: /Удалить аккаунт без возможности восстановления/ })
+    .scrollIntoViewIfNeeded();
   await sleep(300);
 }
 
