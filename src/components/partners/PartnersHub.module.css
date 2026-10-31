@@ -360,6 +360,12 @@
   scroll-margin-bottom: 6rem;
 }
 
+/** C1 modal body host — no nested card chrome; shell owns geometry. */
+.termChangeHostModal {
+  min-width: 0;
+  max-width: 100%;
+}
+
 @media (max-width: 680px) {
   .filterGrid {
     grid-template-columns: 1fr;

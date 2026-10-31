@@ -9,6 +9,13 @@
   scroll-margin-bottom: 6rem;
 }
 
+.panelModal {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+}
+
 .headerRow {
   display: flex;
   flex-wrap: wrap;
@@ -112,6 +119,13 @@
   gap: var(--space-3);
 }
 
+.actionsModal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
 .proposal {
   display: grid;
   gap: var(--space-3);
@@ -120,4 +134,158 @@
 .errorText {
   color: var(--primary);
   font-size: var(--text-sm);
+}
+
+.termTableWrap {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: visible;
+}
+
+.termTable {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.termTable th,
+.termTable td {
+  padding: 0.55rem 0.45rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: break-word;
+}
+
+.termTable thead th:nth-child(1),
+.termTable td:nth-child(1),
+.termTable tbody th {
+  width: 44%;
+}
+
+.termTable thead th:nth-child(2),
+.termTable td:nth-child(2) {
+  width: 22%;
+}
+
+.termTable thead th:nth-child(3),
+.termTable td:nth-child(3) {
+  width: 34%;
+}
+
+.termTable tbody th {
+  font-weight: 600;
+}
+
+.percentInput {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+  color: inherit;
+}
+
+.percentInput:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.percentInput:focus-visible {
+  outline: 2px solid var(--accent, var(--primary));
+  outline-offset: 2px;
+}
+
+.proposedReadonly {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 680px) {
+  .termTable,
+  .termTable thead,
+  .termTable tbody,
+  .termTable tr,
+  .termTable th,
+  .termTable td {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .termTable {
+    table-layout: auto;
+  }
+
+  .termTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .termTable tr {
+    margin: 0 0 0.75rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 92%, var(--offset, #f2f1ee));
+  }
+
+  .termTable th,
+  .termTable td,
+  .termTable thead th:nth-child(1),
+  .termTable td:nth-child(1),
+  .termTable thead th:nth-child(2),
+  .termTable td:nth-child(2),
+  .termTable thead th:nth-child(3),
+  .termTable td:nth-child(3),
+  .termTable tbody th {
+    border: 0;
+    padding: 0.2rem 0;
+    font-size: var(--text-sm, 0.875rem);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .termTable tbody th {
+    font-weight: 700;
+    padding-bottom: 0.35rem;
+  }
+
+  .termTable td:nth-child(2)::before {
+    content: "Сейчас: ";
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .termTable td:nth-child(3)::before {
+    content: "Предлагаете: ";
+    display: block;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+  }
+
+  .actionsModal {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actionsModal > * {
+    width: 100%;
+    justify-content: center;
+  }
 }

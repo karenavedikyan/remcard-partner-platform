@@ -73,6 +73,7 @@ import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { PartnerSearchResultCard } from "@/components/partners/PartnerSearchResultCard";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
+import { TermChangeModal } from "@/components/partners/TermChangeModal";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
 import {
   cooperationActionLabel,
@@ -195,6 +196,7 @@ export function PartnersHub({
   const [termDraftDirty, setTermDraftDirty] = useState(false);
   const termDraftDirtyRef = useRef(false);
   const [termDiscardOpen, setTermDiscardOpen] = useState(false);
+  const [termPanelBusy, setTermPanelBusy] = useState(false);
   const [pendingTermOpenId, setPendingTermOpenId] = useState<string | null>(null);
   const [lifecycleConfirm, setLifecycleConfirm] = useState<{
     partnershipId: string;
@@ -890,6 +892,7 @@ export function PartnersHub({
     termDraftDirtyRef.current = false;
     setTermDraftDirty(false);
     setTermDiscardOpen(false);
+    setTermPanelBusy(false);
     setPendingTermOpenId(null);
     termOpenIdRef.current = partnershipId;
     setExpandedTermPartnershipId(partnershipId);
@@ -927,6 +930,7 @@ export function PartnersHub({
     setExpandedTermPartnershipId(null);
     termDraftDirtyRef.current = false;
     setTermDraftDirty(false);
+    setTermPanelBusy(false);
     restoreTermTriggerFocus(closedId);
   }
 
@@ -944,6 +948,7 @@ export function PartnersHub({
     setPendingTermOpenId(null);
     termDraftDirtyRef.current = false;
     setTermDraftDirty(false);
+    setTermPanelBusy(false);
     termOpenIdRef.current = null;
     setExpandedTermPartnershipId(null);
     if (nextId) {
@@ -1019,34 +1024,44 @@ export function PartnersHub({
       error: "",
     };
     return (
-      <div
-        ref={termHostRef}
-        className={styles.termChangeHost}
-        data-testid="partner-term-change-host"
+      <TermChangeModal
+        open
+        title="Предложить изменение условий"
+        onClose={requestCloseTermChange}
+        busy={termPanelBusy}
+        suspendFocusTrap={termDiscardOpen}
       >
-        <TermChangePanel
-          partnership={partnership}
-          meId={meId}
-          partnerTitle={cooperationPartnerTitle(partnership, meId)}
-          requests={termState.state === "loaded" ? termState.requests : null}
-          loadState={
-            termState.state === "idle"
-              ? "loading"
-              : termState.state === "loaded"
-                ? "loaded"
-                : termState.state
-          }
-          loadError={termState.error}
-          onReload={() => refreshTermRequests(partnership.id)}
-          onChanged={() => {
-            void loadList();
-            refreshTermRequests(partnership.id);
-          }}
-          onDirtyChange={updateTermDraftDirty}
-          onCloseRequest={requestCloseTermChange}
-          revealSignal={termRevealSignal}
-        />
-      </div>
+        <div
+          ref={termHostRef}
+          className={styles.termChangeHostModal}
+          data-testid="partner-term-change-host"
+        >
+          <TermChangePanel
+            partnership={partnership}
+            meId={meId}
+            partnerTitle={cooperationPartnerTitle(partnership, meId)}
+            requests={termState.state === "loaded" ? termState.requests : null}
+            loadState={
+              termState.state === "idle"
+                ? "loading"
+                : termState.state === "loaded"
+                  ? "loaded"
+                  : termState.state
+            }
+            loadError={termState.error}
+            onReload={() => refreshTermRequests(partnership.id)}
+            onChanged={() => {
+              void loadList();
+              refreshTermRequests(partnership.id);
+            }}
+            onDirtyChange={updateTermDraftDirty}
+            onCloseRequest={requestCloseTermChange}
+            revealSignal={termRevealSignal}
+            presentation="modal"
+            onBusyChange={setTermPanelBusy}
+          />
+        </div>
+      </TermChangeModal>
     );
   }
 

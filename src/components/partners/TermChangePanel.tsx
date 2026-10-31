@@ -23,6 +23,13 @@ type TermChangePanelProps = {
   onCloseRequest?: () => void;
   /** Increments when host should scroll into view and focus (open / Keep). */
   revealSignal?: number;
+  /**
+   * `modal` — R1 centered shell owns title/close/Escape; panel renders table + R1 CTA copy.
+   * `inline` — legacy embedded panel (title/close/Escape stay here).
+   */
+  presentation?: "inline" | "modal";
+  /** Reports mutation busy so a modal host can gate Escape/backdrop. */
+  onBusyChange?: (busy: boolean) => void;
 };
 
 function activeTerms(terms: PartnershipTerm[]): PartnershipTerm[] {
@@ -101,7 +108,10 @@ export function TermChangePanel({
   onDirtyChange,
   onCloseRequest,
   revealSignal = 0,
+  presentation = "inline",
+  onBusyChange,
 }: TermChangePanelProps) {
+  const isModal = presentation === "modal";
   const [draftPercents, setDraftPercents] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -164,10 +174,17 @@ export function TermChangePanel({
   }, [dirty, onDirtyChange]);
 
   useEffect(() => {
+    onBusyChange?.(busy);
+    return () => {
+      onBusyChange?.(false);
+    };
+  }, [busy, onBusyChange]);
+
+  useEffect(() => {
     if (!revealSignal) return;
     const panel = panelRef.current;
     if (!panel) return;
-    if (typeof panel.scrollIntoView === "function") {
+    if (!isModal && typeof panel.scrollIntoView === "function") {
       // Prefer center so the workflow is inside the viewport after list open (host may sit below fold).
       panel.scrollIntoView({ block: "center", inline: "nearest" });
     }
@@ -176,18 +193,20 @@ export function TermChangePanel({
       focusDraftField(panelRef.current, lastEditedCategoryRef.current);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [revealSignal, partnership.status, requestsReady, loadState]);
+  }, [revealSignal, partnership.status, requestsReady, loadState, isModal]);
 
+  // Inline only: modal shell owns Escape (and gates it on busy / discard).
   useEffect(() => {
-    if (!onCloseRequest) return;
+    if (isModal || !onCloseRequest) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (busy) return;
       event.preventDefault();
       onCloseRequest();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCloseRequest]);
+  }, [onCloseRequest, isModal, busy]);
 
   function isMutationCurrent(gen: number, submittedKey: string): boolean {
     return mutationGenRef.current === gen && contextKeyRef.current === submittedKey;
@@ -337,40 +356,57 @@ export function TermChangePanel({
     }
   }
 
+  const noticeText = isModal
+    ? "Новые условия начнут действовать только после согласия партнёра. Пока действуют прежние."
+    : "До согласования действуют прежние условия.";
+  const submitLabel = isModal
+    ? submitting
+      ? "Отправка…"
+      : "Отправить на согласование"
+    : submitting
+      ? "Отправка…"
+      : "Предложить изменение условий";
+
   return (
     <div
       ref={panelRef}
-      className={styles.panel}
+      className={isModal ? styles.panelModal : styles.panel}
       data-testid="partner-term-change-panel"
+      data-presentation={presentation}
       data-dirty={dirty ? "true" : "false"}
+      data-busy={busy ? "true" : "false"}
       data-participant={isParticipant ? "true" : "false"}
       data-context-key={contextKey}
     >
-      <div className={styles.headerRow}>
-        <div>
-          <h4 className={styles.title}>Изменить условия</h4>
-          <p className={styles.partnerName} data-testid="term-change-partner-name">
-            Партнёр: <strong>{partnerTitle}</strong>
-          </p>
+      {isModal ? (
+        <p className={styles.partnerName} data-testid="term-change-partner-name">
+          Партнёр: <strong>{partnerTitle}</strong>
+        </p>
+      ) : (
+        <div className={styles.headerRow}>
+          <div>
+            <h4 className={styles.title}>Изменить условия</h4>
+            <p className={styles.partnerName} data-testid="term-change-partner-name">
+              Партнёр: <strong>{partnerTitle}</strong>
+            </p>
+          </div>
+          {onCloseRequest ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className={styles.closeButton}
+              data-testid="term-change-close"
+              aria-label="Закрыть"
+              disabled={busy}
+              onClick={onCloseRequest}
+            >
+              Закрыть
+            </Button>
+          ) : null}
         </div>
-        {onCloseRequest ? (
-          <Button
-            type="button"
-            variant="secondary"
-            className={styles.closeButton}
-            data-testid="term-change-close"
-            aria-label="Закрыть"
-            disabled={busy}
-            onClick={onCloseRequest}
-          >
-            Закрыть
-          </Button>
-        ) : null}
-      </div>
+      )}
 
-      <p className={styles.notice}>
-        До согласования действуют прежние условия.
-      </p>
+      <p className={styles.notice}>{noticeText}</p>
 
       {loadState === "loading" || loadState === "idle" ? (
         <p className={styles.meta}>Загрузка запросов…</p>
@@ -461,54 +497,146 @@ export function TermChangePanel({
 
       {partnership.status === "ACTIVE" ? (
         <div className={styles.proposal}>
-          <h5 className={styles.subheading}>Предложить новое изменение</h5>
+          {isModal ? null : (
+            <h5 className={styles.subheading}>Предложить новое изменение</h5>
+          )}
           <p className={styles.meta}>
-            Укажите предлагаемый процент рядом с текущим. Пустые поля не отправляются; 0 —
-            допустимое значение.
+            {isModal
+              ? "Общий процент «скидка клиенту + бонус», а не обещание дохода. Редактируются только уже согласованные категории."
+              : "Укажите предлагаемый процент рядом с текущим. Пустые поля не отправляются; 0 — допустимое значение."}
           </p>
-          {terms.map((term) => (
-            <div
-              key={term.id}
-              className={styles.termCompare}
-              data-testid={`term-compare-${term.category}`}
-            >
-              <div className={styles.currentBox}>
-                <span className={styles.currentLabel}>{categoryLabel(term.category)}</span>
-                <span className={styles.currentValue}>
-                  Сейчас <strong>{term.storePercent}%</strong>
-                </span>
-              </div>
-              <TextField
-                label={`Предлагаете, %`}
-                id={`term-draft-${partnership.id}-${term.category}`}
-                type="number"
-                min={0}
-                max={100}
-                placeholder={String(term.storePercent)}
-                value={draftPercents[term.category] ?? ""}
-                data-testid={`term-draft-${term.category}`}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  lastEditedCategoryRef.current = term.category;
-                  setDraftPercents((prev) => {
-                    const next = { ...prev, [term.category]: nextValue };
-                    onDirtyChange?.(isDraftDirty(terms, next));
-                    return next;
-                  });
-                }}
-                disabled={Boolean(pendingRequest) || busy || !requestsReady || !isParticipant}
-              />
+          {isModal ? (
+            <div className={styles.termTableWrap}>
+              <table className={styles.termTable} data-testid="term-change-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Категория</th>
+                    <th scope="col">Сейчас, %</th>
+                    <th scope="col">Предлагаете, %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {terms.map((term) => {
+                    const label = categoryLabel(term.category);
+                    const draftDisabled =
+                      Boolean(pendingRequest) || busy || !requestsReady || !isParticipant;
+                    return (
+                      <tr
+                        key={term.id}
+                        data-testid={`term-compare-${term.category}`}
+                      >
+                        <th scope="row">{label}</th>
+                        <td>{term.storePercent}%</td>
+                        <td>
+                          {pendingRequest ? (
+                            <span className={styles.proposedReadonly}>
+                              {(() => {
+                                const change = (
+                                  Array.isArray(pendingRequest.changes)
+                                    ? pendingRequest.changes
+                                    : []
+                                ).find(
+                                  (item) =>
+                                    String((item as { category?: unknown }).category ?? "") ===
+                                    term.category,
+                                );
+                                const proposed = Number(
+                                  (change as { newPercent?: unknown } | undefined)?.newPercent,
+                                );
+                                return Number.isFinite(proposed)
+                                  ? `${proposed}%`
+                                  : `${term.storePercent}%`;
+                              })()}
+                            </span>
+                          ) : (
+                            <input
+                              id={`term-draft-${partnership.id}-${term.category}`}
+                              className={styles.percentInput}
+                              type="number"
+                              min={0}
+                              max={100}
+                              inputMode="decimal"
+                              placeholder={String(term.storePercent)}
+                              value={draftPercents[term.category] ?? ""}
+                              aria-label={`Предлагаете % для ${label}`}
+                              data-testid={`term-draft-${term.category}`}
+                              disabled={draftDisabled}
+                              onChange={(event) => {
+                                const nextValue = event.target.value;
+                                lastEditedCategoryRef.current = term.category;
+                                setDraftPercents((prev) => {
+                                  const next = { ...prev, [term.category]: nextValue };
+                                  onDirtyChange?.(isDraftDirty(terms, next));
+                                  return next;
+                                });
+                              }}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ))}
-          <div className={styles.actions}>
-            <Button
-              disabled={!canPropose}
-              onClick={() => void submitProposal()}
-              data-testid="term-change-submit"
-            >
-              {submitting ? "Отправка…" : "Предложить изменение условий"}
-            </Button>
-            {onCloseRequest ? (
+          ) : (
+            terms.map((term) => (
+              <div
+                key={term.id}
+                className={styles.termCompare}
+                data-testid={`term-compare-${term.category}`}
+              >
+                <div className={styles.currentBox}>
+                  <span className={styles.currentLabel}>{categoryLabel(term.category)}</span>
+                  <span className={styles.currentValue}>
+                    Сейчас <strong>{term.storePercent}%</strong>
+                  </span>
+                </div>
+                <TextField
+                  label={`Предлагаете, %`}
+                  id={`term-draft-${partnership.id}-${term.category}`}
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder={String(term.storePercent)}
+                  value={draftPercents[term.category] ?? ""}
+                  data-testid={`term-draft-${term.category}`}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    lastEditedCategoryRef.current = term.category;
+                    setDraftPercents((prev) => {
+                      const next = { ...prev, [term.category]: nextValue };
+                      onDirtyChange?.(isDraftDirty(terms, next));
+                      return next;
+                    });
+                  }}
+                  disabled={Boolean(pendingRequest) || busy || !requestsReady || !isParticipant}
+                />
+              </div>
+            ))
+          )}
+          <div className={isModal ? styles.actionsModal : styles.actions}>
+            {isModal && onCloseRequest ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy}
+                data-testid="term-change-cancel"
+                onClick={onCloseRequest}
+              >
+                Отмена
+              </Button>
+            ) : null}
+            {isModal && pendingRequest ? null : (
+              <Button
+                disabled={!canPropose}
+                onClick={() => void submitProposal()}
+                data-testid="term-change-submit"
+              >
+                {submitLabel}
+              </Button>
+            )}
+            {!isModal && onCloseRequest ? (
               <Button
                 type="button"
                 variant="secondary"
