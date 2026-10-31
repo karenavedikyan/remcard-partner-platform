@@ -64,35 +64,95 @@ export function AgentDiscussionInviteWizard({
     templateKeyForText(cooperationSubject),
   );
   const [stepError, setStepError] = useState("");
-  const focusTargetRef = useRef<"partner" | "subject" | "create" | null>("partner");
+  /** Pending focus after Next/Back/edit; consumed in the same effect as async-error focus. */
+  const pendingFocusRef = useRef<"partner" | "subject" | "create" | null>("partner");
+  const prevErrorRef = useRef(error);
+  const focusRafRef = useRef<number | null>(null);
   const partnerInputId = useId();
   const subjectInputId = useId();
   const createButtonRef = useRef<HTMLButtonElement>(null);
+  const wizardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const target = focusTargetRef.current;
-    focusTargetRef.current = null;
+    return () => {
+      if (focusRafRef.current != null) {
+        cancelAnimationFrame(focusRafRef.current);
+        focusRafRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let target = pendingFocusRef.current;
+    pendingFocusRef.current = null;
+
+    // First/repeat async failure: empty→non-empty error while Create is again enabled.
+    // Must schedule in THIS effect — a later effect that only writes a ref is never consumed.
+    const errorAppeared = Boolean(error) && !prevErrorRef.current;
+    prevErrorRef.current = error;
+    if (errorAppeared && !creating && step === 3) {
+      target = "create";
+    }
+
     if (!target) return;
-    requestAnimationFrame(() => {
-      if (target === "partner") {
+
+    if (focusRafRef.current != null) {
+      cancelAnimationFrame(focusRafRef.current);
+    }
+    const scheduledStep = step;
+    const scheduledTarget = target;
+    focusRafRef.current = requestAnimationFrame(() => {
+      focusRafRef.current = null;
+      // Drop stale focus after close/step change/unmount or while Create is still busy.
+      if (scheduledStep !== step) return;
+
+      // Align wizard chrome in the modal scrollport before focusing (no jump on disabled/missing).
+      const root = wizardRef.current;
+      if (root?.isConnected) {
+        let scrollParent: HTMLElement | null = root.parentElement;
+        while (scrollParent) {
+          const { overflowY } = getComputedStyle(scrollParent);
+          if (overflowY === "auto" || overflowY === "scroll") break;
+          scrollParent = scrollParent.parentElement;
+        }
+        if (scrollParent) {
+          const delta =
+            root.getBoundingClientRect().top - scrollParent.getBoundingClientRect().top;
+          if (Math.abs(delta) > 1) {
+            scrollParent.scrollTop += delta;
+          }
+        }
+      }
+
+      if (scheduledTarget === "create") {
+        if (creating || step !== 3) return;
+        const btn = createButtonRef.current;
+        if (!btn || btn.disabled || !btn.isConnected) return;
+        btn.focus({ preventScroll: true });
+        return;
+      }
+      if (scheduledTarget === "partner") {
+        if (step !== 1) return;
         document.getElementById(partnerInputId)?.focus({ preventScroll: true });
-      } else if (target === "subject") {
+        return;
+      }
+      if (scheduledTarget === "subject") {
+        if (step !== 2) return;
         document.getElementById(subjectInputId)?.focus({ preventScroll: true });
-      } else if (target === "create") {
-        createButtonRef.current?.focus({ preventScroll: true });
       }
     });
-  }, [step, partnerInputId, subjectInputId, error]);
 
-  useEffect(() => {
-    if (error) {
-      focusTargetRef.current = "create";
-    }
-  }, [error]);
+    return () => {
+      if (focusRafRef.current != null) {
+        cancelAnimationFrame(focusRafRef.current);
+        focusRafRef.current = null;
+      }
+    };
+  }, [step, partnerInputId, subjectInputId, error, creating]);
 
   function goTo(next: Step, focus: "partner" | "subject" | "create") {
     setStepError("");
-    focusTargetRef.current = focus;
+    pendingFocusRef.current = focus;
     setStep(next);
   }
 
@@ -101,7 +161,6 @@ export function AgentDiscussionInviteWizard({
     if (creating) return;
     if (!recipientLabel.trim()) {
       setStepError("Укажите имя или название партнёра");
-      focusTargetRef.current = "partner";
       document.getElementById(partnerInputId)?.focus({ preventScroll: true });
       return;
     }
@@ -113,7 +172,6 @@ export function AgentDiscussionInviteWizard({
     if (creating) return;
     if (!cooperationSubject.trim()) {
       setStepError("Напишите текст приглашения");
-      focusTargetRef.current = "subject";
       document.getElementById(subjectInputId)?.focus({ preventScroll: true });
       return;
     }
@@ -126,7 +184,6 @@ export function AgentDiscussionInviteWizard({
     if (key) {
       onCooperationSubjectChange(AGENT_DISCUSSION_INVITE_TEMPLATES[key].text);
     }
-    focusTargetRef.current = "subject";
     requestAnimationFrame(() => {
       document.getElementById(subjectInputId)?.focus({ preventScroll: true });
     });
@@ -152,6 +209,7 @@ export function AgentDiscussionInviteWizard({
 
   return (
     <section
+      ref={wizardRef}
       className={styles.wizard}
       data-testid="agent-discussion-invite-wizard"
       data-step={step}
