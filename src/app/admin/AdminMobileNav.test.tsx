@@ -24,7 +24,12 @@ describe("Admin mobile navigation", () => {
       </ThemeProvider>,
     );
     expect(screen.getByRole("button", { name: "Разделы" })).toBeTruthy();
-    expect(screen.getByText("Партнёры", { selector: "span" })).toBeTruthy();
+    const currentSection = screen.getByText("Партнёры", {
+      selector: 'span[aria-current="page"]',
+    });
+    expect(currentSection).toBeTruthy();
+    expect(currentSection.getAttribute("aria-current")).toBe("page");
+    expect(currentSection.textContent).toBe("Партнёры");
     expect(screen.getAllByRole("navigation", { name: "Администрирование" }).length).toBeGreaterThan(0);
   });
 
