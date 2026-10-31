@@ -47,11 +47,9 @@ describe("AgentDiscussionInviteResult P16 ready chrome (GAP prio1/prio2)", () =>
     expect(openCard.className).toMatch(/text/);
     expect(openCard.className).toContain(styles.openCard);
     expect(openCard.className).not.toMatch(/secondary/);
-    expect(css).toMatch(/\.openCard/);
-    expect(css).toMatch(/padding-inline:\s*0/);
-    expect(css).not.toMatch(
-      /agent-discussion-invite-open-card"\]\s*\{\s*width:\s*100%/,
-    );
+    // P16b: R1 link-open is full-width ghost weight 700 (supersedes P16 narrow/500).
+    expect(css).toMatch(/\.openCard\s*\{[^}]*width:\s*100%/s);
+    expect(css).toMatch(/\.openCard\s*\{[^}]*font-weight:\s*700/s);
 
     await userEvent.click(openCard);
     expect(onOpenInviteCard).toHaveBeenCalledTimes(1);

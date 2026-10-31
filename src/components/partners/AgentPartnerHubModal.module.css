@@ -196,3 +196,90 @@
     width: calc(100% - 2 * var(--space-4));
   }
 }
+
+/* === P16b: readyMode-only shell matching frozen dialog.pr-invite-dialog ===
+ * Measured (coop2 CSS): 1440 → 620×… @ x410; 375 → 337 @ x19; 320 → 282 @ x19.
+ * Find/link wizard layout above is unchanged when readyMode=false.
+ */
+.backdropReady {
+  align-items: center;
+  justify-content: center;
+  padding: 19px;
+  box-sizing: border-box;
+  background: rgb(17 17 17 / 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.sheetReady {
+  width: min(620px, 100%);
+  max-width: 100%;
+  max-height: min(94dvh, 94vh);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
+  border: 1px solid var(--line);
+  /* Not a mobile bottom-sheet when ready. */
+  align-self: center;
+}
+
+.sheetReady .header {
+  padding: 24px 24px 0;
+  border-bottom: 0;
+  align-items: center;
+}
+
+.sheetReady .header h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  line-height: 1.4;
+}
+
+.sheetReady .body {
+  /* Desktop dialog pad 24px; head margin-bottom absorbed as top gap. */
+  padding: 20px 24px 24px;
+}
+
+/* Flatten nested Panel card — R1 ready has no inner bordered frame. */
+.sheetReady .body :global(section[class*="panel"]) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.sheetReady .body :global([class*="linkPanel"]) {
+  gap: 0;
+}
+
+@media (max-width: 680px) {
+  .backdropReady {
+    align-items: center;
+    padding: 19px;
+  }
+
+  .sheetReady {
+    width: min(620px, 100%);
+    max-height: 94dvh;
+    border-radius: 16px;
+  }
+
+  /* Mobile measured dialog pad 16px (--s4). */
+  .sheetReady .header {
+    padding: 16px 16px 0;
+  }
+
+  .sheetReady .body {
+    padding: 16px;
+  }
+}
+
+@media (max-height: 640px) {
+  .backdropReady {
+    align-items: center;
+  }
+
+  .sheetReady {
+    max-height: calc(100dvh - 38px);
+  }
+}

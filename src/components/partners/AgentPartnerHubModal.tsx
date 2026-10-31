@@ -78,7 +78,7 @@ export function AgentPartnerHubModal({
 
   return (
     <div
-      className={styles.backdrop}
+      className={[styles.backdrop, readyMode ? styles.backdropReady : ""].filter(Boolean).join(" ")}
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -86,7 +86,7 @@ export function AgentPartnerHubModal({
     >
       <div
         ref={sheetRef}
-        className={styles.sheet}
+        className={[styles.sheet, readyMode ? styles.sheetReady : ""].filter(Boolean).join(" ")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
