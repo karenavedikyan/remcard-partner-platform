@@ -128,6 +128,21 @@ describe("Independent mass-action safety", () => {
     expect(screen.getByRole("button", { name: "Остановить оставшиеся" })).toBeInTheDocument();
   });
 
+  it("Cancel on modal confirmation does not POST apply", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Выбрать Partner 1"));
+    await expandBulkForm("Каталог");
+    fireEvent.change(screen.getByLabelText("Причина группового изменения"), { target: { value: "Review" } });
+    fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
+    await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
+    fireEvent.click(screen.getByRole("button", { name: "Получить preview группы" }));
+    const dialog = await screen.findByRole("dialog", { name: "Скрыть выбранных партнёров?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Отмена" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Скрыть выбранных партнёров?" })).not.toBeInTheDocument());
+    expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
+  });
+
   it("locks metric filter chips while applying", async () => {
     api.applyPartnerLifecycle.mockImplementation(() => new Promise(() => {}));
     await open();
