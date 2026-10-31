@@ -247,7 +247,7 @@
 @media (max-width: 680px) {
   .progress {
     gap: var(--space-2, 0.5rem);
-    /* Keep Партнёр/Сообщение/Проверка visible while modal body scrolls. */
+    /* Sticky progress only — never sticky footer (it painted over the message textarea). */
     position: sticky;
     top: 0;
     z-index: 2;
@@ -268,14 +268,16 @@
     gap: var(--space-4, 1rem);
   }
 
+  /*
+   * Footer stays in normal flow on narrow viewports. Sticky bottom previously
+   * overlapped the step-2 textarea (Next/Back hit targets covering the field).
+   * Predictable modal-body scroll is preferred over geometric occlusion.
+   */
   .footer {
-    /* Keep Next/Create reachable without losing the step chrome. */
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-    background: var(--surface, #fff);
-    padding-bottom: max(var(--space-3, 0.75rem), env(safe-area-inset-bottom, 0px));
+    position: static;
+    z-index: auto;
     margin-top: var(--space-2, 0.5rem);
+    padding-bottom: max(var(--space-3, 0.75rem), env(safe-area-inset-bottom, 0px));
   }
 
   .footer :global(button[data-testid="agent-discussion-invite-next"]),

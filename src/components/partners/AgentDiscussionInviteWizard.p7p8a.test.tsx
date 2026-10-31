@@ -49,6 +49,13 @@ describe("AgentDiscussionInviteWizard P7/P8a presentation", () => {
     expect(source).toContain('aria-current');
     expect(source).toContain("DISCUSSION_INVITE_SUBJECT_MAX");
     expect(css).not.toContain("!important");
+    // Mobile footer must stay in normal flow — sticky bottom overlapped the message textarea.
+    expect(css).toMatch(
+      /@media \(max-width:\s*680px\)[\s\S]*?\.footer\s*\{[\s\S]*?position:\s*static/,
+    );
+    expect(css).not.toMatch(
+      /@media \(max-width:\s*680px\)[\s\S]*?\.footer\s*\{[\s\S]*?position:\s*sticky/,
+    );
   });
 
   it("walks Partner → Message → Review locally without create until review CTA", async () => {

@@ -50,6 +50,37 @@ function templateKeyForText(text: string): AgentDiscussionInviteTemplateKey | ""
   return "";
 }
 
+/** Nearest overflow scrollport for modal-body containment (not window). */
+function scrollParentOf(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const { overflowY } = getComputedStyle(node);
+    if (overflowY === "auto" || overflowY === "scroll") return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Minimal scroll so `el` sits inside the scrollport below sticky progress.
+ * Does not jump the caret or force the field out of view on every step change.
+ */
+function ensureInScrollport(el: HTMLElement | null, progress: HTMLElement | null) {
+  if (!el?.isConnected) return;
+  const port = scrollParentOf(el);
+  if (!port) return;
+  const portRect = port.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const progressBottom = progress?.getBoundingClientRect().bottom ?? portRect.top;
+  const topLimit = Math.max(portRect.top, progressBottom) + 4;
+  const bottomLimit = portRect.bottom - 4;
+  if (elRect.top < topLimit) {
+    port.scrollTop += elRect.top - topLimit;
+  } else if (elRect.bottom > bottomLimit) {
+    port.scrollTop += elRect.bottom - bottomLimit;
+  }
+}
+
 export function AgentDiscussionInviteWizard({
   recipientLabel,
   cooperationSubject,
@@ -106,39 +137,30 @@ export function AgentDiscussionInviteWizard({
       // Drop stale focus after close/step change/unmount or while Create is still busy.
       if (scheduledStep !== step) return;
 
-      // Align wizard chrome in the modal scrollport before focusing (no jump on disabled/missing).
-      const root = wizardRef.current;
-      if (root?.isConnected) {
-        let scrollParent: HTMLElement | null = root.parentElement;
-        while (scrollParent) {
-          const { overflowY } = getComputedStyle(scrollParent);
-          if (overflowY === "auto" || overflowY === "scroll") break;
-          scrollParent = scrollParent.parentElement;
-        }
-        if (scrollParent) {
-          const delta =
-            root.getBoundingClientRect().top - scrollParent.getBoundingClientRect().top;
-          if (Math.abs(delta) > 1) {
-            scrollParent.scrollTop += delta;
-          }
-        }
-      }
+      const progress = wizardRef.current?.querySelector<HTMLElement>(
+        '[data-testid="agent-discussion-invite-progress"]',
+      );
 
       if (scheduledTarget === "create") {
         if (creating || step !== 3) return;
         const btn = createButtonRef.current;
         if (!btn || btn.disabled || !btn.isConnected) return;
         btn.focus({ preventScroll: true });
+        ensureInScrollport(btn, progress ?? null);
         return;
       }
       if (scheduledTarget === "partner") {
         if (step !== 1) return;
-        document.getElementById(partnerInputId)?.focus({ preventScroll: true });
+        const input = document.getElementById(partnerInputId);
+        input?.focus({ preventScroll: true });
+        ensureInScrollport(input, progress ?? null);
         return;
       }
       if (scheduledTarget === "subject") {
         if (step !== 2) return;
-        document.getElementById(subjectInputId)?.focus({ preventScroll: true });
+        const input = document.getElementById(subjectInputId);
+        input?.focus({ preventScroll: true });
+        ensureInScrollport(input, progress ?? null);
       }
     });
 
