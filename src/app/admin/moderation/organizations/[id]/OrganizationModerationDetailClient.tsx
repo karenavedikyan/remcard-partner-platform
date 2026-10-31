@@ -735,6 +735,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={orgDialog?.action === "approve"}
         title="Одобрить заявку"
         description={orgApproveConfirmMessage(org)}
@@ -747,6 +748,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={orgDialog?.action === "approve-all"}
         title="Одобрить организацию и филиалы"
         description={orgApproveAllConfirmMessage(org)}
@@ -759,6 +761,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={orgDialog?.action === "reject"}
         title="Отклонить заявку"
         description={orgRejectConfirmMessage(org)}
@@ -777,6 +780,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={orgDialog?.action === "revise"}
         title="Вернуть на доработку"
         description={orgReviseConfirmMessage(org)}
@@ -795,6 +799,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
 
       {branchDialog ? (
         <ModerationConfirmDialog
+        presentationVariant="r1"
           open
           title={
             branchDialog.action === "approve"
@@ -832,6 +837,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
       ) : null}
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={testDialog !== null}
         title={
           testDialog ? "Разрешить публикацию тестового партнёра" : "Скрыть тестового партнёра из каталога"

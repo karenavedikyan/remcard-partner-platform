@@ -470,6 +470,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={partnerDialog?.action === "approve"}
         title="Одобрить заявку"
         description={partnerApproveConfirmMessage(partner)}
@@ -482,6 +483,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={partnerDialog?.action === "reject"}
         title="Отклонить заявку"
         description={partnerRejectConfirmMessage(partner)}
@@ -500,6 +502,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={partnerDialog?.action === "revise"}
         title="Вернуть на доработку"
         description={partnerReviseConfirmMessage(partner)}
@@ -517,6 +520,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
       />
 
       <ModerationConfirmDialog
+        presentationVariant="r1"
         open={testDialog !== null}
         title={
           testDialog ? "Разрешить публикацию тестового партнёра" : "Скрыть тестового партнёра из каталога"
