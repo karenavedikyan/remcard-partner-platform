@@ -852,6 +852,11 @@ export function AdminPartnersClient() {
             ) : null}
           </div>
         ) : null}
+        {pageSuccess && !pageError ? (
+          <div className={styles.registryErrorBlock} role="status">
+            <p>{pageSuccess}</p>
+          </div>
+        ) : null}
         {loading ? (
           <p role="status" className={styles.panelStatus}>
             Загрузка…
