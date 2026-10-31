@@ -172,7 +172,7 @@ const server = http.createServer((req, res) => {
             "Это общая учётная запись: удаление затрагивает всю учётную запись, включая клиентский кабинет, если он есть.",
           ],
           loginServices: ["MAX", "Telegram"],
-          counts: { partnerships: 2, orders: 1, certificates: 0 },
+          counts: { partnerships: 2, orders: 1, certificates: 0, settlements: 1 },
           hasClientCabinet: true,
           confirmToken: issueToken(id, reason.trim()),
         },

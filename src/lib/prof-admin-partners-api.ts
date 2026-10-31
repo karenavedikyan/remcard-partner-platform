@@ -135,7 +135,12 @@ export type PartnerAccountDeletePreview = {
   effects: string[];
   warnings: string[];
   loginServices: string[];
-  counts: { partnerships: number; orders: number; certificates: number };
+  counts: {
+    partnerships: number;
+    orders: number;
+    certificates: number;
+    settlements?: number;
+  };
   hasClientCabinet: boolean;
   confirmToken: string;
 };

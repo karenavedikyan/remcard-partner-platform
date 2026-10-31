@@ -259,7 +259,7 @@ describe("Independent mass-action safety", () => {
     fireEvent.change(screen.getByLabelText("Групповое действие"), { target: { value: "hide_catalog" } });
     await waitFor(() => expect(screen.getByLabelText("Групповое действие")).toHaveValue("hide_catalog"));
     fireEvent.click(screen.getByRole("button", { name: "Проверить последствия для группы" }));
-    const exclude = await screen.findByRole("button", { name: "Исключить проблемные и обновить preview" });
+    const exclude = await screen.findByRole("button", { name: "Исключить проблемные и проверить заново" });
     expect(screen.queryByRole("button", { name: "Подтвердить" })).not.toBeInTheDocument();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
     fireEvent.click(exclude);

@@ -435,8 +435,9 @@ export function AdminPartnersBulkPanel({
           </ul>
           {!applying ? (
             <p className={styles.bulkHint}>
-              Для повторной попытки по ошибкам нужны свежий preview и подтверждение; успешные записи
-              повторно не отправляются автоматически. Выберите участников ниже для новой операции.
+              Для повторной попытки по ошибкам снова проверьте последствия и подтвердите действие;
+              успешные записи повторно не отправляются автоматически. Выберите участников ниже для
+              новой операции.
             </p>
           ) : null}
         </div>
@@ -445,8 +446,8 @@ export function AdminPartnersBulkPanel({
       {showNewGroupForm ? (
         <>
           <p className={styles.bulkHint}>
-            Групповое «удаление» — обратимое скрытие из каталога или архивирование профилей, без
-            физического удаления пользователей.
+            Групповые действия здесь только архивируют профили, восстанавливают из архива или меняют
+            видимость в каталоге. Удаление аккаунта доступно только в карточке одного партнёра.
           </p>
           <label className={styles.field}>
             Общая причина
@@ -479,7 +480,7 @@ export function AdminPartnersBulkPanel({
 
           {previewFailures && previewFailures.length > 0 ? (
             <div role="alert" className={styles.error}>
-              <p>Preview недоступен для части выбранных профилей:</p>
+              <p>Проверка последствий недоступна для части выбранных профилей:</p>
               <ul>
                 {previewFailures.map((f) => (
                   <li key={f.userId}>
@@ -494,7 +495,7 @@ export function AdminPartnersBulkPanel({
                   onExcludeFailedAndRetryPreview(previewFailures.map((f) => f.userId))
                 }
               >
-                Исключить проблемные и обновить preview
+                Исключить проблемные и проверить заново
               </Button>
             </div>
           ) : null}

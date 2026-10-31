@@ -40,7 +40,12 @@ type PendingAccountDelete = {
   effects: string[];
   warnings: string[];
   loginServices: string[];
-  counts: { partnerships: number; orders: number; certificates: number };
+  counts: {
+    partnerships: number;
+    orders: number;
+    certificates: number;
+    settlements?: number;
+  };
   hasClientCabinet: boolean;
   confirmToken: string;
 };
@@ -458,7 +463,8 @@ export function AdminPartnersPartnerDetailDialog({
             <p className={styles.helpTip}>
               Связано: партнёрств {pendingAccountDelete.counts.partnerships}, заказов{" "}
               {pendingAccountDelete.counts.orders}, сертификатов{" "}
-              {pendingAccountDelete.counts.certificates}
+              {pendingAccountDelete.counts.certificates}, расчётов{" "}
+              {pendingAccountDelete.counts.settlements ?? 0}
               {pendingAccountDelete.loginServices.length > 0
                 ? `. Сервисы входа: ${pendingAccountDelete.loginServices.join(", ")}`
                 : ""}

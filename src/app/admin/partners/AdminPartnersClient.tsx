@@ -467,11 +467,21 @@ export function AdminPartnersClient() {
 
   function retryDialogWorkflow() {
     if (isApplyingSingle || bulkApplying) return;
+    const action = lastDialogActionRef.current;
+    // Account-delete must never fall through to lifecycle preview/apply.
+    if (action === "delete_partner_account") {
+      // After unknown network result: refresh consequence review and require a new
+      // publicId confirmation — do not silently re-fire the dangerous apply.
+      setDialogError(null);
+      setPublicIdConfirm("");
+      setPendingAccountDelete(null);
+      void requestAccountDeletePreview();
+      return;
+    }
     if (pendingPreview && pendingPreview.partnerId === singleSelectedIdRef.current) {
       void confirmApply();
       return;
     }
-    const action = lastDialogActionRef.current;
     if (action) void requestPreview(action);
   }
 
@@ -556,7 +566,7 @@ export function AdminPartnersClient() {
       bulkPreview.members.length !== memberIds.length ||
       !bulkSnapshotMatches(bulkPreview, bulkAction as BulkLifecycleAction, bulkReason, memberIds)
     ) {
-      setActionError("Группа или причина изменились — получите preview заново");
+      setActionError("Группа или причина изменились — снова проверьте последствия");
       invalidateBulkPreview();
       return;
     }
