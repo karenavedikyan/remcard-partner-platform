@@ -45,8 +45,27 @@ export function ModerationConfirmDialog({
   const cancelRef = useRef<HTMLButtonElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const didFocusOnOpen = useRef(false);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
   const isR1 = presentationVariant === "r1";
   const styles = isR1 ? r1Styles : legacyStyles;
+
+  useEffect(() => {
+    if (open) {
+      if (!wasOpenRef.current) {
+        const active = document.activeElement;
+        restoreFocusRef.current = active instanceof HTMLElement ? active : null;
+      }
+      wasOpenRef.current = true;
+      return;
+    }
+    if (wasOpenRef.current) {
+      const restore = restoreFocusRef.current;
+      restoreFocusRef.current = null;
+      wasOpenRef.current = false;
+      queueMicrotask(() => restore?.focus?.());
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
