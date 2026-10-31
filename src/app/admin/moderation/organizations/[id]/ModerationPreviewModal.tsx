@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CatalogPublicationPreview } from "@/components/profile/CatalogPublicationPreview";
 import { Button } from "@/components/ui/Button";
 import { RemcardApiError } from "@/lib/api-client";
@@ -16,8 +16,7 @@ import {
   ModerationOrgCatalogFullPreview,
   type ModerationPublicPreviewPayload,
 } from "./ModerationOrgCatalogFullPreview";
-import { useModerationModalFocusTrap } from "./useModerationModalFocusTrap";
-import styles from "./OrganizationModerationDetail.module.css";
+import styles from "./OrganizationModerationDetail.r1.module.css";
 
 type Props = {
   open: boolean;
@@ -27,16 +26,64 @@ type Props = {
 };
 
 export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
-  const trapRef = useModerationModalFocusTrap(open);
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const closingRef = useRef(false);
   const [fullPayload, setFullPayload] = useState<ModerationPublicPreviewPayload | null>(null);
   const [fullError, setFullError] = useState<string | null>(null);
   const [fullLoading, setFullLoading] = useState(false);
   const loadGenRef = useRef(0);
   const orgRef = useRef(org);
   orgRef.current = org;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const revisionFetchKey = moderationOrgPreviewRevisionFetchKey(org);
+
+  const requestClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    const restore = restoreFocusRef.current;
+    onCloseRef.current();
+    queueMicrotask(() => {
+      restore?.focus?.();
+      closingRef.current = false;
+    });
+  };
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open) {
+      closingRef.current = false;
+      const active = document.activeElement;
+      restoreFocusRef.current = active instanceof HTMLElement ? active : null;
+      if (!dialog.open) dialog.showModal();
+      queueMicrotask(() => closeRef.current?.focus());
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    // Register only while the dialog node is mounted (open=true). An empty-deps
+    // effect runs on the open=false first paint when ref is still null and never
+    // rebinds — Escape would close the native dialog without syncing React state.
+    const syncClosed = () => {
+      requestClose();
+    };
+    dialog.addEventListener("cancel", syncClosed);
+    dialog.addEventListener("close", syncClosed);
+    return () => {
+      dialog.removeEventListener("cancel", syncClosed);
+      dialog.removeEventListener("close", syncClosed);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open || mode !== "full") return;
@@ -94,37 +141,34 @@ export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
     }
   }, [open]);
 
-  const onCancelRef = useRef(onClose);
-  onCancelRef.current = onClose;
-
-  useEffect(() => {
-    if (!open) return;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancelRef.current();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
   if (!open) return null;
 
   const { profile, draft } = buildModerationOrgCatalogPreviewInput(org);
   const variant = org.partnerType === "MASTER" ? "specialist" : "business";
 
   return (
-    <div className={styles.overlay} role="presentation" onClick={onClose}>
-      <div
-        ref={trapRef}
-        className={styles.previewDialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="moderation-preview-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="moderation-preview-title" className={styles.dialogTitle}>
+    <dialog
+      ref={dialogRef}
+      className={styles.previewDialog}
+      aria-modal="true"
+      aria-labelledby={titleId}
+      data-org-moderation-preview="true"
+    >
+      <div className={styles.previewHead}>
+        <h2 id={titleId}>
           {mode === "list" ? "Карточка в списке каталога" : "Полная карточка организации"}
         </h2>
+        <button
+          ref={closeRef}
+          type="button"
+          className={styles.previewClose}
+          aria-label="Закрыть окно"
+          onClick={requestClose}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div className={styles.previewBody}>
         <p className={styles.metaLine}>
           {mode === "list"
             ? "Компактный вид результата поиска (отправленная заявка)."
@@ -136,7 +180,7 @@ export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
             <CatalogPublicationPreview variant={variant} profile={profile} draft={draft} />
           </div>
         ) : fullLoading ? (
-          <p>Загрузка предпросмотра…</p>
+          <p role="status">Загрузка предпросмотра…</p>
         ) : fullError ? (
           <p role="alert" className={styles.statusError}>
             {fullError}
@@ -146,13 +190,12 @@ export function ModerationPreviewModal({ open, mode, onClose, org }: Props) {
             <ModerationOrgCatalogFullPreview data={fullPayload} />
           </div>
         ) : null}
-
-        <div className={styles.dialogActions}>
-          <Button ref={closeRef} type="button" variant="primary" onClick={onClose}>
-            Закрыть
-          </Button>
-        </div>
       </div>
-    </div>
+      <div className={styles.previewFooter}>
+        <Button type="button" variant="primary" onClick={requestClose}>
+          Закрыть
+        </Button>
+      </div>
+    </dialog>
   );
 }

@@ -6,7 +6,7 @@ import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { moderationSubmittedStageLabels } from "@/lib/prof-admin-moderation-org-display";
 import { partnerTypeLabel } from "@/lib/profile-overview-display";
 import { CatalogCategoryAvatar } from "@/components/profile/CatalogCategoryAvatar";
-import styles from "./OrganizationModerationDetail.module.css";
+import styles from "./OrganizationModerationDetail.r1.module.css";
 
 export type ModerationPublicPreviewPayload = {
   previewLimitation: string;

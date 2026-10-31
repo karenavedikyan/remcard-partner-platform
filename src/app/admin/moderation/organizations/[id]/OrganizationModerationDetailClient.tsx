@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import {
@@ -42,12 +42,11 @@ import {
   moderationOrgCanPublishLabel,
   moderationOrgServerReadiness,
 } from "@/lib/prof-admin-moderation-org-readiness";
-import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { BranchCatalogPublicationPreview } from "@/components/profile/BranchCatalogPublicationPreview";
 import { ModerationPreviewModal } from "./ModerationPreviewModal";
 import { ModerationConfirmDialog } from "./ModerationConfirmDialog";
-import styles from "./OrganizationModerationDetail.module.css";
+import styles from "./OrganizationModerationDetail.r1.module.css";
 
 const MODERATION_FOCUS_HASH_KEY = "profModerationFocusHash";
 
@@ -67,6 +66,16 @@ type BranchDialog = {
   revisionAtOpen: string;
   fieldError: string | null;
 } | null;
+
+function initialsFromName(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (parts.length === 0) return "?";
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+}
 
 function SafePhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [failed, setFailed] = useState(false);
@@ -100,6 +109,9 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
   const [orgDialog, setOrgDialog] = useState<OrgDialog>(null);
   const [branchDialog, setBranchDialog] = useState<BranchDialog>(null);
   const [testDialog, setTestDialog] = useState<boolean | null>(null);
+
+  const backQs = searchParams.toString();
+  const backHref = `/admin/moderation${backQs ? `?${backQs}` : ""}`;
 
   const load = useCallback(
     async (opts?: { keepExistingOnError?: boolean }) => {
@@ -316,22 +328,58 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     setBusy(false);
   };
 
-  if (loading && !org) return <p className={styles.page}>Загрузка…</p>;
-  if (error && !org) {
+  if (loading && !org) {
     return (
-      <div className={styles.page}>
-        <p role="alert">{error}</p>
-        <Button type="button" variant="secondary" onClick={() => void load()}>
-          Повторить загрузку
-        </Button>
+      <div className={styles.page} role="status" aria-live="polite" data-org-moderation-detail="true">
+        <div className={styles.stateBlock}>
+          <strong>Загрузка карточки</strong>
+          <p>Получаем отправленную заявку, готовность и филиалы…</p>
+        </div>
       </div>
     );
   }
-  if (!org) return <p className={styles.page}>Не найдено</p>;
 
-  const backQs = searchParams.toString();
+  if (error && !org) {
+    const forbidden = /403|forbidden|доступ|прав/i.test(error);
+    const notFound = /404|not found|не найден/i.test(error);
+    return (
+      <div className={styles.page} data-org-moderation-detail="true">
+        <Link className={styles.backLink} href={backHref}>
+          ← Очередь модерации
+        </Link>
+        <div className={styles.stateBlock} role="alert">
+          <strong>
+            {forbidden ? "Недостаточно прав" : notFound ? "Карточка не найдена" : "Не удалось загрузить"}
+          </strong>
+          <p>{error}</p>
+          <div className={styles.toolbar} style={{ justifyContent: "center", marginTop: "1rem" }}>
+            <Button type="button" variant="secondary" onClick={() => void load()}>
+              Повторить загрузку
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!org) {
+    return (
+      <div className={styles.page} data-org-moderation-detail="true">
+        <Link className={styles.backLink} href={backHref}>
+          ← Очередь модерации
+        </Link>
+        <div className={styles.stateBlock}>
+          <strong>Не найдено</strong>
+          <p>Организация с таким идентификатором недоступна в очереди модерации.</p>
+        </div>
+      </div>
+    );
+  }
+
   const orgPending = org.catalogStatus === "PENDING";
   const pendingBranches = org.branches.filter((b) => b.catalogStatus === "PENDING");
+  const typeLabel = partnerTypeLabel(org.partnerType);
+  const metaBits = [typeLabel, city || null, org.ownerPublicId].filter(Boolean);
 
   const openOrgDialog = (action: OrgModerationAction) => {
     setOrgDialog({
@@ -356,59 +404,132 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
     });
   };
 
+  const decisionButtons = (
+    <div className={styles.actionsRow}>
+      <Button
+        className={styles.actionPrimary}
+        type="button"
+        disabled={busy || !orgPending}
+        onClick={() => openOrgDialog("approve")}
+      >
+        {orgApproveButtonLabel(org)}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={busy || !orgPending}
+        onClick={() => openOrgDialog("revise")}
+      >
+        Вернуть на доработку
+      </Button>
+      <Button
+        type="button"
+        variant="text"
+        disabled={busy || !orgPending}
+        onClick={() => openOrgDialog("reject")}
+      >
+        Отклонить заявку
+      </Button>
+      {pendingBranches.length > 0 ? (
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={busy || !orgPending}
+          onClick={() => openOrgDialog("approve-all")}
+        >
+          Одобрить организацию и {pendingBranches.length} филиал(ов)
+        </Button>
+      ) : null}
+    </div>
+  );
+
   return (
-    <div className={styles.page}>
-      <Link className={styles.backLink} href={`/admin/moderation${backQs ? `?${backQs}` : ""}`}>
+    <div className={styles.page} data-org-moderation-detail="true">
+      <Link className={styles.backLink} href={backHref}>
         ← Очередь модерации
       </Link>
 
       <header className={styles.header}>
-        <div className={styles.titleRow}>
-          <h1 className={styles.title}>{org.name}</h1>
-          <div className={styles.badges}>
-            <span className={styles.badge}>{partnerTypeLabel(org.partnerType)}</span>
-            <span className={orgPending ? styles.badgePending : styles.badge}>
-              {moderationCatalogStatusLabel(org.catalogStatus)}
-            </span>
-            {org.isTestPartner ? <span className={styles.badgeTest}>Тестовый партнёр</span> : null}
+        <div className={styles.detailTop}>
+          <div className={styles.avatar} aria-hidden>
+            {org.submitted.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={org.submitted.logoUrl} alt="" />
+            ) : (
+              initialsFromName(org.name)
+            )}
+          </div>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>{org.name}</h1>
+            <p className={styles.metaLine}>{metaBits.join(" · ")}</p>
+            <div className={styles.badges}>
+              <span className={orgPending ? styles.badgePending : styles.badge}>
+                {moderationCatalogStatusLabel(org.catalogStatus)}
+              </span>
+              <span className={styles.badge}>{typeLabel}</span>
+              {org.isTestPartner ? <span className={styles.badgeTest}>Тестовый партнёр</span> : null}
+            </div>
           </div>
         </div>
-        {city ? <p className={styles.metaLine}>Город: {city}</p> : null}
         {org.updatedAt ? (
           <p className={styles.metaLine}>
             Обновлено в системе: {new Date(org.updatedAt).toLocaleString("ru-RU")} (не дата отправки
             заявки)
           </p>
         ) : null}
-        {visibility ? (
-          <p className={styles.metaLine}>
-            <strong>Видимость в каталоге:</strong> {visibility.headline} — {visibility.detail}
-          </p>
-        ) : null}
-        <Button type="button" variant="secondary" disabled={busy} onClick={() => void load()}>
-          Обновить данные
-        </Button>
       </header>
 
-      <div className={styles.previewBar}>
-        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "list" })}>
-          Посмотреть как в каталоге · список
-        </Button>
-        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "full" })}>
-          Посмотреть как в каталоге · полная карточка
-        </Button>
-      </div>
+      {visibility ? (
+        <section className={styles.visibilityCard} aria-label="Видимость в каталоге">
+          <div className={styles.visibilityRow}>
+            <div>
+              <h2>Публичный каталог</h2>
+              <p>
+                <strong>{visibility.headline}</strong> — {visibility.detail}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
-      <div className={styles.sectionGrid}>
-        <Panel title={changeBlock?.title ?? "Изменения"}>
+      {changeBlock ? (
+        <section className={styles.section} aria-label={changeBlock.title}>
+          <h2>{changeBlock.title}</h2>
           <ul className={styles.diffList}>
-            {(changeBlock?.lines ?? []).map((line) => (
+            {changeBlock.lines.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
-        </Panel>
+        </section>
+      ) : null}
 
-        <Panel title="Готовность к публикации">
+      <div className={styles.toolbar}>
+        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "list" })}>
+          Карточка в списке
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setPreview({ mode: "full" })}>
+          Полная карточка
+        </Button>
+        <Button type="button" variant="text" disabled={busy} onClick={() => void load()}>
+          Обновить данные
+        </Button>
+      </div>
+
+      {orgPending ? (
+        <section className={styles.reviewSection} aria-label="Ожидает проверки">
+          <h2>Ожидает проверки</h2>
+          <p className={styles.reviewLead}>
+            Проверяется отправленная заявка организации и филиалы. Одобрение не меняет видимость в
+            каталоге само по себе. Закрытие окна подтверждения без подтверждения ничего не отправляет.
+          </p>
+          <p className={styles.metaLine}>{moderationOrgCanPublishLabel(org)}</p>
+          {decisionButtons}
+        </section>
+      ) : null}
+
+      <div className={styles.sectionGrid}>
+        <section className={styles.section} aria-label="Готовность к публикации">
+          <h2>Готовность к публикации</h2>
           <p className={styles.metaLine}>{moderationOrgCanPublishLabel(org)}</p>
           <ul className={styles.readinessList}>
             {readiness.map((item) => (
@@ -426,49 +547,59 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
               </li>
             ))}
           </ul>
-        </Panel>
+        </section>
 
-        <Panel title="Фото и описание">
+        <section className={styles.section} aria-label="Фото и описание">
+          <h2>Фото и описание</h2>
           {org.submitted.logoUrl ? (
             <SafePhoto src={org.submitted.logoUrl} alt="" className={styles.photoThumb} />
           ) : (
             <p className={styles.metaLine}>Логотип не приложен</p>
           )}
-          <p>{moderationSubmittedString(org.submitted.description) || "Описание не указано"}</p>
-        </Panel>
+          <p className={styles.prose}>
+            {moderationSubmittedString(org.submitted.description) || "Описание не указано"}
+          </p>
+        </section>
 
-        <Panel title="Контакты (публичные в заявке)">
-          <div className={styles.dataGrid}>
-            <span>Сайт</span>
-            <span>{moderationSubmittedString(org.submitted.website) || "—"}</span>
-            <span>Telegram</span>
-            <span>{moderationSubmittedString(org.submitted.telegram) || "—"}</span>
-            <span>Email</span>
-            <span>{moderationSubmittedString(org.submitted.publicEmail) || "—"}</span>
-            <span>Телефон</span>
-            <span>{moderationFormatPublicPhone(org.submitted.publicPhone)}</span>
-          </div>
-        </Panel>
+        <section className={styles.section} aria-label="Контакты">
+          <h2>Контакты (публичные в заявке)</h2>
+          <dl className={styles.dataGrid}>
+            <dt>Сайт</dt>
+            <dd>{moderationSubmittedString(org.submitted.website) || "—"}</dd>
+            <dt>Telegram</dt>
+            <dd>{moderationSubmittedString(org.submitted.telegram) || "—"}</dd>
+            <dt>Email</dt>
+            <dd>{moderationSubmittedString(org.submitted.publicEmail) || "—"}</dd>
+            <dt>Телефон</dt>
+            <dd>{moderationFormatPublicPhone(org.submitted.publicPhone)}</dd>
+          </dl>
+        </section>
 
-        <Panel title="Товары и услуги">
-          <div className={styles.dataGrid}>
-            <span>Товары</span>
-            <span>{moderationSubmittedCategoryLabels(org.submitted.storeCategories).join(", ") || "—"}</span>
-            <span>Услуги</span>
-            <span>{moderationSubmittedServiceLabels(org.submitted.specializations).join(", ") || "—"}</span>
-            <span>Этапы</span>
-            <span>{moderationSubmittedStageLabels(org.submitted.navigatorStageIds).join(", ") || "—"}</span>
-          </div>
-        </Panel>
+        <section className={styles.section} aria-label="Товары и услуги">
+          <h2>Товары и услуги</h2>
+          <dl className={styles.dataGrid}>
+            <dt>Товары</dt>
+            <dd>{moderationSubmittedCategoryLabels(org.submitted.storeCategories).join(", ") || "—"}</dd>
+            <dt>Услуги</dt>
+            <dd>{moderationSubmittedServiceLabels(org.submitted.specializations).join(", ") || "—"}</dd>
+            <dt>Этапы</dt>
+            <dd>{moderationSubmittedStageLabels(org.submitted.navigatorStageIds).join(", ") || "—"}</dd>
+          </dl>
+        </section>
 
         {org.live.catalogPublished ? (
-          <Panel title="Опубликовано сейчас" hint="Для сравнения с отправленной заявкой">
-            <p>{moderationSubmittedString(org.live.description) || "Описание не заполнено"}</p>
-          </Panel>
+          <section className={styles.section} aria-label="Опубликовано сейчас">
+            <h2>Опубликовано сейчас (live)</h2>
+            <p className={styles.metaLine}>Для сравнения с отправленной заявкой</p>
+            <p className={styles.prose}>
+              {moderationSubmittedString(org.live.description) || "Описание не заполнено"}
+            </p>
+          </section>
         ) : null}
 
         {org.publicContacts?.length ? (
-          <Panel title="Служебно: опубликованный справочник контактов">
+          <section className={styles.section} aria-label="Справочник контактов">
+            <h2>Служебно: опубликованный справочник контактов</h2>
             <ul className={styles.diffList}>
               {org.publicContacts.map((c, i) => (
                 <li key={`${c.type}-${i}`}>
@@ -477,74 +608,82 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
                 </li>
               ))}
             </ul>
-          </Panel>
+          </section>
         ) : null}
 
-        <Panel title="Адреса и филиалы">
-          {org.branches.map((b) => (
-            <article
-              key={b.id}
-              id={`branch-${b.id}`}
-              className={`${styles.branchCard} ${focusBranch === b.id ? styles.branchFocus : ""}`}
-            >
-              <strong>{b.submitted.name ?? "Филиал"}</strong> ·{" "}
-              {moderationCatalogStatusLabel(b.catalogStatus)}
-              {b.catalogStatus === "DRAFT" ? (
-                <p className={styles.branchDraftNote}>Черновик — на проверку не отправлен.</p>
-              ) : null}
-              <p className={styles.metaLine}>
-                {b.submitted.city}, {b.submitted.address}
-              </p>
-              {b.submitted.workingHours ? <p>Часы: {b.submitted.workingHours}</p> : null}
-              {b.submitted.description ? <p>{b.submitted.description}</p> : null}
-              {b.submitted.photoUrl ? (
-                <SafePhoto src={b.submitted.photoUrl} alt="" className={styles.photoThumb} />
-              ) : null}
-              {b.catalogStatus === "PENDING" ? (
-                <div className={styles.actionsRow} style={{ marginTop: "0.5rem" }}>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => openBranchDialog(b.id, "approve")}
-                  >
-                    Одобрить филиал
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="text"
-                    disabled={busy}
-                    onClick={() => openBranchDialog(b.id, "revise")}
-                  >
-                    На доработку
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="text"
-                    disabled={busy}
-                    onClick={() => openBranchDialog(b.id, "reject")}
-                  >
-                    Отклонить
-                  </Button>
-                </div>
-              ) : null}
-              {b.catalogStatus === "PENDING" ? (
-                <BranchCatalogPublicationPreview model={buildModerationBranchPreviewModel(b, org)} />
-              ) : null}
-            </article>
-          ))}
-        </Panel>
+        <section className={styles.section} aria-label="Адреса и филиалы">
+          <h2>Адреса и филиалы</h2>
+          {org.branches.length === 0 ? (
+            <p className={styles.metaLine}>Филиалы не указаны</p>
+          ) : (
+            org.branches.map((b) => (
+              <article
+                key={b.id}
+                id={`branch-${b.id}`}
+                className={`${styles.branchCard} ${focusBranch === b.id ? styles.branchFocus : ""}`}
+              >
+                <p className={styles.branchTitle}>
+                  {b.submitted.name ?? "Филиал"} · {moderationCatalogStatusLabel(b.catalogStatus)}
+                </p>
+                {b.catalogStatus === "DRAFT" ? (
+                  <p className={styles.branchDraftNote}>Черновик — на проверку не отправлен.</p>
+                ) : null}
+                <p className={styles.metaLine}>
+                  {b.submitted.city}, {b.submitted.address}
+                </p>
+                {b.submitted.workingHours ? <p className={styles.prose}>Часы: {b.submitted.workingHours}</p> : null}
+                {b.submitted.description ? <p className={styles.prose}>{b.submitted.description}</p> : null}
+                {b.submitted.photoUrl ? (
+                  <SafePhoto src={b.submitted.photoUrl} alt="" className={styles.photoThumb} />
+                ) : null}
+                {b.catalogStatus === "PENDING" ? (
+                  <div className={styles.actionsRow} style={{ marginTop: "0.75rem" }}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => openBranchDialog(b.id, "approve")}
+                    >
+                      Одобрить филиал
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="text"
+                      disabled={busy}
+                      onClick={() => openBranchDialog(b.id, "revise")}
+                    >
+                      На доработку
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="text"
+                      disabled={busy}
+                      onClick={() => openBranchDialog(b.id, "reject")}
+                    >
+                      Отклонить
+                    </Button>
+                  </div>
+                ) : null}
+                {b.catalogStatus === "PENDING" ? (
+                  <BranchCatalogPublicationPreview model={buildModerationBranchPreviewModel(b, org)} />
+                ) : null}
+              </article>
+            ))
+          )}
+        </section>
 
-        <Panel title="История проверки">
+        <section className={styles.section} aria-label="История проверки">
+          <h2>История проверки</h2>
           <p className={styles.metaLine}>
             История решений по организации в API не передаётся. Показываются только сохранённые данные
             текущей заявки.
           </p>
-        </Panel>
+        </section>
 
         {org.isTestPartner ? (
-          <Panel title="Публикация тестового партнёра">
-            <p className={styles.metaLine}>
+          <section className={styles.section} aria-label="Публикация тестового партнёра">
+            <h2>Публикация тестового партнёра</h2>
+            <p className={styles.prose}>
               Разрешение публикации:{" "}
               {org.profTestPublicCatalogAllowed
                 ? "включено"
@@ -562,49 +701,14 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
                 Скрыть из каталога
               </Button>
             </div>
-          </Panel>
+          </section>
         ) : null}
       </div>
 
       <section className={styles.actionsPanel} aria-label="Решение по организации">
-        <h2 className={styles.dialogTitle}>Решение по организации</h2>
+        <h2>Решение по организации</h2>
         <p className={styles.metaLine}>{moderationOrgCanPublishLabel(org)}</p>
-        <div className={styles.actionsRow}>
-          <Button
-            className={styles.actionPrimary}
-            type="button"
-            disabled={busy || !orgPending}
-            onClick={() => openOrgDialog("approve")}
-          >
-            {orgApproveButtonLabel(org)}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={busy || !orgPending}
-            onClick={() => openOrgDialog("revise")}
-          >
-            Вернуть на доработку
-          </Button>
-          <Button
-            type="button"
-            variant="text"
-            disabled={busy || !orgPending}
-            onClick={() => openOrgDialog("reject")}
-          >
-            Отклонить заявку
-          </Button>
-          {pendingBranches.length > 0 ? (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={busy || !orgPending}
-              onClick={() => openOrgDialog("approve-all")}
-            >
-              Одобрить организацию и {pendingBranches.length} филиал(ов)
-            </Button>
-          ) : null}
-        </div>
+        {decisionButtons}
       </section>
 
       {message ? (

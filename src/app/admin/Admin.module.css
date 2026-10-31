@@ -420,7 +420,8 @@
 /* ===== Partners route-scoped shell (data-partners-shell) — other pages unchanged ===== */
 
 .topbar[data-partners-shell="true"],
-.topbar[data-moderation-partner-detail-shell="true"] {
+.topbar[data-moderation-partner-detail-shell="true"],
+.topbar[data-moderation-org-detail-shell="true"] {
   pointer-events: auto;
   justify-content: flex-start;
   gap: 1rem;

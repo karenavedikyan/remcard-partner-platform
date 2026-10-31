@@ -14,6 +14,11 @@ function isPartnerModerationDetailPath(pathname: string): boolean {
   return /^\/admin\/moderation\/partners\/[^/]+\/?$/.test(pathname);
 }
 
+/** Exact organization-moderation detail card only — not the queue or partner routes. */
+function isOrgModerationDetailPath(pathname: string): boolean {
+  return /^\/admin\/moderation\/organizations\/[^/]+\/?$/.test(pathname);
+}
+
 /**
  * Visual admin chrome only (A1 redesign): sidebar brand + topbar account cluster.
  * Navigation destinations and AdminAccountControls behavior stay on the live set.
@@ -21,14 +26,15 @@ function isPartnerModerationDetailPath(pathname: string): boolean {
  *
  * Partners routes get minimal presentation wiring (icons/breadcrumb/mobile chrome)
  * via data-partners-shell — other admin pages keep exact baseline chrome.
- * Partner-moderation detail uses a separate breadcrumb flag that does not enable
+ * Partner/org moderation detail use separate breadcrumb flags that do not enable
  * partnersChrome / data-partners-shell.
  */
 export function AdminHeader({ identity }: { identity: AdminAccountIdentity | null }) {
   const pathname = usePathname() ?? "";
   const partnersShell = isPartnersAdminPath(pathname);
   const moderationPartnerDetailShell = isPartnerModerationDetailPath(pathname);
-  const showTopbar = partnersShell || moderationPartnerDetailShell;
+  const moderationOrgDetailShell = isOrgModerationDetailPath(pathname);
+  const showTopbar = partnersShell || moderationPartnerDetailShell || moderationOrgDetailShell;
 
   return (
     <>
@@ -37,6 +43,7 @@ export function AdminHeader({ identity }: { identity: AdminAccountIdentity | nul
         aria-label="Бренд администратора"
         data-partners-shell={partnersShell ? "true" : undefined}
         data-moderation-partner-detail-shell={moderationPartnerDetailShell ? "true" : undefined}
+        data-moderation-org-detail-shell={moderationOrgDetailShell ? "true" : undefined}
       >
         <div className={styles.brand}>
           <strong>
@@ -53,6 +60,7 @@ export function AdminHeader({ identity }: { identity: AdminAccountIdentity | nul
         className={styles.topbar}
         data-partners-shell={partnersShell ? "true" : undefined}
         data-moderation-partner-detail-shell={moderationPartnerDetailShell ? "true" : undefined}
+        data-moderation-org-detail-shell={moderationOrgDetailShell ? "true" : undefined}
         {...(showTopbar ? {} : { "aria-hidden": true as const })}
       >
         {partnersShell ? (
@@ -71,6 +79,15 @@ export function AdminHeader({ identity }: { identity: AdminAccountIdentity | nul
               ›
             </span>
             <strong>Модерация · партнёр</strong>
+          </nav>
+        ) : null}
+        {moderationOrgDetailShell ? (
+          <nav className={styles.partnersBreadcrumb} aria-label="Путь раздела">
+            <span>Кабинет администратора</span>
+            <span className={styles.partnersBreadcrumbSep} aria-hidden="true">
+              ›
+            </span>
+            <strong>Модерация · организация</strong>
           </nav>
         ) : null}
       </div>
