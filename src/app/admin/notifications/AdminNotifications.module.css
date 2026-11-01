@@ -95,6 +95,9 @@
 }
 
 .markAllButton {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
   min-height: 38px !important;
   padding: 8px 12px !important;
   font-size: var(--text-xs, 0.8125rem) !important;
