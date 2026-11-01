@@ -197,10 +197,6 @@
 }
 
 @media (max-width: 680px) {
-  .modalResultCover {
-    padding: 0 12px;
-  }
-
   .modalResultTop {
     padding: 12px 12px 8px;
     gap: 10px;
@@ -231,10 +227,6 @@
 }
 
 @media (max-width: 360px) {
-  .modalResultCover {
-    padding: 0 10px;
-  }
-
   .modalResultTop,
   .modalResultBody {
     padding-left: 10px;
