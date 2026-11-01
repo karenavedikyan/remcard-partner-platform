@@ -761,6 +761,7 @@
 @media (max-height: 640px) {
   .previewDialog {
     max-height: calc(100dvh - 8px);
-    width: calc(100vw - 8px);
+    /* A14b: keep desktop cap on short-wide viewports (no 100vw - 8px stretch). */
+    width: min(610px, calc(100vw - 32px));
   }
 }

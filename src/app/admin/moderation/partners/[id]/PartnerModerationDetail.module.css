@@ -563,6 +563,6 @@
 @media (max-height: 640px) {
   .previewDialog {
     max-height: calc(100dvh - 8px);
-    width: calc(100vw - 8px);
+    width: min(610px, calc(100vw - 32px));
   }
 }

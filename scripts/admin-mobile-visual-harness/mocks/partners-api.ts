@@ -92,17 +92,3 @@ export async function previewDemoSupersession() {
 export async function applyDemoSupersession() {
   return { ok: true };
 }
-
-export async function previewPartnerAccountDelete(_userId: string, _reason: string) {
-  return {
-    preview: {
-      effects: ["Harness-only delete preview"],
-      warnings: [],
-      confirmToken: "harness-delete-token",
-    },
-  };
-}
-
-export async function applyPartnerAccountDelete() {
-  return { ok: true };
-}
