@@ -809,3 +809,26 @@
   background: #78350f;
   border-color: #fbbf24;
 }
+
+/* A18c: history list + long reason text in detail */
+.historyList {
+  list-style: none;
+  margin: var(--om-space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--om-space-3);
+}
+
+.historyItem {
+  min-width: 0;
+  padding: var(--om-space-3);
+  border: 1px solid var(--om-line);
+  border-radius: calc(var(--om-radius) - 4px);
+  background: var(--om-offset);
+}
+
+.historyItem .prose {
+  overflow-wrap: anywhere;
+  margin: 0;
+}

@@ -46,6 +46,9 @@ import { Button } from "@/components/ui/Button";
 import { BranchCatalogPublicationPreview } from "@/components/profile/BranchCatalogPublicationPreview";
 import { ModerationPreviewModal } from "./ModerationPreviewModal";
 import { ModerationConfirmDialog } from "./ModerationConfirmDialog";
+import {
+  OrganizationModerationHistorySection,
+} from "../../ModerationDetailHistorySections";
 import styles from "./OrganizationModerationDetail.r1.module.css";
 
 const MODERATION_FOCUS_HASH_KEY = "profModerationFocusHash";
@@ -675,13 +678,7 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
           )}
         </section>
 
-        <section className={styles.section} aria-label="История проверки">
-          <h2>История проверки</h2>
-          <p className={styles.metaLine}>
-            История решений по организации в API не передаётся. Показываются только сохранённые данные
-            текущей заявки.
-          </p>
-        </section>
+        <OrganizationModerationHistorySection org={org} styles={styles} />
 
         {org.isTestPartner ? (
           <section className={styles.section} aria-label="Публикация тестового партнёра">
@@ -724,7 +721,6 @@ export function OrganizationModerationDetailClient({ organizationId }: { organiz
         <dt>Служебная информация</dt>
         <dd>ID организации: {org.id}</dd>
         <dd>Публичный ID владельца: {org.ownerPublicId}</dd>
-        <dd>Токен ревизии: {org.revisionToken}</dd>
       </dl>
 
       <ModerationPreviewModal

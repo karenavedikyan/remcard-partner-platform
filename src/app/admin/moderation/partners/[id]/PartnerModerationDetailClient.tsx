@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ModerationConfirmDialog } from "../../organizations/[id]/ModerationConfirmDialog";
 import { PartnerModerationPreviewModal } from "./PartnerModerationPreviewModal";
+import { PartnerModerationHistorySection } from "../../ModerationDetailHistorySections";
 import styles from "./PartnerModerationDetail.module.css";
 
 type PreviewState = { mode: "list" | "full" } | null;
@@ -241,7 +242,7 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
           <p>{error}</p>
           <div className={styles.toolbar} style={{ justifyContent: "center", marginTop: "1rem" }}>
             <Button type="button" variant="secondary" onClick={() => void load()}>
-              Повторить
+              Повторить загрузку
             </Button>
           </div>
         </div>
@@ -450,6 +451,8 @@ export function PartnerModerationDetailClient({ partnerId }: { partnerId: string
           </ul>
         </section>
       ) : null}
+
+      <PartnerModerationHistorySection partner={partner} styles={styles} />
 
       <section className={styles.actionsPanel} aria-label="Решение по партнёру">
         <h2>Решение по партнёру</h2>
