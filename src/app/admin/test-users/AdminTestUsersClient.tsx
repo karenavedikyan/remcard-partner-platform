@@ -17,6 +17,7 @@ import {
   type ProfTestUserCreateKind,
 } from "./adminTestUserKind";
 import styles from "../admin-test-users.module.css";
+import { adminTestUserCreateError } from "./adminTestUserCreateError";
 
 type TestUser = {
   id: string;
@@ -112,7 +113,7 @@ export function AdminTestUsersClient() {
     } catch (caught) {
       if (gen === createGenRef.current) {
         setForm(submitted);
-        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать");
+        setError(adminTestUserCreateError(caught instanceof RemcardApiError ? caught.message : null));
       }
     } finally {
       if (gen === createGenRef.current) setCreating(false);
