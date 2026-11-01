@@ -72,8 +72,9 @@ function GrowthChart({
 
   const clientValues = series.map((r) => r.clients);
   const proValues = series.map((r) => r.pros);
-  const clientGeo = buildLineGeometry(clientValues, plotW, CHART_VIEW_H);
-  const proGeo = buildLineGeometry(proValues, plotW, CHART_VIEW_H);
+  const sharedMaximum = Math.max(0, ...clientValues, ...proValues);
+  const clientGeo = buildLineGeometry(clientValues, plotW, CHART_VIEW_H, sharedMaximum);
+  const proGeo = buildLineGeometry(proValues, plotW, CHART_VIEW_H, sharedMaximum);
   const labelX = Math.max(4, clientGeo.padL - 6);
 
   return (

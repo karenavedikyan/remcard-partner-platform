@@ -49,12 +49,12 @@ export type LineGeometry = {
  * Build line geometry in user units matching the CSS pixel width of the SVG
  * (viewBox width === rendered width → screen CTM scale ≈ 1 for axis text).
  */
-export function buildLineGeometry(values: number[], width: number, height: number): LineGeometry {
+export function buildLineGeometry(values: number[], width: number, height: number, sharedMaximum?: number): LineGeometry {
   const n = values.length;
   const padR = 12;
   const padT = 16;
   const padB = 28;
-  const max = Math.max(4, ...values) + 2;
+  const max = Math.max(4, sharedMaximum ?? 0, ...values) + 2;
   const guideValues = [0, 1, 2, 3].map((i) => Math.round((i * max) / 3));
   const tickLabels = guideValues.map(formatAxisTick);
   const rawPad = estimateTickPadPx(tickLabels);
