@@ -6,7 +6,7 @@ import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
-import { getPartnershipUiActions, partnershipNeedsMyResponse } from "@/lib/partnership-rules";
+import { getPartnershipUiActions, partnershipAgentSegment, partnershipNeedsMyResponse } from "@/lib/partnership-rules";
 import type { AgentListViewMode } from "@/components/partners/AgentR04ListToolbar";
 import {
   partnerCollectionListDetail,
@@ -27,14 +27,27 @@ import {
 import r03 from "@/components/agent-r03/agent-r03.module.css";
 import styles from "./AgentPartnerCollection.module.css";
 import inviteStyles from "./AgentInvitationCollection.module.css";
+import activeStyles from "./AgentActiveCollection.module.css";
+
+export type AgentPartnerCollectionPresentation = "default" | "invitations" | "active";
+
+export function resolveActivePartnerPresentation(
+  presentationVariant: AgentPartnerCollectionPresentation,
+  partnerships: Partnership[],
+): boolean {
+  if (presentationVariant === "invitations") return false;
+  if (presentationVariant === "active") return true;
+  return (
+    partnerships.length > 0 &&
+    partnerships.every((p) => partnershipAgentSegment(p.status) === "active")
+  );
+}
 
 type TermRequestState = {
   state: "idle" | "loading" | "loaded" | "error";
   requests: import("@/lib/types").TermChangeRequest[];
   error: string;
 };
-
-export type AgentPartnerCollectionPresentation = "default" | "invitations";
 
 type Props = {
   partnerships: Partnership[];
@@ -215,6 +228,7 @@ export function AgentPartnerCollection(props: Props) {
   } = props;
 
   const isInvitations = presentationVariant === "invitations";
+  const isActiveSkin = resolveActivePartnerPresentation(presentationVariant, partnerships);
 
   const [detailPartnershipId, setDetailPartnershipId] = useState<string | null>(null);
   const detailNameButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -327,26 +341,81 @@ export function AgentPartnerCollection(props: Props) {
     />
   );
 
-  const cardGridClass = isInvitations ? inviteStyles.cardGrid : styles.cardGrid;
-  const partnerCardClass = (selected: boolean) =>
-    isInvitations
-      ? `${inviteStyles.partnerCard}${selected ? ` ${inviteStyles.partnerCardSelected}` : ""}`
-      : `${styles.partnerCard}${selected ? ` ${styles.partnerCardSelected}` : ""}`;
-  const cardSelectClass = isInvitations ? inviteStyles.cardSelectRow : styles.cardSelectRow;
-  const cardBodyClass = isInvitations ? inviteStyles.cardBody : styles.cardBody;
-  const cardTitleClass = isInvitations ? inviteStyles.cardTitle : styles.cardTitle;
-  const cardMetaClass = isInvitations ? inviteStyles.cardMeta : styles.cardMeta;
-  const cardFooterClass = isInvitations ? inviteStyles.cardFooter : styles.cardFooter;
+  const cardGridClass = isInvitations ? inviteStyles.cardGrid : isActiveSkin ? activeStyles.cardGrid : styles.cardGrid;
+  const partnerCardClass = (selected: boolean) => {
+    if (isInvitations) {
+      return `${inviteStyles.partnerCard}${selected ? ` ${inviteStyles.partnerCardSelected}` : ""}`;
+    }
+    if (isActiveSkin) {
+      return `${activeStyles.partnerCard}${selected ? ` ${activeStyles.partnerCardSelected}` : ""}`;
+    }
+    return `${styles.partnerCard}${selected ? ` ${styles.partnerCardSelected}` : ""}`;
+  };
+  const cardSelectClass = isInvitations
+    ? inviteStyles.cardSelectRow
+    : isActiveSkin
+      ? activeStyles.cardSelectRow
+      : styles.cardSelectRow;
+  const cardBodyClass = isInvitations
+    ? inviteStyles.cardBody
+    : isActiveSkin
+      ? activeStyles.cardBody
+      : styles.cardBody;
+  const cardTitleClass = isInvitations
+    ? inviteStyles.cardTitle
+    : isActiveSkin
+      ? activeStyles.cardTitle
+      : styles.cardTitle;
+  const cardMetaClass = isInvitations
+    ? inviteStyles.cardMeta
+    : isActiveSkin
+      ? activeStyles.cardMeta
+      : styles.cardMeta;
+  const cardFooterClass = isInvitations
+    ? inviteStyles.cardFooter
+    : isActiveSkin
+      ? activeStyles.cardFooter
+      : styles.cardFooter;
   const tableWrapClass = isInvitations
     ? `${inviteStyles.tableWrap} ${styles.desktopOnly}`
-    : `${styles.tableWrap} ${styles.desktopOnly}`;
-  const dataTableClass = isInvitations ? inviteStyles.dataTable : styles.dataTable;
-  const titleCellClass = isInvitations ? inviteStyles.titleCell : styles.titleCell;
-  const detailCellClass = isInvitations ? inviteStyles.detailCell : styles.detailCell;
-  const statusCellClass = isInvitations ? inviteStyles.statusCell : styles.statusCell;
-  const actionCellClass = isInvitations ? inviteStyles.actionCell : styles.actionCell;
-  const captionClass = isInvitations ? inviteStyles.caption : styles.caption;
-  const workflowCellClass = isInvitations ? inviteStyles.workflowCell : styles.workflowCell;
+    : isActiveSkin
+      ? `${activeStyles.tableWrap} ${styles.desktopOnly}`
+      : `${styles.tableWrap} ${styles.desktopOnly}`;
+  const dataTableClass = isInvitations
+    ? inviteStyles.dataTable
+    : isActiveSkin
+      ? activeStyles.dataTable
+      : styles.dataTable;
+  const titleCellClass = isInvitations
+    ? inviteStyles.titleCell
+    : isActiveSkin
+      ? activeStyles.titleCell
+      : styles.titleCell;
+  const detailCellClass = isInvitations
+    ? inviteStyles.detailCell
+    : isActiveSkin
+      ? activeStyles.detailCell
+      : styles.detailCell;
+  const statusCellClass = isInvitations
+    ? inviteStyles.statusCell
+    : isActiveSkin
+      ? activeStyles.statusCell
+      : styles.statusCell;
+  const actionCellClass = isInvitations
+    ? inviteStyles.actionCell
+    : isActiveSkin
+      ? activeStyles.actionCell
+      : styles.actionCell;
+  const captionClass = isInvitations
+    ? inviteStyles.caption
+    : isActiveSkin
+      ? activeStyles.caption
+      : styles.caption;
+  const workflowCellClass = isInvitations
+    ? inviteStyles.workflowCell
+    : isActiveSkin
+      ? activeStyles.workflowCell
+      : styles.workflowCell;
 
   const listBody =
     viewMode === "cards" ? (
@@ -368,7 +437,13 @@ export function AgentPartnerCollection(props: Props) {
                 key={partnership.id}
                 className={partnerCardClass(isSelected)}
                 data-selected={isSelected ? "true" : "false"}
-                data-testid={isInvitations ? "agent-invitation-card" : undefined}
+                data-testid={
+                  isInvitations
+                    ? "agent-invitation-card"
+                    : isActiveSkin
+                      ? "agent-active-card"
+                      : undefined
+                }
               >
                 <div className={cardSelectClass}>
                   <input
@@ -466,7 +541,9 @@ export function AgentPartnerCollection(props: Props) {
                     <p className={r03.meta} data-testid="partner-row-detail">
                       {detail}
                     </p>
-                    {needsResponse ? <p className={r03.meta}>Ожидает вашего решения</p> : null}
+                    {needsResponse && !isActiveSkin ? (
+                      <p className={r03.meta}>Ожидает вашего решения</p>
+                    ) : null}
                   </div>
                 </div>
                 <PartnerRowInlineWorkflow
@@ -595,9 +672,17 @@ export function AgentPartnerCollection(props: Props) {
   // Single composition: list/cards body + one detail dialog. Term-change editor is owned by PartnersHub.
   return (
     <div
-      className={isInvitations ? inviteStyles.root : undefined}
-      data-testid={isInvitations ? "agent-invitation-collection" : undefined}
-      data-presentation={presentationVariant}
+      className={isInvitations ? inviteStyles.root : isActiveSkin ? activeStyles.root : undefined}
+      data-testid={
+        isInvitations
+          ? "agent-invitation-collection"
+          : isActiveSkin
+            ? "agent-active-collection"
+            : undefined
+      }
+      data-presentation={
+        isInvitations ? "invitations" : isActiveSkin ? "active" : presentationVariant
+      }
       data-invitation-flow={isInvitations ? invitationFlowHint ?? undefined : undefined}
     >
       {listBody}

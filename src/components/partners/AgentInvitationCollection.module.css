@@ -44,10 +44,19 @@
 
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
-  gap: var(--space-4);
-  /* Cards surface only — never pair with list mobile/desktop in the same mode */
   min-width: 0;
+}
+
+/* Incoming (decide): frozen R1 `.pr-decisions` — not `.prof-offers`. */
+.root[data-invitation-flow="incoming"] .cardGrid {
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: var(--space-4);
+}
+
+/* Outgoing (waiting) cards: frozen R1 `.prof-offers` desktop grid. */
+.root[data-invitation-flow="outgoing"] .cardGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .partnerCard {

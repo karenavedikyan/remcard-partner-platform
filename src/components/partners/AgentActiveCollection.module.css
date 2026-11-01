@@ -1,0 +1,123 @@
+/**
+ * Active partnerships presentation (P28a).
+ * Maps compiled cards grid to frozen R1 `.pr-showcase-main .pr-grid` (2 columns desktop).
+ * Scoped via AgentPartnerCollection; does not alter invitations variant.
+ */
+
+.root {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.root :global([data-testid="partner-row-name-button"]),
+.root :global([data-testid="partner-row-inline-workflow"]) :global(button),
+.root :global(button[data-testid^="partner-action-"]) {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  min-width: 0;
+  align-items: stretch;
+}
+
+.partnerCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.partnerCardSelected {
+  border-color: var(--accent, var(--primary));
+  background: var(--soft, color-mix(in srgb, var(--accent, var(--primary)) 10%, var(--surface)));
+}
+
+.cardSelectRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.cardBody {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-md, 1rem);
+  font-weight: 700;
+}
+
+.cardMeta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.titleCell,
+.detailCell,
+.statusCell,
+.actionCell,
+.workflowCell {
+  padding: var(--space-3) var(--space-4);
+  vertical-align: top;
+}
+
+.caption {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.mobileStack :global(.mobileRecord) {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--surface);
+}
+
+@media (max-width: 720px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+}
