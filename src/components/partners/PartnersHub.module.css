@@ -85,7 +85,9 @@
 }
 
 .agentToolbarShell {
-  margin-bottom: var(--space-3);
+  /* Spacing to the collection comes from zoneBody grid gap — avoid double margin
+     with AgentR04ListToolbar.root (frozen quiet-tools use margin:0). */
+  margin-bottom: 0;
 }
 
 .discussionContextPanel {

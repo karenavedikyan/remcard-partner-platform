@@ -33,7 +33,19 @@ function client(n: number, extra: Partial<{ displayName: string; publicId: strin
   };
 }
 
-describe("A21b clients hardening", () => {
+function funnel(registered: number) {
+  return {
+    registered,
+    profileFilled: Math.min(registered, Math.max(0, registered - 2)),
+    firstAction: Math.min(registered, Math.max(0, registered - 5)),
+    activeRecently: Math.min(registered, 3),
+    pctProfile: registered ? 80 : 0,
+    pctFirst: registered ? 50 : 0,
+    pctActive: registered ? 30 : 0,
+  };
+}
+
+describe("A21b/A21c clients hardening", () => {
   beforeEach(() => {
     fetchAdminClients.mockReset();
   });
@@ -44,9 +56,10 @@ describe("A21b clients hardening", () => {
       total: 42,
       page: 1,
       totalPages: 5,
+      funnel: funnel(126),
     });
     render(<AdminClientsClient />);
-    expect(await screen.findByTestId("clients-total")).toHaveTextContent("42");
+    expect(await screen.findByTestId("clients-total")).toHaveTextContent("126");
     expect(screen.getByTestId("clients-count-hint")).toHaveTextContent("42 клиентов");
     expect(screen.getByTestId("clients-range").textContent).toMatch(/из 42/);
   });
@@ -57,10 +70,12 @@ describe("A21b clients hardening", () => {
       total: 0,
       page: 1,
       totalPages: 1,
+      funnel: funnel(0),
     });
     render(<AdminClientsClient />);
     expect(await screen.findByTestId("clients-empty")).toBeTruthy();
     expect(screen.getByTestId("clients-total")).toHaveTextContent("0");
+    expect(screen.getByTestId("clients-count-hint")).toHaveTextContent("0 клиентов");
   });
 
   it("ignores delayed stale responses when search changes quickly", async () => {
@@ -75,6 +90,7 @@ describe("A21b clients hardening", () => {
         total: 1,
         page: 1,
         totalPages: 1,
+        funnel: funnel(20),
       });
 
     const ui = userEvent.setup();
@@ -88,11 +104,12 @@ describe("A21b clients hardening", () => {
         total: 99,
         page: 1,
         totalPages: 10,
+        funnel: funnel(99),
       });
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("clients-total")).toHaveTextContent("1");
+      expect(screen.getByTestId("clients-count-hint")).toHaveTextContent("1 клиентов");
     });
     expect(screen.queryByText("Устаревший")).toBeNull();
     expect(screen.getAllByText("Анна").length).toBeGreaterThan(0);
@@ -109,11 +126,13 @@ describe("A21b clients hardening", () => {
       total: 1,
       page: 1,
       totalPages: 1,
+      funnel: funnel(1),
     });
     const { container } = render(<AdminClientsClient />);
     expect((await screen.findAllByText(longName)).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /создать|удалить|изменить/i })).toBeNull();
-    expect(container.querySelector('[data-admin-clients="a21b"]')).toBeTruthy();
+    expect(container.querySelector('[data-admin-clients="a21g"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="clients-funnel"]')).toBeNull();
   });
 
   it("surfaces 401 and 403 distinctly with retry after error", async () => {

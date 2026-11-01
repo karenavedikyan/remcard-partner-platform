@@ -65,7 +65,7 @@ describe("PartnerSearchResultCard P25f pure agent DTO parity", () => {
         onInvite={() => {}}
       />,
     );
-    expect(screen.getByTestId("agent-partner-search-result-invite")).toBeDisabled();
-    expect(screen.getByTestId("agent-partner-search-result-invite-blocked")).toBeTruthy();
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).toBeNull();
+    expect(screen.getByTestId("agent-partner-search-result-status")).toHaveTextContent("Активно");
   });
 });

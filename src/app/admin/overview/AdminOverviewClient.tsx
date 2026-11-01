@@ -113,9 +113,9 @@ function CommunityGrowthPanel({
           <h2 className={styles.panelTitle}>Рост сообщества</h2>
           <p className={styles.chartSubtitle}>{subtitle}</p>
         </div>
-        <span className={styles.chartSubtitle} aria-disabled="true">
-          Аналитика готовится
-        </span>
+        <Link className={styles.chartSubtitle} href="/admin/analytics">
+          Вся аналитика
+        </Link>
       </div>
       {error ? (
         <div className={styles.chartSourceError}>

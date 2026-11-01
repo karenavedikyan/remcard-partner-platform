@@ -15,6 +15,7 @@ import {
   type AdminClientPeriod,
   type AdminClientsListResponse,
 } from "@/lib/prof-admin-clients-api";
+import { AdminClientDetailDrawer } from "./AdminClientDetailDrawer";
 import styles from "./AdminClients.r1.module.css";
 
 type LoadState =
@@ -78,11 +79,51 @@ function ClientAvatar({ client }: { client: AdminClient }) {
   );
 }
 
-function StatusPill({ client }: { client: AdminClient }) {
-  if (client.isBlocked) {
-    return <span className={`${styles.pill} ${styles.pillBlocked}`}>Заблокирован</span>;
-  }
-  return <span className={`${styles.pill} ${styles.pillOk}`}>Активен</span>;
+function displayClientName(client: AdminClient): string {
+  const name = client.displayName?.trim();
+  return name ? name : "—";
+}
+
+function displayClientCity(client: AdminClient): string {
+  const city = client.city?.trim();
+  return city ? city : "—";
+}
+
+/** Honest unavailable cell — never fill with registration/funnel/profile values. */
+function GapCell({ label }: { label: string }) {
+  return (
+    <span
+      className={styles.gapCell}
+      title={`${label} пока не отображается`}
+      aria-label={`${label}: пока нет`}
+    >
+      —
+    </span>
+  );
+}
+
+function BlockedPill({ client }: { client: AdminClient }) {
+  if (!client.isBlocked) return null;
+  return <span className={`${styles.pill} ${styles.pillBlocked}`}>Заблокирован</span>;
+}
+
+function ClientIdentity({ client }: { client: AdminClient }) {
+  const name = displayClientName(client);
+  const city = displayClientCity(client);
+  return (
+    <div className={styles.clientName}>
+      <strong title={name} data-testid="client-name">
+        {name}
+      </strong>
+      {/* publicId and city stay on separate lines so a long id never clamps the city away */}
+      <small className={styles.clientPublicId} title={client.publicId} data-testid="client-public-id">
+        {client.publicId}
+      </small>
+      <small className={styles.clientCity} title={city} data-testid="client-city">
+        {city}
+      </small>
+    </div>
+  );
 }
 
 const EMPTY: AdminClientsListResponse = {
@@ -90,6 +131,7 @@ const EMPTY: AdminClientsListResponse = {
   total: 0,
   page: 1,
   totalPages: 1,
+  funnel: null,
 };
 
 export function AdminClientsClient() {
@@ -102,10 +144,22 @@ export function AdminClientsClient() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [period, setPeriod] = useState<AdminClientPeriod>("all");
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  // Desktop defaults to table (frozen R1); cards are the narrow breakpoint surface.
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [retryTick, setRetryTick] = useState(0);
+  const [detailClient, setDetailClient] = useState<AdminClient | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const requestSeq = useRef(0);
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null);
+
+  function openClientDetail(client: AdminClient, trigger: HTMLElement) {
+    detailReturnFocusRef.current = trigger;
+    setDetailClient(client);
+  }
+
+  function closeClientDetail() {
+    setDetailClient(null);
+  }
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -183,37 +237,56 @@ export function AdminClientsClient() {
       : Math.min(beTotal, (data.page - 1) * ADMIN_CLIENTS_DEFAULT_LIMIT + data.users.length);
   const canPrev = data.page > 1 && loadState.kind !== "loading";
   const canNext = data.page < data.totalPages && beTotal > 0 && loadState.kind !== "loading";
-  const filtered = Boolean(debouncedQuery) || period !== "all";
   const showList = loadState.kind === "ready" || (loadState.kind === "loading" && data.users.length > 0);
+  // All-time CLIENT base from response funnel.registered — panel itself removed (not in frozen).
+  const baseCount = data.funnel?.registered ?? null;
+  const periodMatched = period !== "all";
 
   return (
-    <div className={styles.page} aria-labelledby={titleId} data-admin-clients="a21b">
+    <div className={styles.page} aria-labelledby={titleId} data-admin-clients="a21g">
       <header className={styles.pageHead}>
         <div className={styles.pageHeadCopy}>
           <h1 id={titleId} className={styles.pageTitle}>
             Клиенты
           </h1>
           <p className={styles.pageLead}>
-            Клиентская база RemCard — только для просмотра.
-            Найдите клиента по имени или выберите период регистрации.
+            Клиентская база RemCard — только для просмотра. Найдите клиента по имени или выберите
+            период регистрации.
           </p>
         </div>
       </header>
 
-      <div className={styles.stats} aria-label="Сводка по клиентам">
-        <div className={styles.statTile}>
-          <strong data-testid="clients-total">{beTotal}</strong>
+      <div className={styles.kpis} aria-label="Сводка по клиентам">
+        <div className={styles.kpi} data-testid="clients-kpi-base">
+          <strong data-testid="clients-total">{baseCount ?? "—"}</strong>
+          <span className={styles.kpiLabel}>Клиентов в базе</span>
+          <small>Все клиенты RemCard</small>
+        </div>
+        <div className={styles.kpi} data-testid="clients-kpi-period">
+          <strong>{periodMatched ? beTotal : "—"}</strong>
+          <span className={styles.kpiLabel}>Новые за период</span>
           <small>
-            {filtered
-              ? "Клиентов по выбранным условиям"
-              : "Всего клиентов"}
+            {periodMatched
+              ? `Регистрация: ${labelClientPeriod(period)}`
+              : "Выберите период регистрации"}
           </small>
         </div>
-        <div className={styles.statTile}>
-          <strong>{labelClientPeriod(period)}</strong>
-          <small>Период регистрации</small>
+        <div className={`${styles.kpi} ${styles.kpiGap}`} data-testid="clients-kpi-orders-gap">
+          <strong aria-hidden="true">—</strong>
+          <span className={styles.kpiLabel}>С заявками</span>
+          <small>Пока нет в данных клиентов</small>
+        </div>
+        <div className={`${styles.kpi} ${styles.kpiGap}`} data-testid="clients-kpi-deals-gap">
+          <strong aria-hidden="true">—</strong>
+          <span className={styles.kpiLabel}>Завершённые сделки</span>
+          <small>Пока нет в данных клиентов</small>
         </div>
       </div>
+
+      <p className={styles.periodGapNote} data-testid="clients-period-gap">
+        В прототипе период 7 / 30 / 90 дней. Здесь доступны сегодня, эта неделя и этот месяц — по
+        дате регистрации, не по активности. Окно в 90 дней пока недоступно.
+      </p>
 
       <section
         className={styles.panel}
@@ -229,7 +302,7 @@ export function AdminClientsClient() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Имя клиента"
-              aria-label="Поиск клиентов"
+              aria-label="Поиск клиентов по имени"
               data-testid="client-search"
               autoComplete="off"
             />
@@ -253,17 +326,17 @@ export function AdminClientsClient() {
           <div className={styles.viewToggle} role="group" aria-label="Вид списка">
             <button
               type="button"
-              aria-pressed={viewMode === "cards"}
-              onClick={() => setViewMode("cards")}
-            >
-              Карточки
-            </button>
-            <button
-              type="button"
               aria-pressed={viewMode === "list"}
               onClick={() => setViewMode("list")}
             >
               Таблица
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewMode === "cards"}
+              onClick={() => setViewMode("cards")}
+            >
+              Карточки
             </button>
           </div>
         </div>
@@ -297,7 +370,7 @@ export function AdminClientsClient() {
 
         {loadState.kind === "empty" ? (
           <div className={styles.stateBox} role="status" data-testid="clients-empty">
-            {debouncedQuery
+            {debouncedQuery || period !== "all"
               ? "Никого не найдено по этому запросу"
               : "Клиентов пока нет"}
           </div>
@@ -313,28 +386,49 @@ export function AdminClientsClient() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th scope="col">Клиент</th>
-                    <th scope="col">Город</th>
-                    <th scope="col">Статус</th>
-                    <th scope="col">Регистрация</th>
+                    <th scope="col" className={styles.colClient}>
+                      Клиент
+                    </th>
+                    <th scope="col" className={styles.colGap}>
+                      Источник
+                    </th>
+                    <th scope="col" className={styles.colGap}>
+                      Этап
+                    </th>
+                    <th scope="col" className={styles.colReg}>
+                      Регистрация
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.users.map((client) => (
                     <tr key={client.id}>
                       <td>
-                        <div className={styles.clientName}>
-                          <strong title={client.displayName}>{client.displayName}</strong>
-                          <small title={client.publicId}>{client.publicId}</small>
+                        <div className={styles.clientCell}>
+                          <button
+                            type="button"
+                            className={styles.openClientBtn}
+                            data-testid="open-client"
+                            aria-label={`Открыть карточку клиента ${displayClientName(client)}`}
+                            onClick={(e) => openClientDetail(client, e.currentTarget)}
+                          >
+                            <ClientAvatar client={client} />
+                            <ClientIdentity client={client} />
+                          </button>
+                          <BlockedPill client={client} />
                         </div>
                       </td>
-                      <td>
-                        <span className={styles.cellClamp}>{client.city ?? "—"}</span>
+                      <td data-testid="clients-source-gap">
+                        <GapCell label="Источник рекомендации" />
+                      </td>
+                      <td data-testid="clients-stage-gap">
+                        <GapCell label="Этап сделки" />
                       </td>
                       <td>
-                        <StatusPill client={client} />
+                        <span className={styles.regDate}>
+                          {formatClientRegisteredAt(client.createdAt)}
+                        </span>
                       </td>
-                      <td>{formatClientRegisteredAt(client.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -350,17 +444,25 @@ export function AdminClientsClient() {
               {data.users.map((client) => (
                 <article className={styles.card} key={client.id}>
                   <div className={styles.cardTop}>
-                    <div className={styles.cardTopMain}>
+                    <button
+                      type="button"
+                      className={`${styles.openClientBtn} ${styles.cardTopMain}`}
+                      data-testid="open-client"
+                      aria-label={`Открыть карточку клиента ${displayClientName(client)}`}
+                      onClick={(e) => openClientDetail(client, e.currentTarget)}
+                    >
                       <ClientAvatar client={client} />
-                      <div className={styles.clientName}>
-                        <strong title={client.displayName}>{client.displayName}</strong>
-                        <small title={client.publicId}>
-                          {client.publicId}
-                          {client.city ? ` · ${client.city}` : ""}
-                        </small>
-                      </div>
-                    </div>
-                    <StatusPill client={client} />
+                      <ClientIdentity client={client} />
+                    </button>
+                    <BlockedPill client={client} />
+                  </div>
+                  <div className={styles.clientSource}>
+                    <span className={styles.smallMuted}>Источник рекомендации</span>
+                    <GapCell label="Источник рекомендации" />
+                  </div>
+                  <div className={styles.cardMeta}>
+                    <span>Этап сделки</span>
+                    <GapCell label="Этап сделки" />
                   </div>
                   <div className={styles.cardMeta}>
                     <span>Регистрация</span>
@@ -402,11 +504,17 @@ export function AdminClientsClient() {
         ) : null}
       </section>
 
-      <p className={styles.helpTip}>
-        Здесь можно найти клиента и посмотреть сведения о его регистрации.
-        Источник рекомендации, этап сделки и история посещений пока не отображаются.
-        Изменение и удаление аккаунтов в этом разделе недоступны.
+      <p className={styles.helpTip} data-testid="clients-help">
+        Здесь можно найти клиента и посмотреть сведения о его регистрации. Источник рекомендации,
+        этап сделки и история посещений пока не отображаются. Изменение и удаление аккаунтов в
+        этом разделе недоступны.
       </p>
+
+      <AdminClientDetailDrawer
+        client={detailClient}
+        onClose={closeClientDetail}
+        returnFocusRef={detailReturnFocusRef}
+      />
     </div>
   );
 }

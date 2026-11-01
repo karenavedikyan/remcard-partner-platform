@@ -113,4 +113,38 @@ describe("AgentPartnerHubModal P5a presentation", () => {
     expect(screen.queryByTestId("agent-partner-hub-modal-tabs")).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Найти в RemCard" })).not.toBeInTheDocument();
   });
+
+  it("keeps children mounted while closed (no silent find remount on reopen)", () => {
+    const { rerender } = render(
+      <AgentPartnerHubModal
+        open
+        tab="find"
+        titleFind="Найти партнёра"
+        titleLink="Пригласить партнёра"
+        onTabChange={vi.fn()}
+        onClose={vi.fn()}
+      >
+        <p data-testid="hub-modal-child">find body</p>
+      </AgentPartnerHubModal>,
+    );
+    expect(screen.getByTestId("hub-modal-child")).toBeInTheDocument();
+
+    rerender(
+      <AgentPartnerHubModal
+        open={false}
+        tab="find"
+        titleFind="Найти партнёра"
+        titleLink="Пригласить партнёра"
+        onTabChange={vi.fn()}
+        onClose={vi.fn()}
+      >
+        <p data-testid="hub-modal-child">find body</p>
+      </AgentPartnerHubModal>,
+    );
+    expect(screen.getByTestId("hub-modal-child")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-partner-hub-modal").closest("[data-open]")).toHaveAttribute(
+      "data-open",
+      "false",
+    );
+  });
 });

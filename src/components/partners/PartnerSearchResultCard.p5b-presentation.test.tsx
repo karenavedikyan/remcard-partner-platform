@@ -141,7 +141,7 @@ describe("PartnerSearchResultCard P5b presentation", () => {
     expect(onInvite).toHaveBeenCalledTimes(1);
   });
 
-  it("shows existing partnership status when the contract provides it", () => {
+  it("shows existing partnership status in the footer badge slot", () => {
     render(
       <PartnerSearchResultCard
         partner={partner({ partnershipStatus: "ACTIVE" })}
@@ -151,7 +151,8 @@ describe("PartnerSearchResultCard P5b presentation", () => {
         onInvite={() => undefined}
       />,
     );
-    expect(screen.getByTestId("agent-partner-search-result-invite")).toBeDisabled();
-    expect(screen.getByTestId("agent-partner-search-result-invite-blocked")).toHaveTextContent("Активно");
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).toBeNull();
+    expect(screen.getByTestId("agent-partner-search-result-status")).toHaveTextContent("Активно");
+    expect(screen.queryByTestId("agent-partner-search-result-invite-blocked")).toBeNull();
   });
 });

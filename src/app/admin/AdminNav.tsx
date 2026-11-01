@@ -22,6 +22,7 @@ export const ADMIN_NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin/moderation", label: "Модерация", icon: "moderation", group: "primary" },
   { href: "/admin/partners", label: "Партнёры", icon: "partners", group: "primary" },
   { href: "/admin/clients", label: "Клиенты", icon: "clients", group: "primary" },
+  { href: "/admin/analytics", label: "Аналитика", icon: "analytics", group: "primary" },
   { href: "/admin/team", label: "Команда", icon: "team", group: "primary" },
   { href: "/admin/notifications", label: "Уведомления", icon: "notifications", group: "control" },
   { href: "/admin/test-users", label: "Тестовые пользователи", icon: "test", group: "service" },
@@ -54,6 +55,12 @@ function NavIcon({ name }: { name: string }) {
     "aria-hidden": true as const,
   };
   switch (name) {
+    case "analytics":
+      return (
+        <svg {...common}>
+          <path d="M4 4v16h16M8 16v-4m5 4V8m5 8V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
     case "overview":
       return (
         <svg {...common}>

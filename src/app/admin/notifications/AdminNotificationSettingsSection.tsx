@@ -67,6 +67,8 @@ export function AdminNotificationSettingsSection({
   const [bindChallenge, setBindChallenge] = useState<BindChallenge | null>(null);
   const [bindClockMs, setBindClockMs] = useState(() => Date.now());
   const bindFlightRef = useRef<Promise<void> | null>(null);
+  const loadSeqRef = useRef(0);
+  const formRef = useRef<AdminNotificationSettingsForm | null>(null);
   const savedPayloadRef = useRef<string | null>(null);
   const savingRef = useRef(false);
   const saveFlightRef = useRef<Promise<void> | null>(null);
@@ -75,22 +77,35 @@ export function AdminNotificationSettingsSection({
     savedPayloadRef.current = JSON.stringify(adminNotificationSettingsPatchPayload(nextForm));
   }, []);
 
+  formRef.current = form;
+
   const loadSettings = useCallback(async () => {
+    const requestId = ++loadSeqRef.current;
     setLoading(true);
     setLoadError("");
     try {
       const data = await fetchAdminNotificationSettings();
+      if (requestId !== loadSeqRef.current) return;
+      const draftActive =
+        formRef.current !== null &&
+        savedPayloadRef.current !== null &&
+        JSON.stringify(adminNotificationSettingsPatchPayload(formRef.current)) !== savedPayloadRef.current;
+      if (draftActive) {
+        setBindings(data.bindings);
+        return;
+      }
       const nextForm = settingsToForm(data.settings);
       setForm(nextForm);
       setBindings(data.bindings);
       syncSavedBaseline(nextForm);
     } catch (caught) {
+      if (requestId !== loadSeqRef.current) return;
       setLoadError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить настройки");
       setForm(null);
       setBindings(null);
       savedPayloadRef.current = null;
     } finally {
-      setLoading(false);
+      if (requestId === loadSeqRef.current) setLoading(false);
     }
   }, [syncSavedBaseline]);
 
@@ -179,7 +194,11 @@ export function AdminNotificationSettingsSection({
   }, [bindingBusy, dirty, onHostStateChange, saving]);
 
   async function runSaveFlight(): Promise<void> {
-    if (!form) return;
+    if (!form || loading) return;
+    if (savedPayloadRef.current === null) {
+      setSaveError("Дождитесь загрузки настроек перед сохранением.");
+      return;
+    }
     savingRef.current = true;
     try {
       const tgLinked = bindings?.telegramLinked === true;
@@ -217,7 +236,7 @@ export function AdminNotificationSettingsSection({
   }
 
   async function save() {
-    if (!form) return;
+    if (!form || loading) return;
     if (saveFlightRef.current) {
       await saveFlightRef.current;
       return;
@@ -403,7 +422,7 @@ export function AdminNotificationSettingsSection({
         type="button"
         variant="primary"
         className={styles.settingsSaveButton}
-        disabled={saving}
+        disabled={saving || loading}
         onClick={() => {
           if (saving) return;
           void save();

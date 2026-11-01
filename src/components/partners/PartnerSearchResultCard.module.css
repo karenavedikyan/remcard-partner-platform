@@ -162,6 +162,7 @@
 
 .modalResultStages {
   margin: 0;
+  min-height: 17px;
   font-size: 11px;
   line-height: 1.5;
   color: var(--muted);
@@ -170,8 +171,11 @@
 
 .modalResultDirectionsEmpty {
   margin: 0;
-  font-size: var(--text-xs);
-  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .modalResultTerms {
@@ -191,6 +195,15 @@
   padding: var(--space-5, 1.25rem);
   padding-top: var(--space-3, 0.75rem);
   min-width: 0;
+}
+
+.modalResultFootStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .modalResultFoot :global(button) {
@@ -228,10 +241,11 @@
 .modalResultOpenHint {
   margin-left: auto;
   max-width: min(48%, 12rem);
+  padding: 2px 6px;
   font-size: 10px;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--muted);
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--modal-result-cover-fg);
   text-align: right;
   overflow-wrap: anywhere;
 }
@@ -259,7 +273,10 @@
 }
 
 .modalResultType,
-.modalResultTypeMuted,
+.modalResultTypeMuted {
+  color: var(--modal-result-cover-fg);
+}
+
 .modalResultOpenHint {
   color: var(--modal-result-cover-fg);
 }
@@ -295,8 +312,7 @@
 .modalResultFootNote,
 .modalResultStages,
 .modalResultCity,
-.modalResultCityMuted,
-.modalResultDirectionsEmpty {
+.modalResultCityMuted {
   color: #5c605a;
 }
 
@@ -307,8 +323,6 @@
 :global([data-theme="dark"]) .modalResultCity,
 :global(html.dark) .modalResultCity,
 :global([data-theme="dark"]) .modalResultCityMuted,
-:global(html.dark) .modalResultCityMuted,
-:global([data-theme="dark"]) .modalResultDirectionsEmpty,
-:global(html.dark) .modalResultDirectionsEmpty {
+:global(html.dark) .modalResultCityMuted {
   color: #c5c7c9;
 }

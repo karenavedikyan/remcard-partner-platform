@@ -1,7 +1,9 @@
 .root {
   display: grid;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  /* Overview active zone provides vertical rhythm via zoneBody gap; keep tools flush
+     like frozen `#pr-zone-active .pr-quiet-tools { margin:0 }`. */
+  margin-bottom: 0;
 }
 
 .toolsRow {

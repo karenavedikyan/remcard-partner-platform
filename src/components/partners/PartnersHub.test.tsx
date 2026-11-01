@@ -328,6 +328,47 @@ describe("PartnersHub search empty state", () => {
     expect(searchCalls).toBe(afterFirst);
   });
 
+  it("does not let a delayed older error overwrite a newer successful search", async () => {
+    let resolveSlowError: (reason?: unknown) => void = () => {};
+    const slowError = new Promise((_, reject) => {
+      resolveSlowError = reject;
+    });
+    mockListAndSearch(async (path) => {
+      if (path.includes("city=ErrCity")) {
+        await slowError;
+        throw new (await import("@/lib/api-client")).RemcardApiError(500, "stale-error");
+      }
+      if (path.includes("q=ok")) {
+        return { partners: [searchPartner("ok")], nextCursor: null };
+      }
+      return { partners: [], nextCursor: null };
+    });
+
+    render(<PartnersHub meId="me-1" initialProfile={storeProfile} />);
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: /По выбранным условиям партнёры пока не найдены/i }),
+      ).toBeInTheDocument();
+    });
+
+    await userEvent.type(screen.getByLabelText(/Город/i), "ErrCity");
+    await waitFor(() => {
+      expect(screen.getByText(/Ищем партнёров/i)).toBeInTheDocument();
+    });
+    await userEvent.clear(screen.getByLabelText(/Город/i));
+    await userEvent.type(screen.getByPlaceholderText(/Имя мастера или компании/i), "ok");
+    await waitFor(() => {
+      expect(screen.getByText(/Partner ok/i)).toBeInTheDocument();
+    });
+
+    resolveSlowError(new (await import("@/lib/api-client")).RemcardApiError(500, "stale-error"));
+    await waitFor(() => {
+      expect(screen.getByText(/Partner ok/i)).toBeInTheDocument();
+      expect(screen.queryByText(/stale-error/i)).not.toBeInTheDocument();
+    });
+  });
+
   it("keeps loaded cards when append returns an empty page", async () => {
     let call = 0;
     mockListAndSearch(async (path) => {

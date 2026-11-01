@@ -253,6 +253,22 @@ describe("AdminNotificationSettingsSection binding (staff admin)", () => {
     expect(await screen.findByTestId("admin-notify-bind-expiry")).toHaveTextContent(/Код действует до/);
   });
 
+  it("NOTIFICATIONS-settings-load-recovery: retries after GET failure without PATCH", async () => {
+    api.fetchAdminNotificationSettings
+      .mockRejectedValueOnce(new RemcardApiError(503, "Synthetic settings load failure", null))
+      .mockResolvedValueOnce({
+        ...settingsPayload,
+        settings: { ...settingsPayload.settings, partnerActivity: true },
+      });
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Synthetic settings load failure/i);
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+    await ui.click(screen.getByRole("button", { name: "Повторить" }));
+    expect(await screen.findByRole("checkbox", { name: /активность партнёров/i })).toBeChecked();
+    expect(api.fetchAdminNotificationSettings).toHaveBeenCalledTimes(2);
+  });
+
   it("NOTIFICATIONS-bind-error-retry: bind failure leaves Save enabled and a later save succeeds", async () => {
     api.startAdminNotificationBind.mockRejectedValueOnce(new RemcardApiError(503, "Synthetic bind start failure", null));
     api.patchAdminNotificationSettings.mockResolvedValueOnce({

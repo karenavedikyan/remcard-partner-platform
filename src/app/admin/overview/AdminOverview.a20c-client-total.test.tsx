@@ -147,7 +147,7 @@ describe("A20c overview CLIENT all-time KPI", () => {
     expect(document.querySelectorAll("article")).toHaveLength(4);
     expect(document.querySelectorAll('[data-source="admin-analytics-overview"]')).toHaveLength(1);
     expect(screen.queryByRole("link", { name: "Аналитика" })).toBeNull();
-    expect(screen.getByText("Аналитика готовится")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("link", { name: "Вся аналитика" })).toHaveAttribute("href", "/admin/analytics");
   });
 
   it("renders dual clients/pros series and empty-day chart state independently", async () => {

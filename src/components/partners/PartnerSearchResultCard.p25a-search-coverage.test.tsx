@@ -56,7 +56,7 @@ describe("PartnerSearchResultCard P25a search coverage (DTO enums)", () => {
     );
     expect(screen.getByTestId("agent-partner-search-result-type")).toHaveTextContent("Агент");
     expect(screen.getByTestId("agent-partner-search-result-card")).toHaveAttribute("data-cover-tone", "agent");
-    expect(screen.getByTestId("agent-partner-search-result-invite")).toBeDisabled();
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).not.toBeInTheDocument();
     expect(screen.getByTestId("agent-partner-search-result-invite-blocked")).toHaveTextContent("Активно");
     expect(screen.queryByTestId("agent-partner-search-result-open-hint")).not.toBeInTheDocument();
   });

@@ -184,6 +184,8 @@ export function PartnerSearchResultCard({
     : "";
   const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled, inviteBusy });
   const showOpenHint = searchResultShowOpenHint(partner) && !inviteFoot.disabled;
+  const showStatusInFoot = Boolean(status && status !== "ENDED");
+  const showInviteControl = !showStatusInFoot;
 
   const coverToneClass =
     coverTone === "store"
@@ -225,11 +227,6 @@ export function PartnerSearchResultCard({
         {showOpenHint ? (
           <span className={styles.modalResultOpenHint} data-testid="agent-partner-search-result-open-hint">
             Открыт к партнёрству
-          </span>
-        ) : null}
-        {status ? (
-          <span data-testid="agent-partner-search-result-status">
-            <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
           </span>
         ) : null}
       </div>
@@ -291,21 +288,35 @@ export function PartnerSearchResultCard({
         className={styles.modalResultFoot}
         data-testid="agent-partner-search-result-foot"
       >
-        {inviteFoot.blockedReason ? (
-          <p className={styles.modalResultFootNote} data-testid="agent-partner-search-result-invite-blocked">
-            {inviteFoot.blockedReason}
-          </p>
-        ) : null}
-        <Button
-          type="button"
-          variant="primary"
-          disabled={inviteFoot.disabled}
-          onClick={onInvite}
-          data-testid="agent-partner-search-result-invite"
-          aria-busy={inviteBusy || undefined}
-        >
-          {inviteFoot.label}
-        </Button>
+        {showStatusInFoot ? (
+          <span
+            className={styles.modalResultFootStatus}
+            data-testid="agent-partner-search-result-status"
+          >
+            <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+          </span>
+        ) : (
+          <>
+            {inviteFoot.blockedReason ? (
+              <p
+                className={styles.modalResultFootNote}
+                data-testid="agent-partner-search-result-invite-blocked"
+              >
+                {inviteFoot.blockedReason}
+              </p>
+            ) : null}
+            <Button
+              type="button"
+              variant="primary"
+              disabled={inviteFoot.disabled}
+              onClick={onInvite}
+              data-testid="agent-partner-search-result-invite"
+              aria-busy={inviteBusy || undefined}
+            >
+              {inviteFoot.label}
+            </Button>
+          </>
+        )}
       </div>
     </article>
   );

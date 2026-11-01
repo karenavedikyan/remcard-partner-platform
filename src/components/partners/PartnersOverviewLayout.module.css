@@ -111,8 +111,9 @@
 }
 
 .zone {
+  /* Frozen `.pr-zone` uses gap --s5 between head and body (incl. quiet tools). */
   display: grid;
-  gap: var(--space-4, 1rem);
+  gap: var(--space-5, 1.25rem);
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--line);
