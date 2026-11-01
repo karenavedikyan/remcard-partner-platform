@@ -207,7 +207,7 @@ export function AdminOverviewClient() {
     <div className={styles.wrap}>
       <header className={styles.header}>
         <div className={styles.headerCopy}>
-          <h1>Обзор</h1>
+          <h1>Обзор проекта</h1>
           <p className={styles.lead}>Главное о росте, людях и партнёрской сети</p>
           <p className={styles.meta}>
             {data ? (

@@ -52,6 +52,8 @@
   line-height: 1.7;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  /* Product-only freshness line; not in frozen R1 page-head (documented in A15b measurements). */
+  opacity: 0.92;
 }
 
 /* Period switcher — keep buttons (not prototype <select>), restyle toward head-actions control */
