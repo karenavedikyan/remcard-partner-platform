@@ -59,6 +59,14 @@ export function AgentPartnerDiscoveryFilters({
 
   const stageOptions = useMemo(() => taxonomy?.stages ?? [], [taxonomy]);
 
+  const handlePartnerTypeChange = useCallback(
+    (next: AgentPartnerTypeFilter) => {
+      onPartnerTypeChange(next);
+      if (specialization) onSpecializationChange("");
+    },
+    [onPartnerTypeChange, onSpecializationChange, specialization],
+  );
+
   if (layout === "list-main") {
     return (
       <div className={styles.mainRow} data-testid="agent-partner-discovery-filters">
@@ -66,7 +74,7 @@ export function AgentPartnerDiscoveryFilters({
           <span>Тип партнёра</span>
           <select
             value={partnerType}
-            onChange={(e) => onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
+            onChange={(e) => handlePartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
             data-testid="active-partner-type"
           >
             <option value="">Все типы</option>
@@ -193,7 +201,7 @@ export function AgentPartnerDiscoveryFilters({
       <span>Тип партнёра</span>
       <select
         value={partnerType}
-        onChange={(e) => onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
+        onChange={(e) => handlePartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
       >
         <option value="">Все типы</option>
         <option value="agent">Агент</option>
@@ -209,7 +217,7 @@ export function AgentPartnerDiscoveryFilters({
       <span>Тип партнёра</span>
       <select
         value={partnerType}
-        onChange={(e) => onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
+        onChange={(e) => handlePartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
         data-testid="discovery-partner-type"
       >
         <option value="">Все типы</option>

@@ -246,21 +246,68 @@
   overflow-wrap: anywhere;
 }
 
-:global([data-theme="dark"]) .modalResultCoverStore .modalResultType,
-:global(html.dark) .modalResultCoverStore .modalResultType,
-:global([data-theme="dark"]) .modalResultCoverCompany .modalResultType,
-:global(html.dark) .modalResultCoverCompany .modalResultType,
-:global([data-theme="dark"]) .modalResultCoverSpecialist .modalResultType,
-:global(html.dark) .modalResultCoverSpecialist .modalResultType,
-:global([data-theme="dark"]) .modalResultCoverAgent .modalResultType,
-:global(html.dark) .modalResultCoverAgent .modalResultType,
-:global([data-theme="dark"]) .modalResultCoverNeutral .modalResultType,
-:global(html.dark) .modalResultCoverNeutral .modalResultType {
-  color: var(--muted);
-}
-
 :global([data-theme="dark"]) .modalResultLogoAgent,
 :global(html.dark) .modalResultLogoAgent {
   background: #2a2b28;
   color: #b8bab4;
+}
+
+/* === P25c: cover-band + secondary small text ≥4.5:1 (normal size; not --muted on band alone) === */
+
+.modalResultCover {
+  --modal-result-cover-fg: #3f4340;
+}
+
+.modalResultType,
+.modalResultTypeMuted,
+.modalResultOpenHint {
+  color: var(--modal-result-cover-fg);
+}
+
+.modalResultCoverStore {
+  --modal-result-cover-fg: #423938;
+}
+
+.modalResultCoverCompany {
+  --modal-result-cover-fg: #3d4248;
+}
+
+.modalResultCoverSpecialist {
+  --modal-result-cover-fg: #3a433e;
+}
+
+.modalResultCoverAgent,
+.modalResultCoverNeutral {
+  --modal-result-cover-fg: #3f4340;
+}
+
+:global([data-theme="dark"]) .modalResultCover,
+:global(html.dark) .modalResultCover {
+  --modal-result-cover-fg: #c8cbc7;
+}
+
+:global([data-theme="dark"]) .modalResultCoverStore,
+:global(html.dark) .modalResultCoverStore {
+  --modal-result-cover-fg: #d0c9c8;
+}
+
+.modalResultFootNote,
+.modalResultStages,
+.modalResultCity,
+.modalResultCityMuted,
+.modalResultDirectionsEmpty {
+  color: #5c605a;
+}
+
+:global([data-theme="dark"]) .modalResultFootNote,
+:global(html.dark) .modalResultFootNote,
+:global([data-theme="dark"]) .modalResultStages,
+:global(html.dark) .modalResultStages,
+:global([data-theme="dark"]) .modalResultCity,
+:global(html.dark) .modalResultCity,
+:global([data-theme="dark"]) .modalResultCityMuted,
+:global(html.dark) .modalResultCityMuted,
+:global([data-theme="dark"]) .modalResultDirectionsEmpty,
+:global(html.dark) .modalResultDirectionsEmpty {
+  color: #c5c7c9;
 }

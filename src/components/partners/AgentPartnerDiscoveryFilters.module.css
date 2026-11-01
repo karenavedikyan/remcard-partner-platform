@@ -303,3 +303,14 @@
     min-height: 50px;
   }
 }
+
+/* === P25c: modal-full closed summary — normal small text ≥4.5:1 on surface === */
+
+.modalFull > .moreFilters > summary {
+  color: #5c605a;
+}
+
+:global([data-theme="dark"]) .modalFull > .moreFilters > summary,
+:global(html.dark) .modalFull > .moreFilters > summary {
+  color: #c5c7c9;
+}
