@@ -18,10 +18,44 @@ export type PartnerSearchResultCardProps = {
   title: string;
   showPublishedTerms: boolean;
   inviteDisabled: boolean;
+  inviteBusy?: boolean;
   onInvite: () => void;
 };
 
-export type SearchResultCoverTone = "store" | "company" | "specialist" | "neutral";
+export type SearchResultInviteFoot = {
+  label: string;
+  disabled: boolean;
+  blockedReason: string | null;
+};
+
+/** Invite CTA from search DTO + hub busy/disabled flags (no network). */
+export function searchResultInviteFoot(
+  partner: PartnerSearchResult,
+  opts: { inviteDisabled?: boolean; inviteBusy?: boolean } = {},
+): SearchResultInviteFoot {
+  const status = partner.partnershipStatus?.trim() ?? "";
+  if (status && status !== "ENDED") {
+    return {
+      label: "Пригласить",
+      disabled: true,
+      blockedReason: PARTNERSHIP_STATUS_LABELS[status] ?? status,
+    };
+  }
+  if (opts.inviteBusy) {
+    return { label: "Отправка…", disabled: true, blockedReason: null };
+  }
+  if (opts.inviteDisabled) {
+    return { label: "Пригласить", disabled: true, blockedReason: null };
+  }
+  return { label: "Пригласить", disabled: false, blockedReason: null };
+}
+
+export function searchResultShowOpenHint(partner: PartnerSearchResult): boolean {
+  const status = partner.partnershipStatus?.trim() ?? "";
+  return !status || status === "ENDED";
+}
+
+export type SearchResultCoverTone = "store" | "company" | "specialist" | "agent" | "neutral";
 
 /** Canonical type caption already returned by search contract / meta mapping. */
 export function searchResultTypeLabel(partner: PartnerSearchResult): string {
@@ -30,6 +64,7 @@ export function searchResultTypeLabel(partner: PartnerSearchResult): string {
   if (partner.partnerType === "STORE") return "Магазин";
   if (partner.partnerType === "COMPANY") return "Компания";
   if (partner.partnerType === "MASTER") return "Специалист";
+  if (partner.partnerType === "AGENT") return "Агент";
   return "";
 }
 
@@ -39,7 +74,9 @@ export function searchResultCoverTone(partner: PartnerSearchResult): SearchResul
   if (raw === "STORE") return "store";
   if (raw === "COMPANY") return "company";
   if (raw === "MASTER") return "specialist";
+  if (raw === "AGENT") return "agent";
   const label = (partner.partnerTypeLabel ?? "").toLowerCase();
+  if (label.includes("агент") || label.includes("agent")) return "agent";
   if (label.includes("магазин") || label.includes("store")) return "store";
   if (label.includes("компани") || label.includes("company")) return "company";
   if (label.includes("специалист") || label.includes("мастер") || label.includes("master")) {
@@ -133,6 +170,7 @@ export function PartnerSearchResultCard({
   title,
   showPublishedTerms,
   inviteDisabled,
+  inviteBusy = false,
   onInvite,
 }: PartnerSearchResultCardProps) {
   const typeLabel = searchResultTypeLabel(partner);
@@ -144,6 +182,8 @@ export function PartnerSearchResultCard({
   const statusLabel = status
     ? (PARTNERSHIP_STATUS_LABELS[status] ?? status)
     : "";
+  const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled, inviteBusy });
+  const showOpenHint = searchResultShowOpenHint(partner) && !inviteFoot.disabled;
 
   const coverToneClass =
     coverTone === "store"
@@ -152,7 +192,9 @@ export function PartnerSearchResultCard({
         ? styles.modalResultCoverCompany
         : coverTone === "specialist"
           ? styles.modalResultCoverSpecialist
-          : styles.modalResultCoverNeutral;
+          : coverTone === "agent"
+            ? styles.modalResultCoverAgent
+            : styles.modalResultCoverNeutral;
 
   const logoToneClass =
     coverTone === "store"
@@ -161,7 +203,9 @@ export function PartnerSearchResultCard({
         ? styles.modalResultLogoCompany
         : coverTone === "specialist"
           ? styles.modalResultLogoSpecialist
-          : styles.modalResultLogoNeutral;
+          : coverTone === "agent"
+            ? styles.modalResultLogoAgent
+            : styles.modalResultLogoNeutral;
 
   return (
     <article
@@ -178,6 +222,11 @@ export function PartnerSearchResultCard({
         ) : (
           <span className={styles.modalResultTypeMuted}>Тип не указан</span>
         )}
+        {showOpenHint ? (
+          <span className={styles.modalResultOpenHint} data-testid="agent-partner-search-result-open-hint">
+            Открыт к партнёрству
+          </span>
+        ) : null}
         {status ? (
           <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
         ) : null}
@@ -238,14 +287,20 @@ export function PartnerSearchResultCard({
         className={styles.modalResultFoot}
         data-testid="agent-partner-search-result-foot"
       >
+        {inviteFoot.blockedReason ? (
+          <p className={styles.modalResultFootNote} data-testid="agent-partner-search-result-invite-blocked">
+            {inviteFoot.blockedReason}
+          </p>
+        ) : null}
         <Button
           type="button"
           variant="primary"
-          disabled={inviteDisabled}
+          disabled={inviteFoot.disabled}
           onClick={onInvite}
           data-testid="agent-partner-search-result-invite"
+          aria-busy={inviteBusy || undefined}
         >
-          Пригласить
+          {inviteFoot.label}
         </Button>
       </div>
     </article>

@@ -213,3 +213,54 @@
     font-size: var(--text-sm);
   }
 }
+
+/* === P25a: agent partner tone + cover readability (appendix; P19 cover metrics unchanged) === */
+
+.modalResultCoverAgent {
+  background: var(--offset, var(--surface-muted, #efeeeb));
+}
+
+.modalResultLogoAgent {
+  background: var(--offset, #efeeeb);
+  color: var(--muted);
+}
+
+.modalResultOpenHint {
+  margin-left: auto;
+  max-width: min(48%, 12rem);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--muted);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.modalResultFootNote {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.45;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+:global([data-theme="dark"]) .modalResultCoverStore .modalResultType,
+:global(html.dark) .modalResultCoverStore .modalResultType,
+:global([data-theme="dark"]) .modalResultCoverCompany .modalResultType,
+:global(html.dark) .modalResultCoverCompany .modalResultType,
+:global([data-theme="dark"]) .modalResultCoverSpecialist .modalResultType,
+:global(html.dark) .modalResultCoverSpecialist .modalResultType,
+:global([data-theme="dark"]) .modalResultCoverAgent .modalResultType,
+:global(html.dark) .modalResultCoverAgent .modalResultType,
+:global([data-theme="dark"]) .modalResultCoverNeutral .modalResultType,
+:global(html.dark) .modalResultCoverNeutral .modalResultType {
+  color: var(--muted);
+}
+
+:global([data-theme="dark"]) .modalResultLogoAgent,
+:global(html.dark) .modalResultLogoAgent {
+  background: #2a2b28;
+  color: #b8bab4;
+}

@@ -151,6 +151,7 @@ describe("PartnerSearchResultCard P5b presentation", () => {
         onInvite={() => undefined}
       />,
     );
-    expect(screen.getByText("Активно")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-partner-search-result-invite")).toBeDisabled();
+    expect(screen.getByTestId("agent-partner-search-result-invite-blocked")).toHaveTextContent("Активно");
   });
 });
