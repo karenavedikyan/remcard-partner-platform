@@ -228,7 +228,9 @@ export function PartnerSearchResultCard({
           </span>
         ) : null}
         {status ? (
-          <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+          <span data-testid="agent-partner-search-result-status">
+            <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+          </span>
         ) : null}
       </div>
 
@@ -249,7 +251,9 @@ export function PartnerSearchResultCard({
               {city}
             </p>
           ) : (
-            <p className={styles.modalResultCityMuted}>Город не указан</p>
+            <p className={styles.modalResultCityMuted} data-testid="agent-partner-search-result-city-muted">
+              Город не указан
+            </p>
           )}
         </div>
       </div>

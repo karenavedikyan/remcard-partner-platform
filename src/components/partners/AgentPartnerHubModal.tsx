@@ -37,6 +37,8 @@ export function AgentPartnerHubModal({
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const hasOpenedRef = useRef(open);
+  if (open) hasOpenedRef.current = true;
 
   useEffect(() => {
     if (!open) return;
@@ -74,10 +76,14 @@ export function AgentPartnerHubModal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   const findWide = !readyMode && tab === "find";
 
+  // Mount lazily, then preserve the search state across subsequent openings.
+  // Mounting a closed Hub on first render would issue invisible requests.
+  if (!hasOpenedRef.current) return null;
+
+  // Keep children mounted while closed so modal find Hub does not silently
+  // re-search on close→open (state + auto-search key survive).
   return (
     <div
       className={[
@@ -88,7 +94,12 @@ export function AgentPartnerHubModal({
         .filter(Boolean)
         .join(" ")}
       role="presentation"
+      hidden={!open}
+      aria-hidden={!open}
+      data-open={open ? "true" : "false"}
+      style={open ? undefined : { display: "none" }}
       onClick={(e) => {
+        if (!open) return;
         if (e.target === e.currentTarget) onClose();
       }}
     >

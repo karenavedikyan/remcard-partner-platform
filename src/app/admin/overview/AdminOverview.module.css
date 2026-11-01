@@ -161,6 +161,29 @@
   white-space: normal;
 }
 
+.demoNotice {
+  margin: 0.25rem 0 0;
+  min-width: 0;
+}
+
+.demoNotice summary {
+  cursor: pointer;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.demoNoticeBody {
+  margin: 0.35rem 0 0;
+  padding-left: 0.75rem;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .kpi a {
   color: var(--primary);
   font-size: var(--text-xs);
@@ -322,6 +345,12 @@
 }
 
 .queueRow:hover {
+  background: var(--soft);
+}
+
+.queueRow:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
   background: var(--soft);
 }
 

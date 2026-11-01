@@ -36,10 +36,11 @@ const settingsPayload = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
   api.fetchAdminNotificationSettings.mockResolvedValue(settingsPayload);
 });
 
-describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", () => {
+describe("AdminNotificationSettingsSection binding (staff admin)", () => {
   it("loads settings only on mount without automatic bind start", async () => {
     render(<AdminNotificationSettingsSection />);
     await screen.findByText("Настройки уведомлений");
@@ -51,6 +52,7 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
   it("disables channel toggles until binding and calls admin bind API on user click", async () => {
     const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
     api.startAdminNotificationBind.mockResolvedValue({
+      expiresAt: "2026-11-01T14:10:00.000Z",
       deepLink: "https://t.me/RemCardBot?start=nbind_admin_tok",
       startPayload: "nbind_admin_tok",
       hint: "Подтвердите в Telegram",
@@ -196,5 +198,76 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
         expect.objectContaining({ dirty: false, saving: false }),
       ),
     );
+  });
+
+  it("shows MAX start instruction with bot payload when deepLink is absent", async () => {
+    api.startAdminNotificationBind.mockResolvedValueOnce({
+      expiresAt: "2026-11-01T14:10:00.000Z",
+      deepLink: null,
+      startPayload: "nbind_admin_qa_max",
+      hint: "Откройте MAX бота",
+    });
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    await screen.findByText("Настройки уведомлений");
+    await ui.click(screen.getByRole("button", { name: "Привязать MAX" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/nbind_admin_qa_max/);
+    expect(api.startAdminNotificationBind).toHaveBeenCalledTimes(1);
+  });
+
+  it("NOTIFICATIONS-bind-lifecycle: rapid double click issues one bind start flight", async () => {
+    let resolveStart!: (v: unknown) => void;
+    api.startAdminNotificationBind.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStart = resolve;
+        }),
+    );
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    await screen.findByText("Настройки уведомлений");
+    const btn = screen.getByRole("button", { name: "Привязать Telegram" });
+    await ui.click(btn);
+    await ui.click(btn);
+    expect(api.startAdminNotificationBind).toHaveBeenCalledTimes(1);
+    resolveStart({
+      expiresAt: "2026-11-01T14:10:00.000Z",
+      deepLink: "https://t.me/RemCardBot?start=nbind_admin_tok",
+      startPayload: "nbind_admin_tok",
+      hint: "Подтвердите",
+    });
+    await waitFor(() => expect(screen.getByRole("status")).toBeTruthy());
+  });
+
+  it("shows bind expiry line after Telegram start", async () => {
+    api.startAdminNotificationBind.mockResolvedValueOnce({
+      expiresAt: new Date(Date.now() + 600_000).toISOString(),
+      deepLink: "https://t.me/RemCardBot?start=nbind_admin_tok",
+      startPayload: "nbind_admin_tok",
+      hint: "Подтвердите в Telegram",
+    });
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    await screen.findByText("Настройки уведомлений");
+    await ui.click(screen.getByRole("button", { name: "Привязать Telegram" }));
+    expect(await screen.findByTestId("admin-notify-bind-expiry")).toHaveTextContent(/Код действует до/);
+  });
+
+  it("NOTIFICATIONS-bind-error-retry: bind failure leaves Save enabled and a later save succeeds", async () => {
+    api.startAdminNotificationBind.mockRejectedValueOnce(new RemcardApiError(503, "Synthetic bind start failure", null));
+    api.patchAdminNotificationSettings.mockResolvedValueOnce({
+      ...settingsPayload,
+      settings: { ...settingsPayload.settings, partnerActivity: true },
+    });
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    await screen.findByText("Настройки уведомлений");
+    await ui.click(screen.getByRole("button", { name: "Привязать Telegram" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Synthetic bind start failure/i);
+    expect(screen.getByRole("button", { name: "Сохранить" })).toBeEnabled();
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Настройки сохранены")).toBeTruthy();
   });
 });

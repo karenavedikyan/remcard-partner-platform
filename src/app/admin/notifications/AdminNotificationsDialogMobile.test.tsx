@@ -8,6 +8,7 @@ const client = readFileSync(path.join(__dirname, "AdminNotificationsClient.tsx")
 describe("settings dialog mobile presentation", () => {
   it("keeps the close control compact without losing its accessible label", () => {
     expect(css).toMatch(/\.settingsDialogClose\s*\{[^}]*flex-shrink:\s*0/s);
+    expect(css).toMatch(/\.settingsSaveButton[\s\S]*accent-fill/);
     expect(client).toContain('aria-label="Закрыть окно настроек"');
     expect(client).toContain('<span aria-hidden="true">×</span>');
   });

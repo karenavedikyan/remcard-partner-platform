@@ -460,13 +460,31 @@
   z-index: 1;
 }
 
-.settingsInDialog .settingsSection > button[type="button"]:last-of-type {
+.settingsInDialog .settingsSection > button.settingsSaveButton {
   width: 100%;
   justify-content: center;
   margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--line);
-  background: var(--accent-fill);
+  background: var(--accent-fill, var(--primary, #5a7a2f));
+  color: var(--accent-on-fill, var(--surface, #fff));
+  border-color: color-mix(in srgb, var(--accent-fill, var(--primary)) 88%, var(--ink));
+}
+
+.settingsInDialog .settingsSection > button.settingsSaveButton:disabled {
+  opacity: 0.72;
+}
+
+.bindExpiry {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.bindExpiryExpired {
+  color: var(--danger, #b42318);
+  font-weight: 650;
 }
 
 .settingsDiscardBackdrop {

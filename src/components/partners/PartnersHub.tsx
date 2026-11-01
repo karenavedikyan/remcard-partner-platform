@@ -95,8 +95,10 @@ import {
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
 import { AgentInvitationViewSwitch } from "@/components/partners/AgentInvitationViewSwitch";
 import {
+  applySearchPageIfCurrent,
+  createSearchRequestGate,
   hasCustomPartnershipSearchFilters,
-  mergeSearchResultPages,
+  partnershipSearchAutoKey,
 } from "@/lib/partnership-search-ui";
 import {
   overviewZoneForPartnership,
@@ -343,7 +345,18 @@ export function PartnersHub({
   const [discoverySpecialization, setDiscoverySpecialization] = useState("");
   const [discoveryStageId, setDiscoveryStageId] = useState("");
   const [expandedTermsId, setExpandedTermsId] = useState<string | null>(null);
-  const searchRequestGen = useRef(0);
+  const searchGate = useRef(createSearchRequestGate());
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const searchPageRef = useRef<{ items: PartnerSearchResult[]; nextCursor: string | null }>({
+    items: [],
+    nextCursor: null,
+  });
+  /**
+   * Last auto-search filter key that was *issued* (not merely last successful apply).
+   * Skip silent re-search on find re-entry / modal close→open, but still re-issue when
+   * filters leave and return so in-flight stale q/city can be aborted.
+   */
+  const searchAutoIssuedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (forcedTab) setTab(forcedTab);
@@ -424,9 +437,15 @@ export function PartnersHub({
 
   const loadSearch = useCallback(
     async (mode: "reset" | "append", cursor: string | null = null) => {
-      let requestGen = searchRequestGen.current;
+      // Sequence bumps for replace AND append. Abort alone is insufficient when a
+      // late response still resolves with older q/type/city + stale cursor.
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+      const requestSeq = searchGate.current.begin();
+
       if (mode === "reset") {
-        requestGen = ++searchRequestGen.current;
+        searchPageRef.current = { items: [], nextCursor: null };
         setSearchResults([]);
         setSearchNextCursor(null);
         setSearchError("");
@@ -449,20 +468,35 @@ export function PartnersHub({
           partners: PartnerSearchResult[];
           nextCursor?: string | null;
           hasMore?: boolean;
-        }>(`/api/partnership/search?${params.toString()}`);
-        if (requestGen !== searchRequestGen.current) return;
+        }>(`/api/partnership/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
 
-        const batch = data.partners ?? [];
-        setSearchResults((prev) => mergeSearchResultPages(prev, batch, mode));
-        setSearchNextCursor(data.nextCursor ?? null);
+        const applied = applySearchPageIfCurrent({
+          requestSeq,
+          latestSeq: searchGate.current.latest.current,
+          mode,
+          prev: searchPageRef.current,
+          batch: data.partners ?? [],
+          nextCursor: data.nextCursor,
+        });
+        if (!applied) return;
+
+        searchPageRef.current = applied;
+        setSearchResults(applied.items);
+        setSearchNextCursor(applied.nextCursor);
       } catch (caught) {
-        if (requestGen !== searchRequestGen.current) return;
-        if (mode === "reset") setSearchResults([]);
+        if (controller.signal.aborted || !searchGate.current.isCurrent(requestSeq)) return;
+        if (mode === "reset") {
+          searchPageRef.current = { items: [], nextCursor: null };
+          setSearchResults([]);
+          setSearchNextCursor(null);
+        }
         setSearchError(
           caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
         );
       } finally {
-        if (requestGen === searchRequestGen.current) {
+        if (searchGate.current.isCurrent(requestSeq)) {
           setLoadingSearch(false);
         }
       }
@@ -779,6 +813,20 @@ export function PartnersHub({
 
   useEffect(() => {
     if (tab !== "find") return;
+    const autoKey = partnershipSearchAutoKey({
+      query,
+      city,
+      filterProducts,
+      filterServices,
+      filterStages,
+      searchPartnerType,
+      searchRole,
+    });
+    // Same filter snapshot already issued — no silent re-search on find re-entry /
+    // modal close→open while Hub stays mounted. Leaving and returning to a prior
+    // key still re-issues so an in-flight stale SlowCity/q can be aborted.
+    if (searchAutoIssuedKeyRef.current === autoKey) return;
+    searchAutoIssuedKeyRef.current = autoKey;
     setSearchNextCursor(null);
     void loadSearch("reset");
   }, [

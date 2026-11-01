@@ -277,8 +277,18 @@ describe("AdminNotificationsClient", () => {
   });
 
   it("blocks close while messenger bind request is in flight", async () => {
-    let resolveBind: (value: { deepLink: null; hint: string }) => void = () => {};
-    const bindPending = new Promise<{ deepLink: null; hint: string }>((resolve) => {
+    let resolveBind: (value: {
+      expiresAt: string;
+      deepLink: null;
+      startPayload: string;
+      hint: string;
+    }) => void = () => {};
+    const bindPending = new Promise<{
+      expiresAt: string;
+      deepLink: null;
+      startPayload: string;
+      hint: string;
+    }>((resolve) => {
       resolveBind = resolve;
     });
     api.startAdminNotificationBind.mockReturnValueOnce(bindPending);
@@ -290,7 +300,12 @@ describe("AdminNotificationsClient", () => {
     expect(screen.getByRole("button", { name: "Закрыть окно настроек" })).toBeDisabled();
     await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
     expect(screen.getByRole("dialog", { name: "Уведомления администратора" })).toBeTruthy();
-    resolveBind({ deepLink: null, hint: "Synthetic" });
+    resolveBind({
+      expiresAt: "2026-11-01T13:10:00.000Z",
+      deepLink: null,
+      startPayload: "nbind_admin_tok",
+      hint: "Synthetic",
+    });
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Закрыть окно настроек" })).not.toBeDisabled(),
     );

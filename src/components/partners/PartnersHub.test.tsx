@@ -269,6 +269,65 @@ describe("PartnersHub search empty state", () => {
     });
   });
 
+  it("does not let a stale append overwrite newer reset cards/cursor", async () => {
+    let resolveAppend: (value: unknown) => void = () => {};
+    const appendPromise = new Promise((resolve) => {
+      resolveAppend = resolve;
+    });
+    mockListAndSearch(async (path) => {
+      if (path.includes("q=fresh")) {
+        return { partners: [searchPartner("fresh")], nextCursor: "cursor-fresh" };
+      }
+      if (path.includes("cursor=cursor-stale-page")) {
+        await appendPromise;
+        return { partners: [searchPartner("stale-page")], nextCursor: "cursor-stale-next" };
+      }
+      return { partners: [searchPartner("base")], nextCursor: "cursor-stale-page" };
+    });
+
+    render(<PartnersHub meId="me-1" initialProfile={storeProfile} />);
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Partner base/i)).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Показать ещё/i }));
+    await userEvent.type(screen.getByPlaceholderText(/Имя мастера или компании/i), "fresh");
+    await waitFor(() => {
+      expect(screen.getByText(/Partner fresh/i)).toBeInTheDocument();
+    });
+
+    resolveAppend({ partners: [searchPartner("stale-page")], nextCursor: "cursor-stale-next" });
+    await waitFor(() => {
+      expect(screen.getByText(/Partner fresh/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Partner stale-page/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Partner base/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not silently re-search when returning to find with the same filters", async () => {
+    let searchCalls = 0;
+    mockListAndSearch(async () => {
+      searchCalls += 1;
+      return { partners: [searchPartner("stable")], nextCursor: null };
+    });
+
+    render(<PartnersHub meId="me-1" initialProfile={storeProfile} />);
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Partner stable/i)).toBeInTheDocument();
+    });
+    const afterFirst = searchCalls;
+    expect(afterFirst).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("tab", { name: /Пригласить по ссылке/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /Найти в RemCard/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Partner stable/i)).toBeInTheDocument();
+    });
+    expect(searchCalls).toBe(afterFirst);
+  });
+
   it("keeps loaded cards when append returns an empty page", async () => {
     let call = 0;
     mockListAndSearch(async (path) => {

@@ -100,7 +100,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
 
     const byTitle = (title: string) => screen.getByRole("heading", { name: title, level: 2 }).closest("article")!;
     expect(within(byTitle("Партнёры")).getByText("5")).toBeTruthy();
-    expect(within(byTitle("Партнёры")).getByText(/Демо-база \(историческая\): 7/)).toBeTruthy();
+    expect(within(byTitle("Партнёры")).getByText(/Историческая демо-база: 7/)).toBeTruthy();
     expect(within(byTitle("Клиенты")).getByText("12")).toBeTruthy();
     expect(within(byTitle("Клиенты")).getByText(/\+2 новых за 7 дней/)).toBeTruthy();
     expect(within(byTitle("В поиске сотрудничества")).getByText("—")).toBeTruthy();
@@ -116,7 +116,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     );
     expect(screen.getByRole("link", { name: /Модерация партнёров/ })).toHaveAttribute(
       "href",
-      "/admin/moderation",
+      "/admin/moderation?status=PENDING&entityKind=user",
     );
     expect(document.querySelectorAll("article button")).toHaveLength(0);
   });
@@ -158,7 +158,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     resolve(payload("7d"));
     await screen.findByRole("heading", { name: "Новые партнёры", level: 2 });
     expect(screen.getByRole("heading", { name: "Рост сообщества", level: 2 })).toBeTruthy();
-    fireEvent.click(screen.getByText("Дополнительные показатели management"));
+    fireEvent.click(screen.getByText("Дополнительные показатели"));
     expect(screen.getByText("Один профиль")).toBeTruthy();
   });
 

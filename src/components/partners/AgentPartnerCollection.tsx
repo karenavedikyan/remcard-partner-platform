@@ -11,11 +11,14 @@ import type { AgentListViewMode } from "@/components/partners/AgentR04ListToolba
 import {
   partnerCollectionListDetail,
   partnerCollectionOfficialLine,
+  partnerListSubtitle,
   partnerRowTitle,
+  partnerSpecializationHint,
   partnerTermsDetail,
   partnerTypeLabel,
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
+import type { PartnershipPartnerProfile } from "@/lib/agent-r04/partner-filters";
 import type { Partnership } from "@/lib/types";
 import { AgentPartnerWorkspaceActions } from "@/components/partners/AgentPartnerWorkspaceActions";
 import { PartnerPartnershipDetailDialog } from "@/components/partners/PartnerPartnershipDetailDialog";
@@ -31,6 +34,22 @@ import inviteStyles from "./AgentInvitationCollection.module.css";
 import activeStyles from "./AgentActiveCollection.module.css";
 
 export type AgentPartnerCollectionPresentation = "default" | "invitations" | "active";
+
+/** Active cards/list: frozen R1 type · city + spec line (collection scope only). */
+function partnerCollectionActiveRowLines(partner: PartnershipPartnerProfile) {
+  return {
+    typeCityLine: partnerListSubtitle(partner),
+    specLine: partnerSpecializationHint(partner) || "Специализация не указана",
+  };
+}
+
+/** Readonly avatar from partnership profile props only (no Hub synthesis). */
+function partnerCollectionAvatarUrl(partner: PartnershipPartnerProfile): string | null {
+  const photo = partner.photoUrl?.trim();
+  if (photo) return photo;
+  const logo = partner.organizationLogoUrl?.trim();
+  return logo || null;
+}
 
 export function resolveActivePartnerPresentation(
   presentationVariant: AgentPartnerCollectionPresentation,
@@ -445,8 +464,12 @@ export function AgentPartnerCollection(props: Props) {
           {partnerships.map((partnership) => {
             const partner = partnershipPartnerProfile(partnership, meId);
             const officialLine = partnerCollectionOfficialLine(partnership, meId);
-            const typeCaption = partnerTypeLabel(partner);
-            const detail = partnerCollectionListDetail(partnership, meId);
+            const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
+            const typeCaption = activeMeta ? activeMeta.typeCityLine : partnerTypeLabel(partner);
+            const detail = activeMeta
+              ? activeMeta.specLine
+              : partnerCollectionListDetail(partnership, meId);
+            const avatarUrl = isActiveSkin ? partnerCollectionAvatarUrl(partner) : null;
             const isSelected = selectedIds.has(partnership.id);
             return (
               <article
@@ -471,6 +494,14 @@ export function AgentPartnerCollection(props: Props) {
                   <PartnerCollectionStatusBadge status={partnership.status} />
                 </div>
                 <div className={cardBodyClass}>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      className={activeStyles.partnerAvatar}
+                      data-testid="partner-row-avatar"
+                    />
+                  ) : null}
                   <PartnerRowNameButton
                     partnership={partnership}
                     meId={meId}
@@ -482,16 +513,33 @@ export function AgentPartnerCollection(props: Props) {
                       Официально: {officialLine}
                     </p>
                   ) : null}
-                  <p className={cardMetaClass} data-testid="partner-row-type-caption">
+                  <p
+                    className={
+                      isActiveSkin
+                        ? `${cardMetaClass} ${activeStyles.typeCityLine}`
+                        : cardMetaClass
+                    }
+                    data-testid="partner-row-type-caption"
+                  >
                     {typeCaption}
                   </p>
-                  <p className={cardMetaClass} data-testid="partner-row-detail">
+                  <p
+                    className={
+                      isActiveSkin
+                        ? `${cardMetaClass} ${activeStyles.specLine}`
+                        : cardMetaClass
+                    }
+                    data-testid="partner-row-detail"
+                  >
                     {detail}
                   </p>
                   {isActiveSkin && partnerTermsDetail(partnership) ? (
-                    <p className={cardMetaClass} data-testid="partner-row-terms-preview">
-                      {partnerTermsDetail(partnership)}
-                    </p>
+                    <div className={activeStyles.termsBlock} data-testid="partner-row-terms-block">
+                      <p className={activeStyles.termsTitle}>Условия</p>
+                      <p className={activeStyles.termsPreview} data-testid="partner-row-terms-preview">
+                        {partnerTermsDetail(partnership)}
+                      </p>
+                    </div>
                   ) : null}
                   <PartnerRowInlineWorkflow
                     partnership={partnership}
@@ -527,8 +575,11 @@ export function AgentPartnerCollection(props: Props) {
             const partner = partnershipPartnerProfile(partnership, meId);
             const needsResponse = partnershipNeedsMyResponse(partnership, meId);
             const officialLine = partnerCollectionOfficialLine(partnership, meId);
-            const typeCaption = partnerTypeLabel(partner);
-            const detail = partnerCollectionListDetail(partnership, meId);
+            const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
+            const typeCaption = activeMeta ? activeMeta.typeCityLine : partnerTypeLabel(partner);
+            const detail = activeMeta
+              ? activeMeta.specLine
+              : partnerCollectionListDetail(partnership, meId);
             return (
               <article
                 key={partnership.id}
@@ -559,13 +610,19 @@ export function AgentPartnerCollection(props: Props) {
                     <p className={r03.meta} data-testid="partner-row-type-caption">
                       {typeCaption}
                     </p>
-                    <p className={r03.meta} data-testid="partner-row-detail">
+                    <p
+                      className={isActiveSkin ? `${r03.meta} ${activeStyles.specLine}` : r03.meta}
+                      data-testid="partner-row-detail"
+                    >
                       {detail}
                     </p>
                     {isActiveSkin && partnerTermsDetail(partnership) ? (
-                      <p className={r03.meta} data-testid="partner-row-terms-preview">
-                        {partnerTermsDetail(partnership)}
-                      </p>
+                      <div className={activeStyles.termsBlock} data-testid="partner-row-terms-block">
+                        <p className={activeStyles.termsTitle}>Условия</p>
+                        <p className={activeStyles.termsPreview} data-testid="partner-row-terms-preview">
+                          {partnerTermsDetail(partnership)}
+                        </p>
+                      </div>
                     ) : null}
                     {needsResponse && !isActiveSkin ? (
                       <p className={r03.meta}>Ожидает вашего решения</p>
@@ -624,8 +681,11 @@ export function AgentPartnerCollection(props: Props) {
               {partnerships.map((partnership) => {
                 const partner = partnershipPartnerProfile(partnership, meId);
                 const officialLine = partnerCollectionOfficialLine(partnership, meId);
-                const typeCaption = partnerTypeLabel(partner);
-                const detail = partnerCollectionListDetail(partnership, meId);
+                const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
+                const typeCaption = activeMeta ? activeMeta.typeCityLine : partnerTypeLabel(partner);
+                const detail = activeMeta
+                  ? activeMeta.specLine
+                  : partnerCollectionListDetail(partnership, meId);
                 return (
                   <Fragment key={partnership.id}>
                     <tr
@@ -655,18 +715,21 @@ export function AgentPartnerCollection(props: Props) {
                           {typeCaption}
                         </small>
                       </td>
-                      <td className={detailCellClass} data-testid="partner-row-detail">
-                        {detail}
+                      <td className={detailCellClass}>
+                        <span data-testid="partner-row-detail">{detail}</span>
                         {isActiveSkin && partnerTermsDetail(partnership) ? (
-                          <>
-                            <br />
-                            <small
-                              className={captionClass}
+                          <div
+                            className={activeStyles.termsBlock}
+                            data-testid="partner-row-terms-block"
+                          >
+                            <p className={activeStyles.termsTitle}>Условия</p>
+                            <p
+                              className={activeStyles.termsPreview}
                               data-testid="partner-row-terms-preview"
                             >
                               {partnerTermsDetail(partnership)}
-                            </small>
-                          </>
+                            </p>
+                          </div>
                         ) : null}
                       </td>
                       <td className={statusCellClass}>

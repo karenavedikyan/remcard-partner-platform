@@ -11,6 +11,15 @@ import {
 } from "@/lib/prof-admin-overview-analytics-api";
 import { getAdminClientTotal } from "@/lib/prof-admin-clients-api";
 import { buildLineGeometry } from "./overviewLineChartGeometry";
+import {
+  OVERVIEW_ATTENTION_MODERATION_PARTNERS_HREF,
+  OVERVIEW_PARTNERS_ACTIVE_REGISTRY_HREF,
+} from "./overviewAttentionNavigation";
+import {
+  formatOverviewChartAxisLabel,
+  formatOverviewChartFullDay,
+} from "./overviewChartDates";
+import { overviewPartnerRegistrationNote } from "./overviewCopy";
 import styles from "./AdminOverview.module.css";
 
 const PERIODS = [
@@ -196,21 +205,28 @@ function CommunityGrowthPanel({
                   className={styles.chartDot}
                 >
                   <title>
-                    {rows[i].date}: клиенты {v}, PRO {pros[i]}
+                    {formatOverviewChartFullDay(rows[i].date)}: клиенты {v}, PRO {pros[i]}
                   </title>
                 </circle>
               ))}
-              {geo.axisIdx.map((i) => (
-                <text
-                  key={`ax-${rows[i].date}`}
-                  x={geo.xAt(i)}
-                  y={CHART_VIEW_H - 2}
-                  textAnchor={i === 0 ? "start" : i === rows.length - 1 ? "end" : "middle"}
-                  className={styles.chartAxisText}
-                >
-                  {String(rows[i].date).slice(0, 5)}
-                </text>
-              ))}
+              {geo.axisIdx.map((i) => {
+                const day = rows[i].date;
+                const short = formatOverviewChartAxisLabel(day);
+                const full = formatOverviewChartFullDay(day);
+                return (
+                  <text
+                    key={`ax-${day}`}
+                    x={geo.xAt(i)}
+                    y={CHART_VIEW_H - 2}
+                    textAnchor={i === 0 ? "start" : i === rows.length - 1 ? "end" : "middle"}
+                    className={styles.chartAxisText}
+                    aria-label={full}
+                  >
+                    <title>{full}</title>
+                    {short}
+                  </text>
+                );
+              })}
             </svg>
             <div className={styles.chartLegend} aria-label="Легенда: Рост сообщества">
               <span>
@@ -288,7 +304,7 @@ export function AdminOverviewClient() {
       setAnalytics(next);
     } catch (e) {
       if (seq !== analyticsLoadSeq.current) return;
-      setAnalyticsError(e instanceof Error ? e.message : "Не удалось загрузить ряд аккаунтов");
+      setAnalyticsError(e instanceof Error ? e.message : "Не удалось загрузить график регистраций");
     } finally {
       if (seq === analyticsLoadSeq.current) setAnalyticsLoading(false);
     }
@@ -306,15 +322,20 @@ export function AdminOverviewClient() {
     void loadClientTotal();
   }, [loadClientTotal]);
 
+  const chartPeriodId = data ? periodIdFromApi(data.period, period) : period;
+
   const regCard = useMemo(() => {
     if (!data) return { value: "—", note: "" };
     const block = data.registrationsCompleted;
     const sel = block.selectedPeriod ?? block.days7;
+    const periodForNote = periodIdFromApi(data.period, period);
+    const fromLabel = overviewPartnerRegistrationNote(block.selectedPeriodLabel, periodForNote);
+    const fromComparison = overviewPartnerRegistrationNote(sel.comparisonNote, periodForNote);
     return {
       value: String(sel.current),
-      note: block.selectedPeriodLabel ?? sel.comparisonNote ?? "",
+      note: fromLabel || fromComparison,
     };
-  }, [data]);
+  }, [data, period]);
 
   const regKindRows = useMemo(() => {
     if (!data) return [];
@@ -324,7 +345,6 @@ export function AdminOverviewClient() {
     }));
   }, [data]);
 
-  const chartPeriodId = data ? periodIdFromApi(data.period, period) : period;
   const kpiPeriodScope = periodScopePhrase(chartPeriodId);
   const analyticsPeriodId = analytics
     ? periodIdFromApi(analytics.period, period)
@@ -390,9 +410,9 @@ export function AdminOverviewClient() {
               <p className={styles.kpiValue}>{data.partners.liveRegistered}</p>
               <div className={styles.kpiBottom}>
                 <p className={styles.sub}>
-                  Демо-база (историческая): {data.partners.demoRegistered}
+                  Историческая демо-база: {data.partners.demoRegistered}
                 </p>
-                <Link href="/admin/partners?registration=active">Открыть реестр</Link>
+                <Link href={OVERVIEW_PARTNERS_ACTIVE_REGISTRY_HREF}>Открыть реестр</Link>
               </div>
             </article>
             <article className={styles.kpi} data-source="admin-users-client-total">
@@ -418,7 +438,12 @@ export function AdminOverviewClient() {
                     <p className={styles.sub}>
                       +{data.clients.createdInPeriod.current} новых за {kpiPeriodScope}
                     </p>
-                    <p className={styles.sub}>{data.clients.historicalDemoWarning}</p>
+                    {data.clients.historicalDemoWarning ? (
+                      <details className={styles.demoNotice}>
+                        <summary>Пояснение к числу клиентов</summary>
+                        <p className={styles.demoNoticeBody}>{data.clients.historicalDemoWarning}</p>
+                      </details>
+                    ) : null}
                   </>
                 )}
               </div>
@@ -458,7 +483,11 @@ export function AdminOverviewClient() {
                 onRetry={() => void loadAnalytics()}
                 emptyLabel="Нет новых аккаунтов за выбранный период"
               />
-              <section className={styles.attentionPanel} aria-label="Требует внимания">
+              <section
+                className={styles.attentionPanel}
+                aria-label="Требует внимания"
+                data-source="admin-overview-attention"
+              >
                 <div className={styles.chartHead}>
                   <div className={styles.chartHeadCopy}>
                     <h2 className={styles.panelTitle}>Требует внимания</h2>
@@ -468,7 +497,11 @@ export function AdminOverviewClient() {
                 <ul className={styles.attentionQueue}>
                   {data.moderation.pendingPartners > 0 ? (
                     <li>
-                      <Link href="/admin/moderation" className={styles.queueRow}>
+                      <Link
+                        href={OVERVIEW_ATTENTION_MODERATION_PARTNERS_HREF}
+                        className={styles.queueRow}
+                        data-attention-target="moderation-partners-pending"
+                      >
                         <span className={styles.queueCopy}>
                           <strong>Модерация партнёров</strong>
                           <small>Заявки в очереди</small>
@@ -478,11 +511,14 @@ export function AdminOverviewClient() {
                     </li>
                   ) : null}
                   {data.leadsAndRequests.leadsNew > 0 ? (
-                    <li>
+                    <li data-attention-static="leads-no-route">
                       <span className={styles.queueRowStatic}>
                         <span className={styles.queueCopy}>
                           <strong>Новые лиды</strong>
-                          <small>Открытых: {data.leadsAndRequests.leadsOpen}</small>
+                          <small>
+                            Открытых: {data.leadsAndRequests.leadsOpen}. Раздел для работы с
+                            лидами пока недоступен.
+                          </small>
                         </span>
                         <span className={styles.queueCount}>{data.leadsAndRequests.leadsNew}</span>
                       </span>
@@ -491,11 +527,14 @@ export function AdminOverviewClient() {
                   {data.incompleteLiveRegistration.available &&
                   data.incompleteLiveRegistration.count != null &&
                   data.incompleteLiveRegistration.count > 0 ? (
-                    <li>
+                    <li data-attention-static="incomplete-registration-no-route">
                       <span className={styles.queueRowStatic}>
                         <span className={styles.queueCopy}>
                           <strong>Незавершённые регистрации</strong>
-                          <small>{data.incompleteLiveRegistration.note}</small>
+                          <small>
+                            {data.incompleteLiveRegistration.note}. Открыть отдельный список по
+                            этому признаку пока нельзя.
+                          </small>
                         </span>
                         <span className={styles.queueCount}>
                           {data.incompleteLiveRegistration.count}
@@ -514,7 +553,7 @@ export function AdminOverviewClient() {
             </div>
           </section>
           <details className={styles.secondaryBlock}>
-            <summary>Дополнительные показатели management</summary>
+            <summary>Дополнительные показатели</summary>
             <ul className={styles.secondaryList}>
               <li>
                 Видны в каталоге: {data.partners.visibleInCatalog} (карточек:{" "}

@@ -85,6 +85,8 @@ export async function markAllAdminNotificationsRead(): Promise<void> {
 export type AdminNotificationBindProvider = "TELEGRAM" | "MAX";
 
 export type AdminNotificationBindStartResponse = {
+  provider?: AdminNotificationBindProvider;
+  expiresAt: string;
   deepLink: string | null;
   startPayload: string;
   hint: string;

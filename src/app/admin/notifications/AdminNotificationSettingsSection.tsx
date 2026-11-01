@@ -24,6 +24,24 @@ import {
 import { Button } from "@/components/ui/Button";
 import styles from "./AdminNotifications.module.css";
 
+type BindChallenge = {
+  provider: "TELEGRAM" | "MAX";
+  expiresAt: string;
+  startPayload: string;
+};
+
+function formatBindExpiryMsk(iso: string): string {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return iso;
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(ms));
+}
+
 export type AdminNotificationSettingsHostState = {
   dirty: boolean;
   saving: boolean;
@@ -46,6 +64,9 @@ export function AdminNotificationSettingsSection({
   const [saveError, setSaveError] = useState("");
   const [bindingBusy, setBindingBusy] = useState<"TELEGRAM" | "MAX" | null>(null);
   const [bindFallbackLink, setBindFallbackLink] = useState<string | null>(null);
+  const [bindChallenge, setBindChallenge] = useState<BindChallenge | null>(null);
+  const [bindClockMs, setBindClockMs] = useState(() => Date.now());
+  const bindFlightRef = useRef<Promise<void> | null>(null);
   const savedPayloadRef = useRef<string | null>(null);
   const savingRef = useRef(false);
   const saveFlightRef = useRef<Promise<void> | null>(null);
@@ -77,11 +98,23 @@ export function AdminNotificationSettingsSection({
     void loadSettings();
   }, [loadSettings]);
 
+  useEffect(() => {
+    if (!bindChallenge) return;
+    const id = window.setInterval(() => setBindClockMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [bindChallenge]);
+
   async function refreshBindings() {
     setSaveError("");
     try {
       const status = await fetchAdminNotificationBindStatus();
       setBindings(status);
+      if (status.telegramLinked) {
+        setBindChallenge((current) => (current?.provider === "TELEGRAM" ? null : current));
+      }
+      if (status.maxLinked) {
+        setBindChallenge((current) => (current?.provider === "MAX" ? null : current));
+      }
       setSaveMessage("Статус привязки обновлён");
     } catch (caught) {
       setSaveError(
@@ -91,30 +124,43 @@ export function AdminNotificationSettingsSection({
   }
 
   async function startBind(provider: "TELEGRAM" | "MAX") {
+    if (bindFlightRef.current) return;
     setBindingBusy(provider);
     setSaveError("");
     setSaveMessage("");
     setBindFallbackLink(null);
-    try {
-      const res = await startAdminNotificationBind(provider);
-      if (res.deepLink) {
-        if (!isTrustedAdminNotificationBindDeepLink(res.deepLink)) {
-          setSaveError("Сервер вернул небезопасную ссылку привязки. Откройте привязку через кнопку позже или обратитесь в поддержку.");
-          return;
+    const flight = (async () => {
+      try {
+        const res = await startAdminNotificationBind(provider);
+        if (res.expiresAt) {
+          setBindChallenge({ provider, expiresAt: res.expiresAt, startPayload: res.startPayload });
         }
-        const opened = openTrustedAdminNotificationBindDeepLink(res.deepLink);
-        if (opened === "popup_blocked") {
-          setBindFallbackLink(res.deepLink);
-          setSaveMessage(`${res.hint} Браузер заблокировал окно — откройте ссылку ниже.`);
-        } else if (opened === "opened") {
-          setSaveMessage(`${res.hint} После подтверждения в боте нажмите «Обновить привязку».`);
+        if (res.deepLink) {
+          if (!isTrustedAdminNotificationBindDeepLink(res.deepLink)) {
+            setSaveError(
+              "Сервер вернул небезопасную ссылку привязки. Откройте привязку через кнопку позже или обратитесь в поддержку.",
+            );
+            return;
+          }
+          const opened = openTrustedAdminNotificationBindDeepLink(res.deepLink);
+          if (opened === "popup_blocked") {
+            setBindFallbackLink(res.deepLink);
+            setSaveMessage(`${res.hint} Браузер заблокировал окно — откройте ссылку ниже.`);
+          } else if (opened === "opened") {
+            setSaveMessage(`${res.hint} После подтверждения в боте нажмите «Обновить привязку».`);
+          }
+        } else {
+          setSaveMessage(`${res.hint} Команда для бота: ${res.startPayload}`);
         }
-      } else {
-        setSaveMessage(res.hint);
+      } catch (caught) {
+        setSaveError(caught instanceof RemcardApiError ? caught.message : "Не удалось начать привязку");
       }
-    } catch (caught) {
-      setSaveError(caught instanceof RemcardApiError ? caught.message : "Не удалось начать привязку");
+    })();
+    bindFlightRef.current = flight;
+    try {
+      await flight;
     } finally {
+      if (bindFlightRef.current === flight) bindFlightRef.current = null;
       setBindingBusy(null);
     }
   }
@@ -206,6 +252,13 @@ export function AdminNotificationSettingsSection({
   const maxLinked = bindings?.maxLinked === true;
   const tgChecked = adminChannelEnabled(form, "telegram");
   const maxChecked = adminChannelEnabled(form, "max");
+  const bindExpired =
+    bindChallenge !== null &&
+    Number.isFinite(Date.parse(bindChallenge.expiresAt)) &&
+    Date.parse(bindChallenge.expiresAt) <= bindClockMs;
+  const bindChallengeVisible =
+    bindChallenge !== null &&
+    !(bindChallenge.provider === "TELEGRAM" ? tgLinked : maxLinked);
 
   return (
     <section className={styles.settingsSection} aria-labelledby="admin-notify-settings-title">
@@ -315,6 +368,20 @@ export function AdminNotificationSettingsSection({
             </a>
           </p>
         ) : null}
+        {bindChallengeVisible ? (
+          <p
+            data-testid="admin-notify-bind-expiry"
+            className={`${styles.bindExpiry} ${bindExpired ? styles.bindExpiryExpired : ""}`}
+          >
+            {bindExpired
+              ? `Срок действия кода истёк. Нажмите «Привязать ${
+                  bindChallenge.provider === "TELEGRAM" ? "Telegram" : "MAX"
+                }» ещё раз, чтобы получить новый код.`
+              : `Код действует до ${formatBindExpiryMsk(bindChallenge.expiresAt)} (МСК).${
+                  bindChallenge.provider === "MAX" ? ` Команда: ${bindChallenge.startPayload}.` : ""
+                } После подтверждения в боте нажмите «Обновить привязку».`}
+          </p>
+        ) : null}
       </fieldset>
 
       <p className={styles.hint}>
@@ -334,6 +401,8 @@ export function AdminNotificationSettingsSection({
 
       <Button
         type="button"
+        variant="primary"
+        className={styles.settingsSaveButton}
         disabled={saving}
         onClick={() => {
           if (saving) return;
