@@ -267,6 +267,51 @@ export function inviteSideStableKey(side: PartnerSideProfile): string {
   ].join("\0");
 }
 
+export const PARTNERSHIP_INVITATION_WITHDRAW_ACTIONS = ["cancel", "withdraw_counter"] as const;
+
+export type PartnershipInvitationWithdrawAction =
+  (typeof PARTNERSHIP_INVITATION_WITHDRAW_ACTIONS)[number];
+
+export function isPartnershipInvitationWithdrawAction(
+  action: string,
+): action is PartnershipInvitationWithdrawAction {
+  return (PARTNERSHIP_INVITATION_WITHDRAW_ACTIONS as readonly string[]).includes(action);
+}
+
+/** Block withdraw PATCH when invitation is already terminal (status gate only). */
+export function partnershipInvitationWithdrawPatchAllowed(
+  partnership: Partnership,
+  action: string,
+): boolean {
+  if (!isPartnershipInvitationWithdrawAction(action)) return true;
+  if (
+    partnership.status === "CANCELLED" ||
+    partnership.status === "REJECTED" ||
+    partnership.status === "ENDED"
+  ) {
+    return false;
+  }
+  return partnership.status === "INVITED" || partnership.status === "PENDING";
+}
+
+/**
+ * Client dedup key for a successful invitation withdraw of one proposal snapshot.
+ * Must not be partnership.id alone: withdraw_counter returns PENDING→INVITED and a later
+ * proposal on the same row is a new legal action (see P23c / Computer audit of P24b).
+ */
+export function partnershipInvitationWithdrawSnapshotKey(
+  partnership: Pick<Partnership, "id" | "updatedAt" | "status" | "pendingProposedBy">,
+  action: PartnershipInvitationWithdrawAction,
+): string {
+  return [
+    partnership.id,
+    action,
+    partnership.status,
+    partnership.updatedAt,
+    partnership.pendingProposedBy ?? "",
+  ].join("\0");
+}
+
 export function partnershipNeedsMyResponse(partnership: Partnership, meId: string): boolean {
   const isParticipant =
     partnership.storeUserId === meId || partnership.proUserId === meId;

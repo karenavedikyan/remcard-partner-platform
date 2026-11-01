@@ -8,6 +8,8 @@ import {
   getPartnershipUiActions,
   inviteRowsToTerms,
   partnershipNeedsMyResponse,
+  partnershipInvitationWithdrawPatchAllowed,
+  partnershipInvitationWithdrawSnapshotKey,
   INVITE_PARTNER_UNKNOWN_BLOCK_MESSAGE,
   inviteTargetStoreOwnershipUnknown,
   resolveInviteTradeSideCategories,
@@ -359,6 +361,44 @@ describe("partnership action rules", () => {
       "store-1",
     );
     assert.deepEqual(actions.map((item) => item.kind), ["cancel"]);
+  });
+
+  it("blocks withdraw PATCH when invitation already terminal", () => {
+    const ended = basePartnership({ status: "ENDED" });
+    assert.equal(partnershipInvitationWithdrawPatchAllowed(ended, "cancel"), false);
+    assert.equal(partnershipInvitationWithdrawPatchAllowed(ended, "withdraw_counter"), false);
+    assert.equal(partnershipInvitationWithdrawPatchAllowed(ended, "accept"), true);
+  });
+
+  it("allows withdraw PATCH only for pending invitation statuses", () => {
+    const invited = basePartnership({ status: "INVITED" });
+    assert.equal(partnershipInvitationWithdrawPatchAllowed(invited, "cancel"), true);
+    const active = basePartnership({ status: "ACTIVE" });
+    assert.equal(partnershipInvitationWithdrawPatchAllowed(active, "cancel"), false);
+  });
+
+  it("withdraw snapshot keys differ across proposal generations on the same id", () => {
+    const first = basePartnership({
+      status: "PENDING",
+      pendingProposedBy: "master-1",
+      updatedAt: "2026-10-01T10:00:00.000Z",
+    });
+    const afterWithdraw = basePartnership({
+      status: "INVITED",
+      pendingProposedBy: null,
+      updatedAt: "2026-10-01T11:00:00.000Z",
+    });
+    const secondProposal = basePartnership({
+      status: "PENDING",
+      pendingProposedBy: "master-1",
+      updatedAt: "2026-10-01T12:00:00.000Z",
+    });
+    const k1 = partnershipInvitationWithdrawSnapshotKey(first, "withdraw_counter");
+    const k2 = partnershipInvitationWithdrawSnapshotKey(afterWithdraw, "cancel");
+    const k3 = partnershipInvitationWithdrawSnapshotKey(secondProposal, "withdraw_counter");
+    assert.notEqual(k1, k2);
+    assert.notEqual(k1, k3);
+    assert.notEqual(k2, k3);
   });
 
   it("allows accept_pending only for non-author in PENDING", () => {

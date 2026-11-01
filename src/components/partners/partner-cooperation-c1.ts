@@ -53,6 +53,24 @@ export function resumeConfirmCopy(partnerName: string): { title: string; body: s
   };
 }
 
+export function invitationWithdrawConfirmCopy(
+  action: "cancel" | "withdraw_counter",
+  partnerName: string,
+): { title: string; body: string; confirmLabel: string } {
+  if (action === "withdraw_counter") {
+    return {
+      title: `Отозвать предложение для ${partnerName}?`,
+      body: "Предложение будет снято. Партнёр получит уведомление.",
+      confirmLabel: "Отозвать предложение",
+    };
+  }
+  return {
+    title: `Отозвать приглашение для ${partnerName}?`,
+    body: "Запрос на сотрудничество будет отменён. Партнёр получит уведомление.",
+    confirmLabel: "Отозвать",
+  };
+}
+
 export function discardTermDraftCopy(): { title: string; body: string; keep: string; discard: string } {
   return {
     title: "Закрыть без отправки?",

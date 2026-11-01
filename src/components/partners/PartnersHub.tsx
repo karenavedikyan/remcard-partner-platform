@@ -14,10 +14,14 @@ import {
   defaultSearchRoleForUser,
   getPartnershipUiActions,
   isAgentCooperationInviter,
+  isPartnershipInvitationWithdrawAction,
   partnershipAgentSegment,
+  partnershipInvitationWithdrawPatchAllowed,
+  partnershipInvitationWithdrawSnapshotKey,
   partnershipNeedsMyResponse,
   profileUserToPartnerSide,
   shouldShowAgentPublishedTermsForSearch,
+  type PartnershipInvitationWithdrawAction,
   type SearchRole,
 } from "@/lib/partnership-rules";
 import {
@@ -80,6 +84,7 @@ import {
   cooperationPartnerTitle,
   discardTermDraftCopy,
   findPartnershipById,
+  invitationWithdrawConfirmCopy,
   isPartnershipParticipant,
   partnerProfileName,
   partnershipAllowsUiAction,
@@ -200,9 +205,22 @@ export function PartnersHub({
   const [pendingTermOpenId, setPendingTermOpenId] = useState<string | null>(null);
   const [lifecycleConfirm, setLifecycleConfirm] = useState<{
     partnershipId: string;
-    action: "pause" | "resume";
+    action: "pause" | "resume" | PartnershipInvitationWithdrawAction;
+    /** Frozen at open — settled dedup keys this proposal snapshot, not row id alone. */
+    snapshotUpdatedAt: string;
+    snapshotStatus: Partnership["status"];
+    snapshotPendingProposedBy: string | null;
   } | null>(null);
   const [lifecycleConfirmError, setLifecycleConfirmError] = useState("");
+  /** Per-partnership PATCH in flight — other cards stay interactive. */
+  const partnershipPatchInFlightRef = useRef(new Set<string>());
+  /**
+   * Successful cancel/withdraw_counter snapshots already sent.
+   * Key = partnershipInvitationWithdrawSnapshotKey (id+action+status+updatedAt+pendingProposedBy).
+   * Do NOT key by partnership.id alone: withdraw_counter returns PENDING→INVITED and a later
+   * proposal must remain actionable.
+   */
+  const partnershipWithdrawSettledRef = useRef(new Set<string>());
   const [termRevealSignal, setTermRevealSignal] = useState(0);
   const [pendingPartnerFocusId, setPendingPartnerFocusId] = useState<string | null>(null);
   const termLoadGenRef = useRef(0);
@@ -788,13 +806,33 @@ export function PartnersHub({
     | { ok: true }
     | { ok: false; error: string; reason: "busy" | "failed" };
 
-  /** Sole PATCH transport for partnership UI actions (incl. pause/resume confirm). */
+  /** Sole PATCH transport for partnership UI actions (incl. pause/resume/withdraw confirm). */
   async function runPartnershipAction(
     partnership: Partnership,
     action: string,
     options?: { suppressHubError?: boolean },
   ): Promise<PartnershipActionResult> {
-    if (busyId) return { ok: false, error: "", reason: "busy" };
+    if (partnershipPatchInFlightRef.current.has(partnership.id)) {
+      return { ok: false, error: "", reason: "busy" };
+    }
+    if (isPartnershipInvitationWithdrawAction(action)) {
+      const snapKey = partnershipInvitationWithdrawSnapshotKey(partnership, action);
+      if (partnershipWithdrawSettledRef.current.has(snapKey)) {
+        return { ok: false, error: "", reason: "busy" };
+      }
+    }
+    if (!partnershipInvitationWithdrawPatchAllowed(partnership, action)) {
+      return {
+        ok: false,
+        error: "Действие недоступно для текущего статуса",
+        reason: "failed",
+      };
+    }
+    // Per-id busy: other partnership cards stay clickable.
+    if (busyId === partnership.id) {
+      return { ok: false, error: "", reason: "busy" };
+    }
+    partnershipPatchInFlightRef.current.add(partnership.id);
     setBusyId(partnership.id);
     if (!options?.suppressHubError) {
       setActionError("");
@@ -808,6 +846,11 @@ export function PartnersHub({
         method: "PATCH",
         body,
       });
+      if (isPartnershipInvitationWithdrawAction(action)) {
+        partnershipWithdrawSettledRef.current.add(
+          partnershipInvitationWithdrawSnapshotKey(partnership, action),
+        );
+      }
       await loadList();
       return { ok: true };
     } catch (caught) {
@@ -818,6 +861,7 @@ export function PartnersHub({
       }
       return { ok: false, error, reason: "failed" };
     } finally {
+      partnershipPatchInFlightRef.current.delete(partnership.id);
       setBusyId(null);
     }
   }
@@ -830,21 +874,38 @@ export function PartnersHub({
       });
       return;
     }
-    if (actionKind === "pause" || actionKind === "resume") {
+    if (
+      actionKind === "pause" ||
+      actionKind === "resume" ||
+      actionKind === "cancel" ||
+      actionKind === "withdraw_counter"
+    ) {
       if (!partnershipAllowsUiAction(partnership, meId, actionKind)) {
         setActionError("Действие недоступно для текущего контекста");
         return;
       }
       setLifecycleConfirmError("");
-      setLifecycleConfirm({ partnershipId: partnership.id, action: actionKind });
+      setLifecycleConfirm({
+        partnershipId: partnership.id,
+        action: actionKind,
+        snapshotUpdatedAt: partnership.updatedAt,
+        snapshotStatus: partnership.status,
+        snapshotPendingProposedBy: partnership.pendingProposedBy ?? null,
+      });
       return;
     }
     void runPartnershipAction(partnership, actionKind);
   }
 
   async function confirmLifecycleAction() {
-    if (!lifecycleConfirm || busyId) return;
+    if (!lifecycleConfirm) return;
     const partnershipId = lifecycleConfirm.partnershipId;
+    if (
+      partnershipPatchInFlightRef.current.has(partnershipId) ||
+      busyId === partnershipId
+    ) {
+      return;
+    }
     const action = lifecycleConfirm.action;
     const current = findPartnershipById(partnerships, partnershipId);
     if (
@@ -854,6 +915,30 @@ export function PartnersHub({
       // Keep confirm open — surface error inside the active workflow, not under the modal.
       setLifecycleConfirmError("Действие недоступно: партнёр или права изменились");
       return;
+    }
+    if (isPartnershipInvitationWithdrawAction(action)) {
+      const openedSnap = partnershipInvitationWithdrawSnapshotKey(
+        {
+          id: partnershipId,
+          updatedAt: lifecycleConfirm.snapshotUpdatedAt,
+          status: lifecycleConfirm.snapshotStatus,
+          pendingProposedBy: lifecycleConfirm.snapshotPendingProposedBy,
+        },
+        action,
+      );
+      if (partnershipWithdrawSettledRef.current.has(openedSnap)) {
+        // Same opened snapshot already PATCHed — dismiss, no additional request.
+        setLifecycleConfirm(null);
+        setLifecycleConfirmError("");
+        return;
+      }
+      const currentSnap = partnershipInvitationWithdrawSnapshotKey(current, action);
+      if (currentSnap !== openedSnap) {
+        // List moved to a newer proposal/state — close stale confirm; user re-opens for new snap.
+        setLifecycleConfirm(null);
+        setLifecycleConfirmError("");
+        return;
+      }
     }
     setLifecycleConfirmError("");
     const result = await runPartnershipAction(current, action, { suppressHubError: true });
@@ -1259,13 +1344,7 @@ export function PartnersHub({
   const agentFindSearchControls = (
     <>
       <p className={styles.modalLead}>
-        Поиск по всем партнёрам с одобренным профилем в RemCard. Оба поля ниже — основной способ отбора.
-      </p>
-      <div className={styles.modalFilterBlock}>
-        <AgentPartnerDiscoveryFilters layout="modal-primary" {...agentDiscoveryFilterProps} />
-      </div>
-      <p className={styles.modalFilterHint}>
-        Выберите один фильтр или оба — покажем партнёров, которые подходят под выбранные условия.
+        Поиск по всем партнёрам с одобренным профилем в RemCard. Уточните город, тип, специализацию и этап.
       </p>
       <div className={styles.modalSearchBlock}>
         <TextField
@@ -1273,7 +1352,7 @@ export function PartnersHub({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Название, товар, услуга, этап или ID"
-          hint="Можно оставить пустым и искать только по фильтрам выше"
+          hint="Можно оставить пустым и искать только по фильтрам ниже"
         />
         <div className={styles.modalSearchAction}>
           <Button
@@ -1288,15 +1367,17 @@ export function PartnersHub({
           </Button>
         </div>
       </div>
-      <AgentPartnerDiscoveryFilters layout="modal-more" {...agentDiscoveryFilterProps} />
+      {/* P22c: modal-full owns the single refine disclosure — no hub dual mount. */}
+      <div className={styles.modalFilterBlock}>
+        <AgentPartnerDiscoveryFilters layout="modal-full" {...agentDiscoveryFilterProps} />
+      </div>
     </>
   );
 
   /**
-   * P23a/b find modal vs frozen hub-wide:
-   * search → one refine slot (single modal-full mount) → showcase (rail width + results).
-   * Closes dual modal-primary/modal-more hub mount (SEARCH-FILTERS-13 wrapper ask).
-   * Flat four-field refine body still needs filter-owner P22c (see INTEGRATION-BLOCKER).
+   * P23c find modal vs frozen hub-wide:
+   * keyword → exactly one refine (P22c modal-full owns details) → showcase.
+   * No outer hub findRefine wrapper (would nest a second disclosure).
    */
   const agentFindShowcase = (
     <div className={styles.findShell} data-testid="agent-partner-find-showcase">
@@ -1325,20 +1406,10 @@ export function PartnersHub({
             </Button>
           </div>
         </div>
-        <details className={styles.findRefine} data-testid="agent-partner-find-refine">
-          <summary>
-            Город и тип партнёра
-            {city || searchPartnerType ? " · выбраны" : ""}
-          </summary>
-          <div className={styles.findRefineBody}>
-            {/*
-              SEARCH-FILTERS-13: single hub refine slot mounts modal-full once.
-              Flat four-field body (no nested cityTypeFold) is filter-owner P22c —
-              see artifacts INTEGRATION-BLOCKER; do not fork DiscoveryFilters here.
-            */}
-            <AgentPartnerDiscoveryFilters layout="modal-full" {...agentDiscoveryFilterProps} />
-          </div>
-        </details>
+        {/* P22c tip 30231a6: layout=modal-full is the sole refine disclosure owner. */}
+        <div className={styles.findFilterSlot} data-testid="agent-partner-find-filter-slot">
+          <AgentPartnerDiscoveryFilters layout="modal-full" {...agentDiscoveryFilterProps} />
+        </div>
       </div>
       <div className={styles.findShowcase}>
         <aside className={styles.findRail} aria-hidden="true" />
@@ -2330,49 +2401,49 @@ export function PartnersHub({
 
       {isAgentR04 ? renderAgentTermChangeHost() : null}
 
-      {lifecycleConfirm ? (
-        <PartnerCooperationConfirmDialog
-          open
-          testId={`partner-${lifecycleConfirm.action}-confirm`}
-          title={
-            (lifecycleConfirm.action === "pause" ? pauseConfirmCopy : resumeConfirmCopy)(
-              (() => {
-                const row = findPartnershipById(
-                  partnerships,
-                  lifecycleConfirm.partnershipId,
-                );
-                return row ? partnerProfileName(row, meId) : "партнёром";
-              })(),
-            ).title
-          }
-          body={
-            (lifecycleConfirm.action === "pause" ? pauseConfirmCopy : resumeConfirmCopy)(
-              (() => {
-                const row = findPartnershipById(
-                  partnerships,
-                  lifecycleConfirm.partnershipId,
-                );
-                return row ? partnerProfileName(row, meId) : "партнёром";
-              })(),
-            ).body
-          }
-          confirmLabel={
-            lifecycleConfirm.action === "pause"
-              ? "Приостановить"
-              : "Возобновить сотрудничество"
-          }
-          dismissLabel="Отмена"
-          safeAction="dismiss"
-          busy={busyId === lifecycleConfirm.partnershipId}
-          error={lifecycleConfirmError}
-          onConfirm={() => void confirmLifecycleAction()}
-          onDismiss={() => {
-            if (busyId === lifecycleConfirm.partnershipId) return;
-            setLifecycleConfirm(null);
-            setLifecycleConfirmError("");
-          }}
-        />
-      ) : null}
+      {lifecycleConfirm
+        ? (() => {
+            const row = findPartnershipById(partnerships, lifecycleConfirm.partnershipId);
+            const partnerName = row ? partnerProfileName(row, meId) : "партнёром";
+            let title: string;
+            let body: string;
+            let confirmLabel: string;
+            if (lifecycleConfirm.action === "pause") {
+              ({ title, body } = pauseConfirmCopy(partnerName));
+              confirmLabel = "Приостановить";
+            } else if (lifecycleConfirm.action === "resume") {
+              ({ title, body } = resumeConfirmCopy(partnerName));
+              confirmLabel = "Возобновить сотрудничество";
+            } else {
+              ({ title, body, confirmLabel } = invitationWithdrawConfirmCopy(
+                lifecycleConfirm.action,
+                partnerName,
+              ));
+            }
+            return (
+              <PartnerCooperationConfirmDialog
+                open
+                testId={`partner-${lifecycleConfirm.action}-confirm`}
+                title={title}
+                body={body}
+                confirmLabel={confirmLabel}
+                dismissLabel="Отмена"
+                safeAction="dismiss"
+                busy={
+                  busyId === lifecycleConfirm.partnershipId ||
+                  partnershipPatchInFlightRef.current.has(lifecycleConfirm.partnershipId)
+                }
+                error={lifecycleConfirmError}
+                onConfirm={() => void confirmLifecycleAction()}
+                onDismiss={() => {
+                  if (busyId === lifecycleConfirm.partnershipId) return;
+                  setLifecycleConfirm(null);
+                  setLifecycleConfirmError("");
+                }}
+              />
+            );
+          })()
+        : null}
 
       {termDiscardOpen ? (
         <PartnerCooperationConfirmDialog

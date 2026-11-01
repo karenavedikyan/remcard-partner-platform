@@ -205,39 +205,14 @@
   min-width: 0;
 }
 
-.findRefine {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0;
-  background: transparent;
+/* P23c: filter slot hosts P22c modal-full (component owns the single refine details). */
+.findFilterSlot {
   min-width: 0;
   align-self: start;
 }
 
-.findRefine > summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 12px;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  font-size: var(--text-xs);
-  font-weight: 500;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.findRefine > summary::-webkit-details-marker {
-  display: none;
-}
-
-.findRefine[open] {
+.findFilterSlot:has([data-testid="agent-partner-discovery-refine"][open]) {
   grid-column: 1 / -1;
-}
-
-.findRefineBody {
-  padding: 0 12px 12px;
-  min-width: 0;
 }
 
 .findShowcase {
@@ -351,7 +326,7 @@
     gap: 12px;
   }
 
-  .findRefine[open] {
+  .findFilterSlot:has([data-testid="agent-partner-discovery-refine"][open]) {
     grid-column: auto;
   }
 
