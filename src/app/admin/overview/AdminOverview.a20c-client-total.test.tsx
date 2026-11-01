@@ -146,6 +146,8 @@ describe("A20c overview CLIENT all-time KPI", () => {
     await screen.findByRole("heading", { name: "Рост сообщества", level: 2 });
     expect(document.querySelectorAll("article")).toHaveLength(4);
     expect(document.querySelectorAll('[data-source="admin-analytics-overview"]')).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "Аналитика" })).toBeNull();
+    expect(screen.getByText("Аналитика готовится")).toHaveAttribute("aria-disabled", "true");
   });
 
   it("renders dual clients/pros series and empty-day chart state independently", async () => {
