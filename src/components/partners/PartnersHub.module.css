@@ -219,10 +219,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 16px;
-  max-height: min(70vh, 640px);
-  overflow: auto;
+  /* P23b: no nested results scrollport — sheetFind owns overflow like dialog.hub-wide */
+  max-height: none;
+  overflow: visible;
   min-width: 0;
-  padding-right: 2px;
 }
 
 .modalResultsFind > .modalResultsState {
@@ -297,7 +297,7 @@
     align-items: stretch;
   }
 
-  /* P23a mobile: stack rail above results; single card column (R1 1fr grid). */
+  /* P23a/b mobile: stack rail above results; single card column (R1 1fr grid). */
   .findShowcase {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -306,7 +306,8 @@
   .modalResultsFind {
     grid-template-columns: 1fr;
     gap: var(--space-2);
-    max-height: min(52vh, 420px);
+    max-height: none;
+    overflow: visible;
   }
 }
 

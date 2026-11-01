@@ -303,30 +303,34 @@
   padding: 24px;
   box-sizing: border-box;
   align-self: center;
-  /* Not a mobile bottom-sheet when finding partners. */
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  /*
+   * P23b scroll ownership = frozen dialog.hub-wide:
+   * sheet/dialog is the sole scrollport (overflow:auto); body/results stay visible.
+   * Nested body+results auto scrollports (P23a) are not reference structure.
+   */
+  overflow: auto;
+  overscroll-behavior: contain;
+  display: block;
 }
 
 .sheetFind .header {
   padding: 0 0 16px;
   border-bottom: 0;
   align-items: center;
-  flex-shrink: 0;
 }
 
 .sheetFind .pathTabs {
   margin: 0 0 16px;
   width: 100%;
-  flex-shrink: 0;
 }
 
 .sheetFind .body {
   padding: 0;
+  overflow: visible;
+  /* Do not create a second scrollport under the sheet. */
+  max-height: none;
+  flex: none;
   min-height: 0;
-  flex: 1 1 auto;
-  overflow: auto;
 }
 
 @media (max-width: 680px) {
