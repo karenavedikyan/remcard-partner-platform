@@ -40,12 +40,15 @@ describe("A21a clients source contracts", () => {
     expect(page).toContain("styles.adminPageWide");
     expect(api).toContain('params.set("role", "CLIENT")');
     expect(api).toContain("getAdminClientTotal");
-    expect(api).toContain("/api/admin/users?${qs}");
+    expect(api).toContain('params.set("role", "CLIENT")');
+    expect(api).toContain('params.set("page", "1")');
+    expect(api).toContain('params.set("limit", "1")');
+    expect(api).toContain("all-time");
     expect(api).not.toMatch(/role=PRO|role=STAFF|\/api\/admin\/users\/\$/);
     expect(client).not.toMatch(/создать клиента|удалить клиента|редактировать/i);
-    expect(client).not.toContain("stage");
     expect(client).not.toContain("clientBonus");
     expect(client).toContain("только для просмотра");
+    expect(client).toContain("BE total");
   });
 
   it("adds Клиенты to AdminNav without inventing unimplemented R1 links", () => {

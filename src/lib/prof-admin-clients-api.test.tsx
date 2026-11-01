@@ -36,6 +36,7 @@ import {
   buildAdminClientsQueryString,
   fetchAdminClients,
   getAdminClientTotal,
+  parseAdminClientsTotal,
   whitelistAdminClient,
   whitelistAdminClientsResponse,
 } from "./prof-admin-clients-api";
@@ -157,7 +158,7 @@ describe("A21a prof-admin-clients-api", () => {
     expect(res.total).toBe(1);
   });
 
-  it("getAdminClientTotal uses minimal limit and returns BE total", async () => {
+  it("getAdminClientTotal is all-time CLIENT only (no period/search)", async () => {
     remcardFetch.mockResolvedValue({
       users: [
         {
@@ -174,7 +175,38 @@ describe("A21a prof-admin-clients-api", () => {
     });
     await expect(getAdminClientTotal()).resolves.toBe(126);
     const path = remcardFetch.mock.calls[0]![0] as string;
-    expect(path).toContain("role=CLIENT");
-    expect(path).toContain("limit=1");
+    expect(path).toBe("/api/admin/users?role=CLIENT&page=1&limit=1");
+    expect(path).not.toContain("period=");
+    expect(path).not.toContain("search=");
+    expect(path).not.toContain("q=");
+  });
+
+  it("parseAdminClientsTotal coerces null/string and never uses list length", () => {
+    expect(parseAdminClientsTotal(null)).toBe(0);
+    expect(parseAdminClientsTotal(undefined)).toBe(0);
+    expect(parseAdminClientsTotal("17")).toBe(17);
+    expect(parseAdminClientsTotal(-3)).toBe(0);
+    expect(
+      whitelistAdminClientsResponse({ users: [{ id: "x" }], total: null }).total,
+    ).toBe(0);
+    expect(
+      whitelistAdminClientsResponse({
+        users: [
+          {
+            id: "c1",
+            publicId: "RC-C1",
+            displayName: "Клиент",
+            role: "CLIENT",
+            createdAt: "2025-01-01T00:00:00.000Z",
+          },
+        ],
+        total: "5",
+      }).total,
+    ).toBe(5);
+  });
+
+  it("buildAdminClientsQueryString never emits q=", () => {
+    expect(buildAdminClientsQueryString({ search: "anna" })).toContain("search=anna");
+    expect(buildAdminClientsQueryString({ search: "anna" })).not.toContain("q=");
   });
 });

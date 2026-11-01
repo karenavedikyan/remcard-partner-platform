@@ -20,7 +20,11 @@
   display: grid;
   gap: var(--cl-s5);
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: hidden;
   color: var(--cl-ink);
+  box-sizing: border-box;
 }
 
 :global(html[data-theme="dark"]) .page {
@@ -145,7 +149,9 @@
 
 .filterSelect {
   min-height: 44px;
-  min-width: 10rem;
+  min-width: 0;
+  max-width: 100%;
+  width: min(12rem, 100%);
   padding: 0 var(--cl-s3);
   border: 1px solid var(--cl-line);
   border-radius: 0.5rem;
@@ -153,6 +159,7 @@
   color: var(--cl-ink);
   font: inherit;
   font-weight: 600;
+  box-sizing: border-box;
 }
 
 .countHint {
@@ -188,13 +195,14 @@
 
 .tableWrap {
   min-width: 0;
-  overflow-x: auto;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 36rem;
+  table-layout: fixed;
 }
 
 .table th,
@@ -215,17 +223,28 @@
   display: grid;
   gap: 0.15rem;
   min-width: 0;
+  max-width: 100%;
 }
 
 .clientName strong {
   font-size: 0.9375rem;
   font-weight: 750;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .clientName small {
   color: var(--cl-muted);
   font-size: var(--text-xs, 0.8125rem);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cellClamp {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .pill {

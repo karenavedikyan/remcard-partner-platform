@@ -1,9 +1,12 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 
 /**
- * A21a readonly contract for GET /api/admin/users?role=CLIENT
+ * A21a/A21b readonly contract for GET /api/admin/users?role=CLIENT
  * (staffAuth OPERATOR+ on BE tip 7978e2e). Always forces role=CLIENT —
  * never loads unscoped / PRO / STAFF lists as a fallback.
+ *
+ * Query params mirrored from BE route only: page, limit, role, period,
+ * search, sort, order. There is no `q` param — do not invent filters.
  */
 
 export type AdminClientPeriod = "all" | "today" | "week" | "month";
@@ -24,6 +27,7 @@ export type AdminClient = {
 
 export type AdminClientsListResponse = {
   users: AdminClient[];
+  /** Always BE `total` for the request — never `users.length`. */
   total: number;
   page: number;
   totalPages: number;
@@ -80,6 +84,16 @@ export function labelClientPeriod(period: AdminClientPeriod): string {
   }
 }
 
+/** Coerce BE total: number | numeric string | null/undefined → non-negative int. */
+export function parseAdminClientsTotal(raw: unknown): number {
+  if (typeof raw === "number" && Number.isFinite(raw)) return Math.max(0, Math.floor(raw));
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n)) return Math.max(0, Math.floor(n));
+  }
+  return 0;
+}
+
 /** Whitelist trustworthy CLIENT row fields only — drop PRO/staff and inventable keys. */
 export function whitelistAdminClient(raw: unknown): AdminClient | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -108,11 +122,15 @@ export function whitelistAdminClientsResponse(raw: unknown): AdminClientsListRes
   const body = raw as Record<string, unknown>;
   const list = Array.isArray(body.users) ? body.users : [];
   const users = list.map(whitelistAdminClient).filter((u): u is AdminClient => Boolean(u));
-  const total = typeof body.total === "number" && Number.isFinite(body.total) ? Math.max(0, body.total) : 0;
-  const page = typeof body.page === "number" && Number.isFinite(body.page) ? Math.max(1, body.page) : 1;
+  const total = parseAdminClientsTotal(body.total);
+  const page =
+    typeof body.page === "number" && Number.isFinite(body.page)
+      ? Math.max(1, Math.floor(body.page))
+      : 1;
+  const totalPagesRaw = body.totalPages;
   const totalPages =
-    typeof body.totalPages === "number" && Number.isFinite(body.totalPages)
-      ? Math.max(1, body.totalPages)
+    typeof totalPagesRaw === "number" && Number.isFinite(totalPagesRaw)
+      ? Math.max(1, Math.floor(totalPagesRaw))
       : Math.max(1, Math.ceil(total / ADMIN_CLIENTS_DEFAULT_LIMIT) || 1);
   return { users, total, page, totalPages };
 }
@@ -121,7 +139,10 @@ function normalizeQuery(q: AdminClientsQuery = {}): Required<
   Omit<AdminClientsQuery, "signal" | "search">
 > & { search: string } {
   const page = Math.max(1, Math.floor(q.page ?? 1) || 1);
-  const limit = Math.min(100, Math.max(1, Math.floor(q.limit ?? ADMIN_CLIENTS_DEFAULT_LIMIT) || ADMIN_CLIENTS_DEFAULT_LIMIT));
+  const limit = Math.min(
+    100,
+    Math.max(1, Math.floor(q.limit ?? ADMIN_CLIENTS_DEFAULT_LIMIT) || ADMIN_CLIENTS_DEFAULT_LIMIT),
+  );
   const period = PERIODS.has(q.period ?? "") ? (q.period as AdminClientPeriod) : "all";
   const sort = SORTS.has(q.sort ?? "") ? (q.sort as AdminClientSort) : "createdAt";
   const order = ORDERS.has(q.order ?? "") ? (q.order as AdminClientOrder) : "desc";
@@ -129,7 +150,7 @@ function normalizeQuery(q: AdminClientsQuery = {}): Required<
   return { page, limit, period, sort, order, search };
 }
 
-/** Build query string — role=CLIENT is always forced and never omitted. */
+/** Build query string — role=CLIENT is always forced and never omitted. Uses `search`, not `q`. */
 export function buildAdminClientsQueryString(q: AdminClientsQuery = {}): string {
   const n = normalizeQuery(q);
   const params = new URLSearchParams();
@@ -153,6 +174,12 @@ export function clientsErrorKind(caught: unknown): AdminClientsErrorKind {
   return "error";
 }
 
+export function isAbortError(caught: unknown): boolean {
+  if (!caught || typeof caught !== "object") return false;
+  const name = (caught as { name?: string }).name;
+  return name === "AbortError" || name === "TimeoutError";
+}
+
 export async function fetchAdminClients(
   query: AdminClientsQuery = {},
 ): Promise<AdminClientsListResponse> {
@@ -164,10 +191,15 @@ export async function fetchAdminClients(
 }
 
 /**
- * Honest CLIENT total for overview KPI handoff (A20b).
- * Same exact GET with role=CLIENT and minimal limit — uses BE `total`.
+ * A20c KPI handoff: **all-time** CLIENT total.
+ * Always `role=CLIENT&page=1&limit=1` with no `period` / `search` —
+ * never “all users” and never registrations of the selected overview period.
  */
 export async function getAdminClientTotal(signal?: AbortSignal): Promise<number> {
-  const res = await fetchAdminClients({ page: 1, limit: 1, period: "all", signal });
-  return res.total;
+  const params = new URLSearchParams();
+  params.set("role", "CLIENT");
+  params.set("page", "1");
+  params.set("limit", "1");
+  const raw = await remcardFetch<unknown>(`/api/admin/users?${params.toString()}`, { signal });
+  return whitelistAdminClientsResponse(raw).total;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   ADMIN_CLIENTS_DEFAULT_LIMIT,
@@ -9,6 +9,7 @@ import {
   clientsErrorKind,
   fetchAdminClients,
   formatClientRegisteredAt,
+  isAbortError,
   labelClientPeriod,
   type AdminClient,
   type AdminClientPeriod,
@@ -39,9 +40,21 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       {dir === "left" ? (
-        <path d="M15 6 9 12l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M15 6 9 12l6 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       ) : (
-        <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="m9 6 6 6-6 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       )}
     </svg>
   );
@@ -72,80 +85,109 @@ function StatusPill({ client }: { client: AdminClient }) {
   return <span className={`${styles.pill} ${styles.pillOk}`}>Активен</span>;
 }
 
+const EMPTY: AdminClientsListResponse = {
+  users: [],
+  total: 0,
+  page: 1,
+  totalPages: 1,
+};
+
 export function AdminClientsClient() {
   const titleId = useId();
   const searchId = useId();
   const periodId = useId();
-  const [data, setData] = useState<AdminClientsListResponse>({
-    users: [],
-    total: 0,
-    page: 1,
-    totalPages: 1,
-  });
+  const [data, setData] = useState<AdminClientsListResponse>(EMPTY);
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [period, setPeriod] = useState<AdminClientPeriod>("all");
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
-  const flightRef = useRef(0);
+  const [retryTick, setRetryTick] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    const t = window.setTimeout(() => {
+      const next = query.trim();
+      setDebouncedQuery((prev) => {
+        if (prev === next) return prev;
+        setPage(1);
+        return next;
+      });
+    }, 250);
     return () => window.clearTimeout(t);
   }, [query]);
 
   useEffect(() => {
-    setPage(1);
-  }, [debouncedQuery, period]);
-
-  const load = useCallback(async () => {
-    const flight = ++flightRef.current;
+    const seq = ++requestSeq.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoadState({ kind: "loading" });
-    try {
-      const res = await fetchAdminClients({
-        page,
-        limit: ADMIN_CLIENTS_DEFAULT_LIMIT,
-        search: debouncedQuery,
-        period,
-      });
-      if (flight !== flightRef.current) return;
-      setData(res);
-      setLoadState(res.users.length === 0 ? { kind: "empty" } : { kind: "ready" });
-    } catch (caught) {
-      if (flight !== flightRef.current) return;
-      setData({ users: [], total: 0, page: 1, totalPages: 1 });
-      const kind = clientsErrorKind(caught);
-      if (kind === "forbidden") {
-        setLoadState({ kind: "forbidden" });
-        return;
-      }
-      if (kind === "unauthorized") {
-        setLoadState({ kind: "unauthorized" });
-        return;
-      }
-      const message =
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось загрузить клиентов";
-      setLoadState({ kind: "error", message });
-    }
-  }, [page, debouncedQuery, period]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+    void (async () => {
+      try {
+        const res = await fetchAdminClients({
+          page,
+          limit: ADMIN_CLIENTS_DEFAULT_LIMIT,
+          search: debouncedQuery,
+          period,
+          signal: controller.signal,
+        });
+        if (seq !== requestSeq.current) return;
+        setData(res);
+        setLoadState(res.users.length === 0 ? { kind: "empty" } : { kind: "ready" });
+      } catch (caught) {
+        if (seq !== requestSeq.current || isAbortError(caught) || controller.signal.aborted) {
+          return;
+        }
+        setData(EMPTY);
+        const kind = clientsErrorKind(caught);
+        if (kind === "forbidden") {
+          setLoadState({ kind: "forbidden" });
+          return;
+        }
+        if (kind === "unauthorized") {
+          setLoadState({ kind: "unauthorized" });
+          return;
+        }
+        const message =
+          caught instanceof RemcardApiError
+            ? caught.message
+            : "Не удалось загрузить клиентов";
+        setLoadState({ kind: "error", message });
+      }
+    })();
 
-  const from = data.total === 0 || data.users.length === 0 ? 0 : (data.page - 1) * ADMIN_CLIENTS_DEFAULT_LIMIT + 1;
+    return () => {
+      controller.abort();
+    };
+  }, [page, debouncedQuery, period, retryTick]);
+
+  function retry() {
+    setRetryTick((n) => n + 1);
+  }
+
+  function onPeriodChange(next: AdminClientPeriod) {
+    setPeriod(next);
+    setPage(1);
+  }
+
+  // Range and footer always use BE total — never users.length as “база”.
+  const beTotal = data.total;
+  const from = beTotal === 0 || data.users.length === 0 ? 0 : (data.page - 1) * ADMIN_CLIENTS_DEFAULT_LIMIT + 1;
   const to =
-    data.total === 0 || data.users.length === 0
+    beTotal === 0 || data.users.length === 0
       ? 0
-      : Math.min(data.total, (data.page - 1) * ADMIN_CLIENTS_DEFAULT_LIMIT + data.users.length);
-  const canPrev = data.page > 1;
-  const canNext = data.page < data.totalPages && data.total > 0;
+      : Math.min(beTotal, (data.page - 1) * ADMIN_CLIENTS_DEFAULT_LIMIT + data.users.length);
+  const canPrev = data.page > 1 && loadState.kind !== "loading";
+  const canNext = data.page < data.totalPages && beTotal > 0 && loadState.kind !== "loading";
+  const filtered = Boolean(debouncedQuery) || period !== "all";
+  const showList = loadState.kind === "ready" || (loadState.kind === "loading" && data.users.length > 0);
 
   return (
-    <div className={styles.page} aria-labelledby={titleId}>
+    <div className={styles.page} aria-labelledby={titleId} data-admin-clients="a21b">
       <header className={styles.pageHead}>
         <div className={styles.pageHeadCopy}>
           <h1 id={titleId} className={styles.pageTitle}>
@@ -153,28 +195,32 @@ export function AdminClientsClient() {
           </h1>
           <p className={styles.pageLead}>
             Клиентская база RemCard — только для просмотра. Список строится из GET
-            /api/admin/users с role=CLIENT; поля этапа, источника-партнёра и активности
-            без согласия в этом блоке не выдумываются.
+            /api/admin/users с role=CLIENT. Общий счётчик — BE total текущего запроса, не
+            длина страницы.
           </p>
         </div>
       </header>
 
       <div className={styles.stats} aria-label="Сводка по клиентам">
         <div className={styles.statTile}>
-          <strong data-testid="clients-total">{data.total}</strong>
+          <strong data-testid="clients-total">{beTotal}</strong>
           <small>
-            {debouncedQuery || period !== "all"
-              ? "Совпадает с текущими фильтрами"
-              : "Клиентов в базе (CLIENT)"}
+            {filtered
+              ? "BE total по текущим search/period"
+              : "Клиентов CLIENT (all-time при period=all)"}
           </small>
         </div>
         <div className={styles.statTile}>
           <strong>{labelClientPeriod(period)}</strong>
-          <small>Фильтр периода регистрации (API period)</small>
+          <small>Фильтр period регистрации (не KPI обзора)</small>
         </div>
       </div>
 
-      <section className={styles.panel} aria-label="Список клиентов">
+      <section
+        className={styles.panel}
+        aria-label="Список клиентов"
+        aria-busy={loadState.kind === "loading"}
+      >
         <div className={styles.toolbar}>
           <div className={styles.searchField}>
             <SearchIcon />
@@ -186,6 +232,7 @@ export function AdminClientsClient() {
               placeholder="Имя клиента"
               aria-label="Поиск клиентов"
               data-testid="client-search"
+              autoComplete="off"
             />
           </div>
           <select
@@ -193,7 +240,8 @@ export function AdminClientsClient() {
             className={styles.filterSelect}
             value={period}
             aria-label="Период регистрации"
-            onChange={(e) => setPeriod(e.target.value as AdminClientPeriod)}
+            data-testid="client-period"
+            onChange={(e) => onPeriodChange(e.target.value as AdminClientPeriod)}
           >
             <option value="all">Все периоды</option>
             <option value="today">Сегодня</option>
@@ -201,7 +249,7 @@ export function AdminClientsClient() {
             <option value="month">Этот месяц</option>
           </select>
           <span className={styles.countHint} data-testid="clients-count-hint">
-            {data.total} клиентов
+            {beTotal} клиентов
           </span>
           <div className={styles.viewToggle} role="group" aria-label="Вид списка">
             <button
@@ -221,7 +269,7 @@ export function AdminClientsClient() {
           </div>
         </div>
 
-        {loadState.kind === "loading" ? (
+        {loadState.kind === "loading" && data.users.length === 0 ? (
           <div className={styles.stateBox} role="status">
             Загрузка клиентов…
           </div>
@@ -230,7 +278,7 @@ export function AdminClientsClient() {
         {loadState.kind === "error" ? (
           <div className={styles.stateBox} data-kind="error" role="alert">
             <div>{loadState.message}</div>
-            <button type="button" className={styles.retry} onClick={() => void load()}>
+            <button type="button" className={styles.retry} onClick={retry}>
               Повторить
             </button>
           </div>
@@ -249,14 +297,14 @@ export function AdminClientsClient() {
         ) : null}
 
         {loadState.kind === "empty" ? (
-          <div className={styles.stateBox} role="status">
+          <div className={styles.stateBox} role="status" data-testid="clients-empty">
             {debouncedQuery
               ? "Никого не найдено по этому запросу"
               : "Клиентов пока нет"}
           </div>
         ) : null}
 
-        {loadState.kind === "ready" ? (
+        {showList ? (
           <>
             <div
               className={styles.tableWrap}
@@ -277,11 +325,13 @@ export function AdminClientsClient() {
                     <tr key={client.id}>
                       <td>
                         <div className={styles.clientName}>
-                          <strong>{client.displayName}</strong>
-                          <small>{client.publicId}</small>
+                          <strong title={client.displayName}>{client.displayName}</strong>
+                          <small title={client.publicId}>{client.publicId}</small>
                         </div>
                       </td>
-                      <td>{client.city ?? "—"}</td>
+                      <td>
+                        <span className={styles.cellClamp}>{client.city ?? "—"}</span>
+                      </td>
                       <td>
                         <StatusPill client={client} />
                       </td>
@@ -304,8 +354,8 @@ export function AdminClientsClient() {
                     <div className={styles.cardTopMain}>
                       <ClientAvatar client={client} />
                       <div className={styles.clientName}>
-                        <strong>{client.displayName}</strong>
-                        <small>
+                        <strong title={client.displayName}>{client.displayName}</strong>
+                        <small title={client.publicId}>
                           {client.publicId}
                           {client.city ? ` · ${client.city}` : ""}
                         </small>
@@ -323,7 +373,7 @@ export function AdminClientsClient() {
 
             <div className={styles.footer}>
               <span data-testid="clients-range">
-                {from}–{to} из {data.total}
+                {from}–{to} из {beTotal}
               </span>
               <div className={styles.pagination}>
                 <button
@@ -354,9 +404,9 @@ export function AdminClientsClient() {
       </section>
 
       <p className={styles.helpTip}>
-        Поиск на стороне API идёт по displayName. Этапы сделки, партнёр-источник и
-        визиты без согласия в этом readonly-блоке не показываются — для них нет
-        достоверных полей в ответе role=CLIENT.
+        Параметр поиска API — <code>search</code> (не <code>q</code>). Этапы сделки,
+        партнёр-источник и визиты без согласия здесь не показываются. Создание / удаление /
+        изменение клиента в этом блоке недоступны.
       </p>
     </div>
   );
