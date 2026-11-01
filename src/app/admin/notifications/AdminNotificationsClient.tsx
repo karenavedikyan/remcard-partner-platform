@@ -224,13 +224,19 @@ export function AdminNotificationsClient() {
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
-        <h1>Уведомления платформы</h1>
-        <p className={styles.pageLead}>Inbox администратора RemCard PROF и настройки категорий/каналов.</p>
+        <div className={styles.pageHeaderMain}>
+          <h1>Уведомления</h1>
+          <p className={styles.pageLead}>События проекта в одном месте</p>
+        </div>
+        <div className={styles.pageHeadActions}>
+          <a className={styles.settingsJump} href="#admin-notify-settings-title">
+            Настройки
+          </a>
+        </div>
       </header>
 
-      <section className={styles.inboxSection} aria-labelledby="admin-notify-inbox-title">
+      <section className={styles.inboxPanel} aria-label="Inbox администратора">
         <div className={styles.inboxToolbar}>
-          <h2 id="admin-notify-inbox-title">Входящие</h2>
           <label className={styles.unreadToggle}>
             <input
               type="checkbox"
@@ -240,80 +246,90 @@ export function AdminNotificationsClient() {
             />
             <span>Только непрочитанные</span>
           </label>
+          <div className={styles.inboxToolbarSpacer} aria-hidden="true" />
           <Button
             type="button"
             variant="secondary"
+            className={styles.markAllButton}
             disabled={loading || markBusy || items.length === 0}
             onClick={() => void onMarkAllRead()}
           >
-            Прочитать все
+            Прочитать всё
           </Button>
         </div>
 
-        {error ? (
-          <div className={styles.stateBox} role="alert">
-            <p>{error}</p>
-            <button type="button" className={styles.retryButton} onClick={runFetch}>
-              Повторить
-            </button>
-          </div>
-        ) : null}
+        <div className={styles.inboxBodyRegion}>
+          {error ? (
+            <div className={styles.stateBox} role="alert">
+              <p>{error}</p>
+              <button type="button" className={styles.retryButton} onClick={runFetch}>
+                Повторить
+              </button>
+            </div>
+          ) : null}
 
-        {inboxMessage ? (
-          <p className={styles.success} role="status">
-            {inboxMessage}
-          </p>
-        ) : null}
+          {inboxMessage ? (
+            <p className={styles.success} role="status">
+              {inboxMessage}
+            </p>
+          ) : null}
 
-        {loading ? <p className={styles.stateBox}>Загрузка…</p> : null}
+          {loading ? <p className={styles.stateBox}>Загрузка…</p> : null}
 
-        {inboxEmpty ? (
-          <p className={styles.stateBox} role="status">
-            {unreadOnly ? "Непрочитанных уведомлений нет." : "Уведомлений пока нет."}
-          </p>
-        ) : null}
+          {inboxEmpty ? (
+            <p className={styles.stateBox} role="status">
+              {unreadOnly ? "Непрочитанных уведомлений нет." : "Уведомлений пока нет."}
+            </p>
+          ) : null}
 
-        {!loading && items.length > 0 ? (
-          <ul className={styles.inboxList}>
-            {items.map((item) => {
-              const actionHref = adminNotificationActionHref(item.actionUrl);
-              const unread = !item.readAt;
-              return (
-                <li key={item.id} className={styles.inboxItem} data-unread={unread || undefined}>
-                  <div className={styles.inboxMeta}>
-                    <span className={styles.categoryBadge}>{adminNotificationCategoryLabel(item)}</span>
-                    <time dateTime={item.createdAt}>{formatWhen(item.createdAt)}</time>
-                  </div>
-                  <h3 className={styles.inboxTitle}>{item.title}</h3>
-                  <p className={styles.inboxBody}>{item.body}</p>
-                  <div className={styles.inboxActions}>
-                    {actionHref ? (
-                      actionHref.startsWith("http") ? (
-                        <a href={actionHref} target="_blank" rel="noopener noreferrer">
-                          Открыть карточку
-                        </a>
-                      ) : (
-                        <Link href={actionHref}>Открыть карточку</Link>
-                      )
-                    ) : item.actionUrl ? (
-                      <span className={styles.untrustedLink}>Ссылка недоступна (не доверенный маршрут)</span>
-                    ) : null}
-                    {unread ? (
-                      <button
-                        type="button"
-                        className={styles.markRead}
-                        disabled={markBusy}
-                        onClick={() => void onMarkRead(item.id)}
-                      >
-                        Прочитано
-                      </button>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
+          {!loading && items.length > 0 ? (
+            <ul className={styles.inboxList}>
+              {items.map((item) => {
+                const actionHref = adminNotificationActionHref(item.actionUrl);
+                const unread = !item.readAt;
+                return (
+                  <li key={item.id} className={styles.inboxItem} data-unread={unread || undefined}>
+                    <div className={styles.inboxRow}>
+                      <span className={styles.categoryBadge}>{adminNotificationCategoryLabel(item)}</span>
+                      <div className={styles.inboxMain}>
+                        <div className={styles.inboxTitleRow}>
+                          <h3 className={styles.inboxTitle}>{item.title}</h3>
+                          <time className={styles.inboxTime} dateTime={item.createdAt}>
+                            {formatWhen(item.createdAt)}
+                          </time>
+                        </div>
+                        <p className={styles.inboxBody}>{item.body}</p>
+                        <div className={styles.inboxActions}>
+                          {actionHref ? (
+                            actionHref.startsWith("http") ? (
+                              <a href={actionHref} target="_blank" rel="noopener noreferrer">
+                                Открыть карточку
+                              </a>
+                            ) : (
+                              <Link href={actionHref}>Открыть карточку</Link>
+                            )
+                          ) : item.actionUrl ? (
+                            <span className={styles.untrustedLink}>Ссылка недоступна (не доверенный маршрут)</span>
+                          ) : null}
+                          {unread ? (
+                            <button
+                              type="button"
+                              className={styles.markRead}
+                              disabled={markBusy}
+                              onClick={() => void onMarkRead(item.id)}
+                            >
+                              Прочитано
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
 
         {!loading && !error && (items.length > 0 || nextCursor) ? (
           <div className={styles.pagination}>
