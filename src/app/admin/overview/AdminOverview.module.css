@@ -17,7 +17,12 @@
   justify-content: space-between;
   gap: var(--space-6);
   align-items: center;
-  margin-bottom: 0;
+  /* Prototype .page-head margin-bottom (--s6) atop .wrap gap (--space-5). */
+  margin-bottom: calc(var(--space-6) - var(--space-5));
+}
+
+.headerCopy {
+  min-width: 0;
 }
 
 .header h1 {
@@ -30,11 +35,23 @@
   color: var(--ink);
 }
 
+/* Prototype .page-head > p lead (R1 overview subtitle; data timestamp stays separate). */
+.lead {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  color: var(--muted);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .meta {
   margin: var(--space-2) 0 0;
   font-size: var(--text-xs);
   line-height: 1.7;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Period switcher — keep buttons (not prototype <select>), restyle toward head-actions control */
