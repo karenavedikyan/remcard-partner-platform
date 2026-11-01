@@ -93,7 +93,8 @@
 
 /*
  * R1 close .btn.icon measured ~44×46, radius 10, 1px line border, pad 12,
- * font 14px/700, line-height 22.4 (1.6). Glyph × centered in box.
+ * font 14px/700, line-height 22.4 (1.6). Glyph: Lucide SVG `x` (not text ×).
+ * Frozen roles.css: `svg { width/height: 20px; stroke-width: 1.7 }` — attrs stay 24/2.
  */
 .closeBtn {
   flex-shrink: 0;
@@ -113,6 +114,15 @@
   display: grid;
   place-items: center;
   box-sizing: border-box;
+}
+
+.closeIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+  pointer-events: none;
+  stroke-width: 1.7;
 }
 
 .closeBtn:disabled {
