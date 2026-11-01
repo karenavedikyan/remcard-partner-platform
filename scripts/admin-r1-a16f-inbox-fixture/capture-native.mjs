@@ -259,11 +259,9 @@ async function run() {
         await page.getByRole("checkbox", { name: /только непрочитанные/i }).click();
         await page.getByRole("heading", { name: "Новый партнёр зарегистрирован" }).waitFor();
         await page.getByRole("button", { name: "Дальше" }).click();
-        await page.getByRole("heading", { name: "Страница 2 — непрочитанное" }).waitFor();
-        const titles = await page.evaluate(() =>
-          [...document.querySelectorAll("h3.inboxTitle, .inboxTitle")].map((h) => h.textContent?.trim()),
-        );
-        return { pageTitles: titles, uniqueTitles: new Set(titles).size === titles.length };
+        await page.getByRole("heading", { name: "Страница 2 — непрочитанное", level: 3 }).waitFor();
+        const page2Title = (await page.getByRole("heading", { name: "Страница 2 — непрочитанное", level: 3 }).textContent())?.trim();
+        return { page2Title, reachedPage2: page2Title === "Страница 2 — непрочитанное" };
       },
     },
     {
@@ -271,13 +269,25 @@ async function run() {
       run: async (page, base) => {
         await qaFetch(base, "/__qa/reset", { method: "POST", body: "{}" });
         await openNotifications(page);
-        await qaFetch(base, "/__qa/scenario", { method: "POST", body: JSON.stringify({ listFailOnce: true }) });
         await page.getByRole("button", { name: "Прочитано" }).first().click();
-        await page.getByText(/не удалось обновить список|не удалось отметить/i).waitFor({ timeout: 30_000 });
+        await page.waitForFunction(() => document.querySelectorAll("li[data-unread]").length === 2);
+        const afterMark = await logMetrics(base);
+        await qaFetch(base, "/__qa/scenario", { method: "POST", body: JSON.stringify({ scenario: "list-error" }) });
+        await page.getByRole("checkbox", { name: /только непрочитанные/i }).click();
+        await page.getByRole("alert").filter({ hasText: /Synthetic upstream failure|не удалось загрузить/i }).waitFor({
+          timeout: 30_000,
+        });
+        await qaFetch(base, "/__qa/scenario", { method: "POST", body: JSON.stringify({ scenario: "default" }) });
         await page.getByRole("button", { name: "Повторить" }).click();
         await page.waitForFunction(() => document.querySelectorAll("li[data-unread]").length === 2);
-        const metrics = await logMetrics(base);
-        return { unreadCount: metrics.unreadCount, markOne: metrics.markOne };
+        await page.getByRole("checkbox", { name: /только непрочитанные/i }).click();
+        await page.waitForFunction(() => document.querySelectorAll("li[data-unread]").length === 2);
+        const afterRetry = await logMetrics(base);
+        return {
+          unreadAfterMark: afterMark.unreadCount,
+          unreadAfterRetry: afterRetry.unreadCount,
+          markOne: afterRetry.markOne,
+        };
       },
     },
     {
