@@ -194,9 +194,8 @@ export function AdminClientsClient() {
             Клиенты
           </h1>
           <p className={styles.pageLead}>
-            Клиентская база RemCard — только для просмотра. Список строится из GET
-            /api/admin/users с role=CLIENT. Общий счётчик — BE total текущего запроса, не
-            длина страницы.
+            Клиентская база RemCard — только для просмотра.
+            Найдите клиента по имени или выберите период регистрации.
           </p>
         </div>
       </header>
@@ -206,13 +205,13 @@ export function AdminClientsClient() {
           <strong data-testid="clients-total">{beTotal}</strong>
           <small>
             {filtered
-              ? "BE total по текущим search/period"
-              : "Клиентов CLIENT (all-time при period=all)"}
+              ? "Клиентов по выбранным условиям"
+              : "Всего клиентов"}
           </small>
         </div>
         <div className={styles.statTile}>
           <strong>{labelClientPeriod(period)}</strong>
-          <small>Фильтр period регистрации (не KPI обзора)</small>
+          <small>Период регистрации</small>
         </div>
       </div>
 

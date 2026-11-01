@@ -12,7 +12,8 @@ const css = cssBytes.toString("utf8");
 const MARKER = "/* === P6a: modal-primary specialization/stage filters (prefix above immutable) === */";
 const PREFIX_BYTES = 1929;
 const PREFIX_SHA256 = "87e316d8ecbb59fedd293f06073ac17bd0f333a76236d3b613f3bad7430a72be";
-const TSX_SHA256 = "e3f858eba98b4f073f3662be8d62463c61e689074aeeed2c908a75d473004c69";
+// Approved P25c change resets incompatible taxonomy on partner-type selection.
+const TSX_SHA256 = "9d4eab2781c225651177b7f50895be153bc3d39297b88cff29249ef4efec1362";
 
 vi.mock("@/lib/partner-taxonomy", () => ({
   fetchPartnerTaxonomy: vi.fn(),
@@ -77,7 +78,7 @@ describe("AgentPartnerDiscoveryFilters P6a presentation", () => {
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("keeps TSX blob frozen and preserves native select contract / full hint text", async () => {
+  it("keeps the approved TSX baseline and preserves native select contract / full hint text", async () => {
     const tsx = readFileSync(path.join(__dirname, "AgentPartnerDiscoveryFilters.tsx"));
     expect(createHash("sha256").update(tsx).digest("hex")).toBe(TSX_SHA256);
 

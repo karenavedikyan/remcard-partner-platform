@@ -14,7 +14,10 @@ describe("A20a admin analytics BFF allowlist (GET only)", () => {
   });
 
   it("rejects other admin routes outside the single analytics GET entry", () => {
-    expect(isAllowedProxyRoute("GET", "/api/admin/users")).toBe(false);
+    // A21 adds this separate, exact read-only endpoint; mutations stay denied.
+    expect(isAllowedProxyRoute("GET", "/api/admin/users")).toBe(true);
+    expect(isAllowedProxyRoute("POST", "/api/admin/users")).toBe(false);
+    expect(isAllowedProxyRoute("GET", "/api/admin/users/other")).toBe(false);
     expect(isAllowedProxyRoute("GET", "/api/admin/partners")).toBe(false);
   });
 });
