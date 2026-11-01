@@ -155,7 +155,7 @@ describe("PROF admin partner registry display (R1)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Проверочный партнёр/ }));
     await screen.findByLabelText("Причина");
     fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Проверка" } });
-    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Видимость в каталоге" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Проверка не выполнена");
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
   });

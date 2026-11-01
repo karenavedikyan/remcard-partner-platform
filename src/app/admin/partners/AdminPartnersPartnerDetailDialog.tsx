@@ -13,6 +13,7 @@ import {
 import {
   catalogDetailCopy,
   catalogVisibilityToken,
+  cooperationVisibilityToken,
   partnerIdentitySubtitle,
   partnerInitials,
   partnerPublicIdLine,
@@ -107,6 +108,7 @@ export function AdminPartnersPartnerDetailDialog({
   const lastPostApplyKeyRef = useRef(0);
 
   const catalog = catalogVisibilityToken(row);
+  const cooperation = cooperationVisibilityToken(row);
   const searchPrimary = effectivePartnerSearchPrimaryLabel(row);
   const searchSetting = adminSearchOverrideSettingLabel(row.partnerSearchVisibility);
   const showControl = partnerSearchActionControl(row, PARTNER_SEARCH_LIFECYCLE_ACTION.show);
@@ -117,6 +119,16 @@ export function AdminPartnersPartnerDetailDialog({
   const partnershipStat = hasPartnershipCounts(row)
     ? formatRegistryCount(row.partnershipCounts.total)
     : "—";
+  const catalogSwitchOn = catalog.visible === true;
+  const searchSwitchOn = cooperation.visible === true;
+  const catalogSwitchDisabled =
+    disabled || isApplying || catalog.visible === null;
+  const searchSwitchDisabled =
+    disabled ||
+    isApplying ||
+    cooperation.visible === null ||
+    (searchSwitchOn ? hideControl.disabled : showControl.disabled);
+  const searchSwitchHint = searchSwitchOn ? hideControl.hint : showControl.hint;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -311,67 +323,75 @@ export function AdminPartnersPartnerDetailDialog({
               <h3>Публичный каталог</h3>
               <p>{catalogDetailCopy(catalog)}</p>
             </div>
-            <div className={styles.detailToggleActions} role="group" aria-label="Действия каталога">
-              <Button
-                variant="secondary"
-                disabled={disabled || isApplying}
-                onClick={() => void onRequestPreview("publish_catalog")}
-              >
-                Вернуть в каталог
-              </Button>
-              <Button
-                variant="secondary"
-                className={styles.danger}
-                disabled={disabled || isApplying}
-                onClick={() => void onRequestPreview("hide_catalog")}
-              >
-                Убрать из каталога
-              </Button>
+            <div className={styles.switchLabel}>
+              <button
+                type="button"
+                role="switch"
+                className={styles.visibilitySwitch}
+                aria-checked={catalogSwitchOn}
+                aria-label="Видимость в каталоге"
+                title="Запросит подтверждение; без немедленного применения"
+                disabled={catalogSwitchDisabled}
+                data-visibility-switch="catalog"
+                onClick={() => {
+                  if (catalog.visible === true) void onRequestPreview("hide_catalog");
+                  else if (catalog.visible === false) void onRequestPreview("publish_catalog");
+                }}
+              />
             </div>
           </div>
           <div className={styles.detailSettingsRow}>
             <div className={styles.detailSettingsCopy}>
               <h3>Поиск сотрудничества</h3>
+              <p>
+                {searchPrimary ??
+                  (cooperation.visible === true
+                    ? "Другие партнёры могут найти"
+                    : cooperation.visible === false
+                      ? "Другие партнёры не видят в поиске"
+                      : "Нет данных с сервера")}
+              </p>
               <dl className={styles.searchControlStatus}>
-                <div>
-                  <dt>Фактически в поиске</dt>
-                  <dd>{searchPrimary ?? "Нет данных с сервера"}</dd>
-                </div>
                 <div>
                   <dt>Решение администратора</dt>
                   <dd>{searchSetting}</dd>
                 </div>
               </dl>
             </div>
-            <div
-              className={styles.detailToggleActions}
-              role="group"
-              aria-label="Действия поиска сотрудничества"
-            >
-              <Button
-                variant="secondary"
-                disabled={disabled || isApplying || showControl.disabled}
-                title={showControl.hint ?? undefined}
-                onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.show)}
-              >
-                Показывать партнёрам
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={disabled || isApplying || hideControl.disabled}
-                title={hideControl.hint ?? undefined}
-                onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.hide)}
-              >
-                Скрыть от партнёров
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={disabled || isApplying || resetControl.disabled}
-                title={resetControl.hint ?? undefined}
-                onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.reset)}
-              >
-                По правилам регистрации
-              </Button>
+            <div className={styles.detailSearchSwitchCluster}>
+              <div className={styles.switchLabel}>
+                <button
+                  type="button"
+                  role="switch"
+                  className={styles.visibilitySwitch}
+                  aria-checked={searchSwitchOn}
+                  aria-label="Видимость в сотрудничестве"
+                  title={
+                    searchSwitchHint ??
+                    "Запросит подтверждение; без немедленного применения"
+                  }
+                  disabled={searchSwitchDisabled}
+                  data-visibility-switch="cooperation"
+                  onClick={() => {
+                    if (searchSwitchOn) {
+                      void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.hide);
+                    } else {
+                      void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.show);
+                    }
+                  }}
+                />
+              </div>
+              {!resetControl.disabled ? (
+                <Button
+                  variant="secondary"
+                  className={styles.resetSearchRules}
+                  disabled={disabled || isApplying || resetControl.disabled}
+                  title={resetControl.hint ?? undefined}
+                  onClick={() => void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.reset)}
+                >
+                  По правилам регистрации
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>

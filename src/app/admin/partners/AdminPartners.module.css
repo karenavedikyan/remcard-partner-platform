@@ -2019,6 +2019,70 @@
   color: var(--muted);
 }
 
+/* R1 proto .switch — presentation only; click still opens preview/confirm. */
+.switchLabel {
+  display: flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.visibilitySwitch {
+  width: 42px;
+  height: 25px;
+  border-radius: 14px;
+  background: var(--line);
+  padding: 3px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  border: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.visibilitySwitch::before {
+  content: "";
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px #0002;
+}
+
+.visibilitySwitch[aria-checked="true"] {
+  background: #c12b2f;
+  justify-content: flex-end;
+}
+
+.visibilitySwitch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.visibilitySwitch:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.detailSearchSwitchCluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.resetSearchRules {
+  min-height: 38px !important;
+  font-size: 0.75rem !important;
+  padding-inline: 10px !important;
+}
+
 .detailSettingsCopy .searchControlStatus dt::after {
   content: ":";
 }

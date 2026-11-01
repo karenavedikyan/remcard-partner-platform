@@ -92,8 +92,8 @@ async function openManagement(name: string) {
 describe("Admin partner search visibility controls", () => {
   it("shows search actions in table management panel with demo badge unchanged", async () => {
     const panel = await openManagement("Legacy Demo Visible");
-    expect(within(panel).getByRole("button", { name: "Показывать партнёрам" })).toBeTruthy();
-    expect(within(panel).getByRole("button", { name: "Скрыть от партнёров" })).toBeTruthy();
+    const searchSwitch = within(panel).getByRole("switch", { name: "Видимость в сотрудничестве" });
+    expect(searchSwitch).toHaveAttribute("aria-checked", "true");
     expect(within(panel).getByRole("button", { name: "По правилам регистрации" })).toBeTruthy();
     expect(screen.getAllByText("Демо").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Виден партнёрам по решению администратора").length).toBeGreaterThan(0);
@@ -103,7 +103,7 @@ describe("Admin partner search visibility controls", () => {
   it("runs preview and apply for hide_partner_search with reason and refreshes registry", async () => {
     const panel = await openManagement("Legacy Demo Visible");
     fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Скрыть из поиска" } });
-    fireEvent.click(within(panel).getByRole("button", { name: "Скрыть от партнёров" }));
+    fireEvent.click(within(panel).getByRole("switch", { name: "Видимость в сотрудничестве" }));
     await waitFor(() =>
       expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("demo-show", "hide_partner_search"),
     );
@@ -122,7 +122,7 @@ describe("Admin partner search visibility controls", () => {
   it("disables show for hard-gated archived partner without calling preview", async () => {
     const panel = await openManagement("Archived Partner");
     fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Попытка" } });
-    expect(within(panel).getByRole("button", { name: "Показывать партнёрам" })).toBeDisabled();
+    expect(within(panel).getByRole("switch", { name: "Видимость в сотрудничестве" })).toBeDisabled();
     expect(api.previewPartnerLifecycle).not.toHaveBeenCalled();
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
   });
@@ -134,7 +134,7 @@ describe("Admin partner search visibility controls", () => {
     await ui.click(screen.getByRole("button", { name: "Карточки" }));
     await ui.click(screen.getAllByRole("button", { name: /Открыть карточку/ })[0]!);
     const panel = screen.getByRole("region", { name: /Управление партнёром Legacy Demo Visible/ });
-    expect(within(panel).getByRole("button", { name: "Показывать партнёрам" })).toBeTruthy();
+    expect(within(panel).getByRole("switch", { name: "Видимость в сотрудничестве" })).toBeTruthy();
   });
 
   it("keeps apply rejection visible after registry reload and busy state settles", async () => {
@@ -161,7 +161,7 @@ describe("Admin partner search visibility controls", () => {
     fireEvent.click(within(row).getByRole("button", { name: /Открыть карточку/ }));
     const panel = screen.getByRole("region", { name: /Управление партнёром Demo Hidden Search/ });
     fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
-    fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
+    fireEvent.click(within(panel).getByRole("switch", { name: "Видимость в сотрудничестве" }));
     await screen.findByRole("button", { name: "Подтвердить" });
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
 
@@ -220,7 +220,7 @@ describe("Admin partner search visibility controls", () => {
     fireEvent.click(within(row).getByRole("button", { name: /Открыть карточку/ }));
     const panel = screen.getByRole("region", { name: /Управление партнёром Demo Hidden Search/ });
     fireEvent.change(within(panel).getByLabelText("Причина"), { target: { value: "Показать демо" } });
-    fireEvent.click(within(panel).getByRole("button", { name: "Показывать партнёрам" }));
+    fireEvent.click(within(panel).getByRole("switch", { name: "Видимость в сотрудничестве" }));
     await screen.findByRole("button", { name: "Подтвердить" });
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Профиль был архивирован"));

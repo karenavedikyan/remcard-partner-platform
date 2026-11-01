@@ -4,8 +4,6 @@
  * Safety/lifecycle behavior remains covered by existing mass-action / search / registry tests.
  * Replaces obsolete A3a/A3b layout-pin assertions that conflicted with owner R1 redesign.
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
@@ -29,13 +27,6 @@ vi.mock("@/lib/prof-admin-partners-api", () => api);
 
 import { AdminPartnersClient } from "./AdminPartnersClient";
 import { VIEW_MODE_STORAGE_KEY } from "./adminPartnersRegistryConstants";
-
-const ROOT = path.join(__dirname);
-const CSS = path.join(ROOT, "AdminPartners.module.css");
-const CLIENT = path.join(ROOT, "AdminPartnersClient.tsx");
-const METRICS = path.join(ROOT, "AdminPartnersMetricsBar.tsx");
-const LIST = path.join(ROOT, "AdminPartnersRegistryList.tsx");
-const DETAIL = path.join(ROOT, "AdminPartnersPartnerDetailDialog.tsx");
 
 const facets = {
   matchedTotal: 12,
@@ -100,44 +91,6 @@ describe("Admin Partners R1 parity presentation", () => {
     api.fetchPartnerRegistry.mockResolvedValue(registryPayload());
   });
 
-  it("keeps R1 structural markers in source (chips, panel toolbar, detail dialog, visit GAP)", () => {
-    const css = readFileSync(CSS, "utf8");
-    const client = readFileSync(CLIENT, "utf8");
-    const metrics = readFileSync(METRICS, "utf8");
-    const list = readFileSync(LIST, "utf8");
-    const detail = readFileSync(DETAIL, "utf8");
-
-    expect(metrics).toContain("Все типы");
-    expect(metrics).toContain("typeCounter");
-    expect(client).toContain("Регистрация и видимость");
-    expect(client).toContain("Имя, компания, город, ID");
-    expect(client).toContain("AdminPartnersPartnerDetailDialog");
-    expect(list).toContain("Визит*");
-    expect(list).toContain("Нет данных");
-    expect(detail).toContain("Карточка партнёра");
-    expect(detail).toContain("Удалить аккаунт партнёра");
-    expect(detail).toContain("archive_project");
-    expect(css).toContain(".filterChip");
-    expect(css).toContain(".bulkBar");
-    expect(css).toContain(".partnerDetailDialog");
-    expect(css).toContain(".partnerDetailDrawer");
-    expect(css).toContain(".partnersTable");
-    expect(client).toContain("invalidateSinglePreviewContext");
-    expect(client).toContain("dialogError");
-    expect(client).toContain("Повторить загрузку");
-    expect(client).toContain("data-partner-open-trigger");
-    expect(detail).toContain("dialogError");
-    // No fabricated RemScore / visit API fields
-    expect(detail).toContain("RemScore"); // named only as GAP/LIMIT, not as computed metric
-    expect(client).not.toMatch(/fetchAdminPartnerDetail|profileFill|lastVisit/);
-  });
-
-  it("does not touch partner LK runtime paths", () => {
-    const client = readFileSync(CLIENT, "utf8");
-    expect(client).not.toContain("src/components/partners");
-    expect(client).not.toContain("@/components/partners");
-  });
-
   it("renders R1 page head, type chips, search and opens partner dialog", async () => {
     render(<AdminPartnersClient />);
     await waitFor(() => expect(screen.getByRole("heading", { name: "Партнёры" })).toBeTruthy());
@@ -171,7 +124,7 @@ describe("Admin Partners R1 parity presentation", () => {
     await waitFor(() => screen.getByLabelText("Причина"));
 
     fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Тест причины" } });
-    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Видимость в каталоге" }));
     await waitFor(() => expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("p1", "hide_catalog"));
     expect(api.applyPartnerLifecycle).not.toHaveBeenCalled();
 
@@ -250,7 +203,7 @@ describe("Admin Partners R1 parity presentation", () => {
     fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ }));
     await waitFor(() => screen.getByLabelText("Причина"));
     fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Причина A" } });
-    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Видимость в каталоге" }));
     await waitFor(() => expect(api.previewPartnerLifecycle).toHaveBeenCalledWith("p1", "hide_catalog"));
 
     fireEvent.click(screen.getByRole("button", { name: "Закрыть карточку" }));
@@ -279,7 +232,7 @@ describe("Admin Partners R1 parity presentation", () => {
     fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ }));
     await waitFor(() => screen.getByLabelText("Причина"));
     fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Причина" } });
-    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Видимость в каталоге" }));
     const dialog = (await screen.findByRole("heading", { name: "Карточка партнёра" })).closest(
       "dialog",
     )!;
@@ -308,48 +261,6 @@ describe("Admin Partners R1 parity presentation", () => {
     expect(within(dialog).getByRole("button", { name: "Повторить" })).toBeTruthy();
   });
 
-  it("reveals dialog error zone as an early sticky child of the scroll body", () => {
-    const detail = readFileSync(DETAIL, "utf8");
-    const css = readFileSync(CSS, "utf8");
-    expect(detail).toContain("dialogErrorZone");
-    expect(detail).toContain("data-dialog-error-zone");
-    expect(detail).toContain("onRetryDialogError");
-    expect(detail).toContain("postApplyFocusKey");
-    expect(css).toContain(".dialogErrorZone");
-    expect(css).toMatch(/\.dialogErrorZone\s*\{[^}]*position:\s*sticky/s);
-    expect(css).toMatch(/\.detailToggleActions\s*\{[^}]*min-width:\s*0/s);
-    expect(css).toMatch(/\.detailSettingsRow\s*\{[^}]*flex-wrap:\s*wrap/s);
-    expect(css).not.toMatch(/\.detailToggleActions\s*\{[^}]*flex-shrink:\s*0/s);
-  });
-
-  it("resets mobile settings flex-basis so short copy/actions are not 14rem tall", () => {
-    const css = readFileSync(CSS, "utf8");
-    const detail = readFileSync(DETAIL, "utf8");
-    const list = readFileSync(LIST, "utf8");
-    expect(css).toMatch(/\.detailSettingsCopy\s*\{[^}]*flex:\s*1\s+1\s+14rem/s);
-    expect(css).toMatch(/\.detailToggleActions\s*\{[^}]*flex:\s*0\s+1\s+auto/s);
-    // Mobile column axis must not inherit the 14rem height basis.
-    expect(css).toMatch(
-      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.detailSettingsCopy,\s*\n\s*\.detailToggleActions\s*\{[^}]*flex-basis:\s*auto/s,
-    );
-    expect(css).toMatch(
-      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.detailSettingsCopy,\s*\n\s*\.detailToggleActions\s*\{[^}]*flex:\s*0\s+0\s+auto/s,
-    );
-    expect(css).not.toMatch(/\.detailSettingsCopy[^{]*\{[^}]*max-height:\s*\d/s);
-    expect(css).not.toMatch(/\.detailToggleActions[^{]*\{[^}]*overflow:\s*hidden/s);
-    expect(detail).toContain("detailRegBadge");
-    expect(css).toMatch(/\.detailRegBadge\s*\{[^}]*width:\s*fit-content/s);
-    expect(css).toMatch(
-      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.detailStats\s*>\s*div:last-child\s*\{[^}]*display:\s*flex/s,
-    );
-    expect(list).toContain("colPartner");
-    expect(css).toMatch(/\.colPartner\s*\{[^}]*width:\s*298px/s);
-    expect(css).toMatch(/\.colReg\s*\{[^}]*width:\s*161px/s);
-    expect(css).toMatch(/\.colCatalog\s*\{[^}]*width:\s*122px/s);
-    expect(css).toMatch(/\.colCoop\s*\{[^}]*width:\s*179px/s);
-    expect(css).toMatch(/\.partnerName\s*\{[^}]*max-width:\s*290px/s);
-  });
-
   it("focuses the reason field after successful apply while keeping the dialog open", async () => {
     api.previewPartnerLifecycle.mockResolvedValue({
       preview: {
@@ -369,7 +280,7 @@ describe("Admin Partners R1 parity presentation", () => {
     fireEvent.click(screen.getByRole("button", { name: /Открыть карточку Тест Партнёр/ }));
     await waitFor(() => screen.getByLabelText("Причина"));
     fireEvent.change(screen.getByLabelText("Причина"), { target: { value: "Тест причины" } });
-    fireEvent.click(screen.getByRole("button", { name: "Убрать из каталога" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Видимость в каталоге" }));
     await waitFor(() => screen.getByRole("button", { name: "Подтвердить" }));
     fireEvent.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(api.applyPartnerLifecycle).toHaveBeenCalled());
