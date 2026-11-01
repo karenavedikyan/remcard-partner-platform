@@ -21,6 +21,7 @@ export default defineConfig({
       "src/app/admin/moderation/ModerationPreview.a14b-presentation.test.tsx",
       "src/app/admin/moderation/ModerationQueueDetail.a18a-presentation.test.tsx",
       "src/app/admin/moderation/ModerationDetailCompletion.a18c-presentation.test.tsx",
+      "src/app/admin/moderation/ModerationDecisions.a18b-presentation.test.tsx",
       "src/app/admin/moderation/organizations/[id]/OrganizationModerationDetail.branch-actions.test.tsx",
       "src/app/admin/moderation/organizations/[id]/OrganizationModerationDetail.actions.test.tsx",
       "src/app/admin/moderation/partners/[id]/PartnerModerationDetail.actions.test.tsx",
