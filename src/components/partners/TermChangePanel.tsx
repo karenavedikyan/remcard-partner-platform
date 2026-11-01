@@ -639,6 +639,7 @@ export function TermChangePanel({
             ) : null}
             {isModal && pendingRequest ? null : (
               <Button
+                className={isModal ? styles.submitPrimary : undefined}
                 disabled={!canPropose}
                 onClick={() => void submitProposal()}
                 data-testid="term-change-submit"

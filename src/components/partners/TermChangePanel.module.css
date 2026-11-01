@@ -10,10 +10,23 @@
 }
 
 .panelModal {
+  /* Scoped R1 roles tokens — do not edit global theme. */
+  --term-muted: #61645f; /* rgb(97,100,95) */
+  --term-ink: #242623;
+  --term-accent: #bb3035; /* rgb(187,48,53) */
+  --term-onaccent: #fff;
   display: grid;
-  gap: var(--space-3);
+  /* R1 dialog-body gap --s4 = 16px */
+  gap: 16px;
   min-width: 0;
   max-width: 100%;
+}
+
+:global([data-theme="dark"]) .panelModal {
+  --term-muted: #b5b9b2;
+  --term-ink: #f1f0eb;
+  --term-accent: #f49391; /* rgb(244,147,145) */
+  --term-onaccent: #271b1a;
 }
 
 .headerRow {
@@ -31,9 +44,11 @@
 }
 
 .partnerName {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
+  margin: 0;
+  /* R1 partner muted line measured 16px / 1.6 */
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--term-muted, var(--muted));
 }
 
 .closeButton {
@@ -42,11 +57,13 @@
 
 .notice {
   margin: 0;
-  padding: var(--space-3);
-  border-radius: 8px;
+  /* R1 .notice: padding --s4, radius 10px; copy uses muted 14px inside product notice */
+  padding: 16px;
+  border-radius: 10px;
   background: var(--offset);
-  font-size: var(--text-sm);
-  line-height: 1.45;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--term-muted, var(--muted));
 }
 
 .subheading {
@@ -56,8 +73,9 @@
 }
 
 .meta {
-  font-size: var(--text-sm);
-  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--term-muted, var(--muted));
 }
 
 .termCompare {
@@ -122,24 +140,56 @@
 .actionsModal {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  /* R1 #coop-term-footer: gap 8px, margin-top 24px, space-between */
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
+  margin-top: 24px;
 }
 
 .cancelGhost {
-  border: 0 !important;
+  /* R1 .btn.ghost measured: 14px / 700 / lh 22.4, transparent bg/border, ink, pad 12×20 */
+  border: 1px solid transparent !important;
   background: transparent !important;
-  color: var(--muted);
-  font-weight: 650;
-  padding-inline: 0;
+  color: var(--term-ink, var(--ink));
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 12px 20px;
   min-height: 44px;
-  justify-content: flex-start;
+  border-radius: 10px;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .cancelGhost:hover:not(:disabled) {
-  color: var(--ink);
-  background: transparent !important;
+  color: var(--term-ink, var(--ink));
+  background: var(--offset, transparent) !important;
+  filter: none;
+}
+
+/*
+ * R1 .btn.primary submit measured: 14px/700/lh22.4, accent/onaccent, pad 12×20, h≈48.39.
+ * Attribute selector beats Button.module.css without global theme edits.
+ */
+.actionsModal :global(button[data-testid="term-change-submit"]),
+.submitPrimary {
+  background: var(--term-accent);
+  color: var(--term-onaccent);
+  border: 1px solid var(--term-accent);
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.actionsModal :global(button[data-testid="term-change-submit"]:hover:not(:disabled)),
+.submitPrimary:hover:not(:disabled) {
+  filter: brightness(0.94);
+  background: var(--term-accent);
+  color: var(--term-onaccent);
 }
 
 .proposal {
@@ -168,11 +218,22 @@
 
 .termTable th,
 .termTable td {
-  padding: 0.55rem 0.45rem;
+  /* R1 measured cell pad 8.8×7.2 */
+  padding: 8.8px 7.2px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
   overflow-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.termTable thead th {
+  /* R1 desktop th: 12px / 700 / muted */
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--term-muted, var(--muted));
 }
 
 .termTable thead th:nth-child(1),
@@ -200,12 +261,27 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 0.45rem 0.55rem;
+  /* R1 .coop-percent-input: pad 0.45/0.55rem, radius 8, ~14px type */
+  padding: 7.2px 8.8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
   color: inherit;
+}
+
+/* Keep type=number semantics; hide UA spinner chrome to match R1 text inputs. */
+.percentInput::-webkit-outer-spin-button,
+.percentInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.percentInput {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .percentInput:disabled {
@@ -276,7 +352,12 @@
 
   .termTable tbody th {
     font-weight: 700;
+    font-size: 14px;
     padding-bottom: 0.35rem;
+  }
+
+  .termTable thead th {
+    font-size: 14px;
   }
 
   .termTable td:nth-child(2)::before {

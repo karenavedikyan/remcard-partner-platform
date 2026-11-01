@@ -1,9 +1,7 @@
-/* P15: C1 term-change shell — match frozen R1 rendered dialog box
- * Independent R1 geometry (border-box of #role-dialog):
- *   1440 → width 620, centered
- *   375  → x 19, width 337  (= viewport − 38)
- *   320  → x 19, width 282
- * Backdrop gutters 19px; sheet fills the padded area (no double-subtract).
+/* P15 shell geometry (frozen measured border-box) — do not regress:
+ *   1440 → width 620; 375 → x19/w337; 320 → x19/w282
+ * P17b inner chrome — measured from frozen #role-dialog (padding 24px, no head divider).
+ * Exact px for title/buttons — avoid FE fluid --text-* clamp (was 14–14.8 vs R1 14).
  */
 
 .backdrop {
@@ -33,39 +31,46 @@
   min-width: 0;
 }
 
+/* R1 dialog-head: flex, gap 12px, align center, margin-bottom 20px, no border. */
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-5) var(--space-4);
-  border-bottom: 1px solid var(--line);
+  gap: 12px;
+  padding: 24px 24px 0;
+  border-bottom: 0;
   flex-shrink: 0;
 }
 
+/* R1 h2 measured: 18px / 700 / line-height 25.2 (1.4) / letter-spacing normal */
 .header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  line-height: 1.4;
+  letter-spacing: normal;
   overflow-wrap: anywhere;
 }
 
+/* R1 close .btn.icon measured ~44×46, radius 10, 1px line border, pad 12. */
 .closeBtn {
   flex-shrink: 0;
   width: 44px;
-  height: 44px;
+  height: 46px;
   min-width: 44px;
-  min-height: 44px;
+  min-height: 46px;
+  padding: 12px;
   border: 1px solid var(--line);
   background: var(--surface);
-  font-size: 1.35rem;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--ink);
   border-radius: 10px;
   display: grid;
   place-items: center;
+  box-sizing: border-box;
 }
 
 .closeBtn:disabled {
@@ -83,10 +88,11 @@
   background: var(--offset, var(--surface-muted));
 }
 
+/* R1: head margin-bottom 20px + dialog pad 24px sides/bottom. */
 .body {
   flex: 1 1 auto;
   overflow: auto;
-  padding: var(--space-5);
+  padding: 20px 24px 24px;
   min-width: 0;
   -webkit-overflow-scrolling: touch;
 }
@@ -114,10 +120,13 @@
     border-radius: 16px;
   }
 
-  .header,
+  /* Keep R1 24px dialog gutters on narrow — not the prior 16px FE chrome. */
+  .header {
+    padding: 24px 24px 0;
+  }
+
   .body {
-    padding-left: var(--space-4);
-    padding-right: var(--space-4);
+    padding: 20px 24px 24px;
   }
 }
 
