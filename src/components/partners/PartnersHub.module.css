@@ -190,7 +190,56 @@
   padding-right: 2px;
 }
 
-/* P23a: frozen pr-showcase-layout — 236px rail + main; 2-col card grid on desktop. */
+/* P23b: frozen hub-wide body — search/refine row, then 236px rail + results. */
+.findShell {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.findToolbarRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: start;
+  min-width: 0;
+}
+
+.findRefine {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0;
+  background: transparent;
+  min-width: 0;
+  align-self: start;
+}
+
+.findRefine > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.findRefine > summary::-webkit-details-marker {
+  display: none;
+}
+
+.findRefine[open] {
+  grid-column: 1 / -1;
+}
+
+.findRefineBody {
+  padding: 0 12px 12px;
+  min-width: 0;
+}
+
 .findShowcase {
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr);
@@ -200,10 +249,9 @@
 }
 
 .findRail {
+  /* Width-only stand-in for frozen pr-navigator column (geometry); not a filter host. */
   min-width: 0;
-  display: grid;
-  gap: var(--space-3);
-  align-content: start;
+  min-height: 1px;
 }
 
 .findMain {
@@ -297,10 +345,23 @@
     align-items: stretch;
   }
 
-  /* P23a/b mobile: stack rail above results; single card column (R1 1fr grid). */
+  /* P23a/b mobile: stack toolbar; drop rail; single card column (R1 1fr grid). */
+  .findToolbarRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .findRefine[open] {
+    grid-column: auto;
+  }
+
   .findShowcase {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .findRail {
+    display: none;
   }
 
   .modalResultsFind {

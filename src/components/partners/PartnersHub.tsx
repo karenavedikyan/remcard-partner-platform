@@ -1292,26 +1292,25 @@ export function PartnersHub({
     </>
   );
 
-  /** P23a find modal: filters in rail, results in main column (frozen pr-showcase-layout). */
+  /**
+   * P23a/b find modal vs frozen hub-wide:
+   * search → one refine slot (single modal-full mount) → showcase (rail width + results).
+   * Closes dual modal-primary/modal-more hub mount (SEARCH-FILTERS-13 wrapper ask).
+   * Flat four-field refine body still needs filter-owner P22c (see INTEGRATION-BLOCKER).
+   */
   const agentFindShowcase = (
-    <div className={styles.findShowcase} data-testid="agent-partner-find-showcase">
-      <aside className={styles.findRail} aria-label="Фильтры поиска партнёров">
-        <div className={styles.modalFilterBlock}>
-          <AgentPartnerDiscoveryFilters layout="modal-primary" {...agentDiscoveryFilterProps} />
-        </div>
-        <AgentPartnerDiscoveryFilters layout="modal-more" {...agentDiscoveryFilterProps} />
-      </aside>
-      <div className={styles.findMain}>
-        <p className={styles.modalLead}>
-          Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
-        </p>
+    <div className={styles.findShell} data-testid="agent-partner-find-showcase">
+      <p className={styles.modalLead}>
+        Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
+      </p>
+      <div className={styles.findToolbarRow}>
         <div className={styles.modalSearchBlock}>
           <TextField
             label="Поиск по словам необязательно"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Название, товар, услуга, этап или ID"
-            hint="Можно оставить пустым и искать только по фильтрам слева"
+            hint="Можно оставить пустым и искать только по фильтрам ниже"
           />
           <div className={styles.modalSearchAction}>
             <Button
@@ -1326,54 +1325,73 @@ export function PartnersHub({
             </Button>
           </div>
         </div>
-        {searchError ? (
-          <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
-            <p>{searchError}</p>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={loadingSearch}
-              onClick={() => {
-                setSearchNextCursor(null);
-                void loadSearch("reset");
-              }}
-            >
-              Повторить
-            </Button>
+        <details className={styles.findRefine} data-testid="agent-partner-find-refine">
+          <summary>
+            Город и тип партнёра
+            {city || searchPartnerType ? " · выбраны" : ""}
+          </summary>
+          <div className={styles.findRefineBody}>
+            {/*
+              SEARCH-FILTERS-13: single hub refine slot mounts modal-full once.
+              Flat four-field body (no nested cityTypeFold) is filter-owner P22c —
+              see artifacts INTEGRATION-BLOCKER; do not fork DiscoveryFilters here.
+            */}
+            <AgentPartnerDiscoveryFilters layout="modal-full" {...agentDiscoveryFilterProps} />
           </div>
-        ) : null}
-        {searchResults.length > 0 || loadingSearch ? (
-          <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
-            Показано: {searchResults.length}
-            {searchNextCursor ? "+" : ""}
-            {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
-          </p>
-        ) : null}
-        <div
-          className={`${styles.modalResults} ${styles.modalResultsFind}`}
-          data-testid="agent-partner-search-results"
-          data-loading={loadingSearch ? "true" : "false"}
-        >
-          {loadingSearch && searchResults.length === 0 ? (
-            <p className={styles.modalResultsState} data-testid="agent-partner-search-loading">
-              Загружаем результаты…
+        </details>
+      </div>
+      <div className={styles.findShowcase}>
+        <aside className={styles.findRail} aria-hidden="true" />
+        <div className={styles.findMain}>
+          {searchError ? (
+            <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
+              <p>{searchError}</p>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={loadingSearch}
+                onClick={() => {
+                  setSearchNextCursor(null);
+                  void loadSearch("reset");
+                }}
+              >
+                Повторить
+              </Button>
+            </div>
+          ) : null}
+          {searchResults.length > 0 || loadingSearch ? (
+            <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
+              Показано: {searchResults.length}
+              {searchNextCursor ? "+" : ""}
+              {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
             </p>
           ) : null}
-          {searchResults.map((partner) => (
-            <PartnerSearchResultCard
-              key={partner.id}
-              partner={partner}
-              title={partnerTitle(partner)}
-              showPublishedTerms={showAgentPublishedTerms}
-              inviteDisabled={Boolean(inviteTarget) || loadingSearch}
-              onInvite={() => setInviteTarget(partner)}
-            />
-          ))}
-          {!loadingSearch && !searchError && searchResults.length === 0 ? (
-            <p className={styles.modalResultsState} data-testid="agent-partner-search-empty">
-              По этому запросу партнёров не найдено.
-            </p>
-          ) : null}
+          <div
+            className={`${styles.modalResults} ${styles.modalResultsFind}`}
+            data-testid="agent-partner-search-results"
+            data-loading={loadingSearch ? "true" : "false"}
+          >
+            {loadingSearch && searchResults.length === 0 ? (
+              <p className={styles.modalResultsState} data-testid="agent-partner-search-loading">
+                Загружаем результаты…
+              </p>
+            ) : null}
+            {searchResults.map((partner) => (
+              <PartnerSearchResultCard
+                key={partner.id}
+                partner={partner}
+                title={partnerTitle(partner)}
+                showPublishedTerms={showAgentPublishedTerms}
+                inviteDisabled={Boolean(inviteTarget) || loadingSearch}
+                onInvite={() => setInviteTarget(partner)}
+              />
+            ))}
+            {!loadingSearch && !searchError && searchResults.length === 0 ? (
+              <p className={styles.modalResultsState} data-testid="agent-partner-search-empty">
+                По этому запросу партнёров не найдено.
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
