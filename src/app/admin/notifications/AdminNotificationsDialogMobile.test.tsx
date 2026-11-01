@@ -20,7 +20,7 @@ describe("settings dialog mobile presentation", () => {
 
   it("does not override the primary save action with a white surface background", () => {
     expect(css).toMatch(
-      /\.settingsInDialog \.settingsSection > \.settingsSaveButton\s*\{[^}]*background:\s*var\(--accent-fill(?:,|\))/s,
+      /\.settingsInDialog \.settingsSection > button\.settingsSaveButton\s*\{[^}]*background:\s*var\(--accent-fill(?:,|\))/s,
     );
   });
 });
