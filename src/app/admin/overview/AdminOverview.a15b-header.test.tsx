@@ -80,7 +80,8 @@ describe("A15b overview R1 page-head completion", () => {
     render(<AdminOverviewClient />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Сбой обзора");
     expect(screen.getByRole("heading", { name: "Обзор проекта", level: 1 })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "7 дней" }));
+    fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("30d"));
     await screen.findByText("Завершённые регистрации");
   });
 

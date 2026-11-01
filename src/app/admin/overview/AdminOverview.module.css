@@ -100,6 +100,8 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
   min-width: 0;
+  /* Prototype .kpis margin-bottom (--s6) atop parent .wrap gap (--space-5). */
+  margin-bottom: calc(var(--space-6) - var(--space-5));
 }
 
 .kpi {
@@ -343,6 +345,8 @@
 @media (max-width: 760px) {
   .kpis {
     gap: var(--space-3);
+    /* Prototype ≤760: .kpis margin-bottom var(--s5) vs wrap gap var(--space-5) — already equal. */
+    margin-bottom: 0;
   }
 
   .kpi {

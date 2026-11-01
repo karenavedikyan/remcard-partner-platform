@@ -83,7 +83,7 @@ beforeEach(() => {
 describe("A2a overview upper KPI presentation (behavior preserved)", () => {
   it("renders exactly nine KPI articles with exact labels and numeric values", async () => {
     render(<AdminOverviewClient />);
-    await screen.findByRole("heading", { name: "Обзор", level: 1 });
+    await screen.findByRole("heading", { name: "Обзор проекта", level: 1 });
     for (const title of KPI_TITLES) {
       await screen.findByRole("heading", { name: title, level: 2 });
     }
@@ -178,7 +178,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     expect(screen.queryByText("Завершённые регистрации")).toBeNull();
     expect(document.querySelectorAll("article")).toHaveLength(0);
     // Period controls and H1 remain so the operator can retry by changing period
-    expect(screen.getByRole("heading", { name: "Обзор", level: 1 })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Обзор проекта", level: 1 })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("1d"));
     await screen.findByText("Завершённые регистрации");
