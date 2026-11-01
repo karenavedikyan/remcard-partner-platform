@@ -12,7 +12,7 @@ const css = cssBytes.toString("utf8");
 const MARKER = "/* === P6a: modal-primary specialization/stage filters (prefix above immutable) === */";
 const PREFIX_BYTES = 1929;
 const PREFIX_SHA256 = "87e316d8ecbb59fedd293f06073ac17bd0f333a76236d3b613f3bad7430a72be";
-const TSX_SHA256 = "e64ee7c854768892e45ec54ec87ea8adf7be5772985f650250da1c033f421389";
+const TSX_SHA256 = "e3f858eba98b4f073f3662be8d62463c61e689074aeeed2c908a75d473004c69";
 
 vi.mock("@/lib/partner-taxonomy", () => ({
   fetchPartnerTaxonomy: vi.fn(),

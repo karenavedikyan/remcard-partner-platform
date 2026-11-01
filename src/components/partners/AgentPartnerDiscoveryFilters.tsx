@@ -101,7 +101,7 @@ export function AgentPartnerDiscoveryFilters({
           </select>
         </label>
         {error ? (
-          <p className={styles.error} role="alert">
+          <p className={styles.error} role="alert" data-testid="agent-partner-discovery-taxonomy-error">
             {error}{" "}
             <button type="button" className={styles.linkBtn} onClick={() => void load()}>
               Повторить
@@ -158,7 +158,7 @@ export function AgentPartnerDiscoveryFilters({
           ))}
         </optgroup>
       </select>
-      {layout === "modal-primary" || layout === "modal-full" ? (
+      {layout === "modal-primary" ? (
         <span className={styles.fieldHint}>Область работ, услуг или товаров партнёра</span>
       ) : null}
     </label>
@@ -175,9 +175,49 @@ export function AgentPartnerDiscoveryFilters({
           </option>
         ))}
       </select>
-      {layout === "modal-primary" || layout === "modal-full" ? (
+      {layout === "modal-primary" ? (
         <span className={styles.fieldHint}>На каком этапе ремонта партнёр полезен</span>
       ) : null}
+    </label>
+  );
+
+  const cityField = (
+    <label className={styles.field}>
+      <span>Город</span>
+      <input value={city} onChange={(e) => onCityChange(e.target.value)} placeholder="Любой" />
+    </label>
+  );
+
+  const modalMoreTypeField = (
+    <label className={styles.field}>
+      <span>Тип партнёра</span>
+      <select
+        value={partnerType}
+        onChange={(e) => onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
+      >
+        <option value="">Все типы</option>
+        <option value="agent">Агент</option>
+        <option value="specialist">Специалист</option>
+        <option value="store">Магазин</option>
+        <option value="company">Компания</option>
+      </select>
+    </label>
+  );
+
+  const modalFullTypeField = (
+    <label className={styles.field}>
+      <span>Тип партнёра</span>
+      <select
+        value={partnerType}
+        onChange={(e) => onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
+        data-testid="discovery-partner-type"
+      >
+        <option value="">Все типы</option>
+        <option value="store">Магазин</option>
+        <option value="company">Компания</option>
+        <option value="specialist">Специалист</option>
+        <option value="agent">Агент</option>
+      </select>
     </label>
   );
 
@@ -185,29 +225,14 @@ export function AgentPartnerDiscoveryFilters({
     <details className={styles.moreFilters}>
       <summary>Уточнить: город и тип партнёра</summary>
       <div className={styles.moreGrid}>
-        <label className={styles.field}>
-          <span>Город</span>
-          <input value={city} onChange={(e) => onCityChange(e.target.value)} placeholder="Любой" />
-        </label>
-        <label className={styles.field}>
-          <span>Тип партнёра</span>
-          <select
-            value={partnerType}
-            onChange={(e) => onPartnerTypeChange(e.target.value as AgentPartnerTypeFilter)}
-          >
-            <option value="">Все типы</option>
-            <option value="agent">Агент</option>
-            <option value="specialist">Специалист</option>
-            <option value="store">Магазин</option>
-            <option value="company">Компания</option>
-          </select>
-        </label>
+        {cityField}
+        {modalMoreTypeField}
       </div>
     </details>
   );
 
   const taxonomyError = error ? (
-    <p className={styles.error} role="alert">
+    <p className={styles.error} role="alert" data-testid="agent-partner-discovery-taxonomy-error">
       {error}{" "}
       <button type="button" className={styles.linkBtn} onClick={() => void load()}>
         Повторить
@@ -235,13 +260,24 @@ export function AgentPartnerDiscoveryFilters({
     );
   }
 
+  const refineHasSelection = Boolean(city || partnerType);
+  const refineSummary = refineHasSelection ? "Город и тип партнёра · выбраны" : "Город и тип партнёра";
+
   return (
-    <div className={styles.root} data-testid="agent-partner-discovery-filters">
-      <div className={styles.primaryRow}>
-        {specializationField}
-        {stageField}
-      </div>
-      {cityTypeFold}
+    <div className={styles.modalFull} data-testid="agent-partner-discovery-filters">
+      <details
+        className={styles.moreFilters}
+        data-testid="agent-partner-discovery-refine"
+        open={refineHasSelection}
+      >
+        <summary>{refineSummary}</summary>
+        <div className={styles.modalFullGrid}>
+          {cityField}
+          {modalFullTypeField}
+          {specializationField}
+          {stageField}
+        </div>
+      </details>
       {taxonomyError}
     </div>
   );
