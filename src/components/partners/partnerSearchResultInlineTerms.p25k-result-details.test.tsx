@@ -2,7 +2,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PartnerSearchResultInlineTerms } from "./PartnerSearchResultInlineTerms";
 import {
-  PARTNER_SEARCH_INLINE_ZERO_PERCENT_NOTE,
   formatPartnerSearchInlineTermLine,
   partnerSearchInlinePercentHeadline,
   resetPartnerSearchInlineTermsCache,
@@ -26,13 +25,13 @@ describe("P25k result inline terms presentation", () => {
     vi.mocked(readPartnerCertificateProgramForSearchCard).mockReset();
   });
 
-  it("shows zero-percent note aligned with PartnerGeneralTermsDetails", () => {
+  it("shows bare zero percent aligned with the frozen inline list", () => {
     const line = formatPartnerSearchInlineTermLine({
       category: "doors",
       categoryLabel: "Двери",
       poolPercent: 0,
     });
-    expect(line.percentText).toBe(`0%${PARTNER_SEARCH_INLINE_ZERO_PERCENT_NOTE}`);
+    expect(line.percentText).toBe("0%");
     expect(partnerSearchInlinePercentHeadline([{ category: "d", categoryLabel: "D", poolPercent: 0 }])).toBe(
       "0%",
     );
@@ -62,7 +61,7 @@ describe("P25k result inline terms presentation", () => {
       expect(screen.getByTestId("agent-partner-search-result-terms-summary")).toBeInTheDocument(),
     );
     expect(screen.getByTestId("agent-partner-search-result-terms-percent-headline")).toHaveTextContent("0%");
-    expect(screen.getByText(`0%${PARTNER_SEARCH_INLINE_ZERO_PERCENT_NOTE}`)).toBeInTheDocument();
+    expect(screen.getByTestId("agent-partner-search-result-terms-percent")).toHaveTextContent(/^0%$/);
     expect(screen.getByTestId("agent-partner-search-result-terms-percent-unavailable")).toHaveTextContent(
       "Нет данных",
     );
