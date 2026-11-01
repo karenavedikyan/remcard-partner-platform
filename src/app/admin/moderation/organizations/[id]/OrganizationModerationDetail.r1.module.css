@@ -724,3 +724,43 @@
     width: min(160px, 100%);
   }
 }
+
+/* ==========================================================================
+   A14a: moderation catalog preview dialog footer (org + shared org preview modal).
+   Maps frozen R1 `.dialog-footer` sticky surface + A5c confirm mobile dismiss width.
+   Preview head/body/async unchanged; legacy confirm CSS untouched.
+   ========================================================================== */
+
+.previewHead {
+  z-index: 2;
+  background: var(--om-surface);
+}
+
+.previewFooter {
+  z-index: 2;
+  background: var(--om-surface);
+}
+
+:global(html[data-theme="dark"]) .previewHead,
+:global(html[data-theme="dark"]) .previewFooter {
+  background: var(--om-surface);
+}
+
+@media (max-width: 760px) {
+  .previewFooter {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--om-space-4);
+  }
+
+  .previewFooter button {
+    width: 100%;
+  }
+}
+
+@media (max-height: 640px) {
+  .previewDialog {
+    max-height: calc(100dvh - 8px);
+    width: calc(100vw - 8px);
+  }
+}

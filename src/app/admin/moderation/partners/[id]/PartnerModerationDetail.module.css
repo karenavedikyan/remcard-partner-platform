@@ -527,3 +527,42 @@
     height: 52px;
   }
 }
+
+/* ==========================================================================
+   A14a: partner moderation preview dialog footer (partner preview modal).
+   Same R1/A5c mapping as org preview; partner detail/actions/async unchanged.
+   ========================================================================== */
+
+.previewHead {
+  z-index: 2;
+  background: var(--pm-surface);
+}
+
+.previewFooter {
+  z-index: 2;
+  background: var(--pm-surface);
+}
+
+:global(html[data-theme="dark"]) .previewHead,
+:global(html[data-theme="dark"]) .previewFooter {
+  background: var(--pm-surface);
+}
+
+@media (max-width: 760px) {
+  .previewFooter {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--pm-space-4);
+  }
+
+  .previewFooter button {
+    width: 100%;
+  }
+}
+
+@media (max-height: 640px) {
+  .previewDialog {
+    max-height: calc(100dvh - 8px);
+    width: calc(100vw - 8px);
+  }
+}
