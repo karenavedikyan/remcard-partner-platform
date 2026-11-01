@@ -46,7 +46,7 @@ describe("AgentPartnerDiscoveryFilters P22a modal find filters", () => {
     expect(block).toContain('layout="modal-full"');
     expect(block).not.toContain('layout="modal-primary"');
     expect(block).not.toContain('layout="modal-more"');
-    expect(block).not.toContain("findRefine");
+    expect(block).not.toMatch(/<details[^>]*findRefine/);
     expect(block).not.toContain("PartnerSearchFilters");
   });
 

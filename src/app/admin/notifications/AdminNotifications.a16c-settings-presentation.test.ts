@@ -13,7 +13,7 @@ describe("AdminNotifications A16c settings presentation", () => {
     expect(css).toContain(".settingsDialogBody");
     expect(css).toContain(".settingsInDialog");
     expect(css).toMatch(/width:\s*min\(580px/);
-    expect(css).toMatch(/\.settingsInDialog #admin-notify-settings-title[\s\S]*clip:/);
+    expect(css).toMatch(/\.settingsInDialog :global\(#admin-notify-settings-title\)[\s\S]*clip:/);
   });
 
   it("NOTIFICATIONS-settings-copy: R1 dialog title and modal-only settings section", () => {

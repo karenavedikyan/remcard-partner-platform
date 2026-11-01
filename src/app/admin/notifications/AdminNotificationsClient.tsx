@@ -537,7 +537,7 @@ export function AdminNotificationsClient() {
               disabled={settingsHost.saving || settingsHost.bindingBusy}
               onClick={requestSettingsClose}
             >
-              Закрыть
+              <span aria-hidden="true">×</span>
             </button>
           </header>
           <div className={styles.settingsDialogBody}>

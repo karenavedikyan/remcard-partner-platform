@@ -211,9 +211,8 @@ export function AdminNotificationSettingsSection({
     <section className={styles.settingsSection} aria-labelledby="admin-notify-settings-title">
       <h2 id="admin-notify-settings-title">Настройки уведомлений</h2>
       <p className={styles.settingsLead}>
-        Категории включены на сервере по умолчанию; каналы Telegram и MAX остаются выключенными, пока вы не
-        подтвердите доставку в мессенджере, не включите канал и не сохраните. Это настройки администратора платформы — отдельно от
-        партнёрского кабинета и клиентского профиля.
+        Выберите события и каналы доставки. Для уведомлений в Telegram или MAX сначала
+        привяжите и подтвердите соответствующий канал, затем включите его и сохраните настройки.
       </p>
 
       <fieldset className={styles.fieldset}>
