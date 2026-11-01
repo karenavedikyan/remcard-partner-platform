@@ -12,6 +12,7 @@ import {
   partnerCollectionListDetail,
   partnerCollectionOfficialLine,
   partnerRowTitle,
+  partnerTermsDetail,
   partnerTypeLabel,
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
@@ -417,6 +418,21 @@ export function AgentPartnerCollection(props: Props) {
       ? activeStyles.workflowCell
       : styles.workflowCell;
 
+  if (isActiveSkin && partnerships.length === 0) {
+    return (
+      <div
+        className={activeStyles.root}
+        data-testid="agent-active-collection"
+        data-presentation="active"
+      >
+        <p className={activeStyles.cardMeta} data-testid="agent-active-empty" role="status">
+          Действующих партнёров пока нет
+        </p>
+        {detailDialog}
+      </div>
+    );
+  }
+
   const listBody =
     viewMode === "cards" ? (
       <>
@@ -472,6 +488,11 @@ export function AgentPartnerCollection(props: Props) {
                   <p className={cardMetaClass} data-testid="partner-row-detail">
                     {detail}
                   </p>
+                  {isActiveSkin && partnerTermsDetail(partnership) ? (
+                    <p className={cardMetaClass} data-testid="partner-row-terms-preview">
+                      {partnerTermsDetail(partnership)}
+                    </p>
+                  ) : null}
                   <PartnerRowInlineWorkflow
                     partnership={partnership}
                     meId={meId}
@@ -541,6 +562,11 @@ export function AgentPartnerCollection(props: Props) {
                     <p className={r03.meta} data-testid="partner-row-detail">
                       {detail}
                     </p>
+                    {isActiveSkin && partnerTermsDetail(partnership) ? (
+                      <p className={r03.meta} data-testid="partner-row-terms-preview">
+                        {partnerTermsDetail(partnership)}
+                      </p>
+                    ) : null}
                     {needsResponse && !isActiveSkin ? (
                       <p className={r03.meta}>Ожидает вашего решения</p>
                     ) : null}
@@ -631,6 +657,17 @@ export function AgentPartnerCollection(props: Props) {
                       </td>
                       <td className={detailCellClass} data-testid="partner-row-detail">
                         {detail}
+                        {isActiveSkin && partnerTermsDetail(partnership) ? (
+                          <>
+                            <br />
+                            <small
+                              className={captionClass}
+                              data-testid="partner-row-terms-preview"
+                            >
+                              {partnerTermsDetail(partnership)}
+                            </small>
+                          </>
+                        ) : null}
                       </td>
                       <td className={statusCellClass}>
                         <PartnerCollectionStatusBadge status={partnership.status} />
