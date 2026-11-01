@@ -86,19 +86,19 @@ beforeEach(() => {
 describe("Independent management UI acceptance", () => {
   it("selected Today shows registrations today, not a hard-coded seven day total", async () => {
     render(<AdminOverviewClient />);
-    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
+    await screen.findByRole("heading", { name: "Новые партнёры", level: 2 });
     fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("1d"));
-    const card = screen.getByText("Завершённые регистрации").closest("article")!;
+    const card = screen.getByRole("heading", { name: "Новые партнёры", level: 2 }).closest("article")!;
     await waitFor(() => expect(card.querySelector("p")?.textContent).toBe("1"));
   });
 
   it("selected 30 days shows 30 day registrations", async () => {
     render(<AdminOverviewClient />);
-    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
+    await screen.findByRole("heading", { name: "Новые партнёры", level: 2 });
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("30d"));
-    const card = screen.getByText("Завершённые регистрации").closest("article")!;
+    const card = screen.getByRole("heading", { name: "Новые партнёры", level: 2 }).closest("article")!;
     await waitFor(() => expect(card.querySelector("p")?.textContent).toBe("30"));
   });
 

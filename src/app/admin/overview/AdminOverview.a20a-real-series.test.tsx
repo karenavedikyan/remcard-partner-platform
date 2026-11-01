@@ -69,11 +69,11 @@ beforeEach(() => {
 });
 
 describe("A20a overview real analytics account series", () => {
-  it("loads analytics registrationsByDay independently with honest PRO legend", async () => {
+  it("loads analytics registrationsByDay in community growth panel with PRO legend", async () => {
     render(<AdminOverviewClient />);
-    await screen.findByRole("heading", { name: "Новые аккаунты по дням", level: 3 });
-    expect(screen.getByLabelText("Легенда: Новые аккаунты по дням")).toHaveTextContent("Клиенты");
-    expect(screen.getByLabelText("Легенда: Новые аккаунты по дням")).toHaveTextContent("PRO");
+    await screen.findByRole("heading", { name: "Рост сообщества", level: 2 });
+    expect(screen.getByLabelText("Легенда: Рост сообщества")).toHaveTextContent("Клиенты");
+    expect(screen.getByLabelText("Легенда: Рост сообщества")).toHaveTextContent("PRO");
     await waitFor(() => expect(mocks.analytics.mock.calls[0]?.[0]).toBe("7d"));
     expect(document.querySelector('[data-source="admin-analytics-overview"]')).toBeTruthy();
   });
@@ -81,35 +81,8 @@ describe("A20a overview real analytics account series", () => {
   it("does not fabricate zeros when analytics returns 403", async () => {
     mocks.analytics.mockRejectedValueOnce(new Error("Forbidden"));
     render(<AdminOverviewClient />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Forbidden");
-    expect(screen.queryByRole("list", { name: "Новые аккаунты по дням" })).toBeNull();
-  });
-
-  it("keeps analytics period subtitle on loaded data while refetching another period", async () => {
-    let release: (() => void) | undefined;
-    const gate = new Promise<void>((r) => {
-      release = r;
-    });
-    mocks.analytics.mockImplementationOnce(async () => analyticsPayload("7d"));
-    mocks.analytics.mockImplementationOnce(async (period: string) => {
-      await gate;
-      return analyticsPayload(period, 99, 88);
-    });
-    mocks.overview.mockImplementation(async (period: string) => {
-      if (period === "30d") {
-        await gate;
-        return managementPayload("30d");
-      }
-      return managementPayload(period);
-    });
-    render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней").length).toBeGreaterThanOrEqual(2));
-    fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
-    expect(await screen.findByText("Обновление ряда…")).toBeTruthy();
-    expect(screen.getAllByText("За 7 дней").length).toBeGreaterThanOrEqual(2);
-    release?.();
-    await waitFor(() => expect(mocks.analytics).toHaveBeenLastCalledWith("30d"));
-    await waitFor(() => expect(screen.getAllByText("За 30 дней").length).toBeGreaterThanOrEqual(2));
+    expect(await screen.findByText("Forbidden")).toBeTruthy();
+    expect(document.querySelectorAll("svg[role='img']")).toHaveLength(0);
   });
 
   it("ignores stale analytics response after newer period selection", async () => {
@@ -124,12 +97,10 @@ describe("A20a overview real analytics account series", () => {
       return analyticsPayload(period, 1, 1);
     });
     render(<AdminOverviewClient />);
-    await screen.findByRole("list", { name: "Новые аккаунты по дням" });
+    await screen.findByRole("img", { name: /Рост сообщества/ });
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     fireEvent.click(screen.getByRole("button", { name: "7 дней" }));
     finish30?.(analyticsPayload("30d", 999, 999));
-    await waitFor(() =>
-      expect(screen.queryByText("999")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByText("999")).toBeNull());
   });
 });

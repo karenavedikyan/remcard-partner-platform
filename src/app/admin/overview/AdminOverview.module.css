@@ -236,10 +236,8 @@
   max-width: 70ch;
 }
 
-/* A2b charts — local panel + line system (prototype chartPanel/lineChart).
-   Equal two panels; do not use asymmetric 1.7fr/1fr dashboard grid.
-   Local type sizes (not PROF global token names). */
-.chartsSection {
+/* A2b / A20b — R1 dashboard grid (chart + attention), not multi-chart row. */
+.dashboardSection {
   display: grid;
   gap: var(--space-3);
   min-width: 0;
@@ -251,6 +249,143 @@
   font-size: var(--text-xs);
   color: var(--muted);
   line-height: 1.45;
+}
+
+.dashboardGrid {
+  --overview-chart-title: 1rem;
+  --overview-chart-title-mobile: 0.875rem;
+  --overview-chart-axis: 0.875rem;
+  --overview-chart-radius: 0.875rem;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  min-width: 0;
+  align-items: stretch;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--overview-chart-title);
+  font-weight: 750;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.panelLink {
+  flex-shrink: 0;
+  align-self: flex-start;
+  font-size: var(--text-xs);
+  font-weight: 650;
+  color: var(--primary);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2);
+}
+
+.panelLink:hover {
+  text-decoration: underline;
+}
+
+.panelLink:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.attentionPanel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--overview-chart-radius);
+  background: var(--surface);
+}
+
+.attentionQueue {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  min-width: 0;
+}
+
+.queueRow,
+.queueRowStatic {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  min-height: 44px;
+}
+
+.queueRow:hover {
+  background: var(--soft);
+}
+
+.queueCopy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.queueCopy strong {
+  font-size: var(--text-xs);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.queueCopy small {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.queueCount {
+  font-size: var(--text-xs);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.queueEmpty {
+  padding: 1rem 1.5rem;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.secondaryBlock {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+}
+
+.secondaryBlock summary {
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--ink);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.secondaryList {
+  margin: var(--space-3) 0 0;
+  padding-left: 1.1rem;
+  line-height: 1.5;
+}
+
+.chartsSection {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  position: relative;
 }
 
 .chartsRow {
@@ -283,6 +418,7 @@
 .chartHead {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem; /* 20px 24px */
   border-bottom: 1px solid var(--line);
@@ -471,11 +607,19 @@
   .kpi {
     padding: var(--space-4);
   }
+
+  .dashboardGrid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 1050px) {
   .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboardGrid {
+    grid-template-columns: 1fr;
   }
 
   .header {
@@ -506,6 +650,10 @@
 
   .periods {
     gap: var(--space-2);
+  }
+
+  .dashboardGrid {
+    gap: 1.25rem;
   }
 
   .chartsRow {

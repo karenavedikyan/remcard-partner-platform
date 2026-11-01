@@ -23,15 +23,10 @@ import path from "node:path";
 import { AdminOverviewClient } from "./AdminOverviewClient";
 
 const KPI_TITLES = [
-  "Партнёры с новой регистрацией",
-  "Завершённые регистрации",
-  "Учтённые клиентские аккаунты",
-  "Активность PROF (партнёрские профили)",
-  "Видны в каталоге",
-  "Требуют модерации",
-  "Заявки и лиды",
-  "Публичный remcard.ru (партнёры)",
-  "Просмотры публичных карточек",
+  "Партнёры",
+  "Клиенты",
+  "В поиске сотрудничества",
+  "Новые партнёры",
 ] as const;
 
 function payload(period: string) {
@@ -90,52 +85,35 @@ beforeEach(() => {
 });
 
 describe("A2a overview upper KPI presentation (behavior preserved)", () => {
-  it("renders exactly nine KPI articles with exact labels and numeric values", async () => {
+  it("renders exactly four KPI articles with exact labels and numeric values", async () => {
     render(<AdminOverviewClient />);
     await screen.findByRole("heading", { name: "Обзор проекта", level: 1 });
     for (const title of KPI_TITLES) {
       await screen.findByRole("heading", { name: title, level: 2 });
     }
     const articles = document.querySelectorAll("article");
-    expect(articles).toHaveLength(9);
+    expect(articles).toHaveLength(4);
 
     const byTitle = (title: string) => screen.getByRole("heading", { name: title, level: 2 }).closest("article")!;
-    expect(within(byTitle("Партнёры с новой регистрацией")).getByText("5")).toBeTruthy();
-    expect(within(byTitle("Партнёры с новой регистрацией")).getByText(/Демо-база \(историческая\): 7/)).toBeTruthy();
-    expect(within(byTitle("Завершённые регистрации")).getByText("7")).toBeTruthy();
-    expect(within(byTitle("Учтённые клиентские аккаунты")).getByText("12")).toBeTruthy();
-    expect(within(byTitle("Учтённые клиентские аккаунты")).getByText("Историческая демо-база")).toBeTruthy();
-    expect(within(byTitle("Активность PROF (партнёрские профили)")).getByText("—")).toBeTruthy();
-    expect(within(byTitle("Активность PROF (партнёрские профили)")).getByText("Нет данных")).toBeTruthy();
-    expect(within(byTitle("Видны в каталоге")).getByText("4")).toBeTruthy();
-    expect(within(byTitle("Требуют модерации")).getByText("2")).toBeTruthy();
-    expect(within(byTitle("Заявки и лиды")).getByText("2")).toBeTruthy();
-    expect(within(byTitle("Заявки и лиды")).getByText(/Открытых лидов: 5/)).toBeTruthy();
-    expect(within(byTitle("Публичный remcard.ru (партнёры)")).getByText("Нет учёта")).toBeTruthy();
-    expect(within(byTitle("Просмотры публичных карточек")).getByText("3")).toBeTruthy();
-    expect(within(byTitle("Просмотры публичных карточек")).getByText("Частичный учёт")).toBeTruthy();
+    expect(within(byTitle("Партнёры")).getByText("5")).toBeTruthy();
+    expect(within(byTitle("Партнёры")).getByText(/Демо-база \(историческая\): 7/)).toBeTruthy();
+    expect(within(byTitle("Клиенты")).getByText("12")).toBeTruthy();
+    expect(within(byTitle("Клиенты")).getByText(/\+2 за 7 дней/)).toBeTruthy();
+    expect(within(byTitle("В поиске сотрудничества")).getByText("—")).toBeTruthy();
+    expect(within(byTitle("Новые партнёры")).getByText("7")).toBeTruthy();
   });
 
-  it("keeps only the three existing drill links with exact hrefs and labels", async () => {
+  it("keeps drill links in KPI and attention areas", async () => {
     render(<AdminOverviewClient />);
-    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
-    const links = screen.getAllByRole("link");
-    const hrefs = links.map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual([
-      "/admin/partners?registration=active",
-      "/admin/partners",
-      "/admin/moderation",
-    ]);
+    await screen.findByRole("heading", { name: "Новые партнёры", level: 2 });
     expect(screen.getByRole("link", { name: "Открыть реестр" })).toHaveAttribute(
       "href",
       "/admin/partners?registration=active",
     );
-    expect(screen.getByRole("link", { name: "Реестр партнёров" })).toHaveAttribute("href", "/admin/partners");
-    expect(screen.getByRole("link", { name: "Очередь модерации" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Модерация партнёров/ })).toHaveAttribute(
       "href",
       "/admin/moderation",
     );
-    // KPI articles themselves are not buttons / do not gain drill clickability
     expect(document.querySelectorAll("article button")).toHaveLength(0);
   });
 
@@ -148,7 +126,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("1d"));
-    const reg = screen.getByText("Завершённые регистрации").closest("article")!;
+    const reg = screen.getByRole("heading", { name: "Новые партнёры", level: 2 }).closest("article")!;
     await waitFor(() => expect(reg.querySelector("p")?.textContent).toBe("1"));
 
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
@@ -174,10 +152,9 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     render(<AdminOverviewClient />);
     expect(screen.getByRole("status")).toHaveTextContent("Загрузка показателей…");
     resolve(payload("7d"));
-    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
-    expect(screen.getByText("Регистрации по дням")).toBeTruthy();
-    expect(screen.getByText("Новые аккаунты по дням")).toBeTruthy();
-    expect(screen.getByText("Активные профили PROF по дням")).toBeTruthy();
+    await screen.findByRole("heading", { name: "Новые партнёры", level: 2 });
+    expect(screen.getByRole("heading", { name: "Рост сообщества", level: 2 })).toBeTruthy();
+    fireEvent.click(screen.getByText("Дополнительные показатели management"));
     expect(screen.getByText("Один профиль")).toBeTruthy();
   });
 
@@ -185,13 +162,13 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     mocks.fetch.mockRejectedValueOnce(new Error("Сбой обзора"));
     render(<AdminOverviewClient />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Сбой обзора");
-    expect(screen.queryByText("Завершённые регистрации")).toBeNull();
+    expect(screen.queryByText("Новые партнёры")).toBeNull();
     expect(document.querySelectorAll("article")).toHaveLength(0);
     // Period controls and H1 remain so the operator can retry by changing period
     expect(screen.getByRole("heading", { name: "Обзор проекта", level: 1 })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("1d"));
-    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
+    await screen.findByRole("heading", { name: "Новые партнёры", level: 2 });
   });
 
   it("isolates KPI presentation classes from chart block styles in module CSS source", () => {

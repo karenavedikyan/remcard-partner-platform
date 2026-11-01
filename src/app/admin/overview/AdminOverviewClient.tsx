@@ -36,165 +36,17 @@ function kindLabel(key: string): string {
   return key;
 }
 
-type SeriesRow = { date: string; [k: string]: number | string };
 
 /** User-unit chart height; matches CSS height via meet without shrinking text when width tracks. */
 const CHART_VIEW_H = 204;
 
-function MiniBars({
-  title,
-  subtitle,
-  legendLabel,
-  series,
-  valueKey,
-  emptyLabel,
-}: {
-  title: string;
-  subtitle: string;
-  legendLabel: string;
-  series: SeriesRow[];
-  valueKey: string;
-  emptyLabel: string;
-}) {
-  const gradId = `ov-area-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [plotW, setPlotW] = useState(320);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const apply = () => {
-      // SVG is width:100% of the content box; exclude wrap padding so viewBox
-      // user units match rendered CSS px (screen CTM ≈ 1 for axis text).
-      const cs = getComputedStyle(el);
-      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-      const w = Math.floor(el.clientWidth - padX);
-      if (w > 0) setPlotW(w);
-    };
-    apply();
-    const ro = new ResizeObserver(() => apply());
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const plotted = useMemo(() => {
-    const values = series.map((row) => Number(row[valueKey] ?? 0));
-    return { values, geo: buildLineGeometry(values, plotW, CHART_VIEW_H) };
-  }, [series, valueKey, plotW]);
-
-  if (series.length === 0) {
-    return (
-      <div className={styles.chartBlock}>
-        <div className={styles.chartHead}>
-          <div className={styles.chartHeadCopy}>
-            <h3>{title}</h3>
-            <p className={styles.chartSubtitle}>{subtitle}</p>
-          </div>
-        </div>
-        <div className={styles.chartWrap} ref={wrapRef}>
-          <p className={styles.chartEmpty}>{emptyLabel}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { values, geo } = plotted;
-  const labelX = Math.max(4, geo.padL - 6);
-
-  return (
-    <div className={styles.chartBlock}>
-      <div className={styles.chartHead}>
-        <div className={styles.chartHeadCopy}>
-          <h3>{title}</h3>
-          <p className={styles.chartSubtitle}>{subtitle}</p>
-        </div>
-      </div>
-      <div className={styles.chartWrap} ref={wrapRef}>
-        <svg
-          className={styles.lineChart}
-          viewBox={`0 0 ${plotW} ${CHART_VIEW_H}`}
-          width={plotW}
-          role="img"
-          aria-label={`${title}: ${values.length} точек`}
-        >
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="currentColor" stopOpacity="0.14" />
-              <stop offset="1" stopColor="currentColor" stopOpacity="0.01" />
-            </linearGradient>
-          </defs>
-          {geo.guides.map((g, gi) => (
-            <g key={`g-${gi}`}>
-              <line
-                x1={geo.padL}
-                y1={g.y}
-                x2={plotW - 8}
-                y2={g.y}
-                className={styles.chartGuide}
-              />
-              <text x={labelX} y={g.y + 4} textAnchor="end" className={styles.chartAxisText}>
-                {g.label}
-              </text>
-            </g>
-          ))}
-          <path d={geo.areaPath} fill={`url(#${gradId})`} />
-          <path
-            d={geo.linePath}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {values.map((v, i) => (
-            <circle
-              key={series[i].date}
-              cx={geo.xAt(i)}
-              cy={geo.yAt(v)}
-              r="4"
-              className={styles.chartDot}
-            >
-              <title>
-                {series[i].date}: {v}
-              </title>
-            </circle>
-          ))}
-          {geo.axisIdx.map((i) => (
-            <text
-              key={`ax-${series[i].date}`}
-              x={geo.xAt(i)}
-              y={CHART_VIEW_H - 2}
-              textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"}
-              className={styles.chartAxisText}
-            >
-              {String(series[i].date).slice(5)}
-            </text>
-          ))}
-        </svg>
-        <div className={styles.chartLegend} aria-label={`Легенда: ${title}`}>
-          <span>
-            <i className={styles.legendDot} aria-hidden="true" />
-            {legendLabel}
-          </span>
-        </div>
-      </div>
-      <ul className={styles.chartBars} aria-label={title}>
-        {series.map((row) => {
-          const v = Number(row[valueKey] ?? 0);
-          return (
-            <li key={row.date}>
-              <span className={styles.chartDate}>{row.date}</span>
-              <span className={styles.chartVal}>{v}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
+function periodScopePhrase(id: PeriodId): string {
+  if (id === "1d") return "сегодня";
+  if (id === "7d") return "7 дней";
+  return "30 дней";
 }
 
-function AnalyticsAccountsChart({
-  title,
+function CommunityGrowthPanel({
   subtitle,
   series,
   emptyLabel,
@@ -202,7 +54,6 @@ function AnalyticsAccountsChart({
   error,
   onRetry,
 }: {
-  title: string;
   subtitle: string;
   series: AdminAnalyticsRegistrationsByDay[] | undefined;
   emptyLabel: string;
@@ -242,12 +93,19 @@ function AnalyticsAccountsChart({
   const labelX = Math.max(4, geo.padL - 6);
 
   return (
-    <div className={styles.chartBlock} data-source="admin-analytics-overview">
+    <section
+      className={styles.chartBlock}
+      data-source="admin-analytics-overview"
+      aria-label="Рост сообщества"
+    >
       <div className={styles.chartHead}>
         <div className={styles.chartHeadCopy}>
-          <h3>{title}</h3>
+          <h2 className={styles.panelTitle}>Рост сообщества</h2>
           <p className={styles.chartSubtitle}>{subtitle}</p>
         </div>
+        <Link href="/admin/analytics" className={styles.panelLink}>
+          Аналитика
+        </Link>
       </div>
       {error ? (
         <div className={styles.chartSourceError}>
@@ -280,7 +138,7 @@ function AnalyticsAccountsChart({
               viewBox={`0 0 ${plotW} ${CHART_VIEW_H}`}
               width={plotW}
               role="img"
-              aria-label={`${title}: ${rows.length} дней`}
+              aria-label={`Рост сообщества: ${rows.length} точек`}
             >
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -353,7 +211,7 @@ function AnalyticsAccountsChart({
                 </text>
               ))}
             </svg>
-            <div className={styles.chartLegend} aria-label={`Легенда: ${title}`}>
+            <div className={styles.chartLegend} aria-label="Легенда: Рост сообщества">
               <span>
                 <i className={styles.legendDot} aria-hidden="true" />
                 Клиенты
@@ -364,18 +222,9 @@ function AnalyticsAccountsChart({
               </span>
             </div>
           </div>
-          <ul className={styles.chartBarsDual} aria-label={title}>
-            {rows.map((row) => (
-              <li key={row.date}>
-                <span className={styles.chartDate}>{row.date}</span>
-                <span className={styles.chartVal}>{row.clients}</span>
-                <span className={styles.chartVal}>{row.pros}</span>
-              </li>
-            ))}
-          </ul>
         </>
       ) : null}
-    </div>
+    </section>
   );
 }
 
@@ -449,13 +298,11 @@ export function AdminOverviewClient() {
   }, [data]);
 
   const chartPeriodId = data ? periodIdFromApi(data.period, period) : period;
-  const chartPeriodScope = periodButtonLabel(chartPeriodId);
-  const regChartSubtitle = `За ${chartPeriodScope}`;
-  const profChartSubtitle = `За ${chartPeriodScope}`;
+  const kpiPeriodScope = periodScopePhrase(chartPeriodId);
   const analyticsPeriodId = analytics
     ? periodIdFromApi(analytics.period, period)
     : period;
-  const analyticsChartSubtitle = `За ${periodButtonLabel(analyticsPeriodId)}`;
+  const growthChartSubtitle = `Новые регистрации за ${periodScopePhrase(analyticsPeriodId)}`;
 
   return (
     <div className={styles.wrap}>
@@ -503,128 +350,140 @@ export function AdminOverviewClient() {
         <>
           <div className={styles.kpis}>
             <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Партнёры с новой регистрацией</h2>
+              <h2 className={styles.kpiLabel}>Партнёры</h2>
               <p className={styles.kpiValue}>{data.partners.liveRegistered}</p>
               <div className={styles.kpiBottom}>
-                <p className={styles.sub}>Демо-база (историческая): {data.partners.demoRegistered}</p>
+                <p className={styles.sub}>
+                  Демо-база (историческая): {data.partners.demoRegistered}
+                </p>
                 <Link href="/admin/partners?registration=active">Открыть реестр</Link>
               </div>
             </article>
             <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Завершённые регистрации</h2>
-              <p className={styles.kpiValue}>{regCard.value}</p>
-              <div className={styles.kpiBottom}>
-                <p className={styles.sub}>{regCard.note}</p>
-                <ul className={styles.kindList}>
-                  {regKindRows.map((row) => (
-                    <li key={row.label}>
-                      {row.label}: {row.value}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </article>
-            <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Учтённые клиентские аккаунты</h2>
+              <h2 className={styles.kpiLabel}>Клиенты</h2>
               <p className={styles.kpiValue}>{data.clients.accountedTotal}</p>
               <div className={styles.kpiBottom}>
+                <p className={styles.sub}>
+                  +{data.clients.createdInPeriod.current} за {kpiPeriodScope}
+                </p>
                 <p className={styles.sub}>{data.clients.historicalDemoWarning}</p>
-                <p className={styles.sub}>Новых за период: {data.clients.createdInPeriod.current}</p>
               </div>
             </article>
             <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Активность PROF (партнёрские профили)</h2>
-              <p className={styles.kpiValue}>
-                {data.activity.profPartnerProfilesUsed.distinctInPeriod ?? "—"}
-              </p>
-              <div className={styles.kpiBottom}>
-                <p className={styles.sub}>{data.activity.profPartnerProfilesUsed.coverageNote}</p>
-              </div>
-            </article>
-            <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Видны в каталоге</h2>
-              <p className={styles.kpiValue}>{data.partners.visibleInCatalog}</p>
-              <div className={styles.kpiBottom}>
-                <p className={styles.sub}>
-                  Опубликованных карточек (user/org/branch): {data.partners.catalogCardSurfaces}
-                </p>
-                <Link href="/admin/partners">Реестр партнёров</Link>
-              </div>
-            </article>
-            <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Требуют модерации</h2>
-              <p className={styles.kpiValue}>{data.moderation.pendingPartners}</p>
-              <div className={styles.kpiBottom}>
-                <p className={styles.sub}>
-                  Старейшая заявка:{" "}
-                  {data.moderation.oldestPendingPartnerAt
-                    ? new Date(data.moderation.oldestPendingPartnerAt).toLocaleString("ru-RU")
-                    : "—"}
-                </p>
-                <Link href="/admin/moderation">Очередь модерации</Link>
-              </div>
-            </article>
-            <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Заявки и лиды</h2>
-              <p className={styles.kpiValue}>{data.leadsAndRequests.leadsNew}</p>
-              <div className={styles.kpiBottom}>
-                <p className={styles.sub}>Открытых лидов: {data.leadsAndRequests.leadsOpen}</p>
-              </div>
-            </article>
-            <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Публичный remcard.ru (партнёры)</h2>
+              <h2 className={styles.kpiLabel}>В поиске сотрудничества</h2>
               <p className={styles.kpiValue}>—</p>
               <div className={styles.kpiBottom}>
-                <p className={styles.sub}>{data.activity.publicSiteAuthenticatedPartners.coverageNote}</p>
+                <p className={styles.sub}>Показатель недоступен на обзоре</p>
               </div>
             </article>
             <article className={styles.kpi}>
-              <h2 className={styles.kpiLabel}>Просмотры публичных карточек</h2>
-              <p className={styles.kpiValue}>{data.activity.publicPartnerCardViews.viewsInPeriod}</p>
+              <h2 className={styles.kpiLabel}>Новые партнёры</h2>
+              <p className={styles.kpiValue}>{regCard.value}</p>
               <div className={styles.kpiBottom}>
-                <p className={styles.sub}>{data.activity.publicPartnerCardViews.coverageNote}</p>
+                <p className={styles.sub}>За {kpiPeriodScope}</p>
+                {regCard.note ? <p className={styles.sub}>{regCard.note}</p> : null}
               </div>
             </article>
           </div>
           <section
-            className={styles.chartsSection}
-            aria-label="Динамика показателей"
+            className={styles.dashboardSection}
+            aria-label="Динамика и внимание"
             aria-busy={loading || analyticsLoading || undefined}
           >
             {(loading || analyticsLoading) && (data || analytics) ? (
               <p className={styles.chartsLoading} role="status">
-                Обновление графиков…
+                Обновление…
               </p>
             ) : null}
-            <div className={styles.chartsRow} data-chart-period={chartPeriodId}>
-              <MiniBars
-                title="Регистрации по дням"
-                subtitle={regChartSubtitle}
-                legendLabel="Итого за день"
-                series={data.registrationsCompleted.seriesDaily}
-                valueKey="total"
-                emptyLabel="Нет завершённых регистраций в выбранном периоде"
-              />
-              <AnalyticsAccountsChart
-                title="Новые аккаунты по дням"
-                subtitle={analyticsChartSubtitle}
+            <div className={styles.dashboardGrid} data-chart-period={analyticsPeriodId}>
+              <CommunityGrowthPanel
+                subtitle={growthChartSubtitle}
                 series={analytics?.registrationsByDay}
                 loading={analyticsLoading}
                 error={analyticsError}
                 onRetry={() => void loadAnalytics()}
                 emptyLabel="Нет новых аккаунтов за выбранный период"
               />
-              <MiniBars
-                title="Активные профили PROF по дням"
-                subtitle={profChartSubtitle}
-                legendLabel="Активные профили PROF"
-                series={data.activitySeriesDaily ?? []}
-                valueKey="profPartnerProfiles"
-                emptyLabel="Нет данных — учёт начнётся после первых визитов кабинета"
-              />
+              <section className={styles.attentionPanel} aria-label="Требует внимания">
+                <div className={styles.chartHead}>
+                  <div className={styles.chartHeadCopy}>
+                    <h2 className={styles.panelTitle}>Требует внимания</h2>
+                    <p className={styles.chartSubtitle}>Следующее полезное действие</p>
+                  </div>
+                </div>
+                <ul className={styles.attentionQueue}>
+                  {data.moderation.pendingPartners > 0 ? (
+                    <li>
+                      <Link href="/admin/moderation" className={styles.queueRow}>
+                        <span className={styles.queueCopy}>
+                          <strong>Модерация партнёров</strong>
+                          <small>Заявки в очереди</small>
+                        </span>
+                        <span className={styles.queueCount}>{data.moderation.pendingPartners}</span>
+                      </Link>
+                    </li>
+                  ) : null}
+                  {data.leadsAndRequests.leadsNew > 0 ? (
+                    <li>
+                      <span className={styles.queueRowStatic}>
+                        <span className={styles.queueCopy}>
+                          <strong>Новые лиды</strong>
+                          <small>Открытых: {data.leadsAndRequests.leadsOpen}</small>
+                        </span>
+                        <span className={styles.queueCount}>{data.leadsAndRequests.leadsNew}</span>
+                      </span>
+                    </li>
+                  ) : null}
+                  {data.incompleteLiveRegistration.available &&
+                  data.incompleteLiveRegistration.count != null &&
+                  data.incompleteLiveRegistration.count > 0 ? (
+                    <li>
+                      <span className={styles.queueRowStatic}>
+                        <span className={styles.queueCopy}>
+                          <strong>Незавершённые регистрации</strong>
+                          <small>{data.incompleteLiveRegistration.note}</small>
+                        </span>
+                        <span className={styles.queueCount}>
+                          {data.incompleteLiveRegistration.count}
+                        </span>
+                      </span>
+                    </li>
+                  ) : null}
+                  {data.moderation.pendingPartners === 0 &&
+                  data.leadsAndRequests.leadsNew === 0 &&
+                  (!data.incompleteLiveRegistration.available ||
+                    !data.incompleteLiveRegistration.count) ? (
+                    <li className={styles.queueEmpty}>Срочных пунктов нет</li>
+                  ) : null}
+                </ul>
+              </section>
             </div>
           </section>
-          <p className={styles.definitions}>{data.definitions.partnerProfile}</p>
+          <details className={styles.secondaryBlock}>
+            <summary>Дополнительные показатели management</summary>
+            <ul className={styles.secondaryList}>
+              <li>
+                Видны в каталоге: {data.partners.visibleInCatalog} (карточек:{" "}
+                {data.partners.catalogCardSurfaces})
+              </li>
+              <li>
+                Активность PROF:{" "}
+                {data.activity.profPartnerProfilesUsed.distinctInPeriod ?? "—"} —{" "}
+                {data.activity.profPartnerProfilesUsed.coverageNote}
+              </li>
+              <li>
+                Просмотры карточек: {data.activity.publicPartnerCardViews.viewsInPeriod} —{" "}
+                {data.activity.publicPartnerCardViews.coverageNote}
+              </li>
+              {regKindRows.length > 0 ? (
+                <li>
+                  Регистрации по видам:{" "}
+                  {regKindRows.map((r) => `${r.label} ${r.value}`).join(", ")}
+                </li>
+              ) : null}
+            </ul>
+            <p className={styles.definitions}>{data.definitions.partnerProfile}</p>
+          </details>
         </>
       ) : null}
     </div>

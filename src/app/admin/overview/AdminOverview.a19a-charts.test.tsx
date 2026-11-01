@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -22,7 +22,7 @@ vi.mock("next/link", () => ({
 
 import { AdminOverviewClient } from "./AdminOverviewClient";
 
-function basePayload(period: string, overrides: Record<string, unknown> = {}) {
+function basePayload(period: string) {
   return {
     generatedAt: "2026-10-27T13:00:00.000Z",
     timezone: "Europe/Moscow",
@@ -34,9 +34,7 @@ function basePayload(period: string, overrides: Record<string, unknown> = {}) {
       days7: { current: 7, comparisonNote: null },
       days30: { current: 30, comparisonNote: null },
       byKindInPeriod: { agent: 1 },
-      seriesDaily: [
-        { date: "2026-10-27", agent: 1, specialist: 0, store: 0, company: 0, total: 7 },
-      ],
+      seriesDaily: [{ date: "2026-10-27", agent: 0, specialist: 0, store: 0, company: 0, total: 7 }],
       selectedPeriod: { current: 7, comparisonNote: null },
       selectedPeriodLabel: period,
     },
@@ -55,7 +53,6 @@ function basePayload(period: string, overrides: Record<string, unknown> = {}) {
     },
     definitions: { partnerProfile: "Один профиль" },
     incompleteLiveRegistration: { available: false, count: null, note: "" },
-    ...overrides,
   };
 }
 
@@ -70,101 +67,65 @@ beforeEach(() => {
 });
 
 describe("A19a overview charts dynamics block", () => {
-  it("renders panel subtitles and single-series legend without technical copy", async () => {
+  it("renders community growth legend without technical copy", async () => {
     render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(3));
-    expect(screen.getByLabelText("Легенда: Регистрации по дням")).toHaveTextContent("Итого за день");
+    await screen.findByText("Новые регистрации за 7 дней");
+    expect(screen.getByLabelText("Легенда: Рост сообщества")).toHaveTextContent("Клиенты");
+    expect(screen.getByLabelText("Легенда: Рост сообщества")).toHaveTextContent("PRO");
     expect(screen.queryByText(/прототипе R1/i)).toBeNull();
     expect(screen.queryByText(/API-ряд/i)).toBeNull();
   });
 
-  it("updates chart subtitles when period changes and refetches with same period id", async () => {
+  it("updates growth subtitle when analytics period changes", async () => {
     render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(3));
+    await screen.findByText("Новые регистрации за 7 дней");
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("30d"));
-    expect(screen.getByRole("button", { name: "30 дней" })).toHaveAttribute("aria-pressed", "true");
-    await waitFor(() => expect(screen.getAllByText("За 30 дней")).toHaveLength(3));
+    await waitFor(() => expect(mocks.analytics).toHaveBeenLastCalledWith("30d"));
+    await waitFor(() => expect(screen.getByText("Новые регистрации за 30 дней")).toBeTruthy());
   });
 
-  it("shows charts refetch status while keeping prior series visible", async () => {
+  it("shows refetch status while keeping prior growth chart visible", async () => {
     let unlock: () => void = () => {};
     const gate = new Promise<void>((r) => {
       unlock = r;
     });
-    mocks.fetch.mockImplementationOnce(async () => basePayload("7d"));
-    mocks.fetch.mockImplementationOnce(async (period: string) => {
+    mocks.analytics.mockImplementationOnce(async () => ({
+      tab: "overview" as const,
+      period: "7d",
+      registrationsByDay: [{ date: "2026-10-27", clients: 2, pros: 1 }],
+    }));
+    mocks.analytics.mockImplementationOnce(async () => {
       await gate;
-      return basePayload(period);
+      return {
+        tab: "overview" as const,
+        period: "1d",
+        registrationsByDay: [{ date: "10:00", clients: 9, pros: 0 }],
+      };
     });
     render(<AdminOverviewClient />);
-    await screen.findByRole("list", { name: "Регистрации по дням" });
+    await screen.findByRole("img", { name: /Рост сообщества/ });
     fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
-    expect(await screen.findByText("Обновление графиков…")).toBeTruthy();
-    expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("7")).toBeTruthy();
+    expect(await screen.findByText("Обновление…")).toBeTruthy();
     unlock();
-    await waitFor(() => expect(screen.queryByText("Обновление графиков…")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("Обновление…")).toBeNull());
   });
 
-  it("recovers via explicit retry and keeps period selection", async () => {
-    mocks.fetch.mockRejectedValueOnce(new Error("Сбой графиков"));
+  it("recovers analytics via explicit retry in growth panel", async () => {
+    mocks.analytics.mockRejectedValueOnce(new Error("Сбой графиков"));
     render(<AdminOverviewClient />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Сбой графиков");
-    fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(2));
-    await screen.findByRole("list", { name: "Регистрации по дням" });
-    expect(screen.getByRole("button", { name: "7 дней" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByText("Сбой графиков")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Повторить" })[0]!);
+    await waitFor(() => expect(mocks.analytics).toHaveBeenCalledTimes(2));
   });
 
-  it("does not apply stale response after a newer period request", async () => {
-    type Resolver = (v: ReturnType<typeof basePayload>) => void;
-    let resolve30: Resolver | undefined;
-    mocks.fetch.mockImplementation(async (period: string) => {
-      if (period === "30d") {
-        return new Promise((resolve) => {
-          resolve30 = resolve;
-        });
-      }
-      return basePayload(period, {
-        registrationsCompleted: {
-          ...basePayload(period).registrationsCompleted,
-          seriesDaily: [
-            { date: "2026-10-27", agent: 0, specialist: 0, store: 0, company: 0, total: 1 },
-          ],
-        },
-      });
-    });
-    render(<AdminOverviewClient />);
-    await screen.findByRole("list", { name: "Регистрации по дням" });
-    fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
-    fireEvent.click(screen.getByRole("button", { name: "7 дней" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("7d"));
-    resolve30?.(
-      basePayload("30d", {
-        registrationsCompleted: {
-          ...basePayload("30d").registrationsCompleted,
-          seriesDaily: [
-            { date: "2026-10-27", agent: 0, specialist: 0, store: 0, company: 0, total: 999 },
-          ],
-        },
-      }),
-    );
-    await waitFor(() =>
-      expect(
-        within(screen.getByRole("list", { name: "Регистрации по дням" })).queryByText("999"),
-      ).toBeNull(),
-    );
-    expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("1")).toBeTruthy();
-  });
-
-  it("scopes chart dynamics CSS: subtitles, legend, section, retry", () => {
+  it("scopes chart dynamics CSS: subtitles, legend, dashboard, retry", () => {
     const src = readFileSync(path.join(__dirname, "AdminOverview.module.css"), "utf8");
-    expect(src).toMatch(/\.chartsSection\s*\{/);
+    expect(src).toMatch(/\.dashboardSection\s*\{/);
+    expect(src).toMatch(/\.dashboardGrid\s*\{/);
     expect(src).toMatch(/\.chartSubtitle\s*\{/);
     expect(src).toMatch(/\.chartLegend\s*\{/);
     expect(src).toMatch(/\.legendDot\s*\{/);
     expect(src).toMatch(/\.retryButton\s*\{/);
     expect(src).not.toMatch(/\.chartContractNote\s*\{/);
-    expect(src).toMatch(/\.chartsRow\s*\{/);
   });
 });

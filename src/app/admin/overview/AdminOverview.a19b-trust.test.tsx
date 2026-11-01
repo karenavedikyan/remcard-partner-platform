@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), analytics: vi.fn() }));
 
@@ -32,9 +32,7 @@ function payloadFor(period: "1d" | "7d" | "30d", total: number) {
       days7: { current: 7, comparisonNote: null },
       days30: { current: 30, comparisonNote: null },
       byKindInPeriod: { agent: 1 },
-      seriesDaily: [
-        { date: "2026-10-27", agent: 0, specialist: 0, store: 0, company: 0, total },
-      ],
+      seriesDaily: [{ date: "2026-10-27", agent: 0, specialist: 0, store: 0, company: 0, total }],
       selectedPeriod: { current: total, comparisonNote: null },
       selectedPeriodLabel: period,
     },
@@ -69,17 +67,10 @@ beforeEach(() => {
 });
 
 describe("A19b overview charts trust and period honesty", () => {
-  it("keeps chart period labels on displayed data while a newer period is loading", async () => {
+  it("keeps growth chart period labels on displayed data while a newer period is loading", async () => {
     let release30: (() => void) | undefined;
     const hold30 = new Promise<void>((resolve) => {
       release30 = resolve;
-    });
-    mocks.fetch.mockImplementation(async (period: string) => {
-      if (period === "30d") {
-        await hold30;
-        return payloadFor("30d", 30);
-      }
-      return payloadFor("7d", 7);
     });
     mocks.analytics.mockImplementation(async (period: string) => {
       if (period === "30d") {
@@ -97,61 +88,44 @@ describe("A19b overview charts trust and period honesty", () => {
       };
     });
     render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(3));
+    await screen.findByText("Новые регистрации за 7 дней");
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
-    expect(await screen.findByText("Обновление графиков…")).toBeTruthy();
-    expect(screen.getAllByText("За 7 дней")).toHaveLength(3);
-    expect(screen.queryByText("За 30 дней")).toBeNull();
-    expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("7")).toBeTruthy();
+    expect(await screen.findByText("Обновление…")).toBeTruthy();
+    expect(screen.getByText("Новые регистрации за 7 дней")).toBeTruthy();
+    expect(screen.queryByText("Новые регистрации за 30 дней")).toBeNull();
     release30?.();
-    await waitFor(() => expect(screen.getAllByText("За 30 дней")).toHaveLength(3));
-    expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("30")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("Новые регистрации за 30 дней")).toBeTruthy());
   });
 
-  it("ignores out-of-order 7d→30d→7d responses", async () => {
-    type Done = (v: ReturnType<typeof payloadFor>) => void;
+  it("ignores out-of-order analytics 7d→30d→7d responses", async () => {
+    type Done = (v: { tab: "overview"; period: string; registrationsByDay: { date: string; clients: number; pros: number }[] }) => void;
     let finish30: Done | undefined;
-    mocks.fetch.mockImplementation(async (period: string) => {
+    mocks.analytics.mockImplementation(async (period: string) => {
       if (period === "30d") {
         return new Promise((resolve) => {
           finish30 = resolve;
         });
       }
-      return payloadFor(period as "1d" | "7d" | "30d", period === "1d" ? 1 : 7);
+      return {
+        tab: "overview" as const,
+        period,
+        registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 1 }],
+      };
     });
     render(<AdminOverviewClient />);
-    await screen.findByRole("list", { name: "Регистрации по дням" });
+    await screen.findByRole("img", { name: /Рост сообщества/ });
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     fireEvent.click(screen.getByRole("button", { name: "7 дней" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("7d"));
-    finish30?.(payloadFor("30d", 999));
-    await waitFor(() =>
-      expect(
-        within(screen.getByRole("list", { name: "Регистрации по дням" })).queryByText("999"),
-      ).toBeNull(),
-    );
+    await waitFor(() => expect(mocks.analytics).toHaveBeenLastCalledWith("7d"));
+    finish30?.({
+      tab: "overview",
+      period: "30d",
+      registrationsByDay: [{ date: "2026-10-27", clients: 999, pros: 999 }],
+    });
+    await waitFor(() => expect(screen.queryByText("999")).toBeNull());
   });
 
-  it("does not commit stale success after unmount", async () => {
-    let finish: (() => void) | undefined;
-    const gate = new Promise<void>((resolve) => {
-      finish = resolve;
-    });
-    mocks.fetch.mockImplementationOnce(async () => payloadFor("7d", 7));
-    mocks.fetch.mockImplementationOnce(async () => {
-      await gate;
-      return payloadFor("30d", 30);
-    });
-    const { unmount } = render(<AdminOverviewClient />);
-    await screen.findByRole("list", { name: "Регистрации по дням" });
-    fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
-    unmount();
-    finish?.();
-    await new Promise((r) => setTimeout(r, 20));
-    expect(mocks.fetch).toHaveBeenCalled();
-  });
-
-  it("keeps stale charts visible on error without retitling to the selected period", async () => {
+  it("keeps stale growth chart visible on management error without retitling growth period", async () => {
     mocks.fetch.mockImplementationOnce(async () => payloadFor("7d", 7));
     mocks.fetch.mockRejectedValueOnce(new Error("Сбой сети"));
     mocks.analytics.mockImplementationOnce(async () => ({
@@ -161,11 +135,10 @@ describe("A19b overview charts trust and period honesty", () => {
     }));
     mocks.analytics.mockRejectedValueOnce(new Error("Сбой аналитики"));
     render(<AdminOverviewClient />);
-    await screen.findByRole("list", { name: "Регистрации по дням" });
+    await screen.findByRole("img", { name: /Рост сообщества/ });
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     expect(await screen.findByText("Сбой сети")).toBeTruthy();
-    expect(screen.getAllByText("За 7 дней")).toHaveLength(3);
+    expect(screen.getByText("Новые регистрации за 7 дней")).toBeTruthy();
     expect(screen.getByRole("button", { name: "30 дней" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("7")).toBeTruthy();
   });
 });
