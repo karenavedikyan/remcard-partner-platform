@@ -35,11 +35,18 @@ describe("AgentPartnerDiscoveryFilters P22a modal find filters", () => {
     });
   });
 
-  it("documents PartnerSearchFilters is not wired into agent modal find controls", () => {
+  it("wires exactly one modal-full filter without legacy dual mounts", () => {
     const hub = readFileSync(path.join(__dirname, "PartnersHub.tsx"), "utf8");
-    const block = hub.slice(hub.indexOf("const agentFindSearchControls"), hub.indexOf("const agentFindResultsBlock"));
-    expect(block).toContain('layout="modal-primary"');
-    expect(block).toContain('layout="modal-more"');
+    const start = hub.indexOf("const agentFindSearchControls");
+    const end = hub.indexOf("const agentFindShowcase", start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const block = hub.slice(start, end);
+    expect(block.match(/<AgentPartnerDiscoveryFilters\b/g)).toHaveLength(1);
+    expect(block).toContain('layout="modal-full"');
+    expect(block).not.toContain('layout="modal-primary"');
+    expect(block).not.toContain('layout="modal-more"');
+    expect(block).not.toContain("findRefine");
     expect(block).not.toContain("PartnerSearchFilters");
   });
 

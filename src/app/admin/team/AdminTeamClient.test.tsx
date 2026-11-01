@@ -52,6 +52,27 @@ beforeEach(() => {
 });
 
 describe("AdminTeamClient A17a readonly", () => {
+  it("counts actual loaded roles including analysts without technical copy", async () => {
+    api.fetchAdminTeam.mockResolvedValueOnce({
+      members: [
+        ...members,
+        {
+          ...members[1],
+          id: "analyst-1",
+          publicId: "RC-ANL",
+          displayName: "Ирина Аналитик",
+          staffRole: "ANALYST",
+        },
+      ],
+    });
+    render(<AdminTeamClient />);
+    await screen.findByText("Ирина Аналитик");
+    const roles = screen.getByText("Ролей в команде").closest("div");
+    expect(roles).not.toBeNull();
+    expect(within(roles!).getByText("3")).toBeTruthy();
+    expect(screen.queryByText(/StaffRole/)).toBeNull();
+  });
+
   it("renders cards with roles and routes access to existing screen", async () => {
     render(<AdminTeamClient />);
     expect(await screen.findByRole("heading", { name: "Команда", level: 1 })).toBeTruthy();

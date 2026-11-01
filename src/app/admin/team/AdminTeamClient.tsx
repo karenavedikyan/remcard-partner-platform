@@ -111,7 +111,7 @@ export function AdminTeamClient() {
 
   const filtered = useMemo(() => filterTeamMembers(members, query), [members, query]);
   const activeCount = members.length;
-  const roleLegend = "Владелец · Администратор · Оператор";
+  const roleCount = new Set(members.map((member) => member.staffRole)).size;
 
   return (
     <div className={styles.page} aria-labelledby={titleId}>
@@ -135,8 +135,8 @@ export function AdminTeamClient() {
           <small>С доступом в кабинет администратора</small>
         </div>
         <div className={styles.statTile}>
-          <strong>{roleLegend}</strong>
-          <small>Роли StaffRole в PROF; кураторы по направлениям — позже</small>
+          <strong>{loadState.kind === "loading" ? "…" : roleCount}</strong>
+          <small>Ролей в команде</small>
         </div>
         <div className={styles.statTile}>
           <strong>{filtered.length}</strong>
@@ -244,7 +244,7 @@ export function AdminTeamClient() {
               </div>
               <span className={`${styles.pill} ${styles.pillGood}`}>Доступ активен</span>
               <p className={styles.note}>
-                Роль задаётся приглашением. Направления кураторов в этом блоке не назначаются.
+                Права сотрудника зависят от его роли в команде.
               </p>
               <div className={styles.employeeActions}>
                 <AccessAction member={member} />
