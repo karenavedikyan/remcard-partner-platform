@@ -12,8 +12,8 @@ const css = cssBytes.toString("utf8");
 const MARKER = "/* === P6a: modal-primary specialization/stage filters (prefix above immutable) === */";
 const PREFIX_BYTES = 1929;
 const PREFIX_SHA256 = "87e316d8ecbb59fedd293f06073ac17bd0f333a76236d3b613f3bad7430a72be";
-// Approved P25c change resets incompatible taxonomy on partner-type selection.
-const TSX_SHA256 = "9d4eab2781c225651177b7f50895be153bc3d39297b88cff29249ef4efec1362";
+// Approved P25c/P25d changes reset specialization and stage on partner-type selection.
+const TSX_SHA256 = "23ca554680712e905024e9549977dc54082743fc26fc99db678a11b122d0dee1";
 
 vi.mock("@/lib/partner-taxonomy", () => ({
   fetchPartnerTaxonomy: vi.fn(),
