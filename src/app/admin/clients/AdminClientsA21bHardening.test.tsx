@@ -98,7 +98,7 @@ describe("A21b clients hardening", () => {
     expect(screen.getAllByText("Анна").length).toBeGreaterThan(0);
   });
 
-  it("wraps long displayName/publicId without create/delete actions", async () => {
+  it("renders long displayName/publicId without create/delete actions", async () => {
     fetchAdminClients.mockResolvedValue({
       users: [
         client(1, {

@@ -74,6 +74,9 @@ describe("A21a clients source contracts", () => {
     expect(css).toContain(".cards");
     expect(css).toContain(".table");
     expect(css).toContain(".pagination");
+    expect(css).toMatch(/overflow-x:\s*hidden/);
+    expect(css).toMatch(/line-clamp:\s*2/);
+    expect(css).toContain("table-layout: fixed");
     expect(client).toContain('data-testid="client-search"');
     expect(client).toContain("Период регистрации");
     expect(client).not.toContain("Завершённые сделки");
