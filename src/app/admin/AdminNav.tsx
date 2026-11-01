@@ -21,6 +21,7 @@ export const ADMIN_NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin/overview", label: "Обзор", icon: "overview", group: "primary" },
   { href: "/admin/moderation", label: "Модерация", icon: "moderation", group: "primary" },
   { href: "/admin/partners", label: "Партнёры", icon: "partners", group: "primary" },
+  { href: "/admin/clients", label: "Клиенты", icon: "clients", group: "primary" },
   { href: "/admin/team", label: "Команда", icon: "team", group: "primary" },
   { href: "/admin/notifications", label: "Уведомления", icon: "notifications", group: "control" },
   { href: "/admin/test-users", label: "Тестовые пользователи", icon: "test", group: "service" },
@@ -70,6 +71,18 @@ function NavIcon({ name }: { name: string }) {
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
+          />
+        </svg>
+      );
+    case "clients":
+      return (
+        <svg {...common}>
+          <path
+            d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm8 2c-2.2 0-4 1.2-4 3v2h8v-2c0-1.8-1.8-3-4-3ZM8 14c-2.5 0-4.5 1.3-4.5 3.2V19h5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       );

@@ -36,7 +36,7 @@ describe("A17b admin shell source contracts", () => {
     expect(nav).not.toContain("Главное меню");
     expect(nav).not.toContain("partnersChrome");
     expect(nav).not.toMatch(/\bnavCount\b|\bcountBadge\b|\bfakeCount\b/);
-    expect(nav).not.toContain("/admin/clients");
+    // A21a adds real /admin/clients; unimplemented R1 pages stay absent.
     expect(nav).not.toContain("/admin/tasks");
     expect(nav).not.toContain("/admin/analytics");
     expect(nav).not.toContain("/admin/settings");

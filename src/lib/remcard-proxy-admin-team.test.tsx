@@ -33,8 +33,9 @@ describe("A17a proxy allowlist for admin team", () => {
     expect(isAllowedProxyRoute("GET", "/api/admin/team/search")).toBe(false);
     expect(isAllowedProxyRoute("POST", "/api/admin/team/search")).toBe(false);
     expect(isAllowedProxyRoute("GET", "/api/admin/team/extra")).toBe(false);
-    expect(isAllowedProxyRoute("GET", "/api/admin/users")).toBe(false);
+    // A21a owns exact GET /api/admin/users; team suite still denies writes/id paths.
     expect(isAllowedProxyRoute("PATCH", "/api/admin/users/u1")).toBe(false);
+    expect(isAllowedProxyRoute("GET", "/api/admin/users/u1")).toBe(false);
     expect(isAllowedProxyRoute("GET", "/api/admin")).toBe(false);
     expect(isAllowedProxyRoute("GET", "/api/admin/profile")).toBe(false);
   });

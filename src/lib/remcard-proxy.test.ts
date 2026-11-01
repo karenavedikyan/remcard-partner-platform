@@ -275,8 +275,11 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/admin/team/search"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/admin/team/search"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/admin/team/extra"), false);
-    assert.equal(isAllowedProxyRoute("GET", "/api/admin/users"), false);
+    // A21a: exact GET /api/admin/users allowed; writes and /users/:id stay denied.
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin/users"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/admin/users"), false);
     assert.equal(isAllowedProxyRoute("PATCH", "/api/admin/users/u1"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin/users/u1"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/admin"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/access/audit"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notification-settings"), true);
