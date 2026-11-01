@@ -97,8 +97,8 @@ function GrowthChart({
         >
           <defs>
             <linearGradient id={gradClients} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="currentColor" stopOpacity="0.14" />
-              <stop offset="1" stopColor="currentColor" stopOpacity="0.01" />
+              <stop offset="0" stopColor="var(--primary)" stopOpacity="0.14" />
+              <stop offset="1" stopColor="var(--primary)" stopOpacity="0.01" />
             </linearGradient>
           </defs>
           {clientGeo.guides.map((g, gi) => (
@@ -113,24 +113,24 @@ function GrowthChart({
           <path
             d={clientGeo.linePath}
             fill="none"
-            stroke="currentColor"
+            stroke="var(--primary)"
             strokeWidth="2.5"
             strokeLinecap="round"
           />
           <path
             d={proGeo.linePath}
             fill="none"
-            stroke="#6366f1"
+            stroke="var(--muted)"
             strokeWidth="2"
             strokeDasharray="4 3"
             strokeLinecap="round"
           />
           {series.map((row, i) => (
             <g key={row.date} data-testid="analytics-registration-points">
-              <circle cx={clientGeo.xAt(i)} cy={clientGeo.yAt(row.clients)} r="3" fill="currentColor">
+              <circle cx={clientGeo.xAt(i)} cy={clientGeo.yAt(row.clients)} r="3" fill="var(--primary)">
                 <title>{`${row.date}: клиенты ${row.clients}`}</title>
               </circle>
-              <circle cx={proGeo.xAt(i)} cy={proGeo.yAt(row.pros)} r="3" fill="#6366f1">
+              <circle cx={proGeo.xAt(i)} cy={proGeo.yAt(row.pros)} r="3" fill="var(--muted)">
                 <title>{`${row.date}: PRO ${row.pros}`}</title>
               </circle>
             </g>

@@ -76,6 +76,8 @@ describe("AdminAnalytics A22d shared reader", () => {
     render(<AdminAnalyticsClient />);
     const points = await screen.findByTestId("analytics-registration-points");
     expect(points.querySelectorAll("circle")).toHaveLength(2);
+    expect(points.querySelectorAll("circle")[0]).toHaveAttribute("fill", "var(--primary)");
+    expect(points.querySelectorAll("circle")[1]).toHaveAttribute("fill", "var(--muted)");
     expect(points).toHaveTextContent("2026-11-01: клиенты 3");
     expect(points).toHaveTextContent("2026-11-01: PRO 1");
     expect(screen.getByText("01.11")).toBeInTheDocument();
