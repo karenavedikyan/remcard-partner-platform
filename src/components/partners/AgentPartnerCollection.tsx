@@ -500,6 +500,12 @@ export function AgentPartnerCollection(props: Props) {
                       alt=""
                       className={activeStyles.partnerAvatar}
                       data-testid="partner-row-avatar"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                      onLoad={(event) => {
+                        event.currentTarget.style.removeProperty("display");
+                      }}
                     />
                   ) : null}
                   <PartnerRowNameButton

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AgentPartnerCollection } from "./AgentPartnerCollection";
 import type { Partnership } from "@/lib/types";
@@ -59,6 +59,22 @@ const defaultProps = {
 };
 
 describe("AgentPartnerCollection P28e pure agent + readonly avatar", () => {
+  it("hides a broken profile image without inventing a logo and recovers on load", () => {
+    const partnership = activePartnership("broken-photo");
+    partnership.storeUser!.photoUrl = "https://example.invalid/photo.png";
+    render(
+      <AgentPartnerCollection
+        {...defaultProps}
+        partnerships={[partnership]}
+        presentationVariant="active"
+      />,
+    );
+    const image = screen.getByTestId("partner-row-avatar");
+    fireEvent.error(image);
+    expect(image).not.toBeVisible();
+    fireEvent.load(image);
+    expect(image).toBeVisible();
+  });
   it("labels pure AGENT activities as Агент (does not rename pro user)", () => {
     render(
       <AgentPartnerCollection

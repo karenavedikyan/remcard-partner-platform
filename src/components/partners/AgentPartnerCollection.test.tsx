@@ -262,9 +262,11 @@ describe("AgentPartnerCollection P3a display hierarchy", () => {
   ) {
     expect(within(root).getByTestId("partner-row-name-button")).toHaveTextContent(expected.title);
     expect(within(root).getByTestId("partner-row-type-caption")).toHaveTextContent(expected.type);
-    expect(within(root).getByTestId("partner-row-detail")).toHaveTextContent(expected.detail);
-    expect(within(root).getByTestId("partner-row-type-caption").textContent).not.toMatch(/Краснодар/);
-    expect(within(root).getByTestId("partner-row-type-caption").textContent).not.toContain("·");
+    const [city, ...specParts] = expected.detail.split(" · ");
+    expect(within(root).getByTestId("partner-row-type-caption")).toHaveTextContent(
+      `${expected.type} · ${city}`,
+    );
+    expect(within(root).getByTestId("partner-row-detail")).toHaveTextContent(specParts.join(" · "));
     if (expected.official) {
       expect(within(root).getByTestId("partner-row-official-line")).toHaveTextContent(
         `Официально: ${expected.official}`,
@@ -293,7 +295,7 @@ describe("AgentPartnerCollection P3a display hierarchy", () => {
       official: "Seda Rallis Agency",
       status: "Активно",
     });
-    expect(within(row).getByTestId("partner-row-detail").textContent).toMatch(/Краснодар/);
+    expect(within(row).getByTestId("partner-row-type-caption").textContent).toMatch(/Краснодар/);
     expect(within(row).getByTestId("partner-row-detail").textContent).toMatch(/Покраска/);
   });
 
@@ -421,9 +423,13 @@ describe("AgentPartnerCollection P3a display hierarchy", () => {
 
     const expectDetailTrio = (details: HTMLElement[]) => {
       expect(details).toHaveLength(3);
-      expect(details[0]).toHaveTextContent("Город не указан · Двери");
-      expect(details[1]).toHaveTextContent("Анапа · Специализация не указана");
-      expect(details[2]).toHaveTextContent("Город не указан · Специализация не указана");
+      const cities = ["Город не указан", "Анапа", "Город не указан"];
+      const specs = ["Двери", "Специализация не указана", "Специализация не указана"];
+      details.forEach((detail, index) => {
+        expect(detail).toHaveTextContent(specs[index]!);
+        const row = detail.closest("tr, article") as HTMLElement;
+        expect(within(row).getByTestId("partner-row-type-caption")).toHaveTextContent(cities[index]!);
+      });
     };
 
     expectDetailTrio(
@@ -513,10 +519,10 @@ describe("AgentPartnerCollection P3a display hierarchy", () => {
 
     const tableRows = screen.getAllByTestId("agent-r04-partners-table-row");
     expect(within(tableRows[0]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Агент");
-    expect(within(tableRows[0]!).getByTestId("partner-row-detail")).toHaveTextContent("Сочи");
+    expect(within(tableRows[0]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Сочи");
     expect(within(tableRows[1]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Магазин");
     expect(within(tableRows[1]!).getByText("Приостановлено")).toBeInTheDocument();
-    expect(within(tableRows[1]!).getByTestId("partner-row-detail").textContent).toMatch(/Анапа/);
+    expect(within(tableRows[1]!).getByTestId("partner-row-type-caption").textContent).toMatch(/Анапа/);
     expect(within(tableRows[1]!).getByTestId("partner-row-detail").textContent).toMatch(/Двери/);
     expect(within(tableRows[2]!).getByTestId("partner-row-type-caption")).toHaveTextContent("Компания");
     expect(within(tableRows[3]!).getByTestId("partner-row-type-caption")).toHaveTextContent(
@@ -576,14 +582,15 @@ describe("AgentPartnerCollection P3a display hierarchy", () => {
     expect(within(longRow!).getByTestId("partner-row-official-line").textContent).toMatch(
       /Официально:.*юридическое/,
     );
-    expect(within(longRow!).getByTestId("partner-row-detail").textContent).toContain(longCity);
+    expect(within(longRow!).getByTestId("partner-row-type-caption").textContent).toContain(longCity);
     expect(within(longRow!).getByTestId("partner-row-detail").textContent).not.toMatch(/\bdoors\b/);
     expect(within(longRow!).getByText("Приостановлено")).toBeInTheDocument();
 
     expect(within(emptyRow!).getByTestId("partner-row-type-caption")).toHaveTextContent("Партнёр");
     expect(within(emptyRow!).getByTestId("partner-row-detail")).toHaveTextContent(
-      "Город не указан · Специализация не указана",
+      "Специализация не указана",
     );
+    expect(within(emptyRow!).getByTestId("partner-row-type-caption")).toHaveTextContent("Город не указан");
     expect(within(emptyRow!).queryByText("undefined")).toBeNull();
     expect(within(emptyRow!).queryByTestId("partner-row-official-line")).toBeNull();
   });
@@ -745,5 +752,4 @@ describe("AgentPartnerCollection P3b cards selection", () => {
     );
   });
 });
-
 
