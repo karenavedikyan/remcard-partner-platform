@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { PartnerGeneralTermsDetails } from "@/components/partners/PartnerGeneralTermsDetails";
+import { PartnerSearchResultInlineTerms } from "@/components/partners/PartnerSearchResultInlineTerms";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -28,6 +28,30 @@ export type SearchResultInviteFoot = {
   blockedReason: string | null;
 };
 
+/** Foot slot: status badge vs invite CTA (frozen pr-card-foot). */
+export function searchResultFootPresentation(
+  partner: PartnerSearchResult,
+  opts: { inviteDisabled?: boolean; inviteBusy?: boolean } = {},
+): {
+  mode: "status-badge" | "invite-button";
+  statusLabel: string | null;
+  invite: SearchResultInviteFoot | null;
+} {
+  const status = partner.partnershipStatus?.trim() ?? "";
+  if (status && status !== "ENDED") {
+    return {
+      mode: "status-badge",
+      statusLabel: PARTNERSHIP_STATUS_LABELS[status] ?? status,
+      invite: null,
+    };
+  }
+  return {
+    mode: "invite-button",
+    statusLabel: null,
+    invite: searchResultInviteFoot(partner, opts),
+  };
+}
+
 /** Invite CTA from search DTO + hub busy/disabled flags (no network). */
 export function searchResultInviteFoot(
   partner: PartnerSearchResult,
@@ -36,7 +60,7 @@ export function searchResultInviteFoot(
   const status = partner.partnershipStatus?.trim() ?? "";
   if (status && status !== "ENDED") {
     return {
-      label: "Пригласить",
+      label: "Сотрудничать",
       disabled: true,
       blockedReason: PARTNERSHIP_STATUS_LABELS[status] ?? status,
     };
@@ -45,9 +69,9 @@ export function searchResultInviteFoot(
     return { label: "Отправка…", disabled: true, blockedReason: null };
   }
   if (opts.inviteDisabled) {
-    return { label: "Пригласить", disabled: true, blockedReason: null };
+    return { label: "Сотрудничать", disabled: true, blockedReason: null };
   }
-  return { label: "Пригласить", disabled: false, blockedReason: null };
+  return { label: "Сотрудничать", disabled: false, blockedReason: null };
 }
 
 export function searchResultShowOpenHint(partner: PartnerSearchResult): boolean {
@@ -279,7 +303,7 @@ export function PartnerSearchResultCard({
 
         {showPublishedTerms ? (
           <div className={styles.modalResultTerms} data-testid="agent-partner-search-result-terms">
-            <PartnerGeneralTermsDetails partnerUserId={partner.id} />
+            <PartnerSearchResultInlineTerms key={partner.id} partnerUserId={partner.id} />
           </div>
         ) : null}
       </div>

@@ -158,18 +158,7 @@ export function AgentR04ListToolbar(props: Props) {
         ) : null}
       </div>
 
-      <div className={styles.collectionCount}>
-        <span>Найдено: {props.count}</span>
-        {!invitations && props.count > 0 ? (
-          <span className={styles.selectionHint}>Выделите записи, чтобы работать с ними вместе</span>
-        ) : null}
-        {showReset ? (
-          <Button type="button" variant="secondary" onClick={props.onResetFilters}>
-            Сбросить фильтры
-          </Button>
-        ) : null}
-      </div>
-
+      {/* Frozen quiet-tools order: tools → chips → count (selection actions live in BulkBar). */}
       {props.chips.length ? (
         <div className={styles.chips} data-testid="list-filter-chips" aria-label="Применённые фильтры партнёров">
           {props.chips.map((chip) => (
@@ -185,6 +174,15 @@ export function AgentR04ListToolbar(props: Props) {
           ))}
         </div>
       ) : null}
+
+      <div className={styles.collectionCount} data-testid="agent-r04-collection-count">
+        <span>Найдено: {props.count}</span>
+        {showReset ? (
+          <Button type="button" variant="secondary" onClick={props.onResetFilters}>
+            Сбросить фильтры
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

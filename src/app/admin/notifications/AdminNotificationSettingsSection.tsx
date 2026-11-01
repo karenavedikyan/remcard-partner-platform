@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   isTrustedAdminNotificationBindDeepLink,
@@ -50,10 +50,13 @@ export type AdminNotificationSettingsHostState = {
 
 type AdminNotificationSettingsSectionProps = {
   onHostStateChange?: (state: AdminNotificationSettingsHostState) => void;
+  /** Synthetic refresh hook (QA native + unit tests). */
+  settingsRefreshNonce?: number;
 };
 
 export function AdminNotificationSettingsSection({
   onHostStateChange,
+  settingsRefreshNonce,
 }: AdminNotificationSettingsSectionProps = {}) {
   const [form, setForm] = useState<AdminNotificationSettingsForm | null>(null);
   const [bindings, setBindings] = useState<AdminNotificationBindings | null>(null);
@@ -72,6 +75,7 @@ export function AdminNotificationSettingsSection({
   const savedPayloadRef = useRef<string | null>(null);
   const savingRef = useRef(false);
   const saveFlightRef = useRef<Promise<void> | null>(null);
+  const saveSeqRef = useRef(0);
 
   const syncSavedBaseline = useCallback((nextForm: AdminNotificationSettingsForm) => {
     savedPayloadRef.current = JSON.stringify(adminNotificationSettingsPatchPayload(nextForm));
@@ -79,39 +83,57 @@ export function AdminNotificationSettingsSection({
 
   formRef.current = form;
 
+  const isDraftActive = useCallback(() => {
+    const current = formRef.current;
+    if (current === null || savedPayloadRef.current === null) return false;
+    return JSON.stringify(adminNotificationSettingsPatchPayload(current)) !== savedPayloadRef.current;
+  }, []);
+
   const loadSettings = useCallback(async () => {
     const requestId = ++loadSeqRef.current;
-    setLoading(true);
+    const draftActiveAtStart = isDraftActive();
+    if (!draftActiveAtStart) {
+      setLoading(true);
+    }
     setLoadError("");
     try {
       const data = await fetchAdminNotificationSettings();
       if (requestId !== loadSeqRef.current) return;
-      const draftActive =
-        formRef.current !== null &&
-        savedPayloadRef.current !== null &&
-        JSON.stringify(adminNotificationSettingsPatchPayload(formRef.current)) !== savedPayloadRef.current;
-      if (draftActive) {
+      if (isDraftActive()) {
         setBindings(data.bindings);
+        setLoadError("");
         return;
       }
       const nextForm = settingsToForm(data.settings);
       setForm(nextForm);
       setBindings(data.bindings);
       syncSavedBaseline(nextForm);
+      setLoadError("");
     } catch (caught) {
       if (requestId !== loadSeqRef.current) return;
-      setLoadError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить настройки");
+      const message =
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить настройки";
+      if (isDraftActive()) {
+        setLoadError(message);
+        return;
+      }
+      setLoadError(message);
       setForm(null);
       setBindings(null);
       savedPayloadRef.current = null;
     } finally {
       if (requestId === loadSeqRef.current) setLoading(false);
     }
-  }, [syncSavedBaseline]);
+  }, [isDraftActive, syncSavedBaseline]);
 
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    if (settingsRefreshNonce === undefined || settingsRefreshNonce < 1) return;
+    void loadSettings();
+  }, [settingsRefreshNonce, loadSettings]);
 
   useEffect(() => {
     if (!bindChallenge) return;
@@ -180,10 +202,12 @@ export function AdminNotificationSettingsSection({
     }
   }
 
-  const dirty = useMemo(() => {
-    if (!form || savedPayloadRef.current === null) return false;
-    return JSON.stringify(adminNotificationSettingsPatchPayload(form)) !== savedPayloadRef.current;
-  }, [form]);
+  // A successful save changes the server baseline, even if the draft stays put.
+  const dirty = Boolean(
+    form &&
+      savedPayloadRef.current !== null &&
+      JSON.stringify(adminNotificationSettingsPatchPayload(form)) !== savedPayloadRef.current,
+  );
 
   useEffect(() => {
     onHostStateChange?.({
@@ -218,17 +242,28 @@ export function AdminNotificationSettingsSection({
       setSaving(true);
       setSaveError("");
       setSaveMessage("");
+      const saveRequestId = ++saveSeqRef.current;
+      const payloadSent = adminNotificationSettingsPatchPayload(form);
       try {
-        const data = await patchAdminNotificationSettings(adminNotificationSettingsPatchPayload(form));
+        const data = await patchAdminNotificationSettings(payloadSent);
+        if (saveRequestId !== saveSeqRef.current) return;
         const nextForm = settingsToForm(data.settings);
-        setForm(nextForm);
-        setBindings(data.bindings);
         syncSavedBaseline(nextForm);
+        setBindings(data.bindings);
+        const current = formRef.current;
+        if (current === null) return;
+        if (JSON.stringify(adminNotificationSettingsPatchPayload(current)) !== JSON.stringify(payloadSent)) {
+          return;
+        }
+        setForm(nextForm);
         setSaveMessage("Настройки сохранены");
       } catch (caught) {
+        if (saveRequestId !== saveSeqRef.current) return;
         setSaveError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить настройки");
       } finally {
-        setSaving(false);
+        if (saveRequestId === saveSeqRef.current) {
+          setSaving(false);
+        }
       }
     } finally {
       savingRef.current = false;
@@ -252,11 +287,11 @@ export function AdminNotificationSettingsSection({
     }
   }
 
-  if (loading) {
+  if (loading && !form) {
     return <p className={styles.stateBox}>Загрузка настроек…</p>;
   }
 
-  if (loadError || !form) {
+  if (!form) {
     return (
       <div className={styles.stateBox} role="alert">
         <p>{loadError || "Настройки недоступны"}</p>
@@ -281,6 +316,14 @@ export function AdminNotificationSettingsSection({
 
   return (
     <section className={styles.settingsSection} aria-labelledby="admin-notify-settings-title">
+      {loadError ? (
+        <div className={styles.stateBox} role="alert">
+          <p>{loadError}</p>
+          <button type="button" className={styles.retryButton} onClick={() => void loadSettings()}>
+            Повторить
+          </button>
+        </div>
+      ) : null}
       <h2 id="admin-notify-settings-title">Настройки уведомлений</h2>
       <p className={styles.settingsLead}>
         Выберите события и каналы доставки. Для уведомлений в Telegram или MAX сначала
@@ -430,6 +473,16 @@ export function AdminNotificationSettingsSection({
       >
         {saving ? "Сохранение…" : "Сохранить"}
       </Button>
+      {process.env.NEXT_PUBLIC_REMcard_ADMIN_QA === "1" ? (
+        <button
+          type="button"
+          data-testid="admin-notify-qa-settings-reload"
+          className={styles.retryButton}
+          onClick={() => void loadSettings()}
+        >
+          QA reload settings
+        </button>
+      ) : null}
     </section>
   );
 }

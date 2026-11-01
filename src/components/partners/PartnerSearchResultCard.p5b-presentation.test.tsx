@@ -12,9 +12,9 @@ import {
 } from "./PartnerSearchResultCard";
 import type { PartnerSearchResult } from "@/lib/types";
 
-vi.mock("@/components/partners/PartnerGeneralTermsDetails", () => ({
-  PartnerGeneralTermsDetails: ({ partnerUserId }: { partnerUserId: string }) => (
-    <div data-testid="agent-published-terms">{partnerUserId}</div>
+vi.mock("@/components/partners/PartnerSearchResultInlineTerms", () => ({
+  PartnerSearchResultInlineTerms: ({ partnerUserId }: { partnerUserId: string }) => (
+    <div data-testid="agent-inline-terms">{partnerUserId}</div>
   ),
 }));
 
@@ -132,10 +132,10 @@ describe("PartnerSearchResultCard P5b presentation", () => {
     expect(screen.getByTestId("agent-partner-search-result-stages")).toHaveTextContent(
       "Чистовая отделка",
     );
-    expect(screen.getByTestId("agent-published-terms")).toHaveTextContent("p-1");
+    expect(screen.getByTestId("agent-inline-terms")).toHaveTextContent("p-1");
     expect(screen.getByTestId("agent-partner-search-result-terms")).toBeInTheDocument();
 
-    const invite = screen.getByRole("button", { name: "Пригласить" });
+    const invite = screen.getByRole("button", { name: "Сотрудничать" });
     expect(invite).toHaveAttribute("data-testid", "agent-partner-search-result-invite");
     await userEvent.click(invite);
     expect(onInvite).toHaveBeenCalledTimes(1);

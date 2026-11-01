@@ -18,8 +18,8 @@ describe("AdminNotifications A16k settings load recovery", () => {
 
   it("NOTIFICATIONS-settings-load-recovery: serializes loads and preserves dirty draft on late GET", () => {
     expect(section).toContain("loadSeqRef");
-    expect(section).toContain("draftActive");
-    expect(section).toMatch(/if \(draftActive\)[\s\S]*setBindings\(data\.bindings\)/);
+    expect(section).toMatch(/isDraftActive|draftActive/);
+    expect(section).toMatch(/if \(isDraftActive\(\)\)[\s\S]*setBindings\(data\.bindings\)/);
   });
 
   it("NOTIFICATIONS-settings-load-recovery: blocks save until baseline exists", () => {

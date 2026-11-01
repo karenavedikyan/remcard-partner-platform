@@ -35,7 +35,11 @@ vi.mock("@/lib/api-client", () => ({
 import {
   ADMIN_CLIENTS_FROZEN_MAPPING,
   assertAdminUserFunnelRole,
+  adminClientsInclusiveCivilDayCount,
+  adminClientsMskDayEndInclusiveIso,
+  adminClientsMskDayStartIso,
   buildAdminClientsQueryString,
+  resolveAdminClientsRegistrationRange,
   buildAdminUserFunnelQueryString,
   fetchAdminClients,
   getAdminClientTotal,
@@ -309,5 +313,60 @@ describe("A21a/A21c prof-admin-clients-api", () => {
   it("buildAdminClientsQueryString never emits q=", () => {
     expect(buildAdminClientsQueryString({ search: "anna" })).toContain("search=anna");
     expect(buildAdminClientsQueryString({ search: "anna" })).not.toContain("q=");
+  });
+
+  it("emits createdFrom/createdTo without legacy period and forbids the combo", () => {
+    const qs = buildAdminClientsQueryString({
+      createdFrom: "2026-08-03T21:00:00.000Z",
+      createdTo: "2026-11-01T20:59:59.999Z",
+      page: 1,
+    });
+    expect(qs).toContain("createdFrom=2026-08-03T21%3A00%3A00.000Z");
+    expect(qs).toContain("createdTo=2026-11-01T20%3A59%3A59.999Z");
+    expect(qs).not.toContain("period=");
+    expect(() =>
+      buildAdminClientsQueryString({
+        period: "week",
+        createdFrom: "2026-10-26",
+        createdTo: "2026-11-01",
+      }),
+    ).toThrow(/Do not combine createdFrom\/createdTo with period/);
+  });
+
+  it("proves MSK N-day inclusive windows (author Aug3–Nov1 was 91, not 90)", () => {
+    // Author A22g example for 90d on 2026-11-01 used Aug 3 → inclusive length 91.
+    expect(adminClientsInclusiveCivilDayCount("2026-08-03", "2026-11-01")).toBe(91);
+    expect(adminClientsInclusiveCivilDayCount("2026-08-04", "2026-11-01")).toBe(90);
+    expect(adminClientsInclusiveCivilDayCount("2026-10-26", "2026-11-01")).toBe(7);
+    expect(adminClientsInclusiveCivilDayCount("2026-10-03", "2026-11-01")).toBe(30);
+
+    const noonUtc = new Date("2026-11-01T12:00:00.000Z");
+    const w90 = resolveAdminClientsRegistrationRange(90, noonUtc);
+    expect(w90.mskTo).toBe("2026-11-01");
+    expect(w90.mskFrom).toBe("2026-08-04");
+    expect(w90.inclusiveDayCount).toBe(90);
+    expect(w90.createdFrom).toBe(adminClientsMskDayStartIso("2026-08-04"));
+    expect(w90.createdTo).toBe(adminClientsMskDayEndInclusiveIso("2026-11-01"));
+    // MSK midnight Aug 4 = 2026-08-03T21:00:00.000Z; end of MSK Nov 1 = …T20:59:59.999Z
+    expect(w90.createdFrom).toBe("2026-08-03T21:00:00.000Z");
+    expect(w90.createdTo).toBe("2026-11-01T20:59:59.999Z");
+
+    const w7 = resolveAdminClientsRegistrationRange(7, noonUtc);
+    expect(w7.mskFrom).toBe("2026-10-26");
+    expect(w7.inclusiveDayCount).toBe(7);
+
+    // Leap-year month roll: 90d ending 2024-03-01 includes 2024-02-29.
+    const leapEnd = new Date("2024-03-01T10:00:00.000Z");
+    const leap = resolveAdminClientsRegistrationRange(90, leapEnd);
+    expect(leap.inclusiveDayCount).toBe(90);
+    expect(leap.mskTo).toBe("2024-03-01");
+    expect(leap.mskFrom).toBe("2023-12-03");
+    expect(adminClientsInclusiveCivilDayCount("2023-12-03", "2024-02-29")).toBeGreaterThan(0);
+
+    // Month-length roll across 31→28/29.
+    const feb = resolveAdminClientsRegistrationRange(30, new Date("2025-03-01T08:00:00.000Z"));
+    expect(feb.inclusiveDayCount).toBe(30);
+    expect(feb.mskFrom).toBe("2025-01-31");
+    expect(feb.mskTo).toBe("2025-03-01");
   });
 });

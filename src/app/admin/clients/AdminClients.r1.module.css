@@ -60,6 +60,111 @@
   display: grid;
   gap: var(--cl-s2);
   min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--cl-s2);
+  flex-shrink: 0;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0 var(--cl-s4);
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r1);
+  background: var(--cl-surface);
+  color: var(--cl-ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.exportBtn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--cl-brand) 45%, var(--cl-line));
+}
+
+.exportBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.exportDialog {
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-radius);
+  padding: 0;
+  width: min(28rem, calc(100vw - 1.5rem));
+  color: var(--cl-ink);
+  background: var(--cl-surface);
+  box-shadow: 0 16px 40px color-mix(in srgb, #14181d 20%, transparent);
+}
+
+.exportDialog::backdrop {
+  background: color-mix(in srgb, #14181d 40%, transparent);
+}
+
+.exportDialogHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cl-s3);
+  padding: var(--cl-s4) var(--cl-s5);
+  border-bottom: 1px solid var(--cl-line);
+}
+
+.exportDialogTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.exportDialogClose {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--cl-brand);
+  border-radius: var(--cl-r1);
+  background: var(--cl-surface);
+  color: var(--cl-ink);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.exportDialogBody {
+  padding: var(--cl-s5);
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.55;
+}
+
+.exportDialogBody p {
+  margin: 0;
+}
+
+.exportDialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cl-s2);
+  padding: 0 var(--cl-s5) var(--cl-s5);
+}
+
+.exportCancelBtn {
+  min-height: 44px;
+  padding: 0 var(--cl-s4);
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r1);
+  background: var(--cl-surface);
+  color: var(--cl-ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 }
 
 .pageTitle {
@@ -814,6 +919,17 @@
   .pageHead {
     align-items: flex-start;
     gap: var(--cl-s4);
+  }
+
+  /* Keep export reachable on narrow viewports (A21h evidence 320). */
+  .headActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .exportBtn {
+    font-size: var(--text-xs, 0.8125rem);
+    padding-inline: var(--cl-s3);
   }
 
   .kpis {

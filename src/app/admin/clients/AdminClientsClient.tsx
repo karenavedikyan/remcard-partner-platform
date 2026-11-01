@@ -11,11 +11,22 @@ import {
   formatClientRegisteredAt,
   isAbortError,
   labelClientPeriod,
+  labelClientRollingDays,
+  resolveAdminClientsRegistrationRange,
   type AdminClient,
   type AdminClientPeriod,
+  type AdminClientRollingDays,
   type AdminClientsListResponse,
+  type AdminClientsRegistrationRange,
 } from "@/lib/prof-admin-clients-api";
 import { AdminClientDetailDrawer } from "./AdminClientDetailDrawer";
+import {
+  buildAdminClientsCsv,
+  buildAdminClientsExportFilename,
+  collectAdminClientsForExport,
+  downloadAdminClientsCsv,
+  type AdminClientsExportProgress,
+} from "./adminClientsExport";
 import styles from "./AdminClients.r1.module.css";
 
 type LoadState =
@@ -27,6 +38,16 @@ type LoadState =
   | { kind: "error"; message: string };
 
 type ViewMode = "cards" | "list";
+
+/** UI period key — rolling 7/30/90 capture stable MSK registration endpoints once. */
+type PeriodFilterKey = AdminClientPeriod | "7d" | "30d" | "90d";
+
+function rollingDaysFromKey(key: PeriodFilterKey): AdminClientRollingDays | null {
+  if (key === "7d") return 7;
+  if (key === "30d") return 30;
+  if (key === "90d") return 90;
+  return null;
+}
 
 function SearchIcon() {
   return (
@@ -60,6 +81,27 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
     </svg>
   );
 }
+
+function DownloadIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+type ExportUiState =
+  | { kind: "idle" }
+  | { kind: "running"; progress: AdminClientsExportProgress }
+  | { kind: "error"; message: string }
+  | { kind: "cancelled" }
+  | { kind: "done"; count: number; filename: string };
 
 function ClientAvatar({ client }: { client: AdminClient }) {
   const [broken, setBroken] = useState(false);
@@ -142,15 +184,23 @@ export function AdminClientsClient() {
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [period, setPeriod] = useState<AdminClientPeriod>("all");
+  const [periodKey, setPeriodKey] = useState<PeriodFilterKey>("all");
+  /** Stable A22g endpoints for the selected rolling window — never recompute on page/export. */
+  const [registrationRange, setRegistrationRange] = useState<AdminClientsRegistrationRange | null>(
+    null,
+  );
   const [page, setPage] = useState(1);
   // Desktop defaults to table (frozen R1); cards are the narrow breakpoint surface.
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [retryTick, setRetryTick] = useState(0);
   const [detailClient, setDetailClient] = useState<AdminClient | null>(null);
+  const [exportUi, setExportUi] = useState<ExportUiState>({ kind: "idle" });
   const abortRef = useRef<AbortController | null>(null);
+  const exportAbortRef = useRef<AbortController | null>(null);
   const requestSeq = useRef(0);
   const detailReturnFocusRef = useRef<HTMLElement | null>(null);
+  const exportReturnFocusRef = useRef<HTMLElement | null>(null);
+  const exportDialogRef = useRef<HTMLDialogElement | null>(null);
 
   function openClientDetail(client: AdminClient, trigger: HTMLElement) {
     detailReturnFocusRef.current = trigger;
@@ -160,6 +210,94 @@ export function AdminClientsClient() {
   function closeClientDetail() {
     setDetailClient(null);
   }
+
+  function cancelExport() {
+    exportAbortRef.current?.abort();
+  }
+
+  function dismissExportUi() {
+    exportAbortRef.current?.abort();
+    exportAbortRef.current = null;
+    setExportUi({ kind: "idle" });
+    const dialog = exportDialogRef.current;
+    if (dialog?.open) dialog.close();
+    const returnTo = exportReturnFocusRef.current;
+    exportReturnFocusRef.current = null;
+    if (returnTo && typeof returnTo.focus === "function") {
+      window.setTimeout(() => returnTo.focus(), 0);
+    }
+  }
+
+  async function startExport(trigger: HTMLElement) {
+    if (exportUi.kind === "running") return;
+    exportReturnFocusRef.current = trigger;
+    exportAbortRef.current?.abort();
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
+    setExportUi({
+      kind: "running",
+      progress: { fetched: 0, total: data.total, page: 0, totalPages: 1 },
+    });
+
+    const legacyPeriod: AdminClientPeriod =
+      registrationRange || periodKey === "7d" || periodKey === "30d" || periodKey === "90d"
+        ? "all"
+        : (periodKey as AdminClientPeriod);
+    const result = await collectAdminClientsForExport({
+      search: debouncedQuery,
+      period: legacyPeriod,
+      createdFrom: registrationRange?.createdFrom,
+      createdTo: registrationRange?.createdTo,
+      signal: controller.signal,
+      onProgress: (progress) => {
+        if (controller.signal.aborted) return;
+        setExportUi({ kind: "running", progress });
+      },
+    });
+
+    if (controller.signal.aborted || (!result.ok && result.reason === "cancelled")) {
+      setExportUi({ kind: "cancelled" });
+      return;
+    }
+    if (!result.ok) {
+      setExportUi({ kind: "error", message: result.message });
+      return;
+    }
+
+    const filename = buildAdminClientsExportFilename({
+      search: debouncedQuery,
+      period: legacyPeriod,
+      createdFrom: registrationRange?.createdFrom,
+      createdTo: registrationRange?.createdTo,
+    });
+    try {
+      const csv = buildAdminClientsCsv(result.clients);
+      downloadAdminClientsCsv(csv, filename);
+      setExportUi({ kind: "done", count: result.clients.length, filename });
+    } catch (caught) {
+      const message =
+        caught instanceof Error && caught.message
+          ? caught.message
+          : "Не удалось сохранить файл выгрузки.";
+      setExportUi({ kind: "error", message });
+    }
+  }
+
+  useEffect(() => {
+    const dialog = exportDialogRef.current;
+    if (!dialog) return;
+    if (exportUi.kind === "idle") {
+      if (dialog.open) dialog.close();
+      return;
+    }
+    if (!dialog.open) {
+      try {
+        dialog.showModal();
+      } catch {
+        dialog.setAttribute("open", "");
+      }
+    }
+  }, [exportUi.kind]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -182,11 +320,18 @@ export function AdminClientsClient() {
 
     void (async () => {
       try {
+        const legacyPeriod: AdminClientPeriod = registrationRange
+          ? "all"
+          : periodKey === "7d" || periodKey === "30d" || periodKey === "90d"
+            ? "all"
+            : (periodKey as AdminClientPeriod);
         const res = await fetchAdminClients({
           page,
           limit: ADMIN_CLIENTS_DEFAULT_LIMIT,
           search: debouncedQuery,
-          period,
+          period: legacyPeriod,
+          createdFrom: registrationRange?.createdFrom,
+          createdTo: registrationRange?.createdTo,
           signal: controller.signal,
         });
         if (seq !== requestSeq.current) return;
@@ -217,15 +362,22 @@ export function AdminClientsClient() {
     return () => {
       controller.abort();
     };
-  }, [page, debouncedQuery, period, retryTick]);
+  }, [page, debouncedQuery, periodKey, registrationRange, retryTick]);
 
   function retry() {
     setRetryTick((n) => n + 1);
   }
 
-  function onPeriodChange(next: AdminClientPeriod) {
-    setPeriod(next);
+  function onPeriodChange(next: PeriodFilterKey) {
+    setPeriodKey(next);
     setPage(1);
+    const days = rollingDaysFromKey(next);
+    // Capture endpoints once at selection — table pages + CSV reuse this snapshot.
+    setRegistrationRange(days ? resolveAdminClientsRegistrationRange(days) : null);
+    // Drop previous window rows/total immediately so the new label never paints
+    // stale counts (requestSeq still ignores late responses after the fetch).
+    setData(EMPTY);
+    setLoadState({ kind: "loading" });
   }
 
   // Range and footer always use BE total — never users.length as “база”.
@@ -240,10 +392,18 @@ export function AdminClientsClient() {
   const showList = loadState.kind === "ready" || (loadState.kind === "loading" && data.users.length > 0);
   // All-time CLIENT base from response funnel.registered — panel itself removed (not in frozen).
   const baseCount = data.funnel?.registered ?? null;
-  const periodMatched = period !== "all";
+  const periodMatched = periodKey !== "all";
+  const periodLabel = registrationRange
+    ? `${labelClientRollingDays(registrationRange.days)} (${registrationRange.mskFrom}–${registrationRange.mskTo} MSK)`
+    : labelClientPeriod(periodKey as AdminClientPeriod);
+  // While the new window is loading after a clear, do not invent a zero as “новые”.
+  const periodKpiValue =
+    periodMatched && loadState.kind === "loading" && data.users.length === 0 ? "—" : periodMatched ? beTotal : "—";
+
+  const exportBusy = exportUi.kind === "running";
 
   return (
-    <div className={styles.page} aria-labelledby={titleId} data-admin-clients="a21g">
+    <div className={styles.page} aria-labelledby={titleId} data-admin-clients="a21j">
       <header className={styles.pageHead}>
         <div className={styles.pageHeadCopy}>
           <h1 id={titleId} className={styles.pageTitle}>
@@ -254,6 +414,26 @@ export function AdminClientsClient() {
             период регистрации.
           </p>
         </div>
+        <div className={styles.headActions}>
+          <button
+            type="button"
+            className={styles.exportBtn}
+            data-testid="clients-export"
+            data-action="export"
+            aria-label="Выгрузить клиентов в CSV"
+            disabled={
+              exportBusy ||
+              loadState.kind === "forbidden" ||
+              loadState.kind === "unauthorized"
+            }
+            onClick={(e) => {
+              void startExport(e.currentTarget);
+            }}
+          >
+            <DownloadIcon />
+            Выгрузить
+          </button>
+        </div>
       </header>
 
       <div className={styles.kpis} aria-label="Сводка по клиентам">
@@ -263,12 +443,10 @@ export function AdminClientsClient() {
           <small>Все клиенты RemCard</small>
         </div>
         <div className={styles.kpi} data-testid="clients-kpi-period">
-          <strong>{periodMatched ? beTotal : "—"}</strong>
+          <strong>{periodKpiValue}</strong>
           <span className={styles.kpiLabel}>Новые за период</span>
           <small>
-            {periodMatched
-              ? `Регистрация: ${labelClientPeriod(period)}`
-              : "Выберите период регистрации"}
+            {periodMatched ? `Регистрация: ${periodLabel}` : "Выберите период регистрации"}
           </small>
         </div>
         <div className={`${styles.kpi} ${styles.kpiGap}`} data-testid="clients-kpi-orders-gap">
@@ -284,8 +462,8 @@ export function AdminClientsClient() {
       </div>
 
       <p className={styles.periodGapNote} data-testid="clients-period-gap">
-        В прототипе период 7 / 30 / 90 дней. Здесь доступны сегодня, эта неделя и этот месяц — по
-        дате регистрации, не по активности. Окно в 90 дней пока недоступно.
+        Период учитывает дату регистрации клиента, а не его активность. Последние 7 / 30 / 90
+        дней включают сегодняшний день и рассчитываются по московскому времени.
       </p>
 
       <section
@@ -310,15 +488,18 @@ export function AdminClientsClient() {
           <select
             id={periodId}
             className={styles.filterSelect}
-            value={period}
+            value={periodKey}
             aria-label="Период регистрации"
             data-testid="client-period"
-            onChange={(e) => onPeriodChange(e.target.value as AdminClientPeriod)}
+            onChange={(e) => onPeriodChange(e.target.value as PeriodFilterKey)}
           >
             <option value="all">Все периоды</option>
-            <option value="today">Сегодня</option>
-            <option value="week">Эта неделя</option>
-            <option value="month">Этот месяц</option>
+            <option value="7d">7 дней</option>
+            <option value="30d">30 дней</option>
+            <option value="90d">90 дней</option>
+            <option value="today">Сегодня (календарь)</option>
+            <option value="week">Эта неделя (календарь)</option>
+            <option value="month">Этот месяц (календарь)</option>
           </select>
           <span className={styles.countHint} data-testid="clients-count-hint">
             {beTotal} клиентов
@@ -370,7 +551,7 @@ export function AdminClientsClient() {
 
         {loadState.kind === "empty" ? (
           <div className={styles.stateBox} role="status" data-testid="clients-empty">
-            {debouncedQuery || period !== "all"
+            {debouncedQuery || periodKey !== "all"
               ? "Никого не найдено по этому запросу"
               : "Клиентов пока нет"}
           </div>
@@ -506,9 +687,95 @@ export function AdminClientsClient() {
 
       <p className={styles.helpTip} data-testid="clients-help">
         Здесь можно найти клиента и посмотреть сведения о его регистрации. Источник рекомендации,
-        этап сделки и история посещений пока не отображаются. Изменение и удаление аккаунтов в
-        этом разделе недоступны.
+        этап сделки и история посещений пока не отображаются. Выгрузка содержит только поля этой
+        страницы по текущему поиску и периоду — все страницы результата, не только видимые 10.
+        Изменение и удаление аккаунтов в этом разделе недоступны.
       </p>
+
+      <dialog
+        ref={exportDialogRef}
+        className={styles.exportDialog}
+        data-testid="clients-export-dialog"
+        aria-labelledby="clients-export-title"
+        onCancel={(e) => {
+          e.preventDefault();
+          if (exportUi.kind === "running") {
+            cancelExport();
+            return;
+          }
+          dismissExportUi();
+        }}
+      >
+        <div className={styles.exportDialogHead}>
+          <h2 id="clients-export-title" className={styles.exportDialogTitle}>
+            Выгрузка клиентов
+          </h2>
+          <button
+            type="button"
+            className={styles.exportDialogClose}
+            aria-label="Закрыть"
+            data-testid="clients-export-dismiss"
+            onClick={() => {
+              if (exportUi.kind === "running") cancelExport();
+              else dismissExportUi();
+            }}
+          >
+            ×
+          </button>
+        </div>
+        <div className={styles.exportDialogBody}>
+          {exportUi.kind === "running" ? (
+            <p role="status" data-testid="clients-export-progress">
+              Загрузка {exportUi.progress.fetched}
+              {exportUi.progress.total > 0 ? ` из ${exportUi.progress.total}` : ""}…
+              {exportUi.progress.page > 0
+                ? ` Страница ${exportUi.progress.page} из ${exportUi.progress.totalPages}.`
+                : ""}{" "}
+              Файл будет сохранён только после полной выгрузки.
+            </p>
+          ) : null}
+          {exportUi.kind === "done" ? (
+            <p role="status" data-testid="clients-export-done">
+              Готово: {exportUi.count} записей. Файл «{exportUi.filename}». В CSV только ID, имя,
+              город, дата регистрации и признак блокировки — без источника, этапа и согласий.
+            </p>
+          ) : null}
+          {exportUi.kind === "cancelled" ? (
+            <p role="status" data-testid="clients-export-cancelled">
+              Выгрузка отменена. Файл не создан.
+            </p>
+          ) : null}
+          {exportUi.kind === "error" ? (
+            <p role="alert" data-testid="clients-export-error">
+              {exportUi.message} Файл не создан.
+            </p>
+          ) : null}
+          {exportUi.kind === "idle" ? (
+            <p role="status">Подготовка выгрузки…</p>
+          ) : null}
+        </div>
+        <div className={styles.exportDialogFooter}>
+          {exportUi.kind === "running" ? (
+            <button
+              type="button"
+              className={styles.exportCancelBtn}
+              data-testid="clients-export-cancel"
+              onClick={cancelExport}
+            >
+              Отменить
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.exportCancelBtn}
+              data-testid="clients-export-close"
+              onClick={dismissExportUi}
+            >
+              Закрыть
+            </button>
+          )}
+        </div>
+      </dialog>
 
       <AdminClientDetailDrawer
         client={detailClient}

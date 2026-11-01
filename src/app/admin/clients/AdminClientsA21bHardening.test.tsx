@@ -131,7 +131,7 @@ describe("A21b/A21c clients hardening", () => {
     const { container } = render(<AdminClientsClient />);
     expect((await screen.findAllByText(longName)).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /создать|удалить|изменить/i })).toBeNull();
-    expect(container.querySelector('[data-admin-clients="a21g"]')).toBeTruthy();
+    expect(container.querySelector('[data-admin-clients="a21j"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="clients-funnel"]')).toBeNull();
   });
 

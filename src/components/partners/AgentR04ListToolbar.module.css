@@ -1,8 +1,7 @@
 .root {
   display: grid;
+  /* Frozen #pr-zone-active .pr-quiet-tools + .pr-quiet-count: flush tools, zoneBody owns rhythm. */
   gap: var(--space-3);
-  /* Overview active zone provides vertical rhythm via zoneBody gap; keep tools flush
-     like frozen `#pr-zone-active .pr-quiet-tools { margin:0 }`. */
   margin-bottom: 0;
 }
 
@@ -145,6 +144,7 @@
 }
 
 .collectionCount {
+  /* Frozen #pr-zone-active .pr-quiet-count — count + optional reset only (small prose hidden). */
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -156,14 +156,6 @@
 .collectionCount > span:first-child {
   font-weight: 500;
   color: var(--muted);
-}
-
-.selectionHint {
-  flex: 1 1 auto;
-  text-align: right;
-  font-weight: 500 !important;
-  color: var(--muted) !important;
-  font-size: var(--text-xs);
 }
 
 .chips {

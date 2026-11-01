@@ -113,6 +113,48 @@ describe("AdminNotificationsClient", () => {
     expect(screen.getByRole("heading", { name: "Непрочитанная строка" })).toBeTruthy();
   });
 
+  it("NOTIFICATIONS-inbox-stale-list: late list fetch cannot overwrite post mark-read refresh", async () => {
+    const unreadRow = { ...item, id: "u1", title: "Ещё непрочитано", readAt: null };
+    let resolveInitial: (value: { items: (typeof item)[]; nextCursor: null }) => void = () => {};
+    const initialPending = new Promise<{ items: (typeof item)[]; nextCursor: null }>((resolve) => {
+      resolveInitial = resolve;
+    });
+    const staleReadRow = {
+      ...item,
+      id: "stale-read",
+      title: "Устаревшая прочитанная строка",
+      readAt: "2026-10-28T11:00:00.000Z",
+    };
+    let marked = false;
+
+    api.fetchAdminNotifications.mockImplementation(({ unread }) => {
+      if (unread) {
+        if (marked) {
+          return Promise.resolve({ items: [], nextCursor: null });
+        }
+        return Promise.resolve({ items: [unreadRow], nextCursor: null });
+      }
+      return initialPending;
+    });
+    api.markAdminNotificationRead.mockImplementation(async () => {
+      marked = true;
+    });
+
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(screen.getByLabelText(/только непрочитанные/i));
+    await screen.findByRole("heading", { name: "Ещё непрочитано" });
+    await ui.click(screen.getByRole("button", { name: "Прочитано" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Ещё непрочитано" })).toBeNull(),
+    );
+    resolveInitial({ items: [staleReadRow], nextCursor: null });
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Устаревшая прочитанная строка" })).toBeNull();
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(/непрочитанных уведомлений нет/i);
+  });
+
   it("loads next unread page after marking the last loaded row read", async () => {
     const firstUnread = { ...item, id: "page1", title: "Первое непрочитанное", readAt: null };
     const nextUnread = { ...item, id: "page2", title: "Следующее непрочитанное", readAt: null };

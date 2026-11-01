@@ -185,6 +185,125 @@
   min-width: 0;
 }
 
+.modalResultInlineTerms {
+  display: grid;
+  gap: var(--space-3, 0.75rem);
+  min-width: 0;
+}
+
+.modalResultInlineTermsHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2, 0.5rem);
+}
+
+.modalResultInlineTermsTitle {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5c605a;
+}
+
+.modalResultInlineTermsRange {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+  min-width: 0;
+}
+
+.modalResultInlineTermsRange strong {
+  font-size: 1.6875rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+
+.modalResultInlineTermsSub {
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.45;
+  color: #5c605a;
+}
+
+.modalResultInlineTermsList {
+  display: grid;
+  gap: var(--space-3, 0.75rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modalResultInlineTermsList li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3, 0.75rem);
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.45;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.modalResultInlineTermsList li span:first-child {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.modalResultInlineTermsList li b {
+  font-weight: 600;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.modalResultInlineTermsMuted,
+.modalResultInlineTermsDisclaimer,
+.modalResultInlineTermsMore {
+  margin: 0;
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.45;
+  color: #5c605a;
+}
+
+.modalResultInlineTermsError {
+  margin: 0;
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.45;
+  color: var(--danger, #b42318);
+}
+
+.modalResultInlineTermsRetry {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-fill, #2563eb);
+  cursor: pointer;
+  text-decoration: underline;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+:global([data-theme="dark"]) .modalResultInlineTermsTitle,
+:global(html.dark) .modalResultInlineTermsTitle,
+:global([data-theme="dark"]) .modalResultInlineTermsSub,
+:global(html.dark) .modalResultInlineTermsSub,
+:global([data-theme="dark"]) .modalResultInlineTermsMuted,
+:global(html.dark) .modalResultInlineTermsMuted,
+:global([data-theme="dark"]) .modalResultInlineTermsDisclaimer,
+:global(html.dark) .modalResultInlineTermsDisclaimer,
+:global([data-theme="dark"]) .modalResultInlineTermsMore,
+:global(html.dark) .modalResultInlineTermsMore {
+  color: #c5c7c9;
+}
+
 .modalResultFoot {
   display: flex;
   justify-content: flex-end;

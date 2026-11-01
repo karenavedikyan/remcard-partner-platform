@@ -50,7 +50,7 @@ describe("A21a/A21f clients source contracts", () => {
     expect(client).toContain("только для просмотра");
     expect(client).toContain("Найдите клиента по имени");
     expect(client).toContain("Источник рекомендации");
-    expect(client).toContain('data-admin-clients="a21g"');
+    expect(client).toContain('data-admin-clients="a21j"');
     expect(client).not.toContain("GET /api/admin/users");
     expect(client).not.toContain("<code>search</code>");
     expect(client).toContain("AdminClientDetailDrawer");
@@ -63,8 +63,9 @@ describe("A21a/A21f clients source contracts", () => {
   it("adds Клиенты to AdminNav without inventing unimplemented R1 links", () => {
     const nav = readFileSync(NAV, "utf8");
     expect(nav).toContain('{ href: "/admin/clients", label: "Клиенты"');
+    // Root7 publishes analytics/password; still no invented tasks/settings.
+    expect(nav).toContain('{ href: "/admin/analytics", label: "Аналитика"');
     expect(nav).not.toContain("/admin/tasks");
-    expect(nav).toContain("/admin/analytics");
     expect(nav).not.toContain("/admin/settings");
     expect(nav).not.toContain("Главное меню");
   });
@@ -93,12 +94,20 @@ describe("A21a/A21f clients source contracts", () => {
     expect(client).toContain("Период регистрации");
     expect(client).toContain("clients-period-gap");
     expect(client).toContain("7 / 30 / 90");
-    expect(client).toContain("90 дней пока недоступно");
+    expect(client).toContain("дату регистрации клиента");
+    expect(client).toContain("московскому времени");
+    expect(client).not.toContain("Candidate BE");
+    expect(client).not.toContain("721708c4");
+    expect(client).not.toContain("90 дней пока недоступно");
+    expect(client).toContain('value="7d"');
+    expect(client).toContain('value="90d"');
+    expect(client).toContain("resolveAdminClientsRegistrationRange");
     expect(client).not.toContain("clients-funnel");
     expect(client).not.toContain("Этапы регистрации клиентов");
     expect(client).not.toContain("funnelFilter");
     expect(client).not.toContain("ADMIN_CLIENT_FUNNEL_LABELS");
-    expect(client).not.toMatch(/period=["']7d|period=["']30d|period=["']90/);
+    // Must not send legacy period=7d|30d|90 to the API — rolling uses createdFrom/To.
+    expect(client).not.toMatch(/period:\s*["']7d|period:\s*["']30d|period:\s*["']90d/);
     expect(client).toContain('placeholder="Имя клиента"');
     // Deal-stage titles appear only as explicit GAP tiles — never as live counts.
     expect(client).toContain("clients-kpi-orders-gap");

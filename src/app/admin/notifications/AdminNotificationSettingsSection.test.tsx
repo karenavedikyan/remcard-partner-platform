@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RemcardApiError } from "@/lib/api-client";
@@ -285,5 +286,111 @@ describe("AdminNotificationSettingsSection binding (staff admin)", () => {
     await ui.click(screen.getByRole("button", { name: "Сохранить" }));
     await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Настройки сохранены")).toBeTruthy();
+  });
+
+  it("NOTIFICATIONS-refresh-error-draft: preserves dirty draft when refresh GET fails then retry succeeds", async () => {
+    const baseline = {
+      ...settingsPayload,
+      settings: { ...settingsPayload.settings, partnerActivity: false },
+    };
+    api.fetchAdminNotificationSettings
+      .mockResolvedValueOnce(baseline)
+      .mockRejectedValueOnce(new RemcardApiError(503, "Synthetic refresh settings failure", null))
+      .mockResolvedValueOnce(baseline);
+
+    function Harness() {
+      const [nonce, setNonce] = useState(0);
+      return (
+        <>
+          <button type="button" onClick={() => setNonce((n) => n + 1)}>
+            trigger refresh
+          </button>
+          <AdminNotificationSettingsSection settingsRefreshNonce={nonce} />
+        </>
+      );
+    }
+
+    const ui = userEvent.setup();
+    render(<Harness />);
+    await screen.findByText("Настройки уведомлений");
+    const activity = screen.getByRole("checkbox", { name: /активность партнёров/i });
+    expect(activity).not.toBeChecked();
+    await ui.click(activity);
+    expect(activity).toBeChecked();
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+    await ui.click(screen.getByRole("button", { name: "trigger refresh" }));
+    expect(await screen.findByText(/Synthetic refresh settings failure/i)).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /активность партнёров/i })).toBeChecked();
+    await ui.click(screen.getByRole("button", { name: "Повторить" }));
+    await waitFor(() => expect(screen.queryByText(/Synthetic refresh settings failure/i)).toBeNull());
+    expect(screen.getByRole("checkbox", { name: /активность партнёров/i })).toBeChecked();
+    expect(api.fetchAdminNotificationSettings).toHaveBeenCalledTimes(3);
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("NOTIFICATIONS-refresh-error-draft: initial GET failure still blocks save defaults until retry", async () => {
+    api.fetchAdminNotificationSettings
+      .mockRejectedValueOnce(new RemcardApiError(503, "Synthetic settings load failure", null))
+      .mockResolvedValueOnce(settingsPayload);
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    expect(await screen.findByText(/Synthetic settings load failure/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Сохранить" })).toBeNull();
+    await ui.click(screen.getByRole("button", { name: "Повторить" }));
+    await screen.findByRole("button", { name: "Сохранить" });
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("NOTIFICATIONS-save-stale-patch: late PATCH success does not overwrite newer draft edits", async () => {
+    let resolvePatch: (value: typeof settingsPayload) => void = () => {};
+    const pending = new Promise<typeof settingsPayload>((resolve) => {
+      resolvePatch = resolve;
+    });
+    api.patchAdminNotificationSettings.mockReturnValueOnce(pending);
+    const ui = userEvent.setup();
+    const hostState = vi.fn();
+    render(<AdminNotificationSettingsSection onHostStateChange={hostState} />);
+    const activity = await screen.findByRole("checkbox", { name: /активность партнёров/i });
+    expect(activity).toBeChecked();
+    await ui.click(activity);
+    expect(activity).not.toBeChecked();
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await ui.click(activity);
+    expect(activity).toBeChecked();
+    resolvePatch({
+      ...settingsPayload,
+      settings: { ...settingsPayload.settings, partnerActivity: false },
+    });
+    await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(1));
+    expect(activity).toBeChecked();
+    expect(screen.queryByText("Настройки сохранены")).toBeNull();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Сохранить" })).toBeEnabled());
+    expect(hostState.mock.calls.at(-1)?.[0].dirty).toBe(true);
+    api.patchAdminNotificationSettings.mockResolvedValueOnce(settingsPayload);
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(2));
+    expect(api.patchAdminNotificationSettings.mock.calls[1][0].partnerActivity).toBe(true);
+    await waitFor(() => expect(hostState.mock.calls.at(-1)?.[0].dirty).toBe(false));
+  });
+
+  it("NOTIFICATIONS-save-error-retry: PATCH failure keeps draft and a later save succeeds", async () => {
+    api.patchAdminNotificationSettings
+      .mockRejectedValueOnce(new RemcardApiError(503, "Synthetic save failure", null))
+      .mockResolvedValueOnce({
+        ...settingsPayload,
+        settings: { ...settingsPayload.settings, partnerActivity: false },
+      });
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    const activity = await screen.findByRole("checkbox", { name: /активность партнёров/i });
+    await ui.click(activity);
+    expect(activity).not.toBeChecked();
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Synthetic save failure/i);
+    expect(activity).not.toBeChecked();
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Настройки сохранены")).toBeTruthy();
+    expect(activity).not.toBeChecked();
   });
 });

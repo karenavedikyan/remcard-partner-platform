@@ -292,7 +292,7 @@ export function AdminNotificationsClient() {
   }, [runFetch]);
 
   const refreshAfterMutation = useCallback(async () => {
-    const requestId = requestSeqRef.current;
+    const requestId = ++requestSeqRef.current;
     const mutationId = mutationSeqRef.current;
     setLoading(true);
     setError("");
@@ -339,7 +339,7 @@ export function AdminNotificationsClient() {
     } catch {
       if (mutationId !== mutationSeqRef.current || scopeRequestId !== requestSeqRef.current) return;
       await refreshAfterMutation();
-      if (mutationId !== mutationSeqRef.current || scopeRequestId !== requestSeqRef.current) return;
+      if (mutationId !== mutationSeqRef.current) return;
       setError("Не удалось отметить прочитанным — непрочитанные сохранены");
     } finally {
       if (mutationId === mutationSeqRef.current) setMarkBusy(false);
