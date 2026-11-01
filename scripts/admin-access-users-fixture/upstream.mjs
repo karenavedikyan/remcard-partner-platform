@@ -282,6 +282,34 @@ export function createUpstreamServer() {
       return json(res, 200, { ok: true, idempotent: already, item });
     }
 
+    const resetMatch = path.match(/^\/api\/pro\/admin\/access\/users\/([\w-]+)\/reset-password$/);
+    if (resetMatch && method === "POST") {
+      const targetId = resetMatch[1];
+      pushLog({ method, path, kind: "reset_password", targetId });
+      if (state.mode === "unauth") return json(res, 401, { error: "Unauthorized" });
+      if (!actorMayManageAccess()) return json(res, 403, { error: "Forbidden" });
+      if (targetId === viewerForMode().id) return json(res, 403, { error: "Forbidden" });
+      const idx = state.items.findIndex((i) => i.id === targetId);
+      if (idx < 0) return json(res, 404, { error: "Not found" });
+      const row = state.items[idx];
+      if (row.staffRole === "OWNER") return json(res, 403, { error: "Forbidden" });
+      if (row.accessState !== "active" || row.staffRole !== "ADMIN") {
+        return json(res, 403, { error: "Forbidden" });
+      }
+      let body = {};
+      try {
+        body = await readBody(req);
+      } catch {
+        return json(res, 400, { error: "Invalid body" });
+      }
+      const np = typeof body.newPassword === "string" ? body.newPassword : "";
+      if (np.length < 12 || np.length > 256) return json(res, 400, { error: "WEAK_PASSWORD" });
+      if (Object.keys(body).some((k) => k !== "newPassword")) {
+        return json(res, 400, { error: "Unknown or forbidden field" });
+      }
+      return json(res, 200, { ok: true, item: row });
+    }
+
     // Harmless stubs for shell chrome that may probe notifications.
     if (path.startsWith("/api/pro/admin/notifications") && method === "GET") {
       return json(res, 200, path.endsWith("/unread-count") ? { count: 0 } : { items: [], total: 0 });

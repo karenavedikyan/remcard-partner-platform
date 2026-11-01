@@ -11,6 +11,7 @@ import {
   fetchAdminAccessUsers,
   labelAccessState,
   labelStaffRole,
+  resetAdminAccessUserPassword,
   revokeAdminAccessUser,
   type AdminAccessUserItem,
   type AdminAccessViewer,
@@ -31,7 +32,13 @@ type FormState = {
   newPassword: string;
 };
 
+type ResetFormState = {
+  newPassword: string;
+  confirmPassword: string;
+};
+
 const EMPTY_FORM: FormState = { displayName: "", login: "", newPassword: "" };
+const EMPTY_RESET_FORM: ResetFormState = { newPassword: "", confirmPassword: "" };
 
 function formDirty(form: FormState) {
   return Boolean(form.displayName || form.login || form.newPassword);
@@ -42,6 +49,7 @@ export function AdminAccessUsersClient() {
   const createTitleId = useId();
   const dialogTitleId = useId();
   const cancelTitleId = useId();
+  const resetDialogTitleId = useId();
 
   const [viewer, setViewer] = useState<AdminAccessViewer | null>(null);
   const [items, setItems] = useState<AdminAccessUserItem[]>([]);
@@ -53,15 +61,25 @@ export function AdminAccessUsersClient() {
   const [revokeTarget, setRevokeTarget] = useState<AdminAccessUserItem | null>(null);
   const [revokeBusy, setRevokeBusy] = useState(false);
   const [revokeError, setRevokeError] = useState("");
+  const [resetTarget, setResetTarget] = useState<AdminAccessUserItem | null>(null);
+  const [resetForm, setResetForm] = useState<ResetFormState>(EMPTY_RESET_FORM);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetOk, setResetOk] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   const flightRef = useRef(0);
   const createFlightRef = useRef(0);
   const revokeFlightRef = useRef(0);
+  const resetFlightRef = useRef(0);
   const displayNameRef = useRef<HTMLInputElement | null>(null);
   const revokeDialogRef = useRef<HTMLDivElement | null>(null);
   const revokeConfirmRef = useRef<HTMLButtonElement | null>(null);
   const revokeOpenerRef = useRef<HTMLElement | null>(null);
+  const resetDialogRef = useRef<HTMLDivElement | null>(null);
+  const resetConfirmRef = useRef<HTMLButtonElement | null>(null);
+  const resetOpenerRef = useRef<HTMLElement | null>(null);
   const cancelDialogRef = useRef<HTMLDivElement | null>(null);
   const cancelConfirmRef = useRef<HTMLButtonElement | null>(null);
   const cancelOpenerRef = useRef<HTMLElement | null>(null);
@@ -70,6 +88,19 @@ export function AdminAccessUsersClient() {
   const canManageAccess = viewer?.staffRole === "OWNER" || viewer?.staffRole === "ADMIN";
   const revokeBusyRef = useRef(false);
   revokeBusyRef.current = revokeBusy;
+  const resetBusyRef = useRef(false);
+  resetBusyRef.current = resetBusy;
+
+  const clearResetSecrets = () => {
+    setResetForm(EMPTY_RESET_FORM);
+    setShowResetPassword(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearResetSecrets();
+    };
+  }, []);
 
   const load = async () => {
     const flight = ++flightRef.current;
@@ -145,6 +176,32 @@ export function AdminAccessUsersClient() {
     };
   }, [revokeTarget]);
 
+  useEffect(() => {
+    if (!resetTarget) return;
+    const root = resetDialogRef.current;
+    if (!root) return;
+    queueMicrotask(() => {
+      const focusable = getFocusableElements(root);
+      (focusable[0] ?? resetConfirmRef.current)?.focus();
+    });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (resetBusyRef.current) return;
+        e.preventDefault();
+        closeResetDialog();
+        return;
+      }
+      handleDialogTabKey(e, root);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const opener = resetOpenerRef.current;
+      resetOpenerRef.current = null;
+      queueMicrotask(() => opener?.focus?.());
+    };
+  }, [resetTarget]);
+
   // Confirm-cancel dialog focus management.
   useEffect(() => {
     if (!confirmCancel) return;
@@ -175,7 +232,7 @@ export function AdminAccessUsersClient() {
     setForm((prev) => ({ ...prev, newPassword: "" }));
   };
 
-  const resetForm = (opts?: { keepOk?: boolean }) => {
+  const resetCreateForm = (opts?: { keepOk?: boolean }) => {
     setForm(EMPTY_FORM);
     setCreateError("");
     if (!opts?.keepOk) setCreateOk("");
@@ -188,7 +245,7 @@ export function AdminAccessUsersClient() {
       setConfirmCancel(true);
       return;
     }
-    resetForm();
+    resetCreateForm();
   };
 
   const submitCreate = async () => {
@@ -216,7 +273,7 @@ export function AdminAccessUsersClient() {
       setCreateOk(
         `Администратор «${res.item.displayName}» создан. Пароль введён только в форме и не сохраняется в браузере.`,
       );
-      resetForm({ keepOk: true });
+      resetCreateForm({ keepOk: true });
       displayNameRef.current?.focus();
       setLoadState({ kind: "ready" });
     } catch (caught) {
@@ -282,6 +339,57 @@ export function AdminAccessUsersClient() {
     if (revokeBusy) return;
     setRevokeTarget(null);
     setRevokeError("");
+  };
+
+  const closeResetDialog = () => {
+    if (resetBusy) return;
+    setResetTarget(null);
+    setResetError("");
+    clearResetSecrets();
+  };
+
+  const confirmResetPassword = async () => {
+    if (!resetTarget || resetBusy || resetFlightRef.current) return;
+    if (!canManageAccess) {
+      setResetError("Сброс пароля доступен OWNER или ADMIN для другого ADMIN.");
+      return;
+    }
+    if (resetForm.newPassword.length < 12 || resetForm.newPassword.length > 256) {
+      setResetError("Пароль должен содержать от 12 до 256 символов.");
+      return;
+    }
+    if (resetForm.newPassword !== resetForm.confirmPassword) {
+      setResetError("Пароли не совпадают.");
+      return;
+    }
+    setResetBusy(true);
+    setResetError("");
+    setResetOk("");
+    const flight = ++resetFlightRef.current;
+    const targetId = resetTarget.id;
+    try {
+      const res = await resetAdminAccessUserPassword(targetId, {
+        newPassword: resetForm.newPassword,
+      });
+      if (flight !== resetFlightRef.current) return;
+      setItems((prev) => prev.map((row) => (row.id === res.item.id ? res.item : row)));
+      setResetOk(`Пароль для «${resetTarget.displayName}» сохранён. Прежние сеансы завершены. Для входа используйте заданный пароль.`);
+      setResetTarget(null);
+      clearResetSecrets();
+    } catch (caught) {
+      if (flight !== resetFlightRef.current) return;
+      setResetError(
+        caught instanceof RemcardApiError
+          ? caught.message
+          : "Не удалось сохранить новый пароль",
+      );
+    } finally {
+      if (flight === resetFlightRef.current) {
+        clearResetSecrets();
+        setResetBusy(false);
+        resetFlightRef.current = 0;
+      }
+    }
   };
 
   return (
@@ -451,6 +559,12 @@ export function AdminAccessUsersClient() {
                 {items.map((row) => {
                   const canRevoke =
                     canManageAccess && row.staffRole === "ADMIN" && row.accessState === "active";
+                  const canResetPassword =
+                    canManageAccess &&
+                    row.staffRole === "ADMIN" &&
+                    row.accessState === "active" &&
+                    Boolean(row.loginNormalized) &&
+                    row.id !== viewer?.id;
                   return (
                     <li key={row.id} className={styles.listItem}>
                       <div className={styles.listName}>{row.displayName}</div>
@@ -462,19 +576,35 @@ export function AdminAccessUsersClient() {
                       {row.staffRole === "OWNER" ? (
                         <div className={styles.listMeta}>Владелец: удаление и понижение недоступны.</div>
                       ) : null}
-                      {canRevoke ? (
+                      {canRevoke || canResetPassword ? (
                         <div className={styles.listActions}>
-                          <Button
-                            className={styles.revokeBtn}
-                            type="button"
-                            onClick={(e) => {
-                              revokeOpenerRef.current = e.currentTarget;
-                              setRevokeError("");
-                              setRevokeTarget(row);
-                            }}
-                          >
-                            Отключить доступ
-                          </Button>
+                          {canResetPassword ? (
+                            <Button
+                              type="button"
+                              onClick={(e) => {
+                                resetOpenerRef.current = e.currentTarget;
+                                setResetError("");
+                                setResetOk("");
+                                clearResetSecrets();
+                                setResetTarget(row);
+                              }}
+                            >
+                              Задать новый пароль
+                            </Button>
+                          ) : null}
+                          {canRevoke ? (
+                            <Button
+                              className={styles.revokeBtn}
+                              type="button"
+                              onClick={(e) => {
+                                revokeOpenerRef.current = e.currentTarget;
+                                setRevokeError("");
+                                setRevokeTarget(row);
+                              }}
+                            >
+                              Отключить доступ
+                            </Button>
+                          ) : null}
                         </div>
                       ) : null}
                     </li>
@@ -524,6 +654,94 @@ export function AdminAccessUsersClient() {
         </div>
       ) : null}
 
+      {resetOk ? (
+        <p className={styles.statusBox} data-tone="ok" role="status">
+          {resetOk}
+        </p>
+      ) : null}
+
+      {resetTarget ? (
+        <div className={styles.dialogBackdrop} role="presentation">
+          <div
+            ref={resetDialogRef}
+            className={`${styles.dialog} ${styles.resetDialog}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={resetDialogTitleId}
+          >
+            <h2 id={resetDialogTitleId} className={styles.dialogTitle}>
+              Задать новый пароль
+            </h2>
+            <p className={styles.dialogBody}>
+              {resetTarget.displayName}
+              {resetTarget.loginNormalized ? ` · логин ${resetTarget.loginNormalized}` : null}
+            </p>
+            <p className={styles.dialogBody}>
+              Будет установлен заданный пароль. Все текущие сеансы этого администратора будут завершены.
+              Логин, права и история действий сохранятся.
+            </p>
+            <label className={styles.field} htmlFor="access-reset-password">
+              Новый пароль
+              <input
+                id="access-reset-password"
+                className={styles.input}
+                type={showResetPassword ? "text" : "password"}
+                autoComplete="new-password"
+                maxLength={256}
+                value={resetForm.newPassword}
+                disabled={resetBusy}
+                onChange={(e) => setResetForm((f) => ({ ...f, newPassword: e.target.value }))}
+              />
+            </label>
+            <label className={styles.field} htmlFor="access-reset-password-confirm">
+              Подтверждение пароля
+              <input
+                id="access-reset-password-confirm"
+                className={styles.input}
+                type={showResetPassword ? "text" : "password"}
+                autoComplete="new-password"
+                maxLength={256}
+                value={resetForm.confirmPassword}
+                disabled={resetBusy}
+                onChange={(e) => setResetForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+              />
+            </label>
+            <label className={styles.checkRow}>
+              <input
+                type="checkbox"
+                checked={showResetPassword}
+                disabled={resetBusy}
+                onChange={(e) => setShowResetPassword(e.target.checked)}
+              />
+              <span>Показать вводимый пароль</span>
+            </label>
+            {resetError ? (
+              <p role="alert" className={styles.statusBox} data-tone="error">
+                {resetError}
+              </p>
+            ) : null}
+            <div className={styles.actions}>
+              <Button
+                ref={resetConfirmRef}
+                type="button"
+                disabled={
+                  resetBusy ||
+                  resetForm.newPassword.length < 12 ||
+                  resetForm.newPassword.length > 256 ||
+                  resetForm.newPassword !== resetForm.confirmPassword
+                }
+                onClick={() => void confirmResetPassword()}
+              >
+                {resetBusy ? "Сохранение…" : "Сохранить новый пароль"}
+              </Button>
+              <Button type="button" disabled={resetBusy} onClick={closeResetDialog}>
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {confirmCancel ? (
         <div className={styles.dialogBackdrop} role="presentation">
           <div
@@ -544,7 +762,7 @@ export function AdminAccessUsersClient() {
                 ref={cancelConfirmRef}
                 type="button"
                 onClick={() => {
-                  resetForm();
+                  resetCreateForm();
                   setConfirmCancel(false);
                   displayNameRef.current?.focus();
                 }}

@@ -208,6 +208,13 @@ async function assertNoHOverflow(page, label) {
   );
 }
 
+async function setTheme(page, theme) {
+  await page.evaluate((t) => {
+    if (t === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+  }, theme);
+}
+
 async function run() {
   await mkdir(SHOT_DIR, { recursive: true });
   await mkdir(path.join(OUT_DIR, "proof"), { recursive: true });
@@ -444,7 +451,7 @@ async function run() {
         await page.fill("#access-users-login", "peer.from.admin");
         await page.fill("#access-users-password", "abcdefghijkl");
         await page.getByRole("button", { name: "Создать администратора" }).click();
-        await page.waitForSelector(/Администратор «Peer From Admin» создан/);
+        await page.getByText(/Администратор «Peer From Admin» создан/).waitFor();
         const adminLog = await getLog(upstream.baseUrl);
         const adminCreates = adminLog.filter((e) => e.kind === "create");
         assert("admin-create-post", adminCreates.length === 1 && adminCreates[0]?.method === "POST");
@@ -506,6 +513,53 @@ async function run() {
         await page.getByRole("button", { name: "Повторить" }).click();
         await page.waitForSelector("text=Администратор А");
         assert("error-retry-recovers", true);
+        await context.close();
+      }
+
+      // —— Reset password dialog (320 + 1440, light/dark) ——
+      {
+        const resetFrames = [
+          { w: 320, h: 812, theme: "light", file: "reset-password-dialog-320-light.png" },
+          { w: 320, h: 812, theme: "dark", file: "reset-password-dialog-320-dark.png" },
+          { w: 1440, h: 900, theme: "light", file: "reset-password-dialog-1440-light.png" },
+          { w: 1440, h: 900, theme: "dark", file: "reset-password-dialog-1440-dark.png" },
+        ];
+        await resetQa(upstream.baseUrl);
+        await setScenario(upstream.baseUrl, { mode: "owner", empty: false, resetLog: true });
+        for (const frame of resetFrames) {
+          const context = await newStaffContext(browser, { width: frame.w, height: frame.h });
+          const page = await context.newPage();
+          await openUsers(page);
+          await setTheme(page, frame.theme);
+          await page.getByRole("button", { name: "Задать новый пароль" }).first().click();
+          await page.waitForSelector('[role="dialog"]');
+          await assertNoHOverflow(page, frame.file);
+          await assertNoSecrets(page, frame.file);
+          await shot(page, frame.file);
+          await context.close();
+        }
+        const context = await newStaffContext(browser, { width: 1440, height: 900 });
+        const page = await context.newPage();
+        await openUsers(page);
+        await page.getByRole("button", { name: "Задать новый пароль" }).first().click();
+        await page.waitForSelector('[role="dialog"]');
+        await page.getByLabel("Новый пароль").fill("abcdefghijkl");
+        await page.getByLabel("Подтверждение пароля").fill("abcdefghijkl");
+        await page.getByRole("button", { name: "Сохранить новый пароль" }).click();
+        await page.waitForSelector('[role="dialog"]', { state: "hidden" });
+        const resetLog = await getLog(upstream.baseUrl);
+        const resets = resetLog.filter((e) => e.kind === "reset_password");
+        assert(
+          "reset-password-mutation-post",
+          resets.length === 1 &&
+            resets[0]?.method === "POST" &&
+            /\/reset-password$/.test(resets[0]?.path || ""),
+          JSON.stringify(resets[0]),
+        );
+        assert(
+          "reset-password-success-no-secret-echo",
+          !(await page.locator("body").innerText()).match(/abcdefghijkl/),
+        );
         await context.close();
       }
 

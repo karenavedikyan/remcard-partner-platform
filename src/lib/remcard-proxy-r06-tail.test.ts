@@ -23,4 +23,13 @@ describe("R06 tail proxy allowlist", () => {
     expect(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join")).toBe(true);
     expect(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join")).toBe(false);
   });
+
+  it("allows admin access user reset-password POST", () => {
+    expect(isAllowedProxyRoute("POST", "/api/pro/admin/access/users/admin-2/reset-password")).toBe(
+      true,
+    );
+    expect(isAllowedProxyRoute("GET", "/api/pro/admin/access/users/admin-2/reset-password")).toBe(
+      false,
+    );
+  });
 });

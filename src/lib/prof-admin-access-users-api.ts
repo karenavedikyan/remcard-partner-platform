@@ -44,6 +44,15 @@ export type AdminAccessRevokeResponse = {
   item: AdminAccessUserItem;
 };
 
+export type AdminAccessResetPasswordResponse = {
+  ok: boolean;
+  item: AdminAccessUserItem;
+};
+
+export type AdminAccessResetPasswordBody = {
+  newPassword: string;
+};
+
 const STAFF_ROLE_LABELS: Record<string, string> = {
   OWNER: "Владелец",
   ADMIN: "Администратор",
@@ -114,6 +123,17 @@ export async function revokeAdminAccessUser(id: string, signal?: AbortSignal) {
   return remcardFetch<AdminAccessRevokeResponse>(
     `/api/pro/admin/access/users/${encodeURIComponent(id)}/revoke`,
     { method: "POST", signal },
+  );
+}
+
+export async function resetAdminAccessUserPassword(
+  id: string,
+  body: AdminAccessResetPasswordBody,
+  signal?: AbortSignal,
+) {
+  return remcardFetch<AdminAccessResetPasswordResponse>(
+    `/api/pro/admin/access/users/${encodeURIComponent(id)}/reset-password`,
+    { method: "POST", body, signal },
   );
 }
 

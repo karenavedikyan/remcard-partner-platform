@@ -6,6 +6,7 @@ import { AdminAccessUsersClient } from "./AdminAccessUsersClient";
 const fetchMock = vi.fn();
 const createMock = vi.fn();
 const revokeMock = vi.fn();
+const resetMock = vi.fn();
 
 vi.mock("@/lib/prof-admin-access-users-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/prof-admin-access-users-api")>(
@@ -16,6 +17,7 @@ vi.mock("@/lib/prof-admin-access-users-api", async () => {
     fetchAdminAccessUsers: (...args: unknown[]) => fetchMock(...args),
     createAdminAccessUser: (...args: unknown[]) => createMock(...args),
     revokeAdminAccessUser: (...args: unknown[]) => revokeMock(...args),
+    resetAdminAccessUserPassword: (...args: unknown[]) => resetMock(...args),
   };
 });
 
@@ -57,6 +59,7 @@ describe("AdminAccessUsersClient", () => {
     fetchMock.mockReset();
     createMock.mockReset();
     revokeMock.mockReset();
+    resetMock.mockReset();
     fetchMock.mockResolvedValue(ownerList);
   });
 
@@ -222,5 +225,89 @@ describe("AdminAccessUsersClient", () => {
     expect(await screen.findByText(/логин уже занят/i)).toBeTruthy();
     expect((screen.getByLabelText("Новый пароль") as HTMLInputElement).value).toBe("");
     expect(document.body.textContent).not.toMatch(/123456789012|passwordHash/);
+  });
+
+  it("reset password dialog clears secrets on success", async () => {
+    resetMock.mockResolvedValue({
+      ok: true,
+      item: ownerList.items[1],
+    });
+    render(<AdminAccessUsersClient />);
+    await screen.findByTestId("access-users-viewer");
+    fireEvent.click(screen.getByRole("button", { name: "Задать новый пароль" }));
+    const dialog = await screen.findByRole("dialog", { name: /Задать новый пароль/i });
+    fireEvent.change(within(dialog).getByLabelText("Новый пароль"), {
+      target: { value: "123456789012" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Подтверждение пароля"), {
+      target: { value: "123456789012" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Сохранить новый пароль" }));
+    await waitFor(() => expect(resetMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.body.textContent).not.toMatch(/123456789012/);
+  });
+
+  it("focuses the password field, restores opener and clears secrets and visibility on Escape", async () => {
+    render(<AdminAccessUsersClient />);
+    await screen.findByTestId("access-users-viewer");
+    const opener = screen.getByRole("button", { name: "Задать новый пароль" });
+    fireEvent.click(opener);
+    let dialog = await screen.findByRole("dialog");
+    const password = within(dialog).getByLabelText("Новый пароль");
+    await waitFor(() => expect(password).toHaveFocus());
+    expect(password).toHaveAttribute("maxlength", "256");
+    fireEvent.change(password, { target: { value: "Synthetic-only-123" } });
+    fireEvent.click(within(dialog).getByLabelText("Показать вводимый пароль"));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(opener).toHaveFocus());
+    fireEvent.click(opener);
+    dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("Новый пароль")).toHaveValue("");
+    expect(within(dialog).getByLabelText("Новый пароль")).toHaveAttribute("type", "password");
+    expect(within(dialog).getByLabelText("Показать вводимый пароль")).not.toBeChecked();
+    expect(resetMock).not.toHaveBeenCalled();
+  });
+
+  it("submits once, prevents busy close, and clears both secrets on server failure", async () => {
+    let rejectReset: (reason: Error) => void = () => undefined;
+    resetMock.mockImplementation(() => new Promise((_, reject) => { rejectReset = reject; }));
+    render(<AdminAccessUsersClient />);
+    await screen.findByTestId("access-users-viewer");
+    fireEvent.click(screen.getByRole("button", { name: "Задать новый пароль" }));
+    const dialog = await screen.findByRole("dialog");
+    for (const label of ["Новый пароль", "Подтверждение пароля"]) {
+      fireEvent.change(within(dialog).getByLabelText(label), { target: { value: "Synthetic-only-123" } });
+    }
+    const save = within(dialog).getByRole("button", { name: "Сохранить новый пароль" });
+    fireEvent.click(save);
+    fireEvent.click(save);
+    await waitFor(() => expect(resetMock).toHaveBeenCalledTimes(1));
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: "Отмена" })).toBeDisabled();
+    rejectReset(new Error("Synthetic server failure"));
+    await screen.findByRole("alert");
+    for (const label of ["Новый пароль", "Подтверждение пароля"]) {
+      expect(within(dialog).getByLabelText(label)).toHaveValue("");
+    }
+    expect(document.body.textContent).not.toContain("Synthetic-only-123");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Отмена" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("does not submit oversized or mismatching passwords", async () => {
+    render(<AdminAccessUsersClient />);
+    await screen.findByTestId("access-users-viewer");
+    fireEvent.click(screen.getByRole("button", { name: "Задать новый пароль" }));
+    const dialog = await screen.findByRole("dialog");
+    for (const label of ["Новый пароль", "Подтверждение пароля"]) {
+      fireEvent.change(within(dialog).getByLabelText(label), { target: { value: "x".repeat(257) } });
+    }
+    expect(within(dialog).getByRole("button", { name: "Сохранить новый пароль" })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText("Новый пароль"), { target: { value: "Synthetic-only-123" } });
+    expect(within(dialog).getByRole("button", { name: "Сохранить новый пароль" })).toBeDisabled();
+    expect(resetMock).not.toHaveBeenCalled();
   });
 });

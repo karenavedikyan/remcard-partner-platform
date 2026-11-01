@@ -244,6 +244,13 @@
   font-weight: 700;
 }
 
+.resetDialog {
+  max-height: calc(100dvh - 2rem);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .dialogBody {
   margin: 0;
   color: var(--au-muted);
