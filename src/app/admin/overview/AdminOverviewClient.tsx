@@ -15,6 +15,10 @@ const PERIODS = [
 
 type PeriodId = (typeof PERIODS)[number]["id"];
 
+function periodButtonLabel(id: PeriodId): string {
+  return PERIODS.find((p) => p.id === id)?.label ?? id;
+}
+
 function kindLabel(key: string): string {
   if (key in PARTNER_KIND_UI_LABELS) {
     return PARTNER_KIND_UI_LABELS[key as keyof typeof PARTNER_KIND_UI_LABELS];
@@ -29,11 +33,15 @@ const CHART_VIEW_H = 204;
 
 function MiniBars({
   title,
+  subtitle,
+  legendLabel,
   series,
   valueKey,
   emptyLabel,
 }: {
   title: string;
+  subtitle: string;
+  legendLabel: string;
   series: SeriesRow[];
   valueKey: string;
   emptyLabel: string;
@@ -68,7 +76,10 @@ function MiniBars({
     return (
       <div className={styles.chartBlock}>
         <div className={styles.chartHead}>
-          <h3>{title}</h3>
+          <div className={styles.chartHeadCopy}>
+            <h3>{title}</h3>
+            <p className={styles.chartSubtitle}>{subtitle}</p>
+          </div>
         </div>
         <div className={styles.chartWrap} ref={wrapRef}>
           <p className={styles.chartEmpty}>{emptyLabel}</p>
@@ -83,7 +94,10 @@ function MiniBars({
   return (
     <div className={styles.chartBlock}>
       <div className={styles.chartHead}>
-        <h3>{title}</h3>
+        <div className={styles.chartHeadCopy}>
+          <h3>{title}</h3>
+          <p className={styles.chartSubtitle}>{subtitle}</p>
+        </div>
       </div>
       <div className={styles.chartWrap} ref={wrapRef}>
         <svg
@@ -147,6 +161,12 @@ function MiniBars({
             </text>
           ))}
         </svg>
+        <div className={styles.chartLegend} aria-label={`Легенда: ${title}`}>
+          <span>
+            <i className={styles.legendDot} aria-hidden="true" />
+            {legendLabel}
+          </span>
+        </div>
       </div>
       <ul className={styles.chartBars} aria-label={title}>
         {series.map((row) => {
@@ -168,16 +188,21 @@ export function AdminOverviewClient() {
   const [data, setData] = useState<ManagementOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const loadSeq = useRef(0);
 
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError(null);
     try {
-      setData(await fetchManagementOverview(period));
+      const next = await fetchManagementOverview(period);
+      if (seq !== loadSeq.current) return;
+      setData(next);
     } catch (e) {
+      if (seq !== loadSeq.current) return;
       setError(e instanceof Error ? e.message : "Не удалось загрузить обзор");
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [period]);
 
@@ -202,6 +227,10 @@ export function AdminOverviewClient() {
       value: v,
     }));
   }, [data]);
+
+  const periodScope = periodButtonLabel(period);
+  const regChartSubtitle = `Завершённые регистрации · ${periodScope}`;
+  const profChartSubtitle = `Активные профили PROF · ${periodScope}`;
 
   return (
     <div className={styles.wrap}>
@@ -234,7 +263,16 @@ export function AdminOverviewClient() {
           ))}
         </div>
       </header>
-      {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+      {error ? (
+        <div className={styles.errorRow}>
+          <p role="alert" className={styles.error}>
+            {error}
+          </p>
+          <button type="button" className={styles.retryButton} onClick={() => void load()}>
+            Повторить
+          </button>
+        </div>
+      ) : null}
       {loading && !data ? <p role="status">Загрузка показателей…</p> : null}
       {data ? (
         <>
@@ -323,20 +361,39 @@ export function AdminOverviewClient() {
               </div>
             </article>
           </div>
-          <div className={styles.chartsRow}>
-            <MiniBars
-              title="Регистрации по дням"
-              series={data.registrationsCompleted.seriesDaily}
-              valueKey="total"
-              emptyLabel="Нет завершённых регистраций в выбранном периоде"
-            />
-            <MiniBars
-              title="Активные профили PROF по дням"
-              series={data.activitySeriesDaily ?? []}
-              valueKey="profPartnerProfiles"
-              emptyLabel="Нет данных — учёт начнётся после первых визитов кабинета"
-            />
-          </div>
+          <section
+            className={styles.chartsSection}
+            aria-label="Динамика показателей"
+            aria-busy={loading || undefined}
+          >
+            {loading ? (
+              <p className={styles.chartsLoading} role="status">
+                Обновление графиков…
+              </p>
+            ) : null}
+            <div className={styles.chartsRow}>
+              <MiniBars
+                title="Регистрации по дням"
+                subtitle={regChartSubtitle}
+                legendLabel="Завершённые регистрации (total)"
+                series={data.registrationsCompleted.seriesDaily}
+                valueKey="total"
+                emptyLabel="Нет завершённых регистраций в выбранном периоде"
+              />
+              <MiniBars
+                title="Активные профили PROF по дням"
+                subtitle={profChartSubtitle}
+                legendLabel="Активные PROF-профили"
+                series={data.activitySeriesDaily ?? []}
+                valueKey="profPartnerProfiles"
+                emptyLabel="Нет данных — учёт начнётся после первых визитов кабинета"
+              />
+            </div>
+            <p className={styles.chartContractNote}>
+              В прототипе R1 один график «Рост сообщества» с двумя демо-сериями (партнёры и клиенты); в
+              продукте — два отдельных API-ряда без клиентской серии.
+            </p>
+          </section>
           <p className={styles.definitions}>{data.definitions.partnerProfile}</p>
         </>
       ) : null}
