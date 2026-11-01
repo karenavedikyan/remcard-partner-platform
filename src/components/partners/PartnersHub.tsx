@@ -1800,6 +1800,7 @@ export function PartnersHub({
                     setListPageSize(size);
                     setListPage(0);
                   }}
+                  presentationVariant="active"
                 />
               )}
             </>
@@ -1981,7 +1982,11 @@ export function PartnersHub({
                 setListPage(0);
               }}
               presentationVariant={
-                agentSegment === "invitations" ? "invitations" : "default"
+                agentSegment === "invitations"
+                  ? "invitations"
+                  : agentSegment === "active"
+                    ? "active"
+                    : "default"
               }
               invitationFlowHint={
                 agentSegment === "invitations" ? agentInvitationFlow ?? null : null
