@@ -2019,32 +2019,40 @@
   color: var(--muted);
 }
 
-/* R1 proto .switch — presentation only; click still opens preview/confirm. */
-.switchLabel {
-  display: flex;
+/* R1 proto .switch — visible track 42×25; real button hit-target ≥44×44. */
+.visibilitySwitch {
+  width: 44px;
+  height: 44px;
   min-width: 44px;
   min-height: 44px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  flex-shrink: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.visibilitySwitch {
+.visibilitySwitchTrack {
   width: 42px;
   height: 25px;
   border-radius: 14px;
   background: var(--line);
   padding: 3px;
-  flex-shrink: 0;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 25px;
-  border: 0;
-  cursor: pointer;
   box-sizing: border-box;
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
-.visibilitySwitch::before {
+.visibilitySwitchTrack::before {
   content: "";
   width: 19px;
   height: 19px;
@@ -2053,14 +2061,22 @@
   box-shadow: 0 1px 4px #0002;
 }
 
-.visibilitySwitch[aria-checked="true"] {
+.visibilitySwitch[aria-checked="true"] .visibilitySwitchTrack {
   background: #c12b2f;
   justify-content: flex-end;
 }
 
+.visibilitySwitch[aria-checked="mixed"] .visibilitySwitchTrack {
+  background: var(--line);
+  opacity: 0.85;
+}
+
 .visibilitySwitch:disabled {
-  opacity: 0.55;
   cursor: not-allowed;
+}
+
+.visibilitySwitch:disabled .visibilitySwitchTrack {
+  opacity: 0.55;
 }
 
 .visibilitySwitch:focus-visible {

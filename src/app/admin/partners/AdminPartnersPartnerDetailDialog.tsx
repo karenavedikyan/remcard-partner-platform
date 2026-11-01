@@ -119,16 +119,23 @@ export function AdminPartnersPartnerDetailDialog({
   const partnershipStat = hasPartnershipCounts(row)
     ? formatRegistryCount(row.partnershipCounts.total)
     : "—";
-  const catalogSwitchOn = catalog.visible === true;
-  const searchSwitchOn = cooperation.visible === true;
+  const catalogSwitchChecked: boolean | "mixed" =
+    catalog.visible === null ? "mixed" : catalog.visible;
+  const searchSwitchChecked: boolean | "mixed" =
+    cooperation.visible === null ? "mixed" : cooperation.visible;
   const catalogSwitchDisabled =
     disabled || isApplying || catalog.visible === null;
   const searchSwitchDisabled =
     disabled ||
     isApplying ||
     cooperation.visible === null ||
-    (searchSwitchOn ? hideControl.disabled : showControl.disabled);
-  const searchSwitchHint = searchSwitchOn ? hideControl.hint : showControl.hint;
+    (cooperation.visible === true ? hideControl.disabled : showControl.disabled);
+  const searchSwitchHint =
+    cooperation.visible === true
+      ? hideControl.hint
+      : cooperation.visible === false
+        ? showControl.hint
+        : "Нет данных с сервера — переключение недоступно";
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -323,22 +330,28 @@ export function AdminPartnersPartnerDetailDialog({
               <h3>Публичный каталог</h3>
               <p>{catalogDetailCopy(catalog)}</p>
             </div>
-            <div className={styles.switchLabel}>
-              <button
-                type="button"
-                role="switch"
-                className={styles.visibilitySwitch}
-                aria-checked={catalogSwitchOn}
-                aria-label="Видимость в каталоге"
-                title="Запросит подтверждение; без немедленного применения"
-                disabled={catalogSwitchDisabled}
-                data-visibility-switch="catalog"
-                onClick={() => {
-                  if (catalog.visible === true) void onRequestPreview("hide_catalog");
-                  else if (catalog.visible === false) void onRequestPreview("publish_catalog");
-                }}
-              />
-            </div>
+            <button
+              type="button"
+              role="switch"
+              className={styles.visibilitySwitch}
+              aria-checked={catalogSwitchChecked}
+              aria-label="Видимость в каталоге"
+              title={
+                catalog.visible === null
+                  ? "Нет данных с сервера — переключение недоступно"
+                  : "Запросит подтверждение; без немедленного применения"
+              }
+              disabled={catalogSwitchDisabled}
+              aria-busy={isApplying || undefined}
+              data-visibility-switch="catalog"
+              data-visibility-known={catalog.visible === null ? "false" : "true"}
+              onClick={() => {
+                if (catalog.visible === true) void onRequestPreview("hide_catalog");
+                else if (catalog.visible === false) void onRequestPreview("publish_catalog");
+              }}
+            >
+              <span className={styles.visibilitySwitchTrack} aria-hidden="true" />
+            </button>
           </div>
           <div className={styles.detailSettingsRow}>
             <div className={styles.detailSettingsCopy}>
@@ -359,28 +372,30 @@ export function AdminPartnersPartnerDetailDialog({
               </dl>
             </div>
             <div className={styles.detailSearchSwitchCluster}>
-              <div className={styles.switchLabel}>
-                <button
-                  type="button"
-                  role="switch"
-                  className={styles.visibilitySwitch}
-                  aria-checked={searchSwitchOn}
-                  aria-label="Видимость в сотрудничестве"
-                  title={
-                    searchSwitchHint ??
-                    "Запросит подтверждение; без немедленного применения"
+              <button
+                type="button"
+                role="switch"
+                className={styles.visibilitySwitch}
+                aria-checked={searchSwitchChecked}
+                aria-label="Видимость в сотрудничестве"
+                title={
+                  searchSwitchHint ??
+                  "Запросит подтверждение; без немедленного применения"
+                }
+                disabled={searchSwitchDisabled}
+                aria-busy={isApplying || undefined}
+                data-visibility-switch="cooperation"
+                data-visibility-known={cooperation.visible === null ? "false" : "true"}
+                onClick={() => {
+                  if (cooperation.visible === true) {
+                    void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.hide);
+                  } else if (cooperation.visible === false) {
+                    void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.show);
                   }
-                  disabled={searchSwitchDisabled}
-                  data-visibility-switch="cooperation"
-                  onClick={() => {
-                    if (searchSwitchOn) {
-                      void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.hide);
-                    } else {
-                      void onRequestPreview(PARTNER_SEARCH_LIFECYCLE_ACTION.show);
-                    }
-                  }}
-                />
-              </div>
+                }}
+              >
+                <span className={styles.visibilitySwitchTrack} aria-hidden="true" />
+              </button>
               {!resetControl.disabled ? (
                 <Button
                   variant="secondary"

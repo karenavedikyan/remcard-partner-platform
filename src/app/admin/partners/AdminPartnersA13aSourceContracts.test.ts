@@ -38,10 +38,16 @@ describe("A13a partners source/CSS contracts", () => {
   it("pins R1 visibility switch chrome (42×25, brand on)", () => {
     const css = readFileSync(CSS, "utf8");
     const detail = readFileSync(DETAIL, "utf8");
-    expect(css).toMatch(/\.visibilitySwitch\s*\{[^}]*width:\s*42px/s);
-    expect(css).toMatch(/\.visibilitySwitch\s*\{[^}]*height:\s*25px/s);
-    expect(css).toMatch(/\.visibilitySwitch\[aria-checked="true"\]\s*\{[^}]*background:\s*#c12b2f/s);
-    expect(css).toContain(".switchLabel");
+    // A13b: button hit-target ≥44×44; painted track remains 42×25.
+    expect(css).toMatch(/\.visibilitySwitch\s*\{[^}]*width:\s*44px/s);
+    expect(css).toMatch(/\.visibilitySwitch\s*\{[^}]*height:\s*44px/s);
+    expect(css).toMatch(/\.visibilitySwitch\s*\{[^}]*min-width:\s*44px/s);
+    expect(css).toMatch(/\.visibilitySwitch\s*\{[^}]*min-height:\s*44px/s);
+    expect(css).toMatch(/\.visibilitySwitchTrack\s*\{[^}]*width:\s*42px/s);
+    expect(css).toMatch(/\.visibilitySwitchTrack\s*\{[^}]*height:\s*25px/s);
+    expect(css).toMatch(
+      /\.visibilitySwitch\[aria-checked="true"\]\s*\.visibilitySwitchTrack\s*\{[^}]*background:\s*#c12b2f/s,
+    );
     expect(css).toContain(".resetSearchRules");
     expect(detail).toContain('role="switch"');
     expect(detail).toContain('data-visibility-switch="catalog"');
