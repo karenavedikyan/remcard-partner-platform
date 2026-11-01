@@ -96,7 +96,8 @@ describe("AdminTeamClient A17c R1 cards/KPI", () => {
     expect(screen.getByTestId("team-kpi-active")).toHaveTextContent("Доступ активен");
     expect(screen.getByTestId("team-kpi-closed").querySelector("strong")?.textContent).toBe("—");
     expect(screen.queryByText(/StaffRole/)).toBeNull();
-    expect(screen.getByText(/Нет в ответе GET \/api\/admin\/team/i)).toBeTruthy();
+    expect(screen.getByText("Данные о закрытых доступах пока недоступны")).toBeTruthy();
+    expect(screen.queryByText(/GET \/api\/admin\/team/i)).toBeNull();
   });
 
   it("renders frozen R1 card note and routes access to existing screen", async () => {

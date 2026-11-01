@@ -84,7 +84,8 @@ describe("A17a team source contracts", () => {
     expect(client).toContain("TEAM_R1_CARD_ROLE_NOTE");
     expect(client).toContain("teamRoleLegend");
     expect(api).toContain("Роль задаётся приглашением, без привязки к направлению");
-    expect(client).toContain("Нет в ответе GET /api/admin/team");
+    expect(client).toContain("Данные о закрытых доступах пока недоступны");
+    expect(client).not.toContain("Нет в ответе GET /api/admin/team");
     expect(client).not.toMatch(/Права сотрудника зависят от его роли/);
   });
 
