@@ -84,6 +84,7 @@ export default defineConfig({
       "src/app/admin/notifications/AdminNotifications.a16a-presentation.test.ts",
       "src/app/admin/notifications/AdminNotifications.a16b-inbox-presentation.test.ts",
       "src/app/admin/notifications/AdminNotifications.a16c-settings-presentation.test.ts",
+      "src/app/admin/notifications/AdminNotifications.a16d-guards-presentation.test.ts",
       "src/lib/theme-contrast.test.ts",
       "src/lib/team-section-model.test.ts",
       "src/lib/team-member-remove-copy.test.ts",

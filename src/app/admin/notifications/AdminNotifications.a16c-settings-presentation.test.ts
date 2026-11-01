@@ -19,7 +19,7 @@ describe("AdminNotifications A16c settings presentation", () => {
   it("NOTIFICATIONS-settings-copy: R1 dialog title and modal-only settings section", () => {
     expect(tsx).toContain("Уведомления администратора");
     expect(tsx).toContain('aria-haspopup="dialog"');
-    expect(tsx).toContain("<AdminNotificationSettingsSection />");
+    expect(tsx).toMatch(/<AdminNotificationSettingsSection[\s/>]/);
     expect(tsx).not.toMatch(/<\/section>\s*<AdminNotificationSettingsSection/);
     expect(tsx).toContain("#admin-notify-settings-title");
     expect(tsx).toContain("settingsOpen");

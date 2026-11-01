@@ -345,6 +345,7 @@
 }
 
 .settingsDialog {
+  position: relative;
   border: 1px solid var(--line);
   border-radius: var(--radius-md, 0.875rem);
   box-shadow: var(--admin-shadow, 0 12px 48px #28251d12);
@@ -465,6 +466,78 @@
   padding-top: var(--space-4);
   border-top: 1px solid var(--line);
   background: var(--surface);
+}
+
+.settingsDiscardBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+.settingsDiscardSheet {
+  width: min(440px, calc(100% - 16px));
+  max-height: min(90%, 520px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--admin-shadow, 0 12px 48px #28251d12);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.settingsDiscardSheet h3 {
+  margin: 0;
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.settingsDiscardBody {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.settingsDiscardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.settingsDiscardPrimary,
+.settingsDiscardSecondary {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 650;
+  font-size: var(--text-xs, 0.8125rem);
+  cursor: pointer;
+}
+
+.settingsDiscardPrimary {
+  border: 1px solid var(--primary-fill, var(--primary));
+  background: var(--primary-fill, var(--primary));
+  color: var(--primary-fg, #fff);
+}
+
+.settingsDiscardSecondary {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.settingsDialogClose:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 @media (max-width: 480px) {

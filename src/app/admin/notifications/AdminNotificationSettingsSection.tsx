@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   isTrustedAdminNotificationBindDeepLink,
@@ -24,7 +24,19 @@ import {
 import { Button } from "@/components/ui/Button";
 import styles from "./AdminNotifications.module.css";
 
-export function AdminNotificationSettingsSection() {
+export type AdminNotificationSettingsHostState = {
+  dirty: boolean;
+  saving: boolean;
+  bindingBusy: boolean;
+};
+
+type AdminNotificationSettingsSectionProps = {
+  onHostStateChange?: (state: AdminNotificationSettingsHostState) => void;
+};
+
+export function AdminNotificationSettingsSection({
+  onHostStateChange,
+}: AdminNotificationSettingsSectionProps = {}) {
   const [form, setForm] = useState<AdminNotificationSettingsForm | null>(null);
   const [bindings, setBindings] = useState<AdminNotificationBindings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,22 +46,32 @@ export function AdminNotificationSettingsSection() {
   const [saveError, setSaveError] = useState("");
   const [bindingBusy, setBindingBusy] = useState<"TELEGRAM" | "MAX" | null>(null);
   const [bindFallbackLink, setBindFallbackLink] = useState<string | null>(null);
+  const savedPayloadRef = useRef<string | null>(null);
+  const savingRef = useRef(false);
+  const saveFlightRef = useRef<Promise<void> | null>(null);
+
+  const syncSavedBaseline = useCallback((nextForm: AdminNotificationSettingsForm) => {
+    savedPayloadRef.current = JSON.stringify(adminNotificationSettingsPatchPayload(nextForm));
+  }, []);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
       const data = await fetchAdminNotificationSettings();
-      setForm(settingsToForm(data.settings));
+      const nextForm = settingsToForm(data.settings);
+      setForm(nextForm);
       setBindings(data.bindings);
+      syncSavedBaseline(nextForm);
     } catch (caught) {
       setLoadError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить настройки");
       setForm(null);
       setBindings(null);
+      savedPayloadRef.current = null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [syncSavedBaseline]);
 
   useEffect(() => {
     void loadSettings();
@@ -97,31 +119,64 @@ export function AdminNotificationSettingsSection() {
     }
   }
 
+  const dirty = useMemo(() => {
+    if (!form || savedPayloadRef.current === null) return false;
+    return JSON.stringify(adminNotificationSettingsPatchPayload(form)) !== savedPayloadRef.current;
+  }, [form]);
+
+  useEffect(() => {
+    onHostStateChange?.({
+      dirty,
+      saving,
+      bindingBusy: bindingBusy !== null,
+    });
+  }, [bindingBusy, dirty, onHostStateChange, saving]);
+
+  async function executeSave() {
+    if (!form) return;
+    savingRef.current = true;
+    try {
+      const tgLinked = bindings?.telegramLinked === true;
+      const maxLinked = bindings?.maxLinked === true;
+      if (adminChannelEnabled(form, "telegram") && !tgLinked) {
+        setSaveError(
+          "Telegram отмечен для доставки, но мессенджер не привязан. Сначала привяжите Telegram или снимите канал.",
+        );
+        return;
+      }
+      if (adminChannelEnabled(form, "max") && !maxLinked) {
+        setSaveError(
+          "MAX отмечен для доставки, но мессенджер не привязан. Сначала привяжите MAX или снимите канал.",
+        );
+        return;
+      }
+      setSaving(true);
+      setSaveError("");
+      setSaveMessage("");
+      try {
+        const data = await patchAdminNotificationSettings(adminNotificationSettingsPatchPayload(form));
+        const nextForm = settingsToForm(data.settings);
+        setForm(nextForm);
+        setBindings(data.bindings);
+        syncSavedBaseline(nextForm);
+        setSaveMessage("Настройки сохранены");
+      } catch (caught) {
+        setSaveError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить настройки");
+      } finally {
+        setSaving(false);
+      }
+    } finally {
+      savingRef.current = false;
+      saveFlightRef.current = null;
+    }
+  }
+
   async function save() {
     if (!form) return;
-    const tgLinked = bindings?.telegramLinked === true;
-    const maxLinked = bindings?.maxLinked === true;
-    if (adminChannelEnabled(form, "telegram") && !tgLinked) {
-      setSaveError("Telegram отмечен для доставки, но мессенджер не привязан. Сначала привяжите Telegram или снимите канал.");
-      return;
+    if (!saveFlightRef.current) {
+      saveFlightRef.current = executeSave();
     }
-    if (adminChannelEnabled(form, "max") && !maxLinked) {
-      setSaveError("MAX отмечен для доставки, но мессенджер не привязан. Сначала привяжите MAX или снимите канал.");
-      return;
-    }
-    setSaving(true);
-    setSaveError("");
-    setSaveMessage("");
-    try {
-      const data = await patchAdminNotificationSettings(adminNotificationSettingsPatchPayload(form));
-      setForm(settingsToForm(data.settings));
-      setBindings(data.bindings);
-      setSaveMessage("Настройки сохранены");
-    } catch (caught) {
-      setSaveError(caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить настройки");
-    } finally {
-      setSaving(false);
-    }
+    await saveFlightRef.current;
   }
 
   if (loading) {
@@ -270,7 +325,14 @@ export function AdminNotificationSettingsSection() {
         </p>
       ) : null}
 
-      <Button type="button" disabled={saving} onClick={() => void save()}>
+      <Button
+        type="button"
+        disabled={saving}
+        onClick={() => {
+          if (saving) return;
+          void save();
+        }}
+      >
         {saving ? "Сохранение…" : "Сохранить"}
       </Button>
     </section>

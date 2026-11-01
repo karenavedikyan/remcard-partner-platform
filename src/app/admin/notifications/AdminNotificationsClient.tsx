@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { handleDialogTabKey } from "@/lib/dialog-focus";
 import { RemcardApiError } from "@/lib/api-client";
 import { adminNotificationCategoryLabel } from "@/lib/admin-notification-display";
 import { adminNotificationActionHref } from "@/lib/admin-notification-url";
@@ -12,10 +13,107 @@ import {
   type AdminNotificationItem,
 } from "@/lib/prof-admin-notifications-api";
 import { Button } from "@/components/ui/Button";
-import { AdminNotificationSettingsSection } from "./AdminNotificationSettingsSection";
+import { AdminNotificationSettingsSection, type AdminNotificationSettingsHostState } from "./AdminNotificationSettingsSection";
 import styles from "./AdminNotifications.module.css";
 
 const PAGE_LIMIT = 25;
+
+type SettingsDiscardConfirmProps = {
+  open: boolean;
+  onStay: () => void;
+  onDiscard: () => void;
+};
+
+function SettingsDiscardConfirm({ open, onStay, onDiscard }: SettingsDiscardConfirmProps) {
+  const titleId = useId();
+  const stayRef = useRef<HTMLButtonElement>(null);
+  const discardRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const onStayRef = useRef(onStay);
+  const onDiscardRef = useRef(onDiscard);
+  onStayRef.current = onStay;
+  onDiscardRef.current = onDiscard;
+
+  useEffect(() => {
+    if (!open) return;
+    stayRef.current?.focus({ preventScroll: true });
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        onStayRef.current();
+        return;
+      }
+      const sheet = sheetRef.current;
+      if (sheet) handleDialogTabKey(event, sheet);
+    };
+
+    const onFocusIn = (event: FocusEvent) => {
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const target = event.target;
+      if (target instanceof Node && sheet.contains(target)) return;
+      event.stopPropagation();
+      stayRef.current?.focus({ preventScroll: true });
+    };
+
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("focusin", onFocusIn, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("focusin", onFocusIn, true);
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className={styles.settingsDiscardBackdrop}
+      role="presentation"
+      data-testid="admin-notify-settings-discard-backdrop"
+      onClick={onStay}
+    >
+      <div
+        ref={sheetRef}
+        className={styles.settingsDiscardSheet}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        data-testid="admin-notify-settings-discard-confirm"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h3 id={titleId}>Закрыть без сохранения?</h3>
+        <p className={styles.settingsDiscardBody}>
+          Есть несохранённые изменения в настройках уведомлений. Нажмите «Сохранить», чтобы применить их, или закройте
+          окно — черновик будет сброшен.
+        </p>
+        <div className={styles.settingsDiscardActions}>
+          <button
+            ref={stayRef}
+            type="button"
+            className={styles.settingsDiscardPrimary}
+            data-testid="admin-notify-settings-discard-stay"
+            onClick={onStay}
+          >
+            Остаться
+          </button>
+          <button
+            ref={discardRef}
+            type="button"
+            className={styles.settingsDiscardSecondary}
+            data-testid="admin-notify-settings-discard-close"
+            onClick={onDiscard}
+          >
+            Закрыть без сохранения
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function formatWhen(iso: string): string {
   const d = new Date(iso);
@@ -34,6 +132,12 @@ export function AdminNotificationsClient() {
   const [inboxMessage, setInboxMessage] = useState("");
   const [markBusy, setMarkBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsHost, setSettingsHost] = useState<AdminNotificationSettingsHostState>({
+    dirty: false,
+    saving: false,
+    bindingBusy: false,
+  });
+  const [settingsDiscardConfirmOpen, setSettingsDiscardConfirmOpen] = useState(false);
   const mountedRef = useRef(true);
   const requestSeqRef = useRef(0);
   const mutationSeqRef = useRef(0);
@@ -56,18 +160,41 @@ export function AdminNotificationsClient() {
   }, []);
 
   useEffect(() => {
+    if (!settingsOpen) return;
     const dialog = settingsDialogRef.current;
-    if (!dialog) return;
-    if (settingsOpen) {
-      if (!dialog.open) dialog.showModal();
-    } else if (dialog.open) {
-      dialog.close();
-    }
+    if (dialog && !dialog.open) dialog.showModal();
   }, [settingsOpen]);
 
-  const closeSettings = useCallback(() => {
+  const finalizeSettingsDialogClosed = useCallback(() => {
     setSettingsOpen(false);
-    settingsTriggerRef.current?.focus();
+    setSettingsDiscardConfirmOpen(false);
+    setSettingsHost({ dirty: false, saving: false, bindingBusy: false });
+    requestAnimationFrame(() => {
+      settingsTriggerRef.current?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  const performSettingsClose = useCallback(() => {
+    setSettingsDiscardConfirmOpen(false);
+    const dialog = settingsDialogRef.current;
+    if (dialog?.open) {
+      dialog.close();
+    }
+    finalizeSettingsDialogClosed();
+  }, [finalizeSettingsDialogClosed]);
+
+  const requestSettingsClose = useCallback(() => {
+    if (settingsHost.saving) return;
+    if (settingsDiscardConfirmOpen) return;
+    if (settingsHost.dirty) {
+      setSettingsDiscardConfirmOpen(true);
+      return;
+    }
+    performSettingsClose();
+  }, [performSettingsClose, settingsDiscardConfirmOpen, settingsHost.dirty, settingsHost.saving]);
+
+  const handleSettingsHostState = useCallback((state: AdminNotificationSettingsHostState) => {
+    setSettingsHost(state);
   }, []);
 
   useEffect(() => {
@@ -75,11 +202,12 @@ export function AdminNotificationsClient() {
     if (!dialog) return;
     const onCancel = (event: Event) => {
       event.preventDefault();
-      closeSettings();
+      if (settingsDiscardConfirmOpen) return;
+      requestSettingsClose();
     };
     dialog.addEventListener("cancel", onCancel);
     return () => dialog.removeEventListener("cancel", onCancel);
-  }, [closeSettings, settingsOpen]);
+  }, [requestSettingsClose, settingsDiscardConfirmOpen, settingsOpen]);
 
   useEffect(() => {
     requestSeqRef.current += 1;
@@ -392,7 +520,7 @@ export function AdminNotificationsClient() {
           ref={settingsDialogRef}
           className={styles.settingsDialog}
           aria-labelledby="admin-notify-settings-dialog-title"
-          onClose={closeSettings}
+          onClose={finalizeSettingsDialogClosed}
         >
           <header className={styles.settingsDialogHead}>
             <h2 id="admin-notify-settings-dialog-title">Уведомления администратора</h2>
@@ -400,16 +528,22 @@ export function AdminNotificationsClient() {
               type="button"
               className={styles.settingsDialogClose}
               aria-label="Закрыть окно настроек"
-              onClick={closeSettings}
+              disabled={settingsHost.saving}
+              onClick={requestSettingsClose}
             >
               Закрыть
             </button>
           </header>
           <div className={styles.settingsDialogBody}>
             <div className={styles.settingsInDialog}>
-              <AdminNotificationSettingsSection />
+              <AdminNotificationSettingsSection onHostStateChange={handleSettingsHostState} />
             </div>
           </div>
+          <SettingsDiscardConfirm
+            open={settingsDiscardConfirmOpen}
+            onStay={() => setSettingsDiscardConfirmOpen(false)}
+            onDiscard={performSettingsClose}
+          />
         </dialog>
       ) : null}
     </div>

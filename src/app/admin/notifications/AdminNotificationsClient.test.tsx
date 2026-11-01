@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const api = vi.hoisted(() => ({
@@ -180,8 +180,78 @@ describe("AdminNotificationsClient", () => {
     await screen.findByRole("heading", { name: "Новый партнёр" });
     await ui.click(screen.getByRole("button", { name: "Настройки" }));
     await screen.findByText("Настройки уведомлений");
-    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/не удалось сохранить/i);
+    const dialog = await screen.findByRole("dialog");
+    await ui.click(within(dialog).getByRole("button", { name: "Сохранить" }));
+    expect(within(dialog).getByRole("alert")).toHaveTextContent(/не удалось сохранить/i);
     expect(screen.queryByText("Настройки сохранены")).toBeNull();
+  });
+
+  it("shows discard confirm when closing dirty settings and stay keeps the modal", async () => {
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await screen.findByRole("heading", { name: "Новый партнёр" });
+    await ui.click(screen.getByRole("button", { name: "Настройки" }));
+    await screen.findByRole("group", { name: "Категории" });
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
+    expect(await screen.findByTestId("admin-notify-settings-discard-confirm")).toBeTruthy();
+    await ui.click(screen.getByTestId("admin-notify-settings-discard-stay"));
+    await waitFor(() =>
+      expect(screen.queryByTestId("admin-notify-settings-discard-confirm")).toBeNull(),
+    );
+    expect(screen.getByRole("dialog", { name: "Уведомления администратора" })).toBeTruthy();
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("discarding dirty settings closes without PATCH", async () => {
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(await screen.findByRole("button", { name: "Настройки" }));
+    await screen.findByRole("group", { name: "Категории" });
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
+    await ui.click(await screen.findByTestId("admin-notify-settings-discard-close"));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("closes clean settings without discard confirm", async () => {
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(await screen.findByRole("button", { name: "Настройки" }));
+    await screen.findByRole("group", { name: "Категории" });
+    await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.queryByTestId("admin-notify-settings-discard-confirm")).toBeNull();
+  });
+
+  it("blocks close while settings save is in flight", async () => {
+    let resolvePatch: (value: Awaited<ReturnType<typeof api.patchAdminNotificationSettings>>) => void = () => {};
+    const patchPending = new Promise<Awaited<ReturnType<typeof api.patchAdminNotificationSettings>>>((resolve) => {
+      resolvePatch = resolve;
+    });
+    api.patchAdminNotificationSettings.mockReturnValueOnce(patchPending);
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(await screen.findByRole("button", { name: "Настройки" }));
+    await screen.findByRole("group", { name: "Категории" });
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    expect(await screen.findByRole("button", { name: "Сохранение…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Закрыть окно настроек" })).toBeDisabled();
+    await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
+    expect(screen.getByRole("dialog", { name: "Уведомления администратора" })).toBeTruthy();
+    expect(screen.queryByTestId("admin-notify-settings-discard-confirm")).toBeNull();
+    resolvePatch({
+      settings: {
+        newClients: true,
+        newPartners: true,
+        partnerActivity: true,
+        channels: [],
+        activityFrequency: "daily",
+      },
+      bindings: { telegramLinked: false, maxLinked: false },
+    });
+    await waitFor(() => expect(screen.getByText("Настройки сохранены")).toBeTruthy());
   });
 });

@@ -116,4 +116,47 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
     expect(screen.queryByRole("link", { name: /настройки партн/i })).toBeNull();
     expect(document.body.textContent).not.toMatch(/\/profile/);
   });
+
+  it("coalesces overlapping save clicks into one PATCH", async () => {
+    let resolvePatch: (value: typeof settingsPayload) => void = () => {};
+    const pending = new Promise<typeof settingsPayload>((resolve) => {
+      resolvePatch = resolve;
+    });
+    api.patchAdminNotificationSettings.mockReturnValueOnce(pending);
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    await screen.findByText("Настройки уведомлений");
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    const save = screen.getByRole("button", { name: "Сохранить" });
+    await ui.click(save);
+    await ui.click(save);
+    expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(1);
+    resolvePatch(settingsPayload);
+    await waitFor(() => expect(screen.getByText("Настройки сохранены")).toBeTruthy());
+  });
+
+  it("reports dirty and saving state to optional host callback", async () => {
+    const onHostStateChange = vi.fn();
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection onHostStateChange={onHostStateChange} />);
+    await screen.findByText("Настройки уведомлений");
+    await waitFor(() =>
+      expect(onHostStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({ dirty: false, saving: false, bindingBusy: false }),
+      ),
+    );
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    await waitFor(() =>
+      expect(onHostStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ dirty: true, saving: false }),
+      ),
+    );
+    api.patchAdminNotificationSettings.mockResolvedValueOnce(settingsPayload);
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() =>
+      expect(onHostStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ dirty: false, saving: false }),
+      ),
+    );
+  });
 });
