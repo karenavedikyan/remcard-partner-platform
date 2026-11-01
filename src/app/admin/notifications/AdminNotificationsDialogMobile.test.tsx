@@ -16,4 +16,10 @@ describe("settings dialog mobile presentation", () => {
     expect(css).toContain(".settingsInDialog :global(#admin-notify-settings-title)");
     expect(css).not.toMatch(/\.settingsInDialog\s+#admin-notify-settings-title\s*\{/);
   });
+
+  it("does not override the primary save action with a white surface background", () => {
+    expect(css).toMatch(
+      /\.settingsInDialog \.settingsSection > button\[type="button"\]:last-of-type\s*\{[^}]*background:\s*var\(--accent-fill\)/s,
+    );
+  });
 });
