@@ -13,4 +13,10 @@ describe("PartnerSearchResultCard P25c contrast appendix", () => {
     expect(appendix).toMatch(/\.modalResultOpenHint[^}]*var\(--modal-result-cover-fg\)/s);
     expect(appendix).toMatch(/\.modalResultFootNote[^}]*#5c605a/s);
   });
+
+  it("pairs the dark store foreground with a dark surface instead of the light tint fallback", () => {
+    expect(css).toMatch(
+      /:global\(\[data-theme="dark"\]\) \.modalResultCoverStore,[^}]*background:\s*color-mix\(in srgb, var\(--accent, #d34e4e\) 14%, var\(--surface\)\);[^}]*--modal-result-cover-fg:\s*#d0c9c8/s,
+    );
+  });
 });

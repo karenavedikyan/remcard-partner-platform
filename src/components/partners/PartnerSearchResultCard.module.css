@@ -288,6 +288,7 @@
 
 :global([data-theme="dark"]) .modalResultCoverStore,
 :global(html.dark) .modalResultCoverStore {
+  background: color-mix(in srgb, var(--accent, #d34e4e) 14%, var(--surface));
   --modal-result-cover-fg: #d0c9c8;
 }
 
