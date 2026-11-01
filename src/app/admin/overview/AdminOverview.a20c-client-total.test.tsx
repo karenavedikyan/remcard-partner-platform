@@ -86,7 +86,7 @@ describe("A20c overview CLIENT all-time KPI", () => {
     expect(screen.queryByText("999")).toBeNull();
     expect(mocks.clientTotal).toHaveBeenCalledTimes(1);
     const kpi = document.querySelector('[data-source="admin-users-client-total"]')!;
-    expect(kpi.textContent).toMatch(/Вся клиентская база \(all-time\)/);
+    expect(kpi.textContent).toMatch(/Всего клиентов за всё время/);
     expect(kpi.textContent).toMatch(/\+2 новых за 7 дней/);
   });
 

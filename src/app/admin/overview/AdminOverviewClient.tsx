@@ -414,7 +414,7 @@ export function AdminOverviewClient() {
                   </>
                 ) : (
                   <>
-                    <p className={styles.sub}>Вся клиентская база (all-time)</p>
+                    <p className={styles.sub}>Всего клиентов за всё время</p>
                     <p className={styles.sub}>
                       +{data.clients.createdInPeriod.current} новых за {kpiPeriodScope}
                     </p>
