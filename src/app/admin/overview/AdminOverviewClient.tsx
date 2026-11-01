@@ -19,6 +19,11 @@ function periodButtonLabel(id: PeriodId): string {
   return PERIODS.find((p) => p.id === id)?.label ?? id;
 }
 
+function periodIdFromApi(value: string | undefined, fallback: PeriodId): PeriodId {
+  if (value === "1d" || value === "7d" || value === "30d") return value;
+  return fallback;
+}
+
 function kindLabel(key: string): string {
   if (key in PARTNER_KIND_UI_LABELS) {
     return PARTNER_KIND_UI_LABELS[key as keyof typeof PARTNER_KIND_UI_LABELS];
@@ -228,9 +233,10 @@ export function AdminOverviewClient() {
     }));
   }, [data]);
 
-  const periodScope = periodButtonLabel(period);
-  const regChartSubtitle = `Завершённые регистрации · ${periodScope}`;
-  const profChartSubtitle = `Активные профили PROF · ${periodScope}`;
+  const chartPeriodId = data ? periodIdFromApi(data.period, period) : period;
+  const chartPeriodScope = periodButtonLabel(chartPeriodId);
+  const regChartSubtitle = `За ${chartPeriodScope}`;
+  const profChartSubtitle = `За ${chartPeriodScope}`;
 
   return (
     <div className={styles.wrap}>
@@ -371,11 +377,11 @@ export function AdminOverviewClient() {
                 Обновление графиков…
               </p>
             ) : null}
-            <div className={styles.chartsRow}>
+            <div className={styles.chartsRow} data-chart-period={chartPeriodId}>
               <MiniBars
                 title="Регистрации по дням"
                 subtitle={regChartSubtitle}
-                legendLabel="Завершённые регистрации (total)"
+                legendLabel="Итого за день"
                 series={data.registrationsCompleted.seriesDaily}
                 valueKey="total"
                 emptyLabel="Нет завершённых регистраций в выбранном периоде"
@@ -383,16 +389,12 @@ export function AdminOverviewClient() {
               <MiniBars
                 title="Активные профили PROF по дням"
                 subtitle={profChartSubtitle}
-                legendLabel="Активные PROF-профили"
+                legendLabel="Активные профили PROF"
                 series={data.activitySeriesDaily ?? []}
                 valueKey="profPartnerProfiles"
                 emptyLabel="Нет данных — учёт начнётся после первых визитов кабинета"
               />
             </div>
-            <p className={styles.chartContractNote}>
-              В прототипе R1 один график «Рост сообщества» с двумя демо-сериями (партнёры и клиенты); в
-              продукте — два отдельных API-ряда без клиентской серии.
-            </p>
           </section>
           <p className={styles.definitions}>{data.definitions.partnerProfile}</p>
         </>

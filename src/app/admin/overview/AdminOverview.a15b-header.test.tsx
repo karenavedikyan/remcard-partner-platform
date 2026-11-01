@@ -82,7 +82,7 @@ describe("A15b overview R1 page-head completion", () => {
     expect(screen.getByRole("heading", { name: "Обзор проекта", level: 1 })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("30d"));
-    await screen.findByText("Завершённые регистрации");
+    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
   });
 
   it("scopes page-head CSS: lead + headerCopy + proto title scale", () => {

@@ -109,7 +109,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
 
   it("keeps only the three existing drill links with exact hrefs and labels", async () => {
     render(<AdminOverviewClient />);
-    await screen.findByText("Завершённые регистрации");
+    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
     const links = screen.getAllByRole("link");
     const hrefs = links.map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual([
@@ -165,7 +165,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     render(<AdminOverviewClient />);
     expect(screen.getByRole("status")).toHaveTextContent("Загрузка показателей…");
     resolve(payload("7d"));
-    await screen.findByText("Завершённые регистрации");
+    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
     expect(screen.getByText("Регистрации по дням")).toBeTruthy();
     expect(screen.getByText("Активные профили PROF по дням")).toBeTruthy();
     expect(screen.getByText("Один профиль")).toBeTruthy();
@@ -181,7 +181,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     expect(screen.getByRole("heading", { name: "Обзор проекта", level: 1 })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Сегодня" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("1d"));
-    await screen.findByText("Завершённые регистрации");
+    await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
   });
 
   it("isolates KPI presentation classes from chart block styles in module CSS source", () => {

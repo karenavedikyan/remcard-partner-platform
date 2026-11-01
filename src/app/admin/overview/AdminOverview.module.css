@@ -253,15 +253,6 @@
   line-height: 1.45;
 }
 
-.chartContractNote {
-  margin: 0;
-  font-size: var(--text-xs);
-  line-height: 1.45;
-  color: var(--muted);
-  max-width: 72ch;
-  overflow-wrap: anywhere;
-}
-
 .chartsRow {
   --overview-chart-title: 1rem; /* prototype panel-head h2 16px */
   --overview-chart-title-mobile: 0.875rem; /* 14px ≤760 */
