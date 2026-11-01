@@ -16,7 +16,7 @@ type NavItem = {
   group: "primary" | "control" | "service";
 };
 
-/** Existing destinations only — no fake badges, no unimplemented R1 pages. */
+/** Existing destinations only — no fake counts, no unimplemented R1 pages. */
 export const ADMIN_NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin/overview", label: "Обзор", icon: "overview", group: "primary" },
   { href: "/admin/moderation", label: "Модерация", icon: "moderation", group: "primary" },

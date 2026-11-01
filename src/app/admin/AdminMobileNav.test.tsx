@@ -45,7 +45,7 @@ describe("Admin mobile navigation", () => {
     const dialog = screen.getByRole("dialog", { name: "Меню" });
     expect(dialog).toBeTruthy();
     expect(dialog.className).toMatch(/navDrawer/);
-    expect(screen.getByText("Контроль и развитие")).toBeTruthy();
+    expect(screen.getAllByText("Контроль и развитие").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Модерация" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Команда" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Уведомления" }).length).toBeGreaterThan(0);

@@ -23,7 +23,7 @@ function isOrgModerationDetailPath(pathname: string): boolean {
  * A17b unified admin chrome: sidebar brand + grouped nav + always-on topbar breadcrumb.
  * Page H1s remain owned by child routes — this shell does not render a second H1.
  * Partners / moderation-detail data-* flags stay for route-scoped presentation hooks
- * owned by those streams; icons and breadcrumb are global (no partnersChrome gate).
+ * owned by those streams; icons and breadcrumb are global (no chrome gate prop).
  */
 export function AdminHeader({ identity }: { identity: AdminAccountIdentity | null }) {
   const pathname = usePathname() ?? "";

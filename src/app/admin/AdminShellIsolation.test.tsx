@@ -1,3 +1,23 @@
+/** @vitest-environment node */
+const mem = new Map<string, string>();
+Object.defineProperty(globalThis, "sessionStorage", {
+  configurable: true,
+  value: {
+    clear: () => mem.clear(),
+    getItem: (k: string) => mem.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      mem.set(k, String(v));
+    },
+    removeItem: (k: string) => {
+      mem.delete(k);
+    },
+    key: (i: number) => [...mem.keys()][i] ?? null,
+    get length() {
+      return mem.size;
+    },
+  },
+});
+
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
