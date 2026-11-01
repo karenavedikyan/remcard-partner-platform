@@ -2,23 +2,14 @@ import { moderationCatalogStatusLabel } from "@/lib/prof-admin-moderation-org-di
 import type { ModerationOrgDetail } from "@/lib/prof-admin-moderation-org-display";
 import type { ModerationPartnerDetail } from "@/lib/prof-admin-moderation-partner-display";
 
-type OrgStyles = {
-  section: string;
-  metaLine: string;
-  dataGrid: string;
-  prose: string;
-  historyList: string;
-  historyItem: string;
-};
-
-type PartnerStyles = OrgStyles;
+type HistoryStyles = Record<string, string>;
 
 export function OrganizationModerationHistorySection({
   org,
   styles,
 }: {
   org: ModerationOrgDetail;
-  styles: OrgStyles;
+  styles: HistoryStyles;
 }) {
   return (
     <section className={styles.section} aria-label="История проверки">
@@ -48,7 +39,7 @@ export function PartnerModerationHistorySection({
   styles,
 }: {
   partner: ModerationPartnerDetail;
-  styles: PartnerStyles;
+  styles: HistoryStyles;
 }) {
   const notes = partner.moderationNotes ?? [];
   const hasReason = Boolean(partner.rejectionReason?.trim());
