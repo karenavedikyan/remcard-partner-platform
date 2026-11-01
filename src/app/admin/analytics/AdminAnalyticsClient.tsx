@@ -82,13 +82,13 @@ function GrowthChart({
         <div>
           <h2>Рост сообщества</h2>
           <p>
-            Новые регистрации за {periodScopeLabel(period)} · легенда «PRO» — роль аккаунта, не партнёр в
-            реестре
+            Новые регистрации за {periodScopeLabel(period)} · клиенты и профессиональные аккаунты
           </p>
         </div>
       </div>
-      <div ref={wrapRef}>
+      <div ref={wrapRef} className={styles.chartFrame}>
         <svg
+          className={styles.growthChart}
           viewBox={`0 0 ${plotW} ${CHART_VIEW_H}`}
           width={plotW}
           role="img"
@@ -124,6 +124,25 @@ function GrowthChart({
             strokeDasharray="4 3"
             strokeLinecap="round"
           />
+          {series.map((row, i) => (
+            <g key={row.date} data-testid="analytics-registration-points">
+              <circle cx={clientGeo.xAt(i)} cy={clientGeo.yAt(row.clients)} r="3" fill="currentColor">
+                <title>{`${row.date}: клиенты ${row.clients}`}</title>
+              </circle>
+              <circle cx={proGeo.xAt(i)} cy={proGeo.yAt(row.pros)} r="3" fill="#6366f1">
+                <title>{`${row.date}: PRO ${row.pros}`}</title>
+              </circle>
+            </g>
+          ))}
+          {clientGeo.axisIdx.map((i) => {
+            const row = series[i];
+            if (!row) return null;
+            const date = new Date(row.date);
+            const label = Number.isNaN(date.getTime()) ? row.date : new Intl.DateTimeFormat("ru-RU", {
+              day: "2-digit", month: "2-digit", timeZone: "Europe/Moscow",
+            }).format(date);
+            return <text key={row.date} x={clientGeo.xAt(i)} y={CHART_VIEW_H - 6} textAnchor="middle" fontSize="10" fill="var(--muted)">{label}</text>;
+          })}
         </svg>
         <div className={styles.chartLegend} aria-label="Легенда: новые регистрации">
           <span>
@@ -158,8 +177,7 @@ function FunnelStagesPanel({
             Этапы воронки · {role === "CLIENT" ? "клиенты" : "PRO"}
           </h2>
           <p>
-            За всё время (all-time) · не зависит от периода {periodScopeLabel(period)} выше · воронка
-            регистрации, не путь партнёра frozen
+            За всё время · этапы регистрации, независимо от выбранного периода графика
           </p>
         </div>
       </div>
@@ -179,7 +197,7 @@ function FunnelStagesPanel({
         })}
       </div>
       <p className={styles.kpiNote}>
-        Доли этапов (all-time): профиль {funnel.pctProfile}% · первое действие {funnel.pctFirst}% · активность
+        Доли этапов: профиль {funnel.pctProfile}% · первое действие {funnel.pctFirst}% · активность
         7д {funnel.pctActive}%
       </p>
     </section>
@@ -255,7 +273,7 @@ export function AdminAnalyticsClient() {
         mapped.unauthorized
           ? "Требуется вход администратора."
           : mapped.forbidden
-            ? "Нет доступа к аналитике (нужна роль аналитика на backend)."
+            ? "Нет доступа к аналитике. Обратитесь к владельцу платформы."
             : mapped.message,
       );
     }
@@ -263,7 +281,7 @@ export function AdminAnalyticsClient() {
     try {
       const snapshot = await getAdminUserFunnel(funnelRole as AdminUserFunnelRole);
       if (!snapshot) {
-        throw new Error("В ответе API нет блока воронки");
+        throw new Error("Не удалось получить этапы регистрации. Повторите загрузку.");
       }
       setFunnel(snapshot);
     } catch (e) {
@@ -379,7 +397,7 @@ export function AdminAnalyticsClient() {
           {analytics.length > 0 ? (
             <GrowthChart series={analytics} period={period} />
           ) : (
-            <p className={styles.empty}>Нет registrationsByDay за выбранный период.</p>
+            <p className={styles.empty}>За выбранный период новых регистраций нет.</p>
           )}
           <div className={styles.funnelRoleSwitch} role="group" aria-label="Роль для этапов воронки">
             {ANALYTICS_FUNNEL_ROLES.map((r) => (

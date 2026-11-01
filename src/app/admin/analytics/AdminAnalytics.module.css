@@ -1,6 +1,7 @@
 .wrap {
   --analytics-proto-text-xl: clamp(1.5rem, 1.3rem + 0.45vw, 1.875rem);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
   min-width: 0;
 }
@@ -115,6 +116,22 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
+}
+
+.panelHead > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chartFrame {
+  min-width: 0;
+  width: 100%;
+}
+
+.growthChart {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 .panelHead p {
