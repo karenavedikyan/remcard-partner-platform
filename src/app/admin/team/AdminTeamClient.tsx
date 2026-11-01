@@ -155,12 +155,12 @@ export function AdminTeamClient() {
             {loadState.kind === "loading" ? "…" : countsLive ? roleLegend : "—"}
           </strong>
           <span className={styles.statLabel}>Роли доступа</span>
-          <small>По ролям в загруженном списке; кураторы по направлениям — не этот блок</small>
+          <small>Роли сотрудников с действующим доступом</small>
         </div>
         <div className={styles.statTile} data-testid="team-kpi-closed">
           <strong>—</strong>
           <span className={styles.statLabel}>Доступ закрыт</span>
-          <small>Нет в ответе GET /api/admin/team — не выдумываем счётчик</small>
+          <small>Данные о закрытых доступах пока недоступны</small>
         </div>
       </section>
 
