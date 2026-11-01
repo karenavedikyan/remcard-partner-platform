@@ -129,7 +129,11 @@ export function AgentR04ListToolbar(props: Props) {
         ) : null}
 
         {!invitations ? (
-          <div className={styles.viewToggle} data-testid="agent-r04-view-toggle" aria-label="Вид">
+          <div
+            className={styles.viewToggle}
+            data-testid="agent-r04-view-toggle"
+            aria-label="Вид списка"
+          >
             <button
               type="button"
               data-active={props.viewMode === "list"}
@@ -138,7 +142,7 @@ export function AgentR04ListToolbar(props: Props) {
               title="Список"
               onClick={() => props.onViewModeChange("list")}
             >
-              ≡
+              Список
             </button>
             <button
               type="button"
@@ -148,7 +152,7 @@ export function AgentR04ListToolbar(props: Props) {
               title="Карточки"
               onClick={() => props.onViewModeChange("cards")}
             >
-              ⊞
+              Карточки
             </button>
           </div>
         ) : null}
