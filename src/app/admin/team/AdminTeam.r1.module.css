@@ -107,8 +107,10 @@
 
 .button:focus-visible,
 .accessLink:focus-visible,
+.accessLink:focus,
 .retry:focus-visible,
-.searchField input:focus-visible {
+.searchField input:focus-visible,
+.viewToggle button:focus-visible {
   outline: 3px solid var(--tm-brand);
   outline-offset: 2px;
 }
@@ -137,10 +139,31 @@
   overflow-wrap: anywhere;
 }
 
+.statTile .roleLegend {
+  font-size: clamp(0.95rem, 0.85rem + 0.35vw, 1.125rem);
+  line-height: 1.35;
+}
+
+.statLabel {
+  font-size: var(--text-xs, 0.8125rem);
+  font-weight: 650;
+  color: var(--tm-ink);
+}
+
 .statTile small {
   color: var(--tm-muted);
   font-size: var(--text-xs, 0.8125rem);
   line-height: 1.45;
+}
+
+.listCountHint {
+  margin: 0;
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+}
+
+.listCountHint[hidden] {
+  display: none;
 }
 
 .toolbar {
@@ -255,17 +278,28 @@
   object-fit: cover;
 }
 
+.employeeTop > div {
+  min-width: 0;
+}
+
 .employeeTop h2 {
   margin: 0;
   font-size: var(--text-sm, 0.875rem);
   font-weight: 750;
   overflow-wrap: anywhere;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .employeeTop p {
   margin: 0.25rem 0 0;
   color: var(--tm-muted);
   font-size: var(--text-xs, 0.8125rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pill {

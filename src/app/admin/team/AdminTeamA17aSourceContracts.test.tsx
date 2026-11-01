@@ -77,4 +77,24 @@ describe("A17a team source contracts", () => {
     expect(detail).toContain("Нет данных о посещениях");
     expect(detail).not.toContain("нет данных API");
   });
+
+  it("A17c pins frozen R1 card note + role legend helper (no invented closed count)", () => {
+    const client = readFileSync(CLIENT, "utf8");
+    const api = readFileSync(API, "utf8");
+    expect(client).toContain("TEAM_R1_CARD_ROLE_NOTE");
+    expect(client).toContain("teamRoleLegend");
+    expect(api).toContain("Роль задаётся приглашением, без привязки к направлению");
+    expect(client).toContain("Нет в ответе GET /api/admin/team");
+    expect(client).not.toMatch(/Права сотрудника зависят от его роли/);
+  });
+
+  it("A17d pins fail-closed list parse and recoverable error copy", () => {
+    const client = readFileSync(CLIENT, "utf8");
+    const api = readFileSync(API, "utf8");
+    expect(client).toContain('data-admin-team="a17d"');
+    expect(client).toContain("TEAM_LOAD_FAILED_MESSAGE");
+    expect(api).toContain("AdminTeamResponseError");
+    expect(api).toContain("throw new AdminTeamResponseError");
+    expect(api).not.toMatch(/return \{ members: \[\] \};\s*\n\s*\}/);
+  });
 });

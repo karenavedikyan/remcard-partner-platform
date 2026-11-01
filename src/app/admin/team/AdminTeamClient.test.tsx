@@ -51,8 +51,31 @@ beforeEach(() => {
   api.fetchAdminTeam.mockResolvedValue({ members });
 });
 
-describe("AdminTeamClient A17a readonly", () => {
-  it("counts actual loaded roles including analysts without technical copy", async () => {
+describe("AdminTeamClient A17d strict response", () => {
+  it("malformed list response shows recoverable error without false empty or zero KPI", async () => {
+    api.fetchAdminTeam
+      .mockRejectedValueOnce(new Error("Не удалось загрузить команду"))
+      .mockResolvedValueOnce({ members });
+    render(<AdminTeamClient />);
+    expect(await screen.findByText("Не удалось загрузить команду")).toBeTruthy();
+    expect(screen.queryByText(/В команде пока никого нет/i)).toBeNull();
+    expect(screen.getByTestId("team-kpi-active").querySelector("strong")?.textContent).toBe("—");
+    fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
+    await screen.findByText("Анна Админ");
+    expect(screen.getByTestId("team-kpi-active").querySelector("strong")?.textContent).toBe("2");
+  });
+
+  it("genuine empty members stays empty state (not error)", async () => {
+    api.fetchAdminTeam.mockResolvedValueOnce({ members: [] });
+    render(<AdminTeamClient />);
+    expect(await screen.findByText(/В команде пока никого нет/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
+    expect(screen.getByTestId("team-kpi-active").querySelector("strong")?.textContent).toBe("0");
+  });
+});
+
+describe("AdminTeamClient A17c R1 cards/KPI", () => {
+  it("shows R1 role legend from loaded roles including analyst without inventing closed count", async () => {
     api.fetchAdminTeam.mockResolvedValueOnce({
       members: [
         ...members,
@@ -67,15 +90,19 @@ describe("AdminTeamClient A17a readonly", () => {
     });
     render(<AdminTeamClient />);
     await screen.findByText("Ирина Аналитик");
-    const roles = screen.getByText("Ролей в команде").closest("div");
-    expect(roles).not.toBeNull();
-    expect(within(roles!).getByText("3")).toBeTruthy();
+    expect(screen.getByTestId("team-kpi-roles")).toHaveTextContent(
+      "Владелец · Администратор · Аналитик",
+    );
+    expect(screen.getByTestId("team-kpi-active")).toHaveTextContent("Доступ активен");
+    expect(screen.getByTestId("team-kpi-closed").querySelector("strong")?.textContent).toBe("—");
     expect(screen.queryByText(/StaffRole/)).toBeNull();
+    expect(screen.getByText(/Нет в ответе GET \/api\/admin\/team/i)).toBeTruthy();
   });
 
-  it("renders cards with roles and routes access to existing screen", async () => {
+  it("renders frozen R1 card note and routes access to existing screen", async () => {
     render(<AdminTeamClient />);
     expect(await screen.findByRole("heading", { name: "Команда", level: 1 })).toBeTruthy();
+    expect(screen.getByText("Люди, направления и доступ")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Управление доступом" })).toHaveAttribute(
       "href",
       "/admin/access/users",
@@ -83,6 +110,9 @@ describe("AdminTeamClient A17a readonly", () => {
     const cards = await screen.findByRole("list", { name: "Карточки сотрудников" });
     expect(within(cards).getByText("Владимир Владелец")).toBeTruthy();
     expect(within(cards).getByText("Анна Админ")).toBeTruthy();
+    expect(
+      within(cards).getAllByText("Роль задаётся приглашением, без привязки к направлению").length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("link", { name: /Все права: управление доступом для Владимир/i }),
     ).toHaveAttribute("href", "/admin/access/users");

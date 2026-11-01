@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
 import {
@@ -10,6 +10,12 @@ import {
 } from "@/lib/prof-admin-api";
 import { Button } from "@/components/ui/Button";
 import { adminTestUserPublicCatalogUrl } from "@/lib/admin-test-users-public-link";
+import {
+  PROF_TEST_USER_KIND_LABEL,
+  filterProfTestUsers,
+  profTestUserKindLabel,
+  type ProfTestUserCreateKind,
+} from "./adminTestUserKind";
 import styles from "../admin-test-users.module.css";
 
 type TestUser = {
@@ -32,13 +38,6 @@ type TestUser = {
   }>;
 };
 
-const KIND_LABEL: Record<string, string> = {
-  agent: "Агент",
-  master: "Специалист",
-  store: "Магазин",
-  company: "Компания",
-};
-
 function catalogStatusLabel(item: TestUser): string {
   const org = item.organizationsOwned?.[0];
   const status = org?.catalogStatus ?? item.catalogStatus ?? "DRAFT";
@@ -52,17 +51,9 @@ function catalogStatusLabel(item: TestUser): string {
   return map[status] ?? status;
 }
 
-function kindLabel(item: TestUser) {
-  const act = item.partnerActivities?.[0];
-  if (act && KIND_LABEL[act.toLowerCase()]) return KIND_LABEL[act.toLowerCase()];
-  if (item.partnerType && KIND_LABEL[item.partnerType.toLowerCase()]) {
-    return KIND_LABEL[item.partnerType.toLowerCase()];
-  }
-  return item.partnerActivities?.join(", ") || item.partnerType || "—";
-}
-
 export function AdminTestUsersClient() {
   const router = useRouter();
+  const createGenRef = useRef(0);
   const [items, setItems] = useState<TestUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,10 +61,10 @@ export function AdminTestUsersClient() {
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<"all" | "active" | "disabled">("all");
-  const [kindFilter, setKindFilter] = useState<string>("all");
+  const [kindFilter, setKindFilter] = useState<"all" | ProfTestUserCreateKind>("all");
   const [form, setForm] = useState({
     displayName: "Тест · Агент 1",
-    kind: "agent" as "agent" | "master" | "store" | "company",
+    kind: "agent" as ProfTestUserCreateKind,
     city: "Краснодар",
     publicCatalogShow: false,
   });
@@ -95,38 +86,36 @@ export function AdminTestUsersClient() {
     void reload();
   }, [reload]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((item) => {
-      if (stateFilter === "active" && item.profTestDisabledAt) return false;
-      if (stateFilter === "disabled" && !item.profTestDisabledAt) return false;
-      if (kindFilter !== "all") {
-        const k = kindLabel(item).toLowerCase();
-        const want = KIND_LABEL[kindFilter]?.toLowerCase() ?? kindFilter;
-        if (!k.includes(want) && !item.partnerActivities?.some((a) => a.toLowerCase() === kindFilter)) {
-          return false;
-        }
-      }
-      if (!q) return true;
-      return (
-        item.displayName.toLowerCase().includes(q) ||
-        item.publicId.toLowerCase().includes(q) ||
-        kindLabel(item).toLowerCase().includes(q)
-      );
-    });
-  }, [items, query, stateFilter, kindFilter]);
+  const filtered = useMemo(
+    () => filterProfTestUsers(items, { query, stateFilter, kindFilter }),
+    [items, query, stateFilter, kindFilter],
+  );
+
+  const filtersActive = query.trim() !== "" || stateFilter !== "all" || kindFilter !== "all";
+
+  const clearFilters = () => {
+    setQuery("");
+    setStateFilter("all");
+    setKindFilter("all");
+  };
 
   const create = async () => {
     if (creating) return;
+    const gen = ++createGenRef.current;
+    const submitted = { ...form };
     setCreating(true);
     setError("");
     try {
-      await createProfTestUser(form);
+      await createProfTestUser(submitted);
+      if (gen !== createGenRef.current) return;
       await reload();
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать");
+      if (gen === createGenRef.current) {
+        setForm(submitted);
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать");
+      }
     } finally {
-      setCreating(false);
+      if (gen === createGenRef.current) setCreating(false);
     }
   };
 
@@ -152,18 +141,25 @@ export function AdminTestUsersClient() {
         <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Создать</h2>
         <label>
           Имя
-          <input value={form.displayName} onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))} />
+          <input
+            value={form.displayName}
+            disabled={creating}
+            onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
+          />
         </label>
         <label>
           Тип
           <select
             value={form.kind}
+            disabled={creating}
             onChange={(e) => {
               const kind = e.target.value as typeof form.kind;
               setForm((f) => ({
                 ...f,
                 kind,
-                displayName: f.displayName.startsWith("Тест ·") ? `Тест · ${KIND_LABEL[kind] ?? kind}` : f.displayName,
+                displayName: f.displayName.startsWith("Тест ·")
+                  ? `Тест · ${PROF_TEST_USER_KIND_LABEL[kind] ?? kind}`
+                  : f.displayName,
               }));
             }}
           >
@@ -175,12 +171,17 @@ export function AdminTestUsersClient() {
         </label>
         <label>
           Город
-          <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+          <input
+            value={form.city}
+            disabled={creating}
+            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+          />
         </label>
         <label className={styles.checkboxRow}>
           <input
             type="checkbox"
             checked={form.publicCatalogShow}
+            disabled={creating}
             onChange={(e) => setForm((f) => ({ ...f, publicCatalogShow: e.target.checked }))}
           />
           Разрешить показ в каталоге remcard.ru после одобрения
@@ -197,22 +198,38 @@ export function AdminTestUsersClient() {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Поиск"
         />
-        <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value as typeof stateFilter)}>
+        <select
+          value={stateFilter}
+          aria-label="Состояние тестового пользователя"
+          onChange={(e) => setStateFilter(e.target.value as typeof stateFilter)}
+        >
           <option value="all">Все состояния</option>
           <option value="active">Активные</option>
           <option value="disabled">Отключённые</option>
         </select>
-        <select value={kindFilter} onChange={(e) => setKindFilter(e.target.value)}>
+        <select
+          value={kindFilter}
+          aria-label="Тип партнёра"
+          onChange={(e) => setKindFilter(e.target.value as typeof kindFilter)}
+        >
           <option value="all">Все типы</option>
           <option value="agent">Агент</option>
           <option value="master">Специалист</option>
           <option value="store">Магазин</option>
           <option value="company">Компания</option>
         </select>
+        {filtersActive ? (
+          <Button type="button" variant="secondary" onClick={clearFilters}>
+            Сбросить фильтры
+          </Button>
+        ) : null}
       </div>
 
       {loading ? <p>Загрузка…</p> : null}
-      {!loading && filtered.length === 0 ? <p>Нет пользователей по выбранным фильтрам.</p> : null}
+      {!loading && items.length === 0 ? <p>Тестовых пользователей пока нет.</p> : null}
+      {!loading && items.length > 0 && filtered.length === 0 ? (
+        <p>Нет пользователей по выбранным фильтрам.</p>
+      ) : null}
 
       <ul className={styles.list}>
         {filtered.map((item) => {
@@ -224,7 +241,7 @@ export function AdminTestUsersClient() {
               <span> · Тестовый партнёр</span>
               {disabled ? <span> · отключён</span> : null}
               <div className={styles.meta}>
-                {item.publicId} · {kindLabel(item)} · Каталог: {catalogStatusLabel(item)}
+                {item.publicId} · {profTestUserKindLabel(item)} · Каталог: {catalogStatusLabel(item)}
               </div>
               <div className={styles.meta}>
                 Показ на remcard.ru:{" "}

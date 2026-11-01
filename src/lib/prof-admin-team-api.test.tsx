@@ -20,10 +20,15 @@ Object.defineProperty(globalThis, "sessionStorage", {
 
 import { describe, expect, it } from "vitest";
 import {
+  AdminTeamResponseError,
   compareTeamMembers,
   filterTeamMembers,
   labelTeamStaffRole,
+  TEAM_LOAD_FAILED_MESSAGE,
+  TEAM_R1_CARD_ROLE_NOTE,
+  TEAM_R1_PAGE_LEAD,
   teamMemberInitials,
+  teamRoleLegend,
   whitelistTeamListResponse,
   whitelistTeamMember,
   type AdminTeamMember,
@@ -116,5 +121,46 @@ describe("prof-admin-team-api", () => {
     expect(
       compareTeamMembers(base({ staffRole: "ADMIN" }), base({ staffRole: "OWNER" })),
     ).toBeGreaterThan(0);
+  });
+
+  it("builds R1 role legend only from present GET roles", () => {
+    expect(TEAM_R1_CARD_ROLE_NOTE).toMatch(/приглашением/);
+    expect(TEAM_R1_PAGE_LEAD).toBe("Люди, направления и доступ");
+    expect(
+      teamRoleLegend([
+        base({ staffRole: "OPERATOR" }),
+        base({ id: "2", staffRole: "OWNER" }),
+        base({ id: "3", staffRole: "ANALYST" }),
+      ]),
+    ).toBe("Владелец · Оператор · Аналитик");
+    expect(teamRoleLegend([])).toBe("—");
+  });
+
+  it("A17d: genuine empty members stays empty; malformed 200 fail-closed", () => {
+    expect(whitelistTeamListResponse({ members: [] })).toEqual({ members: [] });
+    expect(() => whitelistTeamListResponse(null)).toThrow(AdminTeamResponseError);
+    expect(() => whitelistTeamListResponse([])).toThrow(AdminTeamResponseError);
+    expect(() => whitelistTeamListResponse({})).toThrow(AdminTeamResponseError);
+    expect(() => whitelistTeamListResponse({ members: null })).toThrow(AdminTeamResponseError);
+    expect(() => whitelistTeamListResponse({ members: "x" })).toThrow(AdminTeamResponseError);
+    expect(() =>
+      whitelistTeamListResponse({
+        members: [base(), { id: "bad", publicId: "p", displayName: "n", staffRole: "CURATOR", createdAt: "t" }],
+      }),
+    ).toThrow(AdminTeamResponseError);
+    // Published DTO: unknown keys + null optionals still OK
+    const ok = whitelistTeamListResponse({
+      members: [
+        {
+          ...base({ staffAvatarUrl: null, staffPosition: null }),
+          clientBonus: { balance: 9 },
+          extra: true,
+        },
+      ],
+      ignoredTop: 1,
+    });
+    expect(ok.members).toHaveLength(1);
+    expect(ok.members[0]?.displayName).toBe("Анна Владелец");
+    expect(TEAM_LOAD_FAILED_MESSAGE).toBe("Не удалось загрузить команду");
   });
 });

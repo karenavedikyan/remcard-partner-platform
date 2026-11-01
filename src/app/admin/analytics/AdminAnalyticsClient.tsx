@@ -233,6 +233,8 @@ export function AdminAnalyticsClient() {
   const [management, setManagement] = useState<ManagementOverview | null>(null);
   const [managementError, setManagementError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /** A30a: ignore late results from superseded loads; bump on unmount. */
+  const loadGenRef = useRef(0);
 
   const setParams = useCallback(
     (updates: {
@@ -259,15 +261,25 @@ export function AdminAnalyticsClient() {
   );
 
   const load = useCallback(async () => {
+    const gen = ++loadGenRef.current;
+    const stillCurrent = () => gen === loadGenRef.current;
+
     setLoading(true);
     setAnalyticsError(null);
     setFunnelError(null);
     setManagementError(null);
+    // Period-dependent snapshots must not linger under a new period label while in flight.
+    setAnalytics(null);
+    setManagement(null);
+    // Funnel is all-time but role-scoped — clear so CLIENT data cannot sit under PRO chrome.
+    setFunnel(null);
 
     try {
       const overview = await fetchAdminAnalyticsOverview(period);
+      if (!stillCurrent()) return;
       setAnalytics(overview.registrationsByDay ?? []);
     } catch (e) {
+      if (!stillCurrent()) return;
       const mapped = mapLoadError(e);
       setAnalytics(null);
       setAnalyticsError(
@@ -281,11 +293,13 @@ export function AdminAnalyticsClient() {
 
     try {
       const snapshot = await getAdminUserFunnel(funnelRole as AdminUserFunnelRole);
+      if (!stillCurrent()) return;
       if (!snapshot) {
         throw new Error("Не удалось получить этапы регистрации. Повторите загрузку.");
       }
       setFunnel(snapshot);
     } catch (e) {
+      if (!stillCurrent()) return;
       setFunnel(null);
       const mapped = mapLoadError(e);
       setFunnelError(
@@ -299,16 +313,24 @@ export function AdminAnalyticsClient() {
 
     try {
       const mgmtPeriod = period === "30d" ? "30d" : period === "1d" ? "1d" : "7d";
-      setManagement(await fetchManagementOverview(mgmtPeriod));
+      const overview = await fetchManagementOverview(mgmtPeriod);
+      if (!stillCurrent()) return;
+      setManagement(overview);
     } catch (e) {
+      if (!stillCurrent()) return;
       setManagement(null);
       setManagementError(mapLoadError(e).message);
     }
+    if (!stillCurrent()) return;
     setLoading(false);
   }, [period, funnelRole]);
 
   useEffect(() => {
     void load();
+    return () => {
+      // Invalidate in-flight work so late resolutions cannot setState after unmount / supersession.
+      loadGenRef.current += 1;
+    };
   }, [load]);
 
   const activityKpis = useMemo(
@@ -336,7 +358,7 @@ export function AdminAnalyticsClient() {
   );
 
   return (
-    <div className={styles.wrap} data-admin-analytics="a22e">
+    <div className={styles.wrap} data-admin-analytics="a30a">
       <header className={styles.header}>
         <div>
           <h1>Аналитика</h1>

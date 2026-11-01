@@ -40,6 +40,25 @@ export function labelTeamStaffRole(role: string | null | undefined): string {
   return STAFF_ROLE_LABELS[role as AdminTeamStaffRole] ?? role;
 }
 
+/** Frozen R1 card note — invitation sets role; no direction binding in this block. */
+export const TEAM_R1_CARD_ROLE_NOTE =
+  "Роль задаётся приглашением, без привязки к направлению";
+
+/** Frozen R1 page lead (directions named; curator assignment stays out of R1 UI). */
+export const TEAM_R1_PAGE_LEAD = "Люди, направления и доступ";
+
+/**
+ * Role legend from roles actually present in the GET list (OWNER→ANALYST order).
+ * Does not invent closed-access counts or curator directions.
+ */
+export function teamRoleLegend(members: readonly AdminTeamMember[]): string {
+  const present = new Set(members.map((m) => m.staffRole));
+  const labels = (Object.keys(ROLE_ORDER) as AdminTeamStaffRole[])
+    .filter((role) => present.has(role))
+    .map((role) => STAFF_ROLE_LABELS[role]);
+  return labels.length > 0 ? labels.join(" · ") : "—";
+}
+
 export function compareTeamMembers(a: AdminTeamMember, b: AdminTeamMember): number {
   const ra = ROLE_ORDER[a.staffRole] ?? 99;
   const rb = ROLE_ORDER[b.staffRole] ?? 99;
@@ -83,16 +102,48 @@ export function whitelistTeamMember(raw: unknown): AdminTeamMember | null {
   };
 }
 
+/** User-facing load failure — never surface raw API/parse internals. */
+export const TEAM_LOAD_FAILED_MESSAGE = "Не удалось загрузить команду";
+
+/**
+ * A17d: malformed 200 body must not collapse to a false empty list.
+ * Thrown by whitelistTeamListResponse / fetchAdminTeam (fail-closed).
+ */
+export class AdminTeamResponseError extends Error {
+  readonly code = "ADMIN_TEAM_RESPONSE_INVALID" as const;
+  constructor() {
+    super(TEAM_LOAD_FAILED_MESSAGE);
+    this.name = "AdminTeamResponseError";
+  }
+}
+
+/**
+ * Strict list parse (A17d, fail-closed whole list):
+ * - Genuine `{ members: [] }` → empty OK
+ * - Missing/non-array `members`, non-object body, or any invalid required row → throw
+ * - Valid null optionals + unknown extra keys still whitelisted per row
+ */
 export function whitelistTeamListResponse(raw: unknown): AdminTeamListResponse {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { members: [] };
+    throw new AdminTeamResponseError();
   }
   const body = raw as Record<string, unknown>;
-  const list = Array.isArray(body.members) ? body.members : [];
-  const members = list
-    .map(whitelistTeamMember)
-    .filter((m): m is AdminTeamMember => Boolean(m))
-    .sort(compareTeamMembers);
+  if (!Object.prototype.hasOwnProperty.call(body, "members")) {
+    throw new AdminTeamResponseError();
+  }
+  if (!Array.isArray(body.members)) {
+    throw new AdminTeamResponseError();
+  }
+  const members: AdminTeamMember[] = [];
+  for (const row of body.members) {
+    const parsed = whitelistTeamMember(row);
+    if (!parsed) {
+      // Prefer whole-list reject over silently dropping bad rows (false totals).
+      throw new AdminTeamResponseError();
+    }
+    members.push(parsed);
+  }
+  members.sort(compareTeamMembers);
   return { members };
 }
 
@@ -109,9 +160,15 @@ export function filterTeamMembers(
   });
 }
 
-export type AdminTeamErrorKind = "unauthorized" | "forbidden" | "error";
+export type AdminTeamErrorKind = "unauthorized" | "forbidden" | "error" | "aborted";
 
 export function teamErrorKind(caught: unknown): AdminTeamErrorKind {
+  if (
+    (caught instanceof DOMException && caught.name === "AbortError") ||
+    (caught instanceof Error && caught.name === "AbortError")
+  ) {
+    return "aborted";
+  }
   if (caught instanceof RemcardApiError) {
     if (caught.status === 401) return "unauthorized";
     if (caught.status === 403) return "forbidden";

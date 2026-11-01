@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { RemcardApiError } from "@/lib/api-client";
 import {
   fetchAdminTeam,
   filterTeamMembers,
   labelTeamStaffRole,
+  TEAM_LOAD_FAILED_MESSAGE,
+  TEAM_R1_CARD_ROLE_NOTE,
+  TEAM_R1_PAGE_LEAD,
   teamErrorKind,
   teamMemberInitials,
+  teamRoleLegend,
   type AdminTeamMember,
 } from "@/lib/prof-admin-team-api";
 import styles from "./AdminTeam.r1.module.css";
@@ -75,20 +78,27 @@ export function AdminTeamClient() {
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const flightRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = async () => {
     const flight = ++flightRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    // Drop prior rows immediately so stale totals cannot masquerade as the new load.
+    setMembers([]);
     setLoadState({ kind: "loading" });
     try {
-      const res = await fetchAdminTeam();
-      if (flight !== flightRef.current) return;
+      const res = await fetchAdminTeam(controller.signal);
+      if (flight !== flightRef.current || controller.signal.aborted) return;
       const list = res.members;
       setMembers(list);
       setLoadState(list.length === 0 ? { kind: "empty" } : { kind: "ready" });
     } catch (caught) {
-      if (flight !== flightRef.current) return;
-      setMembers([]);
+      if (flight !== flightRef.current || controller.signal.aborted) return;
       const kind = teamErrorKind(caught);
+      if (kind === "aborted") return;
+      setMembers([]);
       if (kind === "forbidden") {
         setLoadState({ kind: "forbidden" });
         return;
@@ -97,30 +107,33 @@ export function AdminTeamClient() {
         setLoadState({ kind: "unauthorized" });
         return;
       }
-      const message =
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось загрузить команду";
-      setLoadState({ kind: "error", message });
+      // Parse/HTTP failures share one recoverable copy — no raw API details.
+      setLoadState({ kind: "error", message: TEAM_LOAD_FAILED_MESSAGE });
     }
   };
 
   useEffect(() => {
     void load();
+    return () => {
+      flightRef.current += 1;
+      abortRef.current?.abort();
+    };
   }, []);
 
   const filtered = useMemo(() => filterTeamMembers(members, query), [members, query]);
-  const activeCount = members.length;
-  const roleCount = new Set(members.map((member) => member.staffRole)).size;
+  // Counts only after a successful parse (ready/empty). Error must not paint 0 as «база».
+  const countsLive = loadState.kind === "ready" || loadState.kind === "empty";
+  const activeAccessCount = members.length;
+  const roleLegend = teamRoleLegend(members);
 
   return (
-    <div className={styles.page} aria-labelledby={titleId}>
+    <div className={styles.page} aria-labelledby={titleId} data-admin-team="a17d">
       <header className={styles.pageHead}>
         <div className={styles.pageHeadCopy}>
           <h1 id={titleId} className={styles.pageTitle}>
             Команда
           </h1>
-          <p className={styles.pageLead}>Люди, роли доступа и просмотр состава</p>
+          <p className={styles.pageLead}>{TEAM_R1_PAGE_LEAD}</p>
         </div>
         <div className={styles.headActions}>
           <Link className={`${styles.button} ${styles.buttonPrimary}`} href="/admin/access/users">
@@ -130,21 +143,32 @@ export function AdminTeamClient() {
       </header>
 
       <section className={styles.stats} aria-label="Сводка по команде">
-        <div className={styles.statTile}>
-          <strong>{loadState.kind === "loading" ? "…" : activeCount}</strong>
-          <small>С доступом в кабинет администратора</small>
+        <div className={styles.statTile} data-testid="team-kpi-active">
+          <strong>
+            {loadState.kind === "loading" ? "…" : countsLive ? activeAccessCount : "—"}
+          </strong>
+          <span className={styles.statLabel}>Доступ активен</span>
+          <small>Могут войти в кабинет</small>
         </div>
-        <div className={styles.statTile}>
-          <strong>{loadState.kind === "loading" ? "…" : roleCount}</strong>
-          <small>Ролей в команде</small>
+        <div className={styles.statTile} data-testid="team-kpi-roles">
+          <strong className={styles.roleLegend}>
+            {loadState.kind === "loading" ? "…" : countsLive ? roleLegend : "—"}
+          </strong>
+          <span className={styles.statLabel}>Роли доступа</span>
+          <small>По ролям в загруженном списке; кураторы по направлениям — не этот блок</small>
         </div>
-        <div className={styles.statTile}>
-          <strong>{filtered.length}</strong>
-          <small>
-            {query.trim() ? "Совпадений в загруженном списке" : "Показано в текущем списке"}
-          </small>
+        <div className={styles.statTile} data-testid="team-kpi-closed">
+          <strong>—</strong>
+          <span className={styles.statLabel}>Доступ закрыт</span>
+          <small>Нет в ответе GET /api/admin/team — не выдумываем счётчик</small>
         </div>
       </section>
+
+      <p className={styles.listCountHint} data-testid="team-list-count" hidden={loadState.kind !== "ready"}>
+        {query.trim()
+          ? `Совпадений в загруженном списке: ${filtered.length}`
+          : `Показано в текущем списке: ${filtered.length}`}
+      </p>
 
       <div className={styles.toolbar}>
         <label className={styles.searchField} htmlFor={searchId}>
@@ -243,9 +267,7 @@ export function AdminTeamClient() {
                 </div>
               </div>
               <span className={`${styles.pill} ${styles.pillGood}`}>Доступ активен</span>
-              <p className={styles.note}>
-                Права сотрудника зависят от его роли в команде.
-              </p>
+              <p className={styles.note}>{TEAM_R1_CARD_ROLE_NOTE}</p>
               <div className={styles.employeeActions}>
                 <AccessAction member={member} />
               </div>
