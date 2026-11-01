@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const api = vi.hoisted(() => ({
@@ -223,6 +223,27 @@ describe("AdminNotificationsClient", () => {
     await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.queryByTestId("admin-notify-settings-discard-confirm")).toBeNull();
+  });
+
+  it("NOTIFICATIONS-dialog-backdrop-click: backdrop surface click closes clean dialog", async () => {
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(await screen.findByRole("button", { name: "Настройки" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(dialog, { target: dialog, currentTarget: dialog });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("NOTIFICATIONS-dialog-backdrop-click: backdrop on dirty opens discard confirm", async () => {
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(await screen.findByRole("button", { name: "Настройки" }));
+    await screen.findByRole("group", { name: "Категории" });
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(dialog, { target: dialog, currentTarget: dialog });
+    expect(await screen.findByTestId("admin-notify-settings-discard-confirm")).toBeTruthy();
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
   it("blocks close while settings save is in flight", async () => {

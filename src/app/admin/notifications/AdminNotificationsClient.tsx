@@ -199,6 +199,14 @@ export function AdminNotificationsClient() {
     settingsHost.saving,
   ]);
 
+  const handleSettingsDialogBackdropClick = useCallback(
+    (event: React.MouseEvent<HTMLDialogElement>) => {
+      if (event.target !== event.currentTarget) return;
+      requestSettingsClose();
+    },
+    [requestSettingsClose],
+  );
+
   const handleSettingsHostState = useCallback((state: AdminNotificationSettingsHostState) => {
     setSettingsHost(state);
   }, []);
@@ -527,6 +535,7 @@ export function AdminNotificationsClient() {
           className={styles.settingsDialog}
           aria-labelledby="admin-notify-settings-dialog-title"
           onClose={finalizeSettingsDialogClosed}
+          onClick={handleSettingsDialogBackdropClick}
         >
           <header className={styles.settingsDialogHead}>
             <h2 id="admin-notify-settings-dialog-title">Уведомления администратора</h2>
