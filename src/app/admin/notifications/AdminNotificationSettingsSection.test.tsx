@@ -117,6 +117,44 @@ describe("AdminNotificationSettingsSection binding (CLIENT-role staff admin)", (
     expect(document.body.textContent).not.toMatch(/\/profile/);
   });
 
+  it("recovers save after sync channel guard without stale save flight", async () => {
+    const settingsWithMaxChannel = {
+      newClients: true,
+      newPartners: true,
+      partnerActivity: false,
+      channels: ["max" as const],
+      activityFrequency: "daily" as const,
+    };
+    const bindings = { telegramLinked: false, maxLinked: false };
+    api.fetchAdminNotificationSettings.mockResolvedValue({
+      settings: settingsWithMaxChannel,
+      bindings,
+    });
+    api.patchAdminNotificationSettings.mockImplementation(async (body) => ({
+      settings: {
+        ...settingsWithMaxChannel,
+        partnerActivity: body.partnerActivity === true,
+        channels: Array.isArray(body.channels) ? body.channels : [],
+      },
+      bindings,
+    }));
+    const ui = userEvent.setup();
+    render(<AdminNotificationSettingsSection />);
+    const max = await screen.findByRole("checkbox", { name: /MAX/ });
+    expect(max).toBeChecked();
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    expect(api.patchAdminNotificationSettings).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/MAX отмечен для доставки/i);
+    await ui.click(max);
+    expect(max).not.toBeChecked();
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Настройки сохранены")).toBeTruthy();
+    await ui.click(screen.getByRole("checkbox", { name: /активность партнёров/i }));
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => expect(api.patchAdminNotificationSettings).toHaveBeenCalledTimes(2));
+  });
+
   it("coalesces overlapping save clicks into one PATCH", async () => {
     let resolvePatch: (value: typeof settingsPayload) => void = () => {};
     const pending = new Promise<typeof settingsPayload>((resolve) => {

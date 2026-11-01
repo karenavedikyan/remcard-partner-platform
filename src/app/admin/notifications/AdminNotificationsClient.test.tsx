@@ -254,4 +254,24 @@ describe("AdminNotificationsClient", () => {
     });
     await waitFor(() => expect(screen.getByText("Настройки сохранены")).toBeTruthy());
   });
+
+  it("blocks close while messenger bind request is in flight", async () => {
+    let resolveBind: (value: { deepLink: null; hint: string }) => void = () => {};
+    const bindPending = new Promise<{ deepLink: null; hint: string }>((resolve) => {
+      resolveBind = resolve;
+    });
+    api.startAdminNotificationBind.mockReturnValueOnce(bindPending);
+    const ui = userEvent.setup();
+    render(<AdminNotificationsClient />);
+    await ui.click(await screen.findByRole("button", { name: "Настройки" }));
+    await screen.findByRole("group", { name: "Категории" });
+    await ui.click(screen.getByRole("button", { name: "Привязать Telegram" }));
+    expect(screen.getByRole("button", { name: "Закрыть окно настроек" })).toBeDisabled();
+    await ui.click(screen.getByRole("button", { name: "Закрыть окно настроек" }));
+    expect(screen.getByRole("dialog", { name: "Уведомления администратора" })).toBeTruthy();
+    resolveBind({ deepLink: null, hint: "Synthetic" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Закрыть окно настроек" })).not.toBeDisabled(),
+    );
+  });
 });

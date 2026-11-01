@@ -184,14 +184,20 @@ export function AdminNotificationsClient() {
   }, [finalizeSettingsDialogClosed]);
 
   const requestSettingsClose = useCallback(() => {
-    if (settingsHost.saving) return;
+    if (settingsHost.saving || settingsHost.bindingBusy) return;
     if (settingsDiscardConfirmOpen) return;
     if (settingsHost.dirty) {
       setSettingsDiscardConfirmOpen(true);
       return;
     }
     performSettingsClose();
-  }, [performSettingsClose, settingsDiscardConfirmOpen, settingsHost.dirty, settingsHost.saving]);
+  }, [
+    performSettingsClose,
+    settingsDiscardConfirmOpen,
+    settingsHost.bindingBusy,
+    settingsHost.dirty,
+    settingsHost.saving,
+  ]);
 
   const handleSettingsHostState = useCallback((state: AdminNotificationSettingsHostState) => {
     setSettingsHost(state);
@@ -528,7 +534,7 @@ export function AdminNotificationsClient() {
               type="button"
               className={styles.settingsDialogClose}
               aria-label="Закрыть окно настроек"
-              disabled={settingsHost.saving}
+              disabled={settingsHost.saving || settingsHost.bindingBusy}
               onClick={requestSettingsClose}
             >
               Закрыть

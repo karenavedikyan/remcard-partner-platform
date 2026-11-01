@@ -132,7 +132,7 @@ export function AdminNotificationSettingsSection({
     });
   }, [bindingBusy, dirty, onHostStateChange, saving]);
 
-  async function executeSave() {
+  async function runSaveFlight(): Promise<void> {
     if (!form) return;
     savingRef.current = true;
     try {
@@ -167,16 +167,24 @@ export function AdminNotificationSettingsSection({
       }
     } finally {
       savingRef.current = false;
-      saveFlightRef.current = null;
     }
   }
 
   async function save() {
     if (!form) return;
-    if (!saveFlightRef.current) {
-      saveFlightRef.current = executeSave();
+    if (saveFlightRef.current) {
+      await saveFlightRef.current;
+      return;
     }
-    await saveFlightRef.current;
+    const flight = runSaveFlight();
+    saveFlightRef.current = flight;
+    try {
+      await flight;
+    } finally {
+      if (saveFlightRef.current === flight) {
+        saveFlightRef.current = null;
+      }
+    }
   }
 
   if (loading) {
