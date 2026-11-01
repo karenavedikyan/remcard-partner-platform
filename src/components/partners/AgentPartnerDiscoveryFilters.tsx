@@ -63,8 +63,9 @@ export function AgentPartnerDiscoveryFilters({
     (next: AgentPartnerTypeFilter) => {
       onPartnerTypeChange(next);
       if (specialization) onSpecializationChange("");
+      if (stageId) onStageChange("");
     },
-    [onPartnerTypeChange, onSpecializationChange, specialization],
+    [onPartnerTypeChange, onSpecializationChange, onStageChange, specialization, stageId],
   );
 
   if (layout === "list-main") {
