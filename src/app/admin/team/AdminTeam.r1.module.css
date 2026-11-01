@@ -1,0 +1,433 @@
+/* A17a R1 «Команда» — scoped presentation; no global theme/UI-kit edits. */
+
+.page {
+  --tm-line: var(--line, #e8e7e4);
+  --tm-ink: var(--ink, #252525);
+  --tm-muted: var(--muted, #626665);
+  --tm-surface: var(--surface, #ffffff);
+  --tm-surface-2: var(--surface-2, #f8f8f7);
+  --tm-bg: var(--bg, #f6f5f3);
+  --tm-brand: var(--brand, #c12b2f);
+  --tm-green: var(--green, #3d7254);
+  --tm-green-soft: var(--green-soft, #edf4ee);
+  --tm-brand-soft: var(--brand-soft, #fbeeee);
+  --tm-radius: 0.875rem;
+  --tm-s2: 0.5rem;
+  --tm-s3: 0.75rem;
+  --tm-s4: 1rem;
+  --tm-s5: 1.25rem;
+  --tm-s6: 1.5rem;
+  display: grid;
+  gap: var(--tm-s5);
+  min-width: 0;
+  color: var(--tm-ink);
+}
+
+:global(html[data-theme="dark"]) .page {
+  --tm-line: #3d4144;
+  --tm-ink: #f0efeb;
+  --tm-muted: #b0b3b4;
+  --tm-surface: #24272a;
+  --tm-surface-2: #2b2e31;
+  --tm-bg: #1c1e20;
+  --tm-brand: #f5acaa;
+  --tm-green: #a4c9ae;
+  --tm-green-soft: #293b30;
+  --tm-brand-soft: #372b2c;
+}
+
+.pageHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--tm-s6);
+  min-width: 0;
+}
+
+.pageHeadCopy {
+  display: grid;
+  gap: var(--tm-s2);
+  min-width: 0;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.3rem + 0.45vw, 1.875rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.pageLead {
+  margin: 0;
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+  line-height: 1.6;
+  max-width: 42rem;
+}
+
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tm-s3);
+  align-items: center;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tm-s2);
+  min-height: 44px;
+  padding: var(--tm-s2) var(--tm-s4);
+  border: 1px solid var(--tm-line);
+  border-radius: 0.5rem;
+  background: var(--tm-surface);
+  color: var(--tm-ink);
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--tm-surface-2);
+}
+
+.buttonPrimary {
+  background: #c12b2f;
+  border-color: #c12b2f;
+  color: #fff;
+}
+
+.buttonPrimary:hover {
+  background: #a72226;
+}
+
+.button:focus-visible,
+.accessLink:focus-visible,
+.retry:focus-visible,
+.searchField input:focus-visible {
+  outline: 3px solid var(--tm-brand);
+  outline-offset: 2px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--tm-s4);
+  min-width: 0;
+}
+
+.statTile {
+  display: grid;
+  gap: var(--tm-s2);
+  padding: var(--tm-s5);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  background: var(--tm-surface);
+  min-width: 0;
+}
+
+.statTile strong {
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.statTile small {
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+  line-height: 1.45;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--tm-s3);
+  flex-wrap: wrap;
+  padding: var(--tm-s4);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  background: var(--tm-surface);
+}
+
+.searchField {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.searchField svg {
+  position: absolute;
+  left: var(--tm-s3);
+  top: 12px;
+  color: var(--tm-muted);
+  pointer-events: none;
+}
+
+.searchField input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--tm-s2) var(--tm-s3) var(--tm-s2) 2.5rem;
+  border: 1px solid var(--tm-line);
+  border-radius: 0.5rem;
+  background: var(--tm-surface);
+  color: var(--tm-ink);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.viewToggle {
+  display: inline-flex;
+  border: 1px solid var(--tm-line);
+  border-radius: 0.5rem;
+  overflow: clip;
+  flex-shrink: 0;
+}
+
+.viewToggle button {
+  min-height: 44px;
+  padding: 0 var(--tm-s4);
+  border: 0;
+  background: transparent;
+  color: var(--tm-ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.viewToggle button[aria-pressed="true"] {
+  background: var(--tm-brand-soft);
+  color: var(--tm-brand);
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--tm-s4);
+  min-width: 0;
+}
+
+.teamList {
+  display: grid;
+  gap: var(--tm-s3);
+  min-width: 0;
+}
+
+.employee {
+  display: grid;
+  gap: var(--tm-s4);
+  padding: var(--tm-s5);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  background: var(--tm-surface);
+  min-width: 0;
+}
+
+.employeeTop {
+  display: flex;
+  align-items: center;
+  gap: var(--tm-s3);
+  min-width: 0;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--tm-brand-soft);
+  color: var(--tm-brand);
+  font-weight: 750;
+  font-size: 0.8125rem;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.employeeTop h2 {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.employeeTop p {
+  margin: 0.25rem 0 0;
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 var(--tm-s3);
+  border-radius: 999px;
+  border: 1px solid var(--tm-line);
+  font-size: var(--text-xs, 0.8125rem);
+  font-weight: 650;
+  color: var(--tm-muted);
+}
+
+.pillGood {
+  background: var(--tm-green-soft);
+  border-color: color-mix(in srgb, var(--tm-green) 35%, var(--tm-line));
+  color: var(--tm-green);
+}
+
+.note {
+  margin: 0;
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+  line-height: 1.5;
+}
+
+.employeeActions {
+  display: flex;
+  gap: var(--tm-s2);
+  padding-top: var(--tm-s3);
+  border-top: 1px solid var(--tm-line);
+}
+
+.accessLink {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--tm-s2);
+  border: 1px solid var(--tm-line);
+  border-radius: 0.5rem;
+  background: var(--tm-surface);
+  color: var(--tm-ink);
+  font-size: var(--text-xs, 0.8125rem);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.accessLink:hover {
+  background: var(--tm-surface-2);
+}
+
+.listRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: var(--tm-s3);
+  align-items: center;
+  padding: var(--tm-s4);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  background: var(--tm-surface);
+  min-width: 0;
+}
+
+.listRowMeta {
+  min-width: 0;
+}
+
+.listRowMeta strong {
+  display: block;
+  font-size: var(--text-sm, 0.875rem);
+  overflow-wrap: anywhere;
+}
+
+.listRowMeta span {
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+}
+
+.statusBanner,
+.errorBanner,
+.emptyState {
+  display: grid;
+  gap: var(--tm-s3);
+  padding: var(--tm-s5);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  background: var(--tm-surface);
+}
+
+.errorBanner {
+  border-color: var(--tm-brand);
+  background: var(--tm-brand-soft);
+  color: var(--tm-brand);
+}
+
+.retry {
+  justify-self: start;
+  min-height: 44px;
+  padding: var(--tm-s2) var(--tm-s4);
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mutationScopeNote {
+  margin: 0;
+  color: var(--tm-muted);
+  font-size: var(--text-xs, 0.8125rem);
+  line-height: 1.55;
+  max-width: 72ch;
+}
+
+@media (max-width: 1250px) {
+  .teamGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+  .teamGrid {
+    grid-template-columns: 1fr;
+  }
+  .listRow {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+  .listRow .pill,
+  .listRow .accessLink {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .pageHead {
+    align-items: flex-start;
+  }
+  .headActions {
+    width: 100%;
+  }
+  .headActions .button {
+    flex: 1;
+  }
+}

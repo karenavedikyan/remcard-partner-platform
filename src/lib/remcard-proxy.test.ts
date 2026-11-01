@@ -267,6 +267,17 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/access/users/admin-2/revoke"), true);
     assert.equal(isAllowedProxyRoute("DELETE", "/api/pro/admin/access/users/admin-2/revoke"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/access/users/admin-2/revoke"), false);
+    // A17a: exact GET /api/admin/team only — no wildcard, search, or writes.
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin/team"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/admin/team"), false);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/admin/team"), false);
+    assert.equal(isAllowedProxyRoute("DELETE", "/api/admin/team"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin/team/search"), false);
+    assert.equal(isAllowedProxyRoute("POST", "/api/admin/team/search"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin/team/extra"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin/users"), false);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/admin/users/u1"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/admin"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/access/audit"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notification-settings"), true);
     assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/admin/notification-settings"), true);

@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/admin/overview", label: "Обзор", icon: "overview" },
   { href: "/admin/moderation", label: "Модерация", icon: "moderation" },
   { href: "/admin/partners", label: "Партнёры", icon: "partners" },
+  { href: "/admin/team", label: "Команда", icon: "team" },
   { href: "/admin/notifications", label: "Уведомления", icon: "notifications" },
   { href: "/admin/test-users", label: "Тестовые пользователи", icon: "test" },
   { href: "/admin/password", label: "Пароль", icon: "password" },
@@ -45,6 +46,18 @@ function NavIcon({ name }: { name: string }) {
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
+          />
+        </svg>
+      );
+    case "team":
+      return (
+        <svg {...common}>
+          <path
+            d="M12 12a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 12 12Zm-7.5 8a5.5 5.5 0 0 1 11 0M17 8.5a2.5 2.5 0 1 0-1-4.8M20.5 20a4.5 4.5 0 0 0-4-4.4"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       );
