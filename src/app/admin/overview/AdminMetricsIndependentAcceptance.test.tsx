@@ -12,6 +12,10 @@ vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
   fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
+vi.mock("@/lib/prof-admin-clients-api", () => ({
+  getAdminClientTotal: vi.fn(async () => 12),
+}));
+
 vi.mock("@/lib/prof-admin-partners-api", () => ({
   fetchPartnerRegistry: mocks.registry,
   applyPartnerLifecycle: vi.fn(),

@@ -12,6 +12,10 @@ vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
   fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
+vi.mock("@/lib/prof-admin-clients-api", () => ({
+  getAdminClientTotal: vi.fn(async () => 12),
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
     <a {...props}>{children}</a>

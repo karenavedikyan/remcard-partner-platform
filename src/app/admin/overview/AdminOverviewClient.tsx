@@ -9,6 +9,7 @@ import {
   type AdminAnalyticsRegistrationsByDay,
   type AdminAnalyticsOverviewResponse,
 } from "@/lib/prof-admin-overview-analytics-api";
+import { getAdminClientTotal } from "@/lib/prof-admin-clients-api";
 import { buildLineGeometry } from "./overviewLineChartGeometry";
 import styles from "./AdminOverview.module.css";
 
@@ -238,6 +239,28 @@ export function AdminOverviewClient() {
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const analyticsLoadSeq = useRef(0);
+  const [clientTotal, setClientTotal] = useState<number | null>(null);
+  const [clientTotalError, setClientTotalError] = useState<string | null>(null);
+  const [clientTotalLoading, setClientTotalLoading] = useState(true);
+  const clientTotalLoadSeq = useRef(0);
+
+  const loadClientTotal = useCallback(async () => {
+    const seq = ++clientTotalLoadSeq.current;
+    setClientTotalLoading(true);
+    setClientTotalError(null);
+    try {
+      const total = await getAdminClientTotal();
+      if (seq !== clientTotalLoadSeq.current) return;
+      setClientTotal(total);
+    } catch (e) {
+      if (seq !== clientTotalLoadSeq.current) return;
+      setClientTotalError(
+        e instanceof Error ? e.message : "Не удалось загрузить число клиентов",
+      );
+    } finally {
+      if (seq === clientTotalLoadSeq.current) setClientTotalLoading(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
@@ -279,6 +302,10 @@ export function AdminOverviewClient() {
     void loadAnalytics();
   }, [loadAnalytics]);
 
+  useEffect(() => {
+    void loadClientTotal();
+  }, [loadClientTotal]);
+
   const regCard = useMemo(() => {
     if (!data) return { value: "—", note: "" };
     const block = data.registrationsCompleted;
@@ -303,6 +330,15 @@ export function AdminOverviewClient() {
     ? periodIdFromApi(analytics.period, period)
     : period;
   const growthChartSubtitle = `Новые регистрации за ${periodScopePhrase(analyticsPeriodId)}`;
+
+  const clientTotalDisplay =
+    clientTotalError != null
+      ? "—"
+      : clientTotalLoading && clientTotal == null
+        ? "…"
+        : clientTotal != null
+          ? String(clientTotal)
+          : "—";
 
   return (
     <div className={styles.wrap}>
@@ -359,14 +395,32 @@ export function AdminOverviewClient() {
                 <Link href="/admin/partners?registration=active">Открыть реестр</Link>
               </div>
             </article>
-            <article className={styles.kpi}>
+            <article className={styles.kpi} data-source="admin-users-client-total">
               <h2 className={styles.kpiLabel}>Клиенты</h2>
-              <p className={styles.kpiValue}>{data.clients.accountedTotal}</p>
+              <p className={styles.kpiValue}>{clientTotalDisplay}</p>
               <div className={styles.kpiBottom}>
-                <p className={styles.sub}>
-                  +{data.clients.createdInPeriod.current} за {kpiPeriodScope}
-                </p>
-                <p className={styles.sub}>{data.clients.historicalDemoWarning}</p>
+                {clientTotalError ? (
+                  <>
+                    <p className={styles.sub} role="alert">
+                      {clientTotalError}
+                    </p>
+                    <button
+                      type="button"
+                      className={styles.retryButton}
+                      onClick={() => void loadClientTotal()}
+                    >
+                      Повторить
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.sub}>Вся клиентская база (all-time)</p>
+                    <p className={styles.sub}>
+                      +{data.clients.createdInPeriod.current} новых за {kpiPeriodScope}
+                    </p>
+                    <p className={styles.sub}>{data.clients.historicalDemoWarning}</p>
+                  </>
+                )}
               </div>
             </article>
             <article className={styles.kpi}>

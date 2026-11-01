@@ -12,6 +12,10 @@ vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
   fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
+vi.mock("@/lib/prof-admin-clients-api", () => ({
+  getAdminClientTotal: vi.fn(async () => 12),
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
     <a {...props}>{children}</a>
@@ -98,7 +102,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     expect(within(byTitle("Партнёры")).getByText("5")).toBeTruthy();
     expect(within(byTitle("Партнёры")).getByText(/Демо-база \(историческая\): 7/)).toBeTruthy();
     expect(within(byTitle("Клиенты")).getByText("12")).toBeTruthy();
-    expect(within(byTitle("Клиенты")).getByText(/\+2 за 7 дней/)).toBeTruthy();
+    expect(within(byTitle("Клиенты")).getByText(/\+2 новых за 7 дней/)).toBeTruthy();
     expect(within(byTitle("В поиске сотрудничества")).getByText("—")).toBeTruthy();
     expect(within(byTitle("Новые партнёры")).getByText("7")).toBeTruthy();
   });

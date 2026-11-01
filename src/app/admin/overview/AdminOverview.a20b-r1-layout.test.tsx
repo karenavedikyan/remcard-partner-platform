@@ -12,6 +12,10 @@ vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
   fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
+vi.mock("@/lib/prof-admin-clients-api", () => ({
+  getAdminClientTotal: vi.fn(async () => 12),
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
     <a {...props}>{children}</a>
@@ -82,7 +86,10 @@ describe("A20b R1 overview layout", () => {
 
   it("shows cooperation KPI as unavailable, not zero", async () => {
     render(<AdminOverviewClient />);
-    const coop = screen.getByRole("heading", { name: "В поиске сотрудничества", level: 2 }).closest("article")!;
+    const coop = (await screen.findByRole("heading", {
+      name: "В поиске сотрудничества",
+      level: 2,
+    })).closest("article")!;
     expect(coop.textContent).toMatch(/—/);
     expect(coop.textContent).toMatch(/недоступен на обзоре/i);
   });
