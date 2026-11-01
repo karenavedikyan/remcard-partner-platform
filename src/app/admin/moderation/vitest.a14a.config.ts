@@ -19,6 +19,7 @@ export default defineConfig({
     include: [
       "src/app/admin/moderation/ModerationPreview.a14a-presentation.test.tsx",
       "src/app/admin/moderation/ModerationPreview.a14b-presentation.test.tsx",
+      "src/app/admin/moderation/ModerationQueueDetail.a18a-presentation.test.tsx",
       "src/app/admin/moderation/AdminModerationA4aPresentation.test.tsx",
       "src/app/admin/moderation/AdminModerationA4bPresentation.test.tsx",
       "src/app/admin/moderation/organizations/[id]/ModerationConfirmDialog.a5c-presentation.test.tsx",

@@ -36,7 +36,7 @@ const CLIENT = path.join(ROOT, "AdminModerationClient.tsx");
 const CSS = path.join(ROOT, "AdminModeration.module.css");
 
 const CLIENT_SHA =
-  "810dc2f20e021b15b3173e8113ca483f0cc3a26bcd071c0dd2a0c8df3c8ffef9";
+  "509f8dabe782696547736de8c10d53a692fc93bcb7d342db146b3812ae9bdd6d";
 const A4A_COMPLETE_PREFIX_BYTES = 8112;
 const A4A_COMPLETE_PREFIX_SHA =
   "633ac78ae95a8bf423d7f455f72073e20714aeaa8a13ebb9396883c4ae7c91cc";

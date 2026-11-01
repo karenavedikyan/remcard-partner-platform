@@ -20,6 +20,14 @@ const ENTITY_RU: Record<string, string> = {
   branch: "Филиал",
 };
 
+function CatalogStatusPill({ status }: { status: string }) {
+  return (
+    <span className={styles.statusPill} data-catalog-status={status}>
+      {moderationCatalogStatusLabel(status)}
+    </span>
+  );
+}
+
 function itemHref(item: ModerationQueueItem, queueQuery: string): string {
   const base =
     item.entityKind === "user"
@@ -153,12 +161,19 @@ export function AdminModerationClient() {
 
       {loading ? <p>Загрузка…</p> : null}
       {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
+        <div className={styles.errorPanel} role="alert">
+          <strong>Не удалось загрузить очередь</strong>
+          <p>{error}</p>
+          <Button type="button" variant="secondary" onClick={() => void load()}>
+            Повторить
+          </Button>
+        </div>
       ) : null}
       {!loading && !error && data?.items.length === 0 ? (
-        <p className={styles.empty}>Заявок по фильтру нет.</p>
+        <div className={styles.emptyPanel}>
+          <strong>Заявок по фильтру нет</strong>
+          <p>Измените фильтры или нажмите «Обновить».</p>
+        </div>
       ) : null}
 
       {!loading && !error && data && data.items.length > 0 ? (
@@ -185,7 +200,7 @@ export function AdminModerationClient() {
                         : ""}
                     </td>
                     <td>{item.city ?? "—"}</td>
-                    <td>{moderationCatalogStatusLabel(item.catalogStatus)}</td>
+                    <td><CatalogStatusPill status={item.catalogStatus} /></td>
                     <td>{new Date(item.updatedAt).toLocaleString("ru-RU")}</td>
                   </tr>
                 ))}
@@ -201,7 +216,7 @@ export function AdminModerationClient() {
               >
                 <div className={styles.cardTitle}>{renderRow(item)}</div>
                 <p className={styles.subMeta}>
-                  {ENTITY_RU[item.entityKind]} · {moderationCatalogStatusLabel(item.catalogStatus)}
+                  {ENTITY_RU[item.entityKind]} · <CatalogStatusPill status={item.catalogStatus} />
                 </p>
                 <p className={styles.subMeta}>
                   {item.city ?? "Город не указан"} · {new Date(item.updatedAt).toLocaleString("ru-RU")}

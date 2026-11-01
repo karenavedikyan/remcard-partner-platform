@@ -529,3 +529,128 @@
   color: #fde68a;
   border-color: #fbbf24;
 }
+
+/* ==========================================================================
+   A18a: moderation queue status pills + empty/error panels (R1 .pill mapping).
+   Bytes above (baseline + A4a + A4b) stay byte-identical. Queue-only:
+   .statusPill, .emptyPanel, .errorPanel. Preview/detail routes untouched.
+   ========================================================================== */
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  background: var(--offset, #f4f6f9);
+  color: var(--muted, #5c6370);
+}
+
+.statusPill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.statusPill[data-catalog-status="PENDING"] {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.statusPill[data-catalog-status="NEEDS_REVISION"] {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.statusPill[data-catalog-status="REJECTED"] {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.statusPill[data-catalog-status="APPROVED"] {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.cards > .card .statusPill {
+  vertical-align: middle;
+}
+
+.emptyPanel,
+.errorPanel {
+  margin: var(--space-4, 1rem) 0;
+  padding: var(--space-8, 2rem) var(--space-6, 1.5rem);
+  text-align: center;
+  border: 1px solid var(--line, #d8dce3);
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface, #fff);
+  min-width: 0;
+}
+
+.emptyPanel strong,
+.errorPanel strong {
+  display: block;
+  margin-bottom: var(--space-2, 0.5rem);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink, #282b30);
+}
+
+.emptyPanel p,
+.errorPanel p {
+  margin: 0 auto var(--space-4, 1rem);
+  max-width: 36ch;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.5;
+  color: var(--muted, #5c6370);
+}
+
+.errorPanel p {
+  color: #b00020;
+}
+
+.errorPanel button {
+  min-height: 44px;
+}
+
+:global([data-theme="dark"]) .emptyPanel,
+:global([data-theme="dark"]) .errorPanel {
+  background: var(--surface, #1e2228);
+  border-color: var(--line, #3a4049);
+}
+
+:global([data-theme="dark"]) .emptyPanel strong,
+:global([data-theme="dark"]) .errorPanel strong {
+  color: var(--ink, #e8eaed);
+}
+
+:global([data-theme="dark"]) .emptyPanel p {
+  color: var(--muted, #a6aea4);
+}
+
+:global([data-theme="dark"]) .statusPill[data-catalog-status="PENDING"] {
+  color: #fde68a;
+  background: #78350f;
+}
+
+:global([data-theme="dark"]) .statusPill[data-catalog-status="NEEDS_REVISION"] {
+  color: #bfdbfe;
+  background: #1e3a8a;
+}
+
+:global([data-theme="dark"]) .statusPill[data-catalog-status="REJECTED"] {
+  color: #fecaca;
+  background: #7f1d1d;
+}
+
+:global([data-theme="dark"]) .statusPill[data-catalog-status="APPROVED"] {
+  color: #bbf7d0;
+  background: #14532d;
+}

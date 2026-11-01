@@ -37,7 +37,7 @@ const CSS = path.join(ROOT, "AdminModeration.module.css");
 
 /** 7c7d38a freeze pins */
 const CLIENT_SHA =
-  "810dc2f20e021b15b3173e8113ca483f0cc3a26bcd071c0dd2a0c8df3c8ffef9";
+  "509f8dabe782696547736de8c10d53a692fc93bcb7d342db146b3812ae9bdd6d";
 const CSS_PREFIX_SHA =
   "1455e6ffd90a4e48b96d74b88a5f965d91a2c9ec710891065c43d3f3eefba75a";
 const CSS_PREFIX_BYTES = 2375;
@@ -76,7 +76,7 @@ const queuePayload = {
 };
 
 describe("A4a source preservation (7c7d whitelist)", () => {
-  it("keeps AdminModerationClient.tsx byte-identical to 7c7d38a", () => {
+  it("keeps AdminModerationClient.tsx at A18a presentation tip", () => {
     expect(sha256(readFileSync(CLIENT))).toBe(CLIENT_SHA);
   });
 
