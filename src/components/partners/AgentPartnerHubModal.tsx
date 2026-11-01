@@ -76,9 +76,17 @@ export function AgentPartnerHubModal({
 
   if (!open) return null;
 
+  const findWide = !readyMode && tab === "find";
+
   return (
     <div
-      className={[styles.backdrop, readyMode ? styles.backdropReady : ""].filter(Boolean).join(" ")}
+      className={[
+        styles.backdrop,
+        readyMode ? styles.backdropReady : "",
+        findWide ? styles.backdropFind : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -86,12 +94,19 @@ export function AgentPartnerHubModal({
     >
       <div
         ref={sheetRef}
-        className={[styles.sheet, readyMode ? styles.sheetReady : ""].filter(Boolean).join(" ")}
+        className={[
+          styles.sheet,
+          readyMode ? styles.sheetReady : "",
+          findWide ? styles.sheetFind : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid="agent-partner-hub-modal"
         data-ready-mode={readyMode ? "true" : "false"}
+        data-hub-tab={readyMode ? "ready" : tab}
         onClick={(e) => e.stopPropagation()}
       >
         <header className={styles.header}>

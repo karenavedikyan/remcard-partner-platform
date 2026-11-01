@@ -190,6 +190,45 @@
   padding-right: 2px;
 }
 
+/* P23a: frozen pr-showcase-layout — 236px rail + main; 2-col card grid on desktop. */
+.findShowcase {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  min-width: 0;
+}
+
+.findRail {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.findMain {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.modalResultsFind {
+  /* align-items:start avoids P5b collapse with overflow:hidden cards */
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  max-height: min(70vh, 640px);
+  overflow: auto;
+  min-width: 0;
+  padding-right: 2px;
+}
+
+.modalResultsFind > .modalResultsState {
+  grid-column: 1 / -1;
+}
+
 .modalResultsState {
   margin: 0;
   padding: var(--space-5) var(--space-3);
@@ -256,6 +295,18 @@
   .modalResultRow {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* P23a mobile: stack rail above results; single card column (R1 1fr grid). */
+  .findShowcase {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .modalResultsFind {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    max-height: min(52vh, 420px);
   }
 }
 

@@ -1292,58 +1292,91 @@ export function PartnersHub({
     </>
   );
 
-  const agentFindResultsBlock = (
-    <>
-      {searchError ? (
-        <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
-          <p>{searchError}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={loadingSearch}
-            onClick={() => {
-              setSearchNextCursor(null);
-              void loadSearch("reset");
-            }}
-          >
-            Повторить
-          </Button>
+  /** P23a find modal: filters in rail, results in main column (frozen pr-showcase-layout). */
+  const agentFindShowcase = (
+    <div className={styles.findShowcase} data-testid="agent-partner-find-showcase">
+      <aside className={styles.findRail} aria-label="Фильтры поиска партнёров">
+        <div className={styles.modalFilterBlock}>
+          <AgentPartnerDiscoveryFilters layout="modal-primary" {...agentDiscoveryFilterProps} />
         </div>
-      ) : null}
-      {searchResults.length > 0 || loadingSearch ? (
-        <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
-          Показано: {searchResults.length}
-          {searchNextCursor ? "+" : ""}
-          {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
+        <AgentPartnerDiscoveryFilters layout="modal-more" {...agentDiscoveryFilterProps} />
+      </aside>
+      <div className={styles.findMain}>
+        <p className={styles.modalLead}>
+          Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
         </p>
-      ) : null}
-      <div
-        className={styles.modalResults}
-        data-testid="agent-partner-search-results"
-        data-loading={loadingSearch ? "true" : "false"}
-      >
-        {loadingSearch && searchResults.length === 0 ? (
-          <p className={styles.modalResultsState} data-testid="agent-partner-search-loading">
-            Загружаем результаты…
-          </p>
-        ) : null}
-        {searchResults.map((partner) => (
-          <PartnerSearchResultCard
-            key={partner.id}
-            partner={partner}
-            title={partnerTitle(partner)}
-            showPublishedTerms={showAgentPublishedTerms}
-            inviteDisabled={Boolean(inviteTarget) || loadingSearch}
-            onInvite={() => setInviteTarget(partner)}
+        <div className={styles.modalSearchBlock}>
+          <TextField
+            label="Поиск по словам необязательно"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Название, товар, услуга, этап или ID"
+            hint="Можно оставить пустым и искать только по фильтрам слева"
           />
-        ))}
-        {!loadingSearch && !searchError && searchResults.length === 0 ? (
-          <p className={styles.modalResultsState} data-testid="agent-partner-search-empty">
-            По этому запросу партнёров не найдено.
+          <div className={styles.modalSearchAction}>
+            <Button
+              type="button"
+              onClick={() => {
+                setSearchNextCursor(null);
+                void loadSearch("reset");
+              }}
+              disabled={loadingSearch}
+            >
+              {loadingSearch ? "Поиск…" : "Найти"}
+            </Button>
+          </div>
+        </div>
+        {searchError ? (
+          <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
+            <p>{searchError}</p>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loadingSearch}
+              onClick={() => {
+                setSearchNextCursor(null);
+                void loadSearch("reset");
+              }}
+            >
+              Повторить
+            </Button>
+          </div>
+        ) : null}
+        {searchResults.length > 0 || loadingSearch ? (
+          <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
+            Показано: {searchResults.length}
+            {searchNextCursor ? "+" : ""}
+            {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
           </p>
         ) : null}
+        <div
+          className={`${styles.modalResults} ${styles.modalResultsFind}`}
+          data-testid="agent-partner-search-results"
+          data-loading={loadingSearch ? "true" : "false"}
+        >
+          {loadingSearch && searchResults.length === 0 ? (
+            <p className={styles.modalResultsState} data-testid="agent-partner-search-loading">
+              Загружаем результаты…
+            </p>
+          ) : null}
+          {searchResults.map((partner) => (
+            <PartnerSearchResultCard
+              key={partner.id}
+              partner={partner}
+              title={partnerTitle(partner)}
+              showPublishedTerms={showAgentPublishedTerms}
+              inviteDisabled={Boolean(inviteTarget) || loadingSearch}
+              onInvite={() => setInviteTarget(partner)}
+            />
+          ))}
+          {!loadingSearch && !searchError && searchResults.length === 0 ? (
+            <p className={styles.modalResultsState} data-testid="agent-partner-search-empty">
+              По этому запросу партнёров не найдено.
+            </p>
+          ) : null}
+        </div>
       </div>
-    </>
+    </div>
   );
 
   if (isModalSurface) {
@@ -1399,8 +1432,7 @@ export function PartnersHub({
           </>
         ) : (
           <>
-            {agentFindSearchControls}
-            {agentFindResultsBlock}
+            {agentFindShowcase}
             {inviteTarget ? (
               <PartnerInviteDialog
                 target={inviteTarget}
