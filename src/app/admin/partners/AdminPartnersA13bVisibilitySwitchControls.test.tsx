@@ -123,10 +123,12 @@ describe("A13b visibility switch controls", () => {
       }),
       { onRequestPreview },
     );
-    const catalog = within(dialog).getByRole("switch", { name: "Видимость в каталоге" });
+    const catalog = within(dialog).getByRole("switch", { name: /Видимость в каталоге/ });
     expect(catalog).toHaveAttribute("aria-checked", "mixed");
     expect(catalog).toBeDisabled();
     expect(catalog).toHaveAttribute("data-visibility-known", "false");
+    expect(catalog).toHaveAccessibleName(/нет данных/i);
+    expect(catalog).not.toHaveAccessibleName(/: скрыт$/i);
     fireEvent.click(catalog);
     fireEvent.keyDown(catalog, { key: " ", code: "Space" });
     expect(onRequestPreview).not.toHaveBeenCalled();
@@ -212,7 +214,7 @@ describe("A13b visibility switch controls", () => {
     for (const c of cases) {
       const onRequestPreview = vi.fn();
       const { dialog } = renderDialog(c.row, { onRequestPreview });
-      const search = within(dialog).getByRole("switch", { name: "Видимость в сотрудничестве" });
+      const search = within(dialog).getByRole("switch", { name: /Видимость в сотрудничестве/ });
       expect(search, c.name).toHaveAttribute("aria-checked", c.checked);
       if (c.disabled) expect(search, c.name).toBeDisabled();
       else expect(search, c.name).not.toBeDisabled();

@@ -91,6 +91,15 @@ describe("A13a partners source/CSS contracts", () => {
     expect(client).not.toMatch(/fetchAdminPartnerDetail|profileFill|lastVisit/);
   });
 
+  it("pins A13c R1 filterChip text-xs + brand-soft (not global --soft)", () => {
+    const css = readFileSync(CSS, "utf8");
+    expect(css).toContain("--registry-brand-soft: #fbeeee");
+    expect(css).toContain("--registry-brand-soft: #372b2c");
+    expect(css).toMatch(/\.filterChip,\s*\n\s*\.filterChipStatic\s*\{[^}]*font-size:\s*var\(--text-xs\)/s);
+    expect(css).toMatch(/\.filterChipActive\s*\{[^}]*background:\s*var\(--registry-brand-soft\)/s);
+    expect(css).not.toMatch(/\.filterChipActive\s*\{[^}]*background:\s*var\(--soft\)/s);
+  });
+
   it("does not touch partner LK runtime paths", () => {
     const client = readFileSync(CLIENT, "utf8");
     expect(client).not.toContain("src/components/partners");

@@ -335,7 +335,11 @@ export function AdminPartnersPartnerDetailDialog({
               role="switch"
               className={styles.visibilitySwitch}
               aria-checked={catalogSwitchChecked}
-              aria-label="Видимость в каталоге"
+              aria-label={
+                catalog.visible === null
+                  ? "Видимость в каталоге: нет данных, переключение недоступно"
+                  : "Видимость в каталоге"
+              }
               title={
                 catalog.visible === null
                   ? "Нет данных с сервера — переключение недоступно"
@@ -377,7 +381,11 @@ export function AdminPartnersPartnerDetailDialog({
                 role="switch"
                 className={styles.visibilitySwitch}
                 aria-checked={searchSwitchChecked}
-                aria-label="Видимость в сотрудничестве"
+                aria-label={
+                  cooperation.visible === null
+                    ? "Видимость в сотрудничестве: нет данных, переключение недоступно"
+                    : "Видимость в сотрудничестве"
+                }
                 title={
                   searchSwitchHint ??
                   "Запросит подтверждение; без немедленного применения"

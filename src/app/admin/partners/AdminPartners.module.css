@@ -1,9 +1,15 @@
 .registry {
   /* Prototype admin --text-xl scale (scoped). Same clamp as accepted A2a overview H1. */
   --registry-proto-text-xl: clamp(1.5rem, 1.3rem + 0.45vw, 1.875rem);
+  /* R1 brand-soft for filter chips (proto #fbeeee / dark #372b2c) — not global --soft. */
+  --registry-brand-soft: #fbeeee;
   display: grid;
   gap: var(--space-5);
   min-width: 0;
+}
+
+:global(html[data-theme="dark"]) .registry {
+  --registry-brand-soft: #372b2c;
 }
 
 /* Prototype .page-head — registry page only (shared .heading stays for partnerships). */
@@ -1289,7 +1295,8 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
-  font-size: var(--text-sm);
+  /* Proto .filter-chip uses --text-xs (not --text-sm). */
+  font-size: var(--text-xs);
   font-weight: 650;
   cursor: pointer;
   flex-shrink: 0;
@@ -1300,7 +1307,8 @@
 }
 
 .filterChipActive {
-  background: var(--soft);
+  /* Proto .filter-chip.active → brand-soft, not global --soft (#fcf0ed). */
+  background: var(--registry-brand-soft);
   border-color: var(--primary);
   color: var(--primary);
 }
@@ -1310,7 +1318,7 @@
 }
 
 .filterChipActive:hover:not(:disabled) {
-  background: var(--soft);
+  background: var(--registry-brand-soft);
 }
 
 .filterChip:focus-visible {
