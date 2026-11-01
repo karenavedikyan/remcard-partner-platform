@@ -55,6 +55,8 @@
   font-weight: 650;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
+  font: inherit;
 }
 
 .settingsJump:focus-visible {
@@ -342,7 +344,140 @@
   margin: 8px 0;
 }
 
+.settingsDialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 0.875rem);
+  box-shadow: var(--admin-shadow, 0 12px 48px #28251d12);
+  padding: 0;
+  width: min(580px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.settingsDialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.settingsDialogHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.settingsDialogHead h2 {
+  margin: 0;
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.settingsDialogClose {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-weight: 650;
+  font-size: var(--text-xs, 0.8125rem);
+  cursor: pointer;
+}
+
+.settingsDialogClose:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.settingsDialogBody {
+  padding: var(--space-6);
+  overflow-y: auto;
+  max-height: min(520px, calc(100dvh - 32px - 80px));
+  overscroll-behavior: contain;
+  min-width: 0;
+}
+
+.settingsInDialog .settingsSection {
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  min-width: 0;
+}
+
+.settingsInDialog #admin-notify-settings-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.settingsInDialog .settingsLead {
+  font-size: var(--text-xs, 0.8125rem);
+  line-height: 1.55;
+}
+
+.settingsInDialog .fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--space-5);
+}
+
+.settingsInDialog .fieldset legend {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm, 0.9375rem);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.settingsInDialog .checkRow {
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.settingsInDialog .bindActions {
+  margin-top: var(--space-3);
+}
+
+.settingsInDialog .settingsSection > :last-child {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+.settingsInDialog .settingsSection > button[type="button"]:last-of-type {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
 @media (max-width: 480px) {
+  .settingsDialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .settingsDialogBody {
+    padding: var(--space-4);
+    max-height: min(480px, calc(100dvh - 16px - 72px));
+  }
+
   .pageHeader h1 {
     font-size: clamp(1.25rem, 1.15rem + 0.35vw, 1.5rem);
   }

@@ -33,9 +33,12 @@ export function AdminNotificationsClient() {
   const [error, setError] = useState("");
   const [inboxMessage, setInboxMessage] = useState("");
   const [markBusy, setMarkBusy] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const mountedRef = useRef(true);
   const requestSeqRef = useRef(0);
   const mutationSeqRef = useRef(0);
+  const settingsTriggerRef = useRef<HTMLButtonElement>(null);
+  const settingsDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -44,6 +47,39 @@ export function AdminNotificationsClient() {
       requestSeqRef.current += 1;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#admin-notify-settings-title") {
+      setSettingsOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const dialog = settingsDialogRef.current;
+    if (!dialog) return;
+    if (settingsOpen) {
+      if (!dialog.open) dialog.showModal();
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [settingsOpen]);
+
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+    settingsTriggerRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const dialog = settingsDialogRef.current;
+    if (!dialog) return;
+    const onCancel = (event: Event) => {
+      event.preventDefault();
+      closeSettings();
+    };
+    dialog.addEventListener("cancel", onCancel);
+    return () => dialog.removeEventListener("cancel", onCancel);
+  }, [closeSettings, settingsOpen]);
 
   useEffect(() => {
     requestSeqRef.current += 1;
@@ -229,9 +265,16 @@ export function AdminNotificationsClient() {
           <p className={styles.pageLead}>События проекта в одном месте</p>
         </div>
         <div className={styles.pageHeadActions}>
-          <a className={styles.settingsJump} href="#admin-notify-settings-title">
+          <button
+            type="button"
+            className={styles.settingsJump}
+            ref={settingsTriggerRef}
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen(true)}
+          >
             Настройки
-          </a>
+          </button>
         </div>
       </header>
 
@@ -344,7 +387,31 @@ export function AdminNotificationsClient() {
         ) : null}
       </section>
 
-      <AdminNotificationSettingsSection />
+      {settingsOpen ? (
+        <dialog
+          ref={settingsDialogRef}
+          className={styles.settingsDialog}
+          aria-labelledby="admin-notify-settings-dialog-title"
+          onClose={closeSettings}
+        >
+          <header className={styles.settingsDialogHead}>
+            <h2 id="admin-notify-settings-dialog-title">Уведомления администратора</h2>
+            <button
+              type="button"
+              className={styles.settingsDialogClose}
+              aria-label="Закрыть окно настроек"
+              onClick={closeSettings}
+            >
+              Закрыть
+            </button>
+          </header>
+          <div className={styles.settingsDialogBody}>
+            <div className={styles.settingsInDialog}>
+              <AdminNotificationSettingsSection />
+            </div>
+          </div>
+        </dialog>
+      ) : null}
     </div>
   );
 }

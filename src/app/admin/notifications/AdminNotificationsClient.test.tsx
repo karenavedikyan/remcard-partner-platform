@@ -177,6 +177,8 @@ describe("AdminNotificationsClient", () => {
     api.patchAdminNotificationSettings.mockRejectedValueOnce(new Error("save failed"));
     const ui = userEvent.setup();
     render(<AdminNotificationsClient />);
+    await screen.findByRole("heading", { name: "Новый партнёр" });
+    await ui.click(screen.getByRole("button", { name: "Настройки" }));
     await screen.findByText("Настройки уведомлений");
     await ui.click(screen.getByRole("button", { name: "Сохранить" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/не удалось сохранить/i);
