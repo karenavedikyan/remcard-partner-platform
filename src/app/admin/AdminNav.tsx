@@ -2,23 +2,47 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import styles from "./Admin.module.css";
 
 /** Keep in sync with Admin.module.css desktop nav breakpoint. */
 export const ADMIN_DESKTOP_NAV_MEDIA = "(min-width: 721px)";
 
-const NAV_ITEMS = [
-  { href: "/admin/overview", label: "Обзор", icon: "overview" },
-  { href: "/admin/moderation", label: "Модерация", icon: "moderation" },
-  { href: "/admin/partners", label: "Партнёры", icon: "partners" },
-  { href: "/admin/team", label: "Команда", icon: "team" },
-  { href: "/admin/notifications", label: "Уведомления", icon: "notifications" },
-  { href: "/admin/test-users", label: "Тестовые пользователи", icon: "test" },
-  { href: "/admin/password", label: "Пароль", icon: "password" },
-  { href: "/profile", label: "Кабинет", icon: "cabinet" },
-  { href: "https://remcard.ru", label: "Сайт RemCard", icon: "site", external: true },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  external?: boolean;
+  group: "primary" | "control" | "service";
+};
+
+/** Existing destinations only — no fake badges, no unimplemented R1 pages. */
+export const ADMIN_NAV_ITEMS: readonly NavItem[] = [
+  { href: "/admin/overview", label: "Обзор", icon: "overview", group: "primary" },
+  { href: "/admin/moderation", label: "Модерация", icon: "moderation", group: "primary" },
+  { href: "/admin/partners", label: "Партнёры", icon: "partners", group: "primary" },
+  { href: "/admin/team", label: "Команда", icon: "team", group: "primary" },
+  { href: "/admin/notifications", label: "Уведомления", icon: "notifications", group: "control" },
+  { href: "/admin/test-users", label: "Тестовые пользователи", icon: "test", group: "service" },
+  { href: "/admin/password", label: "Пароль", icon: "password", group: "service" },
+  { href: "/profile", label: "Кабинет", icon: "cabinet", group: "service" },
+  {
+    href: "https://remcard.ru",
+    label: "Сайт RemCard",
+    icon: "site",
+    external: true,
+    group: "service",
+  },
 ] as const;
+
+export function adminSectionLabel(pathname: string): string {
+  const hit = ADMIN_NAV_ITEMS.find(
+    (item) => !item.external && (pathname === item.href || pathname.startsWith(`${item.href}/`)),
+  );
+  if (hit) return hit.label;
+  if (pathname.startsWith("/admin/access")) return "Доступ";
+  return "Администрирование";
+}
 
 function NavIcon({ name }: { name: string }) {
   const common = {
@@ -89,14 +113,24 @@ function NavIcon({ name }: { name: string }) {
       return (
         <svg {...common}>
           <circle cx="12" cy="8" r="3" stroke="currentColor" strokeWidth="2" />
-          <path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path
+            d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       );
     case "password":
       return (
         <svg {...common}>
           <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="2" />
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path
+            d="M8 11V8a4 4 0 0 1 8 0v3"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       );
     case "cabinet":
@@ -139,25 +173,25 @@ function NavLinks({
   pathname,
   linkClass,
   onNavigate,
-  showIcons,
+  items,
 }: {
   pathname: string;
   linkClass: (active: boolean) => string;
   onNavigate?: () => void;
-  showIcons?: boolean;
+  items: readonly NavItem[];
 }) {
   return (
     <>
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active = navActive(pathname, item.href);
         const className = linkClass(active);
         const content = (
           <>
-            {showIcons ? <NavIcon name={item.icon} /> : null}
+            <NavIcon name={item.icon} />
             <span>{item.label}</span>
           </>
         );
-        if ("external" in item && item.external) {
+        if (item.external) {
           return (
             <a
               key={item.href}
@@ -181,16 +215,46 @@ function NavLinks({
   );
 }
 
-export function AdminNav({ partnersChrome = false }: { partnersChrome?: boolean }) {
-  const pathname = usePathname();
+function GroupedNav({
+  pathname,
+  linkClass,
+  onNavigate,
+}: {
+  pathname: string;
+  linkClass: (active: boolean) => string;
+  onNavigate?: () => void;
+}) {
+  const primary = ADMIN_NAV_ITEMS.filter((i) => i.group === "primary");
+  const control = ADMIN_NAV_ITEMS.filter((i) => i.group === "control");
+  const service = ADMIN_NAV_ITEMS.filter((i) => i.group === "service");
+  return (
+    <>
+      <NavLinks pathname={pathname} linkClass={linkClass} onNavigate={onNavigate} items={primary} />
+      <span className={styles.navCaption}>Контроль и развитие</span>
+      <NavLinks pathname={pathname} linkClass={linkClass} onNavigate={onNavigate} items={control} />
+      <div className={styles.navServiceBlock}>
+        <NavLinks pathname={pathname} linkClass={linkClass} onNavigate={onNavigate} items={service} />
+      </div>
+    </>
+  );
+}
+
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return [
+    ...container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+    ),
+  ].filter((el) => !el.hasAttribute("disabled") && el.tabIndex !== -1);
+}
+
+export function AdminNav() {
+  const pathname = usePathname() ?? "";
   const [menuOpen, setMenuOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const dialogWasOpenRef = useRef(false);
-
-  const currentLabel =
-    NAV_ITEMS.find((item) => !("external" in item) && navActive(pathname, item.href))?.label ??
-    "Администрирование";
+  const titleId = useId();
+  const currentLabel = adminSectionLabel(pathname);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -234,12 +298,28 @@ export function AdminNav({ partnersChrome = false }: { partnersChrome?: boolean 
     setMenuOpen(false);
   }
 
+  function onDrawerKeyDown(e: React.KeyboardEvent<HTMLDialogElement>) {
+    if (e.key !== "Tab") return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusable = getFocusable(dialog);
+    if (focusable.length === 0) return;
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   return (
     <>
       <nav className={styles.navDesktop} aria-label="Администрирование">
-        <NavLinks
+        <GroupedNav
           pathname={pathname}
-          showIcons={partnersChrome}
           linkClass={(active) => (active ? styles.navLinkActive : styles.navLink)}
         />
       </nav>
@@ -248,47 +328,46 @@ export function AdminNav({ partnersChrome = false }: { partnersChrome?: boolean 
         <button
           ref={menuButtonRef}
           type="button"
-          className={partnersChrome ? styles.navMenuIconButton : styles.navMenuButton}
+          className={styles.navMenuIconButton}
           aria-expanded={menuOpen}
           aria-controls="admin-nav-dialog"
-          aria-label={partnersChrome ? "Открыть меню" : undefined}
+          aria-label="Открыть меню"
           onClick={() => setMenuOpen(true)}
         >
-          {partnersChrome ? <MenuIcon /> : "Разделы"}
+          <MenuIcon />
         </button>
-        {partnersChrome ? (
-          <span className={styles.mobileWordmark} aria-hidden="true">
-            remcard<span>.</span>
-          </span>
-        ) : (
-          <span className={styles.navMobileCurrent} aria-current="page">
-            {currentLabel}
-          </span>
-        )}
+        <span className={styles.mobileWordmark} aria-hidden="true">
+          remcard<span>.</span>
+        </span>
+        <span className={styles.navMobileCurrent} aria-current="page">
+          {currentLabel}
+        </span>
       </div>
 
       <dialog
         ref={dialogRef}
         id="admin-nav-dialog"
-        className={styles.navDialog}
-        aria-label="Навигация администратора"
+        className={styles.navDrawer}
+        aria-labelledby={titleId}
         onCancel={(e) => {
           e.preventDefault();
           closeMenu();
         }}
         onClose={() => setMenuOpen(false)}
+        onKeyDown={onDrawerKeyDown}
       >
-        <div className={styles.navDialogInner}>
+        <div className={styles.navDrawerInner}>
           <header className={styles.navDialogHeader}>
-            <h2 className={styles.navDialogTitle}>Разделы PROF</h2>
+            <h2 id={titleId} className={styles.navDialogTitle}>
+              Меню
+            </h2>
             <button type="button" className={styles.navDialogClose} onClick={closeMenu}>
               Закрыть
             </button>
           </header>
           <nav className={styles.navDialogLinks} aria-label="Администрирование">
-            <NavLinks
+            <GroupedNav
               pathname={pathname}
-              showIcons={partnersChrome}
               linkClass={(active) => (active ? styles.navDialogLinkActive : styles.navDialogLink)}
               onNavigate={closeMenu}
             />

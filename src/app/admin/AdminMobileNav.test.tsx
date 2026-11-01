@@ -23,7 +23,7 @@ describe("Admin mobile navigation", () => {
         <AdminNav />
       </ThemeProvider>,
     );
-    expect(screen.getByRole("button", { name: "Разделы" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Открыть меню" })).toBeTruthy();
     const currentSection = screen.getByText("Партнёры", {
       selector: 'span[aria-current="page"]',
     });
@@ -31,24 +31,29 @@ describe("Admin mobile navigation", () => {
     expect(currentSection.getAttribute("aria-current")).toBe("page");
     expect(currentSection.textContent).toBe("Партнёры");
     expect(screen.getAllByRole("navigation", { name: "Администрирование" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Главное меню")).toBeNull();
   });
 
-  it("opens dialog navigation and closes with button", async () => {
+  it("opens left drawer navigation and closes with button", async () => {
     const ui = userEvent.setup();
     render(
       <ThemeProvider>
         <AdminNav />
       </ThemeProvider>,
     );
-    await ui.click(screen.getByRole("button", { name: "Разделы" }));
-    const dialog = screen.getByRole("dialog", { name: "Навигация администратора" });
+    await ui.click(screen.getByRole("button", { name: "Открыть меню" }));
+    const dialog = screen.getByRole("dialog", { name: "Меню" });
     expect(dialog).toBeTruthy();
+    expect(dialog.className).toMatch(/navDrawer/);
+    expect(screen.getByText("Контроль и развитие")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "Модерация" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Команда" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Уведомления" }).length).toBeGreaterThan(0);
     await ui.click(screen.getByRole("button", { name: "Закрыть" }));
-    expect(screen.queryByRole("dialog", { name: "Навигация администратора" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Меню" })).toBeNull();
   });
 
-  it("closes dialog when viewport crosses desktop breakpoint", async () => {
+  it("closes drawer when viewport crosses desktop breakpoint", async () => {
     const listeners = new Map<string, Set<(e: MediaQueryListEvent) => void>>();
     const mql: MediaQueryList = {
       media: ADMIN_DESKTOP_NAV_MEDIA,
@@ -75,16 +80,14 @@ describe("Admin mobile navigation", () => {
         <AdminNav />
       </ThemeProvider>,
     );
-    await ui.click(screen.getByRole("button", { name: "Разделы" }));
-    expect(screen.getByRole("dialog", { name: "Навигация администратора" })).toBeTruthy();
+    await ui.click(screen.getByRole("button", { name: "Открыть меню" }));
+    expect(screen.getByRole("dialog", { name: "Меню" })).toBeTruthy();
 
     mql.matches = true;
     for (const fn of listeners.get("change") ?? []) {
       fn({ matches: true } as MediaQueryListEvent);
     }
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Навигация администратора" })).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Меню" })).toBeNull());
   });
 
   it("closes with Escape and restores focus to the menu button", async () => {
@@ -94,16 +97,26 @@ describe("Admin mobile navigation", () => {
         <AdminNav />
       </ThemeProvider>,
     );
-    const menuButton = screen.getByRole("button", { name: "Разделы" });
+    const menuButton = screen.getByRole("button", { name: "Открыть меню" });
     await ui.click(menuButton);
-    await waitFor(() =>
-      expect(screen.getByRole("dialog", { name: "Навигация администратора" })).toBeTruthy(),
-    );
-    const dialog = screen.getByRole("dialog", { name: "Навигация администратора" });
+    await waitFor(() => expect(screen.getByRole("dialog", { name: "Меню" })).toBeTruthy());
+    const dialog = screen.getByRole("dialog", { name: "Меню" });
     fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Навигация администратора" })).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Меню" })).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(menuButton));
+  });
+
+  it("closes drawer after navigation click", async () => {
+    const ui = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <AdminNav />
+      </ThemeProvider>,
+    );
+    await ui.click(screen.getByRole("button", { name: "Открыть меню" }));
+    expect(screen.getByRole("dialog", { name: "Меню" })).toBeTruthy();
+    const teamLinks = screen.getAllByRole("link", { name: "Команда" });
+    await ui.click(teamLinks[teamLinks.length - 1]!);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Меню" })).toBeNull());
   });
 });

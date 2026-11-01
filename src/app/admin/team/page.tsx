@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminTeamPage() {
   await requireProfPlatformAdmin("/admin/team");
   return (
-    <div className={styles.adminPage}>
+    <div className={styles.adminPageWide}>
       <AdminTeamClient />
     </div>
   );

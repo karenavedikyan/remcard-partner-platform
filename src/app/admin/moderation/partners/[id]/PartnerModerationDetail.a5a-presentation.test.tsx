@@ -141,8 +141,8 @@ describe("A5a route-scoped chrome isolation (source)", () => {
     const header = readFileSync(join(process.cwd(), "src/app/admin/AdminHeader.tsx"), "utf8");
     expect(header).toContain("isPartnerModerationDetailPath");
     expect(header).toContain("data-moderation-partner-detail-shell");
-    expect(header).toMatch(/partnersChrome=\{partnersShell\}/);
-    expect(header).not.toMatch(/partnersChrome=\{[^}]*moderation/);
+    // A17b: partnersChrome gate removed; icons/breadcrumb are global. Isolation stays on data-* flags.
+    expect(header).not.toContain("partnersChrome");
     // Partners path detector stays partners-only
     expect(header).toMatch(
       /pathname === "\/admin\/partners" \|\| pathname\.startsWith\("\/admin\/partners\/"\)/,

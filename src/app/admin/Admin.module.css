@@ -1,4 +1,4 @@
-/* Admin shell A1 — scoped redesign (sidebar + topbar). No global html/body rules. */
+/* Admin shell A17b — scoped redesign vs frozen R1. No global html/body/UI-kit rules. */
 
 .shell {
   --admin-brand: #c12b2f;
@@ -13,6 +13,7 @@
   --admin-shadow: 0 12px 48px #28251d12;
   --admin-sidebar: 232px;
   --admin-topbar: 76px;
+  --admin-main-max: 1730px;
 
   min-height: 100dvh;
   min-width: 0;
@@ -39,9 +40,11 @@
 
 .shell main {
   min-width: 0;
-  max-width: 100%;
+  max-width: var(--admin-main-max);
   margin-left: var(--admin-sidebar);
-  padding: 1.5rem 2rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  margin-right: auto;
+  padding: 2rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
 }
 
@@ -62,10 +65,10 @@
 
 .brand {
   display: grid;
-  gap: 2px;
+  gap: 0.25rem;
   line-height: 1.35;
   padding-inline: 0.75rem;
-  margin-bottom: 1.5rem;
+  padding-bottom: 2rem;
   flex-shrink: 0;
 }
 
@@ -81,9 +84,9 @@
 
 .brand small {
   color: var(--admin-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -95,6 +98,7 @@
   height: var(--admin-topbar);
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 1rem;
   padding: 0 2rem;
   border-bottom: 1px solid var(--admin-line);
@@ -102,7 +106,7 @@
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 /* Single account cluster: desktop paints into the topbar band; mobile shares the header row. */
@@ -148,10 +152,30 @@
   box-sizing: border-box;
 }
 
+.navCaption {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-muted);
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.navServiceBlock {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.75rem;
+}
+
 .navLink,
 .navLinkActive {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
   min-height: 46px;
   padding: 0.75rem;
   border: 1px solid transparent;
@@ -205,6 +229,7 @@
   flex: 1;
 }
 
+/* Legacy centered dialog skin (kept for class-name stability; A17b uses .navDrawer). */
 .navDialog {
   border: none;
   padding: 0;
@@ -228,11 +253,44 @@
   overflow: auto;
 }
 
+/* R1-aligned left mobile drawer (native <dialog showModal>). */
+.navDrawer {
+  border: none;
+  padding: 0;
+  margin: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(240px, calc(100vw - 48px));
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  box-shadow: var(--admin-shadow);
+}
+
+.navDrawer::backdrop {
+  background: #14181d66;
+}
+
+.navDrawerInner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  height: 100%;
+  max-height: 100dvh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
 .navDialogHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .navDialogTitle {
@@ -254,14 +312,18 @@
 }
 
 .navDialogLinks {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .navDialogLink,
 .navDialogLinkActive {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
   min-height: 44px;
   padding: 10px 12px;
   border-radius: 0.5rem;
@@ -287,7 +349,16 @@
   max-width: 40rem;
 }
 
-.adminPage h1 {
+.adminPageWide {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.adminPage h1,
+.adminPageWide h1 {
   font-size: 1.35rem;
   margin: 0;
 }
@@ -395,6 +466,7 @@
 
   .shell main {
     margin-left: 0;
+    max-width: 100%;
     padding: 1.25rem 0.75rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
 }
@@ -403,8 +475,16 @@
   .navMobileBar {
     display: none;
   }
-  .navDialog {
+  .navDialog,
+  .navDrawer {
     display: none;
+  }
+}
+
+/* Short viewport: keep sidebar scrollable so grouped nav stays reachable. */
+@media (max-height: 700px) and (min-width: 721px) {
+  .sidebar {
+    overflow-y: auto;
   }
 }
 
@@ -417,7 +497,7 @@
   }
 }
 
-/* ===== Partners route-scoped shell (data-partners-shell) — other pages unchanged ===== */
+/* ===== Route-scoped shell flags (partners / moderation detail) ===== */
 
 .topbar[data-partners-shell="true"],
 .topbar[data-moderation-partner-detail-shell="true"],
@@ -444,13 +524,6 @@
 
 .partnersBreadcrumbSep {
   opacity: 0.7;
-}
-
-.sidebar[data-partners-shell="true"] .navLink,
-.sidebar[data-partners-shell="true"] .navLinkActive,
-.sidebar[data-partners-shell="true"] .navDialogLink,
-.sidebar[data-partners-shell="true"] .navDialogLinkActive {
-  gap: 0.75rem;
 }
 
 .sidebar[data-partners-shell="true"] .navLinkActive {
