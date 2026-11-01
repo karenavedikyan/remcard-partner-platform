@@ -9,7 +9,10 @@
 .unreadToggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
 .inboxList { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .inboxItem { padding: 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--offset); }
-.inboxItem[data-unread] { border-color: color-mix(in srgb, var(--primary) 35%, var(--line)); }
+.inboxItem[data-unread] {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  background: var(--admin-brand-soft, color-mix(in srgb, var(--primary) 8%, var(--offset)));
+}
 .inboxMeta { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; font-size: 0.8125rem; color: var(--muted); }
 .categoryBadge { font-weight: 700; color: var(--ink); }
 .inboxTitle { margin: 0 0 6px; font-size: 1rem; }

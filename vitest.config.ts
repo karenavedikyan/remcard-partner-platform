@@ -81,6 +81,7 @@ export default defineConfig({
       "src/lib/admin-notification-url.test.ts",
       "src/lib/prof-admin-notification-settings-ui.test.ts",
       "src/app/admin/notifications/AdminNotificationsPageGuard.test.ts",
+      "src/app/admin/notifications/AdminNotifications.a16a-presentation.test.ts",
       "src/lib/theme-contrast.test.ts",
       "src/lib/team-section-model.test.ts",
       "src/lib/team-member-remove-copy.test.ts",
