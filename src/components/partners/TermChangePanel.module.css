@@ -10,16 +10,20 @@
 }
 
 .panelModal {
-  /* Scoped R1 roles tokens — do not edit global theme. */
+  /*
+   * P17c: --surface/--offset/--ink/--muted/--line inherit from TermChangeModal .sheet
+   * (frozen R1 roles palette). Keep --term-* aliases explicit for Cancel/Submit/th.
+   */
   --term-muted: #61645f; /* rgb(97,100,95) */
   --term-ink: #242623;
   --term-accent: #bb3035; /* rgb(187,48,53) */
-  --term-onaccent: #fff;
+  --term-onaccent: #ffffff;
   display: grid;
   /* R1 dialog-body gap --s4 = 16px */
   gap: 16px;
   min-width: 0;
   max-width: 100%;
+  color: var(--ink);
 }
 
 :global([data-theme="dark"]) .panelModal {
@@ -57,13 +61,13 @@
 
 .notice {
   margin: 0;
-  /* R1 .notice: padding --s4, radius 10px; copy uses muted 14px inside product notice */
+  /* R1 .notice: padding --s4, radius 10px, offset bg, muted 14px (sheet-scoped --offset/--muted) */
   padding: 16px;
   border-radius: 10px;
   background: var(--offset);
   font-size: 14px;
   line-height: 1.6;
-  color: var(--term-muted, var(--muted));
+  color: var(--muted);
 }
 
 .subheading {
