@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn(), registry: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), registry: vi.fn(), analytics: vi.fn() }));
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   fetchManagementOverview: mocks.fetch,
   recordProfSessionVisit: vi.fn(),
+}));
+
+vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
+  fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
 vi.mock("@/lib/prof-admin-partners-api", () => ({
@@ -71,6 +75,11 @@ function payload(period: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetch.mockImplementation(async (period: string) => payload(period));
+  mocks.analytics.mockImplementation(async (period: string) => ({
+    tab: "overview" as const,
+    period,
+    registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 0 }],
+  }));
   mocks.registry.mockResolvedValue({ items: [], total: 0, facets: null, nextCursor: null });
 });
 

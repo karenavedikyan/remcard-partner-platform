@@ -3,11 +3,15 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), analytics: vi.fn() }));
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   fetchManagementOverview: mocks.fetch,
   recordProfSessionVisit: vi.fn(),
+}));
+
+vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
+  fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
 vi.mock("next/link", () => ({
@@ -55,6 +59,11 @@ function payload(period: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetch.mockImplementation(async (period: string) => payload(period));
+  mocks.analytics.mockImplementation(async (period: string) => ({
+    tab: "overview" as const,
+    period,
+    registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 0 }],
+  }));
 });
 
 describe("A15b overview R1 page-head completion", () => {

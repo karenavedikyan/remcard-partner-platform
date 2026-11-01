@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), analytics: vi.fn() }));
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   fetchManagementOverview: mocks.fetch,
   recordProfSessionVisit: vi.fn(),
+}));
+
+vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
+  fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
 vi.mock("next/link", () => ({
@@ -57,6 +61,11 @@ beforeEach(() => {
   mocks.fetch.mockImplementation(async (period: string) =>
     payloadFor(period === "30d" ? "30d" : period === "1d" ? "1d" : "7d", period === "30d" ? 30 : period === "1d" ? 1 : 7),
   );
+  mocks.analytics.mockImplementation(async (period: string) => ({
+    tab: "overview" as const,
+    period,
+    registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 1 }],
+  }));
 });
 
 describe("A19b overview charts trust and period honesty", () => {
@@ -72,15 +81,30 @@ describe("A19b overview charts trust and period honesty", () => {
       }
       return payloadFor("7d", 7);
     });
+    mocks.analytics.mockImplementation(async (period: string) => {
+      if (period === "30d") {
+        await hold30;
+        return {
+          tab: "overview" as const,
+          period: "30d",
+          registrationsByDay: [{ date: "2026-10-27", clients: 30, pros: 0 }],
+        };
+      }
+      return {
+        tab: "overview" as const,
+        period,
+        registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 1 }],
+      };
+    });
     render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(3));
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     expect(await screen.findByText("Обновление графиков…")).toBeTruthy();
-    expect(screen.getAllByText("За 7 дней")).toHaveLength(2);
+    expect(screen.getAllByText("За 7 дней")).toHaveLength(3);
     expect(screen.queryByText("За 30 дней")).toBeNull();
     expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("7")).toBeTruthy();
     release30?.();
-    await waitFor(() => expect(screen.getAllByText("За 30 дней")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("За 30 дней")).toHaveLength(3));
     expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("30")).toBeTruthy();
   });
 
@@ -130,11 +154,17 @@ describe("A19b overview charts trust and period honesty", () => {
   it("keeps stale charts visible on error without retitling to the selected period", async () => {
     mocks.fetch.mockImplementationOnce(async () => payloadFor("7d", 7));
     mocks.fetch.mockRejectedValueOnce(new Error("Сбой сети"));
+    mocks.analytics.mockImplementationOnce(async () => ({
+      tab: "overview" as const,
+      period: "7d",
+      registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 1 }],
+    }));
+    mocks.analytics.mockRejectedValueOnce(new Error("Сбой аналитики"));
     render(<AdminOverviewClient />);
     await screen.findByRole("list", { name: "Регистрации по дням" });
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Сбой сети");
-    expect(screen.getAllByText("За 7 дней")).toHaveLength(2);
+    expect(await screen.findByText("Сбой сети")).toBeTruthy();
+    expect(screen.getAllByText("За 7 дней")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "30 дней" })).toHaveAttribute("aria-pressed", "true");
     expect(within(screen.getByRole("list", { name: "Регистрации по дням" })).getByText("7")).toBeTruthy();
   });

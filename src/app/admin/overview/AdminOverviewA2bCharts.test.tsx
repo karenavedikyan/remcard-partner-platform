@@ -3,11 +3,15 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), analytics: vi.fn() }));
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   fetchManagementOverview: mocks.fetch,
   recordProfSessionVisit: vi.fn(),
+}));
+
+vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
+  fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
 vi.mock("next/link", () => ({
@@ -76,6 +80,15 @@ function chartList(title: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetch.mockImplementation(async (period: string) => basePayload(period));
+  mocks.analytics.mockImplementation(async (period: string) => ({
+    tab: "overview" as const,
+    period,
+    registrationsByDay: [
+      { date: "2026-10-25", clients: 1, pros: 0 },
+      { date: "2026-10-26", clients: 0, pros: 2 },
+      { date: "2026-10-27", clients: 1, pros: 1 },
+    ],
+  }));
 });
 
 describe("A2b overview charts (data + empty branches preserved)", () => {
@@ -99,7 +112,7 @@ describe("A2b overview charts (data + empty branches preserved)", () => {
       "2026-10-273",
     ]);
 
-    expect(document.querySelectorAll("svg[role='img']")).toHaveLength(2);
+    expect(document.querySelectorAll("svg[role='img']")).toHaveLength(3);
     const regSvg = screen.getByRole("img", { name: /Регистрации по дням/ });
     expect(regSvg.querySelectorAll("circle")).toHaveLength(3);
   });

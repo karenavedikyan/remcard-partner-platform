@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), analytics: vi.fn() }));
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   fetchManagementOverview: mocks.fetch,
   recordProfSessionVisit: vi.fn(),
+}));
+
+vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
+  fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
 vi.mock("next/link", () => ({
@@ -78,6 +82,11 @@ function payload(period: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetch.mockImplementation(async (period: string) => payload(period));
+  mocks.analytics.mockImplementation(async (period: string) => ({
+    tab: "overview" as const,
+    period,
+    registrationsByDay: [{ date: "2026-10-27", clients: 1, pros: 1 }],
+  }));
 });
 
 describe("A2a overview upper KPI presentation (behavior preserved)", () => {
@@ -167,6 +176,7 @@ describe("A2a overview upper KPI presentation (behavior preserved)", () => {
     resolve(payload("7d"));
     await screen.findByRole("heading", { name: "Завершённые регистрации", level: 2 });
     expect(screen.getByText("Регистрации по дням")).toBeTruthy();
+    expect(screen.getByText("Новые аккаунты по дням")).toBeTruthy();
     expect(screen.getByText("Активные профили PROF по дням")).toBeTruthy();
     expect(screen.getByText("Один профиль")).toBeTruthy();
   });

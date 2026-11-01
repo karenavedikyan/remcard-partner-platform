@@ -3,11 +3,15 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), analytics: vi.fn() }));
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   fetchManagementOverview: mocks.fetch,
   recordProfSessionVisit: vi.fn(),
+}));
+
+vi.mock("@/lib/prof-admin-overview-analytics-api", () => ({
+  fetchAdminAnalyticsOverview: mocks.analytics,
 }));
 
 vi.mock("next/link", () => ({
@@ -58,12 +62,17 @@ function basePayload(period: string, overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetch.mockImplementation(async (period: string) => basePayload(period));
+  mocks.analytics.mockImplementation(async (period: string) => ({
+    tab: "overview" as const,
+    period,
+    registrationsByDay: [{ date: "2026-10-27", clients: 2, pros: 1 }],
+  }));
 });
 
 describe("A19a overview charts dynamics block", () => {
   it("renders panel subtitles and single-series legend without technical copy", async () => {
     render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(3));
     expect(screen.getByLabelText("Легенда: Регистрации по дням")).toHaveTextContent("Итого за день");
     expect(screen.queryByText(/прототипе R1/i)).toBeNull();
     expect(screen.queryByText(/API-ряд/i)).toBeNull();
@@ -71,11 +80,11 @@ describe("A19a overview charts dynamics block", () => {
 
   it("updates chart subtitles when period changes and refetches with same period id", async () => {
     render(<AdminOverviewClient />);
-    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("За 7 дней")).toHaveLength(3));
     fireEvent.click(screen.getByRole("button", { name: "30 дней" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenLastCalledWith("30d"));
     expect(screen.getByRole("button", { name: "30 дней" })).toHaveAttribute("aria-pressed", "true");
-    await waitFor(() => expect(screen.getAllByText("За 30 дней")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("За 30 дней")).toHaveLength(3));
   });
 
   it("shows charts refetch status while keeping prior series visible", async () => {

@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { PARTNER_KIND_UI_LABELS } from "@/lib/partner-kind-ui";
 import { fetchManagementOverview, type ManagementOverview } from "@/lib/prof-admin-management-api";
+import {
+  fetchAdminAnalyticsOverview,
+  type AdminAnalyticsRegistrationsByDay,
+  type AdminAnalyticsOverviewResponse,
+} from "@/lib/prof-admin-overview-analytics-api";
 import { buildLineGeometry } from "./overviewLineChartGeometry";
 import styles from "./AdminOverview.module.css";
 
@@ -188,12 +193,202 @@ function MiniBars({
   );
 }
 
+function AnalyticsAccountsChart({
+  title,
+  subtitle,
+  series,
+  emptyLabel,
+  loading,
+  error,
+  onRetry,
+}: {
+  title: string;
+  subtitle: string;
+  series: AdminAnalyticsRegistrationsByDay[] | undefined;
+  emptyLabel: string;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  const gradId = `ov-area-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [plotW, setPlotW] = useState(320);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const apply = () => {
+      const cs = getComputedStyle(el);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const w = Math.floor(el.clientWidth - padX);
+      if (w > 0) setPlotW(w);
+    };
+    apply();
+    const ro = new ResizeObserver(() => apply());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const rows = series ?? [];
+  const clients = rows.map((r) => r.clients);
+  const pros = rows.map((r) => r.pros);
+  const scaleValues = rows.map((r) => Math.max(r.clients, r.pros, 0));
+  const geo = useMemo(
+    () => buildLineGeometry(scaleValues, plotW, CHART_VIEW_H),
+    [scaleValues, plotW],
+  );
+
+  const showChart = rows.length > 0;
+  const labelX = Math.max(4, geo.padL - 6);
+
+  return (
+    <div className={styles.chartBlock} data-source="admin-analytics-overview">
+      <div className={styles.chartHead}>
+        <div className={styles.chartHeadCopy}>
+          <h3>{title}</h3>
+          <p className={styles.chartSubtitle}>{subtitle}</p>
+        </div>
+      </div>
+      {error ? (
+        <div className={styles.chartSourceError}>
+          <p role="alert">{error}</p>
+          <button type="button" className={styles.retryButton} onClick={onRetry}>
+            Повторить
+          </button>
+        </div>
+      ) : null}
+      {loading && !showChart ? (
+        <p className={styles.chartEmpty} role="status">
+          Загрузка ряда…
+        </p>
+      ) : null}
+      {!loading && !error && !showChart ? (
+        <div className={styles.chartWrap} ref={wrapRef}>
+          <p className={styles.chartEmpty}>{emptyLabel}</p>
+        </div>
+      ) : null}
+      {showChart ? (
+        <>
+          {loading ? (
+            <p className={styles.chartsLoading} role="status">
+              Обновление ряда…
+            </p>
+          ) : null}
+          <div className={styles.chartWrap} ref={wrapRef}>
+            <svg
+              className={styles.lineChart}
+              viewBox={`0 0 ${plotW} ${CHART_VIEW_H}`}
+              width={plotW}
+              role="img"
+              aria-label={`${title}: ${rows.length} дней`}
+            >
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="currentColor" stopOpacity="0.14" />
+                  <stop offset="1" stopColor="currentColor" stopOpacity="0.01" />
+                </linearGradient>
+              </defs>
+              {geo.guides.map((g, gi) => (
+                <g key={`g-${gi}`}>
+                  <line
+                    x1={geo.padL}
+                    y1={g.y}
+                    x2={plotW - 8}
+                    y2={g.y}
+                    className={styles.chartGuide}
+                  />
+                  <text x={labelX} y={g.y + 4} textAnchor="end" className={styles.chartAxisText}>
+                    {g.label}
+                  </text>
+                </g>
+              ))}
+              <path
+                d={
+                  clients.length === 0
+                    ? ""
+                    : clients
+                        .map((v, i) => `${i ? "L" : "M"}${geo.xAt(i)},${geo.yAt(v)}`)
+                        .join(" ")
+                }
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d={
+                  pros.length === 0
+                    ? ""
+                    : pros.map((v, i) => `${i ? "L" : "M"}${geo.xAt(i)},${geo.yAt(v)}`).join(" ")
+                }
+                fill="none"
+                className={styles.chartLineSecondary}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {clients.map((v, i) => (
+                <circle
+                  key={`c-${rows[i].date}`}
+                  cx={geo.xAt(i)}
+                  cy={geo.yAt(v)}
+                  r="4"
+                  className={styles.chartDot}
+                >
+                  <title>
+                    {rows[i].date}: клиенты {v}, PRO {pros[i]}
+                  </title>
+                </circle>
+              ))}
+              {geo.axisIdx.map((i) => (
+                <text
+                  key={`ax-${rows[i].date}`}
+                  x={geo.xAt(i)}
+                  y={CHART_VIEW_H - 2}
+                  textAnchor={i === 0 ? "start" : i === rows.length - 1 ? "end" : "middle"}
+                  className={styles.chartAxisText}
+                >
+                  {String(rows[i].date).slice(0, 5)}
+                </text>
+              ))}
+            </svg>
+            <div className={styles.chartLegend} aria-label={`Легенда: ${title}`}>
+              <span>
+                <i className={styles.legendDot} aria-hidden="true" />
+                Клиенты
+              </span>
+              <span>
+                <i className={styles.legendDotAlt} aria-hidden="true" />
+                PRO
+              </span>
+            </div>
+          </div>
+          <ul className={styles.chartBarsDual} aria-label={title}>
+            {rows.map((row) => (
+              <li key={row.date}>
+                <span className={styles.chartDate}>{row.date}</span>
+                <span className={styles.chartVal}>{row.clients}</span>
+                <span className={styles.chartVal}>{row.pros}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function AdminOverviewClient() {
   const [period, setPeriod] = useState<PeriodId>("7d");
   const [data, setData] = useState<ManagementOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const loadSeq = useRef(0);
+  const [analytics, setAnalytics] = useState<AdminAnalyticsOverviewResponse | null>(null);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const analyticsLoadSeq = useRef(0);
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
@@ -211,9 +406,29 @@ export function AdminOverviewClient() {
     }
   }, [period]);
 
+  const loadAnalytics = useCallback(async () => {
+    const seq = ++analyticsLoadSeq.current;
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const next = await fetchAdminAnalyticsOverview(period);
+      if (seq !== analyticsLoadSeq.current) return;
+      setAnalytics(next);
+    } catch (e) {
+      if (seq !== analyticsLoadSeq.current) return;
+      setAnalyticsError(e instanceof Error ? e.message : "Не удалось загрузить ряд аккаунтов");
+    } finally {
+      if (seq === analyticsLoadSeq.current) setAnalyticsLoading(false);
+    }
+  }, [period]);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadAnalytics();
+  }, [loadAnalytics]);
 
   const regCard = useMemo(() => {
     if (!data) return { value: "—", note: "" };
@@ -237,6 +452,10 @@ export function AdminOverviewClient() {
   const chartPeriodScope = periodButtonLabel(chartPeriodId);
   const regChartSubtitle = `За ${chartPeriodScope}`;
   const profChartSubtitle = `За ${chartPeriodScope}`;
+  const analyticsPeriodId = analytics
+    ? periodIdFromApi(analytics.period, period)
+    : period;
+  const analyticsChartSubtitle = `За ${periodButtonLabel(analyticsPeriodId)}`;
 
   return (
     <div className={styles.wrap}>
@@ -370,9 +589,9 @@ export function AdminOverviewClient() {
           <section
             className={styles.chartsSection}
             aria-label="Динамика показателей"
-            aria-busy={loading || undefined}
+            aria-busy={loading || analyticsLoading || undefined}
           >
-            {loading ? (
+            {(loading || analyticsLoading) && (data || analytics) ? (
               <p className={styles.chartsLoading} role="status">
                 Обновление графиков…
               </p>
@@ -385,6 +604,15 @@ export function AdminOverviewClient() {
                 series={data.registrationsCompleted.seriesDaily}
                 valueKey="total"
                 emptyLabel="Нет завершённых регистраций в выбранном периоде"
+              />
+              <AnalyticsAccountsChart
+                title="Новые аккаунты по дням"
+                subtitle={analyticsChartSubtitle}
+                series={analytics?.registrationsByDay}
+                loading={analyticsLoading}
+                error={analyticsError}
+                onRetry={() => void loadAnalytics()}
+                emptyLabel="Нет новых аккаунтов за выбранный период"
               />
               <MiniBars
                 title="Активные профили PROF по дням"

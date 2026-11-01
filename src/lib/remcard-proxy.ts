@@ -65,6 +65,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/admin\/partners\/[\w-]+\/partnerships$/,
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/management\/overview$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/admin\/analytics$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/admin\/notification-settings$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/notification-bind\/status$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/admin\/notification-bind\/start$/ },
