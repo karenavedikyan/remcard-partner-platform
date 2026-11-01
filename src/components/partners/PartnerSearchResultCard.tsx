@@ -205,7 +205,7 @@ export function PartnerSearchResultCard({
         </div>
       </div>
 
-      <div className={styles.modalResultBody}>
+      <div className={styles.modalResultBody} data-testid="agent-partner-search-result-body">
         {primary.length > 0 ? (
           <p
             className={styles.modalResultDirectionsPrimary}
@@ -234,7 +234,10 @@ export function PartnerSearchResultCard({
         ) : null}
       </div>
 
-      <div className={styles.modalResultFoot}>
+      <div
+        className={styles.modalResultFoot}
+        data-testid="agent-partner-search-result-foot"
+      >
         <Button
           type="button"
           variant="primary"
