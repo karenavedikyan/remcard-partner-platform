@@ -331,6 +331,10 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/wallet\/(balance|transactions|settlements)$/,
     },
     {
+      methods: new Set(["GET", "POST"]),
+      pattern: /^\/api\/pro\/wallet\/order-rewards\/c[a-z0-9]{20,}$/i,
+    },
+    {
       methods: new Set(["POST"]),
       pattern: /^\/api\/pro\/wallet\/settlements\/export$/,
     },
@@ -444,7 +448,8 @@ export function resolveStoreOrderIdempotencyKey(
   const upper = method.toUpperCase();
   if (
     upper === "POST" &&
-    (BONUS_PAY_PATH.test(pathname) || pathname === "/api/pro/agent-certificates")
+    (BONUS_PAY_PATH.test(pathname) || pathname === "/api/pro/agent-certificates" ||
+      /^\/api\/pro\/wallet\/order-rewards\/[^/]+$/.test(pathname))
   ) {
     const parsed = parseOptionalIdempotencyKey(rawHeader);
     if (!parsed.ok) {

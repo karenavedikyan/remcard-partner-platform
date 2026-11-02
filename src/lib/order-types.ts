@@ -42,6 +42,7 @@ export type OrderPreviewDenied = {
 export type OrderPreviewResponse = OrderPreviewAllowed | OrderPreviewDenied;
 
 export type OrderCreateItem = {
+  rewardConfirmation?: import("@/lib/reward-confirmation").RewardConfirmation;
   category: string;
   categoryLabel: string;
   amount: number;

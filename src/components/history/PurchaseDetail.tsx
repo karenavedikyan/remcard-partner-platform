@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PurchaseReceivingClientPanel } from "@/components/history/PurchaseReceivingClientPanel";
 import styles from "./history.module.css";
+import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -139,6 +140,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
       ) : null}
 
       <div className={styles.detailGrid}>
+        {purchase.orderId ? <RewardLifecyclePanel orderId={purchase.orderId} /> : null}
         <p className={styles.meta}>
           Направление:{" "}
           {purchase.direction === "accepted" ? "Принято у меня" : "По моей рекомендации"}

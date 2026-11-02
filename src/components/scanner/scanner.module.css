@@ -263,3 +263,19 @@
     grid-template-columns: 1fr;
   }
 }
+.rewardTerms {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.rewardTerms legend { font-weight: 600; font-size: var(--text-sm); padding: 0 var(--space-1); }
+.rewardLabel { display: grid; gap: var(--space-1); font-size: var(--text-sm); }
+.rewardLabel select { min-width: 0; padding: var(--space-2); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); }
+.rewardCheck { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); }
+.rewardCheck input { margin-top: var(--space-1); flex: 0 0 auto; }
+.rewardApply { width: fit-content; text-align: left; color: var(--ink); background: transparent; border: 0; padding: 0; text-decoration: underline; font-size: var(--text-sm); }
+.rewardTerms:disabled { opacity: 0.65; }

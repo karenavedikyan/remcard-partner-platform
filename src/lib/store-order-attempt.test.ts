@@ -47,6 +47,20 @@ afterEach(() => {
 });
 
 describe("store-order-attempt", () => {
+  it("preserves individual terms verbatim through storage and unknown-result retry", () => {
+    const body = { certificateCode: "RC-TEST", items: [
+      { category: "doors", amount: 120000, rewardConfirmation: { days: 14, kind: "GOODS" as const, fulfilledAt: null } },
+      { category: "flooring", amount: 57000, rewardConfirmation: { days: 0, kind: "SERVICE" as const, fulfilledAt: "ON_OPERATION" } },
+    ] };
+    const created = createStoreOrderAttempt({ userId: "user-1", body });
+    assert.equal(created.ok, true);
+    markStoreOrderAttemptUnknown("user-1");
+    const retry = prepareStoreOrderRetry("user-1");
+    assert.equal(retry.ok, true);
+    if (!retry.ok) return;
+    for (const item of body.items) assert.deepEqual(
+      retry.record.body.items.find(i => i.category === item.category)?.rewardConfirmation, item.rewardConfirmation);
+  });
   it("createStoreOrderAttempt persists before POST", () => {
     const body = {
       certificateCode: "RC-TEST",

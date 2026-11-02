@@ -30,6 +30,7 @@ import {
   type PayoutRecordTarget,
 } from "@/components/payout/PayoutRecordModal";
 import styles from "./settlements.module.css";
+import { RewardLifecyclePanel } from "./RewardLifecyclePanel";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -67,9 +68,12 @@ function ObligationRow({
           <p className={styles.rowTitle}>{formatMoneyRub(row.amount)}</p>
           <p className={styles.meta}>{row.basis}</p>
         </div>
-        <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
+        <StatusBadge label={row.confirmationLabel ?? bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
       </div>
       <p className={styles.meta}>Создано: {formatDate(row.createdAt)}</p>
+      {(row.pendingAmount ?? 0) > 0 ? <p className={styles.meta}>Ожидает подтверждения: {formatMoneyRub(row.pendingAmount!)}. Не входит в баланс.</p> : null}
+      {(row.suspendedAmount ?? 0) > 0 ? <p className={styles.meta}>Приостановлено: {formatMoneyRub(row.suspendedAmount!)}</p> : null}
+      {row.hasIndividualTerms ? <details><summary>Категории, сроки и расчёты</summary><RewardLifecyclePanel orderId={row.orderId} /></details> : null}
       <div className={styles.actions}>
         <Link href={settlementAccrualHref(row)} className={styles.linkButton}>
           Начисление
@@ -167,6 +171,9 @@ export function SettlementsHub() {
 
   useEffect(() => {
     void load();
+    const changed = () => { void load(); };
+    window.addEventListener("remcard:reward-changed", changed);
+    return () => window.removeEventListener("remcard:reward-changed", changed);
   }, [load]);
 
   const receivableGroups = useMemo(
@@ -191,6 +198,8 @@ export function SettlementsHub() {
 
   const receivableTotal = sumObligationAmounts(data?.receivable ?? []);
   const payableTotal = sumObligationAmounts(data?.payable ?? []);
+  const pendingReceivable = (data?.receivable ?? []).reduce((sum, row) => sum + (row.pendingAmount ?? 0), 0);
+  const pendingPayable = (data?.payable ?? []).reduce((sum, row) => sum + (row.pendingAmount ?? 0), 0);
 
   if (loading) {
     return <div className={styles.loading}>Загружаем взаиморасчёты…</div>;
@@ -234,10 +243,14 @@ export function SettlementsHub() {
         <div className={styles.summaryCard}>
           <p className={styles.summaryLabel}>Мне должны</p>
           <p className={styles.summaryValue}>{formatMoneyRub(receivableTotal)}</p>
+          <p className={styles.meta}>Подтверждённая сумма</p>
+          <p className={styles.meta}>Ожидает подтверждения: {formatMoneyRub(pendingReceivable)}</p>
         </div>
         <div className={styles.summaryCard}>
           <p className={styles.summaryLabel}>Я должен</p>
           <p className={styles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
+          <p className={styles.meta}>Подтверждённая сумма</p>
+          <p className={styles.meta}>Ожидает подтверждения: {formatMoneyRub(pendingPayable)}</p>
         </div>
         <div className={styles.summaryCard}>
           <p className={styles.summaryLabel}>Завершённые</p>

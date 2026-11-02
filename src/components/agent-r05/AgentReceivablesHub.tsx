@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
@@ -438,10 +439,19 @@ export function AgentReceivablesHub() {
               >
                 <span>Мне должны</span>
                 <strong>{formatKopecks(overview.confirmedTotalKopecks)}</strong>
+                <small>Только подтверждённые неоплаченные суммы</small>
                 <small>
                   Посмотреть партнёров <span aria-hidden="true">→</span>
                 </small>
               </button>
+              <div className={styles.totalTile} data-testid="agent-reward-pending">
+                <span>Ожидает подтверждения</span>
+                <strong>{formatKopecks(overview.pendingTotalKopecks ?? 0)}</strong>
+                <small>Не входит в баланс</small>
+              </div>
+              {(overview.suspendedTotalKopecks ?? 0) > 0 ? <div className={styles.totalTile}>
+                <span>Приостановлено</span><strong>{formatKopecks(overview.suspendedTotalKopecks ?? 0)}</strong>
+              </div> : null}
             </div>
             <details className={styles.helpNote}>
               <summary>Справка по кошельку</summary>
@@ -589,7 +599,8 @@ export function AgentReceivablesHub() {
                     </small>
                   </span>
                   <span className={styles.lineValue}>
-                    <strong>{formatKopecks(order.remainingKopecks || order.obligationKopecks)}</strong>
+                    <strong>{formatKopecks(order.hasIndividualTerms ? order.remainingKopecks : order.remainingKopecks || order.obligationKopecks)}</strong>
+                    {(order.pendingKopecks ?? 0) > 0 ? <small>Ожидает: {formatKopecks(order.pendingKopecks!)}</small> : null}
                   </span>
                 </summary>
                 <div className={styles.orderBody}>
@@ -682,10 +693,12 @@ export function AgentReceivablesHub() {
             <h2 data-testid="agent-r05-order-detail-heading">{record.orderNumber}</h2>
           </div>
           <strong data-testid="agent-r05-order-detail-sum">
-            {formatKopecks(record.remainingKopecks || record.obligationKopecks)}
+            {formatKopecks(record.hasIndividualTerms ? record.remainingKopecks : record.remainingKopecks || record.obligationKopecks)}
           </strong>
         </div>
         <p className={styles.meta}>{record.partnerLegal.name}</p>
+        {record.hasIndividualTerms ? <RewardLifecyclePanel orderId={record.orderId}
+          onChanged={() => { void reloadOrderDetail(record.orderId); void reloadOverview(); }} /> : null}
         <dl className={styles.breakdown} data-testid="agent-r05-order-breakdown">
           <div>
             <dt>Клиент</dt>

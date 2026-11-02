@@ -163,6 +163,9 @@ export type AccrualRow = {
 };
 
 export type WalletBalanceResponse = {
+  awaitingRub?: number;
+  suspendedRub?: number;
+  balanceRub?: number;
   role: WalletRole;
   pendingRub: number;
   paidRub: number;

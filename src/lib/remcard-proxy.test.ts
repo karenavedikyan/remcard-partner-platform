@@ -112,6 +112,12 @@ const stubServer = createServer(async (request, response) => {
     return;
   }
 
+  if (/^\/api\/pro\/wallet\/order-rewards\/c[a-z0-9]{20,}$/i.test(url.pathname)) {
+    stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ reward: null, permissions: null }));
+    return;
+  }
   if (url.pathname === "/api/store/order" && request.method === "POST") {
     stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
     response.writeHead(201, {
@@ -872,6 +878,22 @@ describe("remcard proxy transport checks", () => {
     }
     assert.equal(failure.status, 401);
     assert.equal(failure.setCookies.length, 0);
+  });
+
+  it("allows only scoped reward GET/POST and forwards the exact financial idempotency key", async () => {
+    const pathname = "/api/pro/wallet/order-rewards/caaaaaaaaaaaaaaaaaaaaaaaa";
+    for (const method of ["GET", "POST"]) {
+      const result = await proxyRemcardRequest({ method, pathname, search: "",
+        contentType: "application/json", cookieHeader: "remcard-token=abc",
+        origin: "http://localhost:3000", bodyText: method === "POST" ? '{"type":"fulfill"}' : null,
+        csrfHeader: "qa-csrf", idempotencyKeyHeader: method === "POST" ? "reward-exact-key" : null });
+      assert.equal(result.ok, true);
+      if (method === "POST") assert.equal(stubState.lastIdempotencyKey, "reward-exact-key");
+    }
+    const denied = await proxyRemcardRequest({ method: "DELETE", pathname, search: "",
+      contentType: "application/json", cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000", bodyText: null, csrfHeader: null });
+    assert.equal(denied.ok, false);
   });
 
   it("requires Idempotency-Key for POST /api/store/order and forwards valid keys", async () => {

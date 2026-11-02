@@ -10,6 +10,8 @@ export type AgentR05Status = {
 };
 
 export type AgentReceivablesOverview = {
+  pendingTotalKopecks?: number;
+  suspendedTotalKopecks?: number;
   contractVersion: string;
   confirmedTotalKopecks: number;
   openCount: number;
@@ -38,6 +40,10 @@ export type AgentReceivablePartnerGroup = {
 };
 
 export type AgentReceivableRecord = {
+  pendingKopecks?: number;
+  suspendedKopecks?: number;
+  confirmationAt?: string | null;
+  hasIndividualTerms?: boolean;
   accrualId: string;
   orderId: string;
   orderNumber: string;

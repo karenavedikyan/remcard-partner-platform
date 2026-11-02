@@ -6,6 +6,7 @@ export const STORE_ORDER_ATTEMPT_STORAGE_KEY = "remcard:store-order-attempt:v1";
 export const STORE_ORDER_ATTEMPT_FORMAT_VERSION = 1 as const;
 
 export type StoreOrderAttemptItem = {
+  rewardConfirmation?: import("@/lib/reward-confirmation").RewardConfirmation;
   category: string;
   categoryLabel?: string;
   amount: number;
@@ -50,6 +51,12 @@ export function normalizeStoreOrderAttemptBody(body: StoreOrderAttemptBody): Sto
         category: String(item.category || "").trim(),
         categoryLabel: item.categoryLabel ? String(item.categoryLabel).trim() : undefined,
         amount: Number(item.amount),
+        ...(item.rewardConfirmation === undefined ? {} : {
+          rewardConfirmation: {
+            days: item.rewardConfirmation.days, kind: item.rewardConfirmation.kind,
+            fulfilledAt: item.rewardConfirmation.fulfilledAt,
+          },
+        }),
       }))
       .filter((item) => item.category && Number.isFinite(item.amount) && item.amount > 0)
       .sort((a, b) => a.category.localeCompare(b.category) || a.amount - b.amount),

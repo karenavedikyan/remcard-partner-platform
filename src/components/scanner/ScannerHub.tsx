@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { RewardConfirmationFields } from "./RewardConfirmationFields";
+import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, type RewardConfirmationDraft } from "@/lib/reward-confirmation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { displayCategoryLabel, displayCategoryLabelFromStored } from "@/lib/category-display";
 import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
@@ -179,6 +181,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const [previewError, setPreviewError] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [amountDrafts, setAmountDrafts] = useState<Record<string, string>>({});
+  const [rewardDrafts, setRewardDrafts] = useState<Record<string, RewardConfirmationDraft>>({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderUncertain, setOrderUncertain] = useState(false);
@@ -398,12 +401,15 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         if ("allowed" in data && data.allowed) {
           if (options?.restoreAttempt) {
             setAmountDrafts(amountDraftsFromAttempt(options.restoreAttempt));
+            setRewardDrafts(Object.fromEntries(options.restoreAttempt.body.items.map(item =>
+              [item.category, rewardTermsToDraft(item.rewardConfirmation)])));
           } else {
             const drafts: Record<string, string> = {};
             for (const cat of data.availableCategories) {
               drafts[cat.category] = "";
             }
             setAmountDrafts(drafts);
+            setRewardDrafts({});
           }
         } else {
           setAmountDrafts({});
@@ -497,8 +503,17 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       return;
     }
 
+    let items;
+    try {
+      items = buildOrderItems(previewSession.preview.availableCategories, amountDrafts)
+        .map(item => previewSession.preview.partner.isSelfScan ? item : ({ ...item,
+          rewardConfirmation: rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft),
+        }));
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Проверьте сроки подтверждения");
+      return;
+    }
     submitInFlightRef.current = true;
-    const items = buildOrderItems(previewSession.preview.availableCategories, amountDrafts);
     const created = createStoreOrderAttempt({
       userId,
       body: { certificateCode: previewSession.code, items },
@@ -517,6 +532,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     await executeOrderPost(created.record, false);
   }, [
     amountDrafts,
+    rewardDrafts,
     executeOrderPost,
     orderConflict,
     orderUncertain,
@@ -640,6 +656,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                   <span className={styles.discountBadge}>−{category.discountPercent}%</span>
                 </div>
                 <TextField
+                  id={`scanner-amount-${category.category}`}
                   label="Сумма покупки до скидки, ₽"
                   type="number"
                   min={0}
@@ -653,6 +670,15 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                     }))
                   }
                 />
+                {!preview.partner.isSelfScan ? <RewardConfirmationFields category={category.category}
+                  draft={rewardDrafts[category.category] ?? defaultRewardDraft}
+                  disabled={submitting || amountsLocked}
+                  onChange={value => setRewardDrafts(prev => ({ ...prev, [category.category]: value }))}
+                  onApplyAll={() => {
+                    const days = (rewardDrafts[category.category] ?? defaultRewardDraft).days;
+                    setRewardDrafts(prev => Object.fromEntries(preview.availableCategories.map(cat =>
+                      [cat.category, { ...(prev[cat.category] ?? defaultRewardDraft), days }])));
+                  }} /> : null}
               </div>
             ))}
           </div>

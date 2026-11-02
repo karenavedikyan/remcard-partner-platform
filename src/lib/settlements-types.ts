@@ -6,6 +6,12 @@ export type SettlementPayoutActions = {
 };
 
 export type SettlementObligation = {
+  pendingAmount?: number;
+  suspendedAmount?: number;
+  paidAmount?: number;
+  hasIndividualTerms?: boolean;
+  confirmationAt?: string | null;
+  confirmationLabel?: string;
   id: string;
   orderId: string;
   accrualType: SettlementAccrualType;
