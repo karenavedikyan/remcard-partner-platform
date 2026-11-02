@@ -33,7 +33,8 @@ export async function buildRemcardProxyRequestInput(
     bodyBinary,
     idempotencyKeyHeader:
       request.method === "POST" &&
-      (pathname === "/api/store/order" || pathname === "/api/pro/agent-certificates")
+      (pathname === "/api/store/order" || pathname === "/api/pro/agent-certificates" ||
+        /^\/api\/pro\/wallet\/order-rewards\/c[a-z0-9]{20,}$/i.test(pathname))
         ? request.headers.get("Idempotency-Key")
         : null,
   };

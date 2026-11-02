@@ -408,7 +408,7 @@ export type ProxyRequestInput = {
   csrfHeader: string | null;
   bodyText?: string;
   bodyBinary?: ArrayBuffer;
-  /** Raw Idempotency-Key from client — validated and forwarded only for POST /api/store/order. */
+  /** Raw client key, validated and forwarded only for the scoped idempotent POST routes. */
   idempotencyKeyHeader?: string | null;
 };
 

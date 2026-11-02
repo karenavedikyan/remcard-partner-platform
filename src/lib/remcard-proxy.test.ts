@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { after, before, describe, it } from "node:test";
+import { NextRequest } from "next/server";
+import { buildRemcardProxyRequestInput } from "./remcard-proxy-bff.ts";
 import {
   buildProxyNextResponse,
   filterAllowedCookies,
@@ -19,6 +21,7 @@ type StubState = {
   lastCookie: string | null;
   lastAuthorization: string | null;
   lastIdempotencyKey: string | null;
+  lastRewardBody: string | null;
   hang: boolean;
 };
 
@@ -26,6 +29,7 @@ const stubState: StubState = {
   lastCookie: null,
   lastAuthorization: null,
   lastIdempotencyKey: null,
+  lastRewardBody: null,
   hang: false,
 };
 
@@ -114,6 +118,9 @@ const stubServer = createServer(async (request, response) => {
 
   if (/^\/api\/pro\/wallet\/order-rewards\/c[a-z0-9]{20,}$/i.test(url.pathname)) {
     stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    stubState.lastRewardBody = Buffer.concat(chunks).toString("utf8");
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ reward: null, permissions: null }));
     return;
@@ -878,6 +885,64 @@ describe("remcard proxy transport checks", () => {
     }
     assert.equal(failure.status, 401);
     assert.equal(failure.setCookies.length, 0);
+  });
+
+  it("passes every reward action and exact retry through the real BFF request builder", async () => {
+    const segments = ["api", "pro", "wallet", "order-rewards", "caaaaaaaaaaaaaaaaaaaaaaaa"];
+    const actions = [
+      { type: "fulfill", lineId: "doors", fulfilledAt: "2026-11-02T12:00:00.000Z" },
+      { type: "return", lineId: "doors", grossKopecks: 10000 },
+      { type: "suspend", lineId: "doors", kopecks: 1000 },
+      { type: "resume", lineId: "doors" },
+      { type: "propose_payment", method: "TRANSFER", kopecks: 1000 },
+      { type: "confirm_payment", paymentId: "owned-payment" },
+      { type: "reject_payment", paymentId: "owned-payment" },
+    ];
+    for (const action of actions) {
+      const key = `reward-boundary-${action.type}`;
+      const body = JSON.stringify(action);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const request = new NextRequest(`http://localhost:3000/api/remcard/${segments.join("/")}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "http://localhost:3000",
+            Cookie: "remcard-token=abc; remcard-csrf=qa-csrf",
+            "X-CSRF-Token": "qa-csrf",
+            "Idempotency-Key": key,
+          },
+          body,
+        });
+        const input = await buildRemcardProxyRequestInput(request, segments);
+        assert.ok(input);
+        assert.equal(input.idempotencyKeyHeader, key, `${action.type}: builder preserves key`);
+        const result = await proxyRemcardRequest(input);
+        assert.equal(result.ok, true);
+        assert.equal(result.status, 200);
+        assert.equal(stubState.lastIdempotencyKey, key);
+        assert.equal(stubState.lastRewardBody, body);
+      }
+    }
+  });
+
+  it("does not manufacture or leak reward idempotency keys to unrelated BFF requests", async () => {
+    const paths = [
+      { method: "GET", segments: ["api", "pro", "wallet", "order-rewards", "caaaaaaaaaaaaaaaaaaaaaaaa"] },
+      { method: "POST", segments: ["api", "account", "consent"] },
+      { method: "POST", segments: ["api", "pro", "wallet", "order-rewards", "invalid-id"] },
+    ];
+    for (const { method, segments } of paths) {
+      const request = new NextRequest(`http://localhost:3000/api/remcard/${segments.join("/")}`, {
+        method, headers: { "Idempotency-Key": "must-not-leak" },
+      });
+      const input = await buildRemcardProxyRequestInput(request, segments);
+      assert.ok(input);
+      assert.equal(input.idempotencyKeyHeader, null);
+    }
+    const missing = await buildRemcardProxyRequestInput(new NextRequest("http://localhost:3000/api/remcard/api/pro/wallet/order-rewards/caaaaaaaaaaaaaaaaaaaaaaaa", { method: "POST" }),
+      ["api", "pro", "wallet", "order-rewards", "caaaaaaaaaaaaaaaaaaaaaaaa"]);
+    assert.ok(missing);
+    assert.equal(missing.idempotencyKeyHeader, null);
   });
 
   it("allows only scoped reward GET/POST and forwards the exact financial idempotency key", async () => {
