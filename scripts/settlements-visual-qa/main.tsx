@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
@@ -12,18 +12,27 @@ const theme = params.get("theme") ?? "light";
 const openCompleted = params.get("completed") === "1";
 document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
 
+const COMPLETED_HISTORY_SELECTOR = '[data-testid="settlements-completed-history"]';
+
 function HubWithCompleted() {
-  const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (openCompleted) {
-      const btn = document.querySelector<HTMLButtonElement>(
-        '[data-testid="settlements-completed-history"]',
-      );
-      btn?.click();
-    }
-    setReady(true);
+    if (!openCompleted) return;
+    let cancelled = false;
+    const openWhenReady = () => {
+      if (cancelled) return;
+      const btn = document.querySelector<HTMLButtonElement>(COMPLETED_HISTORY_SELECTOR);
+      if (btn) {
+        btn.click();
+        return;
+      }
+      window.requestAnimationFrame(openWhenReady);
+    };
+    openWhenReady();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-  if (!ready && openCompleted) return null;
+
   return <SettlementsHub />;
 }
 
@@ -42,7 +51,10 @@ else if (scene.startsWith("specialist")) {
 } else if (scene.startsWith("agent")) node = <AgentReceivablesHub />;
 
 root.render(
-  <div data-scene={scene} style={{ padding: 16, maxWidth: scene.includes("375") ? 375 : 1280, margin: "0 auto" }}>
+  <div
+    data-scene={scene}
+    style={{ padding: 16, maxWidth: scene.includes("375") ? 375 : 1280, margin: "0 auto" }}
+  >
     {node}
   </div>,
 );
