@@ -12,6 +12,7 @@ import { CertificateResultView } from "@/components/recommendations/CertificateR
 import { SpecialistCertificateEditDetailsDialog } from "./SpecialistCertificateEditDetailsDialog";
 import { SpecialistCertificateEditDiscountsDialog } from "@/components/agent-r03/SpecialistCertificateEditDiscountsDialog";
 import { Button } from "@/components/ui/Button";
+import { CertificatePurchases } from "@/components/agent-r03/CertificatePurchases";
 import agentStyles from "@/components/agent-r03/agent-r03.module.css";
 import styles from "@/components/recommendations/recommendations.module.css";
 
@@ -136,6 +137,8 @@ export function SpecialistCertificateDetailDialog({
                   </p>
                 )}
               </div>
+              <CertificatePurchases orders={storeCert.orders} hasPurchases={meta.hasOrders}
+                promoCode={meta.promoCode} clientName={meta.agentClient?.displayName ?? storeCert.clientUser?.displayName} />
               <CertificateResultView
                 certificate={storeCert}
                 displayCode={meta.displayCode}

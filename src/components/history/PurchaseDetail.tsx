@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { displayCategoryLabelFromStored } from "@/lib/category-display";
 import { documentOperationsHref, formatMoneyRub } from "@/lib/history-format";
@@ -44,13 +44,20 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
   const [accessDenied, setAccessDenied] = useState(false);
   const [purchase, setPurchase] = useState<PurchaseRow | null>(null);
   const [linkedAccruals, setLinkedAccruals] = useState<AccrualRow[]>([]);
+  const [accrualWarning, setAccrualWarning] = useState("");
+  const loadVersion = useRef(0);
 
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
     setLoading(true);
     setError("");
     setAccessDenied(false);
+    setPurchase(null);
+    setLinkedAccruals([]);
+    setAccrualWarning("");
     try {
       const row = await fetchPurchaseByOrderId(purchaseId, user);
+      if (version !== loadVersion.current) return;
       if (!row) {
         setPurchase(null);
         setLinkedAccruals([]);
@@ -58,10 +65,17 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         return;
       }
 
-      const accruals = await fetchAccrualRows();
       setPurchase(row);
-      setLinkedAccruals(findAccrualsForPurchase(row, accruals));
+      try {
+        const accruals = await fetchAccrualRows();
+        if (version !== loadVersion.current) return;
+        setLinkedAccruals(findAccrualsForPurchase(row, accruals));
+      } catch {
+        if (version !== loadVersion.current) return;
+        setAccrualWarning("Покупка загружена, но связанные начисления сейчас недоступны. Суммы покупки не изменены.");
+      }
     } catch (caught) {
+      if (version !== loadVersion.current) return;
       if (caught instanceof RemcardApiError && caught.status === 403) {
         setAccessDenied(true);
         setPurchase(null);
@@ -72,12 +86,13 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить операцию",
       );
     } finally {
-      setLoading(false);
+      if (version === loadVersion.current) setLoading(false);
     }
   }, [user, purchaseId]);
 
   useEffect(() => {
     void load();
+    return () => { loadVersion.current++; };
   }, [load]);
 
   if (loading) {
@@ -238,6 +253,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         </Link>
       ) : null}
 
+      {accrualWarning ? <p role="status">{accrualWarning}</p> : null}
       <Link href="/history">← К истории</Link>
     </div>
   );

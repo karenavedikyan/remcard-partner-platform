@@ -4,10 +4,10 @@ import Link from "next/link";
 import type { AgentCertificateRow } from "@/lib/agent-r03/types";
 import {
   certificateLifecycleStatusLabel,
-  certificatePurchaseStatusLabel,
 } from "@/lib/agent-r03/certificatePurchaseStatus";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
+import { CertificatePurchaseLink } from "./CertificatePurchaseLink";
 
 type Props = {
   cert: AgentCertificateRow;
@@ -54,7 +54,7 @@ export function AgentR03MobileCertRow({
       </div>
       <div className={styles.mobileRecordFooter}>
         <div className={styles.mobileRecordFooterStatus}>
-          <span className={styles.purchasePill}>{certificatePurchaseStatusLabel(cert)}</span>
+          <CertificatePurchaseLink cert={cert} detailBasePath={detailBasePath} />
           <span className={styles.collectionLifecycle}>{certificateLifecycleStatusLabel(cert)}</span>
         </div>
         <RecordRowActions

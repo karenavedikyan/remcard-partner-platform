@@ -7,10 +7,10 @@ import { formatDiscountPercent } from "@/lib/agent-r03/formatDiscountPercent";
 import { certificateUsageLabel } from "@/lib/agent-r03/certificateUsageLabel";
 import {
   certificateLifecycleStatusLabel,
-  certificatePurchaseStatusLabel,
 } from "@/lib/agent-r03/certificatePurchaseStatus";
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
+import { CertificatePurchaseLink } from "./CertificatePurchaseLink";
 
 type Props = {
   cert: AgentCertificateRow;
@@ -69,7 +69,7 @@ export function AgentCertificateCard({
         <div className={styles.certCardHead}>
           <div className={styles.certCardHeadText}>
             <span className={styles.certCardEyebrow}>RemCard · сертификат</span>
-            <span className={styles.purchasePill}>{certificatePurchaseStatusLabel(cert)}</span>
+            <CertificatePurchaseLink cert={cert} detailBasePath={detailBasePath} />
           </div>
         </div>
         <div className={styles.certCardBody}>

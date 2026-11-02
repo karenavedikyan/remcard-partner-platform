@@ -1,5 +1,7 @@
 "use client";
 
+import { CertificatePurchaseLink } from "./CertificatePurchaseLink";
+
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -38,7 +40,6 @@ import {
 import type { AgentCertificateRow, AgentR03ListMeta, AgentR03ListSort } from "@/lib/agent-r03/types";
 import {
   certificateLifecycleStatusLabel,
-  certificatePurchaseStatusLabel,
 } from "@/lib/agent-r03/certificatePurchaseStatus";
 import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { Button } from "@/components/ui/Button";
@@ -630,9 +631,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
                     </td>
                     <td className={styles.collectionDetail}>{certificateListDetail(cert)}</td>
                     <td>
-                      <span className={styles.purchasePill}>
-                        {certificatePurchaseStatusLabel(cert)}
-                      </span>
+                      <CertificatePurchaseLink cert={cert} detailBasePath={detailBasePath} />
                       <small className={styles.collectionLifecycle}>
                         {certificateLifecycleStatusLabel(cert)}
                       </small>

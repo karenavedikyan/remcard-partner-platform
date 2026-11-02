@@ -7,6 +7,7 @@ import type { StoreCertificate } from "@/lib/certificate-types";
 import { Button } from "@/components/ui/Button";
 import { storeCertificateDisplayCode } from "@/lib/certificate-url";
 import { CertificateResultView } from "./CertificateResultView";
+import { CertificatePurchases } from "@/components/agent-r03/CertificatePurchases";
 import styles from "./recommendations.module.css";
 
 type CertificateDetailProps = {
@@ -82,6 +83,8 @@ export function CertificateDetail({
           <Button>{createAnotherLabel}</Button>
         </Link>
       </div>
+      <CertificatePurchases orders={certificate.orders} hasPurchases={Boolean(certificate.usageCount || certificate.orders?.length)}
+        promoCode={certificate.promoCode} clientName={certificate.clientUser?.displayName} />
       <CertificateResultView
         certificate={certificate}
         displayCode={storeCertificateDisplayCode(certificate)}

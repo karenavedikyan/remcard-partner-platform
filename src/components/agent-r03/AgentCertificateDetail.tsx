@@ -23,6 +23,7 @@ import { RecordRowActions } from "./RecordRowActions";
 import { SharePreviewDialog } from "./SharePreviewDialog";
 import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import styles from "./agent-r03.module.css";
+import { CertificatePurchases } from "./CertificatePurchases";
 
 export type AgentCertificateDetailAccessMode = "agent" | "specialist";
 
@@ -230,6 +231,9 @@ export function AgentCertificateDetail({
           ]}
         />
       </div>
+
+      <CertificatePurchases orders={storeCert.orders} hasPurchases={meta.hasOrders}
+        promoCode={meta.promoCode} clientName={meta.agentClient?.displayName ?? storeCert.clientUser?.displayName} />
 
       <CertificateResultView
         certificate={storeCert}

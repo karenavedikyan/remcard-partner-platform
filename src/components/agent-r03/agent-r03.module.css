@@ -1564,6 +1564,11 @@
   flex: 0 0 auto;
 }
 
+.purchaseOpenLink {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .collectionFilters {
   flex: 0 1 auto;
 }
@@ -1601,4 +1606,3 @@
     width: 100%;
   }
 }
-

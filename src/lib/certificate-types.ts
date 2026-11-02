@@ -40,6 +40,26 @@ export type StoreCertificate = {
   storeNames?: string[] | null;
   partners?: CertificatePartner[];
   clientUser?: { displayName?: string | null; id?: string } | null;
+  /** Existing owner-scoped certificate GET includes saved purchase snapshots. */
+  orders?: CertificatePurchase[];
+};
+
+export type CertificatePurchase = {
+  id: string;
+  createdAt: string;
+  status: string;
+  totalAmount: number;
+  discountAmount: number;
+  proBonus: number;
+  isSelfScan: boolean;
+  certificatePartner?: { storeName?: string | null } | null;
+  items: Array<{
+    id: string; category: string; categoryLabel: string; amount: number;
+    discountPercent: number; discountAmount: number;
+    issuerPercent?: number | null; issuerAmount?: number | null;
+    proBonusPercent: number; proBonusAmount: number;
+    agentBonusPercent?: number | null; agentBonusAmount?: number | null;
+  }>;
 };
 
 export type CertificateListResponse = {
