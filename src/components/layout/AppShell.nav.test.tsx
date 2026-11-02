@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import type { AuthUser } from "@/lib/types";
 import { AppShell } from "./AppShell";
 
@@ -24,9 +25,11 @@ vi.mock("@/components/account-session/AccountSessionMenu", () => ({
 function renderNav(user: AuthUser) {
   return render(
     <ThemeProvider>
+      <CookieConsentProvider>
       <AppShell user={user}>
         <div>content</div>
       </AppShell>
+      </CookieConsentProvider>
     </ThemeProvider>,
   );
 }

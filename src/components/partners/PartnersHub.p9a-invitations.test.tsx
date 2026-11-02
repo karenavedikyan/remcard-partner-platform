@@ -166,7 +166,26 @@ describe("PartnersHub P9a invitations wiring", () => {
 
     const activeZone = screen.getByTestId("partners-zone-active");
     expect(within(activeZone).queryByTestId("agent-invitation-collection")).toBeNull();
+    expect(within(activeZone).queryByTestId("partner-compact-actions")).toBeNull();
   });
+
+  it.each(["business-r09-company", "business-r09-store", "specialist-r07"] as const)(
+    "uses compact cooperation for %s without changing invitation scope",
+    async (partnersAudience) => {
+      vi.mocked(remcardFetch).mockImplementation(async (path) => {
+        if (path === "/api/partnership/list") return { partnerships: [partnership({ id: "qa-live", status: "ACTIVE" })] };
+        if (path === "/api/partnership/link-invite") return { invites: [] };
+        if (path === "/api/pro/profile") return agentProfile;
+        throw new Error(`unexpected ${String(path)}`);
+      });
+      render(<PartnersHub meId="agent-me" initialProfile={agentProfile} variant="agent-r04"
+        agentPresentation="overview" partnersAudience={partnersAudience} />);
+      await waitFor(() => expect(screen.getByTestId("partners-zone-active")).toBeVisible());
+      const activeZone = screen.getByTestId("partners-zone-active");
+      await waitFor(() => expect(within(activeZone).getAllByTestId("partner-compact-actions").length).toBeGreaterThan(0));
+      expect(within(activeZone).queryByTestId("partner-row-inline-workflow")).toBeNull();
+    },
+  );
 
   it("agentSegment invitations incoming filters by initiatedBy and wires presentation", async () => {
     const incoming = partnership({ id: "in-1", initiatedBy: "store-1" });

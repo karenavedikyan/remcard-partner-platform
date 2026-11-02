@@ -173,3 +173,53 @@
     grid-template-columns: 1fr;
   }
 }
+.compactActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.compactTable {
+  min-width: 820px;
+}
+
+.compactTable col:nth-child(1) { width: 4%; }
+.compactTable col:nth-child(2) { width: 20%; }
+.compactTable col:nth-child(3) { width: 20%; }
+.compactTable col:nth-child(4) { width: 15%; }
+.compactTable col:nth-child(5) { width: 41%; }
+
+.compactTable td {
+  vertical-align: middle;
+}
+
+.compactTable .compactActions {
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.compactTable :global(button[class*="certificateListAction"]) {
+  width: 32px;
+  min-width: 32px;
+  min-height: 36px;
+  height: 36px;
+  padding: var(--space-1);
+}
+
+.openCardButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.openCardButton:hover {
+  background: var(--offset);
+}

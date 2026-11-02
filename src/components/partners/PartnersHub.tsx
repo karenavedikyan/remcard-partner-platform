@@ -2047,6 +2047,7 @@ export function PartnersHub({
                   page={listPage}
                   pageSize={listPageSize}
                   totalCount={overviewActiveRows.length}
+                  compactCooperation={Boolean(partnersAudience && partnersAudience !== "agent-r04")}
                   onPageChange={setListPage}
                   onPageSizeChange={(size) => {
                     setListPageSize(size);

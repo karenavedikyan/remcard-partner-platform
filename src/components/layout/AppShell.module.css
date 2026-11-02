@@ -69,7 +69,9 @@
 .nav {
   display: grid;
   gap: 0.35rem;
+  align-content: start;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

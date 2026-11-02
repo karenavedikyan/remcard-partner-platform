@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 import {
   PARTNERSHIP_STATUS_LABELS,
@@ -49,6 +50,7 @@ type Props = {
   onRunAction?: (action: string) => void;
   /** Opens the shared term-change host for this partnership. */
   onOpenTermChange?: () => void;
+  compactCooperation?: boolean;
 };
 
 function isEmptyAgentInviteRequest(partnership: Partnership, meId: string): boolean {
@@ -71,6 +73,7 @@ export function PartnerPartnershipDetailDialog({
   actionError = "",
   onRunAction,
   onOpenTermChange,
+  compactCooperation = false,
 }: Props) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -159,7 +162,7 @@ export function PartnerPartnershipDetailDialog({
     >
       <div
         ref={sheetRef}
-        className={`${sheetStyles.sheet} ${styles.sheetLayout}`}
+        className={`${sheetStyles.sheet} ${styles.sheetLayout} ${compactCooperation ? styles.cooperationSheet : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -212,7 +215,7 @@ export function PartnerPartnershipDetailDialog({
             {specFull || "Специализация не указана"}
           </p>
 
-          <p className={styles.sectionTitle}>Персональные условия</p>
+          <p className={styles.sectionTitle}>{compactCooperation ? "Ваши условия по категориям" : "Персональные условия"}</p>
           {termsLines.length ? (
             <ul className={styles.list} data-testid="partner-detail-terms-list">
               {termsLines.map((line) => (
@@ -231,7 +234,7 @@ export function PartnerPartnershipDetailDialog({
 
           {hasActionCallbacks && (runnable.length || partnership.status === "ACTIVE") ? (
             <div className={styles.actionsBlock} data-testid="partner-detail-actions">
-              <p className={styles.sectionTitle}>Действия</p>
+              <p className={styles.sectionTitle}>{compactCooperation ? "Сотрудничество" : "Действия"}</p>
               {actionError ? (
                 <p className={styles.actionError} role="alert" data-testid="partner-detail-action-error">
                   {actionError}
@@ -263,7 +266,18 @@ export function PartnerPartnershipDetailDialog({
                     {termChangeActionLabel()}
                   </Button>
                 ) : null}
+                {compactCooperation && partnership.status === "ACTIVE" ? (
+                  <Link href="/certificates" className={styles.certificateLink}>
+                    Создать сертификат
+                  </Link>
+                ) : null}
               </div>
+              {compactCooperation ? (
+                <p className={styles.metaBlock}>
+                  Архив в списке не меняет условия сотрудничества. Пауза сотрудничества
+                  управляется отдельно.
+                </p>
+              ) : null}
             </div>
           ) : runnable.length ? (
             <>

@@ -150,7 +150,7 @@ export function rowActionIcon(id: string) {
   if (id === "rename") return IconEdit;
   if (id === "archive") return IconArchive;
   if (id === "restore") return IconRestore;
-  if (id === "delete") return IconDelete;
+  if (id === "delete" || id === "hide") return IconDelete;
   if (id === "disable") return IconDisable;
   if (id === "open") return IconEye;
   if (id === "more") return IconMore;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -103,9 +103,44 @@ type Props = {
    * `invitations` applies scoped invitation CSS — no filter/action/state changes.
    */
   presentationVariant?: AgentPartnerCollectionPresentation;
+  /** General cabinet prototype: compact rows, full lifecycle actions in detail. */
+  compactCooperation?: boolean;
   /** Presentation hint for invitations surfaces (incoming/outgoing). Does not filter. */
   invitationFlowHint?: "incoming" | "outgoing" | null;
 };
+
+function CompactCooperationActions({
+  partnership, busyId, onOpen, onLoadTermRequests, children,
+}: {
+  partnership: Partnership;
+  busyId: string | null;
+  onOpen: (trigger: HTMLButtonElement) => void;
+  onLoadTermRequests: (id: string, trigger?: HTMLElement | null) => void;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={activeStyles.compactActions} data-testid="partner-compact-actions">
+      <button type="button" className={activeStyles.openCardButton}
+        aria-label="Открыть карточку" title="Открыть карточку"
+        onClick={(event) => onOpen(event.currentTarget)}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="1.8" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M8 8h8M8 12h8M8 16h5" />
+        </svg>
+      </button>
+      {children}
+      {partnership.status === "ACTIVE" ? (
+        <Button type="button" variant="secondary" disabled={busyId === partnership.id}
+          data-testid={`partner-term-change-${partnership.id}`}
+          data-partnership-id={partnership.id}
+          onClick={(event) => onLoadTermRequests(partnership.id, event.currentTarget)}>
+          {termChangeActionLabel()}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 function PartnerRowNameButton({
   partnership,
@@ -245,10 +280,12 @@ export function AgentPartnerCollection(props: Props) {
     onPageSizeChange,
     presentationVariant = "default",
     invitationFlowHint = null,
+    compactCooperation = false,
   } = props;
 
   const isInvitations = presentationVariant === "invitations";
   const isActiveSkin = resolveActivePartnerPresentation(presentationVariant, partnerships);
+  const isCompact = compactCooperation && isActiveSkin;
 
   const [detailPartnershipId, setDetailPartnershipId] = useState<string | null>(null);
   const detailNameButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -335,6 +372,7 @@ export function AgentPartnerCollection(props: Props) {
   const detailDialog = (
     <PartnerPartnershipDetailDialog
       partnership={detailPartnership}
+      compactCooperation={isCompact}
       meId={meId}
       open={detailPartnershipId !== null}
       onClose={closeDetails}
@@ -547,14 +585,18 @@ export function AgentPartnerCollection(props: Props) {
                       </p>
                     </div>
                   ) : null}
-                  <PartnerRowInlineWorkflow
+                  {isCompact ? (
+                    <CompactCooperationActions partnership={partnership} busyId={busyId}
+                      onOpen={(el) => openDetails(partnership.id, el)}
+                      onLoadTermRequests={onLoadTermRequests} />
+                  ) : <PartnerRowInlineWorkflow
                     partnership={partnership}
                     meId={meId}
                     busyId={busyId}
                     onRunAction={onRunAction}
                     onLoadTermRequests={onLoadTermRequests}
                     termExpanded={expandedTermPartnershipId === partnership.id}
-                  />
+                  />}
                 </div>
                 <div className={cardFooterClass}>
                   <AgentPartnerWorkspaceActions
@@ -635,14 +677,18 @@ export function AgentPartnerCollection(props: Props) {
                     ) : null}
                   </div>
                 </div>
-                <PartnerRowInlineWorkflow
+                  {isCompact ? (
+                    <CompactCooperationActions partnership={partnership} busyId={busyId}
+                      onOpen={(el) => openDetails(partnership.id, el)}
+                      onLoadTermRequests={onLoadTermRequests} />
+                  ) : <PartnerRowInlineWorkflow
                   partnership={partnership}
                   meId={meId}
                   busyId={busyId}
                   onRunAction={onRunAction}
                   onLoadTermRequests={onLoadTermRequests}
                   termExpanded={expandedTermPartnershipId === partnership.id}
-                />
+                />}
                 <div className={r03.mobileRecordFooter}>
                   <PartnerCollectionStatusBadge status={partnership.status} />
                   <AgentPartnerWorkspaceActions
@@ -659,7 +705,7 @@ export function AgentPartnerCollection(props: Props) {
         </div>
         {selectPageRow}
         <div className={tableWrapClass} data-partner-surface="desktop">
-          <table className={dataTableClass} data-testid="agent-r04-partners-table">
+          <table className={`${dataTableClass} ${isCompact ? activeStyles.compactTable : ""}`} data-testid="agent-r04-partners-table">
             <colgroup>
               <col className={styles.colSelect} />
               <col className={styles.colName} />
@@ -688,8 +734,10 @@ export function AgentPartnerCollection(props: Props) {
                 const partner = partnershipPartnerProfile(partnership, meId);
                 const officialLine = partnerCollectionOfficialLine(partnership, meId);
                 const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
-                const typeCaption = activeMeta ? activeMeta.typeCityLine : partnerTypeLabel(partner);
-                const detail = activeMeta
+                const typeCaption = activeMeta && !isCompact ? activeMeta.typeCityLine : partnerTypeLabel(partner);
+                const detail = isCompact
+                  ? [partner.city, partnerSpecializationHint(partner)].filter(Boolean).join(" · ") || "Нет дополнительных данных"
+                  : activeMeta
                   ? activeMeta.specLine
                   : partnerCollectionListDetail(partnership, meId);
                 return (
@@ -723,7 +771,7 @@ export function AgentPartnerCollection(props: Props) {
                       </td>
                       <td className={detailCellClass}>
                         <span data-testid="partner-row-detail">{detail}</span>
-                        {isActiveSkin && partnerTermsDetail(partnership) ? (
+                        {isActiveSkin && !isCompact && partnerTermsDetail(partnership) ? (
                           <div
                             className={activeStyles.termsBlock}
                             data-testid="partner-row-terms-block"
@@ -742,16 +790,23 @@ export function AgentPartnerCollection(props: Props) {
                         <PartnerCollectionStatusBadge status={partnership.status} />
                       </td>
                       <td className={actionCellClass}>
-                        <AgentPartnerWorkspaceActions
+                        {isCompact ? (
+                          <CompactCooperationActions partnership={partnership} busyId={busyId}
+                            onOpen={(el) => openDetails(partnership.id, el)}
+                            onLoadTermRequests={onLoadTermRequests}>
+                            <AgentPartnerWorkspaceActions partnership={partnership} meId={meId}
+                              onUpdated={onUpdated} variant="listRow" ariaLabel="Действия" />
+                          </CompactCooperationActions>
+                        ) : <AgentPartnerWorkspaceActions
                           partnership={partnership}
                           meId={meId}
                           onUpdated={onUpdated}
                           variant="listRow"
                           ariaLabel="Действия"
-                        />
+                        />}
                       </td>
                     </tr>
-                    {rowShowsInlineWorkflow(partnership, meId) ? (
+                    {!isCompact && rowShowsInlineWorkflow(partnership, meId) ? (
                       <tr className={styles.workflowRow}>
                         <td colSpan={5} className={workflowCellClass}>
                           <PartnerRowInlineWorkflow

@@ -68,6 +68,43 @@ const defaultProps = {
   onPageSizeChange: noop,
 };
 
+describe("general cabinet compact cooperation presentation", () => {
+  it.each(["table", "cards"] as const)("keeps %s compact and full actions in detail", async (viewMode) => {
+    const partnership = basePartnership({ status: "ACTIVE" });
+    render(<AgentPartnerCollection {...defaultProps} partnerships={[partnership]}
+      presentationVariant="active" compactCooperation viewMode={viewMode} />);
+    expect(screen.queryByTestId("partner-row-inline-workflow")).toBeNull();
+    const surface = viewMode === "table"
+      ? screen.getByTestId("agent-r04-partners-table")
+      : screen.getByTestId("agent-r04-partners-cards");
+    await userEvent.click(within(surface).getByRole("button", { name: "Открыть карточку", exact: true }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Ваши условия по категориям")).toBeVisible();
+    expect(within(dialog).getByText("Сотрудничество", { exact: true })).toBeVisible();
+    expect(within(dialog).getByTestId("partner-detail-action-pause")).toBeEnabled();
+    expect(within(dialog).getByRole("link", { name: "Создать сертификат" })).toHaveAttribute("href", "/certificates");
+    expect(within(dialog).queryByText(/0\s*₽/)).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(within(surface).getByRole("button", { name: "Открыть карточку", exact: true })).toHaveFocus();
+  });
+
+  it("routes change terms to the existing editor and leaves paused editing unavailable", async () => {
+    const onLoadTermRequests = vi.fn();
+    const { rerender } = render(<AgentPartnerCollection {...defaultProps}
+      partnerships={[basePartnership({ status: "ACTIVE" })]} compactCooperation
+      presentationVariant="active" onLoadTermRequests={onLoadTermRequests} />);
+    const table = screen.getByTestId("agent-r04-partners-table");
+    await userEvent.click(within(table).getByRole("button", { name: "Изменить условия", exact: true }));
+    expect(onLoadTermRequests).toHaveBeenCalledWith("p1", expect.any(HTMLButtonElement));
+    rerender(<AgentPartnerCollection {...defaultProps}
+      partnerships={[basePartnership({ status: "PAUSED" })]} compactCooperation presentationVariant="active" />);
+    expect(within(table).queryByRole("button", { name: "Изменить условия", exact: true })).toBeNull();
+    await userEvent.click(within(table).getByRole("button", { name: "Открыть карточку", exact: true }));
+    expect(within(screen.getByRole("dialog")).getByTestId("partner-detail-action-resume")).toBeEnabled();
+  });
+});
+
 describe("AgentPartnerCollection row actions", () => {
   it("shows inline workflow for empty incoming agent request without eye toggle", async () => {
     const onRunAction = vi.fn();
@@ -752,4 +789,3 @@ describe("AgentPartnerCollection P3b cards selection", () => {
     );
   });
 });
-

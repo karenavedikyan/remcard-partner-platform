@@ -6,6 +6,14 @@ import styles from "./agent-r03.module.css";
 const noop = () => {};
 
 describe("RecordRowActions mobileFooter variant", () => {
+  it("renders a real remove icon for hide without changing its safe action", () => {
+    render(<RecordRowActions ariaLabel="Действия" variant="listRow"
+      actions={[{ id: "hide", label: "Скрыть из списка", onClick: noop }]} />);
+    const button = screen.getByRole("button", { name: "Скрыть из списка" });
+    expect(button.querySelector("svg")).not.toBeNull();
+    expect(button).not.toHaveTextContent("•");
+  });
+
   it("does not apply full-width card toolbar class on mobile list footers", () => {
     const { container } = render(
       <RecordRowActions
