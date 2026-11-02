@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
-import { enableR02AgentActivity, fetchAgentProfileStatus } from "@/lib/agent-profile/api";
+import { fetchAgentProfileStatus } from "@/lib/agent-profile/api";
 import type { AgentProfileStatusResponse } from "@/lib/agent-profile/types";
 import { Panel } from "@/components/ui/Panel";
-import { Button } from "@/components/ui/Button";
 import { AgentProfileWizard } from "./AgentProfileWizard";
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import { AgentPayoutRequisitesPanel } from "./AgentPayoutRequisitesPanel";
@@ -22,7 +21,6 @@ type AgentProfileSectionProps = {
   userId: string;
   partnerActivities: string[];
   basicsEditable: boolean;
-  onActivitiesChange?: (activities: string[]) => void;
   layout?: AgentProfileSectionLayout;
   onExitEditMode?: () => void;
 };
@@ -31,7 +29,6 @@ export function AgentProfileSection({
   userId,
   partnerActivities,
   basicsEditable,
-  onActivitiesChange,
   layout = "default",
   onExitEditMode,
 }: AgentProfileSectionProps) {
@@ -39,7 +36,6 @@ export function AgentProfileSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"profile" | "requisites">("profile");
-  const [activating, setActivating] = useState(false);
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
@@ -67,36 +63,7 @@ export function AgentProfileSection({
   const hasAgent = status.hasAgentActivity || partnerActivities.includes("AGENT");
 
   if (!hasAgent) {
-    return (
-      <Panel title="Рекомендую товары и услуги">
-        <p className={styles.intro}>
-          Для агентов и рекомендателей: отдельный пошаговый профиль, черновик и реквизиты для
-          выплат. Включение не меняет права на финансы и сканер.
-        </p>
-        {error ? <p className={styles.bannerError}>{error}</p> : null}
-        <Button
-          type="button"
-          disabled={!basicsEditable || activating}
-          data-testid="agent-activity-enable"
-          onClick={async () => {
-            setActivating(true);
-            try {
-              const res = await enableR02AgentActivity();
-              onActivitiesChange?.(res.user.partnerActivities ?? ["AGENT"]);
-              await loadStatus();
-            } catch (caught) {
-              setError(
-                caught instanceof RemcardApiError ? caught.message : "Не удалось включить деятельность",
-              );
-            } finally {
-              setActivating(false);
-            }
-          }}
-        >
-          Включить деятельность «Агент»
-        </Button>
-      </Panel>
-    );
+    return null;
   }
 
   if (!status.eligible) {

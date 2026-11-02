@@ -68,7 +68,6 @@ import {
 } from "@/lib/business-profile/eligibility";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { SpecialistCatalogSection } from "./specialist/SpecialistCatalogSection";
-import { SpecialistAgentActivityCompact } from "./specialist/SpecialistAgentActivityCompact";
 import {
   catalogPrefillSourceKey,
   markCatalogFieldTouched,
@@ -863,7 +862,6 @@ function ProfileEditorInner({
               userId={profile.user.id}
               partnerActivities={partnerActivities}
               basicsEditable={basicsEditable}
-              onActivitiesChange={setPartnerActivities}
               layout={pureAgentCompactUi ? "parity-overview" : "default"}
             />
             {!pureAgentCompactUi ? (
@@ -897,15 +895,9 @@ function ProfileEditorInner({
                 userId={profile.user.id}
                 partnerActivities={partnerActivities}
                 basicsEditable={basicsEditable}
-                onActivitiesChange={setPartnerActivities}
                 layout="default"
               />
-            ) : (
-              <SpecialistAgentActivityCompact
-                basicsEditable={basicsEditable}
-                onActivitiesChange={setPartnerActivities}
-              />
-            )}
+            ) : null}
           </>
         ) : showBusinessProfileSurface ? null : (
           <>
@@ -913,7 +905,6 @@ function ProfileEditorInner({
           userId={profile.user.id}
           partnerActivities={partnerActivities}
           basicsEditable={basicsEditable}
-          onActivitiesChange={setPartnerActivities}
           layout={pureAgentCompactUi ? "parity-basics" : "default"}
           onExitEditMode={
             pureAgentCompactUi ? () => navigateSection("overview") : undefined
@@ -974,41 +965,6 @@ function ProfileEditorInner({
         </Panel>
 
         <Panel title="Чем вы занимаетесь">
-          <div
-            className={styles.agentActivityRow}
-            data-profile-focus="agentActivity"
-            data-testid="profile-agent-activity-row"
-          >
-            <label className={styles.checkRow}>
-              <input
-                type="checkbox"
-                checked={partnerActivities.includes("AGENT")}
-                disabled={!basicsEditable}
-                data-testid="profile-agent-activity"
-                onChange={(event) => {
-                  const checked = event.target.checked;
-                  setPartnerActivities((prev) => {
-                    if (checked) {
-                      return prev.includes("AGENT") ? prev : [...prev, "AGENT"];
-                    }
-                    return prev.filter((a) => a !== "AGENT");
-                  });
-                }}
-              />
-              <span>
-                <strong>Рекомендую товары и услуги</strong>
-                <span className={styles.hint}>
-                  {" "}
-                  (Агент / рекомендатель)
-                </span>
-              </span>
-            </label>
-            <p className={styles.hint}>
-              Для агентов, блогеров и всех, кто рекомендует партнёров друзьям, знакомым или
-              подписчикам. Необязательно самому оказывать услуги или продавать товары. Размер
-              бонуса зависит от условий с партнёром.
-            </p>
-          </div>
           <div data-profile-focus="directions">
             <ProfileDirectionsPicker
               disabled={!basicsEditable}
