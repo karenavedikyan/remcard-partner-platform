@@ -31,7 +31,7 @@
   --pw-tint: #3c272b;
   --wallet-tab-active-text: var(--pw-accent);
   --wallet-tab-active-bg: var(--pw-tint);
-  --wallet-tab-active-border: #ffb4b6;
+  --wallet-tab-active-border: var(--pw-accent);
   --wallet-tab-focus-ring: #ffd1d3;
 }
 
@@ -61,6 +61,7 @@
   gap: var(--pw-2);
   font-weight: 700;
   font-size: var(--pw-sm);
+  line-height: normal;
   border: 1px solid var(--pw-line);
   border-radius: 7px;
   color: var(--pw-text);

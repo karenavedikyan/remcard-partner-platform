@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -29,7 +32,7 @@ const LIGHT_ACTIVE = { text: "#b52a2e", bg: "#fff1f1", border: "#b52a2e", focus:
 const DARK_ACTIVE = {
   text: "#ff9497",
   bg: "#3c272b",
-  border: "#ffb4b6",
+  border: "#ff9497",
   focus: "#ffd1d3",
   canvas: "#202329",
 };
@@ -141,11 +144,13 @@ describe("WalletPrototypeShell", () => {
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Pane A");
   });
 
-  describe("prototype parity tokens", () => {
-    it("uses profile-wizard pw-3/pw-5 padding scale (12px and 20px at 16px root)", () => {
-      expect(0.75 * 16).toBe(12);
-      expect(1.25 * 16).toBe(20);
-    });
+  it("sources tab line-height and dark active border from wallet-prototype-shell.module.css", () => {
+    const cssPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "wallet-prototype-shell.module.css");
+    const css = readFileSync(cssPath, "utf8");
+    expect(css).toMatch(/\.tab\s*\{[\s\S]*?line-height:\s*normal;/);
+    expect(css).toMatch(
+      /:global\(\[data-theme="dark"\]\)\s*\.pw[\s\S]*--wallet-tab-active-border:\s*var\(--pw-accent\);/,
+    );
   });
 
   describe("contrast tokens", () => {
