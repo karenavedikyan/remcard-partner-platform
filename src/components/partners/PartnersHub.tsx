@@ -207,6 +207,10 @@ export function PartnersHub({
   );
   const [listError, setListError] = useState("");
   const [searchError, setSearchError] = useState("");
+  const [failedSearchPage, setFailedSearchPage] = useState<{
+    mode: "reset" | "append";
+    cursor: string | null;
+  } | null>(null);
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
@@ -601,6 +605,8 @@ export function PartnersHub({
       const controller = new AbortController();
       searchAbortRef.current = controller;
       const requestSeq = searchGate.current.begin();
+      setSearchError("");
+      setFailedSearchPage(null);
 
       if (mode === "reset") {
         searchPageRef.current = { items: [], nextCursor: null };
@@ -659,6 +665,7 @@ export function PartnersHub({
         setSearchError(
           caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
         );
+        setFailedSearchPage({ mode, cursor });
       } finally {
         if (searchGate.current.isCurrent(requestSeq)) {
           setLoadingSearch(false);
@@ -1648,15 +1655,14 @@ export function PartnersHub({
                 variant="secondary"
                 disabled={loadingSearch}
                 onClick={() => {
-                  setSearchNextCursor(null);
-                  void loadSearch("reset");
+                  void loadSearch(failedSearchPage?.mode ?? "reset", failedSearchPage?.cursor ?? null);
                 }}
               >
                 Повторить
               </Button>
             </div>
           ) : null}
-          {searchResults.length > 0 || loadingSearch ? (
+          {searchResults.length > 0 || loadingSearch || searchFacets ? (
             <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
               {searchFacets && !loadingSearch ? `Найдено: ${searchFacets.total} · ` : ""}Показано: {searchResults.length}
               {searchNextCursor ? "+" : ""}

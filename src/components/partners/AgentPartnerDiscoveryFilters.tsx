@@ -64,10 +64,13 @@ export function AgentPartnerDiscoveryFilters({
   const handlePartnerTypeChange = useCallback(
     (next: AgentPartnerTypeFilter) => {
       onPartnerTypeChange(next);
+      // Prototype showcase filters are independent: compare different partner
+      // types within the same repair stage/direction. Keep the own-list policy.
+      if (layout === "modal-full" && !showDirectionFilters) return;
       if (specialization) onSpecializationChange("");
       if (stageId) onStageChange("");
     },
-    [onPartnerTypeChange, onSpecializationChange, onStageChange, specialization, stageId],
+    [onPartnerTypeChange, onSpecializationChange, onStageChange, specialization, stageId, layout, showDirectionFilters],
   );
 
   if (layout === "list-main") {

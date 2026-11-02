@@ -12,8 +12,9 @@ const css = cssBytes.toString("utf8");
 const MARKER = "/* === P6a: modal-primary specialization/stage filters (prefix above immutable) === */";
 const PREFIX_BYTES = 1929;
 const PREFIX_SHA256 = "87e316d8ecbb59fedd293f06073ac17bd0f333a76236d3b613f3bad7430a72be";
-// Approved P25c/P25d changes reset specialization and stage on partner-type selection.
-const TSX_SHA256 = "23ca554680712e905024e9549977dc54082743fc26fc99db678a11b122d0dee1";
+// Prototype showcase now keeps independent stage/direction filters on type
+// changes; own-list resets and the native select/hint contract remain tested.
+const TSX_SHA256 = "9dca36b94f35f0272cb94d0946ed1ca8ebbd1ad5315fa023a84ffb958465eb94";
 
 vi.mock("@/lib/partner-taxonomy", () => ({
   fetchPartnerTaxonomy: vi.fn(),

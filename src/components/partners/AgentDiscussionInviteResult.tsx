@@ -23,6 +23,8 @@ export type AgentDiscussionInviteResultProps = {
    * Discussion-invite create has no proposedTerms — omit (matches frozen R1 when empty).
    */
   proposedTerms?: string | null;
+  /** Shared prototype ready composition, with acceptance-only copy for terms links. */
+  inviteKind?: "discussion" | "terms";
   onToggleShare: () => void;
   onCopyUrl: () => void;
   onCopyMessageAndUrl: () => void;
@@ -46,6 +48,7 @@ export function AgentDiscussionInviteResult({
   shareOpen,
   status,
   proposedTerms = null,
+  inviteKind = "discussion",
   onToggleShare,
   onCopyUrl,
   onCopyMessageAndUrl,
@@ -64,7 +67,7 @@ export function AgentDiscussionInviteResult({
       // Wizard create leaves the hub modal body mid-scroll; without a reset the
       // ready hero stays clipped above the scrollport.
       const root = heading?.closest(
-        '[data-testid="agent-discussion-invite-ready"]',
+        '[data-ready-composition="r1"]',
       ) as HTMLElement | null;
       if (!root?.isConnected) return;
       let port: HTMLElement | null = root.parentElement;
@@ -91,7 +94,7 @@ export function AgentDiscussionInviteResult({
   return (
     <section
       className={styles.result}
-      data-testid="agent-discussion-invite-ready"
+      data-testid={inviteKind === "terms" ? "partner-link-invite-ready" : "agent-discussion-invite-ready"}
       data-ready-composition="r1"
       aria-labelledby="agent-discussion-invite-ready-title"
     >
@@ -133,7 +136,13 @@ export function AgentDiscussionInviteResult({
         </p>
       </div>
 
-      {terms ? (
+      {terms && inviteKind === "terms" ? (
+        <details className={styles.messageBlock} data-testid="partner-link-invite-ready-terms">
+          <summary>Посмотреть условия приглашения</summary>
+          <p className={styles.message}>{terms}</p>
+          <p className={styles.shareNote}>Условия зафиксированы на момент создания ссылки.</p>
+        </details>
+      ) : terms ? (
         <div className={styles.messageBlock} data-testid="agent-discussion-invite-ready-terms">
           <span className={styles.eyebrow}>Предлагаемые условия</span>
           <p className={styles.message}>{terms}</p>
@@ -183,7 +192,7 @@ export function AgentDiscussionInviteResult({
             label="Ссылка"
             value={snapshot.url}
             readOnly
-            data-testid="discussion-invite-created-url"
+            data-testid={inviteKind === "terms" ? "link-invite-created-url" : "discussion-invite-created-url"}
           />
           <p className={styles.expiry}>Действует до {formatExpiry(snapshot.expiresAt)}</p>
           <div className={styles.shareActions}>
@@ -218,9 +227,11 @@ export function AgentDiscussionInviteResult({
             <p>После обычного входа или регистрации он вернётся к вашему приглашению.</p>
           </li>
           <li>
-            <strong>Вы согласуете условия</strong>
+            <strong>{inviteKind === "terms" ? "Партнёр примет ваши условия" : "Вы согласуете условия"}</strong>
             <p>
-              Само приглашение не активирует сотрудничество и не устанавливает проценты.
+              {inviteKind === "terms"
+                ? "После входа партнёр увидит условия из приглашения и сможет принять их. Запросить изменение можно будет после принятия, в карточке партнёрства."
+                : "Само приглашение не активирует сотрудничество и не устанавливает проценты."}
             </p>
           </li>
         </ol>

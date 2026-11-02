@@ -42,4 +42,16 @@ describe("AgentPartnerDiscoveryFilters P25d type change clears incompatible taxo
     expect(onSpecializationChange).toHaveBeenCalledWith("");
     expect(onStageChange).toHaveBeenCalledWith("");
   });
+
+  it("preserves the independent prototype navigator when comparing partner types", async () => {
+    const specialization = vi.fn(), stage = vi.fn(), type = vi.fn();
+    render(<AgentPartnerDiscoveryFilters layout="modal-full" showDirectionFilters={false}
+      specialization="services:s1" stageId="st1" city="Сочи" partnerType="store"
+      onSpecializationChange={specialization} onStageChange={stage}
+      onCityChange={vi.fn()} onPartnerTypeChange={type} />);
+    await userEvent.selectOptions(screen.getByTestId("discovery-partner-type"), "agent");
+    expect(type).toHaveBeenCalledWith("agent");
+    expect(specialization).not.toHaveBeenCalled();
+    expect(stage).not.toHaveBeenCalled();
+  });
 });

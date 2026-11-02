@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
 import {
@@ -32,6 +32,7 @@ import { Panel } from "@/components/ui/Panel";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
+import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
 
 type LinkInviteRow = {
   id: string;
@@ -56,6 +57,15 @@ type PartnerLinkInvitePanelProps = {
 };
 
 type IntendedType = "" | "AGENT" | "MASTER" | "STORE" | "COMPANY";
+
+type CreatedLinkSnapshot = {
+  url: string;
+  expiresAt: string;
+  recipientLabel: string;
+  cooperationSubject: string;
+  terms: string;
+  shareText: string;
+};
 
 type InviteFormAction =
   | { type: "sync"; resetKey: string; categories: readonly string[]; blockedReason?: string }
@@ -129,8 +139,11 @@ export function PartnerLinkInvitePanel({
       createInitialInviteFormState(initial.resetKey, initial.categories, initial.blockedReason),
   );
   const [creating, setCreating] = useState(false);
-  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
-  const [createdExpires, setCreatedExpires] = useState<string | null>(null);
+  const createInFlight = useRef(false);
+  const [createdSnapshot, setCreatedSnapshot] = useState<CreatedLinkSnapshot | null>(null);
+  const createdUrl = createdSnapshot?.url ?? null;
+  const createdExpires = createdSnapshot?.expiresAt ?? null;
+  const [shareOpen, setShareOpen] = useState(false);
   const [invites, setInvites] = useState<LinkInviteRow[]>([]);
   const [listError, setListError] = useState("");
   const [shareHint, setShareHint] = useState("");
@@ -142,8 +155,8 @@ export function PartnerLinkInvitePanel({
 
   function template(kind: string) {
     const name = recipientName.trim();
-    if (kind === "business") return `Здравствуйте, ${name}! Предлагаем сотрудничество в RemCard: рекомендовать наши товары и услуги клиентам и развивать партнёрство. Посмотрите предложение по ссылке и обсудим детали.`;
-    if (kind === "friendly") return `Привет, ${name}! Давайте помогать друг другу находить новых клиентов. Приглашаю в RemCard: по ссылке можно посмотреть предложение и обсудить сотрудничество.`;
+    if (kind === "business") return `Здравствуйте, ${name}! Предлагаем сотрудничество в RemCard: рекомендовать наши товары и услуги клиентам и развивать партнёрство. Посмотрите условия по ссылке и примите приглашение, если они вам подходят.`;
+    if (kind === "friendly") return `Привет, ${name}! Давайте помогать друг другу находить новых клиентов. Приглашаю в RemCard: по ссылке можно посмотреть условия и принять приглашение.`;
     return `Здравствуйте, ${name}! Давайте рекомендовать товары и услуги друг друга и привлекать новых клиентов. Приглашаю к сотрудничеству в RemCard.`;
   }
 
@@ -171,7 +184,7 @@ export function PartnerLinkInvitePanel({
   }, [loadInvites]);
 
   async function createLink() {
-    if (creating) return;
+    if (createInFlight.current || creating) return;
     if (wizard && (step !== 3 || !recipientName.trim() || !form.note.trim())) return;
     dispatch({ type: "set_error", error: "" });
     setShareHint("");
@@ -198,6 +211,20 @@ export function PartnerLinkInvitePanel({
       return;
     }
 
+    // Freeze exactly what is sent, before awaiting the transport. Background
+    // profile refreshes must not rewrite a successful invite's ready/share view.
+    const submitted = {
+      recipientLabel: recipientName.trim(),
+      intendedPartnerType: intendedType,
+      note: form.note.trim(),
+      inviterName: inviterShareName(),
+      inviterType: meProfile.user.partnerType,
+      terms: inviteRowsToTerms(activeRows).map((term) => ({
+        ...term,
+        categoryLabel: categoryLabel(term.category),
+      })),
+    };
+    createInFlight.current = true;
     setCreating(true);
     try {
       const result = await remcardFetch<{
@@ -207,17 +234,30 @@ export function PartnerLinkInvitePanel({
       }>("/api/partnership/link-invite", {
         method: "POST",
         body: {
-          intendedPartnerType: intendedType,
-          note: form.note.trim() || null,
-          terms: inviteRowsToTerms(activeRows).map((term) => ({
-            ...term,
-            categoryLabel: categoryLabel(term.category),
-          })),
+          intendedPartnerType: submitted.intendedPartnerType,
+          note: submitted.note || null,
+          terms: submitted.terms,
         },
       });
       const url = `${getAppUrl()}${result.previewPath}`;
-      setCreatedUrl(url);
-      setCreatedExpires(result.expiresAt);
+      setCreatedSnapshot({
+        url,
+        expiresAt: result.expiresAt,
+        recipientLabel: submitted.recipientLabel,
+        cooperationSubject: submitted.note,
+        terms: submitted.terms.map((term) =>
+          `${term.categoryLabel}: ${term.isExcluded ? "не участвует" : `${term.storePercent}%`}`,
+        ).join("\n"),
+        shareText: wizard && submitted.note
+          ? `${submitted.note}\n\n${url}`
+          : buildInviteShareMessage({
+            inviterName: submitted.inviterName,
+            inviterType: submitted.inviterType,
+            intendedType: submitted.intendedPartnerType || null,
+            url,
+          }),
+      });
+      setShareOpen(false);
       await loadInvites();
     } catch (caught) {
       dispatch({
@@ -225,6 +265,7 @@ export function PartnerLinkInvitePanel({
         error: caught instanceof RemcardApiError ? caught.message : "Не удалось создать ссылку",
       });
     } finally {
+      createInFlight.current = false;
       setCreating(false);
     }
   }
@@ -238,6 +279,7 @@ export function PartnerLinkInvitePanel({
   }
 
   function inviteShareText(url: string) {
+    if (createdSnapshot?.url === url) return createdSnapshot.shareText;
     if (wizard && form.note.trim()) return `${form.note.trim()}\n\n${url}`;
     return buildInviteShareMessage({
       inviterName: inviterShareName(),
@@ -252,7 +294,7 @@ export function PartnerLinkInvitePanel({
       await navigator.clipboard.writeText(url);
       setShareHint("Ссылка скопирована");
     } catch {
-      setShareHint("Скопируйте ссылку вручную из поля ниже");
+      setShareHint("Скопируйте ссылку вручную из поля «Ссылка»");
     }
   }
 
@@ -261,7 +303,7 @@ export function PartnerLinkInvitePanel({
       await navigator.clipboard.writeText(inviteShareText(url));
       setShareHint("Текст приглашения скопирован");
     } catch {
-      setShareHint("Скопируйте текст приглашения вручную из поля ниже");
+      setShareHint("Скопируйте текст приглашения вручную из поля «Готовый текст»");
     }
   }
 
@@ -319,8 +361,8 @@ export function PartnerLinkInvitePanel({
         </> : null}
         {(!wizard || (step === 3 && !createdUrl)) ? (
         <p className={styles.hint}>
-          Создание ссылки не подключает партнёрскую программу и не согласует условия автоматически — это
-          приглашение к обсуждению. Ссылка действует 14 дней; условия фиксируются при создании.
+          Создание ссылки не активирует сотрудничество автоматически. После входа партнёр увидит
+          указанные условия и сможет принять их. Ссылка действует 14 дней; условия фиксируются при создании.
         </p>
         ) : null}
         {(!wizard || (step === 1 && !createdUrl)) ? (
@@ -331,8 +373,8 @@ export function PartnerLinkInvitePanel({
               disabled={creating}
               onChange={(event) => {
                 setIntendedType(event.target.value as IntendedType);
-                setCreatedUrl(null);
-                setCreatedExpires(null);
+                setCreatedSnapshot(null);
+                setShareOpen(false);
                 setShareHint("");
               }}
             >
@@ -469,7 +511,22 @@ export function PartnerLinkInvitePanel({
           )}
         </div> : null}
 
-        {createdUrl ? (
+        {wizard && createdSnapshot ? (
+          <div data-testid="link-invite-created">
+            <AgentDiscussionInviteResult
+              snapshot={createdSnapshot}
+              inviteKind="terms"
+              proposedTerms={createdSnapshot.terms}
+              shareOpen={shareOpen}
+              status={shareHint}
+              onToggleShare={() => setShareOpen((open) => !open)}
+              onCopyUrl={() => void copyUrl(createdSnapshot.url)}
+              onCopyMessageAndUrl={() => void copyInviteMessage(createdSnapshot.url)}
+              onOpenInviteCard={() => window.open(createdSnapshot.url, "_blank", "noopener,noreferrer")}
+              formatExpiry={formatExpiry}
+            />
+          </div>
+        ) : createdUrl ? (
           <div className={styles.notice} data-testid="link-invite-created">
             <p><strong>{wizard ? "Приглашение готово" : "Ссылка создана"}</strong></p>
             <p>Действует до {createdExpires ? formatExpiry(createdExpires) : "—"}</p>
@@ -479,7 +536,7 @@ export function PartnerLinkInvitePanel({
               readOnly
               data-testid="link-invite-created-url"
             />
-            {wizard ? <TextAreaField label="Текст для отправки" value={inviteShareText(createdUrl)} readOnly /> : null}
+            <TextAreaField label="Готовый текст" value={inviteShareText(createdUrl)} readOnly />
             <div className={styles.actions}>
               <Button variant="secondary" onClick={() => void copyUrl(createdUrl)}>
                 Скопировать ссылку
@@ -492,10 +549,6 @@ export function PartnerLinkInvitePanel({
               </Button>
             </div>
             {shareHint ? <p className={styles.hint}>{shareHint}</p> : null}
-            {wizard ? <Button variant="secondary" onClick={() => {
-              setCreatedUrl(null); setCreatedExpires(null); setRecipientName(""); setIntendedType("");
-              dispatch({ type: "set_note", note: "" }); setStep(1); setShareHint("");
-            }}>Создать другое приглашение</Button> : null}
           </div>
         ) : null}
       </Panel>
