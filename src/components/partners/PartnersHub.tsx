@@ -59,6 +59,7 @@ import {
 import { AgentPartnerDiscoveryFilters } from "@/components/partners/AgentPartnerDiscoveryFilters";
 import Link from "next/link";
 import type {
+  PartnerSearchFacets,
   PartnerSearchResult,
   Partnership,
   ProProfileResponse,
@@ -76,6 +77,7 @@ import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDial
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { PartnerSearchResultCard } from "@/components/partners/PartnerSearchResultCard";
+import { PartnerDiscoveryNavigator } from "@/components/partners/PartnerDiscoveryNavigator";
 /** P25p-owned shell — required dependency for in-Hub find detail (no stub). */
 import { PartnerFindDirectoryDetailShell } from "@/components/partners/PartnerFindDirectoryDetailShell";
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
@@ -191,6 +193,7 @@ export function PartnersHub({
   const [meProfile, setMeProfile] = useState(initialProfile);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
+  const [searchFacets, setSearchFacets] = useState<PartnerSearchFacets | null>(null);
   const [searchNextCursor, setSearchNextCursor] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -607,7 +610,10 @@ export function PartnersHub({
       }
       setLoadingSearch(true);
       try {
-        const params = new URLSearchParams({ role: searchRole, limit: "20" });
+        // The prototype directory spans all four kinds. This is a search scope,
+        // not an actor activity or a change to the published-terms permission gate.
+        const params = new URLSearchParams({ role: isModalSurface ? "agent" : searchRole, limit: "20" });
+        if (isModalSurface) params.set("includeFacets", "1");
         if (query.trim()) params.set("q", query.trim());
         if (city.trim()) params.set("city", city.trim());
         if (filterProducts.length) params.set("product", filterProducts.join(","));
@@ -623,6 +629,7 @@ export function PartnersHub({
           partners: PartnerSearchResult[];
           nextCursor?: string | null;
           hasMore?: boolean;
+          facets?: PartnerSearchFacets;
         }>(`/api/partnership/search?${params.toString()}`, {
           signal: controller.signal,
         });
@@ -640,12 +647,14 @@ export function PartnersHub({
         searchPageRef.current = applied;
         setSearchResults(applied.items);
         setSearchNextCursor(applied.nextCursor);
+        setSearchFacets(data.facets ?? null);
       } catch (caught) {
         if (controller.signal.aborted || !searchGate.current.isCurrent(requestSeq)) return;
         if (mode === "reset") {
           searchPageRef.current = { items: [], nextCursor: null };
           setSearchResults([]);
           setSearchNextCursor(null);
+          setSearchFacets(null);
         }
         setSearchError(
           caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить поиск",
@@ -656,7 +665,7 @@ export function PartnersHub({
         }
       }
     },
-    [city, filterProducts, filterServices, filterStages, isAgentR04, query, searchPartnerType, searchRole],
+    [city, filterProducts, filterServices, filterStages, isAgentR04, isModalSurface, query, searchPartnerType, searchRole],
   );
 
   const overviewGroups = useMemo(
@@ -1597,35 +1606,40 @@ export function PartnersHub({
         Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
       </p>
       <div className={styles.findToolbarRow}>
-        <div className={styles.modalSearchBlock}>
+        <form className={styles.modalSearchBlock} onSubmit={event => { event.preventDefault(); void loadSearch("reset"); }}>
           <TextField
-            label="Поиск по словам необязательно"
+            label="Поиск партнёров"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Название, товар, услуга, этап или ID"
-            hint="Можно оставить пустым и искать только по фильтрам ниже"
           />
-          <div className={styles.modalSearchAction}>
-            <Button
-              type="button"
-              onClick={() => {
-                setSearchNextCursor(null);
-                void loadSearch("reset");
-              }}
-              disabled={loadingSearch}
-            >
-              {loadingSearch ? "Поиск…" : "Найти"}
-            </Button>
-          </div>
-        </div>
+        </form>
         {/* P22c tip 30231a6: layout=modal-full is the sole refine disclosure owner. */}
         <div className={styles.findFilterSlot} data-testid="agent-partner-find-filter-slot">
-          <AgentPartnerDiscoveryFilters layout="modal-full" {...agentDiscoveryFilterProps} />
+          <AgentPartnerDiscoveryFilters layout="modal-full" showDirectionFilters={false} {...agentDiscoveryFilterProps} />
         </div>
       </div>
+      {(query || city || searchPartnerType || discoveryStageId || discoverySpecialization) ? (
+        <div className={styles.findActiveFilters} aria-label="Выбранные фильтры">
+          {query ? <button type="button" onClick={() => setQuery("")}>Снять фильтр «{query}» ×</button> : null}
+          {city ? <button type="button" onClick={() => setCity("")}>Город: {city} ×</button> : null}
+          {searchPartnerType ? <button type="button" onClick={() => setSearchPartnerType("")}>Тип: {({ agent: "Агент", specialist: "Специалист", store: "Магазин", company: "Компания" })[searchPartnerType]} ×</button> : null}
+          {discoveryStageId ? <button type="button" onClick={() => setDiscoveryStageId("")}>Снять этап ×</button> : null}
+          {discoverySpecialization ? <button type="button" onClick={() => setDiscoverySpecialization("")}>Снять направление ×</button> : null}
+          <button type="button" onClick={resetSearchFilters}>Сбросить всё</button>
+        </div>
+      ) : null}
       <div className={styles.findShowcase}>
-        <aside className={styles.findRail} aria-hidden="true" />
+        <aside className={styles.findRail}>
+          <PartnerDiscoveryNavigator stageId={discoveryStageId} specialization={discoverySpecialization}
+            facets={searchFacets} loading={loadingSearch} onStageChange={setDiscoveryStageId}
+            onSpecializationChange={setDiscoverySpecialization} />
+        </aside>
         <div className={styles.findMain}>
+          <div className={styles.findHeading}>
+            <span>Партнёры RemCard</span>
+            <h3>Найдите своего партнёра</h3>
+          </div>
           {searchError ? (
             <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
               <p>{searchError}</p>
@@ -1644,7 +1658,7 @@ export function PartnersHub({
           ) : null}
           {searchResults.length > 0 || loadingSearch ? (
             <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
-              Показано: {searchResults.length}
+              {searchFacets && !loadingSearch ? `Найдено: ${searchFacets.total} · ` : ""}Показано: {searchResults.length}
               {searchNextCursor ? "+" : ""}
               {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
             </p>
@@ -1678,6 +1692,14 @@ export function PartnersHub({
                 По этому запросу партнёров не найдено.
               </p>
             ) : null}
+          </div>
+          {searchNextCursor ? <Button type="button" variant="secondary" disabled={loadingSearch}
+            onClick={() => void loadSearch("append", searchNextCursor)}>
+            {loadingSearch ? "Загрузка…" : "Показать ещё"}
+          </Button> : null}
+          <div className={styles.findInviteInline}>
+            <div><strong>Знакомого ещё нет в RemCard?</strong><p>Отправьте персональную ссылку на приглашение.</p></div>
+            <Button type="button" variant="secondary" onClick={() => onOpenPartnerHub?.("link")}>Пригласить по ссылке</Button>
           </div>
         </div>
       </div>
@@ -1732,7 +1754,9 @@ export function PartnersHub({
                 {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
                   <PartnerDiscussionInvitePanel showSectionTitle={false} />
                 ) : (
-                  <PartnerLinkInvitePanel meProfile={meProfile} showSectionTitle={false} />
+          <PartnerLinkInvitePanel key={`link-${discussionInvitePanelKey}`} meProfile={meProfile} showSectionTitle={false} wizard
+            onDirtyChange={onDiscussionInviteDirtyChange} onReadyChange={onDiscussionInviteReadyChange}
+            onAnotherWay={() => onOpenPartnerHub?.("find")} />
                 )}
               </>
             )}

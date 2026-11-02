@@ -1,0 +1,26 @@
+.navigator { min-width: 0; color: var(--ink); }
+.navigator > summary { cursor: pointer; padding: var(--space-3); border: 1px solid var(--line); border-radius: 12px; font-weight: 700; }
+.body { display: grid; gap: var(--space-4); }
+.quest { display: grid; gap: var(--space-2); padding: var(--space-4); background: var(--accent-fill); color: var(--primary-fg); border-radius: 14px; }
+.quest > span { text-transform: uppercase; font-size: var(--text-xs); letter-spacing: .05em; }
+.quest > strong { font-size: var(--text-lg); }
+.quest small { font-size: var(--text-xs); }
+.progress { height: 5px; background: rgb(255 255 255 / .25); border-radius: 9px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: #fff; }
+.path { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); position: relative; }
+.step { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; width: 100%; border: 0; padding: var(--space-2); border-radius: 12px; text-align: left; background: transparent; color: var(--ink); cursor: pointer; font: inherit; }
+.node { display: grid; place-items: center; border: 1px solid var(--line); background: var(--surface); border-radius: 50%; width: 30px; height: 30px; font-size: var(--text-xs); }
+.step b { display: block; font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
+.step small { display: block; text-transform: uppercase; font-size: var(--text-xs); color: var(--muted); line-height: 1.3; }
+.step em, .directions em { font-style: normal; font-size: var(--text-xs); padding: 2px 6px; border-radius: 99px; background: var(--offset); }
+.step[aria-pressed="true"], .directions button[aria-pressed="true"] { background: var(--soft); color: var(--primary); }
+.step[aria-pressed="true"] .node { background: var(--accent-fill); color: var(--primary-fg); border-color: var(--accent-fill); }
+.step:disabled { color: var(--muted); cursor: not-allowed; }
+.step:not(:disabled):hover, .directions button:hover { background: var(--offset); }
+.directions { display: grid; gap: var(--space-1); }
+.directions h3, .directions h4 { margin: var(--space-2) 0; font-size: var(--text-xs); text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
+.directionGroup { display: grid; gap: var(--space-1); }
+.directions button { display: flex; gap: var(--space-2); justify-content: space-between; align-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: inherit; font-size: var(--text-sm); text-align: left; padding: var(--space-2); cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.navigator button:focus-visible, .navigator summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (min-width: 761px) { .navigator > summary { display: none; } }
+@media (max-width: 760px) { .body { padding-top: var(--space-3); } .quest { display: none; } .path { grid-template-columns: repeat(2, minmax(0, 1fr)); } .step { min-height: 66px; } .step small { text-transform: none; } }

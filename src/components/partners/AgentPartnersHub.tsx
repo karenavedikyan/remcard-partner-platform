@@ -17,7 +17,8 @@ export type AgentPartnersHubProps = Omit<PartnersHubProps, "variant" | "defaultS
 
 type PendingInviteExit =
   | { type: "close" }
-  | { type: "tab"; tab: HubModalTab };
+  | { type: "tab"; tab: HubModalTab }
+  | { type: "choose" };
 
 /** Local Hub copy — mirrors term-discard Stay/Discard; invite draft only. */
 function discardInviteDraftCopy(): { title: string; body: string; keep: string; discard: string } {
@@ -40,6 +41,7 @@ export function AgentPartnersHub({
 }: AgentPartnersHubProps) {
   const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
   const [modalTab, setModalTab] = useState<HubModalTab>("find");
   /** P12: frozen R1 ready chrome — hide find/link tabs, title «Приглашение создано». */
   const [discussionInviteReady, setDiscussionInviteReady] = useState(false);
@@ -68,6 +70,7 @@ export function AgentPartnersHub({
   const openHub = searchParams.get("hub");
   useEffect(() => {
     if (openHub === "find" || openHub === "link") {
+      setChooserOpen(false);
       setModalTab(openHub);
       setModalOpen(true);
     }
@@ -122,15 +125,15 @@ export function AgentPartnersHub({
     // wizard field so Stay returns to the draft (same step/values/focus contract).
     requestAnimationFrame(() => {
       const wizard = document.querySelector<HTMLElement>(
-        '[data-testid="agent-discussion-invite-wizard"]',
+        '[data-testid="agent-discussion-invite-wizard"], [data-testid="partner-link-invite-wizard"]',
       );
       const preferred =
         wizard?.querySelector<HTMLElement>(
-          '[data-testid="agent-discussion-invite-subject"], [data-testid="agent-discussion-invite-recipient"], [data-testid="agent-discussion-invite-create"]',
+          '[data-testid="agent-discussion-invite-subject"], [data-testid="agent-discussion-invite-recipient"], [data-testid="agent-discussion-invite-create"], input:not([readonly]), textarea:not([readonly]), select, button',
         ) ?? null;
       const target =
         remembered?.isConnected &&
-        remembered.closest?.('[data-testid="agent-discussion-invite-wizard"]')
+        remembered.closest?.('[data-testid="agent-discussion-invite-wizard"], [data-testid="partner-link-invite-wizard"]')
           ? remembered
           : preferred;
       target?.focus({ preventScroll: true });
@@ -145,6 +148,11 @@ export function AgentPartnersHub({
     inviteFocusRestoreRef.current = null;
     if (pending?.type === "tab") {
       setModalTab(pending.tab);
+      return;
+    }
+    if (pending?.type === "choose") {
+      setModalTab("find");
+      setChooserOpen(true);
       return;
     }
     setModalOpen(false);
@@ -169,6 +177,17 @@ export function AgentPartnersHub({
   const hubSearchRoleProps =
     defaultSearchRole !== undefined ? { defaultSearchRole } : {};
 
+  const chooseMethod = () => {
+    if (inviteDirtyRef.current) {
+      rememberInviteFocus();
+      pendingInviteExitRef.current = { type: "choose" };
+      setInviteDiscardOpen(true);
+      return;
+    }
+    setModalTab("find");
+    setChooserOpen(true);
+  };
+
   const discardCopy = discardInviteDraftCopy();
 
   return (
@@ -183,7 +202,10 @@ export function AgentPartnersHub({
         variant="agent-r04"
         partnersAudience={presentationAudience}
         agentPresentation="overview"
-        onOpenPartnerHub={openModal}
+        onOpenPartnerHub={(tab) => {
+          openModal(tab);
+          setChooserOpen(tab === "find");
+        }}
         forcedTab="list"
         {...hubSearchRoleProps}
       />
@@ -194,8 +216,11 @@ export function AgentPartnersHub({
         titleFind={copy.hubModalTitleFind}
         titleLink={copy.hubModalTitleLink}
         readyMode={discussionInviteReady}
+        choiceMode={chooserOpen}
+        prototypeMode
+        onChooseMethod={chooseMethod}
         titleReady="Приглашение создано"
-        onTabChange={requestTabChange}
+        onTabChange={(tab) => { setChooserOpen(false); requestTabChange(tab); }}
         onClose={requestCloseModal}
       >
         <PartnersHub
@@ -206,6 +231,10 @@ export function AgentPartnersHub({
           forcedTab={modalTab}
           {...hubSearchRoleProps}
           onCloseAgentModal={requestCloseModal}
+          onOpenPartnerHub={(tab) => {
+            if (tab === "find") chooseMethod();
+            else { setChooserOpen(false); openModal(tab); }
+          }}
           onDiscussionInviteReadyChange={setDiscussionInviteReady}
           discussionInviteReady={discussionInviteReady}
           discussionInvitePanelKey={discussionInvitePanelKey}

@@ -22,6 +22,49 @@ function profile(type: string): ProProfileResponse {
 }
 
 describe("all four link-invite audiences", () => {
+  it("keeps edited message and percentages when changing the audience with unchanged profile categories", async () => {
+    const sender = profile("COMPANY");
+    sender.user.storeCategories = ["doors", "flooring", "handles"];
+    render(<PartnerLinkInvitePanel meProfile={sender} wizard />);
+    fireEvent.change(screen.getByRole("textbox", { name: /^Имя или название/ }), { target: { value: "Партнёр" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Предполагаемый тип партнёра" }), { target: { value: "STORE" } });
+    fireEvent.click(screen.getByRole("button", { name: "Далее: сообщение" }));
+    const note = await screen.findByRole("textbox", { name: /^Текст приглашения/ });
+    fireEvent.change(note, { target: { value: "Мой сохранённый текст" } });
+    fireEvent.click(screen.getByRole("button", { name: "Далее: проверить" }));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "15" } });
+    fireEvent.click(screen.getByRole("button", { name: "Изменить имя партнёра" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Предполагаемый тип партнёра" }), { target: { value: "AGENT" } });
+    fireEvent.click(screen.getByRole("button", { name: "Далее: сообщение" }));
+    expect(await screen.findByRole("textbox", { name: /^Текст приглашения/ })).toHaveValue("Мой сохранённый текст");
+    fireEvent.click(screen.getByRole("button", { name: "Далее: проверить" }));
+    expect(screen.getAllByRole("spinbutton")[0]).toHaveValue(15);
+  });
+  it.each(["AGENT", "MASTER", "STORE", "COMPANY"])("wizard reviews exact profile categories before creating %s", async (kind) => {
+    const sender = profile("COMPANY");
+    sender.user.storeCategories = ["doors", "flooring", "handles"];
+    const { container } = render(<PartnerLinkInvitePanel meProfile={sender} wizard />);
+    fireEvent.change(screen.getByRole("textbox", { name: /^Имя или название партнёра/ }), { target: { value: "Мой партнёр" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Предполагаемый тип партнёра" }), { target: { value: kind } });
+    fireEvent.click(screen.getByRole("button", { name: "Далее: сообщение" }));
+    fireEvent.click(screen.getByRole("button", { name: "По-деловому" }));
+    expect((screen.getByRole("textbox", { name: /^Текст приглашения/ }) as HTMLTextAreaElement).value).toContain("Мой партнёр");
+    fireEvent.click(screen.getByRole("button", { name: "Далее: проверить" }));
+    await waitFor(() => expect(container.querySelectorAll('input[type="number"]')).toHaveLength(3));
+    expect(screen.getAllByTestId(/^link-invite-category-/).map(node => node.getAttribute("data-testid"))).toEqual([
+      "link-invite-category-doors", "link-invite-category-flooring", "link-invite-category-handles",
+    ]);
+    expect(screen.getByText("Предпросмотр для получателя")).toBeInTheDocument();
+    expect(screen.getByText("Двери: 10%")).toBeInTheDocument();
+    expect(screen.getByText("Напольные покрытия: 10%")).toBeInTheDocument();
+    expect(screen.getByText("Фурнитура и замки: 10%")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Создать приглашение" }));
+    await screen.findByTestId("link-invite-created");
+    const post = fetchMock.mock.calls.find(call => call[1]?.method === "POST");
+    expect(post?.[1]?.body).toMatchObject({ intendedPartnerType: kind,
+      terms: [{ category: "doors" }, { category: "flooring" }, { category: "handles" }] });
+  });
   beforeEach(() => {
     fetchMock.mockReset();
     fetchMock.mockImplementation(async (_path, options) =>

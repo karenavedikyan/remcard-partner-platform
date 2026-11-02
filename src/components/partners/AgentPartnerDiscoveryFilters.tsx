@@ -18,6 +18,7 @@ type Props = {
   onCityChange: (city: string) => void;
   onPartnerTypeChange: (type: AgentPartnerTypeFilter) => void;
   resetKey?: number;
+  showDirectionFilters?: boolean;
 };
 
 export function AgentPartnerDiscoveryFilters({
@@ -31,6 +32,7 @@ export function AgentPartnerDiscoveryFilters({
   onCityChange,
   onPartnerTypeChange,
   resetKey = 0,
+  showDirectionFilters = true,
 }: Props) {
   const [taxonomy, setTaxonomy] = useState<{
     products: PartnerTaxonomyItem[];
@@ -283,8 +285,8 @@ export function AgentPartnerDiscoveryFilters({
         <div className={styles.modalFullGrid}>
           {cityField}
           {modalFullTypeField}
-          {specializationField}
-          {stageField}
+          {showDirectionFilters ? specializationField : null}
+          {showDirectionFilters ? stageField : null}
         </div>
       </details>
       {taxonomyError}

@@ -453,12 +453,6 @@ export function resolveLinkInviteCreateCategories(
         error: "Укажите предполагаемый тип партнёра",
       };
     }
-    if (intendedPartnerType === "STORE") {
-      return {
-        categories: [...STORE_CATEGORY_CHIP_KEYS],
-        requiresManualPick: true,
-      };
-    }
     return { categories: tradeSideTermCategories(inviter), requiresManualPick: false };
   }
   return {

@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
+import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 
 type LinkInviteRow = {
   id: string;
@@ -48,6 +49,10 @@ type PartnerLinkInvitePanelProps = {
   meProfile: ProProfileResponse;
   /** When the hub modal already shows the title, omit the inner section heading. */
   showSectionTitle?: boolean;
+  wizard?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
+  onReadyChange?: (ready: boolean) => void;
+  onAnotherWay?: () => void;
 };
 
 type IntendedType = "" | "AGENT" | "MASTER" | "STORE" | "COMPANY";
@@ -99,14 +104,23 @@ function formatExpiry(iso: string) {
 export function PartnerLinkInvitePanel({
   meProfile,
   showSectionTitle = true,
+  wizard = false,
+  onDirtyChange,
+  onReadyChange,
+  onAnotherWay,
 }: PartnerLinkInvitePanelProps) {
+  const [step, setStep] = useState(1);
+  const [recipientName, setRecipientName] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [tone, setTone] = useState("short");
   const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const [intendedType, setIntendedType] = useState<IntendedType>("");
   const resolved = useMemo(
     () => resolveLinkInviteCreateCategories(inviterSide, intendedType),
     [inviterSide, intendedType],
   );
-  const resetKey = buildInviteFormResetKey(`link:${intendedType}`, resolved.categories);
+  const formTargetKey = `link:${resolved.error ? "blocked" : "ready"}`;
+  const resetKey = buildInviteFormResetKey(formTargetKey, resolved.categories);
 
   const [form, dispatch] = useReducer(
     inviteFormReducer,
@@ -120,15 +134,27 @@ export function PartnerLinkInvitePanel({
   const [invites, setInvites] = useState<LinkInviteRow[]>([]);
   const [listError, setListError] = useState("");
   const [shareHint, setShareHint] = useState("");
+  useEffect(() => {
+    onDirtyChange?.(!createdUrl && Boolean(recipientName.trim() || intendedType || form.note.trim()));
+    onReadyChange?.(Boolean(createdUrl));
+  }, [createdUrl, recipientName, intendedType, form.note, onDirtyChange, onReadyChange]);
+  useEffect(() => () => { onDirtyChange?.(false); onReadyChange?.(false); }, [onDirtyChange, onReadyChange]);
+
+  function template(kind: string) {
+    const name = recipientName.trim();
+    if (kind === "business") return `Здравствуйте, ${name}! Предлагаем сотрудничество в RemCard: рекомендовать наши товары и услуги клиентам и развивать партнёрство. Посмотрите предложение по ссылке и обсудим детали.`;
+    if (kind === "friendly") return `Привет, ${name}! Давайте помогать друг другу находить новых клиентов. Приглашаю в RemCard: по ссылке можно посмотреть предложение и обсудить сотрудничество.`;
+    return `Здравствуйте, ${name}! Давайте рекомендовать товары и услуги друг друга и привлекать новых клиентов. Приглашаю к сотрудничеству в RemCard.`;
+  }
 
   useEffect(() => {
     dispatch({
       type: "sync",
       resetKey,
-      categories: categoriesFromResetKey(resetKey, `link:${intendedType}`),
+      categories: categoriesFromResetKey(resetKey, formTargetKey),
       blockedReason: resolved.error,
     });
-  }, [resetKey, resolved.error, intendedType]);
+  }, [resetKey, resolved.error, formTargetKey]);
 
   const loadInvites = useCallback(async () => {
     setListError("");
@@ -146,6 +172,7 @@ export function PartnerLinkInvitePanel({
 
   async function createLink() {
     if (creating) return;
+    if (wizard && (step !== 3 || !recipientName.trim() || !form.note.trim())) return;
     dispatch({ type: "set_error", error: "" });
     setShareHint("");
 
@@ -211,6 +238,7 @@ export function PartnerLinkInvitePanel({
   }
 
   function inviteShareText(url: string) {
+    if (wizard && form.note.trim()) return `${form.note.trim()}\n\n${url}`;
     return buildInviteShareMessage({
       inviterName: inviterShareName(),
       url,
@@ -229,8 +257,12 @@ export function PartnerLinkInvitePanel({
   }
 
   async function copyInviteMessage(url: string) {
-    await navigator.clipboard.writeText(inviteShareText(url));
-    setShareHint("Текст приглашения скопирован");
+    try {
+      await navigator.clipboard.writeText(inviteShareText(url));
+      setShareHint("Текст приглашения скопирован");
+    } catch {
+      setShareHint("Скопируйте текст приглашения вручную из поля ниже");
+    }
   }
 
   async function shareUrl(url: string) {
@@ -259,15 +291,39 @@ export function PartnerLinkInvitePanel({
   const previewTerms = activeInviteRows(form);
 
   return (
-    <div className={styles.linkPanel}>
+    <div className={`${styles.linkPanel} ${wizard ? wizardStyles.wizard : ""}`} data-testid={wizard ? "partner-link-invite-wizard" : undefined}>
       <Panel
         title={showSectionTitle ? "Пригласить партнёра" : undefined}
-        hint="Для знакомого, которого ещё нет на платформе. Он пройдёт обычную регистрацию и увидит ваше предложение сотрудничества."
+        className={wizard ? wizardStyles.paper : undefined}
+        hint={wizard ? undefined : "Для знакомого, которого ещё нет на платформе. Он пройдёт обычную регистрацию и увидит ваше предложение сотрудничества."}
       >
+        {wizard && !createdUrl ? <>
+          <ol className={wizardStyles.steps} aria-label={`Шаг ${step} из 3`}>
+            {["Партнёр", "Сообщение", "Проверка"].map((label, index) => <li key={label} aria-current={step === index + 1 ? "step" : undefined} data-complete={step > index + 1}><span>{index + 1}</span>{label}</li>)}
+          </ol>
+          <p className={wizardStyles.eyebrow}>Шаг {step} из 3</p>
+          <h3 className={wizardStyles.title}>{step === 1 ? "Кого хотите пригласить?" : step === 2 ? "Что напишем партнёру?" : "Проверьте приглашение"}</h3>
+          {step === 1 ? <><p className={styles.hint}>Укажите, кому отправите ссылку на сотрудничество. Контакты пока не нужны.</p>
+            <TextField label="Имя или название партнёра" value={recipientName} maxLength={80} required
+              onChange={event => setRecipientName(event.target.value)} /></> : null}
+          {step === 3 ? <>
+            <div className={wizardStyles.review}>
+              <div><span>Кого приглашаете</span><strong>{recipientName}</strong><small>{INTENDED_OPTIONS.find(option => option.value === intendedType)?.label}</small></div>
+              <Button variant="secondary" onClick={() => setStep(1)}>Изменить имя партнёра</Button>
+            </div>
+            <div className={wizardStyles.review}>
+              <div><span>Пригласительное сообщение</span><p>{form.note}</p></div>
+              <Button variant="secondary" onClick={() => setStep(2)}>Изменить сообщение</Button>
+            </div>
+          </> : null}
+        </> : null}
+        {(!wizard || (step === 3 && !createdUrl)) ? (
         <p className={styles.hint}>
           Создание ссылки не подключает партнёрскую программу и не согласует условия автоматически — это
           приглашение к обсуждению. Ссылка действует 14 дней; условия фиксируются при создании.
         </p>
+        ) : null}
+        {(!wizard || (step === 1 && !createdUrl)) ? (
           <label className={styles.roleField}>
             <span>Предполагаемый тип партнёра</span>
             <select
@@ -288,7 +344,21 @@ export function PartnerLinkInvitePanel({
               ))}
             </select>
           </label>
+        ) : null}
 
+        {(!wizard || (step === 2 && !createdUrl)) ? <>
+        {wizard ? <div className={wizardStyles.templates} role="group" aria-label="Варианты приглашения">
+          {[["short", "Коротко"], ["business", "По-деловому"], ["friendly", "По-дружески"]].map(([kind, label]) =>
+            <button type="button" key={kind} aria-pressed={tone === kind} onClick={() => {
+              setTone(kind); dispatch({ type: "set_note", note: template(kind) });
+            }}>{label}</button>)}
+        </div> : null}
+        {wizard ? <TextAreaField label="Текст приглашения" maxLength={400} required value={form.note}
+          onChange={event => dispatch({ type: "set_note", note: event.target.value })} /> : null}
+        </> : null}
+        {(!wizard || (step === 3 && !createdUrl)) ? <>
+        <details open className={wizardStyles.terms}>
+          <summary>Условия сотрудничества · {resolved.categories.length || 1} {resolved.categories.length === 1 ? "направление" : "направления"}</summary>
         <p className={styles.hint}>
           Общий процент по категории — это условие между вами и партнёром. При рекомендации клиенту
           часть идёт на скидку, остальное — ваше вознаграждение PROF.
@@ -320,7 +390,7 @@ export function PartnerLinkInvitePanel({
         {!resolved.error && form.rows.length > 0 ? (
           <div className={styles.termsList}>
             {form.rows.map((row, index) => (
-              <div key={row.category} className={styles.termRow}>
+              <div key={row.category} className={styles.termRow} data-testid={`link-invite-category-${row.category}`}>
                 <div className={styles.termHeader}>
                   <strong>{categoryLabel(row.category)}</strong>
                   <label className={styles.exclude}>
@@ -355,14 +425,16 @@ export function PartnerLinkInvitePanel({
           </div>
         ) : null}
 
-        <TextAreaField
+        </details>
+        {!wizard ? <TextAreaField
           label="Комментарий или исключения"
           value={form.note}
           onChange={(event) => dispatch({ type: "set_note", note: event.target.value })}
           hint="Необязательно. Получатель увидит этот текст на странице приглашения."
-        />
+        /> : null}
+        </> : null}
 
-        {previewTerms.length > 0 ? (
+        {previewTerms.length > 0 && (!wizard || (step === 3 && !createdUrl)) ? (
           <div className={styles.notice}>
             <p><strong>Предпросмотр для получателя</strong></p>
             <ul>
@@ -372,7 +444,7 @@ export function PartnerLinkInvitePanel({
                 </li>
               ))}
             </ul>
-            {form.note.trim() ? <p>Комментарий: {form.note.trim()}</p> : null}
+            {!wizard && form.note.trim() ? <p>Комментарий: {form.note.trim()}</p> : null}
             <p>Срок действия ссылки: 14 дней после создания.</p>
           </div>
         ) : null}
@@ -383,15 +455,23 @@ export function PartnerLinkInvitePanel({
           </p>
         ) : null}
 
-        <div className={styles.actions}>
+        {!createdUrl || !wizard ? <div className={styles.actions}>
+          {wizard && step > 1 ? <Button variant="secondary" disabled={creating} onClick={() => setStep(step - 1)}>Назад</Button> : null}
+          {wizard && step === 1 && onAnotherWay ? <Button variant="secondary" onClick={onAnotherWay}>Другой способ</Button> : null}
+          {wizard && step < 3 ? <Button disabled={step === 1 ? !recipientName.trim() || !intendedType : !form.note.trim()}
+            onClick={() => {
+              if (step === 1 && !form.note.trim()) dispatch({ type: "set_note", note: template(tone) });
+              setStep(step + 1);
+            }}>{step === 1 ? "Далее: сообщение" : "Далее: проверить"}</Button> : (
           <Button disabled={creating || Boolean(resolved.error)} onClick={() => void createLink()}>
-            {creating ? "Создаём…" : "Создать ссылку"}
+            {creating ? "Создаём…" : wizard ? "Создать приглашение" : "Создать ссылку"}
           </Button>
-        </div>
+          )}
+        </div> : null}
 
         {createdUrl ? (
           <div className={styles.notice} data-testid="link-invite-created">
-            <p><strong>Ссылка создана</strong></p>
+            <p><strong>{wizard ? "Приглашение готово" : "Ссылка создана"}</strong></p>
             <p>Действует до {createdExpires ? formatExpiry(createdExpires) : "—"}</p>
             <TextField
               label="Ссылка"
@@ -399,6 +479,7 @@ export function PartnerLinkInvitePanel({
               readOnly
               data-testid="link-invite-created-url"
             />
+            {wizard ? <TextAreaField label="Текст для отправки" value={inviteShareText(createdUrl)} readOnly /> : null}
             <div className={styles.actions}>
               <Button variant="secondary" onClick={() => void copyUrl(createdUrl)}>
                 Скопировать ссылку
@@ -411,11 +492,16 @@ export function PartnerLinkInvitePanel({
               </Button>
             </div>
             {shareHint ? <p className={styles.hint}>{shareHint}</p> : null}
+            {wizard ? <Button variant="secondary" onClick={() => {
+              setCreatedUrl(null); setCreatedExpires(null); setRecipientName(""); setIntendedType("");
+              dispatch({ type: "set_note", note: "" }); setStep(1); setShareHint("");
+            }}>Создать другое приглашение</Button> : null}
           </div>
         ) : null}
       </Panel>
 
-      <Panel title="Ваши ссылки-приглашения" hint="Отозванные и использованные ссылки нельзя восстановить.">
+      {wizard ? <button type="button" className={wizardStyles.historyToggle} aria-expanded={showHistory} onClick={() => setShowHistory(!showHistory)}>Ваши ссылки-приглашения</button> : null}
+      {!wizard || showHistory ? <Panel title="Ваши ссылки-приглашения" hint="Отозванные и использованные ссылки нельзя восстановить.">
         {listError ? (
           <p className={styles.error} role="alert">
             {listError}
@@ -446,7 +532,7 @@ export function PartnerLinkInvitePanel({
             ))}
           </ul>
         )}
-      </Panel>
+      </Panel> : null}
     </div>
   );
 }

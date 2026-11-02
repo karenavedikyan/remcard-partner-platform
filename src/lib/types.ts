@@ -233,6 +233,16 @@ export type PartnerSearchResponse = {
   partners: PartnerSearchResult[];
   nextCursor?: string | null;
   hasMore?: boolean;
+  facets?: PartnerSearchFacets;
+};
+
+export type PartnerSearchFacets = {
+  total: number;
+  baseTotal: number;
+  stageTotal: number;
+  products: Record<string, number>;
+  services: Record<string, number>;
+  stages: Record<string, number>;
 };
 
 export type TermChangeRequest = {

@@ -162,10 +162,14 @@
 }
 
 .modalSearchBlock {
+  position: relative;
   display: grid;
   gap: var(--space-3);
   margin-bottom: var(--space-2);
 }
+.modalSearchBlock > label > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.findShell > .modalLead { padding-right: 240px; }
+@media (max-width: 760px) { .findShell > .modalLead { padding-right: 0; } }
 
 .modalSearchAction {
   display: flex;
@@ -226,10 +230,17 @@
 }
 
 .findRail {
-  /* Width-only stand-in for frozen pr-navigator column (geometry); not a filter host. */
   min-width: 0;
   min-height: 1px;
 }
+
+.findHeading { display: grid; gap: var(--space-2); }
+.findHeading > span { color: var(--muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .05em; }
+.findHeading h3 { margin: 0; font-size: var(--text-lg); line-height: 1.2; letter-spacing: -.035em; }
+.findActiveFilters { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.findActiveFilters button { color: var(--ink); border: 1px solid var(--line); border-radius: 99px; background: var(--surface); padding: var(--space-2) var(--space-3); font: inherit; font-size: var(--text-xs); cursor: pointer; overflow-wrap: anywhere; max-width: 100%; }
+.findInviteInline { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-4); border: 1px dashed var(--line); border-radius: 12px; }
+.findInviteInline p { color: var(--muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
 
 .findMain {
   min-width: 0;
@@ -338,7 +349,7 @@
   }
 
   .findRail {
-    display: none;
+    display: block;
   }
 
   .modalResultsFind {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  resolveLinkInviteCreateCategories,
   buildDefaultInviteRows,
   buildGeneralInviteRow,
   countNeedsMyResponse,
@@ -69,6 +70,16 @@ function basePartnership(overrides: Partial<Partnership>): Partnership {
 }
 
 describe("partnership invite rules", () => {
+  it("uses exact sender categories for every link audience and sender base type", () => {
+    for (const partnerType of ["MASTER", "STORE", "COMPANY"]) {
+      for (const audience of ["AGENT", "MASTER", "STORE", "COMPANY"] as const) {
+        const result = resolveLinkInviteCreateCategories({
+          ...storeInviter, partnerType, storeCategories: ["doors", "flooring", "handles"], specializations: ["L1-9"],
+        }, audience);
+        assert.deepEqual(result, { categories: ["doors", "flooring", "handles"], requiresManualPick: false });
+      }
+    }
+  });
   it("uses inviter categories for store inviting master", () => {
     const result = resolveInviteTradeSideCategories(storeInviter, masterTarget);
     assert.deepEqual(result.categories, ["doors", "plumbing", "tiles"]);

@@ -15,6 +15,9 @@ type Props = {
    * Presentation only — does not change create/share/revoke routes.
    */
   readyMode?: boolean;
+  choiceMode?: boolean;
+  prototypeMode?: boolean;
+  onChooseMethod?: () => void;
   titleReady?: string;
   onTabChange: (tab: HubModalTab) => void;
   onClose: () => void;
@@ -27,12 +30,15 @@ export function AgentPartnerHubModal({
   titleFind,
   titleLink,
   readyMode = false,
+  choiceMode = false,
+  prototypeMode = false,
+  onChooseMethod,
   titleReady = "Приглашение создано",
   onTabChange,
   onClose,
   children,
 }: Props) {
-  const modalTitle = readyMode ? titleReady : tab === "link" ? titleLink : titleFind;
+  const modalTitle = choiceMode ? "Найти партнёра" : readyMode ? titleReady : tab === "link" ? (prototypeMode ? "Пригласить по ссылке" : titleLink) : titleFind;
   const sheetRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -53,9 +59,9 @@ export function AgentPartnerHubModal({
         onClose();
       }
       if (event.key === "Tab" && sheetRef.current) {
-        const focusable = sheetRef.current.querySelectorAll<HTMLElement>(
+        const focusable = Array.from(sheetRef.current.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        );
+        )).filter(node => node.getClientRects().length > 0 && !node.hasAttribute("disabled"));
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
@@ -76,7 +82,7 @@ export function AgentPartnerHubModal({
     };
   }, [open, onClose]);
 
-  const findWide = !readyMode && tab === "find";
+  const findWide = !readyMode && !choiceMode && tab === "find";
 
   // Mount lazily, then preserve the search state across subsequent openings.
   // Mounting a closed Hub on first render would issue invisible requests.
@@ -107,6 +113,8 @@ export function AgentPartnerHubModal({
         ref={sheetRef}
         className={[
           styles.sheet,
+          prototypeMode && findWide ? styles.prototypeFind : "",
+          choiceMode ? styles.sheetChoice : !readyMode && tab === "link" ? styles.sheetLink : "",
           readyMode ? styles.sheetReady : "",
           findWide ? styles.sheetFind : "",
         ]
@@ -134,7 +142,7 @@ export function AgentPartnerHubModal({
             ×
           </button>
         </header>
-        {readyMode ? null : (
+        {readyMode || choiceMode || prototypeMode ? null : (
           <div
             className={styles.pathTabs}
             role="tablist"
@@ -161,7 +169,20 @@ export function AgentPartnerHubModal({
             </button>
           </div>
         )}
-        <div className={styles.body}>{children}</div>
+        <div className={styles.body}>
+          {choiceMode ? <div className={styles.methodChoices}>
+            <button type="button" onClick={() => onTabChange("find")}>
+              <span>Уже в RemCard</span><strong>Найти в RemCard</strong>
+              <p>Партнёр уже зарегистрирован. Посмотрите витрину по этапам ремонта и направлениям, откройте карточку и предложите сотрудничество.</p>
+            </button>
+            <button type="button" onClick={() => onTabChange("link")}>
+              <span>Ещё не в RemCard</span><strong>Пригласить по ссылке</strong>
+              <p>Знакомого магазина, специалиста, агента или компании ещё нет на платформе. Создайте приглашение и отправьте лично.</p>
+            </button>
+          </div> : null}
+          {!choiceMode && !readyMode && tab === "find" && onChooseMethod ? <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>Другой способ приглашения</button> : null}
+          <div hidden={choiceMode}>{children}</div>
+        </div>
       </div>
     </div>
   );
