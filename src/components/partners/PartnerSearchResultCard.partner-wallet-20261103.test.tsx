@@ -140,10 +140,9 @@ describe("partner-wallet-20261103 detail shell behavior", () => {
     expect(screen.getByTestId("partner-find-directory-detail-invite")).toBeDisabled();
   });
 
-  it("orders mobile footer invite before back in DOM with full-width rules", () => {
-    expect(detailCss).toMatch(/@media \(max-width: 680px\)[^]*\.footInvite[^]*order:\s*1/s);
-    expect(detailCss).toMatch(/@media \(max-width: 680px\)[^]*\.footBack[^]*order:\s*2/s);
-    expect(detailCss).toMatch(/@media \(max-width: 680px\)[^]*width:\s*100%/s);
+  it("orders footer invite before back in DOM; desktop CSS keeps invite left / back right", () => {
+    expect(detailCss).toMatch(/@media \(min-width: 681px\)[^]*\.footBack[^]*margin-left:\s*auto/s);
+    expect(detailCss).not.toMatch(/@media \(min-width: 681px\)[^]*\.footBack[^]*order:\s*1/s);
 
     render(<PartnerFindDirectoryDetailShell partner={base()} onBack={() => {}} onInvite={() => {}} />);
     const foot = screen.getByTestId("partner-find-directory-detail-invite").closest("footer")!;

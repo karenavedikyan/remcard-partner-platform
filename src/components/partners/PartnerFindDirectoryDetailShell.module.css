@@ -126,12 +126,14 @@
 }
 
 @media (min-width: 681px) {
-  .footBack {
-    order: 1;
+  .foot {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
   }
 
-  .footInvite {
-    order: 2;
+  /* DOM/tab: invite then back; visual: invite left, back right (Ht primary-first). */
+  .footBack {
     margin-left: auto;
   }
 }
@@ -142,13 +144,8 @@
     align-items: stretch;
   }
 
-  .footInvite {
-    order: 1;
-    width: 100%;
-  }
-
+  .footInvite,
   .footBack {
-    order: 2;
     width: 100%;
   }
 }
