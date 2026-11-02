@@ -14,9 +14,9 @@
   --pw-sm: clamp(0.875rem, 0.84rem + 0.1vw, 0.94rem);
   --pw-base: 1rem;
   --pw-2: 0.5rem;
+  --pw-3: 0.75rem;
   --pw-4: 1rem;
   --pw-5: 1.25rem;
-  --pw-radius: 0.75rem;
   min-width: 0;
   color: var(--pw-text);
 }
@@ -36,8 +36,6 @@
 }
 
 .cabSections {
-  display: grid;
-  gap: 0;
   margin: 0;
   max-width: none;
 }
@@ -50,19 +48,23 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--pw-2);
-  margin: 0;
+  margin: 0 0 var(--pw-5);
 }
 
 .tab {
-  border: 1px solid var(--pw-line);
-  background: var(--pw-bg);
-  padding: var(--pw-2) var(--pw-4);
-  min-height: 44px;
-  font-weight: 650;
-  font-size: var(--pw-sm);
-  color: var(--pw-muted);
   cursor: pointer;
-  border-radius: var(--pw-radius);
+  min-height: 44px;
+  padding: var(--pw-3) var(--pw-5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pw-2);
+  font-weight: 700;
+  font-size: var(--pw-sm);
+  border: 1px solid var(--pw-line);
+  border-radius: 7px;
+  color: var(--pw-text);
+  background: var(--pw-bg);
 }
 
 .tabActive {
@@ -72,19 +74,21 @@
 }
 
 .tab:focus-visible {
-  outline: 2px solid var(--wallet-tab-focus-ring);
-  outline-offset: 2px;
+  outline: 3px solid var(--wallet-tab-focus-ring);
+  outline-offset: 3px;
 }
 
 .panel {
   min-width: 0;
   margin: 0 0 var(--pw-5);
-  padding: var(--pw-5);
-  background: var(--pw-bg);
-  border: 1px solid var(--pw-line);
-  border-radius: var(--pw-radius);
 }
 
 .requisitesScope {
   min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .tab {
+    padding: var(--pw-3);
+  }
 }

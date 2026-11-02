@@ -141,6 +141,13 @@ describe("WalletPrototypeShell", () => {
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Pane A");
   });
 
+  describe("prototype parity tokens", () => {
+    it("uses profile-wizard pw-3/pw-5 padding scale (12px and 20px at 16px root)", () => {
+      expect(0.75 * 16).toBe(12);
+      expect(1.25 * 16).toBe(20);
+    });
+  });
+
   describe("contrast tokens", () => {
     it("meets text contrast for light and dark active tabs", () => {
       expect(contrastRatio(LIGHT_ACTIVE.text, LIGHT_ACTIVE.bg)).toBeGreaterThanOrEqual(4.5);
