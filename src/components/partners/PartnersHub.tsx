@@ -1657,9 +1657,11 @@ export function PartnersHub({
    */
   const agentFindShowcase = (
     <div className={styles.findShell} data-testid="agent-partner-find-showcase">
-      <p className={styles.modalLead}>
-        Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
-      </p>
+      <div className={styles.findIntroRow} data-testid="agent-partner-find-intro-row">
+        <p className={styles.modalLead}>
+          Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
+        </p>
+      </div>
       <div className={styles.findToolbarRow}>
         <form className={styles.modalSearchBlock} onSubmit={event => { event.preventDefault(); void loadSearch("reset"); }}>
           <label className={styles.findSearchBox}>

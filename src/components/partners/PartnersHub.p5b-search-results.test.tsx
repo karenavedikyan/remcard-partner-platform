@@ -214,6 +214,12 @@ describe("PartnersHub P5b modal search results", () => {
     });
   });
 
+  it("documents prototype find chrome without absolute anotherMethod overlap hack", () => {
+    const css = readFileSync(path.join(__dirname, "AgentPartnerHubModal.module.css"), "utf8");
+    expect(css).not.toMatch(/\.prototypeFind\s+\.anotherMethod\s*\{[^}]*position:\s*absolute/s);
+    expect(css).toContain(".findShowcaseChrome");
+  });
+
   it("renders every loaded result (no silent 12-cap), honest count, and opens invite", async () => {
     const partners = Array.from({ length: 14 }, (_, i) => searchPartner(`id-${i + 1}`));
     mockApis(partners, "cursor-more");

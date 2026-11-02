@@ -225,6 +225,16 @@
 
 .findShell > .modalLead { padding-right: 0; }
 
+.findIntroRow {
+  min-width: 0;
+  margin: 0 0 var(--space-2);
+}
+
+.findIntroRow .modalLead {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .modalSearchAction {
   display: flex;
   justify-content: flex-end;

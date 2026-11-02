@@ -233,11 +233,28 @@ export function AgentPartnerHubModal({
               </button>
             </div>
           ) : null}
-          {!choiceMode && !readyMode && tab === "find" && onChooseMethod ? (
+          {!choiceMode && !readyMode && tab === "find" && onChooseMethod && prototypeMode && findWide ? (
+            <div className={styles.findShowcaseChrome} data-testid="agent-partner-find-chrome">
+              <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                  <polyline
+                    points="14,7 8,12 14,17"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Другой способ приглашения
+              </button>
+            </div>
+          ) : null}
+          {!choiceMode && !readyMode && tab === "find" && onChooseMethod && !(prototypeMode && findWide) ? (
             <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>
               <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M15 18l-6 6 6-6"
+                <polyline
+                  points="14,7 8,12 14,17"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
