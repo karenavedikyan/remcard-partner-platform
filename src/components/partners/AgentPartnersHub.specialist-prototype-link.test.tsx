@@ -93,4 +93,22 @@ describe("specialist default discussion uses the shared prototype wizard", () =>
     await act(async () => resolve(response));
     await screen.findByTestId("agent-discussion-invite-ready");
   });
+
+  it("ignores the old creation success after confirmed close and reopening a fresh draft", async () => {
+    let resolve!: (v: typeof response) => void;
+    api.mockImplementation(async (_path, options) => options?.method === "POST"
+      ? new Promise(r => { resolve = r; }) : { user: profile.user, partnerships: [], invites: [] });
+    renderHub(); await openLink(); typeName();
+    fireEvent.click(screen.getByRole("button", { name: "Далее: сообщение" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /^Текст приглашения/ }), { target: { value: "Поздний ответ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Далее: проверить" }));
+    fireEvent.click(screen.getByRole("button", { name: "Создать ссылку", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Закрыть", exact: true }));
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Закрыть без сохранения" }));
+    await openLink();
+    await act(async () => resolve(response));
+    expect(screen.queryByRole("heading", { name: "Приглашение создано", exact: true })).not.toBeInTheDocument();
+    expect(screen.getByTestId("agent-discussion-invite-wizard")).toHaveAttribute("data-step", "1");
+    expect(screen.getByRole("textbox", { name: /^Имя или название/ })).toHaveValue("");
+  });
 });

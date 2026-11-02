@@ -69,6 +69,11 @@ export function PartnerDiscussionInvitePanel({
   const [cooperationSubject, setCooperationSubject] = useState("");
   const [creating, setCreating] = useState(false);
   const createInFlight = useRef(false);
+  const mounted = useRef(false);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   useLayoutEffect(() => {
     onSubmittingChange?.(creating);
     return () => onSubmittingChange?.(false);
@@ -154,6 +159,9 @@ export function PartnerDiscussionInvitePanel({
           cooperationSubject: trimmedSubject,
         },
       });
+      // Closing/discarding can remount a fresh draft while this POST finishes.
+      // Never mark that new parent's chrome ready from the detached old panel.
+      if (!mounted.current) return;
       const url = `${getAppUrl()}${result.previewPath}`;
       setCreatedUrl(url);
       setCreatedExpires(result.expiresAt);
