@@ -115,6 +115,44 @@
   border-top: 1px solid var(--line);
 }
 
+.footInvite {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.footBack {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 681px) {
+  .footBack {
+    order: 1;
+  }
+
+  .footInvite {
+    order: 2;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .footInvite {
+    order: 1;
+    width: 100%;
+  }
+
+  .footBack {
+    order: 2;
+    width: 100%;
+  }
+}
+
 .backButton {
   display: inline-flex;
   align-items: center;
@@ -139,12 +177,6 @@
 .foot :global(button[data-testid="partner-find-directory-detail-invite"]) {
   min-height: 44px;
   min-width: 44px;
-}
-
-@media (max-width: 680px) {
-  .foot :global(button[data-testid="partner-find-directory-detail-invite"]) {
-    flex: 1 1 auto;
-  }
 }
 
 /* P25r: frozen qt() fold-list.general-terms (in-hub detail) */

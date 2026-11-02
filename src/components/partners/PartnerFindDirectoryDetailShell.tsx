@@ -13,7 +13,7 @@ import {
   findDirectoryDetailInviteLabel,
   searchResultDetailCatalogLine,
   searchResultDetailStagesLine,
-  searchResultDirectionGroups,
+  searchResultDetailTopicsLine,
   searchResultInviteFoot,
   searchResultTypeLabel,
 } from "@/components/partners/PartnerSearchResultCard";
@@ -34,6 +34,7 @@ export type PartnerFindDirectoryDetailShellProps = {
   onBack: () => void;
   onInvite: () => void;
   inviteDisabled?: boolean;
+  inviteBusy?: boolean;
   /** Frozen qt() block — AGENT-only; default false (no fetch/render). */
   showAgentTerms?: boolean;
   /** Optional parent snapshot (same certificate-program-summary contract as search card). */
@@ -168,22 +169,22 @@ export function PartnerFindDirectoryDetailShell({
   onBack,
   onInvite,
   inviteDisabled = false,
+  inviteBusy = false,
   showAgentTerms = false,
   agentTermsSnapshot,
 }: PartnerFindDirectoryDetailShellProps) {
   const title = findDirectoryDetailDisplayTitle(partner);
   const typeLabel = searchResultTypeLabel(partner);
   const city = partner.city?.trim() || "";
-  const { primary } = searchResultDirectionGroups(partner);
   const catalogLine = searchResultDetailCatalogLine(partner);
   const detailStagesLine = searchResultDetailStagesLine(partner);
   const description = partner.description?.trim() || "";
   const status = partner.partnershipStatus?.trim() || "";
   const statusLabel = status ? (PARTNERSHIP_STATUS_LABELS[status] ?? status) : "";
-  const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled });
-  const inviteLabel = findDirectoryDetailInviteLabel(partner, { inviteDisabled });
+  const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled, inviteBusy });
+  const inviteLabel = findDirectoryDetailInviteLabel(partner, { inviteDisabled, inviteBusy });
 
-  const topicsLine = primary.length > 0 ? primary.join(", ") : "";
+  const topicsLine = searchResultDetailTopicsLine(partner);
 
   return (
     <section
@@ -269,23 +270,25 @@ export function PartnerFindDirectoryDetailShell({
       </div>
 
       <footer className={styles.foot}>
+        <Button
+          type="button"
+          variant="primary"
+          className={styles.footInvite}
+          disabled={inviteFoot.disabled}
+          onClick={onInvite}
+          data-testid="partner-find-directory-detail-invite"
+          aria-busy={inviteBusy || undefined}
+        >
+          {inviteLabel}
+        </Button>
         <button
           type="button"
-          className={styles.backButton}
+          className={`${styles.backButton} ${styles.footBack}`}
           onClick={onBack}
           data-testid="partner-find-directory-detail-back"
         >
           Назад к поиску
         </button>
-        <Button
-          type="button"
-          variant="primary"
-          disabled={inviteFoot.disabled}
-          onClick={onInvite}
-          data-testid="partner-find-directory-detail-invite"
-        >
-          {inviteLabel}
-        </Button>
       </footer>
     </section>
   );
