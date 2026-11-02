@@ -122,4 +122,79 @@ describe("SettlementsHub", () => {
       await screen.findByText(/раздел взаиморасчётов недоступен/i),
     ).toBeInTheDocument();
   });
+
+  it("summary tile switches receivable tab and search filters partners", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [
+        {
+          id: "b1",
+          orderId: "o1",
+          accrualType: "bonus",
+          counterpartyId: "a",
+          counterpartyName: "Visible Partner",
+          amount: 10,
+          basis: "Сертификат A",
+          status: "CONFIRMED",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+        {
+          id: "b2",
+          orderId: "o2",
+          accrualType: "bonus",
+          counterpartyId: "b",
+          counterpartyName: "Hidden Partner",
+          amount: 20,
+          basis: "Сертификат B",
+          status: "CONFIRMED",
+          createdAt: "2026-10-02T10:00:00.000Z",
+        },
+      ],
+      payable: [],
+      completed: [],
+    });
+
+    render(<SettlementsHub />);
+    expect(await screen.findByText("Visible Partner")).toBeInTheDocument();
+    expect(screen.getByText("Hidden Partner")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: /я должен/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /мне должны/i, pressed: false }),
+    );
+    expect(screen.getByRole("button", { name: /мне должны/i, pressed: true })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText(/поиск и фильтры/i));
+    const search = screen.getByLabelText(/поиск по партнёру/i);
+    await userEvent.clear(search);
+    await userEvent.type(search, "Visible");
+    expect(screen.getByText("Visible Partner")).toBeInTheDocument();
+    expect(screen.queryByText("Hidden Partner")).toBeNull();
+  });
+
+  it("keeps pending amounts out of receivable balance total tile value", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [
+        {
+          id: "b1",
+          orderId: "o1",
+          accrualType: "bonus",
+          counterpartyId: "a",
+          counterpartyName: "Shop",
+          amount: 100,
+          pendingAmount: 500,
+          basis: "Сертификат",
+          status: "CONFIRMED",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
+      payable: [],
+      completed: [],
+    });
+    render(<SettlementsHub />);
+    const tile = await screen.findByRole("button", { name: /мне должны/i });
+    expect(tile).toHaveTextContent("100");
+    expect(tile).toHaveTextContent("500");
+  });
 });

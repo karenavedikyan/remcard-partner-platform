@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
-import { bonusStatusLabel, bonusStatusTone } from "@/lib/history-labels";
 import { fetchSettlements, isSettlementsAccessDenied } from "@/lib/settlements-loader";
 import { settlementAccrualHref, settlementPurchaseHref } from "@/lib/settlements-links";
 import type {
@@ -14,7 +13,6 @@ import type {
   SettlementsResponse,
 } from "@/lib/settlements-types";
 import {
-  buildExportRows,
   clampPage,
   defaultLedgerFilters,
   directionTotal,
@@ -37,9 +35,14 @@ import {
   type PayoutRecordTarget,
 } from "@/components/payout/PayoutRecordModal";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
 import hubStyles from "@/components/settlements/settlements.module.css";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
+import {
+  bonusStatusLabel,
+  bonusStatusTone,
+  type HistoryStatusTone,
+} from "@/lib/history-labels";
 
 type Screen = "overview" | "partners" | "orders" | "partnerHistory" | "reconciliation";
 
@@ -66,6 +69,50 @@ function formatDate(iso: string) {
   });
 }
 
+function statusPillClass(tone: HistoryStatusTone) {
+  if (tone === "active") return hubStyles.statusGreen;
+  if (tone === "pending") return hubStyles.statusAmber;
+  return hubStyles.statusPrimary;
+}
+
+function StatusPill({ label, tone }: { label: string; tone: HistoryStatusTone }) {
+  return (
+    <span className={`${hubStyles.statusPill} ${statusPillClass(tone)}`}>{label}</span>
+  );
+}
+
+function ObligationBreakdown({ row }: { row: SettlementObligation }) {
+  const hasPaid = (row.paidAmount ?? 0) > 0;
+  const hasPending = (row.pendingAmount ?? 0) > 0;
+  const hasSuspended = (row.suspendedAmount ?? 0) > 0;
+  return (
+    <dl className={hubStyles.breakdown}>
+      <div className={hubStyles.breakdownRow}>
+        <dt>Начислено</dt>
+        <dd>{formatMoneyRub(row.amount)}</dd>
+      </div>
+      {hasPending ? (
+        <div className={hubStyles.breakdownRow}>
+          <dt>Ожидает подтверждения</dt>
+          <dd>{formatMoneyRub(row.pendingAmount!)}</dd>
+        </div>
+      ) : null}
+      {hasSuspended ? (
+        <div className={hubStyles.breakdownRow}>
+          <dt>Приостановлено</dt>
+          <dd>{formatMoneyRub(row.suspendedAmount!)}</dd>
+        </div>
+      ) : null}
+      {hasPaid ? (
+        <div className={hubStyles.breakdownRow}>
+          <dt>Оплата подтверждена</dt>
+          <dd>{formatMoneyRub(row.paidAmount!)}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
 function ObligationCard({
   row,
   view,
@@ -80,78 +127,104 @@ function ObligationCard({
     (row.payoutActions.canRecordCash || row.payoutActions.canRecordTransfer);
   const compact = view === "compact";
   const full = view === "cards";
-  const rowClass =
-    view === "rows"
-      ? `${hubStyles.row} ${walletStyles.rowFlat}`
-      : view === "compact"
-        ? `${hubStyles.row} ${walletStyles.rowCompact}`
-        : hubStyles.row;
+  const statusLabel = row.confirmationLabel ?? bonusStatusLabel(row.status);
+  const tone = bonusStatusTone(row.status);
 
   return (
-    <article className={rowClass} data-testid={`specialist-settlement-row-${row.id}`}>
-      <div className={hubStyles.rowHeader}>
-        <div>
-          <p className={hubStyles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-          {!compact ? <p className={hubStyles.meta}>{row.basis}</p> : null}
-          {full ? (
+    <article
+      className={`${hubStyles.compactRecord} ${view === "rows" ? walletStyles.rowFlat : ""} ${
+        compact ? walletStyles.rowCompact : ""
+      }`}
+      data-testid={`specialist-settlement-row-${row.id}`}
+    >
+      <details open={full}>
+        <summary>
+          <span className={hubStyles.recordLineInfo}>
+            <strong>{compact ? formatMoneyRub(row.amount) : `Заказ ${row.orderId}`}</strong>
+            {!compact ? <span>{row.counterpartyName}</span> : null}
+            {!compact ? <small>{row.basis}</small> : full ? (
+              <small>
+                Заказ: {row.orderId} · ID начисления: {row.id}
+              </small>
+            ) : null}
+            {compact ? <small>{row.basis}</small> : null}
+          </span>
+          <span className={hubStyles.recordLineValue}>
+            {!compact ? <strong>{formatMoneyRub(row.amount)}</strong> : null}
+            <StatusPill label={statusLabel} tone={tone} />
+          </span>
+        </summary>
+        <div className={hubStyles.recordDetail}>
+          <ObligationBreakdown row={row} />
+          {(row.pendingAmount ?? 0) > 0 ? (
             <p className={hubStyles.meta}>
-              Заказ: {row.orderId} · ID начисления: {row.id}
+              Ожидает подтверждения: {formatMoneyRub(row.pendingAmount!)}. Не входит в баланс.
             </p>
           ) : null}
-          {full ? (
-            <p className={hubStyles.meta}>Партнёр: {row.counterpartyName}</p>
+          {view !== "compact" ? (
+            <p className={hubStyles.meta}>Создано: {formatDate(row.createdAt)}</p>
+          ) : null}
+          {row.hasIndividualTerms ? (
+            <details className={hubStyles.lifecycleDetails}>
+              <summary>Категории, сроки и расчёты</summary>
+              <RewardLifecyclePanel orderId={row.orderId} />
+            </details>
+          ) : null}
+          {view === "rows" || full || compact ? (
+            <div className={hubStyles.actions}>
+              <Link href={settlementAccrualHref(row)} className={hubStyles.linkButton}>
+                Начисление
+              </Link>
+              <Link href={settlementPurchaseHref(row)} className={hubStyles.linkButton}>
+                Покупка
+              </Link>
+              {canPayout && onRecordPayout ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  data-testid={`specialist-settlements-record-payout-${row.id}`}
+                  onClick={() => onRecordPayout(row)}
+                >
+                  Зафиксировать выплату
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
-        <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
-      </div>
-      {view !== "compact" ? (
-        <p className={hubStyles.meta}>Создано: {formatDate(row.createdAt)}</p>
-      ) : null}
-      {view === "rows" || full ? (
-        <div className={hubStyles.actions}>
-          <Link href={settlementAccrualHref(row)} className={hubStyles.linkButton}>
-            Начисление
-          </Link>
-          <Link href={settlementPurchaseHref(row)} className={hubStyles.linkButton}>
-            Покупка
-          </Link>
-          {canPayout && onRecordPayout ? (
-            <Button
-              type="button"
-              variant="secondary"
-              data-testid={`specialist-settlements-record-payout-${row.id}`}
-              onClick={() => onRecordPayout(row)}
-            >
-              Зафиксировать выплату
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+      </details>
     </article>
   );
 }
 
 function CompletedRow({ row }: { row: SettlementCompleted }) {
   return (
-    <Link
-      key={`${row.id}-${row.paidAt ?? "unknown"}`}
-      href={settlementAccrualHref(row)}
-      className={hubStyles.row}
-    >
-      <div className={hubStyles.rowHeader}>
-        <div>
-          <p className={hubStyles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-          <p className={hubStyles.meta}>{row.counterpartyName}</p>
-          <p className={hubStyles.meta}>{specialistCompletedRowCaption(row)}</p>
-          <p className={hubStyles.meta}>
-            {row.paidAt
-              ? `Зафиксировано: ${formatDate(row.paidAt)}`
-              : "Дата выплаты не зафиксирована (legacy PAID)"}
-          </p>
+    <article className={hubStyles.historyCard}>
+      <details>
+        <summary>
+          <span className={hubStyles.recordLineInfo}>
+            <strong>{row.counterpartyName}</strong>
+            <small>{specialistCompletedRowCaption(row)}</small>
+            <small>
+              {row.paidAt
+                ? `Оплачено: ${formatDate(row.paidAt)}`
+                : "Дата выплаты не зафиксирована"}
+            </small>
+          </span>
+          <strong>{formatMoneyRub(row.amount)}</strong>
+        </summary>
+        <div className={hubStyles.recordDetail}>
+          <StatusPill label="Зафиксированная выплата" tone={bonusStatusTone(row.status)} />
+          <div className={hubStyles.actions}>
+            <Link href={settlementAccrualHref(row)} className={hubStyles.linkButton}>
+              Начисление
+            </Link>
+            <Link href={settlementPurchaseHref(row)} className={hubStyles.linkButton}>
+              Покупка
+            </Link>
+          </div>
         </div>
-        <StatusBadge label="Зафиксированная выплата" tone={bonusStatusTone(row.status)} />
-      </div>
-    </Link>
+      </details>
+    </article>
   );
 }
 
@@ -166,7 +239,6 @@ export function SpecialistSettlementsWorkspace({
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
   const [selectedPartner, setSelectedPartner] = useState<SettlementPartnerGroup | null>(null);
   const [filters, setFilters] = useState<SettlementLedgerFilters>(defaultLedgerFilters());
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [view, setView] = useState<SettlementViewMode>("rows");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(!previewData);
@@ -383,20 +455,82 @@ export function SpecialistSettlementsWorkspace({
     <div data-testid="specialist-settlements-workspace">
       {data.coverageNote ? <p className={hubStyles.note}>{data.coverageNote}</p> : null}
       <p className={hubStyles.note}>
-        Подтверждение выплат получателем и частичные переводы в этом этапе не подключены — отображаются
-        только факты из текущей модели начислений.
+        Подтверждение получения вторым участником и частичные переводы пока недоступны. Показаны
+        данные по подтверждённым покупкам.
       </p>
 
-      <div className={walletStyles.toolbar}>
+      <div className={hubStyles.ledgerPresentation}>
+        <details className={hubStyles.searchDrawer}>
+          <summary>Поиск и фильтры</summary>
+          <div className={walletStyles.filtersPanel}>
+            <input
+              aria-label="Поиск"
+              value={filters.q}
+              onChange={(e) => updateFilters({ q: e.target.value })}
+              placeholder="Партнёр, заказ, сертификат…"
+              className={walletStyles.search}
+            />
+            <select
+              aria-label="Статус"
+              value={filters.status}
+              onChange={(e) =>
+                updateFilters({ status: e.target.value as SettlementLedgerFilters["status"] })
+              }
+            >
+              <option value="open">Открытые</option>
+              <option value="all">Все статусы</option>
+            </select>
+            <select
+              aria-label="Сортировка"
+              value={filters.sort}
+              onChange={(e) =>
+                updateFilters({ sort: e.target.value as SettlementLedgerFilters["sort"] })
+              }
+            >
+              <option value="date-desc">Сначала новые</option>
+              <option value="date-asc">Сначала старые</option>
+              <option value="amount-desc">Сумма ↓</option>
+              <option value="amount-asc">Сумма ↑</option>
+            </select>
+            <input
+              aria-label="Период с"
+              type="date"
+              value={filters.from}
+              onChange={(e) => updateFilters({ from: e.target.value })}
+            />
+            <input
+              aria-label="Период по"
+              type="date"
+              value={filters.to}
+              onChange={(e) => updateFilters({ to: e.target.value })}
+            />
+            <select
+              aria-label="Представление"
+              value={view}
+              onChange={(e) => setView(e.target.value as SettlementViewMode)}
+            >
+              <option value="rows">Строки</option>
+              <option value="compact">Малые</option>
+              <option value="cards">Крупные</option>
+            </select>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setFilters(defaultLedgerFilters());
+                setPage(1);
+              }}
+            >
+              Сбросить фильтры
+            </Button>
+          </div>
+        </details>
         <Button
           type="button"
           variant="secondary"
-          aria-expanded={filtersOpen}
-          onClick={() => setFiltersOpen((v) => !v)}
+          onClick={() => void exportCurrent()}
+          disabled={Boolean(periodError)}
         >
-          {filtersOpen ? "Скрыть фильтры" : "Фильтры и представление"}
-        </Button>
-        <Button type="button" variant="secondary" onClick={() => void exportCurrent()} disabled={Boolean(periodError)}>
           Excel (.xlsx, весь отбор)
         </Button>
       </div>
@@ -405,71 +539,6 @@ export function SpecialistSettlementsWorkspace({
         <p className={hubStyles.error} role="alert">
           {exportError}
         </p>
-      ) : null}
-
-      {filtersOpen ? (
-        <div className={walletStyles.filtersPanel}>
-          <input
-            aria-label="Поиск"
-            value={filters.q}
-            onChange={(e) => updateFilters({ q: e.target.value })}
-            placeholder="Партнёр, заказ, сертификат…"
-            className={walletStyles.search}
-          />
-          <select
-            aria-label="Статус"
-            value={filters.status}
-            onChange={(e) =>
-              updateFilters({ status: e.target.value as SettlementLedgerFilters["status"] })
-            }
-          >
-            <option value="open">Открытые</option>
-            <option value="all">Все статусы</option>
-          </select>
-          <select
-            aria-label="Сортировка"
-            value={filters.sort}
-            onChange={(e) =>
-              updateFilters({ sort: e.target.value as SettlementLedgerFilters["sort"] })
-            }
-          >
-            <option value="date-desc">Сначала новые</option>
-            <option value="date-asc">Сначала старые</option>
-            <option value="amount-desc">Сумма ↓</option>
-            <option value="amount-asc">Сумма ↑</option>
-          </select>
-          <input
-            aria-label="Период с"
-            type="date"
-            value={filters.from}
-            onChange={(e) => updateFilters({ from: e.target.value })}
-          />
-          <input
-            aria-label="Период по"
-            type="date"
-            value={filters.to}
-            onChange={(e) => updateFilters({ to: e.target.value })}
-          />
-          <select
-            aria-label="Представление"
-            value={view}
-            onChange={(e) => setView(e.target.value as SettlementViewMode)}
-          >
-            <option value="rows">Строки</option>
-            <option value="compact">Компактные карточки</option>
-            <option value="cards">Полные карточки</option>
-          </select>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setFilters(defaultLedgerFilters());
-              setPage(1);
-            }}
-          >
-            Сбросить фильтры
-          </Button>
-        </div>
       ) : null}
 
       {periodError ? (
@@ -483,32 +552,30 @@ export function SpecialistSettlementsWorkspace({
           <div className={`${hubStyles.summary} ${walletStyles.directionSummary}`}>
             <button
               type="button"
-              className={`${hubStyles.summaryCard} ${walletStyles.directionTile} ${
-                screen !== "overview" && direction === "receivable"
-                  ? walletStyles.directionTileActive
-                  : ""
-              }`}
+              className={`${hubStyles.summaryCard} ${hubStyles.summaryCardButton} ${hubStyles.summaryCardReceivable} ${walletStyles.directionTile}`}
               onClick={() => openDirection("receivable")}
               data-testid="specialist-wallet-receivable-total"
             >
               <p className={hubStyles.summaryLabel}>Мне должны</p>
               <p className={hubStyles.summaryValue}>{formatMoneyRub(receivableTotal)}</p>
-              <p className={walletStyles.directionTileHint}>К партнёрам →</p>
+              <p className={hubStyles.summaryTileFooter}>
+                <span />
+                <span>Посмотреть партнёров →</span>
+              </p>
             </button>
             <button
               type="button"
-              className={`${hubStyles.summaryCard} ${walletStyles.directionTile} ${
-                screen !== "overview" && direction === "payable"
-                  ? walletStyles.directionTileActive
-                  : ""
-              }`}
+              className={`${hubStyles.summaryCard} ${hubStyles.summaryCardButton} ${walletStyles.directionTile}`}
               onClick={() => openDirection("payable")}
               data-testid="specialist-wallet-payable-total"
             >
               <p className={hubStyles.summaryLabel}>{payableSummaryLabel}</p>
               <p className={hubStyles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
               {payableHint ? <p className={hubStyles.meta}>{payableHint}</p> : null}
-              <p className={walletStyles.directionTileHint}>К партнёрам →</p>
+              <p className={hubStyles.summaryTileFooter}>
+                <span />
+                <span>Посмотреть партнёров →</span>
+              </p>
             </button>
           </div>
           <div className={hubStyles.actions}>
@@ -521,55 +588,91 @@ export function SpecialistSettlementsWorkspace({
 
       {screen === "partners" ? (
         <>
-          <Button type="button" variant="secondary" onClick={() => setScreen("overview")}>
-            ← Обзор
-          </Button>
-          <h2 className={hubStyles.groupTitle}>
-            {direction === "receivable" ? "Мне должны" : payableDirectionLabel}
-          </h2>
+          <button
+            type="button"
+            className={hubStyles.breadcrumbBack}
+            onClick={() => setScreen("overview")}
+          >
+            ← Все взаиморасчёты
+          </button>
+          <div className={hubStyles.focusHeader}>
+            <div>
+              <p className={hubStyles.meta}>
+                {direction === "receivable" ? "Мне должны" : payableDirectionLabel}
+              </p>
+              <h2 className={hubStyles.groupTitle}>Партнёры</h2>
+            </div>
+          </div>
           {pagedPartners.length === 0 ? (
             <div className={hubStyles.empty}>Нет записей по текущему отбору.</div>
           ) : (
-            pagedPartners.map((group) => (
-              <button
-                key={group.counterpartyId}
-                type="button"
-                data-testid={`specialist-partner-group-${group.counterpartyId}`}
-                className={`${hubStyles.group} ${walletStyles.partnerButton}`}
-                onClick={() => {
-                  setSelectedPartner(group);
-                  setPage(1);
-                  setScreen("orders");
-                }}
-              >
-                <div className={hubStyles.groupHeader}>
-                  <p className={hubStyles.groupTitle}>{group.counterpartyName}</p>
-                  <p className={hubStyles.groupTotal}>
-                    {group.completedOnly
-                      ? "Только история"
-                      : formatMoneyRub(group.totalAmount)}
-                  </p>
-                </div>
-              </button>
-            ))
+            <div className={hubStyles.list}>
+              {pagedPartners.map((group) => {
+                const countLabel = `${group.items.length} ${
+                  group.items.length === 1
+                    ? "начисление"
+                    : group.items.length < 5
+                      ? "начисления"
+                      : "начислений"
+                }`;
+                return (
+                  <button
+                    key={group.counterpartyId}
+                    type="button"
+                    data-testid={`specialist-partner-group-${group.counterpartyId}`}
+                    className={`${hubStyles.partnerCompact} ${walletStyles.partnerButton}`}
+                    onClick={() => {
+                      setSelectedPartner(group);
+                      setPage(1);
+                      setScreen("orders");
+                    }}
+                  >
+                    <span className={hubStyles.partnerCompactMain}>
+                      <strong className={hubStyles.groupTitle}>{group.counterpartyName}</strong>
+                      <p className={hubStyles.partnerCompactMeta}>
+                        {group.completedOnly ? "Только история" : countLabel}
+                      </p>
+                    </span>
+                    <span className={hubStyles.partnerCompactAmount}>
+                      <strong>
+                        {group.completedOnly
+                          ? "—"
+                          : formatMoneyRub(group.totalAmount)}
+                      </strong>
+                      <span aria-hidden="true">→</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </>
       ) : null}
 
       {screen === "orders" && selectedPartner ? (
         <>
-          <Button
+          <button
             type="button"
-            variant="secondary"
+            className={hubStyles.breadcrumbBack}
             onClick={() => {
               setScreen("partners");
               setSelectedPartner(null);
               setPage(1);
             }}
           >
-            ← Партнёры
-          </Button>
-          <h2 className={hubStyles.groupTitle}>{selectedPartner.counterpartyName}</h2>
+            ← К партнёрам
+          </button>
+          <div className={hubStyles.focusHeader}>
+            <div>
+              <p className={hubStyles.meta}>
+                {direction === "receivable" ? "Мне должны" : payableDirectionLabel}
+              </p>
+              <h2 className={hubStyles.groupTitle}>{selectedPartner.counterpartyName}</h2>
+            </div>
+            <strong className={hubStyles.focusHeaderAmount}>
+              {formatMoneyRub(selectedPartner.totalAmount)}
+            </strong>
+          </div>
           <div className={hubStyles.actions}>
             <Button type="button" variant="secondary" onClick={() => setScreen("partnerHistory")}>
               История партнёра
@@ -599,12 +702,11 @@ export function SpecialistSettlementsWorkspace({
           </Button>
           <h2 className={hubStyles.groupTitle}>История партнёра (завершённые)</h2>
           <p className={hubStyles.note}>
-            Показаны только зафиксированные выплаты с известной датой paidAt в выбранном периоде.
-            Частичные выплаты и юридические snapshots не восстанавливаются.
+            Показаны только зафиксированные выплаты с известной датой выплаты в выбранном периоде.
           </p>
           {partnerHistory.excludedUnknownPaidAt > 0 ? (
             <p className={hubStyles.meta}>
-              Исключено legacy PAID без paidAt: {partnerHistory.excludedUnknownPaidAt}
+              Не показано выплат без даты: {partnerHistory.excludedUnknownPaidAt}
             </p>
           ) : null}
           {pagedHistoryRows.length === 0 ? (
@@ -639,7 +741,7 @@ export function SpecialistSettlementsWorkspace({
       ) : null}
 
       {screen !== "overview" ? (
-        <div className={hubStyles.actions}>
+        <div className={hubStyles.ledgerPagination}>
           <Button
             type="button"
             variant="secondary"

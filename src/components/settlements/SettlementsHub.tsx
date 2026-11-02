@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
-import { bonusStatusLabel, bonusStatusTone } from "@/lib/history-labels";
+import {
+  bonusStatusLabel,
+  bonusStatusTone,
+  type HistoryStatusTone,
+} from "@/lib/history-labels";
 import { fetchSettlements, isSettlementsAccessDenied } from "@/lib/settlements-loader";
 import {
   completedDirectionLabel,
@@ -24,7 +28,6 @@ import type {
 } from "@/lib/settlements-types";
 import { Tabs } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   PayoutRecordModal,
   type PayoutRecordTarget,
@@ -51,47 +54,114 @@ const TAB_ITEMS: Array<{ id: SettlementsTab; label: string }> = [
   { id: "completed", label: "Завершённые" },
 ];
 
+function statusPillClass(tone: HistoryStatusTone) {
+  if (tone === "active") return styles.statusGreen;
+  if (tone === "pending") return styles.statusAmber;
+  return styles.statusPrimary;
+}
+
+function StatusPill({ label, tone }: { label: string; tone: HistoryStatusTone }) {
+  return (
+    <span className={`${styles.statusPill} ${statusPillClass(tone)}`}>{label}</span>
+  );
+}
+
+function ObligationBreakdown({ row }: { row: SettlementObligation }) {
+  const hasPaid = (row.paidAmount ?? 0) > 0;
+  const hasPending = (row.pendingAmount ?? 0) > 0;
+  const hasSuspended = (row.suspendedAmount ?? 0) > 0;
+  if (!hasPaid && !hasPending && !hasSuspended && row.amount <= 0) return null;
+  return (
+    <dl className={styles.breakdown}>
+      <div className={styles.breakdownRow}>
+        <dt>Начислено</dt>
+        <dd>{formatMoneyRub(row.amount)}</dd>
+      </div>
+      {hasPending ? (
+        <div className={styles.breakdownRow}>
+          <dt>Ожидает подтверждения</dt>
+          <dd>{formatMoneyRub(row.pendingAmount!)}</dd>
+        </div>
+      ) : null}
+      {hasSuspended ? (
+        <div className={styles.breakdownRow}>
+          <dt>Приостановлено</dt>
+          <dd>{formatMoneyRub(row.suspendedAmount!)}</dd>
+        </div>
+      ) : null}
+      {hasPaid ? (
+        <div className={styles.breakdownRow}>
+          <dt>Оплата подтверждена</dt>
+          <dd>{formatMoneyRub(row.paidAmount!)}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
 function ObligationRow({
   row,
   onRecordPayout,
+  hideCounterparty = false,
 }: {
   row: SettlementObligation;
   onRecordPayout?: (row: SettlementObligation) => void;
+  hideCounterparty?: boolean;
 }) {
   const canPayout =
     row.payoutActions &&
     (row.payoutActions.canRecordCash || row.payoutActions.canRecordTransfer);
+  const statusLabel = row.confirmationLabel ?? bonusStatusLabel(row.status);
+  const tone = bonusStatusTone(row.status);
+
   return (
-    <article className={styles.row}>
-      <div className={styles.rowHeader}>
-        <div>
-          <p className={styles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-          <p className={styles.meta}>{row.basis}</p>
+    <article className={styles.compactRecord}>
+      <details>
+        <summary>
+          <span className={styles.recordLineInfo}>
+            <strong>Заказ {row.orderId}</strong>
+            {hideCounterparty ? null : <span>{row.counterpartyName}</span>}
+            <small>{row.basis}</small>
+          </span>
+          <span className={styles.recordLineValue}>
+            <strong>{formatMoneyRub(row.amount)}</strong>
+            <StatusPill label={statusLabel} tone={tone} />
+          </span>
+        </summary>
+        <div className={styles.recordDetail}>
+          <ObligationBreakdown row={row} />
+          {(row.pendingAmount ?? 0) > 0 ? (
+            <p className={styles.meta}>
+              Ожидает подтверждения: {formatMoneyRub(row.pendingAmount!)}. Не входит в баланс.
+            </p>
+          ) : null}
+          <p className={styles.meta}>Создано: {formatDate(row.createdAt)}</p>
+          {row.hasIndividualTerms ? (
+            <details className={styles.lifecycleDetails}>
+              <summary>Категории, сроки и расчёты</summary>
+              <RewardLifecyclePanel orderId={row.orderId} />
+            </details>
+          ) : null}
+          <div className={styles.actions}>
+            <Link href={settlementAccrualHref(row)} className={styles.linkButton}>
+              Начисление
+            </Link>
+            <Link href={settlementPurchaseHref(row)} className={styles.linkButton}>
+              Покупка
+            </Link>
+            {canPayout && onRecordPayout ? (
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid={`settlements-record-payout-${row.id}`}
+                onClick={() => onRecordPayout(row)}
+              >
+                Зафиксировать выплату
+              </Button>
+            ) : null}
+          </div>
         </div>
-        <StatusBadge label={row.confirmationLabel ?? bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
-      </div>
-      <p className={styles.meta}>Создано: {formatDate(row.createdAt)}</p>
-      {(row.pendingAmount ?? 0) > 0 ? <p className={styles.meta}>Ожидает подтверждения: {formatMoneyRub(row.pendingAmount!)}. Не входит в баланс.</p> : null}
-      {(row.suspendedAmount ?? 0) > 0 ? <p className={styles.meta}>Приостановлено: {formatMoneyRub(row.suspendedAmount!)}</p> : null}
-      {row.hasIndividualTerms ? <details><summary>Категории, сроки и расчёты</summary><RewardLifecyclePanel orderId={row.orderId} /></details> : null}
-      <div className={styles.actions}>
-        <Link href={settlementAccrualHref(row)} className={styles.linkButton}>
-          Начисление
-        </Link>
-        <Link href={settlementPurchaseHref(row)} className={styles.linkButton}>
-          Покупка
-        </Link>
-        {canPayout && onRecordPayout ? (
-          <Button
-            type="button"
-            variant="secondary"
-            data-testid={`settlements-record-payout-${row.id}`}
-            onClick={() => onRecordPayout(row)}
-          >
-            Зафиксировать выплату
-          </Button>
-        ) : null}
-      </div>
+      </details>
     </article>
   );
 }
@@ -103,43 +173,104 @@ function PartnerGroupBlock({
   group: SettlementPartnerGroup;
   onRecordPayout?: (row: SettlementObligation) => void;
 }) {
+  const countLabel = `${group.items.length} ${
+    group.items.length === 1 ? "начисление" : group.items.length < 5 ? "начисления" : "начислений"
+  }`;
   return (
-    <section className={styles.group}>
-      <div className={styles.groupHeader}>
-        <p className={styles.groupTitle}>{group.counterpartyName}</p>
-        <p className={styles.groupTotal}>Итого: {formatMoneyRub(group.totalAmount)}</p>
-      </div>
-      <div className={styles.list}>
+    <details className={styles.partnerGroup}>
+      <summary className={styles.partnerCompact}>
+        <span className={styles.partnerCompactMain}>
+          <strong className={styles.groupTitle}>{group.counterpartyName}</strong>
+          <p className={styles.partnerCompactMeta}>{countLabel}</p>
+        </span>
+        <span className={styles.partnerCompactAmount}>
+          <strong>{formatMoneyRub(group.totalAmount)}</strong>
+          <span aria-hidden="true">→</span>
+        </span>
+      </summary>
+      <div className={styles.partnerGroupBody}>
         {group.items.map((row) => (
-          <ObligationRow key={row.id} row={row} onRecordPayout={onRecordPayout} />
+          <ObligationRow
+            key={row.id}
+            row={row}
+            onRecordPayout={onRecordPayout}
+            hideCounterparty
+          />
         ))}
       </div>
-    </section>
+    </details>
   );
 }
 
 function CompletedRow({ row }: { row: SettlementCompleted }) {
+  const directionLabel = completedDirectionLabel(row.direction);
   return (
-    <Link href={settlementAccrualHref(row)} className={styles.row}>
-      <div className={styles.rowHeader}>
-        <div>
-          <p className={styles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-          <p className={styles.meta}>
-            {row.counterpartyName} · {row.basis}
-          </p>
+    <article className={styles.historyCard}>
+      <details>
+        <summary>
+          <span className={styles.recordLineInfo}>
+            <strong>{row.counterpartyName}</strong>
+            <small>{row.basis}</small>
+            <small>
+              Оплачено: {row.paidAt ? formatDate(row.paidAt) : "дата неизвестна"}
+            </small>
+          </span>
+          <strong>{formatMoneyRub(row.amount)}</strong>
+        </summary>
+        <div className={styles.recordDetail}>
+          <StatusPill label={directionLabel} tone="active" />
+          <p className={styles.meta}>{bonusStatusLabel(row.status)}</p>
+          <div className={styles.actions}>
+            <Link href={settlementAccrualHref(row)} className={styles.linkButton}>
+              Начисление
+            </Link>
+            <Link href={settlementPurchaseHref(row)} className={styles.linkButton}>
+              Покупка
+            </Link>
+          </div>
         </div>
-        <StatusBadge label={completedDirectionLabel(row.direction)} tone="active" />
-      </div>
-      <p className={styles.meta}>
-        Оплачено: {row.paidAt ? formatDate(row.paidAt) : "дата неизвестна"} ·{" "}
-        {bonusStatusLabel(row.status)}
-      </p>
-    </Link>
+      </details>
+    </article>
+  );
+}
+
+function filterPartnerGroups(
+  groups: SettlementPartnerGroup[],
+  query: string,
+): SettlementPartnerGroup[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return groups;
+  return groups
+    .map((group) => {
+      const items = group.items.filter(
+        (row) =>
+          row.counterpartyName.toLowerCase().includes(q) ||
+          row.basis.toLowerCase().includes(q) ||
+          row.orderId.toLowerCase().includes(q),
+      );
+      if (items.length === 0) return null;
+      return {
+        ...group,
+        items,
+        totalAmount: sumObligationAmounts(items),
+      };
+    })
+    .filter((group): group is SettlementPartnerGroup => group !== null);
+}
+
+function filterCompleted(rows: SettlementCompleted[], query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter(
+    (row) =>
+      row.counterpartyName.toLowerCase().includes(q) ||
+      row.basis.toLowerCase().includes(q),
   );
 }
 
 export function SettlementsHub() {
   const [tab, setTab] = useState<SettlementsTab>("receivable");
+  const [searchQ, setSearchQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
@@ -171,7 +302,9 @@ export function SettlementsHub() {
 
   useEffect(() => {
     void load();
-    const changed = () => { void load(); };
+    const changed = () => {
+      void load();
+    };
     window.addEventListener("remcard:reward-changed", changed);
     return () => window.removeEventListener("remcard:reward-changed", changed);
   }, [load]);
@@ -183,6 +316,19 @@ export function SettlementsHub() {
   const payableGroups = useMemo(
     () => groupObligationsByCounterparty(data?.payable ?? []),
     [data?.payable],
+  );
+
+  const filteredReceivable = useMemo(
+    () => filterPartnerGroups(receivableGroups, searchQ),
+    [receivableGroups, searchQ],
+  );
+  const filteredPayable = useMemo(
+    () => filterPartnerGroups(payableGroups, searchQ),
+    [payableGroups, searchQ],
+  );
+  const filteredCompleted = useMemo(
+    () => filterCompleted(data?.completed ?? [], searchQ),
+    [data?.completed, searchQ],
   );
 
   const openPayoutModal = useCallback((row: SettlementObligation) => {
@@ -198,8 +344,14 @@ export function SettlementsHub() {
 
   const receivableTotal = sumObligationAmounts(data?.receivable ?? []);
   const payableTotal = sumObligationAmounts(data?.payable ?? []);
-  const pendingReceivable = (data?.receivable ?? []).reduce((sum, row) => sum + (row.pendingAmount ?? 0), 0);
-  const pendingPayable = (data?.payable ?? []).reduce((sum, row) => sum + (row.pendingAmount ?? 0), 0);
+  const pendingReceivable = (data?.receivable ?? []).reduce(
+    (sum, row) => sum + (row.pendingAmount ?? 0),
+    0,
+  );
+  const pendingPayable = (data?.payable ?? []).reduce(
+    (sum, row) => sum + (row.pendingAmount ?? 0),
+    0,
+  );
 
   if (loading) {
     return <div className={styles.loading}>Загружаем взаиморасчёты…</div>;
@@ -236,36 +388,70 @@ export function SettlementsHub() {
   }
 
   return (
-    <>
+    <div className={styles.settlementDemo} data-testid="settlements-hub">
       <p className={styles.note}>{SETTLEMENTS_COVERAGE_NOTE}</p>
 
       <div className={styles.summary}>
-        <div className={styles.summaryCard}>
+        <button
+          type="button"
+          className={`${styles.summaryCard} ${styles.summaryCardButton} ${styles.summaryCardReceivable}`}
+          aria-pressed={tab === "receivable"}
+          onClick={() => setTab("receivable")}
+        >
           <p className={styles.summaryLabel}>Мне должны</p>
           <p className={styles.summaryValue}>{formatMoneyRub(receivableTotal)}</p>
-          <p className={styles.meta}>Подтверждённая сумма</p>
-          <p className={styles.meta}>Ожидает подтверждения: {formatMoneyRub(pendingReceivable)}</p>
-        </div>
-        <div className={styles.summaryCard}>
+          <p className={styles.summaryTileFooter}>
+            <span>Ожидает подтверждения: {formatMoneyRub(pendingReceivable)}</span>
+            <span>Посмотреть партнёров →</span>
+          </p>
+        </button>
+        <button
+          type="button"
+          className={`${styles.summaryCard} ${styles.summaryCardButton}`}
+          aria-pressed={tab === "payable"}
+          onClick={() => setTab("payable")}
+        >
           <p className={styles.summaryLabel}>Я должен</p>
           <p className={styles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
-          <p className={styles.meta}>Подтверждённая сумма</p>
-          <p className={styles.meta}>Ожидает подтверждения: {formatMoneyRub(pendingPayable)}</p>
-        </div>
-        <div className={styles.summaryCard}>
+          <p className={styles.summaryTileFooter}>
+            <span>Ожидает подтверждения: {formatMoneyRub(pendingPayable)}</span>
+            <span>Посмотреть партнёров →</span>
+          </p>
+        </button>
+        <button
+          type="button"
+          className={`${styles.summaryCard} ${styles.summaryCardButton}`}
+          aria-pressed={tab === "completed"}
+          onClick={() => setTab("completed")}
+        >
           <p className={styles.summaryLabel}>Завершённые</p>
           <p className={styles.summaryValue}>{data.completed.length}</p>
-        </div>
+          <p className={styles.summaryTileFooter}>
+            <span>История выплат</span>
+            <span>Открыть →</span>
+          </p>
+        </button>
       </div>
 
       <Tabs items={TAB_ITEMS} active={tab} onChange={setTab} />
 
+      <details className={styles.searchDrawer}>
+        <summary>Поиск и фильтры</summary>
+        <input
+          className={styles.searchField}
+          aria-label="Поиск по партнёру или сертификату"
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+          placeholder="Партнёр, сертификат, заказ…"
+        />
+      </details>
+
       {tab === "receivable" ? (
-        receivableGroups.length === 0 ? (
+        filteredReceivable.length === 0 ? (
           <div className={styles.empty}>Открытых начислений «мне должны» нет.</div>
         ) : (
           <div className={styles.list}>
-            {receivableGroups.map((group) => (
+            {filteredReceivable.map((group) => (
               <PartnerGroupBlock key={group.counterpartyId} group={group} />
             ))}
           </div>
@@ -273,11 +459,11 @@ export function SettlementsHub() {
       ) : null}
 
       {tab === "payable" ? (
-        payableGroups.length === 0 ? (
+        filteredPayable.length === 0 ? (
           <div className={styles.empty}>Открытых обязательств «я должен» нет.</div>
         ) : (
           <div className={styles.list}>
-            {payableGroups.map((group) => (
+            {filteredPayable.map((group) => (
               <PartnerGroupBlock
                 key={group.counterpartyId}
                 group={group}
@@ -289,11 +475,11 @@ export function SettlementsHub() {
       ) : null}
 
       {tab === "completed" ? (
-        data.completed.length === 0 ? (
+        filteredCompleted.length === 0 ? (
           <div className={styles.empty}>Завершённых взаиморасчётов пока нет.</div>
         ) : (
           <div className={styles.list}>
-            {data.completed.map((row) => (
+            {filteredCompleted.map((row) => (
               <CompletedRow key={`${row.id}-${row.paidAt}`} row={row} />
             ))}
           </div>
@@ -307,6 +493,6 @@ export function SettlementsHub() {
           onSuccess={() => void load()}
         />
       ) : null}
-    </>
+    </div>
   );
 }

@@ -69,7 +69,7 @@ describe("SpecialistSettlementsWorkspace", () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByTestId("specialist-wallet-payable-total"));
-    expect(await screen.findByRole("heading", { name: /я должен/i })).toBeInTheDocument();
+    expect(await screen.findByText(/^Я должен$/)).toBeInTheDocument();
     expect(screen.getByText("Beta Pro")).toBeInTheDocument();
     expect(screen.queryByText(/завершённые/i)).toBeNull();
   });
@@ -84,7 +84,7 @@ describe("SpecialistSettlementsWorkspace", () => {
     render(<SpecialistSettlementsWorkspace />);
     await screen.findByTestId("specialist-settlements-workspace");
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /фильтры/i }));
+    await user.click(screen.getByText(/поиск и фильтры/i));
     const from = screen.getByLabelText("Период с");
     const to = screen.getByLabelText("Период по");
     await user.clear(from);
@@ -92,5 +92,58 @@ describe("SpecialistSettlementsWorkspace", () => {
     await user.clear(to);
     await user.type(to, "2026-10-01");
     expect(await screen.findByRole("alert")).toHaveTextContent(/не может быть позже/i);
+  });
+
+  it("shows partner record count on partner compact row", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [
+        {
+          id: "b1",
+          orderId: "o1",
+          accrualType: "bonus",
+          counterpartyId: "store-1",
+          counterpartyName: "Alpha Shop",
+          amount: 100,
+          basis: "Сертификат RC-1",
+          status: "CONFIRMED",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+        {
+          id: "b2",
+          orderId: "o2",
+          accrualType: "bonus",
+          counterpartyId: "store-1",
+          counterpartyName: "Alpha Shop",
+          amount: 50,
+          basis: "Сертификат RC-2",
+          status: "CONFIRMED",
+          createdAt: "2026-10-02T10:00:00.000Z",
+        },
+      ],
+      payable: [],
+      completed: [],
+    });
+
+    render(<SpecialistSettlementsWorkspace />);
+    await screen.findByTestId("specialist-wallet-receivable-total");
+    await userEvent.click(screen.getByTestId("specialist-wallet-receivable-total"));
+    expect(await screen.findByText(/2 начисления/i)).toBeInTheDocument();
+  });
+
+  it("uses user-facing copy without paidAt jargon", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [],
+    });
+    render(<SpecialistSettlementsWorkspace />);
+    await screen.findByTestId("specialist-settlements-workspace");
+    expect(
+      screen.getByText(/подтверждение получения вторым участником/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/paidAt/i)).toBeNull();
+    expect(screen.queryByText(/legacy PAID/i)).toBeNull();
   });
 });
