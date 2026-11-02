@@ -170,16 +170,50 @@ export function AgentPartnerHubModal({
           </div>
         )}
         <div className={styles.body}>
-          {choiceMode ? <div className={styles.methodChoices}>
-            <button type="button" onClick={() => onTabChange("find")}>
-              <span>Уже в RemCard</span><strong>Найти в RemCard</strong>
-              <p>Партнёр уже зарегистрирован. Посмотрите витрину по этапам ремонта и направлениям, откройте карточку и предложите сотрудничество.</p>
-            </button>
-            <button type="button" onClick={() => onTabChange("link")}>
-              <span>Ещё не в RemCard</span><strong>Пригласить по ссылке</strong>
-              <p>Знакомого магазина, специалиста, агента или компании ещё нет на платформе. Создайте приглашение и отправьте лично.</p>
-            </button>
-          </div> : null}
+          {choiceMode ? (
+            <div className={styles.methodChoices}>
+              <button type="button" className={styles.methodChoice} onClick={() => onTabChange("find")}>
+                <span className={styles.methodIcon} aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M20 20l-3-3" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span>Уже в RemCard</span>
+                <strong>Найти в RemCard</strong>
+                <p>
+                  Партнёр уже зарегистрирован. Посмотрите витрину по этапам ремонта и направлениям, откройте
+                  карточку и предложите сотрудничество.
+                </p>
+                <span className={styles.methodLink}>
+                  Открыть витрину
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </button>
+              <button type="button" className={styles.methodChoice} onClick={() => onTabChange("link")}>
+                <span className={`${styles.methodIcon} ${styles.methodIconMuted}`} aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M10 13a5 5 0 007 0l1-1a5 5 0 00-7-7l-1 1" strokeLinecap="round" />
+                    <path d="M14 11a5 5 0 00-7 0l-1 1a5 5 0 007 7l1-1" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span>Ещё не в RemCard</span>
+                <strong>Пригласить по ссылке</strong>
+                <p>
+                  Знакомого магазина, специалиста, агента или компании ещё нет на платформе. Создайте приглашение
+                  и отправьте лично.
+                </p>
+                <span className={styles.methodLink}>
+                  Создать приглашение
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          ) : null}
           {!choiceMode && !readyMode && tab === "find" && onChooseMethod ? <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>Другой способ приглашения</button> : null}
           <div hidden={choiceMode}>{children}</div>
         </div>

@@ -20,7 +20,79 @@
   overflow: hidden;
 }
 
-.methodChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.methodChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.methodChoice {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  min-height: 44px;
+}
+
+.methodChoice:hover,
+.methodChoice:focus-visible {
+  border-color: var(--accent, var(--primary));
+  outline: none;
+}
+
+.methodIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--soft, var(--tint));
+  color: var(--accent, var(--primary));
+}
+
+.methodIconMuted {
+  background: var(--offset);
+  color: var(--ink);
+}
+
+.methodChoice span {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.methodChoice strong {
+  font-size: var(--text-lg);
+  line-height: 1.2;
+}
+
+.methodChoice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.methodLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  color: var(--accent, var(--primary));
+  font-size: var(--text-sm);
+  margin-top: var(--space-2);
+}
+
 .sheetLink { width: min(720px, calc(100vw - 2 * var(--space-4))); }
 .sheetChoice { width: min(780px, calc(100vw - 2 * var(--space-4))); }
 .methodChoices button { display: grid; align-content: start; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; font: inherit; }

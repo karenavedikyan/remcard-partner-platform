@@ -1639,12 +1639,18 @@ export function PartnersHub({
       </p>
       <div className={styles.findToolbarRow}>
         <form className={styles.modalSearchBlock} onSubmit={event => { event.preventDefault(); void loadSearch("reset"); }}>
-          <TextField
-            label="Поиск партнёров"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Название, товар, услуга, этап или ID"
-          />
+          <div className={styles.findSearchBox}>
+            <svg className={styles.findSearchIcon} viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            <TextField
+              label="Поиск партнёров"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Название, товар, услуга, этап или ID"
+            />
+          </div>
         </form>
         {/* P22c tip 30231a6: layout=modal-full is the sole refine disclosure owner. */}
         <div className={styles.findFilterSlot} data-testid="agent-partner-find-filter-slot">

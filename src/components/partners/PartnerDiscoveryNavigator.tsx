@@ -38,9 +38,30 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
     onSpecializationChange("");
     onStageChange(id);
   };
+  const summaryLabel =
+    stages.find((stage) => stage.id === stageId)?.label || "Этапы ремонта и направления";
+
   return (
-    <details className={styles.navigator} open={expanded} onToggle={event => setExpanded(event.currentTarget.open)} data-testid="partner-discovery-navigator">
-      <summary>{stages.find(stage => stage.id === stageId)?.label || "Этапы ремонта и направления"}</summary>
+    <details
+      className={styles.navigator}
+      open={expanded}
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
+      data-testid="partner-discovery-navigator"
+    >
+      <summary>
+        <span className={styles.summaryLabel}>
+          <span>{summaryLabel}</span>
+          <svg className={styles.summaryChevron} width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 9l6 6 6-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+      </summary>
       <nav aria-label="Навигатор партнёров" className={styles.body}>
         <div className={styles.quest}>
           <span>Путь ремонта</span>
@@ -50,27 +71,72 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
         </div>
         {error ? <p role="alert">Не удалось загрузить этапы. <button type="button" onClick={() => void load()}>Повторить</button></p> : null}
         <ol className={styles.path} aria-label="Этапы ремонта">
-          <li><button type="button" aria-pressed={!stageId} className={styles.step} onClick={() => chooseStage("")}>
-            <span className={styles.node}>Все</span><span><b>Весь путь</b><small>Все этапы ремонта</small></span><em>{count(facets?.baseTotal)}</em>
-          </button></li>
+          <li className={styles.pathStep}>
+            <button type="button" aria-pressed={!stageId} className={styles.step} onClick={() => chooseStage("")}>
+              <span className={styles.node}>•</span>
+              <span className={styles.stepText}>
+                <b>Весь путь</b>
+                <em>{stageId ? "Все этапы" : "Вы здесь"}</em>
+              </span>
+              <em>{count(facets?.baseTotal)}</em>
+            </button>
+          </li>
           {stages.map((stage, index) => {
             const n = facets?.stages[stage.id];
-            return <li key={stage.id}><button type="button" className={styles.step} aria-pressed={stageId === stage.id}
-              disabled={!loading && facets !== null && !n && stageId !== stage.id} onClick={() => chooseStage(stage.id)}>
-              <span className={styles.node}>{index + 1}</span><span><b>{stage.label}</b><small>{stageId === stage.id ? "Вы здесь" : facets && !n && !loading ? "Пока без партнёров" : `Уровень ${index + 1}`}</small></span><em>{count(facets ? n ?? 0 : undefined)}</em>
-            </button></li>;
+            return (
+              <li key={stage.id} className={styles.pathStep}>
+                <button
+                  type="button"
+                  className={styles.step}
+                  aria-pressed={stageId === stage.id}
+                  disabled={!loading && facets !== null && !n && stageId !== stage.id}
+                  onClick={() => chooseStage(stage.id)}
+                >
+                  <span className={styles.node}>{index + 1}</span>
+                  <span className={styles.stepText}>
+                    <b>{stage.label}</b>
+                    <em>
+                      {stageId === stage.id
+                        ? "Вы здесь"
+                        : facets && !n && !loading
+                          ? "Пока без партнёров"
+                          : `Уровень ${index + 1}`}
+                    </em>
+                  </span>
+                  <em>{count(facets ? n ?? 0 : undefined)}</em>
+                </button>
+              </li>
+            );
           })}
         </ol>
         <section className={styles.directions} aria-label="Направления">
           <h3>Направление</h3>
-          <button type="button" aria-pressed={!specialization} onClick={() => onSpecializationChange("")}>Все направления <em>{count(facets?.stageTotal)}</em></button>
-          {(["services", "products"] as const).map(group => <div key={group} className={styles.directionGroup}>
-            <h4>{group === "services" ? "Работы и услуги" : "Товары и материалы"}</h4>
-            {(taxonomy?.[group] ?? []).filter(item => !facets || (facets[group][item.id] ?? 0) > 0 || specialization === `${group}:${item.id}`).map(item =>
-              <button key={item.id} type="button" aria-pressed={specialization === `${group}:${item.id}`} onClick={() => onSpecializationChange(`${group}:${item.id}`)}>
-                <span>{item.label}</span><em>{count(facets ? facets[group][item.id] ?? 0 : undefined)}</em>
-              </button>)}
-          </div>)}
+          <div className={styles.directionGroup}>
+            <button type="button" aria-pressed={!specialization} onClick={() => onSpecializationChange("")}>
+              <span>Все направления</span>
+              <em>{count(facets?.stageTotal)}</em>
+            </button>
+            {(["services", "products"] as const).flatMap((group) =>
+              (taxonomy?.[group] ?? [])
+                .filter(
+                  (item) =>
+                    !facets ||
+                    (facets[group][item.id] ?? 0) > 0 ||
+                    specialization === `${group}:${item.id}`,
+                )
+                .map((item) => (
+                  <button
+                    key={`${group}:${item.id}`}
+                    type="button"
+                    aria-pressed={specialization === `${group}:${item.id}`}
+                    onClick={() => onSpecializationChange(`${group}:${item.id}`)}
+                  >
+                    <span>{item.label}</span>
+                    <em>{count(facets ? facets[group][item.id] ?? 0 : undefined)}</em>
+                  </button>
+                )),
+            )}
+          </div>
         </section>
       </nav>
     </details>
