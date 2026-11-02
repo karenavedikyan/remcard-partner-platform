@@ -44,7 +44,21 @@ export function AgentPartnerHubModal({
   const titleId = useId();
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const hasOpenedRef = useRef(open);
+  const chooseFindRef = useRef<HTMLButtonElement>(null);
+  const wasFindShowcaseRef = useRef(false);
   if (open) hasOpenedRef.current = true;
+
+  useEffect(() => {
+    if (open && tab === "find" && !choiceMode) {
+      wasFindShowcaseRef.current = true;
+    }
+  }, [open, tab, choiceMode]);
+
+  useEffect(() => {
+    if (!open || !choiceMode || !wasFindShowcaseRef.current) return;
+    chooseFindRef.current?.focus({ preventScroll: true });
+    wasFindShowcaseRef.current = false;
+  }, [open, choiceMode]);
 
   useEffect(() => {
     if (!open) return;
@@ -172,7 +186,12 @@ export function AgentPartnerHubModal({
         <div className={styles.body}>
           {choiceMode ? (
             <div className={styles.methodChoices}>
-              <button type="button" className={styles.methodChoice} onClick={() => onTabChange("find")}>
+              <button
+                ref={chooseFindRef}
+                type="button"
+                className={styles.methodChoice}
+                onClick={() => onTabChange("find")}
+              >
                 <span className={styles.methodIcon} aria-hidden="true">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <circle cx="11" cy="11" r="7" />
@@ -214,7 +233,21 @@ export function AgentPartnerHubModal({
               </button>
             </div>
           ) : null}
-          {!choiceMode && !readyMode && tab === "find" && onChooseMethod ? <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>Другой способ приглашения</button> : null}
+          {!choiceMode && !readyMode && tab === "find" && onChooseMethod ? (
+            <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M15 18l-6 6 6-6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Другой способ приглашения
+            </button>
+          ) : null}
           <div hidden={choiceMode}>{children}</div>
         </div>
       </div>

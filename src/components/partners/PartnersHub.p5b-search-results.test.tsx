@@ -3,7 +3,7 @@ import path from "node:path";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PartnersHub } from "./PartnersHub";
+import { PartnersHub, findMainResultsWideEnough, FIND_MAIN_RESULTS_TWO_COL_MIN_PX } from "./PartnersHub";
 import { remcardFetch } from "@/lib/api-client";
 import type { PartnerSearchResult, ProProfileResponse } from "@/lib/types";
 
@@ -151,6 +151,69 @@ describe("PartnersHub P5b modal search results", () => {
     expect(cardCss).not.toContain("min-height: min-content");
   });
 
+  it("enables two-column find results from measured findMain width (932px yes, 404px no)", () => {
+    expect(FIND_MAIN_RESULTS_TWO_COL_MIN_PX).toBe(640);
+    expect(findMainResultsWideEnough(932)).toBe(true);
+    expect(findMainResultsWideEnough(404)).toBe(false);
+  });
+
+  it("reflects ResizeObserver findMain width on data-results-wide", async () => {
+    const observers: ResizeObserverCallback[] = [];
+    class MockResizeObserver {
+      constructor(private readonly callback: ResizeObserverCallback) {
+        observers.push(callback);
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+
+    mockApis([searchPartner("wide-1"), searchPartner("wide-2")]);
+    render(
+      <PartnersHub
+        meId="agent-me"
+        initialProfile={agentProfile}
+        variant="agent-r04"
+        agentModalSurface="find"
+        forcedTab="find"
+        partnersAudience="agent-r04"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-partner-find-main")).toBeInTheDocument();
+    });
+    const main = screen.getByTestId("agent-partner-find-main");
+    const rect = (width: number): DOMRect =>
+      ({
+        width,
+        height: 400,
+        top: 0,
+        left: 0,
+        bottom: 400,
+        right: width,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    vi.spyOn(main, "getBoundingClientRect").mockReturnValue(rect(932));
+    for (const callback of observers) {
+      callback([], {} as ResizeObserver);
+    }
+    await waitFor(() => {
+      expect(main).toHaveAttribute("data-results-wide", "true");
+    });
+
+    vi.spyOn(main, "getBoundingClientRect").mockReturnValue(rect(404));
+    for (const callback of observers) {
+      callback([], {} as ResizeObserver);
+    }
+    await waitFor(() => {
+      expect(main).toHaveAttribute("data-results-wide", "false");
+    });
+  });
+
   it("renders every loaded result (no silent 12-cap), honest count, and opens invite", async () => {
     const partners = Array.from({ length: 14 }, (_, i) => searchPartner(`id-${i + 1}`));
     mockApis(partners, "cursor-more");
@@ -174,6 +237,7 @@ describe("PartnersHub P5b modal search results", () => {
     expect(within(results).getAllByTestId("agent-partner-search-result-card")).toHaveLength(14);
 
     await userEvent.click(
+      // Invite label comes from searchResultInviteFoot (not always «Пригласить»); testid is stable.
       within(results).getAllByTestId("agent-partner-search-result-invite")[0]!,
     );
     expect(screen.getByTestId("partner-invite-dialog")).toHaveAttribute(

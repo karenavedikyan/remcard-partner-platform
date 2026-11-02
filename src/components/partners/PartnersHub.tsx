@@ -160,6 +160,13 @@ function partnerTitle(partner: { displayName: string | null; organizationName?: 
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
+/** Measured findMain width in hub-wide dialog (~932px @ 1240 sheet), not viewport. */
+export const FIND_MAIN_RESULTS_TWO_COL_MIN_PX = 640;
+
+export function findMainResultsWideEnough(mainWidthPx: number): boolean {
+  return mainWidthPx > FIND_MAIN_RESULTS_TWO_COL_MIN_PX;
+}
+
 export function PartnersHub({
   meId,
   initialProfile,
@@ -556,7 +563,7 @@ export function PartnersHub({
     const node = findMainRef.current;
     if (!node) return;
     const measure = () => {
-      setFindResultsWide(node.getBoundingClientRect().width > 1000);
+      setFindResultsWide(findMainResultsWideEnough(node.getBoundingClientRect().width));
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;
@@ -1650,27 +1657,6 @@ export function PartnersHub({
    */
   const agentFindShowcase = (
     <div className={styles.findShell} data-testid="agent-partner-find-showcase">
-      {onOpenPartnerHub ? (
-        <div className={styles.findShowcaseIntro}>
-          <button
-            type="button"
-            className={styles.findBack}
-            onClick={() => onOpenPartnerHub("find")}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M15 18l-6-6 6-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            К выбору способа
-          </button>
-        </div>
-      ) : null}
       <p className={styles.modalLead}>
         Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
       </p>
@@ -1715,6 +1701,7 @@ export function PartnersHub({
         <div
           className={styles.findMain}
           ref={findMainRef}
+          data-testid="agent-partner-find-main"
           data-results-wide={findResultsWide ? "true" : "false"}
         >
           <div className={styles.findHeading}>
