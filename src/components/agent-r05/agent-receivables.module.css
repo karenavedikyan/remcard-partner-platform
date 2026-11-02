@@ -60,17 +60,33 @@
   gap: var(--space-4);
   text-align: left;
   padding: var(--space-6);
-  border: 1px solid var(--accent, var(--primary));
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--accent, var(--primary)) 8%, var(--surface));
+  background: var(--surface);
   color: var(--text);
-  cursor: pointer;
   width: 100%;
+  font: inherit;
+}
+
+.totalTilePrimary {
+  background: var(--soft);
+  border-color: var(--primary);
+  cursor: pointer;
+}
+
+.totalTilePrimary:hover {
+  border-color: var(--primary);
+}
+
+.totalTilePrimary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .totalTile > span:first-child {
-  font-size: var(--text-lg);
-  font-weight: 750;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-weight: 650;
 }
 
 .totalTile > strong {
@@ -78,13 +94,28 @@
   line-height: 1.2;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 
-.totalTile small {
+.totalTilePrimary > small {
   display: flex;
   justify-content: space-between;
+  gap: var(--space-2);
   color: var(--muted);
   font-size: var(--text-sm);
+}
+
+.overviewFootnotes {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.overviewFootnotes p {
+  margin: 0;
 }
 
 .helpNote {

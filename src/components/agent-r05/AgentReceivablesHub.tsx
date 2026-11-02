@@ -427,10 +427,10 @@ export function AgentReceivablesHub() {
         {loading && !overview ? <p className={styles.meta}>Загружаем…</p> : null}
         {overview ? (
           <>
-            <div className={styles.overviewGrid}>
+            <div className={styles.overviewGrid} data-testid="agent-r05-overview-grid">
               <button
                 type="button"
-                className={styles.totalTile}
+                className={`${styles.totalTile} ${styles.totalTilePrimary}`}
                 data-testid="agent-r05-incoming-tile"
                 onClick={() => {
                   setScreen("partners");
@@ -439,20 +439,28 @@ export function AgentReceivablesHub() {
               >
                 <span>Мне должны</span>
                 <strong>{formatKopecks(overview.confirmedTotalKopecks)}</strong>
-                <small>Только подтверждённые неоплаченные суммы</small>
                 <small>
                   Посмотреть партнёров <span aria-hidden="true">→</span>
                 </small>
               </button>
-              <div className={styles.totalTile} data-testid="agent-reward-pending">
-                <span>Ожидает подтверждения</span>
-                <strong>{formatKopecks(overview.pendingTotalKopecks ?? 0)}</strong>
-                <small>Не входит в баланс</small>
-              </div>
-              {(overview.suspendedTotalKopecks ?? 0) > 0 ? <div className={styles.totalTile}>
-                <span>Приостановлено</span><strong>{formatKopecks(overview.suspendedTotalKopecks ?? 0)}</strong>
-              </div> : null}
             </div>
+            {(overview.pendingTotalKopecks ?? 0) > 0 ||
+            (overview.suspendedTotalKopecks ?? 0) > 0 ? (
+              <div className={styles.overviewFootnotes}>
+                {(overview.pendingTotalKopecks ?? 0) > 0 ? (
+                  <p data-testid="agent-reward-pending">
+                    Ожидает подтверждения: {formatKopecks(overview.pendingTotalKopecks ?? 0)} — не
+                    входит в баланс.
+                  </p>
+                ) : null}
+                {(overview.suspendedTotalKopecks ?? 0) > 0 ? (
+                  <p data-testid="agent-reward-suspended">
+                    Приостановлено: {formatKopecks(overview.suspendedTotalKopecks ?? 0)} — не входит
+                    в баланс.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <details className={styles.helpNote}>
               <summary>Справка по кошельку</summary>
               <p className={styles.muted}>

@@ -8,7 +8,9 @@ const BASE = process.env.SETTLEMENTS_QA_URL ?? "http://127.0.0.1:5211";
 
 const scenes = [
   { id: "hub-overview", scene: "hub-overview" },
+  { id: "hub-completed", scene: "hub-overview&completed=1" },
   { id: "specialist-overview", scene: "specialist-overview" },
+  { id: "specialist-partners", scene: "specialist-partners" },
   { id: "agent-overview", scene: "agent-overview" },
 ];
 

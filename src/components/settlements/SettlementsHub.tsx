@@ -35,6 +35,11 @@ import {
 import styles from "./settlements.module.css";
 import { RewardLifecyclePanel } from "./RewardLifecyclePanel";
 
+function obligationPrimaryTitle(row: SettlementObligation) {
+  const basis = row.basis?.trim();
+  return basis || "Начисление";
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
     day: "2-digit",
@@ -119,9 +124,8 @@ function ObligationRow({
       <details>
         <summary>
           <span className={styles.recordLineInfo}>
-            <strong>Заказ {row.orderId}</strong>
+            <strong>{obligationPrimaryTitle(row)}</strong>
             {hideCounterparty ? null : <span>{row.counterpartyName}</span>}
-            <small>{row.basis}</small>
           </span>
           <span className={styles.recordLineValue}>
             <strong>{formatMoneyRub(row.amount)}</strong>
@@ -136,6 +140,9 @@ function ObligationRow({
             </p>
           ) : null}
           <p className={styles.meta}>Создано: {formatDate(row.createdAt)}</p>
+          <p className={styles.meta}>
+            Заказ: {row.orderId} · ID начисления: {row.id}
+          </p>
           {row.hasIndividualTerms ? (
             <details className={styles.lifecycleDetails}>
               <summary>Категории, сроки и расчёты</summary>
@@ -401,8 +408,14 @@ export function SettlementsHub() {
           <p className={styles.summaryLabel}>Мне должны</p>
           <p className={styles.summaryValue}>{formatMoneyRub(receivableTotal)}</p>
           <p className={styles.summaryTileFooter}>
-            <span>Ожидает подтверждения: {formatMoneyRub(pendingReceivable)}</span>
-            <span>Посмотреть партнёров →</span>
+            {pendingReceivable > 0 ? (
+              <span className={styles.summaryTileFooterMuted}>
+                Ожидает подтверждения: {formatMoneyRub(pendingReceivable)}
+              </span>
+            ) : (
+              <span className={styles.summaryTileFooterMuted} />
+            )}
+            <span className={styles.summaryTileFooterAction}>Посмотреть партнёров →</span>
           </p>
         </button>
         <button
@@ -414,23 +427,28 @@ export function SettlementsHub() {
           <p className={styles.summaryLabel}>Я должен</p>
           <p className={styles.summaryValue}>{formatMoneyRub(payableTotal)}</p>
           <p className={styles.summaryTileFooter}>
-            <span>Ожидает подтверждения: {formatMoneyRub(pendingPayable)}</span>
-            <span>Посмотреть партнёров →</span>
+            {pendingPayable > 0 ? (
+              <span className={styles.summaryTileFooterMuted}>
+                Ожидает подтверждения: {formatMoneyRub(pendingPayable)}
+              </span>
+            ) : (
+              <span className={styles.summaryTileFooterMuted} />
+            )}
+            <span className={styles.summaryTileFooterAction}>Посмотреть партнёров →</span>
           </p>
         </button>
-        <button
+      </div>
+
+      <div className={styles.summaryActions}>
+        <Button
           type="button"
-          className={`${styles.summaryCard} ${styles.summaryCardButton}`}
+          variant="secondary"
           aria-pressed={tab === "completed"}
+          data-testid="settlements-completed-history"
           onClick={() => setTab("completed")}
         >
-          <p className={styles.summaryLabel}>Завершённые</p>
-          <p className={styles.summaryValue}>{data.completed.length}</p>
-          <p className={styles.summaryTileFooter}>
-            <span>История выплат</span>
-            <span>Открыть →</span>
-          </p>
-        </button>
+          Завершённые взаиморасчёты ({data.completed.length})
+        </Button>
       </div>
 
       <Tabs items={TAB_ITEMS} active={tab} onChange={setTab} />

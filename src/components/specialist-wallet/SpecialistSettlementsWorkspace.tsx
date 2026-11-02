@@ -59,6 +59,17 @@ type Props = {
 
 const DEFAULT_PAYABLE_SUMMARY = "Я должен";
 
+function obligationPrimaryTitle(row: SettlementObligation) {
+  const basis = row.basis?.trim();
+  return basis || "Начисление";
+}
+
+function partnerFocusAmount(group: SettlementPartnerGroup) {
+  if (group.completedOnly) return "—";
+  if (group.totalAmount <= 0) return "—";
+  return formatMoneyRub(group.totalAmount);
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
     day: "2-digit",
@@ -140,13 +151,8 @@ function ObligationCard({
       <details open={full}>
         <summary>
           <span className={hubStyles.recordLineInfo}>
-            <strong>{compact ? formatMoneyRub(row.amount) : `Заказ ${row.orderId}`}</strong>
+            <strong>{compact ? formatMoneyRub(row.amount) : obligationPrimaryTitle(row)}</strong>
             {!compact ? <span>{row.counterpartyName}</span> : null}
-            {!compact ? <small>{row.basis}</small> : full ? (
-              <small>
-                Заказ: {row.orderId} · ID начисления: {row.id}
-              </small>
-            ) : null}
             {compact ? <small>{row.basis}</small> : null}
           </span>
           <span className={hubStyles.recordLineValue}>
@@ -164,6 +170,9 @@ function ObligationCard({
           {view !== "compact" ? (
             <p className={hubStyles.meta}>Создано: {formatDate(row.createdAt)}</p>
           ) : null}
+          <p className={hubStyles.meta}>
+            Заказ: {row.orderId} · ID начисления: {row.id}
+          </p>
           {row.hasIndividualTerms ? (
             <details className={hubStyles.lifecycleDetails}>
               <summary>Категории, сроки и расчёты</summary>
@@ -670,9 +679,12 @@ export function SpecialistSettlementsWorkspace({
               <h2 className={hubStyles.groupTitle}>{selectedPartner.counterpartyName}</h2>
             </div>
             <strong className={hubStyles.focusHeaderAmount}>
-              {formatMoneyRub(selectedPartner.totalAmount)}
+              {partnerFocusAmount(selectedPartner)}
             </strong>
           </div>
+          {selectedPartner.completedOnly ? (
+            <p className={hubStyles.meta}>Только история завершённых выплат</p>
+          ) : null}
           <div className={hubStyles.actions}>
             <Button type="button" variant="secondary" onClick={() => setScreen("partnerHistory")}>
               История партнёра

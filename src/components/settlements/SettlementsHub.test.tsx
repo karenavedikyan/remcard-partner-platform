@@ -197,4 +197,42 @@ describe("SettlementsHub", () => {
     expect(tile).toHaveTextContent("100");
     expect(tile).toHaveTextContent("500");
   });
+
+  it("uses two direction tiles and a separate completed history control", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [{ id: "c1", orderId: "o1", accrualType: "bonus", counterpartyId: "x", counterpartyName: "Done", amount: 1, basis: "B", status: "PAID", createdAt: "2026-10-01T10:00:00.000Z", paidAt: "2026-10-02T10:00:00.000Z", direction: "receivable" }],
+    });
+    render(<SettlementsHub />);
+    await screen.findByTestId("settlements-hub");
+    expect(screen.getAllByRole("button", { name: /мне должны|я должен/i })).toHaveLength(2);
+    expect(screen.getByTestId("settlements-completed-history")).toHaveTextContent("(1)");
+    expect(screen.queryByRole("button", { name: /^завершённые$/i })).toBeNull();
+  });
+
+  it("uses certificate basis as row title instead of internal order id", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [
+        {
+          id: "b1",
+          orderId: "internal-order-uuid",
+          accrualType: "bonus",
+          counterpartyId: "a",
+          counterpartyName: "Shop",
+          amount: 10,
+          basis: "Сертификат RC-TITLE",
+          status: "CONFIRMED",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
+      payable: [],
+      completed: [],
+    });
+    render(<SettlementsHub />);
+    expect(await screen.findByText("Сертификат RC-TITLE")).toBeInTheDocument();
+    expect(screen.queryByText(/Заказ internal-order-uuid/i)).toBeNull();
+  });
 });
