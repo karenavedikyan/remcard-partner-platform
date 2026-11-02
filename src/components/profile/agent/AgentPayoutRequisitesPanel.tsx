@@ -80,7 +80,35 @@ function pickDefaultWalletId(items: AgentRequisitesItem[]): string | null {
   );
 }
 
-function validateClientForm(form: FormState): {
+function isVersionConflict(error: unknown): boolean {
+  return (
+    error instanceof RemcardApiError &&
+    error.status === 409 &&
+    error.body?.code === "VERSION_CONFLICT"
+  );
+}
+
+function profileAccountLine(item: AgentRequisitesItem): string {
+  const parts = [KIND_LABELS[item.kind] ?? item.kind];
+  if (item.bankName) parts.push(item.bankName);
+  parts.push(`счёт …${accountSuffix(item)}`);
+  return parts.join(" · ");
+}
+
+function bankFieldsTouched(form: FormState): boolean {
+  return !!(
+    form.bankName.trim() ||
+    form.bik.trim() ||
+    form.accountNumber.trim() ||
+    form.corrAccount.trim()
+  );
+}
+
+function validateClientForm(
+  form: FormState,
+  mode: "create" | "revise",
+  fieldId: (key: string) => string,
+): {
   fieldErrors: Partial<Record<keyof FormState, string>>;
   formError: string;
   firstFieldId: string | null;
@@ -89,31 +117,35 @@ function validateClientForm(form: FormState): {
   let formError = "";
   let firstFieldId: string | null = null;
 
-  const mark = (key: keyof FormState, message: string, fieldId: string) => {
+  const mark = (key: keyof FormState, message: string, idKey: string) => {
     if (!fieldErrors[key]) {
       fieldErrors[key] = message;
-      if (!firstFieldId) firstFieldId = fieldId;
+      if (!firstFieldId) firstFieldId = fieldId(idKey);
       if (!formError) formError = message;
     }
   };
 
   if (!form.legalName.trim()) {
-    mark("legalName", "Укажите получателя.", "req-name");
+    mark("legalName", "Укажите получателя.", "name");
   }
-  if (!form.bankName.trim()) {
-    mark("bankName", "Укажите название банка.", "req-bank");
-  }
-  const bik = digitsOnly(form.bik);
-  if (!/^\d{9}$/.test(bik)) {
-    mark("bik", "БИК должен содержать 9 цифр.", "req-bik");
-  }
-  const account = form.accountNumber.replace(/\s/g, "");
-  if (!/^\d{20}$/.test(account)) {
-    mark("accountNumber", "Счёт должен содержать 20 цифр.", "req-acc");
-  }
-  const corr = form.corrAccount.replace(/\s/g, "");
-  if (!/^\d{20}$/.test(corr)) {
-    mark("corrAccount", "Корреспондентский счёт должен содержать 20 цифр.", "req-corr");
+
+  const requireBank = mode === "create" || bankFieldsTouched(form);
+  if (requireBank) {
+    if (!form.bankName.trim()) {
+      mark("bankName", "Укажите название банка.", "bank");
+    }
+    const bik = digitsOnly(form.bik);
+    if (!/^\d{9}$/.test(bik)) {
+      mark("bik", "БИК должен содержать 9 цифр.", "bik");
+    }
+    const account = form.accountNumber.replace(/\s/g, "");
+    if (!/^\d{20}$/.test(account)) {
+      mark("accountNumber", "Счёт должен содержать 20 цифр.", "acc");
+    }
+    const corr = form.corrAccount.replace(/\s/g, "");
+    if (!/^\d{20}$/.test(corr)) {
+      mark("corrAccount", "Корреспондентский счёт должен содержать 20 цифр.", "corr");
+    }
   }
 
   const inn = digitsOnly(form.inn);
@@ -122,7 +154,7 @@ function validateClientForm(form: FormState): {
       mark(
         "inn",
         "Проверьте длину ИНН: 10 цифр для организации, 12 для физлица или ИП.",
-        "req-inn",
+        "inn",
       );
     }
   } else if (form.kind === "ip") {
@@ -130,25 +162,59 @@ function validateClientForm(form: FormState): {
       mark(
         "inn",
         "Проверьте длину ИНН: 10 цифр для организации, 12 для физлица или ИП.",
-        "req-inn",
+        "inn",
       );
     }
   } else if (inn && !/^\d{12}$/.test(inn)) {
     mark(
       "inn",
       "Проверьте длину ИНН: 10 цифр для организации, 12 для физлица или ИП.",
-      "req-inn",
+      "inn",
     );
   }
 
   if (form.kind === "company") {
     const kpp = digitsOnly(form.kpp);
     if (!/^\d{9}$/.test(kpp)) {
-      mark("kpp", "КПП должен содержать 9 цифр.", "req-kpp");
+      mark("kpp", "КПП должен содержать 9 цифр.", "kpp");
     }
   }
 
   return { fieldErrors, formError, firstFieldId };
+}
+
+function buildCreatePayload(form: FormState, isFirstItem: boolean) {
+  return {
+    kind: form.kind,
+    legalName: form.legalName.trim(),
+    label: form.label.trim() || undefined,
+    bankName: form.bankName.trim(),
+    bik: digitsOnly(form.bik),
+    accountNumber: form.accountNumber.replace(/\s/g, ""),
+    corrAccount: form.corrAccount.replace(/\s/g, ""),
+    inn: digitsOnly(form.inn) || undefined,
+    kpp: form.kind === "company" ? digitsOnly(form.kpp) : undefined,
+    isPrimary: isFirstItem,
+  };
+}
+
+function buildRevisePayload(form: FormState, expectedVersion: number | null) {
+  const body: Record<string, unknown> = {
+    action: "revise",
+    kind: form.kind,
+    legalName: form.legalName.trim(),
+    label: form.label.trim() || null,
+    bankName: form.bankName.trim(),
+    bik: digitsOnly(form.bik),
+    accountNumber: form.accountNumber.replace(/\s/g, ""),
+    corrAccount: form.corrAccount.replace(/\s/g, ""),
+    inn: digitsOnly(form.inn),
+    kpp: form.kind === "company" ? digitsOnly(form.kpp) : "",
+  };
+  if (expectedVersion != null) {
+    body.expectedVersion = expectedVersion;
+  }
+  return body;
 }
 
 export function AgentPayoutRequisitesPanel({
@@ -156,8 +222,12 @@ export function AgentPayoutRequisitesPanel({
   variant = "profile",
 }: AgentPayoutRequisitesPanelProps) {
   const isWallet = variant === "wallet";
+  const mutatingDisabled = disabled;
+  const fieldUid = useId().replace(/:/g, "");
+  const fieldId = (key: string) => `req-${fieldUid}-${key}`;
   const [items, setItems] = useState<AgentRequisitesItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [formAlert, setFormAlert] = useState("");
@@ -167,28 +237,65 @@ export function AgentPayoutRequisitesPanel({
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
   const [detailById, setDetailById] = useState<Record<string, AgentRequisitesItem>>({});
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
-  const [copyStatus, setCopyStatus] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const copyFallbackRef = useRef<HTMLTextAreaElement>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editExpectedVersion, setEditExpectedVersion] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const dialogTitleId = useId();
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const hasLoadedListRef = useRef(false);
 
   const heading = isWallet ? "Куда получать оплату" : "Реквизиты для получения оплаты";
+  const restrictionMark = mutatingDisabled ? "Изменения недоступны" : "Необязательно";
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    setError("");
+    if (!hasLoadedListRef.current) {
+      setInitialLoading(true);
+    } else {
+      setRefreshing(true);
+    }
     try {
       const data = await listAgentRequisites();
       setItems(data.items ?? []);
+      hasLoadedListRef.current = true;
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить реквизиты");
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
     }
   }, []);
+
+  const resyncAfterVersionConflict = useCallback(
+    async (recordId: string) => {
+      setRefreshing(true);
+      try {
+        const data = await listAgentRequisites();
+        setItems(data.items ?? []);
+        setDetailById((prev) => {
+          const next = { ...prev };
+          delete next[recordId];
+          return next;
+        });
+        try {
+          const fresh = await fetchAgentRequisites(recordId);
+          setDetailById((prev) => ({ ...prev, [recordId]: fresh.item }));
+          if (formOpen && editId === recordId) {
+            setEditExpectedVersion(fresh.item.version);
+          }
+        } catch {
+          /* list refresh still helps retry */
+        }
+        setError(
+          "Реквизиты были изменены в другом окне. Данные обновлены — проверьте форму и сохраните снова.",
+        );
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [editId, formOpen],
+  );
 
   useEffect(() => {
     void reload();
@@ -287,9 +394,9 @@ export function AgentPayoutRequisitesPanel({
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (disabled || pendingId === "form") return;
+    if (mutatingDisabled || pendingId === "form") return;
 
-    const clientValidation = validateClientForm(form);
+    const clientValidation = validateClientForm(form, editId ? "revise" : "create", fieldId);
     if (clientValidation.formError) {
       setFieldErrors(clientValidation.fieldErrors);
       setFormAlert(clientValidation.formError);
@@ -304,30 +411,10 @@ export function AgentPayoutRequisitesPanel({
     setFormAlert("");
     setError("");
     try {
-      const normalized = {
-        ...form,
-        bik: digitsOnly(form.bik),
-        inn: digitsOnly(form.inn) || undefined,
-        kpp: form.kind === "company" ? digitsOnly(form.kpp) : undefined,
-        accountNumber: form.accountNumber.replace(/\s/g, ""),
-        corrAccount: form.corrAccount.replace(/\s/g, ""),
-        label: form.label.trim() || undefined,
-      };
       if (editId) {
-        const body: Record<string, unknown> = {
-          action: "revise",
-          ...normalized,
-          label: form.label.trim() || null,
-        };
-        if (editExpectedVersion != null) {
-          body.expectedVersion = editExpectedVersion;
-        }
-        await patchAgentRequisites(editId, body);
+        await patchAgentRequisites(editId, buildRevisePayload(form, editExpectedVersion));
       } else {
-        await createAgentRequisites({
-          ...normalized,
-          isPrimary: items.length === 0,
-        });
+        await createAgentRequisites(buildCreatePayload(form, items.length === 0));
       }
       setFormOpen(false);
       restoreFocusRef.current?.focus();
@@ -335,10 +422,11 @@ export function AgentPayoutRequisitesPanel({
       setExpandedId(null);
       await reload();
     } catch (caught) {
-      if (caught instanceof RemcardApiError && caught.status === 409) {
-        setError("Реквизиты были изменены в другом окне. Обновите данные и повторите.");
+      if (isVersionConflict(caught) && editId) {
+        await resyncAfterVersionConflict(editId);
       } else if (caught instanceof RemcardApiError && caught.body?.fields) {
         setFieldErrors(caught.body.fields as Partial<Record<keyof FormState, string>>);
+        setError(caught.message);
       } else {
         setError(caught instanceof RemcardApiError ? caught.message : "Ошибка сохранения");
       }
@@ -348,13 +436,13 @@ export function AgentPayoutRequisitesPanel({
   };
 
   const runAction = async (id: string, action: "setPrimary" | "applyForNextPayout" | "archive") => {
-    if (disabled || pendingId) return;
+    if (mutatingDisabled || pendingId) return;
     if (action === "archive" && !window.confirm("Архивировать этот набор? Он не будет доступен для нового выбора.")) {
       return;
     }
     setPendingId(id);
     setError("");
-    setCopyStatus("");
+    setStatusMessage("");
     try {
       await patchAgentRequisites(id, { action });
       setDetailById((prev) => {
@@ -365,14 +453,18 @@ export function AgentPayoutRequisitesPanel({
       if (expandedId === id) setExpandedId(null);
       await reload();
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие");
+      if (isVersionConflict(caught)) {
+        await resyncAfterVersionConflict(id);
+      } else {
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить действие");
+      }
     } finally {
       setPendingId(null);
     }
   };
 
   const copyItem = async (item: AgentRequisitesItem) => {
-    setCopyStatus("");
+    setStatusMessage("");
     setError("");
     const full = await ensureFullDetail(item.id);
     if (!full || !hasFullRequisitesForCopy(full)) {
@@ -382,15 +474,15 @@ export function AgentPayoutRequisitesPanel({
     const text = formatRequisitesCopyText(full);
     try {
       await navigator.clipboard.writeText(text);
-      setCopyStatus("Скопировано в буфер обмена");
+      setStatusMessage("Скопировано в буфер обмена");
     } catch {
       if (copyFallbackRef.current) {
         copyFallbackRef.current.hidden = false;
         copyFallbackRef.current.value = text;
         copyFallbackRef.current.select();
-        setCopyStatus("Скопируйте текст вручную из поля ниже");
+        setStatusMessage("Скопируйте текст вручную из поля ниже");
       } else {
-        setCopyStatus("Не удалось скопировать автоматически");
+        setStatusMessage("Не удалось скопировать автоматически");
       }
     }
   };
@@ -464,12 +556,12 @@ export function AgentPayoutRequisitesPanel({
     >
       <h3 id={dialogTitleId}>{editId ? "Изменить реквизиты" : "Новые реквизиты"}</h3>
       <div className={styles.field}>
-        <label htmlFor="req-kind">Тип получателя</label>
+        <label htmlFor={fieldId("kind")}>Тип получателя</label>
         <select
-          id="req-kind"
+          id={fieldId("kind")}
           data-testid="bank-type"
           value={form.kind}
-          disabled={disabled || pendingId === "form"}
+          disabled={mutatingDisabled || pendingId === "form"}
           onChange={(e) => {
             setForm((f) => ({ ...f, kind: e.target.value as FormState["kind"] }));
             setFormAlert("");
@@ -482,27 +574,27 @@ export function AgentPayoutRequisitesPanel({
       </div>
       <div className={`${styles.fields} ${styles.fieldsTwo}`}>
         <div className={styles.field}>
-          <label htmlFor="req-label">Название набора</label>
+          <label htmlFor={fieldId("label")}>Название набора</label>
           <input
-            id="req-label"
+            id={fieldId("label")}
             data-testid="bank-label"
             value={form.label}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
             autoComplete="off"
           />
           <small>Например, Личный счёт или Основной счёт компании.</small>
         </div>
         <div className={styles.field}>
-          <label htmlFor="req-name">
+          <label htmlFor={fieldId("name")}>
             {legalNameLabel(form.kind)}
             <span className={styles.required}> *</span>
           </label>
           <input
-            id="req-name"
+            id={fieldId("name")}
             data-testid="bank-recipient"
             value={form.legalName}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             aria-invalid={fieldErrors.legalName ? "true" : undefined}
             onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
             autoComplete="off"
@@ -512,14 +604,14 @@ export function AgentPayoutRequisitesPanel({
           ) : null}
         </div>
         <div className={styles.field}>
-          <label htmlFor="req-bank">
+          <label htmlFor={fieldId("bank")}>
             Название банка<span className={styles.required}> *</span>
           </label>
           <input
-            id="req-bank"
+            id={fieldId("bank")}
             data-testid="bank-bank"
             value={form.bankName}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             aria-invalid={fieldErrors.bankName ? "true" : undefined}
             onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))}
             autoComplete="off"
@@ -529,15 +621,15 @@ export function AgentPayoutRequisitesPanel({
           ) : null}
         </div>
         <div className={styles.field}>
-          <label htmlFor="req-bik">
+          <label htmlFor={fieldId("bik")}>
             БИК<span className={styles.required}> *</span>
           </label>
           <input
-            id="req-bik"
+            id={fieldId("bik")}
             data-testid="bank-bik"
             inputMode="numeric"
             value={form.bik}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             aria-invalid={fieldErrors.bik ? "true" : undefined}
             onChange={(e) => setForm((f) => ({ ...f, bik: e.target.value }))}
             autoComplete="off"
@@ -546,16 +638,16 @@ export function AgentPayoutRequisitesPanel({
           {fieldErrors.bik ? <small className={styles.fieldError}>{fieldErrors.bik}</small> : null}
         </div>
         <div className={styles.field}>
-          <label htmlFor="req-acc">
+          <label htmlFor={fieldId("acc")}>
             {accountLabel}
             <span className={styles.required}> *</span>
           </label>
           <input
-            id="req-acc"
+            id={fieldId("acc")}
             data-testid="bank-account"
             inputMode="numeric"
             value={form.accountNumber}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             aria-invalid={fieldErrors.accountNumber ? "true" : undefined}
             onChange={(e) => setForm((f) => ({ ...f, accountNumber: e.target.value }))}
             autoComplete="off"
@@ -566,15 +658,15 @@ export function AgentPayoutRequisitesPanel({
           ) : null}
         </div>
         <div className={styles.field}>
-          <label htmlFor="req-corr">
+          <label htmlFor={fieldId("corr")}>
             Корреспондентский счёт<span className={styles.required}> *</span>
           </label>
           <input
-            id="req-corr"
+            id={fieldId("corr")}
             data-testid="bank-correspondent"
             inputMode="numeric"
             value={form.corrAccount}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             aria-invalid={fieldErrors.corrAccount ? "true" : undefined}
             onChange={(e) => setForm((f) => ({ ...f, corrAccount: e.target.value }))}
             autoComplete="off"
@@ -585,16 +677,16 @@ export function AgentPayoutRequisitesPanel({
           ) : null}
         </div>
         <div className={styles.field}>
-          <label htmlFor="req-inn">
+          <label htmlFor={fieldId("inn")}>
             ИНН получателя
             {form.kind !== "person" ? <span className={styles.required}> *</span> : null}
           </label>
           <input
-            id="req-inn"
+            id={fieldId("inn")}
             data-testid="bank-inn"
             inputMode="numeric"
             value={form.inn}
-            disabled={disabled || pendingId === "form"}
+            disabled={mutatingDisabled || pendingId === "form"}
             aria-invalid={fieldErrors.inn ? "true" : undefined}
             onChange={(e) => setForm((f) => ({ ...f, inn: e.target.value }))}
             autoComplete="off"
@@ -610,15 +702,15 @@ export function AgentPayoutRequisitesPanel({
         </div>
         {form.kind === "company" ? (
           <div className={styles.field}>
-            <label htmlFor="req-kpp">
+            <label htmlFor={fieldId("kpp")}>
               КПП<span className={styles.required}> *</span>
             </label>
             <input
-              id="req-kpp"
+              id={fieldId("kpp")}
               data-testid="bank-kpp"
               inputMode="numeric"
               value={form.kpp}
-              disabled={disabled || pendingId === "form"}
+              disabled={mutatingDisabled || pendingId === "form"}
               aria-invalid={fieldErrors.kpp ? "true" : undefined}
               onChange={(e) => setForm((f) => ({ ...f, kpp: e.target.value }))}
               autoComplete="off"
@@ -637,7 +729,7 @@ export function AgentPayoutRequisitesPanel({
         <button
           type="submit"
           className={`${styles.btn} ${styles.btnPrimary}`}
-          disabled={disabled || pendingId === "form"}
+          disabled={mutatingDisabled || pendingId === "form"}
           data-testid="bank-save"
         >
           {pendingId === "form" ? "Сохранение…" : "Сохранить реквизиты"}
@@ -682,16 +774,12 @@ export function AgentPayoutRequisitesPanel({
                 <strong>{item.label?.trim() || item.legalName}</strong>
                 {item.isPrimary ? <span className={styles.status}>Основные</span> : null}
               </div>
-              <small>
-                {KIND_LABELS[item.kind] ?? item.kind}
-                {item.bankName ? ` · ${item.bankName}` : ""}
-                {item.accountNumberMasked ? ` · ${item.accountNumberMasked}` : ""}
-              </small>
+              <small>{profileAccountLine(item)}</small>
               <div className={styles.bankActionsPrimary}>
                 <button
                   type="button"
                   className={styles.btn}
-                  disabled={disabled || pendingId === item.id || loadingDetail}
+                  disabled={pendingId === item.id || loadingDetail}
                   onClick={() => void toggleExpanded(item)}
                 >
                   {expandedId === item.id ? "Скрыть" : "Посмотреть"}
@@ -699,7 +787,7 @@ export function AgentPayoutRequisitesPanel({
                 <button
                   type="button"
                   className={styles.btn}
-                  disabled={disabled || pendingId === item.id}
+                  disabled={pendingId === item.id}
                   onClick={() => void copyItem(item)}
                 >
                   Скопировать
@@ -707,7 +795,7 @@ export function AgentPayoutRequisitesPanel({
                 <button
                   type="button"
                   className={styles.btn}
-                  disabled={disabled || pendingId === item.id}
+                  disabled={mutatingDisabled || pendingId === item.id}
                   onClick={(e) => void openEdit(item.id, e.currentTarget)}
                 >
                   Изменить
@@ -727,7 +815,7 @@ export function AgentPayoutRequisitesPanel({
                     <button
                       type="button"
                       className={styles.btn}
-                      disabled={disabled || pendingId === item.id}
+                      disabled={mutatingDisabled || pendingId === item.id}
                       onClick={() => void runAction(item.id, "setPrimary")}
                     >
                       Сделать основными
@@ -739,7 +827,7 @@ export function AgentPayoutRequisitesPanel({
                     <button
                       type="button"
                       className={styles.btn}
-                      disabled={disabled || pendingId === item.id}
+                      disabled={mutatingDisabled || pendingId === item.id}
                       onClick={() => void runAction(item.id, "applyForNextPayout")}
                     >
                       Применить для следующего расчёта
@@ -748,7 +836,7 @@ export function AgentPayoutRequisitesPanel({
                   <button
                     type="button"
                     className={styles.btn}
-                    disabled={disabled || pendingId === item.id}
+                    disabled={mutatingDisabled || pendingId === item.id}
                     onClick={() => void runAction(item.id, "archive")}
                   >
                     Архивировать
@@ -773,7 +861,7 @@ export function AgentPayoutRequisitesPanel({
           <button
             type="button"
             className={styles.btnBankAdd}
-            disabled={disabled}
+            disabled={mutatingDisabled}
             onClick={(e) => openCreate(e.currentTarget)}
           >
             Добавить реквизиты
@@ -788,16 +876,15 @@ export function AgentPayoutRequisitesPanel({
     return (
       <>
         <div className={styles.field}>
-          <label htmlFor="bank-select">Получатель оплаты</label>
+          <label htmlFor={fieldId("wallet-select")}>Получатель оплаты</label>
           <select
-            id="bank-select"
+            id={fieldId("wallet-select")}
             data-testid="bank-select"
-            disabled={disabled}
             value={selectedWalletId ?? selected.id}
             onChange={(e) => {
               setSelectedWalletId(e.target.value);
               setExpandedId(null);
-              setCopyStatus("");
+              setStatusMessage("");
             }}
           >
             {items.map((item) => (
@@ -824,7 +911,7 @@ export function AgentPayoutRequisitesPanel({
           <button
             type="button"
             className={styles.btn}
-            disabled={disabled || pendingId === selected.id || loadingDetail}
+            disabled={pendingId === selected.id || loadingDetail}
             onClick={() => void toggleExpanded(selected)}
           >
             {expandedId === selected.id ? "Скрыть подробности" : "Посмотреть полностью"}
@@ -832,35 +919,31 @@ export function AgentPayoutRequisitesPanel({
           <button
             type="button"
             className={styles.btn}
-            disabled={disabled || pendingId === selected.id}
+            disabled={pendingId === selected.id}
             onClick={() => void copyItem(selected)}
           >
             Скопировать реквизиты
           </button>
-          {!disabled ? (
-            <>
-              {selected.applyForNextPayout ? (
-                <span className={styles.label}>Для следующего расчёта</span>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.btn}
-                  disabled={pendingId === selected.id}
-                  onClick={() => void runAction(selected.id, "applyForNextPayout")}
-                >
-                  Применить для следующего расчёта
-                </button>
-              )}
-              <button
-                type="button"
-                className={styles.btnBankAdd}
-                disabled={disabled}
-                onClick={(e) => openCreate(e.currentTarget)}
-              >
-                Добавить реквизиты
-              </button>
-            </>
-          ) : null}
+          {selected.applyForNextPayout ? (
+            <span className={styles.label}>Для следующего расчёта</span>
+          ) : (
+            <button
+              type="button"
+              className={styles.btn}
+              disabled={mutatingDisabled || pendingId === selected.id}
+              onClick={() => void runAction(selected.id, "applyForNextPayout")}
+            >
+              Применить для следующего расчёта
+            </button>
+          )}
+          <button
+            type="button"
+            className={styles.btnBankAdd}
+            disabled={mutatingDisabled}
+            onClick={(e) => openCreate(e.currentTarget)}
+          >
+            Добавить реквизиты
+          </button>
         </div>
         {expandedId === selected.id ? (
           loadingDetail ? (
@@ -869,6 +952,37 @@ export function AgentPayoutRequisitesPanel({
             renderDetailFacts(mergeListWithDetail(selected))
           )
         ) : null}
+        <details className={styles.bankMoreActions} data-testid="bank-wallet-more-actions">
+          <summary>Дополнительные действия</summary>
+          <div className={styles.bankActionsSecondary}>
+            <button
+              type="button"
+              className={styles.btn}
+              disabled={mutatingDisabled || pendingId === selected.id}
+              onClick={(e) => void openEdit(selected.id, e.currentTarget)}
+            >
+              Изменить
+            </button>
+            {!selected.isPrimary ? (
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={mutatingDisabled || pendingId === selected.id}
+                onClick={() => void runAction(selected.id, "setPrimary")}
+              >
+                Сделать основными
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={styles.btn}
+              disabled={mutatingDisabled || pendingId === selected.id}
+              onClick={() => void runAction(selected.id, "archive")}
+            >
+              Архивировать
+            </button>
+          </div>
+        </details>
         {selected.applyForNextPayout ? (
           <p className={styles.bannerSuccess} data-testid="bank-apply-success">
             Для следующего расчёта выбраны: {selected.label?.trim() || selected.legalName}.
@@ -890,21 +1004,21 @@ export function AgentPayoutRequisitesPanel({
     >
       <div className={styles.cardTop}>
         <h2 className={styles.title}>{heading}</h2>
-        <span className={styles.optionalMark}>{disabled ? "Только просмотр" : "Необязательно"}</span>
+        <span className={styles.optionalMark}>{restrictionMark}</span>
       </div>
       {error ? <p className={styles.bannerError}>{error}</p> : null}
-      {loading ? <p className={styles.intro}>Загрузка…</p> : null}
+      {initialLoading && !formOpen ? <p className={styles.intro}>Загрузка…</p> : null}
+      {refreshing ? (
+        <p className={styles.refreshHint} aria-live="polite">
+          Обновление…
+        </p>
+      ) : null}
 
-      {!loading && formOpen ? (
+      {formOpen ? (
         renderForm()
-      ) : !loading ? (
+      ) : !initialLoading ? (
         <>
           {isWallet ? renderWalletBody() : renderProfileList()}
-          {copyStatus ? (
-            <p className={styles.bankStatus} role="status" data-testid="bank-copy-status">
-              {copyStatus}
-            </p>
-          ) : null}
           <textarea
             ref={copyFallbackRef}
             className={styles.copyFallback}
@@ -917,7 +1031,7 @@ export function AgentPayoutRequisitesPanel({
             <button
               type="button"
               className={styles.btnBankAdd}
-              disabled={disabled}
+              disabled={mutatingDisabled}
               onClick={(e) => openCreate(e.currentTarget)}
             >
               {items.length ? "Добавить ещё реквизиты" : "Добавить реквизиты"}
@@ -925,6 +1039,9 @@ export function AgentPayoutRequisitesPanel({
           ) : null}
         </>
       ) : null}
+      <p className={styles.bankStatus} role="status" data-testid="bank-status">
+        {statusMessage}
+      </p>
     </section>
   );
 }

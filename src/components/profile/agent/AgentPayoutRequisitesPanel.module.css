@@ -19,6 +19,7 @@
   --pw-8: 2rem;
   font-family: inherit;
   font-size: var(--pw-base);
+  line-height: 1.45;
   color: var(--pw-text);
   min-width: 0;
 }
@@ -39,6 +40,17 @@
   border-radius: 12px;
   padding: var(--pw-8);
   min-width: 0;
+}
+
+.scope :focus-visible {
+  outline: 3px solid var(--pw-accent);
+  outline-offset: 3px;
+}
+
+.refreshHint {
+  font-size: var(--pw-xs);
+  color: var(--pw-muted);
+  margin: 0 0 var(--pw-3);
 }
 
 .bankPanel {
@@ -116,7 +128,7 @@
   grid-template-columns: 1fr 1fr;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .fieldsTwo {
     grid-template-columns: 1fr;
   }
@@ -136,10 +148,11 @@
   min-height: 48px;
   padding: var(--pw-3);
   border: 1px solid var(--pw-line);
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--pw-bg);
   color: var(--pw-text);
   font: inherit;
+  line-height: 1.45;
   box-sizing: border-box;
 }
 
@@ -166,12 +179,13 @@
 .btn {
   min-height: 44px;
   padding: var(--pw-3) var(--pw-5);
-  border-radius: 8px;
+  border-radius: 7px;
   border: 1px solid var(--pw-line);
   background: var(--pw-bg);
   color: var(--pw-text);
   font-weight: 700;
   font-size: var(--pw-sm);
+  line-height: 1.45;
   cursor: pointer;
 }
 
@@ -263,7 +277,7 @@
 .btnBankAdd {
   min-height: 44px;
   padding: var(--pw-3) var(--pw-5);
-  border-radius: 8px;
+  border-radius: 7px;
   border: 1px solid var(--pw-line);
   background: var(--pw-bg);
   color: var(--pw-text);
@@ -363,6 +377,7 @@
   background: var(--pw-soft);
   border-radius: 8px;
   margin: var(--pw-4) 0;
+  line-height: 1.45;
 }
 
 .kicker {
@@ -403,5 +418,15 @@
   .walletActions .btn,
   .btnBankAdd {
     width: 100%;
+  }
+
+  .fieldsTwo {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .summaryFacts {
+    grid-template-columns: 1fr;
   }
 }

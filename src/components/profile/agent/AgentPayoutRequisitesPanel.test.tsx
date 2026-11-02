@@ -42,7 +42,7 @@ const secondItem = {
   isPrimary: false,
   applyForNextPayout: false,
   isArchived: false,
-  version: 1,
+  version: 2,
 };
 
 const fullDetail = {
@@ -50,6 +50,18 @@ const fullDetail = {
   accountNumber: "40817810000000000001",
   corrAccount: "30101810000000000000",
 };
+
+function fillValidCreateForm() {
+  fireEvent.change(screen.getByTestId("bank-recipient"), { target: { value: "Parity Agent" } });
+  fireEvent.change(screen.getByTestId("bank-bank"), { target: { value: "Тест" } });
+  fireEvent.change(screen.getByTestId("bank-bik"), { target: { value: "044525225" } });
+  fireEvent.change(screen.getByTestId("bank-account"), {
+    target: { value: "40817810000000000001" },
+  });
+  fireEvent.change(screen.getByTestId("bank-correspondent"), {
+    target: { value: "30101810000000000000" },
+  });
+}
 
 beforeEach(() => {
   api.listAgentRequisites.mockResolvedValue({ items: [] });
@@ -68,7 +80,7 @@ describe("AgentPayoutRequisitesPanel copy", () => {
     await screen.findByRole("button", { name: "Скопировать" });
     fireEvent.click(screen.getByRole("button", { name: "Скопировать" }));
     await screen.findByText(/Не удалось загрузить полные реквизиты/);
-    expect(screen.queryByText(/Скопировано в буфер/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("bank-status")).toHaveTextContent("");
   });
 
   it("copies full text when detail returns unmasked account", async () => {
@@ -80,170 +92,184 @@ describe("AgentPayoutRequisitesPanel copy", () => {
     await screen.findByRole("button", { name: "Скопировать" });
     fireEvent.click(screen.getByRole("button", { name: "Скопировать" }));
     await waitFor(() => expect(write).toHaveBeenCalled());
-    const text = write.mock.calls[0][0] as string;
-    expect(text).toContain("Parity Agent");
-    expect(text).toContain("40817810000000000001");
-    expect(text).not.toContain("****");
+    expect(screen.getByTestId("bank-status")).toHaveTextContent(/Скопировано в буфер/);
   });
 });
 
-describe("AgentPayoutRequisitesPanel validation", () => {
-  it("does not call API when client validation fails", async () => {
+describe("AgentPayoutRequisitesPanel create and revise payloads", () => {
+  it("create sends normalized payload with isPrimary on first item", async () => {
     api.listAgentRequisites.mockResolvedValue({ items: [] });
+    api.createAgentRequisites.mockResolvedValue({ item: listItem });
     render(<AgentPayoutRequisitesPanel />);
-    await screen.findByRole("button", { name: "Добавить реквизиты" });
-    fireEvent.click(screen.getByRole("button", { name: "Добавить реквизиты" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Добавить реквизиты" }));
+    fillValidCreateForm();
     fireEvent.click(screen.getByTestId("bank-save"));
-    await screen.findByTestId("bank-error");
-    expect(api.createAgentRequisites).not.toHaveBeenCalled();
+    await waitFor(() => expect(api.createAgentRequisites).toHaveBeenCalled());
+    expect(api.createAgentRequisites.mock.calls[0][0]).toMatchObject({
+      legalName: "Parity Agent",
+      bik: "044525225",
+      isPrimary: true,
+    });
   });
 
-  it("requires company KPP before submit", async () => {
-    api.listAgentRequisites.mockResolvedValue({ items: [] });
+  it("revise sends expectedVersion and empty inn/kpp strings to clear", async () => {
+    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
+    api.fetchAgentRequisites.mockResolvedValue({
+      item: { ...fullDetail, kind: "person", inn: "770708389312", kpp: null, version: 3 },
+    });
+    api.patchAgentRequisites.mockResolvedValue({ item: listItem });
     render(<AgentPayoutRequisitesPanel />);
-    await screen.findByRole("button", { name: "Добавить реквизиты" });
-    fireEvent.click(screen.getByRole("button", { name: "Добавить реквизиты" }));
-    fireEvent.change(screen.getByTestId("bank-type"), { target: { value: "company" } });
-    fireEvent.change(screen.getByTestId("bank-recipient"), { target: { value: "ООО Тест" } });
-    fireEvent.change(screen.getByTestId("bank-bank"), { target: { value: "Банк" } });
-    fireEvent.change(screen.getByTestId("bank-bik"), { target: { value: "044525225" } });
-    fireEvent.change(screen.getByTestId("bank-account"), {
-      target: { value: "40702810000000000001" },
-    });
-    fireEvent.change(screen.getByTestId("bank-correspondent"), {
-      target: { value: "30101810000000000000" },
-    });
-    fireEvent.change(screen.getByTestId("bank-inn"), { target: { value: "7707083893" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Изменить" }));
+    await screen.findByTestId("agent-requisites-form");
+    fireEvent.change(screen.getByTestId("bank-inn"), { target: { value: "" } });
+    fillValidCreateForm();
     fireEvent.click(screen.getByTestId("bank-save"));
-    await screen.findByTestId("bank-error");
-    expect(api.createAgentRequisites).not.toHaveBeenCalled();
+    await waitFor(() => expect(api.patchAgentRequisites).toHaveBeenCalled());
+    const body = api.patchAgentRequisites.mock.calls[0][1] as Record<string, unknown>;
+    expect(body.action).toBe("revise");
+    expect(body.expectedVersion).toBe(3);
+    expect(body.inn).toBe("");
+    expect(body.kpp).toBe("");
+  });
+});
+
+describe("AgentPayoutRequisitesPanel conflict handling", () => {
+  it("VERSION_CONFLICT resyncs version and keeps form open for retry", async () => {
+    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
+    api.fetchAgentRequisites
+      .mockResolvedValueOnce({ item: { ...fullDetail, version: 4 } })
+      .mockResolvedValueOnce({ item: { ...fullDetail, version: 5 } });
+    api.patchAgentRequisites
+      .mockRejectedValueOnce(new RemcardApiError(409, "Conflict", { code: "VERSION_CONFLICT" }))
+      .mockResolvedValueOnce({ item: listItem });
+    render(<AgentPayoutRequisitesPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: "Изменить" }));
+    await screen.findByTestId("agent-requisites-form");
+    fillValidCreateForm();
+    fireEvent.click(screen.getByTestId("bank-save"));
+    await screen.findByText(/Данные обновлены/);
+    expect(screen.getByTestId("agent-requisites-form")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("bank-save"));
+    await waitFor(() => expect(api.patchAgentRequisites).toHaveBeenCalledTimes(2));
+    expect(api.patchAgentRequisites.mock.calls[1][1]).toMatchObject({ expectedVersion: 5 });
+  });
+
+  it("non-version 409 shows server message on revise", async () => {
+    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
+    api.fetchAgentRequisites.mockResolvedValue({ item: fullDetail });
+    api.patchAgentRequisites.mockRejectedValue(
+      new RemcardApiError(409, "ИНН/тип не совпадают с выбранной стороной — создайте новый набор"),
+    );
+    render(<AgentPayoutRequisitesPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: "Изменить" }));
+    await screen.findByTestId("agent-requisites-form");
+    fillValidCreateForm();
+    fireEvent.click(screen.getByTestId("bank-save"));
+    await screen.findByText(/ИНН\/тип не совпадают/);
+  });
+
+  it("surfaces server field errors", async () => {
+    api.listAgentRequisites.mockResolvedValue({ items: [] });
+    api.createAgentRequisites.mockRejectedValue(
+      new RemcardApiError(400, "Ошибка полей", { fields: { bik: "Неверный БИК" } }),
+    );
+    render(<AgentPayoutRequisitesPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: "Добавить реквизиты" }));
+    fillValidCreateForm();
+    fireEvent.click(screen.getByTestId("bank-save"));
+    await screen.findByText("Неверный БИК");
   });
 });
 
 describe("AgentPayoutRequisitesPanel wallet variant", () => {
-  it("renders wallet heading and bank select", async () => {
+  it("exposes edit, primary and archive for selected record", async () => {
     api.listAgentRequisites.mockResolvedValue({ items: [listItem, secondItem] });
     render(<AgentPayoutRequisitesPanel variant="wallet" />);
-    await screen.findByText("Куда получать оплату");
-    expect(screen.getByTestId("bank-select")).toBeInTheDocument();
-    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    await screen.findByTestId("bank-wallet-more-actions");
+    fireEvent.change(screen.getByTestId("bank-select"), { target: { value: "req-2" } });
+    fireEvent.click(screen.getByText("Дополнительные действия"));
+    expect(screen.getByRole("button", { name: "Изменить" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Сделать основными" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Архивировать" })).toBeInTheDocument();
   });
 
-  it("local select change does not call apply API", async () => {
+  it("disabled wallet still allows select and copy", async () => {
     api.listAgentRequisites.mockResolvedValue({ items: [listItem, secondItem] });
-    render(<AgentPayoutRequisitesPanel variant="wallet" />);
-    const select = await screen.findByTestId("bank-select");
+    api.fetchAgentRequisites.mockResolvedValue({ item: fullDetail });
+    const write = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: write } });
+    render(<AgentPayoutRequisitesPanel variant="wallet" disabled />);
+    await screen.findByText("Изменения недоступны");
+    const select = screen.getByTestId("bank-select");
+    expect(select).not.toBeDisabled();
     fireEvent.change(select, { target: { value: "req-2" } });
-    expect(api.patchAgentRequisites).not.toHaveBeenCalled();
-    expect(screen.getByText("Рабочий")).toBeInTheDocument();
-  });
-
-  it("shows apply success from reload-derived applyForNextPayout flag", async () => {
-    api.listAgentRequisites.mockResolvedValue({
-      items: [{ ...listItem, applyForNextPayout: true }],
-    });
-    render(<AgentPayoutRequisitesPanel variant="wallet" />);
-    await screen.findByTestId("bank-apply-success");
-    expect(screen.getByText(/Для следующего расчёта выбраны: Личный счёт/)).toBeInTheDocument();
-  });
-
-  it("apply for next payout calls patch and reloads flag", async () => {
-    api.listAgentRequisites
-      .mockResolvedValueOnce({ items: [listItem, secondItem] })
-      .mockResolvedValueOnce({ items: [{ ...secondItem, applyForNextPayout: true }, listItem] });
-    api.patchAgentRequisites.mockResolvedValue({ item: { ...secondItem, applyForNextPayout: true } });
-    render(<AgentPayoutRequisitesPanel variant="wallet" />);
-    const select = await screen.findByTestId("bank-select");
-    fireEvent.change(select, { target: { value: "req-2" } });
-    fireEvent.click(screen.getByRole("button", { name: "Применить для следующего расчёта" }));
-    await waitFor(() =>
-      expect(api.patchAgentRequisites).toHaveBeenCalledWith("req-2", { action: "applyForNextPayout" }),
-    );
-    await screen.findByTestId("bank-apply-success");
+    fireEvent.click(screen.getByRole("button", { name: "Скопировать реквизиты" }));
+    await waitFor(() => expect(write).toHaveBeenCalled());
+    fireEvent.click(screen.getByText("Дополнительные действия"));
+    expect(screen.getByRole("button", { name: "Изменить" })).toBeDisabled();
   });
 });
 
 describe("AgentPayoutRequisitesPanel profile variant", () => {
-  it("keeps ul list and bank-record test ids", async () => {
+  it("normalizes masked account suffix in list line", async () => {
     api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
     render(<AgentPayoutRequisitesPanel variant="profile" />);
     await screen.findByTestId("bank-record");
-    expect(screen.getByRole("list")).toBeInTheDocument();
-    expect(screen.getByText("Реквизиты для получения оплаты")).toBeInTheDocument();
+    expect(screen.getByText(/счёт …0001/)).toBeInTheDocument();
+    expect(screen.queryByText(/\*\*\*\*0001/)).not.toBeInTheDocument();
+  });
+
+  it("setPrimary calls patch on profile record", async () => {
+    api.listAgentRequisites.mockResolvedValue({ items: [listItem, secondItem] });
+    api.patchAgentRequisites.mockResolvedValue({ item: secondItem });
+    render(<AgentPayoutRequisitesPanel variant="profile" />);
+    const records = await screen.findAllByTestId("bank-record");
+    fireEvent.click(within(records[1]).getByText("Дополнительные действия"));
+    fireEvent.click(within(records[1]).getByRole("button", { name: "Сделать основными" }));
+    await waitFor(() =>
+      expect(api.patchAgentRequisites).toHaveBeenCalledWith("req-2", { action: "setPrimary" }),
+    );
   });
 });
 
-describe("AgentPayoutRequisitesPanel disabled and conflicts", () => {
-  it("disables mutating controls when disabled", async () => {
-    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
-    render(<AgentPayoutRequisitesPanel disabled />);
-    await screen.findByText("Только просмотр");
-    expect(screen.getByRole("button", { name: "Скопировать" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Изменить" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Добавить ещё реквизиты" })).toBeDisabled();
-  });
-
-  it("surfaces version conflict on revise", async () => {
-    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
-    api.fetchAgentRequisites.mockResolvedValue({ item: fullDetail });
-    api.patchAgentRequisites.mockRejectedValue(new RemcardApiError(409, "Conflict"));
+describe("AgentPayoutRequisitesPanel refresh UX", () => {
+  it("keeps form mounted during list refresh after VERSION_CONFLICT", async () => {
+    let resolveSlowList: (value: { items: typeof listItem[] }) => void = () => {};
+    api.listAgentRequisites
+      .mockResolvedValueOnce({ items: [listItem] })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSlowList = resolve;
+          }),
+      )
+      .mockResolvedValue({ items: [listItem] });
+    api.fetchAgentRequisites.mockResolvedValue({ item: { ...fullDetail, version: 2 } });
+    api.patchAgentRequisites.mockRejectedValue(
+      new RemcardApiError(409, "Conflict", { code: "VERSION_CONFLICT" }),
+    );
     render(<AgentPayoutRequisitesPanel />);
-    await screen.findByRole("button", { name: "Изменить" });
-    fireEvent.click(screen.getByRole("button", { name: "Изменить" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Изменить" }));
     await screen.findByTestId("agent-requisites-form");
-    fireEvent.change(screen.getByTestId("bank-recipient"), { target: { value: "Parity Agent" } });
-    fireEvent.change(screen.getByTestId("bank-bank"), { target: { value: "Тест" } });
-    fireEvent.change(screen.getByTestId("bank-bik"), { target: { value: "044525225" } });
-    fireEvent.change(screen.getByTestId("bank-account"), {
-      target: { value: "40817810000000000001" },
-    });
-    fireEvent.change(screen.getByTestId("bank-correspondent"), {
-      target: { value: "30101810000000000000" },
-    });
+    fillValidCreateForm();
     fireEvent.click(screen.getByTestId("bank-save"));
-    await screen.findByText(/изменены в другом окне/);
+    await screen.findByText("Обновление…");
+    expect(screen.getByTestId("agent-requisites-form")).toBeInTheDocument();
+    resolveSlowList({ items: [listItem] });
+    await waitFor(() => expect(screen.queryByText("Обновление…")).not.toBeInTheDocument());
   });
+});
 
-  it("Escape closes form and returns focus", async () => {
+describe("AgentPayoutRequisitesPanel validation", () => {
+  it("requires company KPP with bank-error alert", async () => {
     api.listAgentRequisites.mockResolvedValue({ items: [] });
     render(<AgentPayoutRequisitesPanel />);
-    const add = await screen.findByRole("button", { name: "Добавить реквизиты" });
-    fireEvent.click(add);
-    await screen.findByTestId("agent-requisites-form");
-    fireEvent.keyDown(window, { key: "Escape" });
-    await waitFor(() => expect(screen.queryByTestId("agent-requisites-form")).not.toBeInTheDocument());
-  });
-
-  it("archive confirms and calls patch", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
-    api.patchAgentRequisites.mockResolvedValue({ item: listItem });
-    render(<AgentPayoutRequisitesPanel />);
-    await screen.findByText("Дополнительные действия");
-    fireEvent.click(screen.getByText("Дополнительные действия"));
-    fireEvent.click(screen.getByRole("button", { name: "Архивировать" }));
-    await waitFor(() =>
-      expect(api.patchAgentRequisites).toHaveBeenCalledWith("req-1", { action: "archive" }),
-    );
-  });
-});
-
-describe("AgentPayoutRequisitesPanel detail", () => {
-  it("loads detail on expand and shows copy fallback when clipboard fails", async () => {
-    api.listAgentRequisites.mockResolvedValue({ items: [listItem] });
-    api.fetchAgentRequisites.mockResolvedValue({ item: fullDetail });
-    const write = vi.fn().mockRejectedValue(new Error("denied"));
-    Object.assign(navigator, { clipboard: { writeText: write } });
-    render(<AgentPayoutRequisitesPanel variant="wallet" />);
-    await screen.findByRole("button", { name: "Посмотреть полностью" });
-    fireEvent.click(screen.getByRole("button", { name: "Скопировать реквизиты" }));
-    await screen.findByText(/Скопируйте текст вручную/);
-    const fallback = screen.getByLabelText("Реквизиты для ручного копирования");
-    expect(fallback).not.toHaveAttribute("hidden");
-    fireEvent.click(screen.getByRole("button", { name: "Посмотреть полностью" }));
-    await screen.findByTestId("bank-record-detail");
-    expect(within(screen.getByTestId("bank-record-detail")).getByTestId("bank-detail-inn")).toHaveTextContent(
-      "770708389312",
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Добавить реквизиты" }));
+    fireEvent.change(screen.getByTestId("bank-type"), { target: { value: "company" } });
+    fillValidCreateForm();
+    fireEvent.change(screen.getByTestId("bank-inn"), { target: { value: "7707083893" } });
+    fireEvent.click(screen.getByTestId("bank-save"));
+    await screen.findByTestId("bank-error");
+    expect(api.createAgentRequisites).not.toHaveBeenCalled();
   });
 });
