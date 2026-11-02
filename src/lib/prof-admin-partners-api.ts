@@ -149,7 +149,7 @@ export type PartnerAccountDeletePreview = {
 export async function previewPartnerAccountDelete(userId: string, reason: string) {
   return remcardFetch<{ preview: PartnerAccountDeletePreview }>(
     `/api/pro/admin/partners/${encodeURIComponent(userId)}/account-delete/preview`,
-    { method: "POST", body: { reason } },
+    { method: "POST", body: { reason }, requireCsrf: true },
   );
 }
 
@@ -164,6 +164,7 @@ export async function applyPartnerAccountDelete(
     {
       method: "POST",
       body: { reason, confirmToken, publicIdConfirm },
+      requireCsrf: true,
     },
   );
 }
