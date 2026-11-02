@@ -473,6 +473,25 @@ export function PartnersHub({
   const [taxonomyFilterResetKey, setTaxonomyFilterResetKey] = useState(0);
   const [listArchiveView, setListArchiveView] = useState<"active" | "archive" | "hidden">("active");
   const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
+  const [pendingLinkInviteMode, setPendingLinkInviteMode] = useState<"discussion" | "terms" | null>(null);
+  const [linkInviteSubmitting, setLinkInviteSubmitting] = useState(false);
+  const linkModeDirtyRef = useRef(false);
+  const linkModeTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const reportLinkModeDirty = useCallback((dirty: boolean) => {
+    linkModeDirtyRef.current = dirty;
+    onDiscussionInviteDirtyChange?.(dirty);
+  }, [onDiscussionInviteDirtyChange]);
+  useEffect(() => {
+    setPendingLinkInviteMode(null);
+    setLinkInviteMode("discussion");
+    linkModeDirtyRef.current = false;
+  }, [discussionInvitePanelKey]);
+  function requestLinkMode(mode: "discussion" | "terms", trigger: HTMLButtonElement) {
+    if (mode === linkInviteMode || linkInviteSubmitting) return;
+    linkModeTriggerRef.current = trigger;
+    if (linkModeDirtyRef.current) setPendingLinkInviteMode(mode);
+    else setLinkInviteMode(mode);
+  }
   const [listPartnerType, setListPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [listSpecialization, setListSpecialization] = useState("");
   const [listCity, setListCity] = useState("");
@@ -1735,14 +1754,15 @@ export function PartnersHub({
               </>
             ) : (
               <>
-                {partnersAudience === "specialist-r04" ? (
+                {partnersAudience === "specialist-r04" && !discussionInviteReady ? (
                   <div className={styles.linkModeTabs} role="tablist" aria-label="Тип ссылки">
                     <button
                       type="button"
                       role="tab"
                       aria-selected={linkInviteMode === "discussion"}
                       data-active={linkInviteMode === "discussion"}
-                      onClick={() => setLinkInviteMode("discussion")}
+                      disabled={linkInviteSubmitting}
+                      onClick={(event) => requestLinkMode("discussion", event.currentTarget)}
                     >
                       К обсуждению
                     </button>
@@ -1751,19 +1771,47 @@ export function PartnersHub({
                       role="tab"
                       aria-selected={linkInviteMode === "terms"}
                       data-active={linkInviteMode === "terms"}
-                      onClick={() => setLinkInviteMode("terms")}
+                      disabled={linkInviteSubmitting}
+                      onClick={(event) => requestLinkMode("terms", event.currentTarget)}
                     >
                       С условиями
                     </button>
                   </div>
                 ) : null}
                 {partnersAudience === "specialist-r04" && linkInviteMode === "discussion" ? (
-                  <PartnerDiscussionInvitePanel showSectionTitle={false} />
+                  <PartnerDiscussionInvitePanel
+                    key={`discussion-${discussionInvitePanelKey}`}
+                    showSectionTitle={false}
+                    presentationWizard
+                    onReadyChange={onDiscussionInviteReadyChange}
+                    onDirtyChange={reportLinkModeDirty}
+                    onSubmittingChange={setLinkInviteSubmitting}
+                  />
                 ) : (
           <PartnerLinkInvitePanel key={`link-${discussionInvitePanelKey}`} meProfile={meProfile} showSectionTitle={false} wizard
-            onDirtyChange={onDiscussionInviteDirtyChange} onReadyChange={onDiscussionInviteReadyChange}
+            onDirtyChange={reportLinkModeDirty} onReadyChange={onDiscussionInviteReadyChange}
+            onSubmittingChange={setLinkInviteSubmitting}
             onAnotherWay={() => onOpenPartnerHub?.("find")} />
                 )}
+                {pendingLinkInviteMode ? (
+                  <PartnerCooperationConfirmDialog
+                    open
+                    testId="partner-link-mode-discard-confirm"
+                    title="Сменить тип приглашения?"
+                    body="Введённые данные текущего приглашения не сохранятся. Можно остаться и продолжить заполнение."
+                    confirmLabel="Остаться"
+                    dismissLabel="Сменить тип"
+                    safeAction="confirm"
+                    onConfirm={() => {
+                      setPendingLinkInviteMode(null);
+                      linkModeTriggerRef.current?.focus();
+                    }}
+                    onDismiss={() => {
+                      setLinkInviteMode(pendingLinkInviteMode);
+                      setPendingLinkInviteMode(null);
+                    }}
+                  />
+                ) : null}
               </>
             )}
           </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
 import {
@@ -53,6 +53,7 @@ type PartnerLinkInvitePanelProps = {
   wizard?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
   onReadyChange?: (ready: boolean) => void;
+  onSubmittingChange?: (submitting: boolean) => void;
   onAnotherWay?: () => void;
 };
 
@@ -117,6 +118,7 @@ export function PartnerLinkInvitePanel({
   wizard = false,
   onDirtyChange,
   onReadyChange,
+  onSubmittingChange,
   onAnotherWay,
 }: PartnerLinkInvitePanelProps) {
   const [step, setStep] = useState(1);
@@ -139,6 +141,10 @@ export function PartnerLinkInvitePanel({
       createInitialInviteFormState(initial.resetKey, initial.categories, initial.blockedReason),
   );
   const [creating, setCreating] = useState(false);
+  useLayoutEffect(() => {
+    onSubmittingChange?.(creating);
+    return () => onSubmittingChange?.(false);
+  }, [creating, onSubmittingChange]);
   const createInFlight = useRef(false);
   const [createdSnapshot, setCreatedSnapshot] = useState<CreatedLinkSnapshot | null>(null);
   const createdUrl = createdSnapshot?.url ?? null;

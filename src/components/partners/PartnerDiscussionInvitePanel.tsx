@@ -32,8 +32,9 @@ type DiscussionInviteRow = {
 type Props = {
   showSectionTitle?: boolean;
   onOpenDiscussion?: (inviteId: string) => void;
-  /** Agent-only presentation: 3-step discussion invite wizard. Default keeps flat form. */
+  /** Prototype presentation: shared 3-step discussion wizard. Default keeps flat form. */
   presentationWizard?: boolean;
+  onSubmittingChange?: (submitting: boolean) => void;
   /** P12: notify hub chrome when ready composition is shown. */
   onReadyChange?: (ready: boolean) => void;
   /**
@@ -54,6 +55,7 @@ export function PartnerDiscussionInvitePanel({
   showSectionTitle = true,
   onOpenDiscussion,
   presentationWizard = false,
+  onSubmittingChange,
   onReadyChange,
   onDirtyChange,
 }: Props) {
@@ -66,6 +68,11 @@ export function PartnerDiscussionInvitePanel({
   const [recipientLabel, setRecipientLabel] = useState("");
   const [cooperationSubject, setCooperationSubject] = useState("");
   const [creating, setCreating] = useState(false);
+  const createInFlight = useRef(false);
+  useLayoutEffect(() => {
+    onSubmittingChange?.(creating);
+    return () => onSubmittingChange?.(false);
+  }, [creating, onSubmittingChange]);
   const [error, setError] = useState("");
   const [createdUrl, setCreatedUrl] = useState("");
   const [createdExpires, setCreatedExpires] = useState("");
@@ -127,6 +134,8 @@ export function PartnerDiscussionInvitePanel({
   }, [inviteDraftDirty, onDirtyChange]);
 
   const createLink = useCallback(async () => {
+    if (createInFlight.current) return;
+    createInFlight.current = true;
     setError("");
     setShareHint("");
     setCreating(true);
@@ -170,6 +179,7 @@ export function PartnerDiscussionInvitePanel({
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать ссылку");
       // Keep review/wizard; never show fake ready on error.
     } finally {
+      createInFlight.current = false;
       setCreating(false);
     }
   }, [cooperationSubject, loadInvites, onReadyChange, presentationWizard, recipientLabel]);

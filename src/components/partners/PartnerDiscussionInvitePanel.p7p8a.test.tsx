@@ -45,14 +45,14 @@ describe("PartnerDiscussionInvitePanel P7/P8a wiring", () => {
     });
   });
 
-  it("defaults to flat form and enables wizard only via additive prop", async () => {
+  it("keeps the standalone flat default and enables the prototype wizard for agent and specialist callsites", async () => {
     expect(panelSource).toContain("presentationWizard = false");
     expect(hubSource).toMatch(
-      /PartnerDiscussionInvitePanel\s+showSectionTitle=\{false\}\s+presentationWizard/,
+      /PartnerDiscussionInvitePanel[^>]*?showSectionTitle=\{false\}\s+presentationWizard/,
     );
-    // Specialist/non-agent callsite stays without presentationWizard
+    // Specialist keeps discussion transport, but shares the same wizard.
     expect(hubSource).toMatch(
-      /linkInviteMode === "discussion"[\s\S]*?<PartnerDiscussionInvitePanel showSectionTitle=\{false\} \/>/,
+      /linkInviteMode === "discussion"[\s\S]*?<PartnerDiscussionInvitePanel[^>]*?presentationWizard/,
     );
 
     const { unmount } = render(<PartnerDiscussionInvitePanel showSectionTitle={false} />);
