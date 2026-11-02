@@ -11,11 +11,26 @@ vi.mock("@/lib/prof-admin-management-api", () => ({
 }));
 
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
-import {
-  ProfAnalyticsConsentLoginBlock,
-  ProfAnalyticsConsentProfileSetting,
-} from "./ProfAnalyticsConsentUi";
+import { ProfAnalyticsConsentProfileSetting } from "./ProfAnalyticsConsentUi";
+import { ConsentStep } from "@/components/auth/ConsentStep";
 import { ProfPartnerSessionVisit } from "@/components/layout/ProfPartnerSessionVisit";
+
+function Agreement() {
+  return <ConsentStep
+    requirements={[
+      { kind: "PERSONAL_DATA", legalDocumentId: "qa-privacy", version: "1", url: "/privacy", status: "missing" },
+      { kind: "TERMS", legalDocumentId: "qa-terms", version: "1", url: "/terms", status: "missing" },
+    ]}
+    error="" loading={false} onSubmit={async () => true} onRetryReadiness={() => undefined}
+  />;
+}
+
+async function acceptLegal() {
+  const ui = userEvent.setup();
+  await ui.click(screen.getByRole("checkbox", { name: /я принимаю обработку/i }));
+  await ui.click(screen.getByRole("checkbox", { name: /я принимаю пользовательское/i }));
+  await ui.click(screen.getByRole("button", { name: "Продолжить" }));
+}
 
 function CabinetWithVisit() {
   return (
@@ -36,7 +51,7 @@ describe("PROF analytics consent user path", () => {
   it("does not persist or record visit while checkbox is only shown pre-checked", async () => {
     render(
       <CookieConsentProvider>
-        <ProfAnalyticsConsentLoginBlock />
+        <Agreement />
         <ProfPartnerSessionVisit />
       </CookieConsentProvider>,
     );
@@ -52,12 +67,12 @@ describe("PROF analytics consent user path", () => {
   it("saves analytics=true only after explicit confirm with checked box", async () => {
     render(
       <CookieConsentProvider>
-        <ProfAnalyticsConsentLoginBlock />
+        <Agreement />
         <ProfPartnerSessionVisit />
       </CookieConsentProvider>,
     );
     await screen.findByRole("checkbox", { name: /разрешить учёт посещений/i });
-    fireEvent.click(screen.getByRole("button", { name: "Подтвердить выбор" }));
+    await acceptLegal();
     await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(1));
     expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toMatch(/"analytics":true/);
     expect(decodeURIComponent(document.cookie)).toContain('"analytics":true');
@@ -67,13 +82,13 @@ describe("PROF analytics consent user path", () => {
   it("saves analytics=false when user unchecks before confirm", async () => {
     render(
       <CookieConsentProvider>
-        <ProfAnalyticsConsentLoginBlock />
+        <Agreement />
         <ProfPartnerSessionVisit />
       </CookieConsentProvider>,
     );
     const ui = userEvent.setup();
     await ui.click(await screen.findByRole("checkbox", { name: /разрешить учёт посещений/i }));
-    await ui.click(screen.getByRole("button", { name: "Подтвердить выбор" }));
+    await acceptLegal();
     await waitFor(() =>
       expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toMatch(/"analytics":false/),
     );
@@ -93,7 +108,6 @@ describe("PROF analytics consent user path", () => {
     );
     render(
       <CookieConsentProvider>
-        <ProfAnalyticsConsentLoginBlock />
         <ProfAnalyticsConsentProfileSetting />
       </CookieConsentProvider>,
     );

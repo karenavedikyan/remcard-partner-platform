@@ -1,7 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render as rtlRender, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthFlow } from "./AuthFlow";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import { COOKIE_CONSENT_HTTP, COOKIE_CONSENT_KEY } from "@/lib/cookie-consent";
+
+function render(ui: ReactElement) {
+  return rtlRender(ui, { wrapper: CookieConsentProvider });
+}
 
 const replace = vi.fn();
 const refresh = vi.fn();
@@ -12,10 +19,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/components/layout/ThemeToggle", () => ({
   ThemeToggle: () => null,
-}));
-
-vi.mock("@/components/consent/ProfAnalyticsConsentUi", () => ({
-  ProfAnalyticsConsentLoginBlock: () => null,
 }));
 
 vi.mock("@/lib/api-client", () => ({
@@ -46,6 +49,8 @@ const readyReadiness = {
 describe("AuthFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem(COOKIE_CONSENT_KEY);
+    document.cookie = `${COOKIE_CONSENT_HTTP}=;path=/;max-age=0`;
     vi.stubGlobal("open", vi.fn());
     vi.mocked(getAuthMe).mockResolvedValue({
       user: { id: "store-1", role: "PRO" },
@@ -78,6 +83,63 @@ describe("AuthFlow", () => {
 
     expect(await screen.findByRole("heading", { name: /с возвращением/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /продолжить с max/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("analytics-consent-login")).toBeNull();
+    expect(screen.queryByText("Аналитика кабинета")).toBeNull();
+    expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toBeNull();
+  });
+
+  it.each([true, false])("saves the optional analytics choice only after actual legal completion: %s", async enabled => {
+    const recorded: string[] = [];
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/account/consent") {
+        recorded.push((init?.body as { kind: string }).kind);
+        return { ok: true };
+      }
+      if (path === "/api/account/cabinet-readiness") {
+        return recorded.length === 2 ? readyReadiness : {
+          ...readyReadiness, nextStep: "consents", canAccessCabinet: false,
+          missingConsents: [
+            { kind: "PERSONAL_DATA", legalDocumentId: "qa-privacy", version: "1", url: "/privacy", status: "missing" },
+            { kind: "TERMS", legalDocumentId: "qa-terms", version: "1", url: "/terms", status: "missing" },
+          ],
+        };
+      }
+      return { ok: true };
+    });
+    const ui = userEvent.setup();
+    render(<AuthFlow returnTo="/scanner" />);
+    const analytics = await screen.findByRole("checkbox", { name: /разрешить учёт посещений/i });
+    expect(analytics).toBeChecked();
+    expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toBeNull();
+    if (!enabled) await ui.click(analytics);
+    await ui.click(screen.getByRole("checkbox", { name: /я принимаю обработку/i }));
+    await ui.click(screen.getByRole("checkbox", { name: /я принимаю пользовательское/i }));
+    await ui.click(screen.getByRole("button", { name: "Продолжить" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/scanner"));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(COOKIE_CONSENT_KEY)!)).toMatchObject({ analytics: enabled, marketing: false }));
+    expect(recorded).toEqual(["PERSONAL_DATA", "TERMS"]);
+  });
+
+  it.each([409, 503])("does not turn analytics on after rejected legal submission: %s", async status => {
+    vi.mocked(remcardFetch).mockImplementation(async path => {
+      if (path === "/api/account/consent") throw new RemcardApiError(status, "QA failure", {
+        error: status === 409 ? "DOCUMENT_VERSION_MISMATCH" : "UNAVAILABLE",
+      });
+      return {
+        ...readyReadiness, nextStep: "consents", canAccessCabinet: false,
+        missingConsents: [{ kind: "TERMS", legalDocumentId: "qa-terms", version: "1", url: "/terms", status: "missing" }],
+      };
+    });
+    const ui = userEvent.setup();
+    render(<AuthFlow returnTo="/scanner" />);
+    await ui.click(await screen.findByRole("checkbox", { name: /я принимаю пользовательское/i }));
+    await ui.click(screen.getByRole("button", { name: "Продолжить" }));
+    await screen.findByRole("alert");
+    if (status === 409) {
+      await waitFor(() => expect(screen.getByRole("checkbox", { name: /я принимаю пользовательское/i })).not.toBeChecked());
+    }
+    expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("does not automatically check or redirect a partner session during admin entry", async () => {

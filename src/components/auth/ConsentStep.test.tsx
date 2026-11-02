@@ -1,7 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ConsentStep } from "./ConsentStep";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+
+function render(ui: ReactElement) {
+  return rtlRender(ui, { wrapper: CookieConsentProvider });
+}
 
 const termsA = {
   kind: "TERMS",
@@ -25,7 +31,7 @@ describe("ConsentStep", () => {
       />,
     );
 
-    await ui.click(screen.getByRole("checkbox"));
+    await ui.click(screen.getByRole("checkbox", { name: /я принимаю/i }));
     await ui.click(screen.getByRole("button", { name: /продолжить/i }));
     expect(onSubmit).toHaveBeenCalledWith(new Set(["TERMS:doc-a"]));
 
@@ -39,7 +45,7 @@ describe("ConsentStep", () => {
       />,
     );
 
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /я принимаю/i })).not.toBeChecked();
   });
 
   it("shows retry when requirements are empty", async () => {

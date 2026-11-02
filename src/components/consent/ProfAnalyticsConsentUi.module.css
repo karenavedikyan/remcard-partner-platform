@@ -1,4 +1,4 @@
-.loginBlock,
+.agreementBlock,
 .profileBlock {
   margin-top: var(--space-5);
   padding: var(--space-4);
@@ -93,7 +93,7 @@
 }
 
 @media (max-width: 375px) {
-  .loginBlock,
+  .agreementBlock,
   .profileBlock {
     padding: var(--space-3);
   }

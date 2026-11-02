@@ -6,13 +6,15 @@ import { consentLabel } from "@/lib/auth-consent";
 import { consentRequirementKey } from "@/lib/auth-session";
 import { getLegalSiteUrl } from "@/lib/auth-config";
 import { Button } from "@/components/ui/Button";
+import { useCookieConsent } from "@/contexts/CookieConsentContext";
+import { ProfAnalyticsConsentAgreementChoice } from "@/components/consent/ProfAnalyticsConsentUi";
 import styles from "./auth.module.css";
 
 type ConsentStepProps = {
   requirements: ConsentRequirement[];
   error: string;
   loading: boolean;
-  onSubmit: (accepted: Set<string>) => void;
+  onSubmit: (accepted: Set<string>) => boolean | void | Promise<boolean | void>;
   onRetryReadiness: () => void;
 };
 
@@ -36,9 +38,15 @@ export function ConsentStep({
 }: ConsentStepProps) {
   const legalBase = getLegalSiteUrl();
   const submitLock = useRef(false);
+  const { state, confirmAnalyticsChoice } = useCookieConsent();
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(state?.analytics ?? true);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [localError, setLocalError] = useState("");
   const [signature, setSignature] = useState(requirementsSignature(requirements));
+
+  useEffect(() => {
+    setAnalyticsEnabled(state?.analytics ?? true);
+  }, [state?.analytics, state?.decidedAt]);
 
   useEffect(() => {
     const nextSignature = requirementsSignature(requirements);
@@ -50,7 +58,7 @@ export function ConsentStep({
 
   const hasMissingDocument = requirements.some((req) => !req.legalDocumentId);
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (submitLock.current || loading) return;
 
@@ -70,8 +78,14 @@ export function ConsentStep({
     setLocalError("");
 
     submitLock.current = true;
-    onSubmit(accepted);
-    submitLock.current = false;
+    try {
+      const saved = await onSubmit(accepted);
+      if (saved === true) confirmAnalyticsChoice(analyticsEnabled);
+    } catch {
+      setLocalError("Не удалось сохранить согласия. Повторите попытку.");
+    } finally {
+      submitLock.current = false;
+    }
   }
 
   const allChecked =
@@ -143,6 +157,12 @@ export function ConsentStep({
                 );
               })}
             </fieldset>
+
+            <ProfAnalyticsConsentAgreementChoice
+              enabled={analyticsEnabled}
+              onChange={setAnalyticsEnabled}
+              disabled={loading}
+            />
 
             <Button type="submit" disabled={loading || !allChecked}>
               {loading ? "Сохраняем…" : "Продолжить"}

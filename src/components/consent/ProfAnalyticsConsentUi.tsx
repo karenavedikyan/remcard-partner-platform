@@ -57,34 +57,39 @@ function AnalyticsConsentControls({
   );
 }
 
-/** Compact choice on partner login; no fixed overlay. */
-export function ProfAnalyticsConsentLoginBlock() {
-  const { needsDecision, confirmAnalyticsChoice } = useCookieConsent();
-  const [draftEnabled, setDraftEnabled] = useState(true);
-
-  useEffect(() => {
-    if (needsDecision) setDraftEnabled(true);
-  }, [needsDecision]);
-
-  if (!needsDecision) return null;
-
+/** Optional choice submitted together with the legal agreements, not a separate login panel. */
+export function ProfAnalyticsConsentAgreementChoice({
+  enabled,
+  onChange,
+  disabled,
+}: {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  disabled?: boolean;
+}) {
+  const checkboxId = useId();
   return (
     <section
-      className={styles.loginBlock}
-      aria-labelledby="prof-analytics-login-title"
-      aria-describedby="prof-analytics-login-desc"
-      data-testid="analytics-consent-login"
+      className={styles.agreementBlock}
+      aria-labelledby="prof-analytics-agreement-title"
+      aria-describedby="prof-analytics-agreement-desc"
+      data-testid="analytics-consent-agreements"
     >
-      <h2 id="prof-analytics-login-title" className={styles.title}>
+      <h2 id="prof-analytics-agreement-title" className={styles.title}>
         Аналитика кабинета
       </h2>
-      <AnalyticsConsentCopy idPrefix="prof-analytics-login" />
-      <AnalyticsConsentControls
-        draftEnabled={draftEnabled}
-        onDraftChange={setDraftEnabled}
-        onConfirm={() => confirmAnalyticsChoice(draftEnabled)}
-        confirmLabel="Подтвердить выбор"
-      />
+      <AnalyticsConsentCopy idPrefix="prof-analytics-agreement" />
+      <label className={styles.checkboxRow} htmlFor={checkboxId}>
+        <input
+          id={checkboxId}
+          type="checkbox"
+          className={styles.checkboxInput}
+          checked={enabled}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.checked)}
+        />
+        <span className={styles.checkboxLabel}>{CHECKBOX_LABEL} (необязательно)</span>
+      </label>
     </section>
   );
 }
