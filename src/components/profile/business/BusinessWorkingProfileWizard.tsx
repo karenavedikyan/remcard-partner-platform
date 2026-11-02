@@ -167,7 +167,10 @@ export function BusinessWorkingProfileWizard({
   };
 
   const persistServer = async (nextDraft: ProfileDraft): Promise<boolean> => {
-    const err = validateWorkingProfileDraft(nextDraft);
+    const err = validateWorkingProfileDraft(nextDraft, {
+      profile: profileRef.current,
+      partnerSearchTouched: partnerSearchTouchedRef.current,
+    });
     if (err) {
       setBanner({ kind: "error", text: err });
       return false;

@@ -5,7 +5,15 @@ import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
 import { buildWorkingProfilePatchBody, type WorkingSaveOptions } from "@/lib/working-profile-patch";
 
-export function validateWorkingProfileDraft(draft: ProfileDraft): string | null {
+export type WorkingProfileValidationContext = {
+  profile: ProProfileResponse;
+  partnerSearchTouched?: boolean;
+};
+
+export function validateWorkingProfileDraft(
+  draft: ProfileDraft,
+  context?: WorkingProfileValidationContext,
+): string | null {
   const name = draft.displayName.trim();
   if (name.length < 2 || name === "Пользователь") {
     return "Укажите имя представителя (минимум 2 символа, не «Пользователь»).";
@@ -20,7 +28,14 @@ export function validateWorkingProfileDraft(draft: ProfileDraft): string | null 
   }
   const hasDirections =
     draft.productCategoryIds.length > 0 || draft.serviceSpecializationIds.length > 0;
-  if (draft.partnerSearchOptIn && !hasDirections) {
+  // A server-computed AUTO default is not an explicit search visibility choice.
+  // Keep the historical strict default for callers without context,
+  // and the minimum for a touched ON checkbox or an already explicit ON profile.
+  const requiresSearchDirections =
+    !context ||
+    context.partnerSearchTouched === true ||
+    context.profile.workingProfile?.partnerSearchOptInExplicit === true;
+  if (draft.partnerSearchOptIn && requiresSearchDirections && !hasDirections) {
     return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
   }
   if (draft.primaryDirection) {
@@ -131,7 +146,10 @@ export async function persistWorkingProfileDraft(
   draft: ProfileDraft,
   options: WorkingSaveOptions = {},
 ): Promise<ProProfileResponse> {
-  const validationError = validateWorkingProfileDraft(draft);
+  const validationError = validateWorkingProfileDraft(draft, {
+    profile,
+    partnerSearchTouched: options.partnerSearchTouched,
+  });
   if (validationError) {
     throw new RemcardApiError(400, validationError, null);
   }

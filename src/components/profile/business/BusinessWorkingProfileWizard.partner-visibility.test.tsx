@@ -106,6 +106,101 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     }));
   });
 
+  const withoutDirections = {
+    productCategoryIds: [],
+    serviceSpecializationIds: [],
+    effectiveProductCategoryIds: [],
+    effectiveServiceSpecializationIds: [],
+  };
+
+  it("saves untouched AUTO visible business profile without directions using the actual validator", async () => {
+    const user = userEvent.setup();
+    const initial = storeProfile({
+      ...withoutDirections,
+      partnerSearchOptInExplicit: false,
+      partnerSearchOptIn: false,
+      partnerSearchVisible: true,
+    });
+    persist.mockResolvedValue(initial);
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={initial} partnerType="STORE" basicsEditable forceEditing forceStep={3}
+      />,
+    );
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+    expect(persist.mock.calls[0][0]).toBe(initial);
+    expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(true);
+    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+    expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
+  });
+
+  it("binds direct validation to the current profile ref, not stale initial AUTO state", async () => {
+    const user = userEvent.setup();
+    const initial = storeProfile({
+      ...withoutDirections, partnerSearchOptInExplicit: false, partnerSearchVisible: true,
+    });
+    const { rerender } = render(
+      <BusinessWorkingProfileWizard
+        initialProfile={initial} partnerType="STORE" basicsEditable forceEditing forceStep={3}
+      />,
+    );
+    const refreshed = {
+      ...initial,
+      workingProfile: {
+        ...initial.workingProfile!, partnerSearchOptInExplicit: true, partnerSearchOptIn: true,
+      },
+    };
+    rerender(
+      <BusinessWorkingProfileWizard
+        initialProfile={refreshed} partnerType="STORE" basicsEditable forceEditing forceStep={3}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    expect(await screen.findByText(/Для видимости в поиске укажите/)).toBeTruthy();
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it("requires directions after explicitly returning AUTO checkbox to ON", async () => {
+    const user = userEvent.setup();
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={storeProfile({
+          ...withoutDirections, partnerSearchOptInExplicit: false, partnerSearchVisible: true,
+        })}
+        partnerType="STORE" basicsEditable forceEditing forceStep={3}
+      />,
+    );
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("checkbox"));
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    expect(await screen.findByText(/Для видимости в поиске укажите/)).toBeTruthy();
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it("preserves explicit hidden business profile without directions on an unrelated save", async () => {
+    const user = userEvent.setup();
+    const initial = storeProfile({
+      ...withoutDirections,
+      partnerSearchOptInExplicit: true,
+      partnerSearchOptIn: false,
+      partnerSearchVisible: false,
+    });
+    persist.mockResolvedValue(initial);
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={initial} partnerType="STORE" basicsEditable forceEditing forceStep={3}
+      />,
+    );
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
+    await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+    expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(false);
+    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+  });
+
   it("shows toggle on review step with prototype copy", async () => {
     render(
       <BusinessWorkingProfileWizard
